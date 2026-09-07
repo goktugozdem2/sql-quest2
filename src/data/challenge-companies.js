@@ -30,6 +30,130 @@
 // tagged: see `excludesOnDataset` in src/data/interview-archetypes.js — it is
 // a fraud-strategy job, not an analyst screen, and tagging it would pad the
 // prep plan with five hard challenges nobody is going to ask about.
+// MANUAL ADDITIONS 2026-09-07 (second block today, after the Capital One one
+// directly above): the seven other fintech pages get
+// data that is shaped like their own work. Measured the same day: Stripe's 29
+// tags ran on 27 ecommerce challenges and 2 movies; Plaid's 28 on ecommerce,
+// employees and titanic; JPMorgan's 19 were 16 challenges over an EMPLOYEES
+// table. Meanwhile the bank held 25 card-analytics challenges (275-299) and 27
+// FDIC call-report challenges (200-219, 260-266) that only Capital One was
+// pointed at. Nothing was deleted here — these are additions on top of the
+// existing tags, which stay as history.
+//
+// The obvious wrong answer was tagging all 25 card challenges to all five
+// payments companies: Wise would then be 35 challenges of which 25 are
+// identical to Stripe's, five doors sharing one core. So each company gets a
+// SUBSET chosen against its own page's stated topics, one line of reasoning
+// per challenge. Overlap across the five payments sets is 275 (Ramp, Revolut,
+// Wise), 282 (Ramp, Wise) and 289 (Plaid, Wise) — deliberate: per-account
+// monthly spend, month-over-month with LAG and the half-open timestamp window
+// are base metrics both pages already name as their own. Stripe's six overlap
+// with nobody.
+//
+// STRIPE — 280, 286, 292, 293, 294, 298 (merchant-side processing and
+// disputes; page topics: payment analytics, disputes, rolling revenue)
+//   280 dispute rate per merchant, and the LEFT JOIN COUNT that inflates it
+//   286 risk tier is a merchant attribute, so the filter cannot run pre-join
+//   292 the merchant volume league table, and what a tie does to the rank
+//   293 a merchant's share of its own vertical — percent-of-parent
+//   294 cumulative processed volume at the daily grain, not the swipe grain
+//   298 disputed VALUE by risk tier x category; the amount is on the
+//       transaction, not on the dispute row
+//
+// PLAID — 276, 278, 287, 289, 291, 297 (the transaction feed itself; page
+// topics: NULL-safe aggregation, dedup and entity resolution, categorization,
+// per-account rollups)
+//   276 category is enrichment on the merchant record, not on the transaction
+//       row — join before you group
+//   278 accounts with nothing in the window: the anti-join behind a connection
+//       that has quietly stopped returning transactions
+//   287 COUNT(col) skips NULLs and COUNT(*) does not; an optional field is the
+//       whole question
+//   289 a half-open window on an ISO timestamp column — the off-by-a-day every
+//       date-ranged transactions query hides
+//   291 two one-to-many children of the same parent fan out; aggregate each
+//       branch before joining
+//   297 same account, same merchant, inside 24 hours — duplicate-transaction
+//       detection by self-join
+//
+// RAMP — 275, 279, 281, 282, 288, 299 (corporate spend and vendor
+// concentration; page topics: spend over time, top-N vendors, running totals,
+// pivot reports and Pareto shares)
+//   275 spend per card per month, the report a spend-management customer opens
+//       first
+//   279 top 3 vendors per spend category
+//   281 the pivot: transaction mix across amount bands by conditional
+//       aggregation — how approval thresholds get set
+//   282 month-over-month spend growth per category with LAG
+//   288 the weekday shape of corporate card spend
+//   299 what share of spend sits in the top decile — the Pareto share, with the
+//       cut-off computed rather than typed
+//
+// REVOLUT — 275, 277, 283, 284, 290 (consumer cards, cohorts, per-cardholder
+// behaviour; page topics: retention and cohorts, running balances, funnels)
+//   275 per-cardholder monthly spend, the base metric of a consumer card book
+//   277 signup-month cohorts and spend per account
+//   283 peak rolling 30-day spend per cardholder — the challenge's own words
+//       are "credit-limit and velocity models both start here", and Revolut
+//       issues the card
+//   284 time from first swipe to second: the activation metric for a newly
+//       issued consumer card
+//   290 the never-disputed segment, written as NOT EXISTS
+//   Five, not six: the sixth-best card challenge for Revolut was a duplicate of
+//   an angle another page owns more honestly, and a padded set is the thing
+//   this batch exists to stop.
+//
+// WISE — 275, 282, 285, 289, 295, 296 (cross-border; page topics: country
+// corridors, growth, recency and repeats)
+//   275 per-customer monthly volume, the grain a remittance book reports in
+//   282 month-over-month growth with LAG
+//   285 country lives on the customer, not the transaction — the corridor
+//       table, where cardholders and transfers are two different counts
+//   289 a half-open window on an ISO timestamp, where a multi-timezone money
+//       mover loses a day
+//   295 first send, last send and the span between them
+//   296 "never transacted in the customer's own country" is a condition on the
+//       GROUP, not on a row — the definition of a cross-border customer
+//
+// JPMORGAN and MORGAN STANLEY get the FDIC banking set, NOT the card ledger.
+// A universal bank and a broker are not card issuers; pointing them at
+// accounts/merchants/transactions/chargebacks would repeat the mistake this
+// batch is fixing. FDIC BankFind call-report data — institutions, financials,
+// branches, failures — is the balance-sheet shape their analysts actually
+// work in, and JPMorgan is literally row 1 of the institutions table.
+//
+// JPMORGAN — 200, 208, 210, 211, 213, 215, 216, 217, 262, 265 (balance sheet,
+// credit quality, capital, footprint; page topics: financial metrics, risk and
+// regulatory, time-series windows)
+//   200 the peer league table by total assets
+//   208 CASE banding of banks by asset size — the peer-group cut
+//   210 the institution register joined to the latest quarter's financials
+//   211 capital adequacy per state with a HAVING floor so the average means
+//       something
+//   213 a credit-quality screen against a median computed in a CTE
+//   215 three tables at the right grain: branch footprint against earnings
+//   216 top 3 per state — the market-share view coverage is planned from
+//   217 quarter-over-quarter balance-sheet growth with LAG
+//   262 the tier 1 well-capitalized threshold breach
+//   265 share of branches in the HQ state — concentration on the footprint
+//
+// MORGAN STANLEY — 206, 214, 219, 260, 261, 263, 264, 266 (risk-analytics
+// shapes on the same call-report data; page topics: time-series P&L, risk
+// buckets and percentile ranks, position rollups, data integrity). Disjoint
+// from JPMorgan's ten except 262, which Morgan Stanley already carried.
+//   206 a missing financial figure is the finding, not a zero — NULL handling
+//   214 name-signal segmentation; trust and wealth institutions are the peer set
+//   219 UNION two registers into one labelled table — the reconciliation shape
+//   260 a z-score outlier screen, the risk bucket computed rather than typed
+//   261 quarter-over-quarter acceleration in a risk series — trend, not level
+//   263 clustering events by (state, year) with a HAVING floor
+//   264 a percentile cut on a return series
+//   266 two segments compared side by side with CASE
+//
+// Membership in src/data/interview-archetypes.js is UNCHANGED by all of this
+// and must stay that way: a tag has never granted eligibility, and
+// eligibleTargets() still returns exactly ['Capital One']. Preserve this block
+// on regeneration by scripts/augment-companies.mjs.
 window.challengeCompanies = {
   "1": [
     "Snowflake"
@@ -867,6 +991,39 @@ window.challengeCompanies = {
   "151": [
     "Tesla"
   ],
+  "200": [
+    "JPMorgan"
+  ],
+  "206": [
+    "Morgan Stanley"
+  ],
+  "208": [
+    "JPMorgan"
+  ],
+  "210": [
+    "JPMorgan"
+  ],
+  "211": [
+    "JPMorgan"
+  ],
+  "213": [
+    "JPMorgan"
+  ],
+  "214": [
+    "Morgan Stanley"
+  ],
+  "215": [
+    "JPMorgan"
+  ],
+  "216": [
+    "JPMorgan"
+  ],
+  "217": [
+    "JPMorgan"
+  ],
+  "219": [
+    "Morgan Stanley"
+  ],
   "240": [
     "Tesla"
   ],
@@ -882,82 +1039,130 @@ window.challengeCompanies = {
   "252": [
     "Tesla"
   ],
+  "260": [
+    "Morgan Stanley"
+  ],
+  "261": [
+    "Morgan Stanley"
+  ],
   "262": [
+    "JPMorgan",
+    "Morgan Stanley"
+  ],
+  "263": [
+    "Morgan Stanley"
+  ],
+  "264": [
+    "Morgan Stanley"
+  ],
+  "265": [
+    "JPMorgan"
+  ],
+  "266": [
     "Morgan Stanley"
   ],
   "275": [
-    "Capital One"
+    "Capital One",
+    "Ramp",
+    "Revolut",
+    "Wise"
   ],
   "276": [
-    "Capital One"
+    "Capital One",
+    "Plaid"
   ],
   "277": [
-    "Capital One"
+    "Capital One",
+    "Revolut"
   ],
   "278": [
-    "Capital One"
+    "Capital One",
+    "Plaid"
   ],
   "279": [
-    "Capital One"
+    "Capital One",
+    "Ramp"
   ],
   "280": [
-    "Capital One"
+    "Capital One",
+    "Stripe"
   ],
   "281": [
-    "Capital One"
+    "Capital One",
+    "Ramp"
   ],
   "282": [
-    "Capital One"
+    "Capital One",
+    "Ramp",
+    "Wise"
   ],
   "283": [
-    "Capital One"
+    "Capital One",
+    "Revolut"
   ],
   "284": [
-    "Capital One"
+    "Capital One",
+    "Revolut"
   ],
   "285": [
-    "Capital One"
+    "Capital One",
+    "Wise"
   ],
   "286": [
-    "Capital One"
+    "Capital One",
+    "Stripe"
   ],
   "287": [
-    "Capital One"
+    "Capital One",
+    "Plaid"
   ],
   "288": [
-    "Capital One"
+    "Capital One",
+    "Ramp"
   ],
   "289": [
-    "Capital One"
+    "Capital One",
+    "Plaid",
+    "Wise"
   ],
   "290": [
-    "Capital One"
+    "Capital One",
+    "Revolut"
   ],
   "291": [
-    "Capital One"
+    "Capital One",
+    "Plaid"
   ],
   "292": [
-    "Capital One"
+    "Capital One",
+    "Stripe"
   ],
   "293": [
-    "Capital One"
+    "Capital One",
+    "Stripe"
   ],
   "294": [
-    "Capital One"
+    "Capital One",
+    "Stripe"
   ],
   "295": [
-    "Capital One"
+    "Capital One",
+    "Wise"
   ],
   "296": [
-    "Capital One"
+    "Capital One",
+    "Wise"
   ],
   "297": [
-    "Capital One"
+    "Capital One",
+    "Plaid"
   ],
   "298": [
-    "Capital One"
+    "Capital One",
+    "Stripe"
   ],
   "299": [
-    "Capital One"
+    "Capital One",
+    "Ramp"
   ]
 };

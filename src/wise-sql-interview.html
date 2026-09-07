@@ -45,7 +45,7 @@
     "@context": "https://schema.org",
     "@type": "Course",
     "name": "Wise SQL Interview Preparation",
-    "description": "10 hands-on SQL challenges matching the patterns Wise screens for in data analyst, data scientist, and analytics engineer interviews.",
+    "description": "16 hands-on SQL challenges on cross-border payments patterns \u2014 country rollups, growth with LAG, recency per customer, timestamp windows \u2014 on ecommerce tables and a synthetic card-transaction ledger.",
     "provider": { "@type": "Organization", "name": "SQL Quest", "sameAs": "https://sqlquest.app/" },
     "url": "https://sqlquest.app/wise-sql-interview/",
     "courseMode": "online",
@@ -73,7 +73,7 @@
       "name": "Is this set smaller than the other company sets?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Yes — 10 challenges are tagged to Wise patterns today, 8 of them free. We only tag challenges that genuinely match the patterns; the set grows as matching challenges are added, and the full 285-challenge bank is available to practice beyond it."
+        "text": "Yes — 16 challenges are tagged to Wise patterns today, 13 of them free. We only tag challenges that genuinely match the patterns: six of the sixteen are the cross-border ones on a synthetic card-transaction ledger, added in September 2026, and the other ten run on the app’s ecommerce orders tables. The set grows as matching challenges are added, and the full 285-challenge bank is available to practice beyond it."
       }
     },
     {
@@ -149,14 +149,14 @@
     </div>
     <div class="hb" style="animation:fadeUp .6s .1s both;margin-top:24px;"><span class="pd"></span><span style="font-size:13px;font-weight:600;color:#a5b4fc;">Wise SQL Interview Prep</span></div>
     <h1 class="fd" style="font-size:clamp(38px,5vw,62px);font-weight:800;line-height:1.08;margin-bottom:24px;animation:fadeUp .6s .2s both;">Wise SQL Interview<br><span class="gt">Questions</span></h1>
-    <p style="font-size:18px;line-height:1.8;color:#94a3b8;margin-bottom:36px;max-width:620px;margin-left:auto;margin-right:auto;animation:fadeUp .6s .3s both;">Wise moves money across borders — its data roles screen for geographic and growth analytics. Practice country-level aggregation, fee math, year-over-year growth, and transfer recency on runnable datasets with AI tutoring.</p>
+    <p style="font-size:18px;line-height:1.8;color:#94a3b8;margin-bottom:36px;max-width:620px;margin-left:auto;margin-right:auto;animation:fadeUp .6s .3s both;">Wise moves money across borders. Practice country-level aggregation, fee math, period-over-period growth and transfer recency on a synthetic card-transaction ledger and the app&rsquo;s ecommerce tables, with an AI tutor when you get stuck.</p>
     <div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center;animation:fadeUp .6s .4s both;">
-      <a href="/app/?company=Wise" class="btn bp">Practice Wise Questions Free</a>
+      <a href="/app/?company=Wise" class="btn bp">Practice 16 Wise-Pattern Challenges Free</a>
       <a href="#questions" class="btn bo">See Sample Questions ↓</a>
     </div>
     <div style="display:flex;gap:28px;margin-top:44px;flex-wrap:wrap;justify-content:center;animation:fadeUp .6s .5s both;">
-      <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">10 questions</p><p style="font-size:11px;color:#64748b;">Wise-pattern set</p></div></div>
-      <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">Real datasets</p><p style="font-size:11px;color:#64748b;">Orders & countries</p></div></div>
+      <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">16 challenges</p><p style="font-size:11px;color:#64748b;">Wise-pattern set</p></div></div>
+      <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">Runnable data</p><p style="font-size:11px;color:#64748b;">Orders + a card ledger</p></div></div>
       <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">AI tutor</p><p style="font-size:11px;color:#64748b;">Step-by-step hints</p></div></div>
     </div>
   </div>
@@ -178,8 +178,9 @@
     <span class="sl" style="color:#a5b4fc;">Practice Questions</span>
     <h2 class="st fd">Sample Wise-pattern <span style="color:#a5b4fc;">SQL questions</span></h2>
   </div>
+  <p style="font-size:15px;line-height:1.75;color:#94a3b8;max-width:760px;margin:0 auto 36px;text-align:center;"><b style="color:#e2e8f0;">What the practice set runs on.</b> 16 challenges carry a Wise tag, 13 of them free. Six run on a synthetic card-transaction ledger &mdash; accounts, merchants, transactions and chargebacks, 200 accounts and 2,165 rows, generated, with no real data in it &mdash; and they are the cross-border ones: a country rollup where cardholders and transactions are two different counts, month-over-month growth with LAG, first and last transaction per customer, a half-open window on a timestamp column, and the group-level &ldquo;never spent in their own country&rdquo; condition that cannot live in a WHERE clause. The other ten run on the app&rsquo;s ecommerce orders tables. These are SQL Quest challenges chosen to match cross-border payments work &mdash; not questions from Wise.</p>
   <div class="qg" id="question-cards"></div>
-  <div style="text-align:center;margin-top:32px;"><a href="/app/?company=Wise" class="btn bp">Practice All 10 Wise-Pattern Questions Free →</a></div>
+  <div style="text-align:center;margin-top:32px;"><a href="/app/?company=Wise" class="btn bp">Practice All 16 Wise-Pattern Challenges Free →</a></div>
 </div></section>
 
 <!-- ── How Wise SQL Interviews Work ────────────────────────── -->
@@ -187,6 +188,7 @@
   <div style="text-align:center;margin-bottom:56px;">
     <span class="sl" style="color:#a5b4fc;">Interview Guide</span>
     <h2 class="st fd">How Wise SQL <span style="color:#a5b4fc;">interviews work</span></h2>
+    <p style="font-size:15px;color:#94a3b8;margin-top:16px;max-width:640px;margin:16px auto 0;">General expectations for an analytics SQL round, not sourced from Wise and not a description of its process &mdash; Wise does not publish one. The only page here with dated, citable sources for a company&rsquo;s screen is <a href="/capital-one-sql-interview/" style="color:#a5b4fc;">Capital One</a>.</p>
   </div>
   <div class="fg" id="format-cards"></div>
 </div></section>
@@ -279,7 +281,7 @@ document.getElementById('format-cards').innerHTML=[
 
 const FAQS=[
   ['What SQL patterns do Wise data interviews focus on?','Interview reports for Wise data roles emphasize cross-border analytics: aggregating volume by country corridor, computing fee and revenue shares, year-over-year growth math, and customer transfer recency.'],
-  ['Is this set smaller than the other company sets?','Yes — 10 challenges are tagged to Wise patterns today, 8 of them free. We only tag challenges that genuinely match the patterns; the set grows as matching challenges are added, and the full 285-challenge bank is available to practice beyond it.'],
+  ['Is this set smaller than the other company sets?','Yes — 16 challenges are tagged to Wise patterns today, 13 of them free. We only tag challenges that genuinely match the patterns: six of the sixteen are the cross-border ones on a synthetic card-transaction ledger, added in September 2026, and the other ten run on the app’s ecommerce orders tables. The set grows as matching challenges are added, and the full 285-challenge bank is available to practice beyond it.'],
   ['What SQL dialect should I practice for Wise?','Standard ANSI SQL. Wise\'s analytics stack is Snowflake/BigQuery-flavored; window functions, CTEs, and date functions transfer directly. SQL Quest runs standard SQL in the browser.'],
   ['How is this different from LeetCode SQL?','These challenges are picked to match cross-border payment analytics — corridors, growth, recency — rather than generic puzzles. Each runs on a real dataset with an AI tutor when you get stuck.']
 ];

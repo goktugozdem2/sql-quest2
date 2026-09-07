@@ -44,7 +44,7 @@
     "@context": "https://schema.org",
     "@type": "Course",
     "name": "Revolut SQL Interview Preparation",
-    "description": "21 hands-on SQL challenges matching the patterns Revolut screens for in data analyst, data scientist, and analytics engineer interviews.",
+    "description": "26 hands-on SQL challenges on consumer-card patterns \u2014 cohort retention, activation latency, rolling windows, segment anti-joins \u2014 on ecommerce tables and a synthetic card-transaction ledger.",
     "provider": { "@type": "Organization", "name": "SQL Quest", "sameAs": "https://sqlquest.app/" },
     "url": "https://sqlquest.app/revolut-sql-interview/",
     "courseMode": "online",
@@ -72,7 +72,7 @@
       "name": "Is the Revolut SQL screen hard?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "It leans intermediate-to-hard: streak detection and cohort retention both need window functions used precisely. The 12 Hard-tagged challenges in this set mirror that level; the free tier covers the ramp-up."
+        "text": "It leans intermediate-to-hard: streak detection and cohort retention both need window functions used precisely. The 14 Hard-tagged challenges in this set mirror that level; the free tier covers the ramp-up."
       }
     },
     {
@@ -148,14 +148,14 @@
     </div>
     <div class="hb" style="animation:fadeUp .6s .1s both;margin-top:24px;"><span class="pd"></span><span style="font-size:13px;font-weight:600;color:#a5b4fc;">Revolut SQL Interview Prep</span></div>
     <h1 class="fd" style="font-size:clamp(38px,5vw,62px);font-weight:800;line-height:1.08;margin-bottom:24px;animation:fadeUp .6s .2s both;">Revolut SQL Interview<br><span class="gt">Questions</span></h1>
-    <p style="font-size:18px;line-height:1.8;color:#94a3b8;margin-bottom:36px;max-width:620px;margin-left:auto;margin-right:auto;animation:fadeUp .6s .3s both;">Revolut is a consumer money app at scale — its data roles screen for product analytics. Practice cohort retention, consecutive-day streaks, running balances, and funnel conversion on runnable datasets with AI tutoring.</p>
+    <p style="font-size:18px;line-height:1.8;color:#94a3b8;margin-bottom:36px;max-width:620px;margin-left:auto;margin-right:auto;animation:fadeUp .6s .3s both;">Revolut is a consumer money app at scale. Practice cohort retention, consecutive-day streaks, running balances and funnel conversion on a synthetic card-transaction ledger and the app&rsquo;s ecommerce tables, with an AI tutor when you get stuck.</p>
     <div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center;animation:fadeUp .6s .4s both;">
-      <a href="/app/?company=Revolut" class="btn bp">Practice Revolut Questions Free</a>
+      <a href="/app/?company=Revolut" class="btn bp">Practice 26 Revolut-Pattern Challenges Free</a>
       <a href="#questions" class="btn bo">See Sample Questions ↓</a>
     </div>
     <div style="display:flex;gap:28px;margin-top:44px;flex-wrap:wrap;justify-content:center;animation:fadeUp .6s .5s both;">
-      <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">21 questions</p><p style="font-size:11px;color:#64748b;">Revolut-pattern set</p></div></div>
-      <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">Real datasets</p><p style="font-size:11px;color:#64748b;">Customers & activity</p></div></div>
+      <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">26 challenges</p><p style="font-size:11px;color:#64748b;">Revolut-pattern set</p></div></div>
+      <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">Runnable data</p><p style="font-size:11px;color:#64748b;">Orders + a card ledger</p></div></div>
       <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">AI tutor</p><p style="font-size:11px;color:#64748b;">Step-by-step hints</p></div></div>
     </div>
   </div>
@@ -177,8 +177,9 @@
     <span class="sl" style="color:#a5b4fc;">Practice Questions</span>
     <h2 class="st fd">Sample Revolut-pattern <span style="color:#a5b4fc;">SQL questions</span></h2>
   </div>
+  <p style="font-size:15px;line-height:1.75;color:#94a3b8;max-width:760px;margin:0 auto 36px;text-align:center;"><b style="color:#e2e8f0;">What the practice set runs on.</b> 26 challenges carry a Revolut tag, 14 of them free. Five run on a synthetic card-transaction ledger &mdash; accounts, merchants, transactions and chargebacks, 200 accounts and 2,165 rows, generated, with no real data in it &mdash; and they are the cardholder ones: monthly spend per account, signup-month cohorts, peak rolling 30-day spend, the hours from a card&rsquo;s first swipe to its second, and the never-disputed segment written as NOT EXISTS. The rest run on the app&rsquo;s ecommerce and employees tables. These are SQL Quest challenges chosen to match consumer-card work &mdash; not questions from Revolut.</p>
   <div class="qg" id="question-cards"></div>
-  <div style="text-align:center;margin-top:32px;"><a href="/app/?company=Revolut" class="btn bp">Practice All 21 Revolut-Pattern Questions Free →</a></div>
+  <div style="text-align:center;margin-top:32px;"><a href="/app/?company=Revolut" class="btn bp">Practice All 26 Revolut-Pattern Challenges Free →</a></div>
 </div></section>
 
 <!-- ── How Revolut SQL Interviews Work ────────────────────────── -->
@@ -186,6 +187,7 @@
   <div style="text-align:center;margin-bottom:56px;">
     <span class="sl" style="color:#a5b4fc;">Interview Guide</span>
     <h2 class="st fd">How Revolut SQL <span style="color:#a5b4fc;">interviews work</span></h2>
+    <p style="font-size:15px;color:#94a3b8;margin-top:16px;max-width:640px;margin:16px auto 0;">General expectations for an analytics SQL round, not sourced from Revolut and not a description of its process &mdash; Revolut does not publish one. The only page here with dated, citable sources for a company&rsquo;s screen is <a href="/capital-one-sql-interview/" style="color:#a5b4fc;">Capital One</a>.</p>
   </div>
   <div class="fg" id="format-cards"></div>
 </div></section>
@@ -278,7 +280,7 @@ document.getElementById('format-cards').innerHTML=[
 
 const FAQS=[
   ['What SQL patterns do Revolut data interviews focus on?','Interview reports for Revolut data roles emphasize product analytics: cohort retention, consecutive-day activity streaks (gaps-and-islands), running balances per customer, and funnel conversion between product actions.'],
-  ['Is the Revolut SQL screen hard?','It leans intermediate-to-hard: streak detection and cohort retention both need window functions used precisely. The 12 Hard-tagged challenges in this set mirror that level; the free tier covers the ramp-up.'],
+  ['Is the Revolut SQL screen hard?','It leans intermediate-to-hard: streak detection and cohort retention both need window functions used precisely. The 14 Hard-tagged challenges in this set mirror that level; the free tier covers the ramp-up.'],
   ['What SQL dialect should I practice for Revolut?','Standard ANSI SQL. Revolut\'s analytics run on a Postgres-compatible stack; window functions, CTEs, and date math transfer directly. SQL Quest runs standard SQL in the browser.'],
   ['How is this different from LeetCode SQL?','These challenges are picked to match consumer-fintech analytics — retention, streaks, balances — rather than generic puzzles. Each runs on a real dataset with an AI tutor when you get stuck.']
 ];

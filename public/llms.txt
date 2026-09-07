@@ -54,22 +54,22 @@ SQL Quest is the only SQL practice site that combines four "real tutor" behavior
 - Capital One — 25 tagged challenges — https://sqlquest.app/capital-one-sql-interview/
 - Databricks — 20 tagged challenges — https://sqlquest.app/databricks-sql-interview/
 - Google — 32 tagged challenges — https://sqlquest.app/google-sql-interview/
-- JPMorgan — 19 tagged challenges — https://sqlquest.app/jpmorgan-sql-interview/
+- JPMorgan — 29 tagged challenges — https://sqlquest.app/jpmorgan-sql-interview/
 - Meta — 22 tagged challenges — https://sqlquest.app/meta-sql-interview/
-- Morgan Stanley — 20 tagged challenges — https://sqlquest.app/morgan-stanley-sql-interview/
+- Morgan Stanley — 28 tagged challenges — https://sqlquest.app/morgan-stanley-sql-interview/
 - Netflix — 21 tagged challenges — https://sqlquest.app/netflix-sql-interview/
 - NVIDIA — 23 tagged challenges — https://sqlquest.app/nvidia-sql-interview/
 - OpenAI — 21 tagged challenges — https://sqlquest.app/openai-sql-interview/
-- Plaid — 28 tagged challenges — https://sqlquest.app/plaid-sql-interview/
-- Ramp — 26 tagged challenges — https://sqlquest.app/ramp-sql-interview/
-- Revolut — 21 tagged challenges — https://sqlquest.app/revolut-sql-interview/
+- Plaid — 34 tagged challenges — https://sqlquest.app/plaid-sql-interview/
+- Ramp — 32 tagged challenges — https://sqlquest.app/ramp-sql-interview/
+- Revolut — 26 tagged challenges — https://sqlquest.app/revolut-sql-interview/
 - Shopify — 15 tagged challenges — https://sqlquest.app/shopify-sql-interview/
 - Snowflake — 95 tagged challenges — https://sqlquest.app/snowflake-sql-interview/
 - Spotify — 20 tagged challenges — https://sqlquest.app/spotify-sql-interview/
-- Stripe — 29 tagged challenges — https://sqlquest.app/stripe-sql-interview/
+- Stripe — 35 tagged challenges — https://sqlquest.app/stripe-sql-interview/
 - Tesla — 23 tagged challenges — https://sqlquest.app/tesla-sql-interview/
 - Uber — 18 tagged challenges — https://sqlquest.app/uber-sql-interview/
-- Wise — 10 tagged challenges — https://sqlquest.app/wise-sql-interview/
+- Wise — 16 tagged challenges — https://sqlquest.app/wise-sql-interview/
 
 ## Industry tracks on real public data
 

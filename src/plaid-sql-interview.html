@@ -44,7 +44,7 @@
     "@context": "https://schema.org",
     "@type": "Course",
     "name": "Plaid SQL Interview Preparation",
-    "description": "28 hands-on SQL challenges matching the patterns Plaid screens for in data analyst, data scientist, and analytics engineer interviews.",
+    "description": "34 hands-on SQL challenges on transaction-data patterns \u2014 dedup, NULL-safe aggregation, date windows, per-account rollups \u2014 on ecommerce tables and a synthetic card-transaction ledger.",
     "provider": { "@type": "Organization", "name": "SQL Quest", "sameAs": "https://sqlquest.app/" },
     "url": "https://sqlquest.app/plaid-sql-interview/",
     "courseMode": "online",
@@ -148,14 +148,14 @@
     </div>
     <div class="hb" style="animation:fadeUp .6s .1s both;margin-top:24px;"><span class="pd"></span><span style="font-size:13px;font-weight:600;color:#a5b4fc;">Plaid SQL Interview Prep</span></div>
     <h1 class="fd" style="font-size:clamp(38px,5vw,62px);font-weight:800;line-height:1.08;margin-bottom:24px;animation:fadeUp .6s .2s both;">Plaid SQL Interview<br><span class="gt">Questions</span></h1>
-    <p style="font-size:18px;line-height:1.8;color:#94a3b8;margin-bottom:36px;max-width:620px;margin-left:auto;margin-right:auto;animation:fadeUp .6s .3s both;">Plaid moves messy bank data — its data roles screen for exactly that. Practice transaction dedup, NULL handling, merchant categorization, and data-quality SQL on runnable datasets with AI tutoring.</p>
+    <p style="font-size:18px;line-height:1.8;color:#94a3b8;margin-bottom:36px;max-width:620px;margin-left:auto;margin-right:auto;animation:fadeUp .6s .3s both;">Plaid moves messy bank data. Practice transaction dedup, NULL handling, merchant categorization and data-quality SQL on a synthetic card-transaction ledger and the app&rsquo;s ecommerce tables, with an AI tutor when you get stuck.</p>
     <div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center;animation:fadeUp .6s .4s both;">
-      <a href="/app/?company=Plaid" class="btn bp">Practice Plaid Questions Free</a>
+      <a href="/app/?company=Plaid" class="btn bp">Practice 34 Plaid-Pattern Challenges Free</a>
       <a href="#questions" class="btn bo">See Sample Questions ↓</a>
     </div>
     <div style="display:flex;gap:28px;margin-top:44px;flex-wrap:wrap;justify-content:center;animation:fadeUp .6s .5s both;">
-      <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">28 questions</p><p style="font-size:11px;color:#64748b;">Plaid-pattern set</p></div></div>
-      <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">Real datasets</p><p style="font-size:11px;color:#64748b;">Transactions & customers</p></div></div>
+      <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">34 challenges</p><p style="font-size:11px;color:#64748b;">Plaid-pattern set</p></div></div>
+      <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">Runnable data</p><p style="font-size:11px;color:#64748b;">Orders + a card ledger</p></div></div>
       <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">AI tutor</p><p style="font-size:11px;color:#64748b;">Step-by-step hints</p></div></div>
     </div>
   </div>
@@ -177,8 +177,9 @@
     <span class="sl" style="color:#a5b4fc;">Practice Questions</span>
     <h2 class="st fd">Sample Plaid-pattern <span style="color:#a5b4fc;">SQL questions</span></h2>
   </div>
+  <p style="font-size:15px;line-height:1.75;color:#94a3b8;max-width:760px;margin:0 auto 36px;text-align:center;"><b style="color:#e2e8f0;">What the practice set runs on.</b> 34 challenges carry a Plaid tag, 25 of them free. Six run on a synthetic card-transaction ledger &mdash; accounts, merchants, transactions and chargebacks, 200 accounts and 2,165 rows, generated, with no real data in it &mdash; and they are the plumbing ones: the NULL that COUNT skips, an anti-join for a feed that has gone quiet, a half-open window on a timestamp column, the fan-out two child tables produce, category as enrichment on the merchant record, and duplicate-transaction detection by self-join. The rest run on the app&rsquo;s ecommerce and employees tables. These are SQL Quest challenges chosen to match transaction-data work &mdash; not questions from Plaid.</p>
   <div class="qg" id="question-cards"></div>
-  <div style="text-align:center;margin-top:32px;"><a href="/app/?company=Plaid" class="btn bp">Practice All 28 Plaid-Pattern Questions Free →</a></div>
+  <div style="text-align:center;margin-top:32px;"><a href="/app/?company=Plaid" class="btn bp">Practice All 34 Plaid-Pattern Challenges Free →</a></div>
 </div></section>
 
 <!-- ── How Plaid SQL Interviews Work ────────────────────────── -->
@@ -186,6 +187,7 @@
   <div style="text-align:center;margin-bottom:56px;">
     <span class="sl" style="color:#a5b4fc;">Interview Guide</span>
     <h2 class="st fd">How Plaid SQL <span style="color:#a5b4fc;">interviews work</span></h2>
+    <p style="font-size:15px;color:#94a3b8;margin-top:16px;max-width:640px;margin:16px auto 0;">General expectations for an analytics SQL round, not sourced from Plaid and not a description of its process &mdash; Plaid does not publish one. The only page here with dated, citable sources for a company&rsquo;s screen is <a href="/capital-one-sql-interview/" style="color:#a5b4fc;">Capital One</a>.</p>
   </div>
   <div class="fg" id="format-cards"></div>
 </div></section>
