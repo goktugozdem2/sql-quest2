@@ -964,18 +964,26 @@ order by created_at desc;
 
 ## `interview_prep_funnel`
 
-Of the people who reach the Interview Prep tab, how many name a company and a
-date and then actually open something from the plan. Four events, one funnel,
-all born **2026-09-08**:
+Of the people who reach the countdown card **on the Coach tab**, how many name
+a company and a date and then actually open something from the plan. Five
+events, one funnel, all born **2026-09-08**:
 
 | event | when it fires |
 |---|---|
-| `prep_readiness_shown` | the countdown card mounted — once per mount of the Interview Prep tab; carries `company` (null before a target is picked), `bucket`, `mockTaken` |
+| `prep_readiness_shown` | the countdown card mounted — once per mount of the **Coach** tab; carries `company` (null before a target is picked), `bucket`, `mockTaken` |
 | `prep_target_set` | the company select or the date input changed; carries `company` and `daysOut` |
 | `prep_plan_viewed` | fired alongside `prep_readiness_shown` when a date resolves to a plan; carries `status`, `daysOut`, `todayItems`, `targetRemaining` |
-| `prep_plan_item_opened` | a row in today's list was clicked; carries `kind` (`target`/`drill`/`mock`), `challengeId`, `interviewId`, `skill` |
+| `prep_plan_item_opened` | a row in today's list was clicked, **or the Coach's rehearsal step was started**; carries `kind` (`target`/`drill`/`mock`), `challengeId`, `interviewId`, `skill` |
+| `coach_step_mock_offered` | the Coach's next-step card painted the timed-rehearsal offer; carries `company` and `daysOut` (integer, null when no date is set) |
 
-**Baseline is 0 for all four, structurally.** The feature ships behind
+**The card moved on 2026-09-08, the day after it was written.** It shipped at
+the top of the Interview Prep tab and now renders on the Coach, below the
+next-step card. Nothing about the four original events changed except the
+surface they fire on — which is the whole point, and it means the denominator
+in the trap list below is now the Coach, not a tab with no navigation entry.
+Both surfaces are pre-flip, so no window is split across the move.
+
+**Baseline is 0 for all five, structurally.** The feature ships behind
 `FEATURE_FLAGS.features.interviewCountdown = false` and the flag does not flip
 until after the paywall-surfaces read on 2026-09-20. Date the birth by the flag
 flip recorded in the ledger, never by `min(created_at)` — a window that starts
@@ -993,7 +1001,8 @@ WITH ev AS (
   FROM pro_events
   WHERE created_at >= :since               -- never earlier than the flag flip
     AND event IN ('prep_readiness_shown','prep_target_set',
-                  'prep_plan_viewed','prep_plan_item_opened')
+                  'prep_plan_viewed','prep_plan_item_opened',
+                  'coach_step_mock_offered')
     AND <shared filters>
 )
 SELECT count(DISTINCT pid) FILTER (WHERE event='prep_readiness_shown')  AS reached_card,
@@ -1001,7 +1010,8 @@ SELECT count(DISTINCT pid) FILTER (WHERE event='prep_readiness_shown')  AS reach
        count(DISTINCT pid) FILTER (WHERE event='prep_plan_viewed')      AS saw_a_plan,
        count(DISTINCT pid) FILTER (WHERE event='prep_plan_item_opened') AS opened_an_item,
        count(DISTINCT pid) FILTER (WHERE event='prep_plan_item_opened'
-                                     AND kind='mock')                   AS opened_the_mock
+                                     AND kind='mock')                   AS opened_the_mock,
+       count(DISTINCT pid) FILTER (WHERE event='coach_step_mock_offered') AS offered_a_mock
 FROM ev;
 ```
 
@@ -1011,16 +1021,26 @@ event count is a visit count and only `count(DISTINCT pid)` is a person count.
 
 Traps, stated before the first read:
 
-- **The denominator is the Interview Prep tab, and that tab currently has no
-  navigation entry.** `showLegacyPrimaryNav` is hard-coded `false` in
-  `src/app.jsx`, so the shipped primary nav is two tabs (Learning Path,
-  Challenges) and `activeTab === 'trials'` is reachable only through the
-  `?interview=<id>` deep link on the company pages and through the onboarding
-  branch for `goal === 'interview'`. Measured 2026-09-08 against production
-  with the shared filters: **17 accounts in the entire history of the product
-  carry any `interviewHistory` row**, and the tab has never had an impression
-  event of its own. A near-zero `reached_card` is therefore a finding about
-  DISCOVERY, not about the card — do not read it as "nobody wants this".
+- **The denominator is the Coach tab, since 2026-09-08.** It was the Interview
+  Prep tab for one day. That tab has no navigation entry — `showLegacyPrimaryNav`
+  is hard-coded `false` in `src/app.jsx`, so the shipped primary nav is two tabs
+  (Learning Path, Challenges) and `activeTab === 'trials'` is reachable only
+  through the `?interview=<id>` deep link on the company pages and the
+  onboarding branch for `goal === 'interview'`. Measured 2026-09-08 against
+  production with the shared filters: **22 accounts in the entire history of the
+  product carry any `interviewHistory` row**, against **1,179 people who have
+  viewed the Coach**. The move is why `reached_card` has a real ceiling at all.
+  **The nav entry was NOT restored** and is not coming back — that was a
+  deliberate onboarding decision, so a low `reached_card` can no longer be
+  explained by the door.
+- **`reached_card` is now an impression on a tab people land on by default, not
+  an intent signal.** On the trials tab, arriving was itself evidence of
+  interview intent. On the Coach it is not: the card renders for every Coach
+  visitor who is past the first-run shell, whatever they came for. So
+  `reached_card` inflates by construction relative to the old surface, and the
+  ratio that carries information is `set_a_target / reached_card`, not
+  `reached_card` itself. Do not compare that ratio to anything measured before
+  the move — there is nothing measured before the move.
 - **`nav_interview` is not this tab.** It has 5 rows from 5 people
   (2026-08-01..09-07) and it is the `data-track` on the marketing nav
   **dropdown toggle** in `src/index.html`. Joining it to anything in-app is a
@@ -1044,9 +1064,26 @@ Traps, stated before the first read:
   solved anything in `finans_fraud` at all. So `coverage` starts at 0 for
   everybody and the first fortnight of `bucket` is measuring the radar part
   alone. Do not compare bucket distributions across the first solve wave.
-- **The population that would want this, if it could find it.** In the 31 days
-  to 2026-09-07 (shared filters, people by aid): **155 people declared
-  `intent` of `interview` or `job_ready`**, 144 of them solved at least one
-  challenge, and **83 reached 5+ solves** — the evidence bar the readiness
-  number needs. That 83 is the ceiling on `reached_card` if the tab were
-  reachable; it is not the ceiling on what will actually be measured.
+- **The population that would want this.** In the 31 days to 2026-09-07
+  (shared filters, people by aid): **155 people declared `intent` of
+  `interview` or `job_ready`**, 144 of them solved at least one challenge, and
+  **83 reached 5+ solves** — the evidence bar the readiness number needs. On
+  the Coach, `reached_card` is no longer capped by that 83; it is capped by
+  Coach traffic (965 people in those 31 days). The 83 is now the ceiling on
+  `set_a_target`, which is the number worth predicting.
+- **`coach_step_mock_offered` is a much smaller funnel and a different one.**
+  Five conditions must hold at once (`src/utils/coach.js`,
+  `pickMockInterviewStep`): the flag, **Pro**, a named target that clears the
+  eligibility bar, the `interview-prep` exit criteria met at 80% of each
+  threshold, and no sitting of that mock in 14 days. Three people have ever
+  paid. Expect a single-digit or zero count, and read it as a check that the
+  gate is not stuck rather than as a conversion rate. Fires **once per page
+  load** while the offer stands (`coachMockOfferRef.tracked`), so its event
+  count is a load count, not a person count — `count(DISTINCT pid)`, as
+  everywhere else here.
+- **Starting the rehearsal from the Coach writes `prep_plan_item_opened` with
+  `kind='mock'`, the same row a plan click writes**, deliberately: the mock has
+  one door (`openPrepItem` → `startInterview`) and one lock event. The two
+  origins are separable by looking for a `coach_step_mock_offered` from the
+  same `pid` shortly before. If you need them separated cleanly, that is a
+  payload field to add before the flip, not after.

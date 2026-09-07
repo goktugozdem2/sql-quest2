@@ -924,6 +924,17 @@ const TRANSLATIONS = {
       itemMock: 'Full mock · {n} min',
       open: 'Open',
       emptyToday: 'Nothing scheduled for today.',
+      // The Coach's rehearsal offer (2026-09-08). These four live in THIS
+      // namespace rather than in `coachNext` on purpose: the prediction-word
+      // guard in tests/interview-prep.test.js reads the interviewPrep block in
+      // both languages, and copy that names a company next to a readiness idea
+      // belongs inside that guard. `coachMockWhat` is the honesty line and is
+      // not decoration — it is the same fact `notAffiliated` carries on the
+      // card, said again where the offer is made.
+      coachMockTitle: '🎤 Timed mock · {company}',
+      coachMockReason: "You're close to the bar this path sets. The mock is one {n}-minute sitting — do it now, while there is still time to work on what it shows you.",
+      coachMockWhat: 'It follows a format candidates describe. SQL Quest is not affiliated with {company}, and the result measures our own material.',
+      coachMockCTA: 'Sit the mock →',
     },
   },
 
@@ -1692,6 +1703,15 @@ const TRANSLATIONS = {
       itemMock: 'Tam prova · {n} dk',
       open: 'Aç',
       emptyToday: 'Bugün için planlanmış bir şey yok.',
+      // Koç'un prova teklifi (2026-09-08). EN bloğundaki nota bakın: bu dört
+      // satır bilerek bu ad alanında duruyor, çünkü tahmin-kelimesi koruması
+      // her iki dilde de burayı okuyor. `coachMockWhat` süs değil — kartın
+      // `notAffiliated` satırındaki aynı gerçeği, teklifin yapıldığı yerde
+      // bir kez daha söyler.
+      coachMockTitle: '🎤 Süreli prova · {company}',
+      coachMockReason: 'Bu yolun koyduğu çıtaya yaklaştın. Prova tek oturumda {n} dakika — şimdi gir ki gösterdiği eksikler için hâlâ vaktin olsun.',
+      coachMockWhat: 'Adayların anlattığı bir formatı izler. SQL Quest {company} ile bağlantılı değildir; sonuç kendi materyalimizi ölçer.',
+      coachMockCTA: 'Provaya gir →',
     },
   },
 

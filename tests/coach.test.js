@@ -1,9 +1,12 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import {
   computeNextStep, isStepComplete, matchesSkipIf, isGoalGraduated,
   pickHardPreviewStep, hasAdvancedSkillAtOrAbove,
   HARD_PREVIEW_MIN_ADVANCED, HARD_PREVIEW_STEP_ID, HARD_PREVIEW_MARKER, HARD_PREVIEW_REASON,
   HARD_PREVIEW_ADVANCED_SKILLS,
+  pickMockInterviewStep, exitCriteriaWithinReach, scaleExitCriteria,
+  MOCK_OFFER_STEP_ID, MOCK_OFFER_GOAL_ID, MOCK_OFFER_REACH,
+  MOCK_OFFER_COOLDOWN_DAYS, MOCK_OFFER_REASON,
 } from '../src/utils/coach.js';
 import { validateGoalRegistry } from '../src/utils/coach-validate.js';
 import { buildCurriculumOrder } from '../src/utils/challenge-order.js';
@@ -19,6 +22,18 @@ const mkGoal = (overrides = {}) => ({
   ],
   exitCriteria: { skillThresholds: { 'Aggregation & Grouping': 70 } },
   ...overrides,
+});
+
+// The LIVE registry, for the one test that must not use a fixture: whether
+// `interview-prep` still exists and still ends without a rehearsal is the
+// premise of the mock-offer rule, and a fixture cannot check a premise.
+let liveGoals = null;
+const goalsRegistry = () => liveGoals;
+beforeAll(async () => {
+  globalThis.window = globalThis.window || {};
+  await import('../src/data/challenges.js');
+  await import('../src/data/goals.js');
+  liveGoals = globalThis.window.coachGoals;
 });
 
 const mkUserData = (overrides = {}) => ({
@@ -832,5 +847,395 @@ describe('computeNextStep — hard-preview offer (paywall-surfaces D-3)', () => 
     expect(pickHardPreviewStep(previewOpts({ sessionPreviewOffered: true }), {})).toBeNull();
     expect(pickHardPreviewStep(previewOpts({ skillLevels: { 'Querying Basics': 99 } }), {})).toBeNull();
     expect(pickHardPreviewStep(undefined, undefined)).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Mock-interview offer (2026-09-08)
+//
+// The Coach may offer a timed rehearsal — but the Coach is the one surface
+// 1,179 people see, so the first and most important thing proved here is that
+// it is INERT: for a caller that does not opt in, `computeNextStep` returns
+// byte-identical output to what it returned before this rule existed.
+// ---------------------------------------------------------------------------
+describe('computeNextStep — mock-interview offer: INERTNESS (the invariant)', () => {
+  const ivGoal = () => ({
+    id: MOCK_OFFER_GOAL_ID,
+    name: 'SQL Interview Prep',
+    curriculum: [
+      { id: 'iv-a', type: 'challenge', challengeId: 23 },
+      { id: 'iv-b', type: 'drill', skill: 'Window Functions' },
+    ],
+    exitCriteria: {
+      skillThresholds: { 'Window Functions': 70, 'Joins': 65, 'Subqueries & CTEs': 60 },
+      challengesSolved: { Medium: 3, Hard: 8 },
+    },
+  });
+
+  // A radar + attempt history that clears 80% of the interview bar, so every
+  // state below is one that WOULD fire the rule if the caller opted in. That
+  // is the only way the inertness assertion means anything.
+  const reachRadar = { 'Window Functions': 60, 'Joins': 55, 'Subqueries & CTEs': 50 };
+  const reachAttempts = () => {
+    const t = new Date('2026-04-05T00:00:00Z').getTime();
+    const rows = [];
+    for (let i = 0; i < 7; i++) rows.push({ challengeId: 500 + i, success: true, difficulty: 'Hard', timestamp: t + i });
+    for (let i = 0; i < 3; i++) rows.push({ challengeId: 600 + i, success: true, difficulty: 'Medium', timestamp: t + i });
+    return rows;
+  };
+
+  // A representative set of states: cold, mid-curriculum, curriculum
+  // exhausted, graduated, placement pending, retrieval pending, and the
+  // would-fire state itself — each on a plain goal AND on the interview goal.
+  const states = () => {
+    const out = [];
+    for (const [goalName, goal] of [['plain', mkGoal()], ['interview', ivGoal()]]) {
+      out.push([`${goalName}/cold`, goal, mkUserData()]);
+      out.push([`${goalName}/mid`, goal, mkUserData({ completedAiLessons: new Set([2]) })]);
+      out.push([`${goalName}/exhausted`, goal, mkUserData({
+        coachState: { goalId: goal.id, startedAt: '2026-04-01T00:00:00Z', stepsCompleted: ['s1', 's2', 's3', 'iv-a', 'iv-b'] },
+      })]);
+      out.push([`${goalName}/placement`, goal, mkUserData({
+        coachState: {
+          goalId: goal.id, startedAt: '2026-04-01T00:00:00Z', stepsCompleted: [],
+          placement: { challengeIds: [10, 20, 30, 40, 50], minAnswered: 5, skipped: false },
+        },
+      })]);
+      out.push([`${goalName}/would-fire`, goal, mkUserData({ challengeAttempts: reachAttempts() })]);
+    }
+    out.push(['retrieval', {
+      id: MOCK_OFFER_GOAL_ID, name: 'r',
+      curriculum: [{ id: 'rc', type: 'retrieval_check', sourceLessonId: 2, skill: 'Joins', minDaysSince: 1 }],
+      exitCriteria: ivGoal().exitCriteria,
+    }, mkUserData({ challengeAttempts: reachAttempts() })]);
+    out.push(['graduated', ivGoal(), mkUserData({ challengeAttempts: (() => {
+      const t = new Date('2026-04-05T00:00:00Z').getTime();
+      const rows = [];
+      for (let i = 0; i < 8; i++) rows.push({ challengeId: 500 + i, success: true, difficulty: 'Hard', timestamp: t + i });
+      for (let i = 0; i < 3; i++) rows.push({ challengeId: 600 + i, success: true, difficulty: 'Medium', timestamp: t + i });
+      return rows;
+    })() })]);
+    return out;
+  };
+
+  // Everything the rule needs EXCEPT the opt-in switch. If the switch were
+  // ever defaulted on, or read from anywhere but the options bag, these fail.
+  const armedButNotEnabled = {
+    skillLevels: reachRadar,
+    isPro: true,
+    mockTarget: { company: 'Test Co', mockId: 'test-mock' },
+    prepTargetCompany: 'Test Co',
+    mockCriteria: ivGoal().exitCriteria,
+    lastMockAtMs: null,
+    now: new Date('2026-05-01T00:00:00Z').getTime(),
+  };
+
+  it('a user with no target and no interview goal gets byte-identical output', () => {
+    for (const [label, goal, userData] of states()) {
+      const before = computeNextStep(goal, userData, { skillLevels: reachRadar });
+      const withOptions = computeNextStep(goal, userData, { ...armedButNotEnabled, mockOfferEnabled: false });
+      expect(JSON.stringify(withOptions), `${label}: opting out changed the output`)
+        .toBe(JSON.stringify(before));
+    }
+  });
+
+  it('every option in the bag except the flag leaves the output untouched', () => {
+    for (const [label, goal, userData] of states()) {
+      const before = computeNextStep(goal, userData, { skillLevels: reachRadar });
+      // The flag omitted entirely — the shape every caller in the tree had
+      // before 2026-09-08.
+      const armed = computeNextStep(goal, userData, armedButNotEnabled);
+      expect(JSON.stringify(armed), `${label}: an unset flag behaved as consent`)
+        .toBe(JSON.stringify(before));
+    }
+  });
+
+  it('no truthy-ish value other than true opens the gate', () => {
+    const goal = ivGoal();
+    const userData = mkUserData({ challengeAttempts: reachAttempts() });
+    const base = computeNextStep(goal, userData, { skillLevels: reachRadar });
+    for (const v of [1, 'true', 'yes', {}, [], undefined, null, 0, '']) {
+      const r = computeNextStep(goal, userData, { ...armedButNotEnabled, mockOfferEnabled: v });
+      expect(JSON.stringify(r), `mockOfferEnabled=${JSON.stringify(v)} must not fire`).toBe(JSON.stringify(base));
+    }
+    // …and the same value that IS true does fire, so the assertion above is
+    // testing a live gate rather than a dead rule.
+    const on = computeNextStep(goal, userData, { ...armedButNotEnabled, mockOfferEnabled: true });
+    expect(on.step.type).toBe('mock_interview');
+  });
+
+  it('pickMockInterviewStep is null for the un-opted-in caller, on its own', () => {
+    expect(pickMockInterviewStep(ivGoal(), mkUserData(), {})).toBeNull();
+    expect(pickMockInterviewStep(ivGoal(), mkUserData(), armedButNotEnabled)).toBeNull();
+    expect(pickMockInterviewStep(undefined, undefined, undefined)).toBeNull();
+  });
+});
+
+describe('computeNextStep — mock-interview offer: the five conditions', () => {
+  const IV_CRITERIA = {
+    skillThresholds: { 'Window Functions': 70, 'Joins': 65, 'Subqueries & CTEs': 60 },
+    challengesSolved: { Medium: 3, Hard: 8 },
+  };
+  const ivGoal = (overrides = {}) => ({
+    id: MOCK_OFFER_GOAL_ID,
+    name: 'SQL Interview Prep',
+    curriculum: [
+      { id: 'iv-a', type: 'challenge', challengeId: 23 },
+      { id: 'iv-b', type: 'drill', skill: 'Window Functions' },
+    ],
+    exitCriteria: IV_CRITERIA,
+    ...overrides,
+  });
+  const NOW = new Date('2026-05-01T00:00:00Z').getTime();
+  // 80% of the bar: 56 / 52 / 48 on the radar, 3 Medium and ceil(6.4)=7 Hard.
+  const reachRadar = { 'Window Functions': 56, 'Joins': 52, 'Subqueries & CTEs': 48 };
+  const solves = (hard, medium) => {
+    const t = new Date('2026-04-05T00:00:00Z').getTime();
+    const rows = [];
+    for (let i = 0; i < hard; i++) rows.push({ challengeId: 500 + i, success: true, difficulty: 'Hard', timestamp: t + i });
+    for (let i = 0; i < medium; i++) rows.push({ challengeId: 600 + i, success: true, difficulty: 'Medium', timestamp: t + i });
+    return rows;
+  };
+  const reachData = () => mkUserData({
+    coachState: { goalId: MOCK_OFFER_GOAL_ID, startedAt: '2026-04-01T00:00:00Z', stepsCompleted: [] },
+    challengeAttempts: solves(7, 3),
+  });
+  const opts = (overrides = {}) => ({
+    mockOfferEnabled: true,
+    isPro: true,
+    sessionMockOffered: false,
+    mockTarget: { company: 'Test Co', mockId: 'test-mock' },
+    prepTargetCompany: 'Test Co',
+    mockCriteria: IV_CRITERIA,
+    skillLevels: reachRadar,
+    lastMockAtMs: null,
+    now: NOW,
+    ...overrides,
+  });
+
+  it('fires, and the step names the mock and the company', () => {
+    const r = computeNextStep(ivGoal(), reachData(), opts());
+    expect(r.step).toEqual({
+      id: MOCK_OFFER_STEP_ID,
+      type: 'mock_interview',
+      interviewId: 'test-mock',
+      company: 'Test Co',
+    });
+    expect(r.step.id).toBe('__mock_interview');
+    expect(r.reason).toBe(MOCK_OFFER_REASON);
+    expect(r.graduated).toBe(false);
+  });
+
+  it('keeps the curriculum progress % while standing in for a step', () => {
+    const r = computeNextStep(ivGoal(), mkUserData({
+      coachState: { goalId: MOCK_OFFER_GOAL_ID, startedAt: '2026-04-01T00:00:00Z', stepsCompleted: ['iv-a'] },
+      challengeAttempts: solves(7, 3),
+    }), opts());
+    expect(r.step.id).toBe(MOCK_OFFER_STEP_ID);
+    expect(r.progressPct).toBe(50);
+  });
+
+  it('(2) is never offered to a free user — the Coach\'s one next step is not a Pro wall', () => {
+    const r = computeNextStep(ivGoal(), reachData(), opts({ isPro: false }));
+    expect(r.step.id).toBe('iv-a');
+    expect(computeNextStep(ivGoal(), reachData(), opts({ isPro: undefined })).step.id).toBe('iv-a');
+  });
+
+  it('(3) fires on the interview goal with no company named', () => {
+    const r = computeNextStep(ivGoal(), reachData(), opts({ prepTargetCompany: null }));
+    expect(r.step.id).toBe(MOCK_OFFER_STEP_ID);
+  });
+
+  it('(3) fires on ANY goal once a company is named, measured against the criteria passed in', () => {
+    const otherGoal = { id: 'fundamentals', name: 'F', curriculum: ivGoal().curriculum, exitCriteria: IV_CRITERIA };
+    expect(computeNextStep(otherGoal, reachData(), opts()).step.id).toBe(MOCK_OFFER_STEP_ID);
+    // …and not at all when neither arm holds.
+    expect(computeNextStep(otherGoal, reachData(), opts({ prepTargetCompany: '   ' })).step.id).toBe('iv-a');
+    expect(computeNextStep(otherGoal, reachData(), opts({ prepTargetCompany: null })).step.id).toBe('iv-a');
+  });
+
+  it('(3) mockCriteria overrides the active goal, so a soft goal cannot lower the interview bar', () => {
+    // Fundamentals' own criteria at 0.8 are trivially met by this user; if the
+    // rule read the ACTIVE goal instead of mockCriteria, the mock would be
+    // offered to someone measured against Querying Basics 40.
+    const soft = {
+      id: 'fundamentals', name: 'F', curriculum: ivGoal().curriculum,
+      // Easy 6 required against 5 solved: NOT graduated, but comfortably
+      // inside 0.8 of its own bar (ceil(4.8) = 5).
+      exitCriteria: { skillThresholds: { 'Querying Basics': 50 }, challengesSolved: { Easy: 6 } },
+    };
+    const weak = mkUserData({
+      coachState: { goalId: 'fundamentals', startedAt: '2026-04-01T00:00:00Z', stepsCompleted: [] },
+      challengeAttempts: solves(0, 0).concat((() => {
+        const t = new Date('2026-04-05T00:00:00Z').getTime();
+        return Array.from({ length: 5 }, (_, i) => ({ challengeId: 700 + i, success: true, difficulty: 'Easy', timestamp: t + i }));
+      })()),
+    });
+    const soften = { skillLevels: { 'Querying Basics': 90 } };
+    // Reading the goal's own criteria WOULD fire…
+    expect(computeNextStep(soft, weak, opts({ ...soften, mockCriteria: null })).step.id).toBe(MOCK_OFFER_STEP_ID);
+    // …but the interview bar, which is what app.jsx passes, does not.
+    expect(computeNextStep(soft, weak, opts({ ...soften })).step.id).toBe('iv-a');
+  });
+
+  it('(4) one point under any single threshold and it does not fire', () => {
+    for (const [skill, floor] of [['Window Functions', 56], ['Joins', 52], ['Subqueries & CTEs', 48]]) {
+      const under = computeNextStep(ivGoal(), reachData(), opts({
+        skillLevels: { ...reachRadar, [skill]: floor - 1 },
+      }));
+      expect(under.step.id, `${skill} at ${floor - 1} must not fire`).toBe('iv-a');
+      const at = computeNextStep(ivGoal(), reachData(), opts({
+        skillLevels: { ...reachRadar, [skill]: floor },
+      }));
+      expect(at.step.id, `${skill} at ${floor} must fire`).toBe(MOCK_OFFER_STEP_ID);
+    }
+  });
+
+  it('(4) counts round UP: 6 Hard is not enough, 7 is — and 3 Medium, not 2', () => {
+    const six = mkUserData({
+      coachState: { goalId: MOCK_OFFER_GOAL_ID, startedAt: '2026-04-01T00:00:00Z', stepsCompleted: [] },
+      challengeAttempts: solves(6, 3),
+    });
+    expect(computeNextStep(ivGoal(), six, opts()).step.id).toBe('iv-a');
+    expect(computeNextStep(ivGoal(), reachData(), opts()).step.id).toBe(MOCK_OFFER_STEP_ID);
+    const twoMedium = mkUserData({
+      coachState: { goalId: MOCK_OFFER_GOAL_ID, startedAt: '2026-04-01T00:00:00Z', stepsCompleted: [] },
+      challengeAttempts: solves(7, 2),
+    });
+    expect(computeNextStep(ivGoal(), twoMedium, opts()).step.id).toBe('iv-a');
+  });
+
+  it('(4) reach must be under 1 — at 1 the user has graduated and the rule is dead code', () => {
+    expect(MOCK_OFFER_REACH).toBe(0.8);
+    expect(MOCK_OFFER_REACH).toBeLessThan(1);
+    const args = {
+      exitCriteria: IV_CRITERIA,
+      skillLevels: { 'Window Functions': 100, 'Joins': 100, 'Subqueries & CTEs': 100 },
+      challengeAttempts: solves(20, 20),
+      startedAtMs: 0,
+    };
+    expect(exitCriteriaWithinReach({ ...args, reach: 1 })).toBe(false);
+    expect(exitCriteriaWithinReach({ ...args, reach: 1.5 })).toBe(false);
+    expect(exitCriteriaWithinReach({ ...args, reach: 0 })).toBe(false);
+    expect(exitCriteriaWithinReach({ ...args, reach: 0.8 })).toBe(true);
+    // …and graduation still wins over the offer, which is why that matters.
+    const gradData = mkUserData({
+      coachState: { goalId: MOCK_OFFER_GOAL_ID, startedAt: '2026-04-01T00:00:00Z', stepsCompleted: [] },
+      challengeAttempts: solves(8, 3),
+    });
+    const r = computeNextStep(ivGoal(), gradData, opts({
+      skillLevels: { 'Window Functions': 70, 'Joins': 65, 'Subqueries & CTEs': 60 },
+    }));
+    expect(r.graduated).toBe(true);
+    expect(r.step).toBeNull();
+  });
+
+  it('(4) fails closed on a goal with no exit criteria at all', () => {
+    const noCriteria = { id: MOCK_OFFER_GOAL_ID, name: 'x', curriculum: ivGoal().curriculum };
+    expect(computeNextStep(noCriteria, reachData(), opts({ mockCriteria: null })).step.id).toBe('iv-a');
+    expect(exitCriteriaWithinReach({})).toBe(false);
+    expect(exitCriteriaWithinReach({ exitCriteria: {} })).toBe(false);
+  });
+
+  it('(4) scaleExitCriteria scales thresholds and ceils counts', () => {
+    expect(scaleExitCriteria(IV_CRITERIA, 0.8)).toEqual({
+      skillThresholds: { 'Window Functions': 56, 'Joins': 52, 'Subqueries & CTEs': 48 },
+      challengesSolved: { Medium: 3, Hard: 7 },
+    });
+    expect(scaleExitCriteria(null)).toBeNull();
+  });
+
+  it('(5) the cooldown holds for 14 days after a sitting, then releases', () => {
+    expect(MOCK_OFFER_COOLDOWN_DAYS).toBe(14);
+    const day = 24 * 60 * 60 * 1000;
+    const justSat = computeNextStep(ivGoal(), reachData(), opts({ lastMockAtMs: NOW - (13 * day) }));
+    expect(justSat.step.id).toBe('iv-a');
+    const boundary = computeNextStep(ivGoal(), reachData(), opts({ lastMockAtMs: NOW - (14 * day) }));
+    expect(boundary.step.id).toBe(MOCK_OFFER_STEP_ID);
+    const older = computeNextStep(ivGoal(), reachData(), opts({ lastMockAtMs: NOW - (40 * day) }));
+    expect(older.step.id).toBe(MOCK_OFFER_STEP_ID);
+    // Never sat at all is not a recent sitting.
+    for (const v of [null, undefined, 0, NaN, 'yesterday']) {
+      expect(computeNextStep(ivGoal(), reachData(), opts({ lastMockAtMs: v })).step.id).toBe(MOCK_OFFER_STEP_ID);
+    }
+  });
+
+  it('is silent without a mock to offer', () => {
+    expect(computeNextStep(ivGoal(), reachData(), opts({ mockTarget: null })).step.id).toBe('iv-a');
+    expect(computeNextStep(ivGoal(), reachData(), opts({ mockTarget: { company: 'X' } })).step.id).toBe('iv-a');
+    expect(computeNextStep(ivGoal(), reachData(), opts({ mockTarget: { mockId: '' } })).step.id).toBe('iv-a');
+  });
+
+  it('names no company or mock id of its own — the caller supplies both', () => {
+    const r = computeNextStep(ivGoal(), reachData(), opts({
+      mockTarget: { company: 'Somewhere Else', mockId: 'another-mock' },
+    }));
+    expect(r.step.interviewId).toBe('another-mock');
+    expect(r.step.company).toBe('Somewhere Else');
+  });
+
+  it('is once per session — app.jsx owns the flag, the engine only reads it', () => {
+    expect(computeNextStep(ivGoal(), reachData(), opts({ sessionMockOffered: true })).step.id).toBe('iv-a');
+  });
+
+  it('a pending retrieval_check and a pending placement_check both keep priority', () => {
+    const retrieval = {
+      id: MOCK_OFFER_GOAL_ID, name: 'r', exitCriteria: IV_CRITERIA,
+      curriculum: [{ id: 'rc', type: 'retrieval_check', sourceLessonId: 2, skill: 'Joins', minDaysSince: 1 }],
+    };
+    expect(computeNextStep(retrieval, reachData(), opts()).step.id).toBe('rc');
+    const placing = mkUserData({
+      coachState: {
+        goalId: MOCK_OFFER_GOAL_ID, startedAt: '2026-04-01T00:00:00Z', stepsCompleted: [],
+        placement: { challengeIds: [10, 20, 30, 40, 50], minAnswered: 5, skipped: false },
+      },
+      challengeAttempts: solves(7, 3),
+    });
+    expect(computeNextStep(ivGoal(), placing, opts()).step.id).toBe('__placement');
+  });
+
+  it('may stand in for "curriculum complete" too', () => {
+    const done = mkUserData({
+      coachState: { goalId: MOCK_OFFER_GOAL_ID, startedAt: '2026-04-01T00:00:00Z', stepsCompleted: ['iv-a', 'iv-b'] },
+      challengeAttempts: solves(7, 3),
+    });
+    const r = computeNextStep(ivGoal(), done, opts());
+    expect(r.step.id).toBe(MOCK_OFFER_STEP_ID);
+    expect(r.progressPct).toBe(100);
+  });
+
+  it('the hard preview wins when both could fire — the free Hard preview goes first', () => {
+    // Contrived: isPro is read by both rules with opposite senses, so this can
+    // only happen if one of those gates is ever relaxed. The ordering is the
+    // guard, and this pins it.
+    const previewBank = [{ id: 23, difficulty: 'Hard', freePreview: true }];
+    const bothArmed = { ...opts(), isPro: false, previewChallenges: previewBank, solvedChallenges: new Set(), skillLevels: { ...reachRadar, 'Window Functions': 70 } };
+    const r = computeNextStep(ivGoal(), reachData(), bothArmed);
+    expect(r.step.id).toBe(HARD_PREVIEW_STEP_ID);
+  });
+
+  it('the mock step never enters the curriculum walk — isStepComplete says false', () => {
+    // It is synthetic. If it were ever authored into goals.js, coach-validate
+    // would reject it as an unknown type and this keeps it from silently
+    // "completing" in the meantime.
+    expect(isStepComplete({ id: MOCK_OFFER_STEP_ID, type: 'mock_interview', interviewId: 'test-mock' }, {})).toBe(false);
+    const issues = validateGoalRegistry({
+      goals: [{ id: 'g', curriculum: [{ id: 'm1', type: 'mock_interview', interviewId: 'test-mock' }] }],
+    });
+    expect(issues.some(i => /unknown step type "mock_interview"/.test(i.message))).toBe(true);
+  });
+
+  it('binds to the live registry: interview-prep exists, has exit criteria, and reaches no mock of its own', () => {
+    const live = (goalsRegistry() || []).find(g => g.id === MOCK_OFFER_GOAL_ID);
+    expect(live, 'the interview-prep goal is gone — MOCK_OFFER_GOAL_ID is stale').toBeTruthy();
+    expect(live.exitCriteria?.skillThresholds).toBeTruthy();
+    expect(live.exitCriteria?.challengesSolved).toBeTruthy();
+    // The gap this rule exists to close: no curriculum step is a rehearsal.
+    expect(live.curriculum.some(s => s.type === 'mock_interview')).toBe(false);
+    // And the scaled bar against the LIVE criteria is the one documented.
+    expect(scaleExitCriteria(live.exitCriteria, MOCK_OFFER_REACH)).toEqual({
+      skillThresholds: { 'Window Functions': 56, 'Joins': 52, 'Subqueries & CTEs': 48 },
+      challengesSolved: { Medium: 3, Hard: 7 },
+    });
   });
 });

@@ -7,7 +7,14 @@ if (typeof window !== 'undefined') window.React = window.React || React;
 
 // ── Util imports (source of truth — these replace the inline mirrors
 //    that existed while we were on the Babel script-type build) ────────
-import { computeNextStep as coachComputeNextStep, HARD_PREVIEW_MARKER } from './utils/coach.js';
+// MOCK_OFFER_REASON is deliberately NOT imported: like HARD_PREVIEW_REASON it
+// is the engine's English string for non-display callers, and the card resolves
+// its display copy through i18n off the step TYPE.
+import {
+  computeNextStep as coachComputeNextStep, HARD_PREVIEW_MARKER,
+  MOCK_OFFER_STEP_TYPE as COACH_MOCK_STEP_TYPE,
+  MOCK_OFFER_GOAL_ID as COACH_MOCK_GOAL_ID,
+} from './utils/coach.js';
 import SkillRadar, { DEFAULT_SKILLS as RADAR_DEFAULT_SKILLS, DEFAULT_META as RADAR_DEFAULT_META, normalizeSkills as radarNormalizeSkills, deriveArchetype } from './components/SkillRadar.jsx';
 import PublicProfile, { parsePublicProfileHandle } from './components/PublicProfile.jsx';
 import { calculateSkillLevels as coreCalculateSkillLevels, CANONICAL_SKILLS } from './utils/skill-calc.js';
@@ -10421,6 +10428,14 @@ CRITICAL RULES:
   // startInterview (which owns the Pro gate and trackLockReached). Neither is
   // re-implemented here — a second door into locked content is how a paywall
   // develops a hole.
+  //
+  // The tab switch is NOT decoration (fixed 2026-09-08 with the move to the
+  // Coach): the challenge editor renders only under `activeTab === 'quests' &&
+  // practiceSubTab === 'challenges'`, while the interview is a global overlay.
+  // Without it, a challenge row set currentChallenge and painted nothing —
+  // a plan row that opens a blank screen. It was never observed because the
+  // card shipped behind a flag that has never been on. Same two setters and
+  // the same one-tick defer every other caller uses; still one door.
   const openPrepItem = (item) => {
     if (!item) return;
     trackActivationEvent('prep_plan_item_opened', {
@@ -10436,7 +10451,10 @@ CRITICAL RULES:
       return;
     }
     const ch = (window.challengesData || challenges || []).find(c => c.id === item.challengeId);
-    if (ch) openChallenge(ch);
+    if (!ch) return;
+    setActiveTab('quests');
+    setPracticeSubTab('challenges');
+    setTimeout(() => openChallenge(ch), 50);
   };
 
   // Hard-preview offer, session flag (2026-09-06, paywall-surfaces T6, plan
@@ -10453,6 +10471,24 @@ CRITICAL RULES:
   useEffect(() => {
     if (activeTab !== 'guide' && coachPreviewOfferRef.current.shown) {
       coachPreviewOfferRef.current.done = true;
+    }
+  }, [activeTab]);
+
+  // Mock-interview offer, session flag (2026-09-08). Identical two-bit shape
+  // to the hard-preview ref above, for the identical reason: `shown` flips
+  // when the Coach card paints the offer, `done` when the user acts on it or
+  // leaves the Coach tab, and `done` is the only bit src/utils/coach.js reads.
+  // Flipping the engine's flag at first paint would swap the step out on the
+  // very next render — a one-frame flash, never a real offer.
+  //
+  // `tracked` is the third bit and belongs to analytics, not the engine: it
+  // makes `coach_step_mock_offered` fire once per page load rather than once
+  // per re-render. A reload resets the whole ref, which is what "once per
+  // session" means for this offer, and metrics.md says so.
+  const coachMockOfferRef = useRef({ shown: false, done: false, tracked: false });
+  useEffect(() => {
+    if (activeTab !== 'guide' && coachMockOfferRef.current.shown) {
+      coachMockOfferRef.current.done = true;
     }
   }, [activeTab]);
 
@@ -10500,7 +10536,55 @@ CRITICAL RULES:
       previewChallenges: challenges,
       solvedChallenges,
       curriculumOrder: SQL_ROADMAP_CHALLENGE_ORDER,
+      // 2026-09-08: the mock-interview offer. Every key below is computed
+      // inside the flag check, so with `interviewCountdown` off this spread is
+      // `{}` and computeNextStep is byte-identical to what it was — the
+      // inertness invariant, proved in tests/coach.test.js against a matrix of
+      // user states. The engine's own first line refuses anything but
+      // `mockOfferEnabled === true`; this is belt and braces on the surface
+      // 1,179 people render.
+      ...(window.FF?.feature?.('interviewCountdown') === true
+        ? coachMockOfferOptions()
+        : {}),
     });
+  };
+
+  // The mock offer's inputs. Split out so the block above stays readable and
+  // so nothing here runs unless the flag is on.
+  //
+  // The mock offered is ALWAYS the one belonging to the company the user
+  // named. We never put a company's name in front of somebody who did not type
+  // it — a person working the generic SQL Interview Prep goal who has never
+  // mentioned Capital One should not be told to sit the Capital One mock.
+  // Consequence, stated rather than hidden: the interview-prep goal on its own
+  // still does not reach a rehearsal. Closing that needs a decision about
+  // WHICH of the seven generic mocks that goal ends on, which is a content
+  // decision, not a code one.
+  const coachMockOfferOptions = () => {
+    const bank = window.challengesData || challenges || [];
+    const target = findTarget(prepTarget.company, bank, window.challengeCompanies || {}, mockInterviews);
+    // The interview bar is ONE bar. A user with a named target may be on any
+    // goal, and measuring their reach against SQL Fundamentals' exit criteria
+    // (Querying Basics 50 × 0.8 = 40) would offer a 70-minute rehearsal to a
+    // near-beginner. Always the interview-prep goal's criteria.
+    const goals = (typeof window !== 'undefined' && window.coachGoals) || [];
+    const ivGoal = goals.find(g => g.id === COACH_MOCK_GOAL_ID) || null;
+    const sittings = target
+      ? interviewHistory.filter(h => h && h.interviewId === target.mockId)
+      : [];
+    const lastMockAtMs = sittings.reduce((latest, h) => {
+      const ts = h.timestamp ? new Date(h.timestamp).getTime() : (h.date ? new Date(h.date).getTime() : 0);
+      return Number.isFinite(ts) ? Math.max(latest, ts) : latest;
+    }, 0);
+    return {
+      mockOfferEnabled: true,
+      sessionMockOffered: coachMockOfferRef.current.done,
+      mockTarget: target ? { company: target.company, mockId: target.mockId } : null,
+      prepTargetCompany: prepTarget.company || null,
+      mockCriteria: ivGoal?.exitCriteria || null,
+      lastMockAtMs: lastMockAtMs || null,
+      now: Date.now(),
+    };
   };
 
   // Phase 3: placement check. Fixed 5-challenge spread across canonical
@@ -10839,6 +10923,22 @@ CRITICAL RULES:
             setTimeout(() => openChallenge(ch), 50);
           }
         }
+        break;
+      }
+      case COACH_MOCK_STEP_TYPE: {
+        // 2026-09-08. Straight through `openPrepItem` — the SAME door the prep
+        // card's plan rows use — so the mock keeps exactly one gate:
+        // startInterview owns the Pro check and trackLockReached('interview'),
+        // and `prep_plan_item_opened {kind:'mock'}` keeps this click inside
+        // the interview_prep_funnel instead of opening a parallel one.
+        //
+        // The engine only offers this to a Pro user (src/utils/coach.js —
+        // the Coach's one next step is not a Pro wall), so the gate below is
+        // the belt to that braces: if `isPro` were ever stale, the click ends
+        // at the Pro modal rather than at a timer, exactly as it does from
+        // the card. The synthetic step id is never written to stepsCompleted.
+        coachMockOfferRef.current.done = true;
+        openPrepItem({ kind: 'mock', interviewId: step.interviewId });
         break;
       }
       case 'retrieval_check': {
@@ -30847,6 +30947,79 @@ RULES:
                         </div>
                       );
                     })()
+                  ) : next.step && next.step.type === COACH_MOCK_STEP_TYPE ? (
+                    (() => {
+                      // ── The Coach offers a rehearsal (2026-09-08) ──
+                      //
+                      // Its own branch rather than a line in the generic step
+                      // card below, because this step names a company and a
+                      // duration and carries a countdown, and because the CTA
+                      // opens a 70-minute timed sitting — the one next step in
+                      // the Coach that costs the user an evening. It says so
+                      // before they click.
+                      //
+                      // Reached only by a Pro user: pickMockInterviewStep
+                      // refuses a non-Pro caller outright, so there is no
+                      // locked variant of this card. The Start handler still
+                      // goes through startInterview's gate.
+                      const mock = mockInterviews.find(i => i.id === next.step.interviewId) || null;
+                      const minutes = mock ? Math.round((mock.totalTime || 0) / 60) : null;
+                      const company = next.step.company || null;
+                      const daysOut = daysUntil(prepTarget.date, Date.now());
+                      const countdown = daysOut == null
+                        ? null
+                        : (daysOut === 0
+                            ? i18n_t('interviewPrep', 'daysToGoToday')
+                            : daysOut === 1
+                              ? i18n_t('interviewPrep', 'daysToGoOne')
+                              : i18n_t('interviewPrep', 'daysToGo', { n: daysOut }));
+                      return (
+                        <div
+                          data-testid="coach-mock-step"
+                          className="bg-gray-900/60 rounded-lg p-4 border border-gray-700"
+                          ref={(el) => {
+                            if (!el) return;
+                            // Painting the offer is the "shown" moment for the
+                            // once-per-session flag — same two-bit dance as the
+                            // hard preview, so the step is not swapped out from
+                            // under the user on the next render.
+                            coachMockOfferRef.current.shown = true;
+                            if (coachMockOfferRef.current.tracked) return;
+                            coachMockOfferRef.current.tracked = true;
+                            trackActivationEvent('coach_step_mock_offered', {
+                              company,
+                              // The integer, never the date the user typed —
+                              // the same rule prep_target_set follows.
+                              daysOut: daysUntil(prepTarget.date, Date.now()),
+                            });
+                          }}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0 flex-1">
+                              <p className="text-[11px] uppercase tracking-wider text-gray-500 mb-1">
+                                {i18n_t('coachNext', 'label')}
+                                {countdown ? ` · ${countdown}` : ''}
+                              </p>
+                              <p className="font-medium text-[#F2F0EA] mb-1">
+                                {i18n_t('interviewPrep', 'coachMockTitle', { company: company || '' })}
+                              </p>
+                              <p className="text-xs text-gray-400">
+                                {i18n_t('interviewPrep', 'coachMockReason', { n: minutes ?? '—' })}
+                              </p>
+                              <p className="text-[11px] text-gray-500 mt-1">
+                                {i18n_t('interviewPrep', 'coachMockWhat', { company: company || '' })}
+                              </p>
+                            </div>
+                            <button
+                              onClick={() => handleCoachStepStart(next.step)}
+                              className="px-4 py-2 bg-yellow-400 hover:bg-yellow-300 rounded-lg text-sm font-bold text-[#0E0F13] whitespace-nowrap"
+                            >
+                              {i18n_t('interviewPrep', 'coachMockCTA')}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })()
                   ) : next.step ? (
                     (() => {
                       // Localize the reason on the fly. coach.js still produces
@@ -30982,6 +31155,145 @@ RULES:
                   )}
                 </div>
               )}
+              {/* ── Interview countdown ─────────────────────────────────────
+                  MOVED HERE 2026-09-08, from the top of the Interview Prep
+                  tab where it shipped the day before. That tab has no
+                  navigation entry: `showLegacyPrimaryNav` is hard-coded false
+                  (line ~7599) by the 2026-05-19 nav simplification, so
+                  `activeTab === 'trials'` is reachable only through the
+                  `?interview=<id>` deep link on the company pages and the
+                  onboarding `goal === 'interview'` branch. Lifetime, 22
+                  accounts carry any interview history against 1,179 people who
+                  have viewed the Coach. The card was built onto a door with no
+                  handle. **Both of those entrances are untouched** and the
+                  third nav tab is deliberately NOT coming back.
+
+                  PLACEMENT — below the goal / next-step card, above the Pro
+                  strip. The Coach's contract is one answer to "what do I do
+                  next", and that answer stays first. This card asks a question
+                  (which company? which date?) rather than giving an action, so
+                  it reads as configuration, and configuration follows the
+                  thing it configures. Putting a company-and-date form above
+                  the Coach's answer for the ~98% with no interview would be
+                  the UI version of the inertness the engine rule is careful
+                  about. The top slot is not deaf to interview intent either:
+                  once a target is named and the interview bar is within reach,
+                  the Coach offers the timed rehearsal INSIDE the next-step
+                  card — src/utils/coach.js, pickMockInterviewStep.
+
+                  STILL SHIPPED OFF. `interviewCountdown` is false in
+                  src/data/feature-flags.js and stays false until after the
+                  paywall-surfaces read lands on 2026-09-20: the plan rows lead
+                  into the same free/Pro challenge boundary that claim is
+                  measuring. One surface, one change at a time
+                  (docs/data-driven-product.md P7). Default-OFF read
+                  (`=== true`), the same posture as reviewAsk — an unset flag
+                  is not consent to ship.
+
+                  The IIFE keeps every computation behind the flag: with the
+                  flag off nothing in here runs, including
+                  calculateSkillLevelsFromPerformance. That matters more here
+                  than it did on the trials tab — this is the Coach, and 1,179
+                  people render it.
+              */}
+              {window.FF?.feature?.('interviewCountdown') === true && (() => {
+                const bank = window.challengesData || challenges || [];
+                const targets = eligibleTargets(bank, window.challengeCompanies || {}, mockInterviews);
+                if (targets.length === 0) return null;
+
+                const target = findTarget(prepTarget.company, bank, window.challengeCompanies || {}, mockInterviews);
+                const mock = target ? mockInterviews.find(i => i.id === target.mockId) : null;
+
+                // The best sitting at THIS target's mock. `percentage` is the
+                // field the list card reads and `scorePercent` is the one the
+                // analytics aggregation reads; both are written on every new
+                // row, and older rows may carry only one — take either.
+                const sittings = target
+                  ? interviewHistory.filter(h => h.interviewId === target.mockId)
+                  : [];
+                const mockResult = sittings.length > 0
+                  ? {
+                      taken: true,
+                      scorePercent: sittings.reduce(
+                        (best, h) => Math.max(best, h.percentage ?? h.scorePercent ?? 0), 0),
+                    }
+                  : null;
+
+                const readiness = target
+                  ? companyReadiness({
+                      skillLevels: calculateSkillLevelsFromPerformance(),
+                      solvedIds: solvedChallenges,
+                      target,
+                      bank,
+                      mockResult,
+                    })
+                  : null;
+
+                const now = Date.now();
+                const remaining = daysUntil(prepTarget.date, now);
+                const plan = (target && remaining !== null)
+                  ? planToDate({
+                      target,
+                      readiness,
+                      solvedIds: solvedChallenges,
+                      bank,
+                      daysRemaining: remaining,
+                      now,
+                      // Never raw id order — see src/utils/challenge-order.js.
+                      curriculumOrder: SQL_ROADMAP_CHALLENGE_ORDER,
+                    })
+                  : null;
+
+                return (
+                  <InterviewPrepCard
+                    targets={targets}
+                    target={target}
+                    dateValue={prepTarget.date}
+                    readiness={readiness}
+                    plan={plan}
+                    minEvidenceSolves={MIN_EVIDENCE_SOLVES}
+                    mockMinutes={mock ? Math.round((mock.totalTime || 0) / 60) : null}
+                    onTargetChange={(company) => {
+                      setPrepPreference({ company });
+                      trackActivationEvent('prep_target_set', {
+                        company: company || null,
+                        // The integer, never the date the user typed.
+                        daysOut: daysUntil(prepTarget.date, Date.now()),
+                      });
+                    }}
+                    onDateChange={(date) => {
+                      setPrepPreference({ date });
+                      trackActivationEvent('prep_target_set', {
+                        company: prepTarget.company || null,
+                        daysOut: daysUntil(date, Date.now()),
+                      });
+                    }}
+                    onClear={() => setPrepPreference({ company: null, date: null })}
+                    onOpenItem={openPrepItem}
+                    onShown={() => {
+                      trackActivationEvent('prep_readiness_shown', {
+                        company: prepTarget.company || null,
+                        // A coarse bucket, never the raw score: the score is a
+                        // progress measure, and a per-person number in the
+                        // funnel invites exactly the "how ready are our users"
+                        // reading this feature refuses to support.
+                        bucket: readinessBucket(readiness ? readiness.score : null),
+                        mockTaken: readiness ? readiness.parts.mock.taken : null,
+                      });
+                      if (plan && plan.status !== PREP_PLAN_STATUS.UNAVAILABLE) {
+                        trackActivationEvent('prep_plan_viewed', {
+                          company: prepTarget.company || null,
+                          status: plan.status,
+                          daysOut: plan.daysRemaining,
+                          todayItems: plan.today.length,
+                          targetRemaining: plan.totals.targetRemaining,
+                        });
+                      }
+                    }}
+                  />
+                );
+              })()}
+
               {/* Quiet Pro entry on the default tab — the modal is otherwise only
                   reachable from Profile/Interview Prep or reactive walls, so most
                   users never learn Pro exists (5 modal impressions/week). */}
@@ -34787,128 +35099,6 @@ RULES:
         {/* Interviews Tab */}
         {activeTab === 'trials' && (
           <div className="space-y-6">
-            {/* ── Interview countdown ────────────────────────────────────────
-                SHIPPED OFF. `interviewCountdown` is false in
-                src/data/feature-flags.js and stays false until after the
-                paywall-surfaces read lands on 2026-09-20: this card changes
-                what the Interview Prep tab sends people into for exactly the
-                population that claim is measuring. One surface, one change at
-                a time (docs/data-driven-product.md P7). Default-OFF read
-                (`=== true`), the same posture as reviewAsk — an unset flag is
-                not consent to ship.
-
-                Placement: the top of this tab, above the header panel, because
-                a person who has come here has already said what they are here
-                for. The honest caveat, which belongs in the ledger claim and
-                does: **this tab is nearly unvisited**. 17 accounts in the
-                entire history of the product have any interviewHistory row,
-                and the in-app tab has no impression event at all, so its
-                traffic is dark. `prep_readiness_shown` is the first
-                measurement this surface has ever had, and if it reads near
-                zero the finding is discovery, not the card.
-
-                The IIFE matches the Recommendation Banner below it and keeps
-                every computation behind the flag — with the flag off nothing
-                in here runs, including calculateSkillLevelsFromPerformance.
-            */}
-            {window.FF?.feature?.('interviewCountdown') === true && (() => {
-              const bank = window.challengesData || challenges || [];
-              const targets = eligibleTargets(bank, window.challengeCompanies || {}, mockInterviews);
-              if (targets.length === 0) return null;
-
-              const target = findTarget(prepTarget.company, bank, window.challengeCompanies || {}, mockInterviews);
-              const mock = target ? mockInterviews.find(i => i.id === target.mockId) : null;
-
-              // The best sitting at THIS target's mock. `percentage` is the
-              // field the list card reads and `scorePercent` is the one the
-              // analytics aggregation reads; both are written on every new
-              // row, and older rows may carry only one — take either.
-              const sittings = target
-                ? interviewHistory.filter(h => h.interviewId === target.mockId)
-                : [];
-              const mockResult = sittings.length > 0
-                ? {
-                    taken: true,
-                    scorePercent: sittings.reduce(
-                      (best, h) => Math.max(best, h.percentage ?? h.scorePercent ?? 0), 0),
-                  }
-                : null;
-
-              const readiness = target
-                ? companyReadiness({
-                    skillLevels: calculateSkillLevelsFromPerformance(),
-                    solvedIds: solvedChallenges,
-                    target,
-                    bank,
-                    mockResult,
-                  })
-                : null;
-
-              const now = Date.now();
-              const remaining = daysUntil(prepTarget.date, now);
-              const plan = (target && remaining !== null)
-                ? planToDate({
-                    target,
-                    readiness,
-                    solvedIds: solvedChallenges,
-                    bank,
-                    daysRemaining: remaining,
-                    now,
-                    // Never raw id order — see src/utils/challenge-order.js.
-                    curriculumOrder: SQL_ROADMAP_CHALLENGE_ORDER,
-                  })
-                : null;
-
-              return (
-                <InterviewPrepCard
-                  targets={targets}
-                  target={target}
-                  dateValue={prepTarget.date}
-                  readiness={readiness}
-                  plan={plan}
-                  minEvidenceSolves={MIN_EVIDENCE_SOLVES}
-                  mockMinutes={mock ? Math.round((mock.totalTime || 0) / 60) : null}
-                  onTargetChange={(company) => {
-                    setPrepPreference({ company });
-                    trackActivationEvent('prep_target_set', {
-                      company: company || null,
-                      // The integer, never the date the user typed.
-                      daysOut: daysUntil(prepTarget.date, Date.now()),
-                    });
-                  }}
-                  onDateChange={(date) => {
-                    setPrepPreference({ date });
-                    trackActivationEvent('prep_target_set', {
-                      company: prepTarget.company || null,
-                      daysOut: daysUntil(date, Date.now()),
-                    });
-                  }}
-                  onClear={() => setPrepPreference({ company: null, date: null })}
-                  onOpenItem={openPrepItem}
-                  onShown={() => {
-                    trackActivationEvent('prep_readiness_shown', {
-                      company: prepTarget.company || null,
-                      // A coarse bucket, never the raw score: the score is a
-                      // progress measure, and a per-person number in the
-                      // funnel invites exactly the "how ready are our users"
-                      // reading this feature refuses to support.
-                      bucket: readinessBucket(readiness ? readiness.score : null),
-                      mockTaken: readiness ? readiness.parts.mock.taken : null,
-                    });
-                    if (plan && plan.status !== PREP_PLAN_STATUS.UNAVAILABLE) {
-                      trackActivationEvent('prep_plan_viewed', {
-                        company: prepTarget.company || null,
-                        status: plan.status,
-                        daysOut: plan.daysRemaining,
-                        todayItems: plan.today.length,
-                        targetRemaining: plan.totals.targetRemaining,
-                      });
-                    }
-                  }}
-                />
-              );
-            })()}
-
             {/* Header */}
             <div className="bg-gradient-to-r from-purple-500/20 to-blue-500/20 rounded-xl border border-purple-500/30 p-6">
               <div className="flex items-center justify-between">

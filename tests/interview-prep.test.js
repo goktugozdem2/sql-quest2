@@ -888,3 +888,131 @@ describe('source guard: shipped off, as a card, and the date stays put', () => {
     expect(body).not.toContain('setActiveInterview(');
   });
 });
+
+// ---------------------------------------------------------------------------
+// The move to the Coach (2026-09-08)
+//
+// The card shipped 2026-09-07 at the top of the Interview Prep tab. That tab
+// has no navigation entry, so 22 accounts lifetime have any interview history
+// against 1,179 people who have viewed the Coach. These guards pin the move:
+// the card is on the Coach, both existing doors into the trials tab still
+// work, and no third nav tab came back to "fix" discovery.
+// ---------------------------------------------------------------------------
+
+/** The Coach-tab render block, from `activeTab === 'guide' && currentUser`. */
+const coachTabBody = () => {
+  const start = appSource.indexOf("{activeTab === 'guide' && currentUser && !showSimpleLearningShell");
+  expect(start, 'the Coach tab render block moved — this guard needs re-anchoring').toBeGreaterThan(-1);
+  const end = appSource.indexOf("{/* Interviews Tab */}", start);
+  expect(end).toBeGreaterThan(start);
+  return appSource.slice(start, end);
+};
+
+/** The trials-tab render block. */
+const trialsTabBody = () => {
+  const start = appSource.indexOf("{/* Interviews Tab */}");
+  expect(start).toBeGreaterThan(-1);
+  return appSource.slice(start, start + 40000);
+};
+
+/** The Coach's mock-offer step card. */
+const coachMockCardBody = () => {
+  const start = appSource.indexOf('data-testid="coach-mock-step"');
+  expect(start, 'the Coach mock step card is missing').toBeGreaterThan(-1);
+  return appSource.slice(start - 2500, start + 3000);
+};
+
+describe('source guard: the countdown card lives on the Coach now', () => {
+  it('the flagged render sits inside the Coach tab, not the Interview Prep tab', () => {
+    const coach = coachTabBody();
+    expect(coach).toContain("window.FF?.feature?.('interviewCountdown') === true");
+    expect(coach).toContain('<InterviewPrepCard');
+    // …and nowhere in the Interview Prep tab any more.
+    expect(trialsTabBody()).not.toContain('<InterviewPrepCard');
+  });
+
+  it('exactly one InterviewPrepCard render site exists', () => {
+    const hits = appSource.split('<InterviewPrepCard').length - 1;
+    expect(hits, 'the card must have one home, not two').toBe(1);
+  });
+
+  it('it sits BELOW the Coach next-step card, not above it', () => {
+    // The Coach's contract is one answer to "what do I do next"; this card
+    // asks a question. Answers before questions. If this ever flips it should
+    // be a decision, not a merge accident.
+    const coach = coachTabBody();
+    const nextStepAt = coach.indexOf("i18n_t('coachNext', 'label')");
+    const cardAt = coach.indexOf('<InterviewPrepCard');
+    expect(nextStepAt).toBeGreaterThan(-1);
+    expect(cardAt).toBeGreaterThan(nextStepAt);
+  });
+
+  it('both existing doors into the Interview Prep tab are untouched', () => {
+    // The ?interview= deep link still resolves to the trials tab and hands the
+    // mock to startInterview.
+    expect(appSource).toContain("const interviewParam = urlParams.get('interview');");
+    expect(appSource).toMatch(/setActiveTab\('trials'\);[\s\S]{0,400}startInterview\(target\)/);
+    // The onboarding interview branch still routes there.
+    expect(appSource).toMatch(/onboardingData\.goal === 'interview'\)\s*\{\s*\n\s*setActiveTab\('trials'\);/);
+  });
+
+  it('no third primary nav tab was restored', () => {
+    // Reversing the 2026-05-19 nav simplification is a different decision and
+    // was explicitly not this change.
+    expect(appSource).toMatch(/const showLegacyPrimaryNav = false;/);
+  });
+});
+
+describe('source guard: the Coach rehearsal offer keeps one paywall gate', () => {
+  it('the offer is wired behind the same flag, computed only when it is on', () => {
+    const at = appSource.indexOf('const coachMockOfferOptions');
+    expect(at, 'coachMockOfferOptions is missing').toBeGreaterThan(-1);
+    // The spread into computeNextStep is guarded, so with the flag off the
+    // options bag is unchanged and the engine is byte-identical.
+    expect(appSource).toMatch(/window\.FF\?\.feature\?\.\('interviewCountdown'\) === true\s*\n\s*\?\s*coachMockOfferOptions\(\)\s*\n\s*:\s*\{\}/);
+  });
+
+  it('starting the mock goes through openPrepItem — never a second door', () => {
+    const at = appSource.indexOf('case COACH_MOCK_STEP_TYPE:');
+    expect(at, 'the mock_interview case is missing from handleCoachStepStart').toBeGreaterThan(-1);
+    const body = appSource.slice(at, at + 1400);
+    expect(body).toContain("openPrepItem({ kind: 'mock'");
+    expect(body).not.toContain('setActiveInterview(');
+    expect(body).not.toContain('startInterview(');       // openPrepItem owns that call
+    expect(body).not.toContain('setShowProModal(');
+  });
+
+  it('the engine, not the card, is what keeps a free user out of the offer', () => {
+    const coach = readFileSync(p('../src/utils/coach.js'), 'utf8');
+    const at = coach.indexOf('export function pickMockInterviewStep');
+    expect(at).toBeGreaterThan(-1);
+    const body = coach.slice(at, at + 1200);
+    expect(body).toMatch(/options\.isPro !== true\) return null/);
+  });
+
+  it('the offer event carries daysOut and the company, never the date', () => {
+    const at = appSource.indexOf("'coach_step_mock_offered'");
+    expect(at, 'coach_step_mock_offered is not emitted anywhere').toBeGreaterThan(-1);
+    const region = appSource.slice(at, at + 500);
+    expect(region).toMatch(/daysOut: daysUntil\(/);
+    expect(region).not.toMatch(/date: prepTarget\.date/);
+    expect(region).toMatch(/company,/);
+  });
+
+  it('the Coach offer card names no prediction word either', () => {
+    const hits = predictionHits(stripCommentLines(coachMockCardBody()));
+    expect(hits, `prediction word in the Coach mock card: ${hits.join(', ')}`).toEqual([]);
+  });
+
+  it('the offer copy exists in BOTH languages and says what it is not', () => {
+    const [en, tr] = i18nPrepBlocks();
+    for (const key of ['coachMockTitle', 'coachMockReason', 'coachMockWhat', 'coachMockCTA']) {
+      expect(en, `EN is missing ${key}`).toContain(`${key}:`);
+      expect(tr, `TR is missing ${key}`).toContain(`${key}:`);
+    }
+    expect(en).toMatch(/coachMockWhat:.*not affiliated with \{company\}/);
+    expect(tr).toMatch(/coachMockWhat:.*\{company\} ile bağlantılı değildir/);
+    // The offer card must render the honesty line, not just define it.
+    expect(coachMockCardBody()).toContain("i18n_t('interviewPrep', 'coachMockWhat'");
+  });
+});
