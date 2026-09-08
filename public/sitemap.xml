@@ -364,6 +364,12 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://sqlquest.app/challenges/null-handling/</loc>
+    <lastmod>2026-09-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://sqlquest.app/challenges/joins/</loc>
     <lastmod>2026-09-07</lastmod>
     <changefreq>monthly</changefreq>

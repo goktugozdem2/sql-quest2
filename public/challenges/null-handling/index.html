@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SQL NULL Handling Practice — 16 Challenges (15 Free): IS NULL, COALESCE, Counting Nullable Columns</title>
+  <!-- 2026-09-08: new topic page (docs/reads/keywords-2026-09-07.md §3 deferred list — "Date/String concept pages (content-gated: 2 Easy Date…)"; the full bank gives 6 Easy, so the gate is open on the Date side. String Functions still is not). Every count is computed, not typed: the page total is challengeMatchesSkill(c, 'Date Functions') over the FULL bank (src/data/challenges.js + sector-challenges.js), "free" = Easy + Medium + Hard freePreview — this skill has NO Hard freePreview, so free is exactly Easy + Medium. Sections are predicates over the reference solution: strftime() or SUBSTR() over a date column (#truncation — SQLite has no DATE_TRUNC, and the FDIC and NYC columns are text dates SUBSTR is the only way into), julianday() (#date-arithmetic), and a date column on the left of a range operator or BETWEEN (#date-ranges). TOPIC_PAGES in tests/site-counts.test.js binds all of them — re-run the test, do not retype. #rolling-windows was DROPPED: eight challenges here open an OVER(), and all eight are already listed in a section of /challenges/window-functions/ — it would have been that page under a second name. Three challenges carry the skill and land in no section (two are those window ones, one pins a year with LIKE). Cards are Easy → Medium → Hard, curriculum order inside each band (CLAUDE.md, the raw-array trap) — never id order. -->
+  <meta name="description" content="16 SQL NULL challenges, 15 free: why = NULL never matches, COALESCE defaults, and the aggregates that silently skip NULLs. Runs in your browser, no signup.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://sqlquest.app/challenges/null-handling/">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://sqlquest.app/challenges/null-handling/">
+  <meta property="og:title" content="SQL NULL Handling Practice — 16 Challenges (15 Free): IS NULL, COALESCE, Counting Nullable Columns">
+  <meta property="og:description" content="16 SQL NULL challenges, 15 free: why = NULL never matches, COALESCE defaults, and the aggregates that silently skip NULLs. Runs in your browser, no signup.">
+  <meta property="og:image" content="https://sqlquest.app/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"SQL NULL Handling Practice","description":"16 SQL NULL challenges, 15 free: IS NULL filters, COALESCE defaults and aggregates that skip NULLs.","url":"https://sqlquest.app/challenges/null-handling/","breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"SQL Exercises","item":"https://sqlquest.app/sql-exercises/"},{"@type":"ListItem","position":3,"name":"SQL NULL Handling","item":"https://sqlquest.app/challenges/null-handling/"}]}}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif}
+    .fd{font-family:'Space Grotesk',sans-serif}a{color:#c084fc;text-decoration:none}a:hover{text-decoration:underline}
+    .nav{background:rgba(6,6,15,.95);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06);position:fixed;top:0;left:0;right:0;z-index:100}
+    .ni{max-width:1100px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+    .bp{padding:10px 24px;font-size:14px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:12px;font-weight:700;display:inline-block;text-decoration:none;transition:all .3s}.bp:hover{transform:translateY(-2px);text-decoration:none}
+    .wrap{max-width:900px;margin:0 auto;padding:140px 24px 80px;text-align:center}
+    .breadcrumb{font-size:13px;color:#64748b;margin-bottom:24px}.breadcrumb a{color:#64748b}.breadcrumb a:hover{color:#c084fc}
+    h1{font-size:clamp(28px,4vw,44px);font-weight:800;margin-bottom:20px}
+    p{font-size:16px;line-height:1.75;color:#94a3b8;max-width:600px;margin:0 auto 36px}
+    .cta{padding:14px 36px;font-size:16px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:12px;font-weight:700;display:inline-flex;transition:all .3s;text-decoration:none}.cta:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(124,58,237,.35);text-decoration:none}
+    .related{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:48px}
+    .related a{background:rgba(10,10,25,.5);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:14px 20px;font-size:14px;color:#94a3b8;transition:border-color .2s}.related a:hover{border-color:rgba(124,58,237,.3);text-decoration:none}
+    .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center;margin-top:80px}.ft p{font-size:13px;color:#475569}.ft a{color:#64748b}.ft a:hover{color:#c084fc}
+    /* Card / tag shapes are the sibling topic pages' own CSS (/challenges/joins/, /challenges/case-when/); tag colors are DESIGN.md semantic tokens (info/warning/error/success). Nothing new. */
+    code{font-family:'JetBrains Mono',monospace;font-size:.9em;color:#c084fc}
+    .sec{margin-top:64px;text-align:left;scroll-margin-top:90px}.sec h2{font-size:clamp(22px,3vw,30px);font-weight:800;margin-bottom:12px;text-align:center}.sec>p{text-align:center;margin:0 auto 24px;max-width:640px}
+    .stamp{font-size:12px;color:#64748b;margin:0 auto 20px}
+    .q-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin:0 0 28px}
+    .q-card{background:rgba(10,10,25,.5);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:18px 20px;transition:border-color .2s}.q-card:hover{border-color:rgba(124,58,237,.3)}
+    .q-card h3{font-size:15px;font-weight:700;color:#e2e8f0;margin:10px 0 6px}.q-card p{font-size:13px;line-height:1.6;color:#94a3b8;margin:0 0 12px;max-width:none;text-align:left}
+    .q-card .concepts{font-size:12px;color:#64748b}.q-card .concepts code{background:rgba(124,58,237,.12);padding:2px 5px;border-radius:3px;font-size:12px}
+    .tag{font-size:11px;font-weight:700;padding:3px 10px;border-radius:100px;display:inline-block}.tag.easy{background:rgba(124,196,255,.12);color:#7CC4FF}.tag.medium{background:rgba(255,176,32,.15);color:#FFB020}.tag.hard{background:rgba(255,107,107,.15);color:#FF6B6B}.tag.free{background:rgba(74,222,128,.12);color:#4ADE80}.tag.pro{background:rgba(255,255,255,.06);color:#94a3b8}
+    .btn-practice{font-size:13px;color:#c084fc;border:1px solid rgba(124,58,237,.3);padding:7px 16px;border-radius:8px;display:inline-block;transition:all .2s;text-decoration:none}.btn-practice:hover{background:rgba(124,58,237,.12);text-decoration:none}
+  </style>
+</head>
+<body>
+<nav class="nav"><div class="ni">
+  <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;">
+    <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:16px;">⚡</div>
+    <span class="fd" style="font-size:18px;font-weight:800;">SQL Quest</span>
+  </a>
+  <a href="/app.html" class="bp">Start Free →</a>
+</div></nav>
+<div class="wrap">
+  <p class="breadcrumb"><a href="/">SQL Quest</a> › <a href="/sql-exercises/">SQL Exercises</a> › SQL NULL Handling</p>
+  <h1 class="fd">SQL NULL Handling Practice — <span style="background:linear-gradient(135deg,#c084fc,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">16 Challenges (15 Free)</span></h1>
+  <p class="lede">NULL is not a value, it is the absence of one — so it does not equal anything, not even another NULL. Almost every NULL bug in production is that one sentence, unlearned. These 16 challenges run in your browser on real tables; 15 of them are free, the best free coverage of any topic here.</p>
+
+  <section class="sec" id="is-null">
+    <h2 class="fd">Filtering on absence — why <code>= NULL</code> never matches: 9 challenges (8 free)</h2>
+    <p>Comparing to <code>NULL</code> with <code>=</code> does not return false, it returns <em>unknown</em>, and <code>WHERE</code> keeps only rows that are true. That is why <code>WHERE manager_id = NULL</code> returns nothing at all rather than the rows you meant — you need <code>IS NULL</code>. The same rule is what makes <code>NOT IN</code> against a nullable column return zero rows, the trap <a href="/blog/null-handling-mistakes/#not-in-trap">the NOT IN trap</a> walks through.</p>
+    <p class="stamp">Counted from the challenge bank, September 2026. Easy first, then Medium, then Hard.</p>
+    <div class="q-grid">
+      <div class="q-card">
+        <span class="tag easy">Easy</span> <span class="tag free">Free</span>
+        <h3>Handling NULL Values</h3>
+        <p class="concepts">Uses: <code>IS NULL</code> <code>COALESCE</code></p>
+        <a href="/app/?challenge=103&amp;src=challenges-null-handling" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag easy">Easy</span> <span class="tag free">Free</span>
+        <h3>Failures with No Loss Estimate</h3>
+        <p class="concepts">Uses: <code>WHERE</code> <code>IS NULL</code></p>
+        <a href="/app/?challenge=206&amp;src=challenges-null-handling" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag easy">Easy</span> <span class="tag free">Free</span>
+        <h3>Properties Without Listed Owner</h3>
+        <p class="concepts">Uses: <code>WHERE</code> <code>IS NULL</code></p>
+        <a href="/app/?challenge=226&amp;src=challenges-null-handling" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Genre Box Office Report</h3>
+        <p class="concepts">Uses: <code>GROUP BY</code> <code>Aggregation</code> <code>NULL Handling</code></p>
+        <a href="/app/?challenge=15&amp;src=challenges-null-handling" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Fare Imputation Analysis</h3>
+        <p class="concepts">Uses: <code>NULL Handling</code> <code>COALESCE</code> <code>GROUP BY</code></p>
+        <a href="/app/?challenge=25&amp;src=challenges-null-handling" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Senior Passengers by Port</h3>
+        <p class="concepts">Uses: <code>WHERE</code> <code>GROUP BY</code> <code>Aggregation</code></p>
+        <a href="/app/?challenge=116&amp;src=challenges-null-handling" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Director Rating Volatility</h3>
+        <p class="concepts">Uses: <code>GROUP BY</code> <code>HAVING</code> <code>Aggregation</code></p>
+        <a href="/app/?challenge=122&amp;src=challenges-null-handling" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Dormant Cards — No Transactions in the Last 14 Days</h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>LEFT JOIN</code> <code>IS NULL</code> <code>CTE</code></p>
+        <a href="/app/?challenge=278&amp;src=challenges-null-handling" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Anti-Join Pipeline: Unmatched Records</h3>
+        <p class="concepts">Uses: <code>LEFT JOIN</code> <code>IS NULL</code> <code>CTE</code></p>
+        <a href="/app/?challenge=74&amp;src=challenges-null-handling" class="btn-practice">Try it →</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="coalesce">
+    <h2 class="fd">Supplying a default — COALESCE, IFNULL and NULLIF: 8 challenges (8 free)</h2>
+    <p><code>COALESCE(col, 0)</code> returns the first argument that is not NULL, which is how a missing number becomes a zero in a report rather than a hole in a chart. <code>NULLIF(a, b)</code> does the reverse and is the standard guard against divide-by-zero. The judgement is not the syntax, it is whether a default belongs there at all: a missing rating is not a rating of zero, and averaging it as one is a wrong answer that looks right.</p>
+    <p class="stamp">Counted from the challenge bank, September 2026. Easy first, then Medium, then Hard.</p>
+    <div class="q-grid">
+      <div class="q-card">
+        <span class="tag easy">Easy</span> <span class="tag free">Free</span>
+        <h3>Handling NULL Values</h3>
+        <p class="concepts">Uses: <code>IS NULL</code> <code>COALESCE</code></p>
+        <a href="/app/?challenge=103&amp;src=challenges-null-handling" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag easy">Easy</span> <span class="tag free">Free</span>
+        <h3>Default Age for Missing Records (COALESCE)</h3>
+        <p class="concepts">Uses: <code>NULL Handling</code> <code>COALESCE</code></p>
+        <a href="/app/?challenge=137&amp;src=challenges-null-handling" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Genre Box Office Report</h3>
+        <p class="concepts">Uses: <code>GROUP BY</code> <code>Aggregation</code> <code>NULL Handling</code></p>
+        <a href="/app/?challenge=15&amp;src=challenges-null-handling" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Fare Imputation Analysis</h3>
+        <p class="concepts">Uses: <code>NULL Handling</code> <code>COALESCE</code> <code>GROUP BY</code></p>
+        <a href="/app/?challenge=25&amp;src=challenges-null-handling" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>LEFT JOIN NULL Semantics: Inactive Customers</h3>
+        <p class="concepts">Uses: <code>LEFT JOIN</code> <code>COALESCE</code> <code>Aggregation</code></p>
+        <a href="/app/?challenge=34&amp;src=challenges-null-handling" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Management Hierarchy Overview</h3>
+        <p class="concepts">Uses: <code>LEFT JOIN</code> <code>EXISTS</code> <code>Subquery</code></p>
+        <a href="/app/?challenge=42&amp;src=challenges-null-handling" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Handle NULL Ages</h3>
+        <p class="concepts">Uses: <code>NULL Handling</code> <code>COALESCE</code> <code>Aggregation</code></p>
+        <a href="/app/?challenge=57&amp;src=challenges-null-handling" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Membership Tier Revenue Analysis</h3>
+        <p class="concepts">Uses: <code>LEFT JOIN</code> <code>GROUP BY</code> <code>Aggregation</code></p>
+        <a href="/app/?challenge=66&amp;src=challenges-null-handling" class="btn-practice">Try it →</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="aggregates">
+    <h2 class="fd">Counting what is there — the aggregates that skip NULLs: 7 challenges (6 free)</h2>
+    <p><code>COUNT(*)</code> counts rows; <code>COUNT(column)</code> counts rows where that column is not NULL, and the gap between the two numbers is the missing data. <code>AVG</code>, <code>SUM</code> and <code>MIN</code> ignore NULLs entirely, so an average over a half-empty column is an average of the half that exists — usually right, occasionally the bug. These are the challenges where the answer depends on knowing which.</p>
+    <p class="stamp">Counted from the challenge bank, September 2026. Easy first, then Medium, then Hard.</p>
+    <div class="q-grid">
+      <div class="q-card">
+        <span class="tag easy">Easy</span> <span class="tag free">Free</span>
+        <h3>Chargeback Reason Codes: Resolved and Still Open</h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>GROUP BY</code> <code>Aggregation</code> <code>IS NULL</code></p>
+        <a href="/app/?challenge=287&amp;src=challenges-null-handling" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Genre Box Office Report</h3>
+        <p class="concepts">Uses: <code>GROUP BY</code> <code>Aggregation</code> <code>NULL Handling</code></p>
+        <a href="/app/?challenge=15&amp;src=challenges-null-handling" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Fare Imputation Analysis</h3>
+        <p class="concepts">Uses: <code>NULL Handling</code> <code>COALESCE</code> <code>GROUP BY</code></p>
+        <a href="/app/?challenge=25&amp;src=challenges-null-handling" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>LEFT JOIN NULL Semantics: Inactive Customers</h3>
+        <p class="concepts">Uses: <code>LEFT JOIN</code> <code>COALESCE</code> <code>Aggregation</code></p>
+        <a href="/app/?challenge=34&amp;src=challenges-null-handling" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Handle NULL Ages</h3>
+        <p class="concepts">Uses: <code>NULL Handling</code> <code>COALESCE</code> <code>Aggregation</code></p>
+        <a href="/app/?challenge=57&amp;src=challenges-null-handling" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Membership Tier Revenue Analysis</h3>
+        <p class="concepts">Uses: <code>LEFT JOIN</code> <code>GROUP BY</code> <code>Aggregation</code></p>
+        <a href="/app/?challenge=66&amp;src=challenges-null-handling" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Anti-Join Pipeline: Unmatched Records</h3>
+        <p class="concepts">Uses: <code>LEFT JOIN</code> <code>IS NULL</code> <code>CTE</code></p>
+        <a href="/app/?challenge=74&amp;src=challenges-null-handling" class="btn-practice">Try it →</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="why">
+    <h2 class="fd">Where this shows up next</h2>
+    <p>NULL rarely arrives on its own. It arrives through a <a href="/challenges/joins/">LEFT JOIN</a>, which is the machine that manufactures it; it survives into an <a href="/challenges/aggregation/">aggregate</a> that quietly drops it; and it breaks <a href="/blog/sql-anti-join/">anti-joins</a> written with <code>NOT IN</code> instead of <code>NOT EXISTS</code>. If you want the reading rather than the practice, <a href="/blog/is-null-vs-equals-null/">IS NULL vs = NULL</a> is the short version and <a href="/blog/null-handling-mistakes/">five NULL mistakes</a> the long one.</p>
+  </section>
+  <div class="related">
+    <a href="/challenges/">All Practice Topics →</a>
+    <a href="/challenges/aggregation/">GROUP BY &amp; Aggregation →</a>
+    <a href="/challenges/window-functions/">Window Functions →</a>
+    <a href="/blog/sql-running-total/">Running Totals →</a>
+    <a href="/sql-cheat-sheet/#date-string">Cheat Sheet: Dates →</a>
+    <a href="/challenges/cte/">CTE Challenges →</a>
+    <a href="/challenges/joins/">JOIN Challenges →</a>
+    <a href="/blog/faang-sql-interview-guide/">FAANG SQL Guide →</a>
+  </div>
+</div>
+<footer class="ft"><p>⚡ <strong>SQL Quest</strong> — Master SQL through hands-on practice. <a href="/">Home</a></p><p style="margin-top:8px;font-size:11px;">© 2026 SQL Quest</p></footer>
+  <script defer src="/track.js"></script>
+</body>
+</html>

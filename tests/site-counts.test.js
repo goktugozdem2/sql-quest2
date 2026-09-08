@@ -678,6 +678,15 @@ const singleTableScalar = c => !/\bJOIN\b/i.test(solutionOf(c))
 // the left of a range operator for a window. #rolling-windows was dropped: all
 // eight date challenges that open an OVER() are already listed in a section of
 // the window-functions page.
+// NULL Handling (2026-09-09). The three shapes a NULL page has to teach, and
+// they overlap on purpose: a challenge can filter on IS NULL, default with
+// COALESCE and count a nullable column in the same query.
+export const NULL_IS_NULL = c => /\bIS\s+(?:NOT\s+)?NULL\b/i.test(solutionOf(c));
+export const NULL_DEFAULTS = c => /\b(?:COALESCE|IFNULL|NULLIF)\s*\(/i.test(solutionOf(c));
+// COUNT/AVG/SUM over a COLUMN, never over * — the point of the section is that
+// the aggregate skips NULLs and COUNT(*) does not.
+export const NULL_AGGREGATES = c => /\b(?:COUNT|AVG|SUM)\s*\(\s*(?:DISTINCT\s+)?(?!\*)[A-Za-z_]/i.test(solutionOf(c));
+
 export const DATE_TRUNCATION = c => /\bstrftime\s*\(/i.test(solutionOf(c)) || /\bSUBSTR\s*\(\s*\w*(?:date|_at|day)\w*/i.test(solutionOf(c));
 export const DATE_ARITHMETIC = c => /\bjulianday\s*\(/i.test(solutionOf(c));
 export const DATE_RANGE = c => /\b\w*(?:date|day|_at|time)\w*\s*(?:>=|<=|<|>)|\b\w*(?:date|day|_at|time)\w*\s+BETWEEN\b/i.test(solutionOf(c));
@@ -721,6 +730,14 @@ export const TOPIC_PAGES = {
       'multi-level': c => groupByKeyCount(c) >= 2,
       having: c => HAVING_CLAUSE.test(solutionOf(c)),
       'distinct-counts': c => COUNT_DISTINCT.test(solutionOf(c)),
+    },
+  },
+  'null-handling': {
+    population: c => challengeMatchesSkill(c, 'NULL Handling'),
+    sections: {
+      'is-null': NULL_IS_NULL,
+      coalesce: NULL_DEFAULTS,
+      aggregates: NULL_AGGREGATES,
     },
   },
   'date-functions': {
