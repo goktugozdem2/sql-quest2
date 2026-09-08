@@ -56,6 +56,22 @@ export function isReferrerFresh(refCodeAt, nowMs = Date.now()) {
 // Generate a deterministic peer ref code from a username.
 // Returns null for invalid/empty/guest usernames — those should never
 // have a public ref code (guests are local-only, ref codes are global).
+/**
+ * @deprecated 2026-09-08 — DO NOT USE for new code. Kept only so the shape of
+ * historical codes can still be reasoned about.
+ *
+ * Eight base64 characters carry the first SIX BYTES of the username, so two
+ * usernames sharing a six-character prefix produce the SAME code. Measured
+ * over the 348 live non-guest accounts: 6 codes collided across 13 accounts
+ * (sachin2468/sachinp478, 2024t1008/2024t1177, 2025t0320/2025t0502) and 68
+ * accounts got a code shorter than 8 characters. Because
+ * claim-referral-reward grants Pro days off these stats, a collision hands
+ * one user another user's referrals and their Pro days.
+ *
+ * Codes are assigned by the database now — see
+ * supabase/migrations/20260908b_referral_codes_are_assigned.sql — and the
+ * client reads `personal_ref_code` off the my-referral-stats response.
+ */
 export function generatePersonalRefCode(username) {
   if (!username || typeof username !== 'string') return null;
   const trimmed = username.trim();

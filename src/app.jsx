@@ -36,7 +36,7 @@ import { classifyLandingSrc, LANDING_SRC_KEY } from './utils/landing-src.js';
 import { classifyQueryError } from './utils/query-error.js';
 import { computeSkillTrajectory, topActiveSkills } from './utils/skill-trajectory.js';
 import { detectTurkish, TURKISH_SYSTEM_PROMPT_PREFIX } from './utils/language.js';
-import { normalizeRefCode, isReferrerFresh, generatePersonalRefCode, calculateProDaysEarned, nextReferralMilestone, REFERRAL_TIERS, REFERRAL_PRO_CONVERSION_BONUS_DAYS } from './utils/referrals.js';
+import { normalizeRefCode, isReferrerFresh, calculateProDaysEarned, nextReferralMilestone, REFERRAL_TIERS, REFERRAL_PRO_CONVERSION_BONUS_DAYS } from './utils/referrals.js';
 import { DRILL_SIZE, DRILL_TARGET, buildDrillQueue, challengeMatchesSkill, prioritizeBySector, pickWeakestSkill } from './utils/skill-drill.js';
 import { lintSQL } from './utils/sql-lint.js';
 import { resultsMatch, solutionRequiresOrder, sortRowsCanonical } from './utils/grade.js';
@@ -5881,6 +5881,11 @@ function SQLQuest() {
         const data = await res.json();
         if (data?.ok && data.stats) {
           setMyReferralStats(data.stats);
+          // The server owns the code. Before 2026-09-08 the client derived
+          // its own and put it in the share link, which is how links went out
+          // carrying a code that resolved to nobody — or, for 13 accounts, to
+          // somebody else.
+          if (data.personal_ref_code) setReferralCode(data.personal_ref_code);
           // Mirror server-side signup count back to local state so the
           // header card and milestones reflect cross-device truth.
           if (typeof data.stats.signups === 'number' && data.stats.signups > referralCount) {
@@ -14966,16 +14971,23 @@ CRITICAL RULES:
     // can look it up cross-device (existing localStorage iteration only
     // worked when both users were on the same browser).
     if (username && !username.startsWith('guest_')) {
-      const code = generatePersonalRefCode(username);
-      setReferralCode(code);
-
-      // Stamp the personal ref code on userData so cloud save mirrors
-      // it into public.users.personal_ref_code (set by the Supabase
-      // upsert in saveUserData → users.personal_ref_code via setUserData).
-      // Idempotent: if it's already there, no-op.
-      if (code && userData && userData.personalRefCode !== code) {
-        userData.personalRefCode = code;
-      }
+      // The referral code is NOT derived here any more (2026-09-08).
+      // `generatePersonalRefCode` took the first 8 base64 characters of the
+      // username, i.e. its first six BYTES, so any two usernames sharing a
+      // six-character prefix got the same code: measured over the 348 live
+      // non-guest accounts, 6 codes collided across 13 accounts
+      // (sachin2468/sachinp478, 2024t1008/2024t1177, 2025t0320/2025t0502) and
+      // 68 accounts got a code shorter than 8 characters. Since
+      // claim-referral-reward grants Pro days off these stats, a collision
+      // hands one user another user's referrals and their Pro days.
+      //
+      // The database assigns codes now
+      // (supabase/migrations/20260908b_referral_codes_are_assigned.sql) and
+      // the client READS one — see the my-referral-stats effect, which sets
+      // referralCode from the server's `personal_ref_code`. The old stamp
+      // into userData is gone too: it ran AFTER this function's only
+      // saveUserData call, so it never persisted once — 0 of 348 accounts
+      // carried it.
 
       // Load referral count
       const refData = JSON.parse(localStorage.getItem(`sqlquest_referrals_${username}`) || '{"count":0,"users":[]}');
@@ -15004,43 +15016,23 @@ CRITICAL RULES:
         const processReferral = async () => {
           try {
             // 1. Same-device fast path
-            let foundLocally = false;
-            const allKeys = Object.keys(localStorage).filter(k => k.startsWith('sqlquest_user_') && !k.includes('guest'));
-            for (const key of allKeys) {
-              const refUsername = key.replace('sqlquest_user_', '');
-              const refUserCode = generatePersonalRefCode(refUsername);
-              if (refUserCode === pendingReferrer) {
-                foundLocally = true;
-                // Found the referrer — check if already processed
-                const myData = JSON.parse(localStorage.getItem(`sqlquest_user_${username}`) || '{}');
-                if (!myData.referredBy) {
-                  // Award bonus to new user
-                  myData.referredBy = refUsername;
-                  myData.xp = (myData.xp || 0) + 250;
-                  localStorage.setItem(`sqlquest_user_${username}`, JSON.stringify(myData));
-                  setXP(prev => prev + 250);
-
-                  // Award bonus to referrer (local mirror — server is source of truth)
-                  const referrerData = JSON.parse(localStorage.getItem(`sqlquest_user_${refUsername}`) || '{}');
-                  referrerData.xp = (referrerData.xp || 0) + 250;
-                  const referrerRefData = JSON.parse(localStorage.getItem(`sqlquest_referrals_${refUsername}`) || '{"count":0,"users":[]}');
-                  referrerRefData.count = (referrerRefData.count || 0) + 1;
-                  referrerRefData.users = [...(referrerRefData.users || []), username];
-                  localStorage.setItem(`sqlquest_user_${refUsername}`, JSON.stringify(referrerData));
-                  localStorage.setItem(`sqlquest_referrals_${refUsername}`, JSON.stringify(referrerRefData));
-
-                  // Sync to Supabase if configured
-                  if (isSupabaseConfigured()) {
-                    try {
-                      await saveUserData(username, myData);
-                      await saveUserData(refUsername, referrerData);
-                    } catch(e) { console.error('Referral sync error:', e); }
-                  }
-                }
-                break;
-              }
-            }
-
+            // Always false since the same-device path was removed below; the
+            // server still receives it, so `matched_locally` in the signup
+            // event stays a readable series across the change.
+            const foundLocally = false;
+            // The same-device fast path is GONE (2026-09-08). It matched an
+            // inbound code by re-deriving every locally-saved username's code
+            // with generatePersonalRefCode — which the database no longer
+            // agrees with, since codes are assigned rather than derived. Left
+            // in place it would simply never match, silently, which is worse
+            // than not being there.
+            //
+            // It also awarded 250 XP to both sides from the client and wrote
+            // it back with saveUserData. That is the same shape as the
+            // auto-renew Pro grant removed on 2026-09-07: the client deciding
+            // someone had earned something. The cross-device path below is
+            // authoritative — it fires the signup event and the server
+            // credits the referrer — so nothing is lost but the local mirror.
             // 2. Cross-device path — always fire the signup event so the
             //    server has authoritative attribution. If we already
             //    matched locally, the server insert is the same data;

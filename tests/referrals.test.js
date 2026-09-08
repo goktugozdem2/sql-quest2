@@ -269,3 +269,51 @@ describe('the SQL rollup agrees with the JS formula', () => {
     expect(sql).toMatch(/join me on r\.ref_code = me\.code/i);
   });
 });
+
+// ---------------------------------------------------------------------------
+// The derived scheme is retired. These tests exist so nobody reintroduces it
+// by reading `generatePersonalRefCode` as "the way codes are made".
+// ---------------------------------------------------------------------------
+describe('generatePersonalRefCode is retired — and here is why', () => {
+  it('collides on real usernames from the live table', () => {
+    // Measured 2026-09-08 against public.users. These are not invented pairs.
+    for (const [a, b] of [
+      ['sachin2468', 'sachinp478'],
+      ['2024t1008', '2024t1177'],
+      ['2025t0320', '2025t0502'],
+    ]) {
+      expect(generatePersonalRefCode(a), `${a} vs ${b} no longer collide — the fixture is stale, not the bug`)
+        .toBe(generatePersonalRefCode(b));
+    }
+  });
+
+  it('produces codes shorter than 8 characters for short usernames', () => {
+    // 68 of the 348 live accounts are in this state.
+    expect(generatePersonalRefCode('6ix').length).toBeLessThan(8);
+    expect(generatePersonalRefCode('aaron').length).toBeLessThan(8);
+  });
+
+  it('the app no longer derives a code from a username', () => {
+    const app = readFileSync(join(import.meta.dirname, '..', 'src', 'app.jsx'), 'utf8');
+    expect(/generatePersonalRefCode\s*\(/.test(app),
+      'app.jsx derives a referral code again — the database assigns them (20260908b migration)').toBe(false);
+    expect(app, 'the deprecated helper is imported again').not.toMatch(/import \{[^}]*generatePersonalRefCode/);
+    // and it reads the server's instead
+    expect(app).toMatch(/setReferralCode\(data\.personal_ref_code\)/);
+  });
+
+  it('the assignment migration exists and enforces uniqueness in the database', () => {
+    const m = join(import.meta.dirname, '..', 'supabase', 'migrations', '20260908b_referral_codes_are_assigned.sql');
+    expect(existsSync(m)).toBe(true);
+    const sql = readFileSync(m, 'utf8');
+    expect(sql).toMatch(/create or replace function public\.assign_personal_ref_code/i);
+    expect(sql).toMatch(/create trigger users_assign_ref_code_trg/i);
+    // Retry on collision rather than trusting the draw.
+    expect(sql).toMatch(/unique_violation/i);
+    // 0/O and 1/I are out, so a code survives being read off a screenshot.
+    const alpha = sql.match(/substr\('([A-Z0-9]+)'/);
+    expect(alpha).toBeTruthy();
+    expect(alpha[1]).not.toMatch(/[01OI]/);
+    expect(alpha[1].length).toBe(32);
+  });
+});
