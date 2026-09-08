@@ -73,6 +73,80 @@ other intent — Shopify ranks 7.4 and converts at 1.6%); Starling (zero
 incumbents *and* only seven results at all, which reads as too thin even for
 archetype A).
 
+## REVERSED, same day, before anything shipped
+
+The decision above survived about an hour. Checking whether the content
+existed to back the two pages killed both, and the reasoning is worth more
+than the original call.
+
+### What the check found
+
+Company pages are fed by `?company=<Name>`, resolved through
+`src/data/challenge-companies.js`. Revolut has 26 challenges tagged, Wise 16,
+Ramp 32. **Monzo and Brex have zero** — so writing either page starts with
+tagging, and that file's own convention is strict:
+
+> each company gets a SUBSET chosen against its own page's stated topics, one
+> line of reasoning per challenge … The obvious wrong answer was tagging all 25
+> card challenges to all five payments companies: Wise would then be 35
+> challenges of which 25 are identical to Stripe's, five doors sharing one core.
+
+**Brex is Ramp's business. Monzo is Revolut's.** A genuinely distinct subset
+for either is not available, because the work is not distinct. Picking
+different challenges purely to avoid overlap would be differentiation theatre —
+the same dishonesty the 2026-09-07 pass removed, wearing a different hat.
+
+### And the segment was wrong anyway
+
+Sorting the eight existing fintech pages by clicks, 28 days:
+
+| Page | Clicks | Impressions | Segment |
+|---|---|---|---|
+| revolut | **40** | 277 | consumer neobank |
+| wise | **14** | 102 | consumer transfers |
+| jpmorgan | 4 | 76 | bank |
+| ramp | 1 | 45 | **B2B spend** |
+| plaid | 1 | 30 | **B2B infrastructure** |
+| morgan-stanley | 0 | 6 | bank |
+
+"Fintech works" was the wrong reading of the 09-08 data. **Consumer fintech
+with a large candidate pool works**; B2B fintech gets one click a month. Brex
+sits squarely in the Ramp segment. The stale-incumbent logic was sound and I
+applied it to the segment we have already measured as not converting.
+
+### The real blocker, which neither name would have solved
+
+The bank holds two fintech shapes: `finans` (57 challenges of **FDIC
+call-report data** — bank assets by state, charter classes, deposit totals)
+and `card_analytics` (25 challenges of card transaction and merchant spend).
+Eight fintech pages already draw on those 82 challenges.
+
+There is **no consumer-neobank content that is not already Revolut's**. No
+ledger or balance-history shape, no faster-payments timing, no
+savings-pot analytics. A Monzo page today would be Revolut's content under a
+different name — a doorway, which `tests/company-pages.test.js` exists to
+prevent.
+
+### What actually follows
+
+The next traffic move is **not a tenth company page**. It is one of:
+
+1. **New content that opens a shape we do not have.** Consumer-neobank ledger
+   analytics is a real gap and it would back Monzo, Starling, N26 and Chime at
+   once — four doors from one authoring pass, instead of one door split off an
+   existing core.
+2. **A different page type.** The 09-08 read found the role queries sitting at
+   position 34-46 with real impressions: `sql interview questions for data
+   analyst` (28 imp, 45.5), `sql interview preparation course` (34 imp, 34.8),
+   `data analyst sql interview questions` (9 imp, 44.9). We have pages for
+   these — `/sql-interview-questions-data-analyst/` at position 28 — so this
+   is an improvement job on existing pages, not authoring.
+
+Option 2 is cheaper and unblocked. Option 1 is the larger prize and is the
+prerequisite for ever adding a ninth fintech page honestly.
+
+**Neither Monzo nor Brex should be written until option 1 exists.**
+
 ## What these pages may and may not say
 
 The 2026-09-07 pass removed unsourced interview formats, invented sample
