@@ -517,6 +517,14 @@ of the verifier and must never be rounded to `FLAT`.
   arrivals, so `feedback_submitted` volume is exposed to it independently.
   (iv) AlternativeTo and G2 are off; if the founder lists on either during the
   window, `clicked_public` gains a destination mid-read — record the date.
+  **Recorded: AlternativeTo was submitted 2026-08-27 and paid into the
+  priority queue, confirmed 2026-09-08; the listing is expected live
+  2026-09-09..09-15.** That is BEFORE this claim's 18-day window opens (it
+  ends 2026-10-08, so it starts ~09-20), and before the flag flip, which
+  itself waits on the 09-20 paywall read. So the listing is part of the
+  baseline this claim is measured against, not a mid-read change — provided
+  it lands on schedule. If it slips past 09-20, it becomes a live confound
+  and this note must be revisited.
   (v) **The Trustpilot secondary is already contaminated, before this ships.**
   Four hand-written review invitations went out on 2026-09-07 (sab3r,
   tausif1122, luciej, supertrunker — logged under the outreach claim in

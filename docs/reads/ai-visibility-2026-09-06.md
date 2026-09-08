@@ -53,6 +53,25 @@ lanes, alternatives 1/2, practice_where **0/6**.
 3. Turkish: our page is read but not named — the Turkish pages need an
    explicit "SQL Quest" self-mention with the fact the model can quote.
 
+## Lever log
+
+- **AlternativeTo — submitted 2026-08-27, moved into the PRIORITY queue with
+  a paid review, confirmed by the founder 2026-09-08.** AlternativeTo's own
+  page states priority submissions are usually reviewed in 1-2 business days,
+  up to a week in busy periods, so expect the listing live somewhere in
+  **2026-09-09 .. 09-15**. This is lever 1 of item 2 above, executed. It is
+  the only one of the three that has moved; SaaSHub and G2 are still off, and
+  the Reddit lever is blocked on an account that can post.
+- **What it should and should not be credited with.** The 09-06 read found us
+  absent from every "where do I practice SQL" answer *because* we are absent
+  from the lists those answers are assembled from. If the 2026-10-07 read
+  shows us named on a `practice_where` prompt, the listing is the leading
+  candidate — but AlternativeTo is one list among several the engines quote,
+  so a still-absent result on 10-07 does **not** falsify the lever this soon.
+  A directory listing has to be indexed, then crawled into a model's or a
+  retriever's corpus; one month is early. Record the live date when it lands
+  and judge the lever on the read after next, not the next one.
+
 ## Next read
 
 Fleet `ai-visibility`, first API run after install (needs GEMINI / OPENAI /
