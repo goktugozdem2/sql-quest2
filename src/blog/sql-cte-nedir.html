@@ -20,7 +20,7 @@
   <script type="application/ld+json">
   {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
     {"@type":"Question","name":"CTE nedir?","acceptedAnswer":{"@type":"Answer","text":"CTE (Common Table Expression), WITH anahtar kelimesiyle isim verilen ve ana sorguda tablo gibi kullanılabilen alt sorgudur: WITH isim AS (SELECT ...) SELECT * FROM isim. Yalnızca o ifade boyunca yaşar."}},
-    {"@type":"Question","name":"CTE ne işe yarar?","acceptedAnswer":{"@type":"Answer","text":"Üç şey: okunabilirlik (sorgu tarif gibi yukarıdan aşağı okunur), tekrar kullanım (aynı ara sonuç ana sorguda birden çok kez adıyla çağrılır) ve özyineleme (WITH RECURSIVE, derinliği bilinmeyen hiyerarşileri gezebilir)."}},
+    {"@type":"Question","name":"WITH kullanımı nasıl? Sözdizimi nedir?","acceptedAnswer":{"@type":"Answer","text":"Kalıp şudur: WITH ad AS ( SELECT ... ) SELECT ... FROM ad. WITH sorgunun en başına bir kez yazılır; ikinci bir CTE eklemek için tekrar WITH değil, virgül kullanılır. Bir CTE kendinden öncekini görebilir, sonrakini göremez, ve yalnızca o sorgu boyunca yaşar."}},{"@type":"Question","name":"CTE ne işe yarar?","acceptedAnswer":{"@type":"Answer","text":"Üç şey: okunabilirlik (sorgu tarif gibi yukarıdan aşağı okunur), tekrar kullanım (aynı ara sonuç ana sorguda birden çok kez adıyla çağrılır) ve özyineleme (WITH RECURSIVE, derinliği bilinmeyen hiyerarşileri gezebilir)."}},
     {"@type":"Question","name":"CTE sorguyu hızlandırır mı?","acceptedAnswer":{"@type":"Answer","text":"Hayır — modern veritabanları (PostgreSQL 12+, MySQL 8+, SQL Server, SQLite) CTE'yi alt sorgu yazılmış gibi optimize eder. CTE performans değil okunabilirlik aracıdır."}},
     {"@type":"Question","name":"CTE ile geçici tablo arasındaki fark nedir?","acceptedAnswer":{"@type":"Answer","text":"CTE tek sorgu boyunca yaşar ve diske yazılmaz; geçici tablo oturum boyunca kalır. Aynı ara sonucu birden çok ayrı sorgu kullanacaksa geçici tablo, tek sorgu kullanacaksa CTE doğru araçtır."}}
   ]}
@@ -110,6 +110,15 @@
 <script type="application/json" id="sq-quiz">{"topic":"CTE (WITH)","questions":[{"q":"Tek cümleyle — CTE nedir?","options":["Şemada saklanan kayıtlı sorgu","WITH ile isim verilen, tablo gibi SELECT edilebilen alt sorgu","Oturum boyunca yaşayan geçici tablo","Alt sorguları hızlandıran bir indeks"],"correct":1,"why":"WITH isim AS (...) — tek ifade boyunca yaşayan isimli alt sorgu. Şemada saklanan VIEW, oturum boyu yaşayan TEMP TABLE'dır. Aynı isimlendirme fikri, üç farklı ömür."},{"q":"<code>WITH m AS (SELECT name, salary FROM employees) SELECT name, salary, hire_date FROM m</code> — ne olur?","options":["Çalışır, hire_date employees'tan gelir","Hata: no such column hire_date","Çalışır ama hire_date NULL döner","Motora göre değişir"],"correct":1,"why":"CTE yalnızca kendi SELECT'indeki sütunları dışarı verir. hire_date employees'ta var ama m'de yok. Gerçek bir kullanıcı bu hatayla mülakat hazırlığında 45 dakika kaybetti — sen bedavaya öğrendin."},{"q":"CTE sorguyu hızlandırır mı?","options":["Evet — motor CTE'yi önbelleğe alır","Hayır — modern motorlar içeri açar; CTE okunabilirlik aracıdır","Sadece indeksle birlikte","CTE her zaman yavaşlatır"],"correct":1,"why":"PostgreSQL 12+, MySQL 8+, SQL Server ve SQLite CTE'yi alt sorgu gibi optimize eder. \"CTE yavaştır\" lafı, yıllar önce değişen PostgreSQL ≤11 davranışının fosilidir."}],"cta":{"href":"/app?challenge=your-first-with&src=blog-tr-cte","label":"İlk WITH'ini yaz →","high":"Modeli doğru kurmuşsun — üretimde insanları yakalayan kapsam tuzağı dahil. Tek gerçek sorguyla kalıcılaştır. Ücretsiz, kayıt yok.","low":"WITH'in sıradanlaşmasının (hedef bu!) en hızlı yolu, fikir küçükken bir tane yazmak. Ücretsiz, kayıt yok."}}</script>
 <div id="sq-quiz-root"></div>
 
+  <h2 id="with-kullanimi">WITH kullanımı: sözdizimi ve üç kural</h2>
+  <p>Yazımı tek kalıptır: <code>WITH ad AS ( ... ) SELECT ... FROM ad</code>. Parantezin içi sıradan bir <code>SELECT</code>'tir; dışarıdaki sorgu ona verdiğin ismi tablo gibi kullanır.</p>
+  <p>Üç kural, sırasıyla en çok takılınanlar:</p>
+  <ol>
+    <li><strong>WITH sorgunun en başına gelir</strong> — <code>SELECT</code>'ten önce, tek sefer. İkinci bir CTE için <code>WITH</code>'i tekrar yazmazsın, virgül koyarsın.</li>
+    <li><strong>Bir CTE kendinden öncekini görebilir, sonrakini göremez.</strong> Sıralama önemlidir.</li>
+    <li><strong>CTE yalnızca o sorgu boyunca yaşar.</strong> Kalıcı bir nesne değildir — bir sonraki sorguda adı yoktur.</li>
+  </ol>
+
   <h2 id="coklu">Virgülle çoklu CTE: isimli adımlardan boru hattı</h2>
   <div class="code-block"><div class="code-label">İki CTE — ikincisi birincisini kullanıyor</div><pre><code><span class="kw">WITH</span> muhendisler <span class="kw">AS</span> (
   <span class="kw">SELECT</span> name, salary <span class="kw">FROM</span> employees <span class="kw">WHERE</span> department = <span class="str">'Engineering'</span>
@@ -130,6 +139,8 @@ kidemliler <span class="kw">AS</span> (
   </ul>
 
   <h2 id="sss">Sık sorulanlar</h2>
+  <h3>WITH kullanımı nasıl? Sözdizimi nedir?</h3>
+  <p>Kalıp şudur: <code>WITH ad AS ( SELECT ... ) SELECT ... FROM ad</code>. <code>WITH</code> sorgunun en başına bir kez yazılır; ikinci bir CTE eklemek için tekrar <code>WITH</code> değil, virgül kullanılır. <a href="#with-kullanimi">Üç kuralı yukarıda</a> ayrıntılı yazdım.</p>
   <h3>CTE neyin kısaltması?</h3>
   <p>Common Table Expression — "ortak tablo ifadesi". İsim, kavramdan karışık: "isimli alt sorgu" üç kelimeden daha iyi anlatır.</p>
   <h3>CTE ile VIEW farkı ne?</h3>

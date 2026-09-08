@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SQL JOIN Nedir? INNER, LEFT ve Anti-Join — Türkçe, Gerçek Örneklerle | SQL Quest</title>
+  <title>SQL JOIN ve LEFT JOIN Nedir? INNER, LEFT, Anti-Join — Türkçe Örneklerle | SQL Quest</title>
   <meta name="description" content="JOIN, iki tabloyu ortak bir sütun üzerinden birleştirir. INNER JOIN yalnızca eşleşenleri, LEFT JOIN sol tablonun tamamını döndürür. Gerçek satır sayılarıyla (40 vs 46), WHERE-ON tuzağı ve anti-join — hepsi tarayıcıda çalıştırılabilir.">
   <meta name="keywords" content="sql join nedir, inner join nedir, left join nedir, sql tablo birleştirme, left join inner join farkı, sql join örnekleri, join türleri">
   <meta name="robots" content="index, follow">
@@ -15,12 +15,12 @@
   <meta property="og:image" content="https://sqlquest.app/og-image.png">
   <meta name="twitter:card" content="summary_large_image">
   <script type="application/ld+json">
-  {"@context":"https://schema.org","@type":"Article","headline":"SQL JOIN Nedir? INNER, LEFT ve Anti-Join — Türkçe, Gerçek Örneklerle","description":"JOIN, iki tabloyu ortak bir sütun üzerinden birleştirir. INNER JOIN yalnızca eşleşenleri, LEFT JOIN sol tablonun tamamını döndürür. Gerçek satır sayılarıyla (40 vs 46), WHERE-ON tuzağı ve anti-join — hepsi tarayıcıda çalıştırılabilir.","url":"https://sqlquest.app/blog/sql-join-nedir/","datePublished":"2026-08-02","dateModified":"2026-08-02","author":{"@type":"Organization","name":"SQL Quest","url":"https://sqlquest.app/"},"publisher":{"@type":"Organization","name":"SQL Quest","logo":{"@type":"ImageObject","url":"https://sqlquest.app/og-image.png"}},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"Blog","item":"https://sqlquest.app/blog/"},{"@type":"ListItem","position":3,"name":"SQL JOIN Nedir?","item":"https://sqlquest.app/blog/sql-join-nedir/"}]}}
+  {"@context":"https://schema.org","@type":"Article","headline":"SQL JOIN ve LEFT JOIN Nedir? INNER, LEFT ve Anti-Join — Türkçe, Gerçek Örneklerle","description":"JOIN, iki tabloyu ortak bir sütun üzerinden birleştirir. INNER JOIN yalnızca eşleşenleri, LEFT JOIN sol tablonun tamamını döndürür. Gerçek satır sayılarıyla (40 vs 46), WHERE-ON tuzağı ve anti-join — hepsi tarayıcıda çalıştırılabilir.","url":"https://sqlquest.app/blog/sql-join-nedir/","datePublished":"2026-08-02","dateModified":"2026-08-02","author":{"@type":"Organization","name":"SQL Quest","url":"https://sqlquest.app/"},"publisher":{"@type":"Organization","name":"SQL Quest","logo":{"@type":"ImageObject","url":"https://sqlquest.app/og-image.png"}},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"Blog","item":"https://sqlquest.app/blog/"},{"@type":"ListItem","position":3,"name":"SQL JOIN Nedir?","item":"https://sqlquest.app/blog/sql-join-nedir/"}]}}
   </script>
   <script type="application/ld+json">
   {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
     {"@type":"Question","name":"SQL JOIN nedir?","acceptedAnswer":{"@type":"Answer","text":"JOIN, iki tabloyu ortak bir sütun üzerinden birleştiren SQL işlemidir. Örneğin müşteriler ve siparişler ayrı tablolardayken, JOIN customer_id köprüsüyle her siparişin yanına sahibinin bilgilerini getirir."}},
-    {"@type":"Question","name":"INNER JOIN ile LEFT JOIN arasındaki fark nedir?","acceptedAnswer":{"@type":"Answer","text":"INNER JOIN yalnızca iki tarafta da eşleşme olan satırları döndürür. LEFT JOIN sol tablonun tüm satırlarını korur; eşleşme olmayan satırlarda sağ tablonun sütunları NULL ile doldurulur. Aynı veride LEFT JOIN her zaman en az INNER JOIN kadar satır döndürür."}},
+    {"@type":"Question","name":"LEFT JOIN nedir, ne zaman kullanılır?","acceptedAnswer":{"@type":"Answer","text":"LEFT JOIN sol tablonun tüm satırlarını korur, sağ tablodan eşleşme bulamazsa o sütunları NULL bırakır. Listenin eksilmemesi gereken her yerde — müşteri raporları, panolar, kapsama kontrolü — doğru seçim odur."}},{"@type":"Question","name":"INNER JOIN ile LEFT JOIN arasındaki fark nedir?","acceptedAnswer":{"@type":"Answer","text":"INNER JOIN yalnızca iki tarafta da eşleşme olan satırları döndürür. LEFT JOIN sol tablonun tüm satırlarını korur; eşleşme olmayan satırlarda sağ tablonun sütunları NULL ile doldurulur. Aynı veride LEFT JOIN her zaman en az INNER JOIN kadar satır döndürür."}},
     {"@type":"Question","name":"LEFT JOIN sonrası WHERE neden satırları kaybettiriyor?","acceptedAnswer":{"@type":"Answer","text":"Eşleşmeyen satırlarda sağ tablonun sütunları NULL olur ve NULL ile yapılan karşılaştırmalar hiçbir zaman doğru sonuç vermez. WHERE bu satırları eler ve LEFT JOIN fiilen INNER JOIN'e döner. Sağ tabloya ait koşullar ON içine yazılmalıdır."}},
     {"@type":"Question","name":"Hiç sipariş vermeyen müşteriler nasıl bulunur?","acceptedAnswer":{"@type":"Answer","text":"Anti-join ile: müşterileri siparişlere LEFT JOIN ile bağlayıp WHERE o.order_id IS NULL koşulunu ekleyin. NULL kalan satırlar, hiç eşleşmesi olmayan — yani hiç sipariş vermemiş — müşterilerdir."}}
   ]}
@@ -93,6 +93,11 @@
 <span class="kw">INNER JOIN</span> orders o <span class="kw">ON</span> o.customer_id = c.customer_id;</code></pre></div>
   <p><code>ON</code> satırı köprüdür: "orders'taki customer_id, customers'taki customer_id'ye eşitse bu satırlar birbirine ait." Sonuç: <strong>40 satır</strong> — her sipariş, sahibinin adıyla yan yana.</p>
 
+  <h2 id="left-join-nedir">LEFT JOIN nedir?</h2>
+  <p><strong>LEFT JOIN, sol tablonun her satırını sonuçta tutar</strong> ve sağ tablodan eşleşen varsa onu ekler; eşleşme yoksa sağ tarafın sütunlarını <code>NULL</code> ile doldurur. Tek cümlelik kuralı budur.</p>
+  <p>Pratikte önemi şu: <code>INNER JOIN</code> "iki tarafta da karşılığı olan" satırları verir, <code>LEFT JOIN</code> ise "soldakilerin hepsi, sağdan bulabildiğin kadarı". Müşteri listesi, ürün kataloğu, personel tablosu — soldaki liste eksilmemeliyse LEFT JOIN kullanırsın. SQL joinler arasında raporlamada en sık gerekeni de odur.</p>
+  <p>Aşağıdaki bölüm bunu 16 müşterilik gerçek bir tabloda gösteriyor: aynı sorgu INNER ile 40, LEFT ile 46 satır döndürüyor.</p>
+
   <h2 id="fark">INNER ile LEFT'in farkı: kaybolan 6 müşteri</h2>
   <p>16 müşterinin 6'sı hiç sipariş vermemiş. INNER JOIN'de bu 6 kişi <strong>sonuçta hiç görünmez</strong> — eşleşme yoksa satır da yok. Aynı sorguyu <code>LEFT JOIN</code> ile yazınca:</p>
   <div class="code-block"><div class="code-label">LEFT JOIN — 46 satır: 40 eşleşme + 6 NULL dolgulu müşteri</div><pre><code><span class="kw">SELECT</span> c.name, o.product, o.total
@@ -135,6 +140,8 @@
   <p><a class="practice-link" href="/app/?challenge=175&amp;src=blog-tr-join" data-track="cta_practice_tr_join_mid">▶ Şimdi kendin yaz: LEFT JOIN — NULL'ların Belirişini İzle</a></p>
 
   <h2 id="sss">Sık sorulanlar</h2>
+  <h3>LEFT JOIN nedir, ne zaman kullanılır?</h3>
+  <p>LEFT JOIN sol tablonun tüm satırlarını korur, sağdan eşleşme bulamazsa o sütunları <code>NULL</code> bırakır. "Listem eksilmesin, detay varsa gelsin" dediğin her yerde — müşteri raporu, panolar, kapsama kontrolü — doğru seçim odur. <a href="#left-join-nedir">Yukarıdaki bölümde</a> 16 müşteri üzerinde satır satır görebilirsin.</p>
   <h3>RIGHT JOIN ve FULL JOIN ne işe yarar?</h3>
   <p><code>A RIGHT JOIN B</code>, tabloların yeri değişmiş <code>B LEFT JOIN A</code>'dır — çoğu ekip yalnızca LEFT kullanır. <code>FULL OUTER JOIN</code> iki tarafın da eşleşmeyenlerini tutar; iki sistemi karşılaştırırken ("kim kimde eksik?") işe yarar.</p>
   <h3>LEFT OUTER JOIN farklı bir şey mi?</h3>

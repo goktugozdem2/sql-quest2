@@ -250,7 +250,7 @@ SQL Quest's strongest positioning: "the only SQL practice site that feels like a
 - IS NULL vs = NULL — Why Your WHERE Clause Returns Nothing — https://sqlquest.app/blog/is-null-vs-equals-null/
 - SQL Running Total — SUM() OVER (ORDER BY), Runnable Example (2026) — https://sqlquest.app/blog/sql-running-total/
 - SQL Anti-Join — Finding Rows With No Match (3 Spellings, 1 Trap) — https://sqlquest.app/blog/sql-anti-join/
-- SQL JOIN Nedir? INNER, LEFT ve Anti-Join — Türkçe, Gerçek Örneklerle — https://sqlquest.app/blog/sql-join-nedir/
+- SQL JOIN ve LEFT JOIN Nedir? INNER, LEFT, Anti-Join — Türkçe Örneklerle — https://sqlquest.app/blog/sql-join-nedir/
 - SQL'de CTE (WITH) Nedir? Tek Sorguyla Türkçe Anlatım — https://sqlquest.app/blog/sql-cte-nedir/
 - What the Capital One CodeSignal Data Analyst Assessment Actually Asks (Candidate Reports, 2021–2026) — https://sqlquest.app/blog/capital-one-codesignal-data-analyst-assessment/
 
