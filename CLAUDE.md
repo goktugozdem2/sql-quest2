@@ -86,6 +86,13 @@ Key routing rules:
 
 ---
 
+## Objectives — read this first
+`docs/agent/objectives.md` holds the current objective, its measured starting
+point, its checkpoints and what we would conclude at each. The ledger holds
+claims; objectives hold what the claims are *for*. Read it at the start of a
+session, before the ledger. Current: **50 paying customers per month by
+2026-12-08**, from 2 on 2026-09-09.
+
 ## Data-driven development
 The operating system for measurement and product decisions is
 `docs/data-driven-product.md` — principles (people-not-events, kill
