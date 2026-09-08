@@ -95,6 +95,100 @@ bank, both Pro. Show a goal-holder their own remaining path with the locked
 steps visible and the sentence writes itself — it is about their interview,
 not about our feature list.
 
+## What we ask today, and what we could ask instead
+
+We ask in three places and they do not know about each other.
+
+**1. The intent ask** — one question, after the first solve (`src/app.jsx`):
+
+> *"What brings you to SQL Quest? Your answer shapes what we recommend next."*
+> 🎯 I'm preparing for an interview at a specific company · 💼 Getting
+> job-ready or switching careers · 📚 Learning SQL for my job or school ·
+> *Just exploring*
+
+**2. The Coach goal picker** — three goals: SQL Fundamentals Mastery (15h),
+Analyst Day-One (20h), SQL Interview Prep (25h).
+
+**3. `userGoals`** — sector / role / motivation / target company. Documented in
+CLAUDE.md as driving Coach ordering, tutor analogies and "Personalized for
+[sector]" badges. Measured 2026-09-08 over 652 active users: **sector 10,
+role 0, motivation 0, target 0.** It is not populated.
+
+### Five problems
+
+1. **Questions 1 and 2 ask nearly the same thing and are not connected.**
+   Someone who answers "preparing for an interview at a specific company" is
+   then asked to choose a goal from scratch. The intent answer does not
+   pre-select anything. Part of why only 94 of 652 have a goal: we ask twice
+   and people skip the second.
+2. **We capture intent and barely use it.** `getUserIntent()` has six call
+   sites — two stamp analytics, four sit in a single UI branch. It does not
+   change the paywall copy, the recommended challenge, or the goal. It is the
+   strongest conversion signal we have measured and the product does not read
+   it.
+3. **There is no "exam" option, and that may be expensive.** A student
+   preparing for a midterm falls into "Learning SQL for my job or school",
+   and `learning` produced **41 shown → 0 clicked** over 60 days. If what
+   predicts payment is a *deadline*, an exam date is the same class as an
+   interview date — and we may be filing a deadline-driven segment into the
+   bucket that never buys.
+4. **Sector is never asked**, against 97 sector challenges that exist.
+5. **The options are English-only, hardcoded in JSX with no `i18n_t`**, in a
+   bilingual app.
+
+### The rule: only ask what changes what we serve
+
+A question with no content behind it costs completion and returns a label.
+Inventory, measured 2026-09-08:
+
+| Axis | We can serve | We cannot |
+|---|---|---|
+| **Sector** | finans 57 · card_analytics 25 · fraud 17 · gayrimenkul 20 · üretim 20 | e-commerce (dataset exists, no sector bank) · health **0** · education **0** |
+| **Role** | 8 mock interviews differentiate: Entry/Mid Data Analyst, Senior Data Engineer, Business Analyst, Backend/SWE | — and the mock bank is mostly Pro |
+| **Deadline** | interview (23 company pages) · starting a job (analyst-day-one) | **exam — nothing** |
+
+So asking "health or education?" would be a content claim we cannot back.
+Asking a working learner whether they want to be a data engineer changes
+nothing we serve. **Exam is different and can be asked**: it is a *deadline*
+type, not a content claim, and the fundamentals goal genuinely covers a
+university SQL syllabus. We can route it honestly while finding out whether
+the segment is real.
+
+### Proposed: a branch, not a form. Two taps maximum.
+
+**Q1, everyone:** *"What are you working toward?"*
+
+| Answer | Q2 | Routes to |
+|---|---|---|
+| 🎯 An interview | which company? → which role? | 23 company pages + role-differentiated mock bank |
+| 📅 An exam | — | fundamentals goal (+ the segment measurement) |
+| 💼 Starting a job / changing careers | — | analyst-day-one goal |
+| 📈 I use SQL at work | which sector? **only** finans / gayrimenkul / üretim / other | sector bank |
+| 🧭 Not sure yet | — | placement check |
+
+"Other" instead of inventing options: the count of people choosing it tells us
+which sector bank to write next. More honest and more informative than a menu
+of things we do not have.
+
+Then the answer must flow downstream — pre-select the Coach goal, choose the
+paywall sentence, order the recommendations. None of that happens today.
+
+### Do not add branches before the first question completes
+
+**111 of 384 people have no intent recorded at all.** We ask exactly one
+question and 29% of the answers are missing. Adding branches to a question
+that is not being answered adds unanswered branches. Find out why the first
+one is blank before designing the second.
+
+### Sequence
+
+1. **Now, free:** ask the 61 dismissers **open-ended** — "what were you working
+   toward?", no categories offered. Their own words tell us which buckets are
+   real. Whether "exam" is a segment or a box I invented is exactly the thing
+   to learn before writing a button for it.
+2. **After 2026-09-29:** ship the branch as part of move 1, by which time we
+   know which options are real.
+
 ## The four moves, in order
 
 ### 1. Ask the right people — ship after 2026-09-29
