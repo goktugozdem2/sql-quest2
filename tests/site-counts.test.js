@@ -257,7 +257,17 @@ export function findStalePro19(text, modal) {
 // words may sit between: "257 hands-on SQL challenges". A digit between
 // ("195 of 257 challenges") stops the shorter match, so 257 is the claim.
 // Only N ≥ 100 is a bank-size claim; "12 fraud challenges" is a track.
-const COUNT_CLAIM = /(?<![\w$.,-])(\d+)(\+?)(?=(?:[\s-]+[A-Za-z][\w'+-]*){0,3}[\s-]+(?:challenges?|exercises)\b)/g;
+// "problems" joins the vocabulary 2026-09-09. /sql-exercises/ published
+// "285 Problems With Solutions" in its <title>, og:title and H1 while its body
+// said 287, and /sql-quiz/ said "SQL Quest's challenge bank (285 problems, 219
+// free)" — the "219 free" half was corrected by FREE_CLAIM the day before and
+// the "285 problems" half was not, because this pattern only knew two nouns.
+// The `~` in the lookbehind is what keeps competitor figures out: this codebase
+// writes someone else's number as an approximation ("~250 problems" for
+// HackerRank's SQL track, "~50-80 problems" for LeetCode's free set) and its
+// own as an exact count. Verified 2026-09-09: zero of our own counts are
+// written with a tilde.
+const COUNT_CLAIM = /(?<![\w$.,~-])(\d+)(\+?)(?=(?:[\s-]+[A-Za-z][\w'+-]*){0,3}[\s-]+(?:challenges?|exercises|problems)\b)/g;
 const FREE_CLAIM = /(?<![\w$.,-])(\d+)(\+?) free\b/g;
 
 const floor50 = n => Math.floor(n / 50) * 50;
@@ -304,6 +314,22 @@ export function findChallengeClaims(text, facts) {
     for (const m of s.text.matchAll(COUNT_CLAIM)) {
       const n = Number(m[1]);
       if (n < 100) continue;
+      // "problems" carries THREE senses on this site and only one of them is a
+      // claim about our bank:
+      //   ours      — "SQL Quest's challenge bank (285 problems, 219 free)"
+      //   theirs    — "LeetCode's Database section has roughly 250 SQL problems"
+      //   advice    — "For senior roles: 150+ problems plus ability to reason…"
+      // Excluding the last two needed two more rules, and a matcher that needs
+      // three exclusions to stay quiet will fire on the next page somebody
+      // writes. So `problems` counts only when the sentence NAMES US, which is
+      // the one sense we can identify without guessing.
+      //
+      // Known limit, accepted deliberately: a claim like /sql-exercises/'s meta
+      // description — "SQL exercise bank of 287 hands-on problems" — does not
+      // name us and is therefore not covered. `challenges` and `exercises` are
+      // our own vocabulary and stay unconditional; this narrowing applies to
+      // `problems` alone.
+      if (/^\d+\+?\s+(?:[A-Za-z][\w'+-]*[\s-]+){0,3}problems\b/i.test(m.input.slice(m.index)) && !namesUs(s.text)) continue;
       const why = challengeClaimVerdict(n, plusLike(m, s.text), s.text, facts);
       if (why) offenders.push({ index: s.index + m.index, why, text: s.text });
     }
