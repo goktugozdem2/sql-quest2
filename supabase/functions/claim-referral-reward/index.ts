@@ -148,23 +148,37 @@ Deno.serve(async (req) => {
       return json({ ok: false, error: 'update_failed' }, 500)
     }
 
-    // Best-effort audit trail in pro_events table (if exists). Non-fatal.
-    try {
-      await supabase.from('pro_events').insert({
-        username:    userRow.username,
-        event_type:  'referral_claim',
-        plan_type:   userData.proType,
-        amount_cents: 0,
-        metadata: {
-          earned, claimed_before: claimed, granted: delta,
-          new_pro_expiry: newProExpiryIso,
-          stats: {
-            signups:     Number(stats.signups) || 0,
-            conversions: Number(stats.conversions) || 0,
-          },
+    // Audit trail. This records a Pro GRANT, so a silent loss here is the
+    // worst kind: the days are given and nothing says to whom or why.
+    //
+    // Fixed 2026-09-08. This insert used to carry `event_type`, `plan_type`
+    // and `amount_cents` — those are `referrals` columns, copy-pasted. The
+    // real shape of `pro_events` is (id, event, username, reason, metadata,
+    // created_at), so PostgREST rejected the row with PGRST204 every time.
+    // The try/catch could not save it either: supabase-js RESOLVES with
+    // `{ error }` on a rejected insert, it does not throw, so the catch never
+    // fired and nobody ever inspected the error. It is checked and logged now.
+    const { error: auditErr } = await supabase.from('pro_events').insert({
+      event:    'referral_claim',
+      username: userRow.username,
+      reason:   'referral_reward',
+      metadata: {
+        earned, claimed_before: claimed, granted: delta,
+        proType: userData.proType,
+        new_pro_expiry: newProExpiryIso,
+        stats: {
+          signups:     Number(stats.signups) || 0,
+          conversions: Number(stats.conversions) || 0,
         },
-      })
-    } catch (_) { /* ignore — audit logging is best-effort */ }
+      },
+    })
+    if (auditErr) {
+      // Still non-fatal — the user has their days and must not be told the
+      // claim failed — but it is now visible in the function logs instead of
+      // vanishing.
+      console.error('[claim-referral-reward] AUDIT ROW LOST:', auditErr.message,
+        'user:', userRow.username, 'granted:', delta)
+    }
   }
 
   return json({
