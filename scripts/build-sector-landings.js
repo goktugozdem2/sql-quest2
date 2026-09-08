@@ -440,6 +440,7 @@ const faqc=document.getElementById('faqc');
 FAQS.forEach(f=>{const d=document.createElement('div');d.className='fi';d.innerHTML=\`<div class="fh"><p style="font-size:16px;font-weight:700;color:#e2e8f0;padding-right:16px">\${f[0]}</p><span class="ftg">+</span></div><div class="fa"><p style="font-size:14px;line-height:1.8;color:#94a3b8;padding-top:12px">\${f[1]}</p></div>\`;d.addEventListener('click',()=>d.classList.toggle('o'));faqc.appendChild(d);});
 </script>
 
+<script defer src="/track.js"></script>
 </body>
 </html>
 `;
