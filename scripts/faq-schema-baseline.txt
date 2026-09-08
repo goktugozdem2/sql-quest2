@@ -1,0 +1,119 @@
+# FAQPage schema questions that do not appear on their page.
+#
+# A RATCHET, in the same shape as scripts/content-lint-baseline.txt: these are
+# the violations that existed when tests/faq-schema.test.js was written on
+# 2026-09-08. The guard fails on anything NOT in this list, and it also fails
+# when a line here is fixed but not removed — so the file can only shrink.
+#
+# NEVER ADD A LINE. A new page with a mismatched FAQ is a bug to fix, not a
+# line to append. Removing one means the question now genuinely appears on the
+# page — either write the visible Q&A, or delete the question from the schema.
+#
+# 103 lines across 24 pages at baseline. The homepage carries nine, which is
+# the highest-value nine to fix: it is the domain root and the page assistants
+# reach first.
+#
+# Format: <src path>\t<question>
+src/blog/is-null-vs-equals-null.html	Is NULL = NULL true in SQL?
+src/blog/is-null-vs-equals-null.html	What is the difference between COUNT(*) and COUNT(column)?
+src/blog/is-null-vs-equals-null.html	Why does NOT IN break when the list contains NULL?
+src/blog/is-null-vs-equals-null.html	Why does WHERE col = NULL return no rows?
+src/blog/left-join-vs-inner-join.html	Is LEFT JOIN the same as LEFT OUTER JOIN?
+src/blog/left-join-vs-inner-join.html	What does 'null-padded' mean in a SQL join?
+src/blog/left-join-vs-inner-join.html	What is the difference between LEFT JOIN and INNER JOIN?
+src/blog/left-join-vs-inner-join.html	When should I use LEFT JOIN instead of INNER JOIN?
+src/blog/left-join-vs-inner-join.html	Why did my LEFT JOIN return the same rows as an INNER JOIN?
+src/blog/null-handling-mistakes.html	How do aggregates like COUNT, SUM, and AVG handle NULL?
+src/blog/null-handling-mistakes.html	Should I use ISNULL or COALESCE?
+src/blog/null-handling-mistakes.html	What does three-valued logic mean in SQL?
+src/blog/null-handling-mistakes.html	What is the difference between COALESCE and NULLIF?
+src/blog/null-handling-mistakes.html	Why does NOT IN return no rows when the subquery has NULLs?
+src/blog/null-handling-mistakes.html	Why does col = NULL never return any rows?
+src/blog/recursive-cte-explained.html	Do all databases support recursive CTEs?
+src/blog/recursive-cte-explained.html	What is a recursive CTE?
+src/blog/recursive-cte-explained.html	What is the difference between UNION and UNION ALL in a recursive CTE?
+src/blog/recursive-cte-explained.html	When do I actually need a recursive CTE?
+src/blog/recursive-cte-explained.html	Why does my recursive CTE run forever?
+src/blog/row-number-vs-rank-vs-dense-rank.html	Is a tiebreaker required with ROW_NUMBER?
+src/blog/row-number-vs-rank-vs-dense-rank.html	What is the difference between ROW_NUMBER, RANK and DENSE_RANK?
+src/blog/row-number-vs-rank-vs-dense-rank.html	Which ranking function should I use for top-N per group?
+src/blog/row-number-vs-rank-vs-dense-rank.html	Why does RANK skip numbers after a tie?
+src/blog/sql-anti-join.html	What is a semi-join?
+src/blog/sql-anti-join.html	What is an anti-join in SQL?
+src/blog/sql-anti-join.html	Which is better, NOT EXISTS or NOT IN?
+src/blog/sql-anti-join.html	Why does NOT IN return no rows when the subquery has a NULL?
+src/blog/sql-case-when-tutorial.html	Can I use CASE WHEN to pivot data in SQL?
+src/blog/sql-case-when-tutorial.html	How does CASE WHEN handle NULL?
+src/blog/sql-case-when-tutorial.html	Should I use CASE WHEN, COALESCE, or IIF?
+src/blog/sql-case-when-tutorial.html	What does conditional aggregation mean and when do I use it?
+src/blog/sql-case-when-tutorial.html	What is the difference between simple CASE and searched CASE in SQL?
+src/blog/sql-cte-nedir.html	CTE ile geçici tablo arasındaki fark nedir?
+src/blog/sql-cte-nedir.html	CTE ne işe yarar?
+src/blog/sql-cte-tutorial.html	Are CTEs slower than subqueries?
+src/blog/sql-cte-tutorial.html	Can I have multiple CTEs in one query?
+src/blog/sql-cte-tutorial.html	What is a recursive CTE used for?
+src/blog/sql-cte-tutorial.html	What's the difference between CTE and a temporary table?
+src/blog/sql-cte-tutorial.html	When should I use a CTE instead of a subquery?
+src/blog/sql-for-ai-company-interviews.html	Do I need machine learning knowledge for an OpenAI or Anthropic SQL round?
+src/blog/sql-for-ai-company-interviews.html	How is a retention question different from a simple GROUP BY?
+src/blog/sql-for-ai-company-interviews.html	Is SQL Quest's AI tutor built on Claude?
+src/blog/sql-for-ai-company-interviews.html	What SQL do AI companies ask in data interviews?
+src/blog/sql-for-ai-company-interviews.html	What is sessionization and why do AI companies ask about it?
+src/blog/sql-for-fraud-analytics.html	Can I become a fraud analyst with just SQL skills?
+src/blog/sql-for-fraud-analytics.html	How do I practice fraud SQL without access to real transaction data?
+src/blog/sql-for-fraud-analytics.html	How is fraud SQL different from analytics SQL?
+src/blog/sql-for-fraud-analytics.html	What SQL skills does a fraud analyst need?
+src/blog/sql-for-fraud-analytics.html	What's the difference between bank-level and transaction-level fraud detection?
+src/blog/sql-group-by-tutorial.html	Can I use GROUP BY without an aggregate function?
+src/blog/sql-group-by-tutorial.html	How do I count rows that meet a condition in SQL?
+src/blog/sql-group-by-tutorial.html	What does ROLLUP do in SQL?
+src/blog/sql-group-by-tutorial.html	What is conditional aggregation and why is it useful?
+src/blog/sql-group-by-tutorial.html	What is the difference between WHERE and HAVING in SQL?
+src/blog/sql-group-by-tutorial.html	Why does GROUP BY require every non-aggregated column in SELECT?
+src/blog/sql-join-nedir.html	Hiç sipariş vermeyen müşteriler nasıl bulunur?
+src/blog/sql-join-nedir.html	INNER JOIN ile LEFT JOIN arasındaki fark nedir?
+src/blog/sql-join-nedir.html	LEFT JOIN sonrası WHERE neden satırları kaybettiriyor?
+src/blog/sql-joins-explained.html	How do I handle the case where my JOIN multiplies rows?
+src/blog/sql-joins-explained.html	Is RIGHT JOIN ever the right choice?
+src/blog/sql-joins-explained.html	Should I use SELECT * with JOINs?
+src/blog/sql-joins-explained.html	What is an anti-join?
+src/blog/sql-joins-explained.html	What is the difference between INNER JOIN and LEFT JOIN?
+src/blog/sql-joins-explained.html	Why does my LEFT JOIN behave like an INNER JOIN?
+src/blog/sql-running-total.html	How do I calculate a running total in SQL?
+src/blog/sql-running-total.html	How do I make a running total per customer or per account?
+src/blog/sql-running-total.html	How were running totals done before window functions?
+src/blog/sql-running-total.html	Why do tied dates show the same running total?
+src/blog/time-series-sql-hardware-interviews.html	Do I need hardware or automotive domain knowledge for these interviews?
+src/blog/time-series-sql-hardware-interviews.html	How do you find gaps in a sensor or reading sequence with SQL?
+src/blog/time-series-sql-hardware-interviews.html	What SQL do hardware and manufacturing companies ask in interviews?
+src/blog/time-series-sql-hardware-interviews.html	What is a window frame clause and why does it matter?
+src/blog/time-series-sql-hardware-interviews.html	What is the difference between RANK, DENSE_RANK and ROW_NUMBER?
+src/blog/what-is-a-cte-in-sql.html	Can a query have multiple CTEs?
+src/blog/what-is-a-cte-in-sql.html	Do CTEs make queries faster?
+src/blog/what-is-a-cte-in-sql.html	What columns does a CTE expose?
+src/blog/what-is-a-cte-in-sql.html	What is a CTE in SQL, in one sentence?
+src/blog/what-is-a-cte-in-sql.html	Why use a CTE instead of a subquery?
+src/blog/where-vs-having.html	Can HAVING be used without GROUP BY?
+src/blog/where-vs-having.html	Should non-aggregate conditions go in HAVING?
+src/blog/where-vs-having.html	What is the difference between WHERE and HAVING?
+src/blog/where-vs-having.html	Why does WHERE COUNT(*) > 5 give an error?
+src/blog/window-functions-tutorial.html	How are LAG and LEAD different?
+src/blog/window-functions-tutorial.html	What does PARTITION BY do?
+src/blog/window-functions-tutorial.html	What is the difference between RANK, DENSE_RANK, and ROW_NUMBER?
+src/blog/window-functions-tutorial.html	What is the difference between ROWS BETWEEN and RANGE BETWEEN?
+src/blog/window-functions-tutorial.html	What is the most common window function pattern in SQL interviews?
+src/blog/window-functions-tutorial.html	Why can't I filter on a window function in WHERE?
+src/index.html	Can I practice SQL with industry-specific data instead of generic ecommerce or movies?
+src/index.html	Does SQL Quest explain why my query is wrong?
+src/index.html	Does SQL Quest remember my progress between sessions?
+src/index.html	How is SQL Quest different from LeetCode for SQL?
+src/index.html	How is SQL Quest different from a video course?
+src/index.html	How is the AI tutor different from other SQL practice site AIs?
+src/index.html	Is SQL Quest free to use?
+src/index.html	What does the adaptive coach do?
+src/index.html	Will this help me pass a FAANG SQL interview?
+src/learn-sql-for-beginners.html	Do I need a programming background to learn SQL?
+src/sql-tutorial.html	How long does this SQL tutorial take to complete?
+src/turkce-sql-ogren.html	Sektör bazlı SQL pratiği var mı? Bankacılık, gayrimenkul, üretim?
+src/vs-datalemur.html	How does pricing compare between SQL Quest and DataLemur?
+src/vs-datalemur.html	Which one should I pick if I'm a complete SQL beginner?
