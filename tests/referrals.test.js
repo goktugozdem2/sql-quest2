@@ -1,4 +1,6 @@
 import { describe, it, expect } from 'vitest';
+import { readFileSync, existsSync } from 'fs';
+import { join } from 'path';
 import {
   REF_CODE_RE,
   normalizeRefCode,
@@ -208,5 +210,62 @@ describe('REFERRAL_TIERS / REFERRAL_PRO_CONVERSION_BONUS_DAYS — schema lock', 
 
   it('per-conversion bonus is exactly 30 days', () => {
     expect(REFERRAL_PRO_CONVERSION_BONUS_DAYS).toBe(30);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The reward formula lives in THREE places and the old comment above pointed
+// at `referrals-peer-setup.sql`, which does not exist — the SQL half was never
+// written, which is exactly how the peer loop shipped against a column and an
+// RPC that were never created (measured 2026-09-08: 103 referral rows, 37 ref
+// codes, ZERO personal codes ever). A comment saying "keep these in sync"
+// cannot fail. This can.
+// ---------------------------------------------------------------------------
+describe('the SQL rollup agrees with the JS formula', () => {
+  const MIGRATION = join(import.meta.dirname, '..', 'supabase', 'migrations', '20260908_referral_personal_codes.sql');
+  const sql = existsSync(MIGRATION) ? readFileSync(MIGRATION, 'utf8') : null;
+
+  it('the migration that defines get_my_referral_stats exists', () => {
+    expect(sql, `missing ${MIGRATION} — the peer referral loop has no server side`).toBeTruthy();
+    expect(sql).toMatch(/create or replace function public\.get_my_referral_stats/i);
+  });
+
+  it('creates the users.personal_ref_code both edge functions query', () => {
+    expect(sql).toMatch(/alter table public\.users add column if not exists personal_ref_code/i);
+    // A duplicate code would silently mis-attribute someone else's referrals.
+    expect(sql).toMatch(/create unique index[\s\S]*personal_ref_code/i);
+  });
+
+  it('its signup ladder is exactly REFERRAL_TIERS, highest-tier-wins', () => {
+    const ladder = [...sql.matchAll(/when coalesce\(a\.signups, 0\) >= (\d+) then (\d+)/gi)]
+      .map(m => ({ signups: Number(m[1]), days: Number(m[2]) }));
+    // SQL evaluates top-down, so the ladder is written highest-first; the JS
+    // loop takes the last tier that matches. Same rule, opposite order.
+    expect(ladder).toEqual([...REFERRAL_TIERS].reverse().map(t => ({ signups: t.signups, days: t.days })));
+  });
+
+  it('its per-conversion bonus is exactly REFERRAL_PRO_CONVERSION_BONUS_DAYS', () => {
+    const m = sql.match(/coalesce\(a\.conversions, 0\)::int \* (\d+)/i);
+    expect(m, 'the conversion bonus term is gone from the SQL').toBeTruthy();
+    expect(Number(m[1])).toBe(REFERRAL_PRO_CONVERSION_BONUS_DAYS);
+  });
+
+  it('reads the same event_type vocabulary the table actually uses', () => {
+    // Verified against the live table 2026-09-08: click / signup /
+    // pro_conversion. get_referral_stats (the campaign rollup) uses the same
+    // three; a fourth spelling here would silently count zero.
+    for (const t of ['click', 'signup', 'pro_conversion']) {
+      expect(sql).toContain(`r.event_type = '${t}'`);
+    }
+  });
+
+  it('never exposes the referrals table to anon — it carries ip_hash', () => {
+    expect(sql).toMatch(/security definer/i);
+    expect(sql).toMatch(/revoke all on function public\.get_my_referral_stats\(text\) from public, anon/i);
+  });
+
+  it('scopes the rollup to the caller\'s own code, so it cannot enumerate others', () => {
+    expect(sql).toMatch(/where username = p_username/i);
+    expect(sql).toMatch(/join me on r\.ref_code = me\.code/i);
   });
 });

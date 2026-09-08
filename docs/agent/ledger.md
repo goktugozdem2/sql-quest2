@@ -457,8 +457,14 @@ of the verifier and must never be rounded to `FLAT`.
   guard in `tests/review-ask.test.js` fails the build if an incentive word
   reaches the copy, in either language, and was mutation-verified.
 - **Why** the product has never once asked anybody anything. 318 public
-  profiles auto-published, `profile_link_copied` **zero rows ever**, referral
-  functions at zero events for months, 5 rows in `feedback`. There is no
+  profiles auto-published, `profile_link_copied` **zero rows ever**, the
+  peer-to-peer referral loop at zero personal-code rows in its whole history,
+  5 rows in `feedback`. (Corrected 2026-09-08: "referral functions at zero
+  events" was wrong — `referrals` holds 103 rows over 37 codes since
+  2026-04-29, all of them marketing campaign codes. The *personal* half is
+  what has never produced a row, and the cause is a missing column and a
+  missing RPC, not apathy — see the cold diagnosis in
+  `supabase/migrations/20260908_referral_personal_codes.sql`.) There is no
   third-party text about SQL Quest for Google or an AI assistant to read, and
   the AI-recommendation channel is the only one that has produced a paying
   customer (payer #2, Gemini, 2026-08-28). Related finding, measured

@@ -306,8 +306,11 @@ Verified, DNS records never added, service Disabled.
   feedback back out. Verified: anon insert hits the CHECK (23514, permitted),
   anon select returns `[]`.
 - **Read it weekly — §16 of `scripts/funnel-report.sql`.** A channel nobody
-  reads is the same failure as the referral functions (deployed, wired, zero
-  events for months). n will be small: read the verbatims, don't aggregate.
+  reads is the same failure as the peer-to-peer referral loop (deployed,
+  wired, and pointed at a column and an RPC that were never created — see
+  `supabase/migrations/20260908_referral_personal_codes.sql`; the campaign
+  half of the same table has 103 rows). n will be small: read the verbatims,
+  don't aggregate.
 - Events: `feedback_opened` / `feedback_submitted` / `feedback_failed`.
   `feedback_failed` should stay at zero — a row there is someone who tried to
   reach us and couldn't.
