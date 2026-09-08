@@ -450,8 +450,8 @@ of the verifier and must never be rounded to `FLAT`.
   EN + TR. Also: the profile share link is surfaced on the same card, and the
   feedback flow gains an optional, default-off, separately-worded consent to
   be quoted (checkbox + display name + consent timestamp;
-  `supabase/migrations/20260907_feedback_quote_consent.sql`, **which the
-  founder must still apply**).
+  `supabase/migrations/20260907_feedback_quote_consent.sql`, **applied —
+  verified against the live schema 2026-09-08**).
 - **Nothing is offered in exchange for a review** — no discount, no XP, no Pro
   days, no badge. FTC 16 CFR Part 255 and every platform's terms; a source
   guard in `tests/review-ask.test.js` fails the build if an incentive word

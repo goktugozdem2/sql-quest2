@@ -1283,11 +1283,12 @@ Feedback submitters who explicitly consented to be quoted. Lives in
 table anon cannot read back out; only the boolean echoes into
 `feedback_submitted.quoteConsent`.
 
-Born with `supabase/migrations/20260907_feedback_quote_consent.sql`. **Not
-applied yet — the founder must run it.** Until then the client sends the three
-keys and PostgREST drops them, so the message lands and the consent does not:
-a NULL `quote_consent` in that period means "the column did not exist", which
-is indistinguishable from "never asked". Date the birth by the migration.
+Born with `supabase/migrations/20260907_feedback_quote_consent.sql`, **applied
+— verified 2026-09-08: `feedback` carries `quote_consent`, `quote_name` and
+`quote_consent_at`.** Before it was applied the client sent the three keys and
+PostgREST dropped them, so the message landed and the consent did not: a NULL
+`quote_consent` on any row written before that date means "the column did not
+exist", which is indistinguishable from "never asked". Date the birth by the migration.
 
 ```sql
 select created_at, quote_consent_at, quote_name, message,
