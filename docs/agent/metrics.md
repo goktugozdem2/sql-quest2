@@ -1276,6 +1276,38 @@ Traps, stated before the first read:
   instrumenting it, or check whether wall-hitters are eating the population
   (the same session that fires `content_lock_reached` can never fire this).
 
+## `paywall_ask_efficiency`
+
+**Clicks per person shown** — `pro_checkout_clicked` people divided by
+`pro_modal_shown` people, both by `COALESCE(aid, username)`, over a stated
+window. The one number the signup→subscriber plan
+(`docs/plans/signup-to-subscriber-2026-09-08.md`) is aimed at.
+
+Measured 2026-09-08 over 60 days: **282 people shown, 12 clicked = 4.3%**, and
+**4 of those 12 paid (33%)**. The two ends of the funnel are healthy — signups
++94% with the engaged share up to 64.5%, and a third of clickers buy. Only
+shown→click is broken.
+
+**Read clicks, never shows.** The intervention this metric exists to judge
+*deliberately reduces* the number of people shown, so a falling `shown` is the
+mechanism working. A falling absolute `clicked` is the failure.
+
+Companion splits, both measured 2026-09-08 and both worth carrying:
+
+- **By intent, 60 days:** `interview` 41 shown → 4 clicked; `job_ready` 48 → 2;
+  `learning` 41 → **0**; no intent captured 52 → **0**. 93 people shown, zero
+  clicks, no exception.
+- **By Coach goal, engaged users, 90 days:** with a goal 52 shown → 3 clicked
+  → **3 paid**; without one 78 shown → 6 clicked → **0 paid**. A goal does not
+  predict clicking (5.8% vs 7.7%) — it predicts *finishing*. **n = 3; Fisher
+  exact p ≈ 0.08.** A direction, not a result.
+
+**The trap this metric must not be used to justify.** Making goal-setting a
+step toward checkout would convert the goal from "I chose this deliberately"
+into "I clicked past a gate", and the 3/3 correlation would not survive it.
+The goal is most plausibly a marker of a real deadline, not a cause of
+payment. Never gate the offer on having set one.
+
 ## `referral_funnel`
 
 **People**, by `COALESCE(aid, username)`, through the peer-to-peer invite

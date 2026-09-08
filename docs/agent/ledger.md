@@ -698,6 +698,83 @@ of the verifier and must never be rounded to `FLAT`.
   target there is now harder to reach for a reason that has nothing to do
   with the surfaces.
 - **Verdict** _pending_
+### paywall: ask fewer people, at most twice, and never the ones who came to learn
+- **Claimed** 2026-09-08 — **NOT YET SHIPPED.** Ships after the cold-start read
+  on **2026-09-29**, because `purchases` is a directional guardrail on both
+  that claim and the paywall-surfaces claim reading 09-20, and changing who
+  sees the Pro modal moves it. Plan:
+  `docs/plans/signup-to-subscriber-2026-09-08.md`.
+- **Change** three things to the milestone Pro modal, together: never shown to
+  `learning` intent; shown to people with no captured intent only after asking
+  for the intent instead; and a hard lifetime cap of **two shows per person**.
+- **Why** measured 2026-09-08. Over 60 days the modal reached 282 people and
+  produced 12 checkout clicks (4.3%), of which 4 paid — a third of clickers
+  buy, so the bottom of the funnel is fine and the top is growing (+94%
+  signups, engaged share 55% → 64.5%). The break is shown→click, and two
+  things explain it. **Intent:** of people with a recorded intent, `interview`
+  went 41 shown → 4 clicked and `job_ready` 48 → 2, while `learning` (41) and
+  no-intent (52) produced **zero clicks between them** — 93 people, no
+  exception. **Fatigue:** 1.91 shows per person, **43 people saw it three or
+  more times and one saw it eight**, against a 95% dismiss rate. Solve count,
+  the thing the trigger is built on, does not predict clicking at all —
+  clickers averaged 11.4 solves against 13.4 for everyone shown.
+- **Metric** `paywall_ask_efficiency` (docs/agent/metrics.md). Baseline
+  **12 clicks / 282 people shown = 4.3%** over the 60 days to 2026-09-08.
+- **Guardrail** absolute `pro_checkout_clicked` people must not fall, and
+  `purchases`, directional only.
+- **Target** over the 8 weeks after ship: **shown→click ≥ 8.6%** (double)
+  **AND absolute clicks ≥ 12**, i.e. the same number of clicks from roughly
+  half the asks.
+- **Read on** **2026-11-24** (ship 09-29 + 8 weeks). Eight weeks, not two: the
+  baseline rests on 12 clicks, and a two-week window on this n reads noise.
+- **Falsification, stated in advance:**
+  - **Absolute clicks fall below 12** → the gate is cutting buyers we cannot
+    identify in advance. Revert the intent gate, keep the frequency cap, and
+    re-read the cap alone. The cap is the half of this change that cannot cost
+    us a buyer.
+  - **Rate below 6%** → intent is not the axis. Next move is moment, not
+    audience — i.e. move 2 of the plan, driven by the 09-20 read, not more
+    copy.
+  - **6-8.6% with clicks held** → inconclusive at this n, extend to 2026-12-22,
+    change nothing.
+  - **Any discount, urgency or scarcity appears in this modal** → revert
+    regardless of the numbers. Our buyers are deadline-driven, not
+    price-shopping, and we have never tested otherwise.
+- **Confounds** (i) it ships after two other paywall changes land, so the
+  09-20 and 09-29 verdicts must be written before this one starts. (ii) The
+  intent gate changes the *population* shown, so `shown` is not comparable
+  across the ship date — only clicks are. (iii) If the founder mails the 61
+  dismissers (move 4 of the plan) during the window, some of them may return
+  and buy for a reason that is not this change; record the send dates.
+- **Verdict** _pending_
+
+### goal-setting: a marker of a deadline, or something we can manufacture?
+- **Claimed** 2026-09-08 — **observation, not an intervention.** Nothing ships
+  for it. It exists so the tempting move is written down before somebody makes
+  it.
+- **The finding** among engaged users (5+ solves) over 90 days: 75 have a
+  Coach goal and 216 do not. Shown the modal: 52 vs 78. Clicked: 3 (5.8%) vs
+  6 (7.7%) — goal-setters click *less*. Paid: **3 vs 0.** Every paying
+  engaged customer had set a goal.
+- **Why it is not an instruction to make people set goals.** n = 3; Fisher
+  exact on 3/3 vs 0/6 gives **p ≈ 0.08**. And the causal reading matters more
+  than the p-value: a goal most plausibly *marks* somebody with a real
+  deadline rather than *causing* them to pay. Make goal-setting a step toward
+  checkout and it stops meaning "I chose this" and starts meaning "I clicked
+  past a gate" — the correlation would not survive its own exploitation.
+- **What to do instead** ask goal-less engaged users to set one because the
+  Coach works better with one (94 of 652 active users have a goal; 216 engaged
+  users do not), then watch whether the paid-vs-goal association survives the
+  larger population. If it holds at n ≥ 10 payers, it is real and worth
+  building on. If it dissolves, it was a marker and we learned that cheaply.
+- **Metric** the goal split under `paywall_ask_efficiency`.
+- **Read on** **2026-11-24**, alongside the claim above, or the first time
+  cumulative payers reach 10 — whichever is later.
+- **Falsification, stated in advance:** if by then goal-holders and
+  goal-less engaged users convert within a factor of two of each other, the
+  3/0 was noise and no offer should ever be conditioned on a goal.
+- **Verdict** _pending_
+
 ### grader: ties inside an ORDER BY no longer fail a correct query
 - **Claimed** 2026-09-06 — deployed 2026-09-06 13:42Z
 - **Change** `src/utils/grade.js` ordered mode is tie-tolerant: the SEQUENCE
