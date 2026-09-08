@@ -7642,6 +7642,28 @@ function SQLQuest() {
     } catch (_) { /* ignore */ }
   }, [activeTab, currentUser, isSessionLoading, showFirstRunSimpleShell, showFoundationsFocusShell]);
 
+  // Leaderboard-tab telemetry (2026-09-08). The referral loop's ONLY entry
+  // point in the whole app is the 🎁 button in this tab's header, and this tab
+  // had no view event at all — so "zero referrals" could not be read. It could
+  // mean nobody wants to invite anyone, or that nobody has ever been on this
+  // screen, and there was no way to tell. One event per user per day, same
+  // shape as coach_tab_viewed. Measurement only.
+  useEffect(() => {
+    if (activeTab !== 'leaderboard' || !currentUser || isSessionLoading) return;
+    try {
+      const day = new Date().toISOString().slice(0, 10);
+      const key = `sqlquest_board_view_${day}`;
+      if (localStorage.getItem(key)) return;
+      localStorage.setItem(key, '1');
+      trackActivationEvent('leaderboard_tab_viewed', {
+        // Guests see the invite button but cannot have a code, so they are a
+        // separate population in this funnel, not a smaller version of it.
+        isGuest: typeof currentUser === 'string' && currentUser.startsWith('guest_'),
+        boardSize: Array.isArray(leaderboard) ? leaderboard.length : null,
+      });
+    } catch (_) { /* ignore */ }
+  }, [activeTab, currentUser, isSessionLoading]);
+
   useEffect(() => {
     if (activeTab === 'quests' && practiceSubTab !== 'challenges') {
       setPracticeSubTab('challenges');
@@ -15506,6 +15528,18 @@ CRITICAL RULES:
   };
   
   const shareToplatform = (platform, type, data) => {
+    // 2026-09-08: which platform, and whether the click came from the invite
+    // modal or the general share button — the two are different intents and
+    // were indistinguishable. `hasCode` says whether the link carried a
+    // referral code at all; before the assigned-codes fix it never did.
+    try {
+      trackActivationEvent('share_clicked', {
+        platform,
+        shareKind: type || shareType,
+        fromReferralModal: !!showReferralModal,
+        hasCode: !!referralCode,
+      });
+    } catch (_) { /* analytics must never block a share */ }
     const content = getShareContent(type || shareType, data || shareData);
     const text = encodeURIComponent(content.text);
     const url = encodeURIComponent(getAppUrl());
@@ -23400,7 +23434,7 @@ RULES:
                 <div className="flex items-center gap-2">
                   <input readOnly value={getAppUrl()} className="flex-1 bg-gray-800 text-sm text-gray-300 px-3 py-2 rounded-lg border border-gray-700 truncate" />
                   <button 
-                    onClick={() => { navigator.clipboard.writeText(getAppUrl()); playSound('coin'); alert('Link copied!'); }}
+                    onClick={() => { trackActivationEvent('referral_link_copied', { hasCode: !!referralCode }); navigator.clipboard.writeText(getAppUrl()); playSound('coin'); alert('Link copied!'); }}
                     className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-black font-bold rounded-lg whitespace-nowrap"
                   >
                     📋 Copy
@@ -35732,7 +35766,7 @@ RULES:
                 <h2 className="text-2xl font-bold flex items-center gap-2"><Crown className="text-yellow-400" /> {i18n_t('board', 'title')}</h2>
                 <div className="flex items-center gap-2">
                   <button onClick={() => { setShareType('general'); setShareData(null); setShowShareModal(true); }} className="text-sm px-3 py-1.5 bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 rounded-lg border border-purple-500/30 transition-all">📤 {i18n_t('board', 'shareBtn')}</button>
-                  <button onClick={() => setShowReferralModal(true)} className="text-sm px-3 py-1.5 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 rounded-lg border border-yellow-500/30 transition-all">🎁 {i18n_t('board', 'inviteBtn')}</button>
+                  <button onClick={() => { trackActivationEvent('referral_modal_opened', { hasCode: !!referralCode, isGuest: typeof currentUser === 'string' && currentUser.startsWith('guest_') }); setShowReferralModal(true); }} className="text-sm px-3 py-1.5 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 rounded-lg border border-yellow-500/30 transition-all">🎁 {i18n_t('board', 'inviteBtn')}</button>
                   <button onClick={() => loadLeaderboard().then(setLeaderboard)} className="text-sm text-purple-400 hover:text-purple-300">↻</button>
                 </div>
               </div>

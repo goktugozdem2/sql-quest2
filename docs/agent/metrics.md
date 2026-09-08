@@ -1276,6 +1276,39 @@ Traps, stated before the first read:
   instrumenting it, or check whether wall-hitters are eating the population
   (the same session that fires `content_lock_reached` can never fire this).
 
+## `referral_funnel`
+
+**People**, by `COALESCE(aid, username)`, through the peer-to-peer invite
+path. Born 2026-09-08; **baseline 0 on every step, structurally** — none of
+these events existed before, so absence prior to that date is the
+instrumentation, not behaviour.
+
+| event | question it answers |
+|---|---|
+| `leaderboard_tab_viewed` | how many people are ever on the only screen the invite button lives on (one per user per day, same shape as `coach_tab_viewed`) |
+| `referral_modal_opened` | of those, how many press 🎁 — carries `hasCode`, `isGuest` |
+| `referral_link_copied` | how many take the link away |
+| `share_clicked` | which platform, and whether it came from the invite modal (`fromReferralModal`) or the general share button — carries `platform`, `shareKind`, `hasCode` |
+| `referrals.event_type='click'` on an 8-char code | someone on the other end actually arrived |
+
+**Why it exists.** `referrals` has held 103 rows since 2026-04-29 and every
+one is a marketing campaign code; the personal half has produced **zero rows
+in the product's history**. Until this metric, that zero could not be read: it
+was equally consistent with "nobody wants to invite anyone" and with "nobody
+has ever been on the Leaderboard tab". Three separate faults were found behind
+it (a missing column, a missing RPC, and a code scheme that collided on 13 of
+348 accounts) — but even with all three fixed, the funnel above is what says
+whether the surface is reachable at all.
+
+**Read the steps as a ladder, not a rate.** If `leaderboard_tab_viewed` is
+itself small, nothing below it is interpretable and the answer is placement —
+the invite button is in the wrong place — not copy and not incentives.
+
+**Do not add an incentive to this funnel before it has been read once.** The
+2026-09-08 discussion of "do 3 tasks, get a month of Pro" depends on the
+referral task being both verifiable and reachable; this metric is what
+establishes the second.
+
 ## `quotable_testimonials`
 
 Feedback submitters who explicitly consented to be quoted. Lives in
