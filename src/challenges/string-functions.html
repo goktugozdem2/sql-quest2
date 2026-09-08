@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SQL String Functions Practice — 14 Challenges (13 Free): SUBSTR, TRIM, LIKE</title>
+  <!-- 2026-09-08: new topic page (docs/reads/keywords-2026-09-07.md §3 deferred list — "Date/String concept pages (content-gated: 2 Easy Date…)"; the full bank gives 6 Easy, so the gate is open on the Date side. String Functions still is not). Every count is computed, not typed: the page total is challengeMatchesSkill(c, 'Date Functions') over the FULL bank (src/data/challenges.js + sector-challenges.js), "free" = Easy + Medium + Hard freePreview — this skill has NO Hard freePreview, so free is exactly Easy + Medium. Sections are predicates over the reference solution: strftime() or SUBSTR() over a date column (#truncation — SQLite has no DATE_TRUNC, and the FDIC and NYC columns are text dates SUBSTR is the only way into), julianday() (#date-arithmetic), and a date column on the left of a range operator or BETWEEN (#date-ranges). TOPIC_PAGES in tests/site-counts.test.js binds all of them — re-run the test, do not retype. #rolling-windows was DROPPED: eight challenges here open an OVER(), and all eight are already listed in a section of /challenges/window-functions/ — it would have been that page under a second name. Three challenges carry the skill and land in no section (two are those window ones, one pins a year with LIKE). Cards are Easy → Medium → Hard, curriculum order inside each band (CLAUDE.md, the raw-array trap) — never id order. -->
+  <meta name="description" content="14 SQL string challenges, 13 free: pulling a piece out with SUBSTR and INSTR, rewriting values with TRIM and REPLACE, and matching shapes with LIKE. Runs in your browser, no signup.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://sqlquest.app/challenges/string-functions/">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://sqlquest.app/challenges/string-functions/">
+  <meta property="og:title" content="SQL String Functions Practice — 14 Challenges (13 Free): SUBSTR, TRIM, LIKE">
+  <meta property="og:description" content="14 SQL string challenges, 13 free: pulling a piece out with SUBSTR and INSTR, rewriting values with TRIM and REPLACE, and matching shapes with LIKE. Runs in your browser, no signup.">
+  <meta property="og:image" content="https://sqlquest.app/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"SQL String Functions Practice","description":"14 SQL string challenges, 13 free: SUBSTR and INSTR, TRIM and REPLACE, and LIKE pattern matching.","url":"https://sqlquest.app/challenges/string-functions/","breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"SQL Exercises","item":"https://sqlquest.app/sql-exercises/"},{"@type":"ListItem","position":3,"name":"SQL String Functions","item":"https://sqlquest.app/challenges/string-functions/"}]}}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif}
+    .fd{font-family:'Space Grotesk',sans-serif}a{color:#c084fc;text-decoration:none}a:hover{text-decoration:underline}
+    .nav{background:rgba(6,6,15,.95);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06);position:fixed;top:0;left:0;right:0;z-index:100}
+    .ni{max-width:1100px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+    .bp{padding:10px 24px;font-size:14px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:12px;font-weight:700;display:inline-block;text-decoration:none;transition:all .3s}.bp:hover{transform:translateY(-2px);text-decoration:none}
+    .wrap{max-width:900px;margin:0 auto;padding:140px 24px 80px;text-align:center}
+    .breadcrumb{font-size:13px;color:#64748b;margin-bottom:24px}.breadcrumb a{color:#64748b}.breadcrumb a:hover{color:#c084fc}
+    h1{font-size:clamp(28px,4vw,44px);font-weight:800;margin-bottom:20px}
+    p{font-size:16px;line-height:1.75;color:#94a3b8;max-width:600px;margin:0 auto 36px}
+    .cta{padding:14px 36px;font-size:16px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:12px;font-weight:700;display:inline-flex;transition:all .3s;text-decoration:none}.cta:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(124,58,237,.35);text-decoration:none}
+    .related{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:48px}
+    .related a{background:rgba(10,10,25,.5);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:14px 20px;font-size:14px;color:#94a3b8;transition:border-color .2s}.related a:hover{border-color:rgba(124,58,237,.3);text-decoration:none}
+    .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center;margin-top:80px}.ft p{font-size:13px;color:#475569}.ft a{color:#64748b}.ft a:hover{color:#c084fc}
+    /* Card / tag shapes are the sibling topic pages' own CSS (/challenges/joins/, /challenges/case-when/); tag colors are DESIGN.md semantic tokens (info/warning/error/success). Nothing new. */
+    code{font-family:'JetBrains Mono',monospace;font-size:.9em;color:#c084fc}
+    .sec{margin-top:64px;text-align:left;scroll-margin-top:90px}.sec h2{font-size:clamp(22px,3vw,30px);font-weight:800;margin-bottom:12px;text-align:center}.sec>p{text-align:center;margin:0 auto 24px;max-width:640px}
+    .stamp{font-size:12px;color:#64748b;margin:0 auto 20px}
+    .q-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin:0 0 28px}
+    .q-card{background:rgba(10,10,25,.5);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:18px 20px;transition:border-color .2s}.q-card:hover{border-color:rgba(124,58,237,.3)}
+    .q-card h3{font-size:15px;font-weight:700;color:#e2e8f0;margin:10px 0 6px}.q-card p{font-size:13px;line-height:1.6;color:#94a3b8;margin:0 0 12px;max-width:none;text-align:left}
+    .q-card .concepts{font-size:12px;color:#64748b}.q-card .concepts code{background:rgba(124,58,237,.12);padding:2px 5px;border-radius:3px;font-size:12px}
+    .tag{font-size:11px;font-weight:700;padding:3px 10px;border-radius:100px;display:inline-block}.tag.easy{background:rgba(124,196,255,.12);color:#7CC4FF}.tag.medium{background:rgba(255,176,32,.15);color:#FFB020}.tag.hard{background:rgba(255,107,107,.15);color:#FF6B6B}.tag.free{background:rgba(74,222,128,.12);color:#4ADE80}.tag.pro{background:rgba(255,255,255,.06);color:#94a3b8}
+    .btn-practice{font-size:13px;color:#c084fc;border:1px solid rgba(124,58,237,.3);padding:7px 16px;border-radius:8px;display:inline-block;transition:all .2s;text-decoration:none}.btn-practice:hover{background:rgba(124,58,237,.12);text-decoration:none}
+  </style>
+</head>
+<body>
+<nav class="nav"><div class="ni">
+  <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;">
+    <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:16px;">⚡</div>
+    <span class="fd" style="font-size:18px;font-weight:800;">SQL Quest</span>
+  </a>
+  <a href="/app.html" class="bp">Start Free →</a>
+</div></nav>
+<div class="wrap">
+  <p class="breadcrumb"><a href="/">SQL Quest</a> › <a href="/sql-exercises/">SQL Exercises</a> › SQL String Functions</p>
+  <h1 class="fd">SQL String Functions Practice — <span style="background:linear-gradient(135deg,#c084fc,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">14 Challenges (13 Free)</span></h1>
+  <p class="lede">Text arrives messy: a full name in one column, a code with the meaning buried in characters 4 to 6, a category that is sometimes "Retail" and sometimes " retail ". These 14 challenges are the three moves that fix it — pull a piece out, rewrite the value, match a shape — on real tables in your browser. Thirteen are free.</p>
+
+  <section class="sec" id="extract">
+    <h2 class="fd">Pulling a piece out — SUBSTR, INSTR and LENGTH: 8 challenges (7 free)</h2>
+    <p><code>SUBSTR(col, 4, 3)</code> takes three characters starting at the fourth; <code>INSTR(col, '@')</code> finds where a character sits so you can cut there instead of guessing an offset. Together they are how a domain comes out of an email, a year out of a text date, or a branch code out of an account number. <code>LENGTH</code> is the one that tells you the cut worked.</p>
+    <p class="stamp">Counted from the challenge bank, September 2026. Easy first, then Medium, then Hard.</p>
+    <div class="q-grid">
+      <div class="q-card">
+        <span class="tag easy">Easy</span> <span class="tag free">Free</span>
+        <h3>Long-Named Passengers</h3>
+        <p class="concepts">Uses: <code>String Functions</code> <code>LENGTH</code> <code>WHERE</code></p>
+        <a href="/app/?challenge=119&amp;src=challenges-string-functions" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag easy">Easy</span> <span class="tag free">Free</span>
+        <h3>Extract Family Names (SUBSTR + INSTR)</h3>
+        <p class="concepts">Uses: <code>SUBSTR</code> <code>INSTR</code> <code>String Functions</code></p>
+        <a href="/app/?challenge=146&amp;src=challenges-string-functions" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag easy">Easy</span> <span class="tag free">Free</span>
+        <h3>Year Code from Order Date (SUBSTR)</h3>
+        <p class="concepts">Uses: <code>SUBSTR</code> <code>String Functions</code></p>
+        <a href="/app/?challenge=164&amp;src=challenges-string-functions" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag easy">Easy</span> <span class="tag free">Free</span>
+        <h3>Movie Title Initial Letter Histogram (SUBSTR)</h3>
+        <p class="concepts">Uses: <code>GROUP BY</code> <code>SUBSTR</code> <code>String Functions</code></p>
+        <a href="/app/?challenge=165&amp;src=challenges-string-functions" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag easy">Easy</span> <span class="tag free">Free</span>
+        <h3>Position of '@' in Email (INSTR)</h3>
+        <p class="concepts">Uses: <code>INSTR</code> <code>String Functions</code></p>
+        <a href="/app/?challenge=166&amp;src=challenges-string-functions" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Email Provider Customer Analysis</h3>
+        <p class="concepts">Uses: <code>String Functions</code> <code>GROUP BY</code> <code>Aggregation</code></p>
+        <a href="/app/?challenge=39&amp;src=challenges-string-functions" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Email Username Extract (SUBSTR + INSTR)</h3>
+        <p class="concepts">Uses: <code>SUBSTR</code> <code>INSTR</code> <code>String Functions</code></p>
+        <a href="/app/?challenge=167&amp;src=challenges-string-functions" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Passenger Family Survival Analysis</h3>
+        <p class="concepts">Uses: <code>String Functions</code> <code>GROUP BY</code> <code>HAVING</code></p>
+        <a href="/app/?challenge=38&amp;src=challenges-string-functions" class="btn-practice">Try it →</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="transform">
+    <h2 class="fd">Rewriting the value — TRIM, REPLACE, UPPER and concatenation: 4 challenges (4 free)</h2>
+    <p>The same category written three ways groups into three rows, and it is almost always whitespace or case. <code>TRIM</code> and <code>UPPER</code> collapse that before the <code>GROUP BY</code> sees it. <code>||</code> goes the other way and joins columns into one label, and <code>GROUP_CONCAT</code> folds a whole group into a single readable cell — the roster in one row rather than twelve.</p>
+    <p class="stamp">Counted from the challenge bank, September 2026. Easy first, then Medium, then Hard.</p>
+    <div class="q-grid">
+      <div class="q-card">
+        <span class="tag easy">Easy</span> <span class="tag free">Free</span>
+        <h3>Employee Display Cards (Concat)</h3>
+        <p class="concepts">Uses: <code>String Functions</code> <code>Concatenation</code></p>
+        <a href="/app/?challenge=135&amp;src=challenges-string-functions" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag easy">Easy</span> <span class="tag free">Free</span>
+        <h3>Country Codes in Uppercase</h3>
+        <p class="concepts">Uses: <code>String Functions</code> <code>UPPER</code></p>
+        <a href="/app/?challenge=136&amp;src=challenges-string-functions" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag easy">Easy</span> <span class="tag free">Free</span>
+        <h3>Movie Title Initial Letter Histogram (SUBSTR)</h3>
+        <p class="concepts">Uses: <code>GROUP BY</code> <code>SUBSTR</code> <code>String Functions</code></p>
+        <a href="/app/?challenge=165&amp;src=challenges-string-functions" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Department Roster with GROUP_CONCAT</h3>
+        <p class="concepts">Uses: <code>GROUP BY</code> <code>GROUP_CONCAT</code> <code>Aggregation</code></p>
+        <a href="/app/?challenge=4&amp;src=challenges-string-functions" class="btn-practice">Try it →</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="pattern">
+    <h2 class="fd">Matching a shape — LIKE and its two wildcards: 3 challenges (3 free)</h2>
+    <p><code>LIKE 'A%'</code> anchors at the start, <code>'%bank%'</code> matches anywhere, and <code>_</code> stands for exactly one character. The judgement is the anchor: a leading <code>%</code> means the database cannot use an index and has to read everything, which is fine on the tables here and matters on a real one.</p>
+    <p class="stamp">Counted from the challenge bank, September 2026. Easy first, then Medium, then Hard.</p>
+    <div class="q-grid">
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Title Social Survival Analysis</h3>
+        <p class="concepts">Uses: <code>GROUP BY</code> <code>Aggregation</code> <code>HAVING</code></p>
+        <a href="/app/?challenge=32&amp;src=challenges-string-functions" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Trust and Savings Banks</h3>
+        <p class="concepts">Uses: <code>WHERE</code> <code>LIKE</code> <code>CASE</code></p>
+        <a href="/app/?challenge=214&amp;src=challenges-string-functions" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>LLC vs Individual Buyers</h3>
+        <p class="concepts">Uses: <code>CASE</code> <code>GROUP BY</code> <code>Aggregation</code></p>
+        <a href="/app/?challenge=234&amp;src=challenges-string-functions" class="btn-practice">Try it →</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="why">
+    <h2 class="fd">Where this shows up next</h2>
+    <p>String work is rarely the answer on its own — it is the step that makes the real question askable. Cleaning a category is what makes an <a href="/challenges/aggregation/">aggregation</a> group correctly; splitting a key is what lets a <a href="/challenges/joins/">join</a> find its match; and a text date has to become a real one before <a href="/challenges/date-functions/">date functions</a> can touch it. When the cleaning takes more than one step, name the steps with <a href="/challenges/cte/">a CTE</a>.</p>
+  </section>
+  <div class="related">
+    <a href="/challenges/">All Practice Topics →</a>
+    <a href="/challenges/aggregation/">GROUP BY &amp; Aggregation →</a>
+    <a href="/challenges/window-functions/">Window Functions →</a>
+    <a href="/blog/sql-running-total/">Running Totals →</a>
+    <a href="/sql-cheat-sheet/#date-string">Cheat Sheet: Dates →</a>
+    <a href="/challenges/cte/">CTE Challenges →</a>
+    <a href="/challenges/joins/">JOIN Challenges →</a>
+    <a href="/blog/faang-sql-interview-guide/">FAANG SQL Guide →</a>
+  </div>
+</div>
+<footer class="ft"><p>⚡ <strong>SQL Quest</strong> — Master SQL through hands-on practice. <a href="/">Home</a></p><p style="margin-top:8px;font-size:11px;">© 2026 SQL Quest</p></footer>
+</body>
+</html>

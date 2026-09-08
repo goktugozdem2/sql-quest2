@@ -681,6 +681,13 @@ const singleTableScalar = c => !/\bJOIN\b/i.test(solutionOf(c))
 // NULL Handling (2026-09-09). The three shapes a NULL page has to teach, and
 // they overlap on purpose: a challenge can filter on IS NULL, default with
 // COALESCE and count a nullable column in the same query.
+// String Functions (2026-09-09). Three shapes: pull a piece out, rewrite the
+// value, or match a shape. They do not overlap the way the NULL ones do.
+export const STR_EXTRACT = c => /\b(?:SUBSTR|SUBSTRING|INSTR|LENGTH)\s*\(/i.test(solutionOf(c));
+export const STR_TRANSFORM = c => /\|\|/.test(solutionOf(c))
+  || /\b(?:UPPER|LOWER|TRIM|LTRIM|RTRIM|REPLACE|GROUP_CONCAT|printf)\s*\(/i.test(solutionOf(c));
+export const STR_PATTERN = c => /\bLIKE\b/i.test(solutionOf(c));
+
 export const NULL_IS_NULL = c => /\bIS\s+(?:NOT\s+)?NULL\b/i.test(solutionOf(c));
 export const NULL_DEFAULTS = c => /\b(?:COALESCE|IFNULL|NULLIF)\s*\(/i.test(solutionOf(c));
 // COUNT/AVG/SUM over a COLUMN, never over * — the point of the section is that
@@ -731,6 +738,10 @@ export const TOPIC_PAGES = {
       having: c => HAVING_CLAUSE.test(solutionOf(c)),
       'distinct-counts': c => COUNT_DISTINCT.test(solutionOf(c)),
     },
+  },
+  'string-functions': {
+    population: c => challengeMatchesSkill(c, 'String Functions'),
+    sections: { extract: STR_EXTRACT, transform: STR_TRANSFORM, pattern: STR_PATTERN },
   },
   'null-handling': {
     population: c => challengeMatchesSkill(c, 'NULL Handling'),

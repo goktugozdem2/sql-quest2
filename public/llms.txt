@@ -227,6 +227,7 @@ SQL Quest's strongest positioning: "the only SQL practice site that feels like a
 - SQL CTE Practice — 57 Challenges (24 Free): Multiple CTEs to Recursive — https://sqlquest.app/challenges/cte/
 - SQL Date Functions Practice — 36 Challenges (26 Free): strftime, julianday, Date Ranges — https://sqlquest.app/challenges/date-functions/
 - SQL NULL Handling Practice — 16 Challenges (15 Free): IS NULL, COALESCE, Counting Nullable Columns — https://sqlquest.app/challenges/null-handling/
+- SQL String Functions Practice — 14 Challenges (13 Free): SUBSTR, TRIM, LIKE — https://sqlquest.app/challenges/string-functions/
 - SQL Joins Practice — 79 Challenges (54 Free): INNER, LEFT, Self-Join, Anti-Join — https://sqlquest.app/challenges/joins/
 - SQL Subquery Practice — 57 Challenges (42 Free): Correlated, EXISTS, IN, Derived Tables — https://sqlquest.app/challenges/subqueries/
 - SQL Window Functions Practice — 61 Challenges (23 Free): RANK, LAG, Running Totals — https://sqlquest.app/challenges/window-functions/
