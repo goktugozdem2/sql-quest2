@@ -175,7 +175,7 @@ SQL Quest's strongest positioning: "the only SQL practice site that feels like a
 - How to Find Duplicates in SQL — Find, Inspect, and Delete Them — https://sqlquest.app/sql-find-duplicates/
 - CTE vs Subquery vs Temp Table — When Each One Actually Matters — https://sqlquest.app/sql-cte-vs-subquery/
 - SQL Interview Questions for Data Analysts — By Experience Level — https://sqlquest.app/sql-interview-questions-data-analyst/
-- SQL Exercises — 287 Problems With Solutions (217 Free) — https://sqlquest.app/sql-exercises/
+- SQL Exercises — 287 Problems With Solutions (219 Free) — https://sqlquest.app/sql-exercises/
 - After the SQL Course: The 14 Minutes That Makes It Stick — https://sqlquest.app/after-the-sql-course/
 - After the Bootcamp: Close Your SQL Gap in Weeks — https://sqlquest.app/after-bootcamp/
 - Want to Work in AI? Learn SQL First. — https://sqlquest.app/sql-for-the-ai-era/

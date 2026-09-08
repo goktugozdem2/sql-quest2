@@ -267,8 +267,13 @@ export function findStalePro19(text, modal) {
 // HackerRank's SQL track, "~50-80 problems" for LeetCode's free set) and its
 // own as an exact count. Verified 2026-09-09: zero of our own counts are
 // written with a tilde.
-const COUNT_CLAIM = /(?<![\w$.,~-])(\d+)(\+?)(?=(?:[\s-]+[A-Za-z][\w'+-]*){0,3}[\s-]+(?:challenges?|exercises|problems)\b)/g;
-const FREE_CLAIM = /(?<![\w$.,-])(\d+)(\+?) free\b/g;
+const COUNT_CLAIM = /(?<![\w$.,~-])(\d+)(\+?)(?=(?:[\s-]+[A-Za-z][\w'+-]*){0,3}[\s-]+(?:challenges?|exercises|problems)\b)/gi;
+// Both patterns are case-INSENSITIVE (2026-09-09). They were not, and titles
+// capitalise: /sql-exercises/ published "285 Problems With Solutions (217
+// Free)" for a day after the body was corrected to 287 and 219, because
+// `problems` and `free` only matched in lower case. Thirty capitalised "N
+// Free" claims across the site had never been checked at all.
+const FREE_CLAIM = /(?<![\w$.,-])(\d+)(\+?) free\b/gi;
 
 const floor50 = n => Math.floor(n / 50) * 50;
 const isFloorOf = (n, count) => n % 50 === 0 && n <= count && n > count - 50;
