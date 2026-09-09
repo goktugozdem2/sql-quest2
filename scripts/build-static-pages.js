@@ -39,6 +39,7 @@ const challengePages = htmlSlugsIn(path.join('src', 'challenges'))
   .filter(slug => !CHALLENGE_PAGE_EXCLUDE.has(slug));
 
 const blogPosts = [
+  'validate-ai-generated-sql',
   // Recovered 2026-08-04. This post was live and earning (157 impressions,
   // 5 clicks in GSC) but existed only as a built file under public/ with no
   // source here — so it had no analytics, no quiz, and no way to be rebuilt.

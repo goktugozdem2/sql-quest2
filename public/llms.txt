@@ -255,6 +255,7 @@ SQL Quest's strongest positioning: "the only SQL practice site that feels like a
 - SQL JOIN ve LEFT JOIN Nedir? INNER, LEFT, Anti-Join — Türkçe Örneklerle — https://sqlquest.app/blog/sql-join-nedir/
 - SQL'de CTE (WITH) Nedir? Tek Sorguyla Türkçe Anlatım — https://sqlquest.app/blog/sql-cte-nedir/
 - What the Capital One CodeSignal Data Analyst Assessment Actually Asks (Candidate Reports, 2021–2026) — https://sqlquest.app/blog/capital-one-codesignal-data-analyst-assessment/
+- How to Validate AI-Generated SQL: 7 Production Checks — https://sqlquest.app/blog/validate-ai-generated-sql/
 
 **Legal**
 - Privacy Policy — https://sqlquest.app/privacy.html

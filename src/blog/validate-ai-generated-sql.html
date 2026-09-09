@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- Published 2026-09-09. This page owns the task-specific query
+       "validate AI-generated SQL"; /sql-for-the-ai-era/ remains the broad
+       SQL + AI category page. All three SQL examples were executed in SQLite
+       before publication. Do not add product-bank counts here: the count
+       guard cannot protect claims copied outside the product. Read contract:
+       docs/reads/validate-ai-sql-publish-decisions-2026-09-09.md. -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>How to Validate AI-Generated SQL: 7 Production Checks | SQL Quest</title>
+  <meta name="description" content="Use this seven-step checklist to catch wrong filters, duplicate joins, NULL bugs, bad aggregation, and unsafe AI-generated SQL before production.">
+  <meta name="keywords" content="validate AI generated SQL, check AI SQL query, AI generated SQL accuracy, test SQL query, SQL validation checklist, AI SQL mistakes">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://sqlquest.app/blog/validate-ai-generated-sql/">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://sqlquest.app/blog/validate-ai-generated-sql/">
+  <meta property="og:title" content="Can You Tell When AI-Generated SQL Is Wrong?">
+  <meta property="og:description" content="A practical seven-check validation workflow with a worked SQL example.">
+  <meta property="og:image" content="https://sqlquest.app/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"BlogPosting","headline":"How to Validate AI-Generated SQL: 7 Checks Before Production","description":"A seven-step workflow to catch wrong filters, duplicate joins, NULL bugs, bad aggregation, and unsafe AI-generated SQL before production.","url":"https://sqlquest.app/blog/validate-ai-generated-sql/","datePublished":"2026-09-09","dateModified":"2026-09-09","author":{"@type":"Person","name":"Can Goktug Ozdem","url":"https://sqlquest.app/"},"publisher":{"@type":"Organization","name":"SQL Quest","url":"https://sqlquest.app/","logo":{"@type":"ImageObject","url":"https://sqlquest.app/og-image.png"}},"mainEntityOfPage":"https://sqlquest.app/blog/validate-ai-generated-sql/","keywords":"validate AI generated SQL, check AI SQL query, AI generated SQL accuracy, SQL validation checklist","breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"Blog","item":"https://sqlquest.app/blog/"},{"@type":"ListItem","position":3,"name":"Validate AI-Generated SQL","item":"https://sqlquest.app/blog/validate-ai-generated-sql/"}]}}
+  </script>
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+    {"@type":"Question","name":"Can AI-generated SQL be trusted if it runs without an error?","acceptedAnswer":{"@type":"Answer","text":"No. Execution proves that the engine accepted the statement. It does not prove that the query matches the business definition, returns the right grain, handles missing data, or avoids duplicates."}},
+    {"@type":"Question","name":"Should I use DISTINCT to remove duplicates from an AI query?","acceptedAnswer":{"@type":"Answer","text":"Only after you understand why duplicates exist. DISTINCT may be correct for the intended result, but it can also hide a bad join or an undefined entity grain."}},
+    {"@type":"Question","name":"What is the fastest way to test an AI-generated SQL query?","acceptedAnswer":{"@type":"Answer","text":"Write the expected row grain, run it on a tiny dataset with known edge cases, compare distinct counts before and after joins, and manually verify several included and excluded rows."}},
+    {"@type":"Question","name":"Is EXPLAIN QUERY PLAN enough to validate SQL?","acceptedAnswer":{"@type":"Answer","text":"No. It helps investigate how SQLite plans a query. It does not validate the meaning of the result."}}
+  ]}
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,800&amp;family=Geist:wght@300;400;500;600;700&amp;family=Geist+Mono:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet">
+  <style>
+    :root{--bg:#0e0f13;--surface:#16181f;--surface-2:#1f222b;--border:#2a2e38;--text:#f2f0ea;--muted:#8a8e99;--accent:#ffe34d;--accent-ink:#0e0f13;--blue:#7cc4ff;--green:#b5e48c;--orange:#ffb86c;--error:#ff6b6b;--max:1120px}
+    *,*::before,*::after{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--text);font-family:'Geist',sans-serif;font-size:16px;line-height:1.7;overflow-x:hidden}a{color:var(--blue);text-underline-offset:3px}a:hover{text-decoration-thickness:2px}a:focus-visible,summary:focus-visible{outline:2px solid var(--blue);outline-offset:4px;border-radius:4px}.display{font-family:'Fraunces',serif}.mono{font-family:'Geist Mono','JetBrains Mono',monospace}
+    .nav{position:sticky;top:0;z-index:10;background:rgba(14,15,19,.94);border-bottom:1px solid var(--border);backdrop-filter:blur(12px)}.nav-inner{max-width:var(--max);margin:auto;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px}.brand{color:var(--text);font-size:20px;font-weight:600;text-decoration:none}.primary{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:12px 16px;border-radius:6px;background:var(--accent);color:var(--accent-ink);font-weight:700;text-decoration:none}.primary:hover{text-decoration:none;transform:translateY(-1px)}
+    .article{max-width:780px;margin:auto;padding:72px 24px}.breadcrumb{font-size:14px;color:var(--muted);margin:0 0 32px}.breadcrumb a{color:var(--muted)}.kicker{font:600 12px/1.4 'Geist Mono',monospace;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin:0 0 16px}.article h1{font-size:clamp(42px,7vw,72px);line-height:1.03;letter-spacing:-.035em;margin:0 0 24px}.dek{font-size:20px;line-height:1.55;color:var(--muted);margin:0 0 24px}.meta{display:flex;flex-wrap:wrap;gap:8px 16px;color:var(--muted);font-size:14px;padding-bottom:32px;border-bottom:1px solid var(--border)}.answer{font-size:18px;color:var(--text);padding:24px 0;margin:0;border-bottom:1px solid var(--border)}
+    .toc{margin:32px 0;padding:24px;background:var(--surface);border:1px solid var(--border);border-radius:10px}.toc p{font:600 12px/1.4 'Geist Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0 0 12px}.toc ol{margin:0;padding-left:24px}.toc li{margin:4px 0}.toc a{color:var(--text)}
+    h2{font-family:'Fraunces',serif;font-size:clamp(30px,5vw,42px);line-height:1.12;letter-spacing:-.025em;margin:72px 0 16px;padding-top:12px;border-top:1px solid var(--border)}h3{font-size:20px;line-height:1.35;margin:32px 0 12px}p{margin:0 0 16px;color:var(--muted)}strong{color:var(--text);font-weight:600}ul,ol{color:var(--muted);padding-left:24px;margin:0 0 24px}li{margin:8px 0}code{font-family:'JetBrains Mono',monospace;font-size:.88em;color:var(--green)}
+    .code-block{background:var(--bg);border:1px solid var(--border);border-radius:6px;margin:24px 0;overflow:hidden}.code-label{font:500 12px/1.4 'Geist Mono',monospace;color:var(--muted);padding:8px 16px;background:var(--surface);border-bottom:1px solid var(--border)}pre{margin:0;padding:24px;overflow:auto}pre code{font-size:14px;line-height:1.75;color:var(--text)}.kw{color:var(--blue);font-weight:700}.str{color:var(--green)}.num{color:var(--orange)}.cmt{color:var(--muted);font-style:italic}
+    .callout{border-left:3px solid var(--blue);background:var(--surface);padding:16px 24px;margin:32px 0;border-radius:0 6px 6px 0}.callout p{margin:0}.checklist{list-style:none;padding:0}.checklist li{position:relative;padding-left:32px;margin:12px 0}.checklist li::before{content:'□';position:absolute;left:0;color:var(--blue);font-family:'Geist Mono',monospace}
+    .practice{margin:48px 0;padding:32px;border:1px solid var(--border);background:var(--surface);border-radius:10px}.practice h2{border:0;margin:0 0 12px;padding:0}.practice p{max-width:620px}.disclosure{font-size:14px;padding-top:16px;border-top:1px solid var(--border)}.related{margin:48px 0;padding:24px;border:1px solid var(--border);border-radius:6px}.related h2{font-family:'Geist',sans-serif;font-size:18px;border:0;margin:0 0 12px;padding:0}.related ul{margin:0}.faq details{border-bottom:1px solid var(--border);padding:16px 0}.faq summary{cursor:pointer;font-weight:600;color:var(--text);font-size:17px}.faq details p{margin:12px 0 0}.sources{font-size:14px}.sources li{margin:8px 0}.footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center;color:var(--muted);font-size:14px}
+    @media(max-width:600px){.nav-inner{padding:12px 16px}.primary{font-size:14px;padding:12px}.article{padding:48px 16px}.article h1{font-size:42px}.dek{font-size:18px}.practice{padding:24px}.code-block{margin-left:-8px;margin-right:-8px}}
+    @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.primary{transition:none}}
+  </style>
+  <script type="text/javascript">
+    (function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y)})(window,document,"clarity","script","wovalt3jwh");
+  </script>
+</head>
+<body>
+<nav class="nav"><div class="nav-inner">
+  <a class="brand display" href="/">SQL Quest</a>
+  <a class="primary" data-track="cta_blog" href="/app/?src=validate-ai-generated-sql">Practice SQL validation →</a>
+</div></nav>
+
+<main>
+<article class="article">
+  <p class="breadcrumb"><a href="/">Home</a> / <a href="/blog/">Blog</a> / Validate AI-Generated SQL</p>
+  <p class="kicker">AI SQL validation</p>
+  <h1 class="display">How to Validate AI-Generated SQL: 7 Checks Before Production</h1>
+  <p class="dek">AI can produce syntactically valid SQL in seconds. The dangerous query is the one that runs, returns plausible numbers, and quietly answers the wrong question.</p>
+  <div class="meta"><span>Published September 9, 2026</span><span>9 min read</span><span>By Can Goktug Ozdem, Founder of SQL Quest</span></div>
+
+  <p class="answer"><strong>Short answer:</strong> define the expected result first, check the referenced schema, test filters and NULLs, measure join cardinality, confirm aggregation grain, compare against known rows, and inspect both the result and query plan. Never approve a production query from syntax alone.</p>
+
+  <div class="toc">
+    <p>Seven checks</p>
+    <ol>
+      <li><a href="#contract">Write the result contract</a></li>
+      <li><a href="#schema">Verify the schema</a></li>
+      <li><a href="#filters">Challenge filters and NULLs</a></li>
+      <li><a href="#joins">Measure join cardinality</a></li>
+      <li><a href="#grain">Confirm grain and denominator</a></li>
+      <li><a href="#known-rows">Compare with known rows</a></li>
+      <li><a href="#safety">Inspect safety, cost, and the plan</a></li>
+    </ol>
+  </div>
+
+  <h2>A worked example: “paid customers in the last 30 days”</h2>
+  <p>Suppose an AI assistant returns this query:</p>
+
+  <div class="code-block"><div class="code-label">Plausible, executable, and still ambiguous</div><pre><code><span class="kw">SELECT</span> c.customer_id, c.email, p.paid_at
+<span class="kw">FROM</span> customers <span class="kw">AS</span> c
+<span class="kw">JOIN</span> payments <span class="kw">AS</span> p
+  <span class="kw">ON</span> p.customer_id = c.customer_id
+<span class="kw">WHERE</span> p.status != <span class="str">'refunded'</span>
+  <span class="kw">AND</span> p.paid_at &gt;= <span class="str">'2026-08-10'</span>;</code></pre></div>
+
+  <p>It looks reasonable. It may still be wrong:</p>
+  <ul>
+    <li>One customer can have several payments, so the output may duplicate customers.</li>
+    <li><code>status != 'refunded'</code> includes statuses such as <code>pending</code> or <code>failed</code>.</li>
+    <li>Rows with a NULL status do not pass the filter because a SQL <code>WHERE</code> clause keeps only expressions that evaluate to true.</li>
+    <li>“Paid customer” might mean a recent successful payment, an active subscription, or a lifetime buyer. Those are different contracts.</li>
+  </ul>
+
+  <p>If the agreed definition is “one row per customer with at least one successful payment on or after August 10, 2026,” make that grain explicit:</p>
+
+  <div class="code-block"><div class="code-label">One testable definition, expressed in SQL</div><pre><code><span class="kw">WITH</span> recent_paid_customers <span class="kw">AS</span> (
+  <span class="kw">SELECT</span>
+    customer_id,
+    <span class="kw">MAX</span>(paid_at) <span class="kw">AS</span> latest_paid_at
+  <span class="kw">FROM</span> payments
+  <span class="kw">WHERE</span> status = <span class="str">'paid'</span>
+    <span class="kw">AND</span> paid_at &gt;= <span class="str">'2026-08-10'</span>
+  <span class="kw">GROUP BY</span> customer_id
+)
+<span class="kw">SELECT</span>
+  c.customer_id,
+  c.email,
+  r.latest_paid_at
+<span class="kw">FROM</span> recent_paid_customers <span class="kw">AS</span> r
+<span class="kw">JOIN</span> customers <span class="kw">AS</span> c
+  <span class="kw">ON</span> c.customer_id = r.customer_id
+<span class="kw">ORDER BY</span> r.latest_paid_at <span class="kw">DESC</span>;</code></pre></div>
+
+  <p>This version is not better because it is longer. It is better because the intended grain and accepted payment state are explicit and testable.</p>
+  <p><a data-track="cta_practice_validate_ai_sql_mid" href="/app/?challenge=103&amp;src=validate-ai-generated-sql">Test a NULL-sensitive query in the browser →</a></p>
+
+  <h2 id="contract">Check 1: write the result contract before reviewing the query</h2>
+  <p>State four things in plain language:</p>
+  <ol>
+    <li>What does one output row represent?</li>
+    <li>Which records must be included and excluded?</li>
+    <li>Which time zone and date boundaries apply?</li>
+    <li>What should happen when a value is missing?</li>
+  </ol>
+  <p>For the example, the contract is “one row per customer, with at least one paid payment in the fixed period, ordered by the latest qualifying payment.” That sentence is a stronger review tool than “the query looks right.”</p>
+
+  <h2 id="schema">Check 2: verify every table, column, and relationship</h2>
+  <p>Confirm that the query uses the real schema, not names invented from a prompt. Check primary keys, foreign keys, column types, and whether timestamps represent creation, settlement, or update time. If the assistant did not receive the schema, treat its output as a draft rather than an executable answer.</p>
+
+  <h2 id="filters">Check 3: challenge filters, NULLs, and boundaries</h2>
+  <p>Test each predicate separately. In SQLite, rows are removed when a <code>WHERE</code> expression evaluates to false or NULL. Nullable columns therefore create silent omissions. Check:</p>
+  <ul>
+    <li>equality versus an explicit list of accepted statuses;</li>
+    <li><code>IS NULL</code> and <code>IS NOT NULL</code> behavior;</li>
+    <li>inclusive versus exclusive date boundaries and time zones;</li>
+    <li>empty strings, zero values, and sentinel values.</li>
+  </ul>
+  <p>A test dataset containing only clean rows proves almost nothing. Create at least one fixture for every edge case. If NULL behavior is the weak point, use the <a href="/blog/null-handling-mistakes/">SQL NULL review guide</a> before approving the query.</p>
+
+  <h2 id="joins">Check 4: measure join cardinality before and after the join</h2>
+  <p>Ask what relationship each join represents: one-to-one, one-to-many, or many-to-many. Then measure it.</p>
+
+  <div class="code-block"><div class="code-label">Compare row grain with entity grain</div><pre><code><span class="kw">SELECT</span>
+  <span class="kw">COUNT</span>(*) <span class="kw">AS</span> joined_rows,
+  <span class="kw">COUNT</span>(<span class="kw">DISTINCT</span> c.customer_id) <span class="kw">AS</span> distinct_customers
+<span class="kw">FROM</span> customers <span class="kw">AS</span> c
+<span class="kw">JOIN</span> payments <span class="kw">AS</span> p
+  <span class="kw">ON</span> p.customer_id = c.customer_id
+<span class="kw">WHERE</span> p.status = <span class="str">'paid'</span>
+  <span class="kw">AND</span> p.paid_at &gt;= <span class="str">'2026-08-10'</span>;</code></pre></div>
+
+  <p>If <code>joined_rows</code> is much larger than <code>distinct_customers</code>, the query may be correct at payment grain but wrong at customer grain. Adding <code>DISTINCT</code> can hide the symptom without proving the relationship is correct. The <a href="/blog/sql-joins-explained/">SQL joins guide</a> works through the underlying one-to-many shapes.</p>
+
+  <h2 id="grain">Check 5: confirm aggregation grain and denominator</h2>
+  <p>Every metric needs an explicit numerator, denominator, and grouping level. For conversion rate, decide whether the denominator is visitors, sessions, eligible accounts, or leads. For revenue, decide whether refunds, tax, credits, and currency conversion are included.</p>
+  <p>Review every selected column in an aggregate query. SQLite permits some bare columns that are neither aggregated nor included in <code>GROUP BY</code>, but their selected value can be arbitrary. A query that runs may therefore still communicate an unstable or non-portable result. Review the <a href="/blog/sql-group-by-tutorial/">GROUP BY failure modes</a> if the metric collapses several rows into one.</p>
+
+  <h2 id="known-rows">Check 6: compare with known rows and an independent calculation</h2>
+  <p>Choose a small period you can verify manually. Keep examples that should definitely be included and definitely be excluded. Compare:</p>
+  <ul>
+    <li>total rows and distinct entities;</li>
+    <li>a hand-calculated subtotal;</li>
+    <li>minimum and maximum dates;</li>
+    <li>a few known IDs;</li>
+    <li>the previous trusted report, if its definition matches.</li>
+  </ul>
+  <div class="callout"><p><strong>Try to falsify the query.</strong> A useful test is designed to make the SQL fail if its assumptions are wrong. Repeating the happy path only shows that the example was easy.</p></div>
+
+  <h2 id="safety">Check 7: inspect safety, cost, and the query plan</h2>
+  <p>Use a read-only account for review. Add a sensible row limit during exploration. Keep write operations behind separate permissions and explicit human approval. For performance, use <code>EXPLAIN QUERY PLAN</code> as a diagnostic aid, but do not build application logic that parses its display format: SQLite documents that the format can change between releases.</p>
+  <p>Syntax, semantics, performance, and operational safety are four separate checks. Passing one does not imply the others.</p>
+
+  <h2>AI SQL validation checklist</h2>
+  <ul class="checklist">
+    <li>One output row is clearly defined.</li>
+    <li>Tables and columns exist and have the expected types.</li>
+    <li>Status and date rules match the business definition.</li>
+    <li>NULL cases have explicit expected behavior.</li>
+    <li>Join cardinality is measured, not guessed.</li>
+    <li>Aggregation grain and denominator are stated.</li>
+    <li>Known positive and negative examples pass.</li>
+    <li>The query runs with read-only access and a safe limit.</li>
+    <li>The result, not only the SQL text, has been reviewed.</li>
+    <li>Performance is acceptable on representative data.</li>
+  </ul>
+
+  <section class="practice">
+    <p class="kicker">Turn review into a skill</p>
+    <h2>Practice the judgment, not only the syntax</h2>
+    <p>Predict a query's output, run it, explain the mismatch, then solve a related variation. SQL Quest turns that loop into short challenges with immediate validation.</p>
+    <a class="primary" data-track="cta_practice_validate_ai_sql_end" href="/app/?challenge=103&amp;src=validate-ai-generated-sql">Practice SQL validation — free →</a>
+  </section>
+
+  <p>SQL validation is one part of reviewing AI output. For a reusable workflow that tests prompts against success criteria and failure cases, continue with <a data-track="editorial_claudequest_click" href="https://claudequest.app/blog/practice-ai-prompting-with-feedback?ref=sqlquest&amp;utm_source=sqlquest&amp;utm_medium=editorial_link&amp;utm_campaign=validate_ai_generated_sql">ClaudeQuest's structured AI-output review loop</a>.</p>
+  <p class="disclosure">SQL Quest and ClaudeQuest are independent Datrick learning products. SQL Quest is not affiliated with, endorsed by, or sponsored by Anthropic. Anthropic and Claude are trademarks of Anthropic PBC.</p>
+
+  <section class="faq" id="faq">
+    <h2>Frequently asked questions</h2>
+    <details><summary>Can AI-generated SQL be trusted if it runs without an error?</summary><p>No. Execution proves that the engine accepted the statement. It does not prove that the query matches the business definition, returns the right grain, handles missing data, or avoids duplicates.</p></details>
+    <details><summary>Should I use DISTINCT to remove duplicates from an AI query?</summary><p>Only after you understand why duplicates exist. <code>DISTINCT</code> may be correct for the intended result, but it can also hide a bad join or an undefined entity grain.</p></details>
+    <details><summary>What is the fastest way to test an AI-generated SQL query?</summary><p>Write the expected row grain, run it on a tiny dataset with known edge cases, compare distinct counts before and after joins, and manually verify several included and excluded rows.</p></details>
+    <details><summary>Is EXPLAIN QUERY PLAN enough to validate SQL?</summary><p>No. It helps investigate how SQLite plans a query. It does not validate the meaning of the result.</p></details>
+  </section>
+
+  <section class="related">
+    <h2>Continue learning inside SQL Quest</h2>
+    <ul>
+      <li><a href="/blog/null-handling-mistakes/">NULL handling mistakes that silently change results</a></li>
+      <li><a href="/blog/sql-joins-explained/">SQL joins and cardinality, with runnable examples</a></li>
+      <li><a href="/blog/sql-group-by-tutorial/">GROUP BY grain, denominators, and common bugs</a></li>
+    </ul>
+  </section>
+
+  <section class="sources" id="sources">
+    <h2>Sources</h2>
+    <ul>
+      <li><a href="https://sqlite.org/lang_select.html">SQLite SELECT documentation</a>: joins, WHERE processing, aggregation, bare columns, and DISTINCT.</li>
+      <li><a href="https://sqlite.org/eqp.html">SQLite EXPLAIN QUERY PLAN documentation</a>: diagnostic use and output-format stability warning.</li>
+      <li><a href="https://platform.claude.com/docs/en/test-and-evaluate/develop-tests">Anthropic evaluation guidance</a>: defining measurable success criteria and developing test cases.</li>
+    </ul>
+  </section>
+</article>
+</main>
+
+<footer class="footer">© 2026 SQL Quest · <a href="/blog/">Blog</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a></footer>
+</body>
+</html>
