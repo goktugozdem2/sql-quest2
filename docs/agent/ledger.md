@@ -60,6 +60,19 @@ of the verifier and must never be rounded to `FLAT`.
   - **≥30 impressions** → read CTR, average position and actual query match.
   - Once **≥30 attributed app opens** exist, **<5% first-solve** means the
     handoff failed; **≥9%** holds the existing editorial baseline.
+  - **Amended 2026-09-09, before any data exists**, because the band between
+    those two numbers had no verdict and a 7% result would have left the claim
+    unresolved. **5–9% → the handoff works and is no better than the blog
+    average.** In that case the page keeps its place on search and GEO grounds
+    alone; do not cite it as evidence that editorial traffic converts, and do
+    not build the next two articles on that premise.
+  - **Expect `UNREADABLE` on the handoff side at the 10-07 read.** Every post
+    under `/blog/` together produced **46 arrivals in 90 days** (measured
+    2026-09-09, `door_solve_rate` by arrival door). One article reaching 30
+    attributed app opens in 28 days would be roughly twice the entire blog's
+    current rate. The impressions side already has its 1–29 → UNREADABLE rule;
+    the solve-rate side needs the same discipline, so do not read a 3-of-11 as
+    a percentage.
   - A verified AI citation or an `ai:*` arrival is a separate GEO success
     signal. It does not replace GSC evidence.
 - **Risk if wrong** is bounded: one new article, two internal discovery links,
