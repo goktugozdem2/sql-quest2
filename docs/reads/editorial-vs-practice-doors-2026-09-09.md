@@ -100,10 +100,23 @@ requirement this repo already enforces or a fact nobody has established yet.
 
 ### Blocking — cannot publish until answered
 
-1. **Do the three ClaudeQuest URLs exist?**
-   `/blog/practice-ai-prompting-with-feedback`, `/guides/mcp-tool-design`,
-   `/guides/agentic-architecture`. An editorial link to a 404 is worse than no
-   link, and it is the one thing the whole cross-domain rationale rests on.
+1. ~~**Do the three ClaudeQuest URLs exist?**~~ **CLEARED 2026-09-09.** All
+   three return 200 with real content: `/blog/practice-ai-prompting-with-feedback`
+   (H1 "Practice AI Prompting with Feedback: 6-Step Loop"),
+   `/guides/mcp-tool-design` ("MCP tool design: study the contract, not just
+   the call"), `/guides/agentic-architecture` ("Agentic architecture: choose
+   autonomy deliberately"). An invented path on the same site returns a true
+   404, so those 200s are not soft-404s.
+
+   **But two anchors over-promised, and are now fixed in the pack.** The MCP
+   guide was described as covering "naming, inputs, outputs, failure handling,
+   and testable behavior" — it has no naming section; its four decisions are
+   one clear purpose, a strict input contract, explicit side effects, and
+   recoverable execution. The agentic guide was linked as "agent orchestration
+   and stop-condition patterns" — the page uses neither phrase; it bounds loops
+   and evaluates trajectories. The ideas were right and the words were not,
+   which is the kind of anchor mismatch that reads as manipulation whether or
+   not it was meant that way.
 2. **Has every SQL example been run in SQLite?** The pack's own rule 8 says to
    do this. It says to; it does not say it was done. Our datasets are SQLite,
    and `julianday`, `strftime` and `INSTR` behave differently elsewhere.
@@ -143,8 +156,11 @@ requirement this repo already enforces or a fact nobody has established yet.
 
 ### Attribution and measurement
 
-11. **Per-article `src` tag, not `utm_source=blog`.** Detailed above. Decide the
-    three slugs now so they are stable from the first day of traffic.
+11. ~~**Per-article `src` tag, not `utm_source=blog`.**~~ **DONE 2026-09-09**,
+    in the pack. Slugs fixed now so they are stable from the first day of
+    traffic: `/app/?src=validate-ai-generated-sql`, `?src=build-ai-sql-tutor`,
+    `?src=sql-for-ai-agents`. Each will appear as its own row in the door table
+    above instead of merging into the existing `blog` bucket.
 12. **Does "assisted signup" exist as a metric?** The pack lists it as a success
     signal. We do not measure it. Either define it in
     `docs/agent/metrics.md` before publishing or drop it from the plan.
@@ -174,6 +190,9 @@ requirement this repo already enforces or a fact nobody has established yet.
 
 ### Not verified here
 
-19. The ClaudeQuest URLs, the production behaviour of `/app.html?…` redirects,
-    and current rankings for the three target queries. All three need a live
-    check, and I did not fetch production.
+19. ~~The ClaudeQuest URLs~~ (checked, above). Still unverified: the production
+    behaviour of `/app.html?…` redirects on Vercel — it is almost certainly
+    fine, since `blog-cte`, `blog-antijoin`, `blog-recursive` and
+    `blog-runningtotal` all have live arrivals through that form, but the fix
+    above makes it moot. And current rankings for the three target queries,
+    which need a GSC or SERP read nobody has done.
