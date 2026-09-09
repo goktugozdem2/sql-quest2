@@ -109,12 +109,43 @@ no bug to fix in the one path that has ever produced a sale.
 **So the constraint is not the ask.** It is that only 138 new people reached
 six solves in a month. At the observed 2-in-138, fifty payers a month needs
 roughly **3,450 people reaching six solves every month**, twenty-five times
-today. Against that: 5,069 accounts have **zero** solves, ever, and another
-376 have one to four.
+today.
 
 O1's payer column is an activation problem wearing a pricing problem's
-clothes. The lever is the first six solves, and the 105-opener claim reading
-on 09-13 is already pointed at exactly that stretch.
+clothes.
+
+## Where the activation loss actually is
+
+Same 30 days, people by `aid`, one row per person:
+
+| Stage | People | Step |
+|---|---|---|
+| Saw a landing page, never entered the app | 1,062 | |
+| Entered the app | 1,148 | |
+| Opened a challenge | 663 | 58% |
+| Solved one | 314 | 47% |
+| Solved six | 149 | 47% |
+
+Two leaks, each roughly a halving, and the second one is the interesting one:
+
+- **485 people entered the app and never opened a challenge.**
+- **349 people opened a challenge and never solved one.** These are the most
+  committed people we lose. They clicked into the product and tried.
+
+After the first solve the funnel is not the problem: 1→2 is 82% and 2→3 is
+89%. Everything hard happens before the first correct query.
+
+That is precisely the stretch the **105-opener claim reads on 09-13**, whose
+seat-level baseline (99 at 47.1%) matches the 663→314 step measured here from
+a different direction. Nothing about activation should ship before that
+verdict.
+
+**A number in an earlier draft of this note was misleading and is corrected
+here.** It said 5,069 accounts have zero solves ever. True of the `users`
+table, but **4,989 of those rows are `guest_*` identities**, and guests get a
+fresh identity on every page load — so that figure is a page-load count
+wearing a person's clothes. Only **79 registered accounts** have never solved
+anything. Count activation by `aid`, as the table above does.
 
 ## A risk this sharpens, for the 09-29 read
 

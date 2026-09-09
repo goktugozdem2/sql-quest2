@@ -889,6 +889,19 @@ of the verifier and must never be rounded to `FLAT`.
   first contacts — read 105-as-opener as the primary, overall as secondary.
   (ii) Traffic mix is shifting fast (+51% new people, `(none)` door 22→92);
   the seat-level read is mix-independent, the overall rate is not.
+- **Mechanism check, 2026-09-09 (NOT a verdict).** Run early on purpose: if
+  the deploy had not reached the front door there would still have been time
+  to fix it before the read window closed. It reached it. Since the 09-06
+  13:42Z deploy, **105 holds 37.4% of first contacts (40 of 107)** and **99
+  no longer appears in the top twelve** — its 52% share is gone, which is
+  exactly the substitution the metric demanded. Control 91 reads 75% (n=8)
+  against its 71% baseline, inside the ±10 mix band, but n=8 cannot carry
+  that test and the real control reading is due on 09-13.
+  **n=40 of the required 60**, accumulated in three days, so 60 arrives
+  around 09-11 and the 09-13 date holds. 105-as-opener is running at 55.0%,
+  which is inside the (c) inconclusive band and **is not to be acted on** —
+  the claim fixed n≥60 in advance and 40 is not 60. Recorded so the read is
+  known to be readable, not to pre-empt it.
 - **Verdict** _pending_
 
 ---

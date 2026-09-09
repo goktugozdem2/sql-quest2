@@ -127,9 +127,18 @@ about **3,450 people reaching six solves a month**, against 138 today. That
 is the same 25× the traffic arithmetic already gave, now anchored to a
 mechanism we have watched work rather than to an abstract signup→payer rate.
 It also says which 25× to chase: not visitors, not signups, but **people who
-get to their sixth solve** — 5,069 accounts have zero solves ever and 376
-have one to four. Activation is the objective's real denominator, and the
-09-13 105-opener read is the first evidence due on it.
+get to their sixth solve**. Activation is the objective's real denominator.
+
+Measured the same day, people by `aid` over 30 days: 1,148 entered the app,
+663 opened a challenge, **314 solved one**, 149 reached six. Two halvings,
+and the sharper one is 663→314 — 349 people who clicked into a challenge and
+never produced a correct query. After the first solve the funnel holds (1→2
+is 82%, 2→3 is 89%). Everything hard happens before the first correct query,
+which is exactly where the **09-13 105-opener read** is pointed.
+
+(An earlier version of this paragraph cited "5,069 accounts with zero solves".
+4,989 of those are `guest_*` rows and guests get a new identity per page load,
+so it was a page-load count. Only 79 registered accounts have never solved.)
 
 ### What serves it, and what does not
 
