@@ -1,23 +1,27 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- Published 2026-09-09, body rewritten 2026-09-09. This page owns the
-       task-specific query "validate AI-generated SQL"; /sql-for-the-ai-era/
-       remains the broad SQL + AI category page.
+  <!-- Published 2026-09-09; body rewritten and re-shelled 2026-09-09.
 
-       REWRITE NOTE. The first version taught on an invented customers/payments
-       schema, so a reader could not run any of it. Every query here now
-       executes against the shipped finans_fraud card ledger (200 accounts,
-       2165 transactions, 25 merchants, 76 chargebacks) and every number in the
-       prose — 200 rows, 24 rows, 1715 cross-border, 76 vs 59 — was produced by
-       running the query, not by estimating it. Re-verify with
-       scripts/validate-fraud-challenges.js's dataset loader if the generator
-       is ever re-run, because these numbers are data-dependent.
+       SHELL. This page now uses the SAME article shell as every other post
+       under /blog/ — #06060f ground, DM Sans body, Space Grotesk display
+       (.fd), JetBrains Mono code, the gradient-square ⚡ logo lockup, and the
+       .bp / .cta-main buttons. Its first two versions carried a bespoke shell
+       (Fraunces + a yellow CTA + a text-only wordmark), so a reader arriving
+       from /blog/ or /sql-for-the-ai-era/ landed on something that did not
+       look like the site that sent them. If you edit the shell here, edit it
+       because the whole blog changed, not because this page did.
 
-       Deep links point at ids 287, 290 and 291, which are the same lesson as
-       the section that links them. Do not add product-bank counts here: the
-       count guard cannot protect claims copied outside the product. Read
-       contract: docs/reads/validate-ai-sql-publish-decisions-2026-09-09.md. -->
+       CONTENT. Every query executes against the shipped finans_fraud card
+       ledger (200 accounts, 2165 transactions, 25 merchants, 76 chargebacks),
+       and every figure in the prose — 200 rows, 24 rows, 1715 cross-border,
+       76 against 59 — is asserted by tests/validate-ai-generated-sql.test.js
+       against that dataset. Re-running the generator breaks those tests on
+       purpose: correct the prose, do not loosen the assertions.
+
+       Deep links are 287, 290 and 291, each the lesson of the section that
+       links it. Do not add product-bank counts here; the count guard cannot
+       protect claims copied outside the product. -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>How to Validate AI-Generated SQL: 7 Production Checks | SQL Quest</title>
@@ -43,46 +47,81 @@
   ]}
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,800&amp;family=Geist:wght@300;400;500;600;700&amp;family=Geist+Mono:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&amp;family=Space+Grotesk:wght@400;600;700;800&amp;family=JetBrains+Mono:wght@400;700&amp;display=swap" rel="stylesheet">
   <style>
-    :root{--bg:#0e0f13;--surface:#16181f;--surface-2:#1f222b;--border:#2a2e38;--text:#f2f0ea;--muted:#8a8e99;--accent:#ffe34d;--accent-ink:#0e0f13;--blue:#7cc4ff;--green:#b5e48c;--orange:#ffb86c;--error:#ff6b6b;--max:1120px}
-    *,*::before,*::after{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--text);font-family:'Geist',sans-serif;font-size:16px;line-height:1.7;overflow-x:hidden}a{color:var(--blue);text-underline-offset:3px}a:hover{text-decoration-thickness:2px}a:focus-visible,summary:focus-visible{outline:2px solid var(--blue);outline-offset:4px;border-radius:4px}.display{font-family:'Fraunces',serif}.mono{font-family:'Geist Mono','JetBrains Mono',monospace}
-    .nav{position:sticky;top:0;z-index:10;background:rgba(14,15,19,.94);border-bottom:1px solid var(--border);backdrop-filter:blur(12px)}.nav-inner{max-width:var(--max);margin:auto;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px}.brand{color:var(--text);font-size:20px;font-weight:600;text-decoration:none}.primary{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:12px 16px;border-radius:6px;background:var(--accent);color:var(--accent-ink);font-weight:700;text-decoration:none}.primary:hover{text-decoration:none;transform:translateY(-1px)}
-    .article{max-width:780px;margin:auto;padding:72px 24px}.breadcrumb{font-size:14px;color:var(--muted);margin:0 0 32px}.breadcrumb a{color:var(--muted)}.kicker{font:600 12px/1.4 'Geist Mono',monospace;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin:0 0 16px}.article h1{font-size:clamp(42px,7vw,72px);line-height:1.03;letter-spacing:-.035em;margin:0 0 24px}.dek{font-size:20px;line-height:1.55;color:var(--muted);margin:0 0 24px}.meta{display:flex;flex-wrap:wrap;gap:8px 16px;color:var(--muted);font-size:14px;padding-bottom:32px;border-bottom:1px solid var(--border)}.answer{font-size:18px;color:var(--text);padding:24px 0;margin:0;border-bottom:1px solid var(--border)}
-    .toc{margin:32px 0;padding:24px;background:var(--surface);border:1px solid var(--border);border-radius:10px}.toc p{font:600 12px/1.4 'Geist Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0 0 12px}.toc ol{margin:0;padding-left:24px}.toc li{margin:4px 0}.toc a{color:var(--text)}
-    h2{font-family:'Fraunces',serif;font-size:clamp(30px,5vw,42px);line-height:1.12;letter-spacing:-.025em;margin:72px 0 16px;padding-top:12px;border-top:1px solid var(--border)}h3{font-size:20px;line-height:1.35;margin:32px 0 12px}p{margin:0 0 16px;color:var(--muted)}strong{color:var(--text);font-weight:600}ul,ol{color:var(--muted);padding-left:24px;margin:0 0 24px}li{margin:8px 0}code{font-family:'JetBrains Mono',monospace;font-size:.88em;color:var(--green)}
-    .code-block{background:var(--bg);border:1px solid var(--border);border-radius:6px;margin:24px 0;overflow:hidden}.code-label{font:500 12px/1.4 'Geist Mono',monospace;color:var(--muted);padding:8px 16px;background:var(--surface);border-bottom:1px solid var(--border)}pre{margin:0;padding:24px;overflow:auto}pre code{font-size:14px;line-height:1.75;color:var(--text)}.kw{color:var(--blue);font-weight:700}.str{color:var(--green)}.num{color:var(--orange)}.cmt{color:var(--muted);font-style:italic}
-    .callout{border-left:3px solid var(--blue);background:var(--surface);padding:16px 24px;margin:32px 0;border-radius:0 6px 6px 0}.callout p{margin:0}.checklist{list-style:none;padding:0}.checklist li{position:relative;padding-left:32px;margin:12px 0}.checklist li::before{content:'□';position:absolute;left:0;color:var(--blue);font-family:'Geist Mono',monospace}
-    .practice{margin:48px 0;padding:32px;border:1px solid var(--border);background:var(--surface);border-radius:10px}.practice h2{border:0;margin:0 0 12px;padding:0}.practice p{max-width:620px}.disclosure{font-size:14px;padding-top:16px;border-top:1px solid var(--border)}.related{margin:48px 0;padding:24px;border:1px solid var(--border);border-radius:6px}.related h2{font-family:'Geist',sans-serif;font-size:18px;border:0;margin:0 0 12px;padding:0}.related ul{margin:0}.faq details{border-bottom:1px solid var(--border);padding:16px 0}.faq summary{cursor:pointer;font-weight:600;color:var(--text);font-size:17px}.faq details p{margin:12px 0 0}.sources{font-size:14px}.sources li{margin:8px 0}.footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center;color:var(--muted);font-size:14px}
-    @media(max-width:600px){.nav-inner{padding:12px 16px}.primary{font-size:14px;padding:12px}.article{padding:48px 16px}.article h1{font-size:42px}.dek{font-size:18px}.practice{padding:24px}.code-block{margin-left:-8px;margin-right:-8px}}
-    @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.primary{transition:none}}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif;overflow-x:hidden}
+    .fd{font-family:'Space Grotesk',sans-serif}.fm{font-family:'JetBrains Mono','Fira Code',monospace}
+    a{color:#c084fc;text-decoration:none}a:hover{text-decoration:underline}
+    .nav{background:rgba(6,6,15,.95);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06);position:fixed;top:0;left:0;right:0;z-index:100}
+    .ni{max-width:1100px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+    .bp{padding:10px 24px;font-size:14px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:12px;font-weight:700;display:inline-block;text-decoration:none;transition:all .3s}.bp:hover{transform:translateY(-2px);text-decoration:none}
+    .article{max-width:740px;margin:0 auto;padding:120px 24px 80px}
+    .breadcrumb{font-size:13px;color:#64748b;margin-bottom:28px}.breadcrumb a{color:#64748b}.breadcrumb a:hover{color:#c084fc}
+    .kicker{font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:#64748b;margin-bottom:14px}
+    .article-meta{font-size:13px;color:#64748b;margin-bottom:32px;display:flex;gap:16px;flex-wrap:wrap}
+    h1{font-family:'Space Grotesk',sans-serif;font-size:clamp(28px,4vw,44px);font-weight:800;line-height:1.12;margin-bottom:20px}
+    .intro{font-size:17px;line-height:1.8;color:#94a3b8;border-left:3px solid #10b981;padding-left:20px;margin-bottom:40px}
+    .toc{background:rgba(15,15,30,.7);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:24px 28px;margin-bottom:48px}
+    .toc-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#64748b;margin-bottom:14px}
+    .toc ol{padding-left:20px}.toc li{font-size:14px;line-height:1.8;color:#94a3b8}.toc a{color:#c084fc}
+    h2{font-family:'Space Grotesk',sans-serif;font-size:clamp(20px,2.5vw,28px);font-weight:800;margin:48px 0 16px;padding-top:8px;border-top:1px solid rgba(255,255,255,.05)}
+    h3{font-size:18px;font-weight:700;color:#f1f5f9;margin:28px 0 12px}
+    p{font-size:15px;line-height:1.8;color:#94a3b8;margin-bottom:16px}
+    ul,ol{padding-left:22px;margin-bottom:20px}li{font-size:15px;line-height:1.8;color:#94a3b8;margin-bottom:6px}
+    li strong{color:#e2e8f0}strong{color:#e2e8f0}
+    code{background:rgba(16,185,129,.12);color:#10b981;padding:2px 7px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:13px}
+    .code-block{background:rgba(10,10,25,.8);border:1px solid rgba(255,255,255,.08);border-radius:12px;overflow:hidden;margin:24px 0}
+    .code-label{padding:10px 16px;background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.06);font-size:12px;color:#64748b;font-family:'JetBrains Mono',monospace}
+    .code-block pre{padding:20px;margin:0;overflow-x:auto}.code-block code{background:none;padding:0;color:#e2e8f0;font-size:14px;line-height:1.7}
+    .kw{color:#7CC4FF;font-weight:700}.str{color:#B5E48C}.num{color:#FFB86C}.cmt{color:#64748b;font-style:italic}
+    .callout{background:rgba(16,185,129,.08);border-left:3px solid #10b981;border-radius:0 12px 12px 0;padding:16px 20px;margin:24px 0}
+    .callout p{margin:0;font-size:14px;color:#a7f3d0}.callout strong{color:#d1fae5}
+    .warn{background:rgba(239,68,68,.06);border-left:3px solid #ef4444;border-radius:0 12px 12px 0;padding:16px 20px;margin:24px 0}
+    .warn p{margin:0;font-size:14px;color:#fecaca}.warn strong{color:#fee2e2}
+    .checklist{list-style:none;padding-left:0}.checklist li{position:relative;padding-left:28px}.checklist li::before{content:'□';position:absolute;left:0;color:#10b981;font-family:'JetBrains Mono',monospace}
+    .practice-link{display:inline-flex;align-items:center;gap:6px;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.25);border-radius:8px;padding:8px 16px;font-size:13px;color:#10b981;text-decoration:none;margin:8px 0;transition:all .2s}.practice-link:hover{background:rgba(16,185,129,.18);text-decoration:none}
+    .cta-box{background:linear-gradient(135deg,rgba(16,185,129,.12),rgba(124,58,237,.08));border:1px solid rgba(16,185,129,.25);border-radius:20px;padding:40px;text-align:center;margin:48px 0}
+    .cta-box h3{font-size:24px;margin-bottom:12px;color:#f1f5f9;font-family:'Space Grotesk',sans-serif}.cta-box p{max-width:480px;margin:0 auto 28px}
+    .cta-main{padding:14px 36px;font-size:16px;background:linear-gradient(135deg,#10b981,#7c3aed);color:#fff;border-radius:12px;font-weight:700;display:inline-flex;align-items:center;transition:all .3s;text-decoration:none}.cta-main:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(16,185,129,.35);text-decoration:none}
+    .disclosure{font-size:13px;color:#64748b;border-top:1px solid rgba(255,255,255,.06);padding-top:16px;margin-top:24px}
+    .related{background:rgba(15,15,30,.5);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:24px 28px;margin:40px 0}
+    .related h4{font-size:13px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px}
+    .related ul{margin-bottom:0;padding-left:20px}.related li{font-size:14px;line-height:1.8}
+    .sources{font-size:13px;color:#64748b;line-height:1.8}.sources li{font-size:13px;color:#64748b;margin-bottom:4px}
+    .faq details{border-bottom:1px solid rgba(255,255,255,.06);padding:14px 0}.faq summary{font-size:16px;font-weight:700;color:#e2e8f0;cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center}.faq summary::after{content:'+';color:#3b82f6;font-size:22px;flex-shrink:0;margin-left:16px}.faq details[open] summary::after{content:'−'}.faq details p{margin:12px 0 0;font-size:14px}
+    .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center}.ft p{font-size:13px;color:#475569}.ft a{color:#64748b}.ft a:hover{color:#c084fc}
+    @media(max-width:600px){.article{padding:100px 16px 60px}.cta-box{padding:28px 20px}}
+    @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.bp,.cta-main,.practice-link{transition:none}}
   </style>
   <script type="text/javascript">
     (function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y)})(window,document,"clarity","script","wovalt3jwh");
   </script>
 </head>
 <body>
-<nav class="nav"><div class="nav-inner">
-  <a class="brand display" href="/">SQL Quest</a>
-  <a class="primary" data-track="cta_blog" href="/app/?src=validate-ai-generated-sql">Practice SQL validation →</a>
+<nav class="nav"><div class="ni">
+  <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;">
+    <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:16px;">⚡</div>
+    <span class="fd" style="font-size:18px;font-weight:800;">SQL Quest</span>
+  </a>
+  <a data-track="cta_blog" href="/app/?src=validate-ai-generated-sql" class="bp">Practice Free →</a>
 </div></nav>
 
-<main>
 <article class="article">
   <p class="breadcrumb"><a href="/">Home</a> / <a href="/blog/">Blog</a> / Validate AI-Generated SQL</p>
   <p class="kicker">AI SQL validation</p>
   <h1>How to Validate AI-Generated SQL: 7 Checks Before Production</h1>
-  <p class="dek">AI writes syntactically valid SQL in seconds. The dangerous query is not the one that errors. It is the one that runs, returns plausible numbers, and answers a question nobody asked.</p>
-  <p class="meta"><span>Published September 9, 2026</span><span>10 min read</span><span>By Can Goktug Ozdem, Founder of SQL Quest</span></p>
+  <p class="intro">AI writes syntactically valid SQL in seconds. The dangerous query is not the one that errors. It is the one that runs, returns plausible numbers, and answers a question nobody asked.</p>
+  <p class="article-meta"><span>Published September 9, 2026</span><span>10 min read</span><span>By Can Goktug Ozdem, Founder of SQL Quest</span></p>
 
-  <p class="answer"><strong>Short answer:</strong> write the result contract first, verify the schema is real, test filters and NULLs, measure join cardinality, confirm the aggregation grain, check known rows by hand, then read the plan. Never approve a query from syntax alone, and never from row count alone &mdash; the wrong query below returns eight times more rows than the right one.</p>
+  <p><strong>Short answer:</strong> write the result contract first, verify the schema is real, test filters and NULLs, measure join cardinality, confirm the aggregation grain, check known rows by hand, then read the plan. Never approve a query from syntax alone, and never from row count alone &mdash; the wrong query below returns eight times more rows than the right one.</p>
 
   <div class="callout">
     <p><strong>Every query on this page runs.</strong> They execute against a card-transaction ledger of 200 cardholders, 2,165 transactions, 25 merchants and 76 chargebacks &mdash; the same data behind the fraud-analytics track in SQL Quest. Open it in the browser and check the numbers as you read.</p>
   </div>
 
-  <nav class="toc">
-    <p>Seven checks</p>
+  <div class="toc">
+    <p class="toc-title">Seven checks</p>
     <ol>
       <li><a href="#c1">Write the result contract</a></li>
       <li><a href="#c2">Verify the schema is real</a></li>
@@ -92,7 +131,7 @@
       <li><a href="#c6">Check known rows by hand</a></li>
       <li><a href="#c7">Read safety, cost, and the plan</a></li>
     </ol>
-  </nav>
+  </div>
 
   <h2 id="example">A query that runs, and is wrong for every row it returns</h2>
 
@@ -113,7 +152,11 @@
 
   <p>It returns <strong>200 rows</strong>. There are exactly 200 cardholders in the ledger, so this query has flagged <em>every single one</em> as never having transacted at home. Nothing about the output looks broken: the emails are real, the countries are real, the counts descend sensibly from 21.</p>
 
-  <p>The fault is one line. <code>WHERE</code> decides one row at a time, and <strong>&ldquo;never&rdquo; is a statement about a whole group</strong>, so it cannot live there. <code>WHERE m.country &lt;&gt; a.country</code> keeps the foreign transactions and discards the domestic ones &mdash; which means it deletes exactly the evidence that would have disqualified an account. What survives is the set of cardholders with <em>at least one</em> foreign transaction, and in this ledger 1,715 of 2,165 transactions cross a border, so that is nearly everybody.</p>
+  <div class="warn">
+    <p><strong>The fault is one line.</strong> <code>WHERE</code> decides one row at a time, and &ldquo;never&rdquo; is a statement about a whole group, so it cannot live there.</p>
+  </div>
+
+  <p><code>WHERE m.country &lt;&gt; a.country</code> keeps the foreign transactions and discards the domestic ones &mdash; which means it deletes exactly the evidence that would have disqualified an account. What survives is the set of cardholders with <em>at least one</em> foreign transaction, and in this ledger 1,715 of 2,165 transactions cross a border, so that is nearly everybody.</p>
 
   <p>The condition has to be expressed as a property of the group: count the transactions you do <em>not</em> want, and require that count to be zero.</p>
 
@@ -132,7 +175,7 @@
 
   <p>Notice which error is harder to catch. A query that returns nothing makes you look at it. This one returned more rows than the truth, and a reviewer skimming the top of the result would have seen plausible data and moved on. <strong>Volume reads as confidence.</strong> That is what makes generated SQL worth a procedure rather than a glance.</p>
 
-  <p><a data-track="cta_practice_validate_ai_sql_mid" href="/app/?challenge=290&amp;src=validate-ai-generated-sql">Solve this one yourself, on the same ledger &rarr;</a></p>
+  <a class="practice-link" data-track="cta_practice_validate_ai_sql_mid" href="/app/?challenge=290&amp;src=validate-ai-generated-sql">Solve this one yourself, on the same ledger →</a>
 
   <h2 id="c1">Check 1: write the result contract before you read the query</h2>
 
@@ -174,7 +217,7 @@
 
   <p>Test each predicate on its own, and build a fixture for every edge case &mdash; a test dataset of clean rows proves almost nothing. If NULL semantics are the weak point, the <a href="/challenges/null-handling/">NULL handling exercises</a> drill exactly this, and <a href="/blog/is-null-vs-equals-null/">IS NULL versus = NULL</a> covers why the comparison form never matches.</p>
 
-  <p><a data-track="cta_practice_validate_ai_sql_null" href="/app/?challenge=287&amp;src=validate-ai-generated-sql">Count resolved and still-open disputes yourself &rarr;</a></p>
+  <a class="practice-link" data-track="cta_practice_validate_ai_sql_null" href="/app/?challenge=287&amp;src=validate-ai-generated-sql">Count resolved and still-open disputes yourself →</a>
 
   <h2 id="c4">Check 4: measure join cardinality before you aggregate</h2>
 
@@ -200,7 +243,7 @@
 
   <p>When both aggregates are needed, compute them at their own grain in separate CTEs and join the results, rather than asking one pass to be two grains at once.</p>
 
-  <p><a data-track="cta_practice_validate_ai_sql_grain" href="/app/?challenge=291&amp;src=validate-ai-generated-sql">Compute spend and disputes without the fan-out &rarr;</a></p>
+  <a class="practice-link" data-track="cta_practice_validate_ai_sql_grain" href="/app/?challenge=291&amp;src=validate-ai-generated-sql">Compute spend and disputes without the fan-out →</a>
 
   <h2 id="c6">Check 6: check known rows by hand</h2>
 
@@ -233,11 +276,11 @@
     <li>The statement is a read, is bounded, and its plan has been looked at.</li>
   </ul>
 
-  <section class="practice">
-    <h2>Practice the judgment, not the syntax</h2>
-    <p>Reading about validation builds recognition. Catching a wrong query builds judgment, and that only comes from predicting a result, running it, and being wrong in a way you can see. Every query on this page came from the same ledger the exercises use, so you can carry on exactly where the article stops.</p>
-    <a class="primary" data-track="cta_practice_validate_ai_sql_end" href="/app/?challenge=290&amp;src=validate-ai-generated-sql">Practice SQL validation &mdash; free &rarr;</a>
-  </section>
+  <div class="cta-box">
+    <h3>Practice the judgment, not the syntax</h3>
+    <p>Reading about validation builds recognition. Catching a wrong query builds judgment, and that only comes from predicting a result, running it, and being wrong in a way you can see. Every query on this page came from the same ledger the exercises use.</p>
+    <a class="cta-main" data-track="cta_practice_validate_ai_sql_end" href="/app/?challenge=290&amp;src=validate-ai-generated-sql">Practice SQL validation — free →</a>
+  </div>
 
   <p>Validating SQL is one part of reviewing AI output. For a reusable workflow that tests prompts against success criteria and failure cases, continue with <a data-track="editorial_claudequest_click" href="https://claudequest.app/blog/practice-ai-prompting-with-feedback?ref=sqlquest&amp;utm_source=sqlquest&amp;utm_medium=editorial_link&amp;utm_campaign=validate_ai_generated_sql">ClaudeQuest&rsquo;s structured AI-output review loop</a>.</p>
   <p class="disclosure">SQL Quest and ClaudeQuest are independent Datrick learning products. SQL Quest is not affiliated with, endorsed by, or sponsored by Anthropic. Anthropic and Claude are trademarks of Anthropic PBC.</p>
@@ -254,15 +297,15 @@
       <p>No. It shows how SQLite intends to execute a query, which is a performance and diagnostic question. It cannot tell you the query answers the wrong question, and it reports healthy plans for correct and incorrect queries alike.</p></details>
   </section>
 
-  <section class="related">
-    <h2>Keep going</h2>
+  <div class="related">
+    <h4>Keep going</h4>
     <ul>
       <li><a href="/challenges/null-handling/">NULL handling exercises</a>: the failure mode behind most silent filter bugs.</li>
       <li><a href="/blog/sql-joins-explained/">SQL joins and cardinality, with runnable examples</a>.</li>
       <li><a href="/blog/sql-group-by-tutorial/">GROUP BY grain, denominators, and common bugs</a>.</li>
       <li><a href="/sql-for-the-ai-era/">SQL in the AI era</a>: why review skill is the part that keeps its value.</li>
     </ul>
-  </section>
+  </div>
 
   <section class="sources" id="sources">
     <h2>Sources</h2>
@@ -273,9 +316,10 @@
     </ul>
   </section>
 </article>
-</main>
 
-<footer class="footer">© 2026 SQL Quest · <a href="/blog/">Blog</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a></footer>
+<footer class="ft">
+  <p>© 2026 SQL Quest · <a href="/">Home</a> · <a href="/blog/">Blog</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a></p>
+</footer>
   <script defer src="/track.js"></script>
 </body>
 </html>
