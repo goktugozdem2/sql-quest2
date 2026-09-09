@@ -90,3 +90,90 @@ checking means fetching production.
 `/sql-exercises/` remains our best door on both measures, and the comparison
 pages are second. If the question is where an hour of content work returns most,
 the answer is still those two page types, not a fourth editorial article.
+
+---
+
+## Open questions and requirements before any of the three publish
+
+Ordered by whether they block. Everything in the first two groups is a
+requirement this repo already enforces or a fact nobody has established yet.
+
+### Blocking — cannot publish until answered
+
+1. **Do the three ClaudeQuest URLs exist?**
+   `/blog/practice-ai-prompting-with-feedback`, `/guides/mcp-tool-design`,
+   `/guides/agentic-architecture`. An editorial link to a 404 is worse than no
+   link, and it is the one thing the whole cross-domain rationale rests on.
+2. **Has every SQL example been run in SQLite?** The pack's own rule 8 says to
+   do this. It says to; it does not say it was done. Our datasets are SQLite,
+   and `julianday`, `strftime` and `INSTR` behave differently elsewhere.
+3. **Who is the author byline?** The pack proposes `SQLQuest Editorial Team`
+   for the Article schema. There is no editorial team — there is one founder.
+   Our whole outreach voice rule exists because the founder writing personally
+   is the advantage we have. A fictional team is a small lie in structured data
+   that a reader can check against the About page.
+4. **Which repo publishes these?** The pack sits in a Playground checkout. The
+   live site builds from `src/` in this repo. Somebody has to port them, and
+   the port is where the guards below apply.
+5. **What is the read date and what would count as failure?** Without a claim
+   in the ledger these are three pages nobody ever judges. Proposed baseline is
+   in the table above: editorial doors convert at ~9% first-solve.
+
+### Requirements this repo enforces automatically
+
+6. **Internal links in the same commit.** CLAUDE.md's orphan rule, learned the
+   hard way: four fintech pages sat unindexed on both engines with a healthy
+   sitemap because nothing linked to them. The pack says to link from
+   `/sql-for-the-ai-era/` "only if the links improve the reader's next step" —
+   that is good editorial instinct and it loses to the orphan rule. Ship the
+   homepage nav/footer entry and the hub link in the same commit or the pages
+   do not get crawled.
+7. **Sitemap entry, then `npm run indexnow`.** And the GSC submission needs the
+   full `https://sqlquest.app/sitemap.xml`, not `sitemap.xml`.
+8. **`scripts/build-static-pages.js` must inject `track.js`.** Confirm on the
+   built copies, not the sources. The injector's presence check has silently
+   skipped four pages before, costing 29 days of tracking on the homepage.
+9. **The FAQ guard.** All three drafts carry FAQ blocks.
+   `tests/faq-schema.test.js` ratchets against
+   `scripts/faq-schema-baseline.txt`, and the baseline can only shrink. New
+   pages must either satisfy it or be a deliberate baseline entry.
+10. **The counts guard.** If any draft states a challenge count, exercise
+    count, or "N free", `tests/site-counts.test.js` will check it against the
+    live bank. It has caught stale numbers that had already spread to 21 files.
+
+### Attribution and measurement
+
+11. **Per-article `src` tag, not `utm_source=blog`.** Detailed above. Decide the
+    three slugs now so they are stable from the first day of traffic.
+12. **Does "assisted signup" exist as a metric?** The pack lists it as a success
+    signal. We do not measure it. Either define it in
+    `docs/agent/metrics.md` before publishing or drop it from the plan.
+13. **Is `editorial_claudequest_click` a `[data-track]` click?** Only those
+    reach `pro_events`. Anything routed through `trackLanding` is still
+    Vercel-only and therefore discarded on Hobby — that is how five landing
+    events were silently lost for months.
+
+### Editorial judgment — the founder's calls, not mine
+
+14. **Cannibalisation.** We already have `/sql-for-the-ai-era/`,
+    `/blog/sql-for-ai-company-interviews`, and `/blog/sql-for-fraud-analytics`.
+    Do the three new pieces take queries from those, or add to them?
+15. **Three at once, or spaced?** Three articles landing the same day from a
+    site with 46 blog arrivals a quarter is a visible pattern.
+16. **Turkish versions?** `/turkce-sql-ogren/` ranks 11.5 and we already run
+    Turkish blog posts. AI+SQL is a thinner Turkish query space, but the
+    decision should be made rather than defaulted.
+17. **Is ClaudeQuest linking back?** The pack forbids copying the articles
+    there, which is right. Reciprocal editorial links between two sites owned
+    by the same company are still a pattern search engines model. One-directional
+    is safer, and worth stating explicitly rather than leaving to whoever writes
+    ClaudeQuest's pages.
+18. **Anthropic trademark, consistently.** The drafts carry a clear
+    no-affiliation line. We also run `/anthropic-sql-interview/`. Whatever the
+    standard is, it should be the same on both.
+
+### Not verified here
+
+19. The ClaudeQuest URLs, the production behaviour of `/app.html?…` redirects,
+    and current rankings for the three target queries. All three need a live
+    check, and I did not fetch production.
