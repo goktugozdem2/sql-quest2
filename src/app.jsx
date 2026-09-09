@@ -24,6 +24,7 @@ import { backfillLegacyAttempts } from './utils/challenge-helpers.js';
 import { resolveProAccess } from './utils/pro-access.js';
 import { pickNextChallengeWith, pickTopNWith, makeChallengeComparator, hardPreviewCounts, isFreePreview } from './utils/challenge-order.js';
 import { paidWallFor, isColdStart } from './utils/paid-wall.js';
+import { expandStageChallenges, placementStartIndex as roadmapPlacementStartIndex } from './utils/roadmap.js';
 import { shouldEmitLockEvent, lockEventKey } from './utils/lock-events.js';
 import { shouldAskForReview, enabledReviewPlatforms, REVIEW_ASK_REASONS } from './utils/review-ask.js';
 import { eligibleTargets, findTarget, companyReadiness, planToDate, daysUntil, readinessBucket, MIN_EVIDENCE_SOLVES, PREP_PLAN_STATUS } from './utils/interview-prep.js';
@@ -1907,6 +1908,11 @@ const SQL_ROADMAP_STAGES = [
     roadmapLessonIds: [1, 2],
     requiredChallengeCount: 0,
     challengeIds: [91, 92],
+    // Canonical skills this stage teaches, and the hardest difficulty it may
+    // ACQUIRE. Curated ids above are exempt from the ceiling; this bounds only
+    // what src/utils/roadmap.js appends. See that file for why.
+    skills: ["Querying Basics"],
+    maxDifficulty: 'Easy',
     outcomes: ['Read a table', 'Choose columns', 'Run a safe small query'],
   },
   {
@@ -1917,6 +1923,11 @@ const SQL_ROADMAP_STAGES = [
     lessonIds: [3, 4, 5],
     roadmapLessonIds: ['filtering-where', 'filtering-logic'],
     challengeIds: [93, 94, 95, 96, 97, 102],
+    // Canonical skills this stage teaches, and the hardest difficulty it may
+    // ACQUIRE. Curated ids above are exempt from the ceiling; this bounds only
+    // what src/utils/roadmap.js appends. See that file for why.
+    skills: ["Querying Basics"],
+    maxDifficulty: 'Easy',
     outcomes: ['Filter rows', 'Combine conditions', 'Sort top results'],
   },
   {
@@ -1927,6 +1938,11 @@ const SQL_ROADMAP_STAGES = [
     lessonIds: [6, 7, 8],
     roadmapLessonIds: ['aggregates-count', 'aggregates-group'],
     challengeIds: [98, 99, 100, 107],
+    // Canonical skills this stage teaches, and the hardest difficulty it may
+    // ACQUIRE. Curated ids above are exempt from the ceiling; this bounds only
+    // what src/utils/roadmap.js appends. See that file for why.
+    skills: ["Aggregation & Grouping"],
+    maxDifficulty: 'Medium',
     outcomes: ['Summarize rows', 'Group categories', 'Filter groups'],
   },
   {
@@ -1937,6 +1953,11 @@ const SQL_ROADMAP_STAGES = [
     lessonIds: [9],
     roadmapLessonIds: ['joins-inner', 'joins-left'],
     challengeIds: [105, 106, 19, 34],
+    // Canonical skills this stage teaches, and the hardest difficulty it may
+    // ACQUIRE. Curated ids above are exempt from the ceiling; this bounds only
+    // what src/utils/roadmap.js appends. See that file for why.
+    skills: ["Joins"],
+    maxDifficulty: 'Medium',
     outcomes: ['Connect tables', 'Keep unmatched records', 'Avoid duplicate surprises'],
   },
   {
@@ -1947,7 +1968,54 @@ const SQL_ROADMAP_STAGES = [
     lessonIds: [],
     roadmapLessonIds: ['cleanup-null-case', 'cleanup-text-dates'],
     challengeIds: [103, 104, 109, 110, 37, 57],
+    // Canonical skills this stage teaches, and the hardest difficulty it may
+    // ACQUIRE. Curated ids above are exempt from the ceiling; this bounds only
+    // what src/utils/roadmap.js appends. See that file for why.
+    skills: ["Conditional Logic", "NULL Handling"],
+    maxDifficulty: 'Medium',
     outcomes: ['Handle NULL safely', 'Create labels', 'Calculate useful fields'],
+  },
+  // Two of the nine canonical skills had no stage at all until 2026-09-09, so
+  // the recommended path could never route anyone to String or Date work no
+  // matter how weak their radar showed it. Both now have a topic page and a
+  // full challenge set behind them; these are the stages that reach them.
+  // No lessonIds yet — getSqlRoadmapState treats an empty lesson list as a
+  // zero-lesson goal, so the stage completes on its first solve.
+  {
+    id: 'strings',
+    // Gated by FEATURE_FLAGS.features.roadmapV2 — with the flag off this
+    // stage is filtered out entirely, so nothing renders an empty stage.
+    v2Only: true,
+    title: 'Working With Text',
+    level: 'Intermediate',
+    summary: 'SUBSTR, INSTR, REPLACE, TRIM, LIKE patterns, and splitting fields apart.',
+    lessonIds: [],
+    roadmapLessonIds: [],
+    challengeIds: [],
+    // Canonical skills this stage teaches, and the hardest difficulty it may
+    // ACQUIRE. Curated ids above are exempt from the ceiling; this bounds only
+    // what src/utils/roadmap.js appends. See that file for why.
+    skills: ["String Functions"],
+    maxDifficulty: 'Medium',
+    outcomes: ['Pull a field out of a string', 'Normalise messy text', 'Match a shape'],
+  },
+  {
+    id: 'dates',
+    // Gated by FEATURE_FLAGS.features.roadmapV2 — with the flag off this
+    // stage is filtered out entirely, so nothing renders an empty stage.
+    v2Only: true,
+    title: 'Dates and Time',
+    level: 'Intermediate',
+    summary: 'Date parts, ranges, truncation, and answering "per month" honestly.',
+    lessonIds: [],
+    roadmapLessonIds: [],
+    challengeIds: [],
+    // Canonical skills this stage teaches, and the hardest difficulty it may
+    // ACQUIRE. Curated ids above are exempt from the ceiling; this bounds only
+    // what src/utils/roadmap.js appends. See that file for why.
+    skills: ["Date Functions"],
+    maxDifficulty: 'Medium',
+    outcomes: ['Filter a date range', 'Group by month', 'Measure a span'],
   },
   {
     id: 'subqueries',
@@ -1957,6 +2025,11 @@ const SQL_ROADMAP_STAGES = [
     lessonIds: [10],
     roadmapLessonIds: ['subqueries-compare', 'subqueries-derived'],
     challengeIds: [108, 115, 31, 33, 35],
+    // Canonical skills this stage teaches, and the hardest difficulty it may
+    // ACQUIRE. Curated ids above are exempt from the ceiling; this bounds only
+    // what src/utils/roadmap.js appends. See that file for why.
+    skills: ["Subqueries & CTEs"],
+    maxDifficulty: 'Medium',
     outcomes: ['Compare to averages', 'Use query results inside queries', 'Break analysis into steps'],
   },
   {
@@ -1967,6 +2040,11 @@ const SQL_ROADMAP_STAGES = [
     lessonIds: [],
     roadmapLessonIds: ['ctes-with', 'ctes-recursive'],
     challengeIds: [111, 43, 44, 79],
+    // Canonical skills this stage teaches, and the hardest difficulty it may
+    // ACQUIRE. Curated ids above are exempt from the ceiling; this bounds only
+    // what src/utils/roadmap.js appends. See that file for why.
+    skills: ["Subqueries & CTEs"],
+    maxDifficulty: 'Medium',
     outcomes: ['Name intermediate results', 'Build readable pipelines', 'Handle hierarchy problems'],
   },
   {
@@ -1977,6 +2055,11 @@ const SQL_ROADMAP_STAGES = [
     lessonIds: [],
     roadmapLessonIds: ['windows-rank', 'windows-compare'],
     challengeIds: [112, 23, 24, 47, 50, 67, 73],
+    // Canonical skills this stage teaches, and the hardest difficulty it may
+    // ACQUIRE. Curated ids above are exempt from the ceiling; this bounds only
+    // what src/utils/roadmap.js appends. See that file for why.
+    skills: ["Window Functions"],
+    maxDifficulty: 'Medium',
     outcomes: ['Rank within groups', 'Compare neighboring rows', 'Calculate running metrics'],
   },
 ];
@@ -11084,14 +11167,18 @@ CRITICAL RULES:
     if (!go()) window.requestAnimationFrame(() => { if (!go()) window.setTimeout(go, 150); });
   };
 
+  // Placement start is resolved BY STAGE ID, not by array position. This used
+  // to read `basics -> 1, working -> 3, advanced -> 6` as bare numbers, which
+  // meant a different stage the moment anybody inserted one — and on
+  // 2026-09-09 two stages were inserted (strings, dates), because String and
+  // Date Functions were the two canonical skills with no stage at all. The id
+  // map lives in src/utils/roadmap.js and tests/roadmap.test.js asserts it
+  // still reproduces 1/3/6 against the live list.
   const getRoadmapPlacementStartIndex = () => {
     const levelId = firstRunLevel || (() => {
       try { return localStorage.getItem(FIRST_RUN_LEVEL_KEY) || ''; } catch (_) { return ''; }
     })();
-    if (levelId === 'basics') return 1;
-    if (levelId === 'working') return 3;
-    if (levelId === 'advanced') return 6;
-    return 0;
+    return roadmapPlacementStartIndex(activeRoadmapStages, levelId);
   };
 
   const isRoadmapLessonComplete = (itemOrId) => {
@@ -12354,9 +12441,34 @@ CRITICAL RULES:
     }));
   };
 
+  // The recommended path, as the rest of the app should read it.
+  //
+  // Flag OFF (today): exactly the eight hand-authored stages, with the two
+  // v2-only stages filtered out so nothing renders an empty one. Byte-for-byte
+  // the old behaviour.
+  //
+  // Flag ON: ten stages, each grown from the live bank by
+  // src/utils/roadmap.js. Every stage still BEGINS with its authored ids in
+  // their authored order — that prefix is what tests/roadmap.test.js pins — so
+  // first contact and the teaching order are untouched either way. Pro users
+  // get Hard challenges in the pool; everyone else gets only what they can
+  // open, so the path never recommends a locked challenge.
+  const activeRoadmapStages = useMemo(() => {
+    if (!FF.feature('roadmapV2')) return SQL_ROADMAP_STAGES.filter(stage => !stage.v2Only);
+    const goal = (typeof window !== 'undefined' && window.coachGoals || [])
+      .find(g => g.id === coachState?.goalId) || null;
+    return expandStageChallenges({
+      stages: SQL_ROADMAP_STAGES,
+      challenges,
+      goal,
+      sector: userGoals?.sector || null,
+      includeLocked: isPro,
+    });
+  }, [challenges, coachState?.goalId, userGoals?.sector, isPro]);
+
   const getSqlRoadmapState = () => {
     const placementStartIndex = getRoadmapPlacementStartIndex();
-    const stages = SQL_ROADMAP_STAGES.map((stage, index) => {
+    const stages = activeRoadmapStages.map((stage, index) => {
       const availableLessons = (stage.roadmapLessonIds || stage.lessonIds || [])
         .map(lessonId => {
           const lesson = ROADMAP_LESSONS_BY_ID[lessonId];
@@ -21866,7 +21978,7 @@ RULES:
       .filter(c => {
         if (searchActive) return true;
         if (selectedPathStageId === 'all') return true;
-        const selectedStage = SQL_ROADMAP_STAGES.find(stage => stage.id === selectedPathStageId);
+        const selectedStage = activeRoadmapStages.find(stage => stage.id === selectedPathStageId);
         if (!selectedStage) return true;
         return (selectedStage.challengeIds || []).includes(c.id);
       })
@@ -33253,7 +33365,7 @@ RULES:
                             </button>
                           </div>
                           <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
-                            {SQL_ROADMAP_STAGES.map(stage => {
+                            {activeRoadmapStages.map(stage => {
                               const stageSelected = selectedPathStageId === stage.id && challengePathFilter !== 'all';
                               const stageChallenges = (stage.challengeIds || [])
                                 .map(id => challenges.find(challenge => challenge.id === id))
@@ -33491,7 +33603,7 @@ RULES:
                           <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-gray-800">
                             <span className="text-xs text-gray-500 self-center mr-1">{tPractice('activeFilters')}:</span>
                             {challengePathFilter !== 'recommended' && challengePathFilter !== 'all' && (() => {
-                              const stage = SQL_ROADMAP_STAGES.find(item => item.id === challengePathFilter);
+                              const stage = activeRoadmapStages.find(item => item.id === challengePathFilter);
                               return (
                                 <button
                                   onClick={() => setChallengePathFilter('all')}

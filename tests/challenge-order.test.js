@@ -59,7 +59,7 @@ function extractRoadmapStageChallengeIds(source) {
   const re = /challengeIds:\s*\[([^\]]*)\]/g;
   let m;
   while ((m = re.exec(block)) !== null) {
-    const ids = m[1].split(',').map(s => Number(s.trim())).filter(n => Number.isInteger(n));
+    const ids = m[1].split(',').map(s => s.trim()).filter(Boolean).map(Number).filter(n => Number.isInteger(n));
     stages.push({ challengeIds: ids });
   }
   return stages;

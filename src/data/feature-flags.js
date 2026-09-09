@@ -30,6 +30,22 @@ window.FEATURE_FLAGS = {
   // FEATURES
   features: {
     aiTutor: true,
+    // Roadmap v2 — the recommended path stops hand-listing 38 challenge ids
+    // and grows each stage from the live bank, plus two new stages for the
+    // two canonical skills that had none (String Functions, Date Functions).
+    // Coverage goes from 38 of 287 to 134 of the 219 free challenges, and 20
+    // sector challenges become reachable for the first time.
+    //
+    // SHIPPED OFF ON PURPOSE (2026-09-09), same reasoning as reviewAsk below.
+    // It changes what the Practice tab recommends, which is the same stretch
+    // of funnel the open "105 opener" ledger claim measures until its read on
+    // 2026-09-13. One surface, one change at a time
+    // (docs/data-driven-product.md P7). Flip to true AFTER that verdict.
+    //
+    // Turning it on does NOT move anyone's first contact: every stage's
+    // authored ids stay first in their authored order, and
+    // tests/roadmap.test.js fails if that prefix is ever disturbed.
+    roadmapV2: false,
     dailyChallenge: true,
     mockInterviews: true,
     smartErrorFeedback: true,
