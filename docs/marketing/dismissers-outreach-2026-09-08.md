@@ -330,3 +330,43 @@ against the branch. Specifically:
 
 Send no more than four a day, spread across the day. Thirteen inside a minute
 is the fingerprint bulk filters look for (`docs/outreach-2026-08-05.md`).
+
+---
+
+## Replies received
+
+### 1. hakko504 — replied 2026-09-09, 13 hours after sending
+
+The first reply the campaign has produced. Verbatim substance, his words:
+
+- **A consultant, systems admin for the last few years, currently between
+  assignments.** Learning SQL "as a way of improving my CV" because he
+  "believes it can come in handy in the future."
+- Calls the site "an excellent (and free) way of learning the basics."
+- **"I fully intend to purchase Pro for at least one month, once I've cleared
+  all the medium grade exercises and is about to start on the hard ones."**
+- On hold through most of September — he picked up a short assignment.
+
+**What it settles, against the question-design list above:**
+
+- He named **no sector**, unprompted, in a free-text answer about his career.
+  That is one vote for dropping the sector branch. It is one vote.
+- He named **no exam and no deadline**. His `job_ready` intent label is doing
+  real work — improving a CV *is* the goal — but there is no date attached to
+  it, which our current question cannot distinguish from an interview next
+  Tuesday. That distinction, deadline vs no deadline, looks more load-bearing
+  than sector or role. Q1 should ask for it.
+- He named a **role-adjacent identity** (consultant / sysadmin) rather than
+  analyst / engineer / scientist. None of our three role buttons fit him.
+
+**What it costs us to take at face value:** he states a purchase intent
+conditioned on exhausting the free Medium bank. He has **54 Mediums left** of
+120, so that condition is a long way off, and it is the reason he has not
+bought at 149 solves. This is the single datapoint behind the
+`docs/reads/purchase-timing-2026-09-09.md` conclusion that depth without a
+deadline does not convert — treat it as one person's stated plan, which is
+weaker evidence than a purchase and stronger than a guess.
+
+**Owed:** a reply. Draft below. No pitch, per the rule — and specifically no
+nudge toward buying sooner, because the honest answer to his stated plan is
+that there is more free content than he thinks, which delays it.

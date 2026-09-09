@@ -88,6 +88,49 @@ point is knowing which factor is missing.
 - **Neither** → the objective was the wrong shape and the honest move is to
   say so and pick a different one, not to extend the deadline.
 
+### Correction, 2026-09-09: what a purchase actually looks like
+
+Measured against all four purchases in the product's history
+(`docs/reads/purchase-timing-2026-09-09.md`): **every one was a first-session
+decision, made with ten solves or fewer, between 14 minutes and 5 hours after
+the buyer's first tracked event.** Their present-day solve counts of 24-39
+were earned *after* paying.
+
+Both purchases since 2026-07-23 came from the **milestone modal's 6-solve
+rung**, first session, 31 seconds and 7 minutes from modal to payment. That
+rung shipped on 07-23 and is the only paywall change in our history that has
+been followed by a sale.
+
+Three consequences for the decomposition above:
+
+- The signup→payer rate of 1.2% is not a nurture rate. It is a rate at which
+  arriving visitors decide inside one sitting.
+- `paywall_ask_efficiency` keeps its billing, but **not aimed where the plan
+  aims it.** The surface with a track record is the milestone ladder's first
+  rung at six solves, not the Hard lock and not the returning engaged
+  account. Nothing has ever been sold to a user with a month of history.
+- The counter-example is decisive rather than merely absent. Our deepest
+  non-payer has 149 solves and told us in writing he is learning for his CV
+  with no deadline. Depth without a deadline does not buy.
+
+The 09-20 / 09-29 / 11-24 reads stand. What changes is where to look first
+when they come back flat: at whether the six-solve rung still fires and still
+converts, before concluding anything about the lock surfaces.
+
+**And it is firing.** Over the 30 days to 2026-09-09, 138 new people reached
+six distinct solves and **135 of them (98%) were asked**; 5 clicked, 2 paid.
+The ask machinery has no leak. So the binding constraint on the payer column
+is the 138 — not the 98%, and not the wording of the modal.
+
+**O1 restated in the terms the data supports:** fifty payers a month needs
+about **3,450 people reaching six solves a month**, against 138 today. That
+is the same 25× the traffic arithmetic already gave, now anchored to a
+mechanism we have watched work rather than to an abstract signup→payer rate.
+It also says which 25× to chase: not visitors, not signups, but **people who
+get to their sixth solve** — 5,069 accounts have zero solves ever and 376
+have one to four. Activation is the objective's real denominator, and the
+09-13 105-opener read is the first evidence due on it.
+
 ### What serves it, and what does not
 
 Claims currently pointed at O1, with their own read dates:

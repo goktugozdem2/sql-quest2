@@ -43,7 +43,15 @@ after the Aug-29 read).
 
 ## Per-platform notes
 
-### AlternativeTo — alternativeto.net (priority 1)
+### AlternativeTo — alternativeto.net (priority 1) — **LIVE 2026-09-09**
+
+> Submitted 2026-09-08, approved and published 2026-09-09. This is the first
+> third-party listing we have anywhere, and per the note at the top of this
+> file it is the surface the AI assistants read back — so what it says about
+> us now outranks what our own pages say. Re-read the listing text against
+> the live product before the next `genai_recommendation` read; a stale
+> challenge count there is harder to correct than one on our own site.
+
 - Account: any email. Submit: "Add an application".
 - List as alternative to: **DataLemur, StrataScratch, LeetCode, HackerRank,
   SQLZoo, Mode SQL Tutorial, DataCamp, sql-practice.com**
