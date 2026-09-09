@@ -27,6 +27,47 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### validate AI-generated SQL: a non-brand answer door with a practice handoff
+
+- **Claimed** 2026-09-09. The page is new, so its baseline is zero by
+  construction. In GSC's 90-day exact-query filter, `validate ai generated
+  sql` had **0 impressions and 0 clicks** before publication.
+- **Change** publish `/blog/validate-ai-generated-sql/`: a seven-check,
+  source-backed workflow with three SQLite-tested queries, one named practice
+  handoff repeated at the worked example and close, three contextual SQLQuest
+  links, and one tracked,
+  editorial SQLQuest → ClaudeQuest link. `/blog/` and
+  `/sql-for-the-ai-era/` link back to it in the same change.
+- **Why** 81% of search clicks were still branded at the 2026-09-08 traffic
+  read. This page answers a task-shaped, non-brand query close to the product's
+  actual value: detecting when plausible SQL is wrong. It is a search and GEO
+  door first, not a claim that editorial traffic will convert like practice
+  traffic.
+- **Metric** GSC impressions and clicks for the page/query cluster, plus
+  `blog_practice_exit` for attributed app opens and first solves. Identity and
+  exclusions follow that metric's existing definition. The practice events are
+  `cta_practice_validate_ai_sql_mid` and
+  `cta_practice_validate_ai_sql_end`; the CTA source is
+  `validate-ai-generated-sql`; the cross-product event is
+  `editorial_claudequest_click`.
+- **Index check** 2026-09-16. Not indexed means a discovery/distribution
+  failure, not a content verdict.
+- **Read date** 2026-10-07, 28 days after publication.
+- **Target and falsification:**
+  - **0 non-brand impressions** by day 28 → acquisition/query hypothesis
+    falsified. Do not clone or translate the page.
+  - **1–29 impressions** → `UNREADABLE`; reread on day 56.
+  - **≥30 impressions** → read CTR, average position and actual query match.
+  - Once **≥30 attributed app opens** exist, **<5% first-solve** means the
+    handoff failed; **≥9%** holds the existing editorial baseline.
+  - A verified AI citation or an `ai:*` arrival is a separate GEO success
+    signal. It does not replace GSC evidence.
+- **Risk if wrong** is bounded: one new article, two internal discovery links,
+  and one contextual cross-product link. Removal is a page-and-links revert;
+  no product or paywall behavior changes.
+- Full publication decisions and checks:
+  `docs/reads/validate-ai-sql-publish-decisions-2026-09-09.md`.
+
 ### blog posts get a real exit: one named challenge, at the moment the idea lands
 
 - **Claimed** 2026-09-08 — built and tested; ships with the next static-page
@@ -1220,4 +1261,3 @@ of the verifier and must never be rounded to `FLAT`.
   against #100's 25%. #99 measures 85% mid-curriculum, so this is the same
   lesson as #100 — a challenge that is easy in context is hard as a first
   contact. Worth a follow-up, not a revert.
-
