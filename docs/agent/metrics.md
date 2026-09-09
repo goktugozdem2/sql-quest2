@@ -160,6 +160,63 @@ later step (08-06) and 47% as the 'working' opener (28-day read, n=221);
 solve-through in one seat to another challenge's in a different seat is not
 a comparison. Compare openers to openers.
 
+## `reach_6_rate`
+
+Of the people who solve at least one challenge in the window, the share who
+reach **six distinct** solves. Six is not arbitrary: it is the rung the
+milestone modal fires on (`src/app.jsx`, tier ladder 6/10/25/50, the 6 added
+2026-07-23 in `66942c5`), and that modal is the only paywall surface that has
+produced a sale since. So this is the activation number closest to revenue.
+
+**Count people, not events, and count DISTINCT challenge ids** — a re-solve is
+not depth, and `challenge_solved` fires per submission.
+
+```sql
+WITH base AS (
+  SELECT coalesce(((metadata #>> '{}')::jsonb)->>'aid', username) AS pid,
+         event, ((metadata #>> '{}')::jsonb)->>'challengeId' AS cid
+  FROM pro_events
+  WHERE created_at >= :since AND <shared filters>
+), per AS (
+  SELECT pid, count(DISTINCT cid) FILTER (
+           WHERE event = 'challenge_solved' AND cid IS NOT NULL) AS solves
+  FROM base GROUP BY pid
+)
+SELECT count(*) FILTER (WHERE solves >= 1) AS solved_1,
+       count(*) FILTER (WHERE solves >= 6) AS solved_6,
+       round(100.0*count(*) FILTER (WHERE solves >= 6)
+             / nullif(count(*) FILTER (WHERE solves >= 1), 0), 1) AS reach_6_pct
+FROM per;
+```
+
+Measured 2026-09-09, 30 days: **314 solved one, 149 reached six, 47.4%.**
+
+The full funnel it sits in, same window and definition: 1,148 entered the app,
+663 opened a challenge, 314 solved one, 149 reached six. Two halvings, and the
+sharper one is 663→314. After the first solve the funnel holds — 1→2 is 82%,
+2→3 is 89% — so everything hard happens before the first correct query.
+
+## `share_of_solves_on_the_38`
+
+What fraction of all solves land on the 38 challenge ids the recommended path
+hand-listed before roadmap v2. A **mechanism** check, not an outcome: if a
+change is supposed to widen what people can find and this does not fall, the
+change never reached the surface and any outcome number is measuring traffic
+mix instead. Same role `first_contact_share(99)` plays for the 105 claim.
+
+The 38 ids are the `challengeIds` arrays of the eight pre-2026-09-09 stages in
+`SQL_ROADMAP_STAGES`. Read them from source rather than pasting a copy here —
+`tests/roadmap.test.js` parses them the same way, and a fixture would drift.
+
+Measured 2026-09-09 across 299 engaged users (5+ solves): **66.1%**, with the
+average engaged user having solved 17.1 of 213 free challenges.
+
+**Beware the double-count trap when you compute the denominator.**
+`src/data/sector-challenges.js` APPENDS itself to `window.challengesData`, so
+concatenating it with `src/data/challenges.js` counts every sector challenge
+twice. That has produced two wrong measurements already. Load `public/data.js`,
+or import both modules and read `window.challengesData` once.
+
 ## `weekly_engaged`
 
 The north star. Distinct users with 5+ lifetime solves who were active in the

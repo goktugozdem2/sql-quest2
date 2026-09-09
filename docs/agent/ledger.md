@@ -812,6 +812,63 @@ of the verifier and must never be rounded to `FLAT`.
   the hard and bridge+ bands, which are the read.
 - **Verdict** _pending_
 
+### the recommended path stops hand-listing 38 of 287 challenges
+- **Claimed** 2026-09-09, **shipped behind `features.roadmapV2 = false`**.
+  The claim is written now, before the flag is flipped, because a target
+  invented after seeing the data is not a target.
+- **Why now** `SQL_ROADMAP_STAGES` hand-listed 38 challenge ids, and the
+  Practice tab's path filter defaults to `'recommended'`, which resolves to the
+  user's *current* stage. So the default view of a 287-challenge bank showed
+  between 2 and 7 challenges. Measured 2026-09-09 across 299 engaged users
+  (5+ solves): **66.1% of every solve lands on those 38 ids**, and the average
+  engaged user has solved **17.1 of 213 free challenges**. No sector challenge
+  (200-299) was reachable from any stage, and String Functions and Date
+  Functions — two of the nine canonical skills — had no stage at all.
+- **Change** `src/utils/roadmap.js` grows each stage from the live bank by the
+  stage's own canonical skills and a difficulty ceiling, plus two new stages for
+  the two missing skills. Verified in the browser: 38 → **134 of the 219 free
+  challenges**, Foundations 2 → 14 exercises, 20 sector challenges reachable.
+  Curated ids stay first in their authored order (prefix test + mutation test),
+  so first contact is untouched.
+- **Metric** `reach_6_rate` — of people who solve at least one challenge in the
+  window, the share who reach six distinct solves. Six is the rung the milestone
+  modal fires on and the only surface that has produced a sale since 07-23, so
+  it is the activation number that touches revenue.
+  **Baseline: 47.4% (149 of 314), 30 days to 2026-09-09, people by `aid`.**
+- **Mechanism check, and it must pass before the outcome is read:**
+  `share_of_solves_on_the_38` must fall from **66.1%**. If it does not, the
+  wider path never reached anybody and the outcome number is measuring traffic
+  mix. Same shape as the 105 claim's `first_contact_share(99)` check.
+- **Control** first-contact activation must not move. This change appends only;
+  it never reorders a curated id and never touches `FIRST_RUN_PATHS`. If first
+  contacts move at all, something appended is being served as an opener and the
+  change is not what it claims to be.
+- **Target** `reach_6_rate` ≥ **55%** at n ≥ 250 solvers, with
+  `share_of_solves_on_the_38` below 50%.
+- **Read on** **2026-10-13**, and not before — the flag cannot be flipped until
+  the 105-opener claim reads on 09-13, because both act on the same stretch of
+  funnel. Thirty days of post-flip data from a 09-13 flip lands on 10-13.
+- **Falsification, stated in advance:**
+  (a) `reach_6_rate` ≥ 55% with the mechanism check passing → discoverability
+  was a real constraint on depth; next is raising the per-stage cap of 14 and
+  giving the two new stages lessons.
+  (b) mechanism passes, `reach_6_rate` within ±3 points of 47.4% → **people were
+  not short of findable work.** This is the outcome I expect to be most likely,
+  because the nine users who cleared 30+ of the 38 all found their way off the
+  roadmap unaided, averaging 44 off-roadmap solves. Keep the change on
+  correctness grounds — 85% of the bank being unreachable by default is a defect
+  either way — and stop spending on discoverability. The next lever is the goal
+  picker: 230 people were shown it in 30 days and **51 set a goal**, and goal
+  setters reach six solves at 68.6% against 35.2% for people who saw the picker
+  and did not. That gap is confounded by self-selection and is the largest
+  unexplained gap in the funnel.
+  (c) mechanism fails → UNREADABLE, the flag did not reach the surface. Check
+  the three render sites that read the stage list; two of them were reading the
+  raw constant on 2026-09-09 and the flag did nothing there until it was fixed.
+- **Confounds** none intended — it ships alone, after the 105 read closes. If
+  anything else lands on the Practice tab in the read window, say so here.
+- **Verdict** _pending_
+
 ### subscription management hands off to Stripe — no more client-side "cancel"
 - **Claimed** 2026-09-03 — correctness + measurement, no target on purpose
 - **Change** the "Auto-Renew ON/OFF" toggle (Pro panel and profile) flipped
