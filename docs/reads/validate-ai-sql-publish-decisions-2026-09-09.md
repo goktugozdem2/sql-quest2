@@ -65,6 +65,12 @@ from publication, indexing, or ranking alone.
 - [x] Full lint, test, build, and build validation pass.
 - [x] Built page contains one H1, canonical metadata, matching FAQ schema,
   `/track.js`, the stable `src` tag, and the tracked ClaudeQuest link.
-- [ ] Production URL returns 200 after deployment.
-- [ ] `npm run indexnow` succeeds after the production URL is live.
-- [ ] GSC receives the full sitemap URL and the article URL is inspected.
+- [x] Production URL returns HTTP 200 after deployment; the live DOM has one
+  H1, one canonical, one `/track.js` include, and no captured console errors.
+- [x] `npm run indexnow -- /blog/validate-ai-generated-sql/` returned HTTP 200.
+- [x] GSC received `https://sqlquest.app/sitemap.xml` successfully and the
+  article URL was inspected. The URL was initially unknown to Google, as
+  expected for a same-day page. A manual indexing request was attempted, but
+  GSC reported that the property's daily request quota had already been used;
+  sitemap discovery and the 2026-09-16 index-state check remain the source of
+  truth.
