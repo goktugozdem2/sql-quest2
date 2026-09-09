@@ -92,6 +92,46 @@ asked for without asking: he does not know where he stands or what to do next.
 This is a genuinely different product from "10 free then pay", and it is the
 version that does not put the acquisition channel at risk.
 
+## Ranking, asked directly 2026-09-09: is selling the roadmap the top move?
+
+**No.** "Sell the sequence" is better than "ten free then pay", but neither is
+the recommendation, and it would be dishonest to let a design I proposed
+inherit more confidence than the evidence gives it.
+
+Three reasons, in order of weight:
+
+1. **Whatever we sell, only 94-149 people a month reach the point of being
+   asked.** Paywall design can plausibly move 2 payers a month to 8 or 10. It
+   cannot move it to 50. Only the funnel can. Redesigning the ask is
+   optimising the small number in the product.
+2. **There is no evidence anyone wants to buy guidance, and one datapoint
+   against.** Our only articulate user told us in writing what the paid thing
+   is for him: *"once I've cleared all the medium grade exercises and is about
+   to start on the hard ones."* He wants the **Hard bank** — which is exactly
+   what Pro already gates. Two of four buyers came through a generic milestone
+   modal and one through a company page wanting interview content. Nobody has
+   ever bought guidance. The Coach is free today, so we have no read either
+   way, and "sell the sequence" would be inventing a demand rather than
+   answering one.
+3. **The roadmap's real value is activation, and it is large there.** 349
+   people a month open a challenge and never solve one; 349 more solve one and
+   never reach six. A roadmap that says what to do next is aimed straight at
+   that, and the current one covers 38 of 287 challenges and pins to a
+   seven-item list when finished.
+
+**So: build the roadmap, keep it free, and leave Pro's value where the one
+stated preference we have puts it — the Hard bank.** Judge the roadmap on
+whether six-solve counts rise, not on revenue.
+
+If we still want to test charging for the path later, it is a slice test after
+09-29 with the claim below, and the honest expectation is single-digit payers
+per month from it. That is worth knowing, and it is not a route to O1.
+
+**What a route to O1 actually requires**, from the same arithmetic: about
+3,450 people reaching six solves a month against 149 today. That is traffic
+times activation, roughly 23×, and it is why the checkpoints on 10-09 and
+11-08 exist. No paywall design changes that number.
+
 ## What blocks it, and for how long
 
 **Nothing monetisation-adjacent ships before 2026-09-29** (`objectives.md`).
