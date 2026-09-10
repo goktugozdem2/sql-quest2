@@ -1129,6 +1129,58 @@ of the verifier and must never be rounded to `FLAT`.
   hakko504 and adinajoshi were deliberately left out — both had already
   received a different email from the founder that day.
 
+### Bing T1 — /sql-exercises/ answers the query it actually ranks for — **OPEN**
+- **Claimed** 2026-09-11 · **Read** 2026-10-09 (with O1's day-30 checkpoint)
+- **Change** title / og / twitter / meta description / h1 on
+  `src/sql-exercises.html` now carry "practice questions" alongside
+  "exercises". Reason, from the first Bing Webmaster Tools read ever done on
+  this site: our single largest query is **`sql practice questions`, 1,200
+  impressions at position 7.44 and 2.93% CTR**, and the phrase appeared **zero
+  times** on the page it ranks. Exact-word queries against the same page clear
+  8.07% (`sql exercises`), 16.30% (`sql exercises for practice`) and 27.91%
+  (`sql practice problems`).
+- **Metric** `bing_page_ctr('/sql-exercises/')` — baseline **4.28%** at
+  position 6.36 (11.4K impressions, 489 clicks, 3 months to 2026-09-08).
+- **Target** ≥ **6.0%** over the 21 days after propagation.
+- **Guardrail** landing→solve for the page must not fall. A broader title that
+  buys clicks from people who bounce has cost us, not earned.
+- **Falsification** below **5.0%** → the title was not the constraint and the
+  position is, which is a slower and different job (links, not words). Say so
+  and stop editing titles on this page.
+- **Confound, stated in advance** this is the door feeding `door_solve_rate`
+  and, indirectly, the 09-29 cold-start read. Bing title propagation runs 1-3
+  weeks, so the effect should land after that read closes. If the cold-start
+  numbers move oddly in early October, check here first.
+
+### Bing T2 — the competitor-brand queries we rank for and never convert — **OPEN**
+- **Claimed** 2026-09-11 · **Read** 2026-10-12
+- **Change** `/vs-datalemur/` retitled from "SQL Quest vs DataLemur: …" to
+  "Is DataLemur Free? 2026 Pricing, Free Tier & SQL Practice". Someone
+  searching a competitor's name is not looking for ours, and a title that
+  opens with ours reads as an advertisement. The description now discloses in
+  its own words that a competitor wrote the page, which the old title did
+  implicitly and the new one does not.
+- **Metric** clicks on `datalemur`, `datalemur sql practice`, `sql bolt
+  exercises`, `sqlzoo practice exercises` — baseline **0 clicks against 452
+  impressions** across 3 months, positions 6.91-8.68.
+- **Target** ≥ **15 clicks** in 30 days.
+- **Falsification** under **5** → competitor-brand searchers do not leave for
+  a comparison page whatever the title says, and the two unbuilt pages
+  (SQLBolt, SQLZoo) in the plan should not be built.
+
+### Bing T3 — get the other 44 pages into the index — **OPEN**
+- **Claimed** 2026-09-11 · **Read** 2026-10-12
+- **Change** `npm run indexnow -- --all` submitted all 87 sitemap URLs,
+  HTTP 200. No quota on IndexNow; Bing's URL Submission holds 100/day in
+  reserve, thirty times Google's.
+- **Metric** pages with ≥1 Bing impression — baseline **41 of 85 built pages**
+  (3 months to 09-08).
+- **Target** ≥ **60**.
+- **Falsification** under **50** → submission was never the constraint, and
+  those pages have a quality or duplication problem. That is worth knowing
+  before writing more of them, which is the whole reason this is a claim
+  rather than a chore.
+
 ### schema columns on the challenge card (first-run shell had none) — **MISS**
 - **Claimed** 2026-08-21 · **Read** 2026-08-30 (window 08-21→08-29 per protocol)
 - **Change** `app.jsx` ~32022: the always-rendered "Tables used" card now lists

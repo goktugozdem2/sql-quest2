@@ -1741,3 +1741,59 @@ Traps:
 - **A change that touches both arms cannot be read here.** If the control moves,
   the metric has told you the cause is not scoped to first-run; that is a valid
   read, not a failure.
+
+## `bing_page_ctr` / `bing_citations`
+
+Bing's own numbers for a page: impressions, clicks, CTR and average position;
+and, in a **separate panel**, how often Microsoft Copilot cites it.
+
+Registered 2026-09-11, the first day anyone opened Bing Webmaster Tools for
+this site. It matters more than its late arrival suggests: Bing sent 356
+first-time browsers against Google's 528 in the same six weeks and produced
+**more solvers** (99 vs 73) and a better signup rate (11.0% vs 8.7%). See
+`docs/reads/signup-growth-cause-2026-09-11.md` and
+`docs/plans/bing-channel-2026-09-11.md`.
+
+There is no API in use, so this is a hand read.
+
+**Recipe**
+
+1. `https://www.bing.com/webmasters/searchperf?siteUrl=https://sqlquest.app`
+2. **Check the site picker first.** It also holds `claudequest.app` and
+   `datrick.com`; the panel renders identically for all three.
+3. Pick the window (7D / 30D / 3M / 6M), then `List By` → **Pages** or
+   **Keywords**. `Download all` exports the full table.
+4. Copilot: left nav → **AI Performance** → `List By` → Grounding Queries or
+   Pages.
+
+**Baselines, 3 months to 2026-09-08**
+
+| | |
+|---|---|
+| Clicks / impressions / CTR | 809 · 23.7K · 3.42% |
+| Pages with ≥1 impression | **41 of 85 built** |
+| `/sql-exercises/` | 11.4K impr · 489 clicks · **4.28%** · position 6.36 |
+| Copilot citations | **12,600**, avg 12 cited pages/day |
+
+Traps, all found on the first read:
+
+- **`searchperformance` (the long spelling) renders "No pages found".** The
+  working path is `searchperf`, which is what the left-nav link uses. An empty
+  panel here is a URL bug, not a site with no data.
+- **Keywords and Pages cover WEB traffic only.** The panel says so in a line
+  that is easy to scroll past: Chat and other verticals are excluded. So the
+  809 clicks and the 12.6K citations are disjoint populations — never add them,
+  and never read a flat click series as "the AI channel is not working".
+- **AI Performance is explicitly a sample** ("Results may be refined as
+  additional data is processed"). Read its *shares* and its *shape*, not its
+  absolute counts.
+- **Position is an average over impressions**, so a page that ranks 3rd for its
+  best query and 15th for a long tail reports something in between. A CTR that
+  looks weak for the reported position is usually a mix, not a bad snippet.
+- **Zero clicks at a good position is not always a defect.** The clearest case
+  here: `cte acronym meanings education sql`, 795 impressions, position 5.94,
+  **0 clicks**. Bing answers definitional queries inline. The page earning
+  those impressions is simultaneously Copilot's third-most-cited source.
+  Before "fixing" a zero-CTR page, look at which query it ranks for.
+- **Bing's index is Yahoo's and largely DuckDuckGo's.** When sizing the
+  channel from our own `ref` field, count all three or you undercount by ~40%.
