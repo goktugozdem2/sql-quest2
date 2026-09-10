@@ -1798,6 +1798,29 @@ Traps, all found on the first read:
 - **Bing's index is Yahoo's and largely DuckDuckGo's.** When sizing the
   channel from our own `ref` field, count all three or you undercount by ~40%.
 
+**The three Top Recommendations on the Home panel, read 2026-09-11.** Two of
+the three are not defects, and it is worth writing down which, because they
+will be there again next time:
+
+- *"Some URLs are not getting indexed due to robots NOINDEX meta tags"*
+  (Moderate, 7 pages) — **working as intended.** All seven are `/app/` and its
+  query-string variants. `/app/` carries `noindex, follow` plus a canonical to
+  itself, is deliberately absent from the sitemap, and is the product rather
+  than a page we want ranked. No action.
+- *"Your site has limited crawl capacity"* (**High**, 1 site-level error) —
+  its recommended action is to exclude junk URLs in robots.txt and to raise the
+  crawl quota in Crawl Control. **Neither is the fix**, and raising the slider
+  would be theatre: it is a *ceiling*, not a throttle we are hitting. Crawl
+  Control sits on Default and the rate bars are well below the cap all 24
+  hours, so Bing is not being held back by us. Crawl capacity on a domain this
+  size is a function of authority, which is the third recommendation —
+  *"not enough inbound links from high quality domains"* — wearing a different
+  hat. Treat #1 and #3 as one problem with one lever, and that lever is links.
+- Do **not** add `Disallow: /app/` to robots.txt to silence the noindex
+  warning. The most-shared URLs on the site are `/app/?challenge=N&src=…` deep
+  links from the blog and comparison pages; disallowing them removes the
+  unfurl card from every share to buy back seven crawls.
+
 **URL Submission** (left nav) is separate from IndexNow and worth using on top
 of it: 100 URLs/day against Google's ~10. Same URL trap as Search Performance —
 `/webmasters/url-submission` renders "No pages found"; the working path is
