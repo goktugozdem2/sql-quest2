@@ -1165,8 +1165,27 @@ of the verifier and must never be rounded to `FLAT`.
   impressions** across 3 months, positions 6.91-8.68.
 - **Target** ≥ **15 clicks** in 30 days.
 - **Falsification** under **5** → competitor-brand searchers do not leave for
-  a comparison page whatever the title says, and the two unbuilt pages
-  (SQLBolt, SQLZoo) in the plan should not be built.
+  a comparison page whatever the title says.
+- **Amended the same day, and the amendment is the honest part.** The
+  falsification above originally read "…and the two unbuilt pages (SQLBolt,
+  SQLZoo) in the plan should not be built". The founder asked for both pages
+  immediately, so this read no longer gates them and the claim is weaker for
+  it: we now learn *from* those pages rather than *about* whether to build
+  them. Shipped 2026-09-11 as `/vs-sqlbolt/` and `/vs-sqlzoo/`, with internal
+  links in the same commit.
+- **What the two new pages add to the read.** `sql bolt exercises` (74
+  impressions, position 7.47, 0 clicks) and `sqlzoo practice exercises` (57,
+  6.91, 0 clicks) currently rank on `/best-sql-practice-sites/` alone. Both now
+  have a dedicated page whose title leads with the competitor's name. If those
+  two queries move and the two DataLemur queries do not, the lever is a
+  dedicated page, not a title — which is a more useful thing to learn than the
+  original claim would have told us.
+- **A note on what these pages could not argue.** SQLBolt and SQLZoo are both
+  free with no paid tier, verified by fetching them on 2026-09-11. The free-tier
+  comparison every other vs- page leads with does not exist here, so both pages
+  say so in the first screen and argue the surrounding product instead. A
+  comparison page that cannot find an honest advantage should say that rather
+  than manufacture one.
 
 ### Bing T3 — get the other 44 pages into the index — **OPEN**
 - **Claimed** 2026-09-11 · **Read** 2026-10-12
