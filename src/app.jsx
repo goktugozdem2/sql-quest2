@@ -6446,6 +6446,31 @@ function SQLQuest() {
   // answer mid-session.
   const getUserIntent = () => {
     try { return localStorage.getItem('sqlquest_user_intent') || null; } catch (_) { return null; }
+
+  // The intent modal promises "Your answer shapes what we recommend next."
+  // Until 2026-09-11 it shaped nothing: getUserIntent() was read in exactly two
+  // places, both analytics payloads, so 413 people in 60 days answered a
+  // question the product ignored. This is that promise, kept.
+  //
+  // Deliberately small. Someone who says they are prepping for a named company
+  // has already told us WHICH company, in the URL they arrived on, and stage 1
+  // of the recommended path is two challenges. So: open the whole bank instead
+  // of the ladder, and apply the company they came for. No new question.
+  //
+  // Gated by FEATURE_FLAGS.features.intentRouting — see that flag for why it
+  // ships off and what it is a choice against.
+  const applyIntentRouting = (intent) => {
+    if (!FF.feature('intentRouting')) return;
+    if (intent !== 'interview' && intent !== 'job_ready') return;
+    let company = null;
+    try {
+      const m = (localStorage.getItem('sqlquest_arrival_src') || '').match(/^company:(.+)$/);
+      if (m) company = m[1];
+    } catch (_) { /* ignore */ }
+    setChallengePathFilter('all');
+    if (company) setCompanyFilter(company);
+    trackActivationEvent('intent_routed', { intent, company: company || null });
+  };
   };
 
   // Answer key for the email micro-lesson quizzes. KEEP IN SYNC with
@@ -24550,6 +24575,7 @@ RULES:
                     } catch (_) {}
                     trackActivationEvent('intent_captured', { intent: key });
                     setShowIntentAsk(false);
+                    applyIntentRouting(key);
                   }}
                   className="w-full text-left p-3 transition-colors"
                   style={{ background: '#1F222B', border: '1px solid #2A2E38', borderRadius: '6px', color: '#F2F0EA' }}

@@ -30,6 +30,21 @@ window.FEATURE_FLAGS = {
   // FEATURES
   features: {
     aiTutor: true,
+    // Intent routing — make the declared intent actually change what the
+    // product recommends. The intent modal's own copy promises "Your answer
+    // shapes what we recommend next"; until 2026-09-11 it shaped nothing.
+    // getUserIntent() was read in exactly two places, both analytics payloads,
+    // so 413 people in 60 days answered a question the product ignored.
+    //
+    // SHIPPED OFF (2026-09-11). Not because of a freeze — the intent ask fires
+    // AFTER the first solve, so it cannot touch first_contact_activation and
+    // the 105-opener read on 09-13 is safe either way. It is off because it
+    // moves reach_6_rate, and the roadmap-v2 claim reads that same metric on
+    // 10-13 and says "it ships alone". Both cannot read cleanly.
+    //
+    // So this is one half of a choice, not a queued change: flip THIS or flip
+    // roadmapV2 on 09-13, never both. See docs/agent/ledger.md.
+    intentRouting: false,
     // Roadmap v2 — the recommended path stops hand-listing 38 challenge ids
     // and grows each stage from the live bank, plus two new stages for the
     // two canonical skills that had none (String Functions, Date Functions).
