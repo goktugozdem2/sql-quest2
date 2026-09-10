@@ -163,7 +163,7 @@
       {
         "@type": "Question",
         "name": "Are these SQL exercises free?",
-        "acceptedAnswer": { "@type": "Answer", "text": "Yes. 217 of the 287 exercises are free forever, no card and no signup: all 91 Easy, all 120 Medium, and 6 free Hard previews. Pro ($29/month, $99/year, or $199 lifetime) unlocks the remaining 68 Hard exercises, the full mock-interview bank, unlimited AI tutor, and all Daily difficulties — upgrade only when you want the depth. The Coach is included in the free tier." }
+        "acceptedAnswer": { "@type": "Answer", "text": "Yes. 219 of the 287 exercises are free forever, no card and no signup: all 93 Easy, all 120 Medium, and 6 free Hard previews. Pro ($29/month, $99/year, or $199 lifetime) unlocks the remaining 68 Hard exercises, the full mock-interview bank, unlimited AI tutor, and all Daily difficulties — upgrade only when you want the depth. The Coach is included in the free tier." }
       },
       {
         "@type": "Question",
@@ -183,7 +183,7 @@
       {
         "@type": "Question",
         "name": "What's the difficulty distribution?",
-        "acceptedAnswer": { "@type": "Answer", "text": "287 exercises as of September 2026: 91 Easy, 120 Medium, 74 Hard. The 190 core exercises split 53 Easy / 81 Medium / 54 Hard; the 97 sector-track exercises (banking, real estate, manufacturing) split 38 Easy / 39 Medium / 20 Hard. Easy covers SELECT/WHERE/GROUP BY; Medium adds JOINs, subqueries, CTEs, basic window functions; Hard covers nested window functions, recursive CTEs, complex business math, and FAANG-style interview patterns. Hard is Pro except 6 free previews, and the Coach gates Hard until you've mastered Medium." }
+        "acceptedAnswer": { "@type": "Answer", "text": "287 exercises as of September 2026: 93 Easy, 120 Medium, 74 Hard. The 190 core exercises split 53 Easy / 81 Medium / 54 Hard; the 97 sector-track exercises (banking, real estate, manufacturing) split 38 Easy / 39 Medium / 20 Hard. Easy covers SELECT/WHERE/GROUP BY; Medium adds JOINs, subqueries, CTEs, basic window functions; Hard covers nested window functions, recursive CTEs, complex business math, and FAANG-style interview patterns. Hard is Pro except 6 free previews, and the Coach gates Hard until you've mastered Medium." }
       },
       {
         "@type": "Question",
@@ -325,7 +325,7 @@
     <a class="slice" href="/app/?src=sql-exercises">
       <span class="slice-icon">📈</span>
       <p class="slice-title">By difficulty</p>
-      <p class="slice-desc">91 Easy, 120 Medium, 74 Hard. Easy and Medium are free; Hard is Pro except 6 free previews, and the Coach gates it until you've shown mastery on Medium.</p>
+      <p class="slice-desc">93 Easy, 120 Medium, 74 Hard. Easy and Medium are free; Hard is Pro except 6 free previews, and the Coach gates it until you've shown mastery on Medium.</p>
       <div class="slice-tags">
         <span class="slice-tag">Easy 80</span>
         <span class="slice-tag">Medium 109</span>
@@ -552,11 +552,11 @@ window.addEventListener('scroll',()=>{document.getElementById('nav').classList.t
 // 2026-09-07: "sql practice exercises with solutions" — visible answers mirror the FAQPage JSON-LD above, word for word (bank counts; 9 skills; sector tracks not Pro-gated)
 // 2026-09-07: "banking sql exercises" — banking answer now reads 27 FDIC BankFind + 30 on the card-transaction ledger, identical to the FAQPage JSON-LD entry
 const FAQS=[
-  ['Are these SQL exercises free?','Yes. 217 of the 287 exercises are free forever, no card and no signup: all 91 Easy, all 120 Medium, and 6 free Hard previews. Pro ($29/month, $99/year, or $199 lifetime) unlocks the remaining 68 Hard exercises, the full mock-interview bank, unlimited AI tutor, and all Daily difficulties — upgrade only when you want the depth. The Coach is included in the free tier.'],
+  ['Are these SQL exercises free?','Yes. 219 of the 287 exercises are free forever, no card and no signup: all 93 Easy, all 120 Medium, and 6 free Hard previews. Pro ($29/month, $99/year, or $199 lifetime) unlocks the remaining 68 Hard exercises, the full mock-interview bank, unlimited AI tutor, and all Daily difficulties — upgrade only when you want the depth. The Coach is included in the free tier.'],
   ['Do these exercises have solutions?','Yes. Every exercise has a worked solution that you can reveal after attempting (or whenever you want). The default flow is: read problem → write your query → run → if wrong, get a specific diagnosis → ask the AI Coach for a hint → reveal solution if needed. Solutions are written to teach, not just satisfy the grader — they explain the why.'],
   ['How do I know which SQL exercise to do next?','The Coach picks the next exercise based on your skill radar. Browse mode lets you filter by topic (window functions, JOINs, GROUP BY, etc.), by difficulty, by company tag, or by industry. If you don\'t want to choose, click \'Coach picks one\' and the system selects an exercise that targets your weakest skill.'],
   ['Can I practice SQL exercises on real-world data instead of generic ecommerce?','Yes. SQL Quest ships three industry exercise tracks built on real public datasets — 97 exercises in total, and their Easy and Medium problems are free like the rest of the bank. Banking & Finance: 57 exercises — 27 on FDIC BankFind data (200 US banks: JPMorgan, BoA, Citi) plus 30 on a synthetic card-transactions ledger. Real Estate: 20 exercises on NYC OpenData (PLUTO building footprints, ACRIS deeds, DOB permits). Manufacturing: 20 exercises on UCI AI4I 2020 predictive maintenance — the industry-standard ML benchmark used by Siemens, GE, Honeywell.'],
-  ['What\'s the difficulty distribution?','287 exercises as of September 2026: 91 Easy, 120 Medium, 74 Hard. The 190 core exercises split 53 Easy / 81 Medium / 54 Hard; the 97 sector-track exercises (banking, real estate, manufacturing) split 38 Easy / 39 Medium / 20 Hard. Easy covers SELECT/WHERE/GROUP BY; Medium adds JOINs, subqueries, CTEs, basic window functions; Hard covers nested window functions, recursive CTEs, complex business math, and FAANG-style interview patterns. Hard is Pro except 6 free previews, and the Coach gates Hard until you\'ve mastered Medium.'],
+  ['What\'s the difficulty distribution?','287 exercises as of September 2026: 93 Easy, 120 Medium, 74 Hard. The 190 core exercises split 53 Easy / 81 Medium / 54 Hard; the 97 sector-track exercises (banking, real estate, manufacturing) split 38 Easy / 39 Medium / 20 Hard. Easy covers SELECT/WHERE/GROUP BY; Medium adds JOINs, subqueries, CTEs, basic window functions; Hard covers nested window functions, recursive CTEs, complex business math, and FAANG-style interview patterns. Hard is Pro except 6 free previews, and the Coach gates Hard until you\'ve mastered Medium.'],
   ['How are SQL exercises scored?','Each exercise is scored on three dimensions: difficulty (Easy/Medium/Hard), the SQL skill it exercises (one of 9 canonical skills), and your speed plus hint usage. A clean cold solve adds more to your skill radar than a solve with multiple hints. Mastery checks require a fresh solve on an unseen exercise — recognition isn\'t enough.']
 ];
 const faqc=document.getElementById('faqc');

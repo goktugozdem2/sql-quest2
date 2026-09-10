@@ -184,6 +184,8 @@ SQL Quest's strongest positioning: "the only SQL practice site that feels like a
 **Comparisons**
 - Is DataLemur Free? 2026 Pricing, Free Tier & SQL Practice — https://sqlquest.app/vs-datalemur/
 - SQL Quest vs DataLemur (2026) — Hangisi Daha İyi? — https://sqlquest.app/datalemur-karsilastirma/
+- SQLBolt Exercises: All 53, and What to Practise Next — https://sqlquest.app/vs-sqlbolt/
+- SQLZoo Practice Exercises vs SQL Quest (2026) — https://sqlquest.app/vs-sqlzoo/
 - StrataScratch Pricing & Free Tier vs SQL Quest (Sept 2026) — https://sqlquest.app/vs-stratascratch/
 - SQL Quest vs LeetCode SQL (2026) — Best Site for SQL Interview Prep — https://sqlquest.app/vs-leetcode-sql/
 - SQL Quest vs HackerRank SQL (2026) — Best for Real Interview Prep — https://sqlquest.app/vs-hackerrank-sql/

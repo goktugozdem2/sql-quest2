@@ -389,6 +389,69 @@ const SKILL_LOOSE = /(?<![\w-])(\d+) (?:SQL )?skills\b/gi;
 // (exercise/challenge/problem/question) binds to the bank total unless it also
 // says "free", and a label naming skills binds to the canonical count. A label
 // this does not recognise is left alone rather than guessed at.
+// "219 of 287", "219 of the 287 exercises", "287 challenges, 219 of them free",
+// "(93 Easy / 120 Medium / 74 Hard)" — the free tier stated as a RATIO rather
+// than as the bare "N free" that FREE_CLAIM matches.
+//
+// On 2026-09-11 eleven pages said **217 of 287** and two said **91 Easy**,
+// against a bank of 219 free and 93 Easy. Both numbers had been true once; the
+// sector challenges moved them and nothing was watching, because the only
+// thing between the number and the word "free" was the word "of". These
+// sentences are what an assistant quotes when someone asks whether SQL Quest
+// is free, so a wrong one is a public claim about our own pricing.
+//
+// The total on the right-hand side is matched too: "217 of 285" is equally
+// wrong and would otherwise pass by naming a bank we do not have.
+export function findRatioClaims(text, facts) {
+  const offenders = [];
+  const rules = [
+    // N of [the|its] M challenges/exercises/problems/questions
+    [/(\d+)\s+of\s+(?:the\s+|its\s+|our\s+|SQL Quest's\s+)?(\d+)(?=\s+(?:challenges?|exercises?|problems?|questions?)\b)/gi, 'free', 'total'],
+    // M challenges, N of them free   |   M challenge (N ücretsiz)
+    [/(\d+)\s+challenges?,\s*(\d+)\s+of\s+them\s+free/gi, 'total', 'free'],
+    // N of M  — only when "free" is the next few words
+    [/(\d+)\s+of\s+(\d+)(?=[^.<]{0,40}\bfree\b)/gi, 'free', 'total'],
+  ];
+  const want = { free: facts.freeChallengeCount, total: facts.challengeCount };
+  const seen = new Set();
+  for (const [rx, roleA, roleB] of rules) {
+    for (const m of text.matchAll(rx)) {
+      if (seen.has(m.index)) continue;
+      const a = Number(m[1]);
+      const b = Number(m[2]);
+      // Only judge a pair that is plausibly OUR ratio: the larger side must be
+      // the bank total or the number we have drifted from. A competitor's
+      // "50-80 of 250+" must never be "corrected" against our bank.
+      if (Math.max(a, b) < 100 || Math.abs(Math.max(a, b) - facts.challengeCount) > 20) continue;
+      seen.add(m.index);
+      const got = { [roleA]: a, [roleB]: b };
+      if (got.free === want.free && got.total === want.total) continue;
+      offenders.push({
+        index: m.index,
+        why: `"${m[0].trim()}" — the bank is ${want.free} free of ${want.total}`,
+        text: m[0].trim(),
+      });
+    }
+  }
+  // The difficulty split, but ONLY where the triple claims to be the whole
+  // bank. Every topic page states its own subset ("3 Easy, 14 Medium, 44
+  // Hard" on /challenges/window-functions/), and those are bound harder by
+  // rule 4 against the bank predicate for that page. A triple that does not
+  // sum to the bank total is a subset claim and not this rule's business.
+  const split = new RegExp(String.raw`(\d+)\s*Easy\s*[/,]\s*(\d+)\s*Medium\s*[/,]\s*(\d+)\s*Hard`, 'gi');
+  for (const m of text.matchAll(split)) {
+    const [e, md, h] = [Number(m[1]), Number(m[2]), Number(m[3])];
+    if (e === facts.easyCount && md === facts.mediumCount && h === facts.hardCount) continue;
+    if (Math.abs(e + md + h - facts.challengeCount) > 4) continue;
+    offenders.push({
+      index: m.index,
+      why: `"${m[0].trim()}" — the bank is ${facts.easyCount} Easy / ${facts.mediumCount} Medium / ${facts.hardCount} Hard`,
+      text: m[0].trim(),
+    });
+  }
+  return offenders;
+}
+
 export function findStatBlockClaims(text, facts, skillCount) {
   const offenders = [];
   const BLOCK = /stat-num"[^>]*>\s*([\d,]+)\s*<\/div>\s*<div class="stat-lbl"[^>]*>\s*([^<]+?)\s*<\/div>/gi;
@@ -1137,6 +1200,30 @@ describe('helpers (fixtures)', () => {
     ]) expect(findPriceOffences(s, FIXTURE_MODAL).length, s).toBe(1);
   });
 
+  it('findRatioClaims judges our free ratio and difficulty split, and leaves competitors alone', () => {
+    const F = { challengeCount: 287, freeChallengeCount: 219, easyCount: 93, mediumCount: 120, hardCount: 74 };
+    for (const s of ['219 of 287 challenges', '219 of the 287 exercises are free', '287 challenges, 219 of them free',
+                     "219 of SQL Quest's 287 challenges are playable free", '(93 Easy / 120 Medium / 74 Hard)',
+                     '93 Easy, 120 Medium, 74 Hard']) {
+      expect(findRatioClaims(s, F), s).toEqual([]);
+    }
+    // The exact regressions this rule was written for.
+    for (const s of ['217 of 287 challenges', '217 of the 287 exercises are free', '287 challenges, 217 of them free',
+                     '(91 Easy / 120 Medium / 74 Hard)', '219 of 285 challenges']) {
+      expect(findRatioClaims(s, F).length, s).toBeGreaterThan(0);
+    }
+    // A topic page's own subset split sums nowhere near the bank; rule 4 owns those.
+    for (const s of ['3 Easy, 14 Medium, 44 Hard', '1 Easy, 7 Medium, 4 Hard', '30 Easy, 76 Medium, 41 Hard']) {
+      expect(findRatioClaims(s, F), s).toEqual([]);
+    }
+    // A competitor's numbers are not ours and must never be "corrected".
+    for (const s of ['LeetCode Database has roughly 250+ SQL problems, with around 50-80 in the free tier',
+                     'StrataScratch lists 75+ free of 1000+ coding questions',
+                     'DataLemur is $15/mo, $60/yr, $300 lifetime']) {
+      expect(findRatioClaims(s, F), s).toEqual([]);
+    }
+  });
+
   it('findStatBlockClaims reads the number across the tag boundary, and only labels it knows', () => {
     const F = { challengeCount: 287, freeChallengeCount: 219 };
     const block = (n, lbl) => `<div class="stat"><div class="stat-num">${n}</div><div class="stat-lbl">${lbl}</div></div>`;
@@ -1365,6 +1452,15 @@ describe('2. every count a page states is the bank\'s count', () => {
   it('"N-skill" / "N-axis" / "N canonical skills" is the canonical skill count', () => {
     const offenders = collect(p => findSkillClaims(p.text, CANONICAL_SKILLS.length));
     expect(offenders, `skill counts off the radar (${CANONICAL_SKILLS.length}):\n${report(offenders)}`).toEqual([]);
+  });
+
+  it('"N of M" free-tier ratios and the Easy/Medium/Hard split are the bank\'s', () => {
+    const offenders = collect(p => findRatioClaims(p.text, facts));
+    expect(offenders, `ratio claims off the bank (${facts.freeChallengeCount} free of ${facts.challengeCount}; ${facts.easyCount}/${facts.mediumCount}/${facts.hardCount}):\n${report(offenders)}`).toEqual([]);
+    // Not vacuous: the site does state the ratio and the split.
+    const all = pages.map(p => p.text).join('\n');
+    expect(all).toMatch(new RegExp(`${facts.freeChallengeCount} of (?:the )?${facts.challengeCount}`));
+    expect(all).toMatch(new RegExp(`${facts.easyCount}\\s*(?:Easy)`));
   });
 
   it('a stat block\'s number matches its own label — the shape prose rules cannot see', () => {
