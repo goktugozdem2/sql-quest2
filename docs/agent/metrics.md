@@ -217,6 +217,105 @@ concatenating it with `src/data/challenges.js` counts every sector challenge
 twice. That has produced two wrong measurements already. Load `public/data.js`,
 or import both modules and read `window.challengesData` once.
 
+## `signup_growth`
+
+Signups per ISO week, by person. The number O1's traffic half is judged on:
+its day-30 checkpoint is 340 signups in 30 days and its 12-08 target is 1,000.
+
+**Never count from `users.created_at`** (see the shared-filters trap above) and
+**never count `signup_completed` by username alone** — that undercounts by half.
+See the `guest` trap below, which is the reason this metric needs its own
+identity resolution rather than the usual `coalesce(aid, username)`.
+
+```sql
+WITH resolve AS (          -- the real username each browser eventually carried
+  SELECT DISTINCT ON (((metadata #>> '{}')::jsonb)->>'aid')
+         ((metadata #>> '{}')::jsonb)->>'aid' AS aid, username AS uname
+  FROM pro_events
+  WHERE username NOT LIKE 'guest%' AND username <> 'guest'
+    AND ((metadata #>> '{}')::jsonb)->>'aid' IS NOT NULL
+  ORDER BY 1, created_at
+), sign AS (
+  SELECT p.created_at,
+         COALESCE(r.uname,
+                  NULLIF(CASE WHEN p.username = 'guest' THEN NULL ELSE p.username END, ''),
+                  ((p.metadata #>> '{}')::jsonb)->>'aid') AS person
+  FROM pro_events p
+  LEFT JOIN resolve r ON r.aid = ((p.metadata #>> '{}')::jsonb)->>'aid'
+  WHERE p.event = 'signup_completed' AND <shared filters>
+)
+SELECT date_trunc('week', created_at)::date AS week, count(DISTINCT person) AS signups
+FROM sign GROUP BY 1 ORDER BY 1;
+```
+
+### Measured 2026-09-11
+
+| week | signups | change |
+|---|---|---|
+| 2026-08-03 | 18 | |
+| 2026-08-10 | 24 | +33% |
+| 2026-08-17 | 38 | +58% |
+| 2026-08-24 | 39 | +3% |
+| 2026-08-31 | **49** | +26% |
+| 2026-09-07 | 27 | **partial, 4 days** (~47 at run rate) |
+
+Monthly: July 36 (from the 11th only), August 129, September 69 through the 10th.
+
+**Five weeks of ~22% compounding.** If it holds, the 5× needed to reach O1's
+1,000/month arrives around mid-November, before 12-08. Five weeks is a thin
+base for a trend and the payer column has not followed it (2, 1, 1, 0 by month),
+so this says the traffic half may land, not that O1 will.
+
+### `signup_completed` does not exist before 2026-07-11
+
+There is no May or June signup data, and none can be reconstructed —
+`users.created_at` is a last-save timestamp. Any request for "signups since
+May" is unanswerable; say so rather than substituting the users table.
+
+### The `guest` trap — half of all signups arrive nameless
+
+`signup_completed` fires with `username = 'guest'` when the account name is not
+yet attached to the payload. Counted naively this looks like **one user with 168
+signup events across 130 browsers**; every other username fired exactly once.
+
+They are real signups. Of the 129 browsers that fired a `guest`-named signup,
+**115 (89.1%) later carried a real username**. So:
+
+- by username alone: 75 in the last 30 days — **undercounts, misses the guests**
+- by `aid`: 172 — over-counts slightly (one person, two browsers)
+- resolved (the query above): matches `aid` within ~5%
+
+**O1's baseline of 169 used the `aid` method and is therefore correct.** That
+was checked on 2026-09-11 after the discrepancy was raised as a possible
+baseline error; it is not one.
+
+### Where the growth is, and why that is only half-answerable
+
+By arrival door, signups per week. **Attribution before the week of 2026-07-27
+does not exist** — `aid` stamping began that day, so every earlier week reads
+`(none)`.
+
+| door | 2026-08-03 | 2026-08-31 |
+|---|---|---|
+| `home` | 6 | **26** |
+| `sql-exercises` | 3 | 10 |
+| comparison pages | 2 | 7 |
+| company pages | 4 | **3** |
+
+The growth is `home`, `/sql-exercises/` and the comparison pages. **Company
+pages are flat** — the door that converts best to a first solve is contributing
+nothing to signup growth.
+
+`home` is the ambiguous bucket: it holds direct traffic, brand search and the
+GenAI recommendation channel, which arrives with no referrer. `landingSrc`
+would split it, but it shipped 2026-09-06 and is stamped on only **30 of 194**
+signups since 08-03 — of those, `search:google` 15, `search:bing` 7,
+`ai:perplexity` 1. **Too sparse to explain a 4× rise in `home`.**
+
+So: where the growth lands is measured, what causes it is not. The instrument
+that would answer it now exists, so the same question asked in October will have
+an answer.
+
 ## `weekly_engaged`
 
 The north star. Distinct users with 5+ lifetime solves who were active in the
