@@ -1839,3 +1839,57 @@ Two corrections to what this repo used to say about it, both observed
   rather than a row: it read 100 before and **98** after, which confirms both
   URLs consumed quota rather than merely being listed. Reopen the dialog to
   read it; that costs nothing.
+
+
+## `gsc_position` / `external_links`
+
+Google's side of the same question `bing_page_ctr` answers, plus the backlink
+profile Bing's third recommendation is about. Both are hand reads of Search
+Console on the domain property `sc-domain:sqlquest.app`.
+
+Registered 2026-09-11 alongside the first side-by-side read of both consoles.
+
+**Baselines, 3 months to 2026-09-08**
+
+| | Google | Bing |
+|---|---|---|
+| Impressions | **73.6K** | 23.7K |
+| Clicks | 982 | 809 |
+| CTR | 1.3% | 3.42% |
+| Average position | **15.7** | ~6 |
+| Indexing | 76 indexed, 54 not | 41 pages with impressions |
+
+**The sentence those two columns make:** Google shows us to three times as many
+people and sends 21% more clicks, because 15.7 is the middle of page two. Bing
+ranks us around 6 and its arrivals are also worth more — 58.6% reach a first
+solve against Google's 49.0%, and 11.0% sign up against 8.7%. So on Google the
+constraint is **ranking, not indexing**: "Discovered – currently not indexed" is
+zero, which means Google has crawled us, kept us, and placed us.
+
+**External links, 2026-09-11: 57 total, and 44 of them from `saasmarket.site`.**
+Strip that one directory-shaped domain and the profile is roughly a dozen links
+from four domains — dev.to, linkedin.com, microsoft.com and `sql-quest.app`, a
+hyphenated variant of our own domain that we do not own and should look into.
+Plan: `docs/plans/backlinks-2026-09-11.md`.
+
+Traps:
+
+- **Read the two consoles together or you will draw the wrong conclusion.**
+  Bing's numbers alone say we rank well; Google's alone say we have an indexing
+  problem. Neither is true. Indexed-but-page-two and ranked-but-lower-volume are
+  different problems with different levers.
+- **The sitemap panels are not self-refreshing.** Both consoles last read our
+  sitemap on 2026-09-09 and had 87 (Google) and 86 (Bing) against a live 89.
+  Resubmit after any deploy that adds a page, with the FULL URL
+  `https://sqlquest.app/sitemap.xml` — the bare `sitemap.xml` is rejected on a
+  domain property. **Google re-reads instantly** (Sep 11, 89 discovered, within
+  seconds of the toast); Bing goes to "Processing" and takes longer.
+- **The 404 count is not necessarily our defect.** Google lists 8 "Not found",
+  validation Failed. A crawl of every internal link in `public/` on 2026-09-11
+  found **zero** links pointing at a page we do not build, so those 404s were
+  discovered from outside — old URLs or someone else's typo. Check the internal
+  crawl before writing code to chase them.
+- **"Excluded by noindex" (32) and "Page with redirect" (11) are intended.**
+  The 32 are the 30 weekly archive permalinks plus the app shell; the 11 are
+  the `.html` → directory redirects. Neither is a defect and both will be there
+  at every read.
