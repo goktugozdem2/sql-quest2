@@ -1153,6 +1153,20 @@ of the verifier and must never be rounded to `FLAT`.
   people on 99 is in the writing of the query, not the comparison of results.
   The schema card stays (it is correct UX and cost nothing), but it earned no
   metric claim.
+- **Amended 2026-09-11 — the verdict was right about its instrument and wrong
+  about the change.** The fix removed the schema from *first-run users on any
+  challenge*. `challenge_solve_through(99)` measures *one challenge, all
+  users*, and 99's openers are mostly warm — the treated population barely
+  appears in the denominator, so the metric could not have moved even if the
+  fix worked perfectly. Re-read on `cold_first_solve_rate` (registered in
+  metrics.md the same day, with the warm arm as a control): cold browsers went
+  **39.7% → 46.0%** across this deploy (269/678 → 184/400, z = 2.0) while the
+  warm control held at **86.8% → 85.4%**. The MISS process was sound — the
+  falsification was written in advance and honoured — but the instrument was
+  chosen badly ten days earlier. **A claim on a per-challenge metric cannot
+  test a change scoped to a user state.** Match the instrument's population to
+  the change's population before writing the target down. Full working:
+  `docs/reads/signup-growth-cause-2026-09-11.md`.
 
 ### instrument the paid walls before moving them — **HIT**
 - **Claimed** 2026-08-15 · **Read** 2026-08-21, one day early at the founder's

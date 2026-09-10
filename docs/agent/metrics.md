@@ -312,9 +312,20 @@ would split it, but it shipped 2026-09-06 and is stamped on only **30 of 194**
 signups since 08-03 — of those, `search:google` 15, `search:bing` 7,
 `ai:perplexity` 1. **Too sparse to explain a 4× rise in `home`.**
 
-So: where the growth lands is measured, what causes it is not. The instrument
-that would answer it now exists, so the same question asked in October will have
-an answer.
+So: where the growth lands is measured, what causes it is not — **from
+`landingSrc`.** It was answered the next day from two fields nobody had read,
+`page` and `ref` on the 3,716 `reason='landing'` rows, which have 100% and 57%
+coverage against `landingSrc`'s 15%. Answer: traffic ×1.4 (all of it
+`/sql-exercises/` doubling) times cold-user activation ×1.3, the second half
+caused by two first-run commits and confirmed against a warm control arm. Full
+working and the referrer census in
+`docs/reads/signup-growth-cause-2026-09-11.md`; the activation instrument is
+`cold_first_solve_rate` below.
+
+**Do not read a weekly landing series that includes `home`,
+`after-the-sql-course`, `after-bootcamp` or `sql-for-the-ai-era`** across
+2026-08-05..09-05. Those four lost their tag in that window (CLAUDE.md), so the
+09-06 repair reads as a traffic jump. Every trend here excludes them.
 
 ## `weekly_engaged`
 
@@ -1661,3 +1672,72 @@ Traps, stated before the first read:
   origins are separable by looking for a `coach_step_mock_offered` from the
   same `pid` shortly before. If you need them separated cleanly, that is a
   payload field to add before the flip, not after.
+
+## `cold_first_solve_rate`
+
+Of the challenges opened by a browser that has **never solved anything**, what
+share produced a solve within 24 hours — read against the **warm control**, the
+same rate for browsers that had already solved at least once.
+
+This is the activation instrument. It exists because the 2026-08-21
+schema-columns claim was closed MISS on `challenge_solve_through(99)`, an
+instrument whose population (all openers of one challenge, mostly warm) did
+not overlap the change's population (cold users on any challenge). Under this
+metric the same change reads +6.3pp. See
+`docs/reads/signup-growth-cause-2026-09-11.md`.
+
+**Always report both arms.** The cold number alone cannot separate a product
+fix from a change in traffic quality, challenge mix, or grading — all of which
+move the warm arm too. The control is the metric; the cold rate is half of it.
+
+```sql
+WITH ev AS (
+  SELECT ((metadata #>> '{}')::jsonb)->>'aid' AS aid, event, created_at
+  FROM pro_events
+  WHERE ((metadata #>> '{}')::jsonb)->>'aid' IS NOT NULL
+    AND event IN ('challenge_opened','challenge_solved')
+    AND <shared internal-account filters>
+),
+opens AS (
+  SELECT o.created_at AS t,
+    EXISTS (SELECT 1 FROM ev s WHERE s.aid = o.aid
+              AND s.event='challenge_solved' AND s.created_at < o.created_at) AS warm,
+    EXISTS (SELECT 1 FROM ev s WHERE s.aid = o.aid
+              AND s.event='challenge_solved'
+              AND s.created_at > o.created_at
+              AND s.created_at < o.created_at + interval '24 hours') AS solved24
+  FROM ev o
+  WHERE o.event='challenge_opened' AND o.created_at >= :since AND o.created_at < :until
+)
+SELECT CASE WHEN warm THEN 'warm_control' ELSE 'cold_treated' END AS arm,
+       CASE WHEN t < :deploy_ts THEN 'pre' ELSE 'post' END        AS window,
+       count(*)                                                    AS opens,
+       count(*) FILTER (WHERE solved24)                            AS solved,
+       round(100.0*count(*) FILTER (WHERE solved24)/count(*), 1)   AS pct
+FROM opens GROUP BY 1,2 ORDER BY 1,2;
+```
+
+Measured baselines, 2026-09-11:
+
+| Period | Cold | Warm control |
+|---|---|---|
+| 2026-07-20 → 08-21 12:09Z | 39.7% (n=678) | 86.8% (n=2603) |
+| 08-21 → 09-02 09:24Z | 46.0% (n=400) | 85.4% (n=2130) |
+| 09-02 → 09-10 | 51.7% (n=267) | 87.6% (n=1830) |
+
+Traps:
+
+- **`aid`, never `username`.** A cold user is usually a guest, and guests get a
+  fresh username per page load. Grouping by username shatters the cold arm and
+  inflates it, because a browser that solved on its second identity looks like
+  two browsers that each opened once.
+- **`aid` is only stamped from 2026-07-27.** `:since` earlier than that reads a
+  shrinking denominator as a rising rate.
+- **The 24-hour window right-censors the last day.** Do not include opens whose
+  window has not closed; `:until` must be at least 24h before now.
+- **Warm is defined per open, not per browser.** The same browser is cold for
+  its first open and warm afterwards, which is the point — the arms are states,
+  not cohorts, so nobody is double-counted inside one arm.
+- **A change that touches both arms cannot be read here.** If the control moves,
+  the metric has told you the cause is not scoped to first-run; that is a valid
+  read, not a failure.
