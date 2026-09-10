@@ -125,7 +125,7 @@
     .fg{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}.fc{background:rgba(15,15,30,.6);border:1px solid rgba(255,255,255,.05);border-radius:16px;padding:28px 24px;transition:transform .3s,border-color .3s;cursor:default;position:relative;overflow:hidden}.fc:hover{transform:translateY(-3px)}
     .fi{border-bottom:1px solid rgba(255,255,255,.06);padding:20px 0;cursor:pointer}.fh{display:flex;justify-content:space-between;align-items:center}.ftg{color:#0082FB;font-size:22px;transition:transform .3s;flex-shrink:0}.fa{max-height:0;overflow:hidden;transition:max-height .4s ease}.fi.o .fa{max-height:300px}.fi.o .ftg{transform:rotate(45deg)}
     .cs{position:relative;overflow:hidden}.cbg{position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 50% 100%,rgba(0,130,251,.15) 0%,transparent 60%)}
-    .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center}.flk{margin-top:20px;display:flex;justify-content:center;gap:24px}.flk a{color:#64748b;text-decoration:none;font-size:13px;transition:color .2s}.flk a:hover{color:#e2e8f0}
+    .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center}.flk{margin-top:20px;display:flex;justify-content:center;gap:24px}.flk a{color:#8b98ab;text-decoration:none;font-size:13px;transition:color .2s}.flk a:hover{color:#e2e8f0}
     /* 2026-09-07: #patterns-2026. Badges reuse this page's .db/.dh/.dm/.de; .dp (Pro), .pl and .px are copied from google-sql-interview.html. No accent yellow — nothing in the section is a primary CTA. */
     .dp{background:rgba(255,255,255,.08);color:#94a3b8}
     .px{max-width:820px;margin:44px auto 0}.px h3{font-size:20px;font-weight:800;color:#f1f5f9;margin-top:44px}.px h3:first-child{margin-top:0}.px .lead{font-size:15px;line-height:1.8;color:#94a3b8;margin-top:8px}.px .lead strong{color:#e2e8f0;font-weight:600}
@@ -210,11 +210,11 @@
   <div class="sec">
     <p class="sl" style="color:#0082FB;text-align:center;">Analyst Round</p>
     <h2 class="fd st" style="text-align:center;">What the Meta analyst SQL round tests (September 2026 refresh)</h2>
-    <p style="font-size:13px;color:#64748b;text-align:center;margin-top:14px;">Updated September 2026 · 22 Meta-tagged challenges in the bank · 7 play free, 15 are Pro</p>
+    <p style="font-size:13px;color:#8b98ab;text-align:center;margin-top:14px;">Updated September 2026 · 22 Meta-tagged challenges in the bank · 7 play free, 15 are Pro</p>
     <p style="font-size:16px;color:#94a3b8;text-align:center;margin-top:16px;max-width:660px;margin-left:auto;margin-right:auto;line-height:1.8;">Analyst-round SQL questions keep returning to six shapes: <strong style="color:#e2e8f0;font-weight:600;">rank inside a group</strong>, <strong style="color:#e2e8f0;font-weight:600;">accumulate across rows</strong>, <strong style="color:#e2e8f0;font-weight:600;">compare a row with its neighbour</strong>, <strong style="color:#e2e8f0;font-weight:600;">count who is still here</strong>, <strong style="color:#e2e8f0;font-weight:600;">find the repeat</strong>, and <strong style="color:#e2e8f0;font-weight:600;">filter by existence</strong>. Each family below lists every Meta-tagged challenge that drills it. All 22 run in the browser and show the solution once solved.</p>
 
     <div class="px">
-      <h3 class="fd">1 · Ranking and percentiles <span class="fm" style="font-size:13px;color:#64748b;font-weight:400;margin-left:8px;">5 challenges</span></h3>
+      <h3 class="fd">1 · Ranking and percentiles <span class="fm" style="font-size:13px;color:#8b98ab;font-weight:400;margin-left:8px;">5 challenges</span></h3>
       <p class="lead">DENSE_RANK versus ROW_NUMBER on ties, NTILE quartiles, PERCENT_RANK, and a median with no percentile function. Say which tie-break the question wants before you write it — that sentence is usually worth more than the query.</p>
       <div class="pl">
         <a href="/app/?src=meta-sql-interview&challenge=89"><div class="bd"><span class="db dh">Hard</span><span class="db dp">Pro</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Second Highest Salary per Department</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">DENSE_RANK inside PARTITION BY, so tied salaries share a rank; one-person departments drop out.</p></div></a>
@@ -224,7 +224,7 @@
         <a href="/app/?src=meta-sql-interview&challenge=87"><div class="bd"><span class="db dh">Hard</span><span class="db dp">Pro</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Department Salary Percentile Buckets</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">NTILE(4) per department, then CASE to label each quartile.</p></div></a>
       </div>
 
-      <h3 class="fd">2 · Running totals, rolling windows and share of total <span class="fm" style="font-size:13px;color:#64748b;font-weight:400;margin-left:8px;">3 challenges</span></h3>
+      <h3 class="fd">2 · Running totals, rolling windows and share of total <span class="fm" style="font-size:13px;color:#8b98ab;font-weight:400;margin-left:8px;">3 challenges</span></h3>
       <p class="lead">The frame clause and the empty OVER (). A running SUM, a three-row rolling average, and a category's share of the whole without a second query.</p>
       <div class="pl">
         <a href="/app/?src=meta-sql-interview&challenge=11"><div class="bd"><span class="db dh">Hard</span><span class="db de">Free</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Cumulative Distinct Customers Over Time</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">First-order date per customer in a CTE, new customers per day, then SUM() OVER (ORDER BY date). The one Hard Meta-tagged challenge that plays free.</p></div></a>
@@ -232,14 +232,14 @@
         <a href="/app/?src=meta-sql-interview&challenge=61"><div class="bd"><span class="db dh">Hard</span><span class="db dp">Pro</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Revenue Share by Category (Window %)</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">SUM(SUM(total)) OVER () as the denominator — a window on top of a GROUP BY.</p></div></a>
       </div>
 
-      <h3 class="fd">3 · Sessionization and gaps-and-islands <span class="fm" style="font-size:13px;color:#64748b;font-weight:400;margin-left:8px;">2 challenges</span></h3>
+      <h3 class="fd">3 · Sessionization and gaps-and-islands <span class="fm" style="font-size:13px;color:#8b98ab;font-weight:400;margin-left:8px;">2 challenges</span></h3>
       <p class="lead">Compare a row with its neighbour. LAG finds the gap, a running SUM of the gap flags becomes the session id, and the ROW_NUMBER-difference trick turns consecutive dates into islands.</p>
       <div class="pl">
         <a href="/app/?src=meta-sql-interview&challenge=9"><div class="bd"><span class="db dh">Hard</span><span class="db dp">Pro</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Order Sessionization by Customer</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">LAG on order_date per customer, CASE for a 30-day gap, running SUM for the session number.</p></div></a>
         <a href="/app/?src=meta-sql-interview&challenge=85"><div class="bd"><span class="db dh">Hard</span><span class="db dp">Pro</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Island Length Classification</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">Date minus ROW_NUMBER groups consecutive days; MIN, MAX and COUNT per island, then a CASE label.</p></div></a>
       </div>
 
-      <h3 class="fd">4 · Retention, cohorts and active users <span class="fm" style="font-size:13px;color:#64748b;font-weight:400;margin-left:8px;">5 challenges</span></h3>
+      <h3 class="fd">4 · Retention, cohorts and active users <span class="fm" style="font-size:13px;color:#8b98ab;font-weight:400;margin-left:8px;">5 challenges</span></h3>
       <p class="lead">Count who is still here. Daily actives, customers active in two or more months, days since the last order, and a first-order-month cohort table.</p>
       <div class="pl">
         <a href="/app/?src=meta-sql-interview&challenge=60"><div class="bd"><span class="db dh">Hard</span><span class="db dp">Pro</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Daily Active Customers</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">COUNT(DISTINCT customer_id) per order_date — DAU on an orders table.</p></div></a>
@@ -249,7 +249,7 @@
         <a href="/app/?src=meta-sql-interview&challenge=46"><div class="bd"><span class="db dm">Medium</span><span class="db de">Free</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Quarterly Hiring Cohort Report</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">CASE on the month to build the quarter, GROUP BY year and quarter.</p></div></a>
       </div>
 
-      <h3 class="fd">5 · Self-joins and repeat behaviour <span class="fm" style="font-size:13px;color:#64748b;font-weight:400;margin-left:8px;">3 challenges</span></h3>
+      <h3 class="fd">5 · Self-joins and repeat behaviour <span class="fm" style="font-size:13px;color:#8b98ab;font-weight:400;margin-left:8px;">3 challenges</span></h3>
       <p class="lead">Find the repeat. The orders table joined to itself on the customer with the date window in the ON clause, and the employees table joined to itself on id + 1.</p>
       <div class="pl">
         <a href="/app/?src=meta-sql-interview&challenge=26"><div class="bd"><span class="db dh">Hard</span><span class="db dp">Pro</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Detect Repeat Buyers Within 7 Days</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">orders o1 JOIN orders o2 on the customer, o2 strictly later, at most 7 days apart; DISTINCT the pairs.</p></div></a>
@@ -257,7 +257,7 @@
         <a href="/app/?src=meta-sql-interview&challenge=54"><div class="bd"><span class="db dh">Hard</span><span class="db dp">Pro</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">Consecutive IDs</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">JOIN employees e2 ON e2.emp_id = e1.emp_id + 1, same department.</p></div></a>
       </div>
 
-      <h3 class="fd">6 · EXISTS, relational division and join aggregation <span class="fm" style="font-size:13px;color:#64748b;font-weight:400;margin-left:8px;">4 challenges</span></h3>
+      <h3 class="fd">6 · EXISTS, relational division and join aggregation <span class="fm" style="font-size:13px;color:#8b98ab;font-weight:400;margin-left:8px;">4 challenges</span></h3>
       <p class="lead">Filter by existence. Correlated EXISTS, the every-category relational-division question, and a LEFT JOIN with COALESCE so empty groups still show.</p>
       <div class="pl">
         <a href="/app/?src=meta-sql-interview&challenge=35"><div class="bd"><span class="db dm">Medium</span><span class="db de">Free</span></div><div><p style="font-size:15px;font-weight:700;color:#e2e8f0;">EXISTS vs IN: Departments with Top Performers</p><p style="font-size:13px;color:#94a3b8;margin-top:3px;">Correlated EXISTS on the same table, then AVG per department.</p></div></a>
@@ -294,33 +294,33 @@
 <section id="related" style="border-top:1px solid rgba(255,255,255,.04);">
   <style>#related a.qc:hover{border-color:rgba(255,255,255,.18)}</style>
   <div class="sec" style="padding:72px 24px;">
-    <p class="sl" style="color:#64748b;text-align:center;margin-bottom:10px;">Keep prepping</p>
+    <p class="sl" style="color:#8b98ab;text-align:center;margin-bottom:10px;">Keep prepping</p>
     <h2 class="fd" style="font-size:28px;font-weight:800;text-align:center;color:#e2e8f0;margin-bottom:10px;">Other companies that ask similar SQL</h2>
-    <p style="font-size:14px;color:#64748b;text-align:center;max-width:580px;margin:0 auto 36px;line-height:1.7;">Loops reuse the same handful of patterns. Prepping for two at once costs far less than twice the work.</p>
+    <p style="font-size:14px;color:#8b98ab;text-align:center;max-width:580px;margin:0 auto 36px;line-height:1.7;">Loops reuse the same handful of patterns. Prepping for two at once costs far less than twice the work.</p>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;">
       <a class="qc" href="/apple-sql-interview/" style="display:block;text-decoration:none;">
         <p class="fd" style="font-size:15px;font-weight:700;color:#e2e8f0;margin-bottom:4px;">Apple</p>
-        <p style="font-size:12px;color:#64748b;line-height:1.6;">Services and product analytics</p>
+        <p style="font-size:12px;color:#8b98ab;line-height:1.6;">Services and product analytics</p>
       </a>
       <a class="qc" href="/netflix-sql-interview/" style="display:block;text-decoration:none;">
         <p class="fd" style="font-size:15px;font-weight:700;color:#e2e8f0;margin-bottom:4px;">Netflix</p>
-        <p style="font-size:12px;color:#64748b;line-height:1.6;">A/B testing, churn, streaming sessions</p>
+        <p style="font-size:12px;color:#8b98ab;line-height:1.6;">A/B testing, churn, streaming sessions</p>
       </a>
       <a class="qc" href="/amazon-sql-interview/" style="display:block;text-decoration:none;">
         <p class="fd" style="font-size:15px;font-weight:700;color:#e2e8f0;margin-bottom:4px;">Amazon</p>
-        <p style="font-size:12px;color:#64748b;line-height:1.6;">BIE and analyst patterns, e-commerce metrics</p>
+        <p style="font-size:12px;color:#8b98ab;line-height:1.6;">BIE and analyst patterns, e-commerce metrics</p>
       </a>
       <a class="qc" href="/google-sql-interview/" style="display:block;text-decoration:none;">
         <p class="fd" style="font-size:15px;font-weight:700;color:#e2e8f0;margin-bottom:4px;">Google</p>
-        <p style="font-size:12px;color:#64748b;line-height:1.6;">L3–L6 analyst and engineer patterns</p>
+        <p style="font-size:12px;color:#8b98ab;line-height:1.6;">L3–L6 analyst and engineer patterns</p>
       </a>
       <a class="qc" href="/openai-sql-interview/" style="display:block;text-decoration:none;">
         <p class="fd" style="font-size:15px;font-weight:700;color:#e2e8f0;margin-bottom:4px;">OpenAI</p>
-        <p style="font-size:12px;color:#64748b;line-height:1.6;">Usage cohorts, retention, sessionization</p>
+        <p style="font-size:12px;color:#8b98ab;line-height:1.6;">Usage cohorts, retention, sessionization</p>
       </a>
       <a class="qc" href="/anthropic-sql-interview/" style="display:block;text-decoration:none;">
         <p class="fd" style="font-size:15px;font-weight:700;color:#e2e8f0;margin-bottom:4px;">Anthropic</p>
-        <p style="font-size:12px;color:#64748b;line-height:1.6;">Usage percentiles, event hygiene, growth</p>
+        <p style="font-size:12px;color:#8b98ab;line-height:1.6;">Usage percentiles, event hygiene, growth</p>
       </a>
     </div>
     <p style="text-align:center;margin-top:28px;">
@@ -334,13 +334,13 @@
   <!-- 2026-09-07: "Meta-style" → "Meta-tagged" (the 22 are tags in challenge-companies.js), and the button no longer says all 22 are free — 7 are. -->
   <p style="font-size:18px;color:#94a3b8;max-width:540px;margin:0 auto 40px;">Practice the 22 Meta-tagged challenges with AI tutoring, instant feedback, and real datasets. Free to start, no signup.</p>
   <a href="/app/?company=Meta" class="btn bp blg" style="box-shadow:0 0 40px rgba(0,130,251,.3);">Practice the Meta Set →</a>
-  <p style="font-size:13px;color:#475569;margin-top:20px;">Works on Chrome, Firefox, Safari, Edge · No plugins · No downloads</p>
+  <p style="font-size:13px;color:#7f8da1;margin-top:20px;">Works on Chrome, Firefox, Safari, Edge · No plugins · No downloads</p>
 </div></section>
 
 <!-- ── Footer ─────────────────────────────────────────────────── -->
 <p data-crosslink="companies" style="margin:28px auto;max-width:720px;padding:16px 20px;border:1px solid rgba(124,58,237,.25);border-radius:12px;background:rgba(124,58,237,.06);font-size:14px;line-height:1.7;color:#94a3b8;">Interviewing at more than one company? The same patterns carry: <a href="/google-sql-interview/" style="color:#c084fc;font-weight:600;">Google</a> · <a href="/amazon-sql-interview/" style="color:#c084fc;font-weight:600;">Amazon</a> · <a href="/apple-sql-interview/" style="color:#c084fc;font-weight:600;">Apple</a> · <a href="/netflix-sql-interview/" style="color:#c084fc;font-weight:600;">Netflix</a> — or the full <a href="/sql-interview-prep/" style="color:#c084fc;font-weight:600;">company-by-company interview guide</a><!-- 2026-09-07: was "12-track"; 22 company pages as of the 2026-09-06 bank read -->.</p>
-<footer class="ft"><div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:16px;"><div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:14px;">⚡</div><span class="fd" style="font-size:16px;font-weight:800;">SQL Quest</span></div><p style="font-size:13px;color:#475569;">Master SQL through hands-on practice.</p>
-<div class="flk"><a href="/app/?company=Meta">Start Practicing</a><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a><a href="/refund.html">Refund Policy</a></div><p style="font-size:11px;color:#334155;margin-top:24px;">&copy; 2026 SQL Quest</p></footer>
+<footer class="ft"><div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:16px;"><div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:14px;">⚡</div><span class="fd" style="font-size:16px;font-weight:800;">SQL Quest</span></div><p style="font-size:13px;color:#7f8da1;">Master SQL through hands-on practice.</p>
+<div class="flk"><a href="/app/?company=Meta">Start Practicing</a><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a><a href="/refund.html">Refund Policy</a></div><p style="font-size:11px;color:#79879b;margin-top:24px;">&copy; 2026 SQL Quest</p></footer>
 
 <script>
 // Sticky nav
@@ -360,7 +360,7 @@ const TOPICS=[
   ['18%','Conditional Logic','4 of the 22 · CASE for row labels, buckets and conditional aggregation','#22c55e'],
   ['5%','NULL Handling','1 of the 22 · IS NULL, COALESCE, NULLIF, and what COUNT skips','#c084fc']
 ];
-document.getElementById('topic-cards').innerHTML=TOPICS.map(t=>`<div class="tc" onmouseenter="this.style.borderColor='${t[3]}44'" onmouseleave="this.style.borderColor='rgba(255,255,255,0.06)'"><p class="fd" style="font-size:32px;font-weight:800;color:${t[3]}">${t[0]}</p><p style="font-size:13px;font-weight:700;color:#e2e8f0;margin-top:4px">${t[1]}</p><p style="font-size:11px;color:#64748b;margin-top:6px;line-height:1.5">${t[2]}</p></div>`).join('');
+document.getElementById('topic-cards').innerHTML=TOPICS.map(t=>`<div class="tc" onmouseenter="this.style.borderColor='${t[3]}44'" onmouseleave="this.style.borderColor='rgba(255,255,255,0.06)'"><p class="fd" style="font-size:32px;font-weight:800;color:${t[3]}">${t[0]}</p><p style="font-size:13px;font-weight:700;color:#e2e8f0;margin-top:4px">${t[1]}</p><p style="font-size:11px;color:#8b98ab;margin-top:6px;line-height:1.5">${t[2]}</p></div>`).join('');
 
 // GENERATED FROM THE BANK — do not hand-edit. Every entry is a real SQL Quest
 // challenge carrying the "Meta" tag in src/data/challenge-companies.js,
@@ -375,7 +375,7 @@ const FQ=[
   {id:66,q:'Membership Tier Revenue Analysis',d:'Medium',free:true,t:['SELECT','LEFT JOIN','GROUP BY']},
   {id:121,q:'Multi-Month Active Customers',d:'Medium',free:true,t:['SELECT','JOIN','GROUP BY']}
 ];
-document.getElementById('question-cards').innerHTML=FQ.map(f=>`<a class="qc" href="/app/?src=meta-sql-interview&challenge=${f.id}" style="display:block;text-decoration:none"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px"><span style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#64748b">SQL Quest challenge #${f.id}</span><span style="display:flex;gap:6px;flex-shrink:0"><span class="db ${f.d==='Hard'?'dh':f.d==='Easy'?'de':'dm'}">${f.d}</span><span class="db ${f.free?'de':'dp'}">${f.free?'Free':'Pro'}</span></span></div><p style="font-size:15px;font-weight:700;color:#e2e8f0;line-height:1.5;margin-bottom:12px">${f.q}</p><div style="display:flex;gap:6px;flex-wrap:wrap">${f.t.map(t=>`<span class="tt">${t}</span>`).join('')}</div></a>`).join('');
+document.getElementById('question-cards').innerHTML=FQ.map(f=>`<a class="qc" href="/app/?src=meta-sql-interview&challenge=${f.id}" style="display:block;text-decoration:none"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px"><span style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#8b98ab">SQL Quest challenge #${f.id}</span><span style="display:flex;gap:6px;flex-shrink:0"><span class="db ${f.d==='Hard'?'dh':f.d==='Easy'?'de':'dm'}">${f.d}</span><span class="db ${f.free?'de':'dp'}">${f.free?'Free':'Pro'}</span></span></div><p style="font-size:15px;font-weight:700;color:#e2e8f0;line-height:1.5;margin-bottom:12px">${f.q}</p><div style="display:flex;gap:6px;flex-wrap:wrap">${f.t.map(t=>`<span class="tt">${t}</span>`).join('')}</div></a>`).join('');
 
 // GENERATED — identical on every company page by design. No company name is
 // attached to a duration, a tool or a process anywhere in it; see

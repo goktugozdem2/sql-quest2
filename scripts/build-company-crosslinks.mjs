@@ -128,7 +128,7 @@ function block(slug) {
     const c = COMPANIES[k];
     return `      <a class="qc" href="/${k}-sql-interview/" style="display:block;text-decoration:none;">
         <p class="fd" style="font-size:15px;font-weight:700;color:#e2e8f0;margin-bottom:4px;">${c.name}</p>
-        <p style="font-size:12px;color:#64748b;line-height:1.6;">${c.desc}</p>
+        <p style="font-size:12px;color:#8b98ab;line-height:1.6;">${c.desc}</p>
       </a>`;
   }).join('\n');
 
@@ -136,9 +136,9 @@ function block(slug) {
 <section id="related" style="border-top:1px solid rgba(255,255,255,.04);">
   <style>#related a.qc:hover{border-color:rgba(255,255,255,.18)}</style>
   <div class="sec" style="padding:72px 24px;">
-    <p class="sl" style="color:#64748b;text-align:center;margin-bottom:10px;">Keep prepping</p>
+    <p class="sl" style="color:#8b98ab;text-align:center;margin-bottom:10px;">Keep prepping</p>
     <h2 class="fd" style="font-size:28px;font-weight:800;text-align:center;color:#e2e8f0;margin-bottom:10px;">Other companies that ask similar SQL</h2>
-    <p style="font-size:14px;color:#64748b;text-align:center;max-width:580px;margin:0 auto 36px;line-height:1.7;">Loops reuse the same handful of patterns. Prepping for two at once costs far less than twice the work.</p>
+    <p style="font-size:14px;color:#8b98ab;text-align:center;max-width:580px;margin:0 auto 36px;line-height:1.7;">Loops reuse the same handful of patterns. Prepping for two at once costs far less than twice the work.</p>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;">
 ${cards}
     </div>

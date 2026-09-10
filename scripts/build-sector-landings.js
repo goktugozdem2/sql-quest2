@@ -338,11 +338,11 @@ function generateLandingHtml(s) {
     .hb{display:inline-flex;align-items:center;gap:8px;background:${accentLight};border:1px solid ${accentMid};border-radius:100px;padding:6px 16px;margin-bottom:28px}.pd{width:8px;height:8px;border-radius:4px;background:#22c55e;animation:pulse-glow 2s infinite}
     .pills{display:flex;gap:18px;margin-top:36px;flex-wrap:wrap;justify-content:center}.pill{display:flex;align-items:flex-start;gap:8px}.pill .pdot{width:6px;height:6px;border-radius:3px;background:#22c55e;flex-shrink:0;margin-top:7px}
     .feat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px}.feat-card{background:rgba(15,15,30,.5);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:24px 22px;transition:border-color .3s}.feat-card:hover{border-color:${accentMid}}
-    .schema-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-top:28px}.schema-card{background:rgba(10,10,25,.6);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:18px 18px}.schema-name{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:${s.accent_hex};margin-bottom:6px}.schema-rows{font-size:11px;color:#64748b;margin-bottom:10px;text-transform:uppercase;letter-spacing:1px}.schema-desc{font-size:13px;color:#94a3b8;line-height:1.6}
+    .schema-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-top:28px}.schema-card{background:rgba(10,10,25,.6);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:18px 18px}.schema-name{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:${s.accent_hex};margin-bottom:6px}.schema-rows{font-size:11px;color:#8b98ab;margin-bottom:10px;text-transform:uppercase;letter-spacing:1px}.schema-desc{font-size:13px;color:#94a3b8;line-height:1.6}
     .ch-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-top:28px}.ch-card{display:block;background:rgba(15,15,30,.55);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:20px 22px;text-decoration:none;transition:all .3s}.ch-card:hover{border-color:${accentMid};transform:translateY(-2px)}.ch-diff{display:inline-block;font-size:11px;font-weight:700;padding:3px 10px;border-radius:100px;margin-bottom:10px}.ch-easy{background:rgba(34,197,94,.15);color:#4ade80}.ch-medium{background:rgba(251,191,36,.15);color:#fbbf24}.ch-hard{background:rgba(239,68,68,.15);color:#f87171}.ch-title{font-size:16px;font-weight:800;color:#f1f5f9;margin-bottom:8px}.ch-prev{font-size:13px;color:#94a3b8;line-height:1.6}
     .fi{border-bottom:1px solid rgba(255,255,255,.06);padding:20px 0;cursor:pointer}.fh{display:flex;justify-content:space-between;align-items:center}.ftg{color:${s.accent_hex};font-size:22px;transition:transform .3s;flex-shrink:0}.fa{max-height:0;overflow:hidden;transition:max-height .4s ease}.fi.o .fa{max-height:400px}.fi.o .ftg{transform:rotate(45deg)}
     .cs{position:relative;overflow:hidden}.cbg{position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 50% 100%,rgba(124,58,237,.12) 0%,transparent 60%)}
-    .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center}.flk{margin-top:20px;display:flex;justify-content:center;gap:24px;flex-wrap:wrap}.flk a{color:#64748b;text-decoration:none;font-size:13px;transition:color .2s}.flk a:hover{color:#e2e8f0}
+    .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center}.flk{margin-top:20px;display:flex;justify-content:center;gap:24px;flex-wrap:wrap}.flk a{color:#8b98ab;text-decoration:none;font-size:13px;transition:color .2s}.flk a:hover{color:#e2e8f0}
     .attrib-block{background:rgba(10,10,25,.6);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:20px 24px;margin-top:36px;font-size:13px;line-height:1.7;color:#94a3b8}.attrib-block strong{color:#cbd5e1;font-weight:700}
     @media(max-width:768px){.nl > a:not(.btn){display:none}.nl .bp{font-size:13px;padding:9px 14px}}
   </style>
@@ -371,7 +371,7 @@ function generateLandingHtml(s) {
       <a href="#dataset" class="btn bo">Veriyi gör ↓</a>
     </div>
     <div class="pills" style="animation:fadeUp .6s .5s both;">
-      ${s.pills.map(p => `<div class="pill"><span class="pdot"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">${p.title}</p><p style="font-size:11px;color:#64748b;">${p.sub}</p></div></div>`).join('')}
+      ${s.pills.map(p => `<div class="pill"><span class="pdot"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">${p.title}</p><p style="font-size:11px;color:#8b98ab;">${p.sub}</p></div></div>`).join('')}
     </div>
   </div>
 </section>
@@ -424,14 +424,14 @@ function generateLandingHtml(s) {
   <h2 class="fd" style="font-size:clamp(30px,4.5vw,48px);font-weight:800;line-height:1.15;margin-bottom:20px;">${s.tr_name} için<br><span class="gt">SQL pratik başlasın.</span></h2>
   <p style="font-size:18px;color:#94a3b8;max-width:540px;margin:0 auto 32px;">Kayıt yok. Kart yok. İlk sorgun 60 saniyede.</p>
   <a href="/app.html?lang=tr&sector=${s.id}&challenge=${s.sample_challenges[0].id}&ref=lp_${s.id}" class="btn bp blg" style="box-shadow:0 0 40px ${accentMid};">Başlat — Ücretsiz ⚡</a>
-  <p style="font-size:13px;color:#475569;margin-top:20px;">Tarayıcıda çalışır. Kurulum yok.</p>
+  <p style="font-size:13px;color:#7f8da1;margin-top:20px;">Tarayıcıda çalışır. Kurulum yok.</p>
 </div></section>
 
 <!-- ── Footer ─────────────────────────────────────────────────── -->
 <footer class="ft"><div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:16px;"><div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,${s.accent_hex},#7c3aed);display:flex;align-items:center;justify-content:center;font-size:14px;">⚡</div><span class="fd" style="font-size:16px;font-weight:800;">SQL Quest</span></div>
-<p style="font-size:13px;color:#475569;">Sektörünün gerçek verisiyle SQL pratiği.</p>
+<p style="font-size:13px;color:#7f8da1;">Sektörünün gerçek verisiyle SQL pratiği.</p>
 <div class="flk"><a href="/app.html?lang=tr&sector=${s.id}&challenge=${s.sample_challenges[0].id}&ref=lp_${s.id}">Hemen Başla</a><a href="/turkce-sql-ogren/">Türkçe ana sayfa</a><a href="/finans-sql/">Finans</a><a href="/gayrimenkul-sql/">Gayrimenkul</a><a href="/uretim-sql/">Üretim</a></div>
-<p style="font-size:11px;color:#334155;margin-top:24px;">© 2026 SQL Quest</p></footer>
+<p style="font-size:11px;color:#79879b;margin-top:24px;">© 2026 SQL Quest</p></footer>
 
 <script>
 window.addEventListener('scroll',()=>{document.getElementById('nav').classList.toggle('s',window.scrollY>50)},{passive:true});

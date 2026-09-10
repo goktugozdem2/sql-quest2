@@ -139,7 +139,7 @@ function renderWeekPage(yw, mode) {
     archive.push({ weekLabel: label, challenge: selectWeeklyChallenge(cursor, allChallenges) });
   }
   const archiveHtml = archive.map(a =>
-    `        <li><a href="/weekly/${esc(a.weekLabel)}/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">${esc(a.weekLabel)}</strong> · ${esc(a.challenge?.title || '')} <span style="color:#64748b">(${esc(a.challenge?.difficulty || '')})</span></a></li>`
+    `        <li><a href="/weekly/${esc(a.weekLabel)}/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">${esc(a.weekLabel)}</strong> · ${esc(a.challenge?.title || '')} <span style="color:#8b98ab">(${esc(a.challenge?.difficulty || '')})</span></a></li>`
   ).join('\n');
 
   // Archive-only banner shown on past-week permalinks. Empty string on
