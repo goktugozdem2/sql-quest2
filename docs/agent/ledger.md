@@ -1192,8 +1192,13 @@ of the verifier and must never be rounded to `FLAT`.
 - **Change** `npm run indexnow -- --all` submitted all 87 sitemap URLs,
   HTTP 200. No quota on IndexNow; Bing's URL Submission holds 100/day in
   reserve, thirty times Google's.
+- **Also submitted 2026-09-11 02:03** via Bing's URL Submission panel, which is
+  a separate queue from IndexNow: `/vs-sqlbolt/` and `/vs-sqlzoo/`, the two new
+  pages. Quota went 100 → 98, so both consumed a slot rather than only appearing
+  in the table.
 - **Metric** pages with ≥1 Bing impression — baseline **41 of 85 built pages**
-  (3 months to 09-08).
+  (3 months to 09-08). The two new pages raise the denominator to 87, so read
+  the target against 87 rather than 85.
 - **Target** ≥ **60**.
 - **Falsification** under **50** → submission was never the constraint, and
   those pages have a quality or duplication problem. That is worth knowing

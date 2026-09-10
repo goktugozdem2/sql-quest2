@@ -451,8 +451,16 @@ shown /anthropic-sql-interview/ crawled-but-not-indexed as the cost.
   dates after submitting; a toast you did not see is not a submission.**
 - **Bing**: Webmaster Tools IS set up (site picker also holds claudequest.app and
   datrick.com — check the selected site before reading anything). URL Inspection →
-  Request Indexing there too, quota 100 URLs/day. The submission lands via the
-  quota counter, not the URL Submission table, which lags.
+  Request Indexing there too, quota 100 URLs/day. **URL Submission is a
+  separate panel** and takes a batch, one URL per line — its own path is
+  `/webmasters/submiturl` (`/webmasters/url-submission` renders "No pages
+  found", the same trap as `searchperf` vs `searchperformance`). Corrected
+  2026-09-11: the Submitted Urls table does NOT lag — rows appear with a
+  timestamp straight after the toast. Read the quota counter anyway (100 →
+  98 for a two-URL batch); a number is better proof than a row.
+  **Bing Webmaster Tools also has an AI Performance panel** reporting
+  Copilot citations — 12.6K in the 3 months to 2026-09-08. See
+  `bing_page_ctr` / `bing_citations` in `docs/agent/metrics.md`.
 - **IndexNow**: `npm run indexnow` — submits sitemap URLs with `lastmod` in the last
   7 days, so run it after any deploy that bumps lastmod. Ownership key is
   `public/<32-hex>.txt`; the script derives the key from the filename and probes

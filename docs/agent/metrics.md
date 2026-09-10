@@ -1797,3 +1797,22 @@ Traps, all found on the first read:
   Before "fixing" a zero-CTR page, look at which query it ranks for.
 - **Bing's index is Yahoo's and largely DuckDuckGo's.** When sizing the
   channel from our own `ref` field, count all three or you undercount by ~40%.
+
+**URL Submission** (left nav) is separate from IndexNow and worth using on top
+of it: 100 URLs/day against Google's ~10. Same URL trap as Search Performance —
+`/webmasters/url-submission` renders "No pages found"; the working path is
+`/webmasters/submiturl`, which is where the left-nav link goes. Open it, click
+**Submit URLs**, one URL per line, Submit.
+
+Two corrections to what this repo used to say about it, both observed
+2026-09-11 while submitting `/vs-sqlbolt/` and `/vs-sqlzoo/`:
+
+- **The Submitted Urls list does NOT lag.** Both URLs appeared at the top of
+  the table with a "Today at 02:03" timestamp immediately after the success
+  toast. CLAUDE.md's older note ("the submission lands via the quota counter,
+  not the URL Submission table, which lags") was written from a different
+  observation and no longer holds.
+- **The quota counter is still the better proof**, because it is a number
+  rather than a row: it read 100 before and **98** after, which confirms both
+  URLs consumed quota rather than merely being listed. Reopen the dialog to
+  read it; that costs nothing.
