@@ -211,3 +211,32 @@ Deferred per revised premise #1. Not blocking revenue.
 - [ ] **`#correlated` on `/challenges/subqueries/` still has zero Easy.** The 2026-09-07 on-ramps (186-188) covered scalar, IN and derived-table; a correlated / EXISTS rung at Easy is still missing, so the section's gentlest entry is Medium. Author one on the movies or ecommerce dataset ("films rated above their own genre's average" is the canonical shape).
 - [x] **Capital One challenges 275-284 have no `title_tr`.** A Turkish user reads Turkish chrome around English challenge titles. Invisible until 2026-09-08, when the prep card became the first surface to list them together. Translate the ten titles and their descriptions the way the rest of the sector bank is translated.
   DONE 2026-09-07: all 25 card-analytics challenges (275-284 backfilled, 285-299 authored with it) carry `title_tr`, `description_tr`, `hint_tr` and `example_tr` — the four fields `localizeChallenge` swaps, same convention as `src/data/challenges.js`. `scripts/validate-fraud-challenges.js` now FAILS on a `card_analytics` challenge missing any of the three text fields, so the gap cannot reopen silently. Note the rest of `sector-challenges.js` (200-274, the FDIC / NYC / UCI / fraud tracks, 72 challenges) is still English-only — a separate, larger pass.
+
+## Design review 2026-09-10 — deferred findings
+
+Full report: `~/.gstack/projects/goktugozdem2-sql-quest2/designs/design-audit-20260910/design-audit-sqlquest.md`
+Fixed in the same run: FINDING-001 (contrast ramp, `0b23b2c`), FINDING-002 (heading levels, `19a1ea8`).
+
+- [ ] **FINDING-000 (high, design-system) — DESIGN.md describes a site we do not
+      ship.** The file specifies Fraunces/Geist, `#0E0F13`, one yellow accent on
+      CTAs only. The site ships Space Grotesk/DM Sans on `#06060f` with
+      violet-to-pink gradients, and the logo gradient uses two colours the file
+      does not list. CLAUDE.md treats the file as authoritative, so every design
+      review is noisy until this is settled. Two honest fixes: update the file to
+      describe the site, or plan the work to move the site back. The file is in
+      `legacy` format; `gstack-design-md convert` handles either direction.
+- [ ] **Type sizes (medium, typography).** 11 `tiny-text` hits (11px body copy)
+      and 5 `undersized-ui-text` (a 10px "YOUR GOAL" label), all on the homepage.
+      Checklist floors are 16px body and 12px caption. Not fixed in the review
+      because raising type moves layout on every page — it needs its own
+      before/after pass.
+- [ ] **AI-slop cluster (medium, direction not defect).** `gradient-text` 12,
+      `ai-color-palette` 9, `dark-glow` 5, `radial-spotlight-glow` 3,
+      `icon-tile-stack` 1, `kicker-above-heading` 1 — plus the three-column
+      feature grid, the five big-numbers row, the logo marquee, and gradient
+      primary buttons. This is the chosen identity, so it is a decision, not a
+      bug list. Blocked behind FINDING-000.
+- [ ] **Homepage footer says "SQL Exercises (250+)"** while `/sql-exercises/`
+      says 287. True but stale, and `tests/site-counts.test.js` cannot see it:
+      its pattern expects the number before the noun and here the noun comes
+      first. Either update the link text or widen the guard.
