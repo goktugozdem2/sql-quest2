@@ -373,6 +373,43 @@ const SKILL_CLAIMS = [
 ];
 const SKILL_LOOSE = /(?<![\w-])(\d+) (?:SQL )?skills\b/gi;
 
+// A stat block states a number and its meaning in two SIBLING elements:
+//
+//   <div class="stat-num">285</div><div class="stat-lbl">Exercises</div>
+//
+// Every rule above reads prose, and prose is where the number and the noun sit
+// in one sentence. This shape puts a tag boundary between them, so
+// `findChallengeClaims` never saw a claim at all — and on 2026-09-11
+// /sql-exercises/, the page carrying 48% of our Bing impressions, was found
+// stating **285 exercises, 217 free** against a bank of 287 and 219. It had
+// been wrong since the sector challenges shipped, under a guard written
+// precisely because an assistant quotes these pages verbatim.
+//
+// Labels are matched loosely on purpose: any label naming our unit of work
+// (exercise/challenge/problem/question) binds to the bank total unless it also
+// says "free", and a label naming skills binds to the canonical count. A label
+// this does not recognise is left alone rather than guessed at.
+export function findStatBlockClaims(text, facts, skillCount) {
+  const offenders = [];
+  const BLOCK = /stat-num"[^>]*>\s*([\d,]+)\s*<\/div>\s*<div class="stat-lbl"[^>]*>\s*([^<]+?)\s*<\/div>/gi;
+  for (const m of text.matchAll(BLOCK)) {
+    const n = Number(m[1].replace(/,/g, ''));
+    const label = m[2];
+    if (!Number.isFinite(n)) continue;
+    let want = null;
+    if (/\bskill/i.test(label)) want = skillCount;
+    else if (/\bfree\b/i.test(label)) want = facts.freeChallengeCount;
+    else if (/\b(?:exercis|challeng|problem|question)/i.test(label)) want = facts.challengeCount;
+    if (want === null || n === want) continue;
+    offenders.push({
+      index: m.index,
+      why: `stat block "${n} ${label}" — the bank has ${want}`,
+      text: m[0],
+    });
+  }
+  return offenders;
+}
+
 export function findSkillClaims(text, skillCount) {
   const offenders = [];
   for (const s of sentencesOf(text)) {
@@ -1099,6 +1136,27 @@ describe('helpers (fixtures)', () => {
       '<p>StrataScratch is $19/mo.</p><p>SQL Quest Pro is $19/mo.</p>',
     ]) expect(findPriceOffences(s, FIXTURE_MODAL).length, s).toBe(1);
   });
+
+  it('findStatBlockClaims reads the number across the tag boundary, and only labels it knows', () => {
+    const F = { challengeCount: 287, freeChallengeCount: 219 };
+    const block = (n, lbl) => `<div class="stat"><div class="stat-num">${n}</div><div class="stat-lbl">${lbl}</div></div>`;
+    // Clean.
+    for (const s of [block(287, 'Exercises'), block(219, 'Free to solve'), block(9, 'Skill categories'),
+                     block('287', 'Practice questions'), block(22, 'Company tags'), block(3, 'Industry tracks')]) {
+      expect(findStatBlockClaims(s, F, 9), s).toEqual([]);
+    }
+    // The exact regression this rule was written for.
+    expect(findStatBlockClaims(block(285, 'Exercises'), F, 9).length).toBe(1);
+    expect(findStatBlockClaims(block(217, 'Free to solve'), F, 9).length).toBe(1);
+    expect(findStatBlockClaims(block(10, 'Skill categories'), F, 9).length).toBe(1);
+    // "free" wins over the unit noun when a label carries both.
+    expect(findStatBlockClaims(block(219, 'Free exercises'), F, 9)).toEqual([]);
+    expect(findStatBlockClaims(block(287, 'Free exercises'), F, 9).length).toBe(1);
+    // An unrecognised label is left alone, not guessed at.
+    expect(findStatBlockClaims(block(3, 'Industry tracks'), F, 9)).toEqual([]);
+    // Both halves of a two-block run are reported.
+    expect(findStatBlockClaims(block(285, 'Exercises') + block(217, 'Free'), F, 9).length).toBe(2);
+  });
 });
 
 
@@ -1307,6 +1365,14 @@ describe('2. every count a page states is the bank\'s count', () => {
   it('"N-skill" / "N-axis" / "N canonical skills" is the canonical skill count', () => {
     const offenders = collect(p => findSkillClaims(p.text, CANONICAL_SKILLS.length));
     expect(offenders, `skill counts off the radar (${CANONICAL_SKILLS.length}):\n${report(offenders)}`).toEqual([]);
+  });
+
+  it('a stat block\'s number matches its own label — the shape prose rules cannot see', () => {
+    const offenders = collect(p => findStatBlockClaims(p.text, facts, CANONICAL_SKILLS.length));
+    expect(offenders, `stat blocks off the bank (total ${facts.challengeCount}, free ${facts.freeChallengeCount}):\n${report(offenders)}`).toEqual([]);
+    // Not vacuous: the site does carry stat blocks this rule reads.
+    const seen = pages.filter(p => /stat-num"[^>]*>\s*[\d,]+\s*<\/div>\s*<div class="stat-lbl"/i.test(p.text));
+    expect(seen.length, 'no page has a stat block — the rule proved nothing').toBeGreaterThan(0);
   });
 
   it('"N company pages / tracks / tagged companies" is the company-page count', () => {
