@@ -984,6 +984,23 @@ of the verifier and must never be rounded to `FLAT`.
   is part of the verdict — if 91 moved ≥ 10 points in the read week, the
   week is a mix week and the read is UNREADABLE-mix, extend; (iii) n ≥ 60
   first contacts on 105 before any verdict. Thresholds below unchanged.
+- **Pre-read note, 2026-09-11 (two days early, deliberately written BEFORE the
+  read so it cannot be selected afterwards).** Both target conditions are
+  currently met and one of them hides a tension:
+  - 105 as opener: **61.3%** activation, n=**75**. Target was ≥60% at n≥60, so
+    both halves clear. 99 no longer appears in the opener seat at all, which
+    confirms the swap took mechanically.
+  - Overall last-7 activation: **53.7%** (94/175). Target was ≥48%, so it
+    clears.
+  - **But the seven days BEFORE the deploy read 57.2%** (83/145), and the
+    window since the deploy reads 52.1% (76/146). So the site-wide number did
+    not rise — it drifted down — while 105's own seat performs well above the
+    line it was given.
+  The honest reading on 09-13 is therefore not a clean HIT on both halves. 105
+  beat its target in its seat; the funnel it sits in did not improve. Decide on
+  09-13 whether the claim's second condition (≥48% overall) was too weak to be
+  informative, and say so in the verdict rather than banking a number that
+  passed a bar set below the prior week's actual.
 - **Falsification, two-sided, stated in advance:**
   (a) 105-as-opener ≥ 60% → the *challenge* was the constraint: 99's
   five-column exact-alias prompt is too much for a first contact. Keep 105
