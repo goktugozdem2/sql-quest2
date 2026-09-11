@@ -75,6 +75,21 @@ standard position-to-CTR curve, not our measurement. We cannot measure our own
 page-one CTR because we have never been there. Treat the table as the size of
 the prize, not as a forecast.
 
+**Corrected 2026-09-11, later the same day —** the query-level data says 15.7
+is the wrong number to aim at. Four competitor-brand queries (`stratascratch`
+8,467 impressions, `datalemur` 6,388, `datalemur sql` 1,798, `stratascratch
+sql` 376) are **23% of our impressions and 21 of our clicks**, all at position
+7-9 where a brand searcher never clicks. They drag the site-wide average down
+and no lever moves them. Meanwhile most of our pages already sit at 6.7-13.2,
+which is the bottom of page one.
+
+So the case for links stands, but the table above overstates what links alone
+would collect, and the target is per-page rather than site-wide. The sharpest
+version of the argument is in `docs/reads/google-position-2026-09-11.md`:
+**`/sql-exercises/` ranks 6.36 on Bing and 24.5 on Google**, same page, same
+content, with nine times fewer impressions as a result. That gap is what
+authority buys.
+
 ---
 
 ## 3. T0 — the links we already own and are wasting (ship today)
@@ -125,10 +140,18 @@ pages.
 
 The cheapest link in the world is a mention that is already written.
 
-- **`sql-quest.app` links to us twice.** That is a hyphenated variant of our
-  own domain that we do not own. Find out what it is. If it is a squatter,
-  those two links are worthless and possibly harmful; if it is a fan page,
-  it is a relationship.
+- **`sql-quest.app` — answered 2026-09-11, and it is not a link.** It is a
+  different product with our name: *SQLQuest, Master SQL Through Detective
+  Investigations*, a SQL mobile game on iOS and Android, French/English, OVH
+  hosting. Search Console counts it as a linking domain because **their
+  `rel=canonical`, both `hreflang` tags, `og:url` and `og:image` all point at
+  `sqlquest.app`** — they typed their own domain without the hyphen. Their
+  social cards serve our OG image and their canonicals hand their content to
+  us. Nothing to fix on our side (`/en/` and `/fr/` already 308 to the
+  homepage). Worth one founder email: it is a real favour to them, and a
+  same-name product in the same category is better known than discovered.
+  Full detail in `docs/reads/google-position-2026-09-11.md` §4. **So the real
+  count of linking domains is three, not four.**
 - **`microsoft.com` links to us twice.** Find out where. A link from
   microsoft.com is worth more than the other twelve combined, and knowing why
   it exists tells us whether it can be repeated.
@@ -137,9 +160,9 @@ The cheapest link in the world is a mention that is already written.
   without a link and, where the thread is still live and the mention is
   positive, reply as the founder. Not a pitch — the CLAUDE.md outreach voice.
 
-**Claim:** distinct real linking domains, baseline **4** (dev.to, linkedin.com,
-microsoft.com, sql-quest.app, excluding saasmarket.site). Target **≥ 10** by
-2026-11-08. Falsification: under 6 means unlinked mentions are not a real
+**Claim:** distinct real linking domains, baseline **3** (dev.to, linkedin.com,
+microsoft.com — `sql-quest.app` is a miscounted canonical, not a link, and
+`saasmarket.site` is excluded). Target **≥ 10** by 2026-11-08. Falsification: under 6 means unlinked mentions are not a real
 inventory at our size and the channel is outreach, not reclamation.
 
 ## 5. T2 — the lists that link out by policy (this month)

@@ -1129,6 +1129,30 @@ of the verifier and must never be rounded to `FLAT`.
   hakko504 and adinajoshi were deliberately left out — both had already
   received a different email from the founder that day.
 
+### /sql-exercises/ on Google — the page that ranks 6 on Bing and 24.5 here — **OPEN**
+- **Claimed** 2026-09-11 · **Read** 2026-10-12
+- **The observation that opened it:** the same page, same content, ranks
+  **6.36 on Bing with 11,400 impressions and 489 clicks** and **24.5 on Google
+  with 1,250 impressions and 20 clicks** over the same three months. Rank
+  governs how often you are shown at all, so Google gives our best door nine
+  times fewer impressions than Bing does. Every other page of ours sits at
+  Google 6.7-13.2; this one is the outlier, and it is the one that matters.
+- **Change** two things shipped 2026-09-11, both cheap and both aimed here:
+  internal links to the page went **31 → 132 of 141 pages** (it had fewer than
+  `terms.html`), and its title now carries "practice questions", the phrase
+  that was our largest Bing query and appeared nowhere on the page.
+- **Metric** `gsc_position('/sql-exercises/')` — baseline **24.5**
+  (1,250 impressions, 20 clicks, 1.6% CTR, 3 months to 2026-09-08).
+- **Target** ≤ **15** — the top of page two, i.e. evidence the page moved at
+  all. Page one is not a 30-day ask.
+- **Falsification** still above **22** → internal links and title were not what
+  was holding it, the constraint is domain authority, and the honest response is
+  that `docs/plans/backlinks-2026-09-11.md` is the only remaining lever and it
+  runs in quarters. Say that rather than shipping another title.
+- **Note on what is NOT being claimed:** the site-wide average position of 15.7
+  is an artifact of 17,029 competitor-brand impressions at 0% CTR and is not a
+  target. See `docs/reads/google-position-2026-09-11.md`.
+
 ### Bing T1 — /sql-exercises/ answers the query it actually ranks for — **OPEN**
 - **Claimed** 2026-09-11 · **Read** 2026-10-09 (with O1's day-30 checkpoint)
 - **Change** title / og / twitter / meta description / h1 on

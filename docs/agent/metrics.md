@@ -1872,6 +1872,26 @@ from four domains — dev.to, linkedin.com, microsoft.com and `sql-quest.app`, a
 hyphenated variant of our own domain that we do not own and should look into.
 Plan: `docs/plans/backlinks-2026-09-11.md`.
 
+**Exclusion list — apply it to every position and CTR read.** Four
+competitor-brand queries carry 23% of our Google impressions and produce 21
+clicks: `stratascratch` (8,467 impressions, 0.0% CTR, position 7.6),
+`datalemur` (6,388, 0.1%, 7.1), `datalemur sql` (1,798, 0.4%, 7.0) and
+`stratascratch sql` (376, 0.3%, 8.8). A brand searcher does not click result
+seven, so there is no lever on them, and including them makes the site-wide
+average move when Google changes its mind about our competitors. **The site-wide
+15.7 is an artifact; read position per page instead**, against the same page's
+Bing position. Working: `docs/reads/google-position-2026-09-11.md`.
+
+**The per-page gap is the number worth watching.** Same page, two engines,
+2026-09-11:
+
+| Page | Bing position | Google position |
+|---|---|---|
+| `/sql-exercises/` | **6.36** (11.4K impressions) | **24.5** (1,250) |
+| `/best-sql-practice-sites/` | 5.44 | 9.7 |
+| `/snowflake-sql-interview/` | 3.49 | 13.2 |
+| `/blog/sql-cte-tutorial/` | 6.07 | ~25-31 (via its queries) |
+
 Traps:
 
 - **Read the two consoles together or you will draw the wrong conclusion.**
