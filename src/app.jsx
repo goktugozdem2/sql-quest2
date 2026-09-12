@@ -7497,8 +7497,13 @@ function SQLQuest() {
     if (!wants) return;
     proLinkFiredRef.current = true;
     if (userProStatus) return;
+    // ?plan=annual|monthly (the homepage pricing cards, 2026-09-13) opens the
+    // same modal under reason 'pricing_link' so the two doors read apart;
+    // the plan rides in the reason for the click read. Nothing pre-selects.
+    let plan = null;
+    try { const raw = new URLSearchParams(window.location.search).get('plan'); plan = raw === 'annual' || raw === 'monthly' ? raw : null; } catch (_) { plan = null; }
     const t = setTimeout(() => {
-      setProModalReason({ type: 'email_link', solvedCount: solvedChallenges.size, topic: null });
+      setProModalReason({ type: plan ? 'pricing_link' : 'email_link', plan, solvedCount: solvedChallenges.size, topic: null });
       setShowProModal(true);
     }, 800);
     return () => clearTimeout(t);
@@ -29185,6 +29190,8 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                       ? 'Finish the path.'
                       : proModalReason.type === 'email_link'
                       ? 'The interview run, before the interview.'
+                      : proModalReason.type === 'pricing_link'
+                      ? 'Two plans. Annual is the one most people choose.'
                       : ['learning', 'job_ready'].includes(getUserIntent())
                       ? 'Make SQL second nature.'
                       : 'Walk into the interview ready.'}
@@ -29208,8 +29215,8 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                       <p className="font-medium" style={{ color: '#F2F0EA' }}>{proModalReason.solvedCount} challenges solved.</p>
                       <p className="text-sm mt-2" style={{ color: '#8A8E99' }}>
                         {['learning', 'job_ready'].includes(getUserIntent())
-                          ? 'You\'re past the curiosity phase — this is exactly where most learners stall. Pro removes the friction: the AI tutor without the free tier's daily cap the moment you\'re stuck, the full 30-day path, and 200+ warm-ups that turn practice into fluency.'
-                          : 'You\'re past the curiosity phase — this is the spot where most people quit and the few who don\'t get hired. Pro unlocks Hard challenges, the full mock-interview bank, and the AI tutor without the free tier's daily cap so you can keep the momentum going.'}
+                          ? 'You\'re past the curiosity phase — this is exactly where most learners stall. Pro removes the friction: the AI tutor without the free tier\'s daily cap the moment you\'re stuck, the full 30-day path, and 200+ warm-ups that turn practice into fluency.'
+                          : 'You\'re past the curiosity phase — this is the spot where most people quit and the few who don\'t get hired. Pro unlocks Hard challenges, the full mock-interview bank, and the AI tutor without the free tier\'s daily cap so you can keep the momentum going.'}
                       </p>
                     </div>
                   ) : proModalReason.type === 'coach_path' ? (

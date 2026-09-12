@@ -176,6 +176,25 @@ of the verifier and must never be rounded to `FLAT`.
   state (commit e6e5069 for the page, the pre-437f72e modal) — the
   founder's rule, not a judgement call. Read 2026-10-03; watched every
   Friday by `weekly-funnel-friday`.
+- **Design pass, 2026-09-13 (the founder's 17-item list), same variant.**
+  One company section (the logo strip and the "question shapes" are gone),
+  the nine-topic grid moved to /sql-exercises/, industry tracks as one line,
+  section padding halved, three accents only (purple brand, yellow action,
+  green status — orange, cyan, red and the pink gradient purged), grey
+  eyebrows, plain-white H2s outside the hero and the final, line icons for
+  every emoji, a full six-line query in the mockup, the proof line inside
+  the hero under the H1, clickable pricing cards (`?pro=1&plan=annual|monthly`,
+  modal reason `pricing_link`), three "Start free" buttons (hero, pricing,
+  final), a purple one-line banner in body type, FAQ at six. **Measured
+  before → after:** height 10,857 → 6,659 px at 1024 wide (6,633 at 1440;
+  target was under 6,000 — the Coach mock alone is ~1,000 px and its radar is
+  test-bound to this page, so the last 750 px need a content decision, not a
+  trim); Lighthouse desktop 93 → 100, LCP 1,582 → 495 ms, FCP 843 → 495 ms,
+  CLS 0.009 → 0.004, page 159 → 153 KB. home→app: the 09-06→09-12 baseline
+  is 51.9%; the first seven days of the new page are read on the Friday of
+  2026-09-18 (`weekly-funnel-friday`), not here. Item 15 (a Preply photo in
+  "built in public") waits for the file; item 9's usage line is refreshed by
+  the Friday task.
 
 ### the price story: page and modal tell it the same way (founder's items 3, 5, 16 — 2026-09-12)
 

@@ -50,7 +50,8 @@ describe('activated-note: the second ask, in the founder voice', () => {
   it('the CTA opens the Pro modal in the app, and the app honours it once, never for Pro accounts', () => {
     expect(fn).toContain("utm('/app/?src=activated_note&pro=1', TEMPLATE)");
     expect(app).toContain("get('pro') === '1'");
-    expect(app).toContain("type: 'email_link'");
+    expect(app).toMatch(/'email_link'/);
+    expect(app).toMatch(/'pricing_link'/);
     expect(app).toMatch(/proLinkFiredRef\.current = true/);
     expect(app).toMatch(/if \(userProStatus\) return;/);
     // The headline the modal shows for that reason is the homepage's promise.

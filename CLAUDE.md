@@ -260,37 +260,44 @@ so a landing view and a later solve are joinable for the first time.
 - Three `reason='landing'` rows on 2026-07-28 (aid `e5fcbad1a022…`) are
   localhost verification traffic — exclude that aid from the first read.
 
-### Homepage — one promise, company-first, two plans (2026-09-12)
+### Homepage — one promise, one company section, three accents (2026-09-13)
 
-- `src/index.html`: hero "Pass the SQL interview." (one promise; the "AI can
-  write a query" thesis lives in /blog/validate-ai-generated-sql/ and
-  /sql-for-the-ai-era/, not on the homepage), then the company sets
-  (Revolut, Capital One, Stripe, Wise, JPMorgan, Snowflake — the fintech
-  pages that convert from search, plus the two timed mocks), the practice
-  hub, the tutor + Coach mock, **Pricing right under it**, industry tracks,
-  the comparison table, built-in-public, the closing, a ten-question FAQ.
-- Founder's rules on this page (2026-09-12 list): two CTA labels only —
-  **Start free** and **See pricing**; one bank number (299) in nav, hero and
-  footer, no free count, no difficulty split, no per-company counts; none of
-  "free forever", "no trial clock", "free is the product"; a usage line
-  under the hero (refreshed by `weekly-funnel-friday`); a four-item nav
-  (Practice, Interview Prep, Pricing, Log In) with every mega-menu link in
-  the footer.
-- Pro section speaks in outcomes tied to the interview and mirrors the modal
-  word for word in spirit: the Hard question on the day, the screen sat
-  before the screen, help that does not stall. Two plans, annual first.
+- `src/index.html`: hero "Pass the SQL interview." with the proof line
+  right under the H1 (`data-testid="usage-line"`, refreshed by the Friday
+  task) and a full six-line query in the mockup; then the company cards
+  (Revolut, Capital One, Stripe, Wise, JPMorgan, Snowflake — the only company
+  section; no logo strip, no sample questions), a one-line practice strip
+  (the nine-topic grid lives on /sql-exercises/ `#by-topic`), the tutor +
+  Coach mock (rendered at `zoom:.85`), **Pricing right under it** with
+  clickable plan cards (`/app/?src=home&pro=1&plan=annual|monthly` → modal
+  reason `pricing_link`), a one-line industry strip, the comparison table
+  (five rows), built-in-public, the final CTA, a six-question FAQ.
+- Founder's rules on this page (12–13 Sep lists): exactly three **Start
+  free** buttons (hero, pricing, final) and one **See pricing**; one bank
+  number (299); no free count, difficulty split or per-company counts; none
+  of "free forever", "no trial clock", "free is the product"; a four-item nav
+  (Practice, Interview Prep, Pricing, Log In) with every mega-menu link in the
+  footer; three accents — purple brand, yellow action (`.bp` is #FFE34D),
+  green status; grey eyebrows; coloured second-half H2s only in the hero and
+  the final; line icons, never emoji; the Turkish banner purple, body type,
+  one line, geo-targeted via `/api/geo/` (browser language only as fallback;
+  `/?geo=US` previews).
+- Pro section speaks in outcomes tied to the interview and mirrors the modal:
+  the Hard question on the day, the screen sat before the screen, help that
+  does not stall. Two plans, annual first. "Unlimited" is never claimed
+  anywhere on the site (Pro lifts the free tier's daily cap of 20).
 - Every count is bound by `tests/site-counts.test.js`; the FAQ JSON-LD must
-  equal the visible FAQ verbatim (`tests/faq-schema.test.js`).
-- Turkish banner is geo-targeted: `/api/geo` echoes Vercel's
-  `x-vercel-ip-country`; browser language is only the fallback when the call
-  fails. Sector deep links are English (`?sector=finance | real-estate |
-  manufacturing`); `canonicalSectorId` in app.jsx maps them to the Turkish
-  data ids, `vercel.json` 301s the legacy spellings, `tests/sector-param.test.js`
-  pins both.
+  equal the visible FAQ verbatim (`tests/faq-schema.test.js`). Sector deep
+  links are English (`?sector=finance | real-estate | manufacturing`);
+  `canonicalSectorId` in app.jsx maps them, `vercel.json` 301s the legacy
+  spellings, `tests/sector-param.test.js` pins both.
+- Measured 2026-09-13 after the design pass: height 6,659 px at 1024 wide
+  (was 10,857), Lighthouse desktop 100 (was 93), LCP 495 ms (was 1,582).
 - Watch (founder's item 15): home→app must not fall below 51.9%,
-  modal→checkout must rise from 3.4% — if the second falls, revert both the
-  page and the modal. Ledger: "the homepage, company-first" and "the price
-  story"; metrics `home_door`, `modal_click_rate`; read 2026-10-03.
+  modal→checkout must rise from 3.4% (target 15% by 10-09) — if the second
+  falls, revert both the page and the modal. Ledger: "the homepage,
+  company-first" and "the price story"; metrics `home_door`,
+  `modal_click_rate`; read 2026-10-03.
 
 ### Public Profile (USER MUST DEPLOY for cross-device reads)
 Phase 4b + 4c shipped client-side; Supabase needs migration + deploy.
