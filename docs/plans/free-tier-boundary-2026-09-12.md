@@ -86,10 +86,19 @@ and they burn the surface (1.9 shows per person; 43 people asked 3+ times).
 Only `milestone_solves` has ever sold, and it sells in the first session
 (119 of 171 shows are first-session; 4 of the 7 clicks).
 
-**4. The checkout cannot take the money of a growing share of the audience.**
-67 of 203 modal viewers are in India; the last three people to reach Stripe
-were India, Russia, Mexico — 0 paid; the three US arrivals before them all
-paid. Separate decision (merchant of record: Paddle / Lemon Squeezy), founder's.
+**4. The checkout cannot take the money of a growing share of the audience —
+or they never tried.** 67 of 203 modal viewers are in India; the last three
+people to reach Stripe were India, Russia, Mexico — 0 paid; the three US
+arrivals before them all paid. **Checked in the Stripe dashboard 2026-09-12
+(evening):** since 2026-09-01 the Payments list holds exactly one payment
+(the 09-01 $29, succeeded) and **zero failed or incomplete payments**, so none
+of the three ever submitted a card — Stripe creates the payment attempt on
+submit, and there is none. They left the Checkout page (our
+`pro_checkout_returned` rows say 24 s, 62 s and 25 min away) with the form
+unfilled. That is abandonment at the price/card step, not a decline; the
+merchant-of-record question (Paddle / Lemon Squeezy) stays a founder's
+decision, now with weaker evidence for it and stronger evidence for asking
+the three why.
 
 **5. A false claim on the checkout surface.** "Unlimited AI Tutor" appears in
 45 places; `supabase/functions/ai-tutor` caps Pro at 50 (monthly) / 75

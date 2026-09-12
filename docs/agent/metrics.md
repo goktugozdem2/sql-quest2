@@ -2296,7 +2296,9 @@ purchases attributed to a company arrival: 1 (2026-07-22, `company:Amazon`).
 
 Shared trap: the payment-geography finding (docs/plans/free-tier-boundary-
 2026-09-12.md §3) — of the seven non-US people who ever reached Stripe, none
-paid. Read clicks before purchases, and read purchases by `tz` region.
+paid, and the Stripe dashboard (checked 2026-09-12) shows no failed or
+incomplete payment for any of them: they left Checkout with the card form
+unfilled. Read clicks before purchases, and read purchases by `tz` region.
 
 ## `goal_wall_early`
 

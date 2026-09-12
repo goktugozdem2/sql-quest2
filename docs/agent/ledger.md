@@ -272,7 +272,10 @@ of the verifier and must never be rounded to `FLAT`.
   after it for that reason. M2 flips 10-12 on the Coach; a company arrival
   holding the interview-prep goal is on both surfaces, split on goal. The
   payment-geography finding (0 of 7 non-US checkouts paid) caps what any
-  wall can show in purchases; read clicks before purchases.
+  wall can show in purchases; read clicks before purchases. Stripe checked
+  2026-09-12: no failed or incomplete payment since 09-01 — the three
+  non-payers left Checkout without submitting a card (abandonment, not a
+  decline).
 - **Verdict** _pending_
 
 ### the interview-prep goal meets the wall at step 4 (free-tier boundary M2)
