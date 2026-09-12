@@ -20,7 +20,7 @@ const parseList = (name) => {
   const start = app.indexOf(`const ${name} = [`);
   expect(start, `${name} in app.jsx`).toBeGreaterThan(-1);
   const end = app.indexOf('\n];', start);
-  // eslint-disable-next-line no-new-func
+   
   return new Function(`return ${app.slice(start + `const ${name} = `.length, end + 3)}`)();
 };
 const ROUND1 = parseList('FIRST_RUN_PLACEMENT_QUESTIONS');
@@ -233,7 +233,7 @@ describe('a first-run placement is a placement', () => {
     expect(flags).toMatch(/coachTrustQuizPlacement: false,/);
     expect(app).toMatch(/newCoachGoalState\(goalId, \{ source: 'picker', cold: shouldPlace, placementIds: COACH_PLACEMENT_CHALLENGE_IDS, firstRun, trustFirstRun \}\)/);
     expect(app).toMatch(/source: 'intake',\s*\n\s*cold: _coachUserIsCold\(\) && !_userIsSelfDeclaredAdvanced\(\),\s*\n\s*placementIds: COACH_PLACEMENT_CHALLENGE_IDS,\s*\n\s*now,\s*\n\s*firstRun,\s*\n\s*trustFirstRun: !!window\.FF\?\.feature\('coachTrustQuizPlacement'\),/);
-    expect(app).toMatch(/applyFirstRunPlacementToCoach\(levelId, metadata\.source \|\| 'first_run_placement'\);\n  \};/);
+    expect(app).toMatch(/applyFirstRunPlacementToCoach\(levelId, metadata\.source \|\| 'first_run_placement'\);\n {2}\};/);
     expect(app).toMatch(/seedFloors: coachState\?\.seedFloors \|\| null,/);
     expect((app.match(/trackActivationEvent\('coach_placement_skipped', \{ by: 'first_run_quiz'/g) || []).length).toBe(3);
     const coach = read('../src/utils/coach.js');

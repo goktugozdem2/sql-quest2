@@ -229,10 +229,10 @@ export function runRegistryValidation() {
   for (const issue of issues) {
     const prefix = `[coach-validate] ${issue.severity} [${issue.goalId}${issue.stepId ? '/' + issue.stepId : ''}]`;
     if (issue.severity === 'error') {
-      // eslint-disable-next-line no-console
+       
       console.error(prefix, issue.message);
     } else {
-      // eslint-disable-next-line no-console
+       
       console.warn(prefix, issue.message);
     }
   }

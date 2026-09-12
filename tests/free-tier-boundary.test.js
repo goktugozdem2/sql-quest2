@@ -285,7 +285,7 @@ describe('source guards — the five flags are wired, and off', () => {
     expect(app).toMatch(/const activeGoal = coachState\?\.goalId \? resolveCoachGoal\(goals\.find/);
     expect(app).toMatch(/stepsSkipped: Array\.from\(new Set\(\[\.\.\.\(coachState\.stepsSkipped \|\| \[\]\), step\.id\]\)\)/);
     expect((app.match(/data-testid="coach-step-skip"/g) || []).length).toBe(2);
-    expect(app).toMatch(/interviewHistory,\n    \}, \{/);
+    expect(app).toMatch(/interviewHistory,\n {4}\}, \{/);
     // a curriculum mock step starts through startInterview (the one gate), before
     // the switch, so the synthetic offer keeps its own door and session flag
     expect(app).toMatch(/if \(step\.type === COACH_MOCK_STEP_TYPE && step\.id !== COACH_MOCK_STEP_ID\) \{\n\s+const mock = mockInterviews\.find\(i => i\.id === step\.interviewId\);\n\s+if \(mock\) startInterview\(mock\);\n\s+return;/);

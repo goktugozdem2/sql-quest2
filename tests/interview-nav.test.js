@@ -68,8 +68,8 @@ describe('source guards — the entry, the events, the copy', () => {
     const ar = app.indexOf('const applyIntentRouting = (', gi);
     expect(gi).toBeGreaterThan(-1);
     expect(ar).toBeGreaterThan(gi);
-    expect(app.slice(gi, ar)).toMatch(/\n  \};\n/);
-    expect(app).not.toMatch(/source \}\);\n  \};\n  \};/);
+    expect(app.slice(gi, ar)).toMatch(/\n {2}\};\n/);
+    expect(app).not.toMatch(/source \}\);\n {2}\};\n {2}\};/);
     expect(app).toMatch(/const showInterviewNav = shouldShowInterviewNav\(\{/);
     expect(app).toMatch(/flagOn: !!window\.FF\?\.feature\('intentRouting'\)/);
     expect(app).toMatch(/data-onboarding="nav-trials"/);

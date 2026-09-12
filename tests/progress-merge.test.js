@@ -150,6 +150,6 @@ describe('source guard — restoring a session never celebrates a level-up', () 
     expect(app).toMatch(/if \(xpDiff > 0 && prevXPRef\.current > 0 && !xpRestoreRef\.current\)/);
     expect(app).toMatch(/if \(prevLevelRef\.current && xp > 0 && !xpRestoreRef\.current\)/);
     // consumed on the first commit after the load, which isSessionLoading guarantees
-    expect(app).toMatch(/xpRestoreRef\.current = false;\n  \}, \[currentLevel\.name, xp, isSessionLoading\]\);/);
+    expect(app).toMatch(/xpRestoreRef\.current = false;\n {2}\}, \[currentLevel\.name, xp, isSessionLoading\]\);/);
   });
 });
