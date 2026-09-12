@@ -82,6 +82,9 @@
   <div class="breadcrumb"><a href="/">Home</a> › <a href="/blog/">Blog</a> › IS NULL vs = NULL</div>
   <h1>IS NULL vs = NULL — why <code style="font-size:.7em;vertical-align:middle">= NULL</code> returns zero rows, every time</h1>
   <div class="article-meta"><span>Published Aug 2, 2026</span><span>·</span><span>6 min read</span><span>·</span><span>Every query runnable in your browser</span></div>
+  <!-- blog-practice:start -->
+  <p style="margin:18px 0 26px;padding:14px 18px;border:1px solid rgba(124,58,237,.3);border-radius:12px;background:rgba(124,58,237,.07);font-size:15px;line-height:1.7;">Skip ahead to practice: <a href="/challenges/null-handling/" data-track="cta_blog_practice" style="color:#c084fc;font-weight:700;">solve NULL handling questions in the browser →</a> · or <a href="/sql-interview-readiness-test/" data-track="cta_blog_readiness" style="color:#c084fc;font-weight:700;">check your SQL interview readiness</a> (10 questions, no signup).</p>
+  <!-- blog-practice:end -->
 
   <p class="intro">On SQL Quest's employees table, <code>WHERE manager_id IS NULL</code> returns <strong style="color:#e2e8f0">7 rows</strong> — the people with no manager. <code>WHERE manager_id = NULL</code> returns <strong style="color:#e2e8f0">0 rows</strong>. Same table, same instant. Not an error, not a warning — just silently nothing. Here is the one idea that explains it, and the two places it will bite you again.</p>
 

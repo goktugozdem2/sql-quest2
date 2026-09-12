@@ -86,6 +86,9 @@
   <div class="breadcrumb"><a href="/">Home</a> › <a href="/blog/">Blog</a> › Recursive CTE Explained</div>
   <h1>Recursive CTE explained — org charts, trees, and when you actually need one</h1>
   <div class="article-meta"><span>Published Aug 2, 2026</span><span>·</span><span>9 min read</span><span>·</span><span>Every query runnable in your browser</span></div>
+  <!-- blog-practice:start -->
+  <p style="margin:18px 0 26px;padding:14px 18px;border:1px solid rgba(124,58,237,.3);border-radius:12px;background:rgba(124,58,237,.07);font-size:15px;line-height:1.7;">Skip ahead to practice: <a href="/challenges/cte/" data-track="cta_blog_practice" style="color:#c084fc;font-weight:700;">solve CTE questions in the browser →</a> · or <a href="/sql-interview-readiness-test/" data-track="cta_blog_readiness" style="color:#c084fc;font-weight:700;">check your SQL interview readiness</a> (10 questions, no signup).</p>
+  <!-- blog-practice:end -->
 
   <p class="intro">A recursive CTE is a query with three moving parts: <strong style="color:#e2e8f0">an anchor</strong> (where to start), <strong style="color:#e2e8f0">a step</strong> (how to grow), and <strong style="color:#e2e8f0">a stop</strong> (no new rows → done). That's it. If you can say those three sentences about your problem — "start at Bob, follow manager_id upward, stop at the CEO" — you can write the query. This post walks a real 50-person org chart in both directions.</p>
 

@@ -90,6 +90,9 @@
        "running total in sql", placed as the first content block so a snippet can lift it. -->
   <h1>SQL Running Total — one OVER clause, shown on real orders</h1>
   <div class="article-meta"><span>Published Aug 2, 2026</span><span>·</span><span>Updated Sep 7, 2026</span><span>·</span><span>7 min read</span><span>·</span><span>Every query runnable in your browser</span></div>
+  <!-- blog-practice:start -->
+  <p style="margin:18px 0 26px;padding:14px 18px;border:1px solid rgba(124,58,237,.3);border-radius:12px;background:rgba(124,58,237,.07);font-size:15px;line-height:1.7;">Skip ahead to practice: <a href="/challenges/window-functions/" data-track="cta_blog_practice" style="color:#c084fc;font-weight:700;">solve window function questions in the browser →</a> · or <a href="/sql-interview-readiness-test/" data-track="cta_blog_readiness" style="color:#c084fc;font-weight:700;">check your SQL interview readiness</a> (10 questions, no signup).</p>
+  <!-- blog-practice:end -->
   <p class="answer"><strong>A running total in SQL is <code>SUM(amount) OVER (ORDER BY date_col, id)</code></strong> — the ORDER BY inside OVER makes the sum cumulative, so each row shows its own amount plus every row before it.<br>
   <code>SELECT date_col, amount, SUM(amount) OVER (ORDER BY date_col, id) AS running_total FROM t;</code> — no GROUP BY, every row is kept; add <code>PARTITION BY customer_id</code> inside OVER to restart the total per group.</p>
 

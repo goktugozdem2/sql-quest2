@@ -66,6 +66,18 @@ export const SOURCED_PAGES = {
   // format". The registry entry is written and unsigned
   // (src/data/interview-archetypes.js, PENDING_INTERVIEW_ARCHETYPES).
   'revolut-sql-interview': 'interviewquery guide synthesised from 27 candidate reports stamped Q3 2026, cited on the page',
+  // 2026-09-13: the seven pages generated from the company template
+  // (scripts/build-company-pages.mjs). Every format row cites source keys that
+  // resolve to a dated source in src/data/company-interviews.js, listed on the
+  // page; only sources fetched on the research date are cited; disagreements
+  // are stated in the row. Research notes: docs/reads/company-research-2026-09-13.md.
+  'doordash-sql-interview': 'Exponent guide (2026), StrataScratch (Mar 2026), DataLemur (May 2025), Blind (Jul 2022)',
+  'goldman-sachs-sql-interview': 'GeeksforGeeks analyst report (2024), Exponent (2024), LinkJob (Sep 2025), DataLemur (Mar 2025)',
+  'walmart-sql-interview': 'Exponent Walmart DA guide (2026), Blind (Jun 2021), Data Engineer Academy (Mar 2026)',
+  'tiktok-sql-interview': 'Exponent guide (2026), DataLemur guide (Jan 2025), Blind (Feb 2022)',
+  'linkedin-sql-interview': 'Exponent DA guide (2026), PracHub (Sep 2026), SQLPad (Apr 2024), DataLemur (Apr 2025)',
+  'microsoft-sql-interview': 'Exponent DS guide (2026), DataLemur guides (May 2025), StrataScratch (Oct 2023); OA sources disagree and the page says so',
+  'bloomberg-sql-interview': 'OphyAI guide (Jun 2026), DataLemur (Apr 2025); SQL screen not reliably reported and the page says so',
 };
 
 // ---------------------------------------------------------------------------

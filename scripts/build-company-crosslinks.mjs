@@ -52,6 +52,15 @@ const COMPANIES = {
   'morgan-stanley': { name: 'Morgan Stanley', sector: 'fintech', desc: 'Running P&L, risk buckets, reconciliation' },
   databricks: { name: 'Databricks', sector: 'datainfra', desc: 'Spark SQL, ETL, Delta Lake' },
   snowflake:  { name: 'Snowflake',  sector: 'datainfra', desc: 'Warehouse patterns, 95 runnable questions' },
+  // 2026-09-13: the seven template pages (scripts/build-company-pages.mjs).
+  // Descriptors come from src/data/company-interviews.js crosslinkDesc.
+  doordash:        { name: 'DoorDash',      sector: 'consumer', desc: 'Orders and deliveries, window functions, month buckets' },
+  walmart:         { name: 'Walmart',       sector: 'consumer', desc: 'Retail joins, HAVING, top product per region' },
+  tiktok:          { name: 'TikTok',        sector: 'consumer', desc: 'Engagement, day-2 activation, ranking ties' },
+  linkedin:        { name: 'LinkedIn',      sector: 'bigtech',  desc: 'Joins, HAVING, "has all of", sign-up windows' },
+  microsoft:       { name: 'Microsoft',     sector: 'bigtech',  desc: 'Data scientist SQL, conditional aggregation' },
+  'goldman-sachs': { name: 'Goldman Sachs', sector: 'fintech',  desc: 'Deduplication, latest record, running totals' },
+  bloomberg:       { name: 'Bloomberg',     sector: 'fintech',  desc: 'Prices and trades by time bucket, ranking' },
 };
 
 // Who reads as "adjacent" to whom, in the order we'd recommend them.

@@ -2536,3 +2536,24 @@ modal directly through `?pro=1`), `pro_plan_clicked` /
 of the send. Once per user ever (`users.data.activatedNoteAt`), 40 a run,
 nobody who was mailed by any campaign in the prior 7 days. The founder runs
 it; nothing schedules it. Founder's week-2 item 8.
+
+## `readiness_funnel`
+
+`/sql-interview-readiness-test/` (from 2026-09-13), people by `aid`:
+`landing_view` page=`sql-interview-readiness-test` → `readiness_started`
+{company} → `readiness_completed` {company, score, weakest} →
+`readiness_plan_clicked` {company, weakest, challengeId} → `readiness_arrived`
+in the app (src=readiness) → `challenge_solved` on that challengeId → six
+solves → `signup_completed`. Split by `company` (null = no company). The
+company score is a weighting of our tagged set, not a measurement of the
+company's interview; never quote it as one.
+
+## `company_page_door`
+
+People by `aid` whose first `landing_view` carries `page` ending
+`-sql-interview`, grouped by page: solved one, reached six, signed up; plus
+the page's clicks (`cta_hero_primary`, `cta_readiness_<slug>`,
+`cta_start_set_<slug>`). Read the seven template pages (doordash,
+goldman-sachs, walmart, tiktok, linkedin, microsoft, bloomberg — shipped
+2026-09-13) apart from the 23 older ones, and both against `/sql-exercises/`.
+Search Console impressions per page sit beside it (the SEO dashboard).

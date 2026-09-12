@@ -318,6 +318,19 @@
 // has never granted eligibility: eligibleTargets() returns exactly
 // ['Capital One'] after this edit, as tests/interview-prep.test.js asserts.
 // Preserve this block on regeneration by scripts/augment-companies.mjs.
+// MANUAL ADDITIONS 2026-09-13 (company template, P0.5): DoorDash, Goldman Sachs,
+// Walmart, TikTok, LinkedIn, Microsoft and Bloomberg. Each set is chosen
+// against the SQL topics and data shape that company's dated sources report
+// (src/data/company-interviews.js, docs/reads/company-research-2026-09-13.md),
+// balanced Easy → Hard so a free visitor can start it: DoorDash on orders with
+// window functions and month buckets; Goldman on dedup, latest record, running
+// totals and salary tables; Walmart on retail joins, HAVING and top-N per
+// category; TikTok on activation cohorts, day-level windows and ranking ties;
+// LinkedIn on joins, HAVING, "has all of", self-joins and 30-day sign-up
+// windows; Microsoft on joins, conditional aggregation and relational
+// division; Bloomberg on time-bucketed financial aggregation and ranking.
+// These are SQL Quest challenges matched to reported patterns, never a claim
+// that the company asked them. Preserve on regeneration.
 window.challengeCompanies = {
   // MANUAL ADDITIONS 2026-09-12: the Revolut-shaped analyst set on the
   // finans_neobank ledger (sector-challenges.js 300-311). Revolut only, on
@@ -399,7 +412,8 @@ window.challengeCompanies = {
     "Revolut",
     "Spotify",
     "Stripe",
-    "Uber"
+    "Uber",
+    "TikTok"
   ],
   "10": [
     "Google",
@@ -426,7 +440,9 @@ window.challengeCompanies = {
     "Plaid",
     "Revolut",
     "Snowflake",
-    "Uber"
+    "Uber",
+    "DoorDash",
+    "Walmart"
   ],
   "13": [
     "Anthropic",
@@ -446,7 +462,8 @@ window.challengeCompanies = {
     "Ramp",
     "Shopify",
     "Snowflake",
-    "Wise"
+    "Wise",
+    "Microsoft"
   ],
   "15": [
     "Snowflake",
@@ -457,10 +474,12 @@ window.challengeCompanies = {
     "Databricks",
     "Google",
     "Ramp",
-    "Snowflake"
+    "Snowflake",
+    "Goldman Sachs"
   ],
   "17": [
-    "Snowflake"
+    "Snowflake",
+    "LinkedIn"
   ],
   "18": [
     "Google",
@@ -477,7 +496,9 @@ window.challengeCompanies = {
     "Ramp",
     "Shopify",
     "Snowflake",
-    "Wise"
+    "Wise",
+    "DoorDash",
+    "Walmart"
   ],
   "21": [
     "Google",
@@ -495,7 +516,9 @@ window.challengeCompanies = {
   ],
   "23": [
     "NVIDIA",
-    "Snowflake"
+    "Snowflake",
+    "LinkedIn",
+    "Microsoft"
   ],
   "24": [
     "Airbnb",
@@ -508,7 +531,8 @@ window.challengeCompanies = {
     "Snowflake",
     "Stripe",
     "Tesla",
-    "Uber"
+    "Uber",
+    "Goldman Sachs"
   ],
   "25": [
     "Plaid",
@@ -523,7 +547,8 @@ window.challengeCompanies = {
     "Revolut",
     "Shopify",
     "Stripe",
-    "Uber"
+    "Uber",
+    "DoorDash"
   ],
   "27": [
     "Databricks",
@@ -554,7 +579,8 @@ window.challengeCompanies = {
   ],
   "31": [
     "Google",
-    "Snowflake"
+    "Snowflake",
+    "Microsoft"
   ],
   "32": [
     "Google",
@@ -589,7 +615,8 @@ window.challengeCompanies = {
     "Shopify",
     "Snowflake",
     "Stripe",
-    "Uber"
+    "Uber",
+    "Walmart"
   ],
   "38": [
     "Google",
@@ -602,11 +629,13 @@ window.challengeCompanies = {
   "40": [
     "Netflix",
     "Snowflake",
-    "Spotify"
+    "Spotify",
+    "TikTok"
   ],
   "41": [
     "Plaid",
-    "Snowflake"
+    "Snowflake",
+    "Goldman Sachs"
   ],
   "42": [
     "Google",
@@ -640,7 +669,8 @@ window.challengeCompanies = {
     "Snowflake"
   ],
   "48": [
-    "Snowflake"
+    "Snowflake",
+    "Goldman Sachs"
   ],
   "49": [
     "Databricks",
@@ -657,7 +687,8 @@ window.challengeCompanies = {
     "Snowflake",
     "Spotify",
     "Stripe",
-    "Tesla"
+    "Tesla",
+    "DoorDash"
   ],
   "51": [
     "Snowflake"
@@ -720,7 +751,9 @@ window.challengeCompanies = {
     "Meta",
     "Revolut",
     "Snowflake",
-    "Uber"
+    "Uber",
+    "DoorDash",
+    "TikTok"
   ],
   "61": [
     "Amazon",
@@ -730,7 +763,9 @@ window.challengeCompanies = {
     "Ramp",
     "Shopify",
     "Snowflake",
-    "Stripe"
+    "Stripe",
+    "Walmart",
+    "Microsoft"
   ],
   "62": [
     "Snowflake"
@@ -744,7 +779,8 @@ window.challengeCompanies = {
     "Amazon",
     "Shopify",
     "Snowflake",
-    "Stripe"
+    "Stripe",
+    "Walmart"
   ],
   "65": [
     "Netflix",
@@ -755,12 +791,15 @@ window.challengeCompanies = {
     "Meta",
     "Shopify",
     "Snowflake",
-    "Stripe"
+    "Stripe",
+    "Walmart",
+    "Microsoft"
   ],
   "67": [
     "Netflix",
     "Snowflake",
-    "Spotify"
+    "Spotify",
+    "TikTok"
   ],
   "68": [
     "Airbnb",
@@ -787,7 +826,8 @@ window.challengeCompanies = {
     "NVIDIA",
     "OpenAI",
     "Plaid",
-    "Snowflake"
+    "Snowflake",
+    "Walmart"
   ],
   "72": [
     "Anthropic",
@@ -803,7 +843,8 @@ window.challengeCompanies = {
     "OpenAI",
     "Plaid",
     "Snowflake",
-    "Uber"
+    "Uber",
+    "Goldman Sachs"
   ],
   "74": [
     "Amazon",
@@ -812,7 +853,8 @@ window.challengeCompanies = {
     "JPMorgan",
     "Plaid",
     "Snowflake",
-    "Stripe"
+    "Stripe",
+    "LinkedIn"
   ],
   "75": [
     "Airbnb",
@@ -821,7 +863,8 @@ window.challengeCompanies = {
     "Revolut",
     "Shopify",
     "Stripe",
-    "Uber"
+    "Uber",
+    "DoorDash"
   ],
   "76": [
     "Snowflake"
@@ -831,7 +874,9 @@ window.challengeCompanies = {
     "Google",
     "Meta",
     "Plaid",
-    "Snowflake"
+    "Snowflake",
+    "LinkedIn",
+    "Microsoft"
   ],
   "78": [
     "Amazon",
@@ -869,7 +914,9 @@ window.challengeCompanies = {
     "Revolut",
     "Shopify",
     "Snowflake",
-    "Stripe"
+    "Stripe",
+    "TikTok",
+    "Microsoft"
   ],
   "83": [
     "Airbnb",
@@ -888,7 +935,9 @@ window.challengeCompanies = {
     "Stripe",
     "Tesla",
     "Uber",
-    "Wise"
+    "Wise",
+    "DoorDash",
+    "TikTok"
   ],
   "85": [
     "Airbnb",
@@ -904,7 +953,8 @@ window.challengeCompanies = {
     "Ramp",
     "Shopify",
     "Snowflake",
-    "Stripe"
+    "Stripe",
+    "Walmart"
   ],
   "87": [
     "Amazon",
@@ -924,14 +974,18 @@ window.challengeCompanies = {
     "OpenAI",
     "Revolut",
     "Shopify",
-    "Stripe"
+    "Stripe",
+    "DoorDash",
+    "TikTok"
   ],
   "89": [
     "Amazon",
     "Google",
     "Meta",
     "NVIDIA",
-    "Snowflake"
+    "Snowflake",
+    "Goldman Sachs",
+    "Bloomberg"
   ],
   "90": [
     "Airbnb",
@@ -945,11 +999,14 @@ window.challengeCompanies = {
     "Tesla"
   ],
   "106": [
-    "Snowflake"
+    "Snowflake",
+    "LinkedIn"
   ],
   "107": [
     "Snowflake",
-    "Spotify"
+    "Spotify",
+    "Goldman Sachs",
+    "LinkedIn"
   ],
   "108": [
     "Google",
@@ -963,23 +1020,27 @@ window.challengeCompanies = {
     "Tesla"
   ],
   "111": [
-    "Snowflake"
+    "Snowflake",
+    "Microsoft"
   ],
   "112": [
     "Anthropic",
     "OpenAI",
     "Snowflake",
-    "Uber"
+    "Uber",
+    "Microsoft"
   ],
   "113": [
     "Amazon",
     "Databricks",
     "Ramp",
     "Snowflake",
-    "Spotify"
+    "Spotify",
+    "Microsoft"
   ],
   "114": [
-    "Snowflake"
+    "Snowflake",
+    "LinkedIn"
   ],
   "115": [
     "Snowflake"
@@ -997,7 +1058,8 @@ window.challengeCompanies = {
     "Apple",
     "Ramp",
     "Revolut",
-    "Uber"
+    "Uber",
+    "DoorDash"
   ],
   "119": [
     "Google",
@@ -1017,7 +1079,10 @@ window.challengeCompanies = {
     "OpenAI",
     "Revolut",
     "Stripe",
-    "Wise"
+    "Wise",
+    "Walmart",
+    "Microsoft",
+    "LinkedIn"
   ],
   "122": [
     "Netflix",
@@ -1031,7 +1096,8 @@ window.challengeCompanies = {
     "Amazon",
     "Ramp",
     "Snowflake",
-    "Stripe"
+    "Stripe",
+    "TikTok"
   ],
   "125": [
     "Plaid"
@@ -1047,10 +1113,13 @@ window.challengeCompanies = {
     "Revolut",
     "Stripe",
     "Uber",
-    "Wise"
+    "Wise",
+    "DoorDash",
+    "TikTok"
   ],
   "128": [
-    "Plaid"
+    "Plaid",
+    "Microsoft"
   ],
   "129": [
     "Plaid"
@@ -1065,19 +1134,26 @@ window.challengeCompanies = {
     "Wise"
   ],
   "138": [
-    "Ramp"
+    "Ramp",
+    "DoorDash",
+    "Microsoft",
+    "TikTok"
   ],
   "139": [
-    "Plaid"
+    "Plaid",
+    "TikTok"
   ],
   "144": [
-    "Plaid"
+    "Plaid",
+    "Goldman Sachs"
   ],
   "145": [
-    "Ramp"
+    "Ramp",
+    "Goldman Sachs"
   ],
   "147": [
-    "Ramp"
+    "Ramp",
+    "DoorDash"
   ],
   "148": [
     "Plaid"
@@ -1093,22 +1169,29 @@ window.challengeCompanies = {
   ],
   "154": [
     "Plaid",
-    "Wise"
+    "Wise",
+    "Walmart"
   ],
   "156": [
     "Wise"
   ],
   "157": [
     "Ramp",
-    "Revolut"
+    "Revolut",
+    "Walmart",
+    "Microsoft"
   ],
   "158": [
-    "Plaid"
+    "Plaid",
+    "Walmart",
+    "LinkedIn"
   ],
   "160": [
     "NVIDIA",
     "Ramp",
-    "Tesla"
+    "Tesla",
+    "TikTok",
+    "Bloomberg"
   ],
   "166": [
     "Plaid"
@@ -1116,36 +1199,52 @@ window.challengeCompanies = {
   "162": [
     "NVIDIA",
     "OpenAI",
-    "Stripe"
+    "Stripe",
+    "DoorDash",
+    "Goldman Sachs",
+    "Walmart",
+    "TikTok"
   ],
   "172": [
     "Anthropic",
     "OpenAI",
     "Stripe",
-    "Tesla"
+    "Tesla",
+    "DoorDash",
+    "TikTok"
   ],
   "173": [
     "NVIDIA",
     "OpenAI",
     "Stripe",
-    "Tesla"
+    "Tesla",
+    "DoorDash"
   ],
   "174": [
-    "Stripe"
+    "Stripe",
+    "DoorDash",
+    "LinkedIn"
   ],
   "175": [
-    "Stripe"
+    "Stripe",
+    "DoorDash",
+    "TikTok",
+    "LinkedIn"
   ],
   "176": [
-    "Stripe"
+    "Stripe",
+    "Walmart",
+    "TikTok"
   ],
   "161": [
-    "NVIDIA"
+    "NVIDIA",
+    "LinkedIn"
   ],
   "163": [
     "NVIDIA",
     "OpenAI",
-    "Tesla"
+    "Tesla",
+    "Bloomberg"
   ],
   "168": [
     "Anthropic",
@@ -1170,7 +1269,8 @@ window.challengeCompanies = {
     "JPMorgan"
   ],
   "202": [
-    "JPMorgan"
+    "JPMorgan",
+    "Bloomberg"
   ],
   "203": [
     "JPMorgan"
@@ -1191,7 +1291,8 @@ window.challengeCompanies = {
     "JPMorgan"
   ],
   "211": [
-    "JPMorgan"
+    "JPMorgan",
+    "Bloomberg"
   ],
   "212": [
     "JPMorgan"
@@ -1206,10 +1307,13 @@ window.challengeCompanies = {
     "JPMorgan"
   ],
   "216": [
-    "JPMorgan"
+    "JPMorgan",
+    "Goldman Sachs",
+    "Bloomberg"
   ],
   "217": [
-    "JPMorgan"
+    "JPMorgan",
+    "Bloomberg"
   ],
   "218": [
     "Morgan Stanley"
@@ -1258,7 +1362,9 @@ window.challengeCompanies = {
     "Capital One",
     "Ramp",
     "Revolut",
-    "Wise"
+    "Wise",
+    "Goldman Sachs",
+    "Bloomberg"
   ],
   "276": [
     "Capital One",
@@ -1282,16 +1388,19 @@ window.challengeCompanies = {
   ],
   "281": [
     "Capital One",
-    "Ramp"
+    "Ramp",
+    "Bloomberg"
   ],
   "282": [
     "Capital One",
     "Ramp",
-    "Wise"
+    "Wise",
+    "Bloomberg"
   ],
   "283": [
     "Capital One",
-    "Revolut"
+    "Revolut",
+    "Bloomberg"
   ],
   "284": [
     "Capital One",
@@ -1311,12 +1420,14 @@ window.challengeCompanies = {
   ],
   "288": [
     "Capital One",
-    "Ramp"
+    "Ramp",
+    "Bloomberg"
   ],
   "289": [
     "Capital One",
     "Plaid",
-    "Wise"
+    "Wise",
+    "Bloomberg"
   ],
   "290": [
     "Capital One",
@@ -1328,15 +1439,19 @@ window.challengeCompanies = {
   ],
   "292": [
     "Capital One",
-    "Stripe"
+    "Stripe",
+    "Bloomberg"
   ],
   "293": [
     "Capital One",
-    "Stripe"
+    "Stripe",
+    "Goldman Sachs"
   ],
   "294": [
     "Capital One",
-    "Stripe"
+    "Stripe",
+    "Goldman Sachs",
+    "Bloomberg"
   ],
   "295": [
     "Capital One",
@@ -1356,6 +1471,36 @@ window.challengeCompanies = {
   ],
   "299": [
     "Capital One",
-    "Ramp"
+    "Ramp",
+    "Bloomberg"
+  ],
+  "153": [
+    "DoorDash"
+  ],
+  "177": [
+    "Goldman Sachs"
+  ],
+  "183": [
+    "Goldman Sachs"
+  ],
+  "105": [
+    "Walmart",
+    "Microsoft"
+  ],
+  "188": [
+    "Walmart",
+    "LinkedIn"
+  ],
+  "170": [
+    "LinkedIn"
+  ],
+  "159": [
+    "LinkedIn"
+  ],
+  "149": [
+    "LinkedIn"
+  ],
+  "179": [
+    "Microsoft"
   ]
 };

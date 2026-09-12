@@ -202,6 +202,50 @@ of the verifier and must never be rounded to `FLAT`.
   section after the hero, the industry strip removed. Same two watch lines;
   the Friday table splits home→app by variant.
 
+### the company template, seven new company pages, and the readiness funnel (founder's SEO plan P0.4–P0.6, 2026-09-13)
+
+- **Claimed** 2026-09-13 · **Live** on push, no flag · **Read** 2026-10-13
+  (30 days; new pages need two to three weeks to index).
+- **Change** (1) `scripts/build-company-pages.mjs` + `src/data/company-
+  interviews.js`: one template for "{Company} SQL Interview Questions" —
+  format as candidates report it (each row citing dated sources, disagreements
+  stated), the SQL that comes up (reported, next to our set's composition),
+  difficulty, paraphrased question shapes with sources, the real tagged
+  challenges, a Skillmap/readiness block, topic links, FAQ. Seven new pages:
+  DoorDash, Goldman Sachs, Walmart, TikTok, LinkedIn, Microsoft, Bloomberg
+  (16–18 tagged challenges each, Easy → Hard). The 23 older pages keep their
+  copy and gain the readiness block and topic links. (2)
+  `/sql-interview-readiness-test/` (`scripts/build-readiness-test.mjs`): ten
+  questions, no signup, a Skillmap per skill, an overall score weighted by the
+  company's tagged-set skill mix when `?company=` is given, the weakest skill,
+  and "Build My Personalized Practice Plan" opening the gentlest free
+  challenge on that skill (from the company's set when it has one) in the app;
+  the app's `?src=readiness` hook sets the prep target company. (3) Every blog
+  post opens with a practice box (topic page + readiness test).
+- **Why** editorial doors convert at ~9% to a first solve vs 29–37% for
+  practice-shaped doors (docs/reads/editorial-vs-practice-doors-2026-09-09.md);
+  company-intent queries are the long tail we win (keywords-2026-09-08). The
+  seven names came from the founder; research said defer on Microsoft (SQL
+  Server intent) and Bloomberg (format thinly reported) — shipped with that
+  stated, first in line for the P4 prune rule.
+- **Metric** `readiness_funnel` and `company_page_door` (docs/agent/metrics.md).
+- **Baseline** company pages 2026-08-14 → 09-11: 309 people landed, 29.4%
+  solved one, 11.0% reached six (editorial-vs-practice read). Readiness test:
+  new, zero. Blog door: 46 people in 90 days, 8.7% solved one.
+- **Target** by 10-13: the seven new pages indexed and earning impressions
+  (≥ 5 of 7); company-page door solved-one ≥ 30% held with the readiness block
+  in place; readiness_completed ≥ 40% of readiness_started and
+  readiness_plan_clicked ≥ 35% of completed; blog door solved-one ≥ 15%.
+- **Falsification, stated in advance:** company-page solved-one below 25% at
+  n ≥ 200 → the readiness block pulls people away from the set; move it below
+  the FAQ. Plan clicks below 15% of completed → the result does not sell the
+  next step; rewrite the result card before adding tools. A new page with zero
+  impressions at 10-13 after indexing was requested → it goes on the P4 prune
+  list.
+- **Confounds** `onboardingIntake` (09-16) and `freeQuota` (09-21) move every
+  first-run door; read company pages against `/sql-exercises/` as control.
+- **Verdict** _pending_
+
 ### the price story: page and modal tell it the same way (founder's items 3, 5, 16 — 2026-09-12)
 
 - **Claimed** 2026-09-12 · **Live** on push, no flag · **Read** 2026-10-03.

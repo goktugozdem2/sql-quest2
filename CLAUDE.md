@@ -313,6 +313,37 @@ so a landing view and a later solve are joinable for the first time.
   company-first" and "the price story"; metrics `home_door`,
   `modal_click_rate`; read 2026-10-03.
 
+### Company pages — one template, sourced (2026-09-13)
+
+- `scripts/build-company-pages.mjs` renders `src/<slug>-sql-interview.html`
+  from `src/data/company-interviews.js` (format rows citing dated sources,
+  reported topics, paraphrased question shapes, the real tagged challenges,
+  Skillmap/readiness block, topic links, FAQ). Seven pages come from it
+  (DoorDash, Goldman Sachs, Walmart, TikTok, LinkedIn, Microsoft, Bloomberg);
+  it also injects the readiness block and topic links into the 23 older pages.
+  Edit the data, then run it, then `node scripts/build-company-crosslinks.mjs`,
+  then `npm run build`. `tests/company-template.test.js` fails if a committed
+  page drifts from the generator; `tests/company-pages.test.js` still binds
+  every claim (a page that states a format must sit in SOURCED_PAGES).
+- **A company page never states a format without a dated source**, and never
+  cites a fact seen only in a search snippet. Research notes:
+  docs/reads/company-research-2026-09-13.md.
+- Adding a company: data entry + NEW_COMPANY_TAGS (the Revolut set 300–311
+  stays Revolut-only) + the cross-link registry + the app's company whitelist
+  in app.jsx + SOURCED_PAGES + sitemap. The company-page count (now 30) is
+  bound across pages by site-counts.
+
+### Readiness test — the Skillmap door (2026-09-13)
+
+- `/sql-interview-readiness-test/` (`scripts/build-readiness-test.mjs`): ten
+  questions, no signup; per-skill Skillmap, overall score weighted by the
+  company's tagged-set skill mix with `?company=<slug>`, weakest skill, and a
+  plan link `/app/?src=readiness&company=<Name>&challenge=<id>`. Result stored
+  in `localStorage.sqlquest_readiness_v1`; the app's `?src=readiness` hook
+  sets `prepTarget.company` when empty. Events: readiness_started /
+  readiness_completed / readiness_plan_clicked / readiness_arrived (metric
+  `readiness_funnel`). Every company page and every blog post links to it.
+
 ### Public Profile (USER MUST DEPLOY for cross-device reads)
 Phase 4b + 4c shipped client-side; Supabase needs migration + deploy.
 

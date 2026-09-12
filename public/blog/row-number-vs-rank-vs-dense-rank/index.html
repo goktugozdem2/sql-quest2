@@ -83,6 +83,9 @@
   <div class="breadcrumb"><a href="/">Home</a> › <a href="/blog/">Blog</a> › ROW_NUMBER vs RANK vs DENSE_RANK</div>
   <h1>ROW_NUMBER vs RANK vs DENSE_RANK — the difference is what happens on a tie</h1>
   <div class="article-meta"><span>Published Aug 2, 2026</span><span>·</span><span>7 min read</span><span>·</span><span>Every query runnable in your browser</span></div>
+  <!-- blog-practice:start -->
+  <p style="margin:18px 0 26px;padding:14px 18px;border:1px solid rgba(124,58,237,.3);border-radius:12px;background:rgba(124,58,237,.07);font-size:15px;line-height:1.7;">Skip ahead to practice: <a href="/challenges/window-functions/" data-track="cta_blog_practice" style="color:#c084fc;font-weight:700;">solve window function questions in the browser →</a> · or <a href="/sql-interview-readiness-test/" data-track="cta_blog_readiness" style="color:#c084fc;font-weight:700;">check your SQL interview readiness</a> (10 questions, no signup).</p>
+  <!-- blog-practice:end -->
 
   <p class="intro"><strong style="color:#e2e8f0">All three functions produce 1, 2, 3, … over ordered rows — they only disagree when rows tie.</strong> On a tie, ROW_NUMBER invents an order, RANK repeats-then-skips, DENSE_RANK repeats-without-skipping. That one sentence answers the interview question; the rest of this post shows it happening on real salary data, and which function each real task wants.</p>
 

@@ -7423,7 +7423,9 @@ function SQLQuest() {
                      // 2026-09-07: the map (src/data/challenge-companies.js) had carried these for
                      // weeks while ?company= on their own pages resolved to null.
                      'Snowflake','Plaid','Ramp','Tesla','NVIDIA','Revolut','OpenAI',
-                     'Morgan Stanley','Anthropic','Capital One','Wise'];
+                     'Morgan Stanley','Anthropic','Capital One','Wise',
+                     // 2026-09-13: the seven template pages (scripts/build-company-pages.mjs).
+                     'DoorDash','Goldman Sachs','Walmart','TikTok','LinkedIn','Microsoft','Bloomberg'];
       const wanted = raw.toLowerCase().replace(/[-_]+/g, ' ').trim();
       const match = VALID.find(v => v.toLowerCase() === wanted);
       return match || null;
@@ -7508,6 +7510,26 @@ function SQLQuest() {
     }, 800);
     return () => clearTimeout(t);
   }, [currentUser, userProStatus]);
+
+  // ?src=readiness — the arrival from /sql-interview-readiness-test/ (founder's
+  // SEO plan, 2026-09-13, P0.6). The test stores its result in
+  // localStorage `sqlquest_readiness_v1` {company, overall, weakest, scores};
+  // the link opens the recommended challenge itself. Here the company becomes
+  // the prep target when none is set yet (so the countdown, the plan and the
+  // Coach speak about that company), and the arrival is logged once.
+  const readinessArrivalRef = useRef(false);
+  useEffect(() => {
+    if (readinessArrivalRef.current || !currentUser) return;
+    let src = null;
+    try { src = new URLSearchParams(window.location.search).get('src'); } catch (_) { src = null; }
+    if (src !== 'readiness') return;
+    readinessArrivalRef.current = true;
+    let rec = null;
+    try { rec = JSON.parse(localStorage.getItem('sqlquest_readiness_v1') || 'null'); } catch (_) { rec = null; }
+    if (!rec || typeof rec !== 'object') return;
+    if (rec.company && !prepTarget.company) setPrepPreference({ company: rec.company });
+    try { trackActivationEvent('readiness_arrived', { company: rec.company || null, score: rec.overall ?? null, weakest: rec.weakest || null }); } catch (_) {}
+  }, [currentUser]);
   useEffect(() => { try { localStorage.setItem('sqlquest_practice_path', challengePathFilter); } catch (_) {} }, [challengePathFilter]);
   useEffect(() => { try { localStorage.setItem('sqlquest_practice_more_open', String(moreFiltersOpen)); } catch (_) {} }, [moreFiltersOpen]);
   useEffect(() => { try { localStorage.setItem('sqlquest_live_tutor', liveTutorMode); } catch (_) {} }, [liveTutorMode]);
