@@ -195,6 +195,12 @@ of the verifier and must never be rounded to `FLAT`.
   2026-09-18 (`weekly-funnel-friday`), not here. Item 15 (a Preply photo in
   "built in public") waits for the file; item 9's usage line is refreshed by
   the Friday task.
+- **Positioning, 2026-09-13 (founder's SEO plan, P0.3), variant
+  `personalized_v1`.** H1 "Personalized SQL interview practice.", subline "An
+  AI coach that finds your SQL skill gaps — and builds your practice around
+  them.", the Skillmap (the nine-skill radar, renamed site-wide) as the first
+  section after the hero, the industry strip removed. Same two watch lines;
+  the Friday table splits home→app by variant.
 
 ### the price story: page and modal tell it the same way (founder's items 3, 5, 16 — 2026-09-12)
 
