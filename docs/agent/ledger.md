@@ -72,6 +72,13 @@ of the verifier and must never be rounded to `FLAT`.
 - **Target** within one hour of apply, a registered `updated_at` newer than
   the apply time exists. By 09-19, ≥8 registered rows/day and ≥5 signups/day
   with rows — back inside the pre-break band.
+- **Applied 2026-09-12 ~10:58:30Z** by the founder. Verified within minutes:
+  the `anon` probe now reaches its own RAISE (the insert passes the trigger;
+  no probe row left behind); `gen_ref_code` ACL carries `anon=X`;
+  `users_assign_ref_code` is SECURITY DEFINER with `search_path=public`; the
+  last `permission denied` in `postgres_logs` is 10:58:12Z after 202 in the
+  preceding two hours; the first registered write in four days landed at
+  10:58:46Z, 34 seconds after the last error. The first-hour target is met.
 - **Falsification** still 0 an hour after apply → the fix is insufficient;
   look at RLS on `users` and the postgres error log before anything else.
   Signups-with-rows under 3/day across the week → a client path is still
