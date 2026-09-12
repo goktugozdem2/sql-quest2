@@ -27,6 +27,30 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### three hand-written founder emails to the checkout abandoners of 09-04 / 09-06 — **OPEN**
+
+- **Sent** 2026-09-12 evening by the founder from Gmail (drafts written by the
+  agent; addresses deliberately not in git). Three people who clicked a plan
+  and left Stripe Checkout without submitting a card (Stripe checked the same
+  day: no failed or incomplete payment exists): `alexis_montesdeoca`
+  (lifetime, 25 min on the page, 12 solves since), `harinivr02` (monthly,
+  `company:Stripe`, 28 solves since), `rereremin` (monthly, Moscow, 24 s on
+  the page, not seen since). One question each — what stopped you — no
+  pitch, no follow-up, per the email rule in CLAUDE.md.
+- **Contact load, known before sending:** each had already received the
+  automated `checkout_abandon` note (09-05 / 09-07 / 09-08), a `streak_save`,
+  a `weekly_digest`, and two of them a `skill_decay_lesson` at 10:00Z the
+  same morning. This is the third to fifth email in eight days. If nobody
+  answers, that is one candidate reason; read it before reading "the
+  question was wrong".
+- **Metric** `outreach_replies` (metrics.md): replies within 7 days, by
+  name, verbatim. **Read** 2026-09-19.
+- **Target** 1 of 3 replies. **Falsification:** 0 of 3 → the abandonment
+  reason stays unknown; do not mail these three again, and do not build the
+  merchant-of-record change on an assumption — read the M1 wall's
+  `pro_checkout_returned.outcome` split by `tz` instead.
+- **Verdict** _pending_
+
 ### Revolut membership: everything but the signature — **SIGNED 2026-09-12**
 
 - **Signed** 2026-09-12 by Göktuğ, in chat ("imzaladım, revolut'u kayda
