@@ -1208,7 +1208,7 @@ function dismissTrBanner(){const b=document.getElementById('trBanner');if(b){b.c
   const byLanguage=()=>{const langs=[(navigator.language||'').toLowerCase(),...((navigator.languages||[]).map(l=>l.toLowerCase()))];return langs.some(l=>l.startsWith('tr'));};
   const ctl=typeof AbortController==='function'?new AbortController():null;
   const timer=setTimeout(()=>{try{ctl&&ctl.abort();}catch(_){}},1500);
-  fetch('/api/geo',{cache:'no-store',signal:ctl?ctl.signal:undefined})
+  fetch('/api/geo/',{cache:'no-store',signal:ctl?ctl.signal:undefined})
     .then(r=>r.ok?r.json():Promise.reject(new Error('geo '+r.status)))
     .then(g=>{clearTimeout(timer);if(g&&g.country==='TR')show();})
     .catch(()=>{clearTimeout(timer);if(byLanguage())show();});
