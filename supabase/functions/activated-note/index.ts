@@ -159,12 +159,15 @@ const pick = (username: string, len: number) => {
 
 function renderBody(args: { username: string; solves: number; weakest: string | null; company: string | null; cta: string }): string {
   const { username, solves, weakest, company, cta } = args
+  // Three openers, chosen by username; the middle one only reads right
+  // once someone is clearly past six, so under nine solves it is not offered.
   const openers = [
-    `You have ${solves} solves on SQL Quest. That is past the point where most people stop, so this one is from me, not from a sequence.`,
+    `You have ${solves} solves on SQL Quest. That is the point where most people stop, so this one is from me, not from a sequence.`,
     `${solves} solves. Most people who start never reach six, and you are well past it — so I am writing this myself.`,
     `I looked at the accounts that got past six solves and never bought, and yours is one of a short list, so I am writing to you directly.`,
   ]
-  const opener = openers[pick(username, openers.length)]
+  const eligible = solves >= 9 ? openers : [openers[0], openers[2]]
+  const opener = eligible[pick(username, eligible.length)]
   const radar = weakest
     ? `Your radar's lowest line right now is <strong>${weakest}</strong>. That is the shape the screens save for last, and it is where the Hard set starts.`
     : `The Hard set is where the screens' last question lives: a window function over a ledger, a NULL nobody handled, a correlated subquery.`
