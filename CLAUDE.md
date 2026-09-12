@@ -434,6 +434,22 @@ Rewritten Coach-forward:
 - **Read the postgres error log weekly**: `query_logs` on `postgres_logs`,
   severity ERROR. It is the only place this outage was visible.
 
+### Guest progress — persists, resumes, merges (2026-09-12)
+
+- A browser keeps ONE guest identity under `localStorage.sqlquest_guest_user`;
+  `startGuestMode` resumes it from the local blob (never cloud-first — the
+  07-24 shredder) when it holds progress and was active in the last 90 days,
+  else mints a fresh `guest_<ts>` and forgets the old blob. `sqlquest_user`
+  is never set for guests: the mount guard deletes any `guest_*` found there.
+- Login merges the guest blob into the account before the session loads
+  (`mergeGuestIntoAccount` → `src/utils/progress-merge.js`, a pure union:
+  account wins identity, money and scalars; collections union; XP only for
+  new solves). The auth-modal register path carries the blob the same way;
+  the post-solve prompt always did. Both forget the guest afterwards.
+- Events: `guest_resumed`, `guest_progress_merged`, `signup_completed.carriedSolves`
+  → `guest_continuity` in `docs/agent/metrics.md`. Tests:
+  `tests/progress-merge.test.js` (unit + source guards).
+
 ### Notifications
 Major overhaul this session: persist `dismissedNotifs`, `_subtabEnabled()` gates routes by feature flag, threshold-aligned with Quick Drill (<65), dedup by `target` string, clock-tick recompute, NOTIF_PRI constants (streak=0). Reviews Due block commented-out until Coach surfaces retrieval checks outside goals.
 

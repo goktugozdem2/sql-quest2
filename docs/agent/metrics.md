@@ -1979,3 +1979,43 @@ Traps, stated before the first read:
 - **Lifetime before the flip: 22 accounts with any interview history**
   (measured 2026-09-11 from `users.data.interviewHistory`). That is the only
   pre-flip number, and it is a stock, not a 30-day flow.
+
+## `guest_continuity`
+
+Does anonymous work survive, and does it follow the person into an account?
+Three signals, all born 2026-09-12 (the deploy is the birth; never
+`min(created_at)`):
+
+| event | when it fires |
+|---|---|
+| `guest_resumed` | a browser that already held a `guest_*` identity with progress came back and the app resumed it instead of minting a new one; carries `solvedCount` |
+| `guest_progress_merged` | a login folded this browser's guest blob into the account; carries `newSolves`, `newAttempts`, `xpAdded`, `guestSolves`, `account` |
+| `signup_completed` with `carriedSolves` | the auth-modal register path now carries the guest blob; `carriedSolves` is how many solves came along (the post-solve prompt path, `source='guest_conversion'`, always carried them) |
+
+```sql
+SELECT count(DISTINCT ((metadata #>> '{}')::jsonb)->>'aid') FILTER (WHERE event='guest_resumed')          AS resumed_people,
+       count(*)                                                 FILTER (WHERE event='guest_progress_merged')  AS merges,
+       count(*)                                                 FILTER (WHERE event='guest_progress_merged'
+                                                                          AND (((metadata #>> '{}')::jsonb)->>'newSolves')::int > 0) AS merges_with_solves,
+       count(*)                                                 FILTER (WHERE event='signup_completed'
+                                                                          AND (((metadata #>> '{}')::jsonb)->>'carriedSolves')::int > 0) AS signups_carrying_solves
+FROM pro_events
+WHERE created_at >= :deploy AND <shared filters>;
+```
+
+Traps, stated before the first read:
+
+- **`users` guest rows are per browser from 2026-09-12, per page load before.**
+  The 4,989-row figure in objectives.md was a page-load count; a fall in new
+  `guest_*` rows after the deploy is the fix, not a fall in visitors. Count
+  people by `aid`, as always.
+- **A resumed guest is not a first contact.** `first_contact_activation` reads
+  each aid's first `challenge_opened`; a returning browser that keeps its
+  solves no longer re-runs the opener, but its first contact already
+  happened. The 105 read (09-13) is unaffected by construction.
+- **The register path writes the same single row it always did**, only with a
+  fuller blob. The 09-19 "users writes restored" read counts rows, not
+  fields, and is unaffected.
+- **A merge with `newSolves = 0` is still a merge**: the guest solved things
+  the account already had. Read `merges_with_solves`, not `merges`, for the
+  value delivered.

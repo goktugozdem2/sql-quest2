@@ -27,6 +27,64 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### anonymous progress survives the reload and follows the login
+
+- **Claimed** 2026-09-12 · **Read** 2026-09-26 (14 days), and the 30-day
+  returning-solver number again at the O1 day-30 read on 2026-10-09.
+- **Change** three things, one module. A browser keeps one guest identity
+  (`localStorage.sqlquest_guest_user`); `startGuestMode` resumes it from the
+  LOCAL blob when it holds progress and was active in the last 90 days,
+  else mints a fresh one. Login folds the guest blob into the account before
+  the session loads (`mergeGuestIntoAccount` → `src/utils/progress-merge.js`,
+  a pure union: the account wins identity, money and every scalar it holds;
+  collections union; XP only for solves the account did not have; idempotent).
+  The auth-modal register path carries the blob the same way — until now it
+  wrote `xp: 0, solvedChallenges: []` and lost every solve; only the
+  post-solve prompt carried progress. Events: `guest_resumed`,
+  `guest_progress_merged`, `signup_completed.carriedSolves`. 22 unit tests
+  and source guards in `tests/progress-merge.test.js`. Verified in the local
+  preview: solve 91 as a fresh guest, reload `/app/` plainly → same
+  `guest_*` name, 210 XP in the header, the solve kept, no quiz.
+- **Why** every page load minted `guest_<Date.now()>` and reset the state
+  (objectives.md: 4,989 guest rows that were page loads, not people), and
+  `loadUserSession` replaced state wholesale on login, discarding whatever a
+  guest had in hand. Measured 2026-09-12 over 30 days, people by `aid` with
+  `isGuest=true`: **265 guests solved at least one challenge; 30 of them
+  solved on two or more distinct days, 9 on three or more** — every one of
+  those returns started from the placement quiz with zero solves. P0-3 on
+  the founder's 2026-09-12 list; the only item on it with no read-calendar
+  conflict.
+- **Metric** `guest_continuity` (docs/agent/metrics.md): `resumed_people`,
+  `merges_with_solves`, `signups_carrying_solves` since the deploy; and the
+  30-day count of guests solving on 2+ distinct days, which is the number
+  this should move.
+- **Baseline** structural 0 for the three events. Returning guest solvers:
+  **30 / 30 days** (2+ days), 9 (3+ days).
+- **Target** by 09-26: `resumed_people` ≥ **30** in 14 days (returning
+  browsers with progress, whether or not they solve again), and
+  `merges_with_solves + signups_carrying_solves` ≥ **5**. By 10-09: guests
+  solving on 2+ distinct days ≥ **45 / 30 days** (from 30).
+- **Guardrails** `first_contact_activation` must not move — structurally it
+  cannot (a first contact is an aid's first open, which a resumed browser
+  already had; noted on the 105 claim as confound iii). The 09-19 "users
+  writes restored" read counts rows, not fields; the register path still
+  writes one row.
+- **Falsification, stated in advance:** `resumed_people` < 10 in 14 days →
+  the returning population was smaller than the row count implied and the
+  rows were bounces; keep the change on correctness grounds (a reload must
+  not erase work) and stop expecting a retention effect from it. 2+-day
+  solvers flat at 10-09 with resumes ≥ 30 → keeping progress does not bring
+  people back to solve; the return is driven by something upstream (email,
+  habit), not by state. Any `guest_progress_merged` with `newSolves` > 0
+  followed by a login whose record lacks those solves → the force-save is
+  not landing; read `postgres_logs` before anything else.
+- **Confounds** ships the evening before the 105 read closes (returning
+  browsers only; first contacts untouched by construction). The 09-13
+  `intentRouting` flip lands the next day on the same returning population;
+  `guest_resumed` is not conditioned on intent, so the two are separable by
+  `intent_captured`.
+- **Verdict** _pending_
+
 ### users writes restored: the referral trigger blocked every registered save for four days
 
 - **Claimed** 2026-09-12 · **Read** 2026-09-19 (seven days of restored
@@ -1083,6 +1141,12 @@ of the verifier and must never be rounded to `FLAT`.
   first contacts — read 105-as-opener as the primary, overall as secondary.
   (ii) Traffic mix is shifting fast (+51% new people, `(none)` door 22→92);
   the seat-level read is mix-independent, the overall rate is not.
+  (iii) Added 2026-09-12, the evening before the read: guest progress now
+  survives a reload (ledger: "anonymous progress survives the reload").
+  Returning browsers keep their solves and no longer re-run the opener; a
+  first contact is an aid's FIRST `challenge_opened`, which such a browser
+  already had, so neither the seat metric nor its denominator moves. Said
+  here so the read does not discover it.
 - **Mechanism check, 2026-09-09 (NOT a verdict).** Run early on purpose: if
   the deploy had not reached the front door there would still have been time
   to fix it before the read window closed. It reached it. Since the 09-06

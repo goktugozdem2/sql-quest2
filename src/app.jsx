@@ -24,6 +24,7 @@ import { backfillLegacyAttempts } from './utils/challenge-helpers.js';
 import { resolveProAccess } from './utils/pro-access.js';
 import { pickNextChallengeWith, pickTopNWith, makeChallengeComparator, hardPreviewCounts, isFreePreview } from './utils/challenge-order.js';
 import { shouldShowInterviewNav, interviewNavReason } from './utils/interview-nav.js';
+import { mergeProgress, hasProgress, isResumableGuest, GUEST_USER_KEY } from './utils/progress-merge.js';
 import { paidWallFor, isColdStart } from './utils/paid-wall.js';
 import { expandStageChallenges, placementStartIndex as roadmapPlacementStartIndex } from './utils/roadmap.js';
 import { shouldEmitLockEvent, lockEventKey } from './utils/lock-events.js';
@@ -2896,7 +2897,13 @@ const saveUserData = async (username, data, options = {}) => {
   return true;
 };
 
-const loadUserData = async (username, allowLocalFallback = true) => {
+const loadUserData = async (username, allowLocalFallback = true, options = {}) => {
+  // localOnly: a guest resuming on this browser (2026-09-12). The local blob is
+  // the only truth a guest has; the cloud row is a debounced copy that can lag
+  // it, and reading cloud-first was the "progress shredder" of 07-24.
+  if (options.localOnly) {
+    try { const raw = localStorage.getItem(`sqlquest_user_${username}`); return raw ? JSON.parse(raw) : null; } catch (_) { return null; }
+  }
   
   // Try cloud first if configured
   if (isSupabaseConfigured()) {
@@ -14898,10 +14905,11 @@ CRITICAL RULES:
     }
   }, [db, aiExpectedQuery]);
 
-  const loadUserSession = async (username) => {
+  const loadUserSession = async (username, options = {}) => {
     setIsSessionLoading(true); // Prevent save during load
-    // When Supabase is configured, don't allow localStorage fallback
-    const userData = await loadUserData(username, !isSupabaseConfigured());
+    // When Supabase is configured, don't allow localStorage fallback — except
+    // for a resuming guest, whose only record IS the local blob.
+    const userData = await loadUserData(username, !isSupabaseConfigured() || !!options.localOnly, options);
     if (!userData) {
       // User not found - clear session and show login
       localStorage.removeItem('sqlquest_user');
@@ -15209,11 +15217,13 @@ CRITICAL RULES:
       }
 
       setShowAuth(false);
-      localStorage.setItem('sqlquest_user', username);
+      // A resumed guest is remembered under GUEST_USER_KEY, never here: the
+      // mount guard deletes any guest_* found in sqlquest_user, blob included.
+      if (!options.localOnly) localStorage.setItem('sqlquest_user', username);
     } else {
       setCurrentUser(username);
       setShowAuth(false);
-      localStorage.setItem('sqlquest_user', username);
+      if (!options.localOnly) localStorage.setItem('sqlquest_user', username);
     }
     setIsSessionLoading(false); // Allow saves now
     // Allow sounds after a delay so login-triggered achievements don't make noise
@@ -17306,10 +17316,49 @@ CRITICAL RULES:
   };
 
   // ============ GUEST MODE FUNCTIONS ============
-  const startGuestMode = (options = {}) => {
+  // Which guest identity this browser already holds, if it is worth resuming:
+  // the guest_* name under GUEST_USER_KEY whose local blob has progress and was
+  // active in the last 90 days (src/utils/progress-merge.js). Null = fresh.
+  const readResumableGuest = () => {
+    try {
+      const name = localStorage.getItem(GUEST_USER_KEY);
+      if (!name) return null;
+      const raw = localStorage.getItem(`sqlquest_user_${name}`);
+      return isResumableGuest(name, raw ? JSON.parse(raw) : null) ? name : null;
+    } catch (_) { return null; }
+  };
+
+  const startGuestMode = async (options = {}) => {
     const preserveFoundationResume = !!options.preserveFoundationResume;
     const resumeLessonId = preserveFoundationResume ? loadSavedFoundationActiveLessonId() : null;
     const resumePractice = preserveFoundationResume ? loadSavedFoundationPracticeState(resumeLessonId) : null;
+
+    // Anonymous progress survives a reload (2026-09-12). Until now every load
+    // minted guest_<Date.now()> and reset everything, so a guest who solved
+    // five challenges and came back the next day started from the quiz —
+    // objectives.md counted 4,989 guest rows that were page loads, not people.
+    // The tab is chosen BEFORE the await so a deep-link resolver that called
+    // us synchronously still gets the last word on where the visitor lands.
+    const resumeGuest = options.resumeGuest !== undefined ? options.resumeGuest : readResumableGuest();
+    if (resumeGuest) {
+      suppressSoundsRef.current = true;
+      setIsGuest(true);
+      setCurrentUser(resumeGuest);
+      setShowAuth(false);
+      setActiveTab('guide');
+      setPracticeSubTab('challenges');
+      setCurrentChallenge(null);
+      await loadUserSession(resumeGuest, { localOnly: true });
+      setIsGuest(true);
+      if (preserveFoundationResume && resumeLessonId) {
+        setFoundationsRoadmapLessonId(resumeLessonId);
+        setFoundationPractice(resumePractice || createFoundationPracticeState(resumeLessonId));
+      }
+      let solvedCount = 0;
+      try { solvedCount = (JSON.parse(localStorage.getItem(`sqlquest_user_${resumeGuest}`) || '{}').solvedChallenges || []).length; } catch (_) {}
+      trackActivationEvent('guest_resumed', { solvedCount });
+      return;
+    }
     // Persistent device ID for retention analytics. Lives in localStorage so
     // the same browser reuses it across sessions — private browsing / cleared
     // storage gets a new one, which is accurate ("new session" by design).
@@ -17326,6 +17375,13 @@ CRITICAL RULES:
     } catch (_) { /* private mode, localStorage unavailable — skip silently */ }
 
     const sessionUsername = 'guest_' + Date.now();
+    // Remember this identity so the next load resumes it instead of minting
+    // another; drop the previous one's blob if it held nothing worth keeping.
+    try {
+      const previous = localStorage.getItem(GUEST_USER_KEY);
+      if (previous && previous !== sessionUsername) localStorage.removeItem(`sqlquest_user_${previous}`);
+      localStorage.setItem(GUEST_USER_KEY, sessionUsername);
+    } catch (_) { /* private mode — a guest that cannot be remembered is still a guest */ }
     setCurrentUser(sessionUsername);
     setIsGuest(true);
 
@@ -17442,7 +17498,43 @@ CRITICAL RULES:
     }
   };
 
+  // The guest blob this browser holds, when it holds real progress.
+  const readGuestBlob = () => {
+    try {
+      const name = localStorage.getItem(GUEST_USER_KEY) || (isGuest && currentUser) || null;
+      if (!name || !String(name).startsWith('guest_')) return { name: null, blob: null };
+      const raw = localStorage.getItem(`sqlquest_user_${name}`);
+      const blob = raw ? JSON.parse(raw) : null;
+      return { name, blob: hasProgress(blob) ? blob : null };
+    } catch (_) { return { name: null, blob: null }; }
+  };
+  const forgetGuest = (name) => {
+    try {
+      localStorage.removeItem(GUEST_USER_KEY);
+      if (name) localStorage.removeItem(`sqlquest_user_${name}`);
+    } catch (_) { /* ignore */ }
+  };
+  // Merge this browser's guest progress into an existing account (2026-09-12).
+  // Until now logging in replaced state wholesale and the guest's solves were
+  // discarded. The merge is a pure union (src/utils/progress-merge.js): the
+  // account wins on identity, money and every scalar it holds; collections
+  // are unioned; XP is added only for solves the account did not have.
+  const mergeGuestIntoAccount = async (username) => {
+    const { name, blob } = readGuestBlob();
+    if (!blob) return null;
+    const account = await loadUserData(username, false);
+    if (!account) return null;
+    const { merged, summary } = mergeProgress(account, blob, { challenges: window.challengesData || challenges || [] });
+    if (summary.newSolves > 0 || summary.newAttempts > 0) {
+      await saveUserData(username, merged, { force: true });
+    }
+    trackActivationEvent('guest_progress_merged', { ...summary, account: username });
+    forgetGuest(name);
+    return summary;
+  };
+
   const convertGuestToUser = async (username, password, email) => {
+    const previousGuestName = (() => { try { return localStorage.getItem(GUEST_USER_KEY); } catch (_) { return null; } })();
     // Hash password
     const salt = generateSalt();
     const passwordHash = await hashPassword(password, salt);
@@ -17514,6 +17606,7 @@ CRITICAL RULES:
     setIsGuest(false);
     setShowSignupPrompt(false);
     localStorage.setItem('sqlquest_user', username);
+    forgetGuest(previousGuestName);
 
     // Sync Pro state with saved userData (paid plan carried from a guest
     // purchase, or Free). Without these setter calls, the auto-save effect
@@ -17829,8 +17922,15 @@ CRITICAL RULES:
       };
       // force: true — same reasoning as guest→registered: the new account
       // must land in Supabase synchronously so the next login lookup finds it.
+      // Carry this browser's guest progress into the new account — the same
+      // union the login path applies (2026-09-12). Before this, registering
+      // through the auth modal instead of the post-solve prompt lost every solve.
+      const { name: guestName, blob: guestBlob } = readGuestBlob();
+      const registerData = guestBlob
+        ? mergeProgress(newUserData, guestBlob, { challenges: window.challengesData || challenges || [] }).merged
+        : newUserData;
       try {
-        await saveUserData(regUsername, newUserData, { force: true });
+        await saveUserData(regUsername, registerData, { force: true });
       } catch (err) {
         console.error('Signup cloud save failed:', err);
         setAuthError('Could not finish creating your account. Please check your connection and try again.');
@@ -17855,9 +17955,11 @@ CRITICAL RULES:
         // Non-critical: Supabase Auth signup is optional
       }
 
+      if (guestBlob) forgetGuest(guestName);
       trackActivationEvent('signup_completed', {
         source: 'direct',
         newUsername: regUsername,
+        carriedSolves: guestBlob ? (guestBlob.solvedChallenges || []).length : 0,
       });
       try { localStorage.setItem('sqlquest_signup_at', String(Date.now())); } catch (_) {}
 
@@ -17866,6 +17968,11 @@ CRITICAL RULES:
       username = regUsername;
     }
     
+    // Login: fold this browser's guest progress into the account before the
+    // session loads, so the load below reads the merged record.
+    if (authMode === 'login') {
+      try { await mergeGuestIntoAccount(username); } catch (err) { console.error('Guest merge failed:', err); }
+    }
     await loadUserSession(username);
     setAuthError('');
     setAuthUsername('');
