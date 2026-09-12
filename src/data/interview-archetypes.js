@@ -131,6 +131,38 @@
 // and a guess, and it is why the second member is not written here yet.
 // Re-check when a card issuer's screen surfaces in candidate reports rather
 // than in guides quoting each other.
+//
+// ─────────────── CHECKED AGAIN BY TRAFFIC, 2026-09-12 (not a member) ───────────
+//
+// Ranked by 30-day landings on our own company pages: Revolut 59 (14.4% CTR),
+// Snowflake 53, Stripe 31, Amazon 30, Wise 21. Searched for a sourced screen
+// for the top three; none clears the checklist today, each for a stated reason:
+//
+//   Revolut — the closest. A 2025/2026 prep guide (interviewquery) describes
+//     "a 30-minute timed HackerRank data analyst test, a mix of SQL challenges
+//     and basic statistics, some multiple choice"; a Glassdoor candidate report
+//     describes "a 60-minute interview with 4 SQL questions", which reads as a
+//     later live stage, not the screen. Two different rounds, no dates on the
+//     reports in the snippets, and both source pages refused the fetch
+//     (429 / 403) so nothing here is quotable with a month on it. Data shape
+//     fails on its own: the 26 Revolut-tagged challenges sit on `ecommerce`
+//     (18), `finans_fraud` (5) and `employees` (3) — a neobank screen runs on
+//     users / transactions / currencies / top-ups, and that ledger does not
+//     exist in the bank. Writing it is authored-data work, not a tag.
+//   Stripe — guides and one Blind thread describe a CoderPad SQL round and a
+//     take-home report inside a five-round loop; no duration, no count, no
+//     table shape. Tags: `ecommerce` 27, `finans_fraud` 6.
+//   Wise — a HackerRank screen of three tasks (an algorithm question, one SQL
+//     join/aggregation query, a REST filtering task) per one guide, i.e. an
+//     engineering screen with one SQL item; nothing analyst-specific. Tags:
+//     `ecommerce` 10, `finans_fraud` 6.
+//
+// What the product does for these three meanwhile is written in the Interview
+// tab's target pin (src/app.jsx, `interviewTarget`): it names the count of
+// challenges carrying their tag and opens them, and says in so many words that
+// no sourced screen format exists. The next member needs a person to read the
+// Glassdoor / Blind reports in a browser, write the dated digest, and author
+// the ledger the screen runs on.
 /**
  * THE REGISTRY. One archetype, one member, today — and that is asserted by a
  * test, so growing it is a deliberate, reviewed diff rather than a drift.

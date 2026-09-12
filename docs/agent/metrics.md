@@ -1932,7 +1932,7 @@ claim "intent routing: a handle on the interview door", never by
 
 | event | when it fires |
 |---|---|
-| `interview_tab_viewed` | once per user per day on the first mount of the Interview tab; carries `entry` (`nav` / `deeplink` / `onboarding` / `guest_shell` / `unknown`), `reason` (`history` / `intent` / `goal` / `company` / null — why the nav entry was showing), `intent`, `solvedCount`, `hasHistory` |
+| `interview_tab_viewed` | once per user per day on the first mount of the Interview tab; carries `entry` (`nav` / `deeplink` / `onboarding` / `guest_shell` / `unknown`), `reason` (`history` / `intent` / `goal` / `company` / null — why the nav entry was showing), `intent`, `solvedCount`, `hasHistory`, and the target pin: `targetCompany` (resolved from countdown target → company filter → arrival), `targetMockId` (non-null only when that company is a registry member with a sittable mock — today only `capital-one-codesignal`), `targetTaggedCount` |
 | `interview_started` | a mock starts or resumes, AFTER the Pro check; carries `interviewId`, `company`, `difficulty`, `isFree`, `resumed` |
 | `interview_completed` | the last question is answered; carries `interviewId`, `company`, `passed`, `percentage`, `questions`, `retry` |
 

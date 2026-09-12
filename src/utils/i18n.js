@@ -882,6 +882,13 @@ const TRANSLATIONS = {
       startNow: 'Start Now',
       questionsToReview: 'Questions to Review ({n} remaining)',
       viewAllPast: 'View all past interviews →',
+      // Target pin (2026-09-12). No prediction words: the pin names a screen we
+      // could source, or says plainly that we could not.
+      targetPinTitle: 'Your target: {company}',
+      targetPinSub: 'The one screen format we could source. Everything below is general practice.',
+      noTargetTitle: 'No sourced screen format for {company} yet',
+      noTargetSub: '{n} challenges carry the {company} tag. That is the honest prep; we do not invent a format.',
+      noTargetCta: 'Open the {company} challenges',
     },
 
     // Interview countdown — pick a company, pick a date, get a plan.
@@ -1675,6 +1682,11 @@ const TRANSLATIONS = {
       startNow: 'Şimdi Başla',
       questionsToReview: 'Gözden Geçirilecek Sorular ({n} kaldı)',
       viewAllPast: 'Tüm geçmiş mülakatları gör →',
+      targetPinTitle: 'Hedefin: {company}',
+      targetPinSub: 'Kaynağını gösterebildiğimiz tek ekran formatı. Aşağıdakiler genel pratik.',
+      noTargetTitle: '{company} için kaynaklı bir ekran formatı yok',
+      noTargetSub: '{n} challenge {company} etiketi taşıyor. Dürüst hazırlık bu; format uydurmuyoruz.',
+      noTargetCta: '{company} challenge\'larını aç',
     },
 
     // Bkz. EN bloğundaki not: buradaki hiçbir cümle bir mülakat sonucunu ima

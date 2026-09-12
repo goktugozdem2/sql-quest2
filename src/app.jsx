@@ -7769,6 +7769,28 @@ function SQLQuest() {
     solvedCount: solvedChallenges.size,
     ...interviewNavInputs,
   });
+  // Which company this person is here for, and whether we can hand them a
+  // screen for it (2026-09-12). Resolution order: a countdown target they set,
+  // the Practice company filter (applyIntentRouting sets it from the arrival
+  // page), then the arrival stamp itself. findTarget applies the registry's
+  // three conjuncts (src/data/interview-archetypes.js), so `mock` is non-null
+  // only for a declared, sourced member — today, Capital One. For any other
+  // company we can say how many challenges carry its tag, and nothing more:
+  // a screen format we could not source is not shown as one.
+  const interviewTarget = (() => {
+    const src = interviewNavInputs.arrivalSrc;
+    const arrival = typeof src === 'string' && src.startsWith('company:') ? src.slice('company:'.length) : null;
+    const fromFilter = typeof companyFilter === 'string' && companyFilter && companyFilter !== 'all' ? companyFilter : null;
+    const company = prepTarget?.company || fromFilter || arrival || null;
+    if (!company) return { company: null, mock: null, taggedCount: 0 };
+    let match = null;
+    try { match = findTarget(company, challenges, window.challengeCompanies || {}, mockInterviews); } catch (_) { match = null; }
+    const mock = match ? (mockInterviews.find(m => m.id === match.mockId) || null) : null;
+    const wanted = company.trim().toLowerCase();
+    const taggedCount = Object.values(window.challengeCompanies || {})
+      .filter(cos => Array.isArray(cos) && cos.some(c => typeof c === 'string' && c.trim().toLowerCase() === wanted)).length;
+    return { company: company.trim(), mock, taggedCount };
+  })();
   useEffect(() => {
     if (activeTab !== 'trials' || !currentUser || isSessionLoading) return;
     const entry = interviewEntryRef.current || 'unknown';
@@ -7786,6 +7808,9 @@ function SQLQuest() {
         hasHistory: interviewNavInputs.hasInterviewHistory,
         arrivalSrc: interviewNavInputs.arrivalSrc,
         landingSrc: interviewNavInputs.landingSrc,
+        targetCompany: interviewTarget.company,
+        targetMockId: interviewTarget.mock ? interviewTarget.mock.id : null,
+        targetTaggedCount: interviewTarget.taggedCount,
       });
     } catch (_) { /* ignore */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -35652,6 +35677,57 @@ RULES:
               </div>
             )}
 
+            {/* Target pin (2026-09-12) — the person's own company first.
+                findTarget applies the registry: a mock is pinned only for a
+                declared, sourced member. Any other company gets the count of
+                challenges tagged for it and a door to them — never an invented
+                screen. See src/data/interview-archetypes.js. */}
+            {interviewTarget.mock && (() => {
+              const m = interviewTarget.mock;
+              const im = localizeInterview(m, lang);
+              const canAccess = canAccessInterview(m);
+              return (
+                <div className="bg-purple-500/10 border border-purple-500/40 rounded-xl p-5" data-interview-target={m.id}>
+                  <div className="text-xs font-bold uppercase tracking-wide text-purple-300 mb-1">
+                    🎯 {i18n_t('interview', 'targetPinTitle', { company: interviewTarget.company })}
+                  </div>
+                  <p className="text-xs text-gray-400 mb-3">{i18n_t('interview', 'targetPinSub')}</p>
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <h3 className="text-lg font-bold">{im.title}</h3>
+                      <p className="text-gray-400 text-sm mt-1">{im.description}</p>
+                      <div className="flex items-center gap-4 text-sm mt-2">
+                        <span className="text-gray-500 flex items-center gap-1">
+                          <Clock size={14} /> {i18n_t('interviewList', 'minutesLabel', { n: Math.floor(m.totalTime / 60) })}
+                        </span>
+                        <span className="text-gray-500 flex items-center gap-1">
+                          <Target size={14} /> {i18n_t('interviewList', 'questionsLabel', { n: m.questionsCount })}
+                        </span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => startInterview(m)}
+                      className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium flex items-center gap-2 whitespace-nowrap"
+                    >
+                      {canAccess ? <Play size={16} /> : <Lock size={16} />} {i18n_t('interview', 'startNow')}
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
+            {!interviewTarget.mock && interviewTarget.company && interviewTarget.taggedCount > 0 && (
+              <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-4" data-interview-target="none">
+                <h3 className="font-bold text-gray-200">{i18n_t('interview', 'noTargetTitle', { company: interviewTarget.company })}</h3>
+                <p className="text-sm text-gray-400 mt-1">{i18n_t('interview', 'noTargetSub', { n: interviewTarget.taggedCount, company: interviewTarget.company })}</p>
+                <button
+                  onClick={() => { setCompanyFilter(interviewTarget.company); setChallengePathFilter('all'); setPracticeSubTab('challenges'); setActiveTab('quests'); }}
+                  className="mt-3 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm font-medium"
+                >
+                  {i18n_t('interview', 'noTargetCta', { company: interviewTarget.company })}
+                </button>
+              </div>
+            )}
+
             {/* Interview Difficulty Filter */}
             <div className="flex flex-wrap gap-2">
               {[
@@ -35684,6 +35760,7 @@ RULES:
             {/* Interview List */}
             <div className="grid gap-4">
               {mockInterviews.filter(interview => {
+                if (interviewTarget.mock && interview.id === interviewTarget.mock.id) return false; // pinned above
                 const hasPassed = interviewHistory.some(h => h.interviewId === interview.id && h.passed);
                 const hasAttempted = interviewHistory.some(h => h.interviewId === interview.id);
                 

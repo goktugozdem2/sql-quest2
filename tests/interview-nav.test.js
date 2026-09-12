@@ -90,4 +90,19 @@ describe('source guards — the entry, the events, the copy', () => {
     expect((i18n.match(/interviewSub: '/g) || []).length).toBe(2);
     expect(flags).toMatch(/intentRouting: (true|false),/);
   });
+
+  it('the target pin goes through the registry, never through a company string alone', () => {
+    // The pinned mock is whatever findTarget returns — the registry's three
+    // conjuncts — so a company with no sourced screen can never be pinned.
+    expect(app).toMatch(/match = findTarget\(company, challenges, window\.challengeCompanies \|\| \{\}, mockInterviews\)/);
+    expect(app).toMatch(/data-interview-target=\{m\.id\}/);
+    expect(app).toMatch(/data-interview-target="none"/);
+    // the pinned mock is not listed twice
+    expect(app).toMatch(/if \(interviewTarget\.mock && interview\.id === interviewTarget\.mock\.id\) return false;/);
+    // the view event carries the pin
+    expect(app).toMatch(/targetMockId: interviewTarget\.mock \? interviewTarget\.mock\.id : null,/);
+    for (const key of ['targetPinTitle', 'targetPinSub', 'noTargetTitle', 'noTargetSub', 'noTargetCta']) {
+      expect((i18n.match(new RegExp(`${key}: '`, 'g')) || []).length, `${key} in both languages`).toBe(2);
+    }
+  });
 });
