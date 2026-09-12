@@ -537,6 +537,44 @@ Rewritten Coach-forward:
   places and the backend caps Pro at 50/75/100 calls a day
   (`supabase/functions/ai-tutor`). Fix the words, not the cap.
 
+### P1 — skill model, diff engine, tutor (2026-09-12)
+
+- **user_skill is derived, canonical, and fed by attempts.**
+  `skillMastery` (state, `userData.skillMastery`, localStorage
+  `sqlquest_skill_mastery`) is rebuilt by `src/utils/user-skill.js` from
+  `challengeAttempts` + the radar + `lessonSkillStats` (the lessons' own
+  counts, `updateSkillMastery`). Same field names as the old fourteen-name
+  record, so every reader (tutor context, rust notifications, session recap)
+  kept working and now sees solves. A saved OLD record is folded in once
+  (`isLegacyMasteryRecord`); a canonical one is never re-read as input.
+  There is no `user_skill` table: `users.data` already carries the rows for
+  the server-side senders.
+- **Picker:** `pickNextBySkill` (weakest canonical skill, one difficulty
+  above the highest solved on it, Hard only at mastery ≥ 50, curriculum
+  comparator — never raw order). Wired to the post-solve strip behind
+  `weakSkillNext`. Skill filter on Practice (`skillFilter`, session-only) is
+  live.
+- **Diff engine:** `diagnose.js` gained `row_set` (right count, wrong rows —
+  before this it was reported as wrong values) and `primaryHint(diagnosis,
+  {query, description})`, one hint by kind and by what the query actually
+  says. The panel shows the sentence + one hint behind `diagnosisHints`; the
+  three-item lists remain the tutor's material.
+- **Error patterns:** `src/utils/error-patterns.js` names the habit behind
+  a wrong submit (missing_group_by, cross_join, wrong_join_type,
+  null_handling, extra_filter, …), recorded on both wrong paths into
+  `userData.errorPatterns` (counts + last 50) with
+  `challenge_error_pattern {kind, primary, patterns, repeat}`. LIVE.
+- **Tutor:** `buildChallengeTutorContext` is the ONE context builder for
+  both tutor doors on the challenge page (the hint chain and the inline
+  panel): query as written, diagnosis, mastery rows for the challenge's
+  skills, error patterns with a REPEAT line at ≥3, goal + days to the date.
+  LIVE. Behind `socraticLadder`: the panel opens on the diagnosis (not
+  `TOPIC_EXPLANATIONS`), the ladder (defect → clause → full query), bypass
+  by phrase or button. The live nudge carries the REPEAT line too.
+- Flip 2026-09-30 for the three flags (one task), reads 2026-10-21; claims
+  in the ledger. `/coach/` now redirects to `/app` (it 404'd; nothing linked
+  to it).
+
 ### Notifications
 Major overhaul this session: persist `dismissedNotifs`, `_subtabEnabled()` gates routes by feature flag, threshold-aligned with Quick Drill (<65), dedup by `target` string, clock-tick recompute, NOTIF_PRI constants (streak=0). Reviews Due block commented-out until Coach surfaces retrieval checks outside goals.
 

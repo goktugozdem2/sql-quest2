@@ -2359,3 +2359,42 @@ quieted-reason people ≈ 50 (13 streak, 12 company_hard, ~25 early
 `generic` that were mostly locked-mock clicks — see the reason
 discontinuity under `lock_reach_rate`); 10 people clicked in the month;
 43 people shown 3+ times over the 60 days to 09-08.
+
+## `user_skill` (the record, not a metric)
+
+`userData.skillMastery` is, from 2026-09-12, one row per CANONICAL skill —
+`{ mastery, totalAttempts, correctCount, lastPracticed, hintsUsed, level }` —
+derived in the client by `src/utils/user-skill.js` from `challengeAttempts`
++ `weaknessTracking.skillLevels` + the lesson-only counts in
+`userData.lessonSkillStats`. Before that date the same field held fourteen
+retired names that only the lessons wrote to. Read it on `users.data` for
+server-side senders (weekly digest, skill decay); never as a `pro_events`
+series. A row's `lastPracticed` is the spaced-retrieval clock.
+
+## `hint_to_solve`
+
+Of people (by `aid`) with a `challenge_errored` or a wrong submit on a
+challenge — a `challenge_error_pattern` row, born 2026-09-12, is the cleaner
+signal — the share who `challenge_solved` THAT challenge id later in the
+same session (30-minute gap rule). Split by the `diagnosisHints` flag arm
+(flip scheduled 2026-09-30). Secondary: wrong submits per eventual solve.
+Guardrail: the cold-start first-solve rate, which the panel sits under.
+
+## `tutor_ladder`
+
+`inline_help_opened {challengeId, opener: diagnosis|topic, hasDiagnosis}`
+(born 2026-09-12) is the denominator: people who opened the inline help
+panel on a challenge. Numerator: `challenge_solved` on that id in the same
+session. Companions: `tutor_bypass_clicked` ÷ opens (bypass rate); people
+with any `challenge_error_pattern.repeat ≥ 3` (the REPEAT line was shown to
+the tutor); `challenge_error_pattern.primary` distribution — the mistake
+census the P1 list asked for. Exclude sessions with a `rate_limit`
+`pro_modal_shown` (the free AI cap ended the conversation, not the ladder).
+
+## `next_rec_take`
+
+`next_rec_started {challengeId, difficulty, source: weak_skill|curriculum,
+skill}` (born 2026-09-12) over `challenge_solved` events that rendered the
+"Next quest" strip (every non-drill solve): the click share, and of the
+clicked, the share solved in the same session. Split by `source`; the
+`curriculum` arm before the 2026-09-30 flip is the baseline.

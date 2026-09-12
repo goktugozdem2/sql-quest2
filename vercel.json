@@ -10,6 +10,7 @@
       "destination": "https://sqlquest.app/:path*",
       "permanent": true
     },
+    { "source": "/coach/", "destination": "/app", "permanent": true },
     { "source": "/en/", "destination": "/", "permanent": true },
     { "source": "/fr/", "destination": "/", "permanent": true },
     { "source": "/:slug/privacy/", "destination": "/privacy/", "permanent": true },

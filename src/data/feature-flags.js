@@ -214,6 +214,31 @@ window.FEATURE_FLAGS = {
     // Interview tab was reached by 3 people in 30 days. Flips 2026-10-12
     // with M2 (it is M2's steps 5–6). Ledger: "the mocks get a door".
     mockDoor: false,
+
+    // ── P1 (2026-09-12): skill model, diff engine, tutor ─────────────────
+    // Built the same day as the free-tier boundary; LIVE parts: the user_skill
+    // row (canonical, fed by attempts), the skill filter on Practice, error-
+    // pattern recording, and the tutor's enriched context. The three below
+    // change what a person SEES on the solve surface, so they wait for the
+    // cold-start read (09-29) and flip together on 2026-09-30 by scheduled
+    // task; each has a ledger claim and reads 2026-10-21.
+    //
+    // The post-solve "Next quest" picks the weakest canonical skill and one
+    // difficulty above what the person has solved on it (src/utils/
+    // user-skill.js pickNextBySkill), instead of curriculum-next at the same
+    // difficulty. Strip carries the why; `next_rec_started` carries source.
+    weakSkillNext: false,
+    // The wrong-answer panel says WHAT is wrong (the diagnosis headline) in
+    // place of "Try again!", and shows ONE hint chosen for the diagnosis
+    // and the query (diagnose.js primaryHint) instead of the fixed three.
+    // The new `row_set` diagnosis kind (right count, wrong rows) is live
+    // either way — it is a truer report, not a different surface.
+    diagnosisHints: false,
+    // The inline tutor's ladder: request 1 names the defect in THEIR query,
+    // 2 gives the exact clause, 3+ the full corrected query; asking for the
+    // answer outright bypasses the ladder. Off, the tutor never reveals the
+    // solution (today's rule 1). Bypass button on the panel is flag-only.
+    socraticLadder: false,
   },
 };
 

@@ -36,7 +36,9 @@ import { shouldAskForReview, enabledReviewPlatforms, REVIEW_ASK_REASONS } from '
 import { eligibleTargets, findTarget, companyReadiness, planToDate, daysUntil, readinessBucket, MIN_EVIDENCE_SOLVES, PREP_PLAN_STATUS } from './utils/interview-prep.js';
 import { buildDivision as buildLeagueDivision, tierForXp as leagueTierForXp } from './utils/leagues.js';
 import { getPrimarySkeleton, getAllSkeletons } from './utils/skeletons.js';
-import { diagnoseResult } from './utils/diagnose.js';
+import { diagnoseResult, diagnosisShort, primaryHint } from './utils/diagnose.js';
+import { buildUserSkill, pickNextBySkill, toCanonicalSkill, isLegacyMasteryRecord } from './utils/user-skill.js';
+import { classifyErrorPatterns, recordErrorPatterns, describeErrorPatterns, patternCount, emptyErrorStore } from './utils/error-patterns.js';
 import { computeRecap, shouldShowRecap } from './utils/session-recap.js';
 import { getAnonId } from './utils/anon-id.js';
 import { classifyLandingSrc, LANDING_SRC_KEY } from './utils/landing-src.js';
@@ -5925,26 +5927,40 @@ function SQLQuest() {
   });
   
   // Skill Mastery Tracking (per-topic proficiency for AI context)
-  const [skillMastery, setSkillMastery] = useState(() => {
-    const saved = localStorage.getItem('sqlquest_skill_mastery');
-    return saved ? JSON.parse(saved) : {
-      // Core SQL skills with mastery data
-      'SELECT Basics': { level: 1, correctCount: 0, totalAttempts: 0, lastPracticed: null, hintsUsed: 0 },
-      'WHERE & Filtering': { level: 1, correctCount: 0, totalAttempts: 0, lastPracticed: null, hintsUsed: 0 },
-      'ORDER BY & LIMIT': { level: 1, correctCount: 0, totalAttempts: 0, lastPracticed: null, hintsUsed: 0 },
-      'Aggregation (COUNT, SUM, AVG)': { level: 1, correctCount: 0, totalAttempts: 0, lastPracticed: null, hintsUsed: 0 },
-      'GROUP BY': { level: 1, correctCount: 0, totalAttempts: 0, lastPracticed: null, hintsUsed: 0 },
-      'HAVING': { level: 1, correctCount: 0, totalAttempts: 0, lastPracticed: null, hintsUsed: 0 },
-      'JOIN Tables': { level: 1, correctCount: 0, totalAttempts: 0, lastPracticed: null, hintsUsed: 0 },
-      'Subqueries': { level: 1, correctCount: 0, totalAttempts: 0, lastPracticed: null, hintsUsed: 0 },
-      'String Functions': { level: 1, correctCount: 0, totalAttempts: 0, lastPracticed: null, hintsUsed: 0 },
-      'Date Functions': { level: 1, correctCount: 0, totalAttempts: 0, lastPracticed: null, hintsUsed: 0 },
-      'CASE Statements': { level: 1, correctCount: 0, totalAttempts: 0, lastPracticed: null, hintsUsed: 0 },
-      'Window Functions': { level: 1, correctCount: 0, totalAttempts: 0, lastPracticed: null, hintsUsed: 0 },
-      'CTEs': { level: 1, correctCount: 0, totalAttempts: 0, lastPracticed: null, hintsUsed: 0 },
-      'UNION & Set Operations': { level: 1, correctCount: 0, totalAttempts: 0, lastPracticed: null, hintsUsed: 0 }
-    };
+  // user_skill (2026-09-12, P1): one row per CANONICAL skill — mastery (the
+  // radar number), attempts, correct, lastPracticed, hintsUsed, level 1–5.
+  // Derived, never hand-written: src/utils/user-skill.js builds it from
+  // challengeAttempts + weaknessTracking.skillLevels, plus the lesson-only
+  // counts below. Until this date the record held FOURTEEN retired names
+  // that only the lessons wrote to, so the tutor's "weakest skills" and the
+  // notifications' "rust" were read off a mostly-empty table. Same field
+  // names as before, so every reader keeps working — and now sees solves.
+  //
+  // `lessonSkillStats` is the part the lessons record (updateSkillMastery);
+  // a saved record in the OLD vocabulary is folded into it once, through the
+  // same tag mapping, so nobody loses what the lessons counted.
+  const [lessonSkillStats, setLessonSkillStats] = useState(() => {
+    try {
+      const own = localStorage.getItem('sqlquest_lesson_skill_stats');
+      if (own) return JSON.parse(own);
+      const saved = localStorage.getItem('sqlquest_skill_mastery');
+      const parsed = saved ? JSON.parse(saved) : null;
+      return parsed && isLegacyMasteryRecord(parsed) ? buildUserSkill({ legacy: parsed }) : {};
+    } catch (_) { return {}; }
   });
+  const [skillMastery, setSkillMastery] = useState(() => buildUserSkill({ legacy: lessonSkillStats }));
+  // Error patterns (P1): the habit behind each wrong submit, remembered —
+  // src/utils/error-patterns.js. Lets the tutor say "third time".
+  const [errorPatterns, setErrorPatterns] = useState(() => {
+    try {
+      const saved = localStorage.getItem('sqlquest_error_patterns');
+      const parsed = saved ? JSON.parse(saved) : null;
+      return parsed && typeof parsed === 'object' && parsed.counts ? parsed : emptyErrorStore();
+    } catch (_) { return emptyErrorStore(); }
+  });
+  const lastErrorPatternsRef = useRef([]);
+  // What the "Next quest" strip picked and why (P1 picker, `weakSkillNext`).
+  const [nextChallengeRecMeta, setNextChallengeRecMeta] = useState(null);
   
   // Mock Interview state
   const [showInterviews, setShowInterviews] = useState(false);
@@ -7418,6 +7434,10 @@ function SQLQuest() {
   // ?sector= URL param so /<sector>-sql/ landing CTAs auto-filter the list.
   // The mount-effect URL handler also stamps userGoals.sector for the
   // Coach badge + AI Tutor sector context — same lever, two surfaces.
+  // Skill filter for the Practice tab (2026-09-12, P1): one canonical skill or
+  // null. Session-only on purpose — a sticky skill filter would silently
+  // narrow the list on the next visit the way the path filter once did.
+  const [skillFilter, setSkillFilter] = useState(null);
   const [sectorFilter, setSectorFilter] = useState(() => {
     if (typeof window === 'undefined') return null;
     try {
@@ -7505,6 +7525,14 @@ function SQLQuest() {
         `Description: ${challenge.description || '(none)'}`,
         `My SQL:\n${userQuery}`,
         `Auto-diagnosis: ${diagnosis.headline}. ${diagnosis.details || ''}`,
+        // Error patterns (P1): the habit, with its count, so the nudge can say
+        // "third time" — the most-read tutor sentence in the product.
+        ...(() => {
+          try {
+            const lines = describeErrorPatterns(errorPatterns, lastErrorPatternsRef.current || [], { recentN: 10 });
+            return lines.length > 0 ? [lines.join('\n')] : [];
+          } catch (_) { return []; }
+        })(),
       ].join('\n\n');
       const aiUsername = (typeof currentUser === 'string' && !currentUser.startsWith('guest_'))
         ? currentUser
@@ -8517,6 +8545,8 @@ function SQLQuest() {
           weaknessTracking: weaknessTracking,
           // Skill Mastery for AI Tutor
           skillMastery: skillMastery,
+          lessonSkillStats: lessonSkillStats,
+          errorPatterns: errorPatterns,
           // (defeatedBosses + workoutStreak + lastWorkoutDate removed —
           // Boss Battle and Daily Workout systems were retired; their
           // persisted values were never read on rehydration after the
@@ -8546,7 +8576,7 @@ function SQLQuest() {
         saveToLeaderboard(currentUser, xp, solvedChallenges.size);
       })();
     }
-  }, [xp, solvedChallenges, unlockedAchievements, queryCount, aiLessonPhase, currentAiLesson, completedAiLessons, aiLessonCompletions, roadmapLessonCompletions, comprehensionCount, comprehensionCorrect, consecutiveCorrect, comprehensionConsecutive, completedExercises, challengeQueries, completedDailyChallenges, dailyStreak, challengeAttempts, dailyChallengeHistory, weeklyReports, weeklyReportLastSeen, weeklyDigestOptOut, earnedMilestones, coachState, userGoals, intakeRecord, prepTarget, goalsPromptDismissedAt, loginCalendar, speedRunHistory, explainHistory, userProStatus, proType, proExpiry, proAutoRenew, interviewHistory, challengeProgress, challengeStartDate, weaknessTracking, skillMastery]);
+  }, [xp, solvedChallenges, unlockedAchievements, queryCount, aiLessonPhase, currentAiLesson, completedAiLessons, aiLessonCompletions, roadmapLessonCompletions, comprehensionCount, comprehensionCorrect, consecutiveCorrect, comprehensionConsecutive, completedExercises, challengeQueries, completedDailyChallenges, dailyStreak, challengeAttempts, dailyChallengeHistory, weeklyReports, weeklyReportLastSeen, weeklyDigestOptOut, earnedMilestones, coachState, userGoals, intakeRecord, prepTarget, goalsPromptDismissedAt, loginCalendar, speedRunHistory, explainHistory, userProStatus, proType, proExpiry, proAutoRenew, interviewHistory, challengeProgress, challengeStartDate, weaknessTracking, skillMastery, lessonSkillStats, errorPatterns]);
 
   // Load leaderboard periodically
   useEffect(() => {
@@ -14316,7 +14346,13 @@ CRITICAL RULES:
           <div data-foundation-lesson-goal="true" className="mt-4 rounded-xl border border-emerald-500/25 bg-emerald-500/10 p-4">
             <p className="text-xs font-bold uppercase tracking-wider text-emerald-300">Why this matters</p>
             <p className="mt-1 text-sm leading-relaxed text-emerald-50">
-              In real work, your first SQL task is usually simple: open a table safely, inspect a few rows, and understand what data exists before analyzing it.
+              {/* Per path (2026-09-12, P2): the sentence follows the intent the
+                  person declared, not one default. */}
+              {getUserIntent() === 'interview'
+                ? 'In an interview screen, the first minute is reading the table you were handed: open it, look at a few rows, and say out loud what each column is before you write a single JOIN.'
+                : getUserIntent() === 'learning'
+                  ? 'Every query starts the same way: open a table, look at a few rows, and learn what the data actually contains before you ask it anything.'
+                  : 'In real work, your first SQL task is usually simple: open a table safely, inspect a few rows, and understand what data exists before analyzing it.'}
             </p>
           </div>
         )}
@@ -15586,14 +15622,21 @@ CRITICAL RULES:
         setWeaknessTracking(wt);
       }
       
-      // Restore Skill Mastery for AI Tutor
-      if (userData.skillMastery) {
-        setSkillMastery(prev => ({
-          ...prev,
-          ...userData.skillMastery
-        }));
-        // Also save to localStorage for non-logged-in persistence
-        localStorage.setItem('sqlquest_skill_mastery', JSON.stringify(userData.skillMastery));
+      // Restore the lesson-only skill counts (user_skill, 2026-09-12). A
+      // saved `skillMastery` in the OLD vocabulary is folded in once; one in
+      // the canonical vocabulary is the derived record and is rebuilt from
+      // attempts below, never re-read as input (that would double-count).
+      if (userData.lessonSkillStats && typeof userData.lessonSkillStats === 'object') {
+        setLessonSkillStats(userData.lessonSkillStats);
+        try { localStorage.setItem('sqlquest_lesson_skill_stats', JSON.stringify(userData.lessonSkillStats)); } catch (_) {}
+      } else if (userData.skillMastery && isLegacyMasteryRecord(userData.skillMastery)) {
+        const folded = buildUserSkill({ legacy: userData.skillMastery });
+        setLessonSkillStats(folded);
+        try { localStorage.setItem('sqlquest_lesson_skill_stats', JSON.stringify(folded)); } catch (_) {}
+      }
+      if (userData.errorPatterns && typeof userData.errorPatterns === 'object' && userData.errorPatterns.counts) {
+        setErrorPatterns(userData.errorPatterns);
+        try { localStorage.setItem('sqlquest_error_patterns', JSON.stringify(userData.errorPatterns)); } catch (_) {}
       }
       
       // (Boss Battle + Daily Workout hydration removed — their state hooks
@@ -19011,108 +19054,48 @@ Adapt based on this student's level — but ALWAYS stay direct and code-first:`;
   
   // Update skill mastery after an interaction
   const updateSkillMastery = (skillName, wasCorrect, usedHint = false) => {
-    // Map various topic names to canonical skill names
-    const skillMapping = {
-      'select': 'SELECT Basics',
-      'where': 'WHERE & Filtering',
-      'filter': 'WHERE & Filtering',
-      'order by': 'ORDER BY & LIMIT',
-      'limit': 'ORDER BY & LIMIT',
-      'count': 'Aggregation (COUNT, SUM, AVG)',
-      'sum': 'Aggregation (COUNT, SUM, AVG)',
-      'avg': 'Aggregation (COUNT, SUM, AVG)',
-      'average': 'Aggregation (COUNT, SUM, AVG)',
-      'aggregat': 'Aggregation (COUNT, SUM, AVG)',
-      'group by': 'GROUP BY',
-      'grouping': 'GROUP BY',
-      'having': 'HAVING',
-      'join': 'JOIN Tables',
-      'inner join': 'JOIN Tables',
-      'left join': 'JOIN Tables',
-      'subquer': 'Subqueries',
-      'nested': 'Subqueries',
-      'string': 'String Functions',
-      'concat': 'String Functions',
-      'substr': 'String Functions',
-      'date': 'Date Functions',
-      'strftime': 'Date Functions',
-      'time': 'Date Functions',
-      'case': 'CASE Statements',
-      'when': 'CASE Statements',
-      'window': 'Window Functions',
-      'over': 'Window Functions',
-      'partition': 'Window Functions',
-      'rank': 'Window Functions',
-      'row_number': 'Window Functions',
-      'cte': 'CTEs',
-      'with': 'CTEs',
-      'common table': 'CTEs',
-      'union': 'UNION & Set Operations',
-      'intersect': 'UNION & Set Operations',
-      'except': 'UNION & Set Operations'
-    };
-    
-    // Find the canonical skill name
-    let canonicalSkill = null;
-    const lowerSkill = (skillName || '').toLowerCase();
-    
-    // First try exact match
-    if (skillMastery[skillName]) {
-      canonicalSkill = skillName;
-    } else {
-      // Try mapping
-      for (const [keyword, skill] of Object.entries(skillMapping)) {
-        if (lowerSkill.includes(keyword)) {
-          canonicalSkill = skill;
-          break;
-        }
-      }
-    }
-    
-    if (!canonicalSkill || !skillMastery[canonicalSkill]) {
-      return;
-    }
-    
-    setSkillMastery(prev => {
-      const current = prev[canonicalSkill];
-      const newCorrect = current.correctCount + (wasCorrect ? 1 : 0);
-      const newAttempts = current.totalAttempts + 1;
-      const newHints = current.hintsUsed + (usedHint ? 1 : 0);
-      
-      // Calculate new level (1-5) based on success rate and attempts
-      const successRate = newAttempts > 0 ? newCorrect / newAttempts : 0;
-      let newLevel = current.level;
-      
-      if (newAttempts >= 3) {
-        if (successRate >= 0.9 && newAttempts >= 10) newLevel = 5;
-        else if (successRate >= 0.8 && newAttempts >= 7) newLevel = 4;
-        else if (successRate >= 0.7 && newAttempts >= 5) newLevel = 3;
-        else if (successRate >= 0.5 && newAttempts >= 3) newLevel = 2;
-        else newLevel = 1;
-        
-        // Reduce level if using too many hints
-        if (newHints > newAttempts * 0.5) {
-          newLevel = Math.max(1, newLevel - 1);
-        }
-      }
-      
+    // user_skill (2026-09-12): the lessons' part of the row, on the canonical
+    // nine. Challenge attempts feed the record on their own (the derive
+    // effect below); this only counts lesson exercises, which have no
+    // attempt row. Unknown topics are dropped, never invented.
+    const k = toCanonicalSkill(skillName);
+    if (!k) return;
+    setLessonSkillStats(prev => {
+      const cur = (prev && prev[k]) || { level: 1, mastery: 0, correctCount: 0, totalAttempts: 0, lastPracticed: null, hintsUsed: 0 };
       const updated = {
-        ...prev,
-        [canonicalSkill]: {
-          level: newLevel,
-          correctCount: newCorrect,
-          totalAttempts: newAttempts,
+        ...(prev || {}),
+        [k]: {
+          ...cur,
+          correctCount: (Number(cur.correctCount) || 0) + (wasCorrect ? 1 : 0),
+          totalAttempts: (Number(cur.totalAttempts) || 0) + 1,
+          hintsUsed: (Number(cur.hintsUsed) || 0) + (usedHint ? 1 : 0),
           lastPracticed: new Date().toISOString(),
-          hintsUsed: newHints
-        }
+        },
       };
-      
-      // Save to localStorage
-      localStorage.setItem('sqlquest_skill_mastery', JSON.stringify(updated));
-      
+      try { localStorage.setItem('sqlquest_lesson_skill_stats', JSON.stringify(updated)); } catch (_) {}
       return updated;
     });
   };
+
+  // The derived row — user_skill(tag, mastery, attempts, last_seen) — rebuilt
+  // whenever attempts, the radar or the lesson counts change. Written under
+  // the old storage key too, so nothing that reads it sees an empty table.
+  useEffect(() => {
+    try {
+      const next = buildUserSkill({
+        attempts: challengeAttempts,
+        skillLevels: weaknessTracking?.skillLevels || {},
+        allChallenges: challenges,
+        legacy: lessonSkillStats,
+      });
+      setSkillMastery(next);
+      localStorage.setItem('sqlquest_skill_mastery', JSON.stringify(next));
+    } catch (_) { /* a derived record must never break a render */ }
+  }, [challengeAttempts.length, weaknessTracking?.skillLevels, lessonSkillStats]);
+
+  useEffect(() => {
+    try { localStorage.setItem('sqlquest_error_patterns', JSON.stringify(errorPatterns)); } catch (_) {}
+  }, [errorPatterns]);
   
   // Get skill level for a topic (for display)
   const getSkillLevel = (skillName) => {
@@ -21988,6 +21971,67 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     openChallenge(drillQueue[nextIdx]);
   };
 
+  // The tutor knows the query, the diff, the habit and the deadline
+  // (2026-09-12, P1). Everything here is measured state, not inference: the
+  // just-failed diagnosis, their SQL as written, the user_skill rows for this
+  // challenge's skills, the error patterns of their last ten wrong submits
+  // (with a REPEAT line at three or more), and the goal with the days left to
+  // the date they gave us. Absent pieces are simply absent. Used by BOTH
+  // tutor doors on the challenge page — the "Get a hint" chain and the inline
+  // help panel — so the two never disagree about the student.
+  const buildChallengeTutorContext = (message, priorMessages, { includeDiagnosis = true } = {}) => {
+    const parts = [];
+    if (!currentChallenge) return { parts, hintRequestNumber: 1, ladderOn: false, bypassAsked: false };
+    if (includeDiagnosis && challengeDiagnosis) {
+      parts.push([
+        `JUST-FAILED SUBMIT DIAGNOSIS:`,
+        `- Kind: ${challengeDiagnosis.kind}`,
+        `- Issue: ${challengeDiagnosis.headline}`,
+        `- Detail: ${challengeDiagnosis.details}`,
+      ].join('\n'));
+    }
+    parts.push(`STUDENT'S CURRENT QUERY (exactly as written):\n${(challengeQuery || '').trim() || '(empty editor)'}`);
+    try {
+      const challengeSkills = [...new Set([...(currentChallenge.skills || []), currentChallenge.category].map(toCanonicalSkill).filter(Boolean))];
+      const rows = challengeSkills.map(s => {
+        const r = skillMastery && skillMastery[s];
+        return r ? `${s}: mastery ${r.mastery}/100, ${r.totalAttempts} attempts, ${r.correctCount} correct, last seen ${r.lastPracticed ? r.lastPracticed.slice(0, 10) : 'never'}` : `${s}: no data yet`;
+      });
+      if (rows.length > 0) parts.push(`MASTERY ON THIS CHALLENGE'S SKILLS:\n- ${rows.join('\n- ')}`);
+    } catch (_) {}
+    try {
+      const patternLines = describeErrorPatterns(errorPatterns, lastErrorPatternsRef.current || []);
+      if (patternLines.length > 0) parts.push(patternLines.join('\n'));
+    } catch (_) {}
+    try {
+      const goalName = coachState?.goalId ? ((window.coachGoals || []).find(g => g.id === coachState.goalId)?.name || coachState.goalId) : null;
+      const daysOutForTutor = daysUntil(prepTarget.date, Date.now());
+      const goalBits = [
+        goalName ? `Coach goal: ${goalName}` : null,
+        prepTarget.company ? `target company: ${prepTarget.company}` : null,
+        daysOutForTutor != null ? `${daysOutForTutor} day${daysOutForTutor === 1 ? '' : 's'} to their interview date` : null,
+      ].filter(Boolean);
+      if (goalBits.length > 0) parts.push(`GOAL AND DEADLINE: ${goalBits.join(' · ')}`);
+    } catch (_) {}
+    const hintRequestNumber = (priorMessages || []).filter(m => m && m.role === 'user').length + 1;
+    const ladderOn = ftbFlag('socraticLadder');
+    const bypassAsked = /\b(show|give|tell)\s+(me\s+)?(the\s+)?(full\s+|whole\s+|complete\s+)?(answer|solution|query)\b|\bjust tell me\b|cevab[ıi]|çözümü göster|çözümü ver/i.test(message || '');
+    return { parts, hintRequestNumber, ladderOn, bypassAsked };
+  };
+
+  // The ladder the inline panel follows under `socraticLadder` (P1): the
+  // same three rungs as the hint chain, in the panel's no-markdown voice.
+  const inlineLadderRules = ({ hintRequestNumber, bypassAsked }) => `HINT REQUEST NUMBER: ${hintRequestNumber}${bypassAsked ? ' (the student asked for the answer outright)' : ''}
+
+RULES:
+- NO markdown (no **, ##, backticks). Use CAPS for SQL keywords.
+- Speak to THEIR query: the first sentence names the clause that is wrong or missing and what it does instead of what the question asks. Never a generic lesson.
+- THE LADDER, by hint request number: request 1 = the specific defect and the concept that fixes it, no corrected SQL; request 2 = the exact clause to change, as one short SQL fragment; request 3 or later = the full corrected query, then one line on why it works.
+- BYPASS: if the student asks for the answer outright, give the full corrected query at once, then one line on why. Never make them ask twice.
+- If a REPEAT line is present above, open with it in one plain sentence, then continue the ladder.
+- Name what is specifically right in their query before what is wrong. No cheerleading.
+- Keep responses SHORT. 2-4 sentences plus at most one query. MAX 120 WORDS per response.`;
+
   // Inline AI hint for challenges - stays on the same page
   const getChallengeAiHint = async (followUpMessage) => {
     if (!currentUser || !currentChallenge || challengeAiLoading) return;
@@ -22035,6 +22079,12 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     if (showChallengeStructure) {
       contextParts.push(`NOTE: Student has already revealed the structure skeleton for this pattern. Don't re-explain the skeleton — build on it.`);
     }
+    // Shared with the inline help panel: query, diff, mastery rows, error
+    // patterns, goal and deadline, plus the ladder position (P1, 2026-09-12).
+    const tutorCtx = buildChallengeTutorContext(followUpMessage, challengeAiMessages, { includeDiagnosis: false });
+    contextParts.push(...tutorCtx.parts);
+    const { hintRequestNumber, ladderOn, bypassAsked } = tutorCtx;
+
 
     const systemPrompt = `You are an inline SQL hint assistant embedded in a coding challenge page. The student is working on a SQL challenge and is stuck.
 
@@ -22044,7 +22094,22 @@ Table: ${currentChallenge.table || currentChallenge.dataset || 'unknown'}
 ${currentChallenge.hint ? `Static hint already shown: "${currentChallenge.hint}"` : ''}
 
 ${contextParts.length > 0 ? `\n${contextParts.join('\n\n')}\n` : ''}
+${ladderOn ? `HINT REQUEST NUMBER: ${hintRequestNumber}${bypassAsked ? ' (the student asked for the answer outright)' : ''}
+
 CRITICAL RULES:
+1. Speak to THEIR query. Never open with a generic lesson: the first sentence names the clause in their SQL that is wrong (or missing) and what it does instead of what the question asks.
+2. THE LADDER, by hint request number — never skip ahead unless rule 3 applies:
+   - Request 1: the specific defect in their query, named at clause level, and the concept that fixes it. NO corrected SQL.
+   - Request 2: the exact change to make — the clause they need, as a short snippet in backticks. Not the whole query.
+   - Request 3 or later: the full corrected query in backticks, then ONE line on why it works.
+3. BYPASS: if the student asks for the answer outright (any request number), give the full corrected query at once, then one line on why. Never make them ask twice.
+4. If a REPEAT line is present above, open with it in one plain sentence ("This is the third time an INNER JOIN has dropped rows you needed") — then continue the ladder.
+5. Keep responses SHORT (2-4 sentences plus at most one snippet) - this is a small inline panel, not a full tutor
+6. If they have a syntax error, point out the exact syntax issue
+7. Format any SQL with \`backticks\` (not code blocks - keep it compact)
+8. Name what is specifically right in their query before what is wrong; no "great question", no cheerleading
+9. If STUDENT HISTORY shows they got stuck on a similar pattern before, reference it warmly
+10. If JUST-FAILED SUBMIT DIAGNOSIS is present, DON'T repeat it verbatim — interpret it against their query` : `CRITICAL RULES:
 1. NEVER reveal the full solution query
 2. Give progressive hints - start small, get more specific on follow-ups
 3. If they have a query, point out what's wrong WITHOUT fixing it for them
@@ -22059,7 +22124,8 @@ CRITICAL RULES:
 HINT PROGRESSION (based on conversation length):
 - First hint: Point them toward the RIGHT CONCEPT (e.g., "This is a GROUP BY problem" or "Think about using a subquery")
 - Second hint: Be more specific about the APPROACH (e.g., "You'll need to group by X and then filter with HAVING")
-- Third+ hint: Give a PARTIAL example showing the structure without the exact answer`;
+- Third+ hint: Give a PARTIAL example showing the structure without the exact answer
+11. If a REPEAT line is present above, say so once, plainly and kindly, and name the rule.`}`;
 
     const conversationHistory = [
       ...challengeAiMessages
@@ -22113,17 +22179,31 @@ HINT PROGRESSION (based on conversation length):
       ? `\n\nI can see you're working on "${challenge.title}". Ask me anything about your approach!`
       : `\n\nWorking on "${challenge.title}" — ask me a question when you need help!`;
 
-    setInlineAiMessages([{ role: 'assistant', content: explanation + contextNote }]);
+    // First message = a diagnosis of THEIR query, not a static lesson (P1,
+    // 2026-09-12, `socraticLadder`): the diff engine's headline, the one hint
+    // chosen for their SQL, and what the next two asks will give them. Free
+    // and instant — no AI call to open the panel. Flag off, or no diagnosis
+    // yet: the topic explanation, as before.
+    const diagnosisOpener = ftbFlag('socraticLadder') && challengeDiagnosis
+      ? (() => {
+          const one = primaryHint(challengeDiagnosis, { query: userQuery, description: challenge?.description });
+          return `${challengeDiagnosis.headline}. ${one || challengeDiagnosis.details || ''}`.trim()
+            + `\n\nAsk me for the next step and I'll name the exact clause to change. Ask for the answer and you'll get the full query.`;
+        })()
+      : null;
+    setInlineAiMessages([{ role: 'assistant', content: diagnosisOpener || (explanation + contextNote) }]);
     setInlineAiInput('');
     setInlineAiLoading(false);
     setShowInlineAiHelp(true);
+    trackActivationEvent('inline_help_opened', { challengeId: challenge?.id ?? null, opener: diagnosisOpener ? 'diagnosis' : 'topic', hasDiagnosis: !!challengeDiagnosis });
   };
 
   // Send a follow-up message in the inline AI help panel
-  const sendInlineAiMessage = async () => {
-    if (!inlineAiInput.trim() || inlineAiLoading || !currentChallenge) return;
+  const sendInlineAiMessage = async (forcedMessage = null) => {
+    const typed = typeof forcedMessage === 'string' ? forcedMessage : inlineAiInput;
+    if (!typed.trim() || inlineAiLoading || !currentChallenge) return;
 
-    const userMessage = inlineAiInput.trim();
+    const userMessage = typed.trim();
     setInlineAiInput('');
     setInlineAiMessages(prev => [...prev, { role: 'user', content: userMessage }]);
     setInlineAiLoading(true);
@@ -22131,6 +22211,9 @@ HINT PROGRESSION (based on conversation length):
     // Build context-aware system prompt
     const topicKey = getTopicForChallenge(currentChallenge);
     const topicData = topicKey ? TOPIC_EXPLANATIONS[topicKey] : null;
+    // P1 (2026-09-12): diagnosis, query, mastery, error patterns, deadline — the
+    // same context the hint chain carries — and the ladder under its flag.
+    const inlineCtx = buildChallengeTutorContext(userMessage, inlineAiMessages);
 
     const systemPrompt = `You are a sharp SQL tutor helping with a specific challenge. Direct, code-first, no filler.
 
@@ -22142,14 +22225,15 @@ DIFFICULTY: ${currentChallenge.difficulty}
 HINT: ${currentChallenge.hint || 'none'}
 ${topicData ? `\nRELEVANT CONCEPT: ${topicData.title}` : ''}
 ${challengeQuery ? `\nSTUDENT'S CURRENT QUERY:\n${challengeQuery}` : ''}
-
-RULES:
+${inlineCtx.parts.length > 0 ? `\n${inlineCtx.parts.join('\n\n')}\n` : ''}
+${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
 - NO markdown (no **, ##, backticks). Use CAPS for SQL keywords.
 - Do NOT give the full solution. Guide them to discover it.
 - If their query has an error, name the specific mistake and hint at the fix.
+- If a REPEAT line is present above, say so once, plainly and kindly, and name the rule.
 - Keep responses SHORT. 2-4 sentences max. One concept at a time.
 - If they're close, say so. If they're way off, redirect to the right approach.
-- MAX 80 WORDS per response.`;
+- MAX 80 WORDS per response.`}`;
 
     // Build conversation history
     const history = [...inlineAiMessages, { role: 'user', content: userMessage }]
@@ -22304,9 +22388,31 @@ RULES:
         // order — see compareChallengeCurriculumOrder. Raw order sent every
         // Medium solver to challenge 1.
         const isOpenNext = c => !solvedChallenges.has(c.id) && c.id !== currentChallenge.id;
-        const rec = pickNextChallenge(challenges, c => isOpenNext(c) && c.difficulty === currentChallenge.difficulty)
+        // Weakest skill, one step up (2026-09-12, P1) — behind `weakSkillNext`.
+        // The pick reads the user_skill rows and the curriculum comparator;
+        // flag off, the strip recommends exactly what it recommended.
+        const weakPick = ftbFlag('weakSkillNext')
+          ? (() => {
+              try {
+                return pickNextBySkill({
+                  userSkill: skillMastery,
+                  allChallenges: challenges,
+                  attempts: challengeAttempts,
+                  solved: solvedChallenges,
+                  excludeId: currentChallenge.id,
+                  comparator: makeChallengeComparator(SQL_ROADMAP_CHALLENGE_ORDER),
+                  isLocked: c => isContentLocked('challenge', c),
+                });
+              } catch (_) { return null; }
+            })()
+          : null;
+        const rec = (weakPick && weakPick.challenge)
+          || pickNextChallenge(challenges, c => isOpenNext(c) && c.difficulty === currentChallenge.difficulty)
           || pickNextChallenge(challenges, isOpenNext);
         setNextChallengeRec(rec || null);
+        setNextChallengeRecMeta(weakPick && weakPick.challenge
+          ? { source: 'weak_skill', skill: weakPick.skill, mastery: weakPick.mastery, reason: weakPick.reason }
+          : (rec ? { source: 'curriculum', skill: null, mastery: null, reason: null } : null));
         // Never Give Up - succeed on a challenge you previously failed
         const previousFail = challengeAttempts.some(a => a.challengeId === currentChallenge.id && !a.success);
         if (previousFail && !unlockedAchievements.has('try_again')) unlockAchievement('try_again');
@@ -22581,6 +22687,22 @@ RULES:
           liveDiagnosis = diagnoseResult(userShape, expectedShape);
           setChallengeDiagnosis(liveDiagnosis);
           setDiagnosisCollapsed(false); // expand fresh diagnosis so user sees it
+          // Error patterns (2026-09-12, P1): name the habit behind this wrong
+          // submit and remember it, so the tutor can say "third time".
+          try {
+            const patterns = classifyErrorPatterns(liveDiagnosis, challengeQuery, currentChallenge);
+            lastErrorPatternsRef.current = patterns;
+            if (patterns.length > 0) {
+              setErrorPatterns(prev => recordErrorPatterns(prev, patterns, currentChallenge.id));
+              trackActivationEvent('challenge_error_pattern', {
+                challengeId: currentChallenge.id,
+                kind: liveDiagnosis.kind,
+                primary: patterns[0],
+                patterns,
+                repeat: patternCount(errorPatterns, patterns[0]) + 1,
+              });
+            }
+          } catch (_) { /* never block the wrong path */ }
         } catch (diagErr) {
           // Diagnostic should never throw, but if it does we fall back to
           // the existing generic "wrong" status so the submit still works.
@@ -22683,8 +22805,18 @@ RULES:
       // Surface the SQL error through the diagnostic layer so users get
       // translated, actionable guidance instead of raw SQLite error text.
       try {
-        setChallengeDiagnosis(diagnoseResult(null, null, err.message));
+        const errDiagnosis = diagnoseResult(null, null, err.message);
+        setChallengeDiagnosis(errDiagnosis);
         setDiagnosisCollapsed(false); // expand fresh diagnosis so user sees it
+        // Error patterns (P1): a query that did not run is a habit too.
+        try {
+          const patterns = classifyErrorPatterns(errDiagnosis, challengeQuery, currentChallenge);
+          lastErrorPatternsRef.current = patterns;
+          if (patterns.length > 0 && currentChallenge) {
+            setErrorPatterns(prev => recordErrorPatterns(prev, patterns, currentChallenge.id));
+            trackActivationEvent('challenge_error_pattern', { challengeId: currentChallenge.id, kind: 'runtime_error', primary: patterns[0], patterns, repeat: patternCount(errorPatterns, patterns[0]) + 1 });
+          }
+        } catch (_) {}
       } catch (diagErr) {
         console.warn('Diagnostic failed in error path:', diagErr);
         setChallengeDiagnosis(null);
@@ -22774,6 +22906,9 @@ RULES:
         const tags = lookup ? lookup[String(c.id)] : null;
         return Array.isArray(tags) && tags.includes(sectorFilter);
       })
+      // Skill filter (2026-09-12, P1): one of the nine canonical skills,
+      // resolved through the same tag mapping the radar and the drills use.
+      .filter(c => !skillFilter || challengeMatchesSkill(c, skillFilter))
       .filter(c => {
         // Free-text search — case-insensitive, matches id, title, description,
         // skills, category. Whitespace-trimmed; empty string disables filter.
@@ -31380,7 +31515,11 @@ RULES:
                 <div className="mt-5 rounded-lg border border-cyan-500/20 bg-cyan-500/10 p-3">
                   <p className="text-xs font-bold uppercase tracking-wider text-cyan-300">Why this matters</p>
                   <p className="mt-1 text-xs leading-relaxed text-gray-300">
-                    Start with one pattern: choose columns, choose a table, keep the result small.
+                    {getUserIntent() === 'interview'
+                      ? 'Interviewers watch the first query: choose the columns the question names, the right table, and a small result you can explain. That habit is what they score.'
+                      : getUserIntent() === 'job_ready'
+                        ? 'On the job, the first query is never the analysis. It is the check: the right columns, the right table, a small result you can trust before you build on it.'
+                        : 'Start with one pattern: choose columns, choose a table, keep the result small.'}
                   </p>
                 </div>
               </div>
@@ -34543,9 +34682,9 @@ RULES:
                           >
                             <span>{moreFiltersOpen ? '▼' : '▶'}</span>
                             <span>{moreFiltersOpen ? tPractice('moreFiltersHide') : tPractice('moreFilters')}</span>
-                            {!moreFiltersOpen && (companyFilter || sectorFilter) && (
+                            {!moreFiltersOpen && (companyFilter || sectorFilter || skillFilter) && (
                               <span className="bg-orange-500/20 text-orange-300 px-1.5 py-0.5 rounded-full text-[10px] ml-1">
-                                {[companyFilter, sectorFilter].filter(Boolean).length}
+                                {[companyFilter, sectorFilter, skillFilter].filter(Boolean).length}
                               </span>
                             )}
                           </button>
@@ -34576,6 +34715,37 @@ RULES:
                                           className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${companyFilter === co ? 'bg-blue-500 text-[#F2F0EA]' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
                                         >
                                           {co} <span className="opacity-60">({counts[co] || 0})</span>
+                                        </button>
+                                      ))}
+                                    </>
+                                  );
+                                })()}
+                              </div>
+
+                              {/* Skill sub-filter (2026-09-12, P1): the nine canonical
+                                  skills, counts from the live bank through the same
+                                  tag mapping the radar uses. */}
+                              <div className="flex flex-wrap gap-2 items-center" data-testid="skill-filter">
+                                <span className="text-xs text-gray-500 self-center mr-1 w-16">🎯 {tPractice('skill')}:</span>
+                                {(() => {
+                                  const counts = {};
+                                  for (const s of CANONICAL_SKILLS) counts[s] = challenges.filter(c => challengeMatchesSkill(c, s)).length;
+                                  return (
+                                    <>
+                                      <button
+                                        onClick={() => setSkillFilter(null)}
+                                        className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${!skillFilter ? 'bg-blue-500 text-[#F2F0EA]' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
+                                      >
+                                        {tPractice('all')}
+                                      </button>
+                                      {CANONICAL_SKILLS.map(s => (
+                                        <button
+                                          key={s}
+                                          onClick={() => setSkillFilter(skillFilter === s ? null : s)}
+                                          title={skillMastery?.[s] ? `Mastery ${skillMastery[s].mastery}/100 · ${skillMastery[s].totalAttempts} attempts` : undefined}
+                                          className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${skillFilter === s ? 'bg-blue-500 text-[#F2F0EA]' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
+                                        >
+                                          {s} <span className="opacity-60">({counts[s] || 0})</span>
                                         </button>
                                       ))}
                                     </>
@@ -34688,6 +34858,15 @@ RULES:
                               >
                                 {tPractice('company')}: {companyFilter}
                                 <span className="text-blue-400">✕</span>
+                              </button>
+                            )}
+                            {skillFilter && (
+                              <button
+                                onClick={() => setSkillFilter(null)}
+                                className="px-2 py-1 rounded-md bg-teal-500/20 border border-teal-500/40 text-teal-200 text-xs font-medium hover:bg-teal-500/30 transition-all flex items-center gap-1"
+                              >
+                                {tPractice('skill')}: {skillFilter}
+                                <span className="text-teal-400">✕</span>
                               </button>
                             )}
                             {sectorFilter && (() => {
@@ -35654,7 +35833,11 @@ RULES:
                           <Target className="text-red-500" size={24} />
                           <div>
                             <p className="font-bold text-red-400">{i18n_t('practice', 'wrongTitle')}</p>
-                            <p className="text-sm text-gray-400">{i18n_t('practice', 'wrongDesc')}</p>
+                            {/* One sentence that says WHAT is wrong, not "Try again!"
+                                (2026-09-12, P1, behind `diagnosisHints`). */}
+                            <p className="text-sm text-gray-400" data-testid="wrong-desc">
+                              {ftbFlag('diagnosisHints') && challengeDiagnosis ? diagnosisShort(challengeDiagnosis) : i18n_t('practice', 'wrongDesc')}
+                            </p>
                           </div>
                         </div>
                       )}
@@ -35749,7 +35932,19 @@ RULES:
                           {diagnosisCollapsed ? '▼' : '▲'}
                         </span>
                       </button>
-                      {!diagnosisCollapsed && challengeDiagnosis.hints && challengeDiagnosis.hints.length > 0 && (
+                      {/* One hint, chosen for this diagnosis and this query
+                          (2026-09-12, P1, `diagnosisHints`); the three-item
+                          list stays for the flag-off arm and for the tutor. */}
+                      {!diagnosisCollapsed && ftbFlag('diagnosisHints') && (() => {
+                        const one = primaryHint(challengeDiagnosis, { query: challengeQuery, description: currentChallenge?.description });
+                        return one ? (
+                          <p className="mt-3 pl-8 text-xs text-orange-200 flex items-start gap-2" data-testid="primary-hint">
+                            <span className="text-orange-400 mt-0.5">💡</span>
+                            <span>{one}</span>
+                          </p>
+                        ) : null;
+                      })()}
+                      {!diagnosisCollapsed && !ftbFlag('diagnosisHints') && challengeDiagnosis.hints && challengeDiagnosis.hints.length > 0 && (
                         <ul className="mt-3 space-y-1 pl-8">
                           {challengeDiagnosis.hints.map((hint, idx) => (
                             <li key={idx} className="text-xs text-orange-200 flex items-start gap-2">
@@ -36076,8 +36271,20 @@ RULES:
                           className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-sm text-[#F2F0EA] placeholder-gray-500 focus:outline-none focus:border-purple-500"
                           disabled={inlineAiLoading}
                         />
+                        {ftbFlag('socraticLadder') && (
+                          <button
+                            type="button"
+                            data-testid="tutor-bypass"
+                            onClick={() => { trackActivationEvent('tutor_bypass_clicked', { challengeId: currentChallenge?.id ?? null }); sendInlineAiMessage('Show me the full solution and one line on why it works.'); }}
+                            disabled={inlineAiLoading}
+                            className="px-3 py-2 rounded-lg text-xs font-medium text-gray-300 border border-gray-600 hover:border-gray-400 disabled:opacity-50 whitespace-nowrap"
+                            title="Skip the hints and see the answer"
+                          >
+                            Show me the answer
+                          </button>
+                        )}
                         <button
-                          onClick={sendInlineAiMessage}
+                          onClick={() => sendInlineAiMessage()}
                           disabled={inlineAiLoading || !inlineAiInput.trim()}
                           className="px-4 py-2 bg-purple-600 hover:bg-purple-500 disabled:bg-gray-700 disabled:text-gray-500 rounded-lg text-sm font-bold text-[#F2F0EA] transition-all"
                         >
@@ -36094,13 +36301,28 @@ RULES:
                       <div className="flex items-center justify-between gap-3">
                         <div className="min-w-0">
                           <p className="font-bold text-[#F2F0EA] text-sm truncate">{nextChallengeRec.title}</p>
+                          {/* Why this one (P1 picker, `weakSkillNext`): the weakest skill, one step up. */}
+                          {nextChallengeRecMeta?.source === 'weak_skill' && (
+                            <p className="text-[11px] text-teal-300/80 mt-0.5" data-testid="next-rec-why">
+                              Weakest skill · {nextChallengeRecMeta.skill} ({nextChallengeRecMeta.mastery}/100) · {nextChallengeRecMeta.reason === 'one_up' ? 'one step up' : 'at your level'}
+                            </p>
+                          )}
                           <div className="flex items-center gap-2 mt-1">
                             <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${nextChallengeRec.difficulty === 'Hard' ? 'bg-red-500/20 text-red-400' : nextChallengeRec.difficulty === 'Medium' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-green-500/20 text-green-400'}`}>{nextChallengeRec.difficulty}</span>
                             <span className="text-xs text-gray-500">+{nextChallengeRec.xpReward} XP</span>
                           </div>
                         </div>
                         <button
-                          onClick={() => { openChallenge(nextChallengeRec); setNextChallengeRec(null); }}
+                          onClick={() => {
+                            trackActivationEvent('next_rec_started', {
+                              challengeId: nextChallengeRec.id,
+                              difficulty: nextChallengeRec.difficulty,
+                              source: nextChallengeRecMeta?.source || 'curriculum',
+                              skill: nextChallengeRecMeta?.skill || null,
+                            });
+                            openChallenge(nextChallengeRec);
+                            setNextChallengeRec(null);
+                          }}
                           className="flex-shrink-0 px-4 py-2 bg-teal-600 hover:bg-teal-500 rounded-lg text-xs font-bold text-[#F2F0EA] transition-all whitespace-nowrap"
                         >
                           Start →

@@ -178,6 +178,40 @@ export function diagnoseResult(user, expected, userError = null) {
       };
     }
 
+    // 7b. Row set — same count, same columns, but not these rows (2026-09-12,
+    // the founder's P1 "row-set comparison": extra, missing, order and value
+    // differences reported SEPARATELY). Before this, a WHERE that kept the
+    // right number of the wrong rows was reported as "rows have wrong
+    // values" — a value problem, when the problem was which rows. The rule:
+    // when at least half of the differing positions differ in EVERY column,
+    // the rows are different rows, not the same rows with wrong cells.
+    {
+      const positional = findAllDifferingRows(user.rows, expected.rows);
+      const wholeRow = positional.filter(d => d.diffCols.every(Boolean)).length;
+      if (positional.length > 0 && wholeRow * 2 >= positional.length && user.columns.length > 1) {
+        const { extraRows, missingRows } = diffRowsAsMultisets(user.rows, expected.rows);
+        if (extraRows.length > 0 && missingRows.length > 0) {
+          return {
+            kind: 'row_set',
+            headline: `Right number of rows, but ${extraRows.length === 1 ? 'one of them is' : `${extraRows.length} of them are`} the wrong rows`,
+            details: `${extraRows.length} row${extraRows.length === 1 ? '' : 's'} you returned should not be there, and ${missingRows.length} row${missingRows.length === 1 ? ' that' : 's that'} should be ${missingRows.length === 1 ? 'is' : 'are'} missing. The count matched by coincidence — check which rows your WHERE / JOIN keeps and which it drops.`,
+            hints: [
+              'Compare one extra row with one missing row: what condition separates them? That is the clause to fix.',
+              'If you used INNER JOIN, a LEFT JOIN may keep the rows you are missing; if you used LEFT JOIN, the extra rows may be the unmatched ones.',
+              'Re-read the filter in the question — "active", "last month", "at least" — and check each condition against the extra rows.',
+            ],
+            preview: {
+              extraRows: extraRows.slice(0, 5),
+              extraTotal: extraRows.length,
+              missingRows: missingRows.slice(0, 5),
+              missingTotal: missingRows.length,
+              columns: user.columns,
+            },
+          };
+        }
+      }
+    }
+
     // 8. NULL mismatch — user has NULL where expected has a value (or vice versa)
     let nullMismatchCount = 0;
     let nonNullMismatchCount = 0;
@@ -465,6 +499,73 @@ function sqlErrorHints(error) {
 export function diagnosisShort(diagnosis) {
   if (!diagnosis) return '';
   return diagnosis.headline;
+}
+
+/**
+ * ONE hint, chosen for this diagnosis and this query (2026-09-12, the
+ * founder's P1: "remove the fixed hint list; one hint per diagnosis type").
+ * The three-item lists above stay as the tutor's material; the student sees
+ * the one line that fits what they wrote. Rules, not a model — each branch
+ * names the clause it is about, so the hint can be checked against the query.
+ *
+ * @param {object} diagnosis  diagnoseResult() output
+ * @param {{query?: string, description?: string}} ctx
+ * @returns {string|null}
+ */
+export function primaryHint(diagnosis, ctx = {}) {
+  if (!diagnosis || !diagnosis.kind) return null;
+  const q = String((ctx && ctx.query) || '').replace(/--.*$/gm, ' ').replace(/\s+/g, ' ').toLowerCase();
+  const desc = String((ctx && ctx.description) || '').toLowerCase();
+  const hints = Array.isArray(diagnosis.hints) ? diagnosis.hints : [];
+  const hasAgg = /\b(count|sum|avg|min|max)\s*\(/.test(q);
+  const hasGroupBy = /\bgroup\s+by\b/.test(q);
+  const hasJoin = /\bjoin\b/.test(q);
+  const hasOn = /\bon\b/.test(q) || /\busing\s*\(/.test(q);
+  const hasLeft = /\b(left|right|full)\s+(outer\s+)?join\b/.test(q);
+  const hasWhere = /\bwhere\b/.test(q);
+  const eqNull = /(=|<>|!=)\s*null\b/.test(q);
+  const asksPer = /\b(per|each|every)\b/.test(desc);
+  const sortAsk = /\b(sort|order)(ed)?\s+(them\s+)?by\s+([a-z_ ]+?)(?:[,.]|\s+(?:asc|desc|descending|ascending|and|then)\b|$)/.exec(desc);
+
+  switch (diagnosis.kind) {
+    case 'runtime_error':
+      return hints[0] || 'Read the error message: it names the token or table the database could not resolve.';
+    case 'empty_result':
+      if (eqNull) return 'WHERE column = NULL is never true. Use IS NULL / IS NOT NULL.';
+      if (hasJoin && !hasLeft) return 'An INNER JOIN with no matches returns nothing — check the join keys, or try LEFT JOIN.';
+      if (hasWhere) return 'Your WHERE removed every row. Run the query without it and add the conditions back one at a time.';
+      return hints[0] || 'Run SELECT * on the table first and check the values you are filtering on.';
+    case 'column_count':
+      return hints[0] || 'Return exactly the columns the question lists, in that order — nothing extra.';
+    case 'column_name':
+      return hints[0] || 'Name the output columns with AS to match the expected headers exactly.';
+    case 'row_count': {
+      const extra = /extra row/i.test(diagnosis.details || '');
+      if (extra) {
+        if (hasJoin && !hasOn) return 'Your JOIN has no ON clause, so every row matched every row. Add ON a.key = b.key.';
+        if (hasAgg && !hasGroupBy) return 'You aggregate but never GROUP BY — add GROUP BY the column the question asks "per".';
+        if (asksPer && !hasGroupBy) return 'The question asks for one row per group — add GROUP BY that column.';
+        return 'You returned too many rows: add the condition the question states, or DISTINCT if duplicates are the extra ones.';
+      }
+      if (eqNull) return 'WHERE column = NULL drops every row with a NULL. Use IS NULL.';
+      if (hasJoin && !hasLeft) return 'Rows without a match vanish in an INNER JOIN — use LEFT JOIN to keep them.';
+      return 'You are missing rows: one of your WHERE / HAVING conditions is stricter than the question.';
+    }
+    case 'row_set':
+      return hints[0];
+    case 'sort_order':
+      return sortAsk ? `Add ORDER BY ${sortAsk[4].trim()} — the question says how to sort, and the grader checks it.` : (hints[0] || 'Add the ORDER BY the question describes; the grader is strict about order.');
+    case 'null_mismatch':
+      return hints[0] || 'Wrap the column in COALESCE(column, 0) where the question wants NULL treated as a value.';
+    case 'cell_values':
+      if (/integer division/i.test((diagnosis.details || '') + ' ' + (hints[0] || ''))) return hints[0];
+      if (/\bavg\s*\(/.test(q)) return 'AVG() skips NULLs — if the question counts them as 0, use SUM(x) / COUNT(*).';
+      if (/\bround\s*\(/.test(q)) return 'Check the ROUND precision the question asks for — ROUND(x, 1) and ROUND(x, 2) are different answers.';
+      if (/\bcase\b/.test(q)) return 'One CASE branch is off — compare a highlighted row above with the condition that should have caught it.';
+      return hints[0] || 'Compare one highlighted row with its expected value: the difference tells you which expression is wrong.';
+    default:
+      return hints[0] || null;
+  }
 }
 
 export default diagnoseResult;

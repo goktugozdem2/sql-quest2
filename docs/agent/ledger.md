@@ -27,6 +27,110 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### the wrong-answer panel says what is wrong, and one hint (P1 diff engine)
+
+- **Claimed** 2026-09-12 · **Flips** 2026-09-30 by scheduled task, after the
+  cold-start read (09-29) is written — the panel is the solve surface that
+  read measures · **Read** 2026-10-21 (flip + 21 days).
+- **Change** behind `diagnosisHints` (off): on a wrong submit the panel's
+  second line is the diff engine's sentence ("Wrong number of rows —
+  expected 12, got 30") instead of "Your output doesn't match the expected
+  result. Try again!", and the diagnosis block shows ONE hint chosen for the
+  diagnosis kind and the query as written (`primaryHint` in
+  src/utils/diagnose.js: a missing GROUP BY when the query aggregates without
+  one, a LEFT JOIN when rows are missing behind an INNER JOIN, `IS NULL`
+  when the query says `= NULL`, the ORDER BY column lifted from the
+  description) instead of the fixed three. Live regardless of the flag: the
+  new `row_set` diagnosis kind — right count, wrong rows, reported as extra
+  and missing rows rather than as "wrong values".
+- **Why** the founder's P1 list: "remove the fixed hint list; one hint per
+  diagnosis type; 'Try again!' → a diagnosis sentence". The engine already
+  knew what was wrong; the panel told the student to try again.
+- **Metric** `hint_to_solve` (docs/agent/metrics.md): of people who get a
+  wrong submit on a challenge, the share who solve THAT challenge within the
+  same session, split by the flag; secondary: wrong submits per eventual
+  solve. Baseline read at the flip over the prior 21 days.
+- **Target** wrong→solve same session up ≥ 5 points at n ≥ 300 wrong-submit
+  people; never a drop in first-contact solve (the cold-start guardrail).
+- **Falsification, stated in advance:** wrong→solve flat or down at n ≥ 300
+  → the sentence was not the constraint; keep the row_set kind, revert the
+  panel to the list, and read which diagnosis kinds stall. n < 300 by 10-21
+  → extend to 11-11.
+- **Confounds** the tutor ladder and the weak-skill picker flip the same
+  day on different surfaces; a wrong submit that opens the tutor is read
+  under the ladder claim, not here (split on `inline_help_opened` /
+  `tutor_bypass_clicked`).
+- **Verdict** _pending_
+
+### the tutor speaks to the query, climbs a ladder, and remembers the habit (P1 tutor)
+
+- **Claimed** 2026-09-12 · **Flips** 2026-09-30 with the panel claim ·
+  **Read** 2026-10-21. Live from 2026-09-12 regardless of the flag: the
+  enriched context (both tutor doors carry the student's query as written,
+  the just-failed diagnosis, user_skill rows for the challenge's skills,
+  the error patterns of the last ten wrong submits with a REPEAT line at
+  three or more, the Coach goal and days to the interview date), and error-
+  pattern recording (`challenge_error_pattern {kind, primary, patterns,
+  repeat}`; store `userData.errorPatterns`; src/utils/error-patterns.js).
+- **Change** behind `socraticLadder` (off): the inline help panel opens on a
+  diagnosis of THEIR query (the diff sentence plus the one hint) instead of
+  the static topic explanation; both doors follow a ladder — request 1 names
+  the defect at clause level, request 2 gives the exact clause, request 3+
+  the full corrected query with one line on why; asking for the answer
+  outright bypasses the ladder, and a "Show me the answer" button does the
+  asking. Flag off, the tutor never reveals the solution, as today.
+- **Why** the founder's P1 list, and the measured state of the doors: the
+  panel users actually see opened with `TOPIC_EXPLANATIONS[topic]` — the
+  same paragraph for everyone on that topic — and the hint chain's prompt
+  carried no query, no mastery and no history of mistakes. "This is the
+  third time" was impossible: nothing counted.
+- **Metric** `tutor_ladder` (metrics.md): of people who open the inline
+  panel on a challenge (`inline_help_opened`), the share who solve it in
+  the session, split by flag and by `opener`; bypass rate
+  (`tutor_bypass_clicked` ÷ opens); REPEAT lines shown (people whose
+  `challenge_error_pattern.repeat ≥ 3`).
+- **Baseline** read at the flip over the prior 21 days: panel opens, solves
+  after open. `challenge_error_pattern` is born 2026-09-12.
+- **Target** open→solve same session ≥ 55% under the ladder (baseline TBD
+  at flip); bypass ≤ 40% of opens.
+- **Falsification, stated in advance:** open→solve under the ladder below
+  the no-ladder arm at n ≥ 80 opens → the ladder gives away too much or too
+  little; read bypass rate to tell which, then move rung 3 to rung 4 (too
+  much) or rung 2's snippet to rung 1 (too little). Bypass > 60% → the
+  first two rungs are not worth asking for; make rung 2 the opener.
+- **Confounds** the free AI cap (20/day) — a person who hits it mid-ladder
+  is read as unresolved; exclude `rate_limit` shows. The live nudge
+  (`live_nudge` mode) also carries the REPEAT line from 09-12.
+- **Verdict** _pending_
+
+### the next quest is the weakest skill, one step up (P1 picker)
+
+- **Claimed** 2026-09-12 · **Flips** 2026-09-30 with the panel claim ·
+  **Read** 2026-10-21.
+- **Change** behind `weakSkillNext` (off): after a solve, the "Next quest"
+  strip recommends a challenge on the person's WEAKEST canonical skill (by
+  the user_skill mastery row), one difficulty above the highest they have
+  solved on that skill (Easy if none; Hard only once mastery ≥ 50), in
+  curriculum order — `pickNextBySkill` in src/utils/user-skill.js, never
+  raw id order. The strip says why ("Weakest skill · Joins (42/100) · one
+  step up"); `next_rec_started {source, skill}` on the click. Flag off, the
+  strip picks curriculum-next at the same difficulty, as today.
+- **Why** the founder's P1 list. Today's pick ignores the radar entirely.
+- **Metric** `next_rec_take` (metrics.md): clicks on the strip ÷ solves
+  that showed it, and solve rate of the recommended challenge within the
+  session, split by `source`.
+- **Baseline** `next_rec_started` is born 2026-09-12; the strip's take
+  rate before the flip is read from it over 09-12 → 09-30.
+- **Target** take rate ≥ the curriculum arm at n ≥ 200 strips shown, with
+  the recommended solve rate ≥ 60%.
+- **Falsification, stated in advance:** recommended solve rate < 45% → "one
+  step up" is a cliff; drop the tier to same-as-highest-solved and re-read.
+  Take rate < 70% of the curriculum arm → people do not want the weakest
+  skill after a win; revert and keep the picker for the Coach's drill only.
+- **Confounds** the intent-routing read (10-13) reads reach-6 over the same
+  weeks; this moves what the second solve is. Noted on that entry.
+- **Verdict** _pending_
+
 ### company sets: three free, then Pro (free-tier boundary M1)
 
 - **Claimed** 2026-09-12 · **Flips** 2026-10-14 by scheduled task — after the
