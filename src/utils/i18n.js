@@ -55,6 +55,7 @@ const TRANSLATIONS = {
     // Top navigation tabs + the row of utility buttons (Daily/WarmUp/etc.)
     nav: {
       coach: 'Coach', practice: 'Practice', interview: 'Interview',
+      interviewSub: 'Timed mock interviews, by company',
       board: 'Board', profile: 'Profile',
       daily: 'Daily', dailyDone: 'Done',
       warmup: 'Warm Up', weekly: 'Weekly',
@@ -959,6 +960,7 @@ const TRANSLATIONS = {
 
     nav: {
       coach: 'Koç', practice: 'Pratik', interview: 'Mülakat',
+      interviewSub: 'Şirkete göre süreli deneme mülakatları',
       board: 'Skor', profile: 'Profil',
       daily: 'Günlük', dailyDone: 'Bitti',
       warmup: 'Isınma', weekly: 'Haftalık',

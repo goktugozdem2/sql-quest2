@@ -1921,3 +1921,61 @@ Traps:
   The 32 are the 30 weekly archive permalinks plus the app shell; the 11 are
   the `.html` → directory redirects. Neither is a defect and both will be there
   at every read.
+
+## `interview_reach`
+
+Of the people who solve at least one challenge in the window, how many reach
+the Interview Prep tab, and what they do there. Three events, born at the
+`intentRouting` flip — date the birth by the flip time recorded in the ledger
+claim "intent routing: a handle on the interview door", never by
+`min(created_at)`:
+
+| event | when it fires |
+|---|---|
+| `interview_tab_viewed` | once per user per day on the first mount of the Interview tab; carries `entry` (`nav` / `deeplink` / `onboarding` / `guest_shell` / `unknown`), `reason` (`history` / `intent` / `goal` / `company` / null — why the nav entry was showing), `intent`, `solvedCount`, `hasHistory` |
+| `interview_started` | a mock starts or resumes, AFTER the Pro check; carries `interviewId`, `company`, `difficulty`, `isFree`, `resumed` |
+| `interview_completed` | the last question is answered; carries `interviewId`, `company`, `passed`, `percentage`, `questions`, `retry` |
+
+The locked-mock collision is not one of these: it is `content_lock_reached`
+with `surface='interview'`, and it carried `interviewId` before 2026-09-12.
+
+```sql
+WITH ev AS (
+  SELECT COALESCE(((metadata #>> '{}')::jsonb)->>'aid', username) AS pid, event,
+         ((metadata #>> '{}')::jsonb)->>'entry'       AS entry,
+         ((metadata #>> '{}')::jsonb)->>'reason'      AS reason,
+         ((metadata #>> '{}')::jsonb)->>'intent'      AS intent,
+         ((metadata #>> '{}')::jsonb)->>'interviewId' AS interview_id
+  FROM pro_events
+  WHERE created_at >= :flip_time            -- never earlier than the flip
+    AND event IN ('interview_tab_viewed','interview_started','interview_completed')
+    AND <shared filters>
+)
+SELECT count(DISTINCT pid) FILTER (WHERE event='interview_tab_viewed')                   AS reached_tab,
+       count(DISTINCT pid) FILTER (WHERE event='interview_tab_viewed' AND entry='nav')   AS reached_via_nav,
+       count(DISTINCT pid) FILTER (WHERE event='interview_started')                      AS started_a_mock,
+       count(DISTINCT pid) FILTER (WHERE event='interview_completed')                    AS finished_a_mock
+FROM ev;
+```
+
+Denominator for a rate: people with `intent_captured` in `interview` /
+`job_ready` in the same window (the routed arm). `learning` is the control and
+should read near zero here, because the tab is not shown to them.
+
+Traps, stated before the first read:
+
+- **`entry='unknown'` is a real bucket**, not a bug. Any `setActiveTab('trials')`
+  the four tagged sites do not cover (a last-activity resume, for one) lands
+  there. If it dominates, find the site before reading `nav`.
+- **The tab needs one solve.** A zero-solve person cannot see it by design, so
+  `reached_tab` is a post-first-solve number and must not be divided by
+  arrivals or by signups.
+- **Seven of the eight mocks are Pro-locked.** `interview_started` fires after
+  the Pro check, so a locked click is a `content_lock_reached`
+  (`surface='interview'`), not a start. Read both, and expect the lock count
+  to rise when the tab appears — that is the surface being reached, not a
+  paywall change. The cold-start denominator is untouched: the tab does not
+  exist at zero solves.
+- **Lifetime before the flip: 22 accounts with any interview history**
+  (measured 2026-09-11 from `users.data.interviewHistory`). That is the only
+  pre-flip number, and it is a stock, not a 30-day flow.

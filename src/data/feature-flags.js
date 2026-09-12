@@ -31,19 +31,29 @@ window.FEATURE_FLAGS = {
   features: {
     aiTutor: true,
     // Intent routing — make the declared intent actually change what the
-    // product recommends. The intent modal's own copy promises "Your answer
-    // shapes what we recommend next"; until 2026-09-11 it shaped nothing.
-    // getUserIntent() was read in exactly two places, both analytics payloads,
-    // so 413 people in 60 days answered a question the product ignored.
+    // product recommends, and give the people who said "interview" a way to
+    // reach the Interview Prep tab. The intent modal's own copy promises
+    // "Your answer shapes what we recommend next"; until 2026-09-11 it shaped
+    // nothing — getUserIntent() was read in two analytics payloads and nowhere
+    // else, so 413 people in 60 days answered a question the product ignored.
     //
-    // SHIPPED OFF (2026-09-11). Not because of a freeze — the intent ask fires
-    // AFTER the first solve, so it cannot touch first_contact_activation and
-    // the 105-opener read on 09-13 is safe either way. It is off because it
-    // moves reach_6_rate, and the roadmap-v2 claim reads that same metric on
-    // 10-13 and says "it ships alone". Both cannot read cleanly.
+    // ON, this flag does three things:
+    //   1. applyIntentRouting: interview / job_ready answers open the whole
+    //      bank instead of the ladder and apply the company they arrived on.
+    //   2. A third primary-nav tab, Interview, for people with hiring intent,
+    //      interview history, the interview-prep goal, or a company-page
+    //      arrival — and only after their first solve. Rules and the reason
+    //      for each: src/utils/interview-nav.js. Until 2026-09-13 that tab
+    //      had no navigation entry at all (22 accounts lifetime).
+    //   3. interview_tab_viewed / interview_started / interview_completed
+    //      events, so the surface can be read (metrics.md: interview_reach).
     //
-    // So this is one half of a choice, not a queued change: flip THIS or flip
-    // roadmapV2 on 09-13, never both. See docs/agent/ledger.md.
+    // SHIPPED OFF (2026-09-11), dark until the 105-opener read closes on
+    // 2026-09-13. Not because it can touch first contacts — the intent ask
+    // fires after the first solve and the tab needs a solve — but because it
+    // moves reach_6_rate, and the roadmap-v2 claim reads that same metric and
+    // says "it ships alone". Flip THIS or roadmapV2, never both. The founder
+    // chose this one on 2026-09-12. See docs/agent/ledger.md.
     intentRouting: false,
     // Roadmap v2 — the recommended path stops hand-listing 38 challenge ids
     // and grows each stage from the live bank, plus two new stages for the

@@ -23,6 +23,7 @@ import { publishProfile } from './utils/profile-publish.js';
 import { backfillLegacyAttempts } from './utils/challenge-helpers.js';
 import { resolveProAccess } from './utils/pro-access.js';
 import { pickNextChallengeWith, pickTopNWith, makeChallengeComparator, hardPreviewCounts, isFreePreview } from './utils/challenge-order.js';
+import { shouldShowInterviewNav, interviewNavReason } from './utils/interview-nav.js';
 import { paidWallFor, isColdStart } from './utils/paid-wall.js';
 import { expandStageChallenges, placementStartIndex as roadmapPlacementStartIndex } from './utils/roadmap.js';
 import { shouldEmitLockEvent, lockEventKey } from './utils/lock-events.js';
@@ -7752,6 +7753,44 @@ function SQLQuest() {
     }
   }, [isGuest, isFirstRunUser, currentChallenge, activeTab]);
 
+  // Interview tab: who sees the nav entry, and one view event per user per
+  // day (same shape as coach_tab_viewed). The rules and the reason for each
+  // live in src/utils/interview-nav.js; the flag is features.intentRouting.
+  const interviewEntryRef = useRef(null);
+  const interviewNavInputs = {
+    intent: getUserIntent(),
+    hasInterviewHistory: Array.isArray(interviewHistory) && interviewHistory.length > 0,
+    goalId: coachState?.goalId || null,
+    arrivalSrc: (() => { try { return localStorage.getItem('sqlquest_arrival_src'); } catch (_) { return null; } })(),
+    landingSrc: (() => { try { return localStorage.getItem(LANDING_SRC_KEY) || null; } catch (_) { return null; } })(),
+  };
+  const showInterviewNav = shouldShowInterviewNav({
+    flagOn: !!window.FF?.feature('intentRouting'),
+    solvedCount: solvedChallenges.size,
+    ...interviewNavInputs,
+  });
+  useEffect(() => {
+    if (activeTab !== 'trials' || !currentUser || isSessionLoading) return;
+    const entry = interviewEntryRef.current || 'unknown';
+    interviewEntryRef.current = null;
+    try {
+      const day = new Date().toISOString().slice(0, 10);
+      const key = `sqlquest_interview_view_${day}`;
+      if (localStorage.getItem(key)) return;
+      localStorage.setItem(key, '1');
+      trackActivationEvent('interview_tab_viewed', {
+        entry,
+        reason: interviewNavReason(interviewNavInputs),
+        intent: interviewNavInputs.intent,
+        solvedCount: solvedChallenges.size,
+        hasHistory: interviewNavInputs.hasInterviewHistory,
+        arrivalSrc: interviewNavInputs.arrivalSrc,
+        landingSrc: interviewNavInputs.landingSrc,
+      });
+    } catch (_) { /* ignore */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, currentUser, isSessionLoading]);
+
   // Coach-tab funnel telemetry. 69% of users with saved state have goalId
   // null, and we could not say why: is the tab unreached, or reached in a
   // shell that never renders the goal picker? The picker converts 77% of
@@ -9615,6 +9654,10 @@ function SQLQuest() {
     // Check for saved progress (unless forcing new)
     if (!forceNew && savedInterviewProgress && savedInterviewProgress.interviewId === interview.id) {
       // Resume from saved progress
+      trackActivationEvent('interview_started', {
+        interviewId: interview.id, company: interview.company || null,
+        difficulty: interview.difficulty || null, isFree: !!interview.isFree, resumed: true,
+      });
       setActiveInterview(interview);
       setInterviewQuestion(savedInterviewProgress.questionIndex);
       setInterviewQuery(savedInterviewProgress.currentQuery || '');
@@ -9639,6 +9682,10 @@ function SQLQuest() {
     }
     
     // Start fresh
+    trackActivationEvent('interview_started', {
+      interviewId: interview.id, company: interview.company || null,
+      difficulty: interview.difficulty || null, isFree: !!interview.isFree, resumed: false,
+    });
     setActiveInterview(interview);
     setInterviewQuestion(0);
     setInterviewQuery('');
@@ -9977,6 +10024,11 @@ function SQLQuest() {
     const totalScore = finalAnswers.reduce((sum, a) => sum + a.score, 0);
     const maxScore = activeInterview.questions.reduce((sum, q) => sum + q.points, 0);
     const passed = (totalScore / maxScore * 100) >= activeInterview.passingScore;
+    trackActivationEvent('interview_completed', {
+      interviewId: activeInterview.id, company: activeInterview.company || null,
+      passed, percentage: maxScore ? Math.round(totalScore / maxScore * 100) : 0,
+      questions: activeInterview.questions.length, retry: !!retryMode,
+    });
     
     // Identify mistakes for study - include questionIndex for retry functionality
     const mistakes = finalAnswers
@@ -22153,6 +22205,7 @@ RULES:
       if (savedUser && !String(savedUser).startsWith('guest_')) return; // wait for the session
       startGuestMode();
     }
+    interviewEntryRef.current = 'deeplink';
     setActiveTab('trials');
     // Skip the first-run shell — it renders regardless of tab and would
     // swallow the interview the link promised (same as the list resolver).
@@ -27808,6 +27861,7 @@ RULES:
 
                     if (onboardingData.goal === 'interview') {
                       setActiveTab('trials');
+                      interviewEntryRef.current = 'onboarding';
                     } else {
                       setActiveTab('quests');
                       setPracticeSubTab('challenges');
@@ -30231,7 +30285,7 @@ RULES:
             <div
               data-primary-learning-tabs="true"
               data-primary-learning-shell={showFoundationsFocusShell || showLessonAdjacentChallengesShell ? 'lesson-one' : 'default'}
-              className="mb-4 grid grid-cols-2 gap-2 rounded-xl border border-slate-700 bg-slate-950/75 p-1.5"
+              className={`mb-4 grid ${showInterviewNav ? 'grid-cols-3' : 'grid-cols-2'} gap-2 rounded-xl border border-slate-700 bg-slate-950/75 p-1.5`}
             >
               <button
                 type="button"
@@ -30241,7 +30295,7 @@ RULES:
                   setCurrentChallenge(null);
                 }}
                 className={`min-h-[54px] rounded-lg px-3 py-2 text-left transition-all ${
-                  activeTab !== 'quests'
+                  activeTab !== 'quests' && activeTab !== 'trials'
                     ? 'border border-slate-500 bg-slate-800 text-[#F2F0EA]'
                     : 'border border-transparent bg-transparent text-slate-300 hover:border-slate-600 hover:bg-slate-900 hover:text-[#F2F0EA]'
                 }`}
@@ -30277,6 +30331,30 @@ RULES:
                 </span>
                 <span className="mt-0.5 block text-[11px] leading-snug text-slate-400">Practice freely</span>
               </button>
+              {showInterviewNav && (
+                <button
+                  type="button"
+                  data-onboarding="nav-trials"
+                  onClick={() => {
+                    interviewEntryRef.current = 'nav';
+                    setCurrentChallenge(null);
+                    setActiveTab('trials');
+                  }}
+                  className={`min-h-[54px] rounded-lg px-3 py-2 text-left transition-all ${
+                    activeTab === 'trials'
+                      ? 'border border-slate-500 bg-slate-800 text-[#F2F0EA]'
+                      : 'border border-transparent bg-transparent text-slate-300 hover:border-slate-600 hover:bg-slate-900 hover:text-[#F2F0EA]'
+                  }`}
+                >
+                  <span className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-bold">{i18n_t('nav', 'interview')}</span>
+                    <span className="rounded-full border border-slate-600 bg-slate-900 px-2 py-0.5 text-[10px] font-bold text-slate-300">
+                      {mockInterviews.length}
+                    </span>
+                  </span>
+                  <span className="mt-0.5 block text-[11px] leading-snug text-slate-400">{i18n_t('nav', 'interviewSub')}</span>
+                </button>
+              )}
             </div>
             {activeTab === 'quests' && (
               <p className="-mt-2 mb-4 text-xs font-medium text-slate-300">
@@ -30865,7 +30943,7 @@ RULES:
                   <button onClick={() => { setActiveTab('quests'); setPracticeSubTab('challenges'); }} className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm">
                     ⚔️ Challenges
                   </button>
-                  <button onClick={() => setActiveTab('trials')} className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm">
+                  <button onClick={() => { interviewEntryRef.current = 'guest_shell'; setActiveTab('trials'); }} className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm">
                     🎤 Interview
                   </button>
                 </div>

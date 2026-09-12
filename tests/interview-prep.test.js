@@ -1191,9 +1191,13 @@ describe('source guard: the countdown card lives on the Coach now', () => {
     expect(appSource).toMatch(/onboardingData\.goal === 'interview'\)\s*\{\s*\n\s*setActiveTab\('trials'\);/);
   });
 
-  it('no third primary nav tab was restored', () => {
+  it('the legacy five-tab nav stays off', () => {
     // Reversing the 2026-05-19 nav simplification is a different decision and
-    // was explicitly not this change.
+    // was explicitly not this change. The Interview entry that DID come back
+    // on 2026-09-12 is a gated third tab in the new two-tab nav, shown only
+    // after a solve and only to people with hiring intent — see
+    // src/utils/interview-nav.js and tests/interview-nav.test.js. The legacy
+    // nav itself is not restored.
     expect(appSource).toMatch(/const showLegacyPrimaryNav = false;/);
   });
 });

@@ -102,6 +102,18 @@ surface instead of the generic practice list. `applyIntentRouting` is already
 written behind `intentRouting: false`. Effort S (human ~2 days / CC ~2 hours).
 Risk Low. Reuses: the flag, the routing function, the whole existing surface.
 
+**Built 2026-09-12, dark behind the same flag, flips 2026-09-13.** The
+description above overstated what `applyIntentRouting` did: it opened the
+whole bank and applied the arrival company; it never touched the Interview
+tab. What ships is the actual handle — a third primary-nav tab, shown only
+after the first solve and only to people with hiring intent, interview
+history, the interview-prep goal, or a company-page arrival
+(`src/utils/interview-nav.js`, tested). The intent answer does **not**
+yank anyone into the tab: it appears, and they choose. Plus the three events
+the read needs (`interview_tab_viewed`, `interview_started`,
+`interview_completed`, all carrying the mock id — the prerequisite below is
+met by this change). Metric: `interview_reach` in `docs/agent/metrics.md`.
+
 ### Approach B: Price the one real screen
 Make the Capital One CodeSignal mock what Pro buys, wrapped in the countdown
 card. Effort M. **Blocked until 09-29**, and pointless while the door has no
