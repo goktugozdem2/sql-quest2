@@ -129,7 +129,7 @@ SQL Quest's strongest positioning: "the only SQL practice site that feels like a
 
 - **Free** (no account needed to start): the Coach and placement check, every Easy and Medium challenge ({{freeChallengeCount}} challenges including {{freePreviewCount}} free Hard previews, sector tracks included), skill radar, daily streaks, weekly report, basic mock interviews, and a daily allowance of AI tutor calls.
 - **Pro**: $29/month or $99/year. Adds all {{hardCount}} Hard challenges, the full Mock Interview bank, AI tutor access without the free tier's daily cap, all Daily difficulties, the full Warm-Up bank, the 30-Day Challenge, and priority support. Payment via Stripe, cancel anytime, progress is kept either way.
-- **Refunds**: 7-day full refund on Monthly and Annual. Full terms: https://sqlquest.app/refund.html
+- **Refunds**: 7-day full refund on Monthly and Annual. Full terms: https://sqlquest.app/refund/
 
 ## Pages
 

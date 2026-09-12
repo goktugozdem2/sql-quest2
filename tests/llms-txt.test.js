@@ -256,10 +256,12 @@ describe('pricing guard — llms.txt quotes the Pro modal in app.jsx, nothing el
   });
 
   it('the Pricing section links a legal page that exists and is on the sitemap', () => {
-    const m = /Full terms: https:\/\/sqlquest\.app\/([a-z]+\.html)/.exec(pricing);
+    // 2026-09-13: legal pages are linked in their served form (/refund/); the
+    // .html spelling 308s, and Search Console listed it as "Page with redirect".
+    const m = /Full terms: https:\/\/sqlquest\.app\/([a-z]+)\//.exec(pricing);
     expect(m).toBeTruthy();
-    expect(m[1] in LEGAL_PAGES).toBe(true);
-    expect(facts.pages.map(p => p.path)).toContain(`/${m[1]}`);
+    expect(`${m[1]}.html` in LEGAL_PAGES).toBe(true);
+    expect(facts.pages.map(p => p.path)).toContain(`/${m[1]}/`);
   });
 });
 

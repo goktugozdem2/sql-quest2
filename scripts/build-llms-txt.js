@@ -114,13 +114,15 @@ export function titleCandidates(rootDir, urlPath) {
     out.push(path.join(rootDir, 'src', `${slug}.html`));
   }
   out.push(path.join(rootDir, 'public', slug, 'index.html'));
+  // Legal pages are built only as public/<slug>.html and served at /<slug>/.
+  out.push(path.join(rootDir, 'public', `${slug}.html`));
   return out;
 }
 
 export function pageGroup(urlPath) {
   const p = urlPath.replace(/^\/+|\/+$/g, '');
   if (p === '') return 'Home';
-  if (p.endsWith('.html')) return 'Legal';
+  if (p.endsWith('.html') || ['privacy', 'terms', 'refund'].includes(p)) return 'Legal';
   if (p === 'blog' || p.startsWith('blog/')) return 'Blog';
   if (p.startsWith('challenges/')) return 'Challenge topic pages';
   if (p.endsWith('-sql-interview')) return 'Company SQL interview pages';

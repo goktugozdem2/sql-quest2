@@ -46,6 +46,26 @@
       "permanent": true
     },
     {
+      "source": "/:slug/privacy.html",
+      "destination": "/privacy/",
+      "permanent": true
+    },
+    {
+      "source": "/:slug/terms.html",
+      "destination": "/terms/",
+      "permanent": true
+    },
+    {
+      "source": "/:slug/refund.html",
+      "destination": "/refund/",
+      "permanent": true
+    },
+    {
+      "source": "/:slug/app.html",
+      "destination": "/app/",
+      "permanent": true
+    },
+    {
       "source": "/app/",
       "has": [
         {
