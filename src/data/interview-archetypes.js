@@ -138,23 +138,37 @@
 // Snowflake 53, Stripe 31, Amazon 30, Wise 21. Searched for a sourced screen
 // for the top three; none clears the checklist today, each for a stated reason:
 //
-//   Revolut — the closest. A 2025/2026 prep guide (interviewquery) describes
-//     "a 30-minute timed HackerRank data analyst test, a mix of SQL challenges
-//     and basic statistics, some multiple choice"; a Glassdoor candidate report
-//     describes "a 60-minute interview with 4 SQL questions", which reads as a
-//     later live stage, not the screen. Two different rounds, no dates on the
-//     reports in the snippets, and both source pages refused the fetch
-//     (429 / 403) so nothing here is quotable with a month on it. Data shape
-//     fails on its own: the 26 Revolut-tagged challenges sit on `ecommerce`
+//   Revolut — the closest, and since the evening of 2026-09-12 the screen IS
+//     quotable with a quarter on it. Read in a browser (WebFetch returned
+//     429): interviewquery "Revolut Data Analyst Interview Guide 2026",
+//     https://www.interviewquery.com/interview-guides/revolut-data-analyst,
+//     "synthesized from 27 candidate reports", reports stamped "Interviewed
+//     Q3 2026". Two rounds, both SQL: (1) an online HackerRank screen —
+//     "60 minutes, with two SQL questions and several" multiple-choice items
+//     per one report, "SQL coding with multiple-choice questions" per
+//     another (the older guide said 30 minutes; the 2026 reports say 60);
+//     (2) a live coding session, "four sequential questions on a set of
+//     interconnected tables (users, transactions, events, subscriptions)" —
+//     "monthly active users with completed transactions, users in the top
+//     10% by transaction volume, joins, aggregations, CTEs, filtering, and
+//     date logic", with "window functions, cohort or funnel questions, and
+//     conversion rates" named by a second candidate; a third lists
+//     "joins, GROUP BY, WHERE vs HAVING, aggregations, NULL handling/COALESCE,
+//     CTEs". That is step 1 of the checklist, unsigned: a person still has
+//     to put their name on `declaredBy`. Data shape: until 2026-09-12 the
+//     26 Revolut-tagged challenges sat on `ecommerce`
 //     (18), `finans_fraud` (5) and `employees` (3) — a neobank screen runs on
 //     users / transactions / currencies / top-ups, and that ledger did not
 //     exist in the bank. Written the same day: `finans_neobank`
 //     (src/data/neobank-data.js, from scripts/generate-neobank-ledger.js —
 //     240 users, 12 currencies, top_ups and transactions with simulated
 //     balances, validated by scripts/validate-neobank-ledger.mjs). That is
-//     step 2 of the checklist done in advance; steps 1 (a dated, citable
-//     screen format) and 3 (the page section) are what still stand between
-//     Revolut and membership, and neither is a tag or a script.
+//     step 2 of the checklist done in advance. What still stands between
+//     Revolut and membership: at least 8 challenges on `finans_neobank`
+//     shaped like the four live-session tasks above and tagged Revolut, a
+//     mock keyed to the exact name that mirrors the 60-minute two-SQL screen,
+//     the page section — and the signature. None of those is a tag or a
+//     script; the challenges and the mock are a day's content work.
 //   Stripe — guides and one Blind thread describe a CoderPad SQL round and a
 //     take-home report inside a five-round loop; no duration, no count, no
 //     table shape. Tags: `ecommerce` 27, `finans_fraud` 6.
