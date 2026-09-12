@@ -171,7 +171,7 @@ SQL Quest's strongest positioning: "the only SQL practice site that feels like a
 
 **Guides and hubs**
 - Practice SQL Without Setup — No DBeaver, No Postgres, Browser Only — https://sqlquest.app/practice-sql-no-setup/
-- What's Your SQL Level? — Free 5-Minute Adaptive Quiz — https://sqlquest.app/sql-quiz/
+- Free SQL Skill Test — What's Your SQL Level? (5-Minute Adaptive Quiz) — https://sqlquest.app/sql-quiz/
 - SQL Quest Weekly Challenge — a new challenge every Monday, past weeks archived — https://sqlquest.app/weekly/
 - SQL for Fraud Analytics — Practice the Patterns Fraud Analysts Actually Run — https://sqlquest.app/fraud-analytics-sql/
 - SQL Interview Preparation — 30 Company Tracks + Study Plan (2026) — https://sqlquest.app/sql-interview-prep/
@@ -188,6 +188,12 @@ SQL Quest's strongest positioning: "the only SQL practice site that feels like a
 - Want to Work in AI? Learn SQL First. — https://sqlquest.app/sql-for-the-ai-era/
 - SQL Practice by Topic — GROUP BY, Window Functions, Joins, CTEs, CASE WHEN, Subqueries, Dates — https://sqlquest.app/challenges/
 - SQL Interview Readiness Test — Free, 10 Questions, Your Skillmap — https://sqlquest.app/sql-interview-readiness-test/
+- Free SQL Tools — Query Checker, Explainer, Optimizer and Skill Tests — https://sqlquest.app/sql-tools/
+- SQL Query Checker — Find the Mistakes That Return Wrong Rows (Free) — https://sqlquest.app/sql-query-checker/
+- SQL Query Explainer — Explain a SQL Query Step by Step (Free) — https://sqlquest.app/sql-query-explainer/
+- SQL Query Optimizer — Free Suggestions to Make a Query Faster — https://sqlquest.app/sql-query-optimizer/
+- DataLemur Alternatives (2026): SQL Interview Practice Sites Compared — https://sqlquest.app/datalemur-alternatives/
+- StrataScratch Alternatives (2026): SQL Interview Practice Sites Compared — https://sqlquest.app/stratascratch-alternatives/
 - SQL Interview Questions — 299 Practice Problems by Topic — https://sqlquest.app/questions/
 - Class Survival Breakdown — SQL Interview Question (Medium) — https://sqlquest.app/questions/class-survival-breakdown/
 - Salary Percentile Ranking — SQL Interview Question (Hard) — https://sqlquest.app/questions/salary-percentile-ranking/

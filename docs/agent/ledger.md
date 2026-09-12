@@ -202,6 +202,41 @@ of the verifier and must never be rounded to `FLAT`.
   section after the hero, the industry strip removed. Same two watch lines;
   the Friday table splits home→app by variant.
 
+### free SQL tools, alternatives pages, and the outreach kit (founder's SEO plan P2.13–P2.17, 2026-09-13)
+
+- **Claimed** 2026-09-13 · **Live** on push, no flag · **Read** 2026-11-24
+  (the T2 read date in docs/plans/backlinks-2026-09-11.md; links take months).
+- **Change** (1) `/sql-query-checker/`, `/sql-query-explainer/`,
+  `/sql-query-optimizer/` and the `/sql-tools/` hub
+  (`scripts/build-sql-tools.mjs` over `src/utils/sql-tools.js`): static,
+  in-browser analysis — nothing is sent anywhere; event `tool_used {tool,
+  found, kinds}`, never the query. `/sql-quiz/` is now titled "Free SQL
+  Skill Test". (2) `/datalemur-alternatives/` and
+  `/stratascratch-alternatives/` (`scripts/build-alternatives-pages.mjs`):
+  every competitor fact from `docs/reads/alternatives-facts-2026-09-13.md`,
+  dated and linked, and SQL Quest's section lists what it is worse at.
+  (3) Outreach kit, nothing sent: `docs/marketing/backlink-prospects-
+  2026-09-13.md` (100 URLs, fit-scored), `backlink-outreach-2026-09-13.md`
+  (5 PRs, 3 AlternativeTo listings, 7 author notes, tracker),
+  `distribution-drafts-2026-09-13.md` (Reddit and LinkedIn).
+- **Why** a list of free resources adds a free tool far more readily than a
+  product (the 09-11 plan's T2 bar), and "X alternatives" is the query family
+  where the prospect list found us absent from every editorial page.
+- **Metric** `external_links` (docs/agent/metrics.md) for the links;
+  `tool_page_door` for what the tools do once people arrive.
+- **Baseline** 3 real linking domains (09-11 plan). Tools and alternatives
+  pages: zero, new.
+- **Target** by 11-24: ≥ 5 links merged or accepted from the outreach kit;
+  ≥ 150 `tool_used` people; tool-page door → readiness or app click ≥ 10%.
+- **Falsification, stated in advance:** under 2 accepted links after all 15
+  kit items were sent → the free-tool pitch does not clear editors' bar;
+  stop outreach and move the effort to T3 (publish a measured finding).
+  `tool_used` people under 30 by 11-24 → the tools do not rank or get
+  shared; fold them into one page and stop building more tools.
+- **Confounds** none of these doors existed before; the founder's send dates
+  are the treatment and must be written into the tracker.
+- **Verdict** _pending_
+
 ### question pages, two more topic pages, and the internal link graph (founder's SEO plan P1.7–P1.12, 2026-09-13)
 
 - **Claimed** 2026-09-13 · **Live** on push, no flag · **Read** 2026-10-27

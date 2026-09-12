@@ -360,6 +360,19 @@ so a landing view and a later solve are joinable for the first time.
   card title to its question page; `build-company-pages.mjs` adds the
   question list to every company page.
 
+### Free SQL tools and alternatives pages (2026-09-13)
+
+- `src/utils/sql-tools.js` is the tools' engine (checker, explainer,
+  optimizer). **It is not `src/utils/sql-lint.js`** — that one is the app's
+  Live Tutor lint and is unrelated. `scripts/build-sql-tools.mjs` inlines the
+  engine into the three pages (strip `export`, classic script), so it must
+  stay import-free. Every rule has a fire/no-fire pair in
+  `tests/sql-tools.test.js`; add both when adding a rule.
+- `/datalemur-alternatives/` and `/stratascratch-alternatives/` are generated
+  (`scripts/build-alternatives-pages.mjs`). Competitor facts only from a dated
+  read in `docs/reads/`; the test fails on a competitor price not in it.
+  Re-fetch and write a new dated read before changing a price.
+
 ### Public Profile (USER MUST DEPLOY for cross-device reads)
 Phase 4b + 4c shipped client-side; Supabase needs migration + deploy.
 

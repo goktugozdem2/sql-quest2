@@ -120,7 +120,7 @@ ${ld.map(o => `  <script type="application/ld+json">${JSON.stringify(o)}</script
 <nav class="nav"><div class="ni"><a href="/" class="fd" style="color:#e2e8f0;font-weight:800;font-size:18px;">SQL Quest</a><a href="/sql-interview-readiness-test/" style="font-size:14px;">Readiness test</a></div></nav>`;
 
 const foot = `<script defer src="/track.js"></script>
-<footer class="ft">SQL Quest — personalized SQL interview practice · <a href="/questions/">All SQL interview questions</a> · <a href="/sql-exercises/">Practice by difficulty</a> · <a href="/sql-interview-prep/">Company guides</a> · <a href="/privacy/">Privacy</a></footer>
+<footer class="ft">SQL Quest — personalized SQL interview practice · <a href="/questions/">All SQL interview questions</a> · <a href="/sql-exercises/">Practice by difficulty</a> · <a href="/sql-interview-prep/">Company guides</a> · <a href="/sql-tools/">Free SQL tools</a> · <a href="/privacy/">Privacy</a></footer>
 </body>
 </html>
 `;

@@ -2548,6 +2548,17 @@ solves → `signup_completed`. Split by `company` (null = no company). The
 company score is a weighting of our tagged set, not a measurement of the
 company's interview; never quote it as one.
 
+## `tool_page_door`
+
+People by `aid` whose first `landing_view` carries `page` in
+`/sql-query-checker/`, `/sql-query-explainer/`, `/sql-query-optimizer/`,
+`/sql-tools/`, `/datalemur-alternatives/` or `/stratascratch-alternatives/`:
+fired `tool_used` (tool pages only), clicked `cta_tool_readiness_*` /
+`cta_tool_practice_*` / `cta_alternatives_readiness_*`, solved one within 7
+days. `tool_used.kinds` says which checks fire; a rule that fires on most
+queries is a false-positive suspect. The query text is never recorded.
+Shipped 2026-09-13.
+
 ## `question_page_door`
 
 People by `aid` whose first `landing_view` carries `page` starting
