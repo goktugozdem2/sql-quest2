@@ -27,6 +27,85 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### onboarding intake: three optional questions before the quiz
+
+- **Claimed** 2026-09-12 · **Flips** 2026-09-16 by scheduled task, after the
+  105 verdict and only if that claim was not extended · **Read** 2026-09-30
+  (flip + 14 days; ~28 first-run viewers a day, so n ≈ 390).
+- **Change** three OPTIONAL questions in front of the placement quiz, for
+  first-run users on the Learning Path tab, behind `onboardingIntake` (off):
+  what brings you here (an interview / job-ready / SQL in general), by when
+  (a date), and what you do (six fixed roles). Every step has a skip; skipping
+  all three is a completed intake and nobody is asked twice. Each answer lands
+  in the store that already owns it — the goal writes the intent key the
+  post-solve ask writes (`sqlquest_user_intent`, so the Interview door and
+  every event's `intent` stamp agree) and the Coach goal it maps to
+  (`interview-prep` / `analyst-day-one` / `fundamentals`), stamped
+  `coachState.source = 'intake'`; the date goes to `prepTarget.date`, the
+  countdown card's own store, and is shown back as "🗓 N days left" on the
+  Coach radar panel; the role goes to `userGoals.role` as a key. A skipped
+  goal still gets the one-question ask after the first solve, as today; an
+  answered one gets the same `applyIntentRouting` the modal would apply, at
+  the same moment — after the first solve, never before it, and tagged
+  `source='intake'`. Pure half `src/utils/onboarding-intake.js`, 40 tests
+  and source guards in `tests/onboarding-intake.test.js`, smoke step in
+  `scripts/smoke-test.js`. P0-1 on the founder's 2026-09-12 list; the goal is
+  optional by the founder's instruction.
+- **Why** the goal was collected in three places and none of them before the
+  quiz (the post-solve ask, the Coach picker, the mentor chat — dead
+  `FIRST_RUN_GOALS` sat next to the quiz and rendered nowhere); the date
+  existed only behind `interviewCountdown`; the role was free text from a
+  chat. Of the people who answer the post-solve ask, 73% declare a hiring or
+  learning intent (60 days to 09-12: interview 98, job_ready 98, learning 83,
+  "just exploring" 103 people), and the product asks them only after they
+  have already been routed by a quiz that knows nothing about it. The
+  landing pages promise a Coach that knows the goal; P0-4 made the Coach page
+  show one; this is where it comes from for a new person.
+- **Metric** `intake_funnel` (docs/agent/metrics.md): of the people shown the
+  intake, the share who answer the goal (not skipped), the date, the role,
+  and who complete it. **Guardrail** `first_run_reach`: of first-run shell
+  viewers (`coach_tab_viewed shell='first_run'`, first per aid), the share
+  with a `first_challenge_started` within 24h — the intake sits exactly on
+  this stretch. Second guardrail `cold_first_solve_rate`, both arms, split at
+  the flip timestamp.
+- **Baseline** `first_run_reach` **56.7%** (444 of 783 first-run viewers, 28
+  days to 2026-09-12; 30.9% solve within 24h; 217 viewers in the last 7).
+  The intake events are structurally 0 until the flip; the flip's deploy
+  timestamp is their birth.
+- **Target** (i) ≥ **50%** of people shown the intake answer the goal, at
+  n ≥ 150 shown; (ii) `first_run_reach` in the 14 days after the flip
+  ≥ **52%** (baseline − 5 points) at n ≥ 300 viewers.
+- **Falsification, stated in advance:** goal answered < 30% → the question
+  is not wanted at the door; move the ask back to after the first solve (the
+  modal exists) and keep the record format. `first_run_reach` < 47% (−10)
+  while the warm arm of `cold_first_solve_rate` is flat → the intake costs
+  first contacts; take it off the start screen the same day, whatever the
+  answer rate. 47–52% → inconclusive, extend to 2026-10-14, change nothing.
+  Both conditions met → keep; the next question is whether an intake goal
+  changes what people do after the first solve (Interview-tab reach by
+  `reason='intent'`), which is the 10-13 intentRouting read's to answer.
+- **Guardrails, and what this must not be used for** the goal is never a
+  step toward checkout — the block renders nothing about Pro, by test — and
+  an intake-mapped Coach goal is not a chosen one: the 11-24 goal split
+  under `paywall_ask_efficiency` must exclude `coachState.source='intake'`,
+  or the "every payer had set a goal" marker is manufactured exactly the way
+  the goal-setting entry below warns against. `goal_selected` /
+  `goal_picker_shown` are untouched (the intake fires neither), so the Coach
+  page claim's picker secondary keeps its meaning; but from 09-16 that
+  claim's denominator (full shell, hasGoal) gains intake goals —
+  `coach_tab_viewed` now carries `goalSource`, split on it. 105's seat is
+  after the intake and its activation is per opener, so it cannot move for
+  a reason that lives here; `first_contact_share` can, if fewer people reach
+  any opener — that is what `first_run_reach` is for.
+- **Confounds** flips three days after `intentRouting` (09-13), and both
+  feed the Interview tab: separated by `intent_routed.source` ('ask' /
+  'intake') and `interview_tab_viewed.reason`; the 10-13 read must split by
+  source. The 09-29 cold-start read is untouched by construction: a
+  deep-linked challenge opener never sees the start screen, and the
+  cold-start dialog is unchanged. Guest continuity (09-26): an intake record
+  rides the guest blob into the account like any other field.
+- **Verdict** _pending_
+
 ### the Coach page shows the goal, the step, the challenge and the radar
 
 - **Claimed** 2026-09-12 · **Read** 2026-09-26 (14 days).
@@ -74,7 +153,12 @@ of the verifier and must never be rounded to `FLAT`.
   first-run shell is the read's surface and is untouched). `intentRouting`
   flips 09-13 on the same returning population. The countdown card
   (`interviewCountdown`, after 09-20) will render on this tab below the
-  radar panel; that is its own claim.
+  radar panel; that is its own claim. **Added 2026-09-12:** the onboarding
+  intake (above) flips 09-16 and maps a Coach goal for new people who answer
+  it, so from that day the full-with-goal denominator holds goals nobody
+  chose on the picker; `coach_tab_viewed` carries `goalSource` — read the
+  picker goals and the intake goals as two rows. A date set at the intake
+  also adds a small "days left" chip to the radar panel's stats line.
 - **Verdict** _pending_
 
 ### anonymous progress survives the reload and follows the login
@@ -995,7 +1079,10 @@ of the verifier and must never be rounded to `FLAT`.
   users do not), then watch whether the paid-vs-goal association survives the
   larger population. If it holds at n ≥ 10 payers, it is real and worth
   building on. If it dissolves, it was a marker and we learned that cheaply.
-- **Metric** the goal split under `paywall_ask_efficiency`.
+- **Metric** the goal split under `paywall_ask_efficiency`. **From the
+  2026-09-16 intake flip, exclude `coachState.source='intake'`** — a goal the
+  onboarding intake mapped from a one-tap answer is not the deliberate choice
+  this observation is about, and counting it would manufacture the marker.
 - **Read on** **2026-11-24**, alongside the claim above, or the first time
   cumulative payers reach 10 — whichever is later.
 - **Falsification, stated in advance:** if by then goal-holders and

@@ -38,12 +38,19 @@ const dedupeBy = (arr, keyOf) => {
   return out;
 };
 
-/** True when a saved blob holds anything worth keeping. */
+/**
+ * True when a saved blob holds anything worth keeping: a solve, an attempt,
+ * XP — or a completed onboarding intake (2026-09-12). Someone who answered
+ * three questions and reloaded before their first solve has told us
+ * something; minting a fresh guest would throw the Coach goal away while the
+ * browser-scoped answers survived, and the two would disagree.
+ */
 export function hasProgress(blob) {
   if (!blob || typeof blob !== 'object') return false;
   return asArray(blob.solvedChallenges).length > 0
     || asArray(blob.challengeAttempts).length > 0
-    || num(blob.xp) > 0;
+    || num(blob.xp) > 0
+    || !!(blob.intake && typeof blob.intake === 'object' && typeof blob.intake.completedAt === 'string');
 }
 
 /**

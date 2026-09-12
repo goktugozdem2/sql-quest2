@@ -2020,6 +2020,95 @@ Traps, stated before the first read:
   the account already had. Read `merges_with_solves`, not `merges`, for the
   value delivered.
 
+## `intake_funnel`
+
+Of the people shown the onboarding intake, how many answered each of its
+three optional questions, and how many completed it. Born with the
+`onboardingIntake` flip (scheduled 2026-09-16; the deploy timestamp is the
+birth — never `min(created_at)`). Events, all `activation_funnel`:
+
+| event | when it fires |
+|---|---|
+| `intake_shown` | the intake rendered for this browser, once (`onceKey`) |
+| `intake_answered` | one step answered or skipped; `step` ∈ goal/date/role, `value` (goal or role key; null for the date), `daysOut` (integer, date step only), `skipped` |
+| `intake_completed` | the last step answered or skipped; `goal`, `hasDate`, `daysOut`, `role`, `skippedCount`, `seconds` |
+
+```sql
+WITH e AS (
+  SELECT event, ((metadata #>> '{}')::jsonb) AS md, created_at
+  FROM pro_events
+  WHERE event IN ('intake_shown','intake_answered','intake_completed')
+    AND created_at >= :deploy AND <shared filters>
+)
+SELECT count(DISTINCT md->>'aid') FILTER (WHERE event='intake_shown')                                   AS shown,
+       count(DISTINCT md->>'aid') FILTER (WHERE event='intake_answered' AND md->>'step'='goal' AND md->>'skipped'='false') AS goal_answered,
+       count(DISTINCT md->>'aid') FILTER (WHERE event='intake_answered' AND md->>'step'='date' AND md->>'skipped'='false') AS date_answered,
+       count(DISTINCT md->>'aid') FILTER (WHERE event='intake_answered' AND md->>'step'='role' AND md->>'skipped'='false') AS role_answered,
+       count(DISTINCT md->>'aid') FILTER (WHERE event='intake_completed')                               AS completed
+FROM e;
+-- goal mix: SELECT md->>'goal', count(DISTINCT md->>'aid') FROM e WHERE event='intake_completed' GROUP BY 1;
+-- urgency:  SELECT width_bucket((md->>'daysOut')::int, 0, 180, 6), count(*) FROM e WHERE event='intake_completed' AND md->>'hasDate'='true' GROUP BY 1;
+```
+
+Traps, stated before the first read:
+
+- **People by `aid`.** `intake_shown` is once per guest identity, and a guest
+  identity is per browser since 09-12 — but count by `aid` anyway, as always.
+- **Skipping is completing.** `completed` counts the skip-all-three person;
+  the answer rates are the signal, `completed` is the mechanism check
+  (shown ≈ completed, or the block is stranding people).
+- **The date never arrives.** `daysOut` is the integer at answer time; there
+  is no calendar date in any row, by test.
+- **An intake goal is not a picker goal.** It maps a Coach goal with
+  `coachState.source='intake'`; `goal_selected` does not fire. Read
+  `coach_page_take_rate` and the `paywall_ask_efficiency` goal split with
+  `goalSource` / `source` split out.
+- **It is not the post-solve ask.** `intent_captured` does not fire from the
+  intake; the intent key is written directly, so `intent_captured` volume
+  FALLS after the flip (fewer people reach the modal) for a structural
+  reason. Declarers from the flip on = intake goal answers + modal answers.
+
+## `first_run_reach`
+
+Of the people who saw the first-run start screen, how many opened a first
+challenge within 24 hours. The guardrail for anything placed in front of the
+placement quiz: the onboarding intake sits exactly here.
+
+```sql
+WITH m AS (
+  SELECT event, created_at, ((metadata #>> '{}')::jsonb) AS md
+  FROM pro_events
+  WHERE created_at >= :since AND created_at < :until
+    AND event IN ('coach_tab_viewed','first_challenge_started','first_challenge_solved')
+    AND <shared filters>
+),
+fr AS (SELECT md->>'aid' AS aid, min(created_at) AS t FROM m
+       WHERE event='coach_tab_viewed' AND md->>'shell'='first_run' AND md->>'aid' IS NOT NULL GROUP BY 1),
+fcs AS (SELECT md->>'aid' AS aid, min(created_at) AS t FROM m WHERE event='first_challenge_started' GROUP BY 1),
+fcv AS (SELECT md->>'aid' AS aid, min(created_at) AS t FROM m WHERE event='first_challenge_solved' GROUP BY 1)
+SELECT count(*) AS first_run_viewers,
+       round(100.0*count(*) FILTER (WHERE fcs.t < fr.t + interval '24 hours')/count(*),1) AS started_24h_pct,
+       round(100.0*count(*) FILTER (WHERE fcv.t < fr.t + interval '24 hours')/count(*),1) AS solved_24h_pct
+FROM fr LEFT JOIN fcs USING (aid) LEFT JOIN fcv USING (aid);
+```
+
+**Baseline, 28 days to 2026-09-12:** 783 viewers, **56.7%** started within
+24h, 30.9% solved within 24h; 217 viewers in the last 7 days (~28 a day).
+
+Traps:
+
+- **`coach_tab_viewed` fires once per browser per day** and carries `shell`;
+  `first_run` means zero solves and no completed first run. A returning
+  browser with solves is `full`, not here.
+- **The 24-hour window right-censors the last day**; `:until` must be at
+  least 24h before now.
+- **Deep-linked openers are not in the denominator.** Someone who lands on
+  `/app/?challenge=89` never sees the start screen; they are in
+  `first_contact_activation`, not here. The two are different populations
+  on purpose.
+- **Read it against the warm arm of `cold_first_solve_rate`.** A fall here
+  while warm is flat is a start-screen problem; a fall in both is traffic.
+
 ## `coach_page_take_rate`
 
 Of the people who saw the full Coach with a goal on a day, how many took the

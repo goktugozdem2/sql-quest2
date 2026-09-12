@@ -60,6 +60,16 @@ describe('source guards — the entry, the events, the copy', () => {
   const flags = read('../src/data/feature-flags.js');
 
   it('the primary nav renders the Interview tab through shouldShowInterviewNav', () => {
+    // applyIntentRouting must be a component-scope function. On 2026-09-11 it
+    // was written inside getUserIntent's body after the return — unreachable —
+    // so the modal's call threw a swallowed ReferenceError; found in the
+    // preview on 09-12, the evening before the flip.
+    const gi = app.indexOf('const getUserIntent = () => {');
+    const ar = app.indexOf('const applyIntentRouting = (', gi);
+    expect(gi).toBeGreaterThan(-1);
+    expect(ar).toBeGreaterThan(gi);
+    expect(app.slice(gi, ar)).toMatch(/\n  \};\n/);
+    expect(app).not.toMatch(/source \}\);\n  \};\n  \};/);
     expect(app).toMatch(/const showInterviewNav = shouldShowInterviewNav\(\{/);
     expect(app).toMatch(/flagOn: !!window\.FF\?\.feature\('intentRouting'\)/);
     expect(app).toMatch(/data-onboarding="nav-trials"/);

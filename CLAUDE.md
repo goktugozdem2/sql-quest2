@@ -405,7 +405,7 @@ Rewritten Coach-forward:
 - "Free includes the Coach. Pro adds:" → Unlimited AI Tutor, Hard challenges, Full Mock Interview bank, All Daily difficulties, Full Warm-Up bank, 30-Day Challenge, Priority support.
 
 ### Testing
-- **1,244 tests passing** across 48 test files (vitest), incl. `tests/site-counts.test.js` — the guard that fails on any stale product count on a static page — and `tests/cloud-save-contract.test.js`, the guard on the one write that must never lie. Runs via `npm run test:run`. (Measured 2026-09-12; this line goes stale fast — re-run before quoting it.)
+- **1,311 tests passing** across 53 test files (vitest), incl. `tests/site-counts.test.js` — the guard that fails on any stale product count on a static page — and `tests/cloud-save-contract.test.js`, the guard on the one write that must never lie. Runs via `npm run test:run`. (Measured 2026-09-12 evening; this line goes stale fast — re-run before quoting it.)
 - `scripts/smoke-test.js` (headless Chrome e2e): 8/8 pass against a live dev server. Run with `npm run smoke` (dev server must be up on :4321 or pass URL arg).
 
 ### Database writes — read before touching `users` or its triggers (2026-09-12)
@@ -449,6 +449,27 @@ Rewritten Coach-forward:
 - Events: `guest_resumed`, `guest_progress_merged`, `signup_completed.carriedSolves`
   → `guest_continuity` in `docs/agent/metrics.md`. Tests:
   `tests/progress-merge.test.js` (unit + source guards).
+
+### Onboarding intake — three optional questions before the quiz (2026-09-12)
+
+- Behind `onboardingIntake` (off until the 2026-09-16 scheduled flip, after
+  the 105 read). First-run users on the Learning Path tab see goal (an
+  interview / job-ready / SQL in general), date, role — each skippable;
+  skipping all three completes it; nobody is asked twice. Pure half:
+  `src/utils/onboarding-intake.js`; guards: `tests/onboarding-intake.test.js`.
+- **No fourth store.** The goal writes `sqlquest_user_intent` +
+  `sqlquest_intent_asked` (the post-solve ask's own keys) and maps a Coach
+  goal stamped `coachState.source='intake'`; the date goes to
+  `prepTarget.date`; the role to `userGoals.role` as a fixed key. The record
+  (`sqlquest_intake_v1`, mirrored to `userData.intake`) never holds the date.
+- **Never a step toward checkout, never a first-contact mover.** The block
+  mentions nothing about Pro (by test); routing for an intake-captured intent
+  runs after the first solve through `applyIntentRouting(intent, 'intake')`.
+  It fires none of `goal_selected` / `prep_target_set` / `intent_captured`,
+  so those funnels keep their meaning; its own events are `intake_shown`,
+  `intake_answered`, `intake_completed` (metrics: `intake_funnel`, guardrail
+  `first_run_reach`). `coach_tab_viewed` carries `goalSource` — split the
+  Coach reads on it, and exclude intake goals from the 11-24 goal split.
 
 ### Notifications
 Major overhaul this session: persist `dismissedNotifs`, `_subtabEnabled()` gates routes by feature flag, threshold-aligned with Quick Drill (<65), dedup by `target` string, clock-tick recompute, NOTIF_PRI constants (streak=0). Reviews Due block commented-out until Coach surfaces retrieval checks outside goals.

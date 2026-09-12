@@ -95,6 +95,9 @@ describe('hasProgress / isResumableGuest / xpForChallenge', () => {
     expect(hasProgress({ solvedChallenges: [91] })).toBe(true);
     expect(hasProgress({ xp: 5 })).toBe(true);
     expect(hasProgress(null)).toBe(false);
+    // a completed onboarding intake is worth keeping; a half-written one is not
+    expect(hasProgress({ intake: { version: 1, goal: 'interview', completedAt: '2026-09-12T00:00:00Z' } })).toBe(true);
+    expect(hasProgress({ intake: { version: 1 } })).toBe(false);
   });
 
   it('resumes a guest with progress inside the idle window, and only a guest', () => {

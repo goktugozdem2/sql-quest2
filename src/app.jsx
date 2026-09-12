@@ -25,6 +25,7 @@ import { resolveProAccess } from './utils/pro-access.js';
 import { pickNextChallengeWith, pickTopNWith, makeChallengeComparator, hardPreviewCounts, isFreePreview } from './utils/challenge-order.js';
 import { shouldShowInterviewNav, interviewNavReason } from './utils/interview-nav.js';
 import { mergeProgress, hasProgress, isResumableGuest, GUEST_USER_KEY } from './utils/progress-merge.js';
+import { INTAKE_KEY, INTAKE_GOALS, INTAKE_ROLES, INTAKE_STEPS, intakeGoalFor, nextIntakeStep, isValidIntakeDate, buildIntakeRecord, readIntakeRecord, intakeEventPayload, newCoachGoalState, shouldShowIntake } from './utils/onboarding-intake.js';
 import { paidWallFor, isColdStart } from './utils/paid-wall.js';
 import { expandStageChallenges, placementStartIndex as roadmapPlacementStartIndex } from './utils/roadmap.js';
 import { shouldEmitLockEvent, lockEventKey } from './utils/lock-events.js';
@@ -6405,6 +6406,14 @@ function SQLQuest() {
   const firstRunQuizAnswersRef = useRef(firstRunQuizAnswers);
   firstRunQuizAnswersRef.current = firstRunQuizAnswers;
   const [showFirstRunManualLevels, setShowFirstRunManualLevels] = useState(false);
+  // Onboarding intake (P0-1, 2026-09-12): three optional questions before the
+  // placement quiz. Browser-scoped record, mirrored to userData.intake so a
+  // login carries it. Pure half: src/utils/onboarding-intake.js.
+  const [intakeRecord, setIntakeRecord] = useState(() => { try { return readIntakeRecord(localStorage); } catch (_) { return null; } });
+  const [intakeStep, setIntakeStep] = useState('goal');
+  const [intakeDraft, setIntakeDraft] = useState({ goal: null, date: null, role: null });
+  const [intakeDateInput, setIntakeDateInput] = useState('');
+  const intakeStartedAtRef = useRef(null);
   const [showFirstEntryTour, setShowFirstEntryTour] = useState(() => {
     try { return !localStorage.getItem(FIRST_ENTRY_TOUR_KEY); } catch (_) { return true; }
   });
@@ -6480,6 +6489,7 @@ function SQLQuest() {
   // answer mid-session.
   const getUserIntent = () => {
     try { return localStorage.getItem('sqlquest_user_intent') || null; } catch (_) { return null; }
+  };
 
   // The intent modal promises "Your answer shapes what we recommend next."
   // Until 2026-09-11 it shaped nothing: getUserIntent() was read in exactly two
@@ -6493,7 +6503,9 @@ function SQLQuest() {
   //
   // Gated by FEATURE_FLAGS.features.intentRouting — see that flag for why it
   // ships off and what it is a choice against.
-  const applyIntentRouting = (intent) => {
+  // `source`: 'ask' from the post-solve modal, 'intake' when the onboarding
+  // intake answered the question at the door and the first solve applies it.
+  const applyIntentRouting = (intent, source = 'ask') => {
     if (!FF.feature('intentRouting')) return;
     if (intent !== 'interview' && intent !== 'job_ready') return;
     let company = null;
@@ -6503,8 +6515,7 @@ function SQLQuest() {
     } catch (_) { /* ignore */ }
     setChallengePathFilter('all');
     if (company) setCompanyFilter(company);
-    trackActivationEvent('intent_routed', { intent, company: company || null });
-  };
+    trackActivationEvent('intent_routed', { intent, company: company || null, source });
   };
 
   // Answer key for the email micro-lesson quizzes. KEEP IN SYNC with
@@ -7749,6 +7760,13 @@ function SQLQuest() {
   const showFoundationsFocusShell = activeTab === 'guide' && !!currentUser && !!activeFoundationsLessonForShell;
   const showLessonAdjacentChallengesShell = activeTab === 'quests' && !!currentUser && !!activeFoundationsLessonForShell && !currentChallenge;
   const showSimpleLearningShell = showFirstRunSimpleShell || showFoundationsFocusShell || showLessonAdjacentChallengesShell;
+  // The intake sits in front of the quiz on the first-run start screen, once,
+  // behind its flag. Never on a challenge, never after the first solve.
+  const showIntake = shouldShowIntake({
+    flagOn: !!window.FF?.feature('onboardingIntake'),
+    onStartScreen: showFirstRunStart && !showZeroSqlLesson,
+    record: intakeRecord,
+  });
   const showPrimaryLearningTabs = true;
   const showLegacyActivityShortcuts = false;
   const showLegacyPrimaryNav = false;
@@ -7843,6 +7861,9 @@ function SQLQuest() {
           : showFoundationsFocusShell ? 'foundations'
           : 'full',
         hasGoal: !!coachState?.goalId,
+        // 'intake' when the onboarding intake mapped the goal, 'picker' when
+        // chosen on the Coach, null for goals set before the field existed.
+        goalSource: coachState?.source || null,
       });
     } catch (_) { /* ignore */ }
   }, [activeTab, currentUser, isSessionLoading, showFirstRunSimpleShell, showFoundationsFocusShell]);
@@ -8411,6 +8432,13 @@ function SQLQuest() {
           coachState,               // { goalId, startedAt, stepsCompleted } — Coach progress
           roadmapLessonCompletions: [...roadmapLessonCompletions],
           goals: userGoals,         // sector MVP — sector/role/motivation/etc; see docs/sector-mvp-plan.md
+          intake: intakeRecord,     // onboarding intake — what was asked and skipped; never the date
+          // The countdown / intake target rides the save from STATE, not only
+          // from setPrepPreference's direct write: this effect re-reads the
+          // record (cloud-first for a guest) and re-spreads it, so a field
+          // written only on the local blob a moment earlier was being dropped
+          // on the next autosave — measured in the preview on 2026-09-12.
+          ...((prepTarget.company || prepTarget.date) ? { prepTarget } : {}),
           goalsPromptDismissedAt,   // one-time dismiss timestamp for opt-in pop-up
           dismissedNotifs: [...dismissedNotifs], // persisted so dismissals stick across sessions
           loginCalendar,
@@ -8461,7 +8489,7 @@ function SQLQuest() {
         saveToLeaderboard(currentUser, xp, solvedChallenges.size);
       })();
     }
-  }, [xp, solvedChallenges, unlockedAchievements, queryCount, aiLessonPhase, currentAiLesson, completedAiLessons, aiLessonCompletions, roadmapLessonCompletions, comprehensionCount, comprehensionCorrect, consecutiveCorrect, comprehensionConsecutive, completedExercises, challengeQueries, completedDailyChallenges, dailyStreak, challengeAttempts, dailyChallengeHistory, weeklyReports, weeklyReportLastSeen, weeklyDigestOptOut, earnedMilestones, coachState, userGoals, goalsPromptDismissedAt, loginCalendar, speedRunHistory, explainHistory, userProStatus, proType, proExpiry, proAutoRenew, interviewHistory, challengeProgress, challengeStartDate, weaknessTracking, skillMastery]);
+  }, [xp, solvedChallenges, unlockedAchievements, queryCount, aiLessonPhase, currentAiLesson, completedAiLessons, aiLessonCompletions, roadmapLessonCompletions, comprehensionCount, comprehensionCorrect, consecutiveCorrect, comprehensionConsecutive, completedExercises, challengeQueries, completedDailyChallenges, dailyStreak, challengeAttempts, dailyChallengeHistory, weeklyReports, weeklyReportLastSeen, weeklyDigestOptOut, earnedMilestones, coachState, userGoals, intakeRecord, prepTarget, goalsPromptDismissedAt, loginCalendar, speedRunHistory, explainHistory, userProStatus, proType, proExpiry, proAutoRenew, interviewHistory, challengeProgress, challengeStartDate, weaknessTracking, skillMastery]);
 
   // Load leaderboard periodically
   useEffect(() => {
@@ -11010,21 +11038,213 @@ CRITICAL RULES:
     // coachState already records the outcome, but only as current state —
     // an event row gives the funnel a timestamped, queryable step.
     trackActivationEvent('goal_selected', { goalId });
-    const next = {
-      goalId,
-      startedAt: new Date().toISOString(),
-      stepsCompleted: [],
-      graduatedAt: null,
-      ...(shouldPlace
-        ? { placement: { challengeIds: COACH_PLACEMENT_CHALLENGE_IDS, minAnswered: 5, skipped: false } }
-        : {}),
-    };
+    // Same shape the onboarding intake writes (src/utils/onboarding-intake.js),
+    // stamped with where the goal came from.
+    const next = newCoachGoalState(goalId, { source: 'picker', cold: shouldPlace, placementIds: COACH_PLACEMENT_CHALLENGE_IDS });
     setCoachState(next);
     if (currentUser) {
       const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
       userData.coachState = next;
       saveUserData(currentUser, userData);
     }
+  };
+
+  // ── Onboarding intake (P0-1, 2026-09-12) ───────────────────────────────
+  // Three optional questions before the placement quiz. Each answer lands in
+  // the store that already owns it (the intent key, the Coach goal, the
+  // countdown's prepTarget.date, the mentor's userGoals.role); the record only
+  // says what was asked and what was skipped. The goal is never a step toward
+  // checkout, and nothing here fires the picker's goal_selected, the
+  // countdown's prep_target_set or the post-solve ask's intent_captured —
+  // those funnels keep their meaning. Rules and shapes:
+  // src/utils/onboarding-intake.js.
+  useEffect(() => {
+    if (!showIntake || intakeStartedAtRef.current) return;
+    intakeStartedAtRef.current = Date.now();
+    trackActivationEvent('intake_shown', {}, { onceKey: 'intake_shown' });
+  }, [showIntake]);
+
+  const persistIntakeRecord = (record) => {
+    setIntakeRecord(record);
+    try { localStorage.setItem(INTAKE_KEY, JSON.stringify(record)); } catch (_) {}
+    if (currentUser) {
+      try {
+        const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+        userData.intake = record;
+        saveUserData(currentUser, userData);
+      } catch (_) {}
+    }
+  };
+
+  const completeIntake = (draft) => {
+    const now = Date.now();
+    const record = buildIntakeRecord(draft, now);
+    const goal = intakeGoalFor(record.goal);
+    if (goal) {
+      // The same two keys the post-solve ask writes, so the Interview door
+      // (src/utils/interview-nav.js) and every event's `intent` stamp agree.
+      try {
+        localStorage.setItem('sqlquest_user_intent', goal.intent);
+        localStorage.setItem('sqlquest_intent_asked', '1');
+      } catch (_) {}
+      if (!coachState?.goalId) {
+        const next = newCoachGoalState(goal.coachGoalId, {
+          source: 'intake',
+          cold: _coachUserIsCold() && !_userIsSelfDeclaredAdvanced(),
+          placementIds: COACH_PLACEMENT_CHALLENGE_IDS,
+          now,
+        });
+        setCoachState(next);
+        if (currentUser) {
+          try {
+            const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+            userData.coachState = next;
+            saveUserData(currentUser, userData);
+          } catch (_) {}
+        }
+      }
+    }
+    if (record.hasDate) setPrepPreference({ date: draft.date });
+    if (record.role) {
+      let saved = null;
+      try { saved = JSON.parse(localStorage.getItem('sqlquest_user_goals') || 'null'); } catch (_) {}
+      const merged = {
+        ...(userGoals || saved || {}),
+        role: record.role,
+        inferred_at: new Date(now).toISOString(),
+        user_confirmed: true,
+      };
+      setUserGoals(merged);
+      try { localStorage.setItem('sqlquest_user_goals', JSON.stringify(merged)); } catch (_) {}
+    }
+    persistIntakeRecord(record);
+    trackActivationEvent('intake_completed', intakeEventPayload(record, {
+      draftDate: draft.date,
+      now,
+      startedAt: intakeStartedAtRef.current,
+    }));
+  };
+
+  const answerIntake = (step, value) => {
+    const skipped = value === null || value === undefined || value === '';
+    const draft = { ...intakeDraft, [step]: skipped ? null : value };
+    trackActivationEvent('intake_answered', {
+      step,
+      // The date never leaves the browser as a date — the integer does.
+      value: step === 'date' ? null : (skipped ? null : value),
+      daysOut: step === 'date' && !skipped ? daysUntil(value, Date.now()) : null,
+      skipped,
+    });
+    const next = nextIntakeStep(step);
+    setIntakeDraft(draft);
+    if (next) { setIntakeStep(next); return; }
+    completeIntake(draft);
+  };
+
+  const renderOnboardingIntake = () => {
+    const stepIndex = Math.max(0, INTAKE_STEPS.indexOf(intakeStep));
+    const goal = intakeGoalFor(intakeDraft.goal);
+    const dateTitleKey = goal?.id === 'interview' ? 'dateTitleInterview' : goal?.id === 'job' ? 'dateTitleJob' : 'dateTitleGeneral';
+    const dateOk = isValidIntakeDate(intakeDateInput, Date.now());
+    const today = (() => { const d = new Date(); const pad = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; })();
+    const optionStyle = { background: '#1F222B', border: '1px solid #2A2E38', borderRadius: '6px', color: '#F2F0EA' };
+    const hoverOn = e => { e.currentTarget.style.borderColor = '#8A8E99'; };
+    const hoverOff = e => { e.currentTarget.style.borderColor = '#2A2E38'; };
+    const goalKey = { interview: 'goalInterview', job: 'goalJob', general: 'goalGeneral' };
+    const roleKey = { analyst: 'roleAnalyst', data_scientist: 'roleDataScientist', engineer: 'roleEngineer', product: 'roleProduct', student: 'roleStudent', other: 'roleOther' };
+    return (
+      <div data-onboarding="first-run-intake" data-intake-step={intakeStep}>
+        <div className="mb-2 flex items-center justify-between gap-3">
+          <p className="text-xs font-bold uppercase tracking-wider text-purple-300">{i18n_t('intake', 'optional')}</p>
+          <p className="text-xs font-semibold tabular-nums" style={{ color: '#8A8E99' }}>{i18n_t('intake', 'progress', { n: stepIndex + 1, m: INTAKE_STEPS.length })}</p>
+        </div>
+        {intakeStep === 'goal' && (
+          <>
+            <h2 className="mb-2 text-2xl font-bold text-[#F2F0EA] md:text-3xl">{i18n_t('intake', 'goalTitle')}</h2>
+            <p className="max-w-2xl text-sm leading-relaxed text-gray-300">{i18n_t('intake', 'goalSub')}</p>
+            <div className="mt-5 space-y-2">
+              {INTAKE_GOALS.map(g => (
+                <button
+                  key={g.id}
+                  type="button"
+                  data-intake-goal={g.id}
+                  onClick={() => answerIntake('goal', g.id)}
+                  className="w-full p-3 text-left transition-colors"
+                  style={optionStyle}
+                  onMouseEnter={hoverOn}
+                  onMouseLeave={hoverOff}
+                >
+                  <span className="mr-2">{g.emoji}</span>
+                  <span className="text-sm font-semibold">{i18n_t('intake', goalKey[g.id])}</span>
+                  <span className="mt-0.5 block text-xs" style={{ color: '#8A8E99' }}>{i18n_t('intake', `${goalKey[g.id]}Sub`)}</span>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+        {intakeStep === 'date' && (
+          <>
+            <h2 className="mb-2 text-2xl font-bold text-[#F2F0EA] md:text-3xl">{i18n_t('intake', dateTitleKey)}</h2>
+            <p className="max-w-2xl text-sm leading-relaxed text-gray-300">{i18n_t('intake', 'dateSub')}</p>
+            <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <input
+                type="date"
+                data-intake-date="true"
+                min={today}
+                value={intakeDateInput}
+                onChange={(e) => setIntakeDateInput(e.target.value || '')}
+                className="px-3 py-2 rounded-lg text-sm tabular-nums"
+                style={{ background: '#0E0F13', border: '1px solid #2A2E38', color: '#F2F0EA' }}
+              />
+              <button
+                type="button"
+                data-intake-date-continue="true"
+                disabled={!dateOk}
+                onClick={() => answerIntake('date', intakeDateInput)}
+                className="px-4 py-2 text-sm font-bold transition-colors"
+                style={{ background: dateOk ? '#FFE34D' : '#2A2E38', color: dateOk ? '#0E0F13' : '#8A8E99', borderRadius: '6px' }}
+              >
+                {i18n_t('intake', 'dateContinue')}
+              </button>
+            </div>
+            {intakeDateInput && !dateOk && (
+              <p className="mt-2 text-xs" style={{ color: '#FF6B6B' }}>{i18n_t('intake', 'dateInvalid')}</p>
+            )}
+          </>
+        )}
+        {intakeStep === 'role' && (
+          <>
+            <h2 className="mb-2 text-2xl font-bold text-[#F2F0EA] md:text-3xl">{i18n_t('intake', 'roleTitle')}</h2>
+            <p className="max-w-2xl text-sm leading-relaxed text-gray-300">{i18n_t('intake', 'roleSub')}</p>
+            <div className="mt-5 grid gap-2 sm:grid-cols-2">
+              {INTAKE_ROLES.map(r => (
+                <button
+                  key={r}
+                  type="button"
+                  data-intake-role={r}
+                  onClick={() => answerIntake('role', r)}
+                  className="min-h-[44px] px-3 py-2.5 text-left text-sm font-semibold transition-colors"
+                  style={optionStyle}
+                  onMouseEnter={hoverOn}
+                  onMouseLeave={hoverOff}
+                >
+                  {i18n_t('intake', roleKey[r])}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+        <button
+          type="button"
+          data-intake-skip="true"
+          onClick={() => answerIntake(intakeStep, null)}
+          className="mt-4 text-xs underline underline-offset-2 transition-colors"
+          style={{ color: '#8A8E99' }}
+        >
+          {intakeStep === 'date' ? i18n_t('intake', 'dateNone') : i18n_t('intake', 'skip')}
+        </button>
+      </div>
+    );
   };
 
   // User clicked "Skip placement" — keep the coachState but flip the skipped
@@ -15054,6 +15274,13 @@ CRITICAL RULES:
           setPrepTargetState(merged);
           try { localStorage.setItem(PREP_TARGET_KEY, JSON.stringify(merged)); } catch (_) {}
         }
+      }
+      // Onboarding intake: the record on the account wins over the browser
+      // mirror, but only when it holds one — a guest who answered five minutes
+      // ago on this device keeps that answer through a sign-in.
+      if (userData.intake && typeof userData.intake === 'object' && typeof userData.intake.completedAt === 'string') {
+        setIntakeRecord(userData.intake);
+        try { localStorage.setItem(INTAKE_KEY, JSON.stringify(userData.intake)); } catch (_) {}
       }
       if (userData.loginCalendar) setLoginCalendar(userData.loginCalendar);
       if (userData.maxLoginStreak) setMaxLoginStreak(userData.maxLoginStreak);
@@ -21918,6 +22145,11 @@ RULES:
             try {
               if (!localStorage.getItem('sqlquest_intent_asked')) {
                 setTimeout(() => setShowIntentAsk(true), 3000);
+              } else if (intakeRecord?.goal) {
+                // The intake answered the question at the door; the routing
+                // the modal would apply happens here, at the same moment —
+                // after the first solve, never before it.
+                applyIntentRouting(getUserIntent(), 'intake');
               }
             } catch (_) {}
           }
@@ -28328,7 +28560,7 @@ RULES:
       })()}
 
       {/* First-challenge onboarding tour (Murat lesson — UI opaque to first-timers) */}
-      {showFirstEntryTour && showFirstRunStart && !currentChallenge && !showOnboardingTour && !showAppTour && (
+      {showFirstEntryTour && showFirstRunStart && !showIntake && !currentChallenge && !showOnboardingTour && !showAppTour && (
         <OnboardingTour
           steps={FIRST_ENTRY_ONBOARDING_STEPS}
           onComplete={() => {
@@ -30632,6 +30864,8 @@ RULES:
                       </button>
                     </div>
                   </div>
+                ) : showIntake ? (
+                  renderOnboardingIntake()
                 ) : (
                   (() => {
                     const quizResult = getFirstRunQuizResult();
@@ -31750,6 +31984,11 @@ RULES:
                       <div className="flex items-center gap-3 text-xs text-gray-400">
                         <span>🔥 {i18n_t('coach', 'streakDays', { n: dailyStreak || 0 })}</span>
                         <span>✅ {i18n_t('coach', 'solvesCount', { n: solvedChallenges.size })}</span>
+                        {(() => {
+                          // The date the intake (or the countdown card) holds, shown back as days.
+                          const left = daysUntil(prepTarget.date, Date.now());
+                          return left !== null && left >= 0 ? <span data-testid="coach-days-left">{i18n_t('intake', 'daysLeft', { n: left })}</span> : null;
+                        })()}
                         <span className="font-bold text-yellow-400">{xp} XP</span>
                       </div>
                     </div>

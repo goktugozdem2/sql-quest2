@@ -30,6 +30,24 @@ window.FEATURE_FLAGS = {
   // FEATURES
   features: {
     aiTutor: true,
+    // Onboarding intake — three OPTIONAL questions in front of the placement
+    // quiz for first-run users on the Learning Path tab: what brings you here
+    // (interview / job-ready / general), by when, and what you do. P0-1 on
+    // the founder's 2026-09-12 list. Each answer lands in a store that
+    // already exists — the intent key the post-solve ask writes, the Coach
+    // goal it maps to (stamped source='intake'), prepTarget.date, and
+    // userGoals.role — so there is no fourth profile to reconcile. Skipping
+    // all three is a completed intake; nobody is asked twice; a skipped goal
+    // still gets the one-question ask after the first solve, as today.
+    //
+    // SHIPPED OFF (2026-09-12). It sits on the first-contact stretch that the
+    // "105 opener" ledger claim reads until 2026-09-13, so it flips on
+    // 2026-09-16 by scheduled task — after that verdict, and only if the
+    // claim was not extended. Claim, baseline (783 first-run viewers in 28
+    // days, 56.7% reach a first challenge within 24h) and falsification:
+    // docs/agent/ledger.md, "onboarding intake". Never a step toward
+    // checkout: the block renders nothing about Pro, by test.
+    onboardingIntake: false,
     // Intent routing — make the declared intent actually change what the
     // product recommends, and give the people who said "interview" a way to
     // reach the Interview Prep tab. The intent modal's own copy promises
@@ -48,6 +66,11 @@ window.FEATURE_FLAGS = {
     //   3. interview_tab_viewed / interview_started / interview_completed
     //      events, so the surface can be read (metrics.md: interview_reach).
     //
+    // 2026-09-12, found in the preview before the flip: applyIntentRouting had
+    // been written INSIDE getUserIntent, after its return — unreachable, so
+    // every call would have thrown a swallowed ReferenceError and the flip
+    // would have read UNREADABLE on its own mechanism check. Fixed; guarded
+    // in tests/interview-nav.test.js.
     // SHIPPED OFF (2026-09-11), dark until the 105-opener read closes on
     // 2026-09-13. Not because it can touch first contacts — the intent ask
     // fires after the first solve and the tab needs a solve — but because it

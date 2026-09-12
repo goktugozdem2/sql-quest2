@@ -194,9 +194,11 @@ What it takes, in the order it has to happen, each line tied to a read:
 2. **Activation is the denominator: people reaching six solves, 164 in the
    30 days to today.** The sharpest halving is opened → first correct query
    (663 → 314). Levers with dates: the 105 opener (reads 09-13), the
-   `intentRouting` flip (09-13, reads 10-13), cold start (09-29), and the
-   goal-picker gap (68.6% vs 35.2%, confounded by self-selection — it needs a
-   design, not a flag).
+   `intentRouting` flip (09-13, reads 10-13), cold start (09-29), the
+   onboarding intake in front of the quiz (built 09-12, flips 09-16, reads
+   09-30 on `first_run_reach`), and the goal-picker gap (68.6% vs 35.2%,
+   confounded by self-selection — the intake is the first design for it,
+   optional by instruction).
 3. **Traffic goes where the users already come from: Bing.** The
    `/sql-exercises/` title (reads 10-09), the competitor pages and indexing
    (10-12), and the free half of the backlink plan, shipped. The other half

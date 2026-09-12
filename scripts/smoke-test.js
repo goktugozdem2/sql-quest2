@@ -184,6 +184,42 @@ async function main() {
       pass('(skipped logged-in Coach check — no session)');
     }
 
+    // Onboarding intake (feature flag onboardingIntake, 2026-09-12): three
+    // OPTIONAL questions in front of the placement quiz. When the flag is on,
+    // skip through all three and expect the quiz behind them; when it is off
+    // the block is absent and the step is a documented skip, not a pass.
+    const intakeState = await evalInPage(tab, `
+      (async () => {
+        const wait = ms => new Promise(r => setTimeout(r, ms));
+        const root = document.querySelector('[data-onboarding="first-run-intake"]');
+        if (!root) return { present: false };
+        const first = root.textContent || '';
+        const steps = [];
+        for (let i = 0; i < 4; i++) {
+          const r = document.querySelector('[data-onboarding="first-run-intake"]');
+          if (!r) break;
+          steps.push(r.getAttribute('data-intake-step'));
+          const skip = r.querySelector('[data-intake-skip]');
+          if (!skip) break;
+          skip.click();
+          await wait(250);
+        }
+        const after = document.body.textContent || '';
+        let record = null;
+        try { record = JSON.parse(localStorage.getItem('sqlquest_intake_v1') || 'null'); } catch (_) {}
+        return {
+          present: true,
+          steps,
+          askedGoal: /What brings you here/i.test(first),
+          noPro: !/\\bPro\\b|\\$\\d|checkout/i.test(first),
+          quizAfter: /Placement quiz/i.test(after),
+          recordSkipped: record && Array.isArray(record.skipped) ? record.skipped.length : null,
+        };
+      })()`);
+    if (!intakeState.present) pass('(onboarding intake absent — flag off, skipped)');
+    else if (intakeState.steps.join(',') === 'goal,date,role' && intakeState.askedGoal && intakeState.noPro && intakeState.quizAfter && intakeState.recordSkipped === 3) pass('onboarding intake: three optional steps, all skippable, quiz behind them');
+    else fail('onboarding intake: three optional steps, all skippable, quiz behind them', JSON.stringify(intakeState));
+
     const simpleStartState = await evalInPage(tab, `
       (async () => {
         const wait = ms => new Promise(r => setTimeout(r, ms));
@@ -1375,7 +1411,7 @@ async function main() {
         const text = document.body.textContent || '';
         return {
           savedUser: localStorage.getItem('sqlquest_user'),
-          hasFirstRun: /Find your SQL starting point|Answer 4 quick questions|Start from zero|Know SELECT\\s*\\/\\s*WHERE|Already interview-ready/i.test(text)
+          hasFirstRun: /Find your SQL starting point|Answer 4 quick questions|Start from zero|Know SELECT\\s*\\/\\s*WHERE|Already interview-ready|What brings you here/i.test(text)
         };
       })()`);
     if (legacyGuestState.hasFirstRun && legacyGuestState.savedUser !== 'guest_legacy_smoke') {
