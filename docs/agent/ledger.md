@@ -202,6 +202,43 @@ of the verifier and must never be rounded to `FLAT`.
   section after the hero, the industry strip removed. Same two watch lines;
   the Friday table splits home→app by variant.
 
+### question pages, two more topic pages, and the internal link graph (founder's SEO plan P1.7–P1.12, 2026-09-13)
+
+- **Claimed** 2026-09-13 · **Live** on push, no flag · **Read** 2026-10-27
+  (six weeks: 300 new URLs on a low-authority domain index slowly).
+- **Change** (1) `/questions/<slug>/` for all 299 challenges plus a
+  `/questions/` hub (`scripts/build-question-pages.mjs`, in `npm run build`):
+  problem, schema with three sample rows, difficulty, concepts linked to the
+  topic pages, the company sets that include it, the hint (free challenges
+  only, and never a hint that spells out the query), related questions, a
+  "Solve it in the browser editor" link into the app and the readiness test.
+  No reference solution is published — `tests/question-pages.test.js` fails
+  on any. (2) `/challenges/ranking-functions/` and `/challenges/advanced/`
+  (`scripts/build-topic-extra.mjs`), bound by the same TOPIC_PAGES rules as
+  the nine hand-written pages. (3) Links: every topic-page card title and
+  every company page's set now link the question pages; the readiness
+  result links its recommended question; homepage footer, `/challenges/` and
+  `/sql-exercises/` link the new pages. (4) Schema: BreadcrumbList +
+  LearningResource on question pages, + FAQPage on the two new topic pages.
+- **Why** practice-shaped doors convert to a first solve at 29–37% against
+  ~9% for editorial ones, and a single named question ("second highest
+  salary sql", "top n per group sql") is the most practice-shaped query
+  there is. Before this, each challenge lived only inside the app, where
+  nothing indexes it.
+- **Metric** `question_page_door` (docs/agent/metrics.md).
+- **Baseline** zero: the URLs did not exist. Sitemap 97 → 399 URLs.
+- **Target** by 10-27: ≥ 100 question pages indexed in GSC; ≥ 30 earning
+  impressions; question-page door solved-one ≥ 30% at n ≥ 50 people.
+- **Falsification, stated in advance:** fewer than 25 indexed at 10-27 after
+  the sitemap was read → Google treats them as thin; add each page's own
+  worked explanation to the top-traffic 30 and noindex the rest (P4 prune
+  rule). Solved-one below 20% at n ≥ 50 → the page answers the question
+  well enough that nobody opens the editor; move the schema below the fold
+  and the CTA above the description.
+- **Confounds** `onboardingIntake` (09-16) and `freeQuota` (09-21) move every
+  first-run door; read against `/sql-exercises/` as control.
+- **Verdict** _pending_
+
 ### the company template, seven new company pages, and the readiness funnel (founder's SEO plan P0.4–P0.6, 2026-09-13)
 
 - **Claimed** 2026-09-13 · **Live** on push, no flag · **Read** 2026-10-13

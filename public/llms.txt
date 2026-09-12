@@ -188,6 +188,306 @@ SQL Quest's strongest positioning: "the only SQL practice site that feels like a
 - Want to Work in AI? Learn SQL First. — https://sqlquest.app/sql-for-the-ai-era/
 - SQL Practice by Topic — GROUP BY, Window Functions, Joins, CTEs, CASE WHEN, Subqueries, Dates — https://sqlquest.app/challenges/
 - SQL Interview Readiness Test — Free, 10 Questions, Your Skillmap — https://sqlquest.app/sql-interview-readiness-test/
+- SQL Interview Questions — 299 Practice Problems by Topic — https://sqlquest.app/questions/
+- Class Survival Breakdown — SQL Interview Question (Medium) — https://sqlquest.app/questions/class-survival-breakdown/
+- Salary Percentile Ranking — SQL Interview Question (Hard) — https://sqlquest.app/questions/salary-percentile-ranking/
+- Wealthy Survivor Profile — SQL Interview Question (Hard) — https://sqlquest.app/questions/wealthy-survivor-profile/
+- Department Roster with GROUP_CONCAT — SQL Interview Question (Medium) — https://sqlquest.app/questions/department-roster-with-group-concat/
+- Movie Rating Tier Breakdown — SQL Interview Question (Medium) — https://sqlquest.app/questions/movie-rating-tier-breakdown/
+- Full Survival Dashboard by Class — SQL Interview Question (Medium) — https://sqlquest.app/questions/full-survival-dashboard-by-class/
+- Genre Financial Report — SQL Interview Question (Medium) — https://sqlquest.app/questions/genre-financial-report/
+- Department Compensation Report — SQL Interview Question (Medium) — https://sqlquest.app/questions/department-compensation-report/
+- Order Sessionization by Customer — SQL Interview Question (Hard) — https://sqlquest.app/questions/order-sessionization-by-customer/
+- Consistent Director Analysis — SQL Interview Question (Medium) — https://sqlquest.app/questions/consistent-director-analysis/
+- Cumulative Distinct Customers Over Time — SQL Interview Question (Hard) — https://sqlquest.app/questions/cumulative-distinct-customers-over-time/
+- First and Last Order per Customer — SQL Interview Question (Hard) — https://sqlquest.app/questions/first-and-last-order-per-customer/
+- Cumulative Revenue Share (Pareto) — SQL Interview Question (Hard) — https://sqlquest.app/questions/cumulative-revenue-share-pareto/
+- Pivot: Order Status by Country — SQL Interview Question (Medium) — https://sqlquest.app/questions/pivot-order-status-by-country/
+- Genre Box Office Report — SQL Interview Question (Medium) — https://sqlquest.app/questions/genre-box-office-report/
+- Below Department Average — SQL Interview Question (Medium) — https://sqlquest.app/questions/below-department-average/
+- Employees Earning More Than Manager — SQL Interview Question (Hard) — https://sqlquest.app/questions/employees-earning-more-than-manager/
+- Highest Total Salary Budget Department — SQL Interview Question (Medium) — https://sqlquest.app/questions/highest-total-salary-budget-department/
+- Customers Who Never Ordered — SQL Interview Question (Medium) — https://sqlquest.app/questions/customers-who-never-ordered/
+- Top Spender Per Country — SQL Interview Question (Hard) — https://sqlquest.app/questions/top-spender-per-country/
+- Employees with Similar Salaries — SQL Interview Question (Hard) — https://sqlquest.app/questions/employees-with-similar-salaries/
+- Moving Average with Dynamic Window — SQL Interview Question (Hard) — https://sqlquest.app/questions/moving-average-with-dynamic-window/
+- Salary Rank Within Department — SQL Interview Question (Hard) — https://sqlquest.app/questions/salary-rank-within-department/
+- Running Total Revenue — SQL Interview Question (Hard) — https://sqlquest.app/questions/running-total-revenue/
+- Fare Imputation Analysis — SQL Interview Question (Medium) — https://sqlquest.app/questions/fare-imputation-analysis/
+- Detect Repeat Buyers Within 7 Days — SQL Interview Question (Hard) — https://sqlquest.app/questions/detect-repeat-buyers-within-7-days/
+- UNION ALL Dedup: Cross-Dataset Search — SQL Interview Question (Medium) — https://sqlquest.app/questions/union-all-dedup-cross-dataset-search/
+- Highest Fare Per Port — SQL Interview Question (Hard) — https://sqlquest.app/questions/highest-fare-per-port/
+- Nth Highest Salary per Department — SQL Interview Question (Hard) — https://sqlquest.app/questions/nth-highest-salary-per-department/
+- Year-over-Year Growth — SQL Interview Question (Hard) — https://sqlquest.app/questions/year-over-year-growth/
+- Correlated Subquery: Employees Above Department Median — SQL Interview Question (Hard) — https://sqlquest.app/questions/correlated-subquery-employees-above-department-median/
+- Title Social Survival Analysis — SQL Interview Question (Medium) — https://sqlquest.app/questions/title-social-survival-analysis/
+- Above-Average Departments (Derived Table) — SQL Interview Question (Medium) — https://sqlquest.app/questions/above-average-departments-derived-table/
+- LEFT JOIN NULL Semantics: Inactive Customers — SQL Interview Question (Medium) — https://sqlquest.app/questions/left-join-null-semantics-inactive-customers/
+- EXISTS vs IN: Departments with Top Performers — SQL Interview Question (Medium) — https://sqlquest.app/questions/exists-vs-in-departments-with-top-performers/
+- Genres Without Blockbusters — SQL Interview Question (Medium) — https://sqlquest.app/questions/genres-without-blockbusters/
+- Category Revenue with Relabeling — SQL Interview Question (Medium) — https://sqlquest.app/questions/category-revenue-with-relabeling/
+- Passenger Family Survival Analysis — SQL Interview Question (Hard) — https://sqlquest.app/questions/passenger-family-survival-analysis/
+- Email Provider Customer Analysis — SQL Interview Question (Medium) — https://sqlquest.app/questions/email-provider-customer-analysis/
+- Rank Movies by Rating — SQL Interview Question (Hard) — https://sqlquest.app/questions/rank-movies-by-rating/
+- Find Duplicate Emails — SQL Interview Question (Medium) — https://sqlquest.app/questions/find-duplicate-emails/
+- Management Hierarchy Overview — SQL Interview Question (Medium) — https://sqlquest.app/questions/management-hierarchy-overview/
+- Count Direct Reports — SQL Interview Question (Medium) — https://sqlquest.app/questions/count-direct-reports/
+- Recursive Team Size Rollup — SQL Interview Question (Hard) — https://sqlquest.app/questions/recursive-team-size-rollup/
+- Employee Tenure Bands — SQL Interview Question (Medium) — https://sqlquest.app/questions/employee-tenure-bands/
+- Quarterly Hiring Cohort Report — SQL Interview Question (Medium) — https://sqlquest.app/questions/quarterly-hiring-cohort-report/
+- Salary Lead-Lag Gap Within Department — SQL Interview Question (Hard) — https://sqlquest.app/questions/salary-lead-lag-gap-within-department/
+- Top Earner Per Department — SQL Interview Question (Hard) — https://sqlquest.app/questions/top-earner-per-department/
+- Genres in Common (INTERSECT) — SQL Interview Question (Hard) — https://sqlquest.app/questions/genres-in-common-intersect/
+- 7-Day Rolling Revenue Average — SQL Interview Question (Hard) — https://sqlquest.app/questions/7-day-rolling-revenue-average/
+- Department Performance Rate — SQL Interview Question (Medium) — https://sqlquest.app/questions/department-performance-rate/
+- Survival Cross-Tab: Class × Sex — SQL Interview Question (Medium) — https://sqlquest.app/questions/survival-cross-tab-class-sex/
+- Departments With High Earners — SQL Interview Question (Medium) — https://sqlquest.app/questions/departments-with-high-earners/
+- Consecutive IDs — SQL Interview Question (Hard) — https://sqlquest.app/questions/consecutive-ids/
+- 3-Movie Rolling Average Revenue — SQL Interview Question (Hard) — https://sqlquest.app/questions/3-movie-rolling-average-revenue/
+- Customer Recency Analysis — SQL Interview Question (Medium) — https://sqlquest.app/questions/customer-recency-analysis/
+- Handle NULL Ages — SQL Interview Question (Medium) — https://sqlquest.app/questions/handle-null-ages/
+- Customer Lifetime Value — SQL Interview Question (Hard) — https://sqlquest.app/questions/customer-lifetime-value/
+- Fare Percentile Ranking — SQL Interview Question (Hard) — https://sqlquest.app/questions/fare-percentile-ranking/
+- Daily Active Customers — SQL Interview Question (Hard) — https://sqlquest.app/questions/daily-active-customers/
+- Revenue Share by Category (Window %) — SQL Interview Question (Hard) — https://sqlquest.app/questions/revenue-share-by-category-window/
+- Age Group Survival Analysis — SQL Interview Question (Medium) — https://sqlquest.app/questions/age-group-survival-analysis/
+- Performance vs Salary Analysis — SQL Interview Question (Medium) — https://sqlquest.app/questions/performance-vs-salary-analysis/
+- Order Status Dashboard — SQL Interview Question (Hard) — https://sqlquest.app/questions/order-status-dashboard/
+- Highest Rated by Genre — SQL Interview Question (Medium) — https://sqlquest.app/questions/highest-rated-by-genre/
+- Membership Tier Revenue Analysis — SQL Interview Question (Medium) — https://sqlquest.app/questions/membership-tier-revenue-analysis/
+- RANK vs DENSE_RANK: Rating Gaps — SQL Interview Question (Hard) — https://sqlquest.app/questions/rank-vs-dense-rank-rating-gaps/
+- Engagement Streaks (3+ Orders, ≤7-Day Gaps) — SQL Interview Question (Hard) — https://sqlquest.app/questions/engagement-streaks-3-orders-7-day-gaps/
+- Self-Join: Manager Salary Comparison — SQL Interview Question (Hard) — https://sqlquest.app/questions/self-join-manager-salary-comparison/
+- Director Consistency Report — SQL Interview Question (Medium) — https://sqlquest.app/questions/director-consistency-report/
+- Top-N Products per Category — SQL Interview Question (Hard) — https://sqlquest.app/questions/top-n-products-per-category/
+- Median Salary Without PERCENTILE — SQL Interview Question (Hard) — https://sqlquest.app/questions/median-salary-without-percentile/
+- Deduplicate Orders with ROW_NUMBER — SQL Interview Question (Hard) — https://sqlquest.app/questions/deduplicate-orders-with-row-number/
+- Anti-Join Pipeline: Unmatched Records — SQL Interview Question (Hard) — https://sqlquest.app/questions/anti-join-pipeline-unmatched-records/
+- Monthly Order Trends — SQL Interview Question (Medium) — https://sqlquest.app/questions/monthly-order-trends/
+- Department Budget Analysis — SQL Interview Question (Hard) — https://sqlquest.app/questions/department-budget-analysis/
+- Customers with Orders in ALL Categories — SQL Interview Question (Hard) — https://sqlquest.app/questions/customers-with-orders-in-all-categories/
+- Sliding Window Max Revenue — SQL Interview Question (Hard) — https://sqlquest.app/questions/sliding-window-max-revenue/
+- Customer Lifetime Value Pipeline — SQL Interview Question (Hard) — https://sqlquest.app/questions/customer-lifetime-value-pipeline/
+- Top Spender per Membership Tier — SQL Interview Question (Hard) — https://sqlquest.app/questions/top-spender-per-membership-tier/
+- Recursive Org Chart Traversal — SQL Interview Question (Hard) — https://sqlquest.app/questions/recursive-org-chart-traversal/
+- Order Funnel Conversion — SQL Interview Question (Hard) — https://sqlquest.app/questions/order-funnel-conversion/
+- Self-Join: Repeat Orders Within a Week — SQL Interview Question (Hard) — https://sqlquest.app/questions/self-join-repeat-orders-within-a-week/
+- Month-over-Month Revenue Growth — SQL Interview Question (Hard) — https://sqlquest.app/questions/month-over-month-revenue-growth/
+- Island Length Classification — SQL Interview Question (Hard) — https://sqlquest.app/questions/island-length-classification/
+- Multi-CTE Revenue Pipeline — SQL Interview Question (Hard) — https://sqlquest.app/questions/multi-cte-revenue-pipeline/
+- Department Salary Percentile Buckets — SQL Interview Question (Hard) — https://sqlquest.app/questions/department-salary-percentile-buckets/
+- Customer Retention Cohort — SQL Interview Question (Hard) — https://sqlquest.app/questions/customer-retention-cohort/
+- Second Highest Salary per Department — SQL Interview Question (Hard) — https://sqlquest.app/questions/second-highest-salary-per-department/
+- Year-over-Year Movie Rating Trends — SQL Interview Question (Hard) — https://sqlquest.app/questions/year-over-year-movie-rating-trends/
+- Your First Query — SQL Interview Question (Easy) — https://sqlquest.app/questions/your-first-query/
+- Pick Your Columns — SQL Interview Question (Easy) — https://sqlquest.app/questions/pick-your-columns/
+- Filter with WHERE — SQL Interview Question (Easy) — https://sqlquest.app/questions/filter-with-where/
+- Comparison Operators — SQL Interview Question (Easy) — https://sqlquest.app/questions/comparison-operators/
+- Multiple Conditions (AND / OR) — SQL Interview Question (Easy) — https://sqlquest.app/questions/multiple-conditions-and-or/
+- The IN Operator — SQL Interview Question (Easy) — https://sqlquest.app/questions/the-in-operator/
+- Sorting and Limiting — SQL Interview Question (Easy) — https://sqlquest.app/questions/sorting-and-limiting/
+- Counting Rows — SQL Interview Question (Easy) — https://sqlquest.app/questions/counting-rows/
+- SUM, AVG, MIN, MAX — SQL Interview Question (Easy) — https://sqlquest.app/questions/sum-avg-min-max/
+- GROUP BY Basics — SQL Interview Question (Easy) — https://sqlquest.app/questions/group-by-basics/
+- DISTINCT Values — SQL Interview Question (Easy) — https://sqlquest.app/questions/distinct-values/
+- Pattern Matching with LIKE — SQL Interview Question (Easy) — https://sqlquest.app/questions/pattern-matching-with-like/
+- Handling NULL Values — SQL Interview Question (Easy) — https://sqlquest.app/questions/handling-null-values/
+- Calculated Columns — SQL Interview Question (Easy) — https://sqlquest.app/questions/calculated-columns/
+- Your First JOIN — SQL Interview Question (Easy) — https://sqlquest.app/questions/your-first-join/
+- LEFT JOIN: Keep Everyone — SQL Interview Question (Medium) — https://sqlquest.app/questions/left-join-keep-everyone/
+- GROUP BY + HAVING — SQL Interview Question (Medium) — https://sqlquest.app/questions/group-by-having/
+- Simple Subquery: Above Average — SQL Interview Question (Medium) — https://sqlquest.app/questions/simple-subquery-above-average/
+- Introduction to CASE WHEN — SQL Interview Question (Medium) — https://sqlquest.app/questions/introduction-to-case-when/
+- Date Functions: How Long Ago? — SQL Interview Question (Medium) — https://sqlquest.app/questions/date-functions-how-long-ago/
+- Your First CTE (WITH Clause) — SQL Interview Question (Medium) — https://sqlquest.app/questions/your-first-cte-with-clause/
+- Window Functions: ROW_NUMBER — SQL Interview Question (Medium) — https://sqlquest.app/questions/window-functions-row-number/
+- Conditional Counting with CASE — SQL Interview Question (Medium) — https://sqlquest.app/questions/conditional-counting-with-case/
+- Self-Join: Employee and Manager — SQL Interview Question (Medium) — https://sqlquest.app/questions/self-join-employee-and-manager/
+- Subquery in FROM (Derived Table) — SQL Interview Question (Medium) — https://sqlquest.app/questions/subquery-in-from-derived-table/
+- Senior Passengers by Port — SQL Interview Question (Medium) — https://sqlquest.app/questions/senior-passengers-by-port/
+- Recent Hit Movies (2010s) — SQL Interview Question (Easy) — https://sqlquest.app/questions/recent-hit-movies-2010s/
+- Monthly Order Volume in 2024 — SQL Interview Question (Medium) — https://sqlquest.app/questions/monthly-order-volume-in-2024/
+- Long-Named Passengers — SQL Interview Question (Easy) — https://sqlquest.app/questions/long-named-passengers/
+- Earliest Movie per Genre — SQL Interview Question (Hard) — https://sqlquest.app/questions/earliest-movie-per-genre/
+- Multi-Month Active Customers — SQL Interview Question (Medium) — https://sqlquest.app/questions/multi-month-active-customers/
+- Director Rating Volatility — SQL Interview Question (Medium) — https://sqlquest.app/questions/director-rating-volatility/
+- Family Size Survival Buckets — SQL Interview Question (Medium) — https://sqlquest.app/questions/family-size-survival-buckets/
+- Inactive Customers by Tier — SQL Interview Question (Medium) — https://sqlquest.app/questions/inactive-customers-by-tier/
+- Department Tenure Span — SQL Interview Question (Medium) — https://sqlquest.app/questions/department-tenure-span/
+- Month-over-Month Customer Growth — SQL Interview Question (Medium) — https://sqlquest.app/questions/month-over-month-customer-growth/
+- Comp Tier Labels — SQL Interview Question (Easy) — https://sqlquest.app/questions/comp-tier-labels/
+- Membership Display Labels — SQL Interview Question (Easy) — https://sqlquest.app/questions/membership-display-labels/
+- Bonus Tier with Cross-Conditions — SQL Interview Question (Medium) — https://sqlquest.app/questions/bonus-tier-with-cross-conditions/
+- Promotion Eligibility Matrix — SQL Interview Question (Medium) — https://sqlquest.app/questions/promotion-eligibility-matrix/
+- Above-Department-Average Earners — SQL Interview Question (Medium) — https://sqlquest.app/questions/above-department-average-earners/
+- Customers Without Orders — SQL Interview Question (Medium) — https://sqlquest.app/questions/customers-without-orders/
+- Working-Age Passengers (BETWEEN) — SQL Interview Question (Easy) — https://sqlquest.app/questions/working-age-passengers-between/
+- Non-Sales Roster (NOT IN) — SQL Interview Question (Easy) — https://sqlquest.app/questions/non-sales-roster-not-in/
+- Employee Display Cards (Concat) — SQL Interview Question (Easy) — https://sqlquest.app/questions/employee-display-cards-concat/
+- Country Codes in Uppercase — SQL Interview Question (Easy) — https://sqlquest.app/questions/country-codes-in-uppercase/
+- Default Age for Missing Records (COALESCE) — SQL Interview Question (Easy) — https://sqlquest.app/questions/default-age-for-missing-records-coalesce/
+- Monthly Order Count — SQL Interview Question (Easy) — https://sqlquest.app/questions/monthly-order-count/
+- How Many Genres Do We Cover? (DISTINCT) — SQL Interview Question (Easy) — https://sqlquest.app/questions/how-many-genres-do-we-cover-distinct/
+- Department Leaderboard (Multi-Key Sort) — SQL Interview Question (Easy) — https://sqlquest.app/questions/department-leaderboard-multi-key-sort/
+- Passengers Without Mr. or Mrs. (NOT LIKE) — SQL Interview Question (Easy) — https://sqlquest.app/questions/passengers-without-mr-or-mrs-not-like/
+- Rounded Revenue: Top 10 from 2015+ — SQL Interview Question (Easy) — https://sqlquest.app/questions/rounded-revenue-top-10-from-2015/
+- Female Survivor Count — SQL Interview Question (Easy) — https://sqlquest.app/questions/female-survivor-count/
+- Average Salary by Department — SQL Interview Question (Easy) — https://sqlquest.app/questions/average-salary-by-department/
+- Top 5 Earners — SQL Interview Question (Easy) — https://sqlquest.app/questions/top-5-earners/
+- Extract Family Names (SUBSTR + INSTR) — SQL Interview Question (Easy) — https://sqlquest.app/questions/extract-family-names-substr-instr/
+- January 2024 Orders — SQL Interview Question (Easy) — https://sqlquest.app/questions/january-2024-orders/
+- Employee + Manager Pairs (Self Join) — SQL Interview Question (Medium) — https://sqlquest.app/questions/employee-manager-pairs-self-join/
+- Earning More Than the Boss (Self Join) — SQL Interview Question (Medium) — https://sqlquest.app/questions/earning-more-than-the-boss-self-join/
+- Same-Year Hires in Same Department (Self Join) — SQL Interview Question (Medium) — https://sqlquest.app/questions/same-year-hires-in-same-department-self-join/
+- Tenure in Months (Date Math) — SQL Interview Question (Medium) — https://sqlquest.app/questions/tenure-in-months-date-math/
+- Customer Signup Quarter (Date + CASE) — SQL Interview Question (Medium) — https://sqlquest.app/questions/customer-signup-quarter-date-case/
+- Day-of-Week Order Pattern (strftime) — SQL Interview Question (Medium) — https://sqlquest.app/questions/day-of-week-order-pattern-strftime/
+- Country × Category Coverage Matrix (Cross Join) — SQL Interview Question (Medium) — https://sqlquest.app/questions/country-category-coverage-matrix-cross-join/
+- Bonus What-If Matrix (Cross Join + VALUES) — SQL Interview Question (Medium) — https://sqlquest.app/questions/bonus-what-if-matrix-cross-join-values/
+- Membership × Country Activity (Cross Join) — SQL Interview Question (Medium) — https://sqlquest.app/questions/membership-country-activity-cross-join/
+- Active Spender Cohort (HAVING) — SQL Interview Question (Medium) — https://sqlquest.app/questions/active-spender-cohort-having/
+- High-Volume Categories (HAVING) — SQL Interview Question (Easy) — https://sqlquest.app/questions/high-volume-categories-having/
+- Genre-Spanning Directors (HAVING) — SQL Interview Question (Medium) — https://sqlquest.app/questions/genre-spanning-directors-having/
+- RANK vs DENSE_RANK Side-by-Side — SQL Interview Question (Medium) — https://sqlquest.app/questions/rank-vs-dense-rank-side-by-side/
+- Top 3 Salary Tiers (DENSE_RANK) — SQL Interview Question (Medium) — https://sqlquest.app/questions/top-3-salary-tiers-dense-rank/
+- Most Recent Order Per Customer (ROW_NUMBER) — SQL Interview Question (Medium) — https://sqlquest.app/questions/most-recent-order-per-customer-row-number/
+- Second-Highest Earner Per Department (ROW_NUMBER) — SQL Interview Question (Medium) — https://sqlquest.app/questions/second-highest-earner-per-department-row-number/
+- Year Code from Order Date (SUBSTR) — SQL Interview Question (Easy) — https://sqlquest.app/questions/year-code-from-order-date-substr/
+- Movie Title Initial Letter Histogram (SUBSTR) — SQL Interview Question (Easy) — https://sqlquest.app/questions/movie-title-initial-letter-histogram-substr/
+- Position of '@' in Email (INSTR) — SQL Interview Question (Easy) — https://sqlquest.app/questions/position-of-in-email-instr/
+- Email Username Extract (SUBSTR + INSTR) — SQL Interview Question (Medium) — https://sqlquest.app/questions/email-username-extract-substr-instr/
+- Your First Window Function — SQL Interview Question (Easy) — https://sqlquest.app/questions/your-first-window-function/
+- Each Salary's Share of Payroll — SQL Interview Question (Easy) — https://sqlquest.app/questions/each-salarys-share-of-payroll/
+- Rank Everyone by Salary — SQL Interview Question (Easy) — https://sqlquest.app/questions/rank-everyone-by-salary/
+- Salary vs Department Average (PARTITION BY) — SQL Interview Question (Medium) — https://sqlquest.app/questions/salary-vs-department-average-partition-by/
+- The Previous Order's Total (LAG) — SQL Interview Question (Medium) — https://sqlquest.app/questions/the-previous-orders-total-lag/
+- Running Total of Orders — SQL Interview Question (Medium) — https://sqlquest.app/questions/running-total-of-orders/
+- JOIN with a Filter — SQL Interview Question (Easy) — https://sqlquest.app/questions/join-with-a-filter/
+- LEFT JOIN: Watch the NULLs Appear — SQL Interview Question (Easy) — https://sqlquest.app/questions/left-join-watch-the-nulls-appear/
+- Counting Across a JOIN — SQL Interview Question (Easy) — https://sqlquest.app/questions/counting-across-a-join/
+- A Subquery That Returns One Value — SQL Interview Question (Easy) — https://sqlquest.app/questions/a-subquery-that-returns-one-value/
+- A Subquery That Returns a Set (IN) — SQL Interview Question (Easy) — https://sqlquest.app/questions/a-subquery-that-returns-a-set-in/
+- Give a Query a Name (WITH) — SQL Interview Question (Easy) — https://sqlquest.app/questions/give-a-query-a-name-with/
+- Insert a New Customer — SQL Interview Question (Easy) — https://sqlquest.app/questions/insert-a-new-customer/
+- Promote Your Best Customers — SQL Interview Question (Easy) — https://sqlquest.app/questions/promote-your-best-customers/
+- Delete the Empty Accounts — SQL Interview Question (Easy) — https://sqlquest.app/questions/delete-the-empty-accounts/
+- Delete Duplicate Records, Keep the Original — SQL Interview Question (Medium) — https://sqlquest.app/questions/delete-duplicate-records-keep-the-original/
+- Give the Top Performers a Raise — SQL Interview Question (Medium) — https://sqlquest.app/questions/give-the-top-performers-a-raise/
+- Recompute a Stale Counter — SQL Interview Question (Medium) — https://sqlquest.app/questions/recompute-a-stale-counter/
+- Movies Rated Above the Average — SQL Interview Question (Easy) — https://sqlquest.app/questions/movies-rated-above-the-average/
+- Every Film by a Director Who Once Hit 8.5 — SQL Interview Question (Easy) — https://sqlquest.app/questions/every-film-by-a-director-who-once-hit-8-5/
+- Filter on an Average You Just Computed — SQL Interview Question (Easy) — https://sqlquest.app/questions/filter-on-an-average-you-just-computed/
+- Better Than Its Own Genre — SQL Interview Question (Easy) — https://sqlquest.app/questions/better-than-its-own-genre/
+- Who Manages Nobody — SQL Interview Question (Easy) — https://sqlquest.app/questions/who-manages-nobody/
+- Top 10 Banks by Assets — SQL Interview Question (Easy) — https://sqlquest.app/questions/top-10-banks-by-assets/
+- Texas Banks Above $5B — SQL Interview Question (Easy) — https://sqlquest.app/questions/texas-banks-above-5b/
+- National Total Deposits — SQL Interview Question (Easy) — https://sqlquest.app/questions/national-total-deposits/
+- Bank Count Per State — SQL Interview Question (Easy) — https://sqlquest.app/questions/bank-count-per-state/
+- Distinct Charter Classes — SQL Interview Question (Easy) — https://sqlquest.app/questions/distinct-charter-classes/
+- National Association Banks — SQL Interview Question (Easy) — https://sqlquest.app/questions/national-association-banks/
+- Failures with No Loss Estimate — SQL Interview Question (Easy) — https://sqlquest.app/questions/failures-with-no-loss-estimate/
+- States With 5 or More Banks — SQL Interview Question (Easy) — https://sqlquest.app/questions/states-with-5-or-more-banks/
+- Asset Tier Classification — SQL Interview Question (Easy) — https://sqlquest.app/questions/asset-tier-classification/
+- Pre-1900 Banks — SQL Interview Question (Easy) — https://sqlquest.app/questions/pre-1900-banks/
+- Bank with Most Recent Net Income — SQL Interview Question (Medium) — https://sqlquest.app/questions/bank-with-most-recent-net-income/
+- Average Tier 1 Ratio Per State — SQL Interview Question (Medium) — https://sqlquest.app/questions/average-tier-1-ratio-per-state/
+- Banks Above National Average Assets — SQL Interview Question (Medium) — https://sqlquest.app/questions/banks-above-national-average-assets/
+- Above-Median NPL Banks — SQL Interview Question (Medium) — https://sqlquest.app/questions/above-median-npl-banks/
+- Trust and Savings Banks — SQL Interview Question (Medium) — https://sqlquest.app/questions/trust-and-savings-banks/
+- Bank with Branch Count and Income — SQL Interview Question (Medium) — https://sqlquest.app/questions/bank-with-branch-count-and-income/
+- Top 3 Banks Per State by Assets — SQL Interview Question (Hard) — https://sqlquest.app/questions/top-3-banks-per-state-by-assets/
+- QoQ Asset Growth — Top Banks — SQL Interview Question (Hard) — https://sqlquest.app/questions/qoq-asset-growth-top-banks/
+- Failed Banks Recent Decade — SQL Interview Question (Medium) — https://sqlquest.app/questions/failed-banks-recent-decade/
+- Active and Recently Failed — SQL Interview Question (Medium) — https://sqlquest.app/questions/active-and-recently-failed/
+- Top 10 Manhattan Properties by Assessed Value — SQL Interview Question (Easy) — https://sqlquest.app/questions/top-10-manhattan-properties-by-assessed-value/
+- Pre-1920 NYC Buildings — SQL Interview Question (Easy) — https://sqlquest.app/questions/pre-1920-nyc-buildings/
+- Properties Per Borough — SQL Interview Question (Easy) — https://sqlquest.app/questions/properties-per-borough/
+- Total Assessed Value — SQL Interview Question (Easy) — https://sqlquest.app/questions/total-assessed-value/
+- Common Building Classes — SQL Interview Question (Easy) — https://sqlquest.app/questions/common-building-classes/
+- Distinct ACRIS Property Types — SQL Interview Question (Easy) — https://sqlquest.app/questions/distinct-acris-property-types/
+- Properties Without Listed Owner — SQL Interview Question (Easy) — https://sqlquest.app/questions/properties-without-listed-owner/
+- Building Age Tier — SQL Interview Question (Easy) — https://sqlquest.app/questions/building-age-tier/
+- LLC and Realty Owners — SQL Interview Question (Easy) — https://sqlquest.app/questions/llc-and-realty-owners/
+- 2025 Sales — SQL Interview Question (Easy) — https://sqlquest.app/questions/2025-sales/
+- Big-Ticket Sales with Properties — SQL Interview Question (Medium) — https://sqlquest.app/questions/big-ticket-sales-with-properties/
+- Avg DEED Amount Per Borough — SQL Interview Question (Medium) — https://sqlquest.app/questions/avg-deed-amount-per-borough/
+- Above-Average-Assess Properties — SQL Interview Question (Medium) — https://sqlquest.app/questions/above-average-assess-properties/
+- Top Buyers by Volume — SQL Interview Question (Medium) — https://sqlquest.app/questions/top-buyers-by-volume/
+- LLC vs Individual Buyers — SQL Interview Question (Medium) — https://sqlquest.app/questions/llc-vs-individual-buyers/
+- Property Sale + Buyer — SQL Interview Question (Medium) — https://sqlquest.app/questions/property-sale-buyer/
+- Top 3 Sales Per Borough — SQL Interview Question (Hard) — https://sqlquest.app/questions/top-3-sales-per-borough/
+- YoY Sales Volume Per Borough — SQL Interview Question (Hard) — https://sqlquest.app/questions/yoy-sales-volume-per-borough/
+- Active Properties with Permits — SQL Interview Question (Hard) — https://sqlquest.app/questions/active-properties-with-permits/
+- Combined Sales and Permits Activity — SQL Interview Question (Medium) — https://sqlquest.app/questions/combined-sales-and-permits-activity/
+- Top 10 by Tool Wear — SQL Interview Question (Easy) — https://sqlquest.app/questions/top-10-by-tool-wear/
+- High-Quality Products Only — SQL Interview Question (Easy) — https://sqlquest.app/questions/high-quality-products-only/
+- Quality Grade Distribution — SQL Interview Question (Easy) — https://sqlquest.app/questions/quality-grade-distribution/
+- Average Sensor Readings — SQL Interview Question (Easy) — https://sqlquest.app/questions/average-sensor-readings/
+- Quality Grades With 100+ Products — SQL Interview Question (Easy) — https://sqlquest.app/questions/quality-grades-with-100-products/
+- Distinct FMEA Categories — SQL Interview Question (Easy) — https://sqlquest.app/questions/distinct-fmea-categories/
+- All Failure Mode Reference — SQL Interview Question (Easy) — https://sqlquest.app/questions/all-failure-mode-reference/
+- Tool Wear Stress Tier — SQL Interview Question (Easy) — https://sqlquest.app/questions/tool-wear-stress-tier/
+- Medium Quality Products — SQL Interview Question (Easy) — https://sqlquest.app/questions/medium-quality-products/
+- Failure Count by Mode — SQL Interview Question (Easy) — https://sqlquest.app/questions/failure-count-by-mode/
+- Sensor Readings of Failed Units — SQL Interview Question (Medium) — https://sqlquest.app/questions/sensor-readings-of-failed-units/
+- Failure Rate Per Quality Type — SQL Interview Question (Medium) — https://sqlquest.app/questions/failure-rate-per-quality-type/
+- Above-Average Tool Wear — SQL Interview Question (Medium) — https://sqlquest.app/questions/above-average-tool-wear/
+- Top Failure Mode by Quality — SQL Interview Question (Medium) — https://sqlquest.app/questions/top-failure-mode-by-quality/
+- Power Envelope Check — SQL Interview Question (Medium) — https://sqlquest.app/questions/power-envelope-check/
+- Full Failure Profile — SQL Interview Question (Medium) — https://sqlquest.app/questions/full-failure-profile/
+- Top 5 Torque Per Quality — SQL Interview Question (Hard) — https://sqlquest.app/questions/top-5-torque-per-quality/
+- Rolling Tool Wear Trend — SQL Interview Question (Hard) — https://sqlquest.app/questions/rolling-tool-wear-trend/
+- Failure Rate by Torque Bucket — SQL Interview Question (Hard) — https://sqlquest.app/questions/failure-rate-by-torque-bucket/
+- Failure Mode Catalog Join — SQL Interview Question (Medium) — https://sqlquest.app/questions/failure-mode-catalog-join/
+- Banks with NPL Above 2-Sigma — SQL Interview Question (Hard) — https://sqlquest.app/questions/banks-with-npl-above-2-sigma/
+- NPL Quarter-over-Quarter Acceleration — SQL Interview Question (Hard) — https://sqlquest.app/questions/npl-quarter-over-quarter-acceleration/
+- Tier 1 Capital Below Well-Capitalized Threshold — SQL Interview Question (Medium) — https://sqlquest.app/questions/tier-1-capital-below-well-capitalized-threshold/
+- Failure Clustering — State + Year — SQL Interview Question (Medium) — https://sqlquest.app/questions/failure-clustering-state-year/
+- ROA Outliers — Top 5% by Return — SQL Interview Question (Medium) — https://sqlquest.app/questions/roa-outliers-top-5-by-return/
+- Geographic Concentration — Single-State Banks — SQL Interview Question (Medium) — https://sqlquest.app/questions/geographic-concentration-single-state-banks/
+- Trust Banks vs Others — NPL Profile Comparison — SQL Interview Question (Medium) — https://sqlquest.app/questions/trust-banks-vs-others-npl-profile-comparison/
+- 3-Sigma Anomaly: Transaction Amount Outliers — SQL Interview Question (Hard) — https://sqlquest.app/questions/3-sigma-anomaly-transaction-amount-outliers/
+- Velocity Rule — 5+ Transactions in 5 Minutes — SQL Interview Question (Hard) — https://sqlquest.app/questions/velocity-rule-5-transactions-in-5-minutes/
+- Geographic Mismatch — Impossible Travel — SQL Interview Question (Hard) — https://sqlquest.app/questions/geographic-mismatch-impossible-travel/
+- Cross-Account Collusion — Shared Device Fingerprint — SQL Interview Question (Medium) — https://sqlquest.app/questions/cross-account-collusion-shared-device-fingerprint/
+- Recursive CTE — Chargeback Chain Investigation — SQL Interview Question (Hard) — https://sqlquest.app/questions/recursive-cte-chargeback-chain-investigation/
+- Monthly Spend Per Account — SQL Interview Question (Easy) — https://sqlquest.app/questions/monthly-spend-per-account/
+- Transaction Share by Merchant Category — SQL Interview Question (Easy) — https://sqlquest.app/questions/transaction-share-by-merchant-category/
+- Signup-Month Cohort Spend — SQL Interview Question (Easy) — https://sqlquest.app/questions/signup-month-cohort-spend/
+- Dormant Cards — No Transactions in the Last 14 Days — SQL Interview Question (Medium) — https://sqlquest.app/questions/dormant-cards-no-transactions-in-the-last-14-days/
+- Top 3 Merchants Per Category by Spend — SQL Interview Question (Medium) — https://sqlquest.app/questions/top-3-merchants-per-category-by-spend/
+- Chargeback Rate Per Merchant — SQL Interview Question (Medium) — https://sqlquest.app/questions/chargeback-rate-per-merchant/
+- Ticket-Size Mix by Category — SQL Interview Question (Medium) — https://sqlquest.app/questions/ticket-size-mix-by-category/
+- Month-over-Month Spend Growth by Category — SQL Interview Question (Medium) — https://sqlquest.app/questions/month-over-month-spend-growth-by-category/
+- Peak Rolling 30-Day Spend Per Account — SQL Interview Question (Hard) — https://sqlquest.app/questions/peak-rolling-30-day-spend-per-account/
+- First-to-Second Transaction Latency — SQL Interview Question (Hard) — https://sqlquest.app/questions/first-to-second-transaction-latency/
+- Card Spend by Country — SQL Interview Question (Easy) — https://sqlquest.app/questions/card-spend-by-country/
+- Transactions at High-Risk Merchants — SQL Interview Question (Easy) — https://sqlquest.app/questions/transactions-at-high-risk-merchants/
+- Chargeback Reason Codes: Resolved and Still Open — SQL Interview Question (Easy) — https://sqlquest.app/questions/chargeback-reason-codes-resolved-and-still-open/
+- Spend by Day of Week — SQL Interview Question (Easy) — https://sqlquest.app/questions/spend-by-day-of-week/
+- The Ledger's First Week, Day by Day — SQL Interview Question (Easy) — https://sqlquest.app/questions/the-ledgers-first-week-day-by-day/
+- Cardholders Who Have Never Disputed a Charge — SQL Interview Question (Medium) — https://sqlquest.app/questions/cardholders-who-have-never-disputed-a-charge/
+- Spend and Disputes Per Cardholder — Without the Fan-Out — SQL Interview Question (Medium) — https://sqlquest.app/questions/spend-and-disputes-per-cardholder-without-the-fan-out/
+- Busiest Merchants, and What a Tie Does to the Rank — SQL Interview Question (Medium) — https://sqlquest.app/questions/busiest-merchants-and-what-a-tie-does-to-the-rank/
+- Each Merchant's Share of Its Category — SQL Interview Question (Medium) — https://sqlquest.app/questions/each-merchants-share-of-its-category/
+- Running Total of Daily Card Spend — SQL Interview Question (Medium) — https://sqlquest.app/questions/running-total-of-daily-card-spend/
+- How Long Has Each Card Been Active? — SQL Interview Question (Medium) — https://sqlquest.app/questions/how-long-has-each-card-been-active/
+- Cards That Never Spend at Home — SQL Interview Question (Hard) — https://sqlquest.app/questions/cards-that-never-spend-at-home/
+- Two Swipes at the Same Merchant Inside a Day — SQL Interview Question (Hard) — https://sqlquest.app/questions/two-swipes-at-the-same-merchant-inside-a-day/
+- Disputed Spend by Risk Tier and Category — SQL Interview Question (Hard) — https://sqlquest.app/questions/disputed-spend-by-risk-tier-and-category/
+- How Concentrated Is the Spend? — SQL Interview Question (Hard) — https://sqlquest.app/questions/how-concentrated-is-the-spend/
+- Card Spend by Category, August 2026 — SQL Interview Question (Easy) — https://sqlquest.app/questions/card-spend-by-category-august-2026/
+- Monthly Active Users — SQL Interview Question (Medium) — https://sqlquest.app/questions/monthly-active-users/
+- Top 10% Users by Transaction Volume — SQL Interview Question (Hard) — https://sqlquest.app/questions/top-10-users-by-transaction-volume/
+- Signup Cohort Activation Within 30 Days — SQL Interview Question (Medium) — https://sqlquest.app/questions/signup-cohort-activation-within-30-days/
+- Top-up Methods by Plan — SQL Interview Question (Medium) — https://sqlquest.app/questions/top-up-methods-by-plan/
+- Card Decline Rate by Plan — SQL Interview Question (Hard) — https://sqlquest.app/questions/card-decline-rate-by-plan/
+- Users Who Never Sent Money — SQL Interview Question (Medium) — https://sqlquest.app/questions/users-who-never-sent-money/
+- FX Fee Take Rate by Currency — SQL Interview Question (Hard) — https://sqlquest.app/questions/fx-fee-take-rate-by-currency/
+- Month-over-Month Volume Growth — SQL Interview Question (Hard) — https://sqlquest.app/questions/month-over-month-volume-growth/
+- Days to KYC Verification by Country — SQL Interview Question (Medium) — https://sqlquest.app/questions/days-to-kyc-verification-by-country/
+- Top 3 Spending Categories per Country — SQL Interview Question (Hard) — https://sqlquest.app/questions/top-3-spending-categories-per-country/
+- Referred vs Organic: First-Month Spend — SQL Interview Question (Medium) — https://sqlquest.app/questions/referred-vs-organic-first-month-spend/
 
 **Comparisons**
 - Is DataLemur Free? 2026 Pricing, Free Tier & SQL Practice — https://sqlquest.app/vs-datalemur/
@@ -248,6 +548,8 @@ SQL Quest's strongest positioning: "the only SQL practice site that feels like a
 - SQL Joins Practice — 87 Challenges (58 Free): INNER, LEFT, Self-Join, Anti-Join — https://sqlquest.app/challenges/joins/
 - SQL Subquery Practice — 57 Challenges (42 Free): Correlated, EXISTS, IN, Derived Tables — https://sqlquest.app/challenges/subqueries/
 - SQL Window Functions Practice — 64 Challenges (23 Free): RANK, LAG, Running Totals — https://sqlquest.app/challenges/window-functions/
+- SQL Ranking Functions Practice — 32 Challenges (10 Free): ROW_NUMBER, RANK, DENSE_RANK — https://sqlquest.app/challenges/ranking-functions/
+- Advanced SQL Interview Questions — 79 Challenges (6 Free): Hard Window, CTE and Join Problems — https://sqlquest.app/challenges/advanced/
 
 **Blog**
 - SQL Quest Blog — Tutorials, Deep-Dives, Interview Prep — https://sqlquest.app/blog/

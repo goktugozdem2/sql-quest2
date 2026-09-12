@@ -344,6 +344,22 @@ so a landing view and a later solve are joinable for the first time.
   readiness_completed / readiness_plan_clicked / readiness_arrived (metric
   `readiness_funnel`). Every company page and every blog post links to it.
 
+### Question pages and the link graph (2026-09-13)
+
+- `/questions/<slug>/` for every challenge, generated at build time by
+  `scripts/build-question-pages.mjs` into `public/questions/` (plus the
+  sitemap block between `questions:start/end` markers). Slugs come from
+  `scripts/question-slugs.mjs` — **renaming a challenge title changes its
+  URL**; add a vercel.json redirect in the same commit. Never publish a
+  reference solution, a Pro hint, or a hint that contains the query
+  (`showHint`); `tests/question-pages.test.js` pins all three.
+- `/challenges/ranking-functions/` and `/challenges/advanced/` are generated
+  by `scripts/build-topic-extra.mjs`; its `EXTRA_TOPIC_SPECS` is spread into
+  `TOPIC_PAGES`, so the count guard checks them like the hand-written nine.
+  Do not hand-edit those two files. The same script links every topic-page
+  card title to its question page; `build-company-pages.mjs` adds the
+  question list to every company page.
+
 ### Public Profile (USER MUST DEPLOY for cross-device reads)
 Phase 4b + 4c shipped client-side; Supabase needs migration + deploy.
 

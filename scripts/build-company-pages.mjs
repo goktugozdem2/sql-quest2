@@ -26,6 +26,7 @@
  * Run:  node scripts/build-company-pages.mjs && node scripts/build-company-crosslinks.mjs && npm run build
  */
 
+import { questionSlugs, loadQuestionBank } from './question-slugs.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
@@ -170,11 +171,20 @@ export function readinessBlock({ slug, name, src }) {
 <!-- company-readiness:end -->`;
 }
 
-export function topicLinksBlock({ name, dist }) {
+let QSLUGS = null;
+const qslug = id => {
+  if (!QSLUGS) QSLUGS = questionSlugs(loadQuestionBank().bank);
+  return QSLUGS.get(id);
+};
+
+export function topicLinksBlock({ name, dist, ordered = [] }) {
+  const qs = ordered.filter(c => qslug(c.id))
+    .map(c => `<a href="/questions/${qslug(c.id)}/" style="color:#c084fc;text-decoration:none;">${esc(c.title)}</a>`);
   const links = dist.filter(d => SKILL_PAGE[d.skill] && d.skill !== 'Querying Basics').slice(0, 5)
     .map(d => `<a href="${SKILL_PAGE[d.skill][0]}" style="color:#c084fc;text-decoration:none;font-weight:600;">${SKILL_PAGE[d.skill][1]}</a>`);
   return `<!-- company-topics:start -->
-<p data-crosslink="topics" style="margin:28px auto;max-width:720px;padding:16px 20px;border:1px solid rgba(124,58,237,.25);border-radius:12px;background:rgba(124,58,237,.06);font-size:14px;line-height:1.8;color:#94a3b8;">Drill the skills the ${esc(name)} set leans on, one at a time: ${links.join(' · ')} — or browse every <a href="/sql-exercises/" style="color:#c084fc;text-decoration:none;font-weight:600;">SQL practice question</a>.</p>
+<p data-crosslink="topics" style="margin:28px auto;max-width:720px;padding:16px 20px;border:1px solid rgba(124,58,237,.25);border-radius:12px;background:rgba(124,58,237,.06);font-size:14px;line-height:1.8;color:#94a3b8;">Drill the skills the ${esc(name)} set leans on, one at a time: ${links.join(' · ')} — or browse every <a href="/sql-exercises/" style="color:#c084fc;text-decoration:none;font-weight:600;">SQL practice question</a>.</p>${qs.length ? `
+<p data-crosslink="questions" style="margin:-12px auto 28px;max-width:720px;padding:0 20px;font-size:13px;line-height:1.9;color:#8b98ab;">Every question in the ${esc(name)} set, one page each with the schema and a hint: ${qs.join(' · ')}.</p>` : ''}
 <!-- company-topics:end -->`;
 }
 
@@ -351,7 +361,7 @@ ${readinessBlock({ slug: key, name: d.name, src: slug })}
   <h2 class="fd" style="font-size:30px;font-weight:800;text-align:center;margin-bottom:28px;">Frequently asked</h2>
 </div></section>
 
-${topicLinksBlock({ name: d.name, dist: f.dist })}
+${topicLinksBlock({ name: d.name, dist: f.dist, ordered: f.ordered })}
 
 <section class="cs"><div class="sec" style="text-align:center;padding:64px 24px;border-top:1px solid rgba(255,255,255,.04);">
   <h2 class="fd" style="font-size:clamp(28px,4vw,44px);font-weight:800;line-height:1.15;margin-bottom:14px;">Ready for the ${esc(d.name)} SQL round?</h2>
@@ -408,7 +418,7 @@ export function injectModules(bank) {
     html = html.slice(0, faqAnchor) + readinessBlock({ slug: key, name, src: `${key}-sql-interview` }) + '\n\n' + html.slice(faqAnchor);
     const rel = html.indexOf('<!-- related-companies:start -->');
     const at = rel >= 0 ? rel : html.indexOf('<section class="cs">');
-    if (at >= 0) html = html.slice(0, at) + topicLinksBlock({ name, dist: fx.dist }) + '\n' + html.slice(at);
+    if (at >= 0) html = html.slice(0, at) + topicLinksBlock({ name, dist: fx.dist, ordered: fx.ordered }) + '\n' + html.slice(at);
     fs.writeFileSync(file, html);
     done.push(key);
   }

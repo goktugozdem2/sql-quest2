@@ -73,115 +73,115 @@
     <div class="q-grid">
       <div class="q-card">
         <span class="tag medium">Medium</span> <span class="tag free">Free</span>
-        <h3>Country × Category Coverage Matrix (Cross Join)</h3>
+        <h3><a href="/questions/country-category-coverage-matrix-cross-join/" style="color:inherit;">Country × Category Coverage Matrix (Cross Join)</a></h3>
         <p>Two CTEs of DISTINCT values — countries, categories — CROSS JOINed, then a LEFT JOIN to orders to count. The empty cells are the answer.</p>
         <a href="/app/?challenge=154&amp;src=challenges-cte" class="btn-practice">Try it →</a>
       </div>
       <div class="q-card">
         <span class="tag medium">Medium</span> <span class="tag free">Free</span>
-        <h3>Membership × Country Activity (Cross Join)</h3>
+        <h3><a href="/questions/membership-country-activity-cross-join/" style="color:inherit;">Membership × Country Activity (Cross Join)</a></h3>
         <p>Same shape with a twist: distinct memberships × distinct countries, then a LEFT JOIN through customers to orders.</p>
         <a href="/app/?challenge=156&amp;src=challenges-cte" class="btn-practice">Try it →</a>
       </div>
       <div class="q-card">
         <span class="tag medium">Medium</span> <span class="tag free">Free</span>
-        <h3>ROA Outliers — Top 5% by Return</h3>
+        <h3><a href="/questions/roa-outliers-top-5-by-return/" style="color:inherit;">ROA Outliers — Top 5% by Return</a></h3>
         <p>One CTE filters the quarter; a second, built on it, finds the 95th-percentile cutoff with OFFSET; the query keeps banks above it. Banking track, FDIC data.</p>
         <a href="/app/?challenge=264&amp;src=challenges-cte" class="btn-practice">Try it →</a>
       </div>
       <div class="q-card">
         <span class="tag medium">Medium</span> <span class="tag free">Free</span>
-        <h3>Above-Median NPL Banks</h3>
+        <h3><a href="/questions/above-median-npl-banks/" style="color:inherit;">Above-Median NPL Banks</a></h3>
         <p>Three CTEs: filter the quarter, sort it, pick the median row with OFFSET — then join the banks above the median. Banking track.</p>
         <a href="/app/?challenge=213&amp;src=challenges-cte" class="btn-practice">Try it →</a>
       </div>
       <div class="q-card">
         <span class="tag medium">Medium</span> <span class="tag free">Free</span>
-        <h3>Spend and Disputes Per Cardholder — Without the Fan-Out</h3>
+        <h3><a href="/questions/spend-and-disputes-per-cardholder-without-the-fan-out/" style="color:inherit;">Spend and Disputes Per Cardholder — Without the Fan-Out</a></h3>
         <p>Spend per account in one CTE, disputes per account in another, then LEFT JOIN the two summaries. Join both children at row level instead and every transaction repeats once per chargeback.</p>
         <a href="/app/?challenge=291&amp;src=challenges-cte" class="btn-practice">Try it →</a>
       </div>
       <div class="q-card">
         <span class="tag medium">Medium</span> <span class="tag free">Free</span>
-        <h3>Signup Cohort Activation Within 30 Days</h3>
+        <h3><a href="/questions/signup-cohort-activation-within-30-days/" style="color:inherit;">Signup Cohort Activation Within 30 Days</a></h3>
         <p class="concepts">Uses: <code>SELECT</code> <code>CTE</code> <code>LEFT JOIN</code> <code>GROUP BY</code> <code>julianday</code> <code>COUNT</code></p>
         <a href="/app/?challenge=303&amp;src=challenges-cte" class="btn-practice">Try it →</a>
       </div>
       <div class="q-card">
         <span class="tag hard">Hard</span> <span class="tag free">Free preview</span>
-        <h3>Multi-CTE Revenue Pipeline</h3>
+        <h3><a href="/questions/multi-cte-revenue-pipeline/" style="color:inherit;">Multi-CTE Revenue Pipeline</a></h3>
         <p>Spend per customer → DENSE_RANK over that CTE → join customers for name and membership. Written for exactly this pattern; start here.</p>
         <a href="/app/?challenge=86&amp;src=challenges-cte" class="btn-practice">Try it →</a>
       </div>
       <div class="q-card">
         <span class="tag hard">Hard</span> <span class="tag free">Free preview</span>
-        <h3>Cumulative Distinct Customers Over Time</h3>
+        <h3><a href="/questions/cumulative-distinct-customers-over-time/" style="color:inherit;">Cumulative Distinct Customers Over Time</a></h3>
         <p>First-order date per customer → new customers per day from that → a running SUM, because COUNT(DISTINCT) can't be a window.</p>
         <a href="/app/?challenge=11&amp;src=challenges-cte" class="btn-practice">Try it →</a>
       </div>
       <div class="q-card">
         <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
-        <h3>Order Sessionization by Customer</h3>
+        <h3><a href="/questions/order-sessionization-by-customer/" style="color:inherit;">Order Sessionization by Customer</a></h3>
         <p>LAG in one CTE, a new-session flag in the next, a running SUM in the final SELECT. Meta's sessionization pattern.</p>
         <a href="/app/?challenge=9&amp;src=challenges-cte" class="btn-practice">Try it →</a>
       </div>
       <div class="q-card">
         <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
-        <h3>Engagement Streaks (3+ Orders, ≤7-Day Gaps)</h3>
+        <h3><a href="/questions/engagement-streaks-3-orders-7-day-gaps/" style="color:inherit;">Engagement Streaks (3+ Orders, ≤7-Day Gaps)</a></h3>
         <p>LAG → running-sum streak id → GROUP BY with HAVING COUNT >= 3. Gaps and islands.</p>
         <a href="/app/?challenge=68&amp;src=challenges-cte" class="btn-practice">Try it →</a>
       </div>
       <div class="q-card">
         <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
-        <h3>Island Length Classification</h3>
+        <h3><a href="/questions/island-length-classification/" style="color:inherit;">Island Length Classification</a></h3>
         <p>DISTINCT dates → a ROW_NUMBER grouping key → islands, then CASE labels each one flash / burst / streak / marathon.</p>
         <a href="/app/?challenge=85&amp;src=challenges-cte" class="btn-practice">Try it →</a>
       </div>
       <div class="q-card">
         <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
-        <h3>Customer Retention Cohort</h3>
+        <h3><a href="/questions/customer-retention-cohort/" style="color:inherit;">Customer Retention Cohort</a></h3>
         <p>Cohort month per customer, activity joined back to cohorts, cohort sizes — three CTEs the final SELECT joins for a retention rate.</p>
         <a href="/app/?challenge=88&amp;src=challenges-cte" class="btn-practice">Try it →</a>
       </div>
       <div class="q-card">
         <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
-        <h3>QoQ Asset Growth — Top Banks</h3>
+        <h3><a href="/questions/qoq-asset-growth-top-banks/" style="color:inherit;">QoQ Asset Growth — Top Banks</a></h3>
         <p>A top-10 CTE feeds a LAG CTE; the query turns it into quarter-over-quarter growth. Banking track.</p>
         <a href="/app/?challenge=217&amp;src=challenges-cte" class="btn-practice">Try it →</a>
       </div>
       <div class="q-card">
         <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
-        <h3>Banks with NPL Above 2-Sigma</h3>
+        <h3><a href="/questions/banks-with-npl-above-2-sigma/" style="color:inherit;">Banks with NPL Above 2-Sigma</a></h3>
         <p>Filter → mean → standard deviation (SQLite has no STDDEV, you build it) → z-scores above 2. Banking track.</p>
         <a href="/app/?challenge=260&amp;src=challenges-cte" class="btn-practice">Try it →</a>
       </div>
       <div class="q-card">
         <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
-        <h3>3-Sigma Anomaly: Transaction Amount Outliers</h3>
+        <h3><a href="/questions/3-sigma-anomaly-transaction-amount-outliers/" style="color:inherit;">3-Sigma Anomaly: Transaction Amount Outliers</a></h3>
         <p>A mean CTE, a stddev CTE built on it, then every transaction past 3σ with its z-score. Fraud dataset, Banking track.</p>
         <a href="/app/?challenge=270&amp;src=challenges-cte" class="btn-practice">Try it →</a>
       </div>
       <div class="q-card">
         <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
-        <h3>Disputed Spend by Risk Tier and Category</h3>
+        <h3><a href="/questions/disputed-spend-by-risk-tier-and-category/" style="color:inherit;">Disputed Spend by Risk Tier and Category</a></h3>
         <p>One CTE tags each transaction with its merchant's risk tier and whether it was disputed; a second aggregates by tier and category; a window then sets each cell beside its tier's own rate.</p>
         <a href="/app/?challenge=298&amp;src=challenges-cte" class="btn-practice">Try it →</a>
       </div>
       <div class="q-card">
         <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
-        <h3>How Concentrated Is the Spend?</h3>
+        <h3><a href="/questions/how-concentrated-is-the-spend/" style="color:inherit;">How Concentrated Is the Spend?</a></h3>
         <p>Spend per account, then ROW_NUMBER and COUNT(*) OVER () in the CTE built on it — so the decile cut-off is computed from the book, never typed.</p>
         <a href="/app/?challenge=299&amp;src=challenges-cte" class="btn-practice">Try it →</a>
       </div>
       <div class="q-card">
         <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
-        <h3>Top 10% Users by Transaction Volume</h3>
+        <h3><a href="/questions/top-10-users-by-transaction-volume/" style="color:inherit;">Top 10% Users by Transaction Volume</a></h3>
         <p class="concepts">Uses: <code>SELECT</code> <code>CTE</code> <code>Window Functions</code> <code>NTILE</code> <code>JOIN</code> <code>SUM</code></p>
         <a href="/app/?challenge=302&amp;src=challenges-cte" class="btn-practice">Try it →</a>
       </div>
       <div class="q-card">
         <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
-        <h3>Top 3 Spending Categories per Country</h3>
+        <h3><a href="/questions/top-3-spending-categories-per-country/" style="color:inherit;">Top 3 Spending Categories per Country</a></h3>
         <p class="concepts">Uses: <code>SELECT</code> <code>CTE</code> <code>Window Functions</code> <code>ROW_NUMBER</code> <code>JOIN</code> <code>GROUP BY</code></p>
         <a href="/app/?challenge=310&amp;src=challenges-cte" class="btn-practice">Try it →</a>
       </div>
@@ -195,19 +195,19 @@
     <div class="q-grid">
       <div class="q-card">
         <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
-        <h3>Recursive Team Size Rollup</h3>
+        <h3><a href="/questions/recursive-team-size-rollup/" style="color:inherit;">Recursive Team Size Rollup</a></h3>
         <p class="concepts">Uses: <code>Recursive CTE</code> <code>JOIN</code> <code>Aggregation</code> <code>GROUP BY</code></p>
         <a href="/app/?challenge=44&amp;src=challenges-cte" class="btn-practice">Try it →</a>
       </div>
       <div class="q-card">
         <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
-        <h3>Recursive Org Chart Traversal</h3>
+        <h3><a href="/questions/recursive-org-chart-traversal/" style="color:inherit;">Recursive Org Chart Traversal</a></h3>
         <p class="concepts">Uses: <code>Recursive CTE</code> <code>JOIN</code> <code>UNION</code></p>
         <a href="/app/?challenge=81&amp;src=challenges-cte" class="btn-practice">Try it →</a>
       </div>
       <div class="q-card">
         <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
-        <h3>Recursive CTE — Chargeback Chain Investigation</h3>
+        <h3><a href="/questions/recursive-cte-chargeback-chain-investigation/" style="color:inherit;">Recursive CTE — Chargeback Chain Investigation</a></h3>
         <p class="concepts">Finance & Banking track · Uses: <code>Recursive CTE</code> <code>JOIN</code> <code>UNION ALL</code></p>
         <a href="/app/?challenge=274&amp;src=challenges-cte" class="btn-practice">Try it →</a>
       </div>

@@ -28,6 +28,7 @@
  * Run: node scripts/build-readiness-test.mjs   (writes src/sql-interview-readiness-test.html)
  */
 
+import { questionSlugs } from './question-slugs.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import { loadBank, facts, SKILL_PAGE } from './build-company-pages.mjs';
@@ -146,6 +147,7 @@ function companyList() {
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
+let QS = new Map();
 // The gentlest free challenge on a skill, preferring the company's own set.
 function nextFor(skill, pool, all) {
   const pick = list => list
@@ -153,12 +155,13 @@ function nextFor(skill, pool, all) {
     .sort((a, b) => RANK[a.difficulty] - RANK[b.difficulty] || a.id - b.id)
     .find(c => c.difficulty !== 'Easy') || list.filter(c => playableFree(c) && canon(c).includes(skill)).sort((a, b) => a.id - b.id)[0];
   const c = pick(pool) || pick(all);
-  return c ? { id: c.id, title: c.title, difficulty: c.difficulty } : null;
+  return c ? { id: c.id, title: c.title, difficulty: c.difficulty, slug: QS.get(c.id) } : null;
 }
 
 export function buildData() {
   const bank = loadBank();
   const all = [...bank.byId.values()];
+  QS = questionSlugs(all);
   const companies = {};
   for (const { slug, name } of companyList()) {
     const f = facts(bank, name);
@@ -345,7 +348,7 @@ function finish() {
   $('rweak').textContent = weakest;
   const next = base.next[weakest];
   const page = SKILL_PAGE[weakest];
-  $('rtrain').innerHTML = 'Start with ' + (next ? '<strong style="color:#e2e8f0">' + next.title + '</strong> (' + next.difficulty + ', free)' : 'the free challenges on this skill') + (co ? ' from the ' + co.name + ' set' : '') + ', then work through ' + (page ? '<a href="' + page[0] + '" style="color:#c084fc">' + page[1] + '</a>' : 'the practice bank') + '. The Coach keeps picking from your Skillmap as you solve.';
+  $('rtrain').innerHTML = 'Start with ' + (next ? '<a href="/questions/' + next.slug + '/" style="color:#e2e8f0;font-weight:700">' + next.title + '</a> (' + next.difficulty + ', free)' : 'the free challenges on this skill') + (co ? ' from the ' + co.name + ' set' : '') + ', then work through ' + (page ? '<a href="' + page[0] + '" style="color:#c084fc">' + page[1] + '</a>' : 'the practice bank') + '. The Coach keeps picking from your Skillmap as you solve.';
   const href = '/app/?src=readiness' + (co ? '&company=' + encodeURIComponent(co.name) : '') + (next ? '&challenge=' + next.id : '');
   $('plan').href = href;
   $('retake').href = '/sql-interview-readiness-test/' + (slug ? '?company=' + slug : '');

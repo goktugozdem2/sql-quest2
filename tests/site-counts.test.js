@@ -48,6 +48,7 @@ import { dirname, join } from 'node:path';
 import { collectBankFacts, loadBank } from '../scripts/build-llms-txt.js';
 import { CANONICAL_SKILLS } from '../src/utils/skill-calc.js';
 import { challengeMatchesSkill } from '../src/utils/skill-drill.js';
+import { EXTRA_TOPIC_SPECS } from '../scripts/build-topic-extra.mjs';
 import { isFreePreview } from '../src/utils/challenge-order.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -878,6 +879,9 @@ export const TOPIC_PAGES = {
       'derived-tables': c => DERIVED_TABLE.test(solutionOf(c)),
     },
   },
+  // Generated pages (scripts/build-topic-extra.mjs, 2026-09-13): the spec is
+  // the generator's own, and every rule below checks the written page against it.
+  ...EXTRA_TOPIC_SPECS,
 };
 
 // The /challenges/ hub — src/challenges/index.html — is NOT a topic page. It

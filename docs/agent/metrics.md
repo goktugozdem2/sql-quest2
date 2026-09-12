@@ -2548,6 +2548,17 @@ solves → `signup_completed`. Split by `company` (null = no company). The
 company score is a weighting of our tagged set, not a measurement of the
 company's interview; never quote it as one.
 
+## `question_page_door`
+
+People by `aid` whose first `landing_view` carries `page` starting
+`/questions/`: solved one (any `challenge_solved` within 7 days), reached
+six, signed up; plus clicks on `cta_question_solve` and
+`cta_question_readiness`. App arrivals carry `src=question-<slug>`, so the
+solve can also be joined on the source. Read the hub apart from the
+question pages, and both against `/sql-exercises/`. GSC indexed count and
+impressions for the `/questions/` prefix sit beside it (the SEO dashboard).
+Shipped 2026-09-13.
+
 ## `company_page_door`
 
 People by `aid` whose first `landing_view` carries `page` ending
