@@ -2644,12 +2644,25 @@ const checkAuthErrorCallback = () => {
   return null;
 };
 
+// supabaseFetch(endpoint, options?)
+//   Returns the parsed body, or null. null is AMBIGUOUS: a successful write
+//   with Prefer: return=minimal has an empty body and also returns null, and
+//   so does a 4xx/5xx or a network failure. A caller that must know whether
+//   a write landed passes { throwOnError: true } and catches.
+//
+//   That ambiguity cost us four days: from 2026-09-08 08:53 UTC every
+//   registered-user upsert was rejected with 403 "permission denied for
+//   function gen_ref_code" (a BEFORE INSERT trigger on users ran as anon),
+//   this function logged it and returned null, _flushCloudSave read null as
+//   success, and 36 people were told their account was saved when no row
+//   existed. See supabase/migrations/20260912100000_*.sql.
 const supabaseFetch = async (endpoint, options = {}) => {
   if (!isSupabaseConfigured()) return null;
 
+  const { throwOnError = false, ...fetchOptions } = options;
   try {
     const response = await fetch(`${window.SUPABASE_URL}/rest/v1/${endpoint}`, {
-      ...options,
+      ...fetchOptions,
       headers: {
         'apikey': window.SUPABASE_ANON_KEY,
         'Authorization': `Bearer ${window.SUPABASE_ANON_KEY}`,
@@ -2659,13 +2672,16 @@ const supabaseFetch = async (endpoint, options = {}) => {
         // be 100KB+ each. Callers that actually need the row back set
         // Prefer: return=representation explicitly.
         'Prefer': 'return=minimal',
-        ...options.headers
+        ...fetchOptions.headers
       }
     });
 
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Supabase error:', response.status, errorText);
+      if (throwOnError) {
+        throw new Error(`Supabase ${response.status}: ${String(errorText).slice(0, 300)}`);
+      }
       return null;
     }
 
@@ -2673,6 +2689,7 @@ const supabaseFetch = async (endpoint, options = {}) => {
     return text ? JSON.parse(text) : null;
   } catch (err) {
     console.error('Supabase fetch error:', err);
+    if (throwOnError) throw err;
     return null;
   }
 };
@@ -2699,6 +2716,11 @@ const CLOUD_SAVE_DEBOUNCE_MS = 5000;
 const _flushCloudSave = async (username, data) => {
   if (!isSupabaseConfigured()) return { ok: true, skipped: true };
   try {
+    // No created_at here. PostgREST's merge-duplicates sets EVERY column in
+    // the payload on conflict, so sending created_at overwrote it on every
+    // save — measured 2026-09-12: created_at == updated_at on every registered
+    // row, and data.createdAt (the real signup time) weeks earlier. The
+    // column default (now()) sets it once, on the insert that creates the row.
     const cloudData = {
       username,
       password_hash: data.passwordHash || '',
@@ -2706,15 +2728,19 @@ const _flushCloudSave = async (username, data) => {
       email: data.email || null,
       data,
       updated_at: new Date().toISOString(),
-      created_at: new Date().toISOString(), // ignored on conflict-merge
     };
     // Upsert via ON CONFLICT (username). One request, minimal response.
     // Requires a unique index on users.username — which the old lookup-
     // then-patch code relied on implicitly too. If that index is missing,
     // add it: `create unique index if not exists users_username_key on
     // public.users (username);`
+    //
+    // throwOnError: a rejected write must come back as { ok: false }. Without
+    // it, return=minimal's empty body and a 403 both read as null, and the
+    // force path below promises callers it "propagates failure".
     await supabaseFetch('users?on_conflict=username', {
       method: 'POST',
+      throwOnError: true,
       headers: {
         'Prefer': 'resolution=merge-duplicates,return=minimal',
       },

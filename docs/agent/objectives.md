@@ -167,6 +167,23 @@ directional guardrail on both the 09-20 and 09-29 claims, and moving who sees
 a paywall makes both unreadable. An objective is not a reason to break the
 read calendar — if it were, the objective would be unmeasurable too.
 
+### Correction, 2026-09-12: the baseline was measured during an outage
+
+From 2026-09-08 08:53Z the database rejected every registered-user write —
+no account could be created and no registered account could save (ledger:
+"users writes restored"). The 09-09 starting row above was read inside that
+window. Its "Signups 169" counts `signup_completed` events, and every one of
+those after the break is a person who finished the form and got no account;
+measured 2026-09-12, that is 36 people. Nothing above changes shape, but two
+things follow for the reads:
+
+- The first days of the objective produced zero accounts **by construction**,
+  not by demand. At the day-30 read, treat 09-08 08:53Z → the apply time as a
+  hole in the signups column and say so; do not read the recovery week after
+  it as growth.
+- The people-reaching-six-solves denominator is unaffected (it is read from
+  `pro_events`), which is one more reason it is the honest denominator.
+
 ---
 
 ## How to add an objective

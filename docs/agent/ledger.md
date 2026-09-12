@@ -27,6 +27,65 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### users writes restored: the referral trigger blocked every registered save for four days
+
+- **Claimed** 2026-09-12 · **Read** 2026-09-19 (seven days of restored
+  writes), and again inside the O1 day-30 read on 2026-10-09.
+- **What broke** `20260908b_referral_codes_are_assigned.sql` was applied
+  2026-09-08 08:53:32Z. Its last lines revoke EXECUTE on `gen_ref_code()`
+  from `anon`, and it installs a SECURITY INVOKER `BEFORE INSERT` trigger on
+  `public.users` that calls that function. Every client save is a PostgREST
+  upsert sent with the anon key; upserts fire BEFORE INSERT triggers; so
+  every non-guest write failed with `permission denied for function
+  gen_ref_code` — 1,103 times on 09-08, 40–115 an hour every hour since.
+  Guests skip the loop, so guest rows kept flowing and the tables looked
+  like a quiet week. Reproduced 2026-09-12 with a rolled-back insert as
+  `anon`: `users_assign_ref_code() line 9 at assignment`.
+- **Blast radius, measured 2026-09-12 10:40Z** last successful registered
+  write 2026-09-08 08:53:26 — six seconds before the first failure. Since
+  then 0 registered rows created or updated. 36 people completed the signup
+  form and were told "Your XP, streak, and solves are saved to your account"
+  with no row written: `supabaseFetch` returns `null` on a 403, and
+  `_flushCloudSave` read `null` as success, so `saveUserData({ force: true })`
+  — whose contract is "throws on failure" — resolved. 57 registered accounts
+  were active, 27 of them solving; none of it reached the cloud. 12 logins.
+  0 purchases in the window against ~0.3 expected at the 30-day rate, so
+  money is not readable here.
+- **Change** database:
+  `20260912100000_ref_code_trigger_must_not_block_user_writes.sql` — grant
+  `anon` EXECUTE on the generator, make the trigger SECURITY DEFINER, and
+  wrap its loop so any failure yields a row with a null code instead of no
+  row. Applied by the founder with `supabase db query --linked -f …` (the
+  agent's write was stopped by the permission classifier; the agent wrote
+  the file and the probe). Client, same day: `supabaseFetch` gains
+  `throwOnError`, `_flushCloudSave` passes it so a rejected write comes back
+  as `{ ok: false }`; `created_at` is dropped from the upsert payload
+  (merge-duplicates was overwriting it on every save). Guard:
+  `tests/cloud-save-contract.test.js`.
+- **Metric** two daily counts, internal accounts excluded: registered rows
+  whose `updated_at` falls on the day (`users`, `username not like
+  'guest%'`), and people completing signup who have a `users` row within
+  five minutes (`signup_completed` by aid, joined to `users` on the
+  `newUsername` in metadata).
+- **Baseline** 09-09..09-12: 0 and 0 per day. The week before the break,
+  09-01..09-07: 4–17 registered rows/day, 5–9 signups/day.
+- **Target** within one hour of apply, a registered `updated_at` newer than
+  the apply time exists. By 09-19, ≥8 registered rows/day and ≥5 signups/day
+  with rows — back inside the pre-break band.
+- **Falsification** still 0 an hour after apply → the fix is insufficient;
+  look at RLS on `users` and the postgres error log before anything else.
+  Signups-with-rows under 3/day across the week → a client path is still
+  lying; read `feedback` verbatims and `postgres_logs` severity ERROR before
+  touching paywall or traffic work.
+- **Recovery** automatic for anyone who returns on the same browser: the
+  client sends the whole `data` blob, so the next save re-creates or catches
+  up the row. Anyone who signed up on one device and logged in on another
+  has no account, and the 36 cannot be written to — no row, no email.
+- **Effect on other reads** the 09-13 105-opener read uses `pro_events`
+  only and is unaffected. O1's day-0 baseline (2026-09-09) was measured
+  inside the outage; treat 09-08 08:53Z → apply as a hole in the signups
+  column at the day-30 read, and say so there.
+
 ### validate AI-generated SQL: a non-brand answer door with a practice handoff
 
 - **Claimed** 2026-09-09. The page is new, so its baseline is zero by

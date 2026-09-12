@@ -73,7 +73,15 @@ And two standing traps:
   accounts carry a `created_at` equal to their `lastActive` (weekly read
   2026-09-07): the client upserts the whole row on every save. Count signups
   from `signup_completed` by aid, or from a username's first `pro_events`
-  row — never from `users.created_at`.
+  row — never from `users.created_at`. Since 2026-09-12 the client no longer
+  sends `created_at`, so rows created after that date carry a real insert
+  time; rows from before keep their last-save value.
+- **No registered-user write landed between 2026-09-08 08:53Z and the fix**
+  (ledger: "users writes restored"). In that window `signup_completed` is
+  people who finished the form, not accounts; `users.updated_at` is frozen
+  at 09-08 for everyone; anything cohorted on "has a users row" undercounts
+  those days. Check `postgres_logs` severity ERROR before trusting a quiet
+  week — 1,103 errors on 09-08 sat there unread for four days.
 - **The 2026-08-26/27 burst is not people.** 165 browsers in ~36 hours, all
   `desktop:1919x992`, five US timezones, arriving through blog / SEO CTAs and
   `(none)`, 0 solves, 0 signups. Exclude that viewport on those two days when

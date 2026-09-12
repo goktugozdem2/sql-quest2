@@ -405,8 +405,34 @@ Rewritten Coach-forward:
 - "Free includes the Coach. Pro adds:" → Unlimited AI Tutor, Hard challenges, Full Mock Interview bank, All Daily difficulties, Full Warm-Up bank, 30-Day Challenge, Priority support.
 
 ### Testing
-- **906 tests passing** across 36 test files (vitest), incl. `tests/site-counts.test.js` — the guard that fails on any stale product count on a static page. Runs via `npm run test:run`. (Measured 2026-09-07; this line goes stale fast — re-run before quoting it.)
+- **1,244 tests passing** across 48 test files (vitest), incl. `tests/site-counts.test.js` — the guard that fails on any stale product count on a static page — and `tests/cloud-save-contract.test.js`, the guard on the one write that must never lie. Runs via `npm run test:run`. (Measured 2026-09-12; this line goes stale fast — re-run before quoting it.)
 - `scripts/smoke-test.js` (headless Chrome e2e): 8/8 pass against a live dev server. Run with `npm run smoke` (dev server must be up on :4321 or pass URL arg).
+
+### Database writes — read before touching `users` or its triggers (2026-09-12)
+
+- **Every client save is a PostgREST upsert sent as `anon`**
+  (`_flushCloudSave`, `users?on_conflict=username`). An upsert fires BEFORE
+  INSERT triggers even when it resolves to an UPDATE, and a trigger runs as
+  the caller unless it is SECURITY DEFINER. So never revoke from `anon`
+  anything a `users` trigger calls. The 09-08 referral migration did exactly
+  that, and for four days no account could be created and no registered
+  account could save; guest rows kept flowing, so nothing looked wrong.
+  Ledger entry "users writes restored" has the numbers; the fix is
+  `supabase/migrations/20260912100000_*.sql`.
+- **`supabaseFetch` returns `null` for success-with-empty-body AND for
+  failure.** Pass `{ throwOnError: true }` on any write that must not lie;
+  `_flushCloudSave` does, which is what makes `saveUserData({ force: true })`
+  actually throw. `tests/cloud-save-contract.test.js` pins both.
+- **Tooling:** the Supabase MCP `execute_sql` is read-only. `supabase db
+  query --linked -f <file>` reaches production from this machine (the CLI is
+  linked through the Management API), but the agent's production writes are
+  stopped by the permission classifier — the founder runs the command; the
+  agent writes the migration and a rolled-back `set role anon; do $$ … $$`
+  probe to prove the failure before and the fix after. `supabase migration
+  list` shows 20260725 / 20260907 / 20260908 as applied by hand and
+  unrecorded; `db push` would re-run them — do not.
+- **Read the postgres error log weekly**: `query_logs` on `postgres_logs`,
+  severity ERROR. It is the only place this outage was visible.
 
 ### Notifications
 Major overhaul this session: persist `dismissedNotifs`, `_subtabEnabled()` gates routes by feature flag, threshold-aligned with Quick Drill (<65), dedup by `target` string, clock-tick recompute, NOTIF_PRI constants (streak=0). Reviews Due block commented-out until Coach surfaces retrieval checks outside goals.
