@@ -138,3 +138,15 @@ describe('source guards — app.jsx keeps the guest, resumes it, and merges it',
     expect(app).toMatch(/trackActivationEvent\('guest_resumed'/);
   });
 });
+
+describe('source guard — restoring a session never celebrates a level-up', () => {
+  const app = readFileSync(fileURLToPath(new URL('../src/app.jsx', import.meta.url)), 'utf8');
+
+  it('loadUserSession marks the restore and both XP effects honour it', () => {
+    expect(app).toMatch(/xpRestoreRef\.current = true; \/\/ restoring saved XP is not a level-up/);
+    expect(app).toMatch(/if \(xpDiff > 0 && prevXPRef\.current > 0 && !xpRestoreRef\.current\)/);
+    expect(app).toMatch(/if \(prevLevelRef\.current && xp > 0 && !xpRestoreRef\.current\)/);
+    // consumed on the first commit after the load, which isSessionLoading guarantees
+    expect(app).toMatch(/xpRestoreRef\.current = false;\n  \}, \[currentLevel\.name, xp, isSessionLoading\]\);/);
+  });
+});

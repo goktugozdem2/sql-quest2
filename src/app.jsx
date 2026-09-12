@@ -14929,6 +14929,7 @@ CRITICAL RULES:
       return;
     }
     if (userData) {
+      xpRestoreRef.current = true; // restoring saved XP is not a level-up
       setCurrentUser(username);
       setXP(userData.xp || 0);
       setStreak(userData.streak || 0);
@@ -22301,6 +22302,12 @@ RULES:
   const nextLevel = levels.find(l => l.minXP > xp) || levels[levels.length - 1];
   const prevLevelRef = useRef(currentLevel.name);
   const prevXPRef = useRef(xp);
+  // Set by loadUserSession right before it restores a saved XP, consumed by the
+  // two effects below on the next commit. A restore is not a level-up and not
+  // an XP gain: a resumed guest (2026-09-12) or any login used to get the
+  // "Level Up" banner, confetti and the share prompt for XP they earned last
+  // week, because the refs above start at the first render's XP of zero.
+  const xpRestoreRef = useRef(false);
   // Holds a challenge referenced by a ?challenge=<slug-or-id> URL until the
   // auth state resolves. Then the deep-link resolver effect below opens it,
   // auto-starting guest mode if the visitor has no session.
@@ -22488,17 +22495,19 @@ RULES:
   }, [isSessionLoading, userProStatus]);
 
   useEffect(() => {
-    // Detect XP gain and show floating animation
+    // Detect XP gain and show floating animation — earned XP only, never a
+    // restore (login, guest resume) landing on top of a live number.
     const xpDiff = xp - prevXPRef.current;
-    if (xpDiff > 0 && prevXPRef.current > 0) {
+    if (xpDiff > 0 && prevXPRef.current > 0 && !xpRestoreRef.current) {
       setFloatingXP({ amount: xpDiff, id: Date.now() });
     }
     prevXPRef.current = xp;
   }, [xp]);
   useEffect(() => {
     if (currentLevel.name !== prevLevelRef.current) {
-      // Level changed - play level up sound (but not on initial load)
-      if (prevLevelRef.current && xp > 0) {
+      // Level changed — celebrate only when it was earned in this session,
+      // not when a saved session just came back (the refs start at XP 0).
+      if (prevLevelRef.current && xp > 0 && !xpRestoreRef.current) {
         playSound('levelup');
         setShowLevelUp(currentLevel.name);
         setShowConfetti(true);
@@ -22507,7 +22516,11 @@ RULES:
       }
     }
     prevLevelRef.current = currentLevel.name;
-  }, [currentLevel.name]);
+    // The restore flag is consumed on the first commit after a session load.
+    // isSessionLoading is in the deps so that commit always happens, even
+    // when the restored XP is 0 or lands in the same level as before.
+    xpRestoreRef.current = false;
+  }, [currentLevel.name, xp, isSessionLoading]);
   const dataset = publicDatasets[currentDataset];
 
   // Payment Success Modal — landing spot for the Stripe payment-link redirect.
