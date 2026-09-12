@@ -20,6 +20,7 @@ export const dataFiles = [
   'sector-tags.js',
   'finans-data.js',
   'finans-fraud-data.js',
+  'neobank-data.js',
   'gayrimenkul-data.js',
   'uretim-data.js',
   'sector-challenges.js',

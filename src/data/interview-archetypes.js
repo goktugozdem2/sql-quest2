@@ -147,8 +147,14 @@
 //     (429 / 403) so nothing here is quotable with a month on it. Data shape
 //     fails on its own: the 26 Revolut-tagged challenges sit on `ecommerce`
 //     (18), `finans_fraud` (5) and `employees` (3) — a neobank screen runs on
-//     users / transactions / currencies / top-ups, and that ledger does not
-//     exist in the bank. Writing it is authored-data work, not a tag.
+//     users / transactions / currencies / top-ups, and that ledger did not
+//     exist in the bank. Written the same day: `finans_neobank`
+//     (src/data/neobank-data.js, from scripts/generate-neobank-ledger.js —
+//     240 users, 12 currencies, top_ups and transactions with simulated
+//     balances, validated by scripts/validate-neobank-ledger.mjs). That is
+//     step 2 of the checklist done in advance; steps 1 (a dated, citable
+//     screen format) and 3 (the page section) are what still stand between
+//     Revolut and membership, and neither is a tag or a script.
 //   Stripe — guides and one Blind thread describe a CoderPad SQL round and a
 //     take-home report inside a five-round loop; no duration, no count, no
 //     table shape. Tags: `ecommerce` 27, `finans_fraud` 6.
