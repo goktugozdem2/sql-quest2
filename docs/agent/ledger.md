@@ -112,6 +112,10 @@ of the verifier and must never be rounded to `FLAT`.
 - **Target** returned_48h up ≥ 5 points over three sends.
 - **Falsification:** flat at n ≥ 100 sends → the lines are decoration;
   keep the mastery line, drop the recommendation.
+- **Deployed at** 2026-09-12 (the founder ran `supabase functions deploy
+  weekly-digest`; verified on the project as version 6 with the new source —
+  a first attempt earlier the same day had not landed, the keychain prompt
+  had stopped it). First send with the new lines: Monday 2026-09-14 09:00Z.
 - **Verdict** _pending_
 
 ### the wrong-answer panel says what is wrong, and one hint (P1 diff engine)
