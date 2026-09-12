@@ -27,8 +27,14 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
-### Revolut membership: everything but the signature — **PENDING A PERSON**
+### Revolut membership: everything but the signature — **SIGNED 2026-09-12**
 
+- **Signed** 2026-09-12 by Göktuğ, in chat ("imzaladım, revolut'u kayda
+  taşı"); the block moved into `INTERVIEW_ARCHETYPES` as the second
+  archetype (`neobank-analyst` on `finans_neobank`), the registry test now
+  asserts two. This is the pre-registered "a second value in `company`"
+  trigger firing, by design: from this date every prep read splits by
+  company, and the two rows are never summed.
 - **Written** 2026-09-12. Not a claim to read; a state to sign. The registry
   checklist (src/data/interview-archetypes.js) is met on every point a script
   may meet: a dated source (interviewquery's 2026 guide, 27 candidate reports
@@ -1202,7 +1208,10 @@ of the verifier and must never be rounded to `FLAT`.
       `content_lock_reached` spike** → this shipped as a paywall funnel. Revert
       the mock from the plan regardless of the other numbers. (Unchanged.)
     - **A second value ever appears in `company`** → content changed under the
-      eligibility bar. Stop and look. (Unchanged.)
+      eligibility bar. Stop and look. (Unchanged.) **Fired 2026-09-12:**
+      Revolut signed as the second member (`neobank-analyst` on
+      `finans_neobank`, 12 challenges, mock `revolut-analytics-screen`).
+      From that date read this funnel split by company; never sum the rows.
     - **Any prediction wording appears on the card or in the Coach offer** →
       revert immediately, regardless of the numbers. (Unchanged; the guard now
       covers the Coach offer's copy in both languages too.)
@@ -1228,6 +1237,10 @@ of the verifier and must never be rounded to `FLAT`.
     regardless of the other numbers.
   - **A second value ever appears in `company`** → content changed under the
     eligibility bar. Stop and look at what changed before reading anything.
+    **Fired 2026-09-12** (Revolut signed; see "Revolut membership" above):
+    the change is a second archetype on a second ledger, not a change to
+    Capital One's set — read Capital One's rows as before and Revolut's as a
+    new series born that day.
   - **Any prediction wording appears on the card** → revert immediately,
     regardless of the numbers. That is not a metric question.
 - **Confounds** (i) The flip lands days after the paywall-surfaces read closes,

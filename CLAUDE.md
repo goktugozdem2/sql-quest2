@@ -575,18 +575,19 @@ Rewritten Coach-forward:
   in the ledger. `/coach/` now redirects to `/app` (it 404'd; nothing linked
   to it).
 
-### Revolut — everything but the signature (2026-09-12)
+### Revolut — the second interview-prep member (signed 2026-09-12)
 
-- The registry checklist for a second interview-prep member is met except
-  `declaredBy`: twelve challenges on `finans_neobank` tagged Revolut
-  (300-311), the mock `revolut-analytics-screen` (6 MCQ computed from the
-  data + 2 written, 60 min, all on the ledger), the page's sourced rounds
-  section with `Sources:` (now in `SOURCED_PAGES`), and
-  `PENDING_INTERVIEW_ARCHETYPES` in src/data/interview-archetypes.js with
-  `declaredBy: null`. tests/revolut-mock.test.js validates the block with a
-  placeholder signature. **To sign:** fill declaredOn/declaredBy, move the
-  block into `INTERVIEW_ARCHETYPES`, set the "exactly one archetype" test to
-  two — and read `interview_prep_funnel` split by company from that day.
+- `neobank-analyst` on `finans_neobank`, member Revolut, `declaredBy:
+  'Göktuğ'`: twelve challenges tagged Revolut on the ledger (300-311), the
+  mock `revolut-analytics-screen` (6 MCQ whose correct options are computed
+  from the data + 2 written, 60 min, all on the ledger), the page's sourced
+  rounds section with `Sources:` (in `SOURCED_PAGES`). tests/revolut-mock.
+  test.js and the registry test pin all of it; `PENDING_INTERVIEW_ARCHETYPES`
+  is the empty waiting room for the next candidate.
+- **From this date `interview_prep_funnel` has two values in `company`.**
+  That was the pre-registered stop-and-look; read the funnel split by
+  company and never sum the rows. A Revolut arrival with a named target now
+  gets the prep flow (readiness, day plan, mock offer) Capital One's did.
 
 ### P2 — retention (2026-09-12)
 

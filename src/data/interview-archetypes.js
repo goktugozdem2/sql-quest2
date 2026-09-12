@@ -171,8 +171,8 @@
 //     script; the challenges and the mock are a day's content work.
 //     DONE later the same day (2026-09-12): the twelve challenges (300-311),
 //     the mock (`revolut-analytics-screen`), the page section with its
-//     sources. What remains is the signature — see PENDING_INTERVIEW_ARCHETYPES
-//     at the bottom of this file.
+//     sources. SIGNED 2026-09-12 by Göktuğ — Revolut is the second member;
+//     see `neobank-analyst` in INTERVIEW_ARCHETYPES.
 //   Stripe — guides and one Blind thread describe a CoderPad SQL round and a
 //     take-home report inside a five-round loop; no duration, no count, no
 //     table shape. Tags: `ecommerce` 27, `finans_fraud` 6.
@@ -188,7 +188,8 @@
 // Glassdoor / Blind reports in a browser, write the dated digest, and author
 // the ledger the screen runs on.
 /**
- * THE REGISTRY. One archetype, one member, today — and that is asserted by a
+ * THE REGISTRY. Two archetypes, one member each (Capital One 2026-09-08,
+ * Revolut 2026-09-12) — and that is asserted by a
  * test, so growing it is a deliberate, reviewed diff rather than a drift.
  */
 export const INTERVIEW_ARCHETYPES = Object.freeze([
@@ -269,28 +270,6 @@ export const INTERVIEW_ARCHETYPES = Object.freeze([
       }),
     ]),
   }),
-]);
-
-/**
- * PENDING — written, backed by the data, and UNSIGNED (2026-09-12).
- *
- * Everything the checklist asks for a Revolut membership exists in the bank
- * tonight except the one thing a script may not supply: a person's name on
- * `declaredBy`. The twelve challenges on `finans_neobank` tagged Revolut
- * (ids 300-311), the mock keyed to the exact name and running on that ledger
- * (`revolut-analytics-screen`), the page section with its dated sources
- * (src/revolut-sql-interview.html) — all in place and pinned by
- * tests/revolut-mock.test.js, which validates THIS block against the live
- * data with a placeholder signature so the only thing left to change is the
- * signature.
- *
- * TO SIGN: fill `declaredOn` and `declaredBy`, move the archetype into
- * INTERVIEW_ARCHETYPES above, delete it from here, and update the
- * "exactly one archetype and one member today" assertion in
- * tests/interview-prep.test.js to two. Then tell the ledger: a second value
- * in the prep funnel's `company` column is its pre-registered stop-and-look.
- */
-export const PENDING_INTERVIEW_ARCHETYPES = Object.freeze([
   Object.freeze({
     id: 'neobank-analyst',
     label: 'Neobank analyst screen',
@@ -315,8 +294,8 @@ export const PENDING_INTERVIEW_ARCHETYPES = Object.freeze([
       Object.freeze({
         company: 'Revolut',
         pageSlug: 'revolut',
-        declaredOn: null,
-        declaredBy: null,
+        declaredOn: '2026-09-12',
+        declaredBy: 'Göktuğ',
         screenSource:
           "As described publicly in September 2026: interviewquery's \"Revolut Data "
           + "Analyst Interview Guide 2026\", synthesised from 27 candidate reports "
@@ -340,6 +319,32 @@ export const PENDING_INTERVIEW_ARCHETYPES = Object.freeze([
       }),
     ]),
   }),
+]);
+
+/**
+ * PENDING — the waiting room for the next member. Empty since 2026-09-12:
+ * Revolut was written here unsigned that morning and signed by Göktuğ that
+ * evening (the block below is what a candidate looks like while it waits).
+ *
+ * Everything the checklist asks for a Revolut membership exists in the bank
+ * tonight except the one thing a script may not supply: a person's name on
+ * `declaredBy`. The twelve challenges on `finans_neobank` tagged Revolut
+ * (ids 300-311), the mock keyed to the exact name and running on that ledger
+ * (`revolut-analytics-screen`), the page section with its dated sources
+ * (src/revolut-sql-interview.html) — all in place and pinned by
+ * tests/revolut-mock.test.js, which validates THIS block against the live
+ * data with a placeholder signature so the only thing left to change is the
+ * signature.
+ *
+ * TO SIGN: fill `declaredOn` and `declaredBy`, move the archetype into
+ * INTERVIEW_ARCHETYPES above, delete it from here, and update the
+ * "exactly one archetype and one member today" assertion in
+ * tests/interview-prep.test.js to two. Then tell the ledger: a second value
+ * in the prep funnel's `company` column is its pre-registered stop-and-look.
+ */
+export const PENDING_INTERVIEW_ARCHETYPES = Object.freeze([
+  // (empty — Revolut was signed on 2026-09-12 and moved into INTERVIEW_ARCHETYPES)
+
 ]);
 
 /** Every declared member company, across every archetype. Sorted, deduped. */

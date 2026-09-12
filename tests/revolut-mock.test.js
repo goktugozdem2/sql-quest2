@@ -101,24 +101,21 @@ describe('the mock — keyed to the exact name, on the ledger, 60 minutes', () =
   });
 });
 
-describe('the pending registry block — backed by the bank, missing only the signature', () => {
+describe('the registry — Revolut signed 2026-09-12, the waiting room empty', () => {
   const bank = () => win.challengesData;
   const companyMap = () => win.challengeCompanies;
-  const signed = () => PENDING_INTERVIEW_ARCHETYPES.map(a => ({
-    ...a, members: a.members.map(m => ({ ...m, declaredOn: '2026-09-13', declaredBy: 'placeholder' })),
-  }));
 
-  it('is unsigned today, on purpose', () => {
-    expect(PENDING_INTERVIEW_ARCHETYPES).toHaveLength(1);
-    expect(PENDING_INTERVIEW_ARCHETYPES[0].members[0].declaredBy).toBeNull();
-    expect(archetypeProblems(bank(), companyMap(), win.mockInterviewsData, PENDING_INTERVIEW_ARCHETYPES).join(' '))
-      .toMatch(/declaredBy is missing/);
+  it('is signed by a person, and nothing waits unsigned', () => {
+    const rv = INTERVIEW_ARCHETYPES.find(a => a.id === 'neobank-analyst');
+    expect(rv).toBeTruthy();
+    expect(rv.dataset).toBe(DATASET);
+    expect(rv.members[0]).toMatchObject({ company: 'Revolut', pageSlug: 'revolut', declaredOn: '2026-09-12', declaredBy: 'Göktuğ' });
+    expect(PENDING_INTERVIEW_ARCHETYPES).toHaveLength(0);
   });
 
-  it('with a signature, every other check passes: dataset in the bank, ≥ 8 tagged, a sittable mock, one archetype per company', () => {
-    expect(archetypeProblems(bank(), companyMap(), win.mockInterviewsData, signed())).toEqual([]);
-    const both = [...INTERVIEW_ARCHETYPES, ...signed()];
-    expect(archetypeProblems(bank(), companyMap(), win.mockInterviewsData, both)).toEqual([]);
+  it('every registry check passes on the live bank: dataset in the bank, ≥ 8 tagged, a sittable mock, one archetype per company', () => {
+    expect(archetypeProblems(bank(), companyMap(), win.mockInterviewsData, INTERVIEW_ARCHETYPES)).toEqual([]);
+    const both = INTERVIEW_ARCHETYPES;
     const targets = eligibleTargets(bank(), companyMap(), win.mockInterviewsData, both);
     expect(targets.map(t => t.company)).toEqual(['Capital One', 'Revolut']);
     const rv = findTarget('Revolut', bank(), companyMap(), win.mockInterviewsData, both);

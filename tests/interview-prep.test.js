@@ -149,10 +149,10 @@ const CARD_SET = Array.from({ length: 25 }, (_, i) => 275 + i);
 // ───────────────────────────── eligibility ──────────────────────────────────
 
 describe('eligibleTargets — who the live data lets us offer', () => {
-  it('offers exactly one company today, and it is the one with its own dataset', () => {
-    // If this ever returns two, a second target genuinely cleared the data bar
-    // — check WHY before celebrating: a co-tag or a generic mock can move it.
-    expect(eligibleTargets(bank, companyMap, mocks).map(t => t.company)).toEqual(['Capital One']);
+  it('offers exactly the declared members today — Capital One, and Revolut since 2026-09-12', () => {
+    // If this ever returns a third, a target genuinely cleared the data bar —
+    // check WHY before celebrating: a co-tag or a generic mock can move it.
+    expect(eligibleTargets(bank, companyMap, mocks).map(t => t.company)).toEqual(['Capital One', 'Revolut']);
   });
 
   it('describes the target from the data, not from a literal', () => {
@@ -172,18 +172,20 @@ describe('eligibleTargets — who the live data lets us offer', () => {
     // 'E-commerce Corp', 'Fintech', 'FAANG'). None of those strings is a key
     // in the company map, so none can ever pick up challenges.
     const offered = new Set(eligibleTargets(bank, companyMap, mocks).map(t => t.company));
+    const members = new Set(archetypeMemberCompanies());
     for (const m of mocks) {
-      if (m.company === 'Capital One') continue;
+      if (members.has(m.company)) continue;
       expect(offered.has(m.company), `${m.company} must not be offerable`).toBe(false);
     }
   });
 
-  it('the other 22 tagged companies are NOT offered — a tag is not a target', () => {
+  it('the other 21 tagged companies are NOT offered — a tag is not a target', () => {
     const tagged = new Set(Object.values(companyMap).flat());
     const offered = new Set(eligibleTargets(bank, companyMap, mocks).map(t => t.company));
+    const members = new Set(archetypeMemberCompanies());
     expect(tagged.size).toBeGreaterThan(20);
     for (const c of tagged) {
-      if (c === 'Capital One') continue;
+      if (members.has(c)) continue;
       expect(offered.has(c), `${c} is a tag filter over the generic bank, not a target`).toBe(false);
     }
   });
@@ -221,7 +223,7 @@ describe('eligibleTargets — a tag alone does not qualify a company, only membe
     const withRival = [...mocks, {
       id: 'rival-mock', company: 'Rival Bank', questions: questionsOn('finans_fraud'),
     }];
-    expect(eligibleTargets(bank, extra, withRival).map(t => t.company)).toEqual(['Capital One']);
+    expect(eligibleTargets(bank, extra, withRival).map(t => t.company)).toEqual(['Capital One', 'Revolut']);
   });
 
   it('tagging challenges on a dataset the archetype does not name qualifies nobody', () => {
@@ -239,8 +241,10 @@ describe('eligibleTargets — a tag alone does not qualify a company, only membe
     for (const c of bank.filter(x => x.dataset === 'ecommerce').slice(0, 30)) {
       extra[String(c.id)] = [...(extra[String(c.id)] || []), 'Capital One'];
     }
-    const [t, ...rest] = eligibleTargets(bank, extra, mocks);
-    expect(rest).toEqual([]);
+    const targets = eligibleTargets(bank, extra, mocks);
+    // still exactly the two declared members — the pasted tag adds nobody
+    expect(targets.map(x => x.company)).toEqual(['Capital One', 'Revolut']);
+    const t = targets[0];
     expect(t.company).toBe('Capital One');
     expect(t.challengeIds).toEqual(CARD_SET);
   });
@@ -410,18 +414,24 @@ describe('the archetype registry — every claim in it is backed, loudly', () =>
     expect(archetypeMemberCompanies()).toEqual([...seen.values()].sort());
   });
 
-  it('the registry is not vacuous: exactly one archetype and one member today', () => {
+  it('the registry is not vacuous: exactly two archetypes, one member each, today', () => {
     // Adding either is a deliberate, reviewed diff — and it fires the ledger's
     // pre-registered "a second value in `company`, stop and look" trigger.
-    expect(INTERVIEW_ARCHETYPES).toHaveLength(1);
+    // Fired 2026-09-12: Revolut signed by Göktuğ (ledger: "Revolut
+    // membership: everything but the signature", now signed).
+    expect(INTERVIEW_ARCHETYPES).toHaveLength(2);
     expect(INTERVIEW_ARCHETYPES[0].id).toBe('card-payments-analyst');
     expect(INTERVIEW_ARCHETYPES[0].dataset).toBe('finans_fraud');
-    expect(archetypeMemberCompanies()).toEqual(['Capital One']);
+    expect(INTERVIEW_ARCHETYPES[1].id).toBe('neobank-analyst');
+    expect(INTERVIEW_ARCHETYPES[1].dataset).toBe('finans_neobank');
+    expect(INTERVIEW_ARCHETYPES[1].members[0]).toMatchObject({ company: 'Revolut', declaredBy: 'Göktuğ', declaredOn: '2026-09-12' });
+    expect(archetypeMemberCompanies()).toEqual(['Capital One', 'Revolut']);
     expect(eligibleTargets(bank, companyMap, mocks).map(t => t.company))
       .toEqual(archetypeMemberCompanies());
     // The lookup a stored preference goes through: case-insensitive on the
     // member, null on everybody else in the product.
     expect(archetypeForCompany('capital one')?.member.company).toBe('Capital One');
+    expect(archetypeForCompany('revolut')?.archetype.id).toBe('neobank-analyst');
     expect(archetypeForCompany('Stripe')).toBeNull();
     expect(archetypeForCompany('')).toBeNull();
     expect(archetypeForCompany(null)).toBeNull();

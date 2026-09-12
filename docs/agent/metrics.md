@@ -1658,7 +1658,10 @@ Traps, stated before the first read:
   in `src/data/interview-archetypes.js` that a dataset is shaped like a kind of
   company's screen. A tag cannot grant it; a person writes it down and signs
   it. A second value appearing in this column therefore means **somebody added
-  a member** — go and read that diff before reading the funnel. (The old bar
+  a member** — go and read that diff before reading the funnel. **It appeared
+  on 2026-09-12: Revolut**, signed by Göktuğ, on the `finans_neobank` ledger
+  with the `revolut-analytics-screen` mock — a second archetype, not a change
+  to Capital One's set. Split every read on `company` from that date. (The old bar
   had the property that co-tagging the target set for a second issuer removed
   the *first* company too, which would have shown up here as the column going
   empty rather than gaining a value. That failure mode no longer exists.)
