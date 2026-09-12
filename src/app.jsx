@@ -26,7 +26,7 @@ import { pickNextChallengeWith, pickTopNWith, makeChallengeComparator, hardPrevi
 import { shouldShowInterviewNav, interviewNavReason } from './utils/interview-nav.js';
 import { mergeProgress, hasProgress, isResumableGuest, GUEST_USER_KEY } from './utils/progress-merge.js';
 import { INTAKE_KEY, INTAKE_GOALS, INTAKE_ROLES, INTAKE_STEPS, intakeGoalFor, nextIntakeStep, isValidIntakeDate, buildIntakeRecord, readIntakeRecord, intakeEventPayload, newCoachGoalState, shouldShowIntake } from './utils/onboarding-intake.js';
-import { PLACEMENT_TIERS, placementResult, placementEventPayload } from './utils/placement.js';
+import { PLACEMENT_TIERS, placementResult, placementEventPayload, readFirstRunPlacement, seedFloorsFor } from './utils/placement.js';
 import { paidWallFor, isColdStart } from './utils/paid-wall.js';
 import { expandStageChallenges, placementStartIndex as roadmapPlacementStartIndex } from './utils/roadmap.js';
 import { shouldEmitLockEvent, lockEventKey } from './utils/lock-events.js';
@@ -10852,6 +10852,8 @@ CRITICAL RULES:
       completedDrills,
     }, {
       skillLevels: weaknessTracking?.skillLevels || {},
+      // A first-run placement's floors, seen by skipIf only (coach.js).
+      seedFloors: coachState?.seedFloors || null,
       // 2026-09-06 (paywall-surfaces T6): what `pickHardPreviewStep` reads.
       // The bank and the roadmap order go in so the pick is curriculum-next,
       // never raw id order (the raw-array trap); `isPro` skips the rule
@@ -11093,7 +11095,12 @@ CRITICAL RULES:
     trackActivationEvent('goal_selected', { goalId });
     // Same shape the onboarding intake writes (src/utils/onboarding-intake.js),
     // stamped with where the goal came from.
-    const next = newCoachGoalState(goalId, { source: 'picker', cold: shouldPlace, placementIds: COACH_PLACEMENT_CHALLENGE_IDS });
+    const firstRun = (() => { try { return readFirstRunPlacement(localStorage); } catch (_) { return null; } })();
+    const trustFirstRun = !!window.FF?.feature('coachTrustQuizPlacement');
+    const next = newCoachGoalState(goalId, { source: 'picker', cold: shouldPlace, placementIds: COACH_PLACEMENT_CHALLENGE_IDS, firstRun, trustFirstRun });
+    if (next.placement?.skippedBy === 'first_run_quiz') {
+      trackActivationEvent('coach_placement_skipped', { by: 'first_run_quiz', level: firstRun.level, tier: PLACEMENT_TIERS[firstRun.level], goalId, at: 'goal_start', placementSource: firstRun.source });
+    }
     setCoachState(next);
     if (currentUser) {
       const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
@@ -11141,12 +11148,18 @@ CRITICAL RULES:
         localStorage.setItem('sqlquest_intent_asked', '1');
       } catch (_) {}
       if (!coachState?.goalId) {
+        const firstRun = (() => { try { return readFirstRunPlacement(localStorage); } catch (_) { return null; } })();
         const next = newCoachGoalState(goal.coachGoalId, {
           source: 'intake',
           cold: _coachUserIsCold() && !_userIsSelfDeclaredAdvanced(),
           placementIds: COACH_PLACEMENT_CHALLENGE_IDS,
           now,
+          firstRun,
+          trustFirstRun: !!window.FF?.feature('coachTrustQuizPlacement'),
         });
+        if (next.placement?.skippedBy === 'first_run_quiz') {
+          trackActivationEvent('coach_placement_skipped', { by: 'first_run_quiz', level: firstRun.level, tier: PLACEMENT_TIERS[firstRun.level], goalId: goal.coachGoalId, at: 'goal_start', placementSource: firstRun.source });
+        }
         setCoachState(next);
         if (currentUser) {
           try {
@@ -21477,6 +21490,44 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
         placedAt: new Date().toISOString(),
       }));
     } catch (_) { /* ignore */ }
+    applyFirstRunPlacementToCoach(levelId, metadata.source || 'first_run_placement');
+  };
+
+  // ── The Coach stops asking twice (2026-09-12) ─────────────────────────
+  // A first-run placement is a placement. Behind coachTrustQuizPlacement, a
+  // Coach goal that still holds a pending five-challenge placement check is
+  // marked skipped by it, and the tier becomes seed floors that ONLY the
+  // engine's skipIf clauses see (src/utils/coach.js applySeedFloors): the
+  // radar keeps showing what was measured, graduation reads the radar, and
+  // "Retake placement" on the Coach still works. Measured before this: of
+  // 102 goal starters handed the placement check, 50 never attempted one of
+  // its challenges, 43 stopped inside it, 4 finished, 4 ever completed a
+  // curriculum step. Claim: docs/agent/ledger.md, "the Coach stops asking
+  // twice". Rules and floors: src/utils/placement.js.
+  const applyFirstRunPlacementToCoach = (levelId, source = 'first_run_placement') => {
+    if (!window.FF?.feature('coachTrustQuizPlacement')) return;
+    if (!coachState?.goalId || !PLACEMENT_TIERS[levelId]) return;
+    const pending = !!coachState.placement && !coachState.placement.skipped;
+    if (!pending && coachState.seedFloors?.level === levelId) return;
+    const at = new Date().toISOString();
+    const next = {
+      ...coachState,
+      ...(pending
+        ? { placement: { ...coachState.placement, skipped: true, skippedBy: 'first_run_quiz', level: levelId, at } }
+        : {}),
+      seedFloors: { source: 'first_run_quiz', level: levelId, floors: seedFloorsFor(levelId), at },
+    };
+    setCoachState(next);
+    if (currentUser) {
+      try {
+        const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+        userData.coachState = next;
+        saveUserData(currentUser, userData);
+      } catch (_) {}
+    }
+    if (pending) {
+      trackActivationEvent('coach_placement_skipped', { by: 'first_run_quiz', level: levelId, tier: PLACEMENT_TIERS[levelId], goalId: coachState.goalId, at: 'placement', placementSource: source });
+    }
   };
 
   const getFirstRunQuizResult = (answers = firstRunQuizAnswers) => {

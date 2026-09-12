@@ -124,6 +124,14 @@ metrics:report`.
      retrieval check forever (analyst-day-one d1-9 / d1-24).
 - Coach tab is live for all users (`tabs.guide: true` in feature-flags.js). Skill Forge retired — folded into the Coach's Quick Drill card.
 - Placement check auto-injects for cold users (< 150 summed skill points).
+- **The placement check is where cold goal-starters stop** (measured
+  2026-09-12: 102 handed it, 50 never started it, 43 stopped inside, 4
+  finished, 4 ever completed a curriculum step). Behind
+  `coachTrustQuizPlacement` (flips 2026-09-27) a first-run placement is
+  trusted instead: `placement.skippedBy='first_run_quiz'` and
+  `coachState.seedFloors` — floors that ONLY `skipIf` sees
+  (`applySeedFloors` in coach.js); never the radar, never graduation.
+  `tests/placement.test.js` pins all three.
 
 ### Skill radar (9 canonical skills — the reshuffle SHIPPED)
 `CANONICAL_SKILLS` (src/utils/skill-calc.js) is the single source of truth:

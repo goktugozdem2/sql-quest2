@@ -176,7 +176,7 @@ describe('source guards — app.jsx keeps the intake optional, early, and quiet'
     expect(block).toMatch(/role: record\.role,/);
     expect(block).toMatch(/localStorage\.setItem\('sqlquest_user_goals', JSON\.stringify\(merged\)\)/);
     // and the picker writes the same shape, stamped
-    expect(app).toMatch(/newCoachGoalState\(goalId, \{ source: 'picker', cold: shouldPlace, placementIds: COACH_PLACEMENT_CHALLENGE_IDS \}\)/);
+    expect(app).toMatch(/newCoachGoalState\(goalId, \{ source: 'picker', cold: shouldPlace, placementIds: COACH_PLACEMENT_CHALLENGE_IDS, firstRun, trustFirstRun \}\)/);
     expect(app).toMatch(/goalSource: coachState\?\.source \|\| null,/);
   });
 

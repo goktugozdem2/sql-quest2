@@ -48,6 +48,26 @@ window.FEATURE_FLAGS = {
     // docs/agent/ledger.md, "onboarding intake". Never a step toward
     // checkout: the block renders nothing about Pro, by test.
     onboardingIntake: false,
+    // The Coach stops asking twice — a first-run placement (the quiz, or a
+    // level picked by hand) IS a placement. ON, a Coach goal started by
+    // someone the first run already placed skips the Coach's own five-
+    // challenge placement check, and the tier becomes seed floors that only
+    // the engine's skipIf clauses see; the radar and graduation read what
+    // was measured. "Retake placement" on the Coach still works.
+    //
+    // Measured 2026-09-12 on the users table: of 102 goal starters handed
+    // the placement check, 50 never attempted one of its challenges, 43
+    // stopped inside it, 4 finished, and 4 ever completed a curriculum step.
+    // From 09-16 the onboarding intake hands a Coach goal to every new
+    // person who answers it — all cold, all at this wall.
+    //
+    // SHIPPED OFF (2026-09-12). The Coach page claim reads the full-shell
+    // Coach until 2026-09-26 (take rate, split by first-step type); this
+    // changes what that first step IS, so it flips on 2026-09-27 by
+    // scheduled task, after that verdict and only if it was not extended.
+    // Claim, baseline and falsification: docs/agent/ledger.md, "the Coach
+    // stops asking twice".
+    coachTrustQuizPlacement: false,
     // Adaptive placement — a full score on the four recognition questions
     // opens a second round of four (window functions, a CTE, NULL comparison,
     // the anti-join); only a pass there (3 of 4) places someone on the

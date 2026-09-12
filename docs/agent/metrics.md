@@ -2020,6 +2020,71 @@ Traps, stated before the first read:
   the account already had. Read `merges_with_solves`, not `merges`, for the
   value delivered.
 
+## `coach_goal_to_step`
+
+Of the people who start a Coach goal, how many complete at least one
+curriculum step within 14 days. The instrument for "the Coach stops asking
+twice": the five-challenge placement check injected at goal start is where
+cold goal-starters stop.
+
+Two sources, read both. The record (`users.data.coachState`) is the truth
+for completion — the engine writes `stepsCompleted` when a curriculum step is
+done and there is no event for it; the events give the timing.
+
+```sql
+-- record: goal starters after the flip, and whether a curriculum step was ever completed
+SELECT count(*) AS goal_starters,
+       count(*) FILTER (WHERE jsonb_array_length(COALESCE(data->'coachState'->'stepsCompleted','[]'::jsonb)) >= 1) AS took_a_step,
+       count(*) FILTER (WHERE (data->'coachState'->'placement'->>'skippedBy') = 'first_run_quiz') AS placement_skipped_by_first_run,
+       count(*) FILTER (WHERE data->'coachState'->'placement' IS NOT NULL
+                          AND (data->'coachState'->'placement'->>'skipped') <> 'true') AS still_holding_the_check
+FROM users
+WHERE (data->'coachState'->>'startedAt')::timestamptz >= :flip
+  AND (data->'coachState'->>'startedAt')::timestamptz < now() - interval '14 days'
+  AND <shared filters>;
+
+-- events: first non-placement step within 7 days of the goal start, people by aid
+WITH g AS (
+  SELECT ((metadata #>> '{}')::jsonb)->>'aid' AS aid, min(created_at) AS t
+  FROM pro_events WHERE event IN ('goal_selected','intake_completed') AND created_at >= :flip AND <shared filters>
+  GROUP BY 1
+), s AS (
+  SELECT ((metadata #>> '{}')::jsonb)->>'aid' AS aid, min(created_at) AS t
+  FROM pro_events WHERE event = 'coach_step_started'
+    AND ((metadata #>> '{}')::jsonb)->>'type' <> 'placement_check' AND created_at >= :flip
+  GROUP BY 1
+)
+SELECT count(*) AS goal_starters,
+       count(*) FILTER (WHERE s.t IS NOT NULL AND s.t < g.t + interval '7 days') AS took_a_real_step_7d
+FROM g LEFT JOIN s USING (aid);
+```
+
+**Baseline, measured 2026-09-12 on the record, all time:** 102 goal
+starters were handed the placement check; 50 never attempted one of its
+challenges, 43 attempted 1–4, 4 finished, 5 skipped; **4 of 102 (3.9%)**
+ever completed a curriculum step. 82 of the 102 started since 2026-07-01.
+
+**Guardrail — first-step solve rate.** `coach_step_started type='challenge'`
+→ `challenge_solved` with the same `challengeId` within 24h, people by aid,
+split by whether the person's `coachState.seedFloors` exists (record) — the
+floors could send someone to a step they cannot do, and this is where it
+shows first.
+
+Traps, stated before the first read:
+
+- **`stepsCompleted` is the only completion signal**, and it lives on the
+  record. A person who never saved (guest who bounced) has no row; read the
+  events for reach, the record for completion.
+- **`intake_completed` with a null goal starts no Coach goal**; the events
+  query above over-counts starters by those people. Filter
+  `((metadata #>> '{}')::jsonb)->>'goal' IS NOT NULL` on the intake rows.
+- **Warm accounts are not in the treated arm.** A goal-picker with no
+  first-run record still gets the Coach's own check; split by
+  `placement.skippedBy` before reading a rate.
+- **From 2026-10-01 the floors follow the adaptive tiers**; an
+  Interview-ready floor set is stronger than an Advanced one. Read the
+  guardrail per `seedFloors.level`.
+
 ## `placement_mix`
 
 Where the first-run placement quiz sends people, and whether the second round

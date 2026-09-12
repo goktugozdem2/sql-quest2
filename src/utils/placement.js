@@ -109,3 +109,69 @@ export function placementEventPayload(result, source = 'quiz') {
     round2: !!r.round2Active,
   };
 }
+
+// ── The Coach stops asking twice (2026-09-12) ─────────────────────────────
+// A first-run placement — the quiz, or a level picked by hand — IS a
+// placement. Behind `coachTrustQuizPlacement`, a Coach goal started by
+// someone the first run already placed does not get the Coach's own
+// five-challenge placement check; the tier becomes seed floors that only the
+// engine's skipIf clauses see (src/utils/coach.js applySeedFloors). The radar
+// keeps showing what was measured, and graduation reads the radar.
+//
+// Floors sit exactly on the goals' skipIf thresholds (gte 60 / 70): a tier
+// skips the intro lessons on what it evidences and nothing more. Challenges
+// still gate; a floor never solves anything.
+
+export const FIRST_RUN_PLACEMENT_SOURCES = Object.freeze([
+  'first_run_placement_quiz',
+  'first_run_manual_or_recommendation',
+  'first_run_completed',
+]);
+
+export const COACH_SEED_FLOORS = Object.freeze({
+  'brand-new': Object.freeze({}),
+  basics: Object.freeze({ 'Querying Basics': 70 }),
+  working: Object.freeze({ 'Querying Basics': 70, 'Aggregation & Grouping': 60, 'Joins': 60 }),
+  advanced: Object.freeze({
+    'Querying Basics': 70, 'Aggregation & Grouping': 70, 'Joins': 70,
+    'Conditional Logic': 60, 'Subqueries & CTEs': 60, 'Window Functions': 60,
+  }),
+});
+
+export function seedFloorsFor(levelId) {
+  return { ...(COACH_SEED_FLOORS[levelId] || {}) };
+}
+
+/** The first-run placement this browser holds, or null. Reads the legacy onboarding record the quiz and the manual pick both write. */
+export function readFirstRunPlacement(storage) {
+  try {
+    const raw = storage && storage.getItem('sqlquest_onboarding_data');
+    if (!raw) return null;
+    const rec = JSON.parse(raw);
+    if (!rec || typeof rec !== 'object') return null;
+    if (!FIRST_RUN_PLACEMENT_SOURCES.includes(rec.source)) return null;
+    if (!PLACEMENT_TIERS[rec.firstRunLevel]) return null;
+    return { level: rec.firstRunLevel, source: rec.source, placedAt: typeof rec.placedAt === 'string' ? rec.placedAt : null };
+  } catch (_) {
+    return null;
+  }
+}
+
+/**
+ * What a new Coach goal gets: the Coach's own placement (cold user), the
+ * first-run placement honoured (trusted), or nothing (warm user).
+ */
+export function coachPlacementFor({ trust = false, firstRun = null, cold = false, placementIds = [], now = Date.now() } = {}) {
+  const at = new Date(Number(now)).toISOString();
+  if (trust && firstRun && PLACEMENT_TIERS[firstRun.level]) {
+    return {
+      placement: { challengeIds: placementIds, minAnswered: 5, skipped: true, skippedBy: 'first_run_quiz', level: firstRun.level, at },
+      seedFloors: { source: 'first_run_quiz', level: firstRun.level, floors: seedFloorsFor(firstRun.level), at },
+      skippedBy: 'first_run_quiz',
+    };
+  }
+  if (cold) {
+    return { placement: { challengeIds: placementIds, minAnswered: 5, skipped: false }, seedFloors: null, skippedBy: null };
+  }
+  return { placement: undefined, seedFloors: null, skippedBy: null };
+}

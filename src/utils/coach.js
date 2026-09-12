@@ -390,6 +390,11 @@ export function computeNextStep(goal, userData = {}, options = {}) {
   const startedAtMs = coachState.startedAt ? new Date(coachState.startedAt).getTime() : 0;
 
   const skillLevels = options.skillLevels || {};
+  // Seed floors (2026-09-12): a first-run placement raises the level the
+  // skipIf clauses see — and ONLY those. Graduation below reads the measured
+  // radar, so a floor can let someone past an intro lesson but never out of
+  // a goal. See applySeedFloors and src/utils/placement.js COACH_SEED_FLOORS.
+  const skipLevels = applySeedFloors(skillLevels, options.seedFloors);
   const aiLessonCompletions = normalizeLessonCompletions(userData);
   const completedAiLessons = legacyLessonSet(userData);
   const challengeAttempts = userData.challengeAttempts || [];
@@ -406,7 +411,7 @@ export function computeNextStep(goal, userData = {}, options = {}) {
     // retrieval_check needs these to tell "never learned it" apart from
     // "we told them to skip the lesson because their radar was already high".
     curriculum: goal.curriculum,
-    skillLevels,
+    skillLevels: skipLevels,
   };
 
   // --- Check graduation first ---
@@ -462,7 +467,7 @@ export function computeNextStep(goal, userData = {}, options = {}) {
     }
 
     // skipIf: user's radar already shows mastery for this skill
-    if (step.skipIf && matchesSkipIf(step.skipIf, skillLevels)) {
+    if (step.skipIf && matchesSkipIf(step.skipIf, skipLevels)) {
       completedCount++;
       continue;
     }
@@ -674,6 +679,25 @@ function sourceLessonSkippedByRadar(lessonId, curriculum = [], skillLevels = {})
   const steps = (curriculum || []).filter(s => s && s.type === 'lesson' && s.lessonId === lessonId);
   if (steps.length === 0) return false;
   return steps.every(s => s.skipIf && matchesSkipIf(s.skipIf, skillLevels));
+}
+
+/**
+ * The skill levels the skipIf clauses see: the measured radar, raised to any
+ * seed floors a first-run placement set. Pure; returns the input untouched
+ * when there are no floors. Never used for graduation.
+ */
+export function applySeedFloors(skillLevels = {}, seed) {
+  const floors = seed && typeof seed === 'object' ? (seed.floors || seed) : null;
+  if (!floors || typeof floors !== 'object' || Array.isArray(floors)) return skillLevels;
+  const out = { ...(skillLevels || {}) };
+  let changed = false;
+  for (const [skill, floor] of Object.entries(floors)) {
+    const f = Number(floor);
+    if (!Number.isFinite(f)) continue;
+    const cur = Number(out[skill]) || 0;
+    if (f > cur) { out[skill] = f; changed = true; }
+  }
+  return changed ? out : skillLevels;
 }
 
 export function matchesSkipIf(skipIf, skillLevels = {}) {

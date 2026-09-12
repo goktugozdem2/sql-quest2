@@ -23,6 +23,7 @@
 // manufacture?"). Nothing here reads or writes anything about Pro.
 
 import { daysUntil } from './interview-prep.js';
+import { coachPlacementFor } from './placement.js';
 
 export const INTAKE_KEY = 'sqlquest_intake_v1';
 export const INTAKE_VERSION = 1;
@@ -120,16 +121,18 @@ export function intakeEventPayload(record, { draftDate = null, now = Date.now(),
  * writes, plus `source`. A cold user gets the Coach's own placement, as on
  * the picker; `placementIds` is COACH_PLACEMENT_CHALLENGE_IDS from app.jsx.
  */
-export function newCoachGoalState(goalId, { source = 'picker', cold = false, placementIds = [], now = Date.now() } = {}) {
+export function newCoachGoalState(goalId, { source = 'picker', cold = false, placementIds = [], now = Date.now(), firstRun = null, trustFirstRun = false } = {}) {
+  // A trusted first-run placement replaces the Coach's own (2026-09-12):
+  // src/utils/placement.js coachPlacementFor.
+  const decided = coachPlacementFor({ trust: trustFirstRun, firstRun, cold, placementIds, now });
   return {
     goalId,
     startedAt: new Date(Number(now)).toISOString(),
     stepsCompleted: [],
     graduatedAt: null,
     source,
-    ...(cold
-      ? { placement: { challengeIds: placementIds, minAnswered: 5, skipped: false } }
-      : {}),
+    ...(decided.placement ? { placement: decided.placement } : {}),
+    ...(decided.seedFloors ? { seedFloors: decided.seedFloors } : {}),
   };
 }
 

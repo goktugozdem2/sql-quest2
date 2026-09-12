@@ -152,3 +152,96 @@ describe('source guards — app.jsx', () => {
     expect(app).toMatch(/trackId: 'foundations-advanced'/);
   });
 });
+
+// ── The Coach stops asking twice (2026-09-12) ──────────────────────────────
+import { FIRST_RUN_PLACEMENT_SOURCES, COACH_SEED_FLOORS, seedFloorsFor, readFirstRunPlacement, coachPlacementFor } from '../src/utils/placement.js';
+import { newCoachGoalState } from '../src/utils/onboarding-intake.js';
+import { computeNextStep, applySeedFloors, isGoalGraduated } from '../src/utils/coach.js';
+
+describe('a first-run placement is a placement', () => {
+  const NOW = Date.UTC(2026, 8, 12, 12, 0, 0);
+  const storage = (rec) => ({ getItem: (k) => (k === 'sqlquest_onboarding_data' && rec ? JSON.stringify(rec) : null) });
+
+  it('reads the record the quiz and the manual pick write, and nothing else', () => {
+    expect(readFirstRunPlacement(storage({ source: 'first_run_placement_quiz', firstRunLevel: 'working', placedAt: '2026-09-12T10:00:00Z' })))
+      .toEqual({ level: 'working', source: 'first_run_placement_quiz', placedAt: '2026-09-12T10:00:00Z' });
+    expect(readFirstRunPlacement(storage({ source: 'first_run_manual_or_recommendation', firstRunLevel: 'advanced' })).level).toBe('advanced');
+    expect(readFirstRunPlacement(storage({ source: 'legacy_modal', firstRunLevel: 'working' }))).toBeNull();
+    expect(readFirstRunPlacement(storage({ source: 'first_run_placement_quiz', firstRunLevel: 'guru' }))).toBeNull();
+    expect(readFirstRunPlacement(storage(null))).toBeNull();
+    expect(readFirstRunPlacement({ getItem: () => 'not json' })).toBeNull();
+    expect(FIRST_RUN_PLACEMENT_SOURCES).toEqual(['first_run_placement_quiz', 'first_run_manual_or_recommendation', 'first_run_completed']);
+  });
+
+  it('floors sit on the goals\' own skipIf thresholds and name only canonical skills', () => {
+    const goals = read('../src/data/goals.js');
+    const thresholds = new Set([...goals.matchAll(/gte: (\d+)/g)].map(m => Number(m[1])));
+    for (const [level, floors] of Object.entries(COACH_SEED_FLOORS)) {
+      for (const [skill, v] of Object.entries(floors)) {
+        expect(thresholds.has(v), `${level}: ${skill} floor ${v} is not a skipIf threshold`).toBe(true);
+        expect(goals.includes(`'${skill}'`), `${level}: ${skill} is not a skill the goals name`).toBe(true);
+      }
+    }
+    expect(seedFloorsFor('brand-new')).toEqual({});
+    expect(seedFloorsFor('basics')).toEqual({ 'Querying Basics': 70 });
+    expect(seedFloorsFor('nonsense')).toEqual({});
+    expect(Object.keys(seedFloorsFor('advanced')).length).toBe(6);
+  });
+
+  it('trusted: the Coach placement is skipped by the first run and floors are set; cold otherwise gets the Coach placement', () => {
+    const fr = { level: 'working', source: 'first_run_placement_quiz', placedAt: null };
+    const trusted = coachPlacementFor({ trust: true, firstRun: fr, cold: true, placementIds: [91, 98], now: NOW });
+    expect(trusted.placement).toEqual({ challengeIds: [91, 98], minAnswered: 5, skipped: true, skippedBy: 'first_run_quiz', level: 'working', at: '2026-09-12T12:00:00.000Z' });
+    expect(trusted.seedFloors).toEqual({ source: 'first_run_quiz', level: 'working', floors: { 'Querying Basics': 70, 'Aggregation & Grouping': 60, 'Joins': 60 }, at: '2026-09-12T12:00:00.000Z' });
+    const cold = coachPlacementFor({ trust: false, firstRun: fr, cold: true, placementIds: [91, 98], now: NOW });
+    expect(cold).toEqual({ placement: { challengeIds: [91, 98], minAnswered: 5, skipped: false }, seedFloors: null, skippedBy: null });
+    expect(coachPlacementFor({ trust: true, firstRun: null, cold: false, now: NOW }).placement).toBeUndefined();
+    // the goal state carries both
+    const st = newCoachGoalState('fundamentals', { source: 'intake', cold: true, placementIds: [91], now: NOW, firstRun: fr, trustFirstRun: true });
+    expect(st.placement.skippedBy).toBe('first_run_quiz');
+    expect(st.seedFloors.level).toBe('working');
+    // and without trust it is what it always was
+    const old = newCoachGoalState('fundamentals', { source: 'intake', cold: true, placementIds: [91], now: NOW, firstRun: fr, trustFirstRun: false });
+    expect(old.placement).toEqual({ challengeIds: [91], minAnswered: 5, skipped: false });
+    expect(old.seedFloors).toBeUndefined();
+  });
+
+  it('the engine: floors let a person past a skipIf lesson, never past a goal, and never touch the radar', () => {
+    const goal = {
+      id: 'g', curriculum: [
+        { id: 's1', type: 'lesson', lessonId: 1, skipIf: { skill: 'Querying Basics', gte: 70 } },
+        { id: 's2', type: 'lesson', lessonId: 2, skipIf: { skill: 'Joins', gte: 70 } },
+      ],
+      exitCriteria: { skillThresholds: { 'Querying Basics': 70 } },
+    };
+    const user = { coachState: { goalId: 'g', startedAt: '2026-09-12T00:00:00Z', stepsCompleted: [] }, challengeAttempts: [] };
+    const radar = { 'Querying Basics': 10 };
+    const plain = computeNextStep(goal, user, { skillLevels: radar });
+    expect(plain.step.id).toBe('s1');
+    const floored = computeNextStep(goal, user, { skillLevels: radar, seedFloors: { floors: { 'Querying Basics': 70 } } });
+    expect(floored.step.id).toBe('s2');
+    expect(floored.graduated).toBe(false);
+    expect(radar).toEqual({ 'Querying Basics': 10 });
+    expect(isGoalGraduated({ exitCriteria: goal.exitCriteria, skillLevels: radar, challengeAttempts: [], startedAtMs: 0 })).toBe(false);
+    expect(applySeedFloors({ Joins: 80 }, { floors: { Joins: 60, 'Querying Basics': 70 } })).toEqual({ Joins: 80, 'Querying Basics': 70 });
+    const same = { Joins: 80 };
+    expect(applySeedFloors(same, null)).toBe(same);
+    expect(applySeedFloors(same, { floors: { Joins: 50 } })).toBe(same);
+  });
+
+  it('source guards: off by default, wired at both goal doors and at the quiz, floors reach skipIf only', () => {
+    expect(flags).toMatch(/coachTrustQuizPlacement: false,/);
+    expect(app).toMatch(/newCoachGoalState\(goalId, \{ source: 'picker', cold: shouldPlace, placementIds: COACH_PLACEMENT_CHALLENGE_IDS, firstRun, trustFirstRun \}\)/);
+    expect(app).toMatch(/source: 'intake',\s*\n\s*cold: _coachUserIsCold\(\) && !_userIsSelfDeclaredAdvanced\(\),\s*\n\s*placementIds: COACH_PLACEMENT_CHALLENGE_IDS,\s*\n\s*now,\s*\n\s*firstRun,\s*\n\s*trustFirstRun: !!window\.FF\?\.feature\('coachTrustQuizPlacement'\),/);
+    expect(app).toMatch(/applyFirstRunPlacementToCoach\(levelId, metadata\.source \|\| 'first_run_placement'\);\n  \};/);
+    expect(app).toMatch(/seedFloors: coachState\?\.seedFloors \|\| null,/);
+    expect((app.match(/trackActivationEvent\('coach_placement_skipped', \{ by: 'first_run_quiz'/g) || []).length).toBe(3);
+    const coach = read('../src/utils/coach.js');
+    expect(coach).toMatch(/matchesSkipIf\(step\.skipIf, skipLevels\)/);
+    expect(coach).toMatch(/isGoalGraduated\(\{ exitCriteria, skillLevels, challengeAttempts, startedAtMs \}\)/);
+    expect(coach).not.toMatch(/isGoalGraduated\(\{ exitCriteria, skillLevels: skipLevels/);
+    // the radar is never written from a floor
+    const block = app.slice(app.indexOf('const applyFirstRunPlacementToCoach'), app.indexOf('const applyFirstRunPlacementToCoach') + 2200);
+    expect(block).not.toMatch(/setWeaknessTracking/);
+  });
+});

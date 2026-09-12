@@ -27,6 +27,75 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### the Coach stops asking twice: a first-run placement is a placement
+
+- **Claimed** 2026-09-12 · **Flips** 2026-09-27 by scheduled task, after the
+  Coach page read (09-26) and only if that claim was not extended · **Read**
+  2026-10-11 (flip + 14 days).
+- **Change** behind `coachTrustQuizPlacement` (off): a Coach goal started by
+  someone the first run already placed — the four-question quiz or a level
+  picked by hand — no longer gets the Coach's own five-challenge placement
+  check. At both goal doors (the Coach picker, the onboarding intake) the
+  first-run record is read and the placement is written `skipped: true,
+  skippedBy: 'first_run_quiz'`; a goal that already holds a pending check
+  when the quiz completes is marked the same way. The tier becomes **seed
+  floors** that only the engine's `skipIf` clauses see
+  (`src/utils/coach.js` `applySeedFloors`): Foundations none; Intermediate
+  Querying Basics 70; Advanced + Aggregation 60, Joins 60; Interview-ready
+  70/70/70 and 60 on Conditional Logic, Subqueries & CTEs, Window Functions
+  — exactly the goals' own thresholds (no goal skips on NULL Handling, so no
+  floor there), so a tier skips the
+  intro lessons on what it evidences and nothing more. The radar keeps
+  showing what was measured, graduation reads the radar, challenges still
+  gate, and "Retake placement" on the Coach still works. Event
+  `coach_placement_skipped {by, level, tier, goalId, at: goal_start |
+  placement, placementSource}`. Pure half `src/utils/placement.js`;
+  engine tests in `tests/placement.test.js` (floors pass a skipIf lesson,
+  never a goal, never write the radar).
+- **Why** measured 2026-09-12 on the users table: **102 goal starters were
+  handed the placement check. 50 never attempted one of its five
+  challenges, 43 stopped inside it, 4 finished it, 5 skipped it — and 4 of
+  the 102 ever completed a curriculum step.** The placement check is where
+  the Coach loses cold goal-starters, and from 09-16 the onboarding intake
+  hands a Coach goal to every new person who answers it, all cold, all at
+  this wall, minutes after they have just answered the first-run quiz that
+  exists to place them. Asking twice is the product not trusting its own
+  question.
+- **Metric** `coach_goal_to_step` (docs/agent/metrics.md): of people who
+  start a Coach goal (`coachState.startedAt` after the flip), the share with
+  at least one curriculum step completed within 14 days; mechanism
+  `coach_step_started` with `type ≠ placement_check` within 7 days of the
+  goal start, and `coach_placement_skipped` volume against goal starts.
+  Guardrail: the first Coach challenge step's solve rate within 24h
+  (`coach_step_started type=challenge` → `challenge_solved` same id), split
+  by whether the goal holds seed floors — a floor that sends someone to a
+  step they cannot do would show here first.
+- **Baseline** 4 of 102 (3.9%) all-time, 4 of 82 since 2026-07-01.
+  `coach_placement_skipped` is structurally 0 until the flip.
+- **Target** ≥ **25%** of goal starters complete a curriculum step within
+  14 days, at n ≥ 60 goal starters; first-step solve rate with floors
+  ≥ **50%**.
+- **Falsification, stated in advance:** < 10% → the placement check was not
+  the wall, the first curriculum step is; read which step people stall on
+  before touching anything else. 10–25% → inconclusive, extend to
+  2026-10-25, change nothing. First-step solve rate with floors < 35% while
+  the no-floor arm is above 50% → the floors are too generous; drop the
+  Advanced and Interview-ready floors to the gte-60 thresholds only, keep
+  the skip. Fewer than 60 goal starters by 10-11 → the intake is not
+  producing goals; read its 09-30 verdict before this one.
+- **What this must not become** a fabricated radar: floors never write
+  `weaknessTracking`, by test, and never enter `isGoalGraduated`. Nor a
+  removal of the Coach placement for everyone — a warm-account goal-picker
+  with no first-run record still gets the Coach's own check, unchanged.
+- **Confounds** the Coach page claim (reads 09-26) measures the take rate
+  of the full-shell Coach split by first-step type; this changes what the
+  first step IS for quiz-placed people, hence the flip after that read. The
+  intake (09-16) supplies the population and is read on 09-30 on the start
+  screen, not here. Adaptive placement (10-01) changes which tier the quiz
+  assigns to a 4/4 — the floors follow the tier, so from 10-01 the
+  Interview-ready floors appear; note it in the read.
+- **Verdict** _pending_
+
 ### adaptive placement: interview-ready is earned on a second round, not declared
 
 - **Claimed** 2026-09-12 · **Flips** 2026-10-01 by scheduled task, after the
@@ -228,6 +297,10 @@ of the verifier and must never be rounded to `FLAT`.
   chose on the picker; `coach_tab_viewed` carries `goalSource` — read the
   picker goals and the intake goals as two rows. A date set at the intake
   also adds a small "days left" chip to the radar panel's stats line.
+  **Added 2026-09-12 (evening):** "the Coach stops asking twice" (above)
+  flips 09-27, the day after this read closes, and changes what the first
+  step is for quiz-placed people; nothing about it is live during this
+  window.
 - **Verdict** _pending_
 
 ### anonymous progress survives the reload and follows the login
