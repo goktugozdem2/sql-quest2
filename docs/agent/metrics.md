@@ -2020,6 +2020,52 @@ Traps, stated before the first read:
   the account already had. Read `merges_with_solves`, not `merges`, for the
   value delivered.
 
+## `placement_mix`
+
+Where the first-run placement quiz sends people, and whether the second round
+is finished. Born 2026-09-12 with `placement_completed` (fires with the flag
+off too, so the four-question split has a baseline before `adaptivePlacement`
+flips on 2026-10-01) and `placement_round2_started` (structurally 0 until
+the flip). People by `aid`; a person who retakes counts at their LAST
+completion.
+
+| event | when it fires |
+|---|---|
+| `placement_completed` | the quiz produced a recommendation (`source='quiz'`) or a level was picked from "I already know my level" (`source='manual'`); carries `levelId`, `tier`, `score1`, `score2` (null without a second round), `round2` |
+| `placement_round2_started` | a 4/4 on round 1 opened the four harder questions; carries `score1` |
+
+```sql
+WITH last AS (
+  SELECT DISTINCT ON (md->>'aid') md->>'aid' AS aid, md->>'source' AS source, md->>'tier' AS tier, md->>'round2' AS round2, created_at
+  FROM (SELECT ((metadata #>> '{}')::jsonb) AS md, created_at FROM pro_events
+        WHERE event='placement_completed' AND created_at >= :since AND <shared filters>) e
+  ORDER BY md->>'aid', created_at DESC
+)
+SELECT source, tier, count(*) AS people FROM last GROUP BY 1,2 ORDER BY 1,3 DESC;
+-- round-2 completion: starters vs completions with round2='true'
+SELECT count(DISTINCT ((metadata #>> '{}')::jsonb)->>'aid') FILTER (WHERE event='placement_round2_started') AS round2_starters,
+       count(DISTINCT ((metadata #>> '{}')::jsonb)->>'aid') FILTER (WHERE event='placement_completed' AND ((metadata #>> '{}')::jsonb)->>'round2'='true') AS round2_completed
+FROM pro_events WHERE created_at >= :deploy AND <shared filters>;
+```
+
+The claim it serves reads the interview-ready OPENER through
+`first_contact_activation(1)`, split by the door: join `placement_completed`
+(`source='quiz'`, `tier='Interview-ready'`) and (`source='manual'`,
+`levelId='advanced'`) to each person's first `first_challenge_started` by
+aid. Same seat, two doors — the comparison is the metric.
+
+Traps, stated before the first read:
+
+- **Scores travel, answers do not.** `score1` / `score2` are integers; there
+  is no per-question field, by test.
+- **`round2='false'` with `tier='Interview-ready'` is impossible from the
+  quiz** (only a round-2 pass routes there) — a row like that is the manual
+  door, and `source` says so. Split on `source` before reading tiers.
+- **A deep-linked opener never took the quiz.** People arriving on
+  `/app/?challenge=N` have no row here and are not in the arms.
+- **Before the flip, `tier` is null**: the flag off returns no tier name,
+  `levelId` is the split to read.
+
 ## `intake_funnel`
 
 Of the people shown the onboarding intake, how many answered each of its

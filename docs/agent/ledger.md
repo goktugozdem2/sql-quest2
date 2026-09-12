@@ -27,6 +27,75 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### adaptive placement: interview-ready is earned on a second round, not declared
+
+- **Claimed** 2026-09-12 · **Flips** 2026-10-01 by scheduled task, after the
+  intake read (09-30) and only if that claim was not extended · **Read**
+  2026-10-15 (flip + 14 days), extend to 10-22 if the interview-ready arm has
+  not reached n ≥ 30.
+- **Change** behind `adaptivePlacement` (off): a full score on the four
+  recognition questions opens a **second round of four** — a window function
+  (RANK OVER), a CTE, a NULL comparison (`<> 5` drops the NULLs), the
+  anti-join (LEFT JOIN … IS NULL) — and only a pass there (3 of 4) places
+  someone on the interview-ready track (`foundations-advanced`, opener
+  challenge 1, unchanged). Everyone else lands where the 08-14 cap put them:
+  0–1 Foundations (`brand-new`), 2 Intermediate (`basics`), 3 or a failed
+  round 2 Advanced (`working`, the 105 opener). Four tiers named on the four
+  ids that already exist; the manual "I already know my level" list keeps
+  every level and now shows the tier. With the flag off the quiz returns
+  byte-for-byte what it returned before (`tests/placement.test.js` pins all
+  five scores). Events either way: `placement_completed {source: quiz |
+  manual, levelId, tier, score1, score2, round2}` — scores, never answers —
+  and `placement_round2_started {score1}`. Pure half `src/utils/placement.js`;
+  smoke step for both flag states. P0-2 on the founder's 2026-09-12 list.
+- **Why** the 08-14 cap (ledger, Closed, HIT) was right and incomplete. It
+  stopped a four-question recognition quiz from declaring people
+  interview-ready — challenge 1 had been the front door for half of all first
+  contacts and 75% never finished it — but it left the interview-ready track
+  reachable only by self-declaration. Measured 08-14 → 09-11: **25 people
+  declared it and 44.0% activated on challenge 1**, against 35.2% (n=261)
+  when the quiz sent everyone there. A self-report is a weak instrument; four
+  more recognition questions on the things an interview asks are a stronger
+  one, and the people who pass them are the population the Capital One and
+  interview-intent signals say we should be able to place well.
+- **Metric** `first_contact_activation(1)` for the **quiz-placed** arm —
+  people whose `placement_completed` carries `source='quiz'` and
+  `tier='Interview-ready'`, joined by aid to their first contact — against
+  the **self-declared** arm (`source='manual', levelId='advanced'`) in the
+  same window: same seat, two doors. Mechanism: `placement_mix`
+  (docs/agent/metrics.md) — the tier split of quiz completions and round-2
+  completion among round-2 starters. Guardrail `first_run_reach` against
+  the post-intake baseline the 09-30 read records.
+- **Baseline** challenge 1 as opener, self-declared only, 08-14 → 09-11:
+  **44.0%** (n=25). Quiz-placed arm structurally 0; the round-2 events are
+  born at the flip. Tier mix before the flip: `placement_completed` fires
+  from this deploy with the flag off, so the 10-01 flip has a two-week
+  baseline of the four-question split.
+- **Target** quiz-placed Interview-ready opener activation ≥ **60%** at
+  n ≥ 30; round-2 completion ≥ **80%** of round-2 starters; `first_run_reach`
+  within 3 points of its post-intake baseline.
+- **Falsification, stated in advance:** quiz-placed ≤ **44%** (no better than
+  a self-report) → the four recognition questions do not identify readiness
+  either; restore the cap (round 2 stays as data, its pass no longer routes).
+  44–60% → inconclusive, extend to 2026-10-29, change nothing. Round-2
+  completion < 60% → the second round costs more than it tells; cut it to
+  two questions or drop it, whatever the opener number says.
+  `first_run_reach` down > 3 points → the quiz got longer for exactly the
+  people most likely to leave; read next to round-2 completion before
+  blaming the opener.
+- **What this must not become** a third swap of the 'working' opener (its
+  own claim closed 09-13; the seat is untouched here) or a reopening of the
+  cap by the back door: a 4/4 still lands on 105 unless round 2 says
+  otherwise, by test.
+- **Confounds** the onboarding intake (flips 09-16, reads 09-30) sits on the
+  same start screen — the flips are sequential by design and the intake read
+  closes first. The 'working' seat loses its 4/4-then-pass people to the
+  interview-ready track from 10-01, so 105's activation can drift down for a
+  mix reason after its claim has closed; say so if anyone re-reads it. The
+  Coach's own five-challenge placement (`COACH_PLACEMENT_CHALLENGE_IDS`) is
+  a different instrument and is untouched.
+- **Verdict** _pending_
+
 ### onboarding intake: three optional questions before the quiz
 
 - **Claimed** 2026-09-12 · **Flips** 2026-09-16 by scheduled task, after the

@@ -26,6 +26,7 @@ import { pickNextChallengeWith, pickTopNWith, makeChallengeComparator, hardPrevi
 import { shouldShowInterviewNav, interviewNavReason } from './utils/interview-nav.js';
 import { mergeProgress, hasProgress, isResumableGuest, GUEST_USER_KEY } from './utils/progress-merge.js';
 import { INTAKE_KEY, INTAKE_GOALS, INTAKE_ROLES, INTAKE_STEPS, intakeGoalFor, nextIntakeStep, isValidIntakeDate, buildIntakeRecord, readIntakeRecord, intakeEventPayload, newCoachGoalState, shouldShowIntake } from './utils/onboarding-intake.js';
+import { PLACEMENT_TIERS, placementResult, placementEventPayload } from './utils/placement.js';
 import { paidWallFor, isColdStart } from './utils/paid-wall.js';
 import { expandStageChallenges, placementStartIndex as roadmapPlacementStartIndex } from './utils/roadmap.js';
 import { shouldEmitLockEvent, lockEventKey } from './utils/lock-events.js';
@@ -980,6 +981,58 @@ const FIRST_RUN_PLACEMENT_QUESTIONS = [
       { id: 'filter', label: 'To keep only rows above a value', points: 0 },
       { id: 'combine', label: 'To combine related rows from two tables', points: 1 },
       { id: 'rename', label: 'To rename a column', points: 0 },
+      { id: 'unsure', label: 'Not sure yet', points: 0 },
+    ],
+  },
+];
+
+// Round 2 of the placement (P0-2, 2026-09-12): rendered only behind
+// adaptivePlacement, only to a 4/4 on round 1. Four recognition questions on
+// what an interview actually asks; a pass (3 of 4) is what EARNS the
+// interview-ready track that the 08-14 cap took out of the quiz's gift.
+// Logic and the reason: src/utils/placement.js.
+const FIRST_RUN_PLACEMENT_ROUND2 = [
+  {
+    id: 'window',
+    prompt: 'What does this query return?',
+    code: 'SELECT name, salary,\n       RANK() OVER (ORDER BY salary DESC) AS rnk\nFROM employees;',
+    options: [
+      { id: 'rank-rows', label: 'Every employee with their salary rank; equal salaries share a rank', points: 1 },
+      { id: 'top-one', label: 'One row: the highest-paid employee', points: 0 },
+      { id: 'grouped', label: 'One row per distinct salary, with a count', points: 0 },
+      { id: 'unsure', label: 'Not sure yet', points: 0 },
+    ],
+  },
+  {
+    id: 'cte',
+    prompt: 'What does the WITH clause do here?',
+    code: 'WITH dept_pay AS (\n  SELECT dept, AVG(salary) AS avg_pay FROM employees GROUP BY dept\n)\nSELECT * FROM dept_pay WHERE avg_pay > 5000;',
+    options: [
+      { id: 'named-result', label: 'Names a temporary result set that the main query then filters', points: 1 },
+      { id: 'creates-table', label: 'Creates a permanent table called dept_pay', points: 0 },
+      { id: 'runs-twice', label: 'Runs the inner query once per employee', points: 0 },
+      { id: 'unsure', label: 'Not sure yet', points: 0 },
+    ],
+  },
+  {
+    id: 'null',
+    prompt: 'Some employees have a NULL manager_id. Which rows does this return?',
+    code: 'SELECT name FROM employees WHERE manager_id <> 5;',
+    options: [
+      { id: 'excludes-null', label: 'Employees whose manager_id is not 5 — the NULL ones are left out', points: 1 },
+      { id: 'includes-null', label: 'Everyone except manager 5, including the NULL ones', points: 0 },
+      { id: 'only-null', label: 'Only the employees with a NULL manager_id', points: 0 },
+      { id: 'unsure', label: 'Not sure yet', points: 0 },
+    ],
+  },
+  {
+    id: 'antijoin',
+    prompt: 'Which customers does this query list?',
+    code: 'SELECT c.name\nFROM customers c\nLEFT JOIN orders o ON o.customer_id = c.id\nWHERE o.id IS NULL;',
+    options: [
+      { id: 'no-orders', label: 'Customers who have never placed an order', points: 1 },
+      { id: 'with-orders', label: 'Customers with at least one order', points: 0 },
+      { id: 'all-customers', label: 'Every customer, with NULL where the order is missing', points: 0 },
       { id: 'unsure', label: 'Not sure yet', points: 0 },
     ],
   },
@@ -21427,47 +21480,34 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
   };
 
   const getFirstRunQuizResult = (answers = firstRunQuizAnswers) => {
-    const total = FIRST_RUN_PLACEMENT_QUESTIONS.length;
-    const answeredCount = FIRST_RUN_PLACEMENT_QUESTIONS.filter(question => answers[question.id]).length;
-    const score = FIRST_RUN_PLACEMENT_QUESTIONS.reduce((sum, question) => {
-      const option = question.options.find(candidate => candidate.id === answers[question.id]);
-      return sum + (option?.points || 0);
-    }, 0);
-    // 4/4 used to mean 'advanced', which routed to the [1, 6, 7, 10] track and
-    // made challenge 1 the front door for HALF of all first contacts — 68 in a
-    // week, 75% of whom never finished it (ledger, 2026-08-14).
-    //
-    // The four questions test RECOGNITION: what SELECT returns, which clause
-    // filters, what COUNT counts, what a JOIN is for. Anyone who has read one
-    // tutorial answers all four. Challenge 1 then demands PRODUCTION — a GROUP
-    // BY with aliases the user has to invent. Treating recognition as
-    // interview-readiness is what broke, not the challenge.
-    //
-    // So the quiz now tops out at 'working', whose own description is "GROUP BY
-    // or JOIN feels familiar" — exactly what 4/4 evidences and no more.
-    // 'advanced' stays reachable, but only by explicit self-selection through
-    // "I already know my level", which sits on the same screen. Self-declared
-    // interview-readiness is a claim the user makes; a four-question quiz is
-    // not entitled to make it for them.
-    const levelId = score <= 1 ? 'brand-new' : score === 2 ? 'basics' : 'working';
-    const level = FIRST_RUN_LEVELS.find(candidate => candidate.id === levelId) || FIRST_RUN_LEVELS[0];
-    const track = getFirstRunTrack('zero', levelId);
-    return {
-      total,
-      answeredCount,
-      score,
-      complete: answeredCount === total,
-      levelId,
-      level,
-      track,
-    };
+    // The level a score maps to lives in src/utils/placement.js: the 08-14
+    // cap (4/4 is 'working', not 'advanced' — a four-question recognition
+    // quiz is not entitled to declare someone interview-ready) and, behind
+    // adaptivePlacement, the second round that lets a full score EARN it.
+    const result = placementResult({
+      round1: FIRST_RUN_PLACEMENT_QUESTIONS,
+      round2: FIRST_RUN_PLACEMENT_ROUND2,
+      answers,
+      adaptive: !!window.FF?.feature('adaptivePlacement'),
+    });
+    const level = FIRST_RUN_LEVELS.find(candidate => candidate.id === result.levelId) || FIRST_RUN_LEVELS[0];
+    const track = getFirstRunTrack('zero', result.levelId);
+    return { ...result, level, track };
   };
 
   const answerFirstRunQuizQuestion = (questionId, optionId) => {
     const nextAnswers = { ...firstRunQuizAnswersRef.current, [questionId]: optionId };
+    const before = getFirstRunQuizResult(firstRunQuizAnswersRef.current);
     const result = getFirstRunQuizResult(nextAnswers);
     firstRunQuizAnswersRef.current = nextAnswers;
     setFirstRunQuizAnswers(nextAnswers);
+    if (result.round2Active && !before.round2Active) {
+      trackActivationEvent('placement_round2_started', { score1: result.score });
+    }
+    if (result.complete && (!before.complete || before.levelId !== result.levelId)) {
+      // Scores and the tier, never the answers (src/utils/placement.js).
+      trackActivationEvent('placement_completed', placementEventPayload(result, 'quiz'));
+    }
     if (result.complete) {
       setFirstRunGoal('zero');
       setFirstRunLevel(result.levelId);
@@ -21479,7 +21519,8 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
       } catch (_) { /* ignore */ }
       suppressLegacyOnboardingForPlacement(result.levelId, {
         source: 'first_run_placement_quiz',
-        score: result.score,
+        // both rounds, so an 8/8 reads as 8/8 in the legacy record too
+        score: result.score + (result.score2 || 0),
         total: result.total,
       });
     }
@@ -30869,6 +30910,35 @@ RULES:
                 ) : (
                   (() => {
                     const quizResult = getFirstRunQuizResult();
+                    const adaptivePlacement = !!window.FF?.feature('adaptivePlacement');
+                    const renderPlacementQuestion = (question, number) => (
+                      <div key={question.id} className="min-w-0 rounded-lg border border-gray-800 bg-gray-950/60 p-3">
+                        <p className="text-sm font-semibold text-[#F2F0EA]">
+                          {number}. {question.prompt}
+                        </p>
+                        {question.code && (
+                          <pre className="mt-2 max-w-full overflow-x-auto rounded-md bg-black/50 p-3 text-xs leading-relaxed text-green-100"><code>{question.code}</code></pre>
+                        )}
+                        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                          {question.options.map(option => {
+                            const selected = firstRunQuizAnswers[question.id] === option.id;
+                            return (
+                              <button
+                                key={option.id}
+                                onClick={() => answerFirstRunQuizQuestion(question.id, option.id)}
+                                className={`min-h-[44px] rounded-lg border px-3 py-2.5 text-left text-xs font-semibold leading-snug transition-all whitespace-normal break-words ${
+                                  selected
+                                    ? 'border-cyan-400 bg-cyan-500/20 text-cyan-100'
+                                    : 'border-gray-700 bg-gray-900/70 text-gray-300 hover:border-cyan-500/60 hover:bg-gray-800'
+                                }`}
+                              >
+                                {option.label}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
                     return (
                       <>
                         <h2 className="mb-2 text-2xl font-bold text-[#F2F0EA] md:text-3xl">Find your SQL starting point</h2>
@@ -30878,38 +30948,22 @@ RULES:
 
                         <div data-onboarding="first-run-placement" className="mt-5 min-w-0 rounded-xl border border-gray-700 bg-black/25 p-4">
                           <div className="mb-3 flex items-center justify-between gap-3">
-                            <p className="text-xs font-bold uppercase tracking-wider text-gray-500">Placement quiz</p>
+                            <p className="text-xs font-bold uppercase tracking-wider text-gray-500">{quizResult.round2Active ? 'Placement quiz · round 2' : 'Placement quiz'}</p>
                             <p className="text-xs font-semibold text-gray-400">{quizResult.answeredCount} / {quizResult.total}</p>
                           </div>
                           <div className="space-y-3">
-                            {FIRST_RUN_PLACEMENT_QUESTIONS.map((question, questionIndex) => (
-                              <div key={question.id} className="min-w-0 rounded-lg border border-gray-800 bg-gray-950/60 p-3">
-                                <p className="text-sm font-semibold text-[#F2F0EA]">
-                                  {questionIndex + 1}. {question.prompt}
-                                </p>
-                                {question.code && (
-                                  <pre className="mt-2 max-w-full overflow-x-auto rounded-md bg-black/50 p-3 text-xs leading-relaxed text-green-100"><code>{question.code}</code></pre>
-                                )}
-                                <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                                  {question.options.map(option => {
-                                    const selected = firstRunQuizAnswers[question.id] === option.id;
-                                    return (
-                                      <button
-                                        key={option.id}
-                                        onClick={() => answerFirstRunQuizQuestion(question.id, option.id)}
-                                        className={`min-h-[44px] rounded-lg border px-3 py-2.5 text-left text-xs font-semibold leading-snug transition-all whitespace-normal break-words ${
-                                          selected
-                                            ? 'border-cyan-400 bg-cyan-500/20 text-cyan-100'
-                                            : 'border-gray-700 bg-gray-900/70 text-gray-300 hover:border-cyan-500/60 hover:bg-gray-800'
-                                        }`}
-                                      >
-                                        {option.label}
-                                      </button>
-                                    );
-                                  })}
+                            {FIRST_RUN_PLACEMENT_QUESTIONS.map((question, questionIndex) => renderPlacementQuestion(question, questionIndex + 1))}
+                            {quizResult.round2Active && (
+                              <div data-placement-round="2" className="space-y-3">
+                                <div className="rounded-lg border border-purple-500/30 bg-purple-500/10 p-3">
+                                  <p className="text-xs font-bold uppercase tracking-wider text-purple-300">Round 2 · four more</p>
+                                  <p className="mt-1 text-xs leading-relaxed text-gray-300">
+                                    All four right. These four decide between Advanced and Interview-ready — they are what an interview actually asks. Not sure is still okay.
+                                  </p>
                                 </div>
+                                {FIRST_RUN_PLACEMENT_ROUND2.map((question, questionIndex) => renderPlacementQuestion(question, FIRST_RUN_PLACEMENT_QUESTIONS.length + questionIndex + 1))}
                               </div>
-                            ))}
+                            )}
                           </div>
                         </div>
 
@@ -30918,7 +30972,7 @@ RULES:
                             <p className="text-xs font-bold uppercase tracking-wider text-green-300">Recommended start</p>
                             <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                               <div>
-                                <p className="text-base font-bold text-[#F2F0EA]">{quizResult.level.icon} {quizResult.level.title}</p>
+                                <p className="text-base font-bold text-[#F2F0EA]">{quizResult.level.icon} {quizResult.tier ? `${quizResult.tier} · ` : ''}{quizResult.level.title}</p>
                                 <p className="mt-1 text-xs leading-relaxed text-gray-300">{quizResult.track.trackSubtitle}</p>
                               </div>
                               <div className="flex shrink-0 gap-2">
@@ -30939,7 +30993,9 @@ RULES:
                           </div>
                         ) : (
                           <p className="mt-3 text-xs leading-relaxed text-gray-400">
-                            Answer all 4 questions to get a recommendation. Choose "Not sure yet" whenever a question feels unfamiliar.
+                            {quizResult.round2Active
+                              ? 'Four more to go — answer them all to get a recommendation. "Not sure yet" is a fine answer.'
+                              : 'Answer all 4 questions to get a recommendation. Choose "Not sure yet" whenever a question feels unfamiliar.'}
                           </p>
                         )}
 
@@ -30958,7 +31014,10 @@ RULES:
                                 return (
                                   <button
                                     key={level.id}
-                                    onClick={() => startFirstRunPath('zero', level.id)}
+                                    onClick={() => {
+                                      trackActivationEvent('placement_completed', placementEventPayload({ levelId: level.id }, 'manual'));
+                                      startFirstRunPath('zero', level.id);
+                                    }}
                                     className={`group min-w-0 rounded-lg border p-4 text-left transition-all hover:border-cyan-400/70 hover:bg-gray-800 ${
                                       firstRunLevel === level.id
                                         ? 'border-cyan-400/80 bg-cyan-500/15'
@@ -30968,6 +31027,9 @@ RULES:
                                     <div className="mb-2 flex items-center gap-2">
                                       <span className="text-2xl">{level.icon}</span>
                                       <span className="font-bold text-[#F2F0EA] group-hover:text-cyan-200">{level.title}</span>
+                                      {adaptivePlacement && (
+                                        <span className="ml-auto rounded border border-gray-600 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-gray-300">{PLACEMENT_TIERS[level.id]}</span>
+                                      )}
                                     </div>
                                     <p className="text-xs leading-relaxed text-gray-400">{level.description}</p>
                                     <p className="mt-2 text-[11px] font-semibold uppercase tracking-wider text-cyan-300">

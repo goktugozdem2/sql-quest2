@@ -405,7 +405,7 @@ Rewritten Coach-forward:
 - "Free includes the Coach. Pro adds:" → Unlimited AI Tutor, Hard challenges, Full Mock Interview bank, All Daily difficulties, Full Warm-Up bank, 30-Day Challenge, Priority support.
 
 ### Testing
-- **1,311 tests passing** across 53 test files (vitest), incl. `tests/site-counts.test.js` — the guard that fails on any stale product count on a static page — and `tests/cloud-save-contract.test.js`, the guard on the one write that must never lie. Runs via `npm run test:run`. (Measured 2026-09-12 evening; this line goes stale fast — re-run before quoting it.)
+- **1,331 tests passing** across 54 test files (vitest), incl. `tests/site-counts.test.js` — the guard that fails on any stale product count on a static page — and `tests/cloud-save-contract.test.js`, the guard on the one write that must never lie. Runs via `npm run test:run`. (Measured 2026-09-12 evening; this line goes stale fast — re-run before quoting it.)
 - `scripts/smoke-test.js` (headless Chrome e2e): 8/8 pass against a live dev server. Run with `npm run smoke` (dev server must be up on :4321 or pass URL arg).
 
 ### Database writes — read before touching `users` or its triggers (2026-09-12)
@@ -470,6 +470,23 @@ Rewritten Coach-forward:
   `intake_answered`, `intake_completed` (metrics: `intake_funnel`, guardrail
   `first_run_reach`). `coach_tab_viewed` carries `goalSource` — split the
   Coach reads on it, and exclude intake goals from the 11-24 goal split.
+
+### First-run placement — the cap, and the second round that earns it (2026-09-12)
+
+- The level a quiz score maps to lives in `src/utils/placement.js`, nowhere
+  else. Flag off: the 2026-08-14 cap — 0–1 `brand-new`, 2 `basics`, 3–4
+  `working`; a four-question recognition quiz never declares anyone
+  interview-ready (ledger: closed HIT, challenge 1 had been the front door
+  for half of all first contacts). Flag `adaptivePlacement` on (scheduled
+  2026-10-01): a 4/4 opens `FIRST_RUN_PLACEMENT_ROUND2` (window, CTE, NULL,
+  anti-join) and only 3 of 4 there routes to `advanced`. Tiers on the four
+  ids: Foundations / Intermediate / Advanced / Interview-ready.
+- Events `placement_completed` (`source` quiz | manual, scores, tier — never
+  answers) and `placement_round2_started`; metric `placement_mix`. The
+  interview-ready opener (challenge 1) is read per door, quiz-placed vs
+  self-declared (44%, n=25, 08-14 → 09-11).
+- Do not swap the `working` opener a third time from here, and do not let a
+  4/4 reach `advanced` without round 2 — `tests/placement.test.js` pins both.
 
 ### Notifications
 Major overhaul this session: persist `dismissedNotifs`, `_subtabEnabled()` gates routes by feature flag, threshold-aligned with Quick Drill (<65), dedup by `target` string, clock-tick recompute, NOTIF_PRI constants (streak=0). Reviews Due block commented-out until Coach surfaces retrieval checks outside goals.

@@ -325,6 +325,47 @@ async function main() {
     await cdp(tab, 'Page.reload', { ignoreCache: true });
     await new Promise(r => setTimeout(r, 5000));
 
+    // Adaptive placement (flag adaptivePlacement, 2026-09-12): a 4/4 on round 1
+    // opens four more questions and a pass places Interview-ready. Flag off:
+    // the 08-14 cap, 4/4 recommends "Can aggregate or JOIN". Either way the
+    // quiz is cleared with "Retake" so the next step starts from a blank quiz.
+    const fullScoreState = await evalInPage(tab, `
+      (async () => {
+        const wait = ms => new Promise(r => setTimeout(r, ms));
+        const clickAnswer = (re) => {
+          const b = Array.from(document.querySelectorAll('[data-onboarding="first-run-placement"] button'))
+            .find(b => re.test((b.textContent || '').trim()));
+          if (b) b.click();
+          return !!b;
+        };
+        const round1 = [/name column for up to 10/i, /^WHERE$/i, /rows are in a group/i, /combine related rows/i].map(clickAnswer);
+        await wait(300);
+        const round2Block = document.querySelector('[data-placement-round="2"]');
+        let round2 = null;
+        if (round2Block) {
+          round2 = [/salary rank/i, /temporary result set/i, /NULL ones are left out/i, /never placed an order/i].map(clickAnswer);
+          await wait(300);
+        }
+        const text = document.body.textContent || '';
+        const recommended = /Recommended start/i.test(text);
+        const tier = round2Block
+          ? /Interview-ready/i.test(text)
+          : (/Can aggregate or JOIN/i.test(text) && !/Interview-ready/i.test(text));
+        const retake = Array.from(document.querySelectorAll('button')).find(b => /^Retake$/i.test((b.textContent || '').trim()));
+        if (retake) retake.click();
+        await wait(300);
+        const cleared = !/Recommended start/i.test(document.body.textContent || '');
+        return { round1, round2, adaptive: !!round2Block, recommended, tier, cleared };
+      })()`);
+    if (
+      fullScoreState.round1.every(Boolean)
+      && fullScoreState.recommended
+      && fullScoreState.tier
+      && fullScoreState.cleared
+      && (!fullScoreState.adaptive || fullScoreState.round2.every(Boolean))
+    ) pass(fullScoreState.adaptive ? 'placement round 2 opens on 4/4 and a pass places Interview-ready' : '(adaptive placement off) 4/4 recommends "Can aggregate or JOIN" — the 08-14 cap');
+    else fail('placement full-score path', JSON.stringify(fullScoreState));
+
     const zeroLessonState = await evalInPage(tab, `
       (async () => {
         const unsureButtons = Array.from(document.querySelectorAll('button')).filter(b => /not sure yet/i.test(b.textContent || ''));

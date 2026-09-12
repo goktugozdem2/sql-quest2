@@ -48,6 +48,23 @@ window.FEATURE_FLAGS = {
     // docs/agent/ledger.md, "onboarding intake". Never a step toward
     // checkout: the block renders nothing about Pro, by test.
     onboardingIntake: false,
+    // Adaptive placement — a full score on the four recognition questions
+    // opens a second round of four (window functions, a CTE, NULL comparison,
+    // the anti-join); only a pass there (3 of 4) places someone on the
+    // interview-ready track. Four tiers on the four ids that already exist:
+    // Foundations / Intermediate / Advanced / Interview-ready. P0-2 on the
+    // founder's 2026-09-12 list. Pure half: src/utils/placement.js. OFF, the
+    // quiz returns exactly what the 08-14 cap returned (4/4 → 'working');
+    // the `placement_completed` event fires either way, so the tier mix has
+    // a baseline before the flip.
+    //
+    // SHIPPED OFF (2026-09-12). Same surface as the onboarding intake above,
+    // which flips 09-16 and reads 09-30 on first_run_reach — one change per
+    // surface per read, so this flips on 2026-10-01 by scheduled task, after
+    // that verdict and only if it was not extended. Claim, the 44% baseline
+    // for the self-declared interview-ready opener, and the falsification:
+    // docs/agent/ledger.md, "adaptive placement".
+    adaptivePlacement: false,
     // Intent routing — make the declared intent actually change what the
     // product recommends, and give the people who said "interview" a way to
     // reach the Interview Prep tab. The intent modal's own copy promises
