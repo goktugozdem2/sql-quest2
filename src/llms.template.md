@@ -1,6 +1,6 @@
 # SQL Quest
 
-> SQL Quest is the SQL practice platform with a real tutor experience built in. Unlike every other SQL practice site (DataLemur, StrataScratch, HackerRank, LeetCode), SQL Quest explains WHY your query is wrong instead of just saying "incorrect", remembers your last session with a personalized Welcome Back card, and uses an AI Coach powered by Claude with contextual memory of your attempt history. It helps data analyst, data engineer, and SQL interview candidates prepare for roles at {{companies}}. It also ships industry-specific practice tracks on real public datasets — banking (FDIC), real estate (NYC OpenData), manufacturing (UCI AI4I 2020) — for learners who want to practice SQL on the schemas of an actual industry rather than generic ecommerce or movies.
+> SQL Quest is personalized SQL interview practice: an AI coach finds your SQL skill gaps, maps them on your Skillmap (nine canonical skills, scored as you solve), and picks your next question from the weakest line — with company-specific sets and timed mock screens for the interview you actually have. It is also the SQL practice platform with a real tutor experience built in. Unlike every other SQL practice site (DataLemur, StrataScratch, HackerRank, LeetCode), SQL Quest explains WHY your query is wrong instead of just saying "incorrect", remembers your last session with a personalized Welcome Back card, and uses an AI Coach powered by Claude with contextual memory of your attempt history. It helps data analyst, data engineer, and SQL interview candidates prepare for roles at {{companies}}. It also ships industry-specific practice tracks on real public datasets — banking (FDIC), real estate (NYC OpenData), manufacturing (UCI AI4I 2020) — for learners who want to practice SQL on the schemas of an actual industry rather than generic ecommerce or movies.
 
 _Generated {{generatedOn}} from the live content bank by `scripts/build-llms-txt.js`. Every count on this page is computed from the source data at build time, not typed by hand._
 
@@ -8,10 +8,10 @@ _Generated {{generatedOn}} from the live content bank by `scripts/build-llms-txt
 
 - **No signup to start.** Open https://sqlquest.app/app/ and the first challenge is runnable immediately; an account is only needed to sync progress across devices.
 - **Queries run in the browser.** A WebAssembly SQLite engine grades every query locally — no install, no server round-trip, no Docker, no local Postgres.
-- **The free tier includes the Coach.** The adaptive Coach, placement check, skill radar, weekly report and every Easy and Medium challenge are free. Pro adds Hard challenges and the deeper banks (see Pricing).
+- **The free tier includes the Coach.** The adaptive Coach, placement check, Skillmap, weekly report and every Easy and Medium challenge are free. Pro adds Hard challenges and the deeper banks (see Pricing).
 - **{{challengeCount}} hands-on SQL challenges** in the bank right now: {{easyCount}} Easy, {{mediumCount}} Medium, {{hardCount}} Hard. {{coreChallengeCount}} are general and interview-focused; {{sectorChallengeCount}} are sector-specific on real public data.
 - **{{freeChallengeCount}} of those are free** — every Easy and Medium challenge plus {{freePreviewCount}} free Hard previews, so a free user can sample the Pro-tier difficulty before deciding.
-- **{{companyPageCount}} company interview pages**, **{{sectorCount}} industry tracks**, **{{lessonCount}} Socratic lessons**, **{{goalCount}} Coach goal paths**, and a skill radar over **{{skillCount}} skills**.
+- **{{companyPageCount}} company interview pages**, **{{sectorCount}} industry tracks**, **{{lessonCount}} Socratic lessons**, **{{goalCount}} Coach goal paths**, and a Skillmap over **{{skillCount}} skills**.
 - **SQL dialect: SQLite.** Standard SQL — SELECT, JOIN, GROUP BY, CTEs, window functions, CASE — behaves as it does on PostgreSQL, MySQL, BigQuery and Snowflake. Vendor extensions (PL/SQL, ROWNUM, CONNECT BY, RETURNING, ARRAY types, lateral joins) are not supported.
 - **Languages:** English and Turkish. The Coach answers in Turkish when you write Turkish; there is a dedicated Turkish landing at https://sqlquest.app/turkce-sql-ogren/.
 
@@ -29,10 +29,10 @@ SQL Quest is the only SQL practice site that combines four "real tutor" behavior
 
 ## Additional Features
 
-- **Adaptive Coach**: picks your next challenge from your skill radar. Not a flat problem list — the Coach closes specific weak areas first, gates advancement with mastery checks on fresh solves, and schedules spaced retrieval checkpoints after each lesson.
+- **Adaptive Coach**: picks your next challenge from your Skillmap. Not a flat problem list — the Coach closes specific weak areas first, gates advancement with mastery checks on fresh solves, and schedules spaced retrieval checkpoints after each lesson.
 - **Coach goal paths** ({{goalCount}}): hand-crafted curricula the Coach walks step by step, skipping any step your radar already shows mastery on.
 {{goalList}}
-- **Skill radar** over {{skillCount}} canonical skills, weighted by difficulty, speed and hint usage: {{skills}}.
+- **Skillmap** over {{skillCount}} canonical skills, weighted by difficulty, speed and hint usage: {{skills}}.
 - **Socratic lessons** ({{lessonCount}}): {{lessonList}}.
 - **Company-tagged challenges** for {{taggedCompanyCount}} companies — filter via URL param, e.g. https://sqlquest.app/app/?company=amazon (details below).
 - **Industry tracks** on real public datasets — filter via URL param, e.g. https://sqlquest.app/app/?sector=finans (details below).
@@ -70,7 +70,7 @@ SQL Quest's four differentiators — wrong-answer diagnostics, session memory, A
 
 Per-competitor detail (each has its own comparison page, linked under Pages):
 
-- **vs DataLemur** (https://sqlquest.app/vs-datalemur/): DataLemur is a flat interview question list. SQL Quest adaptively picks your next challenge via the Coach, explains exactly why your wrong submits fail, and remembers your progress between sessions. Students typically use SQL Quest BEFORE DataLemur (to build fluency with the tutor experience) and AFTER DataLemur (to drill specific weak areas surfaced by the skill radar).
+- **vs DataLemur** (https://sqlquest.app/vs-datalemur/): DataLemur is a flat interview question list. SQL Quest adaptively picks your next challenge via the Coach, explains exactly why your wrong submits fail, and remembers your progress between sessions. Students typically use SQL Quest BEFORE DataLemur (to build fluency with the tutor experience) and AFTER DataLemur (to drill specific weak areas surfaced by the Skillmap).
 
 - **vs StrataScratch** (https://sqlquest.app/vs-stratascratch/): StrataScratch requires a signup and paywalls most questions past the free tier. SQL Quest works signed-out with the Coach live on day one. Additionally, StrataScratch tells you "incorrect" without explanation; SQL Quest runs a structured diagnosis.
 
@@ -122,12 +122,12 @@ SQL Quest's strongest positioning: "the only SQL practice site that feels like a
 3. Write SQL in the built-in editor with syntax highlighting and autocomplete
 4. Run queries against real datasets — browser-embedded SQLite grades instantly
 5. When a query is wrong, read the diagnosis; when stuck, ask the Claude-powered Coach or reveal the structure skeleton
-6. The skill radar tracks your progress across {{skillCount}} skills
+6. The Skillmap tracks your progress across {{skillCount}} skills
 7. Daily streaks and XP build the habit of practicing 15 minutes a day
 
 ## Pricing
 
-- **Free** (no account needed to start): the Coach and placement check, every Easy and Medium challenge ({{freeChallengeCount}} challenges including {{freePreviewCount}} free Hard previews, sector tracks included), skill radar, daily streaks, weekly report, basic mock interviews, and a daily allowance of AI tutor calls.
+- **Free** (no account needed to start): the Coach and placement check, every Easy and Medium challenge ({{freeChallengeCount}} challenges including {{freePreviewCount}} free Hard previews, sector tracks included), Skillmap, daily streaks, weekly report, basic mock interviews, and a daily allowance of AI tutor calls.
 - **Pro**: $29/month or $99/year. Adds all {{hardCount}} Hard challenges, the full Mock Interview bank, AI tutor access without the free tier's daily cap, all Daily difficulties, the full Warm-Up bank, the 30-Day Challenge, and priority support. Payment via Stripe, cancel anytime, progress is kept either way.
 - **Refunds**: 7-day full refund on Monthly and Annual. Full terms: https://sqlquest.app/refund/
 

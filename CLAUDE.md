@@ -220,7 +220,7 @@ is whether it still receives first-contact traffic at all; it should not.
 
 ### Landing pages + marketing
 Three variant pages, all with analytics events isolated by `variant` tag:
-- `/` — interview_promise_v1 from the evening of 2026-09-12 (company_first_v1 for a few hours that day, adaptive_tutor_v1 before; never one series across a change)
+- `/` — personalized_v1 from 2026-09-13 (interview_promise_v1 from the evening of 2026-09-12, company_first_v1 for a few hours that day, adaptive_tutor_v1 before; never one series across a change)
 - `/after-the-sql-course/` — after_course_v1 (Udemy/Coursera targeting)
 - `/after-bootcamp/` — after_bootcamp_v1 (Flatiron/GA/Metis targeting)
 
@@ -259,6 +259,20 @@ so a landing view and a later solve are joinable for the first time.
   parameters, so don't plan a paid-acquisition read on it.
 - Three `reason='landing'` rows on 2026-07-28 (aid `e5fcbad1a022…`) are
   localhost verification traffic — exclude that aid from the first read.
+
+### Positioning — personalized SQL interview practice, Skillmap (2026-09-13)
+
+- **Primary message: "Personalized SQL interview practice."** Secondary: "An
+  AI coach that finds your SQL skill gaps." The differentiator is the
+  **Skillmap** — the product name for the nine-skill radar on every
+  marketing surface and in the app's labels (`skillRadar` i18n key reads
+  "Skillmap"; code identifiers keep their names). Never "skill radar" in new
+  English copy; Turkish pages keep "yetenek radarı".
+- Industry tracks and the "learn SQL" breadth stay in the footer, the app and
+  their own pages; they are not on the homepage.
+- Homepage variant `personalized_v1` (2026-09-13); section order hero →
+  Skillmap/Coach mock → Pricing → company sets → practice strip → comparison
+  → built in public → final → FAQ.
 
 ### Homepage — one promise, one company section, three accents (2026-09-13)
 

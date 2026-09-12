@@ -777,7 +777,7 @@ const FIRST_RUN_GOALS = [
     id: 'weak-spots',
     icon: '🎯',
     title: 'Find weak spots',
-    description: 'Get a first signal for your skill radar.',
+    description: 'Get a first signal for your Skillmap.',
   },
 ];
 
@@ -928,7 +928,7 @@ const FIRST_RUN_PATHS = {
   'weak-spots': {
     'brand-new': {
       trackId: 'radar-zero',
-      trackTitle: 'Skill Radar Foundations',
+      trackTitle: 'Skillmap Foundations',
       trackSubtitle: 'Learn the first pattern before the app measures gaps.',
       challengeIds: [91, 92, 93],
       nextSteps: ['First query', 'Column choice', 'WHERE signal'],
@@ -25685,7 +25685,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
               <p className="text-yellow-400 font-medium flex items-center gap-2 mb-2">
                 <AlertCircle size={18} /> Your progress won't survive your next visit
               </p>
-              <p className="text-gray-400 text-sm">Guest sessions reset when you come back. A free account keeps your XP, streak, and skill radar — on this device and everywhere else.</p>
+              <p className="text-gray-400 text-sm">Guest sessions reset when you come back. A free account keeps your XP, streak, and Skillmap — on this device and everywhere else.</p>
             </div>
             
             <form onSubmit={async (e) => {
@@ -29255,7 +29255,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                     <div className="mt-3">
                       <p className="font-medium" style={{ color: '#F2F0EA' }}>Welcome back to Free.</p>
                       <p className="text-sm mt-2" style={{ color: '#8A8E99' }}>
-                        The Coach, skill radar, daily streak, and your first ~75 challenges stay yours forever. But Hard challenges, sector tracks, mock interviews, and the AI tutor without the free tier's daily cap are now locked. Pick up Pro to keep going where you left off.
+                        The Coach, Skillmap, daily streak, and your first ~75 challenges stay yours forever. But Hard challenges, sector tracks, mock interviews, and the AI tutor without the free tier's daily cap are now locked. Pick up Pro to keep going where you left off.
                       </p>
                     </div>
                   ) : proModalReason.type === 'company_set' ? (
@@ -31818,7 +31818,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
               <div className="text-6xl mb-4">🧭</div>
               <h2 className="text-2xl font-bold mb-2">Your SQL Coach</h2>
               <p className="text-gray-400 mb-6">
-                Pick a goal. The Coach reads your skill radar, skips what you know,
+                Pick a goal. The Coach reads your Skillmap, skips what you know,
                 and tells you the next thing to do. Sign in to start.
               </p>
 
@@ -31827,7 +31827,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                 <ul className="space-y-2 text-sm text-gray-300">
                   <li className="flex items-start gap-2">
                     <span className="text-green-400">✓</span>
-                    <span>Picks your next challenge based on your 10-skill radar, not a fixed linear path</span>
+                    <span>Picks your next challenge from your 9-skill Skillmap, not a fixed linear path</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-green-400">✓</span>

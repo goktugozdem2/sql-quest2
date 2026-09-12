@@ -174,7 +174,7 @@
       {
         "@type": "Question",
         "name": "How do I know which SQL exercise to do next?",
-        "acceptedAnswer": { "@type": "Answer", "text": "The Coach picks the next exercise based on your skill radar. Browse mode lets you filter by topic (window functions, JOINs, GROUP BY, etc.), by difficulty, by company tag, or by industry. If you don't want to choose, click 'Coach picks one' and the system selects an exercise that targets your weakest skill." }
+        "acceptedAnswer": { "@type": "Answer", "text": "The Coach picks the next exercise based on your Skillmap. Browse mode lets you filter by topic (window functions, JOINs, GROUP BY, etc.), by difficulty, by company tag, or by industry. If you don't want to choose, click 'Coach picks one' and the system selects an exercise that targets your weakest skill." }
       },
       {
         "@type": "Question",
@@ -189,7 +189,7 @@
       {
         "@type": "Question",
         "name": "How are SQL exercises scored?",
-        "acceptedAnswer": { "@type": "Answer", "text": "Each exercise is scored on three dimensions: difficulty (Easy/Medium/Hard), the SQL skill it exercises (one of 9 canonical skills), and your speed plus hint usage. A clean cold solve adds more to your skill radar than a solve with multiple hints. Mastery checks require a fresh solve on an unseen exercise — recognition isn't enough." }
+        "acceptedAnswer": { "@type": "Answer", "text": "Each exercise is scored on three dimensions: difficulty (Easy/Medium/Hard), the SQL skill it exercises (one of 9 canonical skills), and your speed plus hint usage. A clean cold solve adds more to your Skillmap than a solve with multiple hints. Mastery checks require a fresh solve on an unseen exercise — recognition isn't enough." }
       }
     ]
   }
@@ -280,7 +280,7 @@
 <section class="hero"><div class="hbg"></div><div class="sec" style="padding-top:130px;padding-bottom:30px;text-align:center;position:relative;z-index:2;">
     <div class="hb" style="animation:fadeUp .6s .1s both;"><span class="pd"></span><span style="font-size:13px;font-weight:600;color:#c084fc;">🏋️ 299 exercises · 226 free · skill-tracked</span></div>
     <h1 class="fd" style="font-size:clamp(36px,4.8vw,58px);font-weight:800;line-height:1.08;margin-bottom:20px;animation:fadeUp .6s .2s both;">SQL Practice Questions — <span class="gt">299 exercises, full solutions</span></h1>
-    <p style="font-size:17px;line-height:1.8;color:#94a3b8;margin-bottom:28px;max-width:720px;margin:0 auto 28px;animation:fadeUp .6s .3s both;">Browse by topic, difficulty, company, or industry. Every exercise has sample data, expected output, AI-explained hints, and a worked solution. The skill radar tracks where you're strong and where you need more reps.</p>
+    <p style="font-size:17px;line-height:1.8;color:#94a3b8;margin-bottom:28px;max-width:720px;margin:0 auto 28px;animation:fadeUp .6s .3s both;">Browse by topic, difficulty, company, or industry. Every exercise has sample data, expected output, AI-explained hints, and a worked solution. The Skillmap tracks where you're strong and where you need more reps.</p>
     <div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center;animation:fadeUp .6s .4s both;">
       <a href="/app/?src=sql-exercises" class="btn bp">Open the Exercise Bank →</a>
       <a href="#slices" class="btn bo">See the categories ↓</a>
@@ -370,7 +370,7 @@
   <div style="text-align:center;margin-bottom:24px;">
     <span class="sl" style="color:#8b98ab;">By topic</span>
     <h2 class="st fd">Practice one skill at a time</h2>
-    <p style="font-size:16px;color:#94a3b8;margin:16px auto 0;max-width:640px;line-height:1.7;">Each topic page lists the runnable set for one line of the skill radar, from the first Easy to the last Hard.</p>
+    <p style="font-size:16px;color:#94a3b8;margin:16px auto 0;max-width:640px;line-height:1.7;">Each topic page lists the runnable set for one line of the Skillmap, from the first Easy to the last Hard.</p>
   </div>
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;max-width:1040px;margin:0 auto;">
     <a href="/challenges/window-functions/" data-track="cta_topic" style="display:block;background:rgba(10,10,25,.6);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:20px 16px;text-align:center;text-decoration:none;transition:border-color .15s ease-out;" onmouseenter="this.style.borderColor='rgba(192,132,252,.5)'" onmouseleave="this.style.borderColor='rgba(255,255,255,.06)'"><p class="fd" style="font-size:20px;font-weight:800;color:#e2e8f0">Window Functions</p><p style="font-size:13px;color:#8b98ab;margin-top:6px;line-height:1.5">RANK, ROW_NUMBER, LAG/LEAD, running totals</p><p style="font-size:12px;color:#c084fc;font-weight:700;margin-top:10px">Practice this topic →</p></a>
@@ -514,7 +514,7 @@
 <section id="scoring" style="background:linear-gradient(180deg,rgba(124,58,237,.03) 0%,transparent 100%);"><div class="sec" style="padding-top:50px;padding-bottom:60px;">
   <div style="text-align:center;margin-bottom:36px;">
     <span class="sl" style="color:#8b98ab;">Skill tracking</span>
-    <h2 class="st fd">Every exercise feeds <span class="gt">the skill radar</span></h2>
+    <h2 class="st fd">Every exercise feeds <span class="gt">the Skillmap</span></h2>
     <!-- 2026-09-07: "sql exercises" — the radar has 9 canonical skills, not 10 -->
     <p style="font-size:16px;color:#94a3b8;margin-top:16px;max-width:640px;margin:16px auto 0;line-height:1.7;">SQL Quest tracks your proficiency across 9 canonical skills. Each exercise contributes points to the skills it exercises — weighted by difficulty, your speed, and how many hints you used.</p>
   </div>
@@ -578,10 +578,10 @@ window.addEventListener('scroll',()=>{document.getElementById('nav').classList.t
 const FAQS=[
   ['Are these SQL exercises free?','Yes. 226 of the 299 exercises are free forever, no card and no signup: all 94 Easy, all 120 Medium, and 6 free Hard previews. Pro ($29/month or $99/year) unlocks the remaining 68 Hard exercises, the full mock-interview bank, the AI tutor without the free tier's daily cap, and all Daily difficulties — upgrade only when you want the depth. The Coach is included in the free tier.'],
   ['Do these exercises have solutions?','Yes. Every exercise has a worked solution that you can reveal after attempting (or whenever you want). The default flow is: read problem → write your query → run → if wrong, get a specific diagnosis → ask the AI Coach for a hint → reveal solution if needed. Solutions are written to teach, not just satisfy the grader — they explain the why.'],
-  ['How do I know which SQL exercise to do next?','The Coach picks the next exercise based on your skill radar. Browse mode lets you filter by topic (window functions, JOINs, GROUP BY, etc.), by difficulty, by company tag, or by industry. If you don\'t want to choose, click \'Coach picks one\' and the system selects an exercise that targets your weakest skill.'],
+  ['How do I know which SQL exercise to do next?','The Coach picks the next exercise based on your Skillmap. Browse mode lets you filter by topic (window functions, JOINs, GROUP BY, etc.), by difficulty, by company tag, or by industry. If you don\'t want to choose, click \'Coach picks one\' and the system selects an exercise that targets your weakest skill.'],
   ['Can I practice SQL exercises on real-world data instead of generic ecommerce?','Yes. SQL Quest ships three industry exercise tracks built on real public datasets — 97 exercises in total, and their Easy and Medium problems are free like the rest of the bank. Banking & Finance: 57 exercises — 27 on FDIC BankFind data (200 US banks: JPMorgan, BoA, Citi) plus 30 on a synthetic card-transactions ledger. Real Estate: 20 exercises on NYC OpenData (PLUTO building footprints, ACRIS deeds, DOB permits). Manufacturing: 20 exercises on UCI AI4I 2020 predictive maintenance — the industry-standard ML benchmark used by Siemens, GE, Honeywell.'],
   ['What\'s the difficulty distribution?','299 exercises as of September 2026: 94 Easy, 126 Medium, 79 Hard. The 190 core exercises split 53 Easy / 81 Medium / 54 Hard; the 97 sector-track exercises (banking, real estate, manufacturing) split 38 Easy / 39 Medium / 20 Hard. Easy covers SELECT/WHERE/GROUP BY; Medium adds JOINs, subqueries, CTEs, basic window functions; Hard covers nested window functions, recursive CTEs, complex business math, and FAANG-style interview patterns. Hard is Pro except 6 free previews, and the Coach gates Hard until you\'ve mastered Medium.'],
-  ['How are SQL exercises scored?','Each exercise is scored on three dimensions: difficulty (Easy/Medium/Hard), the SQL skill it exercises (one of 9 canonical skills), and your speed plus hint usage. A clean cold solve adds more to your skill radar than a solve with multiple hints. Mastery checks require a fresh solve on an unseen exercise — recognition isn\'t enough.']
+  ['How are SQL exercises scored?','Each exercise is scored on three dimensions: difficulty (Easy/Medium/Hard), the SQL skill it exercises (one of 9 canonical skills), and your speed plus hint usage. A clean cold solve adds more to your Skillmap than a solve with multiple hints. Mastery checks require a fresh solve on an unseen exercise — recognition isn\'t enough.']
 ];
 const faqc=document.getElementById('faqc');
 FAQS.forEach(f=>{const d=document.createElement('div');d.className='fi';d.innerHTML=`<div class="fh"><p style="font-size:16px;font-weight:700;color:#e2e8f0;padding-right:16px">${f[0]}</p><span class="ftg">+</span></div><div class="fa"><p style="font-size:14px;line-height:1.8;color:#94a3b8;padding-top:12px">${f[1]}</p></div>`;d.addEventListener('click',()=>d.classList.toggle('o'));faqc.appendChild(d);});

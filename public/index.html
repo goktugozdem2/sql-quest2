@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- 2026-09-07: stale count → bank figure (287 challenges, 219 free, 22 company pages, skill radar; sector tracks 32 finans / 20 / 20 = 72; scripts/build-llms-txt.js) -->
+  <!-- 2026-09-07: stale count → bank figure (287 challenges, 219 free, 22 company pages, Skillmap; sector tracks 32 finans / 20 / 20 = 72; scripts/build-llms-txt.js) -->
   <script src="/ref-track.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -27,9 +27,9 @@
        the two company mocks. Brand stays first in the title: 81% of Google
        clicks are our own name, and another product now calls itself SQLQuest.
        Every count is bound by tests/site-counts.test.js. -->
-  <title>SQL Quest — SQL Interview Practice by Company, With a Tutor Built In</title>
-  <meta name="description" content="SQL interview practice by company: Revolut, Stripe, Wise, Capital One, JPMorgan, Snowflake and FAANG. 299 challenges, timed mock screens, and a tutor that explains why your query is wrong. Start free.">
-  <meta name="keywords" content="SQL interview practice, SQL interview questions by company, Revolut SQL interview questions, Stripe SQL interview questions, Capital One SQL assessment, Wise SQL interview, Snowflake SQL practice, SQL practice questions, SQL mock interview, SQL tutor online">
+  <title>SQL Quest — Personalized SQL Interview Practice with an AI Coach</title>
+  <meta name="description" content="Personalized SQL interview practice. An AI coach finds your SQL skill gaps, maps them on your Skillmap, and picks your next question — with company sets for Capital One, Stripe, Revolut and more. 299 challenges. Start free.">
+  <meta name="keywords" content="personalized SQL interview practice, SQL interview practice, AI SQL coach, SQL skill gaps, SQL interview questions by company, Capital One SQL assessment, Stripe SQL interview questions, SQL practice questions, SQL mock interview">
   <meta name="robots" content="index, follow">
   <meta name="msvalidate.01" content="AB0AEFB775D84D543B966FEFBBE6F7A3">
   <link rel="canonical" href="https://sqlquest.app/">
@@ -48,20 +48,20 @@
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://sqlquest.app/">
   <meta property="og:site_name" content="SQL Quest">
-  <meta property="og:title" content="SQL Quest — SQL Interview Practice by Company, With a Tutor Built In">
-  <meta property="og:description" content="Practice the SQL questions candidates report from Revolut, Stripe, Wise, Capital One and FAANG screens. 299 challenges, timed mocks, and a tutor that explains why you're wrong. Start free.">
+  <meta property="og:title" content="SQL Quest — Personalized SQL Interview Practice with an AI Coach">
+  <meta property="og:description" content="Personalized SQL interview practice: an AI coach finds your SQL skill gaps and builds your practice around them. Skillmap, company sets, timed mocks. 299 challenges. Start free.">
   <meta property="og:image" content="https://sqlquest.app/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="SQL Quest — SQL interview practice by company, with a tutor built in">
+  <meta property="og:image:alt" content="SQL Quest — personalized SQL interview practice with an AI coach">
   <meta property="og:locale" content="en_US">
 
   <!-- ── Twitter Card ─────────────────────────────────────────── -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="SQL Quest — SQL Interview Practice by Company, With a Tutor Built In">
-  <meta name="twitter:description" content="Practice the SQL questions candidates report from Revolut, Stripe, Wise, Capital One and FAANG screens. 299 challenges, timed mocks, and a tutor that explains why you're wrong. Start free.">
+  <meta name="twitter:title" content="SQL Quest — Personalized SQL Interview Practice with an AI Coach">
+  <meta name="twitter:description" content="Personalized SQL interview practice: an AI coach finds your SQL skill gaps and builds your practice around them. Skillmap, company sets, timed mocks. 299 challenges. Start free.">
   <meta name="twitter:image" content="https://sqlquest.app/og-image.png">
-  <meta name="twitter:image:alt" content="SQL Quest — SQL interview practice by company, with a tutor built in">
+  <meta name="twitter:image:alt" content="SQL Quest — personalized SQL interview practice with an AI coach">
 
   <!-- ── Vercel Web Analytics ─────────────────────────────────── -->
   <script>
@@ -82,7 +82,7 @@
       "sqlquest.app"
     ],
     "url": "https://sqlquest.app/",
-    "description": "SQL interview practice by company (Revolut, Stripe, Wise, Capital One, JPMorgan, Snowflake, FAANG) with timed mock screens and a tutor that explains why a query is wrong. 299 challenges, runs in the browser.",
+    "description": "Personalized SQL interview practice: an AI coach finds your SQL skill gaps, maps them on a nine-skill Skillmap, and picks the next question — with company sets and timed mock screens. 299 challenges, runs in the browser.",
     "publisher": {
       "@id": "https://sqlquest.app/#organization"
     },
@@ -116,11 +116,11 @@
       "url": "https://sqlquest.app/og-image.png",
       "width": 1200,
       "height": 630,
-      "caption": "SQL Quest — SQL Interview Practice by Company, With a Tutor Built In"
+      "caption": "SQL Quest — Personalized SQL Interview Practice with an AI Coach"
     },
     "image": "https://sqlquest.app/og-image.png",
-    "description": "SQL Quest is a browser-based SQL practice platform built around company-specific interview preparation: tagged challenge sets and timed mocks modelled on the screens candidates report at Revolut, Capital One, Stripe, Wise, JPMorgan, Snowflake and the FAANG companies, plus a tutor that diagnoses a wrong query instead of saying incorrect, session memory, and a Coach that picks the next challenge from a skill radar. 299 hands-on challenges and industry tracks on public data (banking via FDIC, real estate via NYC OpenData, manufacturing via UCI AI4I).",
-    "slogan": "SQL interview practice by company, with a tutor built in",
+    "description": "SQL Quest is a browser-based SQL practice platform built around company-specific interview preparation: tagged challenge sets and timed mocks modelled on the screens candidates report at Revolut, Capital One, Stripe, Wise, JPMorgan, Snowflake and the FAANG companies, plus a tutor that diagnoses a wrong query instead of saying incorrect, session memory, and a Coach that picks the next challenge from a Skillmap. 299 hands-on challenges and industry tracks on public data (banking via FDIC, real estate via NYC OpenData, manufacturing via UCI AI4I).",
+    "slogan": "Personalized SQL interview practice",
     "foundingDate": "2024",
     "founder": {
       "@type": "Person",
@@ -162,8 +162,8 @@
   {
     "@context": "https://schema.org",
     "@type": "Course",
-    "name": "SQL Quest — SQL Interview Practice by Company",
-    "description": "Company-specific SQL interview preparation: tagged challenge sets built from candidate reports for Revolut, Capital One, Stripe, Wise, JPMorgan, Snowflake and the FAANG companies; timed mocks modelled on the reported Revolut (60 minutes) and Capital One (70 minutes) screens; wrong-answer diagnostics that name the specific gap; an adaptive Coach that picks the next challenge from the skill radar. 299 hands-on challenges plus industry tracks on public data.",
+    "name": "SQL Quest — Personalized SQL Interview Practice",
+    "description": "Company-specific SQL interview preparation: tagged challenge sets built from candidate reports for Revolut, Capital One, Stripe, Wise, JPMorgan, Snowflake and the FAANG companies; timed mocks modelled on the reported Revolut (60 minutes) and Capital One (70 minutes) screens; wrong-answer diagnostics that name the specific gap; an adaptive Coach that picks the next challenge from the Skillmap. 299 hands-on challenges plus industry tracks on public data.",
     "provider": {
       "@type": "Organization",
       "name": "SQL Quest",
@@ -202,13 +202,13 @@
     "applicationCategory": "EducationalApplication",
     "operatingSystem": "Web",
     "browserRequirements": "Any modern browser with WebAssembly; nothing to install",
-    "description": "SQL Quest is a browser-based SQL practice platform for company-specific interview preparation: tagged sets and timed mocks for the screens candidates report at Revolut, Capital One, Stripe, Wise, JPMorgan, Snowflake and FAANG, a tutor that explains why a wrong query is wrong, session memory, and a Coach that picks the next challenge from a skill radar.",
+    "description": "SQL Quest is personalized SQL interview practice in the browser: an AI coach that finds your SQL skill gaps and maps them on a nine-skill Skillmap, plus company-specific interview preparation: tagged sets and timed mocks for the screens candidates report at Revolut, Capital One, Stripe, Wise, JPMorgan, Snowflake and FAANG, a tutor that explains why a wrong query is wrong, session memory, and a Coach that picks the next challenge from a Skillmap.",
     "featureList": [
       "Company-tagged SQL interview sets built from candidate reports, with dated sources on every company page",
       "Timed mock screens modelled on the reported Revolut (60 min) and Capital One (70 min) formats: multiple choice plus written SQL",
       "Wrong-answer diagnostics that name the specific gap instead of 'incorrect'",
       "AI tutor that reads the diagnosis and your attempt history before it answers",
-      "Adaptive Coach that picks the next challenge from the skill radar",
+      "Adaptive Coach that picks the next challenge from the Skillmap",
       "Topic practice pages for window functions, joins, CTEs, aggregation, subqueries, CASE, dates, NULLs and strings",
       "Industry tracks on public data: banking (FDIC and card/neobank ledgers), real estate (NYC OpenData), manufacturing (UCI AI4I 2020)",
       "Runs in the browser on WebAssembly SQLite; no install, no signup to start"
@@ -226,7 +226,7 @@
         "priceCurrency": "USD",
         "url": "https://sqlquest.app/app/",
         "availability": "https://schema.org/InStock",
-        "description": "The Coach, the skill radar, the weekly report and every Easy and Medium challenge. No account needed to start."
+        "description": "The Coach, the Skillmap, the weekly report and every Easy and Medium challenge. No account needed to start."
       },
       {
         "@type": "Offer",
@@ -280,7 +280,7 @@
         "name": "Is SQL Quest free?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Yes, to start: every Easy and Medium challenge, the Coach, the skill radar and a daily tutor allowance are free, with no card. Pro is $99 a year or $29 a month, and adds the Hard set, the timed mock bank including the company screens, the tutor without the daily cap, and the full industry tracks."
+          "text": "Yes, to start: every Easy and Medium challenge, the Coach, the Skillmap and a daily tutor allowance are free, with no card. Pro is $99 a year or $29 a month, and adds the Hard set, the timed mock bank including the company screens, the tutor without the daily cap, and the full industry tracks."
         }
       },
       {
@@ -552,18 +552,19 @@
 <section class="hero"><div class="hbg"></div><div class="hgr"></div>
   <div class="sec hc" style="padding-top:120px;padding-bottom:40px;">
     <div class="hl">
-      <div class="hb" style="animation:fadeUp .6s both;"><span class="pd"></span><span style="font-size:13px;font-weight:600;color:#c084fc;">SQL interview practice, by company</span></div>
-      <h1 class="fd" style="animation:fadeUp .6s .1s both;">Pass the <span class="gt">SQL interview.</span></h1>
+      <div class="hb" style="animation:fadeUp .6s both;"><span class="pd"></span><span style="font-size:13px;font-weight:600;color:#c084fc;">Personalized SQL interview practice</span></div>
+      <h1 class="fd" style="animation:fadeUp .6s .1s both;">Personalized <span class="gt">SQL interview practice.</span></h1>
+      <p style="font-size:21px;line-height:1.5;color:#e2e8f0;font-weight:600;margin:12px 0 0;max-width:560px;animation:fadeUp .6s .12s both;">An AI coach that finds your SQL skill gaps — and builds your practice around them.</p>
       <p data-testid="usage-line" title="Measured 12 Sep 2026 against the live event log; refreshed every Friday" style="font-size:17px;font-weight:600;color:#e2e8f0;margin:14px 0 22px;animation:fadeUp .6s .15s both;"><span class="fm" style="color:#FFE34D;">5,745</span> accepted solutions · <span class="fm" style="color:#FFE34D;">1,195</span> people last 30 days</p>
-      <p style="font-size:18px;line-height:1.8;color:#94a3b8;margin-bottom:36px;max-width:560px;animation:fadeUp .6s .2s both;">Practice the screen you are walking into: company sets built from candidate reports, timed mocks shaped like the real thing, and a tutor that tells you <em>why</em> a query is wrong. 299 challenges. Start free.</p>
+      <p style="font-size:17px;line-height:1.75;color:#94a3b8;margin-bottom:32px;max-width:560px;animation:fadeUp .6s .2s both;">Every query you solve scores your <strong style="color:#e2e8f0;">Skillmap</strong> across nine SQL skills. The coach reads it, picks your next question from the weakest line, and tells you <em>why</em> a wrong query is wrong. Company sets and timed mocks for the screen you have. 299 challenges. Start free.</p>
       <div style="display:flex;gap:14px;flex-wrap:wrap;animation:fadeUp .6s .3s both;">
         <a href="app.html?src=home" class="btn bp" data-track="cta_hero_primary">Start free</a>
         <a href="#pricing" class="btn bo" data-track="cta_hero_secondary">See pricing</a>
       </div>
       <div style="display:flex;gap:28px;margin-top:32px;flex-wrap:wrap;animation:fadeUp .6s .4s both;">
-        <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">Sets by company</p><p style="font-size:13px;color:#8b98ab;">Revolut · Stripe · Wise · Capital One</p></div></div>
-        <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">Timed mock screens</p><p style="font-size:13px;color:#8b98ab;">60-min Revolut · 70-min Capital One</p></div></div>
-        <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">Explains why wrong</p><p style="font-size:13px;color:#8b98ab;">A diagnosis, not &quot;incorrect&quot;</p></div></div>
+        <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">Skillmap</p><p style="font-size:13px;color:#8b98ab;">Nine SQL skills, scored as you solve</p></div></div>
+        <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">Your next question</p><p style="font-size:13px;color:#8b98ab;">Picked from your weakest skill</p></div></div>
+        <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">Company sets &amp; mocks</p><p style="font-size:13px;color:#8b98ab;">Capital One · Revolut · Stripe · Wise</p></div></div>
       </div>
     </div>
     <div class="hr" style="animation:fadeUp .8s .3s both;">
@@ -584,70 +585,15 @@
 
 </div>
 
-<!-- ── Interview prep by company ─────────────────────────────
-     The section the page is built around. Counts are the tagged-challenge
-     numbers computed into public/llms.txt (under 100, so not test-bound;
-     re-read llms.txt when the bank moves). Mock lengths come from
-     src/data/mock-interviews.js (totalTime). Every specific is
-     candidate-reported; the footnote says so on purpose. -->
-<section id="sets" style="border-top:1px solid rgba(255,255,255,.04);"><div class="sec" style="padding-top:40px;padding-bottom:40px;">
-  <div style="text-align:center;margin-bottom:24px;">
-    <span class="sl">Interview prep by company</span>
-    <h2 class="st fd">Pick the company. Get its set, then its screen.</h2>
-    <p style="font-size:16px;color:#94a3b8;margin-top:16px;max-width:680px;margin:16px auto 0;line-height:1.7;">Each set is tagged from what candidates report: the tables, the tasks, the time. Two companies also have a timed mock built to the reported format. Every company page dates its sources.</p>
-  </div>
-  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;max-width:1040px;margin:0 auto;">
-    <a href="/revolut-sql-interview/" data-track="cta_set_page_revolut" style="background:rgba(10,10,25,.6);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:18px 18px;display:flex;flex-direction:column;text-decoration:none;color:inherit;transition:border-color .15s ease-out;" onmouseenter="this.style.borderColor='rgba(192,132,252,.5)'" onmouseleave="this.style.borderColor='rgba(255,255,255,.08)'">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><span style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,.08);color:#e2e8f0;font-weight:800;font-size:14px;" class="fd">R</span><span class="fd" style="font-size:18px;font-weight:800;color:#f1f5f9;">Revolut</span><span style="margin-left:auto;font-size:13px;color:#c084fc;font-weight:700;">Open →</span></div>
-      <div style="font-size:12px;color:#c084fc;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:6px;"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> 60-min analyst screen mock · 6 MCQ + 2 written SQL, HackerRank-style</div>
-      <div style="font-size:13px;color:#94a3b8;line-height:1.6;">Users, top-ups and transactions in 12 currencies: MAU, top 10% by volume, decline rates by plan.</div>
-    </a>
-    <a href="/capital-one-sql-interview/" data-track="cta_set_page_capital-one" style="background:rgba(10,10,25,.6);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:18px 18px;display:flex;flex-direction:column;text-decoration:none;color:inherit;transition:border-color .15s ease-out;" onmouseenter="this.style.borderColor='rgba(192,132,252,.5)'" onmouseleave="this.style.borderColor='rgba(255,255,255,.08)'">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><span style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,.08);color:#e2e8f0;font-weight:800;font-size:14px;" class="fd">C</span><span class="fd" style="font-size:18px;font-weight:800;color:#f1f5f9;">Capital One</span><span style="margin-left:auto;font-size:13px;color:#c084fc;font-weight:700;">Open →</span></div>
-      <div style="font-size:12px;color:#c084fc;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:6px;"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> 70-min CodeSignal-style mock · 8 MCQ + 6 written SQL</div>
-      <div style="font-size:13px;color:#94a3b8;line-height:1.6;">Accounts, merchants, transactions, chargebacks: the reported data analyst screen, both halves.</div>
-    </a>
-    <a href="/stripe-sql-interview/" data-track="cta_set_page_stripe" style="background:rgba(10,10,25,.6);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:18px 18px;display:flex;flex-direction:column;text-decoration:none;color:inherit;transition:border-color .15s ease-out;" onmouseenter="this.style.borderColor='rgba(192,132,252,.5)'" onmouseleave="this.style.borderColor='rgba(255,255,255,.08)'">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><span style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,.08);color:#e2e8f0;font-weight:800;font-size:14px;" class="fd">S</span><span class="fd" style="font-size:18px;font-weight:800;color:#f1f5f9;">Stripe</span><span style="margin-left:auto;font-size:13px;color:#c084fc;font-weight:700;">Open →</span></div>
-      <div style="font-size:12px;color:#8b98ab;font-weight:600;margin-bottom:8px;">Tagged set · timed practice</div>
-      <div style="font-size:13px;color:#94a3b8;line-height:1.6;">Payments and revenue tables: duplicate transactions, MRR movements, failed-charge retries.</div>
-    </a>
-    <a href="/wise-sql-interview/" data-track="cta_set_page_wise" style="background:rgba(10,10,25,.6);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:18px 18px;display:flex;flex-direction:column;text-decoration:none;color:inherit;transition:border-color .15s ease-out;" onmouseenter="this.style.borderColor='rgba(192,132,252,.5)'" onmouseleave="this.style.borderColor='rgba(255,255,255,.08)'">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><span style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,.08);color:#e2e8f0;font-weight:800;font-size:14px;" class="fd">W</span><span class="fd" style="font-size:18px;font-weight:800;color:#f1f5f9;">Wise</span><span style="margin-left:auto;font-size:13px;color:#c084fc;font-weight:700;">Open →</span></div>
-      <div style="font-size:12px;color:#8b98ab;font-weight:600;margin-bottom:8px;">Tagged set · timed practice</div>
-      <div style="font-size:13px;color:#94a3b8;line-height:1.6;">Cross-border transfers: FX corridors, margin per route, settlement timing.</div>
-    </a>
-    <a href="/jpmorgan-sql-interview/" data-track="cta_set_page_jpmorgan" style="background:rgba(10,10,25,.6);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:18px 18px;display:flex;flex-direction:column;text-decoration:none;color:inherit;transition:border-color .15s ease-out;" onmouseenter="this.style.borderColor='rgba(192,132,252,.5)'" onmouseleave="this.style.borderColor='rgba(255,255,255,.08)'">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><span style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,.08);color:#e2e8f0;font-weight:800;font-size:14px;" class="fd">J</span><span class="fd" style="font-size:18px;font-weight:800;color:#f1f5f9;">JPMorgan</span><span style="margin-left:auto;font-size:13px;color:#c084fc;font-weight:700;">Open →</span></div>
-      <div style="font-size:12px;color:#8b98ab;font-weight:600;margin-bottom:8px;">Tagged set · timed practice</div>
-      <div style="font-size:13px;color:#94a3b8;line-height:1.6;">Financial analytics and risk: running balances, exposure by counterparty, month-end positions.</div>
-    </a>
-    <a href="/snowflake-sql-interview/" data-track="cta_set_page_snowflake" style="background:rgba(10,10,25,.6);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:18px 18px;display:flex;flex-direction:column;text-decoration:none;color:inherit;transition:border-color .15s ease-out;" onmouseenter="this.style.borderColor='rgba(192,132,252,.5)'" onmouseleave="this.style.borderColor='rgba(255,255,255,.08)'">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><span style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,.08);color:#e2e8f0;font-weight:800;font-size:14px;" class="fd">Sn</span><span class="fd" style="font-size:18px;font-weight:800;color:#f1f5f9;">Snowflake</span><span style="margin-left:auto;font-size:13px;color:#c084fc;font-weight:700;">Open →</span></div>
-      <div style="font-size:12px;color:#8b98ab;font-weight:600;margin-bottom:8px;">Tagged set · timed practice</div>
-      <div style="font-size:13px;color:#94a3b8;line-height:1.6;">A Snowflake-compatible practice set plus the patterns warehouse teams ask.</div>
-    </a>
-  </div>
-  <p style="text-align:center;font-size:14px;color:#94a3b8;margin:28px auto 0;max-width:900px;line-height:2;">More company pages: <a href="/plaid-sql-interview/" style="color:#c084fc;text-decoration:none;">Plaid</a> · <a href="/ramp-sql-interview/" style="color:#c084fc;text-decoration:none;">Ramp</a> · <a href="/morgan-stanley-sql-interview/" style="color:#c084fc;text-decoration:none;">Morgan Stanley</a> · <a href="/spotify-sql-interview/" style="color:#c084fc;text-decoration:none;">Spotify</a> · <a href="/amazon-sql-interview/" style="color:#c084fc;text-decoration:none;">Amazon</a> · <a href="/google-sql-interview/" style="color:#c084fc;text-decoration:none;">Google</a> · <a href="/meta-sql-interview/" style="color:#c084fc;text-decoration:none;">Meta</a> · <a href="/apple-sql-interview/" style="color:#c084fc;text-decoration:none;">Apple</a> · <a href="/netflix-sql-interview/" style="color:#c084fc;text-decoration:none;">Netflix</a> · <a href="/uber-sql-interview/" style="color:#c084fc;text-decoration:none;">Uber</a> · <a href="/airbnb-sql-interview/" style="color:#c084fc;text-decoration:none;">Airbnb</a> · <a href="/shopify-sql-interview/" style="color:#c084fc;text-decoration:none;">Shopify</a> · <a href="/databricks-sql-interview/" style="color:#c084fc;text-decoration:none;">Databricks</a> · <a href="/nvidia-sql-interview/" style="color:#c084fc;text-decoration:none;">NVIDIA</a> · <a href="/openai-sql-interview/" style="color:#c084fc;text-decoration:none;">OpenAI</a> · <a href="/anthropic-sql-interview/" style="color:#c084fc;text-decoration:none;">Anthropic</a> · <a href="/tesla-sql-interview/" style="color:#c084fc;text-decoration:none;">Tesla</a> · <a href="/sql-interview-prep/" style="color:#e2e8f0;font-weight:700;text-decoration:none;">Interview Prep Hub →</a></p>
-  <p style="text-align:center;font-size:12px;color:#8b98ab;margin:18px auto 0;max-width:720px;line-height:1.7;">Built from candidate reports on Glassdoor, Blind and forums, dated on each page. No set is affiliated with or endorsed by the company it is named for, and screens change — treat every specific as reported, not official.</p>
-</div></section>
-
-<!-- ── Practice, one line (2026-09-13): the nine-topic grid lives on
-     /sql-exercises/ now — the Bing door is where topic browsing belongs. -->
-<section id="practice" style="border-top:1px solid rgba(255,255,255,.04);"><div class="sec" style="padding-top:22px;padding-bottom:22px;display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap;">
-  <p style="font-size:15px;color:#94a3b8;line-height:1.6;margin:0;">299 SQL practice challenges, each tagged on the skill radar — window functions, joins, CTEs, aggregation, subqueries, CASE, dates, NULLs, strings.</p>
-  <a href="/sql-exercises/" data-track="cta_practice_hub" style="font-size:14px;color:#c084fc;font-weight:700;text-decoration:none;white-space:nowrap;">Browse the whole bank →</a>
-</div></section>
-
 <!-- ── Tutor + Coach ──────────────────────────────────────────
      The mechanics that convert once someone is inside: the diagnosis on a
      wrong submit, and the Coach picking the next step. The mock below is
      shared with the two variant pages; tests/site-counts binds its copy. -->
 <section id="coach"><div class="sec">
   <div style="text-align:center;margin-bottom:24px;">
-    <span class="sl">The tutor</span>
-    <h2 class="st fd">Wrong once. Told why. Then the next step.</h2>
-    <p style="font-size:16px;color:#94a3b8;margin-top:16px;max-width:640px;margin:16px auto 0;">A wrong submit gets a diagnosis: wrong column count, right rows in the wrong order, right shape with wrong values shown side by side, a NULL you did not handle. Show Structure gives you the skeleton without the answer. Then the Coach reads your radar and picks the next challenge, so you never stare at a list wondering where to start.</p>
+    <span class="sl">Skillmap</span>
+    <h2 class="st fd">Your Skillmap finds the gap. The coach closes it.</h2>
+    <p style="font-size:16px;color:#94a3b8;margin-top:16px;max-width:680px;margin:16px auto 0;line-height:1.7;">Most SQL sites hand you a list. SQL Quest scores every solve on nine skills — joins, window functions, aggregation, CTEs and five more — so you see exactly where you would lose points in an interview. The coach picks the next question from your weakest line, and a wrong submit gets a diagnosis, not "incorrect".</p>
   </div>
 
   <!-- App-screenshot-style Coach mock (shared with /after-the-sql-course/ and /after-bootcamp/) -->
@@ -716,7 +662,7 @@
         </div>
       </main>
       <aside class="cm-radar-panel">
-        <div class="cm-radar-title" style="display:flex;align-items:center;gap:6px;"><span class="ico"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><path d="M12 12 18 6"/><circle cx="12" cy="12" r="1"/></svg></span> SKILL RADAR</div>
+        <div class="cm-radar-title" style="display:flex;align-items:center;gap:6px;"><span class="ico"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><path d="M12 12 18 6"/><circle cx="12" cy="12" r="1"/></svg></span> SKILLMAP</div>
         <svg class="cm-radar" viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
           <polygon points="110,20 167.9,41.1 198.6,94.4 187.9,155 140.8,194.6 79.2,194.6 32.1,155 21.4,94.4 52.1,41.1" fill="none" stroke="rgba(255,255,255,0.05)"/>
           <polygon points="110,50 148.6,64 169.1,99.6 162,140 130.5,166.4 89.5,166.4 58,140 50.9,99.6 71.4,64" fill="none" stroke="rgba(255,255,255,0.04)"/>
@@ -805,9 +751,59 @@
   </div>
 </div></section>
 
-<!-- ── Industry tracks, one line (2026-09-13) -->
-<section id="industry" style="border-top:1px solid rgba(255,255,255,.04);"><div class="sec" style="padding-top:22px;padding-bottom:22px;display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap;">
-  <p style="font-size:15px;color:#94a3b8;line-height:1.6;margin:0;">Industry tracks on public data: <a href="/app/?src=home&amp;sector=finance" data-track="cta_industry_finans" style="color:#e2e8f0;text-decoration:none;font-weight:600;">banking</a> (FDIC plus card and neobank ledgers), <a href="/app/?src=home&amp;sector=real-estate" data-track="cta_industry_realestate" style="color:#e2e8f0;text-decoration:none;font-weight:600;">real estate</a> (NYC OpenData), <a href="/app/?src=home&amp;sector=manufacturing" data-track="cta_industry_manufacturing" style="color:#e2e8f0;text-decoration:none;font-weight:600;">manufacturing</a> (UCI AI4I 2020). Same skill radar as the interview sets.</p>
+<!-- ── Interview prep by company ─────────────────────────────
+     The section the page is built around. Counts are the tagged-challenge
+     numbers computed into public/llms.txt (under 100, so not test-bound;
+     re-read llms.txt when the bank moves). Mock lengths come from
+     src/data/mock-interviews.js (totalTime). Every specific is
+     candidate-reported; the footnote says so on purpose. -->
+<section id="sets" style="border-top:1px solid rgba(255,255,255,.04);"><div class="sec" style="padding-top:40px;padding-bottom:40px;">
+  <div style="text-align:center;margin-bottom:24px;">
+    <span class="sl">Company interview sets</span>
+    <h2 class="st fd">Pick the company. Get its set, then its screen.</h2>
+    <p style="font-size:16px;color:#94a3b8;margin-top:16px;max-width:680px;margin:16px auto 0;line-height:1.7;">Each set is tagged from what candidates report: the tables, the tasks, the time. Two companies also have a timed mock built to the reported format. Every company page dates its sources.</p>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;max-width:1040px;margin:0 auto;">
+    <a href="/revolut-sql-interview/" data-track="cta_set_page_revolut" style="background:rgba(10,10,25,.6);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:18px 18px;display:flex;flex-direction:column;text-decoration:none;color:inherit;transition:border-color .15s ease-out;" onmouseenter="this.style.borderColor='rgba(192,132,252,.5)'" onmouseleave="this.style.borderColor='rgba(255,255,255,.08)'">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><span style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,.08);color:#e2e8f0;font-weight:800;font-size:14px;" class="fd">R</span><span class="fd" style="font-size:18px;font-weight:800;color:#f1f5f9;">Revolut</span><span style="margin-left:auto;font-size:13px;color:#c084fc;font-weight:700;">Open →</span></div>
+      <div style="font-size:12px;color:#c084fc;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:6px;"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> 60-min analyst screen mock · 6 MCQ + 2 written SQL, HackerRank-style</div>
+      <div style="font-size:13px;color:#94a3b8;line-height:1.6;">Users, top-ups and transactions in 12 currencies: MAU, top 10% by volume, decline rates by plan.</div>
+    </a>
+    <a href="/capital-one-sql-interview/" data-track="cta_set_page_capital-one" style="background:rgba(10,10,25,.6);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:18px 18px;display:flex;flex-direction:column;text-decoration:none;color:inherit;transition:border-color .15s ease-out;" onmouseenter="this.style.borderColor='rgba(192,132,252,.5)'" onmouseleave="this.style.borderColor='rgba(255,255,255,.08)'">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><span style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,.08);color:#e2e8f0;font-weight:800;font-size:14px;" class="fd">C</span><span class="fd" style="font-size:18px;font-weight:800;color:#f1f5f9;">Capital One</span><span style="margin-left:auto;font-size:13px;color:#c084fc;font-weight:700;">Open →</span></div>
+      <div style="font-size:12px;color:#c084fc;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:6px;"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> 70-min CodeSignal-style mock · 8 MCQ + 6 written SQL</div>
+      <div style="font-size:13px;color:#94a3b8;line-height:1.6;">Accounts, merchants, transactions, chargebacks: the reported data analyst screen, both halves.</div>
+    </a>
+    <a href="/stripe-sql-interview/" data-track="cta_set_page_stripe" style="background:rgba(10,10,25,.6);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:18px 18px;display:flex;flex-direction:column;text-decoration:none;color:inherit;transition:border-color .15s ease-out;" onmouseenter="this.style.borderColor='rgba(192,132,252,.5)'" onmouseleave="this.style.borderColor='rgba(255,255,255,.08)'">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><span style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,.08);color:#e2e8f0;font-weight:800;font-size:14px;" class="fd">S</span><span class="fd" style="font-size:18px;font-weight:800;color:#f1f5f9;">Stripe</span><span style="margin-left:auto;font-size:13px;color:#c084fc;font-weight:700;">Open →</span></div>
+      <div style="font-size:12px;color:#8b98ab;font-weight:600;margin-bottom:8px;">Tagged set · timed practice</div>
+      <div style="font-size:13px;color:#94a3b8;line-height:1.6;">Payments and revenue tables: duplicate transactions, MRR movements, failed-charge retries.</div>
+    </a>
+    <a href="/wise-sql-interview/" data-track="cta_set_page_wise" style="background:rgba(10,10,25,.6);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:18px 18px;display:flex;flex-direction:column;text-decoration:none;color:inherit;transition:border-color .15s ease-out;" onmouseenter="this.style.borderColor='rgba(192,132,252,.5)'" onmouseleave="this.style.borderColor='rgba(255,255,255,.08)'">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><span style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,.08);color:#e2e8f0;font-weight:800;font-size:14px;" class="fd">W</span><span class="fd" style="font-size:18px;font-weight:800;color:#f1f5f9;">Wise</span><span style="margin-left:auto;font-size:13px;color:#c084fc;font-weight:700;">Open →</span></div>
+      <div style="font-size:12px;color:#8b98ab;font-weight:600;margin-bottom:8px;">Tagged set · timed practice</div>
+      <div style="font-size:13px;color:#94a3b8;line-height:1.6;">Cross-border transfers: FX corridors, margin per route, settlement timing.</div>
+    </a>
+    <a href="/jpmorgan-sql-interview/" data-track="cta_set_page_jpmorgan" style="background:rgba(10,10,25,.6);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:18px 18px;display:flex;flex-direction:column;text-decoration:none;color:inherit;transition:border-color .15s ease-out;" onmouseenter="this.style.borderColor='rgba(192,132,252,.5)'" onmouseleave="this.style.borderColor='rgba(255,255,255,.08)'">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><span style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,.08);color:#e2e8f0;font-weight:800;font-size:14px;" class="fd">J</span><span class="fd" style="font-size:18px;font-weight:800;color:#f1f5f9;">JPMorgan</span><span style="margin-left:auto;font-size:13px;color:#c084fc;font-weight:700;">Open →</span></div>
+      <div style="font-size:12px;color:#8b98ab;font-weight:600;margin-bottom:8px;">Tagged set · timed practice</div>
+      <div style="font-size:13px;color:#94a3b8;line-height:1.6;">Financial analytics and risk: running balances, exposure by counterparty, month-end positions.</div>
+    </a>
+    <a href="/snowflake-sql-interview/" data-track="cta_set_page_snowflake" style="background:rgba(10,10,25,.6);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:18px 18px;display:flex;flex-direction:column;text-decoration:none;color:inherit;transition:border-color .15s ease-out;" onmouseenter="this.style.borderColor='rgba(192,132,252,.5)'" onmouseleave="this.style.borderColor='rgba(255,255,255,.08)'">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><span style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,.08);color:#e2e8f0;font-weight:800;font-size:14px;" class="fd">Sn</span><span class="fd" style="font-size:18px;font-weight:800;color:#f1f5f9;">Snowflake</span><span style="margin-left:auto;font-size:13px;color:#c084fc;font-weight:700;">Open →</span></div>
+      <div style="font-size:12px;color:#8b98ab;font-weight:600;margin-bottom:8px;">Tagged set · timed practice</div>
+      <div style="font-size:13px;color:#94a3b8;line-height:1.6;">A Snowflake-compatible practice set plus the patterns warehouse teams ask.</div>
+    </a>
+  </div>
+  <p style="text-align:center;font-size:14px;color:#94a3b8;margin:28px auto 0;max-width:900px;line-height:2;">More company pages: <a href="/plaid-sql-interview/" style="color:#c084fc;text-decoration:none;">Plaid</a> · <a href="/ramp-sql-interview/" style="color:#c084fc;text-decoration:none;">Ramp</a> · <a href="/morgan-stanley-sql-interview/" style="color:#c084fc;text-decoration:none;">Morgan Stanley</a> · <a href="/spotify-sql-interview/" style="color:#c084fc;text-decoration:none;">Spotify</a> · <a href="/amazon-sql-interview/" style="color:#c084fc;text-decoration:none;">Amazon</a> · <a href="/google-sql-interview/" style="color:#c084fc;text-decoration:none;">Google</a> · <a href="/meta-sql-interview/" style="color:#c084fc;text-decoration:none;">Meta</a> · <a href="/apple-sql-interview/" style="color:#c084fc;text-decoration:none;">Apple</a> · <a href="/netflix-sql-interview/" style="color:#c084fc;text-decoration:none;">Netflix</a> · <a href="/uber-sql-interview/" style="color:#c084fc;text-decoration:none;">Uber</a> · <a href="/airbnb-sql-interview/" style="color:#c084fc;text-decoration:none;">Airbnb</a> · <a href="/shopify-sql-interview/" style="color:#c084fc;text-decoration:none;">Shopify</a> · <a href="/databricks-sql-interview/" style="color:#c084fc;text-decoration:none;">Databricks</a> · <a href="/nvidia-sql-interview/" style="color:#c084fc;text-decoration:none;">NVIDIA</a> · <a href="/openai-sql-interview/" style="color:#c084fc;text-decoration:none;">OpenAI</a> · <a href="/anthropic-sql-interview/" style="color:#c084fc;text-decoration:none;">Anthropic</a> · <a href="/tesla-sql-interview/" style="color:#c084fc;text-decoration:none;">Tesla</a> · <a href="/sql-interview-prep/" style="color:#e2e8f0;font-weight:700;text-decoration:none;">Interview Prep Hub →</a></p>
+  <p style="text-align:center;font-size:12px;color:#8b98ab;margin:18px auto 0;max-width:720px;line-height:1.7;">Built from candidate reports on Glassdoor, Blind and forums, dated on each page. No set is affiliated with or endorsed by the company it is named for, and screens change — treat every specific as reported, not official.</p>
+</div></section>
+
+<!-- ── Practice, one line (2026-09-13): the nine-topic grid lives on
+     /sql-exercises/ now — the Bing door is where topic browsing belongs. -->
+<section id="practice" style="border-top:1px solid rgba(255,255,255,.04);"><div class="sec" style="padding-top:22px;padding-bottom:22px;display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap;">
+  <p style="font-size:15px;color:#94a3b8;line-height:1.6;margin:0;">299 SQL practice challenges, each tagged on the Skillmap — window functions, joins, CTEs, aggregation, subqueries, CASE, dates, NULLs, strings.</p>
+  <a href="/sql-exercises/" data-track="cta_practice_hub" style="font-size:14px;color:#c084fc;font-weight:700;text-decoration:none;white-space:nowrap;">Browse the whole bank →</a>
 </div></section>
 
 <!-- ── Comparison table: shows the 4 tutor features no competitor has.
@@ -855,7 +851,7 @@
             <td class="cmp-n">—</td>
           </tr>
                     <tr>
-            <td style="text-align:left;">Adaptive Coach (picks your next)</td>
+            <td style="text-align:left;">Skillmap that picks your next question</td>
             <td class="cmp-me"><span class="cmp-y">✓</span></td>
             <td class="cmp-n">—</td>
             <td class="cmp-n">—</td>
@@ -966,11 +962,13 @@
 // 2026-09-12: 'company_first_v1' replaces 'adaptive_tutor_v1' — the hero, the
 // section order and the FAQ changed together; read the home door across the
 // two variants, never as one series (ledger: homepage rewrite, reads 10-03).
-// 2026-09-12 evening: 'interview_promise_v1' — one promise in the hero, two
+// 2026-09-13: 'personalized_v1' — P0.3 positioning (primary: personalized SQL
+// interview practice; secondary: an AI coach that finds your skill gaps;
+// Skillmap as the differentiator). Before it, 2026-09-12 evening: 'interview_promise_v1' — one promise in the hero, two
 // plans with annual first, Pricing under the Coach mock, two CTA labels.
 // 'company_first_v1' lived for a few hours the same day; read neither as one
 // series with the other (ledger: homepage rewrite; the founder's item 15).
-const LANDING_VARIANT = 'interview_promise_v1';
+const LANDING_VARIANT = 'personalized_v1';
 // Events that reach ONLY window.va, and are therefore discarded: Vercel
 // Custom Events require Pro and this team is on Hobby. landing_view and every
 // [data-track] click are already written first-party by /track.js, so
@@ -1009,7 +1007,7 @@ window.addEventListener('scroll',()=>{document.getElementById('nav').classList.t
 
 // FAQ — the visible list. tests/faq-schema.test.js requires every question in
 // the FAQPage JSON-LD above to appear here verbatim; keep the two in step.
-const FAQS=[["Which companies does SQL Quest have interview practice for?", "Company pages and tagged challenge sets for Revolut, Wise, Stripe, Capital One, JPMorgan, Plaid, Ramp, Morgan Stanley, Snowflake, Spotify, Amazon, Google, Meta, Apple, Netflix, Uber, Airbnb, Shopify, Databricks, NVIDIA, OpenAI, Anthropic and Tesla. Revolut and Capital One also have a timed mock built to the screen format candidates report. Open a company page for its set, or filter the app with ?company= and the name."], ["Are the company question sets the real interview questions?", "No, and every page says so. Each set is built from what candidates report on Glassdoor, Blind and forums: the table shapes, the task types, the time limit. Each page lists and dates its sources. No set is affiliated with or endorsed by the company it is named for, and companies change their screens, so treat every specific as candidate-reported rather than official."], ["What is in a company mock, and how long is it?", "The Revolut mock runs 60 minutes: 6 multiple-choice questions and 2 written SQL tasks on a synthetic multi-currency neobank ledger, HackerRank-style. The Capital One mock runs 70 minutes: 8 multiple-choice and 6 written SQL questions on a synthetic card-transactions dataset, CodeSignal-style. Both are timed and scored and belong to Pro; a free general mock lets you try the format first."], ["Is SQL Quest free?", "Yes, to start: every Easy and Medium challenge, the Coach, the skill radar and a daily tutor allowance are free, with no card. Pro is $99 a year or $29 a month, and adds the Hard set, the timed mock bank including the company screens, the tutor without the daily cap, and the full industry tracks."], ["What happens when my query is wrong?", "You get a diagnosis, not the word incorrect. SQL Quest compares your result to the expected one and names the gap: wrong column count, the right rows in a different order, the right shape with wrong values shown side by side, NULL handling, or a syntax error translated into plain English. Show Structure then gives you the skeleton of a correct query without the answer, and the AI tutor reads the diagnosis before it says anything."], ["What is the refund policy on Pro?", "A 7-day full refund on both plans, Monthly and Annual. Email support@sqlquest.app or see /refund.html for the full terms."]];
+const FAQS=[["Which companies does SQL Quest have interview practice for?", "Company pages and tagged challenge sets for Revolut, Wise, Stripe, Capital One, JPMorgan, Plaid, Ramp, Morgan Stanley, Snowflake, Spotify, Amazon, Google, Meta, Apple, Netflix, Uber, Airbnb, Shopify, Databricks, NVIDIA, OpenAI, Anthropic and Tesla. Revolut and Capital One also have a timed mock built to the screen format candidates report. Open a company page for its set, or filter the app with ?company= and the name."], ["Are the company question sets the real interview questions?", "No, and every page says so. Each set is built from what candidates report on Glassdoor, Blind and forums: the table shapes, the task types, the time limit. Each page lists and dates its sources. No set is affiliated with or endorsed by the company it is named for, and companies change their screens, so treat every specific as candidate-reported rather than official."], ["What is in a company mock, and how long is it?", "The Revolut mock runs 60 minutes: 6 multiple-choice questions and 2 written SQL tasks on a synthetic multi-currency neobank ledger, HackerRank-style. The Capital One mock runs 70 minutes: 8 multiple-choice and 6 written SQL questions on a synthetic card-transactions dataset, CodeSignal-style. Both are timed and scored and belong to Pro; a free general mock lets you try the format first."], ["Is SQL Quest free?", "Yes, to start: every Easy and Medium challenge, the Coach, the Skillmap and a daily tutor allowance are free, with no card. Pro is $99 a year or $29 a month, and adds the Hard set, the timed mock bank including the company screens, the tutor without the daily cap, and the full industry tracks."], ["What happens when my query is wrong?", "You get a diagnosis, not the word incorrect. SQL Quest compares your result to the expected one and names the gap: wrong column count, the right rows in a different order, the right shape with wrong values shown side by side, NULL handling, or a syntax error translated into plain English. Show Structure then gives you the skeleton of a correct query without the answer, and the AI tutor reads the diagnosis before it says anything."], ["What is the refund policy on Pro?", "A 7-day full refund on both plans, Monthly and Annual. Email support@sqlquest.app or see /refund.html for the full terms."]];
 FAQS.forEach(f=>{const d=document.createElement('div');d.className='fi';d.innerHTML=`<div class="fh"><p style="font-size:16px;font-weight:600;color:#e2e8f0;flex:1;padding-right:16px">${f[0]}</p><span class="ftg">+</span></div><div class="fa"><p style="font-size:14px;line-height:1.8;color:#94a3b8;padding-top:12px">${f[1]}</p></div>`;d.addEventListener('click',()=>{const opened=!d.classList.contains('o');d.classList.toggle('o');if(opened)trackLanding('faq_open',{question:f[0].slice(0,60)});});document.getElementById('faqc').appendChild(d);});
 
 // Login

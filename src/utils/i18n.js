@@ -297,7 +297,7 @@ const TRANSLATIONS = {
       stepOf: 'Step {n} of {m}',
       upNext: 'Up next',
       xpChip: '+{n} XP',
-      skillRadar: 'Skill radar',
+      skillRadar: 'Skillmap',
       radarOverall: 'Overall {n} / 100',
       weakestThree: 'Weakest three',
       radarEmpty: 'Your first solves draw this.',
@@ -766,7 +766,7 @@ const TRANSLATIONS = {
       boardTitle: '🏅 Board',
       boardBody: 'Streaks, XP, achievements, leaderboard. Daily consistency is what actually builds SQL mastery — this is where you see yourself progress.',
       profileTitle: '👤 Profile',
-      profileBody: 'Your public skill radar. A shareable proof-of-skill you can put on LinkedIn, Twitter, or your resume. Recruiters can see exactly what you can do.',
+      profileBody: 'Your public Skillmap. A shareable proof-of-skill you can put on LinkedIn, Twitter, or your resume. Recruiters can see exactly what you can do.',
     },
 
     // Notifications popup (top-right bell)
@@ -954,7 +954,7 @@ const TRANSLATIONS = {
       clear: 'Clear',
       readinessTitle: 'Where you are',
       readinessScore: '{n} of 100',
-      whatItIs: 'This counts how much of our own {company} material you have finished: {n} challenges written on the same card-transaction tables, your skill radar on what those challenges ask for, and the timed mock. It measures our material, not an interview.',
+      whatItIs: 'This counts how much of our own {company} material you have finished: {n} challenges written on the same card-transaction tables, your Skillmap on what those challenges ask for, and the timed mock. It measures our material, not an interview.',
       notAffiliated: 'The mock follows a format candidates describe. SQL Quest is not affiliated with {company} and has no knowledge of how they actually assess anyone.',
       partCoverage: '{company} challenges finished',
       partSkills: 'Radar on the skills this set asks for',

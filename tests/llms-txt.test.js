@@ -175,7 +175,7 @@ describe('counts match the bank (recomputed independently)', () => {
 
   it('skills are the 9 canonical radar names and none of the retired ones', () => {
     expect(facts.skills).toEqual([...CANONICAL_SKILLS]);
-    expect(text).toContain(`a skill radar over **${CANONICAL_SKILLS.length} skills**`);
+    expect(text).toContain(`a Skillmap over **${CANONICAL_SKILLS.length} skills**`);
     for (const s of CANONICAL_SKILLS) expect(text).toContain(s);
     for (const retired of RETIRED_SKILL_NAMES) expect(text).not.toContain(retired);
     expect(text).not.toMatch(/\b10 (SQL )?(skill|categor)/i);

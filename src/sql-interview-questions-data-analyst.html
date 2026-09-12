@@ -75,7 +75,7 @@
       {
         "@type": "Question",
         "name": "How long should I prepare for a data analyst SQL interview?",
-        "acceptedAnswer": { "@type": "Answer", "text": "If you already write SQL at work, two to three weeks of daily practice is usually enough to get the interview patterns cold — the gap is rarely knowledge, it is recall speed under observation. SQL Quest's SQL Interview Prep track is roughly 25 hours across 34 steps and skips the sections your skill radar shows you already have, so a strong candidate finishes considerably faster than a career switcher. If you are moving into analytics from another field, plan on longer and start with fundamentals rather than interview questions." }
+        "acceptedAnswer": { "@type": "Answer", "text": "If you already write SQL at work, two to three weeks of daily practice is usually enough to get the interview patterns cold — the gap is rarely knowledge, it is recall speed under observation. SQL Quest's SQL Interview Prep track is roughly 25 hours across 34 steps and skips the sections your Skillmap shows you already have, so a strong candidate finishes considerably faster than a career switcher. If you are moving into analytics from another field, plan on longer and start with fundamentals rather than interview questions." }
       },
       {
         "@type": "Question",
@@ -275,7 +275,7 @@
   </div>
   <div style="text-align:center;margin-top:34px;">
     <a href="/app/?src=analyst-interview" class="btn bp">Open the editor — free</a>
-    <p style="font-size:13px;color:#8b98ab;margin-top:16px;">Or start the <strong style="color:#c084fc;">SQL Interview Prep</strong> track in the Coach — ~25 hours across 34 steps, and it skips what your skill radar shows you already have.</p>
+    <p style="font-size:13px;color:#8b98ab;margin-top:16px;">Or start the <strong style="color:#c084fc;">SQL Interview Prep</strong> track in the Coach — ~25 hours across 34 steps, and it skips what your Skillmap shows you already have.</p>
   </div>
 </div></section>
 
@@ -304,7 +304,7 @@
   <h2 class="fd" style="font-size:clamp(28px,4.5vw,46px);font-weight:800;line-height:1.15;margin-bottom:20px;">Recall speed is the gap,<br><span class="gt">not knowledge.</span></h2>
   <p style="font-size:18px;color:#94a3b8;max-width:570px;margin:0 auto 38px;">Most analysts who fail a SQL round already knew the answer — they just couldn't produce it while someone watched. That's a practice problem, and it's fixable in a couple of weeks.</p>
   <a href="/app/?src=analyst-interview" class="btn bp blg" style="box-shadow:0 0 40px rgba(124,58,237,.25);">Start Free — No Signup ⚡</a>
-  <p style="font-size:13px;color:#7f8da1;margin-top:20px;">250+ challenges · Adaptive Coach · Skill radar · Pro from $29/month or $99/year</p>
+  <p style="font-size:13px;color:#7f8da1;margin-top:20px;">250+ challenges · Adaptive Coach · Skillmap · Pro from $29/month or $99/year</p>
 </div></section>
 
 <!-- ── Footer ────────────────────────────────────────────────── -->
@@ -319,7 +319,7 @@ const FAQS=[
   ['What SQL do data analysts need for interviews?','Six areas carry almost every analyst loop: joins (including the anti-join), aggregation with GROUP BY and HAVING, window functions, subqueries and CTEs, conditional logic with CASE, and date handling. Notice what is missing — indexes, query plans, partitioning, and schema design belong to data engineer loops. An analyst is being tested on whether you can turn an ambiguous business question into correct SQL, not on how the storage engine works.'],
   ['How do SQL interview questions change with years of experience?','The SQL surface barely changes; what changes is how much of the problem you are handed. At 0-2 years you are usually given a precise spec and graded on whether the query runs and returns the right rows. At 2-5 years the question arrives underspecified on purpose — "find our most engaged customers" with no definition of engaged — and defining the metric out loud is most of the score. At 5+ years you are expected to challenge the question itself: name what the number will miss, what a duplicate or NULL would do to it, and what you would validate before anyone acts on it.'],
   ['What is the most common data analyst SQL interview question?','Two dominate. Finding duplicates — GROUP BY with HAVING COUNT(*) > 1, then the follow-up asking which copy you would keep and why. And top-N per group — the highest-selling product in each category, which needs ROW_NUMBER with PARTITION BY because a plain GROUP BY with MAX cannot return the other columns of the winning row. If you can only rehearse two patterns before an interview, rehearse these.'],
-  ['How long should I prepare for a data analyst SQL interview?','If you already write SQL at work, two to three weeks of daily practice is usually enough to get the interview patterns cold — the gap is rarely knowledge, it is recall speed under observation. SQL Quest\'s SQL Interview Prep track is roughly 25 hours across 34 steps and skips the sections your skill radar shows you already have, so a strong candidate finishes considerably faster than a career switcher. If you are moving into analytics from another field, plan on longer and start with fundamentals rather than interview questions.'],
+  ['How long should I prepare for a data analyst SQL interview?','If you already write SQL at work, two to three weeks of daily practice is usually enough to get the interview patterns cold — the gap is rarely knowledge, it is recall speed under observation. SQL Quest\'s SQL Interview Prep track is roughly 25 hours across 34 steps and skips the sections your Skillmap shows you already have, so a strong candidate finishes considerably faster than a career switcher. If you are moving into analytics from another field, plan on longer and start with fundamentals rather than interview questions.'],
   ['Do data analyst interviews allow you to look things up?','Increasingly yes for exact syntax, and it rarely helps. The bottleneck in a live round is not remembering the argument order of DATEDIFF — it is knowing that this problem is a top-N-per-group problem before you start typing. Pattern recognition cannot be looked up in the moment, which is why practice should focus on producing the shape of the answer quickly rather than on memorising function signatures.']
 ];
 const faqc=document.getElementById('faqc');
