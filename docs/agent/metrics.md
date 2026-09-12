@@ -2455,3 +2455,22 @@ table's churn column is read by hand and says so.
 Trap: a row with `proAutoRenew=false` and an Active Stripe subscription is
 not a churned customer, it is a person who tried to cancel and could not.
 Treat it as a refund owed, not a renewal earned.
+
+## `home_door`
+
+People by `aid` whose `landing_view` (`reason='landing'`) carries `page='home'`
+in the window; of those, any `[data-track]` click on the page
+(`cta_hero_primary`, `cta_nav_primary`, `cta_set_start_<slug>`,
+`cta_set_page_<slug>`, `cta_practice_hub`, `cta_topic`, …), `app_opened`,
+`challenge_solved` on ≥1 and on ≥6 distinct ids, `pro_modal_shown`,
+`signup_completed`. Baseline 2026-09-06 → 09-12: 185 → hero click 55 (29.7%)
+→ app 96 (51.9%) → solved 44 (23.8%) → six 19 (10.3%) → Pro modal 26 →
+signups 24. Split by `variant`: `adaptive_tutor_v1` until 2026-09-12,
+`company_first_v1` after; never one series across the rewrite.
+
+Traps: `page='home'` rows before 2026-09-06 sit in the 29-day tracking hole
+(shared traps above). The company cards link `/app/?src=home&company=<slug>`,
+so the arrival stays `home` and the company filter still applies — a
+`company:<slug>` arrival is a company page, not the homepage. Any first-run
+confound (intake 09-16, quota 09-21) is read against `/sql-exercises/`, the
+untouched control door.

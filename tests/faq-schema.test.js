@@ -70,10 +70,14 @@ describe('the check itself is honest', () => {
   });
 
   it('catches a question that is only in the schema', () => {
-    // The homepage is the real instance: nine questions, none on the page.
-    const found = findViolations(ROOT).filter(v => v.page === 'src/index.html');
-    expect(found.length, 'src/index.html was fixed — delete its baseline lines and this expectation')
-      .toBeGreaterThan(0);
+    // The homepage was the fixture (nine questions, none on the page) until
+    // 2026-09-12, when its FAQ was rewritten to match its schema. Use whichever
+    // page the baseline still names, so the check keeps a real instance for
+    // as long as one exists; an empty baseline means the ratchet has closed.
+    const page = [...readBaseline(ROOT)].map(k => k.split('\t')[0])[0];
+    if (!page) return;
+    const found = findViolations(ROOT).filter(v => v.page === page);
+    expect(found.length, `${page} was fixed — delete its baseline lines`).toBeGreaterThan(0);
   });
 
   it('normalises Unicode so Turkish questions compare correctly', () => {

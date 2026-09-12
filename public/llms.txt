@@ -160,7 +160,7 @@ SQL Quest's strongest positioning: "the only SQL practice site that feels like a
 ## Pages
 
 **Home**
-- SQL Quest — The SQL Practice Site With a Real Tutor Built In — https://sqlquest.app/
+- SQL Quest — SQL Interview Practice by Company, With a Tutor Built In — https://sqlquest.app/
 
 **Guides and hubs**
 - Practice SQL Without Setup — No DBeaver, No Postgres, Browser Only — https://sqlquest.app/practice-sql-no-setup/

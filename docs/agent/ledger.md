@@ -104,6 +104,53 @@ of the verifier and must never be rounded to `FLAT`.
   `subscription.deleted`; until then the Friday table's churn column is read
   from Stripe → Subscriptions by hand and says so.
 
+### the homepage, company-first (founder: "rewrite it around what we are strong at", 2026-09-12)
+
+- **Claimed** 2026-09-12 · **Live** on push — a static page, one variant tag,
+  no flag · **Read** 2026-10-03 (21 days).
+- **Change** `src/index.html` rewritten around the doors search and the
+  assistants already send people through. The hero and the first section are
+  the company sets — Revolut, Capital One, Stripe, Wise, JPMorgan, Snowflake,
+  each with its tagged count and, for two, the timed mock — the second is the
+  practice hub (`/sql-exercises/` and the nine topic pages), the tutor and the
+  Coach come third; FAANG stays linked and stops leading. Title `SQL Quest —
+  SQL Interview Practice by Company, With a Tutor Built In`; JSON-LD and a
+  ten-question FAQ rewritten to match, so the FAQ schema now describes what
+  the page shows (nine baseline lines retired from
+  scripts/faq-schema-baseline.txt). `LANDING_VARIANT = 'company_first_v1'`.
+- **Why** docs/reads/keywords-2026-09-08.md and google-position-2026-09-11.md:
+  the company pages that convert from search are mid-size fintech (Revolut
+  14.4% CTR, Wise 13.7%, Stripe, JPMorgan, Snowflake) and the FAANG pages do
+  not (1.6–1.8%, their query space belongs to Redshift and BigQuery);
+  `/sql-exercises/` is the door Bing sends 263 of 356 arrivals to; Copilot
+  cites us on "sql interview preparation" at 31%; two of the three payers
+  prepared for Capital One; practice-shaped doors convert at 29–37% against
+  editorial's 9%. The old hero ("AI can write a query. Can you tell if it's
+  right?") was positioned on a page that appears in none of those tables.
+- **Metric** `home_door` (docs/agent/metrics.md): people by `aid` with
+  `landing_view` page=home → `app_opened` → solved one → reached six, in the
+  21 days, with the hero-click share and the new `cta_set_*` clicks beside it.
+- **Baseline** 2026-09-06 → 09-12, the first clean week after the tracking
+  repair: 185 landed → 55 clicked the hero (29.7%) → 96 opened the app
+  (51.9%) → 44 solved one (23.8%) → 19 reached six (10.3%); 26 were shown a
+  Pro modal, 24 signed up.
+- **Target** app-open ≥ 55% and solved-one ≥ 28% of home landers over the 21
+  days, reached-six not below 10%, and company-card clicks ≥ 10% of landers.
+- **Falsification, stated in advance:** solved-one below 20% at n ≥ 300
+  landers → the company-first hero narrows the door (people who are not
+  interviewing bounce); restore the practice-first hero and keep the sets
+  section. App-open up and solved-one down → the page sells a set the app does
+  not open on (check that `?company=` lands on the filtered list, not on the
+  placement quiz). Both flat within ±3 points → the homepage was never the
+  constraint; stop rewriting it.
+- **Confounds** `onboardingIntake` flips 09-16 and `freeQuota` 09-21 inside
+  the window; both move first-run behaviour for every door, so read
+  `/sql-exercises/` as the control (same events, untouched page) and judge
+  the homepage on the difference, not the level. Assistant-recommended
+  arrivals land here with no referrer, so a burst from Gemini or ChatGPT reads
+  as homepage lift — split on `landingSrc` before crediting the copy.
+- **Verdict** _pending_
+
 ### three hand-written founder emails to the checkout abandoners of 09-04 / 09-06 — **OPEN**
 
 - **Sent** 2026-09-12 evening by the founder from Gmail (drafts written by the

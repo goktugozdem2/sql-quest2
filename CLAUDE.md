@@ -218,7 +218,7 @@ is whether it still receives first-contact traffic at all; it should not.
 
 ### Landing pages + marketing
 Three variant pages, all with analytics events isolated by `variant` tag:
-- `/` — adaptive_tutor_v1
+- `/` — company_first_v1 from 2026-09-12 (adaptive_tutor_v1 before; never one series across the change)
 - `/after-the-sql-course/` — after_course_v1 (Udemy/Coursera targeting)
 - `/after-bootcamp/` — after_bootcamp_v1 (Flatiron/GA/Metis targeting)
 
@@ -257,6 +257,23 @@ so a landing view and a later solve are joinable for the first time.
   parameters, so don't plan a paid-acquisition read on it.
 - Three `reason='landing'` rows on 2026-07-28 (aid `e5fcbad1a022…`) are
   localhost verification traffic — exclude that aid from the first read.
+
+### Homepage — company-first (2026-09-12)
+
+- `src/index.html` leads with the company sets (Revolut, Capital One, Stripe,
+  Wise, JPMorgan, Snowflake — the mid-size fintech pages that convert from
+  search, plus the two timed mocks), then the practice hub (`/sql-exercises/`
+  and the nine `/challenges/<topic>/` pages), then the tutor and the Coach.
+  FAANG is linked, not led with: those pages convert at 1.6–1.8% because
+  "amazon sql" means Redshift (docs/reads/keywords-2026-09-08.md).
+- Every count on the page is bound by `tests/site-counts.test.js`; the FAQ
+  JSON-LD must equal the visible FAQ verbatim (`tests/faq-schema.test.js`,
+  the homepage has no baseline lines any more). The per-company "N tagged
+  challenges" numbers come from `public/llms.txt` and are under 100, so the
+  guard does not see them — re-read llms.txt when the bank moves.
+- Company cards deep-link `/app/?src=home&company=<slug>`: `src` wins the
+  arrival stamp, so the door stays `home` and the filter still applies.
+- Read: ledger "the homepage, company-first", metric `home_door`, 2026-10-03.
 
 ### Public Profile (USER MUST DEPLOY for cross-device reads)
 Phase 4b + 4c shipped client-side; Supabase needs migration + deploy.

@@ -103,15 +103,6 @@ src/blog/window-functions-tutorial.html	What is the difference between RANK, DEN
 src/blog/window-functions-tutorial.html	What is the difference between ROWS BETWEEN and RANGE BETWEEN?
 src/blog/window-functions-tutorial.html	What is the most common window function pattern in SQL interviews?
 src/blog/window-functions-tutorial.html	Why can't I filter on a window function in WHERE?
-src/index.html	Can I practice SQL with industry-specific data instead of generic ecommerce or movies?
-src/index.html	Does SQL Quest explain why my query is wrong?
-src/index.html	Does SQL Quest remember my progress between sessions?
-src/index.html	How is SQL Quest different from LeetCode for SQL?
-src/index.html	How is SQL Quest different from a video course?
-src/index.html	How is the AI tutor different from other SQL practice site AIs?
-src/index.html	Is SQL Quest free to use?
-src/index.html	What does the adaptive coach do?
-src/index.html	Will this help me pass a FAANG SQL interview?
 src/learn-sql-for-beginners.html	Do I need a programming background to learn SQL?
 src/sql-tutorial.html	How long does this SQL tutorial take to complete?
 src/turkce-sql-ogren.html	Sektör bazlı SQL pratiği var mı? Bankacılık, gayrimenkul, üretim?
