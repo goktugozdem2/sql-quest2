@@ -678,7 +678,7 @@ const TRANSLATIONS = {
     // Coach next-step card — step-type labels + dynamic reasons +
     // placement check inline state.
     pro: {
-      coachStripLine: 'Free includes the Coach. Pro adds unlimited AI Tutor, Hard challenges, and the full interview bank.',
+      coachStripLine: 'Free includes the Coach. Pro adds the AI Tutor without the daily cap, Hard challenges, and the full interview bank.',
       coachStripCTA: 'See plans',
       paySuccessTitle: "You're Pro now.",
       paySuccessBody: 'Payment confirmed — your {plan} plan is active. Every Pro feature is unlocked.',
@@ -1551,7 +1551,7 @@ const TRANSLATIONS = {
     },
 
     pro: {
-      coachStripLine: "Ücretsiz plan Coach'u içerir. Pro; sınırsız AI Tutor, Zor sorular ve tüm mülakat bankasını ekler.",
+      coachStripLine: "Ücretsiz plan Coach'u içerir. Pro; günlük tavanı kalkmış AI Tutor, Zor sorular ve tüm mülakat bankasını ekler.",
       coachStripCTA: 'Planları gör',
       paySuccessTitle: 'Artık Pro’sun.',
       paySuccessBody: 'Ödeme onaylandı — {plan} planın aktif. Tüm Pro özellikler açık.',

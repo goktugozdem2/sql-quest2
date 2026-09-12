@@ -29044,7 +29044,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                   {isLastDay ? 'Pro trial ends today' : `${daysLeft} days left in your Pro trial`}
                 </p>
                 <p className="text-xs opacity-80 mt-0.5 truncate">
-                  Hard challenges, sector tracks, mock interviews, and unlimited AI tutor will lock without Pro.
+                  Hard challenges, sector tracks, mock interviews, and the tutor beyond the free daily cap will lock without Pro.
                 </p>
               </div>
               <button
@@ -29208,8 +29208,8 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                       <p className="font-medium" style={{ color: '#F2F0EA' }}>{proModalReason.solvedCount} challenges solved.</p>
                       <p className="text-sm mt-2" style={{ color: '#8A8E99' }}>
                         {['learning', 'job_ready'].includes(getUserIntent())
-                          ? 'You\'re past the curiosity phase — this is exactly where most learners stall. Pro removes the friction: unlimited AI tutor the moment you\'re stuck, the full 30-day path, and 200+ warm-ups that turn practice into fluency.'
-                          : 'You\'re past the curiosity phase — this is the spot where most people quit and the few who don\'t get hired. Pro unlocks Hard challenges, the full mock-interview bank, and unlimited AI tutor so you can keep the momentum going.'}
+                          ? 'You\'re past the curiosity phase — this is exactly where most learners stall. Pro removes the friction: the AI tutor without the free tier's daily cap the moment you\'re stuck, the full 30-day path, and 200+ warm-ups that turn practice into fluency.'
+                          : 'You\'re past the curiosity phase — this is the spot where most people quit and the few who don\'t get hired. Pro unlocks Hard challenges, the full mock-interview bank, and the AI tutor without the free tier's daily cap so you can keep the momentum going.'}
                       </p>
                     </div>
                   ) : proModalReason.type === 'coach_path' ? (
@@ -29241,14 +29241,14 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                         {proModalReason.topic <= 1 ? 'Your Pro trial ends today.' : `${proModalReason.topic} days left in your trial.`}
                       </p>
                       <p className="text-sm mt-2" style={{ color: '#8A8E99' }}>
-                        You've been using full Pro all week — Hard challenges, sector tracks, mock interviews, unlimited AI tutor. Don't drop back to Free right when you've built momentum. Lock it in now.
+                        You've been using full Pro all week — Hard challenges, sector tracks, mock interviews, the tutor beyond the free daily cap. Don't drop back to Free right when you've built momentum. Lock it in now.
                       </p>
                     </div>
                   ) : proModalReason.type === 'trial_ended' ? (
                     <div className="mt-3">
                       <p className="font-medium" style={{ color: '#F2F0EA' }}>Welcome back to Free.</p>
                       <p className="text-sm mt-2" style={{ color: '#8A8E99' }}>
-                        The Coach, skill radar, daily streak, and your first ~75 challenges stay yours forever. But Hard challenges, sector tracks, mock interviews, and unlimited AI tutor are now locked. Pick up Pro to keep going where you left off.
+                        The Coach, skill radar, daily streak, and your first ~75 challenges stay yours forever. But Hard challenges, sector tracks, mock interviews, and the AI tutor without the free tier's daily cap are now locked. Pick up Pro to keep going where you left off.
                       </p>
                     </div>
                   ) : proModalReason.type === 'company_set' ? (
@@ -29306,7 +29306,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                         {proModalReason.hardCount} of the {proModalReason.totalCount} {proModalReason.topic}-tagged questions are Hard.
                       </p>
                       <p className="text-sm mt-2" style={{ color: '#8A8E99' }}>
-                        Hard is where {proModalReason.topic} interviews actually live — window functions, recursive CTEs, multi-step pipelines. Pro unlocks the whole set right now, plus mock interview pressure mode and unlimited AI tutor for the prep sprint.
+                        Hard is where {proModalReason.topic} interviews actually live — window functions, recursive CTEs, multi-step pipelines. Pro unlocks the whole set right now, plus mock interview pressure mode and the AI tutor without the free tier's daily cap for the prep sprint.
                       </p>
                     </div>
                   ) : proModalReason.type === 'hard_challenge' ? (
@@ -29326,7 +29326,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
 
                 {/* Features — Coach-forward. The Coach, radar, placement,
                     mastery + retrieval checks are ALL free. Pro buys depth:
-                    unlimited AI, Hard-tier challenges the Coach routes to,
+                    the tutor cap lifted, Hard-tier challenges the Coach routes to,
                     and mock interview pressure.
                     Ordering branches on declared intent: interview-intent
                     (and unknown) users get the interview-forward list; users
