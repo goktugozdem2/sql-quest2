@@ -27,6 +27,193 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### company sets: three free, then Pro (free-tier boundary M1)
+
+- **Claimed** 2026-09-12 · **Flips** 2026-10-14 by scheduled task — after the
+  intent-routing read (10-13) on `reach_6_rate`, which this moves for company
+  arrivals by design · **Read** 2026-11-04 (flip + 21 days).
+- **Change** behind `companySetGate` (off): in a company view the first three
+  of the set are free, whatever their difficulty, and the fourth meets a wall
+  — `content_lock_reached {surface: 'challenge_set', wall: 'company_set',
+  setPosition, setSize, freeCount, solvedInSet}`, the cold-start diversion,
+  then the Pro modal under reason `company_set` naming the set, the count and
+  (M5) the company's mock when one exists. The banner says "3 of Stripe's 35
+  are free to try" before anyone clicks; locked rows wear the Pro lock; the
+  set-complete ask fires on the third solve. A solved challenge is never
+  taken back, and every question stays reachable one by one from the general
+  list — the curated set is what Pro buys. Pure half
+  `src/utils/free-tier-boundary.js`; company-page copy ("21 free") changes at
+  the flip, count guards enforcing it.
+- **Why** measured 2026-09-12: the company page is the highest-intent door
+  (169 arrivals in 30 days; 11% hit a wall vs 6.5% from the homepage) and the
+  product it promises — "Stripe's SQL questions" — is mostly free: Snowflake
+  53 free / 42 locked, Stripe 23 / 12, Plaid 25 / 9, Capital One 19 / 6.
+  Amazon (10 / 24) is the one mostly-Pro set, and it produced a payer
+  (sergelafarge, $99 annual, via `company:Amazon`) and a checkout click.
+  harinivr02 arrived via `company:Stripe`, solved 6, clicked, did not pay —
+  with 23 free Stripe questions there was nothing to pay for.
+- **Metric** `company_set_wall` (docs/agent/metrics.md): company arrivals
+  (`app_opened.arrivalSrc` like `company:%`) reaching the set wall, clicks
+  per person at it, and purchases whose `arrivalSrc` is a company, all by
+  `aid`. Guardrail: company-arrival reach-6 share.
+- **Baseline** 30 days to 2026-09-12: 169 company arrivals, 45 solved
+  anything, 21 reached six (12.4%), 19 hit a wall, 2 clicked, 0 paid.
+  All-time company-arrival purchases: 1.
+- **Target** ≥ 10% of company arrivals reach the set wall, ≥ 8% of those
+  click, and ≥ 1 purchase attributed to a company arrival in the 21 days,
+  with company-arrival reach-6 ≥ 8%.
+- **Falsification, stated in advance:** company-arrival reach-6 below 8%
+  with no purchase in the window → the door was worth more open; revert.
+  Wall reached by < 5% → the wall is not where they are; read where company
+  arrivals actually stop before touching it. 1 purchase at n < 100 arrivals
+  → UNREADABLE, extend to 2026-11-25.
+- **Confounds** the intent-routing read (10-13, `reach_6_rate`) — this flips
+  after it for that reason. M2 flips 10-12 on the Coach; a company arrival
+  holding the interview-prep goal is on both surfaces, split on goal. The
+  payment-geography finding (0 of 7 non-US checkouts paid) caps what any
+  wall can show in purchases; read clicks before purchases.
+- **Verdict** _pending_
+
+### the interview-prep goal meets the wall at step 4 (free-tier boundary M2)
+
+- **Claimed** 2026-09-12 · **Flips** 2026-10-12 by scheduled task, after the
+  Coach-trust read (10-11) — it changes what that goal's first steps ARE ·
+  **Read** 2026-11-02 (flip + 21 days).
+- **Change** behind `goalWallEarly` (off): the interview-prep curriculum is
+  reordered at read time (`withEarlyWall`, one resolver for the engine and
+  the card): positions 1–2 unchanged, 3 = the free Hard preview (iv-5,
+  challenge 23), 4 = a locked Hard (iv-7, challenge 71, Top-N per Category),
+  then the rest in its original order; with `mockDoor` (M5) the free mock at
+  5 and a Pro mock at 6. The locked-step card says which step is Pro and
+  offers "Set aside for now" — `coachState.stepsSkipped`, which the engine
+  passes over without counting (never progress, returns when removed);
+  event `coach_step_skipped`. The registry file is untouched.
+- **Why** measured 2026-09-12: the first locked step was 11 and the goal held
+  no mock, so a first session — where every purchase has happened — never
+  met the paid good. Of 79 interview-intent people, 39 reached six solves
+  and were asked, **68 never opened a Hard challenge, 0 opened a mock**.
+- **Metric** `goal_wall_early` (metrics.md): of people who start the
+  interview-prep goal after the flip, the share who open a Hard challenge or
+  a mock within 24h of the goal start; skip rate on the locked step;
+  guardrail `coach_goal_to_step` for that goal.
+- **Baseline** interview-intent people opening a Hard in 30 days: 11 of 79
+  (14%); a mock: 0. Goal-holder baseline read at the flip from
+  `coach_step_started` on the goal.
+- **Target** ≥ 50% of new interview-prep goal holders open a Hard or a mock
+  within 24h; ≥ 1 click on `coach_path` or `coach_mock` from them.
+- **Falsification, stated in advance:** first-24h Hard/mock opens < 25% →
+  the reorder did not reach them; read where they stop (step 1–2 solve
+  rate) before touching the order. `coach_goal_to_step` for the goal falls
+  below its no-flag arm by > 10 points → the wall is costing the step, revert.
+  Fewer than 40 goal starters by 11-02 → UNREADABLE, extend to 11-23.
+- **What this must not become** a wall with no way past: the skip is by
+  test, and a skipped step is never credited. Nor a change to the other two
+  goals — same reference, by test.
+- **Confounds** the intake flip (09-16) hands this goal to intake-goal
+  holders (`coachState.source='intake'`); split on source. M5 ships with it
+  — same surface, same read; the mock steps are read as their own line.
+- **Verdict** _pending_
+
+### the six-solve ask speaks to the deadline (free-tier boundary M3)
+
+- **Claimed** 2026-09-12 · **Flips** 2026-10-06 by scheduled task, after the
+  intake read (09-30) that gives it dates · **Read** 2026-11-24, joined to
+  the `paywall_ask_efficiency` read (n is small — ~7 milestone clicks a
+  month; a 21-day read would be UNREADABLE by construction).
+- **Change** behind `deadlineOffer` (off): when the milestone modal fires
+  for a person whose date — the intake's or the countdown card's, as
+  `prepTarget.date` — is inside 45 days, the ask leads with the date ("12
+  days to your interview.") and names what stands between them and it: the
+  count of locked Hard challenges and the company's mock (or "a scored
+  mock"). `pro_modal_shown` carries `deadline` and `daysOut` (the integer;
+  the date never leaves). No date, past 45 days, or flag off: today's modal.
+- **Why** every purchase was a first-session decision at 6–10 solves, two of
+  them at this exact modal in 31 seconds and 7 minutes; the buyers were
+  deadline-driven ("interview coming up"). The modal has never mentioned the
+  deadline it is being bought for.
+- **Metric** `deadline_offer_split` (metrics.md): milestone_solves clicks per
+  person shown, split by `deadline` true/false, by `aid`. Mechanism check
+  2026-10-20: `deadline=true` shows > 0.
+- **Baseline** milestone_solves 30 days to 2026-09-12: 171 people shown, 7
+  clicked (4.1%), 2 paid. With a date: structurally 0 before the intake.
+- **Target** deadline arm ≥ 10% clicks per person shown at n ≥ 30 shown.
+- **Falsification, stated in advance:** deadline arm ≤ the no-date arm at
+  n ≥ 30 → the date is a marker, not a lever; revert the copy, keep the
+  event. n < 30 by 11-24 → UNREADABLE; the intake is not producing dates,
+  read its verdict first. Never widen the window past 45 days to get n.
+- **Confounds** M4 (flips 09-29) removes low-value shows and raises clicks
+  per shown mechanically — this reads milestone_solves only, which M4 never
+  touches. The 09-29 copy fix on the modal ("50+ tutor calls a day" for
+  "unlimited") lands before this flips.
+- **Verdict** _pending_
+
+### quiet the asks that have never sold (free-tier boundary M4)
+
+- **Claimed** 2026-09-12 · **Flips** 2026-09-29 by scheduled task, after the
+  cold-start read (09-29) is written · **Read** 2026-10-13 (flip + 14 days).
+- **Change** behind `quietEarlyAsks` (off): the streak modal
+  (`milestone_streak`) never fires; a company Hard wall (`company_hard`) at
+  three solves or fewer gets the free-preview catcher instead of the modal;
+  a locked mock at three solves or fewer opens the free mock instead
+  (`interview_lock_nudged`, a toast). The lock rows are still written.
+  Live from 2026-09-12 regardless of the flag: the locked-mock ask is stamped
+  `interview_locked` instead of inheriting `generic` (metrics.md, reason
+  discontinuity). User-initiated asks — the header button, the Coach strip —
+  are untouched: they asked.
+- **Why** measured 2026-09-12, 30 days: `milestone_streak` 13 people, 0
+  clicks, none ever; `company_hard` 12 people at an average of 1.8 solves,
+  1 click; `generic` at ≤3 solves 25 of 45 people, 0 clicks — most of them
+  locked-mock clicks wearing the wrong label. Fifty people a month, no sale
+  in the product's history from any of them, and the surface burns: 1.9
+  shows per person, 43 people asked three or more times (60d to 09-08).
+- **Metric** `early_ask_quiet` (metrics.md): `pro_modal_shown` per person
+  shown, people shown 3+ times, and shows under the three quieted reasons;
+  guardrail: `pro_plan_clicked` + `pro_checkout_clicked` people unchanged or
+  up, and `interview_lock_nudged` → free-mock `interview_started` share.
+- **Baseline** 380 shows / 203 people = 1.87 per person; quieted-reason
+  people: 13 + 12 + ~25 = ~50 a month; clicks 10 people.
+- **Target** ≤ 1.3 shows per person, people asked 3+ times < 10 a month,
+  clicks per month ≥ 10; ≥ 40% of nudged mock clicks start the free mock.
+- **Falsification, stated in advance:** clicks per month fall below 7 → one
+  of the quieted asks was selling after all; read which reason's clicks
+  vanished and restore that one only. Nudged-to-free-mock starts < 20% →
+  the nudge is a dismissal, not a door; replace it with the plain ask.
+- **Confounds** M1 (10-14) changes the company wall; this reads to 10-13.
+  Fewer shows raise every "per shown" ratio mechanically — the guardrail is
+  absolute clicks, never a rate.
+- **Verdict** _pending_
+
+### the mocks get a door (free-tier boundary M5)
+
+- **Claimed** 2026-09-12 · **Flips** 2026-10-12 with M2 (it is M2's steps
+  5–6) · **Read** 2026-11-02, as its own line in the M2 read.
+- **Change** behind `mockDoor` (off, read only when `goalWallEarly` is on):
+  the free mock (`sql-fundamentals-free`) becomes step 5 of interview-prep
+  and a Pro mock step 6 — the company the person named, when it has a mock,
+  else the generic `top-10-most-asked`; never a company nobody typed. A
+  curriculum mock step completes on a sitting (`interviewHistory` after the
+  goal start), starts through `startInterview` — the one gate — and never
+  spends the Coach's once-per-session offer flag. The company wall (M1) names
+  the company's mock. Engine: `isStepComplete` for `mock_interview`.
+- **Why** the Interview tab was reached by 3 people in 30 days; 0 of 79
+  interview-intent people opened a mock. "Full mock interview bank" has been
+  a bullet on a modal nobody could find the door to.
+- **Metric** `goal_wall_early` mock line: interview-prep goal holders who
+  start the free mock within 7 days of the goal start; `coach_mock` clicks;
+  `interview_reach` for the goal's holders.
+- **Baseline** interview-intent people opening a mock: 0 of 79 (30d).
+- **Target** ≥ 30% of new goal holders sit the free mock within 7 days.
+- **Falsification, stated in advance:** < 10% start it → a mock is not what
+  a step-5 person wants; move it to the end of Phase B and keep the door on
+  the company wall only. `coach_mock` dismissed with no skip and no start by
+  > 60% → the Pro mock step is a dead end; drop step 6, keep step 5.
+- **Confounds** the `interviewCountdown` flag (off) owns the synthetic
+  offer; its once-per-session flag is untouched by curriculum mocks, by
+  test. Intent routing (09-13) opens the Interview tab to hiring-intent
+  people — a second door in the same window; split mock starts by
+  `coach_step_started type=mock_interview` vs the tab.
+- **Verdict** _pending_
+
 ### the Coach stops asking twice: a first-run placement is a placement
 
 - **Claimed** 2026-09-12 · **Flips** 2026-09-27 by scheduled task, after the

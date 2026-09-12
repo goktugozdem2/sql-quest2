@@ -5,10 +5,18 @@ steer people to pay?". Every number below was measured that day against the
 live database (30 days, people by `aid`, internal accounts excluded).
 Re-measure before quoting.
 
-Status: PLAN. Nothing here ships before 2026-09-29 — `purchases` is a
-directional guardrail on the 09-20 and 09-29 reads (objectives.md, "The
-constraint that outranks the objective"). Build dark, flip on the read
-calendar, one surface per read.
+Status: BUILT 2026-09-12, all five dark behind flags (`companySetGate`,
+`goalWallEarly`, `deadlineOffer`, `quietEarlyAsks`, `mockDoor` in
+`src/data/feature-flags.js`; pure half `src/utils/free-tier-boundary.js`;
+guards `tests/free-tier-boundary.test.js`). Nothing here flips before
+2026-09-29 — `purchases` is a directional guardrail on the 09-20 and 09-29
+reads (objectives.md, "The constraint that outranks the objective"). Flip
+calendar by scheduled task, one surface per read: 09-29 M4 · 10-06 M3 ·
+10-12 M2 + M5 · 10-14 M1 (after the 10-13 intent-routing read on
+`reach_6_rate`, which M1 moves for company arrivals by design). Ledger
+claims: "company sets: three free, then Pro", "the interview-prep goal meets
+the wall at step 4", "the six-solve ask speaks to the deadline", "quiet the
+asks that have never sold", "the mocks get a door".
 
 ---
 

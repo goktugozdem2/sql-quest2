@@ -387,6 +387,11 @@ export function computeNextStep(goal, userData = {}, options = {}) {
 
   const coachState = userData.coachState || {};
   const stepsCompleted = new Set(coachState.stepsCompleted || []);
+  // Skipped, not completed (2026-09-12, free-tier boundary M2): a step the
+  // person set aside — a locked Hard or a Pro mock they chose not to buy
+  // yet. The walk passes over it without counting it, so progress never
+  // credits a skip and the step returns the moment it is removed from here.
+  const stepsSkipped = new Set(coachState.stepsSkipped || []);
   const startedAtMs = coachState.startedAt ? new Date(coachState.startedAt).getTime() : 0;
 
   const skillLevels = options.skillLevels || {};
@@ -399,6 +404,7 @@ export function computeNextStep(goal, userData = {}, options = {}) {
   const completedAiLessons = legacyLessonSet(userData);
   const challengeAttempts = userData.challengeAttempts || [];
   const completedDrills = userData.completedDrills || [];
+  const interviewHistory = Array.isArray(userData.interviewHistory) ? userData.interviewHistory : [];
   const allChallenges = options.allChallenges || [];
 
   const ctx = {
@@ -406,6 +412,7 @@ export function computeNextStep(goal, userData = {}, options = {}) {
     completedAiLessons,
     challengeAttempts,
     completedDrills,
+    interviewHistory,
     allChallenges,
     startedAtMs,
     // retrieval_check needs these to tell "never learned it" apart from
@@ -459,6 +466,9 @@ export function computeNextStep(goal, userData = {}, options = {}) {
       completedCount++;
       continue;
     }
+
+    // Set aside by the person (coachState.stepsSkipped): passed over, never counted.
+    if (stepsSkipped.has(step.id)) continue;
 
     // Activity-based completion detection
     if (isStepComplete(step, ctx)) {
@@ -561,6 +571,7 @@ export function isStepComplete(step, ctx = {}) {
     completedAiLessons = new Set(),
     challengeAttempts = [],
     completedDrills = [],
+    interviewHistory = [],
     allChallenges = [],
     startedAtMs = 0,
     curriculum = [],
@@ -570,6 +581,17 @@ export function isStepComplete(step, ctx = {}) {
   switch (step.type) {
     case 'lesson':
       return lessonCompletedAtMs(step.lessonId, aiLessonCompletions, completedAiLessons) !== null;
+
+    // A curriculum mock step (2026-09-12, free-tier boundary M5): complete
+    // once that mock has been SAT since the goal started — a row in
+    // interviewHistory, which app.jsx writes only for a finished, non-practice
+    // sitting. Starting it is not completing it; a mock is scored, not opened.
+    case MOCK_OFFER_STEP_TYPE:
+      return (interviewHistory || []).some(h => {
+        if (!h || h.interviewId !== step.interviewId) return false;
+        const ts = h.timestamp ? new Date(h.timestamp).getTime() : (h.date ? new Date(h.date).getTime() : 0);
+        return Number.isFinite(ts) && ts >= startedAtMs;
+      });
 
     case 'challenge':
       return (challengeAttempts || []).some(a => {
@@ -770,6 +792,8 @@ function buildReason(step, skillLevels) {
       return `Prove mastery of ${step.skill || 'this skill'} — solve ${step.minSolves || 3} fresh challenges${step.minDifficulty ? ` at ${step.minDifficulty}+` : ''}.`;
     case 'retrieval_check':
       return `Come back tomorrow and solve a challenge on this skill — retrieval beats re-reading.`;
+    case MOCK_OFFER_STEP_TYPE:
+      return `Rehearse under a timer — a scored mock interview, the way the real one is asked.`;
     default:
       return 'Next step.';
   }

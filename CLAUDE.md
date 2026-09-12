@@ -413,7 +413,7 @@ Rewritten Coach-forward:
 - "Free includes the Coach. Pro adds:" → Unlimited AI Tutor, Hard challenges, Full Mock Interview bank, All Daily difficulties, Full Warm-Up bank, 30-Day Challenge, Priority support.
 
 ### Testing
-- **1,331 tests passing** across 54 test files (vitest), incl. `tests/site-counts.test.js` — the guard that fails on any stale product count on a static page — and `tests/cloud-save-contract.test.js`, the guard on the one write that must never lie. Runs via `npm run test:run`. (Measured 2026-09-12 evening; this line goes stale fast — re-run before quoting it.)
+- **1,374 tests passing** across 56 test files (vitest), incl. `tests/site-counts.test.js` — the guard that fails on any stale product count on a static page — and `tests/cloud-save-contract.test.js`, the guard on the one write that must never lie. Runs via `npm run test:run`. (Measured 2026-09-12 evening; this line goes stale fast — re-run before quoting it.)
 - `scripts/smoke-test.js` (headless Chrome e2e): 8/8 pass against a live dev server. Run with `npm run smoke` (dev server must be up on :4321 or pass URL arg).
 
 ### Database writes — read before touching `users` or its triggers (2026-09-12)
@@ -495,6 +495,47 @@ Rewritten Coach-forward:
   self-declared (44%, n=25, 08-14 → 09-11).
 - Do not swap the `working` opener a third time from here, and do not let a
   4/4 reach `advanced` without round 2 — `tests/placement.test.js` pins both.
+
+### The free-tier boundary — five flags, all dark (2026-09-12)
+
+- **The finding, not the founder's premise:** the free tier is not too big,
+  it is in front of the paid good. Locked Hard is opened by 9% of people who
+  open anything, the mocks by 3 people a month and by none of 79
+  interview-intent people; company sets are mostly free except Amazon, the
+  one set that produced a payer; the interview-prep goal's first locked step
+  was 11 and it held no mock. Every purchase was a first-session decision at
+  6–10 solves. **Never cut Easy/Medium** — that is the denominator the only
+  working ask has (`docs/plans/free-tier-boundary-2026-09-12.md`).
+- Pure half `src/utils/free-tier-boundary.js`, guards
+  `tests/free-tier-boundary.test.js`, flags in `feature-flags.js`, each with
+  its own ledger claim and flip task. `ftbFlag(name)` in app.jsx reads
+  `=== true`. Flip calendar: **09-29** `quietEarlyAsks` (M4) · **10-06**
+  `deadlineOffer` (M3) · **10-12** `goalWallEarly` + `mockDoor` (M2, M5) ·
+  **10-14** `companySetGate` (M1, after the intent-routing reach-6 read it
+  would confound). Nothing monetisation-adjacent flips before 09-29.
+- M1: in a company view the first three of the set are free, the fourth
+  meets `wall='company_set'` (`surface='challenge_set'`), reason
+  `company_set`; the banner, the row locks and the set-complete ask all read
+  `companyGateFreeIds()`. Solved is never taken back; the general list is
+  untouched. Company-page copy ("21 free") changes at the flip — count
+  guards will force it.
+- M2/M5: `withEarlyWall` reorders interview-prep at read time — one
+  resolver (`resolveCoachGoal`) for the engine AND the card, so "Step N of
+  M" and the next step cannot disagree. Locked steps offer "Set aside for
+  now" → `coachState.stepsSkipped`; the engine passes a skipped step over
+  **without counting it**. Curriculum `mock_interview` steps complete on an
+  `interviewHistory` sitting and start through `startInterview` before the
+  switch in `handleCoachStepStart`, never through the synthetic offer's door.
+- M3: the milestone modal reads `prepTarget.date` via `daysUntil`; inside 45
+  days the ask leads with the date. `pro_modal_shown` carries
+  `deadline`/`daysOut`, never the date.
+- M4: streak modal silent; `company_hard` and a locked mock at ≤3 solves get
+  the catcher / the free mock. Locked-mock asks are stamped
+  `interview_locked` **live** (label fix; behaviour unchanged) — the
+  `generic` series splits on 2026-09-12 (metrics.md).
+- Still to ship in the 09-29 batch: "Unlimited AI Tutor" appears in 45
+  places and the backend caps Pro at 50/75/100 calls a day
+  (`supabase/functions/ai-tutor`). Fix the words, not the cap.
 
 ### Notifications
 Major overhaul this session: persist `dismissedNotifs`, `_subtabEnabled()` gates routes by feature flag, threshold-aligned with Quick Drill (<65), dedup by `target` string, clock-tick recompute, NOTIF_PRI constants (streak=0). Reviews Due block commented-out until Coach surfaces retrieval checks outside goals.

@@ -160,6 +160,60 @@ window.FEATURE_FLAGS = {
     // company clears that bar today, computed from the bank rather than
     // listed — flipping this flag does not turn on 23 company flows.
     interviewCountdown: false,
+
+    // ── The free-tier boundary (2026-09-12) ──────────────────────────────
+    // Five moves from docs/plans/free-tier-boundary-2026-09-12.md. The
+    // finding: the free tier is not too big, it is in front of the paid good
+    // — the locked Hard set is opened by 9% of people who open anything,
+    // the mocks by 3 people a month and by none of 79 interview-intent
+    // people. Every purchase in our history was a first-session decision at
+    // 6–10 solves, so each move puts the paid good on a deadline person's
+    // path INSIDE the first session, or stops an ask that has never sold.
+    // None of them cuts Easy/Medium. Pure half: src/utils/free-tier-boundary.js;
+    // guards: tests/free-tier-boundary.test.js. All five SHIPPED OFF: nothing
+    // monetisation-adjacent flips before 2026-09-29 (objectives.md, the
+    // constraint that outranks the objective); each flips by scheduled task
+    // on its own date, one surface per read, `purchases` the guardrail.
+    //
+    // M1 — the company view frees the first three of a company's set and
+    // walls the fourth, whatever its difficulty. Today Stripe's arrival
+    // gets 23 free Stripe questions and never needs Pro; Amazon (10 free /
+    // 24 locked) is the one set that produced a payer. The challenges stay
+    // reachable one by one from the general list — the curated set is what
+    // Pro buys. New wall value `company_set`, reason `company_set`.
+    // Flips 2026-09-29 (with M4, a different surface). Ledger: "company
+    // sets: three free, then Pro".
+    companySetGate: false,
+    // M2 — the interview-prep goal meets the wall at step 4, not 11: the
+    // free Hard preview (challenge 23) moves to 3, a locked Hard (71, Top-N
+    // per Category) to 4. A free user can set the locked step aside
+    // (`coachState.stepsSkipped`, engine: passed over, never counted). Of
+    // 79 interview-intent people in 30 days, 68 never opened a Hard.
+    // Flips 2026-10-12, after the Coach-trust read (10-11) — it changes
+    // what that goal's first steps ARE. Ledger: "the wall at step 4".
+    goalWallEarly: false,
+    // M3 — the milestone modal leads with the date. A person whose
+    // intake / countdown date is inside 45 days sees "N days to your
+    // interview" and what stands between them and it (the locked Hard set,
+    // the company's mock), not the feature list. `pro_modal_shown` carries
+    // deadline/daysOut so the ask-efficiency read splits on it. Flips
+    // 2026-10-06, after the intake read (09-30) that gives it dates.
+    // Ledger: "the six-solve ask speaks to the deadline".
+    deadlineOffer: false,
+    // M4 — the asks that have never sold go quiet: the streak modal (13
+    // people/30d, 0 clicks ever) never fires; a company Hard wall or a
+    // locked mock at ≤3 solves gets the free-preview catcher or the free
+    // mock instead of a price. Measured 2026-09-12: 50 people a month, no
+    // sale in the product's history from any of them, and they burn the
+    // surface (43 people asked 3+ times). Flips 2026-09-29 (with M1).
+    // Ledger: "quiet the asks that have never sold".
+    quietEarlyAsks: false,
+    // M5 — the mocks get a door: with M2 on, the free mock becomes step 5
+    // of interview-prep and the named company's Pro mock (or the generic
+    // one) step 6; the company wall (M1) names the company's mock. The
+    // Interview tab was reached by 3 people in 30 days. Flips 2026-10-12
+    // with M2 (it is M2's steps 5–6). Ledger: "the mocks get a door".
+    mockDoor: false,
   },
 };
 

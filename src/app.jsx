@@ -13,6 +13,7 @@ if (typeof window !== 'undefined') window.React = window.React || React;
 import {
   computeNextStep as coachComputeNextStep, HARD_PREVIEW_MARKER,
   MOCK_OFFER_STEP_TYPE as COACH_MOCK_STEP_TYPE,
+  MOCK_OFFER_STEP_ID as COACH_MOCK_STEP_ID,
   MOCK_OFFER_GOAL_ID as COACH_MOCK_GOAL_ID,
 } from './utils/coach.js';
 import SkillRadar, { DEFAULT_SKILLS as RADAR_DEFAULT_SKILLS, DEFAULT_META as RADAR_DEFAULT_META, normalizeSkills as radarNormalizeSkills, deriveArchetype } from './components/SkillRadar.jsx';
@@ -28,6 +29,7 @@ import { mergeProgress, hasProgress, isResumableGuest, GUEST_USER_KEY } from './
 import { INTAKE_KEY, INTAKE_GOALS, INTAKE_ROLES, INTAKE_STEPS, intakeGoalFor, nextIntakeStep, isValidIntakeDate, buildIntakeRecord, readIntakeRecord, intakeEventPayload, newCoachGoalState, shouldShowIntake } from './utils/onboarding-intake.js';
 import { PLACEMENT_TIERS, placementResult, placementEventPayload, readFirstRunPlacement, seedFloorsFor } from './utils/placement.js';
 import { paidWallFor, isColdStart } from './utils/paid-wall.js';
+import { companySetGate, companySetFreeIds, companySetProgress, quietAskDecision, deadlineOfferFor, deadlineEventMeta, withEarlyWall, pickProMockId, FREE_MOCK_ID } from './utils/free-tier-boundary.js';
 import { expandStageChallenges, placementStartIndex as roadmapPlacementStartIndex } from './utils/roadmap.js';
 import { shouldEmitLockEvent, lockEventKey } from './utils/lock-events.js';
 import { shouldAskForReview, enabledReviewPlatforms, REVIEW_ASK_REASONS } from './utils/review-ask.js';
@@ -7057,6 +7059,8 @@ function SQLQuest() {
         // trusting a stale proStatus flag. Lets the read separate newly
         // unblocked users from the ones who were always going to be asked.
         staleProRecovered: !!proModalReason?.staleProRecovered,
+        // Free-tier boundary M3: did this ask lead with a date, and how far.
+        ...deadlineEventMeta(proModalReason),
       });
     }
   }, [showProModal]);
@@ -9750,6 +9754,25 @@ function SQLQuest() {
   }, [db, activeInterview, interviewQuestion, interviewCompleted]);
 
   // Mock Interview Functions
+  // A locked mock at three solves or fewer (free-tier boundary M4,
+  // `quietEarlyAsks`): the free mock instead of a price. The lock row is
+  // already written by the caller; this only changes what the person gets.
+  // Returns false when the flag is off, the person has earned the ask, or
+  // the free mock is somehow missing — the caller then asks as today.
+  const nudgeToFreeMock = (open, interview) => {
+    if (quietAskDecision({ flagOn: ftbFlag('quietEarlyAsks'), reason: 'interview_locked', solvedCount: solvedChallenges.size }) !== 'nudge') return false;
+    const free = mockInterviews.find(m => m && m.id === FREE_MOCK_ID && m.isFree);
+    if (!free || !interview || interview.id === free.id) return false;
+    trackActivationEvent('interview_lock_nudged', {
+      from: interview.id || null,
+      to: free.id,
+      solvedCount: solvedChallenges.size,
+    });
+    try { showMilestone('🎤', 'Start with the free mock', 'Pro mocks open after a few solves. This one is yours right now.'); } catch (_) {}
+    open(free);
+    return true;
+  };
+
   const startInterview = (interview, forceNew = false) => {
     saveLastActivity('interview', `Interview: ${interview.title || interview.company}`, 'trials', null);
     if (!interview.isFree && !userProStatus) {
@@ -9760,6 +9783,12 @@ function SQLQuest() {
         wall: paidWallFor({ isPro, solved: solvedChallenges }),
       });
       if (openColdStartInstead()) return;
+      if (nudgeToFreeMock((m) => startInterview(m, forceNew), interview)) return;
+      // 2026-09-12: this ask used to land under whatever reason the modal
+      // last held (usually 'generic'), which is how 25 of 45 "generic" shows
+      // at ≤3 solves were really people clicking a locked mock. Named now;
+      // the modal renders exactly what it rendered (metrics.md, shared traps).
+      setProModalReason({ type: 'interview_locked', topic: interview.company || null, solvedCount: solvedChallenges.size });
       setShowProModal(true);
       return;
     }
@@ -9839,6 +9868,8 @@ function SQLQuest() {
         wall: paidWallFor({ isPro, solved: solvedChallenges }),
       });
       if (openColdStartInstead()) return;
+      if (nudgeToFreeMock((m) => startPracticeMode(m), interview)) return;
+      setProModalReason({ type: 'interview_locked', topic: interview.company || null, solvedCount: solvedChallenges.size });
       setShowProModal(true);
       return;
     }
@@ -10827,12 +10858,52 @@ CRITICAL RULES:
   // src/utils/coach.js. Assembles component state into the userData
   // blob the pure function expects, forwards. Source of truth for the
   // actual logic is src/utils/coach.js + its test suite.
+  // The free-tier boundary flags (2026-09-12), read as `=== true` so a flag
+  // that is absent reads OFF here. src/utils/free-tier-boundary.js decides
+  // what each one means; this file only decides when.
+  const ftbFlag = (name) => window.FF?.feature?.(name) === true;
+
+  // The goal the engine and the Coach card read. Under `goalWallEarly` the
+  // interview-prep curriculum meets the wall at step 4 (and, under `mockDoor`,
+  // the free mock at 5 and a Pro mock at 6); every other goal, and both flags
+  // off, is the registry object itself. One resolver, two callers, so the
+  // step counter and the engine can never disagree about the order.
+  const resolveCoachGoal = (goal) => withEarlyWall(goal, {
+    flagOn: ftbFlag('goalWallEarly'),
+    mockDoor: ftbFlag('mockDoor'),
+    proMockId: pickProMockId(mockInterviews, prepTarget.company || companyFilter || null),
+  });
+
+  // A step the person set aside (free-tier boundary M2): a locked Hard or a
+  // Pro mock they chose not to buy yet. The engine passes over it without
+  // counting it; it returns the moment it leaves this list. Never written
+  // for a free step — the card only offers the skip on a locked one.
+  const skipCoachStep = (step) => {
+    if (!coachState?.goalId || !step?.id) return;
+    const next = {
+      ...coachState,
+      stepsSkipped: Array.from(new Set([...(coachState.stepsSkipped || []), step.id])),
+    };
+    setCoachState(next);
+    if (currentUser) {
+      const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+      userData.coachState = next;
+      saveUserData(currentUser, userData);
+    }
+    trackActivationEvent('coach_step_skipped', {
+      stepId: step.id,
+      type: step.type || null,
+      challengeId: step.challengeId ?? null,
+      interviewId: step.interviewId || null,
+    });
+  };
+
   const computeCoachNextStep = () => {
     if (!coachState?.goalId) {
       return { step: null, reason: 'No goal selected.', progressPct: 0, graduated: false };
     }
     const goals = (typeof window !== 'undefined' && window.coachGoals) || [];
-    const goal = goals.find(g => g.id === coachState.goalId);
+    const goal = resolveCoachGoal(goals.find(g => g.id === coachState.goalId));
     if (!goal) return { step: null, reason: 'Goal not found.', progressPct: 0, graduated: false };
 
     // completedDrills lives only in the persisted userData blob, not
@@ -10850,6 +10921,8 @@ CRITICAL RULES:
       completedAiLessons,
       aiLessonCompletions,
       completedDrills,
+      // A curriculum mock step (free-tier boundary M5) completes on a sitting.
+      interviewHistory,
     }, {
       skillLevels: weaknessTracking?.skillLevels || {},
       // A first-run placement's floors, seen by skipIf only (coach.js).
@@ -11389,6 +11462,18 @@ CRITICAL RULES:
       skill: step.skill || null,
       preview: step.reason === HARD_PREVIEW_MARKER,
     });
+    // A curriculum mock step (2026-09-12, free-tier boundary M5): the free
+    // mock at step 5 of interview-prep, a Pro mock at 6. Straight to
+    // startInterview, the one gate every mock has — for a free user on the
+    // Pro mock that gate is the wall, and under `quietEarlyAsks` at ≤3
+    // solves it hands them the free mock instead. Handled before the switch
+    // so the synthetic offer below keeps its own door and its session flag;
+    // this click belongs to the Coach funnel and spends neither.
+    if (step.type === COACH_MOCK_STEP_TYPE && step.id !== COACH_MOCK_STEP_ID) {
+      const mock = mockInterviews.find(i => i.id === step.interviewId);
+      if (mock) startInterview(mock);
+      return;
+    }
     switch (step.type) {
       case 'lesson': {
         const idx = (aiLessons || []).findIndex(l => l.id === step.lessonId);
@@ -17937,7 +18022,8 @@ CRITICAL RULES:
       let detail = 'Your XP, streak, and solves are saved to your account.';
       if (companyFilter) {
         const scoped = challenges.filter(c => (c.companies || []).includes(companyFilter));
-        const free = scoped.filter(c => !isContentLocked('challenge', c));
+        const gateIds = companyGateFreeIds(); // free-tier boundary M1
+        const free = gateIds ? scoped.filter(c => gateIds.has(c.id)) : scoped.filter(c => !isContentLocked('challenge', c));
         const freeSolved = free.filter(c => solvedChallenges.has(c.id)).length;
         detail = `${freeSolved} of ${free.length} free ${companyFilter} questions down. Keep going.`;
       }
@@ -21050,6 +21136,33 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     } catch (_) { /* analytics must never block a gate */ }
   };
 
+  // The challenges tagged with the active company filter, in bank order.
+  // The company set wall and the company banner (free-tier boundary M1)
+  // both read this; `companySetOrder` in the pure module sorts it the way
+  // the list shows it.
+  const companyScopedChallenges = () => (
+    companyFilter ? challenges.filter(c => (c.companies || []).includes(companyFilter)) : []
+  );
+
+  // The free three of a company's set under `companySetGate`, else null —
+  // callers fall back to "everything not Hard-locked", today's meaning.
+  const companyGateFreeIds = () => (
+    ftbFlag('companySetGate') && companyFilter && !isPro
+      ? companySetFreeIds(companyScopedChallenges())
+      : null
+  );
+
+  // The title of the mock that belongs to a company (via the interview-prep
+  // registry), or null. Never invents one: a company without a mock gets no
+  // mock line anywhere (free-tier boundary M5).
+  const companyMockTitle = (company) => {
+    try {
+      const target = company ? findTarget(company, challenges, window.challengeCompanies || {}, mockInterviews) : null;
+      const mock = target ? mockInterviews.find(m => m.id === target.mockId) : null;
+      return mock && typeof mock.title === 'string' ? mock.title : null;
+    } catch (_) { return null; }
+  };
+
   const isContentLocked = (type, item) => {
     if (isPro) return false;
     switch (type) {
@@ -21146,12 +21259,27 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     const guestKey = `sqlquest_promo_${tier}solves_guest`;
     const userKey = `sqlquest_promo_${tier}solves_${currentUser}`;
     if (!localStorage.getItem(guestKey) && !localStorage.getItem(userKey)) {
+      // 2026-09-12 (free-tier boundary M3, `deadlineOffer`): a person whose
+      // date — the intake's, or the countdown card's — is inside 45 days is
+      // asked about THAT: the days, and what stands between them and it.
+      // `daysOut` is the countdown's own integer; the date never leaves.
+      // Null with the flag off, with no date, or past 45 days, and the modal
+      // renders exactly what it renders today.
+      const deadlineCompany = prepTarget.company || companyFilter || null;
+      const deadline = deadlineOfferFor({
+        flagOn: ftbFlag('deadlineOffer'),
+        daysOut: daysUntil(prepTarget.date, Date.now()),
+        company: deadlineCompany,
+        hardCount: challenges.filter(c => c.difficulty === 'Hard' && !c.freePreview).length,
+        mockTitle: companyMockTitle(deadlineCompany),
+      });
       setProModalReason({
         type: 'milestone_solves',
         solvedCount: n,
         // Isolates the cohort this fix unblocked, so the read can tell a
         // genuinely new prompt from one that was always going to fire.
         staleProRecovered: userProStatus && !proLiveForOffer,
+        ...(deadline ? { deadline } : {}),
       });
       setShowProModal(true);
       try {
@@ -21164,6 +21292,10 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
   useEffect(() => {
     if (userProStatus || isGuest || !currentUser) return;
     if (typeof window === 'undefined') return;
+    // 2026-09-12 (free-tier boundary M4): 13 people met this modal in 30
+    // days, none has ever clicked it. Under `quietEarlyAsks` a streak is a
+    // streak, not an ask.
+    if (quietAskDecision({ flagOn: ftbFlag('quietEarlyAsks'), reason: 'milestone_streak', solvedCount: solvedChallenges.size }) !== 'show') return;
     if (dailyStreak >= 5) {
       const key = `sqlquest_promo_streak5_${currentUser}`;
       if (!localStorage.getItem(key)) {
@@ -21245,7 +21377,13 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
       // "keep solving Easy + Medium" answers the wrong question. The
       // generic soft toast stays for everyone else (the old always-modal
       // wall had ~100% dismiss rate on casual browsers).
-      if (companyFilter) {
+      //
+      // 2026-09-12 (free-tier boundary M4, `quietEarlyAsks`): this modal
+      // fired at an average of 1.8 solves and has never sold. At three
+      // solves or fewer it steps aside and the person gets the same free-
+      // preview catcher everyone else gets; the lock row above is still
+      // written, so the collision stays countable.
+      if (companyFilter && quietAskDecision({ flagOn: ftbFlag('quietEarlyAsks'), reason: 'company_hard', solvedCount: solvedChallenges.size }) === 'show') {
         const scoped = challenges.filter(c => (c.companies || []).includes(companyFilter));
         const hardCount = scoped.filter(c => c.difficulty === 'Hard').length;
         setProModalReason({
@@ -21277,6 +21415,49 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
         previewCatcherReturnFocusRef.current = active && active !== document.body ? active : null;
       } catch (_) { previewCatcherReturnFocusRef.current = null; }
       setPreviewCatcher({ challengeId: challenge.id, at: Date.now() });
+      return;
+    }
+    // ── The company set wall (2026-09-12, free-tier boundary M1) ──
+    // Under `companySetGate`, a company view frees the first three of the
+    // set and walls the fourth, whatever its difficulty. This is the product
+    // the company page sold — "Stripe's SQL questions" — and today it is
+    // mostly free (Stripe 23 free / 12 locked; Amazon, 10 / 24, is the one
+    // set that produced a payer). The challenge stays reachable one by one
+    // from the general list; the curated set is what Pro buys. Same order as
+    // the other walls: the lock row, cold-start diversion, then the ask.
+    // `paidWallFor` is not consulted: this wall exists only with a company
+    // filter and only for the non-cold — `wall: 'company_set'` is its own
+    // value in the series (metrics.md carries the discontinuity note).
+    const setGate = companySetGate({
+      flagOn: ftbFlag('companySetGate'),
+      isPro,
+      companyFilter,
+      challenge,
+      scoped: companyScopedChallenges(),
+      solved: solvedChallenges,
+    });
+    if (setGate.gated) {
+      trackLockReached('challenge_set', {
+        challengeId: challenge.id,
+        difficulty: challenge.difficulty,
+        category: challenge.category || null,
+        wall: 'company_set',
+        setPosition: setGate.position,
+        setSize: setGate.setSize,
+        freeCount: setGate.freeCount,
+        solvedInSet: setGate.solvedInSet,
+      });
+      if (openColdStartInstead(challenge.id)) return;
+      setProModalReason({
+        type: 'company_set',
+        topic: companyFilter,
+        freeCount: setGate.freeCount,
+        setSize: setGate.setSize,
+        solvedInSet: setGate.solvedInSet,
+        // M5: the wall names the company's mock when one exists.
+        mockTitle: companyMockTitle(companyFilter),
+      });
+      setShowProModal(true);
       return;
     }
     if (foundationPractice?.lessonId) {
@@ -22352,7 +22533,13 @@ RULES:
           if (companyFilter && !userProStatus) {
             try {
               const scoped = challenges.filter(c => (c.companies || []).includes(companyFilter));
-              const free = scoped.filter(c => !isContentLocked('challenge', c));
+              // Free-tier boundary M1: under `companySetGate` the free set is
+              // the first three, so this fires on the third solve — the wall,
+              // met on a success rather than on a click.
+              const gateIds = companyGateFreeIds();
+              const free = gateIds
+                ? scoped.filter(c => gateIds.has(c.id))
+                : scoped.filter(c => !isContentLocked('challenge', c));
               const solvedNow = new Set(solvedChallenges);
               solvedNow.add(currentChallenge.id);
               const allFreeSolved = free.length > 0 && free.every(c => solvedNow.has(c.id));
@@ -22365,6 +22552,8 @@ RULES:
                     topic: companyFilter,
                     freeCount: free.length,
                     hardCount: scoped.length - free.length,
+                    gate: !!gateIds,
+                    mockTitle: gateIds ? companyMockTitle(companyFilter) : null,
                   });
                   setShowProModal(true);
                 }, 1800);
@@ -28734,8 +28923,18 @@ RULES:
                     className="text-4xl font-extrabold italic"
                     style={{ fontFamily: 'Fraunces, serif', color: '#F2F0EA' }}
                   >
-                    {proModalReason.type === 'milestone_solves'
+                    {proModalReason.type === 'milestone_solves' && proModalReason.deadline
+                      ? (proModalReason.deadline.daysOut === 0
+                          ? 'Your interview is today.'
+                          : proModalReason.deadline.daysOut === 1
+                            ? 'One day to your interview.'
+                            : `${proModalReason.deadline.daysOut} days to your interview.`)
+                      : proModalReason.type === 'milestone_solves'
                       ? 'You\'re cooking.'
+                      : proModalReason.type === 'company_set'
+                      ? `${proModalReason.topic}'s set: three free, the rest is Pro.`
+                      : proModalReason.type === 'coach_mock'
+                      ? 'Rehearse before the real one.'
                       : proModalReason.type === 'milestone_streak'
                       ? 'Streak locked in.'
                       : proModalReason.type === 'trial_ending'
@@ -28756,7 +28955,21 @@ RULES:
                       ? 'Make SQL second nature.'
                       : 'Walk into the interview ready.'}
                   </h2>
-                  {proModalReason.type === 'milestone_solves' ? (
+                  {proModalReason.type === 'milestone_solves' && proModalReason.deadline ? (
+                    // Free-tier boundary M3 (`deadlineOffer`): the ask leads
+                    // with the date the person gave us and names what stands
+                    // between them and it. No feature list; that is below.
+                    <div className="mt-3" data-testid="pro-modal-deadline">
+                      <p className="font-medium" style={{ color: '#F2F0EA' }}>
+                        {proModalReason.solvedCount} solved. Here is what is still between you and {proModalReason.deadline.company ? `the ${proModalReason.deadline.company} screen` : 'the interview'}.
+                      </p>
+                      <p className="text-sm mt-2" style={{ color: '#8A8E99' }}>
+                        The {proModalReason.deadline.hardCount} Hard challenges — the window functions, CTEs and anti-joins that round is built from —
+                        {proModalReason.deadline.mockTitle ? ` and the ${proModalReason.deadline.mockTitle} under a timer.` : ' and a scored mock under a timer.'}
+                        {' '}Both are Pro. Everything you have solved stays yours either way.
+                      </p>
+                    </div>
+                  ) : proModalReason.type === 'milestone_solves' ? (
                     <div className="mt-3">
                       <p className="font-medium" style={{ color: '#F2F0EA' }}>{proModalReason.solvedCount} challenges solved.</p>
                       <p className="text-sm mt-2" style={{ color: '#8A8E99' }}>
@@ -28804,13 +29017,42 @@ RULES:
                         The Coach, skill radar, daily streak, and your first ~75 challenges stay yours forever. But Hard challenges, sector tracks, mock interviews, and unlimited AI tutor are now locked. Pick up Pro to keep going where you left off.
                       </p>
                     </div>
+                  ) : proModalReason.type === 'company_set' ? (
+                    // Free-tier boundary M1 (`companySetGate`): the fourth
+                    // question of a company's set. Names the set, the count
+                    // and — M5 — the company's mock when one exists.
+                    <div className="mt-3" data-testid="pro-modal-company-set">
+                      <p className="font-medium" style={{ color: '#F2F0EA' }}>
+                        You solved {proModalReason.solvedInSet} of {proModalReason.topic}'s {proModalReason.setSize}.
+                      </p>
+                      <p className="text-sm mt-2" style={{ color: '#8A8E99' }}>
+                        The first {proModalReason.freeCount} are free to try. The other {Math.max(0, (proModalReason.setSize || 0) - (proModalReason.freeCount || 0))}
+                        {proModalReason.mockTitle ? ` — and the ${proModalReason.mockTitle} — ` : ' '}
+                        open with Pro: the set, ranked the way {proModalReason.topic} asks it. Everything you have solved stays yours.
+                      </p>
+                    </div>
+                  ) : proModalReason.type === 'coach_mock' ? (
+                    // Free-tier boundary M5: a Pro mock as a curriculum step,
+                    // met by a free user on the Coach card.
+                    <div className="mt-3" data-testid="pro-modal-coach-mock">
+                      <p className="font-medium" style={{ color: '#F2F0EA' }}>
+                        {proModalReason.topic || 'This mock'} is Pro.
+                      </p>
+                      <p className="text-sm mt-2" style={{ color: '#8A8E99' }}>
+                        A timed, scored sitting — the way the real round is asked. Pro opens every mock, and the Hard set your path is built from. Or set it aside on the Coach and keep going free.
+                      </p>
+                    </div>
                   ) : proModalReason.type === 'company_set_complete' ? (
                     <div className="mt-3">
                       <p className="font-medium" style={{ color: '#F2F0EA' }}>
                         {proModalReason.freeCount} for {proModalReason.freeCount} on the free {proModalReason.topic} questions.
                       </p>
                       <p className="text-sm mt-2" style={{ color: '#8A8E99' }}>
-                        You've proven you're close. The remaining {proModalReason.hardCount} are Hard — the recursive CTEs, window functions, and multi-step pipelines the actual {proModalReason.topic} screen tests. Pro opens all of them, plus mock interview pressure mode, for the final push.
+                        {proModalReason.gate
+                          // Free-tier boundary M1: under the gate the rest of the
+                          // set is not "Hard" — it is the set. Say what is true.
+                          ? `You've proven you're close. The other ${proModalReason.hardCount} in the ${proModalReason.topic} set${proModalReason.mockTitle ? `, and the ${proModalReason.mockTitle},` : ''} open with Pro — ranked the way ${proModalReason.topic} asks them.`
+                          : `You've proven you're close. The remaining ${proModalReason.hardCount} are Hard — the recursive CTEs, window functions, and multi-step pipelines the actual ${proModalReason.topic} screen tests. Pro opens all of them, plus mock interview pressure mode, for the final push.`}
                       </p>
                     </div>
                   ) : proModalReason.type === 'company_hard' ? (
@@ -31467,7 +31709,7 @@ RULES:
         {activeTab === 'guide' && currentUser && !showSimpleLearningShell && (() => {
           // --- Coach header: goal picker or current step ---
           const goals = (typeof window !== 'undefined' && window.coachGoals) || [];
-          const activeGoal = coachState?.goalId ? goals.find(g => g.id === coachState.goalId) : null;
+          const activeGoal = coachState?.goalId ? resolveCoachGoal(goals.find(g => g.id === coachState.goalId)) : null;
           const next = computeCoachNextStep();
           return (
             <div className="mb-4">
@@ -31840,6 +32082,15 @@ RULES:
                       const mock = mockInterviews.find(i => i.id === next.step.interviewId) || null;
                       const minutes = mock ? Math.round((mock.totalTime || 0) / 60) : null;
                       const company = next.step.company || null;
+                      // A curriculum mock step (2026-09-12, free-tier boundary
+                      // M5): steps 5–6 of interview-prep under `goalWallEarly`
+                      // + `mockDoor`. Not the synthetic offer — it spends no
+                      // session flag and fires no offer event. A Pro mock met
+                      // by a free user is the locked variant below: the lock,
+                      // the ask, and "set aside", the same three the locked
+                      // challenge card has. The free mock is a plain step.
+                      const isCurriculumMock = next.step.id !== COACH_MOCK_STEP_ID;
+                      const mockLocked = isCurriculumMock && !!mock && !mock.isFree && !isPro;
                       const daysOut = daysUntil(prepTarget.date, Date.now());
                       const countdown = daysOut == null
                         ? null
@@ -31853,7 +32104,7 @@ RULES:
                           data-testid="coach-mock-step"
                           className="bg-gray-900/60 rounded-lg p-4 border border-gray-700"
                           ref={(el) => {
-                            if (!el) return;
+                            if (!el || isCurriculumMock) return;
                             // Painting the offer is the "shown" moment for the
                             // once-per-session flag — same two-bit dance as the
                             // hard preview, so the step is not swapped out from
@@ -31876,21 +32127,51 @@ RULES:
                                 {countdown ? ` · ${countdown}` : ''}
                               </p>
                               <p className="font-medium text-[#F2F0EA] mb-1">
-                                {i18n_t('interviewPrep', 'coachMockTitle', { company: company || '' })}
+                                {isCurriculumMock
+                                  ? `Mock interview · ${mock ? mock.title : ''}${mockLocked ? ' · Pro' : ''}`
+                                  : i18n_t('interviewPrep', 'coachMockTitle', { company: company || '' })}
                               </p>
                               <p className="text-xs text-gray-400">
-                                {i18n_t('interviewPrep', 'coachMockReason', { n: minutes ?? '—' })}
+                                {isCurriculumMock
+                                  ? (mockLocked
+                                      ? 'This mock is Pro. Sit it under a timer, scored — or set it aside and keep going free.'
+                                      : `${minutes ?? '—'} minutes under a timer, scored. The way the real round is asked.`)
+                                  : i18n_t('interviewPrep', 'coachMockReason', { n: minutes ?? '—' })}
                               </p>
-                              <p className="text-[11px] text-gray-500 mt-1">
-                                {i18n_t('interviewPrep', 'coachMockWhat', { company: company || '' })}
-                              </p>
+                              {!isCurriculumMock && (
+                                <p className="text-[11px] text-gray-500 mt-1">
+                                  {i18n_t('interviewPrep', 'coachMockWhat', { company: company || '' })}
+                                </p>
+                              )}
                             </div>
-                            <button
-                              onClick={() => handleCoachStepStart(next.step)}
-                              className="px-4 py-2 bg-yellow-400 hover:bg-yellow-300 rounded-lg text-sm font-bold text-[#0E0F13] whitespace-nowrap"
-                            >
-                              {i18n_t('interviewPrep', 'coachMockCTA')}
-                            </button>
+                            {mockLocked ? (
+                              <div className="flex flex-col items-end gap-2">
+                                <button
+                                  onClick={() => {
+                                    setProModalReason({ type: 'coach_mock', topic: mock ? mock.title : null, solvedCount: solvedChallenges.size });
+                                    setShowProModal(true);
+                                  }}
+                                  className="px-4 py-2 bg-yellow-400 hover:bg-yellow-300 rounded-lg text-sm font-bold text-[#0E0F13] whitespace-nowrap"
+                                >
+                                  Keep going →
+                                </button>
+                                <button
+                                  type="button"
+                                  data-testid="coach-step-skip"
+                                  onClick={() => skipCoachStep(next.step)}
+                                  className="text-xs text-gray-400 hover:text-gray-200 underline whitespace-nowrap"
+                                >
+                                  Set aside for now
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => handleCoachStepStart(next.step)}
+                                className="px-4 py-2 bg-yellow-400 hover:bg-yellow-300 rounded-lg text-sm font-bold text-[#0E0F13] whitespace-nowrap"
+                              >
+                                {isCurriculumMock ? 'Start' : i18n_t('interviewPrep', 'coachMockCTA')}
+                              </button>
+                            )}
                           </div>
                         </div>
                       );
@@ -31988,24 +32269,39 @@ RULES:
                                 </p>
                                 <p className="font-medium text-[#F2F0EA] mb-1">{stepChallenge.title}</p>
                                 <p className="text-xs text-gray-400">
-                                  You've cleared the free half of this path. The remaining{' '}
-                                  {lockedAhead} challenge{lockedAhead === 1 ? '' : 's'} on it are Hard,
-                                  and Hard is Pro. Your progress and radar stay exactly where they are.
+                                  {ftbFlag('goalWallEarly')
+                                    // Free-tier boundary M2: the wall is met at step
+                                    // 4, not after "the free half" — say where they
+                                    // are, and that the step can be set aside.
+                                    ? `Step ${stepPos >= 0 ? stepPos + 1 : '—'} is Pro: it and ${Math.max(0, lockedAhead - 1)} more on this path are Hard. Sit it now, or set it aside and keep going free — your progress and radar stay exactly where they are.`
+                                    : `You've cleared the free half of this path. The remaining ${lockedAhead} challenge${lockedAhead === 1 ? '' : 's'} on it are Hard, and Hard is Pro. Your progress and radar stay exactly where they are.`}
                                 </p>
                               </div>
-                              <button
-                                onClick={() => {
-                                  setProModalReason({
-                                    type: 'coach_path',
-                                    topic: activeGoal?.name || null,
-                                    solvedCount: lockedAhead,
-                                  });
-                                  setShowProModal(true);
-                                }}
-                                className="px-4 py-2 bg-yellow-400 hover:bg-yellow-300 rounded-lg text-sm font-bold text-[#0E0F13] whitespace-nowrap"
-                              >
-                                Keep going →
-                              </button>
+                              <div className="flex flex-col items-end gap-2">
+                                <button
+                                  onClick={() => {
+                                    setProModalReason({
+                                      type: 'coach_path',
+                                      topic: activeGoal?.name || null,
+                                      solvedCount: lockedAhead,
+                                    });
+                                    setShowProModal(true);
+                                  }}
+                                  className="px-4 py-2 bg-yellow-400 hover:bg-yellow-300 rounded-lg text-sm font-bold text-[#0E0F13] whitespace-nowrap"
+                                >
+                                  Keep going →
+                                </button>
+                                {ftbFlag('goalWallEarly') && (
+                                  <button
+                                    type="button"
+                                    data-testid="coach-step-skip"
+                                    onClick={() => skipCoachStep(next.step)}
+                                    className="text-xs text-gray-400 hover:text-gray-200 underline whitespace-nowrap"
+                                  >
+                                    Set aside for now
+                                  </button>
+                                )}
+                              </div>
                             </div>
                           </div>
                         );
@@ -34023,6 +34319,19 @@ RULES:
                               if (userProStatus) {
                                 return `${scoped.length} ${companyFilter}-tagged challenges below, ranked by difficulty.`;
                               }
+                              // Free-tier boundary M1: under `companySetGate` the
+                              // free set is the first three, whatever their
+                              // difficulty, and the banner says so before anyone
+                              // clicks a fourth.
+                              const gateIds = companyGateFreeIds();
+                              if (gateIds) {
+                                const p = companySetProgress({ scoped, solved: solvedChallenges, freeIds: gateIds });
+                                const mockLine = companyMockTitle(companyFilter) ? ` and the ${companyMockTitle(companyFilter)}` : '';
+                                if (p.allFreeSolved) {
+                                  return `Free set complete — ${p.freeSolved} of ${p.freeCount} solved. The other ${p.proCount}${mockLine} open with Pro, ranked the way ${companyFilter} asks them.`;
+                                }
+                                return `${p.freeCount} of ${companyFilter}'s ${p.setSize} are free to try — ${p.freeSolved} of ${p.freeCount} solved. The rest${mockLine} open with Pro.`;
+                              }
                               const free = scoped.filter(c => !isContentLocked('challenge', c));
                               const freeSolved = free.filter(c => solvedChallenges.has(c.id)).length;
                               const proCount = scoped.length - free.length;
@@ -34572,7 +34881,11 @@ RULES:
                       const displayNum = idx + 1;
                       const isSolved = solvedChallenges.has(c.id);
                       const isStarted = !isSolved && startedIds.has(c.id);
-                      const isLocked = isContentLocked('challenge', c);
+                      // Free-tier boundary M1: in a company view under
+                      // `companySetGate`, everything past the free three that
+                      // is not already solved wears the same lock as a Hard.
+                      const isLocked = isContentLocked('challenge', c)
+                        || companySetGate({ flagOn: ftbFlag('companySetGate'), isPro, companyFilter, challenge: c, scoped: companyScopedChallenges(), solved: solvedChallenges }).gated;
                       // A free Hard preview, shown to someone it is a preview
                       // FOR. Pro users never see the tag or the blue border.
                       const isPreview = !isPro && isFreePreview(c);

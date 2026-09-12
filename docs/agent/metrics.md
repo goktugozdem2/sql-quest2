@@ -589,6 +589,16 @@ but its shape is unusual enough that a read resting on it is not safe.
 | `preview_dialog` | the collision catcher on a locked-Hard click |
 | `company_modal` | the buyable Pro modal a company-page arrival gets |
 | `cold_start` | from 2026-09-08: the person has solved nothing and was routed, not sold to |
+| `company_set` | from the `companySetGate` flip (scheduled 2026-10-14): the fourth question of a company's set in a company view, whatever its difficulty — `surface='challenge_set'`, with `setPosition`, `setSize`, `freeCount`, `solvedInSet`. A new wall, not a relabel: before the flip this click opened the challenge. Read it as its own line; never add it to `preview_dialog` + `company_modal` when comparing lock reach across the flip. |
+
+**Reason discontinuity 2026-09-12** on `pro_modal_shown.reason`: a locked
+mock click (`startInterview` / `startPracticeMode`) now stamps
+**`interview_locked`**; before this date it inherited whatever reason the
+modal last held — usually `generic`, which is how 25 of 45 `generic` shows
+at ≤3 solves in the 30 days to 09-12 were really people clicking a Pro mock.
+Behaviour unchanged, label fixed: `generic` before 09-12 ≈ `generic` +
+`interview_locked` after. Two more reasons exist only behind flags:
+`company_set` (M1, from the 10-14 flip) and `coach_mock` (M5, from 10-12).
 
 **Absence is organic, by design.** A direct open, a post-solve
 recommendation, a curriculum step — none of them carry the key, and a
@@ -2261,3 +2271,91 @@ Traps, stated before the first read:
 - **The placement check is a step too.** A cold user's first "take" is
   `type='placement_check'`; split by `type` before reading it as a challenge
   take.
+
+## `company_set_wall`
+
+**People**, by `COALESCE(aid, username)`, who arrived from a company page
+(`app_opened` metadata `arrivalSrc` like `company:%`, first open in the
+window) and met the company set wall — `content_lock_reached` with
+`wall='company_set'` (free-tier boundary M1, `companySetGate`, scheduled
+flip 2026-10-14). Three columns, all people: reached the wall, clicked a plan
+or checkout after it, and `pro_purchase_completed` with
+`reason='stripe_webhook'` whose person's first `arrivalSrc` is a company.
+
+**Guardrail: company-arrival reach-6** — of the same arrivals, the share
+with six distinct `challenge_solved` in the window. The wall stands at the
+fourth question of the SET, not the fourth solve, and a person can clear the
+filter and keep solving; if they do not, this number says so.
+
+Baseline 30 days to 2026-09-12: 169 company arrivals, 45 solved anything,
+21 reached six (12.4%), 19 hit any wall, 2 clicked, 0 paid. All-time
+purchases attributed to a company arrival: 1 (2026-07-22, `company:Amazon`).
+
+Shared trap: the payment-geography finding (docs/plans/free-tier-boundary-
+2026-09-12.md §3) — of the seven non-US people who ever reached Stripe, none
+paid. Read clicks before purchases, and read purchases by `tz` region.
+
+## `goal_wall_early`
+
+Of people who START the interview-prep goal after the `goalWallEarly` flip
+(scheduled 2026-10-12; `coachState.startedAt` after it, `goalId =
+'interview-prep'`, by `aid`), the share who open a Hard challenge
+(`challenge_opened.difficulty='Hard'`) or a mock (`interview_started`, or
+`coach_step_started type='mock_interview'`) within 24 hours of the goal
+start. Companion lines: the skip rate on the locked step
+(`coach_step_skipped` people ÷ people whose `coach_step_started` reached
+step 4), `coach_path` / `coach_mock` clicks from them, and — the M5 line —
+the share who sit the free mock (`interviewHistory` row for
+`sql-fundamentals-free`, or `interview_completed` with that id) within 7
+days. Split on `coachState.source` (`intake` vs `picker`).
+
+Guardrail: `coach_goal_to_step` for this goal only, flag arm vs the
+pre-flip arm.
+
+Baseline (proxy, 30 days to 2026-09-12): interview-intent people opening a
+Hard 11 of 79 (14%), a mock 0 of 79. Goal-holder baseline is read at the
+flip from `coach_step_started` on the goal — write it into the ledger entry
+before flipping.
+
+## `deadline_offer_split`
+
+`pro_modal_shown` with `reason='milestone_solves'`, people by `aid`, split
+on the boolean `deadline` the event carries from the `deadlineOffer` flip
+(scheduled 2026-10-06): clicks per person shown (`pro_plan_clicked` or
+`pro_checkout_clicked` after the show) in each arm. `daysOut` is the
+integer the countdown card computes — the date itself is never on the event.
+
+Read at n ≥ 30 in the `deadline=true` arm, not before; the arm depends on
+the intake (flips 09-16) producing dates, so a thin arm is the intake's
+finding first. Mechanism check 2026-10-20: `deadline=true` shows > 0.
+
+Baseline 30 days to 2026-09-12: milestone_solves 171 people shown, 7
+clicked (4.1%), 2 paid; `deadline=true` structurally 0 before the flip.
+
+Shared trap: M4 (`quietEarlyAsks`, 09-29) removes low-value shows under
+OTHER reasons and so raises every "per shown" ratio mechanically. This
+metric reads milestone_solves only, which M4 never touches.
+
+## `early_ask_quiet`
+
+Three numbers over a window, people by `aid`, for the `quietEarlyAsks`
+flip (scheduled 2026-09-29):
+
+- `pro_modal_shown` rows ÷ people shown (shows per person);
+- people shown three or more times;
+- shows under the quieted reasons — `milestone_streak` (silent),
+  `company_hard` at `solvedCount ≤ 3` (catcher instead), `interview_locked`
+  at `solvedCount ≤ 3` (free mock instead, `interview_lock_nudged`).
+
+**Guardrail is absolute, never a rate:** `pro_plan_clicked` +
+`pro_checkout_clicked` people per month, and the share of
+`interview_lock_nudged` people with an `interview_started` on the free mock
+in the same session. Fewer shows raise any click-per-shown ratio by
+construction; only the click COUNT can say whether an ask that was quieted
+had been selling.
+
+Baseline 30 days to 2026-09-12: 380 shows / 203 people = 1.87 per person;
+quieted-reason people ≈ 50 (13 streak, 12 company_hard, ~25 early
+`generic` that were mostly locked-mock clicks — see the reason
+discontinuity under `lock_reach_rate`); 10 people clicked in the month;
+43 people shown 3+ times over the 60 days to 09-08.
