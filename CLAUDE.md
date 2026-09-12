@@ -575,6 +575,29 @@ Rewritten Coach-forward:
   in the ledger. `/coach/` now redirects to `/app` (it 404'd; nothing linked
   to it).
 
+### P2 — retention (2026-09-12)
+
+- **Spaced retrieval** (`src/utils/spaced-retrieval.js`): weak canonical
+  skills (mastery < 70) are due 3 / 7 / 14 days after `lastPracticed` on the
+  user_skill row, by reviews done (`userData.retrievalLog`); the Coach card
+  (`data-testid="coach-retrieval-card"`, behind `spacedRetrievalCard`, flips
+  10-12 with M2) shows up to two, each with one unsolved challenge at the
+  level shown on that skill; `pendingRetrievalRef` credits the review on the
+  solve. The landing's "Tomorrow · spaced retrieval" now has something
+  behind it.
+- **Daily quota** (`dailyQuota`, same flip): the days-left chip reads
+  "12 days left · 6 a day" from the active goal's unsolved challenge steps
+  (or interview-prep as the reference plan) over the days left.
+- **Weekly digest** (`supabase/functions/weekly-digest`): "Moved most" from
+  the canonical user_skill rows vs the prior report's snapshot, and "One
+  thing this week" on the weakest practised skill (utm
+  `weekly_digest_one_thing`). Old fourteen-name records are ignored. Needs
+  `supabase functions deploy weekly-digest` — the founder runs it if the
+  agent's deploy is blocked.
+- Done from the cleanup list: "Why this matters" follows the declared
+  intent; `/coach/` redirects to `/app`; "Try again!" → diagnosis sentence
+  (behind `diagnosisHints`).
+
 ### Notifications
 Major overhaul this session: persist `dismissedNotifs`, `_subtabEnabled()` gates routes by feature flag, threshold-aligned with Quick Drill (<65), dedup by `target` string, clock-tick recompute, NOTIF_PRI constants (streak=0). Reviews Due block commented-out until Coach surfaces retrieval checks outside goals.
 

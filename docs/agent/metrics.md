@@ -2398,3 +2398,15 @@ skill}` (born 2026-09-12) over `challenge_solved` events that rendered the
 "Next quest" strip (every non-drill solve): the click share, and of the
 clicked, the share solved in the same session. Split by `source`; the
 `curriculum` arm before the 2026-09-30 flip is the baseline.
+
+## `retrieval_funnel`
+
+Three people counts by `aid` from the `spacedRetrievalCard` flip
+(scheduled 2026-10-12): `retrieval_due_shown` (the card rendered; once per
+person per day), `retrieval_started` (Start clicked; carries `skill`,
+`daysSince`, `interval`), `retrieval_completed` (the opened challenge was
+solved; carries `seconds`). Companion: for each reviewed skill, the
+user_skill `mastery` 14 days after the review against the same window for
+weak skills (< 70) with no practice, read on `users.data.skillMastery` —
+the only place the rows live. Guardrail: `coach_page_take_rate` on the
+next-step card in the same window.

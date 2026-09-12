@@ -27,6 +27,66 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### weak skills come back at 3, 7 and 14 days (P2 spaced retrieval + daily quota)
+
+- **Claimed** 2026-09-12 · **Flips** 2026-10-12 by the same scheduled task
+  as the interview-prep wall (Coach surface; after the Coach-trust read
+  10-11) · **Read** 2026-11-02 (flip + 21 days).
+- **Change** behind `spacedRetrievalCard` (off): a "Due today · spaced
+  retrieval" card on the Coach tab, between the radar and the countdown.
+  A canonical skill is due when it has been practised, its mastery is below
+  70, and the days since its `lastPracticed` (the user_skill row) reach
+  3 / 7 / 14 for its first / second / later review; up to two skills, each
+  with one unsolved challenge at the level the person has shown on it
+  (`src/utils/spaced-retrieval.js`). Start opens it; the solve credits the
+  review (`retrievalLog`, `retrieval_completed`). Events
+  `retrieval_due_shown`, `retrieval_started`, `retrieval_completed`. Behind
+  `dailyQuota` (off, same flip): the days-left chip on the Coach reads "12
+  days left · 6 a day" — unsolved challenge steps on the active goal (or the
+  interview-prep goal as the reference plan) over the days left.
+- **Why** the landing has promised "Tomorrow · spaced retrieval" since the
+  Coach shipped, and nothing was behind it outside a goal's own
+  retrieval_check steps and the lesson-1 review. The founder's P2 list.
+- **Metric** `retrieval_funnel` (metrics.md): people shown the card, share
+  who start, share who complete; and the retrieved skill's mastery 14 days
+  after the review vs matched non-reviewed weak skills. Guardrail:
+  `coach_page_take_rate` on the next-step card (the card must not steal the
+  Coach's one answer).
+- **Baseline** structurally 0 (events born at the flip). Weak-skill
+  regression baseline: measured at the flip — mean mastery change over 14
+  days for skills with mastery < 70 and no practice.
+- **Target** ≥ 40% of people shown start one; ≥ 60% of starts complete;
+  reviewed skills hold or gain over 14 days while non-reviewed weak skills
+  decay.
+- **Falsification, stated in advance:** starts < 20% at n ≥ 60 shown → the
+  card is ignored; move the due item into the Coach's next-step card as a
+  step type rather than a second card. Next-step take rate falls > 10 points
+  in the same window → the card competes; revert.
+- **Confounds** the interview-prep wall (M2) flips the same day on the same
+  tab; split on goal. The quota chip is display only and is read by
+  `intake_funnel` (dates) rather than its own metric.
+- **Verdict** _pending_
+
+### the weekly digest says what moved and one thing to do (P2, live)
+
+- **Claimed** 2026-09-12 · **Deployed** when `supabase functions deploy
+  weekly-digest` lands (see the deploy note in the report) · **Read**
+  2026-10-13 (three Monday sends).
+- **Change** live in the function: two lines under the stats strip —
+  "Moved most: Joins +9 (42 → 51)" from the canonical user_skill rows on
+  `users.data.skillMastery` against the prior report's snapshot, and "One
+  thing this week: three challenges on <weakest practised skill> (n/100)"
+  with a tagged link (`weekly_digest_one_thing`). Rows without a numeric
+  mastery (the old record, on accounts that have not loaded the new bundle)
+  are ignored, so nobody is told a made-up number.
+- **Metric** `returned_48h` for `weekly_digest` (scripts/funnel-report.sql
+  §5–6), and clicks on the `weekly_digest_one_thing` utm vs the CTA.
+- **Baseline** read from `email_events` for the three sends before deploy.
+- **Target** returned_48h up ≥ 5 points over three sends.
+- **Falsification:** flat at n ≥ 100 sends → the lines are decoration;
+  keep the mastery line, drop the recommendation.
+- **Verdict** _pending_
+
 ### the wrong-answer panel says what is wrong, and one hint (P1 diff engine)
 
 - **Claimed** 2026-09-12 · **Flips** 2026-09-30 by scheduled task, after the

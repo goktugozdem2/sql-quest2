@@ -129,11 +129,15 @@ function buildDigestHtml({
   report,
   previousReport,
   dailyStreak,
+  skillMastery = null,
+  previousSnapshot = null,
 }: {
   username: string
   report: any
   previousReport: any
   dailyStreak: number
+  skillMastery?: any
+  previousSnapshot?: any
 }): { subject: string; html: string } {
   const summary = report.summary || {}
   const pSum = previousReport?.summary || {}
@@ -154,6 +158,38 @@ function buildDigestHtml({
     const top = report.skillStats[report.skillStats.length - 1]
     if (top && typeof top.rate === 'number') {
       topSkillLine = `<p style="margin: 16px 0 0; color: #22c55e; font-weight: 600;">💪 Strongest this week: ${top.skill} — ${top.rate}%</p>`
+    }
+  }
+
+  // Mastery change + ONE recommendation (P2, 2026-09-12). `skillMastery` is
+  // the canonical user_skill row on users.data (mastery 0–100 per skill,
+  // written by the client from 2026-09-12); a row without a numeric
+  // `mastery` is the old fourteen-name record and is ignored. The previous
+  // week's snapshot is the prior report's skillLevelsSnapshot when present.
+  let movedLine = ''
+  let oneThingLine = ''
+  const rows: Array<[string, any]> = skillMastery && typeof skillMastery === 'object'
+    ? Object.entries(skillMastery).filter(([, r]: any) => r && typeof r.mastery === 'number')
+    : []
+  if (rows.length > 0) {
+    const prev = previousSnapshot && typeof previousSnapshot === 'object' ? previousSnapshot : null
+    if (prev) {
+      const moves = rows
+        .map(([s, r]) => ({ s, now: Math.round(Number(r.mastery) || 0), before: Math.round(Number(prev[s]) || 0) }))
+        .map(m => ({ ...m, d: m.now - m.before }))
+        .filter(m => m.d !== 0)
+        .sort((a, b) => Math.abs(b.d) - Math.abs(a.d))
+      if (moves.length > 0) {
+        const m = moves[0]
+        movedLine = `<p style="margin: 12px 0 0; color: ${m.d > 0 ? '#22c55e' : '#f59e0b'}; font-weight: 600;">${m.d > 0 ? '📈' : '📉'} Moved most: ${m.s} ${m.d > 0 ? '+' : ''}${m.d} (${m.before} → ${m.now})</p>`
+      }
+    }
+    const practised = rows.filter(([, r]) => Number(r.totalAttempts) > 0)
+    const weakest = (practised.length > 0 ? practised : rows)
+      .slice()
+      .sort((a, b) => (Number(a[1].mastery) || 0) - (Number(b[1].mastery) || 0))[0]
+    if (weakest) {
+      oneThingLine = `<p style="margin: 12px 0 0; color: #e2e8f0;">🎯 One thing this week: three challenges on <strong>${weakest[0]}</strong> (${Math.round(Number(weakest[1].mastery) || 0)}/100). <a href="${utm('/app.html', 'weekly_digest_one_thing')}" style="color: #a78bfa;">Open the Coach →</a></p>`
     }
   }
 
@@ -213,6 +249,8 @@ function buildDigestHtml({
       </table>
 
       ${topSkillLine}
+      ${movedLine}
+      ${oneThingLine}
 
       <div style="text-align: center; margin: 32px 0 24px;">
         <a href="${utm('/app.html', 'weekly_digest')}"
@@ -325,6 +363,9 @@ Deno.serve(async (req) => {
         report: latest,
         previousReport: previous,
         dailyStreak: userData.dailyStreak || 0,
+        // P2: mastery change + one recommendation from the user_skill rows.
+        skillMastery: userData.skillMastery || null,
+        previousSnapshot: previous?.skillLevelsSnapshot || null,
       })
 
       const unsubToken = await ensureUnsubToken(supabase, user.username, userData)

@@ -239,6 +239,21 @@ window.FEATURE_FLAGS = {
     // answer outright bypasses the ladder. Off, the tutor never reveals the
     // solution (today's rule 1). Bypass button on the panel is flag-only.
     socraticLadder: false,
+
+    // ── P2 (2026-09-12): retention ─────────────────────────────────────────
+    // A "Due today · spaced retrieval" card on the Coach tab: weak canonical
+    // skills (mastery < 70) come back 3, 7 and 14 days after they were last
+    // practised, each with one challenge at the level the person has shown
+    // on that skill (src/utils/spaced-retrieval.js). The landing has promised
+    // "Tomorrow · spaced retrieval" since the Coach shipped; this is what is
+    // behind it. Coach surface → flips 2026-10-12 with goalWallEarly (same
+    // task), reads 2026-11-02. Ledger: "weak skills come back at 3, 7, 14".
+    spacedRetrievalCard: false,
+    // "12 days · 6 a day" next to the days-left chip on the Coach and on the
+    // countdown card: what is left on the active goal divided by the days to
+    // the date the person gave us (dailyQuota in spaced-retrieval.js). Same
+    // surface and date as the card above.
+    dailyQuota: false,
   },
 };
 

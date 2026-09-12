@@ -39,6 +39,7 @@ import { getPrimarySkeleton, getAllSkeletons } from './utils/skeletons.js';
 import { diagnoseResult, diagnosisShort, primaryHint } from './utils/diagnose.js';
 import { buildUserSkill, pickNextBySkill, toCanonicalSkill, isLegacyMasteryRecord } from './utils/user-skill.js';
 import { classifyErrorPatterns, recordErrorPatterns, describeErrorPatterns, patternCount, emptyErrorStore } from './utils/error-patterns.js';
+import { dueRetrievals, pickRetrievalChallenge, recordRetrieval, dailyQuota, MAX_DUE_SHOWN } from './utils/spaced-retrieval.js';
 import { computeRecap, shouldShowRecap } from './utils/session-recap.js';
 import { getAnonId } from './utils/anon-id.js';
 import { classifyLandingSrc, LANDING_SRC_KEY } from './utils/landing-src.js';
@@ -5961,6 +5962,14 @@ function SQLQuest() {
   const lastErrorPatternsRef = useRef([]);
   // What the "Next quest" strip picked and why (P1 picker, `weakSkillNext`).
   const [nextChallengeRecMeta, setNextChallengeRecMeta] = useState(null);
+  // Spaced retrieval (P2): reviews done per weak skill — the 3/7/14 clock
+  // reads the user_skill row's lastPracticed and this count
+  // (src/utils/spaced-retrieval.js). `pendingRetrievalRef` is the review the
+  // Coach card just opened, credited on the solve.
+  const [retrievalLog, setRetrievalLog] = useState(() => {
+    try { const s = localStorage.getItem('sqlquest_retrieval_log'); return s ? JSON.parse(s) : {}; } catch (_) { return {}; }
+  });
+  const pendingRetrievalRef = useRef(null);
   
   // Mock Interview state
   const [showInterviews, setShowInterviews] = useState(false);
@@ -8547,6 +8556,7 @@ function SQLQuest() {
           skillMastery: skillMastery,
           lessonSkillStats: lessonSkillStats,
           errorPatterns: errorPatterns,
+          retrievalLog: retrievalLog,
           // (defeatedBosses + workoutStreak + lastWorkoutDate removed —
           // Boss Battle and Daily Workout systems were retired; their
           // persisted values were never read on rehydration after the
@@ -8576,7 +8586,7 @@ function SQLQuest() {
         saveToLeaderboard(currentUser, xp, solvedChallenges.size);
       })();
     }
-  }, [xp, solvedChallenges, unlockedAchievements, queryCount, aiLessonPhase, currentAiLesson, completedAiLessons, aiLessonCompletions, roadmapLessonCompletions, comprehensionCount, comprehensionCorrect, consecutiveCorrect, comprehensionConsecutive, completedExercises, challengeQueries, completedDailyChallenges, dailyStreak, challengeAttempts, dailyChallengeHistory, weeklyReports, weeklyReportLastSeen, weeklyDigestOptOut, earnedMilestones, coachState, userGoals, intakeRecord, prepTarget, goalsPromptDismissedAt, loginCalendar, speedRunHistory, explainHistory, userProStatus, proType, proExpiry, proAutoRenew, interviewHistory, challengeProgress, challengeStartDate, weaknessTracking, skillMastery, lessonSkillStats, errorPatterns]);
+  }, [xp, solvedChallenges, unlockedAchievements, queryCount, aiLessonPhase, currentAiLesson, completedAiLessons, aiLessonCompletions, roadmapLessonCompletions, comprehensionCount, comprehensionCorrect, consecutiveCorrect, comprehensionConsecutive, completedExercises, challengeQueries, completedDailyChallenges, dailyStreak, challengeAttempts, dailyChallengeHistory, weeklyReports, weeklyReportLastSeen, weeklyDigestOptOut, earnedMilestones, coachState, userGoals, intakeRecord, prepTarget, goalsPromptDismissedAt, loginCalendar, speedRunHistory, explainHistory, userProStatus, proType, proExpiry, proAutoRenew, interviewHistory, challengeProgress, challengeStartDate, weaknessTracking, skillMastery, lessonSkillStats, errorPatterns, retrievalLog]);
 
   // Load leaderboard periodically
   useEffect(() => {
@@ -15638,6 +15648,10 @@ CRITICAL RULES:
         setErrorPatterns(userData.errorPatterns);
         try { localStorage.setItem('sqlquest_error_patterns', JSON.stringify(userData.errorPatterns)); } catch (_) {}
       }
+      if (userData.retrievalLog && typeof userData.retrievalLog === 'object') {
+        setRetrievalLog(userData.retrievalLog);
+        try { localStorage.setItem('sqlquest_retrieval_log', JSON.stringify(userData.retrievalLog)); } catch (_) {}
+      }
       
       // (Boss Battle + Daily Workout hydration removed — their state hooks
       // and setters were deleted along with the retired feature code.)
@@ -19096,6 +19110,9 @@ Adapt based on this student's level — but ALWAYS stay direct and code-first:`;
   useEffect(() => {
     try { localStorage.setItem('sqlquest_error_patterns', JSON.stringify(errorPatterns)); } catch (_) {}
   }, [errorPatterns]);
+  useEffect(() => {
+    try { localStorage.setItem('sqlquest_retrieval_log', JSON.stringify(retrievalLog)); } catch (_) {}
+  }, [retrievalLog]);
   
   // Get skill level for a topic (for display)
   const getSkillLevel = (skillName) => {
@@ -22498,6 +22515,15 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
           if (!firstRunCompleted) {
             completeFirstRun(firstRunGoal || 'zero', firstRunLevel || 'brand-new');
           }
+          // Spaced retrieval (P2): the review the Coach card opened is done.
+          try {
+            const pending = pendingRetrievalRef.current;
+            if (pending && pending.challengeId === currentChallenge.id) {
+              setRetrievalLog(prev => recordRetrieval(prev, pending.skill));
+              trackActivationEvent('retrieval_completed', { skill: pending.skill, challengeId: currentChallenge.id, seconds: Math.round((Date.now() - pending.at) / 1000) });
+              pendingRetrievalRef.current = null;
+            }
+          } catch (_) {}
           trackActivationEvent('challenge_solved', {
             challengeId: currentChallenge.id,
             difficulty: currentChallenge.difficulty,
@@ -32535,7 +32561,23 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                         {(() => {
                           // The date the intake (or the countdown card) holds, shown back as days.
                           const left = daysUntil(prepTarget.date, Date.now());
-                          return left !== null && left >= 0 ? <span data-testid="coach-days-left">{i18n_t('intake', 'daysLeft', { n: left })}</span> : null;
+                          if (left === null || left < 0) return null;
+                          // "12 days · 6 a day" (P2, `dailyQuota`): what is left on the
+                          // active goal — or the interview-prep goal as the reference
+                          // plan — over the days left.
+                          const quota = ftbFlag('dailyQuota') ? (() => {
+                            try {
+                              const goalForQuota = activeGoal || goals.find(g => g.id === 'interview-prep') || null;
+                              const remaining = goalForQuota ? goalForQuota.curriculum.filter(st => st && st.type === 'challenge' && !solvedChallenges.has(st.challengeId)).length : 0;
+                              return dailyQuota({ daysOut: left, remaining });
+                            } catch (_) { return null; }
+                          })() : null;
+                          return (
+                            <span data-testid="coach-days-left">
+                              {i18n_t('intake', 'daysLeft', { n: left })}
+                              {quota ? <span data-testid="coach-daily-quota"> · {i18n_t('coach', 'perDay', { n: quota.perDay })}</span> : null}
+                            </span>
+                          );
                         })()}
                         <span className="font-bold text-yellow-400">{xp} XP</span>
                       </div>
@@ -32559,6 +32601,64 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                         )}
                       </div>
                     </div>
+                  </div>
+                );
+              })()}
+              {/* ── Due today · spaced retrieval (P2, 2026-09-12, `spacedRetrievalCard`) ──
+                  Weak canonical skills come back 3, 7 and 14 days after they
+                  were last practised (src/utils/spaced-retrieval.js), each with
+                  one challenge at the level the person has shown on it. The
+                  review the Start button opens is credited on the solve
+                  (pendingRetrievalRef → retrievalLog). Reads the user_skill
+                  rows already in state — never the expensive recompute. */}
+              {ftbFlag('spacedRetrievalCard') && (() => {
+                let due = [];
+                try { due = dueRetrievals({ userSkill: skillMastery, retrievalLog, now: Date.now() }).slice(0, MAX_DUE_SHOWN); } catch (_) { due = []; }
+                if (due.length === 0) return null;
+                const comparator = makeChallengeComparator(SQL_ROADMAP_CHALLENGE_ORDER);
+                const items = due
+                  .map(d => ({ ...d, challenge: pickRetrievalChallenge({ skill: d.skill, userSkill: skillMastery, allChallenges: challenges, attempts: challengeAttempts, solved: solvedChallenges, comparator, isLocked: c => isContentLocked('challenge', c) }) }))
+                  .filter(x => x.challenge);
+                if (items.length === 0) return null;
+                const cardLangR = resolveLang();
+                return (
+                  <div
+                    className="bg-gray-900/60 rounded-xl border border-gray-700 p-4 mb-4"
+                    data-testid="coach-retrieval-card"
+                    ref={(el) => {
+                      if (!el) return;
+                      try {
+                        const k = 'sqlquest_retrieval_shown_' + new Date().toISOString().slice(0, 10);
+                        if (sessionStorage.getItem(k)) return;
+                        sessionStorage.setItem(k, '1');
+                        trackActivationEvent('retrieval_due_shown', { skills: items.map(x => x.skill), count: items.length });
+                      } catch (_) {}
+                    }}
+                  >
+                    <p className="text-[11px] uppercase tracking-wider text-gray-500 mb-1">⏳ {i18n_t('coach', 'retrievalDue')}</p>
+                    <p className="text-xs text-gray-400 mb-3">{i18n_t('coach', 'retrievalDueSub')}</p>
+                    <ul className="space-y-2">
+                      {items.map(item => (
+                        <li key={item.skill} className="flex items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-[#F2F0EA] truncate">{item.skill} <span className="text-gray-500 font-normal">· {item.mastery}/100</span></p>
+                            <p className="text-[11px] text-gray-500 truncate">{i18n_t('coach', 'retrievalSince', { n: item.daysSince })} · {localizeChallenge(item.challenge, cardLangR).title}</p>
+                          </div>
+                          <button
+                            onClick={() => {
+                              pendingRetrievalRef.current = { skill: item.skill, challengeId: item.challenge.id, at: Date.now() };
+                              trackActivationEvent('retrieval_started', { skill: item.skill, challengeId: item.challenge.id, daysSince: item.daysSince, interval: item.interval });
+                              setActiveTab('quests');
+                              setPracticeSubTab('challenges');
+                              setTimeout(() => openChallenge(item.challenge), 50);
+                            }}
+                            className="px-3 py-1.5 bg-yellow-400 hover:bg-yellow-300 rounded-lg text-xs font-bold text-[#0E0F13] whitespace-nowrap"
+                          >
+                            {i18n_t('coach', 'retrievalStart')}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                 );
               })()}
@@ -34818,7 +34918,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                             "Clear all" resets every dimension at once. Search
                             isn't shown here because the search input has its
                             own ✕ button right inside it. */}
-                        {((challengePathFilter !== 'recommended' && challengePathFilter !== 'all') || difficultyFilter !== 'all' || statusFilter !== 'all' || companyFilter || sectorFilter) && (
+                        {((challengePathFilter !== 'recommended' && challengePathFilter !== 'all') || difficultyFilter !== 'all' || statusFilter !== 'all' || companyFilter || sectorFilter || skillFilter) && (
                           <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-gray-800">
                             <span className="text-xs text-gray-500 self-center mr-1">{tPractice('activeFilters')}:</span>
                             {challengePathFilter !== 'recommended' && challengePathFilter !== 'all' && (() => {

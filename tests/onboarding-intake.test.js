@@ -217,7 +217,10 @@ describe('source guards — app.jsx keeps the intake optional, early, and quiet'
   it('shows the date back as days on the Coach radar panel, display only', () => {
     expect(app).toMatch(/data-testid="coach-days-left"/);
     const at = app.indexOf('data-testid="coach-days-left"');
-    expect(app.slice(at - 400, at)).toMatch(/daysUntil\(prepTarget\.date, Date\.now\(\)\)/);
+    // 1,200 not 400: the P2 daily-quota block (2026-09-12) sits between the
+    // call and the chip; the chip is still display only, still fed by daysUntil.
+    expect(app.slice(at - 1200, at)).toMatch(/daysUntil\(prepTarget\.date, Date\.now\(\)\)/);
+    expect(app.slice(at, at + 400)).not.toMatch(/setPrepPreference|onClick/);
   });
 
   it('copy exists in both languages', () => {
