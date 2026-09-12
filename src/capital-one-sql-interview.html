@@ -15,7 +15,7 @@
        listed in makeChallengeComparator order (src/utils/challenge-order.js) — sector ids are outside the roadmap,
        so that is Easy → Medium → Hard, never raw id order. Free/Pro per isContentLocked: Hard is Pro unless
        freePreview; 203/211/213/215 free, 216/217 Pro. "Capital One" is not a tag in challenge-companies.js, so
-       every CTA opens the Banking track (?sector=finans) rather than ?company=, which would filter to nothing.
+       every CTA opens the Banking track (?sector=finance) rather than ?company=, which would filter to nothing.
        Re-derive titles/difficulties before editing the cards: node scripts/build-llms-txt.js reads the same bank.
        2026-09-07, later the same day: the six cards moved off the FDIC balance-sheet set onto the card-analytics
        set (ids 275-284, dataset finans_fraud, sectorTags finans + card_analytics). Two of the three people who have
@@ -23,7 +23,7 @@
        data. The six here: 275 / 276 (Easy, free), 278 / 279 / 280 (Medium, free), 283 (Hard, Pro) — 5 free, 1 Pro,
        still Easy → Medium → Hard. "Capital One" IS now a tag in challenge-companies.js (275-284), but ?company=
        resolves through the VALID list in src/app.jsx (companyFilter useState), which does not include it yet — so
-       the CTAs stay on ?sector=finans and the cards deep-link by ?challenge=. Validate the solutions with
+       the CTAs stay on ?sector=finance and the cards deep-link by ?challenge=. Validate the solutions with
        node scripts/validate-fraud-challenges.js. -->
 
   <!-- ── Primary SEO ─────────────────────────────────────────── -->
@@ -112,7 +112,7 @@
         "name": "Are the Capital One practice challenges free?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Five of the six are free — the two Easy challenges and the three Medium ones — with no signup to start. The Hard rolling-window challenge is on Pro ($29/mo, $99/yr or $199 lifetime). The full Banking track they come from has 57 challenges, 43 of them free."
+          "text": "Five of the six are free — the two Easy challenges and the three Medium ones — with no signup to start. The Hard rolling-window challenge is on Pro ($29/mo or $99/yr). The full Banking track they come from has 57 challenges, 43 of them free."
         }
       },
       {
@@ -178,7 +178,7 @@
   </a>
   <div class="nl">
     <a href="#codesignal">The Screen</a><a href="#questions">Questions</a><a href="#faq">FAQ</a>
-    <a href="/app/?sector=finans&src=capital-one-sql-interview" class="btn bp" style="font-size:14px;padding:10px 24px;">Start Free →</a>
+    <a href="/app/?sector=finance&src=capital-one-sql-interview" class="btn bp" style="font-size:14px;padding:10px 24px;">Start Free →</a>
   </div>
 </div></nav>
 
@@ -192,7 +192,7 @@
     <h1 class="fd" style="font-size:clamp(38px,5vw,62px);font-weight:800;line-height:1.08;margin-bottom:24px;animation:fadeUp .6s .2s both;">Capital One SQL Interview<br><span class="gt">Questions</span></h1>
     <p style="font-size:18px;line-height:1.8;color:#94a3b8;margin-bottom:36px;max-width:640px;margin-left:auto;margin-right:auto;animation:fadeUp .6s .3s both;">Capital One is a card issuer and a bank, and its data-analyst screen runs on CodeSignal — a timed mix of dataset questions and written SQL. Practice the SQL that screen is described as testing — joins at the right grain, GROUP BY, CTEs, window functions — on card-transaction data — accounts, merchants, transactions, chargebacks — with an AI tutor when you get stuck.</p>
     <div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center;animation:fadeUp .6s .4s both;">
-      <a href="/app/?sector=finans&src=capital-one-sql-interview" class="btn bp">Practice on Card Data — Free</a>
+      <a href="/app/?sector=finance&src=capital-one-sql-interview" class="btn bp">Practice on Card Data — Free</a>
       <a href="#questions" class="btn bo">See the 6 Challenges ↓</a>
     </div>
     <div style="display:flex;gap:28px;margin-top:44px;flex-wrap:wrap;justify-content:center;animation:fadeUp .6s .5s both;">
@@ -284,7 +284,7 @@
   </div>
 
   <p style="font-size:14px;color:#94a3b8;text-align:center;max-width:660px;margin:40px auto 0;line-height:1.8;">These six are the Capital One cut of the Banking track: 57 challenges in all — 27 on FDIC BankFind data plus 30 on a synthetic card ledger — 43 of them free. The other nineteen card-analytics challenges on the same tables (signup-month cohorts, ticket-size mix, month-over-month growth, first-to-second latency, the fan-out two one-to-many joins produce, COUNT(*) versus COUNT(DISTINCT), the NULL that COUNT skips, RANK on ties, percent-of-parent, running totals, a self-join and a decile cut computed from the data) go further into the same shapes; card fraud is Capital One's business, so once those are cold, the ledger's velocity rule and impossible-travel check are the natural next step.</p>
-  <div style="text-align:center;margin-top:28px;"><a href="/app/?sector=finans&src=capital-one-sql-interview" class="btn bp">Open the Banking Track — Free to Start →</a></div>
+  <div style="text-align:center;margin-top:28px;"><a href="/app/?sector=finance&src=capital-one-sql-interview" class="btn bp">Open the Banking Track — Free to Start →</a></div>
 </div></section>
 
 <!-- ── FAQ ────────────────────────────────────────────────────── -->
@@ -337,7 +337,7 @@
 <section class="cs"><div class="cbg"></div><div class="sec" style="text-align:center;position:relative;z-index:2;">
   <h2 class="fd" style="font-size:clamp(32px,4.5vw,52px);font-weight:800;line-height:1.15;margin-bottom:20px;">Ready for the<br><span class="gt">Capital One SQL screen?</span></h2>
   <p style="font-size:18px;color:#94a3b8;max-width:540px;margin:0 auto 40px;">No signup required. No credit card. Open the Banking track and start with the monthly-spend question right now.</p>
-  <a href="/app/?sector=finans&src=capital-one-sql-interview" class="btn bp blg" style="box-shadow:0 0 40px rgba(99,91,255,.25);">Launch SQL Quest — It's Free ⚡</a>
+  <a href="/app/?sector=finance&src=capital-one-sql-interview" class="btn bp blg" style="box-shadow:0 0 40px rgba(99,91,255,.25);">Launch SQL Quest — It's Free ⚡</a>
   <p style="font-size:13px;color:#7f8da1;margin-top:20px;">Works on Chrome, Firefox, Safari, Edge · No plugins · No downloads</p>
 </div></section>
 
@@ -345,7 +345,7 @@
 <p style="margin:28px auto;max-width:720px;padding:16px 20px;border:1px solid rgba(124,58,237,.25);border-radius:12px;background:rgba(124,58,237,.06);font-size:14px;line-height:1.7;color:#94a3b8;">Card fraud is the other half of the job. Read <a href="/blog/sql-for-fraud-analytics/" style="color:#c084fc;font-weight:600;">SQL for fraud analytics</a> — velocity checks, rolling windows and self-joins — or go straight to the <a href="/fraud-analytics-sql/" style="color:#c084fc;font-weight:600;">fraud-analytics challenge set</a> on a transaction ledger.</p>
 <p data-crosslink="companies" style="margin:28px auto;max-width:720px;padding:16px 20px;border:1px solid rgba(124,58,237,.25);border-radius:12px;background:rgba(124,58,237,.06);font-size:14px;line-height:1.7;color:#94a3b8;">Interviewing at more than one bank? The same patterns carry: <a href="/jpmorgan-sql-interview/" style="color:#c084fc;font-weight:600;">JPMorgan</a> · <a href="/morgan-stanley-sql-interview/" style="color:#c084fc;font-weight:600;">Morgan Stanley</a> · <a href="/wise-sql-interview/" style="color:#c084fc;font-weight:600;">Wise</a> · <a href="/revolut-sql-interview/" style="color:#c084fc;font-weight:600;">Revolut</a> — or the full <a href="/sql-interview-prep/" style="color:#c084fc;font-weight:600;">company-by-company interview guide</a>.</p>
 <footer class="ft"><div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:16px;"><div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#db2777);display:flex;align-items:center;justify-content:center;font-size:14px;">⚡</div><span class="fd" style="font-size:16px;font-weight:800;">SQL Quest</span></div><p style="font-size:13px;color:#7f8da1;">Master SQL through hands-on practice.</p>
-<div class="flk"><a href="/app/?sector=finans&src=capital-one-sql-interview">Start Practicing</a>
+<div class="flk"><a href="/app/?sector=finance&src=capital-one-sql-interview">Start Practicing</a>
   <a href="/sql-exercises/">SQL Practice Questions</a>
   <a href="/best-sql-practice-sites/">Best SQL Practice Sites</a><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a><a href="/refund.html">Refund Policy</a></div><p style="font-size:11px;color:#79879b;margin-top:24px;">© 2026 SQL Quest</p></footer>
 
@@ -372,7 +372,7 @@ document.getElementById('topic-cards').innerHTML=TOPICS.map(t=>`<div class="tc" 
 const FAQS=[
   ['What does the Capital One data analyst CodeSignal screen look like?','As described publicly in September 2026 — candidate reports on Blind from 2021 to 2025 and interview-prep guides dated 2025 to 2026 — it is a CodeSignal assessment of about 70 minutes with around 14 to 15 questions: most are multiple-choice over provided CSV or Excel datasets, plus one or a few written SQL questions; reports differ on the exact split. Capital One does not publish the format, so treat the specifics as candidate-reported.'],
   ['Which SQL topics should I practice for Capital One?','The public guides name joins (INNER and LEFT), GROUP BY aggregation with COUNT, SUM, AVG, MIN and MAX, CTEs and subqueries, window functions (ROW_NUMBER, RANK, DENSE_RANK, LAG, LEAD, SUM OVER) and date filtering by day, week, month, quarter and rolling window. The six challenges on this page cover each of them on card-transaction data.'],
-  ['Are the Capital One practice challenges free?','Five of the six are free — the two Easy challenges and the three Medium ones — with no signup to start. The Hard rolling-window challenge is on Pro ($29/mo, $99/yr or $199 lifetime). The full Banking track they come from has 57 challenges, 43 of them free.'],
+  ['Are the Capital One practice challenges free?','Five of the six are free — the two Easy challenges and the three Medium ones — with no signup to start. The Hard rolling-window challenge is on Pro ($29/mo or $99/yr). The full Banking track they come from has 57 challenges, 43 of them free.'],
   ['What SQL dialect should I practice for the Capital One screen?','Standard SQL. Everything on this page runs on SQLite in the browser, and the joins, CTEs, window functions and date logic transfer unchanged to PostgreSQL, MySQL, Snowflake and BigQuery. Vendor-specific syntax is not what the screen is described as testing.'],
   ['Why practice on card-transaction data instead of generic tables?','The screen is described as working from provided account-, transaction- and product-shaped datasets. The card ledger here — accounts, merchants, transactions and chargebacks, joined on account_id, merchant_id and txn_id — is exactly that shape, so the grain and fan-out mistakes you make here are the ones the screen catches. It is synthetic (no real PII), which is also what a screening dataset is.']
 ];

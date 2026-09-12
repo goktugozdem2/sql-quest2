@@ -55,6 +55,24 @@ import { t as i18n_t, getCurrentLang, setLang as i18n_setLang, subscribeLang, SU
 import { buildWeeklyReport, detectMilestones } from './utils/weekly-report.js';
 import { isMcqQuestion, scoreMcqAnswer, applyHintPenalty, nextOptionId, findOption } from './utils/mock-interview.js';
 
+// 2026-09-12 (founder's cleanup item 12): the sector deep-link parameter is
+// English on every link — ?sector=finance | real-estate | manufacturing |
+// ecommerce — while the sector ids in src/data/sectors.js stay Turkish
+// (finans, gayrimenkul, uretim, e-ticaret), so nothing in the data, the
+// datasets or the `sector:<id>` arrival series moves. Every read of the
+// parameter goes through canonicalSectorId, so the old spellings still
+// resolve here, and vercel.json 301s the three legacy links to the English
+// ones. tests/sector-param.test.js pins both halves.
+const SECTOR_PARAM_ALIASES = {
+  finance: 'finans', 'real-estate': 'gayrimenkul', realestate: 'gayrimenkul',
+  manufacturing: 'uretim', ecommerce: 'e-ticaret', 'e-commerce': 'e-ticaret',
+};
+function canonicalSectorId(raw) {
+  if (!raw) return null;
+  const key = String(raw).toLowerCase().trim();
+  return SECTOR_PARAM_ALIASES[key] || key;
+}
+
 // Module-load URL-param capture. Two signals stick to localStorage so they
 // survive across sessions and keep working after we strip them from the
 // visible URL:
@@ -118,7 +136,7 @@ if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
     if (!localStorage.getItem('sqlquest_arrival_src')) {
       const explicitSrc = params.get('src') || params.get('utm_source');
       const derivedSrc = params.get('company') ? `company:${params.get('company')}`
-        : params.get('sector') ? `sector:${params.get('sector')}`
+        : canonicalSectorId(params.get('sector')) ? `sector:${canonicalSectorId(params.get('sector'))}`
         : null;
       // Referrer fallback: 110 of the last fortnight's arrivals carried no
       // source at all and converted at 11% vs home's 48% — our biggest and
@@ -7451,7 +7469,7 @@ function SQLQuest() {
     if (typeof window === 'undefined') return null;
     try {
       const p = new URLSearchParams(window.location.search);
-      const raw = p.get('sector');
+      const raw = canonicalSectorId(p.get('sector'));
       if (!raw) return null;
       // Match against canonical sector ids (registered in src/data/sectors.js).
       const validIds = (window.CANONICAL_SECTORS || []).map(s => s.id);
@@ -8140,7 +8158,7 @@ function SQLQuest() {
     // to decide whether to auto-open the default Easy challenge. Stripping
     // here would race with that check and overwrite the deep-link target.
     // The param is harmless to leave in shareable links.
-    const sectorParam = urlParams.get('sector');
+    const sectorParam = canonicalSectorId(urlParams.get('sector'));
     if (sectorParam && Array.isArray(window.CANONICAL_SECTORS)) {
       const valid = window.CANONICAL_SECTORS.some((s) => s.id === sectorParam);
       if (valid) {
@@ -17893,7 +17911,7 @@ CRITICAL RULES:
       // temporary user and resets progress, so the onboarding state must reset
       // with it. Deep links still override this below by opening their target.
       const sectorParam = (() => {
-        try { return new URLSearchParams(window.location.search).get('sector'); } catch (_) { return null; }
+        try { return canonicalSectorId(new URLSearchParams(window.location.search).get('sector')); } catch (_) { return null; }
       })();
       const hasSectorLanding = !!(sectorParam && FOUNDATION_DATASET_CONFIGS[sectorParam]);
       const startingDatasetId = hasSectorLanding ? getFoundationDatasetIdForSector(sectorParam) : 'hr';
@@ -29277,7 +29295,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                   ) : proModalReason.type === 'rate_limit' ? (
                     <p className="mt-2" style={{ color: '#8A8E99' }}>You've used all 10 free AI tutor calls for today. The Coach has more work for you — Pro removes the daily cap so you can keep practicing without waiting until tomorrow.</p>
                   ) : ['learning', 'job_ready'].includes(getUserIntent()) ? (
-                    <p className="mt-2" style={{ color: '#8A8E99' }}>Unlimited AI tutor the moment you're stuck. A 30-day path that builds the habit. 200+ warm-up drills for daily fluency. Real sector data to practice on — and Hard challenges waiting when you're ready.</p>
+                    <p className="mt-2" style={{ color: '#8A8E99' }}>A tutor that stays with you the moment you're stuck. A 30-day path that builds the habit. 200+ warm-up drills for daily fluency. Real sector data to practice on — and Hard challenges waiting when you're ready.</p>
                   ) : (
                     <p className="mt-2" style={{ color: '#8A8E99' }}>Unlimited AI tutor at 2am when you're stuck. Hard challenges that mirror real interview questions. Mock interview pressure under a timer. Sector tracks built on real public data.</p>
                   )}
@@ -29296,23 +29314,23 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                   <p className="text-xs mb-3 font-medium uppercase tracking-wider" style={{ color: '#8A8E99' }}>What you get with Pro:</p>
                   <div className="grid grid-cols-2 gap-3">
                     {(['learning', 'job_ready'].includes(getUserIntent()) ? [
-                      'Get unstuck the moment it happens — unlimited AI tutor, no daily limit',
+                      'Get unstuck the moment it happens — the tutor reads your wrong query and stays with you; the daily cap lifted',
                       'Build the 30-day habit — full streak path, no Pro paywall mid-week',
                       '200+ warm-up questions — micro-drills for daily fluency',
                       'Train on real sector data — banking (FDIC), real estate (NYC), manufacturing',
                       'Protect the habit — 4 streak freezes a month (free plan: 2)',
-                      'Grow into Hard challenges — advanced patterns ready when you are',
-                      'Full Mock Interview bank — there when the job hunt starts',
-                      'Direct support — questions answered by a human who built it',
+                      'Grow into the Hard set — the shape interview screens save for last, ready when you are',
+                      'Sit a timed mock before a real one — the full bank, Revolut and Capital One formats included',
+                      'Direct support — questions answered by the person who built it',
                     ] : [
-                      'Walk into FAANG-style SQL interviews calm — Hard challenges drill the exact patterns',
-                      'Practice under real pressure — full Mock Interview bank with timer + scoring',
-                      'Get unstuck at 2am — unlimited AI tutor, no daily limit',
-                      'Train on your sector\'s data — banking (FDIC), real estate (NYC), manufacturing',
+                      'Solve the Hard question on the day — the full Hard set, the shape the screens save for last',
+                      'Sit the screen before you sit the screen — the timed mock bank, Revolut and Capital One formats included',
+                      'Never stall the night before — the tutor reads your wrong query and stays with you; the daily cap lifted',
+                      'Train on the tables the fintech screens use — card transactions, a neobank ledger, FDIC banking',
                       'Beat the daily streak — all difficulties of Daily Challenge unlocked',
                       'Build the 30-day habit — full streak path, no Pro paywall mid-week',
                       '200+ warm-up questions — micro-drills for daily fluency',
-                      'Direct support — questions answered by a human who built it',
+                      'Direct support — questions answered by the person who built it',
                     ]).map(feat => (
                       <div key={feat} className="flex items-start gap-2">
                         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="flex-shrink-0 mt-0.5">
@@ -29412,25 +29430,8 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                 )}
 
                 {/* Pricing Options */}
-                <div className={checkoutPendingPlan ? 'hidden' : 'grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6'}>
-                  {/* Monthly */}
-                  <button
-                    onClick={() => {
-                      trackProEvent('click_monthly');
-                      beginCheckout('monthly');
-                    }}
-                    className="p-4 text-center transition-all block w-full"
-                    style={{ background: '#1F222B', borderRadius: '6px', border: '1px solid #2A2E38' }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#8A8E99'; }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = '#2A2E38'; }}
-                  >
-                    <div className="text-2xl font-bold" style={{ fontFamily: 'Geist Mono, monospace', fontVariantNumeric: 'tabular-nums', color: '#F2F0EA' }}>$29</div>
-                    <div className="text-sm font-medium" style={{ color: '#F2F0EA' }}>Monthly</div>
-                    <div className="text-xs mt-1" style={{ color: '#8A8E99' }}>Billed monthly</div>
-                    <div className="text-xs mt-2" style={{ color: '#8A8E99' }}>$29/month</div>
-                  </button>
-
-                  {/* Annual — highlighted */}
+                <div className={checkoutPendingPlan ? 'hidden' : 'grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6'}>
+                  {/* Annual — the main offer (founder, 2026-09-12): first, highlighted; monthly beside it; the $199 lifetime card removed the same day — zero purchases ever, and it undercut two years of annual. */}
                   <button
                     onClick={() => {
                       trackProEvent('click_annual');
@@ -29448,31 +29449,25 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                     <div className="text-2xl font-bold" style={{ fontFamily: 'Geist Mono, monospace', fontVariantNumeric: 'tabular-nums', color: '#F2F0EA' }}>$99</div>
                     <div className="text-sm font-medium" style={{ color: '#F2F0EA' }}>Annual</div>
                     <div className="text-xs mt-1" style={{ color: '#8A8E99' }}>Billed yearly</div>
-                    <div className="text-xs mt-2" style={{ color: '#4ADE80' }}>$8.25/month</div>
+                    <div className="text-xs mt-2" style={{ color: '#4ADE80' }}>$8.25/month · most people choose this</div>
                   </button>
-
-                  {/* Lifetime */}
+                  {/* Monthly */}
                   <button
                     onClick={() => {
-                      trackProEvent('click_lifetime');
-                      beginCheckout('lifetime');
+                      trackProEvent('click_monthly');
+                      beginCheckout('monthly');
                     }}
-                    className="p-4 text-center relative transition-all block w-full"
+                    className="p-4 text-center transition-all block w-full"
                     style={{ background: '#1F222B', borderRadius: '6px', border: '1px solid #2A2E38' }}
                     onMouseEnter={e => { e.currentTarget.style.borderColor = '#8A8E99'; }}
                     onMouseLeave={e => { e.currentTarget.style.borderColor = '#2A2E38'; }}
                   >
-                    <div
-                      className="absolute -top-2 left-1/2 -translate-x-1/2 px-2 py-0.5 text-xs font-bold whitespace-nowrap"
-                      style={{ background: '#FFE34D', color: '#0E0F13', borderRadius: '4px' }}
-                    >
-                      BEST VALUE
-                    </div>
-                    <div className="text-2xl font-bold" style={{ fontFamily: 'Geist Mono, monospace', fontVariantNumeric: 'tabular-nums', color: '#F2F0EA' }}>$199</div>
-                    <div className="text-sm font-medium" style={{ color: '#F2F0EA' }}>Lifetime</div>
-                    <div className="text-xs mt-1" style={{ color: '#8A8E99' }}>One-time payment</div>
-                    <div className="text-xs mt-2" style={{ color: '#FFE34D' }}>Forever yours</div>
+                    <div className="text-2xl font-bold" style={{ fontFamily: 'Geist Mono, monospace', fontVariantNumeric: 'tabular-nums', color: '#F2F0EA' }}>$29</div>
+                    <div className="text-sm font-medium" style={{ color: '#F2F0EA' }}>Monthly</div>
+                    <div className="text-xs mt-1" style={{ color: '#8A8E99' }}>Billed monthly</div>
+                    <div className="text-xs mt-2" style={{ color: '#8A8E99' }}>$29/month</div>
                   </button>
+
                 </div>
 
                 <div className="text-center mb-4">

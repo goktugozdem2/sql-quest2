@@ -2465,8 +2465,12 @@ in the window; of those, any `[data-track]` click on the page
 `challenge_solved` on ≥1 and on ≥6 distinct ids, `pro_modal_shown`,
 `signup_completed`. Baseline 2026-09-06 → 09-12: 185 → hero click 55 (29.7%)
 → app 96 (51.9%) → solved 44 (23.8%) → six 19 (10.3%) → Pro modal 26 →
-signups 24. Split by `variant`: `adaptive_tutor_v1` until 2026-09-12,
-`company_first_v1` after; never one series across the rewrite.
+signups 24. Split by `variant`: `adaptive_tutor_v1` until 2026-09-12 noon,
+`company_first_v1` for a few hours, `interview_promise_v1` from the evening
+of 2026-09-12; never one series across a rewrite. **The founder's two watch
+lines (item 15):** home→app (`app_opened` ÷ `landing_view` page=home, people)
+must not fall below 51.9%; modal→checkout (below) must rise from 3.4% — if it
+falls, revert.
 
 Traps: `page='home'` rows before 2026-09-06 sit in the 29-day tracking hole
 (shared traps above). The company cards link `/app/?src=home&company=<slug>`,
@@ -2474,3 +2478,14 @@ so the arrival stays `home` and the company filter still applies — a
 `company:<slug>` arrival is a company page, not the homepage. Any first-run
 confound (intake 09-16, quota 09-21) is read against `/sql-exercises/`, the
 untouched control door.
+
+## `modal_click_rate`
+
+People shown the Pro modal (`pro_modal_shown`, `reason='milestone_solves'`,
+by `aid`) and, of them, people with `pro_plan_clicked` or
+`pro_checkout_clicked` in the same window; the rate is clicks ÷ shown.
+Baseline 30 days to 2026-09-12: 203 → 7 = **3.4%**. Also the plan mix of the
+clicks (annual ÷ all) since the modal sells two plans (2026-09-12). Read
+`milestone_solves` only: the `free_quota` reason (from 09-21) and the quiet
+early asks (09-29) change who is shown. This is the founder's second watch
+line for the homepage and modal rewrite; a fall below 3.4% means revert.

@@ -150,6 +150,62 @@ of the verifier and must never be rounded to `FLAT`.
   arrivals land here with no referrer, so a burst from Gemini or ChatGPT reads
   as homepage lift — split on `landingSrc` before crediting the copy.
 - **Verdict** _pending_
+- **Revised the same evening, on the founder's 16-item list.** Variant
+  `interview_promise_v1` replaces `company_first_v1` (which lived a few
+  hours): one promise in the hero ("Pass the SQL interview."), the "free
+  forever / no trial clock / free is the product" phrases gone, two CTA
+  labels only (Start free / See pricing), one bank number (299), Pricing in
+  the nav and the Pro section moved under the Coach mock in outcome
+  language, a usage line under the hero (5,745 accepted solutions since
+  June, 1,195 people in 30 days, measured 09-12), the Turkish banner by
+  country (`/api/geo`), English sector params, a four-item nav with the mega
+  menu in the footer, the comparison table re-checked (StrataScratch now
+  shows an AI evaluator and a real free tier). **The founder's two watch
+  metrics (item 15) replace the target above:** home→app must not fall
+  below **51.9%**, and modal→checkout (people who clicked a plan or checkout
+  ÷ people shown the modal) must rise from **3.4%**. If the second falls,
+  the wrong work was done: revert the page and the modal to the 09-12 noon
+  state (commit e6e5069 for the page, the pre-437f72e modal) — the
+  founder's rule, not a judgement call. Read 2026-10-03; watched every
+  Friday by `weekly-funnel-friday`.
+
+### the price story: page and modal tell it the same way (founder's items 3, 5, 16 — 2026-09-12)
+
+- **Claimed** 2026-09-12 · **Live** on push, no flag · **Read** 2026-10-03.
+- **Change** the Pro modal sells two plans — annual first and highlighted
+  ($99, "most people choose this"), monthly beside it ($29) — and the $199
+  lifetime card is gone (zero purchases in the product's history, two clicks
+  ever, and it undercut two years of annual). The "What you get" list speaks
+  in outcomes tied to the interview: the Hard question on the day, the
+  screen sat before the screen, help that does not stall the night before;
+  "unlimited" is no longer claimed (the tutor cap is lifted, not removed).
+  The homepage pricing section says the same three things in the same
+  order. Every page that quoted the lifetime price (43 files) now quotes two
+  plans; legal pages keep the lifetime clause for existing holders and say
+  it is no longer sold. `tests/site-counts.test.js` and
+  `tests/llms-txt.test.js` bind the site to a two-plan modal.
+- **Why** the founder's decision ("remove or $349"): removal, because the
+  plan had no buyers, a $349 card would need a Stripe price the agent cannot
+  create, and two plans match item 7's "fewer asks". The modal changes now
+  rather than in week 2 because item 16 says the modal and the page must
+  tell one story in the same week.
+- **Metric** clicks per person shown on the milestone ask
+  (`pro_plan_clicked` or `pro_checkout_clicked` ÷ `pro_modal_shown`, people
+  by `aid`, `reason='milestone_solves'` only), and the plan mix of clicks
+  (annual ÷ all).
+- **Baseline** 30 days to 2026-09-12: 203 shown → 7 clicked → **3.4%**; 2
+  paid; annual share of purchases 1 of 3 ever.
+- **Target** ≥ 5% clicks per person shown over 21 days, and annual ≥ half of
+  plan clicks.
+- **Falsification, stated in advance (the founder's rule, item 15):** below
+  3.4% at n ≥ 150 shown → revert the modal's order and copy to the 09-12
+  noon state (keep the two plans — the lifetime removal is a pricing
+  decision, not a copy test). Annual under a third of clicks → the
+  "most people choose this" line is not earning its place; drop it.
+- **Confounds** `freeQuota` flips 09-21 and adds `free_quota` asks — read
+  `milestone_solves` only; `quietEarlyAsks` (09-29) lands inside the window's
+  last four days — cut the read at 09-28 if it moves the milestone reason.
+- **Verdict** _pending_
 
 ### three hand-written founder emails to the checkout abandoners of 09-04 / 09-06 — **OPEN**
 

@@ -218,7 +218,7 @@ is whether it still receives first-contact traffic at all; it should not.
 
 ### Landing pages + marketing
 Three variant pages, all with analytics events isolated by `variant` tag:
-- `/` — company_first_v1 from 2026-09-12 (adaptive_tutor_v1 before; never one series across the change)
+- `/` — interview_promise_v1 from the evening of 2026-09-12 (company_first_v1 for a few hours that day, adaptive_tutor_v1 before; never one series across a change)
 - `/after-the-sql-course/` — after_course_v1 (Udemy/Coursera targeting)
 - `/after-bootcamp/` — after_bootcamp_v1 (Flatiron/GA/Metis targeting)
 
@@ -258,22 +258,37 @@ so a landing view and a later solve are joinable for the first time.
 - Three `reason='landing'` rows on 2026-07-28 (aid `e5fcbad1a022…`) are
   localhost verification traffic — exclude that aid from the first read.
 
-### Homepage — company-first (2026-09-12)
+### Homepage — one promise, company-first, two plans (2026-09-12)
 
-- `src/index.html` leads with the company sets (Revolut, Capital One, Stripe,
-  Wise, JPMorgan, Snowflake — the mid-size fintech pages that convert from
-  search, plus the two timed mocks), then the practice hub (`/sql-exercises/`
-  and the nine `/challenges/<topic>/` pages), then the tutor and the Coach.
-  FAANG is linked, not led with: those pages convert at 1.6–1.8% because
-  "amazon sql" means Redshift (docs/reads/keywords-2026-09-08.md).
-- Every count on the page is bound by `tests/site-counts.test.js`; the FAQ
-  JSON-LD must equal the visible FAQ verbatim (`tests/faq-schema.test.js`,
-  the homepage has no baseline lines any more). The per-company "N tagged
-  challenges" numbers come from `public/llms.txt` and are under 100, so the
-  guard does not see them — re-read llms.txt when the bank moves.
-- Company cards deep-link `/app/?src=home&company=<slug>`: `src` wins the
-  arrival stamp, so the door stays `home` and the filter still applies.
-- Read: ledger "the homepage, company-first", metric `home_door`, 2026-10-03.
+- `src/index.html`: hero "Pass the SQL interview." (one promise; the "AI can
+  write a query" thesis lives in /blog/validate-ai-generated-sql/ and
+  /sql-for-the-ai-era/, not on the homepage), then the company sets
+  (Revolut, Capital One, Stripe, Wise, JPMorgan, Snowflake — the fintech
+  pages that convert from search, plus the two timed mocks), the practice
+  hub, the tutor + Coach mock, **Pricing right under it**, industry tracks,
+  the comparison table, built-in-public, the closing, a ten-question FAQ.
+- Founder's rules on this page (2026-09-12 list): two CTA labels only —
+  **Start free** and **See pricing**; one bank number (299) in nav, hero and
+  footer, no free count, no difficulty split, no per-company counts; none of
+  "free forever", "no trial clock", "free is the product"; a usage line
+  under the hero (refreshed by `weekly-funnel-friday`); a four-item nav
+  (Practice, Interview Prep, Pricing, Log In) with every mega-menu link in
+  the footer.
+- Pro section speaks in outcomes tied to the interview and mirrors the modal
+  word for word in spirit: the Hard question on the day, the screen sat
+  before the screen, help that does not stall. Two plans, annual first.
+- Every count is bound by `tests/site-counts.test.js`; the FAQ JSON-LD must
+  equal the visible FAQ verbatim (`tests/faq-schema.test.js`).
+- Turkish banner is geo-targeted: `/api/geo` echoes Vercel's
+  `x-vercel-ip-country`; browser language is only the fallback when the call
+  fails. Sector deep links are English (`?sector=finance | real-estate |
+  manufacturing`); `canonicalSectorId` in app.jsx maps them to the Turkish
+  data ids, `vercel.json` 301s the legacy spellings, `tests/sector-param.test.js`
+  pins both.
+- Watch (founder's item 15): home→app must not fall below 51.9%,
+  modal→checkout must rise from 3.4% — if the second falls, revert both the
+  page and the modal. Ledger: "the homepage, company-first" and "the price
+  story"; metrics `home_door`, `modal_click_rate`; read 2026-10-03.
 
 ### Public Profile (USER MUST DEPLOY for cross-device reads)
 Phase 4b + 4c shipped client-side; Supabase needs migration + deploy.
@@ -421,7 +436,7 @@ structurally zero. returned_48h is the metric anyway.
 
 
 ### Pricing (Pro modal)
-**$29/mo · $99/yr ($8.25/mo) · $199 lifetime** — verified 2026-07-25 against
+**$29/mo · $99/yr ($8.25/mo)** — two plans since 2026-09-12 (the $199 lifetime card was removed: zero purchases ever, and it undercut two years of annual; existing holders keep it). Verified 2026-07-25 against
 the live modal in `src/app.jsx` (~line 26320), which is the surface that calls
 `beginCheckout`. This line previously read "$19/mo" and was wrong; 13 landing
 pages correctly said $29 and nearly got "corrected" to match the stale doc.

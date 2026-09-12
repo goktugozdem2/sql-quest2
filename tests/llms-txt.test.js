@@ -211,21 +211,23 @@ describe('pricing guard — llms.txt quotes the Pro modal in app.jsx, nothing el
     pricing = text.slice(start, end);
   });
 
-  it('finds all three plans in the modal', () => {
-    expect(Object.keys(modal).sort()).toEqual(['Annual', 'Lifetime', 'Monthly']);
+  it('finds the two plans in the modal', () => {
+    // Lifetime was removed 2026-09-12 (zero purchases ever; it undercut two
+    // years of annual). If a third card comes back, this list grows with it.
+    expect(Object.keys(modal).sort()).toEqual(['Annual', 'Monthly']);
   });
 
   it('quotes each plan at the modal price, with its billing unit', () => {
     expect(pricing).toContain(`$${modal.Monthly}/month`);
     expect(pricing).toContain(`$${modal.Annual}/year`);
-    expect(pricing).toContain(`$${modal.Lifetime} lifetime`);
+    expect(pricing).not.toMatch(/lifetime/i);
   });
 
   it('quotes no dollar figure the modal does not carry', () => {
     const quoted = [...pricing.matchAll(/\$(\d+)/g)].map(m => m[1]);
-    expect(quoted.length).toBeGreaterThanOrEqual(3);
+    expect(quoted.length).toBeGreaterThanOrEqual(2);
     for (const q of quoted) expect(Object.values(modal), `$${q}`).toContain(q);
-    expect(text).not.toMatch(/\$19(?!\d)/);   // the stale monthly price; $199 lifetime must still pass
+    expect(text).not.toMatch(/\$19(?!\d)/);   // the stale monthly price
   });
 
   // 2026-09-06 review: the Pricing section hands an assistant
@@ -241,10 +243,14 @@ describe('pricing guard — llms.txt quotes the Pro modal in app.jsx, nothing el
   it.each(Object.keys(LEGAL_PAGES))('public/%s quotes each plan at the modal price and nothing else', (file) => {
     const html = read('public', file);
     for (const [plan, unit] of Object.entries(LEGAL_PAGES[file])) {
+      // A plan the modal no longer sells (Lifetime, removed 2026-09-12) must
+      // carry no price on the legal pages at all — the loop below catches any
+      // figure that is not a modal price.
+      if (!modal[plan]) continue;
       expect(html, `${file}: ${plan}`).toContain(`$${modal[plan]}${unit}`);
     }
     const quoted = [...html.matchAll(/\$(\d+)/g)].map(m => m[1]);
-    expect(quoted.length).toBeGreaterThanOrEqual(3);
+    expect(quoted.length).toBeGreaterThanOrEqual(Object.keys(modal).length);
     for (const q of quoted) expect(Object.values(modal), `${file}: $${q}`).toContain(q);
     expect(html).not.toMatch(/\$19(?!\d)/);
   });

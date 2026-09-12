@@ -6,32 +6,150 @@
   "redirects": [
     {
       "source": "/:path*",
-      "has": [{ "type": "host", "value": "www.sqlquest.app" }],
+      "has": [
+        {
+          "type": "host",
+          "value": "www.sqlquest.app"
+        }
+      ],
       "destination": "https://sqlquest.app/:path*",
       "permanent": true
     },
-    { "source": "/coach/", "destination": "/app", "permanent": true },
-    { "source": "/en/", "destination": "/", "permanent": true },
-    { "source": "/fr/", "destination": "/", "permanent": true },
-    { "source": "/:slug/privacy/", "destination": "/privacy/", "permanent": true },
-    { "source": "/:slug/terms/", "destination": "/terms/", "permanent": true },
-    { "source": "/:slug/refund/", "destination": "/refund/", "permanent": true }
+    {
+      "source": "/coach/",
+      "destination": "/app",
+      "permanent": true
+    },
+    {
+      "source": "/en/",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/fr/",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/:slug/privacy/",
+      "destination": "/privacy/",
+      "permanent": true
+    },
+    {
+      "source": "/:slug/terms/",
+      "destination": "/terms/",
+      "permanent": true
+    },
+    {
+      "source": "/:slug/refund/",
+      "destination": "/refund/",
+      "permanent": true
+    },
+    {
+      "source": "/app/",
+      "has": [
+        {
+          "type": "query",
+          "key": "sector",
+          "value": "finans"
+        }
+      ],
+      "destination": "/app/?sector=finance",
+      "permanent": true
+    },
+    {
+      "source": "/app/",
+      "has": [
+        {
+          "type": "query",
+          "key": "sector",
+          "value": "gayrimenkul"
+        }
+      ],
+      "destination": "/app/?sector=real-estate",
+      "permanent": true
+    },
+    {
+      "source": "/app/",
+      "has": [
+        {
+          "type": "query",
+          "key": "sector",
+          "value": "uretim"
+        }
+      ],
+      "destination": "/app/?sector=manufacturing",
+      "permanent": true
+    },
+    {
+      "source": "/app.html",
+      "has": [
+        {
+          "type": "query",
+          "key": "sector",
+          "value": "finans"
+        }
+      ],
+      "destination": "/app/?sector=finance",
+      "permanent": true
+    },
+    {
+      "source": "/app.html",
+      "has": [
+        {
+          "type": "query",
+          "key": "sector",
+          "value": "gayrimenkul"
+        }
+      ],
+      "destination": "/app/?sector=real-estate",
+      "permanent": true
+    },
+    {
+      "source": "/app.html",
+      "has": [
+        {
+          "type": "query",
+          "key": "sector",
+          "value": "uretim"
+        }
+      ],
+      "destination": "/app/?sector=manufacturing",
+      "permanent": true
+    }
   ],
   "rewrites": [
-    { "source": "/u/(.*)", "destination": "/api/u?handle=$1" }
+    {
+      "source": "/u/(.*)",
+      "destination": "/api/u?handle=$1"
+    }
   ],
   "functions": {
-    "api/u.js": { "includeFiles": "public/app.html" },
-    "api/og-card.js": { "includeFiles": "assets/fonts/**" }
+    "api/u.js": {
+      "includeFiles": "public/app.html"
+    },
+    "api/og-card.js": {
+      "includeFiles": "assets/fonts/**"
+    }
   },
   "headers": [
     {
       "source": "/(.*)",
-      "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }]
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
     },
     {
       "source": "/(.*).png",
-      "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400, stale-while-revalidate=604800" }]
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400, stale-while-revalidate=604800"
+        }
+      ]
     }
   ]
 }

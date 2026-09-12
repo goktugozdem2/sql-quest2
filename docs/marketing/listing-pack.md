@@ -33,7 +33,7 @@ after the Aug-29 read).
   that explains why your query failed. Queries run
   locally in the browser (SQLite/WASM) — no signup needed to start solving.
   Built and run by one person; feedback goes straight to the founder.
-- **Pricing:** Free tier (includes the Coach) · Pro $29/mo · $99/yr · $199 lifetime
+- **Pricing:** Free tier (includes the Coach) · Pro $29/mo · $99/yr (two plans since 2026-09-12; the lifetime tier was retired)
 - **Category tags:** SQL, education, developer tools, interview prep, data analytics, e-learning
 - **Platforms:** Web (works on mobile browsers)
 - **The differentiator sentence (per the positioning learning — sell the

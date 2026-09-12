@@ -235,13 +235,15 @@ export function findRetiredLiterals(text) {
 export function findStalePro19(text, modal) {
   const offenders = [];
   const pageNamesCompetitor = namesCompetitor(text);
-  const oursAnnualOrLifetime = new RegExp(`\\$(?:${modal.Annual}|${modal.Lifetime})(?!\\d)`);
+  // 2026-09-12: the lifetime plan was removed from the modal, so modal.Lifetime
+  // may be undefined; the regex then binds to the annual price alone.
+  const oursAnnualOrLifetime = new RegExp(`\\$(?:${[modal.Annual, modal.Lifetime].filter(Boolean).join('|')})(?!\\d)`);
   for (const s of sentencesOf(text)) {
     for (const m of s.text.matchAll(/\$19(?:\/| per | a )/g)) {
       let why = null;
       if (namesUs(s.text) && !aboutCompetitor(s)) why = 'A: sentence names SQL Quest / Pro and no competitor';
       else if (!pageNamesCompetitor) why = 'B: page names no competitor whose price this could be';
-      else if (oursAnnualOrLifetime.test(s.text)) why = `C: sits beside our $${modal.Annual} / $${modal.Lifetime}`;
+      else if (oursAnnualOrLifetime.test(s.text)) why = `C: sits beside our $${[modal.Annual, modal.Lifetime].filter(Boolean).join(' / $')}`;
       if (why) offenders.push({ index: s.index + m.index, why, text: s.text });
     }
   }
@@ -630,7 +632,9 @@ export function findPriceOffences(text, modal) {
   const offenders = [];
   const monthly = Number(modal.Monthly);
   const annual = Number(modal.Annual);
-  const lifetime = Number(modal.Lifetime);
+  // null when the modal sells no lifetime plan (removed 2026-09-12): any
+  // "$N lifetime" on a page is then stale by construction.
+  const lifetime = modal.Lifetime ? Number(modal.Lifetime) : null;
   const annualPerMonth = Math.round((annual / 12) * 100) / 100;
   for (const s of sentencesOf(text)) {
     if (!namesUs(s.text) || aboutCompetitor(s)) continue;
@@ -641,6 +645,8 @@ export function findPriceOffences(text, modal) {
         why = `"${m[0]}" — the Pro modal says $${modal.Monthly}/month (or $${annualPerMonth}/mo billed yearly)`;
       } else if (m[3] && amount !== annual) {
         why = `"${m[0]}" — the Pro modal says $${modal.Annual}/year`;
+      } else if (m[4] && lifetime === null) {
+        why = `"${m[0]}" — the Pro modal sells no lifetime plan (removed 2026-09-12); two plans, $${modal.Monthly}/month and $${modal.Annual}/year`;
       } else if (m[4] && amount !== lifetime) {
         why = `"${m[0]}" — the Pro modal says $${modal.Lifetime} lifetime`;
       }
@@ -1416,8 +1422,10 @@ describe('the bank facts this test binds to', () => {
     expect(facts.challengeCount).toBeGreaterThanOrEqual(100);
   });
 
-  it('the Pro modal in app.jsx has all three plans', () => {
-    expect(Object.keys(modal).sort()).toEqual(['Annual', 'Lifetime', 'Monthly']);
+  it('the Pro modal in app.jsx sells two plans', () => {
+    // Lifetime was removed 2026-09-12 (zero purchases ever; it undercut two
+    // years of annual). A third card coming back must be added here on purpose.
+    expect(Object.keys(modal).sort()).toEqual(['Annual', 'Monthly']);
     for (const v of Object.values(modal)) expect(v).toMatch(/^\d+$/);
   });
 });
@@ -1514,13 +1522,14 @@ describe('2. every count a page states is the bank\'s count', () => {
 describe('3. pricing — what a page attributes to SQL Quest / Pro is the modal price', () => {
   it('monthly / annual / lifetime figures in a SQL Quest or Pro sentence match src/app.jsx', () => {
     const offenders = collect(p => findPriceOffences(p.text, modal));
-    expect(offenders, `prices off the Pro modal ($${modal.Monthly}/mo · $${modal.Annual}/yr · $${modal.Lifetime}):\n${report(offenders)}`).toEqual([]);
+    expect(offenders, `prices off the Pro modal ($${modal.Monthly}/mo · $${modal.Annual}/yr${modal.Lifetime ? ` · $${modal.Lifetime}` : ''}):\n${report(offenders)}`).toEqual([]);
   });
 
   it('is not vacuous — the pages do quote the modal price', () => {
     const all = pages.map(p => p.text).join('\n');
     expect(all).toMatch(new RegExp(`\\$${modal.Monthly}/mo(?:nth)?\\b`));
-    expect(all).toMatch(new RegExp(`\\$${modal.Lifetime} (?:lifetime|one-time)\\b`));
+    expect(all).toMatch(new RegExp(`\\$${modal.Annual}/y(?:ea)?r\\b`));
+    if (modal.Lifetime) expect(all).toMatch(new RegExp(`\\$${modal.Lifetime} (?:lifetime|one-time)\\b`));
   });
 });
 
