@@ -575,6 +575,19 @@ Rewritten Coach-forward:
   in the ledger. `/coach/` now redirects to `/app` (it 404'd; nothing linked
   to it).
 
+### Revolut — everything but the signature (2026-09-12)
+
+- The registry checklist for a second interview-prep member is met except
+  `declaredBy`: twelve challenges on `finans_neobank` tagged Revolut
+  (300-311), the mock `revolut-analytics-screen` (6 MCQ computed from the
+  data + 2 written, 60 min, all on the ledger), the page's sourced rounds
+  section with `Sources:` (now in `SOURCED_PAGES`), and
+  `PENDING_INTERVIEW_ARCHETYPES` in src/data/interview-archetypes.js with
+  `declaredBy: null`. tests/revolut-mock.test.js validates the block with a
+  placeholder signature. **To sign:** fill declaredOn/declaredBy, move the
+  block into `INTERVIEW_ARCHETYPES`, set the "exactly one archetype" test to
+  two — and read `interview_prep_funnel` split by company from that day.
+
 ### P2 — retention (2026-09-12)
 
 - **Spaced retrieval** (`src/utils/spaced-retrieval.js`): weak canonical

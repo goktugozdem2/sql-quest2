@@ -60,6 +60,12 @@ const read = (...p) => fs.readFileSync(join(ROOT, ...p), 'utf8');
 // ---------------------------------------------------------------------------
 export const SOURCED_PAGES = {
   'capital-one-sql-interview': 'dated Blind reports (2021-2025) + prep guides (Aug 2025 - Feb 2026), cited on the page',
+  // 2026-09-12: one dated guide (interviewquery, 27 candidate reports stamped
+  // Q3 2026), cited in the rounds section, its FAQ and its JSON-LD, phrased
+  // "as described publicly in September 2026 … Revolut does not publish the
+  // format". The registry entry is written and unsigned
+  // (src/data/interview-archetypes.js, PENDING_INTERVIEW_ARCHETYPES).
+  'revolut-sql-interview': 'interviewquery guide synthesised from 27 candidate reports stamped Q3 2026, cited on the page',
 };
 
 // ---------------------------------------------------------------------------
@@ -637,13 +643,15 @@ describe('the page set and the tag map it binds to', () => {
     }
   });
 
-  it('the only exempted page exists and is the only one with a sources list', () => {
+  it('every exempted page exists and carries a dated sources list, and no other page does', () => {
     for (const slug of Object.keys(SOURCED_PAGES)) {
       const p = pages.find(x => x.slug === slug);
       expect(p, slug).toBeTruthy();
-      expect(p.text, `${slug} must carry the sources it is exempted for`).toMatch(/Sources: candidate reports/);
+      // A sources line that names a year — Capital One's Blind reports, Revolut's
+      // dated guide — not one page's wording.
+      expect(p.text, `${slug} must carry the sources it is exempted for`).toMatch(/Sources: [^\n]*\b20\d\d\b/);
     }
-    const others = pages.filter(p => !SOURCED_PAGES[p.slug] && /Sources: candidate reports/.test(p.text));
+    const others = pages.filter(p => !SOURCED_PAGES[p.slug] && /Sources: [^\n]*\b20\d\d\b/.test(p.text));
     expect(others.map(p => p.file), 'a page carrying a sources list must be added to SOURCED_PAGES').toEqual([]);
   });
 });

@@ -27,6 +27,33 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### Revolut membership: everything but the signature — **PENDING A PERSON**
+
+- **Written** 2026-09-12. Not a claim to read; a state to sign. The registry
+  checklist (src/data/interview-archetypes.js) is met on every point a script
+  may meet: a dated source (interviewquery's 2026 guide, 27 candidate reports
+  stamped Q3 2026), a ledger of the sourced shape (`finans_neobank`), twelve
+  challenges on it tagged Revolut (300-311), a mock keyed to the exact name
+  running on that ledger and nothing else (`revolut-analytics-screen`: 6
+  multiple choice whose correct options are computed from the data + 2
+  written tasks, 60 minutes), the page section with a `Sources:` line
+  (src/revolut-sql-interview.html, now in `SOURCED_PAGES`), and the
+  archetype + member block — `PENDING_INTERVIEW_ARCHETYPES`, `declaredBy:
+  null`. tests/revolut-mock.test.js proves that with a placeholder signature
+  every other validator check passes and `eligibleTargets` returns Capital
+  One and Revolut.
+- **To sign** (the founder, in one commit): set `declaredOn` / `declaredBy`,
+  move the block into `INTERVIEW_ARCHETYPES`, change the "exactly one
+  archetype and one member today" assertion in tests/interview-prep.test.js
+  to two. That commit fires the pre-registered stop-and-look on
+  `interview_prep_funnel` — a second value in its `company` column — so read
+  the funnel split by company from that date, and keep the two companies'
+  rows separate in every prep read.
+- **What changes for a person when it is signed:** a Revolut arrival with a
+  named target gets the prep flow (readiness, the day plan, the mock offer)
+  that only Capital One arrivals get today. Until then the page already
+  links the mock and the twelve challenges directly.
+
 ### weak skills come back at 3, 7 and 14 days (P2 spaced retrieval + daily quota)
 
 - **Claimed** 2026-09-12 · **Flips** 2026-10-12 by the same scheduled task

@@ -169,6 +169,10 @@
 //     mock keyed to the exact name that mirrors the 60-minute two-SQL screen,
 //     the page section — and the signature. None of those is a tag or a
 //     script; the challenges and the mock are a day's content work.
+//     DONE later the same day (2026-09-12): the twelve challenges (300-311),
+//     the mock (`revolut-analytics-screen`), the page section with its
+//     sources. What remains is the signature — see PENDING_INTERVIEW_ARCHETYPES
+//     at the bottom of this file.
 //   Stripe — guides and one Blind thread describe a CoderPad SQL round and a
 //     take-home report inside a five-round loop; no duration, no count, no
 //     table shape. Tags: `ecommerce` 27, `finans_fraud` 6.
@@ -262,6 +266,77 @@ export const INTERVIEW_ARCHETYPES = Object.freeze([
           + "LAG/LEAD/SUM OVER, and date filtering by day/week/month/quarter/rolling "
           + "window — and describe account-, transaction- and product-shaped tables. That "
           + "is this ledger, at this grain. Checked 2026-09-08 against ids 275-284.",
+      }),
+    ]),
+  }),
+]);
+
+/**
+ * PENDING — written, backed by the data, and UNSIGNED (2026-09-12).
+ *
+ * Everything the checklist asks for a Revolut membership exists in the bank
+ * tonight except the one thing a script may not supply: a person's name on
+ * `declaredBy`. The twelve challenges on `finans_neobank` tagged Revolut
+ * (ids 300-311), the mock keyed to the exact name and running on that ledger
+ * (`revolut-analytics-screen`), the page section with its dated sources
+ * (src/revolut-sql-interview.html) — all in place and pinned by
+ * tests/revolut-mock.test.js, which validates THIS block against the live
+ * data with a placeholder signature so the only thing left to change is the
+ * signature.
+ *
+ * TO SIGN: fill `declaredOn` and `declaredBy`, move the archetype into
+ * INTERVIEW_ARCHETYPES above, delete it from here, and update the
+ * "exactly one archetype and one member today" assertion in
+ * tests/interview-prep.test.js to two. Then tell the ledger: a second value
+ * in the prep funnel's `company` column is its pre-registered stop-and-look.
+ */
+export const PENDING_INTERVIEW_ARCHETYPES = Object.freeze([
+  Object.freeze({
+    id: 'neobank-analyst',
+    label: 'Neobank analyst screen',
+    dataset: 'finans_neobank',
+    claim:
+      "Consumer neobanks screen analyst candidates on a user-and-transaction ledger — "
+      + "users with plans and referrals, top-ups, multi-currency transactions with a "
+      + "status and a fee — asked as monthly active users, the top share of users by "
+      + "volume, cohort activation, decline and take rates, and month-over-month "
+      + "change. What costs points is counting transactions where users were asked "
+      + "for, a status filter forgotten, and NULL treated as a value.",
+    whyThisDataset:
+      "A synthetic multi-currency neobank ledger (240 users across 12 countries, 12 "
+      + "currencies, 1,153 top-ups, 3,433 transactions with statuses, fees, merchant "
+      + "categories and p2p counterparties; src/data/neobank-data.js). The twelve "
+      + "Revolut-tagged challenges on it (ids 300-311) were written from the sourced "
+      + "task list: MAU with completed transactions, top 10% by volume, signup-cohort "
+      + "activation, decline rate by plan, FX fee take rate, month-over-month growth, "
+      + "KYC latency, top-N per country, referred vs organic.",
+    excludesOnDataset: "none — every challenge on this ledger is analyst-screen shaped.",
+    members: Object.freeze([
+      Object.freeze({
+        company: 'Revolut',
+        pageSlug: 'revolut',
+        declaredOn: null,
+        declaredBy: null,
+        screenSource:
+          "As described publicly in September 2026: interviewquery's \"Revolut Data "
+          + "Analyst Interview Guide 2026\", synthesised from 27 candidate reports "
+          + "stamped Q3 2026. Two SQL rounds: an online HackerRank screen of about 60 "
+          + "minutes with two written SQL questions plus multiple choice (an earlier "
+          + "edition of the same guide said 30 minutes; the 2026 reports say 60), then "
+          + "a live session of four sequential questions on interconnected users, "
+          + "transactions, events and subscriptions tables — monthly active users with "
+          + "completed transactions, users in the top 10% by transaction volume, joins, "
+          + "CTEs, date logic, window functions, cohort and conversion analysis. "
+          + "Revolut does not publish the format; every specific is candidate-reported. "
+          + "Full citation: src/revolut-sql-interview.html.",
+        shapeNote:
+          "The sourced tasks run on users and transactions at the grain of per-user-"
+          + "per-month, share of users, and per-plan rates; the ledger has both tables, "
+          + "a status column for the 'completed' filters the reports stress, plans on "
+          + "users (the subscriptions the live round names), and referrals. What the "
+          + "ledger does not have is a product-events table, so an events funnel "
+          + "question cannot be set on it; the twelve challenges avoid claiming one. "
+          + "Checked 2026-09-12 against ids 300-311 and the mock.",
       }),
     ]),
   }),

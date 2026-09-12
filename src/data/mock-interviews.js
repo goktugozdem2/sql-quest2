@@ -1553,6 +1553,283 @@ window.mockInterviewsData = [
       }
     ],
     passingScore: 60
+  },
+  // ---------------------------------------------------------------------------
+  // Revolut — the analytics screen (2026-09-12). Every question runs on the
+  // neobank ledger (`finans_neobank`, src/data/neobank-data.js), the way the
+  // registry requires of a member's mock (src/data/interview-archetypes.js).
+  // Shape follows the sourced format: interviewquery's 2026 guide,
+  // synthesised from 27 candidate reports stamped Q3 2026 — a 60-minute
+  // HackerRank screen with two written SQL questions plus multiple choice,
+  // on users / transactions tables. Every MCQ's correct option is COMPUTED
+  // from the data by its `verify.sql` and asserted by
+  // tests/revolut-mock.test.js — never hand-written. Revolut does not publish
+  // the format; nothing here comes from Revolut itself.
+  // ---------------------------------------------------------------------------
+  {
+    id: 'revolut-analytics-screen',
+    title: 'Revolut Data Analyst — HackerRank-Style SQL Screen',
+    company: 'Revolut',
+    role: 'Data Analyst',
+    difficulty: 'Medium',
+    totalTime: 60 * 60, // 60 minutes — the candidate-reported screen length (Q3 2026 reports)
+    questionsCount: 8, // 6 multiple choice (18 min) + 2 written SQL (42 min)
+    isFree: false,
+    description: 'The screen candidates report for Revolut analyst roles: about 60 minutes on HackerRank, two written SQL questions plus multiple choice, on user and transaction tables. This mock runs on a synthetic multi-currency neobank ledger — users, top-ups, transactions in 12 currencies — and asks the tasks the reports name: monthly active users with completed transactions, the top 10% of users by volume, decline rates by plan, NULL handling, WHERE vs HAVING. Revolut does not publish its format; every specific is candidate-reported.',
+    title_tr: 'Revolut Data Analyst — HackerRank Tarzı SQL Elemesi',
+    description_tr: 'Adayların Revolut analist rolleri için aktardığı eleme: HackerRank üzerinde yaklaşık 60 dakika, iki yazılı SQL sorusu artı çoktan seçmeli; kullanıcı ve işlem tabloları üzerinde. Bu mock sentetik çok para birimli bir neobank defterinde (kullanıcılar, yüklemeler, 12 para biriminde işlemler) koşar ve raporların adını verdiği işleri sorar: tamamlanmış işlemli aylık aktif kullanıcı, hacme göre ilk %10, plana göre ret oranı, NULL, WHERE vs HAVING. Revolut formatını yayımlamaz; her ayrıntı aday aktarımıdır.',
+    role_tr: 'Data Analyst',
+    skills: ['Multiple Choice', 'GROUP BY', 'JOINs', 'HAVING', 'NULL Handling', 'CTEs', 'Window Functions', 'Date Functions'],
+    questions: [
+      // ---- Section 1: multiple choice over the ledger (6 questions, 18 min).
+      {
+        id: 'rv-m1',
+        order: 1,
+        type: 'mcq',
+        title: 'Read the top row of a grouped aggregate',
+        title_tr: 'Gruplanmış aggregate\'in ilk satırını oku',
+        description: 'An analyst ran the query below over completed card payments in **August 2026**. Read its **first row**: which **merchant_category** is on top, and what is its **spend_gbp**?',
+        description_tr: 'Bir analist aşağıdaki sorguyu **Ağustos 2026**\'daki tamamlanmış kart ödemeleri üzerinde çalıştırdı. **İlk satırını** oku: en üstteki **merchant_category** hangisi ve **spend_gbp** değeri ne?',
+        timeLimit: 3 * 60,
+        difficulty: 'Easy',
+        points: 8,
+        dataset: 'finans_neobank',
+        codeSnippets: [
+          {
+            label: 'The query',
+            label_tr: 'Sorgu',
+            code: "SELECT merchant_category,\n       COUNT(*)                 AS payments,\n       ROUND(SUM(amount_gbp), 2) AS spend_gbp\nFROM transactions\nWHERE type = 'card_payment'\n  AND status = 'completed'\n  AND ts >= '2026-08-01' AND ts < '2026-09-01'\nGROUP BY merchant_category\nORDER BY spend_gbp DESC;"
+          }
+        ],
+        options: [
+          { id: 'm1a', text: 'restaurants — spend_gbp 1509.45', text_tr: 'restaurants — spend_gbp 1509.45', value: 'restaurants|1509.45' },
+          { id: 'm1b', text: 'shopping — spend_gbp 3430.43', text_tr: 'shopping — spend_gbp 3430.43', value: 'shopping|3430.43' },
+          { id: 'm1c', text: 'travel — spend_gbp 3437.83', text_tr: 'travel — spend_gbp 3437.83', value: 'travel|3437.83' },
+          { id: 'm1d', text: 'groceries — spend_gbp 2119.63', text_tr: 'groceries — spend_gbp 2119.63', value: 'groceries|2119.63' }
+        ],
+        correctOptionId: 'm1c',
+        explanation: 'travel, at 3437.83. restaurants and groceries have the most payments (41 each), which is why one of them looks like the top row — but the query sorts by spend_gbp, not by payments, and ten travel payments outspend forty-one restaurant ones. shopping is 7.40 behind; read the number, not the category you expect.',
+        explanation_tr: 'travel, 3437.83 ile. En çok ödeme restaurants ve groceries\'te (41\'er), bu yüzden biri ilk satırmış gibi görünür — ama sorgu payments\'a değil spend_gbp\'ye göre sıralar ve on seyahat ödemesi kırk bir restoran ödemesinden fazla harcar. shopping 7,40 geride; beklediğin kategoriyi değil sayıyı oku.',
+        hints: [
+          'ORDER BY spend_gbp DESC sorts by the summed amount, not by how many payments the category has',
+          'Two categories are within 8 GBP of each other at the top — compare the totals, not the counts'
+        ],
+        hints_tr: [
+          'ORDER BY spend_gbp DESC toplam tutara göre sıralar, kategorideki ödeme sayısına göre değil',
+          'En üstteki iki kategori arasında 8 GBP\'den az fark var — sayıları değil toplamları karşılaştır'
+        ],
+        verify: { sql: "SELECT merchant_category, ROUND(SUM(amount_gbp), 2) AS spend_gbp FROM transactions WHERE type = 'card_payment' AND status = 'completed' AND ts >= '2026-08-01' AND ts < '2026-09-01' GROUP BY merchant_category ORDER BY spend_gbp DESC LIMIT 1" },
+        concepts: ['GROUP BY', 'ORDER BY', 'SUM', 'Reading output']
+      },
+      {
+        id: 'rv-m2',
+        order: 2,
+        type: 'mcq',
+        title: 'Monthly active users, not monthly transactions',
+        title_tr: 'Aylık aktif kullanıcı, aylık işlem değil',
+        description: 'How many **distinct users** had at least one **completed** transaction in **August 2026**? (This is the MAU definition candidates report being asked for.)',
+        description_tr: '**Ağustos 2026**\'da en az bir **tamamlanmış** işlemi olan kaç **farklı kullanıcı** var? (Adayların sorulduğunu aktardığı MAU tanımı bu.)',
+        timeLimit: 3 * 60,
+        difficulty: 'Easy',
+        points: 8,
+        dataset: 'finans_neobank',
+        options: [
+          { id: 'm2a', text: '456', text_tr: '456', value: '456' },
+          { id: 'm2b', text: '117', text_tr: '117', value: '117' },
+          { id: 'm2c', text: '112', text_tr: '112', value: '112' },
+          { id: 'm2d', text: '240', text_tr: '240', value: '240' }
+        ],
+        correctOptionId: 'm2b',
+        explanation: '117. COUNT(*) gives 456 — that is completed transactions in August, and a user with ten transactions is still one active user. 112 is July\'s MAU; 240 is every user who ever signed up. Active means COUNT(DISTINCT user_id) inside the month and status filter.',
+        explanation_tr: '117. COUNT(*) 456 verir — o Ağustos\'taki tamamlanmış işlem sayısıdır ve on işlemi olan kullanıcı hâlâ tek aktif kullanıcıdır. 112 Temmuz MAU\'su; 240 kayıt olmuş herkes. Aktif, ay ve status filtresi içinde COUNT(DISTINCT user_id) demektir.',
+        hints: [
+          'A user with ten transactions in the month counts once — COUNT(DISTINCT user_id), not COUNT(*)',
+          'Filter status = completed and the month with a half-open range on ts before counting'
+        ],
+        hints_tr: [
+          'Ay içinde on işlemi olan kullanıcı bir kez sayılır — COUNT(*) değil COUNT(DISTINCT user_id)',
+          'Saymadan önce status = completed ve ts üzerinde yarı açık ay aralığıyla filtrele'
+        ],
+        verify: { sql: "SELECT COUNT(DISTINCT user_id) AS mau FROM transactions WHERE status = 'completed' AND ts >= '2026-08-01' AND ts < '2026-09-01'" },
+        concepts: ['COUNT DISTINCT', 'Date Filter', 'MAU']
+      },
+      {
+        id: 'rv-m3',
+        order: 3,
+        type: 'mcq',
+        title: 'Decline rate by plan — a rate, not a count',
+        title_tr: 'Plana göre ret oranı — sayı değil oran',
+        description: 'Joining **transactions** to **users** on **user_id**, over all **card_payment** rows (every status): which **plan** has the **highest decline rate** — declined card payments as a percentage of that plan\'s card payments, rounded to one decimal — and what is it?',
+        description_tr: '**transactions**\'ı **user_id** üzerinden **users** ile join edip tüm **card_payment** satırlarına (her status) bakınca: hangi **plan**\'ın **ret oranı en yüksek** — o planın kart ödemeleri içinde reddedilenlerin yüzdesi, bir ondalık — ve kaç?',
+        timeLimit: 3 * 60,
+        difficulty: 'Medium',
+        points: 10,
+        dataset: 'finans_neobank',
+        options: [
+          { id: 'm3a', text: 'standard — 2.4%', text_tr: 'standard — %2,4', value: 'standard|2.4' },
+          { id: 'm3b', text: 'metal — 4.5%', text_tr: 'metal — %4,5', value: 'metal|4.5' },
+          { id: 'm3c', text: 'plus — 2.7%', text_tr: 'plus — %2,7', value: 'plus|2.7' },
+          { id: 'm3d', text: 'premium — 1.7%', text_tr: 'premium — %1,7', value: 'premium|1.7' }
+        ],
+        correctOptionId: 'm3b',
+        explanation: 'metal, at 4.5%. standard has by far the most declines (34 of 1,402 attempts) — the count is highest, the rate is not. A rate is SUM(status = \'declined\') over COUNT(*) per plan; the plan with 44 attempts and 2 declines tops it. Small groups produce big rates; say so if asked.',
+        explanation_tr: 'metal, %4,5 ile. En çok ret açık ara standard\'da (1.402 denemede 34) — sayı en yüksek, oran değil. Oran, plan başına COUNT(*) üzerinden SUM(status = \'declined\')\'dır; 44 denemede 2 reddi olan plan en üstte. Küçük gruplar büyük oranlar üretir; sorulursa söyle.',
+        hints: [
+          'The plan with the most declines is not the plan with the highest rate — divide by that plan\'s attempts',
+          'SUM(status = \'declined\') counts the declines; multiply by 100.0 before dividing or you get 0'
+        ],
+        hints_tr: [
+          'En çok reddi olan plan en yüksek oranlı plan değil — o planın deneme sayısına böl',
+          'SUM(status = \'declined\') retleri sayar; bölmeden önce 100.0 ile çarp, yoksa 0 alırsın'
+        ],
+        verify: { sql: "SELECT u.plan, ROUND(100.0 * SUM(t.status = 'declined') / COUNT(*), 1) AS decline_pct FROM transactions t JOIN users u ON u.user_id = t.user_id WHERE t.type = 'card_payment' GROUP BY u.plan ORDER BY decline_pct DESC LIMIT 1" },
+        concepts: ['INNER JOIN', 'Conditional Aggregation', 'Rates', 'GROUP BY']
+      },
+      {
+        id: 'rv-m4',
+        order: 4,
+        type: 'mcq',
+        title: 'WHERE or HAVING',
+        title_tr: 'WHERE mi HAVING mi',
+        description: 'How many users have **at least 20 completed transactions** in the whole ledger?',
+        description_tr: 'Tüm defterde **en az 20 tamamlanmış işlemi** olan kaç kullanıcı var?',
+        timeLimit: 3 * 60,
+        difficulty: 'Medium',
+        points: 10,
+        dataset: 'finans_neobank',
+        options: [
+          { id: 'm4a', text: '3325', text_tr: '3325', value: '3325' },
+          { id: 'm4b', text: '211', text_tr: '211', value: '211' },
+          { id: 'm4c', text: '55', text_tr: '55', value: '55' },
+          { id: 'm4d', text: '101', text_tr: '101', value: '101' }
+        ],
+        correctOptionId: 'm4c',
+        explanation: '55. The condition is on a group total, so it goes in HAVING COUNT(*) >= 20 after GROUP BY user_id, with WHERE status = \'completed\' on the rows first. 211 is every user with any completed transaction (no HAVING), 101 is the >= 10 bar, 3325 is the row count.',
+        explanation_tr: '55. Koşul bir grup toplamı üzerinde, o yüzden GROUP BY user_id\'den sonra HAVING COUNT(*) >= 20\'ye gider; satırlar üzerinde önce WHERE status = \'completed\'. 211 herhangi bir tamamlanmış işlemi olan tüm kullanıcılar (HAVING yok), 101 >= 10 eşiği, 3325 satır sayısı.',
+        hints: [
+          'WHERE filters rows before grouping; a condition on COUNT(*) can only live in HAVING',
+          'The outer count is of groups (users), not of transactions — wrap the grouped query and COUNT(*) it'
+        ],
+        hints_tr: [
+          'WHERE satırları gruplamadan önce filtreler; COUNT(*) üzerindeki koşul yalnızca HAVING\'de yaşar',
+          'Dıştaki sayım grupların (kullanıcıların), işlemlerin değil — gruplu sorguyu sarıp COUNT(*) al'
+        ],
+        verify: { sql: "SELECT COUNT(*) AS users FROM (SELECT user_id FROM transactions WHERE status = 'completed' GROUP BY user_id HAVING COUNT(*) >= 20)" },
+        concepts: ['HAVING', 'WHERE', 'Subquery', 'GROUP BY']
+      },
+      {
+        id: 'rv-m5',
+        order: 5,
+        type: 'mcq',
+        title: 'COUNT(column) and NULL',
+        title_tr: 'COUNT(kolon) ve NULL',
+        description: 'Over the whole **transactions** table, what does `SELECT COUNT(decline_reason) FROM transactions` return? (decline_reason is NULL on every row that was not declined.)',
+        description_tr: 'Tüm **transactions** tablosu üzerinde `SELECT COUNT(decline_reason) FROM transactions` ne döndürür? (decline_reason, reddedilmemiş her satırda NULL.)',
+        timeLimit: 3 * 60,
+        difficulty: 'Medium',
+        points: 10,
+        dataset: 'finans_neobank',
+        options: [
+          { id: 'm5a', text: '3433 — every row', text_tr: '3433 — her satır', value: '3433' },
+          { id: 'm5b', text: '75 — only the declined rows', text_tr: '75 — yalnız reddedilen satırlar', value: '75' },
+          { id: 'm5c', text: '2093 — the rows with a merchant category', text_tr: '2093 — merchant kategorisi olan satırlar', value: '2093' },
+          { id: 'm5d', text: '698 — the rows with a counterparty', text_tr: '698 — karşı tarafı olan satırlar', value: '698' }
+        ],
+        correctOptionId: 'm5b',
+        explanation: '75. COUNT(column) skips NULLs and COUNT(*) does not, so COUNT(decline_reason) is exactly the declined rows — the same number as SUM(status = \'declined\'). 3433 is COUNT(*); the other two count different nullable columns. The interview asks this to see whether you know which COUNT you are typing.',
+        explanation_tr: '75. COUNT(kolon) NULL\'ları atlar, COUNT(*) atlamaz; bu yüzden COUNT(decline_reason) tam olarak reddedilen satırlardır — SUM(status = \'declined\') ile aynı sayı. 3433 COUNT(*); diğer ikisi başka NULL alabilen kolonları sayar. Mülakat bunu hangi COUNT\'u yazdığını bilip bilmediğini görmek için sorar.',
+        hints: [
+          'COUNT(*) counts rows; COUNT(col) counts rows where col IS NOT NULL',
+          'Ask which rows carry a non-NULL decline_reason — and only those'
+        ],
+        hints_tr: [
+          'COUNT(*) satırları sayar; COUNT(kolon) kolonun NULL olmadığı satırları',
+          'Hangi satırlarda decline_reason NULL değil — yalnızca onları sor'
+        ],
+        verify: { sql: "SELECT COUNT(decline_reason) AS n FROM transactions" },
+        concepts: ['NULL Handling', 'COUNT']
+      },
+      {
+        id: 'rv-m6',
+        order: 6,
+        type: 'mcq',
+        title: 'Share of referred signups',
+        title_tr: 'Davetle gelen kayıt payı',
+        description: 'What percentage of all **users** were referred by another user (**referred_by IS NOT NULL**), rounded to one decimal?',
+        description_tr: 'Tüm **users** içinde başka bir kullanıcının davet ettiği (**referred_by IS NOT NULL**) kullanıcıların yüzdesi, bir ondalık?',
+        timeLimit: 3 * 60,
+        difficulty: 'Medium',
+        points: 10,
+        dataset: 'finans_neobank',
+        options: [
+          { id: 'm6a', text: '17.1%', text_tr: '%17,1', value: '17.1' },
+          { id: 'm6b', text: '82.9%', text_tr: '%82,9', value: '82.9' },
+          { id: 'm6c', text: '20.6%', text_tr: '%20,6', value: '20.6' },
+          { id: 'm6d', text: '41%', text_tr: '%41', value: '41' }
+        ],
+        correctOptionId: 'm6a',
+        explanation: '17.1% — 41 referred users out of 240. 82.9% is the organic share (the complement), 20.6% is 41 divided by the 199 organic users (the wrong denominator), and 41 is the count, not a share. The denominator of a share is every row in the population, so COUNT(*) FROM users.',
+        explanation_tr: '%17,1 — 240 kullanıcıdan 41\'i davetli. %82,9 organik pay (tümleyen), %20,6 41\'in 199 organik kullanıcıya bölümü (yanlış payda), 41 ise pay değil sayı. Payın paydası popülasyondaki her satırdır: COUNT(*) FROM users.',
+        hints: [
+          'SUM(referred_by IS NOT NULL) counts the referred; divide by COUNT(*) of ALL users, not of the organic ones',
+          'Multiply by 100.0 so the division is not integer division'
+        ],
+        hints_tr: [
+          'SUM(referred_by IS NOT NULL) davetlileri sayar; organiklere değil TÜM kullanıcıların COUNT(*)\'ına böl',
+          'Bölme tam sayı bölmesi olmasın diye 100.0 ile çarp'
+        ],
+        verify: { sql: "SELECT ROUND(100.0 * SUM(referred_by IS NOT NULL) / COUNT(*), 1) AS referred_pct FROM users" },
+        concepts: ['NULL Handling', 'Conditional Aggregation', 'Shares']
+      },
+      // ---- Section 2: written SQL (2 questions, 42 min). The two tasks the
+      // candidate reports name first: MAU with completed transactions, and the
+      // top 10% of users by transaction volume.
+      {
+        id: 'rv-q1',
+        order: 7,
+        title: 'Monthly active users, last three months of the ledger',
+        title_tr: 'Defterin son üç ayında aylık aktif kullanıcı',
+        description: 'From **transactions**, report **month** (as `YYYY-MM`, from **ts**) and **active_users** — the number of **distinct** users with at least one **completed** transaction in that month — for **June, July and August 2026** only. Order by month ascending. Expected: three rows.',
+        description_tr: '**transactions** tablosundan yalnızca **Haziran, Temmuz ve Ağustos 2026** için **month** (**ts**\'den `YYYY-MM`) ve **active_users** — o ayda en az bir **tamamlanmış** işlemi olan **farklı** kullanıcı sayısı — raporla. Aya göre artan sırala. Beklenen: üç satır.',
+        timeLimit: 18 * 60,
+        difficulty: 'Medium',
+        points: 20,
+        dataset: 'finans_neobank',
+        solution: "SELECT substr(ts, 1, 7) AS month, COUNT(DISTINCT user_id) AS active_users FROM transactions WHERE status = 'completed' AND ts >= '2026-06-01' AND ts < '2026-09-01' GROUP BY month ORDER BY month",
+        hints: [
+          "substr(ts, 1, 7) or strftime('%Y-%m', ts) gives the month key; GROUP BY the same expression you SELECT",
+          'COUNT(DISTINCT user_id), never COUNT(*) — active users, not transactions; filter status first'
+        ],
+        hints_tr: [
+          "Ay anahtarını substr(ts, 1, 7) ya da strftime('%Y-%m', ts) verir; SELECT ettiğin ifadeyle GROUP BY yap",
+          'COUNT(*) değil COUNT(DISTINCT user_id) — işlem değil aktif kullanıcı; önce status\'ü filtrele'
+        ],
+        concepts: ['COUNT DISTINCT', 'Date Functions', 'GROUP BY', 'MAU']
+      },
+      {
+        id: 'rv-q2',
+        order: 8,
+        title: 'Top 10% of users by completed outflow volume',
+        title_tr: 'Tamamlanmış çıkış hacmine göre ilk %10 kullanıcı',
+        description: 'Define a user\'s **volume_gbp** as the sum of **amount_gbp** over their **completed** transactions of type **card_payment**, **transfer_out**, **bill_payment**, **atm_withdrawal** or **fx_exchange** (money leaving the account). Return the **top 10% of users** by that volume — **user_id** and **volume_gbp** (rounded to 2 decimals) — using **NTILE(10)** over volume descending, highest first. Expected: about 20 rows; the smallest volume in the set is above 3,400.',
+        description_tr: 'Bir kullanıcının **volume_gbp** değerini, **card_payment**, **transfer_out**, **bill_payment**, **atm_withdrawal** veya **fx_exchange** tipindeki (hesaptan çıkan para) **tamamlanmış** işlemlerinin **amount_gbp** toplamı olarak tanımla. Bu hacme göre **ilk %10 kullanıcıyı** — **user_id** ve **volume_gbp** (2 ondalık) — hacim azalan sırada **NTILE(10)** kullanarak döndür, en yüksek önce. Beklenen: yaklaşık 20 satır; setteki en küçük hacim 3.400\'ün üstünde.',
+        timeLimit: 24 * 60,
+        difficulty: 'Hard',
+        points: 24,
+        dataset: 'finans_neobank',
+        solution: "WITH vol AS (SELECT user_id, ROUND(SUM(amount_gbp), 2) AS volume_gbp FROM transactions WHERE status = 'completed' AND type IN ('card_payment', 'transfer_out', 'bill_payment', 'atm_withdrawal', 'fx_exchange') GROUP BY user_id), ranked AS (SELECT user_id, volume_gbp, NTILE(10) OVER (ORDER BY volume_gbp DESC) AS decile FROM vol) SELECT user_id, volume_gbp FROM ranked WHERE decile = 1 ORDER BY volume_gbp DESC",
+        hints: [
+          'Aggregate first in a CTE (one row per user), then NTILE(10) OVER (ORDER BY volume_gbp DESC) in a second step — window functions cannot wrap an aggregate in the same SELECT',
+          'The top 10% is decile = 1 when the ORDER BY is descending; filter on it in the outer query'
+        ],
+        hints_tr: [
+          'Önce bir CTE\'de topla (kullanıcı başına bir satır), sonra ikinci adımda NTILE(10) OVER (ORDER BY volume_gbp DESC) — pencere fonksiyonu aynı SELECT\'te aggregate\'i saramaz',
+          'ORDER BY azalanken ilk %10 decile = 1\'dir; dış sorguda ona göre filtrele'
+        ],
+        concepts: ['CTE', 'NTILE', 'Window Functions', 'GROUP BY', 'Top-N']
+      }
+    ],
+    passingScore: 60
   }
 ];
 
