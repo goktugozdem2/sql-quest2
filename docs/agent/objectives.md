@@ -184,6 +184,37 @@ things follow for the reads:
 - The people-reaching-six-solves denominator is unaffected (it is read from
   `pro_events`), which is one more reason it is the honest denominator.
 
+### The path, written 2026-09-12 (day 3)
+
+What it takes, in the order it has to happen, each line tied to a read:
+
+1. **A product that can take a signup.** Restored 2026-09-12 10:58Z after four
+   dark days. Read the postgres error log weekly; nothing below is readable
+   while writes fail.
+2. **Activation is the denominator: people reaching six solves, 164 in the
+   30 days to today.** The sharpest halving is opened → first correct query
+   (663 → 314). Levers with dates: the 105 opener (reads 09-13), the
+   `intentRouting` flip (09-13, reads 10-13), cold start (09-29), and the
+   goal-picker gap (68.6% vs 35.2%, confounded by self-selection — it needs a
+   design, not a flag).
+3. **Traffic goes where the users already come from: Bing.** The
+   `/sql-exercises/` title (reads 10-09), the competitor pages and indexing
+   (10-12), and the free half of the backlink plan, shipped. The other half
+   is founder outreach. On Google the one target is `/sql-exercises/` at
+   position 24.5.
+4. **Monetisation, only from 09-29, only where it has sold:** the six-solve
+   rung, first session. The interview-intent majority (228 of 317 declarers)
+   and the Capital One signal say what Pro should buy: a timed mock of the
+   real screen behind the countdown card (`interviewCountdown` after the
+   09-20 read; price the mock after 09-29).
+5. **Founder-only:** write to the 22 interview-history accounts; backlink
+   outreach T1–T3; close PR #38.
+
+The arithmetic has not changed: 50 payers needs about 3,450 six-solvers a
+month at today's 1.4% rung-to-pay, or 1,000 at a 5% rung that nothing yet
+supports. Day 30 resets the number to what the trajectory supports — the
+rule is written above and is not renegotiated on the day.
+
 ---
 
 ## How to add an objective
