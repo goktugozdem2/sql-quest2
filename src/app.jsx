@@ -29297,7 +29297,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                   ) : ['learning', 'job_ready'].includes(getUserIntent()) ? (
                     <p className="mt-2" style={{ color: '#8A8E99' }}>A tutor that stays with you the moment you're stuck. A 30-day path that builds the habit. 200+ warm-up drills for daily fluency. Real sector data to practice on — and Hard challenges waiting when you're ready.</p>
                   ) : (
-                    <p className="mt-2" style={{ color: '#8A8E99' }}>Unlimited AI tutor at 2am when you're stuck. Hard challenges that mirror real interview questions. Mock interview pressure under a timer. Sector tracks built on real public data.</p>
+                    <p className="mt-2" style={{ color: '#8A8E99' }}>A tutor that stays with you at 2am when you're stuck. Hard challenges that mirror real interview questions. Mock interview pressure under a timer. Sector tracks built on real public data.</p>
                   )}
                 </div>
 
