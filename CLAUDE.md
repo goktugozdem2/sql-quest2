@@ -383,6 +383,7 @@ silently killed streak-reminder/skill-decay/welcome-back for months).
 | `streak-reminder` | **hourly** (`0 * * * *`) | streak alive, active yesterday, not today. Runs hourly BY DESIGN: it mails each user only when THEIR local clock reads 18:xx, from the tz stamped on their events. Do not "simplify" this to a daily cron — that would collapse it to one timezone band. Verified against cron.job 2026-07-26. |
 | `checkout-abandon` | 15:00 daily | clicked checkout 24-72h ago, didn't buy — founder note, reply-to goktug@datrick.com, ONCE per user ever |
 | `weekly-digest` | Mon 09:00 | personalized weekly report (the "newsletter") |
+| `activated-note` | **NOT SCHEDULED** | the second ask (founder's week-2 item 8, 2026-09-12): registered, 6+ solves, never paid, once ever, 40 a run, quiet 7 days after any other campaign. `?dry=1` previews. The founder deploys and runs it; nothing schedules it. CTA `/app/?src=activated_note&pro=1` opens the Pro modal (reason `email_link`). Guards: tests/activated-note.test.js. |
 | `lapsed-pro` | **NOT SCHEDULED** | win-back for expired Pro. `?dry=1` previews the audience. Targets `proStatus=true` AND expiry past — the stale flag IS the segment. 5+ solves, 3d after expiry, once per user ever, capped 8/run. The only channel that reaches them: they stopped returning, so no in-app trigger can fire. Cron deliberately unset — sending is a decision, not a default. **DO NOT SCHEDULE without rewriting the copy first (measured 2026-09-08).** The audience is now 50 accounts, and the email tells a non-payer "Your SQL Quest Pro trial ended {N} days ago" under the subject "Your trial ended before the best part shipped". For at least 7 of them that sentence is false in our favour: their trial did not lapse, the client's auto-renew branch kept pushing `proExpiry` forward on every login until **we** removed it on 2026-09-07 (src/utils/pro-access.js). Telling someone their trial ended, when what actually happened is that we withdrew access we had been giving them by mistake, is a lie of omission in an outward-facing email. Also measured: **0 of the 50 have been active since the fix**, so there is no confusion to clean up and no urgency — 44 were trials, expiries run 2026-03-26 to 09-04, 13 have 10+ solves, 47 have an email. If this segment is ever mailed, the honest version says we were still giving them Pro and stopped, and says why. That is the founder's call to make, not a default to inherit. |
 | `resend-webhook` | (webhook) | Resend delivered/opened/clicked/bounced → email_events |
 
@@ -394,6 +395,12 @@ where all 107 unknown rows came from (fixed + deployed 2026-08-04).
 `stripe-webhook` still hard-codes `resend_id: null` in source-fixed-but-not-yet-
 deployed form — `payment_failed` has never fired, so it ships with the next
 intentional deploy of that function rather than touching the money path early.
+**That deploy is due (built 2026-09-12 evening, not yet deployed):** it adds
+`checkout.session.expired` → `pro_checkout_expired`, `customer.subscription.updated`
+→ `pro_subscription_cancelled {scheduled}` / `pro_subscription_reactivated`,
+and a `pro_subscription_cancelled {ended}` row on `customer.subscription.deleted`.
+The Stripe endpoint must also subscribe to the two new events (dashboard, founder).
+Guards: tests/stripe-webhook.test.js; metrics `checkout_abandonment`, `payer_churn`.
 
 Measurement: every send logs to `email_events` (best-effort); Resend webhook
 appends engagement rows joined by resend_id. Read side: sections 5-6 of

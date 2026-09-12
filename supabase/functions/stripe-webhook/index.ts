@@ -1,5 +1,8 @@
 // Supabase Edge Function: Stripe Webhook Handler
 // Deploy: supabase functions deploy stripe-webhook --no-verify-jwt
+// Stripe endpoint events (dashboard → Developers → Webhooks): checkout.session.completed,
+// invoice.payment_succeeded, invoice.payment_failed, customer.subscription.deleted,
+// and since 2026-09-12 checkout.session.expired + customer.subscription.updated.
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -364,6 +367,84 @@ serve(async (req) => {
       return new Response("Payment failure recorded", { status: 200 });
     }
 
+    // Handle an expired Checkout Session — the person opened checkout and
+    // never paid; Stripe expires the session 24 hours after creation. Before
+    // this handler the only trace was our own pro_checkout_returned, written
+    // only when the person came back to the app. Founder's week-2 item 9
+    // (2026-09-12): "measure the checkout abandonment point". No user data
+    // changes; one pro_events row per expired session. The Stripe endpoint
+    // must subscribe to checkout.session.expired for this to fire.
+    if (event.type === "checkout.session.expired") {
+      const session = event.data.object as Stripe.Checkout.Session;
+      const username = session.client_reference_id || null;
+      let planType = "unknown";
+      try {
+        const lineItems = await stripe.checkout.sessions.listLineItems(session.id);
+        const priceId = lineItems.data[0]?.price?.id || "";
+        const productId = (lineItems.data[0]?.price?.product as string) || "";
+        planType = (PRICE_TO_PLAN[priceId] || PRODUCT_TO_PLAN[productId])?.type || "unknown";
+      } catch (_) { /* the row still says the session expired */ }
+      await logProEvent("pro_checkout_expired", username, "stripe_webhook", {
+        plan_type: planType,
+        stripe_session_id: session.id,
+        email_present: !!(session.customer_details?.email || session.customer_email),
+        opened_at: session.created ? new Date(session.created * 1000).toISOString() : null,
+      });
+      console.log(`⏳ Checkout session expired for ${username || "unknown"} (${planType})`);
+      return new Response("Checkout expiry recorded", { status: 200 });
+    }
+
+    // Handle a scheduled cancellation, or its undo. The Customer Portal sets
+    // cancel_at_period_end=true the moment a person cancels; the subscription
+    // stays active until the period ends, and the only event we used to hear
+    // was subscription.deleted on THAT day. Measured 2026-09-12: sab3r's
+    // cancellation was learned from the dashboard, and jeromezhao's in-app
+    // press (before 09-03) never reached Stripe at all. From this handler on,
+    // users.data.proAutoRenew is written by Stripe alone, so the flag is a
+    // fact again (docs/agent/metrics.md, payer_churn). Access is never
+    // shortened here — Pro runs to the period end. The Stripe endpoint must
+    // subscribe to customer.subscription.updated for this to fire.
+    if (event.type === "customer.subscription.updated") {
+      const subscription = event.data.object as Stripe.Subscription;
+      const previous = ((event.data as { previous_attributes?: Record<string, unknown> }).previous_attributes) || {};
+      const flipped = Object.prototype.hasOwnProperty.call(previous, "cancel_at_period_end")
+        && previous["cancel_at_period_end"] !== subscription.cancel_at_period_end;
+      if (!flipped) return new Response("Subscription update noted", { status: 200 });
+
+      const customerId = subscription.customer as string;
+      const { data: users } = await supabase
+        .from("users")
+        .select("*")
+        .filter("data->>stripeCustomerId", "eq", customerId);
+      const userRecord = users && users.length > 0 ? users[0] : null;
+      const userData = userRecord?.data;
+      const daysSincePurchase = subscription.created
+        ? Math.round((Date.now() - subscription.created * 1000) / 86400000)
+        : null;
+
+      if (userRecord && userData) {
+        userData.proAutoRenew = !subscription.cancel_at_period_end;
+        await supabase
+          .from("users")
+          .update({ data: userData, updated_at: new Date().toISOString() })
+          .eq("username", userRecord.username);
+      }
+      await logProEvent(
+        subscription.cancel_at_period_end ? "pro_subscription_cancelled" : "pro_subscription_reactivated",
+        userRecord?.username || null,
+        "stripe_webhook",
+        {
+          plan_type: userData?.proType || "unknown",
+          scheduled: true,
+          cancel_at: subscription.cancel_at ? new Date(subscription.cancel_at * 1000).toISOString() : null,
+          period_end: subscription.current_period_end ? new Date(subscription.current_period_end * 1000).toISOString() : null,
+          days_since_purchase: daysSincePurchase,
+        },
+      );
+      console.log(`${subscription.cancel_at_period_end ? "⚠️ Cancellation scheduled" : "↩️ Cancellation undone"} for ${userRecord?.username || customerId}`);
+      return new Response("Subscription update recorded", { status: 200 });
+    }
+
     // Handle subscription cancellation
     if (event.type === "customer.subscription.deleted") {
       const subscription = event.data.object as Stripe.Subscription;
@@ -386,7 +467,20 @@ serve(async (req) => {
           .update({ data: userData, updated_at: new Date().toISOString() })
           .eq("username", userRecord.username);
 
+        // 2026-09-12: this branch logged to the console and nothing else, so
+        // the date a paying customer left was recorded nowhere in our data.
+        await logProEvent("pro_subscription_cancelled", userRecord.username, "stripe_webhook", {
+          plan_type: userData.proType || "unknown",
+          ended: true,
+          days_since_purchase: subscription.created
+            ? Math.round((Date.now() - subscription.created * 1000) / 86400000)
+            : null,
+        });
         console.log(`⚠️ Subscription cancelled for ${userRecord.username}`);
+      } else {
+        await logProEvent("pro_subscription_cancelled", null, "stripe_webhook", {
+          plan_type: "unknown", ended: true, stripe_customer_id: customerId,
+        });
       }
       
       return new Response("Subscription cancelled", { status: 200 });

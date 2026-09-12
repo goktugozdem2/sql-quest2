@@ -103,6 +103,14 @@ of the verifier and must never be rounded to `FLAT`.
   scheduled|ended}` from both `subscription.updated` and
   `subscription.deleted`; until then the Friday table's churn column is read
   from Stripe → Subscriptions by hand and says so.
+- **Built the same evening, awaiting the founder's deploy:** stripe-webhook
+  now handles `customer.subscription.updated` (a scheduled cancel writes the
+  flag and a dated `pro_subscription_cancelled {scheduled}` row; an undo
+  writes `pro_subscription_reactivated`), `customer.subscription.deleted`
+  writes `pro_subscription_cancelled {ended}`, and `checkout.session.expired`
+  writes `pro_checkout_expired` (week-2 item 9). Source guards in
+  tests/stripe-webhook.test.js. Two steps only the founder can take: deploy
+  the function, and add the two new events to the Stripe endpoint.
 
 ### the homepage, company-first (founder: "rewrite it around what we are strong at", 2026-09-12)
 
@@ -205,6 +213,43 @@ of the verifier and must never be rounded to `FLAT`.
 - **Confounds** `freeQuota` flips 09-21 and adds `free_quota` asks — read
   `milestone_solves` only; `quietEarlyAsks` (09-29) lands inside the window's
   last four days — cut the read at 09-28 if it moves the milestone reason.
+- **Verdict** _pending_
+
+### the second ask: one email to the activated non-payers (founder's week-2 item 8, built 2026-09-12)
+
+- **Claimed** 2026-09-12 · **Sends** when the founder runs
+  `activated-note` (deploy, then `?dry=1`, then one batch of 40 a day
+  until drained) · **Read** 14 days after the last batch.
+- **Change** `supabase/functions/activated-note`: registered accounts with
+  six or more distinct solves and no `stripe_webhook` purchase, an address,
+  not opted out, not internal, not mailed by any campaign in the prior 7
+  days, once per person ever. Founder in every subject (three variants
+  chosen by username), the body names the person's solve count, the lowest
+  line on their radar when the record has one, and the company they named;
+  one CTA, `/app/?src=activated_note&pro=1`, which opens the Pro modal
+  (reason `email_link`, headline "The interview run, before the
+  interview."). Reply-to the founder. Guards in tests/activated-note.test.js.
+- **Why** every purchase came at 6–10 solves in a first session; these 136
+  passed that point, were asked once by the modal on the day, and never
+  again. The homepage and the modal now make one promise; this is the same
+  promise to the people who already did the work.
+- **Metric** `activated_note` (docs/agent/metrics.md): sends, returned_48h,
+  `pro_modal_shown` with reason `email_link`, clicks after it, purchases
+  within 14 days, by username.
+- **Baseline** 136 people, 0 asked by email; the segment has produced 0
+  purchases in the product's history by construction.
+- **Target** ≥ 3 purchases from the segment within 14 days of its batch,
+  and modal→click on `email_link` ≥ 5%.
+- **Falsification, stated in advance:** 0–1 purchases and `email_link`
+  modal→click below 3.4% after the whole segment is mailed → the activated
+  non-payer does not buy on a second ask; never mail this segment again and
+  say so in objectives.md. Returned_48h below the campaign floor with
+  bounces above 2% → the list is stale, stop the batches.
+- **Confounds** the modal's two-plan rewrite (same day) is what they see —
+  read the `email_link` reason on its own, never against the milestone
+  rate. `freeQuota` (09-21) walls the bank at ten for these people the
+  moment they return; a batch after 09-21 is a different offer — note the
+  batch dates in the read.
 - **Verdict** _pending_
 
 ### three hand-written founder emails to the checkout abandoners of 09-04 / 09-06 — **OPEN**

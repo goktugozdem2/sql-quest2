@@ -7482,6 +7482,27 @@ function SQLQuest() {
   // initializers above. Cheap writes; localStorage is sync but tiny.
   useEffect(() => { try { localStorage.setItem('sqlquest_practice_difficulty', difficultyFilter); } catch (_) {} }, [difficultyFilter]);
   useEffect(() => { try { localStorage.setItem('sqlquest_practice_status', statusFilter); } catch (_) {} }, [statusFilter]);
+
+  // ?pro=1 — opens the Pro modal on arrival. The single CTA of the
+  // activated-note email (supabase/functions/activated-note, founder's week-2
+  // item 8, 2026-09-12) lands here: the surface where checkout happens, not a
+  // page about it. Fires once per page load, after a user context exists,
+  // never for a Pro account; reason 'email_link' keeps the ask readable on
+  // its own in pro_modal_shown.
+  const proLinkFiredRef = useRef(false);
+  useEffect(() => {
+    if (proLinkFiredRef.current || !currentUser) return;
+    let wants = false;
+    try { wants = new URLSearchParams(window.location.search).get('pro') === '1'; } catch (_) { wants = false; }
+    if (!wants) return;
+    proLinkFiredRef.current = true;
+    if (userProStatus) return;
+    const t = setTimeout(() => {
+      setProModalReason({ type: 'email_link', solvedCount: solvedChallenges.size, topic: null });
+      setShowProModal(true);
+    }, 800);
+    return () => clearTimeout(t);
+  }, [currentUser, userProStatus]);
   useEffect(() => { try { localStorage.setItem('sqlquest_practice_path', challengePathFilter); } catch (_) {} }, [challengePathFilter]);
   useEffect(() => { try { localStorage.setItem('sqlquest_practice_more_open', String(moreFiltersOpen)); } catch (_) {} }, [moreFiltersOpen]);
   useEffect(() => { try { localStorage.setItem('sqlquest_live_tutor', liveTutorMode); } catch (_) {} }, [liveTutorMode]);
@@ -29162,6 +29183,8 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                       ? 'Don\'t stop now.'
                       : proModalReason.type === 'coach_path'
                       ? 'Finish the path.'
+                      : proModalReason.type === 'email_link'
+                      ? 'The interview run, before the interview.'
                       : ['learning', 'job_ready'].includes(getUserIntent())
                       ? 'Make SQL second nature.'
                       : 'Walk into the interview ready.'}

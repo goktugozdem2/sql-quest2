@@ -2456,6 +2456,18 @@ Trap: a row with `proAutoRenew=false` and an Active Stripe subscription is
 not a churned customer, it is a person who tried to cancel and could not.
 Treat it as a refund owed, not a renewal earned.
 
+**From the next stripe-webhook deploy (built 2026-09-12 evening):** the
+handler writes `pro_subscription_cancelled` with `scheduled: true` and
+`cancel_at` / `period_end` when `customer.subscription.updated` flips
+`cancel_at_period_end`, `pro_subscription_reactivated` when it flips back,
+and `pro_subscription_cancelled {ended: true}` when the subscription ends;
+each row carries `days_since_purchase`. `proAutoRenew` is then Stripe's
+truth again, and the churn column is read from these rows, by username,
+`reason='stripe_webhook'`. Until the deploy lands (and the endpoint
+subscribes to `customer.subscription.updated`), the dashboard remains the
+source. Rows from before the deploy do not exist: sab3r's and jeromezhao's
+cancellations stay dashboard facts.
+
 ## `home_door`
 
 People by `aid` whose `landing_view` (`reason='landing'`) carries `page='home'`
@@ -2489,3 +2501,38 @@ clicks (annual ÷ all) since the modal sells two plans (2026-09-12). Read
 `milestone_solves` only: the `free_quota` reason (from 09-21) and the quiet
 early asks (09-29) change who is shown. This is the founder's second watch
 line for the homepage and modal rewrite; a fall below 3.4% means revert.
+
+## `checkout_abandonment`
+
+Where a person who clicked a plan stops, people by `aid`, in order:
+
+| step | event | written by |
+|---|---|---|
+| shown | `pro_modal_shown` (`reason`) | app |
+| plan clicked | `pro_plan_clicked` (`plan`) | app |
+| email step | `checkout_email_captured` / `checkout_email_skipped` | app |
+| sent to Stripe | `pro_checkout_clicked` | app |
+| came back without paying | `pro_checkout_returned` (`outcome`, seconds away) | app, only if they return |
+| never came back, session expired | `pro_checkout_expired` (`plan_type`, `email_present`) | stripe-webhook, from the next deploy — needs `checkout.session.expired` on the Stripe endpoint |
+| paid | `pro_purchase_completed` (`reason='stripe_webhook'`) | stripe-webhook |
+
+The abandonment point is the last step a person reached. Before
+`pro_checkout_expired` exists, "sent to Stripe" with neither a return nor a
+purchase is the only signal, and it cannot separate "still deciding" from
+"gone". Baseline 30 days to 2026-09-12: 7 clicked, 2 paid, 3 returned
+(24 s, 62 s, 25 min), 2 left no trace. Stripe → Payments → Checkout
+sessions lists every session with its status (open / complete / expired)
+and is the hand read until the deploy. Founder's week-2 item 9.
+
+## `activated_note`
+
+The second ask, by email, to registered accounts with six or more solves
+and no `stripe_webhook` purchase (136 on 2026-09-12, all with an address).
+People by username: `email_events` rows with `template='activated_note'`
+(`sent` / `delivered` / `bounced`), `returned_48h` as every campaign is
+read, then `pro_modal_shown` with `reason='email_link'` (the CTA opens the
+modal directly through `?pro=1`), `pro_plan_clicked` /
+`pro_checkout_clicked` after it, and `pro_purchase_completed` within 14 days
+of the send. Once per user ever (`users.data.activatedNoteAt`), 40 a run,
+nobody who was mailed by any campaign in the prior 7 days. The founder runs
+it; nothing schedules it. Founder's week-2 item 8.
