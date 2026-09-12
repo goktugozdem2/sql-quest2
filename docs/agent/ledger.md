@@ -27,6 +27,56 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### the Coach page shows the goal, the step, the challenge and the radar
+
+- **Claimed** 2026-09-12 · **Read** 2026-09-26 (14 days).
+- **Change** the full-shell Coach now carries what the landing mockup
+  (`scripts/coach-mock-snippet.html`, embedded in `/after-the-sql-course/`
+  and `/after-bootcamp/`) has promised since 09-07: a **step counter** ("Step
+  N of M", exact for curriculum steps, absent for the synthetic placement /
+  preview / mock steps); the next step **named** — the challenge or lesson
+  title, a difficulty chip, up to three topic chips and the bank's own
+  `xpReward` — where the card used to say "Challenge"; an **up next** line
+  showing the following curriculum step, display only; and a **9-axis radar
+  panel** with archetype, overall, weakest three, streak, solves and XP, read
+  from `weaknessTracking.skillLevels` (already computed on every solve —
+  nothing calls the expensive recompute; 1,179 people render this tab). The
+  mockup's invented "~4 min" became the XP chip the live card actually shows.
+  **Display only:** the engine call, `handleCoachStepStart`, the hard-preview
+  stamping (`openedFrom='preview_coach'`) and the locked-step branch are
+  untouched, and `tests/coach-page.test.js` fails the build if any of them
+  move. P0-4 on the founder's 2026-09-12 list.
+- **Why** the ad showed a product the tab did not have. Live before this: a
+  typed card, a percentage, no counter, no name, and no radar anywhere in the
+  shipped app except Profile → Skills (the header mini-radar sits inside the
+  dead legacy nav and never renders). Measured over the 14 days to 09-12:
+  **25 people saw the full Coach with a goal** (68 viewer-days); **16 (64%)
+  opened a challenge or lesson the same day** — a proxy, because the click on
+  the card itself was never recorded.
+- **Metric** `coach_page_take_rate` (docs/agent/metrics.md): people with
+  `coach_step_started` ÷ people with `coach_tab_viewed` shell=full,
+  hasGoal=true, same day. Secondary: `goal_selected` ÷ `goal_picker_shown`,
+  which this change does not touch — a move there is mix or the radar
+  changing picker behaviour, and either way is to be said, not banked.
+- **Baseline** the event is structural 0; the proxy is 16/25 = 64%.
+- **Target** ≥ **60%** of full-with-goal viewers take the card's step the
+  same day, at n ≥ 20 viewers. Below 20, UNREADABLE, extend.
+- **Guardrails** `preview_open_to_solve` (09-20 read) keeps its mechanism:
+  the preview offer is still the only path that stamps `preview_coach`. The
+  first-run shell is untouched, so `first_contact_activation` cannot move.
+- **Falsification, stated in advance:** < 40% → naming the step is not what
+  was missing; the card is not what people take even when it says what it
+  is, and the next move is the first-run shell (where most Coach viewers
+  are), not more of this. 40–60% → inconclusive, extend to 2026-10-10,
+  change nothing. Picker conversion moves ≥ 10 points either way → say so
+  and read the radar's effect on goal choice before crediting anything.
+- **Confounds** ships the evening before the 105 read (full shell only; the
+  first-run shell is the read's surface and is untouched). `intentRouting`
+  flips 09-13 on the same returning population. The countdown card
+  (`interviewCountdown`, after 09-20) will render on this tab below the
+  radar panel; that is its own claim.
+- **Verdict** _pending_
+
 ### anonymous progress survives the reload and follows the login
 
 - **Claimed** 2026-09-12 · **Read** 2026-09-26 (14 days), and the 30-day

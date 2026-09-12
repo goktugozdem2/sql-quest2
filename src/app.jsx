@@ -11094,6 +11094,15 @@ CRITICAL RULES:
   // completion detection handles the rest on re-render).
   const handleCoachStepStart = (step) => {
     if (!step) return;
+    // Measurement only (2026-09-12): the Coach's answer, taken. People, not
+    // events — read by aid against coach_tab_viewed (shell=full, hasGoal).
+    trackActivationEvent('coach_step_started', {
+      type: step.type || null,
+      challengeId: step.challengeId ?? null,
+      lessonId: step.lessonId ?? null,
+      skill: step.skill || null,
+      preview: step.reason === HARD_PREVIEW_MARKER,
+    });
     switch (step.type) {
       case 'lesson': {
         const idx = (aiLessons || []).findIndex(l => l.id === step.lessonId);
@@ -31379,7 +31388,19 @@ RULES:
                       style={{ width: `${next.progressPct}%` }}
                     />
                   </div>
-                  <p className="text-[11px] text-gray-500 mb-3">{i18n_t('coach', 'pctComplete', { n: next.progressPct })}</p>
+                  {(() => {
+                    // Step counter (2026-09-12, P0-4): the mockup's "Step 13 of 27".
+                    // Exact when the engine's step is a curriculum step; absent for
+                    // the synthetic ones (placement, hard preview, mock offer).
+                    const curriculum = Array.isArray(activeGoal.curriculum) ? activeGoal.curriculum : [];
+                    const stepPos = next.step ? curriculum.findIndex(st => st && st.id === next.step.id) : -1;
+                    return (
+                      <div className="flex items-center justify-between text-[11px] text-gray-500 mb-3">
+                        <span data-testid="coach-step-counter">{stepPos >= 0 ? i18n_t('coach', 'stepOf', { n: stepPos + 1, m: curriculum.length }) : ''}</span>
+                        <span>{i18n_t('coach', 'pctComplete', { n: next.progressPct })}</span>
+                      </div>
+                    );
+                  })()}
                   {next.graduated ? (
                     <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4 text-center">
                       <p className="text-lg font-bold text-green-400">{i18n_t('coachNext', 'graduated')}</p>
@@ -31578,6 +31599,25 @@ RULES:
                           }).length
                         : 0;
 
+                      // Names and neighbours (2026-09-12, P0-4). Display only:
+                      // the step, the handler and the preview stamping are untouched.
+                      const cardLang = resolveLang();
+                      const stepLesson = stepType === 'lesson' ? (aiLessons || []).find(l => l && l.id === next.step.lessonId) : null;
+                      const stepLessonTitle = stepLesson ? ((cardLang === 'tr' && stepLesson.title_tr) || stepLesson.title || '') : '';
+                      const curriculum = Array.isArray(activeGoal?.curriculum) ? activeGoal.curriculum : [];
+                      const stepPos = curriculum.findIndex(st => st && st.id === next.step.id);
+                      const upNext = stepPos >= 0 ? (curriculum[stepPos + 1] || null) : null;
+                      const upNextLabel = (() => {
+                        if (!upNext) return '';
+                        const bank = typeof challenges !== 'undefined' ? challenges : [];
+                        if (upNext.type === 'challenge') { const c = bank.find(x => x.id === upNext.challengeId); return `${i18n_t('coachNext', 'challenge')}${c ? ' · ' + localizeChallenge(c, cardLang).title : ''}`; }
+                        if (upNext.type === 'lesson') { const l = (aiLessons || []).find(x => x && x.id === upNext.lessonId); return `${i18n_t('coachNext', 'lesson')}${l ? ' · ' + ((cardLang === 'tr' && l.title_tr) || l.title) : ''}`; }
+                        if (upNext.type === 'drill') return i18n_t('coachNext', 'drill', { skill: upNext.skill });
+                        if (upNext.type === 'mastery_check') return i18n_t('coachNext', 'mastery', { skill: upNext.skill });
+                        if (upNext.type === 'retrieval_check') return i18n_t('coachNext', 'retrieval');
+                        return String(upNext.type || '');
+                      })();
+
                       if (stepLocked) {
                         return (
                           <div className="bg-gray-900/60 rounded-lg p-4 border border-purple-500/30">
@@ -31620,17 +31660,43 @@ RULES:
                             <div className="min-w-0 flex-1">
                               <p className="text-[11px] uppercase tracking-wider text-gray-500 mb-1">{i18n_t('coachNext', 'label')}</p>
                               <p className="font-medium text-[#F2F0EA] mb-1">
-                                {stepType === 'lesson' && i18n_t('coachNext', 'lesson')}
-                                {/* The preview offer names the challenge — "this
-                                    one's free" needs a "this one". */}
-                                {stepType === 'challenge' && (isHardPreview && stepChallenge
-                                  ? `${i18n_t('coachNext', 'challenge')} · ${localizeChallenge(stepChallenge, resolveLang()).title}`
+                                {/* Named, not typed (2026-09-12, P0-4). The mockup says
+                                    'Challenge #100 — "GROUP BY Basics"'; the live card
+                                    said "Challenge". Same step, same handler. */}
+                                {stepType === 'lesson' && (stepLesson
+                                  ? `${i18n_t('coachNext', 'lesson')} · ${stepLessonTitle}`
+                                  : i18n_t('coachNext', 'lesson'))}
+                                {stepType === 'challenge' && (stepChallenge
+                                  ? `${i18n_t('coachNext', 'challenge')} · ${localizeChallenge(stepChallenge, cardLang).title}`
                                   : i18n_t('coachNext', 'challenge'))}
                                 {stepType === 'drill' && i18n_t('coachNext', 'drill', { skill })}
                                 {stepType === 'mastery_check' && i18n_t('coachNext', 'mastery', { skill })}
                                 {stepType === 'retrieval_check' && i18n_t('coachNext', 'retrieval')}
                               </p>
                               <p className="text-xs text-gray-400">{localizedReason}</p>
+                              {stepChallenge && (
+                                <div className="flex flex-wrap items-center gap-1.5 mt-2" data-testid="coach-step-chips">
+                                  <span className={`px-2 py-0.5 rounded text-[11px] font-medium ${
+                                    stepChallenge.difficulty === 'Easy' ? 'bg-green-500/20 text-green-400'
+                                      : stepChallenge.difficulty === 'Medium' ? 'bg-yellow-500/20 text-yellow-400'
+                                      : 'bg-red-500/20 text-red-400'
+                                  }`}>
+                                    {['Easy', 'Medium', 'Hard'].includes(stepChallenge.difficulty) ? i18n_t('practice', stepChallenge.difficulty.toLowerCase()) : stepChallenge.difficulty}
+                                  </span>
+                                  {(Array.isArray(stepChallenge.skills) ? stepChallenge.skills : []).slice(0, 3).map(sk => (
+                                    <span key={sk} className="px-2 py-0.5 rounded text-[11px] bg-purple-500/20 text-purple-300">{sk}</span>
+                                  ))}
+                                  {Number.isFinite(Number(stepChallenge.xpReward)) && (
+                                    <span className="text-[11px] font-bold text-yellow-400">{i18n_t('coach', 'xpChip', { n: stepChallenge.xpReward })}</span>
+                                  )}
+                                </div>
+                              )}
+                              {upNext && (
+                                <p className="text-[11px] text-gray-500 mt-3" data-testid="coach-up-next">
+                                  <span className="uppercase tracking-wider">{i18n_t('coach', 'upNext')}</span>
+                                  {' · '}{upNextLabel}
+                                </p>
+                              )}
                             </div>
                             <button
                               onClick={() => handleCoachStepStart(next.step)}
@@ -31649,6 +31715,53 @@ RULES:
                   )}
                 </div>
               )}
+              {/* ── Skill radar on the Coach (2026-09-12, P0-4) ──
+                  The landing mockup (scripts/coach-mock-snippet.html) has shown a
+                  9-axis radar beside the next step since 2026-09-07; the live tab
+                  had none — the only radar in the shipped app sits on Profile →
+                  Skills, and the header mini-radar lives inside the dead legacy
+                  nav. This reads weaknessTracking.skillLevels, which every solve
+                  already computes; nothing here calls
+                  calculateSkillLevelsFromPerformance (1,179 people render this). */}
+              {(() => {
+                const normalized = radarNormalizeSkills(weaknessTracking?.skillLevels || {});
+                const vals = Object.values(normalized).filter(v => typeof v === 'number');
+                const hasRadar = vals.some(v => v > 0);
+                const overall = vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : 0;
+                const archetype = hasRadar ? deriveArchetype(normalized) : null;
+                const weakest = Object.entries(normalized).filter(([, v]) => typeof v === 'number').sort((a, b) => a[1] - b[1]).slice(0, 3);
+                return (
+                  <div className="bg-gray-900/60 rounded-xl border border-gray-700 p-4 mb-4" data-testid="coach-radar-panel">
+                    <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                      <p className="text-[11px] uppercase tracking-wider text-gray-500">📡 {i18n_t('coach', 'skillRadar')}</p>
+                      <div className="flex items-center gap-3 text-xs text-gray-400">
+                        <span>🔥 {i18n_t('coach', 'streakDays', { n: dailyStreak || 0 })}</span>
+                        <span>✅ {i18n_t('coach', 'solvesCount', { n: solvedChallenges.size })}</span>
+                        <span className="font-bold text-yellow-400">{xp} XP</span>
+                      </div>
+                    </div>
+                    <div className="flex flex-col sm:flex-row items-center gap-4">
+                      <SkillRadar skills={normalized} size={240} showLabels={true} showScores={false} />
+                      <div className="flex-1 min-w-0 text-sm w-full">
+                        {hasRadar ? (
+                          <>
+                            {archetype && <p className="font-bold text-[#F2F0EA]">{archetype.emoji} {archetype.name}</p>}
+                            <p className="text-xs text-gray-400 mt-1">{i18n_t('coach', 'radarOverall', { n: overall })}</p>
+                            <p className="text-[11px] uppercase tracking-wider text-gray-500 mt-3">{i18n_t('coach', 'weakestThree')}</p>
+                            <ul className="mt-1 space-y-1 text-xs text-gray-400">
+                              {weakest.map(([sk, v]) => (
+                                <li key={sk} className="flex justify-between gap-3"><span>{sk}</span><span className="text-gray-300">{Math.round(v)}</span></li>
+                              ))}
+                            </ul>
+                          </>
+                        ) : (
+                          <p className="text-xs text-gray-400">{i18n_t('coach', 'radarEmpty')}</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
               {/* ── Interview countdown ─────────────────────────────────────
                   MOVED HERE 2026-09-08, from the top of the Interview Prep
                   tab where it shipped the day before. That tab has no

@@ -2019,3 +2019,45 @@ Traps, stated before the first read:
 - **A merge with `newSolves = 0` is still a merge**: the guest solved things
   the account already had. Read `merges_with_solves`, not `merges`, for the
   value delivered.
+
+## `coach_page_take_rate`
+
+Of the people who saw the full Coach with a goal on a day, how many took the
+card's step that day. Born 2026-09-12 with `coach_step_started`, fired at the
+top of `handleCoachStepStart` for every step type; carries `type`,
+`challengeId`, `lessonId`, `skill`, `preview` (true for the hard-preview
+offer, which the 09-20 claim reads separately through `openedFrom`).
+
+```sql
+WITH v AS (
+  SELECT ((metadata #>> '{}')::jsonb)->>'aid' AS aid, created_at::date AS day
+  FROM pro_events
+  WHERE event = 'coach_tab_viewed' AND created_at >= :since
+    AND ((metadata #>> '{}')::jsonb)->>'shell' = 'full'
+    AND ((metadata #>> '{}')::jsonb)->>'hasGoal' = 'true'
+    AND <shared filters>
+), s AS (
+  SELECT DISTINCT ((metadata #>> '{}')::jsonb)->>'aid' AS aid, created_at::date AS day
+  FROM pro_events WHERE event = 'coach_step_started' AND created_at >= :since
+)
+SELECT count(DISTINCT v.aid) AS viewers,
+       count(DISTINCT v.aid) FILTER (WHERE EXISTS (SELECT 1 FROM s WHERE s.aid = v.aid AND s.day = v.day)) AS takers
+FROM v;
+```
+
+Before the event existed the only proxy was "opened any challenge or lesson
+the same day": **16 of 25 people (64%) over the 14 days to 2026-09-12**, 68
+viewer-days. That proxy counts opens from anywhere, so the first real read
+will come in below it even if nothing changed; compare the event to itself
+from then on.
+
+Traps, stated before the first read:
+
+- **Most Coach viewers are not in this denominator.** `coach_tab_viewed`
+  carries `shell`; the majority sit in `first_run` (the placement quiz) and
+  never see the goal card. This metric is the full shell only, by design.
+- **n is small.** 25 people in 14 days; below 20 viewers a rate is
+  UNREADABLE, extend.
+- **The placement check is a step too.** A cold user's first "take" is
+  `type='placement_check'`; split by `type` before reading it as a challenge
+  take.
