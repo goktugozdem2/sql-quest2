@@ -2415,3 +2415,43 @@ user_skill `mastery` 14 days after the review against the same window for
 weak skills (< 70) with no practice, read on `users.data.skillMastery` —
 the only place the rows live. Guardrail: `coach_page_take_rate` on the
 next-step card in the same window.
+
+## `quota_wall`
+
+From the `freeQuota` flip (scheduled 2026-09-21): people by `aid` with
+`content_lock_reached` where `wall='free_quota'` (surface `challenge_quota`,
+carries `used`, `quota`); of them, `pro_plan_clicked` / `pro_checkout_clicked`
+after the wall; `pro_purchase_completed` (`reason='stripe_webhook'`) within 7
+days of first meeting it. **Read the cost in the same table:** returned-next-
+day share among people at 10+ solves, `weekly_engaged`, and the monthly
+20–39 / 40+ solve buckets (47 / 11 people in the 30 days to 09-12). The wall
+value is new in the `content_lock_reached` series on the flip date; never
+add it to `preview_dialog` / `company_modal` / `company_set` when comparing
+lock reach across it.
+
+`wall` value table addendum:
+
+| `wall` | meaning |
+|---|---|
+| `free_quota` | from the `freeQuota` flip: an unsolved challenge opened at or past the free quota (10 solves) — the founder's week-1 decision |
+
+## `payer_churn`
+
+Denominator: people (by username) with `pro_purchase_completed`,
+`reason='stripe_webhook'`, non-lifetime plan, in the trailing 30 days on the
+read date. Numerator: of those, the ones whose Stripe subscription is
+cancelled or set to cancel at period end before its first renewal. **Source is
+Stripe → Subscriptions, never `users.data.proAutoRenew`.** That flag was
+written by the app's own cancel button until 2026-09-03 (a press that never
+reached Stripe) and since then only by `customer.subscription.deleted`, which
+fires when a subscription ends, not when the cancel is placed. Measured
+2026-09-12: 2 of 2 by intent, 1 of 2 in Stripe — sab3r cancels 09-23,
+jeromezhao's press never left the app and he is still billed. Until
+`pro_subscription_cancelled` exists (owed by the next stripe-webhook deploy:
+`{plan, days_since_purchase, scheduled|ended}` from `subscription.updated`
+with `cancel_at_period_end` and from `subscription.deleted`), the Friday
+table's churn column is read by hand and says so.
+
+Trap: a row with `proAutoRenew=false` and an Active Stripe subscription is
+not a churned customer, it is a person who tried to cancel and could not.
+Treat it as a refund owed, not a renewal earned.

@@ -413,7 +413,7 @@ Rewritten Coach-forward:
 - "Free includes the Coach. Pro adds:" → Unlimited AI Tutor, Hard challenges, Full Mock Interview bank, All Daily difficulties, Full Warm-Up bank, 30-Day Challenge, Priority support.
 
 ### Testing
-- **1,403 tests passing** across 59 test files (vitest), incl. `tests/site-counts.test.js` — the guard that fails on any stale product count on a static page — and `tests/cloud-save-contract.test.js`, the guard on the one write that must never lie. Runs via `npm run test:run`. (Measured 2026-09-12 evening; this line goes stale fast — re-run before quoting it.)
+- **1,406 tests passing** across 59 test files (vitest), incl. `tests/site-counts.test.js` — the guard that fails on any stale product count on a static page — and `tests/cloud-save-contract.test.js`, the guard on the one write that must never lie. Runs via `npm run test:run`. (Measured 2026-09-12 evening; this line goes stale fast — re-run before quoting it.)
 - `scripts/smoke-test.js` (headless Chrome e2e): 8/8 pass against a live dev server. Run with `npm run smoke` (dev server must be up on :4321 or pass URL arg).
 
 ### Database writes — read before touching `users` or its triggers (2026-09-12)

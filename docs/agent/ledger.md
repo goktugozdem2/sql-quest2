@@ -27,6 +27,83 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### the free quota: ten solves, then Pro (founder's week-1 plan, item 2)
+
+- **Claimed** 2026-09-12 · **Flips** 2026-09-21 by scheduled task, after the
+  paywall-surfaces read (09-20) is written — the free Hard previews that read
+  measures sit behind this wall for anyone past ten solves · **Read**
+  2026-10-12 (flip + 21 days).
+- **Change** behind `freeQuota` (off): once a non-Pro person has solved
+  `FREE_SOLVE_QUOTA` (10) challenges, opening any unsolved challenge meets a
+  wall — `content_lock_reached {surface: 'challenge_quota', wall:
+  'free_quota', used, quota}`, the cold-start diversion (moot at ten), then
+  the Pro modal under reason `free_quota` ("10 free solves done. Pro opens
+  the rest."). Every unsolved row wears the lock; the list header counts
+  "N of 10 free solves used". Solved challenges, lessons, warm-ups, the
+  daily and the Coach stay free. Pure half `quotaGate` in
+  src/utils/free-tier-boundary.js.
+- **Why** the founder's decision (2026-09-12): a free quota a little above
+  the activation threshold. The plan doc had argued against a content cap
+  (docs/plans/free-tier-boundary-2026-09-12.md, "Who would a content cut
+  hit"); the founder read it and chose the quota. This claim therefore reads
+  the cost that argument named, not only the gain.
+- **Metric** `quota_wall` (docs/agent/metrics.md): people who meet the
+  quota wall, clicks per person at it, purchases within 7 days of meeting
+  it. **Cost guardrails, read in the same table:** returned-next-day share
+  among people at 10+ solves (baseline read at the flip over the prior 21
+  days); `weekly_engaged` (5+ solves — unaffected by construction, so a
+  move there is a leak); and the 20–39 / 40+ solve buckets per month
+  (47 / 11 people in the 30 days to 09-12), which the wall must shrink and
+  the claim must say so.
+- **Baseline** 30 days to 2026-09-12: 58 people passed 10 solves (the 6–19
+  bucket's upper half plus 20+); milestone asks 203 shown → 7 clicked → 2
+  paid.
+- **Target** ≥ 10% of people meeting the quota wall click, ≥ 2 purchases
+  attributed to it in 21 days, and returned-next-day among 10+ solvers down
+  by no more than 10 points.
+- **Falsification, stated in advance:** clicks at the wall < 4% at n ≥ 50
+  people → the wall does not sell, it only stops; move the quota to 15 and
+  re-read once, then revert. Returned-next-day among 10+ solvers down > 15
+  points with < 2 purchases → the quota is spending the retention base for
+  nothing; revert. Purchases attributed ≥ 2 but `weekly_engaged` down > 10%
+  → the wall leaks into the activation window; find how before keeping it.
+- **Confounds** `quietEarlyAsks` (09-29) and `deadlineOffer` (10-06) change
+  the milestone ask inside this window; read the quota wall's own reason
+  and surface, never the modal total. Company-set gate (10-14) walls the
+  fourth of a set — a person can meet both; read `wall` values separately.
+- **Verdict** _pending_
+
+### the sixth-solve ask waits for the celebration (founder's item 1, live 2026-09-12)
+
+- Not a claim to read on its own: a 1.8-second delay between the sixth
+  "Accepted" and the milestone modal, the delay the company set-complete ask
+  already used, so the confetti lands before the price. The trigger point
+  did not move — it was already the sixth solve, on the same render as the
+  success screen (docs/reads/checkout-clickers-2026-09-12.md §3: six of the
+  eight clicks in 30 days came at exactly six solves from this modal). Read
+  inside `paywall_ask_efficiency` on 11-24 as a copy-level note, nothing
+  more.
+
+### item 4 of the week-1 plan: the Pro list against Stripe, corrected the same evening (2026-09-12)
+
+- Not a claim; a read — docs/reads/checkout-clickers-2026-09-12.md §4. Two
+  corrections to what this ledger and objectives.md carried until tonight:
+  (1) the 07-10 "payer" was the founder's own test subscription, so real
+  payers ever are **three** and gross is **$157**; (2) `proAutoRenew=false`
+  on both monthly payers was written by the app's pre-09-03 cancel button,
+  not by Stripe. Stripe on 09-12: sab3r cancels 09-23 (placed by hand after
+  he emailed — the in-app press never reached Stripe), **jeromezhao is
+  active and bills $29 on 10-01** for a subscription he most likely tried to
+  cancel in his first days. Founder action before 10-01: a Gmail draft is
+  ready, not sent.
+- **Measurement debt, owned here:** `customer.subscription.deleted` writes
+  no `pro_events` row, and a scheduled cancel (`cancel_at_period_end`) is
+  invisible to us until it takes effect. Next intentional deploy of
+  stripe-webhook adds `pro_subscription_cancelled {plan, days_since_purchase,
+  scheduled|ended}` from both `subscription.updated` and
+  `subscription.deleted`; until then the Friday table's churn column is read
+  from Stripe → Subscriptions by hand and says so.
+
 ### three hand-written founder emails to the checkout abandoners of 09-04 / 09-06 — **OPEN**
 
 - **Sent** 2026-09-12 evening by the founder from Gmail (drafts written by the

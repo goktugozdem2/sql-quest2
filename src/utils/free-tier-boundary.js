@@ -233,6 +233,25 @@ export function earlyWallCurriculum(curriculum, { mockDoor = false, proMockId = 
   return [...withoutMocks.slice(0, at), ...mocks, ...withoutMocks.slice(at)];
 }
 
+// ── The free quota (founder's plan, week of 2026-09-12, item 2) ────────────
+
+/** Free solves before the bank closes: the founder's number, "a little above the activation threshold". */
+export const FREE_SOLVE_QUOTA = 10;
+
+/**
+ * Ten free solves, then Pro. The gate is on opening an UNSOLVED challenge
+ * once the person's solve count has reached the quota; anything already
+ * solved stays open (a solved problem is theirs), lessons, warm-ups, the
+ * daily and the Coach are untouched. `remaining` is what the counter shows.
+ */
+export function quotaGate({ flagOn = false, isPro = false, solvedCount = 0, alreadySolved = false, quota = FREE_SOLVE_QUOTA } = {}) {
+  const q = Math.max(1, Number(quota) || FREE_SOLVE_QUOTA);
+  const used = Math.max(0, Number(solvedCount) || 0);
+  const remaining = Math.max(0, q - used);
+  if (!flagOn || isPro || alreadySolved) return { gated: false, used, quota: q, remaining };
+  return { gated: used >= q, used, quota: q, remaining };
+}
+
 /**
  * The goal object the engine and the Coach card should read. Only the
  * interview-prep goal changes, only with the flag on; every other goal, and

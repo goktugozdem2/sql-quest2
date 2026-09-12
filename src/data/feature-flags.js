@@ -254,6 +254,21 @@ window.FEATURE_FLAGS = {
     // the date the person gave us (dailyQuota in spaced-retrieval.js). Same
     // surface and date as the card above.
     dailyQuota: false,
+
+    // ── The free quota (founder's plan, week of 2026-09-12, item 2) ───────
+    // Ten free solves, then the bank is Pro: opening an unsolved challenge
+    // once the solve count has reached FREE_SOLVE_QUOTA (src/utils/free-tier-
+    // boundary.js) meets a wall — `wall: 'free_quota'`, reason `free_quota`
+    // — and every unsolved row wears the lock. Solved challenges, lessons,
+    // warm-ups, the daily and the Coach stay free. The founder set the
+    // number "a little above the activation threshold" (six). The plan doc
+    // argued against a content cap; the founder decided otherwise, and the
+    // claim reads the cost it named: retention of the 10+ solvers.
+    // SHIPPED OFF 2026-09-12; flips 2026-09-21 by scheduled task, after the
+    // paywall-surfaces read (09-20) — the previews it measures sit behind
+    // this wall for anyone past ten solves. Ledger: "the free quota: ten
+    // solves, then Pro".
+    freeQuota: false,
   },
 };
 

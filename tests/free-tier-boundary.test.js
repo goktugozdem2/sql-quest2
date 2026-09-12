@@ -12,6 +12,7 @@ import {
   companySetOrder, companySetFreeIds, companySetGate, companySetProgress,
   quietAskDecision, deadlineOfferFor, deadlineEventMeta,
   pickProMockId, earlyWallCurriculum, withEarlyWall,
+  quotaGate, FREE_SOLVE_QUOTA,
 } from '../src/utils/free-tier-boundary.js';
 import { computeNextStep, isStepComplete, MOCK_OFFER_STEP_TYPE } from '../src/utils/coach.js';
 
@@ -211,6 +212,49 @@ describe('engine · a step set aside is passed over, never counted; a mock step 
     });
     expect(r.step.id).toBe('c');
     expect(r.reason).toBe(`Apply what you've learned on a real challenge.`);
+  });
+});
+
+describe('the free quota — ten solves, then Pro (founder, 2026-09-12, item 2)', () => {
+  it('gates the (quota+1)th NEW solve only; solved, Pro, and flag-off never', () => {
+    expect(FREE_SOLVE_QUOTA).toBe(10);
+    expect(quotaGate({ flagOn: true, solvedCount: 9 })).toEqual({ gated: false, used: 9, quota: 10, remaining: 1 });
+    expect(quotaGate({ flagOn: true, solvedCount: 10 })).toEqual({ gated: true, used: 10, quota: 10, remaining: 0 });
+    expect(quotaGate({ flagOn: true, solvedCount: 37 }).gated).toBe(true);
+    expect(quotaGate({ flagOn: true, solvedCount: 37, alreadySolved: true }).gated).toBe(false);
+    expect(quotaGate({ flagOn: true, solvedCount: 37, isPro: true }).gated).toBe(false);
+    expect(quotaGate({ flagOn: false, solvedCount: 37 }).gated).toBe(false);
+    expect(quotaGate({ flagOn: true, solvedCount: 3, quota: 3 }).gated).toBe(true);
+    expect(quotaGate().gated).toBe(false);
+  });
+
+  it('is wired: its own wall value, cold-start diversion before the ask, row locks, the counter, the modal — and off', () => {
+    const app = read('../src/app.jsx');
+    const flags = read('../src/data/feature-flags.js');
+    expect(flags).toMatch(/^\s+freeQuota: false,/m);
+    const at = app.indexOf("trackLockReached('challenge_quota'");
+    expect(at).toBeGreaterThan(-1);
+    const block = app.slice(at, at + 900);
+    expect(block).toMatch(/wall: 'free_quota'/);
+    expect(block.indexOf('openColdStartInstead(challenge.id)')).toBeLessThan(block.indexOf('setShowProModal(true)'));
+    expect(block).toMatch(/type: 'free_quota'/);
+    expect(app).toMatch(/const isQuotaLocked = quotaGate\(\{ flagOn: ftbFlag\('freeQuota'\)/);
+    expect(app).toMatch(/data-testid="free-quota-counter"/);
+    expect(app).toMatch(/data-testid="pro-modal-free-quota"/);
+    // the quota sits AFTER the Hard gate and the company-set gate in openChallenge
+    const hard = app.indexOf("trackLockReached('challenge_hard'");
+    const set = app.indexOf("trackLockReached('challenge_set'");
+    expect(hard).toBeLessThan(set);
+    expect(set).toBeLessThan(at);
+  });
+
+  it('item 1 (live): the sixth-solve ask waits for the celebration, once-keys written at once', () => {
+    const app = read('../src/app.jsx');
+    const at = app.indexOf('const milestoneReason = {');
+    expect(at).toBeGreaterThan(-1);
+    const block = app.slice(at, at + 1400);
+    expect(block).toMatch(/setTimeout\(\(\) => \{\n\s+setProModalReason\(milestoneReason\);\n\s+setShowProModal\(true\);\n\s+\}, 1800\);/);
+    expect(block).toMatch(/localStorage\.setItem\(guestKey, '1'\)/);
   });
 });
 

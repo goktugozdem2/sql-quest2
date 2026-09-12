@@ -19,7 +19,7 @@ accounts excluded, money read only from `pro_events` where
 |---|---|
 | **Paying customers, last 30 days** | **2** |
 | Paying customers, last 90 days | 4 |
-| Paying customers, ever | 4 |
+| Paying customers, ever | 4 — **3 real**; the 07-10 row is the founder's own test (corrected 09-12, below) |
 | People reaching the app | 2,203 |
 | App opens | 1,676 |
 | Signups | 169 |
@@ -183,6 +183,37 @@ things follow for the reads:
   it as growth.
 - The people-reaching-six-solves denominator is unaffected (it is read from
   `pro_events`), which is one more reason it is the honest denominator.
+
+### Correction, 2026-09-12: the fourth payer was the founder
+
+The 07-10 `pro_purchase_completed` row (`guest_1783707523106`, $19) is the
+founder's own test subscription — Stripe shows the customer as the founder's
+address, created and cancelled within 32 minutes. Real paying customers in the
+product's history: **three** (07-22 annual $99, 08-23 monthly $29, 09-01
+monthly $29; gross $157). "Paying customers, last 90 days: 4" above is 3 by
+the same correction. The rates in the decomposition move by a rounding error;
+the sentence that changes is the one about renewals: no monthly subscription
+has ever renewed, and the two monthly payers both tried to cancel inside
+their first month (docs/reads/checkout-clickers-2026-09-12.md §4).
+
+### Interim targets, set by the founder 2026-09-12 (week-1 plan, item 14)
+
+| Date | Payers / 30d | If missed, the one sentence to write |
+|---|---|---|
+| **2026-10-31** | **10** | which of the three factors — people reaching six solves, clicks per person shown, click→pay — is below its line in the Friday table, by how much |
+| **2026-11-30** | **25** | same sentence, plus whether the traffic investment (item 12) had started and when |
+| **2026-12-08** | **50** | the objective's own falsification above |
+
+Read from the Friday funnel table (item 13, `weekly-funnel-friday` task):
+payers are `pro_purchase_completed` with `reason='stripe_webhook'`, people
+by username, in the trailing 30 days on the date. Payer churn is read next
+to it from the same date: subscriptions cancelled inside their first month
+(measured 2026-09-12: **2 of 2 by intent, 1 of 2 in Stripe** — both monthly
+payers pressed cancel inside their first month; one reached Stripe by email,
+the other's press never left the app, see
+docs/reads/checkout-clickers-2026-09-12.md §4). Read it from Stripe →
+Subscriptions, never from `users.data.proAutoRenew`. A month that hits the
+payer number while churn stays at 2 of 2 has not hit it.
 
 ### The path, written 2026-09-12 (day 3)
 

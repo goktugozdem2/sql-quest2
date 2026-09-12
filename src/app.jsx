@@ -29,7 +29,7 @@ import { mergeProgress, hasProgress, isResumableGuest, GUEST_USER_KEY } from './
 import { INTAKE_KEY, INTAKE_GOALS, INTAKE_ROLES, INTAKE_STEPS, intakeGoalFor, nextIntakeStep, isValidIntakeDate, buildIntakeRecord, readIntakeRecord, intakeEventPayload, newCoachGoalState, shouldShowIntake } from './utils/onboarding-intake.js';
 import { PLACEMENT_TIERS, placementResult, placementEventPayload, readFirstRunPlacement, seedFloorsFor } from './utils/placement.js';
 import { paidWallFor, isColdStart } from './utils/paid-wall.js';
-import { companySetGate, companySetFreeIds, companySetProgress, quietAskDecision, deadlineOfferFor, deadlineEventMeta, withEarlyWall, pickProMockId, FREE_MOCK_ID } from './utils/free-tier-boundary.js';
+import { companySetGate, companySetFreeIds, companySetProgress, quietAskDecision, deadlineOfferFor, deadlineEventMeta, withEarlyWall, pickProMockId, FREE_MOCK_ID, quotaGate, FREE_SOLVE_QUOTA } from './utils/free-tier-boundary.js';
 import { expandStageChallenges, placementStartIndex as roadmapPlacementStartIndex } from './utils/roadmap.js';
 import { shouldEmitLockEvent, lockEventKey } from './utils/lock-events.js';
 import { shouldAskForReview, enabledReviewPlatforms, REVIEW_ASK_REASONS } from './utils/review-ask.js';
@@ -21273,15 +21273,23 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
         hardCount: challenges.filter(c => c.difficulty === 'Hard' && !c.freePreview).length,
         mockTitle: companyMockTitle(deadlineCompany),
       });
-      setProModalReason({
+      const milestoneReason = {
         type: 'milestone_solves',
         solvedCount: n,
         // Isolates the cohort this fix unblocked, so the read can tell a
         // genuinely new prompt from one that was always going to fire.
         staleProRecovered: userProStatus && !proLiveForOffer,
         ...(deadline ? { deadline } : {}),
-      });
-      setShowProModal(true);
+      };
+      // Founder's plan, item 1 (2026-09-12): the ask arrives WITH the sixth
+      // solve — same render as "Accepted" — but after the celebration has
+      // landed: 1.8 s, the delay the company set-complete ask already uses.
+      // The once-keys below are written immediately so a fast reload cannot
+      // fire it twice.
+      setTimeout(() => {
+        setProModalReason(milestoneReason);
+        setShowProModal(true);
+      }, 1800);
       try {
         localStorage.setItem(guestKey, '1');
         localStorage.setItem(userKey, '1');
@@ -21457,6 +21465,28 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
         // M5: the wall names the company's mock when one exists.
         mockTitle: companyMockTitle(companyFilter),
       });
+      setShowProModal(true);
+      return;
+    }
+    // ── The free quota (founder's plan, week of 2026-09-12, item 2; `freeQuota`) ──
+    // Ten free solves, then the bank is Pro: opening an UNSOLVED challenge once
+    // the solve count has reached the quota meets a wall. Solved challenges,
+    // lessons, warm-ups, the daily and the Coach stay open. Same order as every
+    // other wall: the lock row, the cold-start diversion (moot at ten solves,
+    // kept for the guard), then the ask. `wall: 'free_quota'` is its own
+    // value in the series (metrics.md, quota_wall).
+    const quota = quotaGate({ flagOn: ftbFlag('freeQuota'), isPro, solvedCount: solvedChallenges.size, alreadySolved: solvedChallenges.has(challenge.id) });
+    if (quota.gated) {
+      trackLockReached('challenge_quota', {
+        challengeId: challenge.id,
+        difficulty: challenge.difficulty,
+        category: challenge.category || null,
+        wall: 'free_quota',
+        used: quota.used,
+        quota: quota.quota,
+      });
+      if (openColdStartInstead(challenge.id)) return;
+      setProModalReason({ type: 'free_quota', used: quota.used, quota: quota.quota, solvedCount: solvedChallenges.size, topic: null });
       setShowProModal(true);
       return;
     }
@@ -29094,6 +29124,8 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                       ? 'You\'re cooking.'
                       : proModalReason.type === 'company_set'
                       ? `${proModalReason.topic}'s set: three free, the rest is Pro.`
+                      : proModalReason.type === 'free_quota'
+                      ? `${proModalReason.quota} free solves done. Pro opens the rest.`
                       : proModalReason.type === 'coach_mock'
                       ? 'Rehearse before the real one.'
                       : proModalReason.type === 'milestone_streak'
@@ -29190,6 +29222,17 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                         The first {proModalReason.freeCount} are free to try. The other {Math.max(0, (proModalReason.setSize || 0) - (proModalReason.freeCount || 0))}
                         {proModalReason.mockTitle ? ` — and the ${proModalReason.mockTitle} — ` : ' '}
                         open with Pro: the set, ranked the way {proModalReason.topic} asks it. Everything you have solved stays yours.
+                      </p>
+                    </div>
+                  ) : proModalReason.type === 'free_quota' ? (
+                    // The founder's free quota (week of 2026-09-12, item 2): ten
+                    // free solves, then the bank is Pro. Says what stays free.
+                    <div className="mt-3" data-testid="pro-modal-free-quota">
+                      <p className="font-medium" style={{ color: '#F2F0EA' }}>
+                        You've solved {proModalReason.used} — the free quota is {proModalReason.quota}.
+                      </p>
+                      <p className="text-sm mt-2" style={{ color: '#8A8E99' }}>
+                        Everything you've solved stays open, and the lessons, warm-ups, the daily and the Coach stay free. Pro opens the rest of the bank — all {challenges.length} challenges, the Hard set and the mock interviews.
                       </p>
                     </div>
                   ) : proModalReason.type === 'coach_mock' ? (
@@ -34612,6 +34655,9 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                               <span className="text-sm text-gray-400">
                                 {i18n_t('challenges', 'solvedCount', { n: scopeSolved, total: scopeTotal })}
                                 {companyFilter ? ` ${companyFilter}` : ''}
+                                {ftbFlag('freeQuota') && !isPro ? (
+                                  <span data-testid="free-quota-counter"> · {Math.min(solvedChallenges.size, FREE_SOLVE_QUOTA)} of {FREE_SOLVE_QUOTA} free solves used</span>
+                                ) : null}
                               </span>
                               <div className="w-32 h-2 bg-gray-700 rounded-full overflow-hidden">
                                 <div className="h-full bg-gradient-to-r from-green-500 to-emerald-500" style={{ width: `${pct}%` }} />
@@ -35165,6 +35211,8 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                       // is not already solved wears the same lock as a Hard.
                       const isLocked = isContentLocked('challenge', c)
                         || companySetGate({ flagOn: ftbFlag('companySetGate'), isPro, companyFilter, challenge: c, scoped: companyScopedChallenges(), solved: solvedChallenges }).gated;
+                      // Free quota (`freeQuota`): past ten solves every unsolved row wears the lock too.
+                      const isQuotaLocked = quotaGate({ flagOn: ftbFlag('freeQuota'), isPro, solvedCount: solvedChallenges.size, alreadySolved: isSolved }).gated;
                       // A free Hard preview, shown to someone it is a preview
                       // FOR. Pro users never see the tag or the blue border.
                       const isPreview = !isPro && isFreePreview(c);
@@ -35190,9 +35238,9 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                           // lock badge — the one element that says why the
                           // row is dim — and the red difficulty chip keep full
                           // contrast (2026-09-06 review, AA on a live control).
-                          className={`p-4 rounded-xl border text-left transition-all hover:scale-[1.02] relative ${isLocked ? 'bg-gray-800/30 border-gray-700/50' : isPreview ? `border-[#7CC4FF] hover:border-[#7CC4FF] ${isSolved ? 'bg-green-500/10' : isStarted ? 'bg-orange-500/5' : 'bg-gray-800/50'}` : isSolved ? 'bg-green-500/10 border-green-500/50' : isStarted ? 'bg-orange-500/5 border-orange-500/40' : 'bg-gray-800/50 border-gray-700 hover:border-orange-500/50'}`}
+                          className={`p-4 rounded-xl border text-left transition-all hover:scale-[1.02] relative ${(isLocked || isQuotaLocked) ? 'bg-gray-800/30 border-gray-700/50' : isPreview ? `border-[#7CC4FF] hover:border-[#7CC4FF] ${isSolved ? 'bg-green-500/10' : isStarted ? 'bg-orange-500/5' : 'bg-gray-800/50'}` : isSolved ? 'bg-green-500/10 border-green-500/50' : isStarted ? 'bg-orange-500/5 border-orange-500/40' : 'bg-gray-800/50 border-gray-700 hover:border-orange-500/50'}`}
                         >
-                          {isLocked && (
+                          {(isLocked || isQuotaLocked) && (
                             <div className="absolute top-2 right-2 flex items-center gap-1 bg-purple-500/20 border border-purple-500/30 text-purple-400 px-2 py-0.5 rounded-full text-xs font-bold">
                               {i18n_t('practice', 'proLockedBadge')}
                             </div>
@@ -35223,7 +35271,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                             </div>
                           </div>
                           {/* Card body: the part D-1 dims for a locked row. */}
-                          <div className={isLocked ? 'opacity-50' : undefined}>
+                          <div className={(isLocked || isQuotaLocked) ? 'opacity-50' : undefined}>
                           <h3 className={`font-bold mb-1 ${isSolved ? 'text-green-300' : 'text-[#F2F0EA]'}`}>{dc.title}</h3>
                           <p className="text-xs text-gray-400 mb-2 line-clamp-2">{dc.description.replace(/\*\*/g, '')}</p>
                           {/* Company tags — small badges under description. Shows up to 3, "+N" for overflow.
