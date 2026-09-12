@@ -101,7 +101,9 @@ metric definitions (engaged = 5+ solves), instrumentation standards,
 the read calendar, and the measurement-debt list. Read it before adding
 events, metrics, hypotheses, or anything paywall-adjacent. Read side:
 `scripts/funnel-report.sql` (§14 = hypothesis registry) + `npm run
-metrics:report`.
+metrics:report`. Cohorts by signup week: `scripts/cohort-report.sql`
+(read `users.data.createdAt`, never `users.created_at` for rows saved before
+2026-09-12 — the client overwrote that column on every save).
 
 ## Current state of play (April 2026)
 

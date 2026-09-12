@@ -250,6 +250,10 @@ of the verifier and must never be rounded to `FLAT`.
   rate. `freeQuota` (09-21) walls the bank at ten for these people the
   moment they return; a batch after 09-21 is a different offer — note the
   batch dates in the read.
+- **Batch 1:** 2026-09-12 20:57Z, 40 sent, 40 delivered within 15 seconds
+  (Resend webhook), 0 failed; the function was on version 2 (the opener fix)
+  when it ran. 37 remain reachable now; 70 more enter as their 7-day quiet
+  window passes. Read of batch 1: 2026-09-26.
 - **Verdict** _pending_
 
 ### three hand-written founder emails to the checkout abandoners of 09-04 / 09-06 — **OPEN**

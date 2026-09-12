@@ -215,6 +215,18 @@ docs/reads/checkout-clickers-2026-09-12.md §4). Read it from Stripe →
 Subscriptions, never from `users.data.proAutoRenew`. A month that hits the
 payer number while churn stays at 2 of 2 has not hit it.
 
+### Weeks 3–4 watch (founder's plan, items 10–11, set 2026-09-12)
+
+- **Item 10:** modal→checkout (clicks per person shown, `milestone_solves`)
+  from **3.4%** toward **15%** by 2026-10-09, read every Friday
+  (`modal_click_rate`). Item 12 — traffic spend — does not start before this
+  line has moved; that is the founder's order, not a preference.
+- **Item 11:** the signup → activation → payment cohort table lives in
+  `docs/reads/cohorts-2026-09-12.md` (query `scripts/cohort-report.sql`) and
+  the Friday task appends each completed week. First read: registered
+  accounts activate at ~50% per cohort and pay at 1.1% overall; no cohort has
+  ever produced a payer after its first days.
+
 ### The path, written 2026-09-12 (day 3)
 
 What it takes, in the order it has to happen, each line tied to a read:
