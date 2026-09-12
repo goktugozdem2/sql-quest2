@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SQL Date Functions Practice — 36 Challenges (26 Free): strftime, julianday, Date Ranges</title>
+  <title>SQL Date Functions Practice — 37 Challenges (27 Free): strftime, julianday, Date Ranges</title>
   <!-- 2026-09-08: new topic page (docs/reads/keywords-2026-09-07.md §3 deferred list — "Date/String concept pages (content-gated: 2 Easy Date…)"; the full bank gives 6 Easy, so the gate is open on the Date side. String Functions still is not). Every count is computed, not typed: the page total is challengeMatchesSkill(c, 'Date Functions') over the FULL bank (src/data/challenges.js + sector-challenges.js), "free" = Easy + Medium + Hard freePreview — this skill has NO Hard freePreview, so free is exactly Easy + Medium. Sections are predicates over the reference solution: strftime() or SUBSTR() over a date column (#truncation — SQLite has no DATE_TRUNC, and the FDIC and NYC columns are text dates SUBSTR is the only way into), julianday() (#date-arithmetic), and a date column on the left of a range operator or BETWEEN (#date-ranges). TOPIC_PAGES in tests/site-counts.test.js binds all of them — re-run the test, do not retype. #rolling-windows was DROPPED: eight challenges here open an OVER(), and all eight are already listed in a section of /challenges/window-functions/ — it would have been that page under a second name. Three challenges carry the skill and land in no section (two are those window ones, one pins a year with LIKE). Cards are Easy → Medium → Hard, curriculum order inside each band (CLAUDE.md, the raw-array trap) — never id order. -->
-  <meta name="description" content="SQL date function practice: 36 challenges, 26 free to play — strftime to group by month or weekday, julianday for spans and age, and the half-open date window that does not drop the last day. Runs in your browser, no signup. September 2026.">
+  <meta name="description" content="SQL date function practice: 37 challenges, 26 free to play — strftime to group by month or weekday, julianday for spans and age, and the half-open date window that does not drop the last day. Runs in your browser, no signup. September 2026.">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://sqlquest.app/challenges/date-functions/">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://sqlquest.app/challenges/date-functions/">
-  <meta property="og:title" content="SQL Date Functions Practice — 36 Challenges (26 Free): strftime, julianday, Date Ranges">
-  <meta property="og:description" content="36 SQL date challenges, 26 free: strftime truncation, julianday arithmetic and half-open date ranges on real datasets, with AI tutoring.">
+  <meta property="og:title" content="SQL Date Functions Practice — 37 Challenges (27 Free): strftime, julianday, Date Ranges">
+  <meta property="og:description" content="37 SQL date challenges, 26 free: strftime truncation, julianday arithmetic and half-open date ranges on real datasets, with AI tutoring.">
   <meta property="og:image" content="https://sqlquest.app/og-image.png">
   <meta name="twitter:card" content="summary_large_image">
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"SQL Date Functions Practice","description":"36 SQL date function challenges, 26 free: strftime truncation, julianday date arithmetic and date-range filters on real datasets.","url":"https://sqlquest.app/challenges/date-functions/","breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"SQL Exercises","item":"https://sqlquest.app/sql-exercises/"},{"@type":"ListItem","position":3,"name":"SQL Date Functions","item":"https://sqlquest.app/challenges/date-functions/"}]}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"SQL Date Functions Practice","description":"37 SQL date function challenges, 26 free: strftime truncation, julianday date arithmetic and date-range filters on real datasets.","url":"https://sqlquest.app/challenges/date-functions/","breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"SQL Exercises","item":"https://sqlquest.app/sql-exercises/"},{"@type":"ListItem","position":3,"name":"SQL Date Functions","item":"https://sqlquest.app/challenges/date-functions/"}]}}</script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
   <style>
@@ -53,8 +53,8 @@
 </div></nav>
 <div class="wrap">
   <p class="breadcrumb"><a href="/">SQL Quest</a> › <a href="/sql-exercises/">SQL Exercises</a> › SQL Date Functions</p>
-  <h1 class="fd">SQL Date Functions Practice — <span style="background:linear-gradient(135deg,#c084fc,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">36 Challenges (26 Free)</span></h1>
-  <p>36 hands-on challenges counted from the live bank — 6 Easy, 20 Medium, 10 Hard — every one on the skill radar's Date Functions axis: cut a timestamp down to the month or the weekday you want to group by, measure a span in days between two dates, and filter to a window without silently dropping its last day. 26 are free to play; the Hard ones are Pro. Real datasets, AI tutoring.</p>
+  <h1 class="fd">SQL Date Functions Practice — <span style="background:linear-gradient(135deg,#c084fc,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">37 Challenges (27 Free)</span></h1>
+  <p>37 hands-on challenges counted from the live bank — 6 Easy, 20 Medium, 10 Hard — every one on the skill radar's Date Functions axis: cut a timestamp down to the month or the weekday you want to group by, measure a span in days between two dates, and filter to a window without silently dropping its last day. 26 are free to play; the Hard ones are Pro. Real datasets, AI tutoring.</p>
   <a href="/app/?challenge=138&amp;src=challenges-date-functions" class="cta">Start Practicing Free →</a>
   <p style="margin-top:28px;font-size:14px;">SQLite is the dialect here, which is the useful case to learn: there is no <code>DATE_TRUNC</code> and no <code>INTERVAL</code>, so you do the work with <code>strftime</code> and <code>julianday</code> — and two of the public datasets store their dates as text, where <code>SUBSTR</code> is the only way in. Three challenges on the axis land in none of the three sections below: two put a date inside a window function and are listed on the <a href="/challenges/window-functions/">window functions page</a>, and one pins a year with <code>LIKE</code>.</p>
   <section class="sec" id="truncation">
@@ -167,7 +167,7 @@
     </div>
   </section>
   <section class="sec" id="date-arithmetic">
-    <h2 class="fd">Date arithmetic with julianday — spans, age and latency: 14 challenges (7 free)</h2>
+    <h2 class="fd">Date arithmetic with julianday — spans, age and latency: 15 challenges (8 free)</h2>
     <p><code>julianday(a) - julianday(b)</code> is a number of days, fractions included, and everything else is division: <code>/ 365</code> for years of tenure, <code>* 24</code> for hours between two swipes, <code>* 86400</code> for seconds. Start with <strong>Date Functions: How Long Ago?</strong> and <strong>Tenure in Months (Date Math)</strong>; the Hard ones use the same span as a rule — a session gap, a repeat purchase, a velocity check on a card.</p>
     <p class="stamp">Counted from the challenge bank, September 2026. Easy first, then Medium, then Hard.</p>
     <div class="q-grid">
@@ -212,6 +212,12 @@
         <h3>How Long Has Each Card Been Active?</h3>
         <p class="concepts">Finance &amp; Banking track · Uses: <code>GROUP BY</code> <code>Aggregation</code> <code>Date Functions</code> <code>JULIANDAY</code></p>
         <a href="/app/?challenge=295&amp;src=challenges-date-functions" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Days to KYC Verification by Country</h3>
+        <p class="concepts">Uses: <code>SELECT</code> <code>julianday</code> <code>CASE</code> <code>GROUP BY</code> <code>NULL Handling</code> <code>AVG</code></p>
+        <a href="/app/?challenge=309&amp;src=challenges-date-functions" class="btn-practice">Try it →</a>
       </div>
       <div class="q-card">
         <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>

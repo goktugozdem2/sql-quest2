@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SQL CASE WHEN Practice — 48 Challenges (38 Free): Buckets, Conditional Aggregation, Pivots</title>
+  <title>SQL CASE WHEN Practice — 51 Challenges (40 Free): Buckets, Conditional Aggregation, Pivots</title>
   <!-- 2026-09-07: new topic page (docs/reads/keywords-2026-09-07.md row #13 / §3.1). Every count is computed, not typed: the page total is challengeMatchesSkill(c, 'Conditional Logic') over the FULL bank (src/data/challenges.js + sector-challenges.js, the same list the app shows everyone — the read's "35 challenges, 29 free" was the core bank alone; the full bank gives 43 / 36), "free" = Easy + Medium + Hard freePreview, and each section is a predicate over the reference solution inside that total: a CASE outside any aggregate in a query without GROUP BY (#labels) or with one (#bucketing), and SUM / COUNT / AVG / MIN / MAX opening on CASE (#conditional-aggregation). TOPIC_PAGES in tests/site-counts.test.js binds all of them — re-run the test, do not retype. Two Easy calculated-column challenges (ROUND, arithmetic) sit in the radar skill without a CASE, so they count toward the total and appear in no section. Dropped for want of three challenges: CASE in ORDER BY (2 in the bank), nested CASE (0). Cards were generated from the bank in Easy → Medium → Hard order, curriculum order inside each band (CLAUDE.md, the raw-array trap). -->
-  <meta name="description" content="SQL CASE WHEN practice: 48 challenges, 38 free to play — CASE that labels a row, CASE that buckets rows for GROUP BY, and SUM(CASE WHEN …) for conditional counts, rates and pivots. From a first CASE to FAANG-style funnels. Runs in your browser, no signup. September 2026.">
+  <meta name="description" content="SQL CASE WHEN practice: 51 challenges, 40 free to play — CASE that labels a row, CASE that buckets rows for GROUP BY, and SUM(CASE WHEN …) for conditional counts, rates and pivots. From a first CASE to FAANG-style funnels. Runs in your browser, no signup. September 2026.">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://sqlquest.app/challenges/case-when/">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://sqlquest.app/challenges/case-when/">
-  <meta property="og:title" content="SQL CASE WHEN Practice — 48 Challenges (38 Free): Buckets, Conditional Aggregation, Pivots">
-  <meta property="og:description" content="48 SQL CASE WHEN challenges, 38 free: labels, buckets, conditional aggregation and pivots on real datasets, with AI tutoring.">
+  <meta property="og:title" content="SQL CASE WHEN Practice — 51 Challenges (40 Free): Buckets, Conditional Aggregation, Pivots">
+  <meta property="og:description" content="51 SQL CASE WHEN challenges, 40 free: labels, buckets, conditional aggregation and pivots on real datasets, with AI tutoring.">
   <meta property="og:image" content="https://sqlquest.app/og-image.png">
   <meta name="twitter:card" content="summary_large_image">
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"SQL CASE WHEN Practice","description":"48 SQL CASE WHEN challenges, 38 free: labels, buckets, conditional aggregation and pivots on real datasets.","url":"https://sqlquest.app/challenges/case-when/","breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"SQL Exercises","item":"https://sqlquest.app/sql-exercises/"},{"@type":"ListItem","position":3,"name":"SQL CASE WHEN","item":"https://sqlquest.app/challenges/case-when/"}]}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"SQL CASE WHEN Practice","description":"51 SQL CASE WHEN challenges, 40 free: labels, buckets, conditional aggregation and pivots on real datasets.","url":"https://sqlquest.app/challenges/case-when/","breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"SQL Exercises","item":"https://sqlquest.app/sql-exercises/"},{"@type":"ListItem","position":3,"name":"SQL CASE WHEN","item":"https://sqlquest.app/challenges/case-when/"}]}}</script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
   <style>
@@ -53,8 +53,8 @@
 </div></nav>
 <div class="wrap">
   <p class="breadcrumb"><a href="/">SQL Quest</a> › <a href="/sql-exercises/">SQL Exercises</a> › SQL CASE WHEN</p>
-  <h1 class="fd">SQL CASE WHEN Practice — <span style="background:linear-gradient(135deg,#c084fc,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">48 Challenges (38 Free)</span></h1>
-  <p>48 hands-on challenges counted from the live bank — 8 Easy, 30 Medium, 10 Hard — every one on the skill radar's Conditional Logic axis: a CASE that labels each row, a CASE that buckets rows for GROUP BY, and a CASE inside SUM or COUNT for conditional counts, rates and pivots. 38 are free to play; the Hard ones are Pro. Real datasets, AI tutoring.</p>
+  <h1 class="fd">SQL CASE WHEN Practice — <span style="background:linear-gradient(135deg,#c084fc,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">51 Challenges (40 Free)</span></h1>
+  <p>51 hands-on challenges counted from the live bank — 8 Easy, 32 Medium, 11 Hard — every one on the skill radar's Conditional Logic axis: a CASE that labels each row, a CASE that buckets rows for GROUP BY, and a CASE inside SUM or COUNT for conditional counts, rates and pivots. 40 are free to play; the Hard ones are Pro. Real datasets, AI tutoring.</p>
   <a href="/app/?challenge=127&amp;src=challenges-case-when" class="cta">Start Practicing Free →</a>
   <p style="margin-top:28px;font-size:14px;">Two Easy warm-ups on calculated columns (ROUND and arithmetic, no CASE) share the radar skill and count toward the total; they appear in no section below. CASE is an expression — it goes anywhere a value goes — so the three sections are the three places you will meet it.</p>
   <section class="sec" id="labels">
@@ -137,7 +137,7 @@
     </div>
   </section>
   <section class="sec" id="bucketing">
-    <h2 class="fd">CASE alongside GROUP BY — buckets and labels on grouped rows: 19 challenges (15 free)</h2>
+    <h2 class="fd">CASE alongside GROUP BY — buckets and labels on grouped rows: 20 challenges (16 free)</h2>
     <p>CASE builds the bucket — an age band, a tenure band, a rating tier — and GROUP BY counts or averages inside it; grouping by the CASE alias, or repeating the expression, is the whole trick. Start with <strong>Spend by Day of Week</strong>, the Easy one, then <strong>Introduction to CASE WHEN</strong>; <strong>Movie Rating Tier Breakdown</strong> and <strong>Age Group Survival Analysis</strong> are the classic shape. The Hard ones carry the bucket through CTEs and window functions, and <strong>UNION ALL Dedup</strong> uses its CASE in ORDER BY to pin a total row last. The <a href="/blog/sql-group-by-tutorial/">GROUP BY tutorial</a> has the mechanics.</p>
     <p class="stamp">Counted from the challenge bank, September 2026. Easy first, then Medium, then Hard.</p>
     <div class="q-grid">
@@ -232,6 +232,12 @@
         <a href="/app/?challenge=266&amp;src=challenges-case-when" class="btn-practice">Try it →</a>
       </div>
       <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Referred vs Organic: First-Month Spend</h3>
+        <p class="concepts">Uses: <code>SELECT</code> <code>CASE</code> <code>COALESCE</code> <code>LEFT JOIN</code> <code>CTE</code> <code>julianday</code></p>
+        <a href="/app/?challenge=311&amp;src=challenges-case-when" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
         <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
         <h3>Customer Lifetime Value Pipeline</h3>
         <p class="concepts">Uses: <code>JOIN</code> <code>Subquery</code> <code>Window Functions</code> <code>NTILE</code></p>
@@ -258,7 +264,7 @@
     </div>
   </section>
   <section class="sec" id="conditional-aggregation">
-    <h2 class="fd">Conditional aggregation and pivots — SUM(CASE WHEN …): 16 challenges (13 free)</h2>
+    <h2 class="fd">Conditional aggregation and pivots — SUM(CASE WHEN …): 19 challenges (15 free)</h2>
     <p>Put the CASE inside the aggregate — <code>SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END)</code> — and one GROUP BY row carries several conditional counts at once: that is the pivot, the rate, the funnel. Start with <strong>Conditional Counting with CASE</strong>, then <strong>Pivot: Order Status by Country</strong>, the one written for the pivot; <strong>Order Funnel Conversion</strong> is the Hard one. The cheat sheet has the pattern in one screen: <a href="/sql-cheat-sheet/#case">CASE WHEN inside aggregates</a>.</p>
     <p class="stamp">Counted from the challenge bank, September 2026. Medium first, then Hard.</p>
     <div class="q-grid">
@@ -341,6 +347,18 @@
         <a href="/app/?challenge=281&amp;src=challenges-case-when" class="btn-practice">Try it →</a>
       </div>
       <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Days to KYC Verification by Country</h3>
+        <p class="concepts">Uses: <code>SELECT</code> <code>julianday</code> <code>CASE</code> <code>GROUP BY</code> <code>NULL Handling</code> <code>AVG</code></p>
+        <a href="/app/?challenge=309&amp;src=challenges-case-when" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Referred vs Organic: First-Month Spend</h3>
+        <p class="concepts">Uses: <code>SELECT</code> <code>CASE</code> <code>COALESCE</code> <code>LEFT JOIN</code> <code>CTE</code> <code>julianday</code></p>
+        <a href="/app/?challenge=311&amp;src=challenges-case-when" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
         <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
         <h3>Order Funnel Conversion</h3>
         <p class="concepts">Uses: <code>CASE</code> <code>Aggregation</code> <code>Conditional Aggregation</code></p>
@@ -357,6 +375,12 @@
         <h3>Disputed Spend by Risk Tier and Category</h3>
         <p class="concepts">Uses: <code>CASE</code> <code>CTE</code> <code>LEFT JOIN</code> <code>PARTITION BY</code></p>
         <a href="/app/?challenge=298&amp;src=challenges-case-when" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Card Decline Rate by Plan</h3>
+        <p class="concepts">Uses: <code>SELECT</code> <code>CASE</code> <code>SUM</code> <code>JOIN</code> <code>GROUP BY</code> <code>WHERE</code></p>
+        <a href="/app/?challenge=305&amp;src=challenges-case-when" class="btn-practice">Try it →</a>
       </div>
     </div>
     <p>CASE also turns up inside window functions, JOIN conditions and CTEs; the challenges that combine it with those live on the sibling pages — <a href="/challenges/window-functions/">window functions</a>, <a href="/challenges/joins/">joins</a>, <a href="/challenges/cte/">CTEs</a> and <a href="/challenges/subqueries/">subqueries</a>.</p>

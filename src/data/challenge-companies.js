@@ -319,6 +319,47 @@
 // ['Capital One'] after this edit, as tests/interview-prep.test.js asserts.
 // Preserve this block on regeneration by scripts/augment-companies.mjs.
 window.challengeCompanies = {
+  // MANUAL ADDITIONS 2026-09-12: the Revolut-shaped analyst set on the
+  // finans_neobank ledger (sector-challenges.js 300-311). Revolut only, on
+  // purpose: the interview-prep registry's dataset-exclusivity bar (0.9)
+  // needs one company's tags on this dataset. If augment-companies.mjs is
+  // re-run, preserve these.
+  "300": [
+    "Revolut"
+  ],
+  "301": [
+    "Revolut"
+  ],
+  "302": [
+    "Revolut"
+  ],
+  "303": [
+    "Revolut"
+  ],
+  "304": [
+    "Revolut"
+  ],
+  "305": [
+    "Revolut"
+  ],
+  "306": [
+    "Revolut"
+  ],
+  "307": [
+    "Revolut"
+  ],
+  "308": [
+    "Revolut"
+  ],
+  "309": [
+    "Revolut"
+  ],
+  "310": [
+    "Revolut"
+  ],
+  "311": [
+    "Revolut"
+  ],
   "1": [
     "Snowflake"
   ],

@@ -3,16 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SQL CTE Practice — 57 Challenges (24 Free): Multiple CTEs to Recursive</title>
+  <title>SQL CTE Practice — 62 Challenges (26 Free): Multiple CTEs to Recursive</title>
   <!-- 2026-09-07: moved from public/ to src/challenges/ so build-static-pages.js injects track.js. The population here is "reference solution uses WITH" over the FULL bank (the method the 47/18/13/3 figures below were already counted with, and which /blog/sql-cte-tutorial/ quotes), not the CTE tag (37 tagged, 14 free — 11 sector solutions reach for WITH without carrying the tag). TOPIC_PAGES in tests/site-counts.test.js binds every number on this page to that count — re-run the test, do not retype. -->
   <!-- 2026-09-07: "15+" replaced with the bank count (47 solutions use WITH, 18 free, 13 multi-CTE, 3 recursive) — counted from src/data via scripts/build-llms-txt.js loadBank(); re-count before editing. -->
-  <meta name="description" content="SQL CTE practice: 57 challenges solved with a WITH clause, 24 free — including 16 that chain multiple CTEs and 3 recursive. Runs in your browser, no signup. September 2026.">
+  <meta name="description" content="SQL CTE practice: 62 challenges solved with a WITH clause, 26 free — including 19 that chain multiple CTEs and 3 recursive. Runs in your browser, no signup. September 2026.">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://sqlquest.app/challenges/cte/">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://sqlquest.app/challenges/cte/">
-  <meta property="og:title" content="SQL CTE Practice — 57 Challenges (24 Free): Multiple CTEs to Recursive">
-  <meta property="og:description" content="57 SQL CTE challenges, 24 free — including 16 that chain multiple CTEs and 3 recursive. Runs in your browser, no signup.">
+  <meta property="og:title" content="SQL CTE Practice — 62 Challenges (26 Free): Multiple CTEs to Recursive">
+  <meta property="og:description" content="62 SQL CTE challenges, 26 free — including 19 that chain multiple CTEs and 3 recursive. Runs in your browser, no signup.">
   <meta property="og:image" content="https://sqlquest.app/og-image.png">
   <meta name="twitter:card" content="summary_large_image">
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"SQL CTEs (Common Table Expressions) Practice","url":"https://sqlquest.app/challenges/cte/","breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"SQL Exercises","item":"https://sqlquest.app/sql-exercises/"},{"@type":"ListItem","position":3,"name":"SQL CTEs (Common Table Expressions)","item":"https://sqlquest.app/challenges/cte/"}]}}</script>
@@ -54,8 +54,8 @@
 </div></nav>
 <div class="wrap">
   <p class="breadcrumb"><a href="/">SQL Quest</a> › <a href="/sql-exercises/">SQL Exercises</a> › SQL CTEs (Common Table Expressions)</p>
-  <h1 class="fd">SQL CTE Practice — <span style="background:linear-gradient(135deg,#c084fc,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">57 Challenges (24 Free)</span></h1>
-  <p>Master SQL Common Table Expressions (WITH clauses) on 57 challenges whose reference solution uses WITH — 1 Easy, 20 Medium, 36 Hard. 24 are free to play, including 3 free Hard previews; 16 chain two or more CTEs and 3 are recursive. Write cleaner, more readable SQL.</p>
+  <h1 class="fd">SQL CTE Practice — <span style="background:linear-gradient(135deg,#c084fc,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">62 Challenges (26 Free)</span></h1>
+  <p>Master SQL Common Table Expressions (WITH clauses) on 62 challenges whose reference solution uses WITH — 1 Easy, 22 Medium, 39 Hard. 26 are free to play, including 3 free Hard previews; 19 chain two or more CTEs and 3 are recursive. Write cleaner, more readable SQL.</p>
   <a href="/app/?challenge=154&amp;src=challenges-cte" class="cta">Start Practicing Free →</a>
   <!-- 2026-09-07: GSC read of 09-07 has this page at position 5.6 for "cte chain" and 23-37 for
        "multiple cte sql" / "multiple ctes" / "sql multiple cte", and the page listed no challenge at all —
@@ -67,7 +67,7 @@
        Hard rows without freePreview are Pro — a guest gets the preview dialog, not a wall. Re-count before
        changing any number here. -->
   <section class="sec" id="multiple-ctes">
-    <h2 class="fd">Multiple CTEs in one query: 16 chained-CTE challenges (7 free)</h2>
+    <h2 class="fd">Multiple CTEs in one query: 19 chained-CTE challenges (8 free)</h2>
     <p>Every challenge below is solved with a chain — <code>WITH a AS (…), b AS (…)</code> — where a later CTE reads from an earlier one and the final <code>SELECT</code> pulls from the last step. Start with <strong>Multi-CTE Revenue Pipeline</strong>, the one written for exactly this pattern. The five Medium ones are free, and so are the two Hard previews.</p>
     <p class="stamp">Counted from the challenge bank, September 2026.</p>
     <div class="q-grid">
@@ -100,6 +100,12 @@
         <h3>Spend and Disputes Per Cardholder — Without the Fan-Out</h3>
         <p>Spend per account in one CTE, disputes per account in another, then LEFT JOIN the two summaries. Join both children at row level instead and every transaction repeats once per chargeback.</p>
         <a href="/app/?challenge=291&amp;src=challenges-cte" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Signup Cohort Activation Within 30 Days</h3>
+        <p class="concepts">Uses: <code>SELECT</code> <code>CTE</code> <code>LEFT JOIN</code> <code>GROUP BY</code> <code>julianday</code> <code>COUNT</code></p>
+        <a href="/app/?challenge=303&amp;src=challenges-cte" class="btn-practice">Try it →</a>
       </div>
       <div class="q-card">
         <span class="tag hard">Hard</span> <span class="tag free">Free preview</span>
@@ -166,6 +172,18 @@
         <h3>How Concentrated Is the Spend?</h3>
         <p>Spend per account, then ROW_NUMBER and COUNT(*) OVER () in the CTE built on it — so the decile cut-off is computed from the book, never typed.</p>
         <a href="/app/?challenge=299&amp;src=challenges-cte" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Top 10% Users by Transaction Volume</h3>
+        <p class="concepts">Uses: <code>SELECT</code> <code>CTE</code> <code>Window Functions</code> <code>NTILE</code> <code>JOIN</code> <code>SUM</code></p>
+        <a href="/app/?challenge=302&amp;src=challenges-cte" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Top 3 Spending Categories per Country</h3>
+        <p class="concepts">Uses: <code>SELECT</code> <code>CTE</code> <code>Window Functions</code> <code>ROW_NUMBER</code> <code>JOIN</code> <code>GROUP BY</code></p>
+        <a href="/app/?challenge=310&amp;src=challenges-cte" class="btn-practice">Try it →</a>
       </div>
     </div>
     <p>Chaining is what people usually mean by "nested CTEs". For the walkthrough — and the difference from a <code>WITH</code> literally nested inside another CTE — see <a href="/blog/sql-cte-tutorial/#multi">multiple CTEs in the CTE tutorial</a>. A CTE that references itself is a different mechanism: <a href="/blog/recursive-cte-explained/">recursive CTEs explained</a>.</p>

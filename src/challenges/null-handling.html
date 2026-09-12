@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SQL NULL Handling Practice — 16 Challenges (15 Free): IS NULL, COALESCE, Counting Nullable Columns</title>
+  <title>SQL NULL Handling Practice — 20 Challenges (18 Free): IS NULL, COALESCE, Counting Nullable Columns</title>
   <!-- 2026-09-08: new topic page (docs/reads/keywords-2026-09-07.md §3 deferred list — "Date/String concept pages (content-gated: 2 Easy Date…)"; the full bank gives 6 Easy, so the gate is open on the Date side. String Functions still is not). Every count is computed, not typed: the page total is challengeMatchesSkill(c, 'Date Functions') over the FULL bank (src/data/challenges.js + sector-challenges.js), "free" = Easy + Medium + Hard freePreview — this skill has NO Hard freePreview, so free is exactly Easy + Medium. Sections are predicates over the reference solution: strftime() or SUBSTR() over a date column (#truncation — SQLite has no DATE_TRUNC, and the FDIC and NYC columns are text dates SUBSTR is the only way into), julianday() (#date-arithmetic), and a date column on the left of a range operator or BETWEEN (#date-ranges). TOPIC_PAGES in tests/site-counts.test.js binds all of them — re-run the test, do not retype. #rolling-windows was DROPPED: eight challenges here open an OVER(), and all eight are already listed in a section of /challenges/window-functions/ — it would have been that page under a second name. Three challenges carry the skill and land in no section (two are those window ones, one pins a year with LIKE). Cards are Easy → Medium → Hard, curriculum order inside each band (CLAUDE.md, the raw-array trap) — never id order. -->
-  <meta name="description" content="16 SQL NULL challenges, 15 free: why = NULL never matches, COALESCE defaults, and the aggregates that silently skip NULLs. Runs in your browser, no signup.">
+  <meta name="description" content="20 SQL NULL challenges, 18 free: why = NULL never matches, COALESCE defaults, and the aggregates that silently skip NULLs. Runs in your browser, no signup.">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://sqlquest.app/challenges/null-handling/">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://sqlquest.app/challenges/null-handling/">
-  <meta property="og:title" content="SQL NULL Handling Practice — 16 Challenges (15 Free): IS NULL, COALESCE, Counting Nullable Columns">
-  <meta property="og:description" content="16 SQL NULL challenges, 15 free: why = NULL never matches, COALESCE defaults, and the aggregates that silently skip NULLs. Runs in your browser, no signup.">
+  <meta property="og:title" content="SQL NULL Handling Practice — 20 Challenges (18 Free): IS NULL, COALESCE, Counting Nullable Columns">
+  <meta property="og:description" content="20 SQL NULL challenges, 18 free: why = NULL never matches, COALESCE defaults, and the aggregates that silently skip NULLs. Runs in your browser, no signup.">
   <meta property="og:image" content="https://sqlquest.app/og-image.png">
   <meta name="twitter:card" content="summary_large_image">
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"SQL NULL Handling Practice","description":"16 SQL NULL challenges, 15 free: IS NULL filters, COALESCE defaults and aggregates that skip NULLs.","url":"https://sqlquest.app/challenges/null-handling/","breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"SQL Exercises","item":"https://sqlquest.app/sql-exercises/"},{"@type":"ListItem","position":3,"name":"SQL NULL Handling","item":"https://sqlquest.app/challenges/null-handling/"}]}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"SQL NULL Handling Practice","description":"20 SQL NULL challenges, 18 free: IS NULL filters, COALESCE defaults and aggregates that skip NULLs.","url":"https://sqlquest.app/challenges/null-handling/","breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"SQL Exercises","item":"https://sqlquest.app/sql-exercises/"},{"@type":"ListItem","position":3,"name":"SQL NULL Handling","item":"https://sqlquest.app/challenges/null-handling/"}]}}</script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
   <style>
@@ -53,11 +53,11 @@
 </div></nav>
 <div class="wrap">
   <p class="breadcrumb"><a href="/">SQL Quest</a> › <a href="/sql-exercises/">SQL Exercises</a> › SQL NULL Handling</p>
-  <h1 class="fd">SQL NULL Handling Practice — <span style="color:#FFE34D;">16 Challenges (15 Free)</span></h1>
-  <p class="lede">NULL is not a value, it is the absence of one — so it does not equal anything, not even another NULL. Almost every NULL bug in production is that one sentence, unlearned. These 16 challenges run in your browser on real tables; 15 of them are free, the best free coverage of any topic here.</p>
+  <h1 class="fd">SQL NULL Handling Practice — <span style="color:#FFE34D;">20 Challenges (18 Free)</span></h1>
+  <p class="lede">NULL is not a value, it is the absence of one — so it does not equal anything, not even another NULL. Almost every NULL bug in production is that one sentence, unlearned. These 20 challenges run in your browser on real tables; 18 of them are free, the best free coverage of any topic here.</p>
 
   <section class="sec" id="is-null">
-    <h2 class="fd">Filtering on absence — why <code>= NULL</code> never matches: 9 challenges (8 free)</h2>
+    <h2 class="fd">Filtering on absence — why <code>= NULL</code> never matches: 12 challenges (11 free)</h2>
     <p>Comparing to <code>NULL</code> with <code>=</code> does not return false, it returns <em>unknown</em>, and <code>WHERE</code> keeps only rows that are true. That is why <code>WHERE manager_id = NULL</code> returns nothing at all rather than the rows you meant — you need <code>IS NULL</code>. The same rule is what makes <code>NOT IN</code> against a nullable column return zero rows, the trap <a href="/blog/null-handling-mistakes/#not-in-trap">the NOT IN trap</a> walks through.</p>
     <p class="stamp">Counted from the challenge bank, September 2026. Easy first, then Medium, then Hard.</p>
     <div class="q-grid">
@@ -110,6 +110,24 @@
         <a href="/app/?challenge=278&amp;src=challenges-null-handling" class="btn-practice">Try it →</a>
       </div>
       <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Users Who Never Sent Money</h3>
+        <p class="concepts">Uses: <code>SELECT</code> <code>LEFT JOIN</code> <code>NULL Handling</code> <code>WHERE</code></p>
+        <a href="/app/?challenge=306&amp;src=challenges-null-handling" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Days to KYC Verification by Country</h3>
+        <p class="concepts">Uses: <code>SELECT</code> <code>julianday</code> <code>CASE</code> <code>GROUP BY</code> <code>NULL Handling</code> <code>AVG</code></p>
+        <a href="/app/?challenge=309&amp;src=challenges-null-handling" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Referred vs Organic: First-Month Spend</h3>
+        <p class="concepts">Uses: <code>SELECT</code> <code>CASE</code> <code>COALESCE</code> <code>LEFT JOIN</code> <code>CTE</code> <code>julianday</code></p>
+        <a href="/app/?challenge=311&amp;src=challenges-null-handling" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
         <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
         <h3>Anti-Join Pipeline: Unmatched Records</h3>
         <p class="concepts">Uses: <code>LEFT JOIN</code> <code>IS NULL</code> <code>CTE</code></p>
@@ -119,7 +137,7 @@
   </section>
 
   <section class="sec" id="coalesce">
-    <h2 class="fd">Supplying a default — COALESCE, IFNULL and NULLIF: 8 challenges (8 free)</h2>
+    <h2 class="fd">Supplying a default — COALESCE, IFNULL and NULLIF: 9 challenges (9 free)</h2>
     <p><code>COALESCE(col, 0)</code> returns the first argument that is not NULL, which is how a missing number becomes a zero in a report rather than a hole in a chart. <code>NULLIF(a, b)</code> does the reverse and is the standard guard against divide-by-zero. The judgement is not the syntax, it is whether a default belongs there at all: a missing rating is not a rating of zero, and averaging it as one is a wrong answer that looks right.</p>
     <p class="stamp">Counted from the challenge bank, September 2026. Easy first, then Medium, then Hard.</p>
     <div class="q-grid">
@@ -171,11 +189,17 @@
         <p class="concepts">Uses: <code>LEFT JOIN</code> <code>GROUP BY</code> <code>Aggregation</code></p>
         <a href="/app/?challenge=66&amp;src=challenges-null-handling" class="btn-practice">Try it →</a>
       </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Referred vs Organic: First-Month Spend</h3>
+        <p class="concepts">Uses: <code>SELECT</code> <code>CASE</code> <code>COALESCE</code> <code>LEFT JOIN</code> <code>CTE</code> <code>julianday</code></p>
+        <a href="/app/?challenge=311&amp;src=challenges-null-handling" class="btn-practice">Try it →</a>
+      </div>
     </div>
   </section>
 
   <section class="sec" id="aggregates">
-    <h2 class="fd">Counting what is there — the aggregates that skip NULLs: 7 challenges (6 free)</h2>
+    <h2 class="fd">Counting what is there — the aggregates that skip NULLs: 10 challenges (8 free)</h2>
     <p><code>COUNT(*)</code> counts rows; <code>COUNT(column)</code> counts rows where that column is not NULL, and the gap between the two numbers is the missing data. <code>AVG</code>, <code>SUM</code> and <code>MIN</code> ignore NULLs entirely, so an average over a half-empty column is an average of the half that exists — usually right, occasionally the bug. These are the challenges where the answer depends on knowing which.</p>
     <p class="stamp">Counted from the challenge bank, September 2026. Easy first, then Medium, then Hard.</p>
     <div class="q-grid">
@@ -216,10 +240,28 @@
         <a href="/app/?challenge=66&amp;src=challenges-null-handling" class="btn-practice">Try it →</a>
       </div>
       <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Days to KYC Verification by Country</h3>
+        <p class="concepts">Uses: <code>SELECT</code> <code>julianday</code> <code>CASE</code> <code>GROUP BY</code> <code>NULL Handling</code> <code>AVG</code></p>
+        <a href="/app/?challenge=309&amp;src=challenges-null-handling" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3>Referred vs Organic: First-Month Spend</h3>
+        <p class="concepts">Uses: <code>SELECT</code> <code>CASE</code> <code>COALESCE</code> <code>LEFT JOIN</code> <code>CTE</code> <code>julianday</code></p>
+        <a href="/app/?challenge=311&amp;src=challenges-null-handling" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
         <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
         <h3>Anti-Join Pipeline: Unmatched Records</h3>
         <p class="concepts">Uses: <code>LEFT JOIN</code> <code>IS NULL</code> <code>CTE</code></p>
         <a href="/app/?challenge=74&amp;src=challenges-null-handling" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3>Month-over-Month Volume Growth</h3>
+        <p class="concepts">Uses: <code>SELECT</code> <code>CTE</code> <code>Window Functions</code> <code>LAG</code> <code>strftime</code> <code>NULL Handling</code></p>
+        <a href="/app/?challenge=308&amp;src=challenges-null-handling" class="btn-practice">Try it →</a>
       </div>
     </div>
   </section>

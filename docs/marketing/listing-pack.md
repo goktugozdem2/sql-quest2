@@ -19,16 +19,16 @@ after the Aug-29 read).
 - **URL:** https://sqlquest.app
 - **One-liner (60 chars):** SQL practice with an adaptive coach that tracks your skills
 - **Tagline alt:** Learn SQL by solving — with a coach that knows what you're weak at
-- **Short description (~160 chars):** Practice SQL in the browser with 287
+- **Short description (~160 chars):** Practice SQL in the browser with 299
   challenges, a 9-skill radar that tracks your weak spots, and an adaptive
-  coach that picks your next step. 219 are free.
+  coach that picks your next step. 226 are free.
 - **Long description:**
   SQL Quest is a browser-based SQL practice site built around one idea: the
   site should know what you're weak at. Every solve updates a 9-skill radar
   (joins, window functions, CTEs, aggregation…), and an adaptive Coach picks
   your next challenge, lesson, or drill from it — including spaced retrieval
-  checks so what you learned stays learned. 287 challenges from first SELECT
-  to interview-grade Hard problems (219 playable free), 23 company interview
+  checks so what you learned stays learned. 299 challenges from first SELECT
+  to interview-grade Hard problems (226 playable free), 23 company interview
   pages, timed company-style mock interviews, a 30-day path, and an AI tutor
   that explains why your query failed. Queries run
   locally in the browser (SQLite/WASM) — no signup needed to start solving.

@@ -267,7 +267,12 @@ export function findStalePro19(text, modal) {
 // HackerRank's SQL track, "~50-80 problems" for LeetCode's free set) and its
 // own as an exact count. Verified 2026-09-09: zero of our own counts are
 // written with a tilde.
-const COUNT_CLAIM = /(?<![\w$.,~-])(\d+)(\+?)(?=(?:[\s-]+[A-Za-z][\w'+-]*){0,3}[\s-]+(?:challenges?|exercises|problems)\b)/gi;
+// 2026-09-12: the sector count crossed 100 (109 with the neobank set), so
+// "109 industry challenges" and "industry tracks (109 challenges)" would read
+// as bank-size claims here while the sector rule below already owns them and
+// binds them to the sector count. Those two phrasings are excluded, nothing
+// else: "109 hands-on challenges" would still be caught.
+const COUNT_CLAIM = /(?<![\w$.,~-])(?<!industry tracks \()(\d+)(\+?)(?=(?!(?:[\s-]+[A-Za-z][\w'+-]*){0,2}[\s-]+industry\b)(?:[\s-]+[A-Za-z][\w'+-]*){0,3}[\s-]+(?:challenges?|exercises|problems)\b)/gi;
 // Both patterns are case-INSENSITIVE (2026-09-09). They were not, and titles
 // capitalise: /sql-exercises/ published "285 Problems With Solutions (217
 // Free)" for a day after the body was corrected to 287 and 219, because
