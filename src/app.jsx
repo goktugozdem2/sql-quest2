@@ -30895,7 +30895,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
             <div className="mb-4 p-4 bg-gray-800/50 rounded-lg">
               <p className="text-sm font-medium mb-2">Plan: <span className="text-purple-400 capitalize">{aiDailyUsage.plan || 'Free'}</span></p>
               <div className="space-y-1 text-xs text-gray-400">
-                <div className="flex justify-between"><span>Free</span><span>10 calls/day</span></div>
+                <div className="flex justify-between"><span>Free</span><span>20 calls/day</span></div>
                 <div className="flex justify-between"><span>Monthly Pro</span><span>50 calls/day</span></div>
                 <div className="flex justify-between"><span>Annual Pro</span><span>75 calls/day</span></div>
                 <div className="flex justify-between"><span>Lifetime Pro</span><span>100 calls/day</span></div>
