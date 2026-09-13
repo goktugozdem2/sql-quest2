@@ -170,7 +170,8 @@ describe('a first-run placement is a placement', () => {
     expect(readFirstRunPlacement(storage({ source: 'first_run_placement_quiz', firstRunLevel: 'guru' }))).toBeNull();
     expect(readFirstRunPlacement(storage(null))).toBeNull();
     expect(readFirstRunPlacement({ getItem: () => 'not json' })).toBeNull();
-    expect(FIRST_RUN_PLACEMENT_SOURCES).toEqual(['first_run_placement_quiz', 'first_run_manual_or_recommendation', 'first_run_completed']);
+    // 'first_run_readiness_test' added 2026-09-14: a readiness result is a placement (tests/onboarding-unified.test.js).
+    expect(FIRST_RUN_PLACEMENT_SOURCES).toEqual(['first_run_placement_quiz', 'first_run_readiness_test', 'first_run_manual_or_recommendation', 'first_run_completed']);
   });
 
   it('floors sit on the goals\' own skipIf thresholds and name only canonical skills', () => {

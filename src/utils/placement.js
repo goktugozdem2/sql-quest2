@@ -110,6 +110,68 @@ export function placementEventPayload(result, source = 'quiz') {
   };
 }
 
+// ── The readiness test IS a placement (2026-09-14) ────────────────────────
+// Someone who took /sql-interview-readiness-test/ answered ten questions
+// across nine skills — strictly more evidence than the four recognition
+// questions the first-run quiz asks. Asking them to place themselves again is
+// the duplication the founder named. The test's stored result therefore maps
+// onto the same four tiers and is written as a first-run placement, so the
+// quiz does not render and the Coach's own five-challenge check is skipped by
+// the machinery that already exists (coachPlacementFor / seedFloorsFor).
+//
+// The 2026-08-14 rule still holds: recognition alone never declares anyone
+// interview-ready. `advanced` needs a high overall AND a clean sheet on the
+// two skills an interview turns on (window functions, subqueries & CTEs) —
+// the readiness test's stand-in for the quiz's earned round 2.
+
+export const READINESS_RECORD_KEY = 'sqlquest_readiness_v1';
+export const READINESS_MAX_AGE_DAYS = 30;
+export const READINESS_ADVANCED_MIN = 85;
+export const READINESS_EARNING_SKILLS = Object.freeze(['Window Functions', 'Subqueries & CTEs']);
+
+/** Level for a readiness result: the 08-14 cap, with `advanced` earned. */
+export function levelForReadiness(overall, scores) {
+  const n = Number(overall);
+  if (!Number.isFinite(n)) return null;
+  if (n < 35) return 'brand-new';
+  if (n < 60) return 'basics';
+  if (n < READINESS_ADVANCED_MIN) return 'working';
+  const s = asObject(scores);
+  const earned = READINESS_EARNING_SKILLS.every(k => Number(s[k]) === 100);
+  return earned ? 'advanced' : 'working';
+}
+
+/**
+ * The readiness result this browser holds, as a placement — or null when
+ * there is none, it is malformed, or it is older than READINESS_MAX_AGE_DAYS
+ * (a month-old snapshot is not what this person knows today).
+ */
+export function placementFromReadiness(storage, now = Date.now()) {
+  let rec;
+  try {
+    const raw = storage && storage.getItem(READINESS_RECORD_KEY);
+    rec = raw ? JSON.parse(raw) : null;
+  } catch (_) {
+    return null;
+  }
+  if (!rec || typeof rec !== 'object') return null;
+  const at = Number(rec.at);
+  if (!Number.isFinite(at)) return null;
+  const ageDays = (Number(now) - at) / 86400000;
+  if (!(ageDays >= 0) || ageDays > READINESS_MAX_AGE_DAYS) return null;
+  const level = levelForReadiness(rec.overall, rec.scores);
+  if (!level) return null;
+  return {
+    level,
+    tier: PLACEMENT_TIERS[level],
+    overall: Number(rec.overall),
+    weakest: typeof rec.weakest === 'string' ? rec.weakest : null,
+    company: typeof rec.company === 'string' ? rec.company : null,
+    scores: asObject(rec.scores),
+    ageDays: Math.floor(ageDays),
+  };
+}
+
 // ── The Coach stops asking twice (2026-09-12) ─────────────────────────────
 // A first-run placement — the quiz, or a level picked by hand — IS a
 // placement. Behind `coachTrustQuizPlacement`, a Coach goal started by
@@ -124,6 +186,7 @@ export function placementEventPayload(result, source = 'quiz') {
 
 export const FIRST_RUN_PLACEMENT_SOURCES = Object.freeze([
   'first_run_placement_quiz',
+  'first_run_readiness_test',
   'first_run_manual_or_recommendation',
   'first_run_completed',
 ]);

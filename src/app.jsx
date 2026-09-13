@@ -30,7 +30,7 @@ import { shouldShowInterviewNav, interviewNavReason } from './utils/interview-na
 import { mergeProgress, hasProgress, isResumableGuest, GUEST_USER_KEY } from './utils/progress-merge.js';
 import { companySetMatch } from './utils/company-set-match.js';
 import { INTAKE_KEY, INTAKE_GOALS, INTAKE_ROLES, INTAKE_STEPS, INTAKE_COMPANIES, INTAKE_LEVELS, intakeStepsFor, intakeGoalFor, nextIntakeStep, isValidIntakeDate, buildIntakeRecord, readIntakeRecord, intakeEventPayload, newCoachGoalState, shouldShowIntake } from './utils/onboarding-intake.js';
-import { PLACEMENT_TIERS, placementResult, placementEventPayload, readFirstRunPlacement, seedFloorsFor } from './utils/placement.js';
+import { PLACEMENT_TIERS, placementResult, placementEventPayload, readFirstRunPlacement, seedFloorsFor, placementFromReadiness } from './utils/placement.js';
 import { paidWallFor, isColdStart } from './utils/paid-wall.js';
 import { companySetGate, companySetFreeIds, companySetProgress, quietAskDecision, deadlineOfferFor, deadlineEventMeta, withEarlyWall, pickProMockId, FREE_MOCK_ID, quotaGate, FREE_SOLVE_QUOTA } from './utils/free-tier-boundary.js';
 import { expandStageChallenges, placementStartIndex as roadmapPlacementStartIndex } from './utils/roadmap.js';
@@ -7653,6 +7653,37 @@ function SQLQuest() {
     if (rec.company && !prepTarget.company) setPrepPreference({ company: rec.company });
     try { trackActivationEvent('readiness_arrived', { company: rec.company || null, score: rec.overall ?? null, weakest: rec.weakest || null }); } catch (_) {}
   }, [currentUser]);
+
+  // ── One assessment, not two (2026-09-14) ───────────────────────────────
+  // A readiness-test result is a placement: ten questions across nine skills
+  // against the first-run quiz's four. When this browser holds a fresh one
+  // and nothing has placed the person yet, it becomes the first-run placement
+  // — so the quiz does not render, the Coach's own five-challenge check is
+  // skipped by the existing trust path, and the journey continues at the plan
+  // instead of starting over. The rules live in src/utils/placement.js.
+  const readinessPlacementRef = useRef(false);
+  useEffect(() => {
+    if (readinessPlacementRef.current) return;
+    if (!currentUser || !dbReady || isSessionLoading) return;
+    if (firstRunCompleted || firstRunLevel || solvedChallenges.size > 0) return;
+    if (readFirstRunPlacement(localStorage)) return;   // already placed — never overwrite
+    const placed = placementFromReadiness(localStorage);
+    if (!placed) return;
+    readinessPlacementRef.current = true;
+    const goal = placed.company ? 'interview' : (firstRunGoal || 'zero');
+    trackActivationEvent('placement_completed', {
+      source: 'readiness_test',
+      levelId: placed.level,
+      tier: placed.tier,
+      overall: placed.overall,
+      weakest: placed.weakest,
+      ageDays: placed.ageDays,
+      company: placed.company,
+    });
+    completeFirstRun(goal, placed.level);
+    suppressLegacyOnboardingForPlacement(placed.level, { source: 'first_run_readiness_test', score: placed.overall, total: 100 });
+    if (placed.company && !prepTarget.company) setPrepPreference({ company: placed.company });
+  }, [currentUser, dbReady, isSessionLoading, firstRunCompleted, firstRunLevel, solvedChallenges.size]);
   useEffect(() => { try { localStorage.setItem('sqlquest_practice_path', challengePathFilter); } catch (_) {} }, [challengePathFilter]);
   useEffect(() => { try { localStorage.setItem('sqlquest_practice_more_open', String(moreFiltersOpen)); } catch (_) {} }, [moreFiltersOpen]);
   useEffect(() => { try { localStorage.setItem('sqlquest_live_tutor', liveTutorMode); } catch (_) {} }, [liveTutorMode]);
@@ -11528,7 +11559,17 @@ CRITICAL RULES:
       daysOut: step === 'date' && !skipped ? daysUntil(value, Date.now()) : null,
       skipped,
     });
-    const next = nextIntakeStep(step, draft.goal);
+    let next = nextIntakeStep(step, draft.goal);
+    // Never ask what we already know (2026-09-14): the readiness test and the
+    // company-page CTAs set prepTarget.company before the intake runs.
+    if (next === 'company' && prepTarget.company) {
+      draft.company = prepTarget.company;
+      next = nextIntakeStep('company', draft.goal);
+    }
+    if (next === 'date' && prepTarget.date) {
+      draft.date = prepTarget.date;
+      next = nextIntakeStep('date', draft.goal);
+    }
     setIntakeDraft(draft);
     if (next) { setIntakeStep(next); return; }
     completeIntake(draft);
