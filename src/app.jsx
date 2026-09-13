@@ -31525,11 +31525,11 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
               >
                 <span className="flex items-center justify-between gap-2">
                   <span className="text-sm font-bold">Learning Path</span>
-                  <span className="rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-200">
+                  <span className="hidden rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-200 sm:inline">
                     Recommended
                   </span>
                 </span>
-                <span className="mt-0.5 block text-[11px] leading-snug text-slate-400">Lessons and exercises by category</span>
+                <span className="mt-0.5 hidden text-[11px] leading-snug text-slate-400 sm:block">Lessons and exercises by category</span>
               </button>
               <button
                 type="button"
@@ -31552,7 +31552,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                     {challenges.length}
                   </span>
                 </span>
-                <span className="mt-0.5 block text-[11px] leading-snug text-slate-400">Practice freely</span>
+                <span className="mt-0.5 hidden text-[11px] leading-snug text-slate-400 sm:block">Practice freely</span>
               </button>
               {showInterviewNav && (
                 <button
@@ -31659,7 +31659,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
         )}
 
         {showFirstRunStart && (
-          <div className="mb-5 rounded-xl border border-purple-500/30 bg-gradient-to-br from-purple-500/10 via-gray-900/90 to-cyan-500/10 p-5 md:p-6">
+          <div className="mb-5 rounded-xl border border-purple-500/30 bg-gradient-to-br from-purple-500/10 via-gray-900/90 to-cyan-500/10 p-4 sm:p-5 md:p-6">
             <div className="grid gap-5 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
               <div className="min-w-0">
                 <p className="mb-2 text-xs font-bold uppercase tracking-wider text-purple-300">Start here</p>
@@ -31687,7 +31687,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                     </div>
                     <div className="mt-5 rounded-xl border border-green-500/30 bg-green-500/10 p-4">
                       <p className="mb-2 text-xs font-bold uppercase tracking-wider text-green-300">Your first query</p>
-                      <pre className="overflow-x-auto rounded-lg bg-black/40 p-4 text-sm leading-relaxed text-green-100"><code>{firstRunFoundationLesson.query}</code></pre>
+                      <pre className="overflow-x-auto whitespace-pre-wrap break-words rounded-lg bg-black/40 p-3 text-sm leading-relaxed text-green-100 sm:whitespace-pre sm:p-4"><code>{firstRunFoundationLesson.query}</code></pre>
                       <p className="mt-3 text-xs leading-relaxed text-gray-300">
                         {firstRunFoundationLesson.queryNote}
                       </p>
@@ -31713,7 +31713,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                           {number}. {question.prompt}
                         </p>
                         {question.code && (
-                          <pre className="mt-2 max-w-full overflow-x-auto rounded-md bg-black/50 p-3 text-xs leading-relaxed text-green-100"><code>{question.code}</code></pre>
+                          <pre className="mt-2 max-w-full overflow-x-auto whitespace-pre-wrap break-words rounded-md bg-black/50 p-3 text-xs leading-relaxed text-green-100 sm:whitespace-pre"><code>{question.code}</code></pre>
                         )}
                         <div className="mt-3 grid gap-2 sm:grid-cols-2">
                           {question.options.map(option => {
@@ -31742,7 +31742,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                           Answer 4 quick questions. Not sure is okay. SQL Quest will recommend the simplest place to begin.
                         </p>
 
-                        <div data-onboarding="first-run-placement" className="mt-5 min-w-0 rounded-xl border border-gray-700 bg-black/25 p-4">
+                        <div data-onboarding="first-run-placement" className="mt-5 min-w-0 rounded-xl border border-gray-700 bg-black/25 p-3 sm:p-4">
                           <div className="mb-3 flex items-center justify-between gap-3">
                             <p className="text-xs font-bold uppercase tracking-wider text-gray-500">{quizResult.round2Active ? 'Placement quiz · round 2' : 'Placement quiz'}</p>
                             <p className="text-xs font-semibold text-gray-400">{quizResult.answeredCount} / {quizResult.total}</p>

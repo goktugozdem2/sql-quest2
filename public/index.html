@@ -420,6 +420,14 @@
          class-based rules without !important. */
       .funnel-arrow{display:none !important}
       .hc{gap:40px}.cl{gap:24px}.po{flex-direction:column}
+      /* 2026-09-14: the hero's flex container sits inside .hero (display:flex),
+         so it kept min-width:auto and grew to its content (656px on a 402px
+         iPhone 17 Pro) while .hero's overflow:hidden clipped the right side of
+         the headline. Let the container and both columns shrink. */
+      .hero>.sec{width:100%;min-width:0}
+      .hl,.hr{min-width:0;flex-basis:100%}
+      /* Log In stays reachable on a phone; it is the only nav item left. */
+      .nl .bl{display:inline-flex;padding:8px 14px}
     }
     /* Coach app-screenshot mock (scoped .cm-*) */
     .cm-wrap{background:#06060f;border:1px solid rgba(255,255,255,.08);border-radius:16px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.06)}
