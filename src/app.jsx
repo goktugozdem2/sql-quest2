@@ -29,6 +29,7 @@ import { pickNextChallengeWith, pickTopNWith, makeChallengeComparator, hardPrevi
 import { shouldShowInterviewNav, interviewNavReason } from './utils/interview-nav.js';
 import { mergeProgress, hasProgress, isResumableGuest, GUEST_USER_KEY } from './utils/progress-merge.js';
 import { companySetMatch } from './utils/company-set-match.js';
+import { buildPracticePlan, PLAN_MIN_SOLVES_FOR_SKILLS } from './utils/practice-plan.js';
 import { INTAKE_KEY, INTAKE_GOALS, INTAKE_ROLES, INTAKE_STEPS, INTAKE_COMPANIES, INTAKE_LEVELS, intakeStepsFor, intakeGoalFor, nextIntakeStep, isValidIntakeDate, buildIntakeRecord, readIntakeRecord, intakeEventPayload, newCoachGoalState, shouldShowIntake } from './utils/onboarding-intake.js';
 import { PLACEMENT_TIERS, placementResult, placementEventPayload, readFirstRunPlacement, seedFloorsFor, placementFromReadiness } from './utils/placement.js';
 import { paidWallFor, isColdStart } from './utils/paid-wall.js';
@@ -32292,6 +32293,80 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
           const next = computeCoachNextStep();
           return (
             <div className="mb-4">
+              {/* Your plan (founder's list, 2026-09-14): how long you have, what
+                  is weakest, what to solve today, how much a day that is. Free
+                  questions only — it never names a locked one, which is what
+                  keeps it clear of the paywall experiments that own the
+                  countdown / quota / retrieval flags. Pure half:
+                  src/utils/practice-plan.js. */}
+              {(() => {
+                const bank = window.challengesData || challenges || [];
+                const plan = buildPracticePlan({
+                  company: prepTarget.company || companyFilter || null,
+                  bank,
+                  companyMap: window.challengeCompanies || {},
+                  skillLevels: calculateSkillLevelsFromPerformance(),
+                  solvedIds: solvedChallenges,
+                  daysLeft: daysUntil(prepTarget.date, Date.now()),
+                });
+                if (!plan.today.length) return null;
+                const openPlanItem = (item) => {
+                  const ch = bank.find(c => c.id === item.id);
+                  if (!ch) return;
+                  trackActivationEvent('plan_item_started', {
+                    challengeId: item.id, skill: item.skill || null,
+                    company: plan.company, daysLeft: plan.daysLeft,
+                  });
+                  setActiveTab('quests');
+                  setPracticeSubTab('challenges');
+                  setTimeout(() => openChallenge(ch), 50);
+                };
+                return (
+                  <div data-testid="practice-plan" className="mb-4 p-4" style={{ background: '#16181F', border: '1px solid #2A2E38', borderRadius: '8px' }}>
+                    <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-xs font-bold uppercase tracking-wider text-purple-300">
+                        {plan.company ? i18n_t('plan', 'titleCompany', { company: plan.company }) : i18n_t('plan', 'title')}
+                      </p>
+                      {plan.daysLeft !== null && plan.daysLeft >= 0 && (
+                        <p data-testid="plan-countdown" className="text-xs font-semibold tabular-nums" style={{ color: '#FFB020' }}>
+                          {i18n_t('plan', 'daysLeft', { n: plan.daysLeft })}
+                          {plan.quota ? ` · ${i18n_t('plan', 'perDay', { n: plan.quota.perDay })}` : ''}
+                        </p>
+                      )}
+                    </div>
+                    {plan.weakest.length > 0 ? (
+                      <p className="text-sm text-gray-300" data-testid="plan-weakest">
+                        {i18n_t('plan', 'weakest')}{' '}
+                        {plan.weakest.map((w, i) => (
+                          <span key={w.skill}>{i > 0 ? ' · ' : ''}{w.skill} <span className="tabular-nums" style={{ color: '#8A8E99' }}>{w.level}</span></span>
+                        ))}
+                      </p>
+                    ) : (
+                      <p className="text-sm text-gray-300">{i18n_t('plan', 'needSolves', { n: PLAN_MIN_SOLVES_FOR_SKILLS })}</p>
+                    )}
+                    <p className="mt-3 text-xs font-bold uppercase tracking-wider" style={{ color: '#8A8E99' }}>{i18n_t('plan', 'today')}</p>
+                    <div className="mt-1 space-y-1">
+                      {plan.today.map(item => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          data-plan-item={item.id}
+                          onClick={() => openPlanItem(item)}
+                          className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm transition-colors"
+                          style={{ background: '#1F222B', border: '1px solid #2A2E38', borderRadius: '6px', color: '#F2F0EA' }}
+                        >
+                          <span className="min-w-0 truncate">{item.title}</span>
+                          <span className="flex-shrink-0 text-xs" style={{ color: '#8A8E99' }}>{item.skill || item.difficulty}</span>
+                        </button>
+                      ))}
+                    </div>
+                    <p className="mt-3 text-xs" style={{ color: '#8A8E99' }} data-testid="plan-remaining">
+                      {i18n_t('plan', 'remaining', { done: plan.solvedInScope, total: plan.totalInScope })}
+                    </p>
+                  </div>
+                );
+              })()}
+
               {renderSqlRoadmap()}
               {renderFoundationsRoadmapLesson()}
 

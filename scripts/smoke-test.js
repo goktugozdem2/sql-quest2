@@ -1031,7 +1031,14 @@ async function main() {
           hasFilteringCurrent: /Current step\\s*Filtering and Sorting/i.test(text),
           hasFoundationsDone: /Foundations[\\s\\S]{0,300}Done/i.test(text),
           hasReviewButton: /Review lessons/i.test(text),
-          stayedInRoadmap: /Your SQL Learning Path/i.test(text) && !/Your First Query/i.test(text)
+          // 2026-09-14: the plan card lists today's questions by title, and one
+          // of them is literally "Your First Query" — so the jump check reads
+          // the page WITHOUT that card.
+          stayedInRoadmap: /Your SQL Learning Path/i.test(text)
+            && !/Your First Query/i.test((() => {
+              const plan = document.querySelector('[data-testid="practice-plan"]');
+              return plan ? text.split(plan.textContent || '').join(' ') : text;
+            })())
         };
       })()`);
     if (

@@ -957,6 +957,16 @@ const TRANSLATIONS = {
       levelSenior: 'Senior or above',
       daysLeft: '🗓 {n} days left',
     },
+    plan: {
+      title: 'Your plan',
+      titleCompany: 'Your {company} plan',
+      daysLeft: '{n} days left',
+      perDay: '{n} a day',
+      weakest: 'Weakest now:',
+      needSolves: 'Solve {n} questions and this plan names your weakest skills.',
+      today: 'Today',
+      remaining: '{done} of {total} free questions done.',
+    },
     companySetMatch: {
       eyebrow: '{company} practice set',
       score: '{n}% Skillmap match',
@@ -1813,6 +1823,16 @@ const TRANSLATIONS = {
       levelMid: 'Orta seviye',
       levelSenior: 'Kıdemli ve üstü',
       daysLeft: '🗓 {n} gün kaldı',
+    },
+    plan: {
+      title: 'Planın',
+      titleCompany: '{company} planın',
+      daysLeft: '{n} gün kaldı',
+      perDay: 'günde {n}',
+      weakest: 'Şu an en zayıf:',
+      needSolves: '{n} soru çöz, plan en zayıf becerilerini söylesin.',
+      today: 'Bugün',
+      remaining: '{total} ücretsiz sorudan {done} tanesi bitti.',
     },
     companySetMatch: {
       eyebrow: '{company} pratik seti',
