@@ -197,7 +197,7 @@ ${ld.map(o => `  <script type="application/ld+json">${JSON.stringify(o)}</script
   <style>${CSS}</style>
 </head>
 <body>
-<nav class="nav"><div class="ni"><a href="/" class="fd" style="color:#e2e8f0;font-weight:800;font-size:18px;">SQL Quest</a><span style="display:flex;gap:16px;font-size:14px;"><a href="/sql-tools/">Free SQL tools</a><a href="/questions/">Questions</a></span></div></nav>`;
+<nav class="nav"><div class="ni"><a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:#e2e8f0;"><span style="width:32px;height:32px;border-radius:9px;background:#7c3aed;display:inline-flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg></span><span class="fd" style="font-weight:800;font-size:18px;">SQL Quest</span></a><span style="display:flex;gap:16px;font-size:14px;"><a href="/sql-tools/">Free SQL tools</a><a href="/questions/">Questions</a></span></div></nav>`;
 }
 
 const FOOT = `<footer class="ft">SQL Quest — personalized SQL interview practice · <a href="/sql-tools/">Free SQL tools</a> · <a href="/questions/">SQL interview questions</a> · <a href="/challenges/">Practice by topic</a> · <a href="/privacy/">Privacy</a></footer>

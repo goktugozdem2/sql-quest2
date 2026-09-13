@@ -17384,7 +17384,7 @@ CRITICAL RULES:
       <body>
         <div class="card">
           <div class="header">
-            <div class="logo">🎯</div>
+            <div class="logo"><svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="#7c3aed" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
             <div>
               <div class="title">SQL Quest</div>
               <div class="subtitle">30-Day SQL Master Challenge</div>
@@ -17518,7 +17518,7 @@ CRITICAL RULES:
             <div class="score-label">Points Earned</div>
           </div>
           <div class="user">${currentUser || 'SQL Learner'}</div>
-          <div class="footer">Learning SQL with <span class="brand">SQL Quest</span> 🎯</div>
+          <div class="footer">Learning SQL with <span class="brand">SQL Quest</span></div>
         </div>
       </body>
       </html>
@@ -17849,7 +17849,7 @@ CRITICAL RULES:
         
         <div class="card">
           <div class="header">
-            <div class="logo">🎯</div>
+            <div class="logo"><svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="#7c3aed" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
             <div class="brand">SQL Quest</div>
           </div>
           
@@ -17956,7 +17956,7 @@ CRITICAL RULES:
           <div class="desc">${achievement.desc}</div>
           <div class="unlocked">✓ Achievement Unlocked</div>
           <div class="user">${currentUser || 'SQL Learner'}</div>
-          <div class="brand">SQL Quest 🎯</div>
+          <div class="brand">SQL Quest</div>
         </div>
       </body>
       </html>
@@ -23711,8 +23711,8 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
         
         <div className="bg-black/50 backdrop-blur-sm rounded-2xl border border-purple-500/30 p-8 w-full max-w-md">
           <div className="text-center mb-8">
-            <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-4 text-4xl">
-              🎯
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 text-white" style={{ background: '#7c3aed' }}>
+              <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>
             </div>
             <h1 className="text-3xl font-bold text-[#F2F0EA]">SQL Quest</h1>
             <p className="text-gray-400 mt-2">{authMode === 'login' ? 'Sign in to continue' : 'Create your account'}</p>
@@ -31213,17 +31213,17 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
       <header className="bg-black/30 border-b border-purple-500/30">
         {/* Row 1: Identity + Stats + Profile */}
         <div className="max-w-7xl mx-auto px-4 py-2 flex items-center gap-3">
-          {/* Logo — brand mark matches favicon.svg (purple→pink gradient +
-              white lightning bolt). Inline SVG because the lucide Database
-              shim didn't render reliably in the UMD build, and the bolt is
-              the actual brand mark across favicon / OG image / profile cards. */}
+          {/* Logo — the one brand mark (2026-09-14): solid #7c3aed square with
+              the line lightning bolt, the same on the homepage, every static
+              page, the sign-in card and favicon.svg. Inline SVG because the
+              lucide shim didn't render reliably in the UMD build. */}
           <div className="flex items-center gap-2 flex-shrink-0">
-            <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
-              <svg width="18" height="18" viewBox="0 0 512 512" aria-hidden="true">
-                <path d="M290 96L196 272h88l-34 144 128-192h-96l34-128z" fill="white" fillOpacity="0.95"/>
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white" style={{ background: '#7c3aed' }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/>
               </svg>
             </div>
-            <span className="font-bold text-sm text-[#F2F0EA] hidden sm:block">SQL Quest</span>
+            <span className="font-bold text-sm text-[#F2F0EA] hidden min-[380px]:block">SQL Quest</span>
           </div>
           {showSimpleLearningShell && (
             <div className="ml-auto flex items-center gap-2">
