@@ -61,7 +61,7 @@
       "permanent": true
     },
     {
-      "source": "/:slug/app.html",
+      "source": "/:slug/app/",
       "destination": "/app/",
       "permanent": true
     },
