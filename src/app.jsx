@@ -1,3 +1,4 @@
+import { roundDownCount, companySetCount } from './utils/display-count.js';
 import { withLocalAccountKeys as withLocalAccountKeysPure, isMissingServerSide, accountFunctionStatus } from './utils/account-access.js';
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 // Re-expose on window for legacy inline handlers / computed renders that
@@ -23945,21 +23946,35 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
           </button>
           <p className="text-center text-xs text-gray-500 mt-2">No signup required • Jump straight into SQL challenges</p>
 
-          {/* Social Proof */}
+          {/* Social Proof — counts come from the live bank, rounded down
+              (src/utils/display-count.js); never an exact number and no
+              lifetime-free promise (2026-09-14). */}
           <div className="mt-6 pt-5 border-t border-gray-800">
-            <div className="flex items-center justify-center gap-6 text-xs text-gray-400">
-              <div className="text-center">
-                <p className="text-lg font-bold text-purple-400">80+</p>
-                <p>Challenges</p>
-              </div>
-              <div className="text-center">
-                <p className="text-lg font-bold text-green-400">5</p>
-                <p>Datasets</p>
-              </div>
-              <div className="text-center">
-                <p className="text-lg font-bold text-yellow-400">Free</p>
-                <p>Forever</p>
-              </div>
+            <div className="flex items-start justify-center gap-6 text-xs text-gray-400">
+              {(() => {
+                const questions = roundDownCount((window.challengesData || challenges || []).length, 100);
+                const companies = roundDownCount(companySetCount(window.challengeCompanies), 10);
+                return (
+                  <>
+                    {questions && (
+                      <div className="text-center" data-testid="signin-stat-questions">
+                        <p className="text-lg font-bold text-purple-400">{questions}</p>
+                        <p>{i18n_t('practice', 'statInterviewQuestions')}</p>
+                      </div>
+                    )}
+                    {companies && (
+                      <div className="text-center" data-testid="signin-stat-companies">
+                        <p className="text-lg font-bold text-green-400">{companies}</p>
+                        <p>{i18n_t('practice', 'statCompanySets')}</p>
+                      </div>
+                    )}
+                    <div className="text-center">
+                      <p className="text-lg font-bold text-cyan-300">{i18n_t('practice', 'statCoachValue')}</p>
+                      <p>{i18n_t('practice', 'statCoachLabel')}</p>
+                    </div>
+                  </>
+                );
+              })()}
             </div>
             <p className="text-center text-xs text-gray-600 mt-3">{i18n_t('practice', 'practiceWithRealData')}</p>
           </div>
