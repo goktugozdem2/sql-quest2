@@ -23023,7 +23023,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
           }
 
           // Guest conversion ladder (progressive, not all-at-once):
-          //   1st solve   → soft email capture (email only, no password)
+          //   3rd solve   → soft email capture (email only, no password)
           //   10th solve  → full signup prompt (username + email + password)
           //   every 5th after → gentle nudge to create full account
           //
@@ -23033,7 +23033,9 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
           if (isGuest) {
             const newCount = guestActionsCount + 1;
             setGuestActionsCount(newCount);
-            if (newCount === 1 && !softEmailCaptured) {
+            // 2026-09-14: the ask waits for the third solve. At the first it
+            // landed on top of the win that had just been earned.
+            if (newCount === 3 && !softEmailCaptured) {
               setTimeout(() => {
                 if (!softEmailCaptured) setShowSoftEmailCapture(true);
               }, 1500);
@@ -23573,8 +23575,9 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
         playSound('levelup');
         setShowLevelUp(currentLevel.name);
         setShowConfetti(true);
-        // Auto-show share prompt after level up
-        setTimeout(() => setMilestoneShare({ type: 'levelup', data: { levelName: currentLevel.name } }), 2000);
+        // 2026-09-14: no auto share prompt. The banner is the celebration;
+        // a modal two seconds later asked for something in the middle of a
+        // practice session. Sharing stays available from the profile.
       }
     }
     prevLevelRef.current = currentLevel.name;
@@ -29416,7 +29419,10 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
       })()}
 
       {/* First-challenge onboarding tour (Murat lesson — UI opaque to first-timers) */}
-      {showFirstEntryTour && showFirstRunStart && !showIntake && !currentChallenge && !showOnboardingTour && !showAppTour && (
+      {/* 2026-09-14: tours wait for the first solve. Practice is the first
+          thing a visitor should do; a spotlight over the start screen was an
+          interruption before anything had been earned. */}
+      {showFirstEntryTour && solvedChallenges.size >= 1 && showFirstRunStart && !showIntake && !currentChallenge && !showOnboardingTour && !showAppTour && (
         <OnboardingTour
           steps={FIRST_ENTRY_ONBOARDING_STEPS}
           onComplete={() => {
@@ -29430,7 +29436,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
         />
       )}
 
-      {showChallengesEntryTour && activeTab === 'quests' && !currentChallenge && !(showFirstEntryTour && showFirstRunStart) && !showOnboardingTour && !showAppTour && (
+      {showChallengesEntryTour && solvedChallenges.size >= 1 && activeTab === 'quests' && !currentChallenge && !(showFirstEntryTour && showFirstRunStart) && !showOnboardingTour && !showAppTour && (
         <OnboardingTour
           steps={CHALLENGES_ENTRY_ONBOARDING_STEPS}
           onComplete={() => {
@@ -36358,7 +36364,12 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                               />
                             );
                           })()}
-                          {/* What to do next guidance */}
+                          {/* What to do next guidance. 2026-09-14: this strip is
+                              the FALLBACK. When a recommendation exists the panel
+                              below it shows one primary "Next quest" action with
+                              the reason, and three competing buttons next to it
+                              were the choice that stalled people after a win. */}
+                          {!nextChallengeRec && (
                           <div className="border-t border-green-500/20 pt-3">
                             <p className="text-xs text-gray-500 uppercase font-bold mb-2">{i18n_t('practice', 'whatsNext')}</p>
                             <div className="flex flex-wrap gap-2">
@@ -36384,6 +36395,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                               })()}
                             </div>
                           </div>
+                          )}
                         </div>
                       ) : challengeStatus === 'error' ? (
                         /* Amber, not red: the engine rejected the query before it
@@ -36871,9 +36883,15 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                         <div className="min-w-0">
                           <p className="font-bold text-[#F2F0EA] text-sm truncate">{nextChallengeRec.title}</p>
                           {/* Why this one (P1 picker, `weakSkillNext`): the weakest skill, one step up. */}
-                          {nextChallengeRecMeta?.source === 'weak_skill' && (
+                          {nextChallengeRecMeta?.source === 'weak_skill' ? (
                             <p className="text-[11px] text-teal-300/80 mt-0.5" data-testid="next-rec-why">
                               Weakest skill · {nextChallengeRecMeta.skill} ({nextChallengeRecMeta.mastery}/100) · {nextChallengeRecMeta.reason === 'one_up' ? 'one step up' : 'at your level'}
+                            </p>
+                          ) : (
+                            <p className="text-[11px] text-teal-300/80 mt-0.5" data-testid="next-rec-why">
+                              {nextChallengeRec.difficulty === currentChallenge?.difficulty
+                                ? `Next on your path · same level, ${String(nextChallengeRec.category || 'a new pattern').toLowerCase()}`
+                                : `Next on your path · steps up to ${nextChallengeRec.difficulty}`}
                             </p>
                           )}
                           <div className="flex items-center gap-2 mt-1">

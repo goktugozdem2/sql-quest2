@@ -151,7 +151,9 @@ describe('source guards — app.jsx keeps the intake optional, early, and quiet'
     expect(intakeAt).toBeGreaterThan(-1);
     expect(quizAt).toBeGreaterThan(intakeAt);
     // the first-entry tour explains the quiz, so it waits for the quiz
-    expect(app).toMatch(/showFirstEntryTour && showFirstRunStart && !showIntake && !currentChallenge/);
+    // 2026-09-14: the entry tour also waits for the first solve, so it cannot
+    // interrupt practice; it still never renders over the intake.
+    expect(app).toMatch(/showFirstEntryTour && solvedChallenges\.size >= 1 && showFirstRunStart && !showIntake && !currentChallenge/);
   });
 
   it('locates the intake block', () => {
