@@ -246,11 +246,12 @@ async function main() {
         const backText = document.body.textContent || '';
         return {
           hasStart: /Find your SQL starting point/i.test(text),
-          hasIntro: /Step\\s+1\\s+of\\s+4/i.test(text)
-            && /Start with Learning Path/i.test(text)
-            && /guided route/i.test(text)
-            && /Skip tour/i.test(text)
-            && /Next/i.test(text),
+          // 2026-09-14: the entry tour waits for the first solve, so on the
+          // first-run screen none of its markers may be up (founder's list:
+          // tours do not interrupt practice).
+          tourHeldBack: !/Step\\s+1\\s+of\\s+4/i.test(text)
+            && !/Start with Learning Path/i.test(text)
+            && !/Skip tour/i.test(text),
           hasPrompt: /Answer 4 quick questions/i.test(text),
           hasQuiz: /Placement quiz/i.test(text),
           hidesGoalChoices: !/Practice business SQL/i.test(text),
@@ -277,7 +278,7 @@ async function main() {
       })()`);
     if (
       simpleStartState.hasStart
-      && simpleStartState.hasIntro
+      && simpleStartState.tourHeldBack
       && simpleStartState.hasPrompt
       && simpleStartState.hasQuiz
       && simpleStartState.hidesGoalChoices
@@ -290,8 +291,8 @@ async function main() {
       && simpleStartState.allChallengesShowsAllWithoutChip
       && simpleStartState.hidesNestedChallengeFork
       && simpleStartState.returnedToLearningPath
-    ) pass('first-run screen shows only Learning Path and Challenges tabs before placement');
-    else fail('first-run screen shows only Learning Path and Challenges tabs before placement', JSON.stringify(simpleStartState));
+    ) pass('first-run screen shows only Learning Path and Challenges tabs, and holds the tour back');
+    else fail('first-run screen shows only Learning Path and Challenges tabs, and holds the tour back', JSON.stringify(simpleStartState));
 
     await cdp(tab, 'Emulation.setDeviceMetricsOverride', {
       width: 390,
