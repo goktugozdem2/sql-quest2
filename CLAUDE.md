@@ -385,6 +385,16 @@ so a landing view and a later solve are joinable for the first time.
   (no readiness number over a tag filter) stands; the set match uses the
   public readiness test's wording instead.
 
+### SEO operating rules (2026-09-13)
+
+- Weekly: scheduled task `weekly-seo-dashboard` (Mondays) writes
+  `docs/reads/seo-weekly-<date>.md` from both consoles and
+  `scripts/seo-dashboard.sql`. Grow/prune rules, written before the data:
+  `docs/plans/seo-measurement-2026-09-13.md`.
+- To noindex a page, add it to `src/data/seo-prune.json` with a dated note;
+  `scripts/apply-seo-prune.mjs` (last build step) does the rest. No pruning
+  before 2026-11-09; never a hand-written page without the founder.
+
 ### Public Profile (USER MUST DEPLOY for cross-device reads)
 Phase 4b + 4c shipped client-side; Supabase needs migration + deploy.
 

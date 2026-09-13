@@ -2548,6 +2548,19 @@ solves → `signup_completed`. Split by `company` (null = no company). The
 company score is a weighting of our tagged set, not a measurement of the
 company's interview; never quote it as one.
 
+## `seo_page_funnel`
+
+The product half of the weekly SEO dashboard: `scripts/seo-dashboard.sql`.
+People by `aid` whose FIRST `landing_view` in the window was on a page,
+grouped by page family and by page: opened the app ≤ 7d, solved one ≤ 7d,
+signed up ≤ 14d, second session (app_opened on a second calendar day ≤ 14d).
+Joined to Search Console on the landing page, never on the query (Google
+does not pass it). Rules that read it: docs/plans/seo-measurement-2026-09-13.md
+(grow and prune). First run 2026-08-24..08-31 as a check: hubs 96 landed,
+25.0% solved one; company pages 81, 9.9%; comparisons 77, 7.8%; blog 53,
+3.8% — the homepage is absent from that window by the known 08-05..09-05
+tracking hole, not by the query. Weekly task `weekly-seo-dashboard`.
+
 ## `hero_cta_test`
 
 `landing_view` rows on page `/` (or the homepage slug track.js writes) whose

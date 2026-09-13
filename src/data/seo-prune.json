@@ -1,0 +1,5 @@
+{
+  "_comment": "SEO prune list (founder's SEO plan P4.25, 2026-09-13). Paths listed under noindex get <meta name=robots content='noindex, follow'> in the built page and are dropped from public/sitemap.xml by scripts/apply-seo-prune.mjs at the end of npm run build. Add a path only through the prune rule in docs/plans/seo-measurement-2026-09-13.md, with the dated read that justified it in notes. Merges are vercel.json redirects, not entries here.",
+  "noindex": [],
+  "notes": {}
+}

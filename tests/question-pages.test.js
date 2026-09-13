@@ -12,6 +12,7 @@ import path from 'node:path';
 import { loadQuestionBank, questionSlugs, slugify } from '../scripts/question-slugs.mjs';
 import { renderTopic, EXTRA_TOPIC_SPECS } from '../scripts/build-topic-extra.mjs';
 import { isFreePreview } from '../src/utils/challenge-order.js';
+import { readPrune } from '../scripts/apply-seo-prune.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const QDIR = path.join(ROOT, 'public/questions');
@@ -83,7 +84,9 @@ describe('question pages', () => {
   it('the sitemap lists exactly the question pages and the hub', () => {
     const xml = fs.readFileSync(path.join(ROOT, 'public/sitemap.xml'), 'utf8');
     const listed = [...xml.matchAll(/<loc>https:\/\/sqlquest\.app\/questions\/([^<]*)<\/loc>/g)].map(m => m[1]);
-    expect(listed.sort()).toEqual(['', ...[...slugs.values()].map(s => `${s}/`)].sort());
+    const pruned = new Set(readPrune(ROOT).noindex);
+    const want = ['', ...[...slugs.values()].map(s => `${s}/`)].filter(x => !pruned.has(`/questions/${x}`));
+    expect(listed.sort()).toEqual(want.sort());
   });
 
   it('every /questions/ link on the site resolves', () => {
