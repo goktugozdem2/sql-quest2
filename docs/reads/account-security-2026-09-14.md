@@ -52,7 +52,10 @@ remediation for a past leak is a password reset. Options:
   client honours), or **email them** a reset link. Emailing is an outward
   action and follows the CLAUDE.md email voice; it is the founder's to send.
 
-I did not email anyone. Say which option and I will build the client half.
+I did not email anyone. **Decided 2026-09-14 (founder): do nothing for now.**
+The hashes are salted and no longer readable; revisit if there is any sign of
+credential stuffing on the login endpoint (`account_login_attempts` is the
+place that would show it).
 
 ## Decision 2 — account identity (needs a go before I build)
 
@@ -66,6 +69,11 @@ This is an auth-model change touching every save and the guest flow. Done
 wrong it locks users out, so it should not ride a plain "devam et". If you
 green-light it I will do it in stages behind the 404-style fallback, with the
 replica test extended first. Estimate: a focused session.
+
+**Decided 2026-09-14 (founder): wait.** The exposure is progress only —
+password, email, plan and payment fields are already server-owned — so this
+is deferred, not dismissed. Revisit before any feature that makes another
+person's progress worth writing to (public leagues, team accounts).
 
 ## Also noted, not mine to fix
 
