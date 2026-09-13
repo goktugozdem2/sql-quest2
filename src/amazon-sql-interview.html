@@ -174,12 +174,32 @@
 </section>
 
 <!-- ── What Amazon Tests ─────────────────────────────────────── -->
+
+
+<!-- company-format:start -->
 <!-- company-provenance:start -->
-<div data-provenance="general" style="max-width:760px;margin:0 auto;padding:0 24px;">
-  <p style="margin:0 0 8px;padding:14px 18px;border:1px solid rgba(124,58,237,.22);border-left:3px solid #7c3aed;border-radius:10px;background:rgba(124,58,237,.05);font-size:13.5px;line-height:1.8;color:#94a3b8;"><strong style="color:#e2e8f0;">What this page is:</strong> we have no dated public source for how Amazon runs its SQL round, so this page does not state one — no duration, no platform, no stage list. What follows is general SQL interview practice on the kind of data Amazon works with. <strong style="color:#e2e8f0;">What is ours:</strong> the questions are SQL Quest challenges and the topic emphasis is our editorial judgement, not a measured breakdown of Amazon's interview. <a href="/sql-interview-prep/" style="color:#c084fc;text-decoration:none;font-weight:600;">Pages with dated sources</a> say so in this spot.</p>
+<div data-provenance="sourced" style="max-width:760px;margin:0 auto;padding:0 24px;">
+  <p style="margin:0 0 8px;padding:14px 18px;border:1px solid rgba(124,58,237,.22);border-left:3px solid #7c3aed;border-radius:10px;background:rgba(124,58,237,.05);font-size:13.5px;line-height:1.8;color:#94a3b8;"><strong style="color:#e2e8f0;">What is sourced:</strong> Amazon does not publish its interview format, so every specific about their process on this page is what candidates and prep guides described publicly — each one carries its source and the date it showed. Formats change; treat them as reported, not official. <strong style="color:#e2e8f0;">What is ours:</strong> the practice questions are SQL Quest challenges, picked because their SQL matches the patterns those sources report. They are not questions Amazon has asked.</p>
 </div>
 <!-- company-provenance:end -->
 
+<section id="format" style="border-top:1px solid rgba(255,255,255,.04);"><div class="sec">
+  <span class="sl">How the interview runs</span>
+  <h2 class="st fd">The Amazon SQL interview, as candidates report it</h2>
+  <p style="font-size:15px;color:#94a3b8;margin:14px 0 22px;max-width:760px;line-height:1.75;">Amazon does not publish the format. Each row is what candidates and prep guides have described publicly, with its source; where sources disagree, the row says so. Formats change — treat every specific as reported, not official. The sources below describe Business Intelligence Engineer / data analytics roles; other teams at Amazon may run a different loop.</p>
+  <div class="tbl"><table>
+    <tbody>
+      <tr><th scope="row" style="text-align:left;vertical-align:top;padding:14px 16px;color:#e2e8f0;font-weight:700;font-size:14px;white-space:nowrap;border-bottom:1px solid rgba(255,255,255,.06);">Stages</th><td style="padding:14px 16px;color:#94a3b8;font-size:14px;line-height:1.7;border-bottom:1px solid rgba(255,255,255,.06);">A recruiter screen of about 30 minutes, one or two technical phone screens, then a virtual onsite loop of about five rounds.<a href="#src-blind-amzn" style="color:#8b98ab;text-decoration:none;font-size:11px;vertical-align:super;">[1]</a><a href="#src-exponent-amzn" style="color:#8b98ab;text-decoration:none;font-size:11px;vertical-align:super;">[2]</a></td></tr>
+      <tr><th scope="row" style="text-align:left;vertical-align:top;padding:14px 16px;color:#e2e8f0;font-weight:700;font-size:14px;white-space:nowrap;border-bottom:1px solid rgba(255,255,255,.06);">Round length</th><td style="padding:14px 16px;color:#94a3b8;font-size:14px;line-height:1.7;border-bottom:1px solid rgba(255,255,255,.06);">One candidate report puts the technical phone screens at 75 minutes each and the onsite rounds at roughly 60 minutes. A prep guide describes the onsite as five to six rounds of 45 minutes to an hour.<a href="#src-blind-amzn" style="color:#8b98ab;text-decoration:none;font-size:11px;vertical-align:super;">[1]</a><a href="#src-exponent-amzn" style="color:#8b98ab;text-decoration:none;font-size:11px;vertical-align:super;">[2]</a></td></tr>
+      <tr><th scope="row" style="text-align:left;vertical-align:top;padding:14px 16px;color:#e2e8f0;font-weight:700;font-size:14px;white-space:nowrap;border-bottom:1px solid rgba(255,255,255,.06);">Environment</th><td style="padding:14px 16px;color:#94a3b8;font-size:14px;line-height:1.7;border-bottom:1px solid rgba(255,255,255,.06);">The same report describes SQL written on a &quot;CoderPad-style&quot; editor where you often cannot execute the query, so correctness has to be reasoned rather than run.<a href="#src-blind-amzn" style="color:#8b98ab;text-decoration:none;font-size:11px;vertical-align:super;">[1]</a></td></tr>
+      <tr><th scope="row" style="text-align:left;vertical-align:top;padding:14px 16px;color:#e2e8f0;font-weight:700;font-size:14px;white-space:nowrap;border-bottom:1px solid rgba(255,255,255,.06);">What the SQL round covers</th><td style="padding:14px 16px;color:#94a3b8;font-size:14px;line-height:1.7;border-bottom:1px solid rgba(255,255,255,.06);">Joins, window functions and ranking, with follow-ups on edge cases; the guide says to expect at least five questions across SQL, Python, visualisation and business analytics in the technical screen, without splitting out how many are SQL.<a href="#src-blind-amzn" style="color:#8b98ab;text-decoration:none;font-size:11px;vertical-align:super;">[1]</a><a href="#src-exponent-amzn" style="color:#8b98ab;text-decoration:none;font-size:11px;vertical-align:super;">[2]</a></td></tr>
+      <tr><th scope="row" style="text-align:left;vertical-align:top;padding:14px 16px;color:#e2e8f0;font-weight:700;font-size:14px;white-space:nowrap;border-bottom:1px solid rgba(255,255,255,.06);">Alongside the SQL</th><td style="padding:14px 16px;color:#94a3b8;font-size:14px;line-height:1.7;border-bottom:1px solid rgba(255,255,255,.06);">Leadership Principles come up throughout, including inside technical rounds — not only in the behavioural ones.<a href="#src-exponent-amzn" style="color:#8b98ab;text-decoration:none;font-size:11px;vertical-align:super;">[2]</a><a href="#src-blind-amzn" style="color:#8b98ab;text-decoration:none;font-size:11px;vertical-align:super;">[1]</a></td></tr>
+    </tbody>
+  </table></div>
+  <ol style="list-style:none;margin-top:18px;font-size:12px;color:#8b98ab;line-height:1.6;"><li id="src-blind-amzn" style="margin:4px 0;">[1] <a href="https://www.teamblind.com/post/amazon-business-intelligence-engineer-bie-l5-interview-2025-jdr2idmd" rel="nofollow noopener" target="_blank" style="color:#94a3b8;">Blind — &quot;Amazon Business Intelligence Engineer (BIE L5) Interview 2025&quot; (candidate report, replies to 15 Oct 2025) (14 Sep 2025)</a></li><li id="src-exponent-amzn" style="margin:4px 0;">[2] <a href="https://www.tryexponent.com/guides/amazon-bie-interview" rel="nofollow noopener" target="_blank" style="color:#94a3b8;">Exponent — Amazon Business Intelligence Engineer interview guide (shown as &quot;updated 2 months ago&quot; on 14 Sep 2026)</a></li></ol>
+  <p style="font-size:12px;color:#5b6577;margin-top:10px;">Sources: Blind — &quot;Amazon Business Intelligence Engineer (BIE L5) Interview 2025&quot; (candidate report, replies to 15 Oct 2025) (14 Sep 2025); Exponent — Amazon Business Intelligence Engineer interview guide (shown as &quot;updated 2 months ago&quot; on 14 Sep 2026). Accessed 14 Sep 2026.</p>
+</div></section>
+<!-- company-format:end -->
 <section id="topics"><div class="sec">
   <div style="text-align:center;margin-bottom:20px;">
     <span class="sl" style="color:#FF9900;">Practice Set Composition</span>
@@ -287,6 +307,8 @@
 </div></section>
 
 <!-- ── FAQ ────────────────────────────────────────────────────── -->
+
+
 
 
 <!-- company-readiness:start -->

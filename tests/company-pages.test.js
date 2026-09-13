@@ -79,6 +79,13 @@ export const SOURCED_PAGES = {
   'linkedin-sql-interview': 'Exponent DA guide (2026), PracHub (Sep 2026), SQLPad (Apr 2024), DataLemur (Apr 2025)',
   'microsoft-sql-interview': 'Exponent DS guide (2026), DataLemur guides (May 2025), StrataScratch (Oct 2023); OA sources disagree and the page says so',
   'bloomberg-sql-interview': 'OphyAI guide (Jun 2026), DataLemur (Apr 2025); SQL screen not reliably reported and the page says so',
+  // 2026-09-14: the first two older pages given a sourced format section from
+  // SOURCED_FORMATS (src/data/company-interviews.js). Same rule, no softer —
+  // every row cites a source that was fetched on the research date, and where
+  // the sources give no number the row says the page does not state one.
+  // Research notes: docs/reads/company-research-2026-09-14.md.
+  'amazon-sql-interview': 'Blind BIE L5 candidate report (14 Sep 2025, replies to 15 Oct 2025) + Exponent BIE guide (read 14 Sep 2026)',
+  'meta-sql-interview': 'two Blind Data Engineer candidate reports (5 Apr 2025, 17 Mar 2025) that agree on the screen',
 };
 
 // ---------------------------------------------------------------------------

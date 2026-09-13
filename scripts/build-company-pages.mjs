@@ -30,7 +30,7 @@ import { questionSlugs, loadQuestionBank } from './question-slugs.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
-import { COMPANY_INTERVIEWS, NEW_COMPANY_TAGS } from '../src/data/company-interviews.js';
+import { COMPANY_INTERVIEWS, NEW_COMPANY_TAGS, SOURCED_FORMATS } from '../src/data/company-interviews.js';
 import { SKILL_TO_RADAR, mapTopicToSkill, CANONICAL_SKILLS } from '../src/utils/skill-calc.js';
 import { isFreePreview } from '../src/utils/challenge-order.js';
 
@@ -208,6 +208,8 @@ export function topicLinksBlock({ name, dist, ordered = [] }) {
 /** The pages that carry dated, citable sources for the company's own process. */
 export const SOURCED_SLUGS = new Set([
   ...Object.keys(COMPANY_INTERVIEWS),
+  ...Object.keys(SOURCED_FORMATS), // older pages given a sourced format section
+
   'capital-one', // dated Blind reports 2021-2025 + prep guides Aug 2025 - Feb 2026
   'revolut',     // interviewquery guide, 27 candidate reports stamped Q3 2026
 ]);
@@ -224,6 +226,19 @@ export function provenanceBlock({ slug, name }) {
 <!-- company-provenance:end -->`;
 }
 
+/** A sourced format section on an older page (founder's list item 9). */
+export function withSourcedFormat(html, slug) {
+  let out = html.replace(/<!-- company-format:start -->[\s\S]*?<!-- company-format:end -->\n?/, '');
+  const d = SOURCED_FORMATS[slug];
+  if (!d) return out;
+  // Above the page's own claims about the SQL, below the provenance note.
+  let at = out.indexOf('<section id="topics"');
+  if (at < 0) at = out.indexOf('<section id="questions"');
+  if (at < 0) return out;
+  const block = `<!-- company-format:start -->\n${formatSection(d, { accessed: '14 Sep 2026', role: d.role })}\n<!-- company-format:end -->\n`;
+  return out.slice(0, at) + block + out.slice(at);
+}
+
 /** Put it above the first claim on the page: after the hero, before section two. */
 export function withProvenance(html, { slug, name }) {
   let out = html.replace(/<!-- company-provenance:start -->[\s\S]*?<!-- company-provenance:end -->\n?/, '');
@@ -232,6 +247,42 @@ export function withProvenance(html, { slug, name }) {
   const next = out.indexOf('\n<section', hero + 1);
   if (next < 0) return out;
   return `${out.slice(0, next + 1)}${provenanceBlock({ slug, name })}\n\n${out.slice(next + 1)}`;
+}
+
+/**
+ * The sourced format table. One renderer for the generated pages and for the
+ * older pages that get a format section injected (founder's list item 9), so
+ * a page cannot end up with a second, differently-worded version of the same
+ * claim family.
+ *
+ * @param d     {name, format: [[label, text, [srcKeys]]], sources: {key: [label, url|null, date]}}
+ * @param opts  {accessed, role} — `role` narrows the heading when the sources
+ *              only cover one job family.
+ */
+export function formatSection(d, { accessed, role = null } = {}) {
+  const srcKeys = Object.keys(d.sources);
+  const cite = keys => keys.length
+    ? keys.map(k => `<a href="#src-${k}" style="color:#8b98ab;text-decoration:none;font-size:11px;vertical-align:super;">[${srcKeys.indexOf(k) + 1}]</a>`).join('')
+    : '<span style="color:#8b98ab;font-size:11px;"> (no reliable source)</span>';
+  const rows = d.format.map(r => `      <tr><th scope="row" style="text-align:left;vertical-align:top;padding:14px 16px;color:#e2e8f0;font-weight:700;font-size:14px;white-space:nowrap;border-bottom:1px solid rgba(255,255,255,.06);">${esc(r[0])}</th><td style="padding:14px 16px;color:#94a3b8;font-size:14px;line-height:1.7;border-bottom:1px solid rgba(255,255,255,.06);">${esc(r[1])}${cite(r[2])}</td></tr>`).join('\n');
+  const list = srcKeys.map((k, i) => {
+    const [label, href, date] = d.sources[k];
+    const text = `${esc(label)} (${esc(date)})`;
+    return `<li id="src-${k}" style="margin:4px 0;">[${i + 1}] ${href ? `<a href="${href}" rel="nofollow noopener" target="_blank" style="color:#94a3b8;">${text}</a>` : text}</li>`;
+  }).join('');
+  const sentence = `Sources: ${srcKeys.map(k => `${d.sources[k][0]} (${d.sources[k][2]})`).join('; ')}.`;
+  return `<section id="format" style="border-top:1px solid rgba(255,255,255,.04);"><div class="sec">
+  <span class="sl">How the interview runs</span>
+  <h2 class="st fd">The ${esc(d.name)} SQL interview, as candidates report it</h2>
+  <p style="font-size:15px;color:#94a3b8;margin:14px 0 22px;max-width:760px;line-height:1.75;">${esc(d.name)} does not publish the format. Each row is what candidates and prep guides have described publicly, with its source; where sources disagree, the row says so. Formats change — treat every specific as reported, not official.${role ? ` The sources below describe ${esc(role)}; other teams at ${esc(d.name)} may run a different loop.` : ''}</p>
+  <div class="tbl"><table>
+    <tbody>
+${rows}
+    </tbody>
+  </table></div>
+  <ol style="list-style:none;margin-top:18px;font-size:12px;color:#8b98ab;line-height:1.6;">${list}</ol>
+  <p style="font-size:12px;color:#5b6577;margin-top:10px;">${esc(sentence)} Accessed ${esc(accessed)}.</p>
+</div></section>`;
 }
 
 export function breadcrumbLd(slug, name) {
@@ -268,13 +319,6 @@ export function renderPage(key, d, f) {
   const cite = keys => keys.length
     ? keys.map(k => `<a href="#src-${k}" style="color:#8b98ab;text-decoration:none;font-size:11px;vertical-align:super;">[${srcKeys.indexOf(k) + 1}]</a>`).join('')
     : '<span style="color:#8b98ab;font-size:11px;"> (no reliable source)</span>';
-  const formatRows = d.format.map(r => `      <tr><th scope="row" style="text-align:left;vertical-align:top;padding:14px 16px;color:#e2e8f0;font-weight:700;font-size:14px;white-space:nowrap;border-bottom:1px solid rgba(255,255,255,.06);">${esc(r[0])}</th><td style="padding:14px 16px;color:#94a3b8;font-size:14px;line-height:1.7;border-bottom:1px solid rgba(255,255,255,.06);">${esc(r[1])}${cite(r[2])}</td></tr>`).join('\n');
-  const sourcesLine = srcKeys.map((k, i) => {
-    const [label, href, date] = d.sources[k];
-    const text = `${esc(label)} (${esc(date)})`;
-    return `<li id="src-${k}" style="margin:4px 0;">[${i + 1}] ${href ? `<a href="${href}" rel="nofollow noopener" target="_blank" style="color:#94a3b8;">${text}</a>` : text}</li>`;
-  }).join('');
-  const sourcesSentence = `Sources: ${srcKeys.map(k => `${d.sources[k][0]} (${d.sources[k][2]})`).join('; ')}.`;
   const shapes = d.shapes.map(s => `      <li style="margin:0 0 12px;line-height:1.7;">${esc(s[0])}${cite([s[1]])}</li>`).join('\n');
   const reported = d.reportedTopics.map((t, i) => `<li style="margin:0 0 8px;"><span class="fm" style="color:#8b98ab;margin-right:8px;">${i + 1}</span>${esc(t)}</li>`).join('');
   const topicsJs = f.dist.map((x, i) => `  ['${x.share}%','${jsq(x.skill)}','${x.count} of the ${f.n} · ${jsq(SKILL_SUB[x.skill] || '')}','${['#c084fc', '#a78bfa', '#7c3aed', '#c084fc'][i % 4]}']`).join(',\n');
@@ -358,18 +402,7 @@ ${ld}
   <p style="font-size:13px;color:#8b98ab;margin-top:18px;">${f.n} practice challenges · ${f.easy} Easy / ${f.medium} Medium / ${f.hard} Hard · ${f.free} play free · runs in the browser</p>
 </div></section>
 
-<section id="format" style="border-top:1px solid rgba(255,255,255,.04);"><div class="sec">
-  <span class="sl">How the interview runs</span>
-  <h2 class="st fd">The ${esc(d.name)} SQL interview, as candidates report it</h2>
-  <p style="font-size:15px;color:#94a3b8;margin:14px 0 22px;max-width:760px;line-height:1.75;">${esc(d.name)} does not publish the format. Each row is what candidates and prep guides have described publicly, with its source; where sources disagree, the row says so. Formats change — treat every specific as reported, not official.</p>
-  <div class="tbl"><table>
-    <tbody>
-${formatRows}
-    </tbody>
-  </table></div>
-  <ol style="list-style:none;margin-top:18px;font-size:12px;color:#8b98ab;line-height:1.6;">${sourcesLine}</ol>
-  <p style="font-size:12px;color:#5b6577;margin-top:10px;">${esc(sourcesSentence)} Accessed 13 Sep 2026.</p>
-</div></section>
+${formatSection(d, { accessed: '13 Sep 2026' })}
 
 <section id="topics" style="border-top:1px solid rgba(255,255,255,.04);"><div class="sec">
   <span class="sl">The SQL that comes up</span>
@@ -465,6 +498,7 @@ export function injectModules(bank) {
     const rel = html.indexOf('<!-- related-companies:start -->');
     const at = rel >= 0 ? rel : html.indexOf('<section class="cs">');
     if (at >= 0) html = html.slice(0, at) + topicLinksBlock({ name, dist: fx.dist, ordered: fx.ordered }) + '\n' + html.slice(at);
+    html = withSourcedFormat(html, key);
     html = withProvenance(html, { slug: key, name });
     fs.writeFileSync(file, html);
     done.push(key);

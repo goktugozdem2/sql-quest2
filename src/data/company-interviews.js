@@ -255,3 +255,57 @@ export const NEW_COMPANY_TAGS = {
   Microsoft: [105, 138, 128, 179, 113, 14, 121, 157, 66, 111, 112, 77, 82, 61, 23, 31],
   Bloomberg: [275, 288, 289, 202, 211, 282, 292, 294, 281, 160, 163, 217, 283, 299, 216, 89],
 };
+
+// ---------------------------------------------------------------------------
+// Sourced formats for pages that predate the template (founder's list item 9,
+// 2026-09-14).
+//
+// The twenty-one older pages state no format at all — correct since the
+// 2026-09-07 incident, but it leaves the highest-intent companies with less
+// than the seven generated pages carry. These entries give an older page the
+// same sourced format section, injected by scripts/build-company-pages.mjs,
+// and move its slug into SOURCED_SLUGS.
+//
+// Same rule as above and no softer: every row cites keys that resolve to a
+// dated source that was actually FETCHED on the research date. Sources read
+// only as a search-result snippet are not here. Where a source gives a
+// relative date ("updated 2 months ago"), the entry records what it said and
+// the day we read it, not a guess. Research notes:
+// docs/reads/company-research-2026-09-14.md.
+//
+// Adding a company: research, then an entry here, then
+// `node scripts/build-company-pages.mjs`. The guard in
+// tests/company-pages.test.js will start holding the page to rule 1 the
+// moment its slug appears, so the entry has to be right before it ships.
+// ---------------------------------------------------------------------------
+export const SOURCED_FORMATS = {
+  amazon: {
+    name: 'Amazon',
+    role: 'Business Intelligence Engineer / data analytics roles',
+    format: [
+      ['Stages', 'A recruiter screen of about 30 minutes, one or two technical phone screens, then a virtual onsite loop of about five rounds.', ['blind-amzn', 'exponent-amzn']],
+      ['Round length', 'One candidate report puts the technical phone screens at 75 minutes each and the onsite rounds at roughly 60 minutes. A prep guide describes the onsite as five to six rounds of 45 minutes to an hour.', ['blind-amzn', 'exponent-amzn']],
+      ['Environment', 'The same report describes SQL written on a "CoderPad-style" editor where you often cannot execute the query, so correctness has to be reasoned rather than run.', ['blind-amzn']],
+      ['What the SQL round covers', 'Joins, window functions and ranking, with follow-ups on edge cases; the guide says to expect at least five questions across SQL, Python, visualisation and business analytics in the technical screen, without splitting out how many are SQL.', ['blind-amzn', 'exponent-amzn']],
+      ['Alongside the SQL', 'Leadership Principles come up throughout, including inside technical rounds — not only in the behavioural ones.', ['exponent-amzn', 'blind-amzn']],
+    ],
+    sources: {
+      'blind-amzn': ['Blind — "Amazon Business Intelligence Engineer (BIE L5) Interview 2025" (candidate report, replies to 15 Oct 2025)', 'https://www.teamblind.com/post/amazon-business-intelligence-engineer-bie-l5-interview-2025-jdr2idmd', '14 Sep 2025'],
+      'exponent-amzn': ['Exponent — Amazon Business Intelligence Engineer interview guide', 'https://www.tryexponent.com/guides/amazon-bie-interview', 'shown as "updated 2 months ago" on 14 Sep 2026'],
+    },
+  },
+  meta: {
+    name: 'Meta',
+    role: 'Data Engineer',
+    format: [
+      ['The technical screen', 'Two candidate reports agree on five problems in the screen: three SQL and two Python.', ['blind-meta-apr25', 'blind-meta-mar25']],
+      ['Environment', 'You are given the schema, and in both the screen and the onsite the code is not expected to be runnable — one report adds that the onsite also gives you the expected output. Interviewers differ in how strict they are about syntax.', ['blind-meta-apr25']],
+      ['What the SQL covers', 'Reported as medium difficulty: window functions, subqueries, CTEs and date/time work.', ['blind-meta-mar25']],
+      ['The onsite', 'Described as several rounds spanning product sense, data modelling, SQL, Python and behavioural. Neither report gives a length for the individual rounds, so this page does not state one.', ['blind-meta-apr25']],
+    ],
+    sources: {
+      'blind-meta-apr25': ['Blind — "Meta Data Engineer 2025 Interview Experience" (candidate report, E4 offer)', 'https://www.teamblind.com/post/meta-data-engineer-2025-interview-experience-zuvy6qgj', '5 Apr 2025'],
+      'blind-meta-mar25': ['Blind — "Meta Data Engineer: Technical Screen-Help" (poster plus two replying candidates)', 'https://www.teamblind.com/post/meta-data-engineer-technical-screen-help-6fy3wafy', '17 Mar 2025'],
+    },
+  },
+};
