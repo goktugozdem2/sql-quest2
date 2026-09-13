@@ -111,3 +111,23 @@ describe('client call sites', () => {
     expect(app.match(/rpc\('sq_mark_email_verified'\)/g).length).toBe(2);
   });
 });
+
+describe('server-owned plan fields (2026-09-14)', () => {
+  const m2 = fs.readFileSync(path.join(ROOT, 'supabase/migrations/20260914100000_server_owned_account_fields.sql'), 'utf8');
+  it('sq_save_user keeps every plan and sender key from the row', () => {
+    for (const k of ['proStatus', 'proType', 'proExpiry', 'proAutoRenew', 'proGrantReason', 'emailOptOut', 'trialReminder_2days_sent_at', 'checkoutAbandonEmailAt', 'lastSkillDecayEmail', 'lastWelcomeBackEmail', 'unsubToken', 'stripeCustomerId']) {
+      expect(m2, k).toContain(`'${k}'`);
+    }
+    expect(m2).toContain("p_carry_pro_from like 'guest\\_%'");
+    expect(m2).toMatch(/drop policy if exists "Service role full access" on public\.ai_usage/);
+  });
+  it('the sign-up paths name the guest row, and a 404 retries without it', () => {
+    expect((app.match(/carryProFrom: /g) || []).length).toBeGreaterThanOrEqual(2);
+    const at = app.indexOf('const _flushCloudSave');
+    expect(app.slice(at, at + 3500)).toMatch(/if \(!carryProFrom \|\| !isMissingServerSide\(err\)\) throw err;/);
+  });
+  it('no client code path grants a plan by writing the user record', () => {
+    // upgradeToProMock is a leftover mock that is defined and never called.
+    expect((app.match(/upgradeToProMock/g) || []).length).toBe(1);
+  });
+});

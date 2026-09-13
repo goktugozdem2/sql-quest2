@@ -2876,7 +2876,7 @@ const callAccountFunction = async (name, body) => {
 const _cloudSaveQueue = new Map(); // username → { data, timer }
 const CLOUD_SAVE_DEBOUNCE_MS = 5000;
 
-const _flushCloudSave = async (username, data) => {
+const _flushCloudSave = async (username, data, carryProFrom = null) => {
   if (!isSupabaseConfigured()) return { ok: true, skipped: true };
   try {
     // No created_at here. PostgREST's merge-duplicates sets EVERY column in
@@ -2904,18 +2904,28 @@ const _flushCloudSave = async (username, data) => {
     // sq_save_user (2026-09-13): same fields; the server keeps an existing
     // row's own password, email and payment ids. Table upsert only when the
     // function is not deployed yet.
+    // carryProFrom (2026-09-14): a guest who paid and is now creating an
+    // account names the guest row; the server copies the plan from that row.
+    // A 404 with the argument means the server has the older five-argument
+    // function, so the call is retried without it before any table fallback.
+    const rpcBody = {
+      p_username: username,
+      p_data: data,
+      p_password_hash: cloudData.password_hash,
+      p_salt: cloudData.salt,
+      p_email: cloudData.email,
+    };
     try {
-      await supabaseFetch('rpc/sq_save_user', {
-        method: 'POST',
-        throwOnError: true,
-        body: JSON.stringify({
-          p_username: username,
-          p_data: data,
-          p_password_hash: cloudData.password_hash,
-          p_salt: cloudData.salt,
-          p_email: cloudData.email,
-        }),
-      });
+      try {
+        await supabaseFetch('rpc/sq_save_user', {
+          method: 'POST',
+          throwOnError: true,
+          body: JSON.stringify(carryProFrom ? { ...rpcBody, p_carry_pro_from: carryProFrom } : rpcBody),
+        });
+      } catch (err) {
+        if (!carryProFrom || !isMissingServerSide(err)) throw err;
+        await supabaseFetch('rpc/sq_save_user', { method: 'POST', throwOnError: true, body: JSON.stringify(rpcBody) });
+      }
     } catch (err) {
       if (!isMissingServerSide(err)) throw err;
       await supabaseFetch('users?on_conflict=username', {
@@ -3017,7 +3027,7 @@ const saveUserData = async (username, data, options = {}) => {
     const existing = _cloudSaveQueue.get(username);
     if (existing && existing.timer) clearTimeout(existing.timer);
     _cloudSaveQueue.delete(username);
-    const result = await _flushCloudSave(username, data);
+    const result = await _flushCloudSave(username, data, options.carryProFrom || null);
     if (!result.ok) {
       // Surface the failure so the caller can show an error and not pretend
       // the change persisted.
@@ -18294,7 +18304,7 @@ CRITICAL RULES:
     // call the user "registered". Otherwise the next login lookup misses
     // them entirely and they're locked out of an account they just made.
     try {
-      await saveUserData(username, userData, { force: true });
+      await saveUserData(username, userData, { force: true, carryProFrom: previousGuestName && String(previousGuestName).startsWith('guest_') ? previousGuestName : null });
     } catch (err) {
       console.error('Signup cloud save failed:', err);
       alert('Could not finish creating your account. Please check your connection and try again.');
@@ -18653,7 +18663,7 @@ CRITICAL RULES:
         ? mergeProgress(newUserData, guestBlob, { challenges: window.challengesData || challenges || [] }).merged
         : newUserData;
       try {
-        await saveUserData(regUsername, registerData, { force: true });
+        await saveUserData(regUsername, registerData, { force: true, carryProFrom: guestBlob && guestName && String(guestName).startsWith('guest_') ? guestName : null });
       } catch (err) {
         console.error('Signup cloud save failed:', err);
         setAuthError('Could not finish creating your account. Please check your connection and try again.');

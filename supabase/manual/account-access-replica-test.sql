@@ -55,6 +55,12 @@ insert into public.users (username, password_hash, salt, email, data) values
    '{"passwordHash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","salt":"saltalice1","email":"alice@example.com","xp":10,"unsubToken":"tok-a","stripeCustomerId":"cus_a","emailVerified":false}'),
   ('guest_1', '', '', null, '{"xp":3}');
 
+create table public.ai_usage (id bigserial primary key, username text, date date, call_count int, plan_type text, created_at timestamptz default now(), updated_at timestamptz default now());
+alter table public.ai_usage enable row level security;
+create policy "Service role full access" on public.ai_usage for all to public using (true);
+grant select, insert, update, delete on public.ai_usage to anon, authenticated;
+insert into public.ai_usage (username, date, call_count, plan_type) values ('alice', current_date, 20, 'free');
+
 -- ── step 1 ──
 \ir ../migrations/20260913130000_account_access_functions.sql
 
@@ -134,6 +140,48 @@ do $$ begin
   end;
 end $$;
 reset role;
+
+-- ── server-owned plan fields (20260914100000) ──
+update public.users set data = data || '{"proStatus":true,"proType":"annual","proExpiry":"2027-09-01","proAutoRenew":true,"stripeCustomerId":"cus_a"}' where username = 'alice';
+insert into public.users (username, password_hash, salt, data) values
+  ('guest_paid', '', '', '{"xp":4,"proStatus":true,"proType":"monthly","proExpiry":"2026-10-14","proAutoRenew":true,"stripeCustomerId":"cus_g"}');
+\ir ../migrations/20260914100000_server_owned_account_fields.sql
+
+set role anon;
+do $$ begin
+  -- a free user cannot grant themselves a plan
+  perform public.sq_save_user('bob', '{"xp":5,"proStatus":true,"proType":"lifetime","proExpiry":"2126-01-01"}'::jsonb);
+  -- a paying user's stale tab cannot take the plan away
+  perform public.sq_save_user('alice', '{"xp":40,"proStatus":false,"proType":null,"proExpiry":null,"emailOptOut":false}'::jsonb);
+  -- a brand-new account cannot be created on a plan
+  perform public.sq_save_user('carol', jsonb_build_object('xp', 0, 'proStatus', true, 'proType', 'lifetime', 'passwordHash', repeat('9', 64), 'salt', 'saltcarol1'), repeat('9', 64), 'saltcarol1', 'carol@example.com');
+  -- a guest who paid keeps the plan when the account is created (copied from the guest row)
+  perform public.sq_save_user('dave', jsonb_build_object('xp', 4, 'proStatus', true, 'proType', 'lifetime', 'passwordHash', repeat('8', 64), 'salt', 'saltdave12'), repeat('8', 64), 'saltdave12', 'dave@example.com', 'guest_paid');
+  -- naming a non-guest or unpaid row carries nothing
+  perform public.sq_save_user('erin', '{"xp":0}'::jsonb, repeat('7', 64), 'salterin12', 'erin@example.com', 'alice');
+  -- the old five-argument call still works
+  perform public.sq_save_user('guest_4', '{"xp":1}'::jsonb, '', '', null);
+  if (select count(*) from public.ai_usage) <> 0 then raise exception 'anon can still read ai_usage rows'; end if;
+  delete from public.ai_usage;
+end $$;
+reset role;
+do $$
+declare r jsonb;
+begin
+  select data into r from public.users where username = 'bob';
+  if coalesce(r->>'proStatus', 'false') <> 'false' or r ? 'proType' and r->>'proType' is not null then raise exception 'free user granted a plan: %', r; end if;
+  select data into r from public.users where username = 'alice';
+  if r->>'proStatus' <> 'true' or r->>'proType' <> 'annual' or r->>'proExpiry' <> '2027-09-01' or r->>'stripeCustomerId' <> 'cus_a' then raise exception 'plan taken away by a client save: %', r; end if;
+  if (r->>'xp')::int <> 40 then raise exception 'progress lost on a plan row'; end if;
+  select data into r from public.users where username = 'carol';
+  if r->>'proStatus' <> 'false' or r->>'proType' is not null then raise exception 'new account created on a plan: %', r; end if;
+  select data into r from public.users where username = 'dave';
+  if r->>'proStatus' <> 'true' or r->>'proType' <> 'monthly' or r->>'proExpiry' <> '2026-10-14' or r->>'stripeCustomerId' <> 'cus_g' then raise exception 'paid guest plan not carried from the guest row: %', r; end if;
+  select data into r from public.users where username = 'erin';
+  if r->>'proStatus' <> 'false' then raise exception 'carried a plan from a non-guest row'; end if;
+  if not exists (select 1 from public.users where username = 'guest_4') then raise exception 'five-argument call broken'; end if;
+  if (select call_count from public.ai_usage where username = 'alice') <> 20 then raise exception 'anon deleted or changed ai_usage rows'; end if;
+end $$;
 
 -- ── step 2 ──
 \ir 20260913b_users_direct_access_off.sql

@@ -605,6 +605,13 @@ Rewritten Coach-forward:
   (rollback file beside it). Never apply step 2 before the functions answer.
 - Never add a direct `users?` read or write in the client outside a fallback
   branch — the test fails on it.
+- **Plan and sender fields are server-owned** (migration
+  `20260914100000_server_owned_account_fields.sql`): `sq_save_user` always
+  keeps the row's proStatus/proType/proExpiry/proAutoRenew/proGrantReason,
+  stripe ids, emailOptOut and the email senders' markers; a new row starts
+  free unless `p_carry_pro_from` names a paid `guest_*` row, and then the plan
+  is copied from that row. Grant Pro only from a service-role path
+  (stripe-webhook, claim-referral-reward, SQL) — a client write is ignored.
 
 ### Guest progress — persists, resumes, merges (2026-09-12)
 

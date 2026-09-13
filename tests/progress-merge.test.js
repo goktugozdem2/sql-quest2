@@ -135,7 +135,7 @@ describe('source guards — app.jsx keeps the guest, resumes it, and merges it',
   it('login merges before the session loads, register carries the guest blob, and both forget the guest afterwards', () => {
     expect(app).toMatch(/await mergeGuestIntoAccount\(username\)/);
     expect(app).toMatch(/mergeProgress\(newUserData, guestBlob/);
-    expect(app).toMatch(/await saveUserData\(regUsername, registerData, \{ force: true \}\)/);
+    expect(app).toMatch(/await saveUserData\(regUsername, registerData, \{ force: true(, carryProFrom: [^}]+)? \}\)/);
     expect((app.match(/forgetGuest\(/g) || []).length).toBeGreaterThanOrEqual(3);
     expect(app).toMatch(/trackActivationEvent\('guest_progress_merged'/);
     expect(app).toMatch(/trackActivationEvent\('guest_resumed'/);
