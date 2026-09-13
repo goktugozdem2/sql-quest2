@@ -26,7 +26,11 @@
         "npm:vite@^8.0.8",
         "npm:vitest@^4.1.0",
         "npm:ws@^8.20.0"
-      ]
+      ],
+      "overrides": {
+        "sharp": "^0.35.3",
+        "brace-expansion": "^2.0.2"
+      }
     }
   }
 }

@@ -586,6 +586,26 @@ Rewritten Coach-forward:
 - **Read the postgres error log weekly**: `query_logs` on `postgres_logs`,
   severity ERROR. It is the only place this outage was visible.
 
+### Account access — view, save function, server sign-in (2026-09-13)
+
+- **Reads** of account rows go through `public.users_public` (no
+  passwordHash, salt, email, unsubToken, stripe ids); **writes** through
+  `rpc/sq_save_user`, which keeps an existing row's own credential, email and
+  payment-id fields; **sign-in** and **password change** run in the
+  `account-login` / `account-password` edge functions (service role, failure
+  counter in `account_login_attempts`); email-verified and recovery reset use
+  `sq_mark_email_verified` / `sq_set_password_for_session_email` with the
+  Supabase Auth session. Pure half `src/utils/account-access.js`; guards
+  `tests/account-access.test.js`; SQL behaviour
+  `supabase/manual/account-access-replica-test.sql` (local Postgres only).
+- The client falls back to the old table path **only on HTTP 404** (server
+  side not deployed). Release order: migration
+  `20260913130000_account_access_functions.sql` → deploy both functions →
+  (client already live) → verify → `supabase/manual/20260913b_users_direct_access_off.sql`
+  (rollback file beside it). Never apply step 2 before the functions answer.
+- Never add a direct `users?` read or write in the client outside a fallback
+  branch — the test fails on it.
+
 ### Guest progress — persists, resumes, merges (2026-09-12)
 
 - A browser keeps ONE guest identity under `localStorage.sqlquest_guest_user`;

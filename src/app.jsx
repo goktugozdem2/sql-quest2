@@ -1,3 +1,4 @@
+import { withLocalAccountKeys as withLocalAccountKeysPure, isMissingServerSide, accountFunctionStatus } from './utils/account-access.js';
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 // Re-expose on window for legacy inline handlers / computed renders that
 // still reference `React.createElement(...)` or `React.useRef(...)` without
@@ -2774,6 +2775,87 @@ const supabaseFetch = async (endpoint, options = {}) => {
   }
 };
 
+// ============ ACCOUNT ACCESS (2026-09-13) ============
+//
+// Account reads go through the users_public view and account writes through
+// the sq_save_user function (supabase/migrations/20260913130000_*); sign-in
+// and password change run in the account-login / account-password edge
+// functions. Every call falls back to the old direct table path when the
+// server side is not there yet (HTTP 404), so the release order is safe:
+// migration → functions → this client → step 2 (supabase/manual/20260913b_*).
+//
+// The owner's own credential keys never come back from users_public. A
+// signed-in browser keeps them in its local copy; withLocalAccountKeys puts
+// them back onto a cloud read so nothing downstream (autosave, profile
+// publishing) sees them disappear.
+const withLocalAccountKeys = (username, data) => {
+  let raw = null;
+  try { raw = localStorage.getItem(`sqlquest_user_${username}`); } catch (_) { raw = null; }
+  return withLocalAccountKeysPure(data, raw);
+};
+
+// Read account rows: the view first, the table only if the view is not deployed.
+const fetchAccountRows = async (query) => {
+  try {
+    return await supabaseFetch(`users_public?${query}`, { throwOnError: true });
+  } catch (err) {
+    if (!isMissingServerSide(err)) throw err;
+    return await supabaseFetch(`users?${query}`, { throwOnError: true });
+  }
+};
+
+const isEmailRegistered = async (emailLower) => {
+  try {
+    const r = await supabaseFetch('rpc/sq_email_registered', {
+      method: 'POST', throwOnError: true,
+      headers: { Prefer: 'return=representation' },
+      body: JSON.stringify({ p_email: emailLower }),
+    });
+    return r === true;
+  } catch (err) {
+    if (!isMissingServerSide(err)) throw err;
+    let rows = await supabaseFetch(`users?email=eq.${encodeURIComponent(emailLower)}`);
+    if (!rows || rows.length === 0) rows = await supabaseFetch(`users?data->>email=eq.${encodeURIComponent(emailLower)}`);
+    return !!(rows && rows.length > 0);
+  }
+};
+
+const isUsernameRegistered = async (username) => {
+  try {
+    const r = await supabaseFetch('rpc/sq_username_registered', {
+      method: 'POST', throwOnError: true,
+      headers: { Prefer: 'return=representation' },
+      body: JSON.stringify({ p_username: username }),
+    });
+    return r === true;
+  } catch (err) {
+    if (!isMissingServerSide(err)) throw err;
+    const rows = await supabaseFetch(`users?username=eq.${encodeURIComponent(username)}`);
+    return !!(rows && rows[0] && rows[0].data && rows[0].data.passwordHash);
+  }
+};
+
+// POST to an account edge function. status: ok | invalid | locked | unavailable.
+const callAccountFunction = async (name, body) => {
+  try {
+    const r = await fetch(`${window.SUPABASE_URL}/functions/v1/${name}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: window.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${window.SUPABASE_ANON_KEY}`,
+      },
+      body: JSON.stringify(body),
+    });
+    let j = null;
+    if (r.status !== 404) { try { j = await r.json(); } catch (_) { j = null; } }
+    const status = accountFunctionStatus(r.status, j);
+    return { ...(status === 'ok' || status === 'locked' ? (j || {}) : {}), status, httpStatus: r.status };
+  } catch (_) {
+    return { status: 'unavailable' };
+  }
+};
+
 // ============ USER DATA FUNCTIONS ============
 //
 // Cloud-sync egress budget:
@@ -2818,14 +2900,32 @@ const _flushCloudSave = async (username, data) => {
     // throwOnError: a rejected write must come back as { ok: false }. Without
     // it, return=minimal's empty body and a 403 both read as null, and the
     // force path below promises callers it "propagates failure".
-    await supabaseFetch('users?on_conflict=username', {
-      method: 'POST',
-      throwOnError: true,
-      headers: {
-        'Prefer': 'resolution=merge-duplicates,return=minimal',
-      },
-      body: JSON.stringify(cloudData),
-    });
+    // sq_save_user (2026-09-13): same fields; the server keeps an existing
+    // row's own password, email and payment ids. Table upsert only when the
+    // function is not deployed yet.
+    try {
+      await supabaseFetch('rpc/sq_save_user', {
+        method: 'POST',
+        throwOnError: true,
+        body: JSON.stringify({
+          p_username: username,
+          p_data: data,
+          p_password_hash: cloudData.password_hash,
+          p_salt: cloudData.salt,
+          p_email: cloudData.email,
+        }),
+      });
+    } catch (err) {
+      if (!isMissingServerSide(err)) throw err;
+      await supabaseFetch('users?on_conflict=username', {
+        method: 'POST',
+        throwOnError: true,
+        headers: {
+          'Prefer': 'resolution=merge-duplicates,return=minimal',
+        },
+        body: JSON.stringify(cloudData),
+      });
+    }
     return { ok: true };
   } catch (err) {
     console.error('Cloud sync failed:', err);
@@ -2947,22 +3047,20 @@ const saveUserData = async (username, data, options = {}) => {
         if (entry.timer) clearTimeout(entry.timer);
         try {
           const body = JSON.stringify({
-            username: user,
-            password_hash: entry.data.passwordHash || '',
-            salt: entry.data.salt || '',
-            email: entry.data.email || null,
-            data: entry.data,
-            updated_at: new Date().toISOString(),
-            created_at: new Date().toISOString(),
+            p_username: user,
+            p_data: entry.data,
+            p_password_hash: entry.data.passwordHash || '',
+            p_salt: entry.data.salt || '',
+            p_email: entry.data.email || null,
           });
-          fetch(`${window.SUPABASE_URL}/rest/v1/users?on_conflict=username`, {
+          fetch(`${window.SUPABASE_URL}/rest/v1/rpc/sq_save_user`, {
             method: 'POST',
             keepalive: true,
             headers: {
               'apikey': window.SUPABASE_ANON_KEY,
               'Authorization': `Bearer ${window.SUPABASE_ANON_KEY}`,
               'Content-Type': 'application/json',
-              'Prefer': 'resolution=merge-duplicates,return=minimal',
+              'Prefer': 'return=minimal',
             },
             body,
           });
@@ -2986,10 +3084,12 @@ const loadUserData = async (username, allowLocalFallback = true, options = {}) =
   // Try cloud first if configured
   if (isSupabaseConfigured()) {
     try {
-      const cloudData = await supabaseFetch(`users?username=eq.${encodeURIComponent(username)}`);
+      const cloudData = options.legacyTable
+        ? await supabaseFetch(`users?username=eq.${encodeURIComponent(username)}`)
+        : await fetchAccountRows(`select=username,data&username=eq.${encodeURIComponent(username)}`);
       
       if (cloudData && cloudData.length > 0) {
-        const userData = cloudData[0].data;
+        const userData = withLocalAccountKeys(username, cloudData[0].data);
         // Guard: an effectively-EMPTY cloud blob must not clobber local
         // progress. This was eating every guest's work on every load: the
         // guest's cloud row is created at first visit but the autosave loop
@@ -3073,7 +3173,7 @@ const loadLeaderboard = async () => {
   // If Supabase configured, load from cloud
   if (isSupabaseConfigured()) {
     try {
-      const cloudUsers = await supabaseFetch('users?select=username,data&order=data->>xp.desc&limit=50');
+      const cloudUsers = await fetchAccountRows('select=username,data&order=data->>xp.desc&limit=50');
       if (cloudUsers && cloudUsers.length > 0) {
         realUsers = cloudUsers.map(u => ({
           username: u.username,
@@ -8144,7 +8244,7 @@ function SQLQuest() {
       // When Supabase is configured, verify user still exists before restoring session
       if (isSupabaseConfigured()) {
         // Check if user exists in Supabase
-        supabaseFetch(`users?username=eq.${encodeURIComponent(savedUser)}`).then(cloudData => {
+        fetchAccountRows(`select=username&username=eq.${encodeURIComponent(savedUser)}`).then(cloudData => {
           if (cloudData && cloudData.length > 0) {
             // User exists in Supabase, restore session
             loadUserSession(savedUser);
@@ -8333,18 +8433,20 @@ function SQLQuest() {
             // Find user by email and mark as verified
             if (isSupabaseConfigured()) {
               try {
-                // Try dedicated email column first
-                let users = await supabaseFetch(`users?email=eq.${encodeURIComponent(verifiedEmail)}`);
-                if (!users || users.length === 0) {
-                  // Fallback to data->>email
-                  users = await supabaseFetch(`users?data->>email=eq.${encodeURIComponent(verifiedEmail)}`);
-                }
-                
-                if (users && users.length > 0) {
-                  const userData = users[0].data;
-                  if (userData.emailVerified === false) {
-                    userData.emailVerified = true;
-                    await saveUserData(users[0].username, userData);
+                // sq_mark_email_verified reads the email from this Supabase
+                // Auth session (2026-09-13); no account row is fetched.
+                const { error: verifyErr } = await client.rpc('sq_mark_email_verified');
+                if (verifyErr && /Could not find the function|PGRST202/.test(String(verifyErr.message || verifyErr.code || ''))) {
+                  let users = await supabaseFetch(`users?email=eq.${encodeURIComponent(verifiedEmail)}`);
+                  if (!users || users.length === 0) {
+                    users = await supabaseFetch(`users?data->>email=eq.${encodeURIComponent(verifiedEmail)}`);
+                  }
+                  if (users && users.length > 0) {
+                    const userData = users[0].data;
+                    if (userData.emailVerified === false) {
+                      userData.emailVerified = true;
+                      await saveUserData(users[0].username, userData);
+                    }
                   }
                 }
               } catch (err) {
@@ -8375,16 +8477,20 @@ function SQLQuest() {
             // Update in Supabase
             if (isSupabaseConfigured()) {
               try {
-                let users = await supabaseFetch(`users?email=eq.${encodeURIComponent(verifiedEmail)}`);
-                if (!users || users.length === 0) {
-                  users = await supabaseFetch(`users?data->>email=eq.${encodeURIComponent(verifiedEmail)}`);
-                }
-                
-                if (users && users.length > 0) {
-                  const userData = users[0].data;
-                  if (userData.emailVerified === false) {
-                    userData.emailVerified = true;
-                    await saveUserData(users[0].username, userData);
+                // sq_mark_email_verified reads the email from this Supabase
+                // Auth session (2026-09-13); no account row is fetched.
+                const { error: verifyErr } = await client.rpc('sq_mark_email_verified');
+                if (verifyErr && /Could not find the function|PGRST202/.test(String(verifyErr.message || verifyErr.code || ''))) {
+                  let users = await supabaseFetch(`users?email=eq.${encodeURIComponent(verifiedEmail)}`);
+                  if (!users || users.length === 0) {
+                    users = await supabaseFetch(`users?data->>email=eq.${encodeURIComponent(verifiedEmail)}`);
+                  }
+                  if (users && users.length > 0) {
+                    const userData = users[0].data;
+                    if (userData.emailVerified === false) {
+                      userData.emailVerified = true;
+                      await saveUserData(users[0].username, userData);
+                    }
                   }
                 }
               } catch (err) {
@@ -18342,7 +18448,31 @@ CRITICAL RULES:
     
     let username = loginInput;
     let userData = null;
-    
+
+    // Sign-in on the server (2026-09-13): the password is checked by the
+    // account-login edge function, which returns this account's own record.
+    // Only when the function is not deployed does the old in-browser check
+    // below run.
+    let serverSignedIn = false;
+    if (authMode === 'login' && isSupabaseConfigured()) {
+      const res = await callAccountFunction('account-login', { login: loginInput, password: authPassword });
+      if (res.status === 'ok' && res.username && res.data) {
+        username = res.username;
+        userData = res.data;
+        try { localStorage.setItem(`sqlquest_user_${username}`, JSON.stringify(res.data)); } catch (_) {}
+        resetLoginAttempts(username);
+        serverSignedIn = true;
+      } else if (res.status === 'locked') {
+        const mins = Math.max(1, Math.ceil((res.retryAfterSeconds || 900) / 60));
+        setAuthError(`🔒 Too many failed attempts. Try again in ${mins} minute${mins > 1 ? 's' : ''}.`);
+        return;
+      } else if (res.status === 'invalid') {
+        setAuthError('Invalid username/email or password.');
+        return;
+      }
+    }
+
+    if (!serverSignedIn) {
     // If logging in with email, find the username associated with that email
     if (isEmailLogin) {
       // Search for user by email in Supabase (check dedicated email column first, then data->email)
@@ -18383,8 +18513,10 @@ CRITICAL RULES:
         setAuthError('Username must be at least 3 characters');
         return;
       }
-      // When Supabase is configured, don't allow localStorage fallback for login
-      userData = await loadUserData(username, !isSupabaseConfigured());
+      // When Supabase is configured, don't allow localStorage fallback for login.
+      // legacyTable: this path only runs when account-login is not deployed,
+      // and it needs the stored hash, which users_public does not return.
+      userData = await loadUserData(username, !isSupabaseConfigured(), { legacyTable: true });
     }
     
     // Check if account is locked
@@ -18421,6 +18553,7 @@ CRITICAL RULES:
       // Successful login - reset attempts
       resetLoginAttempts(username);
     }
+    } // end !serverSignedIn
     
     if (authMode === 'register') {
       // For registration, use authUsername as the username (not email)
@@ -18453,14 +18586,9 @@ CRITICAL RULES:
       
       const emailLower = authEmail.trim().toLowerCase();
       
-      // Check if email is already in use (Supabase - check dedicated column first, then data->email)
+      // Check if email is already in use (sq_email_registered checks the column and data->email)
       if (isSupabaseConfigured()) {
-        let existingEmail = await supabaseFetch(`users?email=eq.${encodeURIComponent(emailLower)}`);
-        if (!existingEmail || existingEmail.length === 0) {
-          // Fallback to data->>email for older accounts
-          existingEmail = await supabaseFetch(`users?data->>email=eq.${encodeURIComponent(emailLower)}`);
-        }
-        if (existingEmail && existingEmail.length > 0) {
+        if (await isEmailRegistered(emailLower)) {
           setAuthError('This email is already registered. Please login or use a different email.');
           return;
         }
@@ -18611,8 +18739,31 @@ CRITICAL RULES:
     }
     
     try {
+      // Server-side (2026-09-13): account-password checks the current password
+      // and writes the new one; client saves can no longer replace a hash.
+      if (isSupabaseConfigured()) {
+        const res = await callAccountFunction('account-password', { username: currentUser, currentPassword, newPassword });
+        if (res.status === 'ok') {
+          try {
+            const local = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+            local.salt = res.salt;
+            local.passwordHash = res.passwordHash;
+            localStorage.setItem(`sqlquest_user_${currentUser}`, JSON.stringify(local));
+          } catch (_) {}
+          setCurrentPassword('');
+          setNewPassword('');
+          setConfirmPassword('');
+          setChangePasswordSuccess('Password changed successfully!');
+          setTimeout(() => { setChangePasswordSuccess(''); setShowChangePassword(false); }, 2000);
+          return;
+        }
+        if (res.status === 'invalid') { setChangePasswordError('Current password is incorrect'); return; }
+        if (res.status === 'locked') { setChangePasswordError('Too many attempts. Please wait 15 minutes and try again.'); return; }
+        // unavailable: fall through to the old in-browser path
+      }
+
       // Verify current password
-      const userData = await loadUserData(currentUser);
+      const userData = await loadUserData(currentUser, true, { legacyTable: true });
       if (!userData) {
         setChangePasswordError('User data not found');
         return;
@@ -18792,6 +18943,13 @@ CRITICAL RULES:
   const resetUserPassword = async (username) => {
     if (!newPasswordForReset || newPasswordForReset.length < 6) {
       setAdminError('New password must be at least 6 characters');
+      return;
+    }
+    // 2026-09-13: a browser can no longer replace another account's password
+    // (sq_save_user keeps the stored hash). Resets happen in Supabase with the
+    // service role, or through the user's own "Forgot password" email.
+    if (isSupabaseConfigured()) {
+      setAdminError('Password resets run server-side now: ask the user to use "Forgot password", or reset it in Supabase.');
       return;
     }
     try {
@@ -23906,7 +24064,21 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                       // Murat 2026-05-07 incident — the reset link "worked" in
                       // Supabase but did nothing for the app's own login flow.)
                       const userEmail = result?.user?.email?.toLowerCase();
+                      // sq_set_password_for_session_email (2026-09-13): the
+                      // recovery session proves the inbox; the server writes
+                      // the new hash. Old table path only if not deployed.
+                      let serverReset = false;
                       if (userEmail && isSupabaseConfigured()) {
+                        const rpcClient = getSupabaseClient();
+                        if (rpcClient) {
+                          const rSalt = generateSalt();
+                          const rHash = await hashPassword(newResetPassword, rSalt);
+                          const { error: rErr } = await rpcClient.rpc('sq_set_password_for_session_email', { p_salt: rSalt, p_hash: rHash });
+                          if (!rErr) serverReset = true;
+                          else if (!/Could not find the function|PGRST202/.test(String(rErr.message || rErr.code || ''))) throw rErr;
+                        }
+                      }
+                      if (!serverReset && userEmail && isSupabaseConfigured()) {
                         let users = await supabaseFetch(`users?email=eq.${encodeURIComponent(userEmail)}`);
                         if (!users || users.length === 0) {
                           users = await supabaseFetch(`users?data->>email=eq.${encodeURIComponent(userEmail)}`);
@@ -25823,8 +25995,10 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
               }
 
               // Check if username exists
-              const existing = await loadUserData(username);
-              if (existing && existing.passwordHash) {
+              const existing = isSupabaseConfigured()
+                ? await isUsernameRegistered(username)
+                : !!(await loadUserData(username))?.passwordHash;
+              if (existing) {
                 setAuthError('Username already taken');
                 return;
               }
@@ -25832,11 +26006,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
               // Check if email is already in use
               const emailLower = email.toLowerCase();
               if (isSupabaseConfigured()) {
-                let existingEmail = await supabaseFetch(`users?email=eq.${encodeURIComponent(emailLower)}`);
-                if (!existingEmail || existingEmail.length === 0) {
-                  existingEmail = await supabaseFetch(`users?data->>email=eq.${encodeURIComponent(emailLower)}`);
-                }
-                if (existingEmail && existingEmail.length > 0) {
+                if (await isEmailRegistered(emailLower)) {
                   setAuthError('This email is already registered. Please use a different email.');
                   return;
                 }
