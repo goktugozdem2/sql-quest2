@@ -333,6 +333,17 @@ so a landing view and a later solve are joinable for the first time.
   in app.jsx + SOURCED_PAGES + sitemap. The company-page count (now 30) is
   bound across pages by site-counts.
 
+### The interview hub is generated (2026-09-14)
+
+- `src/sql-interview-prep.html`'s company grid is rendered by
+  `scripts/build-interview-hub.mjs` from `COMPANIES` in
+  `scripts/build-company-crosslinks.mjs` — the same registry the cross-link
+  strips use — between `company-grid:start/end`. It had drifted to claiming 30
+  tracks over 23 listed companies, and the seven 09-13 pages had no hub link.
+  A company added to the registry appears here automatically; its editorial
+  description is preserved, and a new sector must be given a group or the
+  build fails. `tests/interview-hub.test.js` binds the hub to the page set.
+
 ### Readiness test — the Skillmap door (2026-09-13)
 
 - `/sql-interview-readiness-test/` (`scripts/build-readiness-test.mjs`): ten

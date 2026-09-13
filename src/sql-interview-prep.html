@@ -8,7 +8,7 @@
   <!-- ── Primary SEO ─────────────────────────────────────────── -->
   <!-- 2026-09-07: "sql interview preparation" — 12 → 22 company tracks (ls src/*-sql-interview.html), 200+ → 287 challenges (bank count 2026-09-06) -->
   <title>SQL Interview Preparation — 30 Company Tracks + Study Plan (2026) | SQL Quest</title>
-  <meta name="description" content="The complete SQL interview preparation guide. 23 company-specific question sets for FAANG, marketplaces, finance, AI labs, and data infrastructure roles. 299 challenges with AI tutoring, including industry tracks for banking, real estate, and manufacturing. Free.">
+  <meta name="description" content="The complete SQL interview preparation guide. 30 company-specific question sets for FAANG, marketplaces, finance, AI labs, and data infrastructure roles. 299 challenges with AI tutoring, including industry tracks for banking, real estate, and manufacturing. Free.">
   <meta name="keywords" content="sql interview preparation, sql interview prep, sql interview questions, prepare for sql interview, data analyst interview prep, sql practice interview, faang sql interview, data science sql interview">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://sqlquest.app/sql-interview-prep/">
@@ -20,7 +20,7 @@
   <meta property="og:site_name" content="SQL Quest">
   <!-- 2026-09-07: "sql interview preparation" — og/twitter cards: 12 → 22 tracks, 200+ → 287 challenges -->
   <meta property="og:title" content="SQL Interview Preparation — 30 Company Tracks + Study Plan (2026) | SQL Quest">
-  <meta property="og:description" content="The complete SQL interview preparation guide. 23 company-specific question sets for FAANG, marketplaces, finance, AI labs, and data infrastructure roles. 299 challenges with AI tutoring, including industry tracks for banking, real estate, and manufacturing. Free.">
+  <meta property="og:description" content="The complete SQL interview preparation guide. 30 company-specific question sets for FAANG, marketplaces, finance, AI labs, and data infrastructure roles. 299 challenges with AI tutoring, including industry tracks for banking, real estate, and manufacturing. Free.">
   <meta property="og:image" content="https://sqlquest.app/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
@@ -30,7 +30,7 @@
   <!-- ── Twitter Card ─────────────────────────────────────────── -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="SQL Interview Preparation — 30 Company Tracks + Study Plan (2026) | SQL Quest">
-  <meta name="twitter:description" content="The complete SQL interview preparation guide. 23 company-specific question sets for FAANG, marketplaces, finance, AI labs, and data infrastructure roles. Free.">
+  <meta name="twitter:description" content="The complete SQL interview preparation guide. 30 company-specific question sets for FAANG, marketplaces, finance, AI labs, and data infrastructure roles. Free.">
   <meta name="twitter:image" content="https://sqlquest.app/og-image.png">
   <meta name="twitter:image:alt" content="SQL Quest — the complete SQL interview preparation guide">
 
@@ -47,7 +47,7 @@
     "@context": "https://schema.org",
     "@type": "Course",
     "name": "Complete SQL Interview Preparation",
-    "description": "End-to-end SQL interview preparation covering 23 company-specific question tracks (Amazon, Google, Meta, Apple, Netflix, Uber, Airbnb, Stripe, Shopify, Spotify, Databricks, Snowflake, JPMorgan, Capital One, Plaid, Ramp, Revolut, Wise, Morgan Stanley, OpenAI, Anthropic, NVIDIA, Tesla), 3 topic deep-dives (CTEs, JOINs, Window Functions), 3 industry-specific tracks on real public datasets (Banking via FDIC, Real Estate via NYC OpenData, Manufacturing via UCI AI4I 2020), and 299 hands-on challenges with AI tutoring.",
+    "description": "End-to-end SQL interview preparation covering 30 company-specific question tracks (Amazon, Google, Meta, Apple, Netflix, Uber, Airbnb, Stripe, Shopify, Spotify, Databricks, Snowflake, JPMorgan, Capital One, Plaid, Ramp, Revolut, Wise, Morgan Stanley, OpenAI, Anthropic, NVIDIA, Tesla), 3 topic deep-dives (CTEs, JOINs, Window Functions), 3 industry-specific tracks on real public datasets (Banking via FDIC, Real Estate via NYC OpenData, Manufacturing via UCI AI4I 2020), and 299 hands-on challenges with AI tutoring.",
     "provider": { "@type": "Organization", "name": "SQL Quest", "sameAs": "https://sqlquest.app/" },
     "url": "https://sqlquest.app/sql-interview-prep/",
     "courseMode": "online",
@@ -164,54 +164,56 @@
     <p style="font-size:15px;color:#94a3b8;max-width:640px;margin:18px auto 0;">Interviewing as an analyst specifically? Start with <a href="/sql-interview-questions-data-analyst/" style="color:#c084fc;font-weight:600;">SQL interview questions for data analysts</a> — the eight patterns to write cold, and how the questions change at 0–2, 2–5, and 5+ years.</p>
   </div>
 
-  <p class="group-label">FAANG</p>
+<!-- company-grid:start -->
+  <p class="group-label">FAANG &amp; Big Tech</p>
   <div class="cg">
     <a class="cc" href="/amazon-sql-interview/"><p class="t">Amazon</p><p class="d">Aggregation, e-commerce analytics, BIE and DA loops</p></a>
     <a class="cc" href="/google-sql-interview/"><p class="t">Google</p><p class="d">Window functions, analytics-heavy, product sense</p></a>
     <a class="cc" href="/meta-sql-interview/"><p class="t">Meta (Facebook)</p><p class="d">Advanced window functions, experimentation, rigorous</p></a>
     <a class="cc" href="/apple-sql-interview/"><p class="t">Apple</p><p class="d">Product revenue, App Store, Services analytics</p></a>
     <a class="cc" href="/netflix-sql-interview/"><p class="t">Netflix</p><p class="d">A/B testing, churn, streaming session analysis</p></a>
+    <a class="cc" href="/linkedin-sql-interview/"><p class="t">LinkedIn</p><p class="d">Joins, HAVING, "has all of", sign-up windows</p></a>
+    <a class="cc" href="/microsoft-sql-interview/"><p class="t">Microsoft</p><p class="d">Data scientist SQL, conditional aggregation</p></a>
   </div>
-
-  <p class="group-label">Marketplaces & Consumer</p>
+  <p class="group-label">Marketplaces &amp; Consumer</p>
   <div class="cg">
     <a class="cc" href="/uber-sql-interview/"><p class="t">Uber</p><p class="d">Marketplace metrics, supply/demand, two-sided retention</p></a>
     <a class="cc" href="/airbnb-sql-interview/"><p class="t">Airbnb</p><p class="d">Booking funnels, host retention, product thinking</p></a>
-    <a class="cc" href="/stripe-sql-interview/"><p class="t">Stripe</p><p class="d">MRR math, payment analytics, revenue decomposition</p></a>
     <a class="cc" href="/shopify-sql-interview/"><p class="t">Shopify</p><p class="d">GMV, merchant retention, e-commerce funnels</p></a>
-  </div>
-
-  <p class="group-label">Streaming & Data Infrastructure</p>
-  <div class="cg">
     <a class="cc" href="/spotify-sql-interview/"><p class="t">Spotify</p><p class="d">Sessionization, listening analytics, premium conversion</p></a>
+    <a class="cc" href="/doordash-sql-interview/"><p class="t">DoorDash</p><p class="d">Orders and deliveries, window functions, month buckets</p></a>
+    <a class="cc" href="/walmart-sql-interview/"><p class="t">Walmart</p><p class="d">Retail joins, HAVING, top product per region</p></a>
+    <a class="cc" href="/tiktok-sql-interview/"><p class="t">TikTok</p><p class="d">Engagement, day-2 activation, ranking ties</p></a>
+  </div>
+  <p class="group-label">Streaming &amp; Data Infrastructure</p>
+  <div class="cg">
+    <a class="cc" href="/nvidia-sql-interview/"><p class="t">NVIDIA</p><p class="d">Telemetry rollups, rolling averages, top-N ranking</p></a>
     <a class="cc" href="/databricks-sql-interview/"><p class="t">Databricks</p><p class="d">Spark SQL, ETL patterns, Delta Lake, query tuning</p></a>
-    <!-- 2026-09-07: "sql interview preparation" — Snowflake was the one company page (of 22) not linked from this hub; an unlinked page is an orphan to crawlers -->
     <a class="cc" href="/snowflake-sql-interview/"><p class="t">Snowflake</p><p class="d">QUALIFY, recursive CTEs, window functions, warehouse analytics</p></a>
   </div>
-
   <p class="group-label">Finance &amp; Fintech</p>
   <div class="cg">
-    <a class="cc" href="/jpmorgan-sql-interview/"><p class="t">JPMorgan</p><p class="d">Financial metrics, risk analytics, regulatory reporting</p></a>
-    <!-- 2026-09-07: Capital One page shipped (keywords read row #22) — 22 → 30 company tracks page-wide -->
-    <a class="cc" href="/capital-one-sql-interview/"><p class="t">Capital One</p><p class="d">CodeSignal analyst screen, joins at the right grain, FDIC bank data</p></a>
+    <a class="cc" href="/stripe-sql-interview/"><p class="t">Stripe</p><p class="d">MRR math, payment analytics, revenue decomposition</p></a>
     <a class="cc" href="/plaid-sql-interview/"><p class="t">Plaid</p><p class="d">Transaction dedup, NULL-safe aggregation, data-quality checks</p></a>
     <a class="cc" href="/ramp-sql-interview/"><p class="t">Ramp</p><p class="d">Month-over-month spend, vendor rankings, running totals</p></a>
     <a class="cc" href="/revolut-sql-interview/"><p class="t">Revolut</p><p class="d">Cohort retention, activity streaks, running balances</p></a>
     <a class="cc" href="/wise-sql-interview/"><p class="t">Wise</p><p class="d">Country corridors, fee analysis, transfer recency</p></a>
+    <a class="cc" href="/jpmorgan-sql-interview/"><p class="t">JPMorgan</p><p class="d">Financial metrics, risk analytics, regulatory reporting</p></a>
+    <a class="cc" href="/capital-one-sql-interview/"><p class="t">Capital One</p><p class="d">CodeSignal analyst screen, joins at the right grain, FDIC bank data</p></a>
     <a class="cc" href="/morgan-stanley-sql-interview/"><p class="t">Morgan Stanley</p><p class="d">Running P&amp;L, risk buckets, reconciliation</p></a>
+    <a class="cc" href="/goldman-sachs-sql-interview/"><p class="t">Goldman Sachs</p><p class="d">Deduplication, latest record, running totals</p></a>
+    <a class="cc" href="/bloomberg-sql-interview/"><p class="t">Bloomberg</p><p class="d">Prices and trades by time bucket, ranking</p></a>
   </div>
-
   <p class="group-label">AI Labs</p>
   <div class="cg">
     <a class="cc" href="/openai-sql-interview/"><p class="t">OpenAI</p><p class="d">Usage cohorts, retention curves, sessionization</p></a>
     <a class="cc" href="/anthropic-sql-interview/"><p class="t">Anthropic</p><p class="d">Usage percentiles, event hygiene, growth readouts</p></a>
   </div>
-
   <p class="group-label">Hardware &amp; Industrial</p>
   <div class="cg">
-    <a class="cc" href="/nvidia-sql-interview/"><p class="t">NVIDIA</p><p class="d">Telemetry rollups, rolling averages, top-N ranking</p></a>
     <a class="cc" href="/tesla-sql-interview/"><p class="t">Tesla</p><p class="d">Defect rates, sensor rollups, moving averages</p></a>
   </div>
+  <!-- company-grid:end -->
 </div></section>
 
 <!-- ── 30-Day Plan ───────────────────────────────────────────── -->
