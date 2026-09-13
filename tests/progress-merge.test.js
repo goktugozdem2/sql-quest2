@@ -151,5 +151,8 @@ describe('source guard — restoring a session never celebrates a level-up', () 
     expect(app).toMatch(/if \(prevLevelRef\.current && xp > 0 && !xpRestoreRef\.current\)/);
     // consumed on the first commit after the load, which isSessionLoading guarantees
     expect(app).toMatch(/xpRestoreRef\.current = false;\n {2}\}, \[currentLevel\.name, xp, isSessionLoading\]\);/);
+    // 2026-09-14: a level up celebrates with the banner only. The share modal
+    // that opened two seconds later was a prompt in the middle of practice.
+    expect(app).not.toMatch(/setTimeout\(\(\) => setMilestoneShare\(\{ type: 'levelup'/);
   });
 });
