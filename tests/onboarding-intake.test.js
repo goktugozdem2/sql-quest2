@@ -64,7 +64,7 @@ describe('intake — the three steps and what each answer maps to', () => {
 describe('intake record — what is kept, and what never is', () => {
   it('records the answers and lists the skipped steps', () => {
     const r = buildIntakeRecord({ goal: 'interview', date: '2026-10-01', role: 'analyst' }, NOW);
-    expect(r).toEqual({ version: 1, goal: 'interview', hasDate: true, role: 'analyst', skipped: [], completedAt: '2026-09-12T12:00:00.000Z' });
+    expect(r).toEqual({ version: 1, goal: 'interview', hasDate: true, role: 'analyst', company: null, level: null, skipped: ['company', 'level'], completedAt: '2026-09-12T12:00:00.000Z' });
     expect(isIntakeComplete(r)).toBe(true);
   });
 
@@ -108,7 +108,7 @@ describe('intake record — what is kept, and what never is', () => {
   it('the completion event carries daysOut, the skipped count and the seconds — never the date', () => {
     const r = buildIntakeRecord({ goal: 'interview', date: '2026-10-01', role: null }, NOW);
     const payload = intakeEventPayload(r, { draftDate: '2026-10-01', now: NOW, startedAt: NOW - 42_000 });
-    expect(payload).toEqual({ goal: 'interview', hasDate: true, daysOut: 19, role: null, skippedCount: 1, seconds: 42 });
+    expect(payload).toEqual({ goal: 'interview', hasDate: true, daysOut: 19, role: null, company: null, level: null, skippedCount: 3, seconds: 42 });
     expect(JSON.stringify(payload)).not.toContain('2026-10-01');
     expect(intakeEventPayload(buildIntakeRecord({}, NOW), { now: NOW }).seconds).toBeNull();
   });
@@ -157,7 +157,8 @@ describe('source guards — app.jsx keeps the intake optional, early, and quiet'
   it('locates the intake block', () => {
     expect(blockStart).toBeGreaterThan(-1);
     expect(blockEnd).toBeGreaterThan(blockStart);
-    expect(block.length).toBeLessThan(12000);
+    // 16,000 since 2026-09-13: the interview goal's company and level steps (P3.20).
+    expect(block.length).toBeLessThan(16000);
   });
 
   it('every step can be skipped, and the goal is one tap', () => {
@@ -172,7 +173,7 @@ describe('source guards — app.jsx keeps the intake optional, early, and quiet'
     expect(block).toMatch(/localStorage\.setItem\('sqlquest_user_intent', goal\.intent\)/);
     expect(block).toMatch(/localStorage\.setItem\('sqlquest_intent_asked', '1'\)/);
     expect(block).toMatch(/newCoachGoalState\(goal\.coachGoalId, \{\s*\n\s*source: 'intake'/);
-    expect(block).toMatch(/if \(record\.hasDate\) setPrepPreference\(\{ date: draft\.date \}\)/);
+    expect(block).toMatch(/\.\.\.\(record\.hasDate \? \{ date: draft\.date \} : \{\}\)/);
     expect(block).toMatch(/role: record\.role,/);
     expect(block).toMatch(/localStorage\.setItem\('sqlquest_user_goals', JSON\.stringify\(merged\)\)/);
     // and the picker writes the same shape, stamped

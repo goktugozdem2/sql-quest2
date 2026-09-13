@@ -26,7 +26,8 @@ import { resolveProAccess } from './utils/pro-access.js';
 import { pickNextChallengeWith, pickTopNWith, makeChallengeComparator, hardPreviewCounts, isFreePreview } from './utils/challenge-order.js';
 import { shouldShowInterviewNav, interviewNavReason } from './utils/interview-nav.js';
 import { mergeProgress, hasProgress, isResumableGuest, GUEST_USER_KEY } from './utils/progress-merge.js';
-import { INTAKE_KEY, INTAKE_GOALS, INTAKE_ROLES, INTAKE_STEPS, intakeGoalFor, nextIntakeStep, isValidIntakeDate, buildIntakeRecord, readIntakeRecord, intakeEventPayload, newCoachGoalState, shouldShowIntake } from './utils/onboarding-intake.js';
+import { companySetMatch } from './utils/company-set-match.js';
+import { INTAKE_KEY, INTAKE_GOALS, INTAKE_ROLES, INTAKE_STEPS, INTAKE_COMPANIES, INTAKE_LEVELS, intakeStepsFor, intakeGoalFor, nextIntakeStep, isValidIntakeDate, buildIntakeRecord, readIntakeRecord, intakeEventPayload, newCoachGoalState, shouldShowIntake } from './utils/onboarding-intake.js';
 import { PLACEMENT_TIERS, placementResult, placementEventPayload, readFirstRunPlacement, seedFloorsFor } from './utils/placement.js';
 import { paidWallFor, isColdStart } from './utils/paid-wall.js';
 import { companySetGate, companySetFreeIds, companySetProgress, quietAskDecision, deadlineOfferFor, deadlineEventMeta, withEarlyWall, pickProMockId, FREE_MOCK_ID, quotaGate, FREE_SOLVE_QUOTA } from './utils/free-tier-boundary.js';
@@ -5840,7 +5841,16 @@ function SQLQuest() {
   const [softEmailInput, setSoftEmailInput] = useState('');
   const [softEmailSubmitting, setSoftEmailSubmitting] = useState(false);
   const [softEmailError, setSoftEmailError] = useState('');
-  const [softEmailCaptured, setSoftEmailCaptured] = useState(false); // never re-prompt once captured/dismissed
+  // Never re-prompt once captured or dismissed — and since guests resume
+  // (2026-09-12), "never" has to outlive the page load: the flag is kept per
+  // browser, or every returning guest was asked again on their first solve
+  // of each visit (login audit, SEO plan P3.19, 2026-09-13).
+  const SOFT_EMAIL_ASKED_KEY = 'sqlquest_soft_email_asked';
+  const [softEmailCaptured, setSoftEmailCapturedState] = useState(() => { try { return !!localStorage.getItem(SOFT_EMAIL_ASKED_KEY); } catch (_) { return false; } });
+  const setSoftEmailCaptured = (v) => {
+    setSoftEmailCapturedState(v);
+    if (v) { try { localStorage.setItem(SOFT_EMAIL_ASKED_KEY, new Date().toISOString()); } catch (_) {} }
+  };
 
   // One-question intent ask — fires once per browser after the first solve.
   // The product's biggest blind spot was WHY people came (goals capture was
@@ -6509,9 +6519,11 @@ function SQLQuest() {
   // login carries it. Pure half: src/utils/onboarding-intake.js.
   const [intakeRecord, setIntakeRecord] = useState(() => { try { return readIntakeRecord(localStorage); } catch (_) { return null; } });
   const [intakeStep, setIntakeStep] = useState('goal');
-  const [intakeDraft, setIntakeDraft] = useState({ goal: null, date: null, role: null });
+  const [intakeDraft, setIntakeDraft] = useState({ goal: null, company: null, date: null, level: null, role: null });
+  const [intakeCompanyInput, setIntakeCompanyInput] = useState('');
   const [intakeDateInput, setIntakeDateInput] = useState('');
   const intakeStartedAtRef = useRef(null);
+  const companySetMatchShownRef = useRef(false);
   const [showFirstEntryTour, setShowFirstEntryTour] = useState(() => {
     try { return !localStorage.getItem(FIRST_ENTRY_TOUR_KEY); } catch (_) { return true; }
   });
@@ -8487,10 +8499,14 @@ function SQLQuest() {
     // exclusion, this setTimeout fires AFTER that resolver and its trailing
     // setActiveTab('guide') clobbers the resolver's 'quests' — the visitor
     // was promised "20 Databricks questions" and got the placement quiz.
-    const hasDeepLink = !!urlParams.get('challenge') || !!urlParams.get('company') || !!urlParams.get('sector')
+    // ?challenge= and ?interview= count only when they RESOLVED (their refs
+    // were set above). An id that matches nothing used to leave a cold
+    // visitor on the Sign In screen with no resolver to take them off it
+    // (login audit, SEO plan P3.19, 2026-09-13); now they get guest mode.
+    const hasDeepLink = !!pendingChallengeRef.current || !!urlParams.get('company') || !!urlParams.get('sector')
       // ?interview= excluded for the same reason: its resolver starts guest
       // mode itself and lands on the Interview tab.
-      || !!urlParams.get('interview')
+      || !!pendingInterviewRef.current
       // ?payment=success (Stripe payment-link redirect) excluded too: the
       // payment-success resolver needs to look up the STASHED purchasing
       // identity — minting a fresh guest here would orphan the buyer's Pro.
@@ -11349,13 +11365,28 @@ CRITICAL RULES:
         }
       }
     }
-    if (record.hasDate) setPrepPreference({ date: draft.date });
+    // Company (interview goal only, P3.20) rides the same store as the date:
+    // prepTarget, the countdown card's and the readiness hook's own.
+    if (record.hasDate || record.company) {
+      setPrepPreference({
+        ...(record.hasDate ? { date: draft.date } : {}),
+        ...(record.company ? { company: record.company } : {}),
+      });
+    }
+    if (record.level && !record.role) {
+      let saved = null;
+      try { saved = JSON.parse(localStorage.getItem('sqlquest_user_goals') || 'null'); } catch (_) {}
+      const merged = { ...(userGoals || saved || {}), level: record.level, inferred_at: new Date(now).toISOString(), user_confirmed: true };
+      setUserGoals(merged);
+      try { localStorage.setItem('sqlquest_user_goals', JSON.stringify(merged)); } catch (_) {}
+    }
     if (record.role) {
       let saved = null;
       try { saved = JSON.parse(localStorage.getItem('sqlquest_user_goals') || 'null'); } catch (_) {}
       const merged = {
         ...(userGoals || saved || {}),
         role: record.role,
+        ...(record.level ? { level: record.level } : {}),
         inferred_at: new Date(now).toISOString(),
         user_confirmed: true,
       };
@@ -11380,14 +11411,15 @@ CRITICAL RULES:
       daysOut: step === 'date' && !skipped ? daysUntil(value, Date.now()) : null,
       skipped,
     });
-    const next = nextIntakeStep(step);
+    const next = nextIntakeStep(step, draft.goal);
     setIntakeDraft(draft);
     if (next) { setIntakeStep(next); return; }
     completeIntake(draft);
   };
 
   const renderOnboardingIntake = () => {
-    const stepIndex = Math.max(0, INTAKE_STEPS.indexOf(intakeStep));
+    const intakeSteps = intakeStepsFor(intakeDraft.goal);
+    const stepIndex = Math.max(0, intakeSteps.indexOf(intakeStep));
     const goal = intakeGoalFor(intakeDraft.goal);
     const dateTitleKey = goal?.id === 'interview' ? 'dateTitleInterview' : goal?.id === 'job' ? 'dateTitleJob' : 'dateTitleGeneral';
     const dateOk = isValidIntakeDate(intakeDateInput, Date.now());
@@ -11401,7 +11433,7 @@ CRITICAL RULES:
       <div data-onboarding="first-run-intake" data-intake-step={intakeStep}>
         <div className="mb-2 flex items-center justify-between gap-3">
           <p className="text-xs font-bold uppercase tracking-wider text-purple-300">{i18n_t('intake', 'optional')}</p>
-          <p className="text-xs font-semibold tabular-nums" style={{ color: '#8A8E99' }}>{i18n_t('intake', 'progress', { n: stepIndex + 1, m: INTAKE_STEPS.length })}</p>
+          <p className="text-xs font-semibold tabular-nums" style={{ color: '#8A8E99' }}>{i18n_t('intake', 'progress', { n: stepIndex + 1, m: intakeSteps.length })}</p>
         </div>
         {intakeStep === 'goal' && (
           <>
@@ -11422,6 +11454,56 @@ CRITICAL RULES:
                   <span className="mr-2">{g.emoji}</span>
                   <span className="text-sm font-semibold">{i18n_t('intake', goalKey[g.id])}</span>
                   <span className="mt-0.5 block text-xs" style={{ color: '#8A8E99' }}>{i18n_t('intake', `${goalKey[g.id]}Sub`)}</span>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+        {intakeStep === 'company' && (
+          <>
+            <h2 className="mb-2 text-2xl font-bold text-[#F2F0EA] md:text-3xl">{i18n_t('intake', 'companyTitle')}</h2>
+            <p className="max-w-2xl text-sm leading-relaxed text-gray-300">{i18n_t('intake', 'companySub')}</p>
+            <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <select
+                data-intake-company="true"
+                value={intakeCompanyInput}
+                onChange={(e) => setIntakeCompanyInput(e.target.value || '')}
+                className="px-3 py-2 rounded-lg text-sm"
+                style={{ background: '#0E0F13', border: '1px solid #2A2E38', color: '#F2F0EA', minWidth: '220px' }}
+              >
+                <option value="">{i18n_t('intake', 'companyPlaceholder')}</option>
+                {INTAKE_COMPANIES.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+              <button
+                type="button"
+                data-intake-company-continue="true"
+                disabled={!intakeCompanyInput}
+                onClick={() => answerIntake('company', intakeCompanyInput)}
+                className="px-4 py-2 text-sm font-bold transition-colors"
+                style={{ background: intakeCompanyInput ? '#FFE34D' : '#2A2E38', color: intakeCompanyInput ? '#0E0F13' : '#8A8E99', borderRadius: '6px' }}
+              >
+                {i18n_t('intake', 'dateContinue')}
+              </button>
+            </div>
+          </>
+        )}
+        {intakeStep === 'level' && (
+          <>
+            <h2 className="mb-2 text-2xl font-bold text-[#F2F0EA] md:text-3xl">{i18n_t('intake', 'levelTitle')}</h2>
+            <p className="max-w-2xl text-sm leading-relaxed text-gray-300">{i18n_t('intake', 'levelSub')}</p>
+            <div className="mt-5 grid gap-2 sm:grid-cols-3">
+              {INTAKE_LEVELS.map(l => (
+                <button
+                  key={l}
+                  type="button"
+                  data-intake-level={l}
+                  onClick={() => answerIntake('level', l)}
+                  className="min-h-[44px] px-3 py-2.5 text-left text-sm font-semibold transition-colors"
+                  style={optionStyle}
+                  onMouseEnter={hoverOn}
+                  onMouseLeave={hoverOff}
+                >
+                  {i18n_t('intake', { entry: 'levelEntry', mid: 'levelMid', senior: 'levelSenior' }[l])}
                 </button>
               ))}
             </div>
@@ -11486,7 +11568,7 @@ CRITICAL RULES:
           className="mt-4 text-xs underline underline-offset-2 transition-colors"
           style={{ color: '#8A8E99' }}
         >
-          {intakeStep === 'date' ? i18n_t('intake', 'dateNone') : i18n_t('intake', 'skip')}
+          {intakeStep === 'date' ? i18n_t('intake', 'dateNone') : intakeStep === 'company' ? i18n_t('intake', 'companyNone') : i18n_t('intake', 'skip')}
         </button>
       </div>
     );
@@ -25707,7 +25789,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
               <p className="text-yellow-400 font-medium flex items-center gap-2 mb-2">
                 <AlertCircle size={18} /> Your progress won't survive your next visit
               </p>
-              <p className="text-gray-400 text-sm">Guest sessions reset when you come back. A free account keeps your XP, streak, and Skillmap — on this device and everywhere else.</p>
+              <p className="text-gray-400 text-sm">Guest progress stays in this browser. A free account keeps your XP, streak, and Skillmap on every device, and survives clearing the browser.</p>
             </div>
             
             <form onSubmit={async (e) => {
@@ -31871,7 +31953,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
                   <div className="bg-gray-700/50 rounded-lg p-2 text-center">
                     <p className="text-[#F2F0EA] font-bold">Free</p>
-                    <p className="text-gray-400">10/day</p>
+                    <p className="text-gray-400">20/day</p>
                   </div>
                   <div className="bg-purple-500/20 rounded-lg p-2 text-center border border-purple-500/30">
                     <p className="text-purple-400 font-bold">Monthly</p>
@@ -32793,6 +32875,62 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                   than it did on the trials tab — this is the Coach, and 1,179
                   people render it.
               */}
+              {/* Company practice-set match (P3.21, 2026-09-13; flag companySetMatch,
+                  default OFF). Only for a named company that has no interview
+                  archetype — those get the readiness card below. Same wording
+                  as the public readiness test: a weighting of our set, never a
+                  measurement of the company's interview. */}
+              {window.FF?.feature?.('companySetMatch') === true && prepTarget.company && (() => {
+                const bank = window.challengesData || challenges || [];
+                if (findTarget(prepTarget.company, bank, window.challengeCompanies || {}, mockInterviews)) return null;
+                const match = companySetMatch({
+                  company: prepTarget.company,
+                  bank,
+                  companyMap: window.challengeCompanies || {},
+                  skillLevels: calculateSkillLevelsFromPerformance(),
+                  solvedIds: solvedChallenges,
+                });
+                if (!companySetMatchShownRef.current) {
+                  companySetMatchShownRef.current = true;
+                  trackActivationEvent('company_set_match_shown', {
+                    company: prepTarget.company,
+                    bucket: match ? readinessBucket(match.score) : 'none',
+                    solvedInSet: match ? match.solved : null,
+                  });
+                }
+                const nextCh = match?.next ? bank.find(c => c.id === match.next.id) : null;
+                return (
+                  <div data-testid="company-set-match" className="mb-4 p-4" style={{ background: '#16181F', border: '1px solid #2A2E38', borderRadius: '8px' }}>
+                    <p className="text-xs font-bold uppercase tracking-wider text-purple-300">{i18n_t('companySetMatch', 'eyebrow', { company: prepTarget.company })}</p>
+                    {match ? (
+                      <>
+                        <p className="mt-1 text-2xl font-bold text-[#F2F0EA]">{i18n_t('companySetMatch', 'score', { n: match.score })}</p>
+                        <p className="mt-1 text-sm text-gray-300">{i18n_t('companySetMatch', 'parts', { solved: match.solved, total: match.total, skills: match.skills })}</p>
+                        {match.weakest && <p className="mt-1 text-sm text-gray-300">{i18n_t('companySetMatch', 'weakest', { skill: match.weakest.skill })}</p>}
+                        {nextCh && (
+                          <button
+                            type="button"
+                            data-testid="company-set-match-next"
+                            onClick={() => {
+                              trackActivationEvent('company_set_match_next_clicked', { company: prepTarget.company, challengeId: nextCh.id, skill: match.weakest?.skill || null });
+                              setActiveTab('quests');
+                              setPracticeSubTab('challenges');
+                              setTimeout(() => openChallenge(nextCh), 50);
+                            }}
+                            className="mt-3 px-4 py-2 text-sm font-bold"
+                            style={{ background: '#FFE34D', color: '#0E0F13', borderRadius: '6px' }}
+                          >
+                            {i18n_t('companySetMatch', 'next', { title: nextCh.title })}
+                          </button>
+                        )}
+                      </>
+                    ) : (
+                      <p className="mt-1 text-sm text-gray-300">{i18n_t('companySetMatch', 'needSolves', { n: 5 })}</p>
+                    )}
+                    <p className="mt-3 text-xs" style={{ color: '#8A8E99' }}>{i18n_t('companySetMatch', 'whatItIs', { company: prepTarget.company })}</p>
+                  </div>
+                );
+              })()}
               {window.FF?.feature?.('interviewCountdown') === true && (() => {
                 const bank = window.challengesData || challenges || [];
                 const targets = eligibleTargets(bank, window.challengeCompanies || {}, mockInterviews);

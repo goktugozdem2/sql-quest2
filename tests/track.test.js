@@ -336,3 +336,60 @@ describe('src/app.jsx — stamps landingSrc next to arrivalSrc, leaves arrivalSr
     expect(appSource).not.toMatch(/sqlquest_arrival_src'[^\n]*LANDING_SRC_KEY|LANDING_SRC_KEY[^\n]*sqlquest_arrival_src/);
   });
 });
+
+describe('src/track.js — hero CTA copy test (P3.18)', () => {
+  function withHero(aidValue, search = '?cta_test=1') {
+    const el = { textContent: 'Start free', attrs: { href: '/app/?src=home' }, setAttribute(k, v) { this.attrs[k] = v; } };
+    const store = new Map([['sqlquest_aid', aidValue]]);
+    const calls = [];
+    const ctx = {
+      localStorage: { getItem: k => (store.has(k) ? store.get(k) : null), setItem: (k, v) => store.set(k, String(v)), removeItem: k => store.delete(k) },
+      location: { hostname: 'sqlquest.app', pathname: '/', search: search, href: 'https://sqlquest.app/' + search },
+      document: { referrer: '', addEventListener() {}, querySelectorAll: sel => (sel === '[data-cta-test="hero"]' ? [el] : []) },
+      navigator: { userAgent: REAL_UA, webdriver: false },
+      fetch: (url, opts) => { calls.push({ body: JSON.parse(opts.body) }); return Promise.resolve({ ok: true }); },
+    };
+    ctx.window = ctx;
+    vm.createContext(ctx);
+    vm.runInContext(trackSource, ctx, { filename: 'track.js' });
+    return { el, calls };
+  }
+  const hex = n => n.toString(16).padStart(32, '0');
+
+  it('the same browser always gets the same arm, and the arm rides on landing_view', () => {
+    const a = withHero(hex(12345));
+    const b = withHero(hex(12345));
+    expect(a.el.textContent).toBe(b.el.textContent);
+    const meta = metaOf(landingViewOf(a.calls));
+    expect(meta.ctaTest).toBe('hero_cta_v1');
+    expect(['control', 'start', 'skills', 'readiness', 'plan']).toContain(meta.ctaArm);
+  });
+
+  it('spreads browsers across all five arms roughly evenly', () => {
+    const counts = {};
+    for (let i = 0; i < 1000; i++) {
+      const { calls } = withHero(hex(i * 7919 + 13));
+      const arm = metaOf(landingViewOf(calls)).ctaArm;
+      counts[arm] = (counts[arm] || 0) + 1;
+    }
+    expect(Object.keys(counts).sort()).toEqual(['control', 'plan', 'readiness', 'skills', 'start']);
+    for (const n of Object.values(counts)) expect(n).toBeGreaterThan(120);
+  });
+
+  it('is not armed before 2026-10-04 without the preview override (the 10-03 homepage read)', () => {
+    if (Date.now() >= Date.UTC(2026, 9, 4)) return;
+    const { el, calls } = withHero(hex(12345), '');
+    expect(el.textContent).toBe('Start free');
+    expect(metaOf(landingViewOf(calls)).ctaArm).toBeUndefined();
+  });
+
+  it('pages without the marker carry no arm', () => {
+    const { calls } = runTracker({});
+    expect(metaOf(landingViewOf(calls)).ctaArm).toBeUndefined();
+  });
+
+  it('the homepage hero is the one marked element', () => {
+    const home = readFileSync(path.resolve(__dirname, '../src/index.html'), 'utf8');
+    expect((home.match(/data-cta-test="hero"/g) || []).length).toBe(1);
+  });
+});

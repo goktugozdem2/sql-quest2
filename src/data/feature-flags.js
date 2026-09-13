@@ -48,6 +48,15 @@ window.FEATURE_FLAGS = {
     // docs/agent/ledger.md, "onboarding intake". Never a step toward
     // checkout: the block renders nothing about Pro, by test.
     onboardingIntake: false,
+    // Company practice-set match on the Coach (SEO plan P3.21, 2026-09-13):
+    // for a named prepTarget.company that has NO interview archetype, how the
+    // Skillmap matches what that company's practice set asks, plus the next
+    // free challenge in the set on the weakest of those skills. Never called
+    // readiness (src/utils/company-set-match.js says why). The intake's new
+    // company step (P3.20) and the readiness test both write the company it
+    // reads. SHIPPED OFF; flips with onboardingIntake on 2026-09-16 by the
+    // same scheduled task, because the intake is what feeds it.
+    companySetMatch: false,
     // The Coach stops asking twice — a first-run placement (the quiz, or a
     // level picked by hand) IS a placement. ON, a Coach goal started by
     // someone the first run already placed skips the Coach's own five-

@@ -41,6 +41,33 @@ export const INTAKE_GOALS = [
 
 export const INTAKE_ROLES = ['analyst', 'data_scientist', 'engineer', 'product', 'student', 'other'];
 
+// Interview goal only (SEO plan P3.20, 2026-09-13): which company and what
+// level. The company list is the app's ?company= VALID list — the names
+// prepTarget.company accepts — and tests/onboarding-intake.test.js binds the
+// two so a company page added there is offered here. The company goes to
+// prepTarget.company (the countdown card and the readiness hook's own store);
+// the level to userGoals.level, a fixed key like role.
+export const INTAKE_COMPANIES = [
+  'Airbnb', 'Amazon', 'Anthropic', 'Apple', 'Bloomberg', 'Capital One', 'Databricks', 'DoorDash',
+  'Goldman Sachs', 'Google', 'JPMorgan', 'LinkedIn', 'Meta', 'Microsoft', 'Morgan Stanley', 'Netflix',
+  'NVIDIA', 'OpenAI', 'Plaid', 'Ramp', 'Revolut', 'Shopify', 'Snowflake', 'Spotify', 'Stripe', 'Tesla',
+  'TikTok', 'Uber', 'Walmart', 'Wise',
+];
+export const INTAKE_LEVELS = ['entry', 'mid', 'senior'];
+
+export function isIntakeCompany(name) {
+  return INTAKE_COMPANIES.includes(name);
+}
+
+export function isIntakeLevel(id) {
+  return INTAKE_LEVELS.includes(id);
+}
+
+/** The steps a goal asks. An interview adds company (after goal) and level (after date). */
+export function intakeStepsFor(goal) {
+  return goal === 'interview' ? ['goal', 'company', 'date', 'level', 'role'] : INTAKE_STEPS;
+}
+
 export function intakeGoalFor(id) {
   return INTAKE_GOALS.find(g => g.id === id) || null;
 }
@@ -49,10 +76,11 @@ export function isIntakeRole(id) {
   return INTAKE_ROLES.includes(id);
 }
 
-export function nextIntakeStep(step) {
-  const i = INTAKE_STEPS.indexOf(step);
-  if (i < 0) return INTAKE_STEPS[0];
-  return INTAKE_STEPS[i + 1] || null;
+export function nextIntakeStep(step, goal = null) {
+  const steps = intakeStepsFor(goal);
+  const i = steps.indexOf(step);
+  if (i < 0) return steps[0];
+  return steps[i + 1] || null;
 }
 
 /** Whole days from `now` to an ISO date — the countdown card's own arithmetic. */
@@ -78,11 +106,17 @@ export function buildIntakeRecord(draft, now = Date.now()) {
   if (!goal) skipped.push('goal');
   if (!hasDate) skipped.push('date');
   if (!role) skipped.push('role');
+  const interview = goal === 'interview';
+  const company = interview && isIntakeCompany(d.company) ? d.company : null;
+  const level = interview && isIntakeLevel(d.level) ? d.level : null;
+  if (interview && !company) skipped.push('company');
+  if (interview && !level) skipped.push('level');
   return {
     version: INTAKE_VERSION,
     goal,
     hasDate,
     role,
+    ...(interview ? { company, level } : {}),
     skipped,
     completedAt: new Date(Number(now)).toISOString(),
   };
@@ -111,6 +145,8 @@ export function intakeEventPayload(record, { draftDate = null, now = Date.now(),
     hasDate: !!r.hasDate,
     daysOut: r.hasDate ? daysOut(draftDate, now) : null,
     role: r.role || null,
+    company: r.company || null,
+    level: r.level || null,
     skippedCount: Array.isArray(r.skipped) ? r.skipped.length : 0,
     seconds: startedAt ? Math.max(0, Math.round((Number(now) - Number(startedAt)) / 1000)) : null,
   };

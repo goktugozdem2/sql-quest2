@@ -373,6 +373,18 @@ so a landing view and a later solve are joinable for the first time.
   read in `docs/reads/`; the test fails on a competitor price not in it.
   Re-fetch and write a new dated read before changing a price.
 
+### Hero CTA test, company set match, login asks (2026-09-13)
+
+- The homepage hero button is an A/B test run by `src/track.js`
+  (`CTA_ARMS`, arm = hash of `aid`), **armed from 2026-10-04** — a date gate,
+  so nothing to flip. `?cta_test=1` arms it early for a preview. Do not add
+  `data-cta-test` to another element without a new test id.
+- The intake's interview goal asks company and level; `INTAKE_COMPANIES` must
+  equal the app's `?company=` VALID list (test-bound).
+- `src/utils/company-set-match.js` is NOT readiness. interview-prep.js's rule
+  (no readiness number over a tag filter) stands; the set match uses the
+  public readiness test's wording instead.
+
 ### Public Profile (USER MUST DEPLOY for cross-device reads)
 Phase 4b + 4c shipped client-side; Supabase needs migration + deploy.
 

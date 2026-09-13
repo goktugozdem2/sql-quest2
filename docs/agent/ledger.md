@@ -202,6 +202,50 @@ of the verifier and must never be rounded to `FLAT`.
   section after the hero, the industry strip removed. Same two watch lines;
   the Friday table splits home→app by variant.
 
+### hero CTA copy test, interview-goal intake, company set match, later login asks (founder's SEO plan P3.18–P3.21, 2026-09-13)
+
+- **Claimed** 2026-09-13 · **Live** three parts, dated separately:
+  (1) the hero CTA test **arms itself on 2026-10-04** (a date gate in
+  `src/track.js`), after the 10-03 homepage read closes, because three of its
+  five arms do not go to `/app/` and would move that read's home→app watch
+  line by construction; (2) the intake's company and level steps ride
+  `onboardingIntake` (flip 09-16); (3) `companySetMatch` flips with it by the
+  same task; (4) the login-ask fixes are live on push, no flag.
+- **Change** (1) `data-cta-test="hero"` on the homepage primary button; arm by
+  hash of `aid`, five arms — control "Start free" → app, "Start Practicing" →
+  app, "Test My SQL Skills" → /sql-quiz/, "Check My Interview Readiness" and
+  "Build My Interview Plan" → the readiness test (same destination, so that
+  pair isolates the words). Every event on the page carries `ctaArm` and
+  `ctaTest='hero_cta_v1'`. (2) An interview goal adds "which company" (the
+  30 `?company=` names → `prepTarget.company`) and "what level" (entry / mid /
+  senior → `userGoals.level`); both skippable; `intake_completed` carries
+  both. (3) Coach card for a named company with no interview archetype: half
+  set coverage, half Skillmap weighted by the set's skills, weakest demanded
+  skill, next free challenge in the set — never called readiness
+  (`src/utils/company-set-match.js`). (4) Login audit: an unresolved
+  `?challenge=`/`?interview=` no longer strands a cold visitor on Sign In; the
+  first-solve email ask is once per browser instead of once per page load
+  (guests resume since 09-12); stale "guest sessions reset" copy fixed; the
+  free AI-call label said 10/day, the server allows 20.
+- **Metric** `hero_cta_test`, `company_set_match` (docs/agent/metrics.md);
+  the intake parts read inside the existing `intake_funnel`.
+- **Baseline** homepage hero: arrivalSrc=home first solves per landing
+  person in the 28 days before 10-04 (compute at arming; the 09-12 read's
+  51.9% home→app is the reference). Set match: new, zero.
+- **Target** by 11-01 (four weeks armed): identify the arm with the highest
+  people-who-solved-one-within-7-days per homepage landing person, at
+  n ≥ 150 per arm; set-match card → next-challenge click ≥ 20% of people
+  shown a score.
+- **Falsification, stated in advance:** no arm beats control by ≥ 3
+  points on solved-one at n ≥ 150 per arm → keep "Start free", end the test,
+  record FLAT. An arm that wins on clicks but loses on solved-one is a MISS
+  for that arm, not a win. Set-match next clicks under 10% → the card is
+  noise on the Coach; remove it.
+- **Confounds** `freeQuota` (09-21) and `quietEarlyAsks` (09-29) change what
+  happens after the click for every arm equally; the per-arm comparison holds,
+  the absolute levels do not compare with September.
+- **Verdict** _pending_
+
 ### free SQL tools, alternatives pages, and the outreach kit (founder's SEO plan P2.13–P2.17, 2026-09-13)
 
 - **Claimed** 2026-09-13 · **Live** on push, no flag · **Read** 2026-11-24

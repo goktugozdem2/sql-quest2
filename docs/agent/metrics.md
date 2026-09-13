@@ -2548,6 +2548,25 @@ solves → `signup_completed`. Split by `company` (null = no company). The
 company score is a weighting of our tagged set, not a measurement of the
 company's interview; never quote it as one.
 
+## `hero_cta_test`
+
+`landing_view` rows on page `/` (or the homepage slug track.js writes) whose
+metadata carries `ctaTest='hero_cta_v1'`, grouped by `ctaArm`: landing
+people (distinct `aid`), `cta_hero_primary` clickers, and people with a
+`challenge_solved` (app events, joined on `aid`) within 7 days of their
+first armed landing. Armed from 2026-10-04 00:00Z; ignore rows before that
+(only `?cta_test=1` preview traffic). Read people, never clicks alone: two
+arms send people to a test first, which delays the solve by design — the
+7-day window is what makes that fair.
+
+## `company_set_match`
+
+`company_set_match_shown {company, bucket, solvedInSet}` (bucket 'none' =
+under five solves) and `company_set_match_next_clicked {company,
+challengeId, skill}`, people by `aid`. Read shown-with-a-score → clicked,
+and whether the clicked challenge was solved within 24h. Live from the
+`companySetMatch` flip (planned 2026-09-16).
+
 ## `tool_page_door`
 
 People by `aid` whose first `landing_view` carries `page` in

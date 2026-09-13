@@ -258,6 +258,56 @@
     } catch (_) {}
   }
 
+  // ── Hero CTA copy test (founder's SEO plan P3.18, 2026-09-13) ──────────
+  // One experiment, on elements marked data-cta-test="hero" (the homepage
+  // hero's primary button only). The arm is a hash of the browser's aid, so a
+  // returning visitor always sees the same button, and it rides on EVERY event
+  // this page sends (landing_view included) as meta.ctaArm — which is what
+  // makes a click, and through aid a later solve, attributable to the copy.
+  // Arm 0 is the control, the button as it was. readiness and plan share a
+  // destination on purpose: that pair isolates the words. Ledger claim
+  // "hero CTA copy test"; metric hero_cta_test. Armed 2026-10-04, read 2026-11-01.
+  var CTA_TEST_ID = 'hero_cta_v1';
+  var CTA_ARMS = [
+    ['control', 'Start free', '/app/?src=home'],
+    ['start', 'Start Practicing', '/app/?src=home'],
+    ['skills', 'Test My SQL Skills', '/sql-quiz/'],
+    ['readiness', 'Check My Interview Readiness', '/sql-interview-readiness-test/'],
+    ['plan', 'Build My Interview Plan', '/sql-interview-readiness-test/']
+  ];
+  var ctaArm = null;
+  // Armed from 2026-10-04, not today: the founder's homepage read closes on
+  // 2026-10-03 on "home→app must not fall below 51.9%", and three of these
+  // arms do not go to the app. Starting the test before that verdict would
+  // move the watched number by construction. ?cta_test=1 arms it early for a
+  // preview check.
+  var CTA_TEST_START = Date.UTC(2026, 9, 4);
+
+  function ctaArmIndex(id) {
+    var h = 2166136261;
+    var s = String(id) + ':' + CTA_TEST_ID;
+    for (var i = 0; i < s.length; i++) {
+      h ^= s.charCodeAt(i);
+      h = (h + ((h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24))) >>> 0;
+    }
+    return h % CTA_ARMS.length;
+  }
+
+  function applyCtaTest() {
+    try {
+      if (!document.querySelectorAll) return;
+      if (Date.now() < CTA_TEST_START && param('cta_test') !== '1') return;
+      var els = document.querySelectorAll('[data-cta-test="hero"]');
+      if (!els || !els.length) return;
+      var arm = CTA_ARMS[ctaArmIndex(aid())];
+      ctaArm = arm[0];
+      for (var i = 0; i < els.length; i++) {
+        els[i].textContent = arm[1];
+        els[i].setAttribute('href', arm[2]);
+      }
+    } catch (_) {}
+  }
+
   function send(event, props) {
     try {
       if (isBot()) return;
@@ -283,6 +333,7 @@
       // Both on every row, so a cta_* click is attributable without a join.
       try { meta.utm = utmSource(); } catch (_) { meta.utm = null; }
       meta.landingSrc = landingSrc();
+      if (ctaArm) { meta.ctaArm = ctaArm; meta.ctaTest = CTA_TEST_ID; }
       try { meta.tz = Intl.DateTimeFormat().resolvedOptions().timeZone || null; } catch (_) {}
 
       var user = null;
@@ -315,6 +366,7 @@
   window.sqTrack = send;
 
   persistLandingSrc();
+  applyCtaTest();
   try { send('landing_view', { returning: !!localStorage.getItem('sqlquest_user') }); } catch (_) {}
 
   document.addEventListener('click', function (e) {
