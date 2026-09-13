@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import { COMPANY_INTERVIEWS, NEW_COMPANY_TAGS } from '../src/data/company-interviews.js';
-import { loadBank, facts, renderPage } from '../scripts/build-company-pages.mjs';
+import { loadBank, facts, renderPage, withProvenance } from '../scripts/build-company-pages.mjs';
 import { QUESTIONS, buildData, render } from '../scripts/build-readiness-test.mjs';
 import { CANONICAL_SKILLS } from '../src/utils/skill-calc.js';
 
@@ -43,7 +43,10 @@ describe('company template', () => {
   it('the committed pages are the generator\'s output (the related strip aside)', () => {
     for (const [key, d] of Object.entries(COMPANY_INTERVIEWS)) {
       const committed = stripStrip(read(`src/${key}-sql-interview.html`));
-      expect(committed, `${key}: re-run node scripts/build-company-pages.mjs`).toBe(stripStrip(renderPage(key, d, facts(bank, d.name))));
+      // The provenance note (2026-09-14) is injected after generation, so the
+      // expectation carries it too — the guard still covers that block.
+      const generated = withProvenance(renderPage(key, d, facts(bank, d.name)), { slug: key, name: d.name });
+      expect(committed, `${key}: re-run node scripts/build-company-pages.mjs`).toBe(stripStrip(generated));
     }
   });
 

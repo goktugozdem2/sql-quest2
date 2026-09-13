@@ -188,6 +188,52 @@ export function topicLinksBlock({ name, dist, ordered = [] }) {
 <!-- company-topics:end -->`;
 }
 
+// ── 3b. provenance, on every company page ──────────────────────────────────
+//
+// Founder's list item 9, 2026-09-14: "clearly distinguish general practice
+// guidance from verified company information."
+//
+// tests/company-pages.test.js already stops an unsourced page from STATING a
+// format — that was the 2026-09-07 incident. But silence is not a label: a
+// reader landing on /anthropic-sql-interview/ sees topic cards and a question
+// set under a company's name and has no way to tell that the emphasis is our
+// editorial judgement, not a measured breakdown of their interview. Nine of
+// the thirty pages carry dated sources; twenty-one do not, and until now both
+// kinds looked identical.
+//
+// So every page says which kind it is, in its own words, above the first
+// claim. Membership is SOURCED_SLUGS below — the test binds its own
+// SOURCED_PAGES to it, so the two lists cannot drift.
+
+/** The pages that carry dated, citable sources for the company's own process. */
+export const SOURCED_SLUGS = new Set([
+  ...Object.keys(COMPANY_INTERVIEWS),
+  'capital-one', // dated Blind reports 2021-2025 + prep guides Aug 2025 - Feb 2026
+  'revolut',     // interviewquery guide, 27 candidate reports stamped Q3 2026
+]);
+
+export function provenanceBlock({ slug, name }) {
+  const sourced = SOURCED_SLUGS.has(slug);
+  const body = sourced
+    ? `<strong style="color:#e2e8f0;">What is sourced:</strong> ${esc(name)} does not publish its interview format, so every specific about their process on this page is what candidates and prep guides described publicly — each one carries its source and the date it showed. Formats change; treat them as reported, not official. <strong style="color:#e2e8f0;">What is ours:</strong> the practice questions are SQL Quest challenges, picked because their SQL matches the patterns those sources report. They are not questions ${esc(name)} has asked.`
+    : `<strong style="color:#e2e8f0;">What this page is:</strong> we have no dated public source for how ${esc(name)} runs its SQL round, so this page does not state one — no duration, no platform, no stage list. What follows is general SQL interview practice on the kind of data ${esc(name)} works with. <strong style="color:#e2e8f0;">What is ours:</strong> the questions are SQL Quest challenges and the topic emphasis is our editorial judgement, not a measured breakdown of ${esc(name)}'s interview. <a href="/sql-interview-prep/" style="color:#c084fc;text-decoration:none;font-weight:600;">Pages with dated sources</a> say so in this spot.`;
+  return `<!-- company-provenance:start -->
+<div data-provenance="${sourced ? 'sourced' : 'general'}" style="max-width:760px;margin:0 auto;padding:0 24px;">
+  <p style="margin:0 0 8px;padding:14px 18px;border:1px solid rgba(124,58,237,.22);border-left:3px solid #7c3aed;border-radius:10px;background:rgba(124,58,237,.05);font-size:13.5px;line-height:1.8;color:#94a3b8;">${body}</p>
+</div>
+<!-- company-provenance:end -->`;
+}
+
+/** Put it above the first claim on the page: after the hero, before section two. */
+export function withProvenance(html, { slug, name }) {
+  let out = html.replace(/<!-- company-provenance:start -->[\s\S]*?<!-- company-provenance:end -->\n?/, '');
+  const hero = out.indexOf('<section class="hero"');
+  if (hero < 0) return out;
+  const next = out.indexOf('\n<section', hero + 1);
+  if (next < 0) return out;
+  return `${out.slice(0, next + 1)}${provenanceBlock({ slug, name })}\n\n${out.slice(next + 1)}`;
+}
+
 export function breadcrumbLd(slug, name) {
   return {
     '@context': 'https://schema.org',
@@ -419,7 +465,21 @@ export function injectModules(bank) {
     const rel = html.indexOf('<!-- related-companies:start -->');
     const at = rel >= 0 ? rel : html.indexOf('<section class="cs">');
     if (at >= 0) html = html.slice(0, at) + topicLinksBlock({ name, dist: fx.dist, ordered: fx.ordered }) + '\n' + html.slice(at);
+    html = withProvenance(html, { slug: key, name });
     fs.writeFileSync(file, html);
+    done.push(key);
+  }
+  return done;
+}
+
+/** The provenance note on the generated pages too — renderPage rewrites them
+ *  whole each run, so this has to come after that loop. */
+export function injectProvenance() {
+  const done = [];
+  for (const [key, d] of Object.entries(COMPANY_INTERVIEWS)) {
+    const file = path.join(ROOT, 'src', `${key}-sql-interview.html`);
+    if (!fs.existsSync(file)) continue;
+    fs.writeFileSync(file, withProvenance(fs.readFileSync(file, 'utf8'), { slug: key, name: d.name }));
     done.push(key);
   }
   return done;
@@ -445,4 +505,6 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   console.log(`[company-pages] ${added} new tags merged`);
   const injected = injectModules(loadBank());
   console.log(`[company-pages] shared modules on ${injected.length} older pages`);
+  const prov = injectProvenance();
+  console.log(`[company-pages] provenance note on ${injected.length + prov.length} pages (${SOURCED_SLUGS.size} sourced)`);
 }

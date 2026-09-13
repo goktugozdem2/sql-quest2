@@ -41,6 +41,7 @@ import { dirname, join } from 'node:path';
 import { loadBank, readCompanyPages } from '../scripts/build-llms-txt.js';
 import { SKILL_TO_RADAR, mapTopicToSkill, CANONICAL_SKILLS } from '../src/utils/skill-calc.js';
 import { isFreePreview } from '../src/utils/challenge-order.js';
+import { SOURCED_SLUGS } from '../scripts/build-company-pages.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..');
@@ -758,6 +759,70 @@ describe('5. the FAQPage JSON-LD and the visible FAQ are the same answers', () =
       const ld = jsonLdFaq(p.raw);
       expect(ld, `${p.file} has no FAQPage JSON-LD`).toBeTruthy();
       expect(ld.items.length, p.file).toBeGreaterThanOrEqual(3);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 6. every page says which kind of page it is (founder's list item 9, 2026-09-14)
+//
+// Rules 1-5 stop an unsourced page from STATING a format. That was the
+// 2026-09-07 incident and it is still the hard line. But silence is not a
+// label: a reader on a page with no sources sees topic cards and a question
+// set under a company's name, and nothing tells them the emphasis is our
+// editorial judgement rather than a measured breakdown of that interview.
+// Nine of the thirty pages carry dated sources; twenty-one do not; until this
+// date the two looked identical.
+//
+// So each page carries one provenance note above its first claim, and its
+// `data-provenance` value has to match its membership in SOURCED_SLUGS —
+// which is now the single list, imported from the generator. SOURCED_PAGES
+// above keeps the reason for each entry; this binds the two so they cannot
+// drift apart.
+// ---------------------------------------------------------------------------
+describe('6. provenance — sourced and general pages are labelled as such', () => {
+  it('SOURCED_PAGES and the generator\'s SOURCED_SLUGS are the same list', () => {
+    const fromTest = Object.keys(SOURCED_PAGES).map(s => s.replace(/-sql-interview$/, '')).sort();
+    expect(fromTest).toEqual([...SOURCED_SLUGS].sort());
+  });
+
+  it('every company page carries exactly one provenance note', () => {
+    for (const p of pages) {
+      const n = (p.raw.match(/<!-- company-provenance:start -->/g) || []).length;
+      expect(n, `${p.file}: expected 1 provenance block, found ${n} — run node scripts/build-company-pages.mjs`).toBe(1);
+    }
+  });
+
+  it('the label matches whether the page actually has sources', () => {
+    for (const p of pages) {
+      const slug = p.slug.replace(/-sql-interview$/, '');
+      const want = SOURCED_SLUGS.has(slug) ? 'sourced' : 'general';
+      const got = (p.raw.match(/data-provenance="([a-z]+)"/) || [])[1];
+      expect(got, `${p.file} is labelled "${got}" but ${want === 'sourced' ? 'has' : 'has no'} sources`).toBe(want);
+    }
+  });
+
+  it('sits above the first claim, not buried at the bottom', () => {
+    for (const p of pages) {
+      const at = p.raw.indexOf('<!-- company-provenance:start -->');
+      const faq = p.raw.indexOf('<section id="faq"');
+      const hero = p.raw.indexOf('<section class="hero"');
+      // The first section after the hero is the page's first claim (format,
+      // topics or the question set, depending on the page).
+      const firstClaim = p.raw.indexOf('\n<section', at);
+      expect(at, `${p.file}: provenance note is below the FAQ`).toBeLessThan(faq);
+      expect(at, `${p.file}: provenance note sits above the hero`).toBeGreaterThan(hero);
+      expect(firstClaim, `${p.file}: nothing follows the provenance note`).toBeGreaterThan(at);
+    }
+  });
+
+  it('a general page\'s note promises nothing about the company\'s process', () => {
+    for (const p of pages.filter(x => !SOURCED_SLUGS.has(x.slug.replace(/-sql-interview$/, '')))) {
+      const note = (p.raw.match(/<!-- company-provenance:start -->([\s\S]*?)<!-- company-provenance:end -->/) || [])[1] || '';
+      expect(note, `${p.file}: a general note must say the questions are ours`).toMatch(/SQL Quest challenges/);
+      expect(note, `${p.file}: a general note must say no source exists`).toMatch(/no dated public source/);
+      // The note itself must not smuggle in the very claims rule 1 forbids.
+      expect(note, `${p.file}: the note states a duration`).not.toMatch(/\b\d+[- ]minute\b/i);
     }
   });
 });
