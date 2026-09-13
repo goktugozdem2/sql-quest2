@@ -17,6 +17,7 @@
     "dev:vite": "vite",
     "test": "vitest",
     "test:run": "vitest run",
+    "e2e": "node scripts/e2e-verify.mjs",
     "smoke": "node scripts/smoke-test.js",
     "lint": "eslint src/utils/ tests/",
     "indexnow": "node scripts/indexnow.mjs",
