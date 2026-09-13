@@ -13,7 +13,7 @@ export const ACCOUNT_PRIVATE_KEYS = ['passwordHash', 'salt', 'email', 'unsubToke
 
 export function withLocalAccountKeys(data, localRaw) {
   if (!data || typeof data !== 'object') return data;
-  let local = null;
+  let local;
   try { local = localRaw ? JSON.parse(localRaw) : null; } catch (_) { local = null; }
   if (!local || typeof local !== 'object') return data;
   const out = { ...data };
