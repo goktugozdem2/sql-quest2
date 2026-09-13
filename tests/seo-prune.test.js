@@ -10,7 +10,7 @@ const ROOT = path.resolve(import.meta.dirname, '..');
 describe('seo prune', () => {
   it('rewrites an existing robots meta, or adds one', () => {
     expect(noindexHtml('<head><meta name="robots" content="index, follow"></head>')).toContain('content="noindex, follow"');
-    expect(noindexHtml('<html><head><title>x</title></head>')).toMatch(/<head>\n  <meta name="robots" content="noindex, follow">/);
+    expect(noindexHtml('<html><head><title>x</title></head>')).toMatch(/<head>\n {2}<meta name="robots" content="noindex, follow">/);
   });
 
   it('drops exactly the listed URLs from a sitemap', () => {
