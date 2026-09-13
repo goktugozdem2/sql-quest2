@@ -83,3 +83,15 @@ body {
     transform: translateY(0) scale(1);
   }
 }
+
+/* Feedback bubble clearance (2026-09-14, founder's mobile item).
+   The challenge screen's Run / Submit bar is `sticky bottom-0` and at 402 CSS
+   px it ends at x=369; the bubble is `fixed bottom-4 right-4` at z-40, so it
+   sat on top of the right 27px of Submit — a higher-z overlay over the one
+   control the whole screen exists for. On a phone the bubble lifts above the
+   bar instead. Desktop is unchanged: there the bar is far from the corner. */
+@media (max-width: 768px) {
+  .sq-feedback-fab {
+    bottom: 80px;
+  }
+}

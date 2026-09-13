@@ -4794,7 +4794,7 @@ function FeedbackWidget({ open, onOpen, onClose, onSubmit, onTopicPick, screen, 
         onClick={onOpen}
         aria-label={i18n_t('feedback', 'openAria')}
         title={i18n_t('feedback', 'openAria')}
-        className="fixed bottom-4 right-4 z-40 w-11 h-11 rounded-full flex items-center justify-center text-lg shadow-lg transition hover:scale-105"
+        className="sq-feedback-fab fixed bottom-4 right-4 z-40 w-11 h-11 rounded-full flex items-center justify-center text-lg shadow-lg transition hover:scale-105"
         style={{ background: '#16181F', border: '1px solid #2A2E38', color: '#F2F0EA' }}
       >
         💬

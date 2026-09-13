@@ -360,6 +360,8 @@
     @keyframes blink{50%{border-color:transparent}}@keyframes fadeUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}@keyframes gradient-shift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}@keyframes pulse-glow{0%,100%{opacity:.4}50%{opacity:.8}}
     .fd{font-family:'Space Grotesk',sans-serif}.fm{font-family:'JetBrains Mono','Fira Code',monospace}
     .nav{position:fixed;top:0;left:0;right:0;z-index:100;transition:all .3s}.nav.s{background:rgba(6,6,15,.92);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06)}.ni{max-width:1200px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}.nl{display:flex;align-items:center;gap:24px}.nl a{color:#94a3b8;text-decoration:none;font-size:14px;font-weight:500;transition:color .2s}.nl a:hover{color:#e2e8f0}
+    /* The phone-only nav row; the media query below turns it on. */
+    .mnav{display:none}
     .btn{display:inline-flex;align-items:center;gap:8px;border-radius:12px;font-weight:700;cursor:pointer;transition:all .3s;text-decoration:none;border:none}.bp{padding:13px 32px;font-size:15px;background:#7c3aed;color:#fff}.bp:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(0,0,0,.45)}.bo{padding:11px 24px;font-size:14px;background:transparent;color:#c084fc;border:1px solid rgba(124,58,237,.4)}.bo:hover{background:rgba(124,58,237,.12);transform:translateY(-2px)}.bl{padding:9px 20px;font-size:13px;background:rgba(255,255,255,.06);color:#e2e8f0;border:1px solid rgba(255,255,255,.1);border-radius:10px}.bl:hover{background:rgba(255,255,255,.1)}.blg{padding:16px 40px;font-size:17px}
     .sec{max-width:1100px;margin:0 auto;padding:100px 24px}.sl{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:2px}.st{font-size:clamp(28px,3.5vw,44px);font-weight:800;margin-top:12px;line-height:1.15}
     .hero{position:relative;min-height:100vh;display:flex;align-items:center;overflow:hidden}.hbg{position:absolute;inset:0;background:radial-gradient(ellipse 80% 50% at 50% -20%,rgba(124,58,237,.15) 0%,transparent 60%)}.hgr{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.012) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.012) 1px,transparent 1px);background-size:60px 60px;-webkit-mask-image:radial-gradient(ellipse at center,black 30%,transparent 75%);mask-image:radial-gradient(ellipse at center,black 30%,transparent 75%)}
@@ -403,9 +405,9 @@
     @media(max-width:640px){.fnav{grid-template-columns:repeat(2,minmax(0,1fr));gap:24px 16px}.fbot{flex-direction:column;align-items:flex-start}}
     .mo{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:200;align-items:center;justify-content:center;padding:24px}.mo.a{display:flex}.md{background:#111827;border:1px solid rgba(124,58,237,.3);border-radius:20px;padding:36px;max-width:420px;width:100%;position:relative}.md input{width:100%;padding:12px 16px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:#e2e8f0;font-size:15px;margin-bottom:12px;outline:none;font-family:'DM Sans',sans-serif}.md input:focus{border-color:#7c3aed}.md input::placeholder{color:#7f8da1}
     @media(max-width:768px){
-      /* Mobile nav: hide secondary items, keep only logo + primary CTA. Sub-links
-         in the dropdown are still in the DOM for SEO; mobile users navigate via
-         scroll. ".nl > a" (direct child only) keeps dropdown sub-anchors visible
+      /* The top row keeps only logo + Log In; Practice / Interview Prep / Pricing
+         move to the .mnav row below it (see the 09-14 note further down).
+         ".nl > a" (direct child only) keeps dropdown sub-anchors visible
          when the dropdown IS shown (tablet/landscape edge cases). */
       .nl > a:not(.btn):not(.bl){display:none}
       /* !important: base .nav-dd{display:inline-block} comes later in source
@@ -423,10 +425,23 @@
          so it kept min-width:auto and grew to its content (656px on a 402px
          iPhone 17 Pro) while .hero's overflow:hidden clipped the right side of
          the headline. Let the container and both columns shrink. */
-      .hero>.sec{width:100%;min-width:0}
+      /* The nav is fixed and its height changes at runtime (the Turkish banner
+         adds ~36px, the new .mnav row another 36). Clear the tallest case:
+         the eyebrow was rendering behind the nav at 104. */
+      .hero>.sec{width:100%;min-width:0;padding-top:156px !important}
       .hl,.hr{min-width:0;flex-basis:100%}
       /* Log In stays reachable on a phone; it is the only nav item left. */
       .nl .bl{display:inline-flex;padding:8px 14px}
+      /* 2026-09-14: Practice and Interview Prep were display:none on a phone,
+         so the two things people come for had no door. They move to a slim
+         row under the logo rather than behind a tap. */
+      .mnav{display:flex;gap:18px;justify-content:center;padding:8px 24px 10px;border-top:1px solid rgba(255,255,255,.06);background:rgba(6,6,15,.95)}
+      .mnav a{font-size:13px;font-weight:600;color:#c084fc;text-decoration:none}
+      /* And the primary CTA comes before the long paragraph, so it is on the
+         first screen instead of at y=731 of an 874px phone. */
+      .hl{display:flex;flex-direction:column}
+      .hl>.hb{order:1}.hl>h1{order:2}.hl>p:not(.hstory){order:3}
+      .hl>.hcta{order:4;margin-bottom:24px}.hl>.hstory{order:5;margin-bottom:0}.hl>.hproof{order:6;margin-top:24px}
     }
     /* Coach app-screenshot mock (scoped .cm-*) */
     .cm-wrap{background:#06060f;border:1px solid rgba(255,255,255,.08);border-radius:16px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.06)}
@@ -554,7 +569,9 @@
     <a href="/sql-exercises/" data-track="nav_practice">Practice</a><a href="/sql-interview-prep/" data-track="nav_interview">Interview Prep</a><a href="#pricing" data-track="nav_pricing">Pricing</a>
     <a class="btn bl" id="login-btn" href="/app/?signin=1" data-track="login_open">Log In</a>
   </div>
-</div></nav>
+</div>
+<div class="mnav"><a href="/sql-exercises/" data-track="mnav_practice">Practice</a><a href="/sql-interview-prep/" data-track="mnav_interview">Interview Prep</a><a href="#pricing" data-track="mnav_pricing">Pricing</a></div>
+</nav>
 
 <section class="hero"><div class="hbg"></div><div class="hgr"></div>
   <div class="sec hc" style="padding-top:120px;padding-bottom:40px;">
@@ -563,12 +580,12 @@
       <h1 class="fd" style="animation:fadeUp .6s .1s both;">Personalized <span class="gt">SQL interview practice.</span></h1>
       <p style="font-size:21px;line-height:1.5;color:#e2e8f0;font-weight:600;margin:12px 0 0;max-width:560px;animation:fadeUp .6s .12s both;">An AI coach that finds your SQL skill gaps — and builds your practice around them.</p>
       <p data-testid="usage-line" title="Measured 12 Sep 2026 against the live event log; refreshed every Friday" style="font-size:17px;font-weight:600;color:#e2e8f0;margin:14px 0 22px;animation:fadeUp .6s .15s both;"><span class="fm" style="color:#FFE34D;">5,745</span> accepted solutions · <span class="fm" style="color:#FFE34D;">1,195</span> people last 30 days</p>
-      <p style="font-size:17px;line-height:1.75;color:#94a3b8;margin-bottom:32px;max-width:560px;animation:fadeUp .6s .2s both;">Every query you solve scores your <strong style="color:#e2e8f0;">Skillmap</strong> across nine SQL skills. The coach reads it, picks your next question from the weakest line, and tells you <em>why</em> a wrong query is wrong. Company sets and timed mocks for the screen you have. 299 challenges. Start free.</p>
-      <div style="display:flex;gap:14px;flex-wrap:wrap;animation:fadeUp .6s .3s both;">
+      <p class="hstory" style="font-size:17px;line-height:1.75;color:#94a3b8;margin-bottom:32px;max-width:560px;animation:fadeUp .6s .2s both;">Every query you solve scores your <strong style="color:#e2e8f0;">Skillmap</strong> across nine SQL skills. The coach reads it, picks your next question from the weakest line, and tells you <em>why</em> a wrong query is wrong. Company sets and timed mocks for the screen you have. 299 challenges. Start free.</p>
+      <div class="hcta" style="display:flex;gap:14px;flex-wrap:wrap;animation:fadeUp .6s .3s both;">
         <a href="/app/?src=home" class="btn bp" data-track="cta_hero_primary" data-cta-test="hero">Start free</a>
         <a href="#pricing" class="btn bo" data-track="cta_hero_secondary">See pricing</a>
       </div>
-      <div style="display:flex;gap:28px;margin-top:32px;flex-wrap:wrap;animation:fadeUp .6s .4s both;">
+      <div class="hproof" style="display:flex;gap:28px;margin-top:32px;flex-wrap:wrap;animation:fadeUp .6s .4s both;">
         <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">Skillmap</p><p style="font-size:13px;color:#8b98ab;">Nine SQL skills, scored as you solve</p></div></div>
         <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">Your next question</p><p style="font-size:13px;color:#8b98ab;">Picked from your weakest skill</p></div></div>
         <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">Company sets &amp; mocks</p><p style="font-size:13px;color:#8b98ab;">Capital One · Revolut · Stripe · Wise</p></div></div>
