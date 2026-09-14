@@ -101,3 +101,51 @@ describe('the modal offers two cards, never three', () => {
     for (const plan of ['monthly', 'quarterly', 'annual']) expect(links).toContain(`${plan}:`);
   });
 });
+
+// Who is allowed to look Pro (founder, 2026-09-14: "sadece ödeme yapanlar pro
+// gözükmeli ve ödeme fail olursa pro free'ye dönmeli").
+//
+// Measured the same day: 57 accounts carried proStatus=true, 4 had a Stripe
+// purchase, 51 were expired (so resolveProAccess already hid Pro from them),
+// and 6 people actually SAW Pro — three payers and three who had never paid.
+//
+// The mechanism half of that ask lives in customer.subscription.deleted, and
+// it was wrong in a way that costs money quietly.
+describe('a subscription that ends because nobody paid', () => {
+  const block = webhook.slice(webhook.indexOf('customer.subscription.deleted'));
+
+  it('is told apart from someone who simply cancelled', () => {
+    // Both arrive as the same event. Cancelling means they paid for the
+    // period they are in; failing to pay means they did not.
+    expect(block).toContain('cancellation_details');
+    expect(block).toContain('payment_failed');
+    expect(block).toContain('"unpaid"');
+    expect(block).toContain('incomplete_expired');
+  });
+
+  it('revokes access immediately when payment failed', () => {
+    // The old comment was "Don't remove Pro immediately - let it expire
+    // naturally", applied to both cases — up to a free month, or a free year
+    // on annual.
+    expect(block).toContain('userData.proStatus = false');
+    expect(block).toContain('userData.proExpiry = new Date().toISOString()');
+    expect(block, 'the revoke must be conditional, not unconditional').toMatch(/if \(endedForNonPayment\) \{/);
+  });
+
+  it('leaves a voluntary cancellation with the period it paid for', () => {
+    const at = block.indexOf('if (endedForNonPayment) {');
+    const guarded = block.slice(at, block.indexOf('}', block.indexOf('proExpiry = new Date')));
+    expect(guarded).toContain('proStatus = false');
+    // proAutoRenew is turned off for BOTH — that part was always right.
+    expect(block.slice(0, at)).toContain('userData.proAutoRenew = false');
+  });
+
+  it('keeps proType so a lapsed subscriber is not mistaken for a stranger', () => {
+    expect(block, 'clearing proType would break the win-back copy and pro-access').not.toMatch(/proType\s*=\s*null/);
+  });
+
+  it('records which of the two happened', () => {
+    expect(block).toContain('revoked: endedForNonPayment');
+    expect(block).toContain('reason: cancelReason');
+  });
+});

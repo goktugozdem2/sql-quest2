@@ -493,12 +493,38 @@ serve(async (req) => {
         .select("*")
         .filter("data->>stripeCustomerId", "eq", customerId);
 
+      // WHY a subscription ended decides whether the person keeps the period
+      // (2026-09-14, founder: "ödeme fail olursa pro free'ye dönmeli").
+      //
+      // Two very different things arrive as the same event:
+      //   - someone CANCELLED. They paid for the period they are in, so they
+      //     keep it to its end. Taking it away would be taking back something
+      //     already bought.
+      //   - Stripe gave up COLLECTING. They did not pay for the period they
+      //     are in, and "let it expire naturally" handed them up to a month
+      //     free — a year on the annual plan.
+      //
+      // The old branch did the second thing to both. Stripe distinguishes
+      // them: `cancellation_details.reason` and the terminal status.
+      const cancelReason = (subscription as { cancellation_details?: { reason?: string } })
+        .cancellation_details?.reason || null;
+      const endedForNonPayment = cancelReason === "payment_failed"
+        || subscription.status === "unpaid"
+        || subscription.status === "incomplete_expired";
+
       if (users && users.length > 0) {
         const userRecord = users[0];
         const userData = userRecord.data;
-        
+
         userData.proAutoRenew = false;
-        // Don't remove Pro immediately - let it expire naturally
+        if (endedForNonPayment) {
+          // Access ends now, not at a date they never paid to reach.
+          // proType is deliberately KEPT: pro-access.js needs it to tell a
+          // lapsed subscriber from someone who never had Pro, and the
+          // win-back copy depends on that difference.
+          userData.proStatus = false;
+          userData.proExpiry = new Date().toISOString();
+        }
 
         await supabase
           .from("users")
@@ -510,14 +536,17 @@ serve(async (req) => {
         await logProEvent("pro_subscription_cancelled", userRecord.username, "stripe_webhook", {
           plan_type: userData.proType || "unknown",
           ended: true,
+          reason: cancelReason,
+          revoked: endedForNonPayment,
           days_since_purchase: subscription.created
             ? Math.round((Date.now() - subscription.created * 1000) / 86400000)
             : null,
         });
-        console.log(`⚠️ Subscription cancelled for ${userRecord.username}`);
+        console.log(`⚠️ Subscription ended for ${userRecord.username} (${cancelReason || subscription.status}) — ${endedForNonPayment ? "access revoked now" : "keeps the paid period"}`);
       } else {
         await logProEvent("pro_subscription_cancelled", null, "stripe_webhook", {
-          plan_type: "unknown", ended: true, stripe_customer_id: customerId,
+          plan_type: "unknown", ended: true, reason: cancelReason,
+          revoked: endedForNonPayment, stripe_customer_id: customerId,
         });
       }
       
