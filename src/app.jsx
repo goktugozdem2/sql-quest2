@@ -6199,7 +6199,14 @@ function SQLQuest() {
   // code threw `ReferenceError: username is not defined` during render which
   // crashed the entire app to a blank screen. Use currentUser everywhere.
   useEffect(() => {
-    if (!showReferralModal || !currentUser || (typeof currentUser === 'string' && currentUser.startsWith('guest_'))) return;
+    // 2026-09-14: this was gated on `showReferralModal` alone, so the code was
+    // fetched only when the Referral Hub opened. The profile panel's Invite
+    // section renders `getAppUrl()`, which appends `?ref=` ONLY when
+    // referralCode is set — so the panel handed out a bare app URL that
+    // credited nobody. Measured the same day: 363 of 363 accounts have a
+    // personal_ref_code in the database and the referrals table holds zero
+    // rows from a personal code, ever. The server side was never the problem.
+    if ((!showReferralModal && !showProfile) || !currentUser || (typeof currentUser === 'string' && currentUser.startsWith('guest_'))) return;
     let cancelled = false;
     setMyReferralStatsLoading(true);
     (async () => {
@@ -6234,7 +6241,7 @@ function SQLQuest() {
       finally { if (!cancelled) setMyReferralStatsLoading(false); }
     })();
     return () => { cancelled = true; };
-  }, [showReferralModal, currentUser]);
+  }, [showReferralModal, showProfile, currentUser]);
   const [shareType, setShareType] = useState('general'); // general, achievement, challenge, streak, interview, levelup
   const [showCertificateModal, setShowCertificateModal] = useState(false);
   const [certificateData, setCertificateData] = useState(null);
@@ -31090,65 +31097,17 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
               </div>
             )}
             
-            {/* Cloud Sync Info - Only show if not guest and not configured */}
-            {!isGuest && !isSupabaseConfigured() && (
-              <div className="mb-4 p-3 rounded-md" style={{ background: 'rgba(255,176,32,0.08)', border: '1px solid rgba(255,176,32,0.3)' }}>
-                <p className="text-xs font-medium mb-1" style={{ color: '#FFB020' }}>⚠️ Local Storage Only</p>
-                <p className="text-xs text-gray-400">Your progress is saved on this device only. To sync across devices, set up cloud sync in config.js</p>
-              </div>
-            )}
-            
-            {/* Stats Grid */}
-            {/* Four counters in four different colours said four different
-                things were happening. They are the same kind of number, so
-                they get the same treatment; Geist Mono + tabular-nums is what
-                DESIGN.md asks of a counter. The yellow on "Achievements" was
-                the accent used as decoration, which the accent rule forbids
-                by name. */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-              {[
-                [queryCount, i18n_t('profile', 'statQueries')],
-                [solvedChallenges.size, i18n_t('profile', 'statChallenges')],
-                [completedAiLessons.size, i18n_t('profile', 'statAiLessons')],
-                [unlockedAchievements.size, i18n_t('profile', 'statAchievements')],
-              ].map(([value, label]) => (
-                <div key={label} className="p-3 text-center" style={{ background: '#16181F', border: '1px solid #2A2E38', borderRadius: '6px' }}>
-                  <p className="text-2xl font-bold" style={{ color: '#F2F0EA', fontFamily: 'Geist Mono, monospace', fontVariantNumeric: 'tabular-nums' }}>{value}</p>
-                  <p className="text-xs" style={{ color: '#8A8E99' }}>{label}</p>
-                </div>
-              ))}
-            </div>
-
-            {/* Share Progress Section */}
-            <div className="mb-6 p-4" style={{ background: '#16181F', border: '1px solid #2A2E38', borderRadius: '10px' }}>
-              <h4 className="font-bold mb-3 flex items-center gap-2" style={{ color: '#F2F0EA' }}>
-                {i18n_t('profile', 'shareSectionTitle')}
-              </h4>
-              <p className="text-sm mb-4" style={{ color: '#8A8E99' }}>{i18n_t('profile', 'shareSectionSubtitle')}</p>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  onClick={() => { setShowProfile(false); setShareType('general'); setShareData(null); setShowShareModal(true); }}
-                  className="flex items-center justify-center gap-2 px-4 py-2 font-medium text-sm sq-quiet-btn"
-                >
-                  {i18n_t('profile', 'btnProgressCard')}
-                </button>
-                <button
-                  onClick={() => { setShowProfile(false); setShareType('streak'); setShareData(null); setShowShareModal(true); }}
-                  className="flex items-center justify-center gap-2 px-4 py-2 font-medium text-sm sq-quiet-btn"
-                >
-                  {i18n_t('profile', 'btnStreakBadge')}
-                </button>
-              </div>
-              {Object.values(challengeProgress).filter(p => p?.completed).length === 30 && (
-                <button
-                  onClick={() => { setShowProfile(false); setShareType('certificate'); setShareData(null); setShowShareModal(true); }}
-                  className="w-full mt-3 flex items-center justify-center gap-2 px-4 py-2 font-bold text-sm sq-accent-btn"
-                >
-                  {i18n_t('profile', 'btnCertificate')}
-                </button>
-              )}
-            </div>
-            
+            {/* Removed 2026-09-14: the "cloud sync not configured" notice only ever
+                rendered when isSupabaseConfigured() was false, which in production
+                it never is. Dead branch in a panel we were trimming. */}
+            {/* Removed 2026-09-14 (founder's declutter): four counters that said less
+                than the Progress block above them. "Challenges" repeated its
+                "Solved" line, and "Queries: 0" sat directly above a list of three
+                queries — the same panel disagreeing with itself. */}
+            {/* Removed 2026-09-14: share_clicked was 3 clicks by 3 people in 90 days,
+                the last on 09-10. A heading, a subtitle and two buttons for that.
+                Sharing still exists on the surfaces that earn it — the post-solve
+                and milestone moments — where the thing worth sharing just happened. */}
             {/* Invite Friends Section */}
             {!isGuest && (
               <div className="mb-6 p-4" style={{ background: 'rgba(255,176,32,0.08)', border: '1px solid rgba(255,176,32,0.3)', borderRadius: '10px' }}>
@@ -31157,9 +31116,10 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                 </h4>
                 <p className="text-gray-400 text-sm mb-3">{i18n_t('profile', 'inviteSectionSubtitle')}</p>
                 <div className="flex items-center gap-2 mb-3">
-                  <input readOnly value={getAppUrl()} className="flex-1 bg-gray-800 text-xs text-gray-300 px-3 py-2 rounded-md border border-gray-700 truncate" />
+                                  <input readOnly value={referralCode ? getAppUrl() : ''} placeholder="Preparing your link…" className="flex-1 text-sm px-3 py-2 rounded-md truncate" style={{ background: '#1F222B', border: '1px solid #2A2E38', color: '#F2F0EA' }} />
                   <button
-                    onClick={() => { navigator.clipboard.writeText(getAppUrl()); playSound('coin'); alert(i18n_t('profile', 'copied')); }}
+                  disabled={!referralCode}
+                    onClick={() => { if (!referralCode) return; trackActivationEvent('referral_link_copied', { hasCode: true, from: 'profile' }); navigator.clipboard.writeText(getAppUrl()); playSound('coin'); alert(i18n_t('profile', 'copied')); }}
                     className="px-3 py-2 text-xs font-bold sq-accent-btn whitespace-nowrap"
                   >
                     {i18n_t('profile', 'copy')}
@@ -31245,25 +31205,10 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
               </div>
             )}
             
-            {/* Query History */}
-            <div className="mb-6">
-              <h3 className="font-bold mb-3 flex items-center gap-2"><History size={18} /> Recent Queries</h3>
-              <div className="space-y-2 max-h-48 overflow-y-auto">
-                {queryHistory.slice(-10).reverse().map((entry, i) => (
-                  <div key={i} className={`p-2 rounded-lg text-sm font-mono ${entry.success ? 'bg-green-500/10 border border-green-500/20' : 'bg-red-500/10 border border-red-500/20'}`}>
-                    <div className="flex items-center justify-between mb-1">
-                      <span className={`text-xs ${entry.success ? 'text-green-400' : 'text-red-400'}`}>
-                        {entry.success ? '✓' : '✗'} {entry.context}
-                      </span>
-                      <span className="text-xs text-gray-500">{new Date(entry.timestamp).toLocaleTimeString()}</span>
-                    </div>
-                    <p className="text-gray-300 truncate">{entry.sql}</p>
-                  </div>
-                ))}
-                {queryHistory.length === 0 && <p className="text-gray-500 text-sm">No queries yet</p>}
-              </div>
-            </div>
-            
+            {/* Removed 2026-09-14: "Recent Queries" listed the last few attempts,
+                which in practice meant three red FAILED rows — debug output, shown
+                to someone who came to look at their own account. The queries are
+                still kept in challengeProgress; nothing here read them back. */}
             {/* Change Password Section */}
             <div className="mb-4">
               <button
@@ -31364,74 +31309,12 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
               )}
             </div>
             
-            {/* Sync Profile Section */}
-            <div className="mb-4 p-3 bg-gray-800/50 rounded-lg border border-gray-700">
-              <p className="text-xs text-gray-400 mb-2">📱 Sync profile across devices:</p>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => {
-                    const userData = localStorage.getItem(`sqlquest_user_${currentUser}`);
-                    if (userData) {
-                      const exportData = {
-                        username: currentUser,
-                        data: JSON.parse(userData),
-                        exportedAt: new Date().toISOString()
-                      };
-                      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-                      const url = URL.createObjectURL(blob);
-                      const a = document.createElement('a');
-                      a.href = url;
-                      a.download = `sqlquest_${currentUser}_profile.json`;
-                      a.click();
-                      URL.revokeObjectURL(url);
-                    }
-                  }}
-                  className="flex-1 py-2 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/50 rounded-lg text-blue-400 font-medium text-xs"
-                >
-                  📤 Export Profile
-                </button>
-                <label className="flex-1 py-2 bg-green-600/20 hover:bg-green-600/30 border border-green-500/50 rounded-lg text-green-400 font-medium text-xs cursor-pointer flex items-center justify-center">
-                  📥 Import Profile
-                  <input
-                    type="file"
-                    accept=".json"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        const reader = new FileReader();
-                        reader.onload = async (event) => {
-                          try {
-                            const importData = JSON.parse(event.target.result);
-                            if (importData.username && importData.data) {
-                              // Check if importing for current user or different user
-                              if (importData.username === currentUser) {
-                                localStorage.setItem(`sqlquest_user_${currentUser}`, JSON.stringify(importData.data));
-                                // Reload user session
-                                window.location.reload();
-                              } else {
-                                if (confirm(`This profile is for "${importData.username}". Import and switch to this user?`)) {
-                                  localStorage.setItem(`sqlquest_user_${importData.username}`, JSON.stringify(importData.data));
-                                  localStorage.setItem('sqlquest_user', importData.username);
-                                  window.location.reload();
-                                }
-                              }
-                            } else {
-                              alert('Invalid profile file');
-                            }
-                          } catch (err) {
-                            alert('Error reading profile file');
-                          }
-                        };
-                        reader.readAsText(file);
-                      }
-                      e.target.value = '';
-                    }}
-                  />
-                </label>
-              </div>
-            </div>
-            
+            {/* Removed 2026-09-14: Export/Import Profile predates cloud sync and
+                contradicted the "Synced" badge at the top of this same panel —
+                offering to move an account by file while the account was already
+                syncing. Never instrumented, so I cannot say nobody used it, only
+                that we never knew. The data still leaves with the account, through
+                sync. */}
             <button
               onClick={handleLogout}
               className="w-full py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 rounded-lg text-red-400 font-medium flex items-center justify-center gap-2"

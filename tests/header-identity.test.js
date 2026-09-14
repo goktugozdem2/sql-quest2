@@ -141,3 +141,66 @@ describe('the profile panel answers the rest', () => {
     expect(panel).toContain('lastLoginDay(');
   });
 });
+
+// The Invite link credited nobody (2026-09-14).
+//
+// The panel's Invite section renders `getAppUrl()`, which appends `?ref=` ONLY
+// when `referralCode` is set — and `referralCode` was fetched by an effect
+// gated on `showReferralModal`. Open the profile without opening the Referral
+// Hub and the copied link was a bare app URL.
+//
+// Measured the same day: 363 of 363 non-guest accounts have a
+// personal_ref_code in the database, a trigger assigns them, and the
+// referrals table holds ZERO rows from a personal code, ever. 0 referral
+// conversions in the product's history. The server side was never the
+// problem — the link was.
+describe('the invite link carries a code, or is not offered', () => {
+  const invite = src.slice(src.indexOf('{/* Invite Friends Section */}'),
+    src.indexOf('{/* Subscription Section */}', src.indexOf('{/* Invite Friends Section */}')));
+
+  it('fetches the code when the profile opens, not only the referral hub', () => {
+    const eff = src.slice(src.indexOf('if ((!showReferralModal'), src.indexOf('if ((!showReferralModal') + 400);
+    expect(eff).toContain('!showProfile');
+    expect(src).toContain('}, [showReferralModal, showProfile, currentUser]);');
+  });
+
+  it('shows no URL at all until the code is known', () => {
+    // A bare app URL looks like a working referral link and is not one.
+    expect(invite).toContain('value={referralCode ? getAppUrl() : \'\'}');
+    expect(invite, 'the raw getAppUrl() is back in the field').not.toMatch(/value=\{getAppUrl\(\)\}/);
+  });
+
+  it('will not copy a link that credits nobody', () => {
+    expect(invite).toContain('disabled={!referralCode}');
+    expect(invite).toContain('if (!referralCode) return;');
+  });
+});
+
+// What the founder cut on 2026-09-14, with the reason each was cut, so a
+// future pass does not quietly put them back.
+describe('the profile panel stays trimmed', () => {
+  const panel = src.slice(src.indexOf('{showProfile && ('), src.indexOf('{showProfile && (') + 30000);
+
+  it('has no stats grid — it repeated Solved and contradicted itself on Queries', () => {
+    expect(panel).not.toContain("i18n_t('profile', 'statAiLessons')");
+  });
+
+  it('has no share section — 3 clicks by 3 people in 90 days', () => {
+    expect(panel).not.toContain("i18n_t('profile', 'btnProgressCard')");
+  });
+
+  it('has no query history — red failed attempts are debug output', () => {
+    expect(panel).not.toContain('{/* Query History */}');
+  });
+
+  it('has no export/import — it contradicted the Synced badge above it', () => {
+    expect(panel).not.toContain('{/* Sync Profile Section */}');
+  });
+
+  it('still has the four things the panel exists for', () => {
+    expect(panel).toContain('data-testid="profile-progress"');
+    expect(panel).toContain('data-testid="profile-settings"');
+    expect(panel).toContain("i18n_t('profile', 'subscriptionTitle')");
+    expect(panel).toContain('handleLogout');
+  });
+});
