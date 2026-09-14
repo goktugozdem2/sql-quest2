@@ -225,6 +225,10 @@ function writeSitemap(slugs) {
   xml = xml.replace(/\s*<!-- questions:start -->[\s\S]*?<!-- questions:end -->/, '');
   const today = '2026-09-13';
   const urls = [`${SITE}/questions/`, ...[...slugs.values()].map(s => `${SITE}/questions/${s}/`)];
+  // The date here is a placeholder: scripts/sitemap-lastmod.mjs runs last in
+  // the build and rewrites every <lastmod> from the built page's content hash,
+  // so a question page that did not change keeps the date it had. Stamping
+  // today on all 299 every build was half of the reason that file existed.
   const block = `\n  <!-- questions:start -->\n${urls.map(u => `  <url>\n    <loc>${u}</loc>\n    <lastmod>${today}</lastmod>\n    <changefreq>monthly</changefreq>\n    <priority>${u.endsWith('/questions/') ? '0.8' : '0.6'}</priority>\n  </url>`).join('\n')}\n  <!-- questions:end -->`;
   xml = xml.replace('</urlset>', `${block}\n</urlset>`);
   fs.writeFileSync(file, xml);
