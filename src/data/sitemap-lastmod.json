@@ -3,7 +3,7 @@
   "updated": "2026-09-14",
   "pages": {
     "/": {
-      "hash": "b9d295e0f272af6d",
+      "hash": "e6172c62f00f15d5",
       "lastmod": "2026-09-14"
     },
     "/turkce-sql-ogren/": {
@@ -191,55 +191,55 @@
       "lastmod": "2026-09-14"
     },
     "/sql-for-the-ai-era/": {
-      "hash": "16913e1f39ed7a1f",
+      "hash": "9db76b47c76f4dc6",
       "lastmod": "2026-09-14"
     },
     "/challenges/": {
-      "hash": "f33290ac92454b90",
+      "hash": "8cb6805e0bdfb129",
       "lastmod": "2026-09-14"
     },
     "/challenges/aggregation/": {
-      "hash": "9f8bfed273093899",
+      "hash": "50468061b69cf2a9",
       "lastmod": "2026-09-14"
     },
     "/challenges/case-when/": {
-      "hash": "3cc37c60118ad1b8",
+      "hash": "9f1e28706d4ce94c",
       "lastmod": "2026-09-14"
     },
     "/challenges/cte/": {
-      "hash": "ac87560fb1297b2f",
+      "hash": "1f15e34eb7838fc5",
       "lastmod": "2026-09-14"
     },
     "/challenges/date-functions/": {
-      "hash": "ebd80bd2a95791d3",
+      "hash": "94f99e2f37c3e4ec",
       "lastmod": "2026-09-14"
     },
     "/challenges/null-handling/": {
-      "hash": "24800d6d91a03e40",
+      "hash": "d47d6fdcb3229f21",
       "lastmod": "2026-09-14"
     },
     "/challenges/string-functions/": {
-      "hash": "1b96a60d1a0fb44a",
+      "hash": "7eca31f3317d1ab2",
       "lastmod": "2026-09-14"
     },
     "/challenges/joins/": {
-      "hash": "713e4fb8db6b30b9",
+      "hash": "8ed01536fea69fe7",
       "lastmod": "2026-09-14"
     },
     "/challenges/subqueries/": {
-      "hash": "f67e6c6a76f874ac",
+      "hash": "8e01f9436d91f865",
       "lastmod": "2026-09-14"
     },
     "/challenges/window-functions/": {
-      "hash": "f23d980e56c5ece7",
+      "hash": "eff3b648f84b4e40",
       "lastmod": "2026-09-14"
     },
     "/challenges/ranking-functions/": {
-      "hash": "b4809dc9426be940",
+      "hash": "13b85b4859548723",
       "lastmod": "2026-09-14"
     },
     "/challenges/advanced/": {
-      "hash": "c0855794d768ea3e",
+      "hash": "e2c2e24db2b4dc6a",
       "lastmod": "2026-09-14"
     },
     "/blog/": {
@@ -399,27 +399,27 @@
       "lastmod": "2026-09-14"
     },
     "/sql-tools/": {
-      "hash": "7325073093ba8bea",
+      "hash": "4d0d6601eb423569",
       "lastmod": "2026-09-14"
     },
     "/sql-query-checker/": {
-      "hash": "679afb891a44d4a4",
+      "hash": "07b6a4041986a6f3",
       "lastmod": "2026-09-14"
     },
     "/sql-query-explainer/": {
-      "hash": "3ab2f5a396f75e99",
+      "hash": "50678eebd96f2955",
       "lastmod": "2026-09-14"
     },
     "/sql-query-optimizer/": {
-      "hash": "99f8d0b62af52da7",
+      "hash": "a0bae25734d1d9ca",
       "lastmod": "2026-09-14"
     },
     "/datalemur-alternatives/": {
-      "hash": "946f975effb9c1b8",
+      "hash": "27d2357a0e025285",
       "lastmod": "2026-09-14"
     },
     "/stratascratch-alternatives/": {
-      "hash": "f2c1b323a6d88817",
+      "hash": "b0bb6eb1925a21dc",
       "lastmod": "2026-09-14"
     },
     "/questions/": {

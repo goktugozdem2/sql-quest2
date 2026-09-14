@@ -122,7 +122,10 @@ export function renderTopic(slug, bank, qslugs) {
   const pop = bank.filter(spec.population).sort((a, b) => cardRank(a) - cardRank(b) || a.id - b.id);
   const t = tallyOf(pop);
   const url = `${SITE}/challenges/${slug}/`;
-  const title = `${copy.name} — ${t.count} Challenges (${t.free} Free): ${copy.tail}`;
+  // The brand token is the DOMAIN: "SQLQuest" alone is another product's
+  // exact name (docs/reads/google-position-2026-09-11.md §4). Never drop
+  // the ".app" — it is the whole of the differentiation.
+  const title = `${copy.name} — ${t.count} Challenges (${t.free} Free): ${copy.tail} | SQLQuest.app`;
   const desc = copy.description(t);
   const faqLd = { '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: copy.faq.map(([q, a]) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a } })) };
   const ld = [

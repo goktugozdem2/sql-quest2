@@ -97,7 +97,7 @@ const TOOLS = {
   'sql-query-checker': {
     kind: 'checker',
     name: 'SQL Query Checker',
-    title: 'SQL Query Checker — Find the Mistakes That Return Wrong Rows (Free)',
+    title: 'SQL Query Checker — Find the Mistakes That Return Wrong Rows (Free) | SQLQuest.app',
     h1: 'SQL query checker',
     sub: 'Paste a query. It points out the mistakes that return the wrong rows or fail to run — NOT IN with NULLs, a window function in WHERE, a LEFT JOIN that quietly became an INNER JOIN — and says how to fix each one.',
     description: 'Free SQL query checker: paste a query and see the mistakes that return wrong rows — NOT IN with NULLs, = NULL, window functions in WHERE, ungrouped columns, LEFT JOIN filters. Runs in your browser.',
@@ -111,7 +111,7 @@ const TOOLS = {
   'sql-query-explainer': {
     kind: 'explainer',
     name: 'SQL Query Explainer',
-    title: 'SQL Query Explainer — Explain a SQL Query Step by Step (Free)',
+    title: 'SQL Query Explainer — Explain a SQL Query Step by Step (Free) | SQLQuest.app',
     h1: 'SQL query explainer',
     sub: 'Paste a query and read it clause by clause, in the order the database actually runs it — CTEs, joins, grouping, window functions and all.',
     description: 'Free SQL query explainer: paste any SELECT and get a plain-English, step-by-step explanation in execution order — CTEs, JOINs, GROUP BY, HAVING, window functions, CASE. Runs in your browser.',
@@ -125,7 +125,7 @@ const TOOLS = {
   'sql-query-optimizer': {
     kind: 'optimizer',
     name: 'SQL Query Optimizer',
-    title: 'SQL Query Optimizer — Free Suggestions to Make a Query Faster',
+    title: 'SQL Query Optimizer — Free Suggestions to Make a Query Faster | SQLQuest.app',
     h1: 'SQL query optimizer',
     sub: 'Paste a query. It points out the patterns that make SQL slow — functions on indexed columns, leading wildcards, correlated subqueries, DISTINCT hiding a fan-out — and shows the faster shape. None of the suggestions change the result.',
     description: 'Free SQL query optimizer: paste a query and get suggestions to make it faster — non-sargable WHERE, LIKE with a leading wildcard, correlated subqueries, DISTINCT over JOIN, UNION vs UNION ALL. Runs in your browser.',
@@ -312,7 +312,7 @@ ${FOOT}`;
 
 export function renderHub() {
   const url = `${SITE}/sql-tools/`;
-  const title = 'Free SQL Tools — Query Checker, Explainer, Optimizer and Skill Tests';
+  const title = 'Free SQL Tools — Query Checker, Explainer, Optimizer and Skill Tests | SQLQuest.app';
   const description = 'Free SQL tools that run in your browser: check a query for mistakes, explain it step by step, find what makes it slow, and test your SQL interview readiness. No signup.';
   const faq = [
     ['Are these SQL tools free?', 'Yes, all five, with no signup. The query tools run entirely in your browser; the readiness test and the skill test need no account either.'],

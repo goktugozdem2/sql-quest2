@@ -132,7 +132,7 @@ export function tools(sq) {
 const PAGES = {
   'datalemur-alternatives': {
     subject: 'datalemur',
-    title: 'DataLemur Alternatives (2026): SQL Interview Practice Sites Compared',
+    title: 'DataLemur Alternatives (2026): SQL Interview Practice Sites Compared | SQLQuest.app',
     h1: 'DataLemur alternatives',
     description: 'A neutral comparison of DataLemur alternatives for SQL interview practice — StrataScratch, LeetCode SQL 50, HackerRank, SQLPad, Analyst Builder, Interview Query, SQL Quest — with prices and free tiers read off each site on 2026-09-13.',
     why: 'DataLemur is a good product at a low price. People look for alternatives for one of four reasons: they want more questions, a bigger free tier, Python or ML practice alongside SQL, or feedback on why a query is wrong. The table says which alternative answers which.',
@@ -147,7 +147,7 @@ const PAGES = {
   },
   'stratascratch-alternatives': {
     subject: 'stratascratch',
-    title: 'StrataScratch Alternatives (2026): SQL Interview Practice Sites Compared',
+    title: 'StrataScratch Alternatives (2026): SQL Interview Practice Sites Compared | SQLQuest.app',
     h1: 'StrataScratch alternatives',
     description: 'A neutral comparison of StrataScratch alternatives for SQL interview practice — DataLemur, LeetCode SQL 50, HackerRank, SQLPad, Analyst Builder, Interview Query, SQL Quest — with prices and free tiers read off each site on 2026-09-13.',
     why: 'StrataScratch has the biggest coding bank of the SQL-first sites and the widest choice of dialects. People look for alternatives when they want a lower price, a bigger free tier for SQL alone, a narrower SQL focus, or practice that tells them which skill to fix first. The table says which alternative answers which.',
