@@ -55,6 +55,25 @@ describe('every page carries the brand', () => {
     expect(naked, `titles with no brand:\n${naked.slice(0, 20).join('\n')}`).toEqual([]);
   });
 
+  // 2026-09-14, founder's call: the whole site moved off "| SQL Quest" to the
+  // domain form. The readable name survives in prose and in the logo; a TITLE
+  // is machine-facing and carries the token that is only ours.
+  it('every title uses the domain form', () => {
+    const old = pages.filter(p => !/SQLQuest\.app/.test(p.title)).map(p => `${p.file}: ${p.title}`);
+    expect(old, `titles still on the shared spelling:\n${old.slice(0, 20).join('\n')}`).toEqual([]);
+  });
+
+  it('og:title, twitter:title and og:site_name agree with it', () => {
+    const bad = [];
+    for (const { file } of pages) {
+      const html = fs.readFileSync(path.join(PUB, file), 'utf8').slice(0, 8000);
+      for (const m of html.matchAll(/(?:property|name)="(og:title|twitter:title|og:site_name)"\s+content="([^"]*)"/g)) {
+        if (/SQL Quest/.test(m[2])) bad.push(`${file} ${m[1]}: ${m[2]}`);
+      }
+    }
+    expect(bad, `social metadata still on the shared spelling:\n${bad.slice(0, 15).join('\n')}`).toEqual([]);
+  });
+
   it('a title that uses the no-space form uses the domain form, never bare "SQLQuest"', () => {
     // Bare "SQLQuest" is the other product's exact name. If a title says it,
     // it must be as SQLQuest.app.

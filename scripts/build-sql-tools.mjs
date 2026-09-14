@@ -185,7 +185,7 @@ function head({ title, description, url, ld }) {
   <link rel="canonical" href="${url}">
   <meta property="og:type" content="website">
   <meta property="og:url" content="${url}">
-  <meta property="og:site_name" content="SQL Quest">
+  <meta property="og:site_name" content="SQLQuest.app">
   <meta property="og:title" content="${esc(title)}">
   <meta property="og:description" content="${esc(description)}">
   <meta property="og:image" content="${SITE}/og-image.png">

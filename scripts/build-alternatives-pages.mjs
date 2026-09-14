@@ -224,7 +224,7 @@ export function renderAlternatives(slug) {
   <link rel="canonical" href="${url}">
   <meta property="og:type" content="article">
   <meta property="og:url" content="${url}">
-  <meta property="og:site_name" content="SQL Quest">
+  <meta property="og:site_name" content="SQLQuest.app">
   <meta property="og:title" content="${esc(pg.title)}">
   <meta property="og:description" content="${esc(pg.description)}">
   <meta property="og:image" content="${SITE}/og-image.png">

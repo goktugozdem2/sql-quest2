@@ -105,7 +105,7 @@ const head = ({ title, description, url, ld }) => `<!DOCTYPE html>
   <link rel="canonical" href="${url}">
   <meta property="og:type" content="article">
   <meta property="og:url" content="${url}">
-  <meta property="og:site_name" content="SQL Quest">
+  <meta property="og:site_name" content="SQLQuest.app">
   <meta property="og:title" content="${esc(title)}">
   <meta property="og:description" content="${esc(description)}">
   <meta property="og:image" content="${SITE}/og-image.png">
@@ -133,7 +133,7 @@ export function renderQuestion(c, ctx) {
   const primary = skills.find(s => s !== 'Querying Basics') || skills[0] || 'Querying Basics';
   const free = playableFree(c);
   const cos = (taggedBy[c.id] || []).map(n => companies[n.toLowerCase()]).filter(Boolean);
-  const title = `${c.title} — SQL Interview Question (${c.difficulty}) | SQL Quest`;
+  const title = `${c.title} — SQL Interview Question (${c.difficulty}) | SQLQuest.app`;
   const description = `${plain(c.description).slice(0, 138).replace(/\s+\S*$/, '')}… A ${c.difficulty.toLowerCase()} SQL practice question on ${primary.toLowerCase()}, with the schema, a hint and an in-browser editor.`;
   const concepts = [...new Set([...(c.skills || []), c.category].filter(Boolean))];
   const topicLinks = skills.filter(s => SKILL_PAGE[s]).map(s => `<a href="${SKILL_PAGE[s][0]}">${esc(SKILL_PAGE[s][1])}</a>`);
@@ -198,7 +198,7 @@ export function renderHub(bank, slugs) {
     (groups[s] = groups[s] || []).push(c);
   }
   const order = CANONICAL_SKILLS.filter(s => groups[s]);
-  const title = `SQL Interview Questions — ${bank.length} Practice Problems by Topic | SQL Quest`;
+  const title = `SQL Interview Questions — ${bank.length} Practice Problems by Topic | SQLQuest.app`;
   const description = `Every SQL Quest practice question as its own page: joins, window functions, aggregation, CTEs, CASE, dates, NULLs and strings. Easy to Hard, runnable in the browser.`;
   const ld = [{ '@context': 'https://schema.org', '@type': 'CollectionPage', name: 'SQL Interview Questions', url, description,
     mainEntity: { '@type': 'ItemList', numberOfItems: bank.length, itemListElement: bank.slice(0, 50).map((c, i) => ({ '@type': 'ListItem', position: i + 1, url: `${SITE}/questions/${slugs.get(c.id)}/`, name: c.title })) } }];

@@ -313,7 +313,7 @@ function faqFor(key, d, f) {
 export function renderPage(key, d, f) {
   const slug = `${key}-sql-interview`;
   const url = `${SITE}/${slug}/`;
-  const title = `${d.title} | SQL Quest`;
+  const title = `${d.title} | SQLQuest.app`;
   const faqs = faqFor(key, d, f);
   const srcKeys = Object.keys(d.sources);
   const cite = keys => keys.length
@@ -354,7 +354,7 @@ export function renderPage(key, d, f) {
   <link rel="canonical" href="${url}">
   <meta property="og:type" content="article">
   <meta property="og:url" content="${url}">
-  <meta property="og:site_name" content="SQL Quest">
+  <meta property="og:site_name" content="SQLQuest.app">
   <meta property="og:title" content="${esc(title)}">
   <meta property="og:description" content="${esc(d.description)}">
   <meta property="og:image" content="${SITE}/og-image.png">

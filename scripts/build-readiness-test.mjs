@@ -181,22 +181,22 @@ const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(
 
 const FAQ = [
   ['What does the SQL interview readiness test measure?', 'Ten questions across the skills SQL interviews lean on: joins, window functions, aggregation, CTEs and subqueries, NULL handling, date filters and conditional logic. Each question maps to one skill on your Skillmap, and the result shows a score per skill, your weakest one, and an overall readiness score.'],
-  ['How is a company readiness score calculated?', 'When you pick a company, each skill is weighted by how much of that company\'s SQL Quest practice set uses it — the same composition its interview page shows. It is a weighting of our practice set, not a measurement of the company\'s interview, and the result says so.'],
+  ['How is a company readiness score calculated?', 'When you pick a company, each skill is weighted by how much of that company\'s SQLQuest.app practice set uses it — the same composition its interview page shows. It is a weighting of our practice set, not a measurement of the company\'s interview, and the result says so.'],
   ['Do I need an account?', 'No. The test runs in your browser and needs no signup. When you open your recommended next challenge, the app starts in guest mode; an account is only needed to keep progress across devices.'],
   ['What happens after the test?', 'You get your weakest skill, the practice page for it, and one next challenge chosen for that skill — from the company\'s own set when you picked one. "Build my personalized practice plan" opens that challenge in the app, where the Coach keeps picking from your Skillmap.'],
 ];
 
 export function render(data) {
-  const title = 'SQL Interview Readiness Test — Free, 10 Questions, Your Skillmap | SQL Quest';
+  const title = 'SQL Interview Readiness Test — Free, 10 Questions, Your Skillmap | SQLQuest.app';
   const description = 'Free SQL interview readiness test: 10 questions, no signup. Get a readiness score (weighted for your target company), a score per SQL skill — joins, window functions, aggregation — and the practice plan for your weakest one.';
   const url = `${SITE}/sql-interview-readiness-test/`;
   const opts = Object.entries(data.companies).map(([slug, c]) => `<option value="${slug}">${esc(c.name)}</option>`).join('');
   const ld = [
     { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'SQL Quest', item: `${SITE}/` },
+      { '@type': 'ListItem', position: 1, name: 'SQLQuest.app', item: `${SITE}/` },
       { '@type': 'ListItem', position: 2, name: 'SQL Interview Readiness Test', item: url },
     ] },
-    { '@context': 'https://schema.org', '@type': 'Quiz', name: 'SQL Interview Readiness Test', description, url, educationalLevel: 'Intermediate', isAccessibleForFree: true, inLanguage: 'en', about: SKILLS.map(s => ({ '@type': 'Thing', name: s })), provider: { '@type': 'Organization', name: 'SQL Quest', url: `${SITE}/` } },
+    { '@context': 'https://schema.org', '@type': 'Quiz', name: 'SQL Interview Readiness Test', description, url, educationalLevel: 'Intermediate', isAccessibleForFree: true, inLanguage: 'en', about: SKILLS.map(s => ({ '@type': 'Thing', name: s })), provider: { '@type': 'Organization', name: 'SQLQuest.app', url: `${SITE}/` } },
     { '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: FAQ.map(([q, a]) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a } })) },
   ].map(o => `  <script type="application/ld+json">\n  ${JSON.stringify(o, null, 2).replace(/\n/g, '\n  ')}\n  </script>`).join('\n');
   const faqHtml = FAQ.map(([q, a]) => `<details class="fi"><summary class="fd">${esc(q)}</summary><p>${esc(a)}</p></details>`).join('\n    ');
@@ -214,7 +214,7 @@ export function render(data) {
   <link rel="canonical" href="${url}">
   <meta property="og:type" content="website">
   <meta property="og:url" content="${url}">
-  <meta property="og:site_name" content="SQL Quest">
+  <meta property="og:site_name" content="SQLQuest.app">
   <meta property="og:title" content="${esc(title)}">
   <meta property="og:description" content="${esc(description)}">
   <meta property="og:image" content="${SITE}/og-image.png">

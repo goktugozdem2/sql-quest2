@@ -36,7 +36,7 @@ const SECTORS = [
     en_name: 'Finance & Banking',
     accent_hex: '#10b981',          // green — money/finance
     accent_rgba: 'rgba(16,185,129,',
-    title_tr: 'Finans & Bankacılık SQL — Gerçek FDIC Verisi ile Pratik | SQL Quest',
+    title_tr: 'Finans & Bankacılık SQL — Gerçek FDIC Verisi ile Pratik | SQLQuest.app',
     description_tr: 'JPMorgan, BoA, Citi gibi 200 ABD bankasının gerçek FDIC verisiyle SQL öğren. RSSD ID, tier1 ratio, NPL, fraud pattern\'ları. 20 challenge, real banker schema, ücretsiz başla.',
     keywords_tr: 'finans SQL, bankacılık SQL, fintech SQL, FDIC veri, tier1 capital, NPL ratio, mülakat, banka veri analisti, fraud detection SQL',
     hero_pretitle: '🏦 Gerçek FDIC verisi',
@@ -93,7 +93,7 @@ const SECTORS = [
     en_name: 'Real Estate',
     accent_hex: '#f59e0b',          // amber — property/realty
     accent_rgba: 'rgba(245,158,11,',
-    title_tr: 'Gayrimenkul SQL — NYC OpenData ile Real Estate Analytics | SQL Quest',
+    title_tr: 'Gayrimenkul SQL — NYC OpenData ile Real Estate Analytics | SQLQuest.app',
     description_tr: 'Gerçek NYC emlak verisi (PLUTO + ACRIS + DOB). BBL, deed/mortgage transaction\'ları, alıcı/satıcı, permit\'ler. 20 challenge, real estate analyst schema, ücretsiz başla.',
     keywords_tr: 'gayrimenkul SQL, emlak veri analizi, NYC PLUTO, ACRIS, BBL, real estate analytics, property data, listings SQL',
     hero_pretitle: '🏠 Gerçek NYC emlak verisi',
@@ -150,7 +150,7 @@ const SECTORS = [
     en_name: 'Manufacturing & Industry',
     accent_hex: '#3b82f6',          // blue — industrial
     accent_rgba: 'rgba(59,130,246,',
-    title_tr: 'Üretim SQL — Predictive Maintenance Benchmark ile | SQL Quest',
+    title_tr: 'Üretim SQL — Predictive Maintenance Benchmark ile | SQLQuest.app',
     description_tr: 'UCI AI4I 2020 industrial benchmark. Siemens/GE/Honeywell ML ekiplerinin kullandığı standart dataset. Tool wear, torque, FMEA failure modes (TWF, HDF, PWF, OSF, RNF). 20 challenge.',
     keywords_tr: 'üretim SQL, manufacturing SQL, predictive maintenance, AI4I, FMEA, tool wear, sensor data, industrial analytics, Siemens veri',
     hero_pretitle: '🏭 Industrial benchmark dataset',
@@ -224,7 +224,7 @@ function generateLandingHtml(s) {
 
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://sqlquest.app/${s.slug}/">
-  <meta property="og:site_name" content="SQL Quest">
+  <meta property="og:site_name" content="SQLQuest.app">
   <meta property="og:title" content="${s.title_tr}">
   <meta property="og:description" content="${s.description_tr}">
   <meta property="og:image" content="https://sqlquest.app/og-image.png">
