@@ -45,12 +45,27 @@ describe('stripe-webhook: the events that make abandonment and churn readable', 
     expect(b).not.toMatch(/proStatus\s*=/);
   });
 
-  it('the subscription ending still only flips the flag, and now leaves a row', () => {
+  // 2026-09-14: this used to assert `proStatus` was NEVER cleared here —
+  // "let it expire naturally", applied to every subscription that ended. That
+  // was right for a cancellation (the period was paid for) and wrong for a
+  // failed payment, where it handed out up to a free month, or a free year on
+  // annual. The assertion now pins the DISTINCTION rather than the blanket
+  // rule: revoke only when Stripe says nobody paid.
+  it('the subscription ending leaves a row, and only revokes when payment failed', () => {
     const b = branch('customer.subscription.deleted');
     expect(b).toContain('userData.proAutoRenew = false');
     expect(b).toContain('logProEvent("pro_subscription_cancelled"');
     expect(b).toContain('ended: true');
-    expect(b).not.toMatch(/proStatus\s*=\s*false/);
+    // The revoke exists…
+    expect(b).toContain('userData.proStatus = false');
+    // …and is reached only through the non-payment test, never unconditionally.
+    const at = b.indexOf('userData.proStatus = false');
+    const guard = b.lastIndexOf('if (endedForNonPayment) {', at);
+    expect(guard, 'proStatus is cleared outside the payment-failure guard').toBeGreaterThan(-1);
+    expect(at - guard, 'the guard is not the one wrapping this line').toBeLessThan(400);
+    // A voluntary cancellation must still keep what it paid for.
+    expect(b).toContain('endedForNonPayment');
+    expect(b).toContain('cancellation_details');
   });
 
   it('every pro_events write in the file carries reason stripe_webhook', () => {
