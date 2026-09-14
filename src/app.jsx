@@ -18282,6 +18282,21 @@ CRITICAL RULES:
     setCurrentChallenge(null);
   };
 
+  // Which rungs of the guest ladder this browser has already been offered.
+  // The ladder used to rely on exact equality against a session counter; with
+  // a persisted solve total it needs a latch instead, or a returning guest is
+  // asked on every solve forever.
+  const GUEST_ASK_LADDER_KEY = 'sqlquest_guest_ask_ladder';
+  const readGuestAskLadder = () => {
+    try { return JSON.parse(localStorage.getItem(GUEST_ASK_LADDER_KEY) || '{}') || {}; }
+    catch (_) { return {}; }
+  };
+  const markGuestAsk = (rung) => {
+    try {
+      localStorage.setItem(GUEST_ASK_LADDER_KEY, JSON.stringify({ ...readGuestAskLadder(), [rung]: true }));
+    } catch (_) { /* private mode — the ask simply repeats, which is the old behaviour */ }
+  };
+
   const triggerSignupPrompt = (reason) => {
     if (isGuest && !showSignupPrompt) {
       setSignupPromptReason(reason);
@@ -23075,18 +23090,33 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
           // Rationale: Muluken/Malaka bounced at the old 5-challenge full-
           // signup wall. Asking for just an email after one proof-of-value
           // solve is low-friction; the drip can do the rest of the work.
+          //
+          // 2026-09-14 — THE LADDER WAS COUNTING THE WRONG THING. It read
+          // `guestActionsCount`, a useState(0) that reset on every page load,
+          // so "the tenth solve" meant ten solves in one unbroken sitting.
+          // Measured over 30 days: 100 people reached 10 solves and the
+          // account prompt was shown to 28. Guest progress has persisted
+          // across sessions since 09-12, so someone could solve three a day
+          // for a week and never once be asked.
+          //
+          // It now reads the guest's REAL total, with a once-per-rung latch in
+          // localStorage — without the latch a returning guest at 12 solves
+          // would be asked again on every solve, and exact equality (`=== 3`)
+          // would skip anyone who crossed the rung between sessions.
           if (isGuest) {
-            const newCount = guestActionsCount + 1;
-            setGuestActionsCount(newCount);
-            // 2026-09-14: the ask waits for the third solve. At the first it
-            // landed on top of the win that had just been earned.
-            if (newCount === 3 && !softEmailCaptured) {
+            const solvedTotal = newSolved.size;
+            setGuestActionsCount(solvedTotal);
+            const accountRung = ftbFlag('signupAskAtThree') ? 3 : 10;
+            const asked = readGuestAskLadder();
+            if (solvedTotal >= accountRung && !asked.account) {
+              markGuestAsk('account');
+              setTimeout(() => triggerSignupPrompt(accountRung === 3 ? 'third_solve' : 'first_challenge'), 1500);
+            } else if (solvedTotal >= 3 && !softEmailCaptured && !asked.email) {
+              markGuestAsk('email');
               setTimeout(() => {
                 if (!softEmailCaptured) setShowSoftEmailCapture(true);
               }, 1500);
-            } else if (newCount === 10) {
-              setTimeout(() => triggerSignupPrompt('first_challenge'), 1500);
-            } else if (newCount > 10 && newCount % 5 === 0) {
+            } else if (solvedTotal > accountRung && asked.account && solvedTotal % 5 === 0) {
               setTimeout(() => triggerSignupPrompt('progress'), 1500);
             }
           }

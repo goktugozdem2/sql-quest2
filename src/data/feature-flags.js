@@ -194,6 +194,35 @@ window.FEATURE_FLAGS = {
     // branch — which knew only monthly and annual — extends them by nothing.
     quarterlyPlan: false,
 
+    // ── The account ask at the third solve (2026-09-14) ──────────────────
+    // Founder: move the registration wall to the 3rd solve. Measured before
+    // agreeing, because the premise needed checking:
+    //
+    //   1,217 active / 197 registered-active in 30 days is 16%, but only 349
+    //   of those 1,217 ever solved anything — a rung at solve 3 cannot touch
+    //   the other 868. Of the 260 who DID reach 3 solves, 140 are already
+    //   registered. The addressable pool is ~120 guests a month, and ~39 of
+    //   them register on their own. So the ceiling is +41% on registered
+    //   users, not 3x.
+    //
+    // Where the 3x instinct IS right: the ASK's reach. 260 people reach 3
+    // solves a month against 100 who reach 10 — 2.6x more people asked.
+    //
+    // And the founder's second argument holds outright: 98 of the 209 people
+    // shown the Pro modal in 30 days were guests, and every one of them meets
+    // an email-capture step before checkout. An account removes that step.
+    //
+    // This flag ONLY moves the account rung from 10 to 3. It is a prompt, not
+    // a wall — nobody is blocked from solving. A hard wall was not built: 65%
+    // of people who reach 3 solves go on to 6, and every purchase in our
+    // history was a first-session decision at 6-10 solves, so a wall would
+    // stand directly in front of the population that pays.
+    //
+    // The LADDER BUG it rides with is fixed live, not behind this flag: the
+    // rungs counted a session-only useState(0), so "the tenth solve" meant
+    // ten in one unbroken sitting. That is why the prompt reached 28 people.
+    signupAskAtThree: false,
+
     // ── The free-tier boundary (2026-09-12) ──────────────────────────────
     // Five moves from docs/plans/free-tier-boundary-2026-09-12.md. The
     // finding: the free tier is not too big, it is in front of the paid good
