@@ -23498,6 +23498,13 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
     return () => { clearTimeout(t); if (obs) obs.disconnect(); };
   }, [showProModal]);
 
+  // The plan, read once for the header (2026-09-14). See the note above the
+  // avatar: the label lives in the profile, only the crown is in the bar.
+  const headerPlan = planLabel({
+    proStatus: userProStatus || !!proType,
+    proType, proExpiry, proAutoRenew,
+  }, Date.now());
+
   const pendingInterviewRef = useRef(null);
   const interviewGuestStartedRef = useRef(false);
   useEffect(() => {
@@ -31026,6 +31033,66 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
               );
             })()}
 
+            {/* Settings — what left the header on 2026-09-14 (founder's
+                declutter). Sound is toggled rarely, a language is chosen once,
+                and the tour is replayed when something is confusing: none of
+                the three earns permanent space beside the streak, and all
+                three are findable here, where people already come to look at
+                their own account. */}
+            <div className="mb-4 p-4" data-testid="profile-settings" style={{ background: '#16181F', border: '1px solid #2A2E38', borderRadius: '10px' }}>
+              <p className="text-xs uppercase tracking-wide mb-3" style={{ color: '#8A8E99' }}>Settings</p>
+
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm" style={{ color: '#F2F0EA' }}>Sound</span>
+                <button
+                  onClick={toggleSound}
+                  className="text-xs px-3 py-1 rounded-md transition-colors"
+                  style={{ background: '#1F222B', border: '1px solid #2A2E38', color: soundEnabled ? '#F2F0EA' : '#8A8E99' }}
+                >
+                  {soundEnabled ? 'On' : 'Off'}
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm" style={{ color: '#F2F0EA' }}>{i18n_t('common', 'language')}</span>
+                <div className="flex gap-1">
+                  {SUPPORTED_LANGS.map(opt => (
+                    <button
+                      key={opt.code}
+                      onClick={() => i18n_setLang(opt.code)}
+                      title={opt.label}
+                      className="text-xs px-2 py-1 rounded-md transition-colors"
+                      style={lang === opt.code
+                        ? { background: '#1F222B', border: '1px solid #7c3aed', color: '#F2F0EA' }
+                        : { background: 'transparent', border: '1px solid #2A2E38', color: '#8A8E99' }}
+                    >
+                      {opt.flag} <span className="uppercase">{opt.code}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span className="text-sm" style={{ color: '#F2F0EA' }}>Replay the tour</span>
+                <button
+                  onClick={() => {
+                    setShowProfile(false);
+                    if (currentChallenge) {
+                      try { localStorage.removeItem('sqlquest_onboarding_v1'); } catch (_) { /* private mode */ }
+                      setShowOnboardingTour(true);
+                    } else {
+                      try { localStorage.removeItem('sqlquest_app_tour_v1'); } catch (_) { /* private mode */ }
+                      setShowAppTour(true);
+                    }
+                  }}
+                  className="text-xs px-3 py-1 rounded-md transition-colors"
+                  style={{ background: '#1F222B', border: '1px solid #2A2E38', color: '#F2F0EA' }}
+                >
+                  Show me
+                </button>
+              </div>
+            </div>
+
             {/* Guest Mode Warning */}
             {isGuest && (
               <div className="mb-4 p-4" style={{ background: 'rgba(255,176,32,0.08)', border: '1px solid rgba(255,176,32,0.3)', borderRadius: '10px' }}>
@@ -31448,6 +31515,10 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
         </div>
       )}
       
+      {/* One read of the plan for the whole header row. Rebuilt from state
+          rather than `userProStatus`, which is already resolved — feeding it
+          back would flatten an expired plan to "Free" and lose the fact that
+          this person HAD one. */}
       <header className="bg-black/30 border-b border-purple-500/30">
         {/* Row 1: Identity + Stats + Profile */}
         <div className="max-w-7xl mx-auto px-4 py-2 flex items-center gap-3">
@@ -31474,11 +31545,19 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
             </div>
           )}
           
-          {/* Center: Level + XP bar */}
-          <div className={`${showSimpleLearningShell ? 'hidden' : 'flex-1 max-w-[220px] mx-auto'}`}>
+          {/* Center: Level + XP bar.
+              2026-09-14 declutter: the raw "25,822 / 30,000" left the header
+              and became the hover title. It was also the SAME NUMBER as the
+              coin beside it — the coin is `title="XP"` and prints `xp` too —
+              so the header showed one value twice and read like two
+              currencies. The bar carries the progress; the number is there
+              when you ask for it. */}
+          <div
+            className={`${showSimpleLearningShell ? 'hidden' : 'flex-1 max-w-[220px] mx-auto'}`}
+            title={`${xp.toLocaleString()} / ${nextLevel.minXP.toLocaleString()} XP to ${nextLevel.name}`}
+          >
             <div className="flex items-center justify-between mb-0.5">
               <span className="text-xs font-bold text-purple-400 truncate">{currentLevel.icon} {currentLevel.name}</span>
-              <span className="text-[10px] text-gray-500">{xp.toLocaleString()} / {nextLevel.minXP.toLocaleString()}</span>
             </div>
             <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
               <div className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all" style={{ width: `${Math.min(100, ((xp - currentLevel.minXP) / (nextLevel.minXP - currentLevel.minXP)) * 100)}%` }} />
@@ -31491,91 +31570,21 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                 not yet earned → ⏳ instead of the flame. Practicing flips it
                 back the moment recordDailyActivity fires. */}
             {dailyStreak > 0 && lastStreakDay !== todayString ? (
-              <span title={`${dailyStreak}-day streak at risk — practice anything today to keep it`} className="flex items-center gap-0.5">
+              <span title={`${dailyStreak}-day streak at risk — practice anything today to keep it${streakFreezes > 0 ? ` · ${streakFreezes} freeze${streakFreezes > 1 ? 's' : ''} left` : ''}`} className="flex items-center gap-0.5">
                 <span className="text-sm leading-none">⏳</span><span className="font-bold text-orange-400">{dailyStreak}</span>
               </span>
             ) : (
-              <span title="Daily streak" className="flex items-center gap-0.5"><PixelFlame active={dailyStreak > 0} size={14} /><span className="font-bold">{dailyStreak}</span></span>
-            )}
-            {streakFreezes > 0 && (
-              <span title={`${streakFreezes} streak freeze${streakFreezes > 1 ? 's' : ''} this month`} className="flex items-center gap-0.5 text-blue-400">
-                <Shield size={11} /><span className="font-bold text-[10px]">{streakFreezes}</span>
-              </span>
+              <span title={`Daily streak${streakFreezes > 0 ? ` · ${streakFreezes} freeze${streakFreezes > 1 ? 's' : ''} left this month` : ''}`} className="flex items-center gap-0.5"><PixelFlame active={dailyStreak > 0} size={14} /><span className="font-bold">{dailyStreak}</span></span>
             )}
             <span className="text-gray-700">|</span>
             <span title="Lives" className="flex gap-0.5">{[1,2,3].map(i => <PixelHeart key={i} filled={i <= lives} size={12} />)}</span>
             <span className="text-gray-700">|</span>
             <span title="XP" className="flex items-center gap-0.5 text-yellow-400"><PixelCoin size={12} /><span className="font-bold">{xp.toLocaleString()}</span></span>
-            <span className="text-gray-700">|</span>
-            <button onClick={toggleSound} className="flex items-center text-sm" title={soundEnabled ? 'Sound On' : 'Sound Off'}>
-              {soundEnabled ? '🔊' : '🔇'}
-            </button>
-            <span className="text-gray-700">|</span>
-            {/* Replay tours. If a challenge is open, replay the challenge tour.
-                Otherwise replay the app tour (Coach/Practice/Interview/Board/
-                Profile nav). Users can always find their way back to either. */}
-            <button
-              onClick={() => {
-                if (currentChallenge) {
-                  try { localStorage.removeItem('sqlquest_onboarding_v1'); } catch (_) {}
-                  setShowOnboardingTour(true);
-                } else {
-                  try { localStorage.removeItem('sqlquest_app_tour_v1'); } catch (_) {}
-                  setShowAppTour(true);
-                }
-              }}
-              className="flex items-center text-sm text-gray-400 hover:text-yellow-400 transition-colors"
-              title={currentChallenge ? 'Replay the challenge tour' : 'Replay the app tour'}
-            >
-              💡
-            </button>
-            <span className="text-gray-700">|</span>
-            {/* Language switcher — added May 2026 to fix the "labels are
-                mixed Turkish + English" pain. Detects browser locale on
-                first visit (tr-TR → Turkish), persists user choice in
-                localStorage, and re-renders the whole tree via the
-                subscribeLang hook at the top of SQLQuest(). Spanish is
-                in SUPPORTED_LANGS as a WIP language; new locales are
-                a single dictionary entry in src/utils/i18n.js. */}
-            <div className="relative" data-lang-switcher>
-              <button
-                onClick={() => setShowLangMenu(prev => !prev)}
-                className="flex items-center gap-1 text-xs font-bold text-gray-400 hover:text-purple-300 transition-colors px-1.5 py-0.5 rounded hover:bg-gray-800/50"
-                title={i18n_t('common', 'language')}
-                aria-label={i18n_t('common', 'language')}
-              >
-                <span>🌐</span>
-                <span className="uppercase">{lang}</span>
-                <span className="text-[8px] opacity-60">▾</span>
-              </button>
-              {showLangMenu && (
-                <div className="absolute right-0 top-full mt-1.5 w-40 bg-gray-900 border border-gray-700 rounded-lg shadow-2xl z-50 overflow-hidden">
-                  <div className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-gray-500 font-bold border-b border-gray-800 bg-gray-800/50">
-                    {i18n_t('common', 'language')}
-                  </div>
-                  {SUPPORTED_LANGS.map(opt => {
-                    const active = lang === opt.code;
-                    return (
-                      <button
-                        key={opt.code}
-                        onClick={() => {
-                          i18n_setLang(opt.code);
-                          setShowLangMenu(false);
-                        }}
-                        className={`w-full flex items-center justify-between gap-2 px-3 py-2 text-sm hover:bg-gray-800 transition-colors ${active ? 'bg-purple-500/10 text-purple-200' : 'text-gray-200'}`}
-                      >
-                        <span className="flex items-center gap-2">
-                          <span>{opt.flag}</span>
-                          <span>{opt.label}</span>
-                          {opt.wip && <span className="text-[9px] tracking-wider text-yellow-400 ml-1 italic">{i18n_t('common', 'wipBadge')}</span>}
-                        </span>
-                        {active && <span className="text-purple-400 text-xs">✓</span>}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+            {/* 2026-09-14 declutter (founder): sound, replay-tour and the language
+                picker moved to the profile panel. A person chooses a language
+                once and toggles sound rarely; neither earns permanent space
+                next to the streak. Header goes from twelve elements to seven:
+                logo · level · streak · lives · coin · notifications · avatar. */}
           </div>
           
           {/* Guest mode — visible escape hatch back to Sign In / Sign Up.
@@ -31663,54 +31672,14 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
               discoverable before a wall is hit. Guests see the same modal;
               purchase binds via client_reference_id or lands in
               pending_subscriptions until they create an account. */}
-          {/* The plan, said out loud. This used to be a gold PRO pill or an
-              "✨ Pro" upsell, so a free user was told what they could buy and
-              never what they already had — and an EXPIRED plan looked exactly
-              like a plan that never existed. planLabel() reads the same
-              record resolveProAccess does, never the raw proStatus flag. */}
-          {(() => {
-            // Rebuilt from state rather than read from `userProStatus`,
-            // which is already the RESOLVED boolean — feeding it back in
-            // would flatten an expired plan to a plain "Free" and lose the
-            // "Pro ended" that tells a lapsed person apart from a stranger.
-            // `proType` survives expiry on purpose (pro-access.js), so its
-            // presence is what says "this person had a plan"; the expiry
-            // decides the rest.
-            const plan = planLabel({
-              proStatus: userProStatus || !!proType,
-              proType, proExpiry, proAutoRenew,
-              }, Date.now());
-            const isPro = plan.tone === 'pro';
-            const chip = (
-              <>
-                <span className="font-bold">{isPro ? '👑' : ''} {plan.label}</span>
-                {plan.detail && <span className="hidden sm:inline opacity-70"> · {plan.detail}</span>}
-              </>
-            );
-            return plan.canUpgrade ? (
-              <button
-                onClick={() => { setProModalReason({ type: 'header_plan', topic: null, solvedCount: solvedChallenges.size }); setShowProModal(true); }}
-                data-testid="header-plan"
-                data-plan={plan.label}
-                title="Open the plans"
-                className="text-xs px-2 py-0.5 rounded-full border transition-all whitespace-nowrap"
-                style={{ color: '#8A8E99', borderColor: '#2A2E38', background: 'transparent' }}
-                onMouseEnter={e => { e.currentTarget.style.color = '#FFE34D'; e.currentTarget.style.borderColor = '#FFE34D'; }}
-                onMouseLeave={e => { e.currentTarget.style.color = '#8A8E99'; e.currentTarget.style.borderColor = '#2A2E38'; }}
-              >
-                {chip}
-              </button>
-            ) : (
-              <span
-                data-testid="header-plan"
-                data-plan={plan.label}
-                className="text-xs px-2 py-0.5 rounded-full whitespace-nowrap"
-                style={{ color: '#FFE34D', background: 'rgba(255,227,77,0.1)', border: '1px solid rgba(255,227,77,0.3)' }}
-              >
-                {chip}
-              </span>
-            );
-          })()}
+          {/* The plan used to be a full chip here — "👑 Pro · 23 days left".
+              2026-09-14, founder: a countdown living permanently in the header
+              reads as "your subscription is ending" every time you glance at
+              it, which is a bad thing to say to someone who is paying. The
+              crown moves onto the avatar and the days move into the profile,
+              where you go when you actually want to know. A free user gets no
+              chip at all; the profile panel still names the plan and offers
+              the upgrade. */}
           {/* Who am I, and what am I on? (2026-09-14, founder's ask)
               Both of these used to be hidden behind !showSimpleLearningShell,
               which is the shell a first-run visitor spends their whole first
@@ -31722,11 +31691,22 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
           <button
             onClick={() => setShowProfile(true)}
             data-testid="header-identity"
-            title={isGuest ? 'Playing as a guest — open your profile' : `Signed in as ${currentUser} — open your profile`}
+            title={isGuest
+              ? 'Playing as a guest — open your profile'
+              : `Signed in as ${currentUser} · ${headerPlan.label}${headerPlan.detail ? ` (${headerPlan.detail})` : ''} — open your profile`}
             className="flex items-center gap-1.5 px-2.5 py-1.5 bg-purple-500/20 hover:bg-purple-500/30 rounded-lg border border-purple-500/30 transition-all min-w-0"
           >
-            <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 ${isGuest ? 'bg-yellow-500/50' : 'bg-gradient-to-br from-purple-500 to-pink-500'}`}>
-              {isGuest ? '👤' : currentUser?.charAt(0).toUpperCase()}
+            <div className="relative flex-shrink-0">
+              <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${isGuest ? 'bg-yellow-500/50' : ''}`} style={isGuest ? undefined : { background: '#7c3aed', color: '#F2F0EA' }}>
+                {isGuest ? '👤' : currentUser?.charAt(0).toUpperCase()}
+              </div>
+              {headerPlan.tone === 'pro' && (
+                <span
+                  aria-label={headerPlan.label}
+                  className="absolute -top-1 -right-1 text-[9px] leading-none"
+                  style={{ filter: 'drop-shadow(0 0 2px #0E0F13)' }}
+                >👑</span>
+              )}
             </div>
             <span className="text-xs font-medium truncate max-w-[10ch]">{isGuest ? 'Guest' : currentUser}</span>
           </button>

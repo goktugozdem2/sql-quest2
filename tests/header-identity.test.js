@@ -25,6 +25,27 @@ import path from 'node:path';
 const src = fs.readFileSync(path.resolve(import.meta.dirname, '../src/app.jsx'), 'utf8');
 const header = src.slice(src.indexOf('<header className="bg-black/30'), src.indexOf('</header>'));
 
+// `title={...}` can span lines and nest braces, so a regex cannot take it out
+// cleanly — the first attempt stopped at the first newline and reported the
+// hover text as if it were rendered. Count the braces instead.
+function stripTitles(jsx) {
+  let out = '';
+  for (let i = 0; i < jsx.length;) {
+    const at = jsx.indexOf('title={', i);
+    if (at < 0) { out += jsx.slice(i); break; }
+    out += jsx.slice(i, at);
+    let depth = 0, j = at + 'title='.length;
+    for (; j < jsx.length; j++) {
+      if (jsx[j] === '{') depth++;
+      else if (jsx[j] === '}') { depth--; if (depth === 0) { j++; break; } }
+    }
+    i = j;
+  }
+  return out.replace(/title="[^"]*"/g, '');
+}
+
+
+
 describe('the header says who you are', () => {
   it('renders the identity button in every shell', () => {
     expect(header).toContain('data-testid="header-identity"');
@@ -35,7 +56,7 @@ describe('the header says who you are', () => {
 
   it('shows the username, not only an avatar, even on a narrow screen', () => {
     const at = header.indexOf('data-testid="header-identity"');
-    const btn = header.slice(at, at + 900);
+    const btn = header.slice(at, header.indexOf('</button>', at));
     expect(btn).toContain("isGuest ? 'Guest' : currentUser");
     expect(btn, 'the name was hidden below the sm breakpoint — it is the answer to the question').not.toContain('hidden sm:inline');
   });
@@ -46,23 +67,49 @@ describe('the header says who you are', () => {
   });
 });
 
-describe('the header says what you are on', () => {
-  it('renders a plan chip in every shell, with the plan as a data attribute', () => {
-    expect(header).toContain('data-testid="header-plan"');
-    expect(header).toContain('data-plan={plan.label}');
+// 2026-09-14, second pass. The plan was a full chip here — "👑 Pro · 23 days
+// left". The founder cut it: a countdown living permanently in the header
+// reads as "your subscription is ending" every time a PAYING customer glances
+// at it. The crown moved onto the avatar, the days moved into the profile.
+//
+// These tests move with it rather than being deleted: the plan must still be
+// answerable from the header without opening anything (the title), and the
+// upgrade must still exist somewhere reachable (the profile).
+describe('the header says what you are on, quietly', () => {
+  it('shows a crown on the avatar for a paid plan, and nothing for free', () => {
+    expect(header).toContain("headerPlan.tone === 'pro'");
+    expect(header).toContain('👑');
+    expect(header, 'the full chip is back in the bar').not.toContain('data-testid="header-plan"');
+  });
+
+  it('no countdown is DRAWN in the bar — the hover may still carry it', () => {
+    // "23 days left" belongs in a hover and in the profile, not in a
+    // permanent glance. The first version of this test matched the string
+    // anywhere and therefore failed on the title attribute, which is the one
+    // place it is wanted; strip the titles first and ask about the rest.
+    const withoutTitles = stripTitles(header);
+    expect(withoutTitles, 'a days-left countdown is rendered in the header again')
+      .not.toMatch(/headerPlan\.detail/);
+  });
+
+  it('still answers the question on hover, without opening anything', () => {
+    const at = header.indexOf('data-testid="header-identity"');
+    const btn = header.slice(Math.max(0, at - 400), header.indexOf('</button>', at));
+    expect(btn).toContain('headerPlan.label');
+    expect(btn).toContain('headerPlan.detail');
   });
 
   it('derives the label from the record, never from the resolved boolean', () => {
     // Feeding `userProStatus` back in would flatten an expired plan to a
     // plain "Free" and lose the "Pro ended" that tells a lapsed person apart
     // from someone who never had it.
-    expect(header).toContain('planLabel({');
-    expect(header).toContain('proStatus: userProStatus || !!proType');
+    expect(src).toContain('const headerPlan = planLabel({');
+    expect(src).toContain('proStatus: userProStatus || !!proType');
   });
 
-  it('still offers the plans when there is something to sell', () => {
-    expect(header).toContain('plan.canUpgrade ?');
-    expect(header).toContain("type: 'header_plan'");
+  it('the upgrade did not vanish with the chip — the profile still sells', () => {
+    expect(src).toContain('data-testid="profile-upgrade"');
+    expect(src).toContain("type: 'profile_plan'");
   });
 });
 
