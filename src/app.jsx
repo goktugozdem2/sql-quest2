@@ -30932,17 +30932,27 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
             </div>
 
             {/* User Info */}
-            <div className="flex items-center gap-4 mb-6 p-4 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-xl">
-              <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-2xl font-bold">
+            {/* DESIGN.md pass, 2026-09-14: the card was a purple→pink gradient
+                with a second gradient inside it. "No button gradients" and
+                "one accent only" are both explicit, and the panel had ten
+                colour families in it. Flat surface, brand purple on the
+                avatar, and the XP number finally wears the accent — that is
+                the one place DESIGN.md says yellow BELONGS ("score/XP
+                values") and it was purple. */}
+            <div className="flex items-center gap-4 mb-6 p-4" style={{ background: '#16181F', border: '1px solid #2A2E38', borderRadius: '10px' }}>
+              <div className="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold" style={{ background: '#7c3aed', color: '#F2F0EA' }}>
                 {isGuest ? '👤' : currentUser?.charAt(0).toUpperCase()}
               </div>
-              <div className="flex-1">
-                <h3 className="text-xl font-bold">{isGuest ? i18n_t('profile', 'guestUser') : currentUser}</h3>
-                <p className="text-purple-300 flex items-center gap-1">{currentLevel.icon} {currentLevel.name} • <PixelCoin size={14} /> {xp.toLocaleString()} XP</p>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-xl font-bold truncate" style={{ color: '#F2F0EA' }}>{isGuest ? i18n_t('profile', 'guestUser') : currentUser}</h3>
+                <p className="flex items-center gap-1 text-sm" style={{ color: '#8A8E99' }}>
+                  {currentLevel.icon} {currentLevel.name} • <PixelCoin size={14} />
+                  <span className="font-bold" style={{ color: '#FFE34D', fontFamily: 'Geist Mono, monospace', fontVariantNumeric: 'tabular-nums' }}>{xp.toLocaleString()}</span> XP
+                </p>
               </div>
               {/* Status Badge */}
               {isGuest ? (
-                <div className="px-2 py-1 rounded-full text-xs bg-yellow-500/20 text-yellow-400">
+                <div className="px-2 py-1 rounded-full text-xs" style={{ background: 'rgba(255,176,32,0.15)', color: '#FFB020' }}>
                   {i18n_t('profile', 'notSaved')}
                 </div>
               ) : (
@@ -30962,7 +30972,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
               const lastDay = lastLoginDay({ loginCalendar, lastActive: Date.now() });
               const fmt = d => { try { return new Date(d).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }); } catch (_) { return d; } };
               return (
-                <div className="mb-4 p-4 rounded-xl" data-testid="profile-plan" style={{ background: '#16181F', border: '1px solid #2A2E38' }}>
+                <div className="mb-4 p-4 rounded-[10px]" data-testid="profile-plan" style={{ background: '#16181F', border: '1px solid #2A2E38' }}>
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-xs uppercase tracking-wide" style={{ color: '#8A8E99' }}>Subscription</span>
                     <span className="text-sm font-bold" style={{ color: plan.tone === 'pro' ? '#FFE34D' : '#F2F0EA' }}>
@@ -30990,7 +31000,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                     <button
                       data-testid="profile-upgrade"
                       onClick={() => { setShowProfile(false); setProModalReason({ type: 'profile_plan', topic: null, solvedCount: solvedChallenges.size }); setShowProModal(true); }}
-                      className="mt-3 w-full py-2 text-sm font-bold rounded-lg transition-all"
+                      className="mt-3 w-full py-2 text-sm font-bold rounded-md transition-all"
                       style={{ background: '#FFE34D', color: '#0E0F13' }}
                     >
                       See plans
@@ -31002,8 +31012,8 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
 
             {/* Guest Mode Warning */}
             {isGuest && (
-              <div className="mb-4 p-4 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/30 rounded-xl">
-                <p className="text-yellow-400 font-medium mb-2 flex items-center gap-2">
+              <div className="mb-4 p-4" style={{ background: 'rgba(255,176,32,0.08)', border: '1px solid rgba(255,176,32,0.3)', borderRadius: '10px' }}>
+                <p className="font-medium mb-2 flex items-center gap-2" style={{ color: '#FFB020' }}>
                   <AlertCircle size={18} /> {i18n_t('profile', 'progressNotSaved')}
                 </p>
                 <p className="text-gray-400 text-sm mb-3">{i18n_t('profile', 'progressNotSavedDesc', { xp, n: solvedChallenges.size })}</p>
@@ -31013,7 +31023,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                     setSignupPromptReason('profile');
                     setShowSignupPrompt(true);
                   }}
-                  className="w-full py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-lg font-bold text-[#F2F0EA] transition-all"
+                  className="w-full py-2 font-bold sq-accent-btn"
                 >
                   {i18n_t('profile', 'createAccountCTA')}
                 </button>
@@ -31022,48 +31032,49 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
             
             {/* Cloud Sync Info - Only show if not guest and not configured */}
             {!isGuest && !isSupabaseConfigured() && (
-              <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-                <p className="text-xs text-yellow-400 font-medium mb-1">⚠️ Local Storage Only</p>
+              <div className="mb-4 p-3 rounded-md" style={{ background: 'rgba(255,176,32,0.08)', border: '1px solid rgba(255,176,32,0.3)' }}>
+                <p className="text-xs font-medium mb-1" style={{ color: '#FFB020' }}>⚠️ Local Storage Only</p>
                 <p className="text-xs text-gray-400">Your progress is saved on this device only. To sync across devices, set up cloud sync in config.js</p>
               </div>
             )}
             
             {/* Stats Grid */}
+            {/* Four counters in four different colours said four different
+                things were happening. They are the same kind of number, so
+                they get the same treatment; Geist Mono + tabular-nums is what
+                DESIGN.md asks of a counter. The yellow on "Achievements" was
+                the accent used as decoration, which the accent rule forbids
+                by name. */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-              <div className="bg-gray-800/50 p-3 rounded-lg text-center">
-                <p className="text-2xl font-bold text-purple-400">{queryCount}</p>
-                <p className="text-xs text-gray-400">{i18n_t('profile', 'statQueries')}</p>
-              </div>
-              <div className="bg-gray-800/50 p-3 rounded-lg text-center">
-                <p className="text-2xl font-bold text-green-400">{solvedChallenges.size}</p>
-                <p className="text-xs text-gray-400">{i18n_t('profile', 'statChallenges')}</p>
-              </div>
-              <div className="bg-gray-800/50 p-3 rounded-lg text-center">
-                <p className="text-2xl font-bold text-cyan-400">{completedAiLessons.size}</p>
-                <p className="text-xs text-gray-400">{i18n_t('profile', 'statAiLessons')}</p>
-              </div>
-              <div className="bg-gray-800/50 p-3 rounded-lg text-center">
-                <p className="text-2xl font-bold text-yellow-400">{unlockedAchievements.size}</p>
-                <p className="text-xs text-gray-400">{i18n_t('profile', 'statAchievements')}</p>
-              </div>
+              {[
+                [queryCount, i18n_t('profile', 'statQueries')],
+                [solvedChallenges.size, i18n_t('profile', 'statChallenges')],
+                [completedAiLessons.size, i18n_t('profile', 'statAiLessons')],
+                [unlockedAchievements.size, i18n_t('profile', 'statAchievements')],
+              ].map(([value, label]) => (
+                <div key={label} className="p-3 text-center" style={{ background: '#16181F', border: '1px solid #2A2E38', borderRadius: '6px' }}>
+                  <p className="text-2xl font-bold" style={{ color: '#F2F0EA', fontFamily: 'Geist Mono, monospace', fontVariantNumeric: 'tabular-nums' }}>{value}</p>
+                  <p className="text-xs" style={{ color: '#8A8E99' }}>{label}</p>
+                </div>
+              ))}
             </div>
 
             {/* Share Progress Section */}
-            <div className="mb-6 p-4 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border border-blue-500/30 rounded-xl">
-              <h4 className="font-bold text-blue-400 mb-3 flex items-center gap-2">
+            <div className="mb-6 p-4" style={{ background: '#16181F', border: '1px solid #2A2E38', borderRadius: '10px' }}>
+              <h4 className="font-bold mb-3 flex items-center gap-2" style={{ color: '#F2F0EA' }}>
                 {i18n_t('profile', 'shareSectionTitle')}
               </h4>
-              <p className="text-gray-400 text-sm mb-4">{i18n_t('profile', 'shareSectionSubtitle')}</p>
+              <p className="text-sm mb-4" style={{ color: '#8A8E99' }}>{i18n_t('profile', 'shareSectionSubtitle')}</p>
               <div className="grid grid-cols-2 gap-3">
                 <button
                   onClick={() => { setShowProfile(false); setShareType('general'); setShareData(null); setShowShareModal(true); }}
-                  className="flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-lg font-medium text-sm"
+                  className="flex items-center justify-center gap-2 px-4 py-2 font-medium text-sm sq-quiet-btn"
                 >
                   {i18n_t('profile', 'btnProgressCard')}
                 </button>
                 <button
                   onClick={() => { setShowProfile(false); setShareType('streak'); setShareData(null); setShowShareModal(true); }}
-                  className="flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 rounded-lg font-medium text-sm"
+                  className="flex items-center justify-center gap-2 px-4 py-2 font-medium text-sm sq-quiet-btn"
                 >
                   {i18n_t('profile', 'btnStreakBadge')}
                 </button>
@@ -31071,7 +31082,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
               {Object.values(challengeProgress).filter(p => p?.completed).length === 30 && (
                 <button
                   onClick={() => { setShowProfile(false); setShareType('certificate'); setShareData(null); setShowShareModal(true); }}
-                  className="w-full mt-3 flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-600 to-amber-600 hover:from-yellow-700 hover:to-amber-700 rounded-lg font-medium text-sm"
+                  className="w-full mt-3 flex items-center justify-center gap-2 px-4 py-2 font-bold text-sm sq-accent-btn"
                 >
                   {i18n_t('profile', 'btnCertificate')}
                 </button>
@@ -31080,23 +31091,23 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
             
             {/* Invite Friends Section */}
             {!isGuest && (
-              <div className="mb-6 p-4 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/30 rounded-xl">
-                <h4 className="font-bold text-yellow-400 mb-2 flex items-center gap-2">
+              <div className="mb-6 p-4" style={{ background: 'rgba(255,176,32,0.08)', border: '1px solid rgba(255,176,32,0.3)', borderRadius: '10px' }}>
+                <h4 className="font-bold mb-2 flex items-center gap-2" style={{ color: '#FFB020' }}>
                   {i18n_t('profile', 'inviteSectionTitle')}
                 </h4>
                 <p className="text-gray-400 text-sm mb-3">{i18n_t('profile', 'inviteSectionSubtitle')}</p>
                 <div className="flex items-center gap-2 mb-3">
-                  <input readOnly value={getAppUrl()} className="flex-1 bg-gray-800 text-xs text-gray-300 px-3 py-2 rounded-lg border border-gray-700 truncate" />
+                  <input readOnly value={getAppUrl()} className="flex-1 bg-gray-800 text-xs text-gray-300 px-3 py-2 rounded-md border border-gray-700 truncate" />
                   <button
                     onClick={() => { navigator.clipboard.writeText(getAppUrl()); playSound('coin'); alert(i18n_t('profile', 'copied')); }}
-                    className="px-3 py-2 bg-yellow-500 hover:bg-yellow-600 text-black text-xs font-bold rounded-lg whitespace-nowrap"
+                    className="px-3 py-2 text-xs font-bold sq-accent-btn whitespace-nowrap"
                   >
                     {i18n_t('profile', 'copy')}
                   </button>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-gray-500">{referralCount === 1 ? i18n_t('profile', 'friendJoined') : i18n_t('profile', 'friendsJoined', { n: referralCount })}</span>
-                  <button onClick={() => { setShowProfile(false); setShowReferralModal(true); }} className="text-xs text-yellow-400 hover:text-yellow-300 font-medium">
+                  <button onClick={() => { setShowProfile(false); setShowReferralModal(true); }} className="text-xs font-medium" style={{ color: '#c084fc' }}>
                     {i18n_t('profile', 'viewReferralHub')}
                   </button>
                 </div>
@@ -31107,14 +31118,14 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
             {!isGuest && (
               <div className="mb-6">
                 <h3 className="font-bold mb-3 flex items-center gap-2">{i18n_t('profile', 'subscriptionTitle')}</h3>
-                <div className={`p-4 rounded-xl border ${userProStatus ? 'bg-gradient-to-r from-purple-500/10 to-yellow-500/10 border-purple-500/30' : 'bg-gray-800/50 border-gray-700'}`}>
+                <div className="p-4" style={{ borderRadius: '10px', background: '#16181F', border: userProStatus ? '1px solid rgba(255,227,77,0.3)' : '1px solid #2A2E38' }}>
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="flex items-center gap-2 mb-1">
                         {userProStatus ? (
                           <>
-                            <span className="text-lg font-bold text-yellow-400">⭐ {i18n_t('common', 'pro')}</span>
-                            <span className="px-2 py-0.5 rounded text-xs bg-yellow-500/20 text-yellow-400">
+                            <span className="text-lg font-bold" style={{ color: '#FFE34D' }}>⭐ {i18n_t('common', 'pro')}</span>
+                            <span className="px-2 py-0.5 rounded text-xs" style={{ background: 'rgba(255,227,77,0.15)', color: '#FFE34D' }}>
                               {proType === 'lifetime' ? i18n_t('profile', 'planLifetime') : proType === 'annual' ? i18n_t('profile', 'planAnnual') : i18n_t('profile', 'planMonthly')}
                             </span>
                           </>

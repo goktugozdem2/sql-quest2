@@ -95,3 +95,30 @@ body {
     bottom: 80px;
   }
 }
+
+/* Profile panel buttons (2026-09-14 DESIGN.md pass).
+   The panel had a purple→pink button beside an orange→red one beside a
+   yellow→amber one. DESIGN.md forbids button gradients by name and allows one
+   accent; three competing gradients in one card is the opposite of both.
+   Quiet actions get the surface treatment; only a win state wears yellow. */
+.sq-quiet-btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 8px 16px;
+  background: #1F222B;
+  border: 1px solid #2A2E38;
+  border-radius: 6px;
+  color: #F2F0EA;
+  transition: border-color 150ms ease-out, background 150ms ease-out;
+}
+.sq-quiet-btn:hover { background: #2A2E38; border-color: #8A8E99; }
+
+.sq-accent-btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 8px 16px;
+  background: #FFE34D;
+  border: 1px solid #FFE34D;
+  border-radius: 6px;
+  color: #0E0F13;
+  transition: filter 150ms ease-out;
+}
+.sq-accent-btn:hover { filter: brightness(1.08); }
