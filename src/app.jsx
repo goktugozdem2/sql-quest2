@@ -30985,33 +30985,20 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
               )}
             </div>
 
-            {/* Your plan — the founder's ask (2026-09-14): "subscription tipi
-                yazmalı… isterse bir üste geçebilsin… en son ne zaman login
-                oldu". Everything here is read from the same record the
-                paywall reads, so the panel cannot disagree with the header. */}
+                        {/* Progress — the facts people come here to check (2026-09-14).
+                This block used to be headed SUBSCRIPTION and repeated the
+                plan, the renew date and the days left. A "Subscription
+                Section" already existed further down with the Manage button
+                and the auto-renew toggle, so the panel showed the same
+                subscription twice — my own miss when I added this. The plan
+                rows are gone; that section is the one home for them. */}
             {(() => {
-              const data = { proStatus: userProStatus || !!proType, proType, proExpiry, proAutoRenew };
-              const plan = planLabel(data, Date.now());
               const lastDay = lastLoginDay({ loginCalendar, lastActive: Date.now() });
               const fmt = d => { try { return new Date(d).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }); } catch (_) { return d; } };
               return (
-                <div className="mb-4 p-4 rounded-[10px]" data-testid="profile-plan" style={{ background: '#16181F', border: '1px solid #2A2E38' }}>
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs uppercase tracking-wide" style={{ color: '#8A8E99' }}>Subscription</span>
-                    <span className="text-sm font-bold" style={{ color: plan.tone === 'pro' ? '#FFE34D' : '#F2F0EA' }}>
-                      {plan.tone === 'pro' ? '👑 ' : ''}{plan.label}
-                    </span>
-                  </div>
+                <div className="mb-4 p-4" data-testid="profile-progress" style={{ background: '#16181F', border: '1px solid #2A2E38', borderRadius: '10px' }}>
+                  <p className="text-xs uppercase tracking-wide mb-3" style={{ color: '#8A8E99' }}>Progress</p>
                   <dl className="space-y-1.5 text-xs">
-                    {plan.detail && (
-                      <div className="flex justify-between"><dt style={{ color: '#8A8E99' }}>Status</dt><dd style={{ color: '#F2F0EA' }}>{plan.detail}</dd></div>
-                    )}
-                    {proExpiry && (
-                      <div className="flex justify-between">
-                        <dt style={{ color: '#8A8E99' }}>{planRenews(data) ? 'Renews' : 'Ends'}</dt>
-                        <dd style={{ color: '#F2F0EA' }}>{fmt(proExpiry)}</dd>
-                      </div>
-                    )}
                     <div className="flex justify-between"><dt style={{ color: '#8A8E99' }}>Score</dt><dd style={{ color: '#F2F0EA' }}>{xp.toLocaleString()} XP · {currentLevel.name}</dd></div>
                     <div className="flex justify-between"><dt style={{ color: '#8A8E99' }}>Solved</dt><dd style={{ color: '#F2F0EA' }}>{solvedChallenges.size} challenges</dd></div>
                     <div className="flex justify-between"><dt style={{ color: '#8A8E99' }}>Streak</dt><dd style={{ color: '#F2F0EA' }}>{streak} {streak === 1 ? 'day' : 'days'}</dd></div>
@@ -31019,16 +31006,6 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                       <div className="flex justify-between"><dt style={{ color: '#8A8E99' }}>Last login</dt><dd style={{ color: '#F2F0EA' }}>{fmt(lastDay)}</dd></div>
                     )}
                   </dl>
-                  {plan.canUpgrade && (
-                    <button
-                      data-testid="profile-upgrade"
-                      onClick={() => { setShowProfile(false); setProModalReason({ type: 'profile_plan', topic: null, solvedCount: solvedChallenges.size }); setShowProModal(true); }}
-                      className="mt-3 w-full py-2 text-sm font-bold rounded-md transition-all"
-                      style={{ background: '#FFE34D', color: '#0E0F13' }}
-                    >
-                      See plans
-                    </button>
-                  )}
                 </div>
               );
             })()}

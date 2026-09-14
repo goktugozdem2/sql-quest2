@@ -108,37 +108,36 @@ describe('the header says what you are on, quietly', () => {
   });
 
   it('the upgrade did not vanish with the chip — the profile still sells', () => {
-    expect(src).toContain('data-testid="profile-upgrade"');
-    expect(src).toContain("type: 'profile_plan'");
+    // It lives in the panel's one Subscription Section, which already had an
+    // Upgrade for free users before today. My own duplicate block carried a
+    // second one; removing the duplicate removed that, not the path.
+    const sub = src.slice(src.indexOf('{/* Subscription Section */}'));
+    expect(sub.slice(0, 4500)).toContain('setShowProModal');
   });
 });
 
+// 2026-09-14, third pass. This block was headed SUBSCRIPTION and repeated the
+// plan, the renew date and the days left — but a "Subscription Section" with
+// the Manage button and the auto-renew toggle already existed further down,
+// so the panel showed the same subscription twice. That was my miss when I
+// added it. The plan rows moved out; what is left is the progress people come
+// here to check, and these tests follow.
 describe('the profile panel answers the rest', () => {
   // The block starts at its comment: lastLoginDay() is computed in the IIFE
   // above the markup, so slicing from the testid would miss it.
-  const start = src.indexOf("{/* Your plan — the founder's ask");
+  const start = src.indexOf('{/* Progress — the facts people come here to check');
   const panel = src.slice(start, src.indexOf('Guest Mode Warning', start));
 
-  it('exists and carries the subscription, the score, the streak and the last login', () => {
-    expect(panel).toContain('Subscription');
+  it('carries the progress facts, and no longer a second copy of the plan', () => {
+    // Strip the comments first: this block's own comment explains the history
+    // and necessarily contains the word.
+    const markup = panel.replace(/\{\/\*[\s\S]*?\*\/\}/g, '');
+    expect(markup, 'the plan is back in two places').not.toContain('SUBSCRIPTION');
+    expect(src, 'the one subscription home must still exist').toContain("i18n_t('profile', 'subscriptionTitle')");
     expect(panel).toContain('Score');
     expect(panel).toContain('Solved');
     expect(panel).toContain('Streak');
     expect(panel).toContain('Last login');
     expect(panel).toContain('lastLoginDay(');
-  });
-
-  it('never says "Renews" about a plan that cannot renew', () => {
-    // proAutoRenew defaults to true in app state, so the flag alone once
-    // labelled a 90-day pass "Renews Oct 29" — promising a charge that will
-    // never come and hiding the date access really stops.
-    expect(panel).toContain('planRenews(data)');
-    expect(panel, 'the raw flag is back in the label decision').not.toMatch(/plan\.tone === 'pro' && proAutoRenew/);
-  });
-
-  it('offers the upgrade only when there is one, and closes the panel first', () => {
-    expect(panel).toContain('plan.canUpgrade &&');
-    expect(panel).toContain('setShowProfile(false)');
-    expect(panel).toContain("type: 'profile_plan'");
   });
 });
