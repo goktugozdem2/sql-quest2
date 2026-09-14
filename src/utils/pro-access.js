@@ -91,13 +91,9 @@ export function resolveProAccess(data, now = Date.now()) {
   }
 
   // Past the stored expiry. A paid plan gets the webhook-lag window; a trial
-  // does not, because nothing renews a trial — and neither does a one-time
-  // plan. `pass3m` (the $49 Interview Pass, 2026-09-14) is bought once for 90
-  // days: there is no invoice in flight at its expiry, so there is no lag to
-  // cover. Giving it grace would hand out three free days nobody paid for and
-  // would make an expired pass look live to `mayBeOffered`, which is how the
-  // 09-07 auto-renew incident silently withheld the ask from 47 accounts.
-  const NON_RENEWING = ['trial', 'pass3m'];
+  // does not, because nothing renews a trial. `quarterly` DOES renew (it
+  // bills every three months), so it gets the window like monthly and annual.
+  const NON_RENEWING = ['trial'];
   const isPaidPlan = proType && !NON_RENEWING.includes(proType);
   if (isPaidPlan && now - expiry <= GRACE_DAYS * MS_PER_DAY) {
     return { isPro: true, proType, proExpiry, inGrace: true, expired: true, reason: 'grace' };
@@ -154,7 +150,7 @@ export function planLabel(data, now = Date.now()) {
 
   if (a.reason === 'lifetime') return { label: 'Pro · Lifetime', tone: 'pro', detail: null, canUpgrade: false };
   if (a.reason === 'active' || a.reason === 'grace') {
-    if (a.proType === 'pass3m') return { label: 'Interview Pass', tone: 'pro', detail: left, canUpgrade: false };
+    if (a.proType === 'quarterly') return { label: 'Pro · Quarterly', tone: 'pro', detail: left, canUpgrade: false };
     if (a.proType === 'trial') return { label: 'Pro trial', tone: 'pro', detail: left, canUpgrade: true };
     return { label: 'Pro', tone: 'pro', detail: left, canUpgrade: false };
   }
@@ -162,7 +158,7 @@ export function planLabel(data, now = Date.now()) {
   // identical on the raw flag, and telling them apart is the whole reason
   // proType survives expiry.
   if (a.expired && a.proType) {
-    const what = a.proType === 'trial' ? 'Trial ended' : a.proType === 'pass3m' ? 'Pass ended' : 'Pro ended';
+    const what = a.proType === 'trial' ? 'Trial ended' : 'Pro ended';
     return { label: 'Free', tone: 'free', detail: what, canUpgrade: true };
   }
   return { label: 'Free', tone: 'free', detail: null, canUpgrade: true };
@@ -183,14 +179,12 @@ export function lastLoginDay(data) {
  * Does this plan actually renew? Never trust `proAutoRenew` alone.
  *
  * It defaults to TRUE in the app's state and is written by Stripe, so a
- * one-time plan whose flag was never set — or was set by an older webhook —
- * would otherwise be labelled "Renews", promising the buyer a charge that
- * will never happen and hiding the date their access really stops. Caught
- * 2026-09-14 on the Interview Pass: the panel said "Renews Oct 29" for a pass
- * that simply ends on Oct 29.
+ * lifetime or a trial whose flag was never set would otherwise be labelled
+ * "Renews", promising the buyer a charge that will never happen and hiding
+ * the date their access really stops. Only the three subscriptions renew.
  */
 export function planRenews(data) {
   const d = data || {};
   if (!d.proAutoRenew) return false;
-  return d.proType === 'monthly' || d.proType === 'annual';
+  return d.proType === 'monthly' || d.proType === 'quarterly' || d.proType === 'annual';
 }

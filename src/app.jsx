@@ -6805,13 +6805,15 @@ function SQLQuest() {
     monthly: 'https://buy.stripe.com/bJe14o2uleSw8m20nOdMI0a',
     annual: 'https://buy.stripe.com/bJe9AU0md4dScCi7QgdMI0b',
     lifetime: 'https://buy.stripe.com/6oUfZi3ypaCgeKqfiIdMI0c',
-    // The Interview Pass: $49 ONE-TIME for 90 days (Stripe prod_VG30Dd7EgIYaaD
-    // / price_1UFWu7Kfw2tJmZR55oe2pLzu, created 2026-09-14). $29/month is the
-    // wrong unit for interview prep — nobody subscribes for six months to pass
-    // one screen. Behind `interviewPass`; see the flag for the release order,
-    // which matters: stripe-webhook must know the price before the link is
-    // reachable, or a buyer pays $49 and the amount fallback grants 30 days.
-    pass3m: 'https://buy.stripe.com/fZu9AUed3aCgdGm6McdMI0h',
+    // Quarterly: $49 every 3 months (Stripe prod_VG3XQHMLhs1XfE /
+    // price_1UFXQPKfw2tJmZR5lqAHNfQw, created 2026-09-14). $29/month is the
+    // wrong unit for interview prep, so this sits between monthly and annual.
+    // It shipped for an hour as a ONE-TIME pass the same day; that link
+    // (plink_1UFWvS…) is deactivated in Stripe, not deleted.
+    // Behind `quarterlyPlan` — see the flag for the release order, which
+    // matters: stripe-webhook must know the price before the link is
+    // reachable, or a buyer pays $49 every quarter and is extended 30 days.
+    quarterly: 'https://buy.stripe.com/7sY28sc4V9ycbye6McdMI0i',
   };
 
   const resolveCheckoutEmail = () => {
@@ -29883,62 +29885,10 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                 )}
 
                 {/* Pricing Options */}
-                <div data-pro-plans className={checkoutPendingPlan ? 'hidden' : 'grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6'}>
-                  {/* The highlighted card. Annual by default (founder,
-                      2026-09-12); behind `interviewPass` it becomes the $49
-                      Interview Pass — one payment, 90 days, nothing renews.
-                      Never three cards: the $199 lifetime was removed on
-                      09-12 for exactly that reason, so the pass REPLACES
-                      annual here rather than joining it. Annual stays
-                      reachable from the homepage pricing cards and
-                      ?plan=annual. */}
-                  {ftbFlag('interviewPass') ? (
-                    <button
-                      onClick={() => {
-                        trackProEvent('click_pass3m');
-                        beginCheckout('pass3m');
-                      }}
-                      className="p-4 text-center relative transition-all block w-full"
-                      style={{ background: '#1F222B', borderRadius: '6px', border: '2px solid #FFE34D' }}
-                    >
-                      <div
-                        className="absolute -top-2 left-1/2 -translate-x-1/2 px-2 py-0.5 text-xs font-bold whitespace-nowrap"
-                        style={{ background: '#4ADE80', color: '#0E0F13', borderRadius: '4px' }}
-                      >
-                        ONE PAYMENT
-                      </div>
-                      <div className="text-2xl font-bold" style={{ fontFamily: 'Geist Mono, monospace', fontVariantNumeric: 'tabular-nums', color: '#F2F0EA' }}>$49</div>
-                      <div className="text-sm font-medium" style={{ color: '#F2F0EA' }}>Interview Pass</div>
-                      <div className="text-xs mt-1" style={{ color: '#8A8E99' }}>3 months, then it ends</div>
-                      <div className="text-xs mt-2" style={{ color: '#4ADE80' }}>No subscription · nothing renews</div>
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => {
-                        trackProEvent('click_annual');
-                        beginCheckout('annual');
-                      }}
-                      className="p-4 text-center relative transition-all block w-full"
-                      style={{ background: '#1F222B', borderRadius: '6px', border: '2px solid #FFE34D' }}
-                    >
-                      <div
-                        className="absolute -top-2 left-1/2 -translate-x-1/2 px-2 py-0.5 text-xs font-bold whitespace-nowrap"
-                        style={{ background: '#4ADE80', color: '#0E0F13', borderRadius: '4px' }}
-                      >
-                        SAVE 72%
-                      </div>
-                      <div className="text-2xl font-bold" style={{ fontFamily: 'Geist Mono, monospace', fontVariantNumeric: 'tabular-nums', color: '#F2F0EA' }}>$99</div>
-                      <div className="text-sm font-medium" style={{ color: '#F2F0EA' }}>Annual</div>
-                      <div className="text-xs mt-1" style={{ color: '#8A8E99' }}>Billed yearly</div>
-                      <div className="text-xs mt-2" style={{ color: '#4ADE80' }}>$8.25/month · most people choose this</div>
-                    </button>
-                  )}
+                <div data-pro-plans className={checkoutPendingPlan ? 'hidden' : `grid grid-cols-1 ${ftbFlag('quarterlyPlan') ? 'sm:grid-cols-3' : 'sm:grid-cols-2'} gap-3 mb-6`}>
                   {/* Monthly */}
                   <button
-                    onClick={() => {
-                      trackProEvent('click_monthly');
-                      beginCheckout('monthly');
-                    }}
+                    onClick={() => { trackProEvent('click_monthly'); beginCheckout('monthly'); }}
                     className="p-4 text-center transition-all block w-full"
                     style={{ background: '#1F222B', borderRadius: '6px', border: '1px solid #2A2E38' }}
                     onMouseEnter={e => { e.currentTarget.style.borderColor = '#8A8E99'; }}
@@ -29950,11 +29900,47 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                     <div className="text-xs mt-2" style={{ color: '#8A8E99' }}>$29/month</div>
                   </button>
 
+                  {/* Quarterly — the founder's third package (2026-09-14):
+                      $49 every 3 months, which is the length of a job hunt.
+                      Behind the flag until stripe-webhook knows the price. */}
+                  {ftbFlag('quarterlyPlan') && (
+                    <button
+                      onClick={() => { trackProEvent('click_quarterly'); beginCheckout('quarterly'); }}
+                      className="p-4 text-center transition-all block w-full"
+                      style={{ background: '#1F222B', borderRadius: '6px', border: '1px solid #2A2E38' }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor = '#8A8E99'; }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor = '#2A2E38'; }}
+                    >
+                      <div className="text-2xl font-bold" style={{ fontFamily: 'Geist Mono, monospace', fontVariantNumeric: 'tabular-nums', color: '#F2F0EA' }}>$49</div>
+                      <div className="text-sm font-medium" style={{ color: '#F2F0EA' }}>Quarterly</div>
+                      <div className="text-xs mt-1" style={{ color: '#8A8E99' }}>Every 3 months</div>
+                      <div className="text-xs mt-2" style={{ color: '#8A8E99' }}>$16.33/month</div>
+                    </button>
+                  )}
+
+                  {/* Annual stays the highlighted offer — the founder's
+                      2026-09-12 decision, unchanged by adding a third tier. */}
+                  <button
+                    onClick={() => { trackProEvent('click_annual'); beginCheckout('annual'); }}
+                    className="p-4 text-center relative transition-all block w-full"
+                    style={{ background: '#1F222B', borderRadius: '6px', border: '2px solid #FFE34D' }}
+                  >
+                    <div
+                      className="absolute -top-2 left-1/2 -translate-x-1/2 px-2 py-0.5 text-xs font-bold whitespace-nowrap"
+                      style={{ background: '#4ADE80', color: '#0E0F13', borderRadius: '4px' }}
+                    >
+                      SAVE 72%
+                    </div>
+                    <div className="text-2xl font-bold" style={{ fontFamily: 'Geist Mono, monospace', fontVariantNumeric: 'tabular-nums', color: '#F2F0EA' }}>$99</div>
+                    <div className="text-sm font-medium" style={{ color: '#F2F0EA' }}>Annual</div>
+                    <div className="text-xs mt-1" style={{ color: '#8A8E99' }}>Billed yearly</div>
+                    <div className="text-xs mt-2" style={{ color: '#4ADE80' }}>$8.25/month · most people choose this</div>
+                  </button>
                 </div>
 
                 <div className="text-center mb-4">
                   <p className="text-xs" style={{ color: '#8A8E99' }}>
-                    Secure payment via Stripe · {ftbFlag('interviewPass') ? 'The pass just ends — nothing to cancel' : 'Cancel anytime'} · Keep all your progress
+                    Secure payment via Stripe · Cancel anytime · Keep all your progress
                   </p>
                   <p className="text-xs mt-1.5" style={{ color: '#8A8E99' }}>
                     7-day money-back guarantee — if Pro doesn't move your prep, reply to your receipt for a full refund, no questions asked.

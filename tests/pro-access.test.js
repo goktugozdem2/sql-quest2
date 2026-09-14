@@ -119,34 +119,35 @@ describe('pass3m: a plan that is bought once', () => {
   const at = (offsetDays) => new Date(Date.now() + offsetDays * day).toISOString();
 
   it('is Pro while it runs', () => {
-    const a = resolveProAccess({ proStatus: true, proType: 'pass3m', proExpiry: at(40) });
+    const a = resolveProAccess({ proStatus: true, proType: 'quarterly', proExpiry: at(40) });
     expect(a.isPro).toBe(true);
     expect(a.reason).toBe('active');
-    expect(a.proType).toBe('pass3m');
+    expect(a.proType).toBe('quarterly');
   });
 
-  it('gets NO grace window, because no invoice is in flight at its expiry', () => {
-    // One day past expiry: a monthly subscriber is still Pro (the renewal
-    // invoice may not have landed yet); a pass holder is not.
-    const monthly = resolveProAccess({ proStatus: true, proType: 'monthly', proExpiry: at(-1) });
-    expect(monthly.isPro, 'a subscription still gets the webhook-lag window').toBe(true);
-    expect(monthly.reason).toBe('grace');
-
-    const pass = resolveProAccess({ proStatus: true, proType: 'pass3m', proExpiry: at(-1) });
-    expect(pass.isPro, 'a one-time pass must expire on the day it expires').toBe(false);
-    expect(pass.reason).toBe('expired');
+  it('gets the webhook-lag window, because an invoice really is in flight', () => {
+    // It bills every three months, so the day after expiry its renewal may
+    // simply not have landed yet — the same reason monthly and annual get it.
+    const q = resolveProAccess({ proStatus: true, proType: 'quarterly', proExpiry: at(-1) });
+    expect(q.isPro).toBe(true);
+    expect(q.reason).toBe('grace');
   });
 
-  it('may be offered again the moment it ends', () => {
-    // The 09-07 incident in miniature: a plan wrongly counted as live is a
-    // person who never gets asked again.
-    expect(mayBeOffered({ proStatus: true, proType: 'pass3m', proExpiry: at(-1) })).toBe(true);
-    expect(mayBeOffered({ proStatus: true, proType: 'pass3m', proExpiry: at(10) })).toBe(false);
+  it('a trial still gets none, which is the case the window was written to exclude', () => {
+    const t = resolveProAccess({ proStatus: true, proType: 'trial', proExpiry: at(-1) });
+    expect(t.isPro).toBe(false);
+    expect(t.reason).toBe('expired');
   });
 
-  it('keeps its type after expiry so we can tell a lapsed pass from a stranger', () => {
-    const a = resolveProAccess({ proStatus: true, proType: 'pass3m', proExpiry: at(-30) });
-    expect(a.proType).toBe('pass3m');
+  it('is never asked to buy while it is live or in grace', () => {
+    expect(mayBeOffered({ proStatus: true, proType: 'quarterly', proExpiry: at(10) })).toBe(false);
+    expect(mayBeOffered({ proStatus: true, proType: 'quarterly', proExpiry: at(-1) })).toBe(false);
+    expect(mayBeOffered({ proStatus: true, proType: 'quarterly', proExpiry: at(-30) })).toBe(true);
+  });
+
+  it('keeps its type after expiry so a lapsed subscriber is not a stranger', () => {
+    const a = resolveProAccess({ proStatus: true, proType: 'quarterly', proExpiry: at(-30) });
+    expect(a.proType).toBe('quarterly');
     expect(a.expired).toBe(true);
   });
 });
@@ -164,9 +165,9 @@ describe('planLabel', () => {
     expect(p.canUpgrade).toBe(true);
   });
 
-  it('names the Interview Pass rather than calling it Pro', () => {
-    const p = planLabel({ proStatus: true, proType: 'pass3m', proExpiry: at(45) });
-    expect(p.label).toBe('Interview Pass');
+  it('names the quarterly plan so it is not mistaken for the other two', () => {
+    const p = planLabel({ proStatus: true, proType: 'quarterly', proExpiry: at(45) });
+    expect(p.label).toBe('Pro · Quarterly');
     expect(p.detail).toBe('45 days left');
     expect(p.canUpgrade).toBe(false);
   });
@@ -187,9 +188,9 @@ describe('planLabel', () => {
   it('tells a lapsed person WHICH thing ended', () => {
     // An expired trial and a stranger look identical on the raw flag.
     expect(planLabel({ proStatus: true, proType: 'trial', proExpiry: at(-9) }).detail).toBe('Trial ended');
-    expect(planLabel({ proStatus: true, proType: 'pass3m', proExpiry: at(-9) }).detail).toBe('Pass ended');
+    expect(planLabel({ proStatus: true, proType: 'quarterly', proExpiry: at(-40) }).detail).toBe('Pro ended');
     expect(planLabel({ proStatus: true, proType: 'annual', proExpiry: at(-9) }).detail).toBe('Pro ended');
-    expect(planLabel({ proStatus: true, proType: 'pass3m', proExpiry: at(-9) }).label).toBe('Free');
+    expect(planLabel({ proStatus: true, proType: 'quarterly', proExpiry: at(-40) }).label).toBe('Free');
   });
 
   it('lifetime never counts down and is never upsold', () => {
@@ -215,15 +216,15 @@ describe('lastLoginDay', () => {
 });
 
 describe('planRenews', () => {
-  it('is false for a one-time plan even when the flag says otherwise', () => {
+  it('is false for a plan that cannot renew, even when the flag says otherwise', () => {
     // proAutoRenew defaults to true in app state and is written by Stripe, so
     // the flag alone would promise a charge that never comes.
-    expect(planRenews({ proType: 'pass3m', proAutoRenew: true })).toBe(false);
     expect(planRenews({ proType: 'lifetime', proAutoRenew: true })).toBe(false);
     expect(planRenews({ proType: 'trial', proAutoRenew: true })).toBe(false);
   });
-  it('is true only for the two subscriptions, and only when the flag is on', () => {
+  it('is true for the three subscriptions, and only when the flag is on', () => {
     expect(planRenews({ proType: 'monthly', proAutoRenew: true })).toBe(true);
+    expect(planRenews({ proType: 'quarterly', proAutoRenew: true })).toBe(true);
     expect(planRenews({ proType: 'annual', proAutoRenew: true })).toBe(true);
     expect(planRenews({ proType: 'annual', proAutoRenew: false })).toBe(false);
   });

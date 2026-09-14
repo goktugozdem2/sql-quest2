@@ -170,30 +170,29 @@ window.FEATURE_FLAGS = {
     // listed — flipping this flag does not turn on 23 company flows.
     interviewCountdown: false,
 
-    // ── The Interview Pass (2026-09-14) ──────────────────────────────────
-    // $49 once for 90 days, beside Monthly; the $99 annual stays reachable
-    // from the homepage pricing cards and ?plan=annual but leaves the modal
-    // while this is on. Two cards, never three — the $199 lifetime was
-    // removed on 09-12 for exactly that reason.
+    // ── The quarterly plan (2026-09-14) ──────────────────────────────────
+    // $49 every 3 months, between monthly and annual. The founder's call:
+    // three packages, 1 month / 3 months / 1 year. Annual stays the
+    // highlighted card (the 09-12 decision is unchanged by adding a tier).
     //
-    // WHY: $29/month is the wrong unit for interview prep. Nobody subscribes
-    // for six months to pass one screen, and our own numbers say the decision
-    // is made in the first session at 6-10 solves. A pass priced to the job
-    // hunt is a different offer, not different words for the same one.
+    // WHY a third tier at all: $29/month is the wrong unit for interview
+    // prep. A job hunt is measured in months, and our own numbers say the
+    // decision is made in the first session at 6-10 solves.
     //
-    // It is also the only kind of change this surface can MEASURE. At 209
-    // modal views a month and a 3.3% click rate, detecting +50% relative
-    // needs 2,160 people per arm (20 months); detecting a move to the
-    // founder's own 15% target needs 95 per arm (~4 weeks). So the modal can
-    // test a different offer and cannot test different copy.
+    // It existed for about an hour as a ONE-TIME "Interview Pass" before the
+    // founder changed it to recurring. That Stripe link is deactivated, not
+    // deleted; every trace of the one-time shape is gone from the code,
+    // because a plan that renews and a plan that does not need opposite
+    // answers on grace, auto-renew and the "Renews / Ends" label.
     //
     // RELEASE ORDER, and it is not optional:
-    //   1. deploy stripe-webhook (it must map price_1UFWu7Kfw2tJmZR55oe2pLzu
-    //      -> pass3m/90 days; without it the amount fallback grants 30)
-    //   2. set STRIPE_PRICE_PASS3M + STRIPE_PRODUCT_PASS3M as function secrets
+    //   1. deploy stripe-webhook (it must map price_1UFXQPKfw2tJmZR5lqAHNfQw
+    //      -> quarterly/90 days, for ACTIVATION and for RENEWAL)
+    //   2. set STRIPE_PRICE_QUARTERLY + STRIPE_PRODUCT_QUARTERLY
     //   3. only then flip this
-    // Flipping first means someone pays $49 for three months and gets one.
-    interviewPass: false,
+    // Flip first and a subscriber pays every 3 months while the old renewal
+    // branch — which knew only monthly and annual — extends them by nothing.
+    quarterlyPlan: false,
 
     // ── The free-tier boundary (2026-09-12) ──────────────────────────────
     // Five moves from docs/plans/free-tier-boundary-2026-09-12.md. The

@@ -33,34 +33,47 @@ async function logProEvent(event: string, username: string | null, reason: strin
   }
 }
 
-// Product ID to plan type mapping - set via Supabase Edge Function secrets:
-//   STRIPE_PRODUCT_MONTHLY, STRIPE_PRODUCT_ANNUAL, STRIPE_PRODUCT_LIFETIME,
-//   STRIPE_PRODUCT_PASS3M
-//   STRIPE_PRICE_MONTHLY, STRIPE_PRICE_ANNUAL, STRIPE_PRICE_LIFETIME,
-//   STRIPE_PRICE_PASS3M
+// Plan durations, in ONE place. Activation and renewal both read this: the
+// renewal branch used to carry its own `if monthly +30 else if annual +365`,
+// so any plan it did not name was extended by ZERO days — a quarterly
+// subscriber would have paid every three months and watched their access
+// expire anyway. Add a plan here and both paths learn it.
+const PLAN_DAYS: Record<string, number> = {
+  monthly: 30,
+  quarterly: 90,
+  annual: 365,
+  lifetime: 36500,
+};
+
+// Product/price ID to plan mapping - set via Supabase Edge Function secrets:
+//   STRIPE_PRODUCT_MONTHLY, STRIPE_PRODUCT_QUARTERLY, STRIPE_PRODUCT_ANNUAL,
+//   STRIPE_PRODUCT_LIFETIME (and the STRIPE_PRICE_* twins)
 //
-// `pass3m` is the Interview Pass (2026-09-14): $49 ONE-TIME for 90 days, not a
-// subscription. It exists because $29/month is the wrong unit for interview
-// prep — nobody subscribes for six months to pass one screen.
+// `quarterly` is $49 every 3 months (2026-09-14). It started life as a
+// one-time "Interview Pass" the same day and became a subscription before it
+// shipped — the founder's call: monthly, quarterly, annual.
+const plan = (type: string) => ({ type, durationDays: PLAN_DAYS[type] });
+
 const PRODUCT_TO_PLAN: Record<string, { type: string; durationDays: number }> = {
-  [Deno.env.get("STRIPE_PRODUCT_MONTHLY") || ""]: { type: "monthly", durationDays: 30 },
-  [Deno.env.get("STRIPE_PRODUCT_ANNUAL") || ""]: { type: "annual", durationDays: 365 },
-  [Deno.env.get("STRIPE_PRODUCT_LIFETIME") || ""]: { type: "lifetime", durationDays: 36500 },
-  [Deno.env.get("STRIPE_PRODUCT_PASS3M") || ""]: { type: "pass3m", durationDays: 90 },
+  [Deno.env.get("STRIPE_PRODUCT_MONTHLY") || ""]: plan("monthly"),
+  [Deno.env.get("STRIPE_PRODUCT_QUARTERLY") || ""]: plan("quarterly"),
+  [Deno.env.get("STRIPE_PRODUCT_ANNUAL") || ""]: plan("annual"),
+  [Deno.env.get("STRIPE_PRODUCT_LIFETIME") || ""]: plan("lifetime"),
 };
 
 const PRICE_TO_PLAN: Record<string, { type: string; durationDays: number }> = {
-  [Deno.env.get("STRIPE_PRICE_MONTHLY") || ""]: { type: "monthly", durationDays: 30 },
-  [Deno.env.get("STRIPE_PRICE_ANNUAL") || ""]: { type: "annual", durationDays: 365 },
-  [Deno.env.get("STRIPE_PRICE_LIFETIME") || ""]: { type: "lifetime", durationDays: 36500 },
-  [Deno.env.get("STRIPE_PRICE_PASS3M") || ""]: { type: "pass3m", durationDays: 90 },
+  [Deno.env.get("STRIPE_PRICE_MONTHLY") || ""]: plan("monthly"),
+  [Deno.env.get("STRIPE_PRICE_QUARTERLY") || ""]: plan("quarterly"),
+  [Deno.env.get("STRIPE_PRICE_ANNUAL") || ""]: plan("annual"),
+  [Deno.env.get("STRIPE_PRICE_LIFETIME") || ""]: plan("lifetime"),
 };
 
 // A plan that does not renew. Stripe sends no invoice for these, so
 // proAutoRenew must be false — the 2026-09-07 incident was exactly an
 // auto-renew flag on something that never renewed, pushing proExpiry forward
-// on every login (src/utils/pro-access.js).
-const ONE_TIME_PLANS = new Set(["lifetime", "pass3m"]);
+// on every login (src/utils/pro-access.js). Quarterly is NOT here: it bills
+// every three months like the other two subscriptions.
+const ONE_TIME_PLANS = new Set(["lifetime"]);
 
 serve(async (req) => {
   const signature = req.headers.get("stripe-signature");
@@ -102,20 +115,21 @@ serve(async (req) => {
       // Determine plan type
       let planInfo = PRICE_TO_PLAN[priceId] || PRODUCT_TO_PLAN[productId];
       
-      // Fallback: determine by amount. Order matters and the bands are exact,
-      // not open-ended — the old `else { monthly }` meant ANY unmapped amount
-      // became 30 days. A $49 Interview Pass would have taken the money and
-      // granted a month. If the secret is unset, the amount has to carry it.
+      // Fallback: determine by amount. Order matters — the old
+      // `else { monthly }` meant ANY unmapped amount became 30 days, so a $49
+      // quarterly would have taken the money and granted a month. If the
+      // secret is unset the amount has to carry it, and it says so in the log
+      // rather than guessing quietly.
       if (!planInfo) {
         const amount = session.amount_total || 0;
         if (amount >= 19900) {
-          planInfo = { type: "lifetime", durationDays: 36500 };
+          planInfo = plan("lifetime");
         } else if (amount >= 9900) {
-          planInfo = { type: "annual", durationDays: 365 };
+          planInfo = plan("annual");
         } else if (amount >= 4900) {
-          planInfo = { type: "pass3m", durationDays: 90 };
+          planInfo = plan("quarterly");
         } else {
-          planInfo = { type: "monthly", durationDays: 30 };
+          planInfo = plan("monthly");
         }
         console.warn(`No price/product mapping for ${priceId || productId}; fell back to ${planInfo.type} on amount ${amount}`);
       }
@@ -256,11 +270,15 @@ serve(async (req) => {
         const currentExpiry = new Date(userData.proExpiry || new Date());
         const newExpiry = new Date(Math.max(currentExpiry.getTime(), Date.now()));
         
-        if (userData.proType === "monthly") {
-          newExpiry.setDate(newExpiry.getDate() + 30);
-        } else if (userData.proType === "annual") {
-          newExpiry.setDate(newExpiry.getDate() + 365);
+        // PLAN_DAYS, not a second copy of the durations. An unknown plan
+        // used to extend by nothing at all, which reads as "paid and lost
+        // access" — so it now extends by a month and says so loudly rather
+        // than silently doing nothing.
+        const renewDays = PLAN_DAYS[userData.proType];
+        if (!renewDays) {
+          console.error(`[stripe-webhook] renewal for unknown plan "${userData.proType}" (${userRecord.username}) — extending 30 days as a floor`);
         }
+        newExpiry.setDate(newExpiry.getDate() + (renewDays || 30));
 
         userData.proExpiry = newExpiry.toISOString();
         userData.proStatus = true;
