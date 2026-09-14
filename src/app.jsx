@@ -6855,6 +6855,41 @@ function SQLQuest() {
 
   // Plan button entry point: users with an email on file go straight to
   // Stripe; the rest get the one-field receipt-email step (skippable).
+  // Why the Pro modal gets closed (2026-09-14).
+  //
+  // Measured over 30 days: 209 people shown, 7 clicked a plan — 3.3%. That
+  // rate has been flat for at least three weeks, so the modal is not broken;
+  // it simply does not work. And we could not say WHY, because the only thing
+  // recorded was `modal_dismissed` with no payload: the black box told us the
+  // box was closed.
+  //
+  // Worse, one of the four close paths (the "Maybe later" button in the
+  // email-capture step) fired nothing at all, so even the dismissal count was
+  // short. Every path goes through here now.
+  //
+  // Three things get recorded, each chosen because it discriminates between
+  // hypotheses we cannot otherwise separate:
+  //   via      — X / backdrop / escape / button. A backdrop click is a reflex;
+  //              a button press is a decision.
+  //   msOpen   — under two seconds is a reflex close, not a rejected offer.
+  //   sawPlans — whether the plan cards were ever ON SCREEN. The modal body is
+  //              `overflow-y-auto max-h-[90vh]`, so on a phone the prices can
+  //              sit below the fold. If most closers never saw a price, the
+  //              problem is layout, not price, and no copy test would ever
+  //              have found that.
+  const proModalOpenedAtRef = useRef(0);
+  const proModalPlansSeenRef = useRef(false);
+  const dismissProModal = (via) => {
+    const openedAt = proModalOpenedAtRef.current;
+    trackProEvent('modal_dismissed', {
+      via,
+      msOpen: openedAt ? Date.now() - openedAt : null,
+      sawPlans: proModalPlansSeenRef.current,
+    });
+    setShowProModal(false);
+    setCheckoutPendingPlan(null);
+  };
+
   const beginCheckout = (plan) => {
     const email = resolveCheckoutEmail();
     // Record the PLAN CLICK here, before the email branch.
@@ -23407,6 +23442,23 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
   // whose cloud session is still restoring is NOT minted as a guest — the
   // effect re-runs when currentUser lands, which is when Pro status is
   // known (loadUserSession sets both in the same batch).
+  // Stamp the open time and watch the plan cards; see dismissProModal above.
+  useEffect(() => {
+    if (!showProModal) return;
+    proModalOpenedAtRef.current = Date.now();
+    proModalPlansSeenRef.current = false;
+    let obs = null;
+    const t = setTimeout(() => {
+      const el = document.querySelector('[data-pro-plans]');
+      if (!el || typeof IntersectionObserver === 'undefined') return;
+      obs = new IntersectionObserver(entries => {
+        if (entries.some(e => e.isIntersecting)) proModalPlansSeenRef.current = true;
+      }, { threshold: 0.5 });
+      obs.observe(el);
+    }, 80);
+    return () => { clearTimeout(t); if (obs) obs.disconnect(); };
+  }, [showProModal]);
+
   const pendingInterviewRef = useRef(null);
   const interviewGuestStartedRef = useRef(false);
   useEffect(() => {
@@ -29503,8 +29555,8 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
       {showProModal && (
         <div
           className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
-          onClick={() => { trackProEvent('modal_dismissed'); setShowProModal(false); setCheckoutPendingPlan(null); }}
-          onKeyDown={e => { if (e.key === 'Escape') { trackProEvent('modal_dismissed'); setShowProModal(false); setCheckoutPendingPlan(null); } }}
+          onClick={() => dismissProModal('backdrop')}
+          onKeyDown={e => { if (e.key === 'Escape') dismissProModal('escape'); }}
         >
           <div
             className="w-full max-w-2xl p-6 overflow-y-auto max-h-[90vh]"
@@ -29824,7 +29876,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                 )}
 
                 {/* Pricing Options */}
-                <div className={checkoutPendingPlan ? 'hidden' : 'grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6'}>
+                <div data-pro-plans className={checkoutPendingPlan ? 'hidden' : 'grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6'}>
                   {/* Annual — the main offer (founder, 2026-09-12): first, highlighted; monthly beside it; the $199 lifetime card removed the same day — zero purchases ever, and it undercut two years of annual. */}
                   <button
                     onClick={() => {
@@ -29931,7 +29983,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                 </div>
 
                 <button
-                  onClick={() => { trackProEvent('modal_dismissed'); setShowProModal(false); setCheckoutPendingPlan(null); }}
+                  onClick={() => dismissProModal('button')}
                   className="w-full py-2 transition-colors"
                   style={{ color: '#8A8E99' }}
                   onMouseEnter={e => { e.currentTarget.style.color = '#F2F0EA'; }}
@@ -30015,7 +30067,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                 )}
 
                 <button
-                  onClick={() => setShowProModal(false)}
+                  onClick={() => dismissProModal('maybe_later')}
                   className="w-full py-3 font-bold transition-colors"
                   style={{ background: '#1F222B', borderRadius: '6px', color: '#F2F0EA' }}
                   onMouseEnter={e => { e.currentTarget.style.background = '#2A2E38'; }}
