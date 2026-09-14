@@ -34,19 +34,33 @@ async function logProEvent(event: string, username: string | null, reason: strin
 }
 
 // Product ID to plan type mapping - set via Supabase Edge Function secrets:
-//   STRIPE_PRODUCT_MONTHLY, STRIPE_PRODUCT_ANNUAL, STRIPE_PRODUCT_LIFETIME
-//   STRIPE_PRICE_MONTHLY, STRIPE_PRICE_ANNUAL, STRIPE_PRICE_LIFETIME
+//   STRIPE_PRODUCT_MONTHLY, STRIPE_PRODUCT_ANNUAL, STRIPE_PRODUCT_LIFETIME,
+//   STRIPE_PRODUCT_PASS3M
+//   STRIPE_PRICE_MONTHLY, STRIPE_PRICE_ANNUAL, STRIPE_PRICE_LIFETIME,
+//   STRIPE_PRICE_PASS3M
+//
+// `pass3m` is the Interview Pass (2026-09-14): $49 ONE-TIME for 90 days, not a
+// subscription. It exists because $29/month is the wrong unit for interview
+// prep — nobody subscribes for six months to pass one screen.
 const PRODUCT_TO_PLAN: Record<string, { type: string; durationDays: number }> = {
   [Deno.env.get("STRIPE_PRODUCT_MONTHLY") || ""]: { type: "monthly", durationDays: 30 },
   [Deno.env.get("STRIPE_PRODUCT_ANNUAL") || ""]: { type: "annual", durationDays: 365 },
   [Deno.env.get("STRIPE_PRODUCT_LIFETIME") || ""]: { type: "lifetime", durationDays: 36500 },
+  [Deno.env.get("STRIPE_PRODUCT_PASS3M") || ""]: { type: "pass3m", durationDays: 90 },
 };
 
 const PRICE_TO_PLAN: Record<string, { type: string; durationDays: number }> = {
   [Deno.env.get("STRIPE_PRICE_MONTHLY") || ""]: { type: "monthly", durationDays: 30 },
   [Deno.env.get("STRIPE_PRICE_ANNUAL") || ""]: { type: "annual", durationDays: 365 },
   [Deno.env.get("STRIPE_PRICE_LIFETIME") || ""]: { type: "lifetime", durationDays: 36500 },
+  [Deno.env.get("STRIPE_PRICE_PASS3M") || ""]: { type: "pass3m", durationDays: 90 },
 };
+
+// A plan that does not renew. Stripe sends no invoice for these, so
+// proAutoRenew must be false — the 2026-09-07 incident was exactly an
+// auto-renew flag on something that never renewed, pushing proExpiry forward
+// on every login (src/utils/pro-access.js).
+const ONE_TIME_PLANS = new Set(["lifetime", "pass3m"]);
 
 serve(async (req) => {
   const signature = req.headers.get("stripe-signature");
@@ -88,16 +102,22 @@ serve(async (req) => {
       // Determine plan type
       let planInfo = PRICE_TO_PLAN[priceId] || PRODUCT_TO_PLAN[productId];
       
-      // Fallback: determine by amount
+      // Fallback: determine by amount. Order matters and the bands are exact,
+      // not open-ended — the old `else { monthly }` meant ANY unmapped amount
+      // became 30 days. A $49 Interview Pass would have taken the money and
+      // granted a month. If the secret is unset, the amount has to carry it.
       if (!planInfo) {
         const amount = session.amount_total || 0;
         if (amount >= 19900) {
           planInfo = { type: "lifetime", durationDays: 36500 };
         } else if (amount >= 9900) {
           planInfo = { type: "annual", durationDays: 365 };
+        } else if (amount >= 4900) {
+          planInfo = { type: "pass3m", durationDays: 90 };
         } else {
           planInfo = { type: "monthly", durationDays: 30 };
         }
+        console.warn(`No price/product mapping for ${priceId || productId}; fell back to ${planInfo.type} on amount ${amount}`);
       }
 
       // Calculate expiry date
@@ -165,7 +185,7 @@ serve(async (req) => {
       userData.proStatus = true;
       userData.proType = planInfo.type;
       userData.proExpiry = expiry.toISOString();
-      userData.proAutoRenew = planInfo.type !== "lifetime";
+      userData.proAutoRenew = !ONE_TIME_PLANS.has(planInfo.type);
       userData.stripeCustomerId = session.customer as string;
       userData.stripeSessionId = session.id;
 

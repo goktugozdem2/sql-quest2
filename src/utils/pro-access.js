@@ -91,8 +91,14 @@ export function resolveProAccess(data, now = Date.now()) {
   }
 
   // Past the stored expiry. A paid plan gets the webhook-lag window; a trial
-  // does not, because nothing renews a trial.
-  const isPaidPlan = proType && proType !== 'trial';
+  // does not, because nothing renews a trial — and neither does a one-time
+  // plan. `pass3m` (the $49 Interview Pass, 2026-09-14) is bought once for 90
+  // days: there is no invoice in flight at its expiry, so there is no lag to
+  // cover. Giving it grace would hand out three free days nobody paid for and
+  // would make an expired pass look live to `mayBeOffered`, which is how the
+  // 09-07 auto-renew incident silently withheld the ask from 47 accounts.
+  const NON_RENEWING = ['trial', 'pass3m'];
+  const isPaidPlan = proType && !NON_RENEWING.includes(proType);
   if (isPaidPlan && now - expiry <= GRACE_DAYS * MS_PER_DAY) {
     return { isPro: true, proType, proExpiry, inGrace: true, expired: true, reason: 'grace' };
   }

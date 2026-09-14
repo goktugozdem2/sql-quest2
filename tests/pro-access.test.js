@@ -108,3 +108,45 @@ describe('source guard — app.jsx must not mint Pro', () => {
     expect(app).toMatch(/resolveProAccess\s*\(/);
   });
 });
+
+// The Interview Pass — bought once, 90 days, nothing renews it (2026-09-14).
+//
+// $29/month is the wrong unit for interview prep, so `pass3m` is a one-time
+// $49 purchase. Every rule that exists because subscriptions renew has to be
+// re-checked against a plan that does not.
+describe('pass3m: a plan that is bought once', () => {
+  const day = 86400000;
+  const at = (offsetDays) => new Date(Date.now() + offsetDays * day).toISOString();
+
+  it('is Pro while it runs', () => {
+    const a = resolveProAccess({ proStatus: true, proType: 'pass3m', proExpiry: at(40) });
+    expect(a.isPro).toBe(true);
+    expect(a.reason).toBe('active');
+    expect(a.proType).toBe('pass3m');
+  });
+
+  it('gets NO grace window, because no invoice is in flight at its expiry', () => {
+    // One day past expiry: a monthly subscriber is still Pro (the renewal
+    // invoice may not have landed yet); a pass holder is not.
+    const monthly = resolveProAccess({ proStatus: true, proType: 'monthly', proExpiry: at(-1) });
+    expect(monthly.isPro, 'a subscription still gets the webhook-lag window').toBe(true);
+    expect(monthly.reason).toBe('grace');
+
+    const pass = resolveProAccess({ proStatus: true, proType: 'pass3m', proExpiry: at(-1) });
+    expect(pass.isPro, 'a one-time pass must expire on the day it expires').toBe(false);
+    expect(pass.reason).toBe('expired');
+  });
+
+  it('may be offered again the moment it ends', () => {
+    // The 09-07 incident in miniature: a plan wrongly counted as live is a
+    // person who never gets asked again.
+    expect(mayBeOffered({ proStatus: true, proType: 'pass3m', proExpiry: at(-1) })).toBe(true);
+    expect(mayBeOffered({ proStatus: true, proType: 'pass3m', proExpiry: at(10) })).toBe(false);
+  });
+
+  it('keeps its type after expiry so we can tell a lapsed pass from a stranger', () => {
+    const a = resolveProAccess({ proStatus: true, proType: 'pass3m', proExpiry: at(-30) });
+    expect(a.proType).toBe('pass3m');
+    expect(a.expired).toBe(true);
+  });
+});
