@@ -24,7 +24,7 @@ import { calculateSkillLevels as coreCalculateSkillLevels, CANONICAL_SKILLS } fr
 import { copyOrDownloadRadarPng, buildShareUrl } from './utils/radar-export.js';
 import { publishProfile } from './utils/profile-publish.js';
 import { backfillLegacyAttempts } from './utils/challenge-helpers.js';
-import { resolveProAccess } from './utils/pro-access.js';
+import { resolveProAccess, planLabel, lastLoginDay, planRenews } from './utils/pro-access.js';
 import { pickNextChallengeWith, pickTopNWith, makeChallengeComparator, hardPreviewCounts, isFreePreview } from './utils/challenge-order.js';
 import { shouldShowInterviewNav, interviewNavReason } from './utils/interview-nav.js';
 import { mergeProgress, hasProgress, isResumableGuest, GUEST_USER_KEY } from './utils/progress-merge.js';
@@ -30952,6 +30952,54 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
               )}
             </div>
 
+            {/* Your plan — the founder's ask (2026-09-14): "subscription tipi
+                yazmalı… isterse bir üste geçebilsin… en son ne zaman login
+                oldu". Everything here is read from the same record the
+                paywall reads, so the panel cannot disagree with the header. */}
+            {(() => {
+              const data = { proStatus: userProStatus || !!proType, proType, proExpiry, proAutoRenew };
+              const plan = planLabel(data, Date.now());
+              const lastDay = lastLoginDay({ loginCalendar, lastActive: Date.now() });
+              const fmt = d => { try { return new Date(d).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }); } catch (_) { return d; } };
+              return (
+                <div className="mb-4 p-4 rounded-xl" data-testid="profile-plan" style={{ background: '#16181F', border: '1px solid #2A2E38' }}>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs uppercase tracking-wide" style={{ color: '#8A8E99' }}>Subscription</span>
+                    <span className="text-sm font-bold" style={{ color: plan.tone === 'pro' ? '#FFE34D' : '#F2F0EA' }}>
+                      {plan.tone === 'pro' ? '👑 ' : ''}{plan.label}
+                    </span>
+                  </div>
+                  <dl className="space-y-1.5 text-xs">
+                    {plan.detail && (
+                      <div className="flex justify-between"><dt style={{ color: '#8A8E99' }}>Status</dt><dd style={{ color: '#F2F0EA' }}>{plan.detail}</dd></div>
+                    )}
+                    {proExpiry && (
+                      <div className="flex justify-between">
+                        <dt style={{ color: '#8A8E99' }}>{planRenews(data) ? 'Renews' : 'Ends'}</dt>
+                        <dd style={{ color: '#F2F0EA' }}>{fmt(proExpiry)}</dd>
+                      </div>
+                    )}
+                    <div className="flex justify-between"><dt style={{ color: '#8A8E99' }}>Score</dt><dd style={{ color: '#F2F0EA' }}>{xp.toLocaleString()} XP · {currentLevel.name}</dd></div>
+                    <div className="flex justify-between"><dt style={{ color: '#8A8E99' }}>Solved</dt><dd style={{ color: '#F2F0EA' }}>{solvedChallenges.size} challenges</dd></div>
+                    <div className="flex justify-between"><dt style={{ color: '#8A8E99' }}>Streak</dt><dd style={{ color: '#F2F0EA' }}>{streak} {streak === 1 ? 'day' : 'days'}</dd></div>
+                    {lastDay && (
+                      <div className="flex justify-between"><dt style={{ color: '#8A8E99' }}>Last login</dt><dd style={{ color: '#F2F0EA' }}>{fmt(lastDay)}</dd></div>
+                    )}
+                  </dl>
+                  {plan.canUpgrade && (
+                    <button
+                      data-testid="profile-upgrade"
+                      onClick={() => { setShowProfile(false); setProModalReason({ type: 'profile_plan', topic: null, solvedCount: solvedChallenges.size }); setShowProModal(true); }}
+                      className="mt-3 w-full py-2 text-sm font-bold rounded-lg transition-all"
+                      style={{ background: '#FFE34D', color: '#0E0F13' }}
+                    >
+                      See plans
+                    </button>
+                  )}
+                </div>
+              );
+            })()}
+
             {/* Guest Mode Warning */}
             {isGuest && (
               <div className="mb-4 p-4 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/30 rounded-xl">
@@ -31588,30 +31636,73 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
               discoverable before a wall is hit. Guests see the same modal;
               purchase binds via client_reference_id or lands in
               pending_subscriptions until they create an account. */}
-          {!showSimpleLearningShell && userProStatus ? (
-            <span className="text-xs px-2 py-0.5 rounded-full font-bold" style={{ color: '#FFE34D', background: 'rgba(255,227,77,0.1)', border: '1px solid rgba(255,227,77,0.3)' }}>
-              👑 PRO
-            </span>
-          ) : !showSimpleLearningShell ? (
-            <button
-              onClick={() => { setProModalReason({ type: 'generic', topic: null, solvedCount: 0 }); setShowProModal(true); }}
-              className="text-xs px-2 py-0.5 rounded-full border transition-all"
-              style={{ color: '#8A8E99', borderColor: '#2A2E38', background: 'transparent' }}
-              onMouseEnter={e => { e.currentTarget.style.color = '#FFE34D'; e.currentTarget.style.borderColor = '#FFE34D'; }}
-              onMouseLeave={e => { e.currentTarget.style.color = '#8A8E99'; e.currentTarget.style.borderColor = '#2A2E38'; }}
-            >
-              ✨ Pro
-            </button>
-          ) : null}
-          {/* Profile */}
-          {!showSimpleLearningShell && (
-            <button onClick={() => setShowProfile(true)} className="flex items-center gap-1.5 px-2.5 py-1.5 bg-purple-500/20 hover:bg-purple-500/30 rounded-lg border border-purple-500/30 transition-all">
-              <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${isGuest ? 'bg-yellow-500/50' : 'bg-gradient-to-br from-purple-500 to-pink-500'}`}>
-                {isGuest ? '👤' : currentUser?.charAt(0).toUpperCase()}
-              </div>
-              <span className="text-xs font-medium hidden sm:inline">{isGuest ? 'Guest' : currentUser}</span>
-            </button>
-          )}
+          {/* The plan, said out loud. This used to be a gold PRO pill or an
+              "✨ Pro" upsell, so a free user was told what they could buy and
+              never what they already had — and an EXPIRED plan looked exactly
+              like a plan that never existed. planLabel() reads the same
+              record resolveProAccess does, never the raw proStatus flag. */}
+          {(() => {
+            // Rebuilt from state rather than read from `userProStatus`,
+            // which is already the RESOLVED boolean — feeding it back in
+            // would flatten an expired plan to a plain "Free" and lose the
+            // "Pro ended" that tells a lapsed person apart from a stranger.
+            // `proType` survives expiry on purpose (pro-access.js), so its
+            // presence is what says "this person had a plan"; the expiry
+            // decides the rest.
+            const plan = planLabel({
+              proStatus: userProStatus || !!proType,
+              proType, proExpiry, proAutoRenew,
+              }, Date.now());
+            const isPro = plan.tone === 'pro';
+            const chip = (
+              <>
+                <span className="font-bold">{isPro ? '👑' : ''} {plan.label}</span>
+                {plan.detail && <span className="hidden sm:inline opacity-70"> · {plan.detail}</span>}
+              </>
+            );
+            return plan.canUpgrade ? (
+              <button
+                onClick={() => { setProModalReason({ type: 'header_plan', topic: null, solvedCount: solvedChallenges.size }); setShowProModal(true); }}
+                data-testid="header-plan"
+                data-plan={plan.label}
+                title="Open the plans"
+                className="text-xs px-2 py-0.5 rounded-full border transition-all whitespace-nowrap"
+                style={{ color: '#8A8E99', borderColor: '#2A2E38', background: 'transparent' }}
+                onMouseEnter={e => { e.currentTarget.style.color = '#FFE34D'; e.currentTarget.style.borderColor = '#FFE34D'; }}
+                onMouseLeave={e => { e.currentTarget.style.color = '#8A8E99'; e.currentTarget.style.borderColor = '#2A2E38'; }}
+              >
+                {chip}
+              </button>
+            ) : (
+              <span
+                data-testid="header-plan"
+                data-plan={plan.label}
+                className="text-xs px-2 py-0.5 rounded-full whitespace-nowrap"
+                style={{ color: '#FFE34D', background: 'rgba(255,227,77,0.1)', border: '1px solid rgba(255,227,77,0.3)' }}
+              >
+                {chip}
+              </span>
+            );
+          })()}
+          {/* Who am I, and what am I on? (2026-09-14, founder's ask)
+              Both of these used to be hidden behind !showSimpleLearningShell,
+              which is the shell a first-run visitor spends their whole first
+              session in — so the person most likely to wonder "am I even
+              logged in?" was the one person who could not see. The name and
+              the plan now render in every shell.
+              The name is also no longer `hidden sm:inline`: it is the answer
+              to the question, so it survives the narrow breakpoint. */}
+          <button
+            onClick={() => setShowProfile(true)}
+            data-testid="header-identity"
+            title={isGuest ? 'Playing as a guest — open your profile' : `Signed in as ${currentUser} — open your profile`}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-purple-500/20 hover:bg-purple-500/30 rounded-lg border border-purple-500/30 transition-all min-w-0"
+          >
+            <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 ${isGuest ? 'bg-yellow-500/50' : 'bg-gradient-to-br from-purple-500 to-pink-500'}`}>
+              {isGuest ? '👤' : currentUser?.charAt(0).toUpperCase()}
+            </div>
+            <span className="text-xs font-medium truncate max-w-[10ch]">{isGuest ? 'Guest' : currentUser}</span>
+          </button>
         </div>
         
       </header>

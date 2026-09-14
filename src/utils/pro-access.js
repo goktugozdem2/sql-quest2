@@ -131,3 +131,66 @@ export function mayBeOffered(data, now = Date.now()) {
 export function hasStaleProFlag(data, now = Date.now()) {
   return (data || {}).proStatus === true && !resolveProAccess(data, now).isPro;
 }
+
+/**
+ * What to print next to someone's name (2026-09-14, founder's ask: "kullanıcı
+ * hangi kullanıcıyla bağlı olduğunu görsün… orda subscription tipi yazmalı").
+ *
+ * The header used to show either a gold "👑 PRO" pill or an "✨ Pro" upsell
+ * button, so a free user was told what they could BUY and never what they
+ * currently HAVE. "Free" is a plan and saying so is not a weaker message: a
+ * person who cannot see their own plan also cannot see that it ran out.
+ *
+ * Pure, and derived from the same record as resolveProAccess — never from the
+ * raw `proStatus` flag, which is exactly what made 47 accounts look like
+ * subscribers in September.
+ *
+ * @returns {{ label, tone: 'pro'|'free', detail: string|null, canUpgrade: boolean }}
+ */
+export function planLabel(data, now = Date.now()) {
+  const a = resolveProAccess(data, now);
+  const days = a.proExpiry ? Math.ceil((new Date(a.proExpiry).getTime() - now) / MS_PER_DAY) : null;
+  const left = days === null ? null : days <= 0 ? 'ends today' : days === 1 ? '1 day left' : `${days} days left`;
+
+  if (a.reason === 'lifetime') return { label: 'Pro · Lifetime', tone: 'pro', detail: null, canUpgrade: false };
+  if (a.reason === 'active' || a.reason === 'grace') {
+    if (a.proType === 'pass3m') return { label: 'Interview Pass', tone: 'pro', detail: left, canUpgrade: false };
+    if (a.proType === 'trial') return { label: 'Pro trial', tone: 'pro', detail: left, canUpgrade: true };
+    return { label: 'Pro', tone: 'pro', detail: left, canUpgrade: false };
+  }
+  // Expired says so. An expired trial and someone who never started one look
+  // identical on the raw flag, and telling them apart is the whole reason
+  // proType survives expiry.
+  if (a.expired && a.proType) {
+    const what = a.proType === 'trial' ? 'Trial ended' : a.proType === 'pass3m' ? 'Pass ended' : 'Pro ended';
+    return { label: 'Free', tone: 'free', detail: what, canUpgrade: true };
+  }
+  return { label: 'Free', tone: 'free', detail: null, canUpgrade: true };
+}
+
+/** The most recent day this person was here: 'YYYY-MM-DD', or null. */
+export function lastLoginDay(data) {
+  const cal = data && data.loginCalendar;
+  if (cal && typeof cal === 'object') {
+    const days = Object.keys(cal).filter(k => /^\d{4}-\d{2}-\d{2}$/.test(k)).sort();
+    if (days.length) return days[days.length - 1];
+  }
+  const t = data && data.lastActive ? new Date(data.lastActive).getTime() : NaN;
+  return Number.isFinite(t) ? new Date(t).toISOString().slice(0, 10) : null;
+}
+
+/**
+ * Does this plan actually renew? Never trust `proAutoRenew` alone.
+ *
+ * It defaults to TRUE in the app's state and is written by Stripe, so a
+ * one-time plan whose flag was never set — or was set by an older webhook —
+ * would otherwise be labelled "Renews", promising the buyer a charge that
+ * will never happen and hiding the date their access really stops. Caught
+ * 2026-09-14 on the Interview Pass: the panel said "Renews Oct 29" for a pass
+ * that simply ends on Oct 29.
+ */
+export function planRenews(data) {
+  const d = data || {};
+  if (!d.proAutoRenew) return false;
+  return d.proType === 'monthly' || d.proType === 'annual';
+}

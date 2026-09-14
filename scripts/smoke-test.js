@@ -224,7 +224,14 @@ async function main() {
       (async () => {
         const wait = ms => new Promise(r => setTimeout(r, ms));
         const text = document.body.textContent || '';
+        // The OLD five-tab nav (Coach / Practice / Interview / Leaderboard /
+        // Profile) must not render in the first-run shell — that is what this
+        // counts. The header identity button is excluded by testid: from
+        // 2026-09-14 it renders in EVERY shell on purpose (the founder's ask —
+        // a first-run visitor could not see which account they were on), and
+        // for a guest its label starts with the same 👤 this filter matches.
         const navTabs = Array.from(document.querySelectorAll('button'))
+          .filter(b => !b.closest('[data-testid="header-identity"]') && !b.matches('[data-testid="header-identity"]'))
           .filter(b => /^(🧭|📝|💼|🏅|👤)/.test(b.textContent?.trim() || ''))
           .map(b => b.textContent.trim());
         const primaryTabs = Array.from(document.querySelectorAll('[data-primary-learning-tabs="true"] button'))
@@ -423,7 +430,14 @@ async function main() {
         const roadmap = document.querySelector('[data-foundation-focus-roadmap="true"]');
         const rect = panel?.getBoundingClientRect();
         const roadmapRect = roadmap?.getBoundingClientRect();
+        // The OLD five-tab nav (Coach / Practice / Interview / Leaderboard /
+        // Profile) must not render in the first-run shell — that is what this
+        // counts. The header identity button is excluded by testid: from
+        // 2026-09-14 it renders in EVERY shell on purpose (the founder's ask —
+        // a first-run visitor could not see which account they were on), and
+        // for a guest its label starts with the same 👤 this filter matches.
         const navTabs = Array.from(document.querySelectorAll('button'))
+          .filter(b => !b.closest('[data-testid="header-identity"]') && !b.matches('[data-testid="header-identity"]'))
           .filter(b => /^(🧭|📝|💼|🏅|👤)/.test(b.textContent?.trim() || ''))
           .map(b => b.textContent.trim());
         const primaryTabs = Array.from(document.querySelectorAll('[data-primary-learning-tabs="true"] button'))

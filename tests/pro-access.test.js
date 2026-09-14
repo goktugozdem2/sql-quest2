@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { resolveProAccess, mayBeOffered, hasStaleProFlag, GRACE_DAYS } from '../src/utils/pro-access.js';
+import { resolveProAccess, mayBeOffered, hasStaleProFlag, GRACE_DAYS, planLabel, lastLoginDay, planRenews } from '../src/utils/pro-access.js';
 
 const ROOT = join(import.meta.dirname, '..');
 const NOW = Date.parse('2026-09-07T12:00:00.000Z');
@@ -148,5 +148,83 @@ describe('pass3m: a plan that is bought once', () => {
     const a = resolveProAccess({ proStatus: true, proType: 'pass3m', proExpiry: at(-30) });
     expect(a.proType).toBe('pass3m');
     expect(a.expired).toBe(true);
+  });
+});
+
+// What the header prints beside your name (2026-09-14).
+describe('planLabel', () => {
+  const day = 86400000;
+  const at = d => new Date(Date.now() + d * day).toISOString();
+
+  it('says Free, out loud, when someone is on the free tier', () => {
+    // The header used to offer "✨ Pro" and never state the current plan.
+    const p = planLabel({});
+    expect(p.label).toBe('Free');
+    expect(p.tone).toBe('free');
+    expect(p.canUpgrade).toBe(true);
+  });
+
+  it('names the Interview Pass rather than calling it Pro', () => {
+    const p = planLabel({ proStatus: true, proType: 'pass3m', proExpiry: at(45) });
+    expect(p.label).toBe('Interview Pass');
+    expect(p.detail).toBe('45 days left');
+    expect(p.canUpgrade).toBe(false);
+  });
+
+  it('counts a subscription down too, and never offers an upgrade to a subscriber', () => {
+    const p = planLabel({ proStatus: true, proType: 'annual', proExpiry: at(1) });
+    expect(p.label).toBe('Pro');
+    expect(p.detail).toBe('1 day left');
+    expect(p.canUpgrade).toBe(false);
+  });
+
+  it('a trial is labelled a trial and may still be upgraded', () => {
+    const p = planLabel({ proStatus: true, proType: 'trial', proExpiry: at(3) });
+    expect(p.label).toBe('Pro trial');
+    expect(p.canUpgrade).toBe(true);
+  });
+
+  it('tells a lapsed person WHICH thing ended', () => {
+    // An expired trial and a stranger look identical on the raw flag.
+    expect(planLabel({ proStatus: true, proType: 'trial', proExpiry: at(-9) }).detail).toBe('Trial ended');
+    expect(planLabel({ proStatus: true, proType: 'pass3m', proExpiry: at(-9) }).detail).toBe('Pass ended');
+    expect(planLabel({ proStatus: true, proType: 'annual', proExpiry: at(-9) }).detail).toBe('Pro ended');
+    expect(planLabel({ proStatus: true, proType: 'pass3m', proExpiry: at(-9) }).label).toBe('Free');
+  });
+
+  it('lifetime never counts down and is never upsold', () => {
+    const p = planLabel({ proStatus: true, proType: 'lifetime' });
+    expect(p.label).toBe('Pro · Lifetime');
+    expect(p.detail).toBeNull();
+    expect(p.canUpgrade).toBe(false);
+  });
+});
+
+describe('lastLoginDay', () => {
+  it('reads the newest day out of the login calendar', () => {
+    expect(lastLoginDay({ loginCalendar: { '2026-09-02': true, '2026-09-14': true, '2026-08-30': true } })).toBe('2026-09-14');
+  });
+  it('falls back to lastActive, which is epoch-ms on some rows and ISO on others', () => {
+    expect(lastLoginDay({ lastActive: Date.UTC(2026, 8, 11) })).toBe('2026-09-11');
+    expect(lastLoginDay({ lastActive: '2026-09-11T08:00:00.000Z' })).toBe('2026-09-11');
+  });
+  it('says nothing rather than guessing', () => {
+    expect(lastLoginDay({})).toBeNull();
+    expect(lastLoginDay({ lastActive: 'not a date' })).toBeNull();
+  });
+});
+
+describe('planRenews', () => {
+  it('is false for a one-time plan even when the flag says otherwise', () => {
+    // proAutoRenew defaults to true in app state and is written by Stripe, so
+    // the flag alone would promise a charge that never comes.
+    expect(planRenews({ proType: 'pass3m', proAutoRenew: true })).toBe(false);
+    expect(planRenews({ proType: 'lifetime', proAutoRenew: true })).toBe(false);
+    expect(planRenews({ proType: 'trial', proAutoRenew: true })).toBe(false);
+  });
+  it('is true only for the two subscriptions, and only when the flag is on', () => {
+    expect(planRenews({ proType: 'monthly', proAutoRenew: true })).toBe(true);
+    expect(planRenews({ proType: 'annual', proAutoRenew: true })).toBe(true);
+    expect(planRenews({ proType: 'annual', proAutoRenew: false })).toBe(false);
   });
 });
