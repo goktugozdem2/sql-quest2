@@ -30,11 +30,17 @@ makes it lie in the other direction.**
 ## What the twelve checks establish
 
 **Pro mocks.** A Pro user arriving on `/app/?interview=<mock>` — the link the
-company pages use — reaches a real SQL question. A cold visitor on the same
-link meets the gate. A free user with fourteen solves who presses the same
-button is handed the free mock ("SQL Fundamentals Assessment"), never the paid
-mock's questions. All three matter: the Pro check alone would pass just as
-happily if mocks were ungated.
+company pages use — lands **inside that mock**, by name, no further click. A
+cold visitor on the same link meets the gate. A free user with fourteen solves
+gets the gate and the free-mock nudge, never the paid mock's questions. All
+three matter: the Pro check alone would pass just as happily if mocks were
+ungated.
+
+The first version of the Pro check asserted only that *a* question rendered,
+and it passed while the harness was clicking the free mock's card — the trials
+tab lists every mock, and the first "Start Interview" on the page belongs to
+whichever card renders first. **A check that cannot tell the two mocks apart is
+not a check.** It now asserts the heading equals the mock the link named.
 
 **Sign-in.** The form posts to the `account-login` edge function, the password
 goes nowhere else, and nothing reads the `users` table — which is 401 for anon
@@ -68,14 +74,36 @@ failed-login storm, and the lockout is not misfiring on real users. The 11:00
 **268 user rows saved in 24 hours, 13 of them registered accounts.** Writes are
 flowing through `sq_save_user` since direct table access was closed.
 
-## One thing observed and not fixed
+## The bug this found, and the fix
 
-A returning Pro guest who follows `?interview=<mock>` lands on that mock's
-card with its "Start Interview" button rather than inside the interview; a
-cold visitor's link resolves straight through to the gate. It is one click,
-not a dead end, and the deep link is the Capital One path
-(`?interview=capital-one-codesignal`), which two of the first three payers
-came through — so it is worth a look, but it is a behaviour change and not
-part of item 10's verification. The harness asserts the user-facing path (land
-on the card, press the button, reach the question), so it will keep passing if
-the auto-start is fixed and keep passing if it is not.
+The deep link did not open the mock. A returning visitor following
+`/app/?interview=<mock>` landed on that mock's **card**, one click short of the
+interview — a cold visitor's link resolved straight through, so it only showed
+up for someone who had been to the site before.
+
+Cause: the resolver called `startGuestMode()` and then fell through to
+`startInterview` in the same tick, consuming its ref on the way past.
+`startGuestMode` is async — it sets `currentUser` before awaiting
+`loadUserSession` — so the mock reached `startInterview` while `userProStatus`
+was still false and `solvedChallenges` still empty, and the ref was gone before
+the session landed. Nothing errored and nothing was logged.
+
+The fix is a `return` that keeps the ref, so the effect re-runs when
+`isSessionLoading` flips back to false, which is the point where the plan is
+actually known. Guest mode is started at most once per arrival
+(`interviewGuestStartedRef`).
+
+Measured, same harness, only the app changed:
+
+| | before | after |
+|---|---|---|
+| auto-started | no | **yes** |
+| landed on | the mock's card | **"Data Analyst Interview"** |
+
+It matters because this is the company-page path —
+`?interview=capital-one-codesignal` — and two of the first three payers came
+through the Capital One screen.
+
+Guards: `tests/interview-prep.test.js` carries a mutation-verified source guard
+(reverting the `return` fails it by name), and `npm run e2e` asserts the mock's
+identity end to end.

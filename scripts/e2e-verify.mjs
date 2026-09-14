@@ -38,7 +38,10 @@ import http from 'http';
 
 const URL = process.argv[2] || 'http://127.0.0.1:4321';
 const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
-const PORT = 9444;
+// A fixed port meant a Chrome left behind by an interrupted run held it and
+// the next run hung waiting for a tab that was never its own. Pick a fresh
+// one per run instead.
+const PORT = 9400 + (process.pid % 500);
 
 const checks = [];
 const pass = name => { checks.push({ name, ok: true }); };
@@ -191,27 +194,42 @@ async function main() {
       const proRun = await ev(`
         (async () => {
           const w = ms => new Promise(r => setTimeout(r, ms));
-          await w(1800);
+          await w(2500);
           for (let i = 0; i < 3; i++) {
             const x = Array.from(document.querySelectorAll('button')).find(b => (b.textContent || '').trim() === '✕');
             if (!x) break;
             x.click(); await w(300);
           }
-          const start = Array.from(document.querySelectorAll('button'))
-            .find(b => /^Start Interview$/i.test((b.textContent || '').trim()));
-          const landedOnCard = !!start;
-          if (start) { start.click(); await w(1500); }
+          const title = ${JSON.stringify(paid.title)};
+          const head = () => ((document.querySelector('h1, h2') || {}).textContent || '').trim();
+          const autoStarted = !!document.querySelector('[data-testid="interview-question"]');
+          let clicked = false;
+          if (!autoStarted) {
+            // The trials tab lists every mock, so the button has to be the one
+            // inside THIS mock's card — the first "Start Interview" on the page
+            // belongs to whichever card renders first.
+            const card = Array.from(document.querySelectorAll('div')).reverse()
+              .find(d => (d.textContent || '').includes(title) && d.querySelector('button') && (d.textContent || '').length < 1200);
+            const start = card && Array.from(card.querySelectorAll('button')).find(b => /^Start Interview$/i.test((b.textContent || '').trim()));
+            if (start) { start.click(); clicked = true; await w(1600); }
+          }
           const q = document.querySelector('[data-testid="interview-question"]');
           const text = document.body.textContent || '';
           return {
-            landedOnCard,
+            autoStarted, clicked,
             reachedQuestion: !!q,
             type: q ? q.getAttribute('data-question-type') : null,
             proModal: /Unlock Pro|Upgrade to Pro/i.test(text),
+            heading: head(),
           };
         })()`);
-      if (proRun.reachedQuestion && !proRun.proModal) pass(`a Pro user opens a paid mock from the deep link and reaches a ${proRun.type} question`);
-      else fail('a Pro user opens a paid mock and reaches a question', JSON.stringify(proRun));
+      // Identity, not just "a question rendered". The first version asserted
+      // only the latter and passed while the harness was clicking the FREE
+      // mock's card — a check that cannot tell the two apart is not a check.
+      const gotThePaidOne = proRun.reachedQuestion && !proRun.proModal && proRun.heading === paid.title;
+      if (gotThePaidOne && proRun.autoStarted) pass(`the deep link opens the paid mock itself for a Pro user — "${proRun.heading}", a ${proRun.type} question, no click needed`);
+      else if (gotThePaidOne) fail('the deep link opens the mock without a further click', `landed on the card instead: ${JSON.stringify(proRun)}`);
+      else fail('a Pro user reaches the paid mock the link named', JSON.stringify(proRun));
 
       await load({
         sqlquest_guest_user: 'guest_e2e_free',
@@ -222,12 +240,18 @@ async function main() {
       const freeRun = await ev(`
         (async () => {
           const w = ms => new Promise(r => setTimeout(r, ms));
-          await w(1800);
-          const start = Array.from(document.querySelectorAll('button'))
-            .find(b => /^Start Interview$/i.test((b.textContent || '').trim()));
-          if (start) { start.click(); await w(1200); }
+          await w(2500);
+          const title = ${JSON.stringify(paid.title)};
+          // Same card-scoped click as the Pro run: the first "Start Interview"
+          // on the page belongs to whichever card renders first, and clicking
+          // that would test nothing.
+          const card = Array.from(document.querySelectorAll('div')).reverse()
+            .find(d => (d.textContent || '').includes(title) && d.querySelector('button') && (d.textContent || '').length < 1200);
+          const start = card && Array.from(card.querySelectorAll('button')).find(b => /^Start Interview$/i.test((b.textContent || '').trim()));
+          if (start) { start.click(); await w(1600); }
           const text = document.body.textContent || '';
           return {
+            foundTheCard: !!start,
             reachedQuestion: !!document.querySelector('[data-testid="interview-question"]'),
             gated: /Unlock Pro|Upgrade to Pro|Pro unlocks|free mock/i.test(text),
             heading: ((document.querySelector('h1, h2') || {}).textContent || '').trim(),
@@ -237,8 +261,11 @@ async function main() {
       // Start on a paid mock is handed the FREE mock instead (the 09-12 M4
       // catcher). So the assertion is on identity — whatever they get, it must
       // not be the paid mock's own questions.
-      const gotPaid = freeRun.reachedQuestion && freeRun.heading && paid.title && freeRun.heading.includes(paid.title);
-      if (!gotPaid) pass(`a free user pressing the same button never reaches the paid mock (got "${freeRun.heading || 'the gate'}")`);
+      // The free user's link resolves the same way; what differs is where it
+      // lands. Either the gate or the free mock is correct — the paid mock's
+      // own questions are not.
+      const gotPaid = freeRun.reachedQuestion && freeRun.heading === paid.title;
+      if (!gotPaid && (freeRun.gated || !freeRun.reachedQuestion)) pass(`the same link for a free user stops at the gate, never the paid mock (landed on "${freeRun.heading}")`);
       else fail('a free user never reaches the paid mock', JSON.stringify(freeRun));
     }
 

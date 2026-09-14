@@ -1265,3 +1265,44 @@ describe('source guard: the Coach rehearsal offer keeps one paywall gate', () =>
     expect(coachMockCardBody()).toContain("i18n_t('interviewPrep', 'coachMockWhat'");
   });
 });
+
+// ---------------------------------------------------------------------------
+// The ?interview= deep link must not resolve before the plan is known
+// (2026-09-14). The resolver used to call startGuestMode() and then fall
+// straight through to startInterview in the same tick. startGuestMode is
+// async — it sets currentUser before awaiting loadUserSession — so the mock
+// reached startInterview while `userProStatus` was still false and
+// `solvedChallenges` still empty, and the effect consumed its ref on the way
+// past. A returning visitor following /app/?interview=<mock> therefore landed
+// on the mock's card instead of inside it, with no error anywhere.
+//
+// The fix is a `return` that keeps the ref, so the effect re-runs when
+// isSessionLoading flips back to false. This guard fails if the fall-through
+// comes back. End-to-end proof (and the mutation check that the fix is what
+// moved it): scripts/e2e-verify.mjs, `npm run e2e`.
+// ---------------------------------------------------------------------------
+describe('source guard: the interview deep link waits for the session', () => {
+  const block = appSource.slice(
+    appSource.indexOf('const pendingInterviewRef = useRef(null);'),
+    appSource.indexOf('// ?company= / ?sector= deep-links'),
+  );
+
+  it('the resolver exists and is still one block', () => {
+    expect(block.length).toBeGreaterThan(400);
+    expect(block).toContain('startInterview(target)');
+  });
+
+  it('starting guest mode returns instead of falling through to startInterview', () => {
+    const at = block.indexOf('startGuestMode()');
+    expect(at, 'the resolver no longer starts guest mode').toBeGreaterThan(-1);
+    const after = block.slice(at, at + 200);
+    expect(after, 'startGuestMode() must be followed by a return — the effect re-runs when the session lands').toMatch(/\breturn;/);
+    // And the return has to come before the ref is consumed, or the re-run
+    // has nothing left to resolve.
+    expect(block.indexOf('return;', at)).toBeLessThan(block.indexOf('pendingInterviewRef.current = null'));
+  });
+
+  it('guest mode is started at most once per arrival', () => {
+    expect(block, 'a re-running effect would mint a guest on every pass').toMatch(/interviewGuestStartedRef/);
+  });
+});

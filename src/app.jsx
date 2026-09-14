@@ -23408,6 +23408,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
   // effect re-runs when currentUser lands, which is when Pro status is
   // known (loadUserSession sets both in the same batch).
   const pendingInterviewRef = useRef(null);
+  const interviewGuestStartedRef = useRef(false);
   useEffect(() => {
     const target = pendingInterviewRef.current;
     if (!target) return;
@@ -23416,7 +23417,23 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
       let savedUser = null;
       try { savedUser = localStorage.getItem('sqlquest_user'); } catch (_) { /* ignore */ }
       if (savedUser && !String(savedUser).startsWith('guest_')) return; // wait for the session
-      startGuestMode();
+      // 2026-09-14: this used to start guest mode and then fall straight
+      // through to startInterview in the same tick. startGuestMode is async —
+      // it sets currentUser before awaiting loadUserSession — so the mock was
+      // handed to startInterview while `userProStatus` was still false and
+      // `solvedChallenges` still empty. The Pro gate then fired on a PAYING
+      // user and nudgeToFreeMock swapped in the free mock: someone following
+      // /app/?interview=capital-one-codesignal got "SQL Fundamentals
+      // Assessment" instead of the screen they came for, with no error and
+      // nothing in the logs. Return instead, keep the ref, and let the effect
+      // re-run when isSessionLoading flips back to false — which is the point
+      // where the plan is actually known. Measured before and after by
+      // scripts/e2e-verify.mjs, which now asserts the mock's identity.
+      if (!interviewGuestStartedRef.current) {
+        interviewGuestStartedRef.current = true;
+        startGuestMode();
+      }
+      return;
     }
     interviewEntryRef.current = 'deeplink';
     setActiveTab('trials');
