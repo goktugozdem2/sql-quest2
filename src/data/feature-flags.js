@@ -192,7 +192,16 @@ window.FEATURE_FLAGS = {
     //   3. only then flip this
     // Flip first and a subscriber pays every 3 months while the old renewal
     // branch — which knew only monthly and annual — extends them by nothing.
-    quarterlyPlan: false,
+    //
+    // FLIPPED 2026-09-14 15:31 +03, after verifying the deployed function
+    // rather than the claim. The first "deployed it" was version 11 from
+    // 09-12 23:54 — the old code, with no quarterly anywhere. Flipping then
+    // would have granted 30 days to a $49 buyer and extended their renewal by
+    // zero. The live source now carries PLAN_DAYS{quarterly:90}, the
+    // STRIPE_*_QUARTERLY maps, the >=4900 band, PLAN_DAYS[proType] on
+    // renewal, ONE_TIME_PLANS={lifetime} and the payment-failure revoke
+    // (stripe-webhook v14, 15:27:56).
+    quarterlyPlan: true,
 
     // ── The account ask at the third solve (2026-09-14) ──────────────────
     // Founder: move the registration wall to the 3rd solve. Measured before

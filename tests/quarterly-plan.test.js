@@ -27,8 +27,29 @@ const flags = read('src/data/feature-flags.js');
 const proAccess = read('src/utils/pro-access.js');
 
 describe('the release order is enforced by the code, not by memory', () => {
-  it('ships dark', () => {
-    expect(flags).toMatch(/quarterlyPlan:\s*false/);
+  // Until 2026-09-14 15:31 this asserted the flag shipped DARK, which was the
+  // whole protection: the app must not sell a plan the server mishandles. The
+  // flag is on now, so the assertion becomes the dependency itself — stronger,
+  // because it also catches the webhook being reverted while the flag stays up.
+  //
+  // Worth recording why it matters: the first "webhook deployed" was version
+  // 11 from 09-12, the old code. Flipping on that claim would have granted 30
+  // days to a $49 buyer and extended their renewal by zero days, silently.
+  // The flip waited for the DEPLOYED SOURCE to be read back.
+  it('is only on because the webhook it depends on knows the plan', () => {
+    const on = /quarterlyPlan:\s*true/.test(flags);
+    if (!on) {
+      expect(flags).toMatch(/quarterlyPlan:\s*false/);
+      return; // dark again is fine; nothing downstream can be sold
+    }
+    for (const required of [
+      'STRIPE_PRICE_QUARTERLY',
+      'quarterly: 90',
+      'amount >= 4900',
+      'PLAN_DAYS[userData.proType]',
+    ]) {
+      expect(webhook, `quarterlyPlan is ON but stripe-webhook lost: ${required}`).toContain(required);
+    }
   });
 
   it('the webhook maps the price and the product, and 90 days is stated once', () => {
