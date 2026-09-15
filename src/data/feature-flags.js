@@ -267,8 +267,9 @@ window.FEATURE_FLAGS = {
     // intake / countdown date is inside 45 days sees "N days to your
     // interview" and what stands between them and it (the locked Hard set,
     // the company's mock), not the feature list. `pro_modal_shown` carries
-    // deadline/daysOut so the ask-efficiency read splits on it. Flips
-    // 2026-10-06, after the intake read (09-30) that gives it dates.
+    // deadline/daysOut so the ask-efficiency read splits on it. Was to flip
+    // 2026-10-06 after the intake read; the founder moved it on 2026-09-16
+    // to flip WITH freeQuota on 2026-09-21 (same scheduled task).
     // Ledger: "the six-solve ask speaks to the deadline".
     deadlineOffer: false,
     // M4 — the asks that have never sold go quiet: the streak modal (13

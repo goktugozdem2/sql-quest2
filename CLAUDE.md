@@ -691,8 +691,10 @@ Rewritten Coach-forward:
 - Pure half `src/utils/free-tier-boundary.js`, guards
   `tests/free-tier-boundary.test.js`, flags in `feature-flags.js`, each with
   its own ledger claim and flip task. `ftbFlag(name)` in app.jsx reads
-  `=== true`. Flip calendar: **09-29** `quietEarlyAsks` (M4) · **10-06**
-  `deadlineOffer` (M3) · **10-12** `goalWallEarly` + `mockDoor` (M2, M5) ·
+  `=== true`. Flip calendar: **09-21** `deadlineOffer` (M3, moved from 10-06 by the
+  founder on 09-16; flips with `freeQuota`) · **09-29** `quietEarlyAsks` (M4) ·
+  **10-12** `goalWallEarly` + `mockDoor` (M2, M5 — `mockDoor` is inert without
+  `goalWallEarly`) ·
   **10-14** `companySetGate` (M1, after the intent-routing reach-6 read it
   would confound). Nothing monetisation-adjacent flips before 09-29.
 - M1: in a company view the first three of the set are free, the fourth

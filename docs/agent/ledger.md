@@ -71,6 +71,10 @@ of the verifier and must never be rounded to `FLAT`.
   the milestone ask inside this window; read the quota wall's own reason
   and surface, never the modal total. Company-set gate (10-14) walls the
   fourth of a set — a person can meet both; read `wall` values separately.
+- **Confound added 2026-09-16:** `deadlineOffer` now flips in the same commit
+  (founder moved it from 10-06). It changes only `reason='milestone_solves'`
+  for people with a date inside 45 days; this claim reads `wall='free_quota'`
+  and `reason='free_quota'`, never the modal total.
 - **Verdict** _pending_
 
 ### the sixth-solve ask waits for the celebration (founder's item 1, live 2026-09-12)
@@ -787,6 +791,18 @@ of the verifier and must never be rounded to `FLAT`.
   per shown mechanically — this reads milestone_solves only, which M4 never
   touches. The 09-29 copy fix on the modal ("50+ tutor calls a day" for
   "unlimited") lands before this flips.
+- **Rescheduled 2026-09-16 by the founder** ("evet, 21 Eylül'e çek"): flips
+  2026-09-21 in the same commit as `freeQuota`, no longer after the intake
+  read. Why: one to three plan clicks a week — the two could not be read
+  apart before the 10-09 checkpoint anyway, and interview-intent people
+  click at 9.3% (4 / 43, 30 days to 09-15) against 0 / 81 for people with
+  no intent, so the ask that names their date is the one to put in front of
+  them first. Cost, accepted: the milestone ask at 10 solves now shares the
+  stage with the quota wall — read `reason='milestone_solves'` only, and say
+  in the verdict that `freeQuota` flipped the same minute. Mechanism check
+  moves to 2026-10-05; the Read stays 2026-11-24. `mockDoor` did NOT move:
+  it acts only inside `withEarlyWall`, i.e. with `goalWallEarly` on, and that
+  stays 10-12 behind the Coach-trust read.
 - **Verdict** _pending_
 
 ### quiet the asks that have never sold (free-tier boundary M4)
