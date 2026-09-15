@@ -123,7 +123,8 @@ window.FEATURE_FLAGS = {
     // moves reach_6_rate, and the roadmap-v2 claim reads that same metric and
     // says "it ships alone". Flip THIS or roadmapV2, never both. The founder
     // chose this one on 2026-09-12. See docs/agent/ledger.md.
-    intentRouting: false,
+    // Flipped 2026-09-16 (the 09-13 task stalled before writing anything), after the 105-opener read came back (c) inconclusive and was extended to 09-20; ledger claim "intent routing: a handle on the interview door".
+    intentRouting: true,
     // Roadmap v2 — the recommended path stops hand-listing 38 challenge ids
     // and grows each stage from the live bank, plus two new stages for the
     // two canonical skills that had none (String Functions, Date Functions).

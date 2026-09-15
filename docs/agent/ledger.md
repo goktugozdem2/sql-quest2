@@ -2121,6 +2121,112 @@ of the verifier and must never be rounded to `FLAT`.
   the hard and bridge+ bands, which are the read.
 - **Verdict** _pending_
 
+### intent routing: a handle on the interview door
+- **Claimed** 2026-09-16, written and baselined before the flip · flag
+  `features.intentRouting` flipped 2026-09-16 (the 09-13 task stalled before
+  writing anything) · flipped at _recorded after the push_
+- **Change** the flag, built and shipped dark 2026-09-12, turns on three
+  things already in the code: (1) `applyIntentRouting` — an interview /
+  job_ready answer to the post-first-solve intent modal sets the Practice path
+  filter to the whole bank and applies the company from
+  `sqlquest_arrival_src`, and fires `intent_routed {intent, company, source}`;
+  it does not move the person to the Interview tab. (2) A third primary-nav
+  tab, **Interview** (`data-onboarding="nav-trials"`), shown only when
+  `shouldShowInterviewNav` holds (`src/utils/interview-nav.js`): flag on, at
+  least one solve, and one of declared intent interview/job_ready, interview
+  history, the `interview-prep` Coach goal, or a `company:` arrival. Nobody
+  else sees it. (3) `interview_tab_viewed` (once per user per day; `entry`,
+  `reason`, `intent`, `solvedCount`, `hasHistory`), `interview_started`,
+  `interview_completed` (both with `interviewId`). Nothing about what the tab
+  shows or locks changes.
+- **Why now** the Interview Prep surface had no navigation entry from
+  2026-05-19 on — reachable only by `?interview=` deep link or one onboarding
+  branch — and 22 accounts carry any interview history, lifetime. Meanwhile
+  176 people in 30 days told the intent modal they are here for an interview
+  or a job, under copy that promises "Your answer shapes what we recommend
+  next", and the answer shaped nothing. The founder chose this over roadmapV2
+  on 2026-09-12 as the one change on this stretch.
+- **Metric** `interview_reach` (docs/agent/metrics.md) → `reached_tab`
+  people in the 30 days after the flip time, split by `reason` (history /
+  intent / goal / company) and by intent arm (interview vs job_ready).
+  **Secondary** `started_a_mock`, `finished_a_mock`, and
+  `content_lock_reached` people with `surface='interview'`. The lock count is
+  expected to rise: that is the surface being reached, not a paywall change —
+  seven of the eight mocks were already Pro-locked, and the wall is untouched.
+- **Baseline** 30 days ending at the flip (window 2026-08-16 22:30Z →
+  2026-09-15 22:30Z, measured minutes before the flip; internal accounts
+  excluded; people by `aid`, latest `intent_captured` per person):
+  - `reach_6_rate`, **routed arm** (interview + job_ready): **49.4%** (87 of
+    176) — interview 46.6% (41/88), job_ready 52.3% (46/88).
+    **Control arm** (learning): **43.1%** (28 of 65). (exploring, not an arm:
+    44.2%, 34/77.)
+  - People who captured each intent: interview **88**, job_ready **88**,
+    learning **65**, exploring 77.
+  - `content_lock_reached` with `surface='interview'`: **2 people** in 30
+    days, **0** of them in the routed arm (one of the two is an
+    Europe/Istanbul desktop deep link on 09-13 21:58Z, very likely QA).
+  - Pro modal shown → checkout clicked, routed arm: **91 shown, 5 clicked
+    (5.5%)** — interview 43 → 3, job_ready 48 → 2. Recorded as a guardrail
+    context only; nothing here touches the modal.
+  - Interview-surface reach before the flip is a **stock, not a flow: 22
+    accounts lifetime** with any interview history
+    (docs/designs/hiring-readiness-module.md). The three events did not exist
+    in production before the flip, so there is no 30-day baseline for them and
+    none is invented. One `interview_tab_viewed` row predates the flip (09-13
+    21:58Z, `entry='deeplink'`, the same Istanbul aid as above): the event
+    fires on deep links whether or not the flag is on, which is why the
+    mechanism check below keys on `entry='nav'`.
+- **Mechanism check** within a day of the flip: `intent_routed` rows appear
+  and track `intent_captured` for the two hiring intents, and
+  `interview_tab_viewed` rows appear with `entry='nav'`. Split `intent_routed`
+  by `source` from the start — `'ask'` from the post-solve modal, `'intake'`
+  from the onboarding intake, which may flip later today by its own task (see
+  Confounds). If either the `'ask'` rows or the `nav` rows are absent, the
+  flag did not reach the surface and the read is UNREADABLE — check the
+  served bundle before anything else.
+- **Guardrails** `first_contact_activation` must not move (structurally it
+  cannot: the intent ask fires after the first solve and the tab needs a
+  solve; read it anyway). Routed arm `reach_6_rate` must not fall more than 3
+  points below 49.4%; control arm `reach_6_rate` must stay inside 43.1% ± 3.
+- **Target** at least **60 people reach the tab** in the 30 days after the
+  flip time (the design doc's own line: under 60 means routing did not solve
+  discovery and the door is somewhere else) **AND at least 25 of them start a
+  mock**.
+- **Read on** **2026-10-16** — flip plus 30 days. It was 2026-10-13 when the
+  flip was planned for 09-13; the scheduled run that day measured baselines
+  and stalled before writing anything, so the flag flipped three days late
+  and the 30-day window moves with it.
+- **Falsification, stated in advance:**
+  (a) fewer than 60 reach the tab → the gate is the constraint or the intent
+  ask is not reaching people; the next move is the intent ask's own reach,
+  not the tab.
+  (b) 60 or more reach but fewer than 15 start a mock → the eight-item list is
+  the wrong landing (the design doc's open question: seven of eight mocks are
+  generic); the next move is landing a routed person on their company's mock.
+  (c) routed arm `reach_6_rate` down 5 points or more → the tab pulls
+  second-solve users off the ladder; move it behind the sixth solve.
+- **Confounds**
+  - **The 105-opener read was extended** to 2026-09-20 (verdict (c),
+    59.6% on n=94). This flips anyway: it cannot touch first contacts.
+  - **Cold start** ("cold start: nobody is asked to pay before they have
+    solved anything", reads 09-29): the tab cannot enter its denominator —
+    there is no tab at zero solves.
+  - **Paywall surfaces** ("paywall surfaces: lead people to the free Hard
+    previews", 09-20): its primary `preview_open_to_solve` is stamp-based and
+    cannot be touched by this.
+  - **Onboarding intake** (flag `onboardingIntake`, ledger claim "onboarding
+    intake: three optional questions before the quiz", built 2026-09-12, off)
+    flips by the scheduled task `flip-onboarding-intake` — on 2026-09-16 if
+    the 105 read closed, otherwise after the extended read; as of this
+    writing that read is extended, so not before 09-21. It writes the same
+    intent key BEFORE the first solve and applies `applyIntentRouting` after
+    the first solve with `source='intake'`. `intent_routed` carries `source`
+    ('ask' / 'intake') and `interview_tab_viewed` carries `reason`; the read
+    must split by both and never sum across the intake flip time.
+  - **roadmapV2** stays off (amended below); nothing else on the Practice
+    path filter changes in the window.
+- **Verdict** _pending_
+
 ### the recommended path stops hand-listing 38 of 287 challenges
 - **Claimed** 2026-09-09, **shipped behind `features.roadmapV2 = false`**.
   The claim is written now, before the flag is flipped, because a target
@@ -2176,6 +2282,9 @@ of the verifier and must never be rounded to `FLAT`.
   raw constant on 2026-09-09 and the flag did nothing there until it was fixed.
 - **Confounds** none intended — it ships alone, after the 105 read closes. If
   anything else lands on the Practice tab in the read window, say so here.
+- **Amended 2026-09-16 — not flipped.** The founder chose intentRouting on
+  09-12 as the one change on this stretch of funnel. The read date is void
+  until the flag flips; recompute as flip plus 30 days.
 - **Verdict** _pending_
 
 ### subscription management hands off to Stripe — no more client-side "cancel"
@@ -2291,7 +2400,44 @@ of the verifier and must never be rounded to `FLAT`.
   which is inside the (c) inconclusive band and **is not to be acted on** —
   the claim fixed n≥60 in advance and 40 is not 60. Recorded so the read is
   known to be readable, not to pre-empt it.
-- **Verdict** _pending_
+- **Verdict** INCONCLUSIVE, falsification branch (c) — **EXTENDED one week,
+  extended read date 2026-09-20.** Not a closed word, and not rounded up.
+  Read 2026-09-16 on the fixed window 2026-09-06 13:42Z → 2026-09-13 13:42Z
+  (the 09-13 run stalled before writing; the window was not widened), solves
+  counted up to the window close — what the read would have seen on the day.
+  - **105 as opener: 59.6%** (56 of **94**; n ≥ 60 holds). Below the 60% line
+    by less than one person. Counting solves that landed after the close it
+    is 60.6% (57/94) — the extra one is a guest who started 09-12 11:38Z and
+    first solved 09-13 21:53Z, eight hours after the read time. That does not
+    count: the rule was fixed in advance and one late solve on n=94 is not
+    information either way. Against the 28-day baseline for the seat (99,
+    47.1%) it is +12.5 points; against 99 in the seat the week before the
+    deploy (**63.4%**, 52/82) it is −3.8 — the ±15-point mix swing the 09-06
+    amendment warned about, sitting on both sides of the same number.
+  - **Mechanism: passed.** First-contact share since the deploy: 99 **0.5%**
+    (1 of 184; 53.9% the week before, 82/152), 105 **51.1%** (94/184; 1.3%
+    the week before). The swap reached the front door completely.
+  - **Control 91: 72.7%** (8/11) against its 71% baseline — inside ±10, so
+    by the rule this is not a mix week. n=11 cannot carry that test well; the
+    week before read 81.3% (13/16), −8.6 against that, still inside the band.
+  - **Overall last-7: 50.0%** (92/184). It clears the 48% target and says
+    nothing by doing so: the week before the deploy read **58.6%** (89/152 on
+    today's recount; 57.2%, 83/145, in the 09-11 note — late-arriving rows),
+    so the site-wide rate fell 8.6 points while the seat rose against its
+    baseline. The 48% bar was set against a one-week 37% that had already
+    receded by deploy day; it was below the prior week's actual and was too
+    weak to be informative. Recorded as passed-but-uninformative, not as half
+    a HIT. Part of the fall is the tail: openers other than 105 and 91 went
+    from 44.4% (24/54) to 35.4% (28/79) as deep-linked first contacts
+    (question and company pages, 09-13) grew.
+  - **Extension, stated before the data:** read on **2026-09-20** on the
+    cumulative window 2026-09-06 13:42Z → 2026-09-20 13:42Z, solves counted to
+    the close, second week also reported alone; same thresholds (a)/(b)/(c),
+    same 91 control, no other change to the track. Known in that week:
+    `intentRouting` flips 2026-09-16 (post-first-solve only, cannot reach an
+    opener); the homepage (`personalized_v1`, 09-13) shifts the mix, which is
+    what the control is for. `onboardingIntake` does NOT flip while this read
+    is open — its task waits on this entry.
 
 ---
 
