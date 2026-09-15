@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
+import fs from 'node:fs';
+import path from 'node:path';
 import { audit, resolvePath } from '../scripts/seo-audit.mjs';
+
+const ROOT = path.resolve(import.meta.dirname, '..');
 
 // The technical SEO guard over the built site (public/). Written 2026-09-13
 // after the Search Console page-indexing report listed eight 404s that were
@@ -40,5 +44,11 @@ describe('technical SEO over public/', () => {
     expect(resolvePath('/privacy/')).toBe('ok');
     expect(resolvePath('/privacy.html')).toBe('redirect');
     expect(resolvePath('/definitely-not-a-page/')).toBe('missing');
+  });
+
+  it('recovers nested app.html URLs after cleanUrls normalizes them', () => {
+    const vercel = JSON.parse(fs.readFileSync(path.join(ROOT, 'vercel.json'), 'utf8'));
+    const redirect = vercel.redirects.find(r => r.source === '/:slug/app/');
+    expect(redirect).toMatchObject({ destination: '/app/', permanent: true });
   });
 });
