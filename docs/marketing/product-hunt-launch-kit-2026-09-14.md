@@ -129,26 +129,38 @@ site's number.
 
 ## 3. Gallery
 
-First image is the feed thumbnail and does more work than the other five
-combined. Spec: **1270×760**, PNG, no device mockup frames, text legible at
-400px wide.
+**Built 2026-09-15 — upload these, in this order.** Every frame is the live
+bundle rendering a seeded learner, cropped, never retouched; no dark flag is
+switched on. Files in `docs/marketing/product-hunt/`; each has a `@2x` twin
+(2540×1520) — upload the `@2x` if PH accepts it, it is sharper on retina.
 
-| # | Shows | Why it is in this position |
+| # | File | What it shows |
 |---|---|---|
-| 1 | The Skillmap radar beside the "your next question" card | The differentiator in one frame. Someone scrolling the feed must understand the product without reading the tagline. |
-| 2 | A wrong query with the diagnosis sentence under it | The thing no competitor screenshot has. |
-| 3 | A company set — Capital One — with the timed mock card | Proof of the interview-specific claim, and it is the set that produced real payers. |
-| 4 | The readiness test result page | The free, no-signup door; it converts on its own. |
-| 5 | The pricing block, unedited | Showing the price honestly on the launch page pre-empts the "is this a freemium trap" comment. |
-| 6 *(optional)* | 30-second screen recording: solve → wrong → diagnosis → Skillmap moves | Only if it is genuinely smooth. A bad video costs more than no video. |
+| 1 | `gallery-1-skillmap.png` | **Thumbnail.** The Skillmap panel (overall 55, Window Functions 19 weakest) above "Your plan", whose first item today is a window-function question. The differentiator in one frame. |
+| 2 | `gallery-2-diagnosis.png` | A LEFT JOIN written as JOIN, and the panel: "expected 46, got 40", the INNER→LEFT hint, the six missing rows. |
+| 3 | `gallery-3-company-mock.png` | The Capital One mock mid-sitting (Q1/14, the 69:53 clock) beside the first three cards of the Capital One set. |
+| 4 | `gallery-4-readiness.png` | The free readiness test result for Capital One: 73%, the per-skill bars, Window Functions named weakest. |
+| 5 | `gallery-5-pricing.png` | The homepage pricing block as it is: three outcomes, $99/yr and $29/mo. |
+| — | `logo-240.png` | The purple bolt mark, no wordmark. |
 
-Logo/thumbnail asset: **240×240**, the purple mark on the dark ground, no
-wordmark (it renders at 40px in the feed).
+Rebuild after any UI change: `npm run dev`, then `npm run ph:gallery`
+(`scripts/ph-gallery/capture.mjs` → `compose.mjs`). The capture is hermetic —
+every Supabase call is answered in-page, so the seeded account never becomes
+a row.
 
-Existing assets to start from: `scripts/coach-mock-snippet.html` is the
-Skillmap + next-step mock already used on the landing pages, and
-`scripts/build-og.sh` builds the OG images. Both are the right visual
-language; do not invent a new one for PH.
+Two things to know before launch day:
+
+- **The seeded learner is a demo account, not a customer.** `maya_k`, 185
+  solves, is generated from the live bank. Its name never appears in a crop; do not
+  describe the account as a user in the comments.
+- **The homepage shows two plans; the app sells three.** Since
+  `quarterlyPlan` went on (2026-09-14) the in-app modal also offers $49 per
+  quarter; the homepage still lists only annual and monthly, and frame 5
+  shows the homepage. Deliberate for now — the homepage price story is under
+  a read on 2026-10-03 and changing it would confound that read — but a PH
+  visitor who clicks through will see a third price. The maker comment's
+  "$29/mo or $99/yr" line is true of the homepage and incomplete for the app;
+  add "or $49 a quarter" to it if you launch before 10-03.
 
 ---
 
