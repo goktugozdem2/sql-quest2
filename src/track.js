@@ -86,7 +86,11 @@
       // 2026-08-03 landing read — one unique aid per view, all tz
       // America/Los_Angeles, ~28% of every landing number. Same for
       // Chrome-Lighthouse and the AdsBot variants.
-      return /bot|crawl|spider|slurp|bingpreview|headless|lighthouse|pagespeed|gtmetrix|ahrefs|semrush|inspectiontool|google-read|adsbot|apis-google|mediapartners/i
+      // 2026-09-16: the list grew by the fetchers that carry no 'bot' either —
+      // link unfurlers, AI assistants fetching for a user, and plain HTTP
+      // libraries. None of them caused the 09-13 burst (see landing_engaged
+      // below); they are here so the next one does not start from zero.
+      return /bot|crawl|spider|slurp|bingpreview|headless|lighthouse|pagespeed|gtmetrix|ahrefs|semrush|inspectiontool|google-read|adsbot|apis-google|mediapartners|facebookexternalhit|embedly|chatgpt-user|perplexity-user|claude-user|python|curl\/|wget|go-http|axios|node-fetch|java\//i
         .test(navigator.userAgent || '');
     } catch (_) { return false; }
   }
@@ -367,7 +371,41 @@
 
   persistLandingSrc();
   applyCtaTest();
-  try { send('landing_view', { returning: !!localStorage.getItem('sqlquest_user') }); } catch (_) {}
+  // `ua` rides on landing_view only, capped. The 2026-09-13 burst — 313
+  // question-page views in 13 minutes, one aid each, tz America/Los_Angeles,
+  // no referrer, nothing after — passed isBot() and could not be named,
+  // because no row said what fetched the page. Next time it can.
+  try {
+    send('landing_view', {
+      returning: !!localStorage.getItem('sqlquest_user'),
+      ua: (navigator.userAgent || '').slice(0, 160) || null,
+      vis: (document.visibilityState || null),
+    });
+  } catch (_) {}
+
+  // landing_engaged: the first real input on the page — pointer, key, touch,
+  // scroll or wheel — once per load. A renderer executes the script and so
+  // writes landing_view; it does not move a mouse. From 2026-09-16 the
+  // landing denominator is people with landing_engaged (or any later app
+  // event), not landing_view: docs/agent/metrics.md, `landing_people`.
+  // landing_view itself is unchanged, so the series before that date still
+  // reads the same way.
+  (function () {
+    var t0 = Date.now();
+    var done = false;
+    var kinds = ['pointerdown', 'mousemove', 'keydown', 'touchstart', 'scroll', 'wheel'];
+    function engaged(e) {
+      if (done) return;
+      done = true;
+      for (var k = 0; k < kinds.length; k++) {
+        try { document.removeEventListener(kinds[k], engaged, true); } catch (_) {}
+      }
+      send('landing_engaged', { via: (e && e.type) || null, msToEngage: Date.now() - t0 });
+    }
+    for (var i = 0; i < kinds.length; i++) {
+      try { document.addEventListener(kinds[i], engaged, { capture: true, passive: true }); } catch (_) {}
+    }
+  })();
 
   document.addEventListener('click', function (e) {
     try {

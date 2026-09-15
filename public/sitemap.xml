@@ -183,7 +183,7 @@
   <!-- Weekly Challenge — viral loop, rotates every Monday -->
   <url>
     <loc>https://sqlquest.app/weekly/</loc>
-    <lastmod>2026-09-14</lastmod>
+    <lastmod>2026-09-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.95</priority>
   </url>

@@ -57,6 +57,7 @@ function runTracker({
   userAgent = REAL_UA,
 } = {}) {
   const calls = [];
+  const listeners = {};
   const ctx = {
     localStorage: {
       getItem: k => (store.has(k) ? store.get(k) : null),
@@ -64,7 +65,12 @@ function runTracker({
       removeItem: k => { store.delete(k); },
     },
     location: { hostname, pathname, search, href: `https://${hostname}${pathname}${search}` },
-    document: { referrer, addEventListener() {} },
+    document: {
+      referrer,
+      visibilityState: 'visible',
+      addEventListener(type, fn) { (listeners[type] = listeners[type] || []).push(fn); },
+      removeEventListener(type, fn) { listeners[type] = (listeners[type] || []).filter(f => f !== fn); },
+    },
     navigator: { userAgent, webdriver: false },
     fetch: (url, opts) => {
       calls.push({ url, body: JSON.parse(opts.body), headers: opts.headers });
@@ -74,7 +80,8 @@ function runTracker({
   ctx.window = ctx;
   vm.createContext(ctx);
   vm.runInContext(trackSource, ctx, { filename: 'track.js' });
-  return { store, calls, ctx };
+  const fire = type => (listeners[type] || []).slice().forEach(fn => fn({ type, target: {} }));
+  return { store, calls, ctx, fire };
 }
 
 const landingViewOf = calls => calls.find(c => c.body.event === 'landing_view');
@@ -188,6 +195,77 @@ describe('src/track.js — landing_view row', () => {
   it('sends nothing for a crawler', () => {
     const { calls } = runTracker({ userAgent: 'Mozilla/5.0 (compatible; Google-InspectionTool/1.0)' });
     expect(calls).toHaveLength(0);
+  });
+
+  it('sends nothing for the fetchers that carry no "bot" in their name (2026-09-16)', () => {
+    for (const ua of [
+      'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)',
+      'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; ChatGPT-User/1.0; +https://openai.com/bot)',
+      'Mozilla/5.0 (compatible; Perplexity-User/1.0)',
+      'python-requests/2.32.3',
+      'curl/8.7.1',
+      'Go-http-client/2.0',
+      'node-fetch/1.0 (+https://github.com/bitinn/node-fetch)',
+    ]) {
+      expect(runTracker({ userAgent: ua }).calls, ua).toHaveLength(0);
+    }
+  });
+
+  it('a real browser is not caught by the wider list', () => {
+    for (const ua of [
+      REAL_UA,
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1',
+      'Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0 Mobile Safari/537.36',
+    ]) {
+      expect(landingViewOf(runTracker({ userAgent: ua }).calls), ua).toBeTruthy();
+    }
+  });
+
+  it('landing_view names what fetched the page — ua capped at 160 chars, plus visibility', () => {
+    const long = REAL_UA + ' ' + 'x'.repeat(400);
+    const meta = JSON.parse(landingViewOf(runTracker({ userAgent: long }).calls).body.metadata);
+    expect(meta.ua).toBe(long.slice(0, 160));
+    expect(meta.vis).toBe('visible');
+  });
+});
+
+describe('src/track.js — landing_engaged (the human denominator, 2026-09-16)', () => {
+  // The 09-13 burst wrote 313 landing_view rows and not one input event.
+  // landing_engaged is what separates a person from a renderer.
+  const engagedOf = calls => calls.filter(c => c.body.event === 'landing_engaged');
+
+  it('is not sent on load — a page that is only rendered stays unengaged', () => {
+    expect(engagedOf(runTracker().calls)).toHaveLength(0);
+  });
+
+  it('is sent on the first real input, once, whatever comes after', () => {
+    const { calls, fire } = runTracker();
+    fire('scroll');
+    fire('pointerdown');
+    fire('keydown');
+    const rows = engagedOf(calls);
+    expect(rows).toHaveLength(1);
+    const meta = JSON.parse(rows[0].body.metadata);
+    expect(meta.via).toBe('scroll');
+    expect(typeof meta.msToEngage).toBe('number');
+    expect(meta.aid).toBe(JSON.parse(landingViewOf(calls).body.metadata).aid);
+  });
+
+  it('listens for every kind of input a person makes — touch and keyboard included', () => {
+    for (const kind of ['pointerdown', 'mousemove', 'keydown', 'touchstart', 'scroll', 'wheel']) {
+      const { calls, fire } = runTracker();
+      fire(kind);
+      expect(engagedOf(calls), kind).toHaveLength(1);
+    }
+  });
+
+  it('a crawler that somehow scrolls still sends nothing, and localhost stays muted', () => {
+    const bot = runTracker({ userAgent: 'python-requests/2.32.3' });
+    bot.fire('scroll');
+    expect(bot.calls).toHaveLength(0);
+    const local = runTracker({ hostname: 'localhost' });
+    local.fire('scroll');
+    expect(local.calls).toHaveLength(0);
   });
 });
 

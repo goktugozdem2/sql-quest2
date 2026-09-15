@@ -66,6 +66,19 @@ And two standing traps:
   "landing traffic jumped" read across 09-06 is the fix, not growth. The
   hub, company and blog pages were tracked throughout. Split by `page`
   (`home`, `after-the-sql-course`, …) to compare like with like.
+- **A renderer wrote 313 "people" on 2026-09-13.** Between 02:07 and 02:20
+  UTC — the night `/questions/` shipped — 313 `landing_view` rows landed on
+  question pages, one `aid` each, all tz `America/Los_Angeles`, no referrer,
+  and 3 of them did anything afterwards. It passed `isBot()` (no "bot" in
+  the user agent, not `webdriver`), so the rows are indistinguishable from
+  a person by the tracker, and no row recorded a user agent. It doubled the
+  week's headline landing count (1,046 raw, 631 without it, 2026-09-16 read).
+  For any window that touches 09-13, drop browsers whose landing rows are
+  all no-referrer + LA tz and who have no other event — that removed 408 in
+  the week to 09-15, 46 and 15 in the two before. **From 2026-09-16**
+  `track.js` records `ua` and `vis` on `landing_view` and sends
+  `landing_engaged` on the first real input, and the denominator is
+  `landing_people` below — not `landing_view`.
 
 ---
 
@@ -851,6 +864,32 @@ GROUP BY 1 ORDER BY people DESC;
 - **`home` is a mix**, not a page: true direct traffic plus AI-assistant
   referrals, because AI apps strip referrers (payer #2 was sent by Gemini and
   reads as `home`). Do not attribute its movement to the homepage alone.
+
+## `landing_people`
+
+**The landing denominator from 2026-09-16.** Browsers with a
+`landing_engaged` row (first pointer, key, touch, scroll or wheel on the
+page, once per load) or any non-landing event in the window. `landing_view`
+alone counts every renderer that executes JavaScript without calling
+itself a bot; see the 2026-09-13 trap under Shared filters.
+
+```sql
+SELECT count(DISTINCT ((metadata #>> '{}')::jsonb)->>'aid')
+FROM pro_events
+WHERE created_at >= :since AND created_at < :until
+  AND (event = 'landing_engaged' OR reason <> 'landing')
+  AND <shared filters>
+```
+
+- Read it only for windows starting on or after 2026-09-16. Before that
+  date there is no `landing_engaged`; use `landing_view` minus the
+  renderer signature and say so.
+- Expect `landing_people` < `landing_view` even with no bots: a person who
+  lands and leaves without scrolling or moving the pointer is not counted.
+  On a phone that is rare; on a desktop reader with a tall screen it is
+  not. Do not read the ratio of the two as a bot share.
+- When a new unengaged burst appears, group its `landing_view` rows by
+  `ua` and add the fetcher to `isBot()` in `src/track.js` with a test.
 
 ## `landing_click_through`
 
