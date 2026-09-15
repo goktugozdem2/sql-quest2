@@ -2124,7 +2124,9 @@ of the verifier and must never be rounded to `FLAT`.
 ### intent routing: a handle on the interview door
 - **Claimed** 2026-09-16, written and baselined before the flip · flag
   `features.intentRouting` flipped 2026-09-16 (the 09-13 task stalled before
-  writing anything) · flipped at _recorded after the push_
+  writing anything) · **flipped at 2026-09-15T22:18Z** (b33df19 pushed;
+  01:18 on 09-16 Istanbul time). The read window starts there, never at
+  `min(created_at)`.
 - **Change** the flag, built and shipped dark 2026-09-12, turns on three
   things already in the code: (1) `applyIntentRouting` — an interview /
   job_ready answer to the post-first-solve intent modal sets the Practice path
@@ -2153,8 +2155,9 @@ of the verifier and must never be rounded to `FLAT`.
   `content_lock_reached` people with `surface='interview'`. The lock count is
   expected to rise: that is the surface being reached, not a paywall change —
   seven of the eight mocks were already Pro-locked, and the wall is untouched.
-- **Baseline** 30 days ending at the flip (window 2026-08-16 22:30Z →
-  2026-09-15 22:30Z, measured minutes before the flip; internal accounts
+- **Baseline** 30 days ending at the flip (queried at ~22:15Z on 2026-09-15,
+  three minutes before the 22:18Z push, over the window 2026-08-16 22:30Z →
+  2026-09-15 22:30Z, so in effect 30 days to the flip; internal accounts
   excluded; people by `aid`, latest `intent_captured` per person):
   - `reach_6_rate`, **routed arm** (interview + job_ready): **49.4%** (87 of
     176) — interview 46.6% (41/88), job_ready 52.3% (46/88).
@@ -2192,7 +2195,8 @@ of the verifier and must never be rounded to `FLAT`.
   flip time (the design doc's own line: under 60 means routing did not solve
   discovery and the door is somewhere else) **AND at least 25 of them start a
   mock**.
-- **Read on** **2026-10-16** — flip plus 30 days. It was 2026-10-13 when the
+- **Read on** **2026-10-16** — flip plus 30 days (window 2026-09-15T22:18Z →
+  2026-10-15T22:18Z). It was 2026-10-13 when the
   flip was planned for 09-13; the scheduled run that day measured baselines
   and stalled before writing anything, so the flag flipped three days late
   and the 30-day window moves with it.
