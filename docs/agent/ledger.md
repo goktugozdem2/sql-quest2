@@ -1080,10 +1080,13 @@ of the verifier and must never be rounded to `FLAT`.
   after the intake and its activation is per opener, so it cannot move for
   a reason that lives here; `first_contact_share` can, if fewer people reach
   any opener — that is what `first_run_reach` is for.
-- **Confounds** flips three days after `intentRouting` (09-13), and both
-  feed the Interview tab: separated by `intent_routed.source` ('ask' /
-  'intake') and `interview_tab_viewed.reason`; the 10-13 read must split by
-  source. The 09-29 cold-start read is untouched by construction: a
+- **Confounds** flips after `intentRouting` — which went on at
+  2026-09-15T22:18Z, not 09-13 as first written here (that task stalled) —
+  and both feed the Interview tab: separated by `intent_routed.source`
+  ('ask' / 'intake') and `interview_tab_viewed.reason`; the intentRouting
+  read (now 2026-10-16) must split by source. The intake itself waits for
+  the 105 read, extended to 2026-09-20; it is scheduled for 2026-09-21
+  14:00 Istanbul. The 09-29 cold-start read is untouched by construction: a
   deep-linked challenge opener never sees the start screen, and the
   cold-start dialog is unchanged. Guest continuity (09-26): an intake record
   rides the guest blob into the account like any other field.
