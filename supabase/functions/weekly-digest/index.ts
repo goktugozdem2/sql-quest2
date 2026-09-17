@@ -82,9 +82,12 @@ const footer = (unsub: string) => `
   </p>`
 
 // Send via Resend + best-effort measurement log into email_events. Never throws.
+// `meta` (this function only, 2026-09-17): extra keys on the email_events
+// row — the digest stamps `goalAsked` so the goal-capture read can split
+// sends by whether the question was in the email.
 async function sendAndLog(supabase: any, apiKey: string, args: {
   to: string; username: string; template: string; subject: string;
-  html: string; unsub: string; replyTo?: string;
+  html: string; unsub: string; replyTo?: string; meta?: Record<string, unknown>;
 }): Promise<boolean> {
   let ok = false, resendId: string | null = null, status = 0
   try {
@@ -108,7 +111,7 @@ async function sendAndLog(supabase: any, apiKey: string, args: {
     await supabase.from('email_events').insert({
       username: args.username, email: args.to, template: args.template,
       event: ok ? 'sent' : 'send_failed', resend_id: resendId,
-      meta: ok ? {} : { status },
+      meta: ok ? { ...(args.meta || {}) } : { status, ...(args.meta || {}) },
     })
   } catch (_) { /* email_events may not exist yet — measurement is best-effort */ }
   return ok
@@ -123,6 +126,47 @@ const formatTime = (seconds: number): string => {
   return `${mins}:${String(secs).padStart(2, '0')}`
 }
 
+// ── the goal question (founder's directive, 2026-09-17: ask every person
+// their goal; docs/plans/goal-capture-2026-09-17.md) ──────────────────────
+//
+// Does this account have a goal on record? The raw intent the post-solve ask
+// collects lives ONLY in localStorage (`sqlquest_user_intent`) — it is never
+// written to users.data — so the server reads the three places a goal does
+// reach the row: the intake record's `goal` (the same question, asked at the
+// door), a Coach goal (`coachState.goalId`), and a prep target (a company or
+// a date). `intent` / `userIntent` are read too, in case a later client
+// starts persisting the ask; today they are always absent. Someone who
+// answered "just exploring" is indistinguishable from someone never asked
+// and is asked again here — one link, no form, so the cost is a line.
+function goalOnRecord(userData: any): boolean {
+  const d = userData || {}
+  const intent = d.intent || d.userIntent
+  if (intent === 'interview' || intent === 'job_ready' || intent === 'learning') return true
+  if (d.intake && typeof d.intake === 'object' && d.intake.goal) return true
+  if (d.coachState && typeof d.coachState === 'object' && d.coachState.goalId) return true
+  const t = d.prepTarget && typeof d.prepTarget === 'object' ? d.prepTarget : null
+  if (t && (t.company || t.date)) return true
+  return false
+}
+
+// The block that opens the digest for a person with no goal on record. It
+// sits ABOVE the report. Three links, each `/app/?src=digest_goal&goal=…`,
+// which the app records on arrival when no goal is recorded yet. Written in
+// the founder's voice inside the digest — no second sign-off, no Pro, no
+// price; the ask is one click.
+function goalAskBlock(): string {
+  const link = (goal: string, label: string) =>
+    `<a href="${utm(`/app/?src=digest_goal&goal=${goal}`, 'digest_goal')}" style="color: #a78bfa; font-weight: 600; text-decoration: none;">${label}</a>`
+  return `
+      <div style="background: #1e293b; border-left: 3px solid #8b5cf6; border-radius: 8px; padding: 14px 16px; margin: 20px 0 4px;">
+        <p style="margin: 0 0 6px; color: #f1f5f9; font-weight: 700; font-size: 15px;">One question from me: what are you preparing for?</p>
+        <p style="margin: 0 0 10px; color: #94a3b8; font-size: 13px; line-height: 1.6;">I build SQL Quest, and I would rather ask than guess from the data. You have never told us what you practise for, and the answer changes what the Coach puts in front of you next week. One click, nothing to fill in:</p>
+        <p style="margin: 0; font-size: 14px; line-height: 2;">
+          ${link('interview', 'An interview')} &nbsp;·&nbsp; ${link('job_ready', 'Getting job-ready')} &nbsp;·&nbsp; ${link('learning', 'SQL in general')}
+        </p>
+      </div>`
+}
+
 // Build the HTML body for a single user's digest. Pure — easy to iterate on copy.
 function buildDigestHtml({
   username,
@@ -131,6 +175,7 @@ function buildDigestHtml({
   dailyStreak,
   skillMastery = null,
   previousSnapshot = null,
+  askGoal = false,
 }: {
   username: string
   report: any
@@ -138,6 +183,7 @@ function buildDigestHtml({
   dailyStreak: number
   skillMastery?: any
   previousSnapshot?: any
+  askGoal?: boolean
 }): { subject: string; html: string } {
   const summary = report.summary || {}
   const pSum = previousReport?.summary || {}
@@ -219,6 +265,7 @@ function buildDigestHtml({
         <p style="margin: 0; color: #a78bfa; font-weight: 700; font-size: 16px;">SQL Quest</p>
         <p style="margin: 2px 0 0; color: #64748b; font-size: 13px;">Week of ${report.weekStart} — ${report.weekEnd}</p>
       </div>
+      ${askGoal ? goalAskBlock() : ''}
 
       <h1 style="color: #f1f5f9; font-size: 28px; margin: 24px 0 8px; line-height: 1.25;">${hero}</h1>
       ${username ? `<p style="color: #94a3b8; font-size: 14px; margin: 0 0 24px;">Hi @${username}, here's your week at SQL Quest.</p>` : ''}
@@ -298,7 +345,7 @@ Deno.serve(async (req) => {
     // Dry-run: ?dry=1 computes the would-send list without sending or
     // stamping — used to test targeting against live data safely.
     const dryRun = new URL(req.url).searchParams.get('dry') === '1'
-    const wouldSend: Array<{ username: string; weekStart: string }> = []
+    const wouldSend: Array<{ username: string; weekStart: string; goalAsked: boolean }> = []
 
     for (const user of users || []) {
       if (!user.email) {
@@ -353,8 +400,11 @@ Deno.serve(async (req) => {
         continue
       }
 
+      // The goal question opens the digest for anyone with no goal on record.
+      const askGoal = !goalOnRecord(userData)
+
       if (dryRun) {
-        wouldSend.push({ username: user.username, weekStart: latest.weekStart })
+        wouldSend.push({ username: user.username, weekStart: latest.weekStart, goalAsked: askGoal })
         continue
       }
 
@@ -366,12 +416,14 @@ Deno.serve(async (req) => {
         // P2: mastery change + one recommendation from the user_skill rows.
         skillMastery: userData.skillMastery || null,
         previousSnapshot: previous?.skillLevelsSnapshot || null,
+        askGoal,
       })
 
       const unsubToken = await ensureUnsubToken(supabase, user.username, userData)
       const ok = await sendAndLog(supabase, RESEND_API_KEY, {
         to: user.email, username: user.username, template: 'weekly_digest',
         subject, html, unsub: unsubLink(unsubToken),
+        meta: { goalAsked: askGoal },
       })
       if (ok) {
         // Mark as sent so we don't re-send this week.
