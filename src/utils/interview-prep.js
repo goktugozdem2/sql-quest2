@@ -179,6 +179,11 @@ export const READINESS_WEIGHTS = Object.freeze({ coverage: 0.45, skills: 0.30, m
  * next 21 days and says so, and `beyondPlanDays` carries the remainder.
  */
 export const MAX_PLAN_DAYS = 21;
+// The frame (docs/plans/interview-first-2026-09-17.md): "today's three". A
+// tagged company can carry 95 questions; spread over ten days that was ten a
+// day, which is a backlog, not a plan. Work past the cap is reported as
+// `totals.deferred`, never silently dropped. The mock rides on top of the cap.
+export const MAX_PLAN_ITEMS_PER_DAY = 3;
 
 /** Weak demanded skills that earn drills, and how many challenges each gets. */
 export const PLAN_DRILL_SKILLS = 3;
@@ -906,16 +911,25 @@ export function planToDate({ target, readiness, skillLevels, solvedIds, bank, da
     ? { kind: 'mock', interviewId: target.mockId, challengeId: null, title: null, difficulty: null, skill: null }
     : null;
 
-  const work = [...targetItems, ...drillItems];
-  if (work.length === 0 && !mockItem) {
+  const allWork = [...targetItems, ...drillItems];
+  if (allWork.length === 0 && !mockItem) {
     return { ...empty(PREP_PLAN_STATUS.NOTHING_LEFT), daysRemaining: days };
   }
 
-  // ── spread it ──
+  // ── cap it, then spread it ──
   // Never pad a calendar: with 13 items and 90 days the plan is 13 days long
   // and `beyondPlanDays` carries the other 77, rather than drawing a month of
-  // empty boxes to reach the date.
+  // empty boxes to reach the date. And never overload one: at most
+  // MAX_PLAN_ITEMS_PER_DAY a day; what does not fit is `deferred`. When the
+  // cap cuts every drill off, the last slot goes to the first drill — a plan
+  // with no work on the weakest skill is not the frame's plan.
   const windowDays = Math.max(1, Math.min(isToday ? 1 : days, MAX_PLAN_DAYS));
+  const capacity = windowDays * MAX_PLAN_ITEMS_PER_DAY;
+  let work = allWork.slice(0, capacity);
+  if (drillItems.length > 0 && work.length === capacity && !work.some(i => i.kind === 'drill')) {
+    work = [...work.slice(0, capacity - 1), drillItems[0]];
+  }
+  const deferred = allWork.length - work.length;
   const planDays = Math.max(1, Math.min(windowDays, work.length || 1));
   const beyondPlanDays = Math.max(0, days - planDays);
   // Spread the remainder over the FIRST days rather than slicing by a fixed
@@ -955,6 +969,7 @@ export function planToDate({ target, readiness, skillLevels, solvedIds, bank, da
       targetRemaining: targetItems.length,
       drills: drillItems.length,
       mock: mockItem ? 1 : 0,
+      deferred,
     },
   };
 }

@@ -55,6 +55,7 @@ import {
   MIN_TARGET_CHALLENGES,
   MIN_EVIDENCE_SOLVES,
   MAX_PLAN_DAYS,
+  MAX_PLAN_ITEMS_PER_DAY,
   READINESS_WEIGHTS,
   PREP_PLAN_STATUS,
 } from '../src/utils/interview-prep.js';
@@ -776,7 +777,8 @@ describe('planToDate — the edges, by name', () => {
     ]);
     expect(r.today).toEqual(r.days[0].items);
     const placed = r.days.flatMap(d => d.items).filter(i => i.kind !== 'mock');
-    expect(placed).toHaveLength(r.totals.targetRemaining + r.totals.drills);
+    // Everything not deferred by the per-day cap is on the calendar.
+    expect(placed).toHaveLength(r.totals.targetRemaining + r.totals.drills - r.totals.deferred);
     // The mock is the dress rehearsal: last day, last item.
     const last = r.days[r.days.length - 1].items;
     expect(last[last.length - 1].kind).toBe('mock');
@@ -787,6 +789,29 @@ describe('planToDate — the edges, by name', () => {
     expect(r.planDays).toBeLessThanOrEqual(MAX_PLAN_DAYS);
     expect(r.beyondPlanDays).toBe(90 - r.planDays);
     expect(r.days.every(d => d.items.length > 0), 'no empty days in the plan').toBe(true);
+  });
+
+  it('never plans more than MAX_PLAN_ITEMS_PER_DAY a day — the rest is deferred, and said so (2026-09-17)', () => {
+    // A tagged company with 95 questions, ten days out: the frame says
+    // "today's three", not ten a day.
+    const many = rows(95, 'big_set', 6000);
+    const t2 = { company: 'Bigco', kind: 'tagged', mockId: null, dataset: 'big_set', challengeIds: many.map(c => c.id) };
+    const r = planToDate({ target: t2, readiness: null, solvedIds: [], bank: many, daysRemaining: 10, now: NOW });
+    expect(r.days.every(d => d.items.filter(i => i.kind !== 'mock').length <= MAX_PLAN_ITEMS_PER_DAY)).toBe(true);
+    expect(r.today).toHaveLength(MAX_PLAN_ITEMS_PER_DAY);
+    expect(r.totals.deferred).toBe(95 - 10 * MAX_PLAN_ITEMS_PER_DAY);
+    expect(r.totals.targetRemaining).toBe(95); // the truth about the set is still reported
+  });
+
+  it('the cap never deletes the weakest-skill drill: the last slot is a drill when nothing else would be', () => {
+    const r = plan(2); // two days, six slots, a target set larger than that plus drills
+    const kinds = r.days.flatMap(d => d.items.map(i => i.kind));
+    expect(r.totals.drills).toBeGreaterThan(0);
+    expect(kinds).toContain('drill');
+  });
+
+  it('a small plan is untouched by the cap: nothing deferred', () => {
+    expect(plan(30).totals.deferred).toBe(0);
   });
 
   it('caps at MAX_PLAN_DAYS when there is more work than that many days', () => {
