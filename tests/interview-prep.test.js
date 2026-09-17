@@ -1020,6 +1020,36 @@ describe('source guard: the score is never presented as a prediction', () => {
     expect(hits, `prediction word inside InterviewPrepCard: ${hits.join(', ')}`).toEqual([]);
   });
 
+  // 2026-09-17: the in-app goal check shows a number against a company's set
+  // ("On the skills the Snowflake set asks for, you are at 43/100") — the same
+  // honesty bar, on the same guard.
+  const i18nGoalMeasureBlocks = () => {
+    const blocks = [];
+    const re = /\n {4}goalMeasure: \{\n([\s\S]*?)\n {4}\},/g;
+    let m;
+    while ((m = re.exec(i18nSource))) blocks.push(m[1]);
+    return blocks;
+  };
+  const goalMeasureBody = () => {
+    const start = appSource.indexOf('const renderGoalMeasure = ');
+    expect(start, 'renderGoalMeasure not found in app.jsx').toBeGreaterThan(-1);
+    const rest = appSource.slice(start);
+    return rest.slice(0, rest.indexOf('\n  };\n'));
+  };
+
+  it('the goal check names no prediction word in either language, and says what the number is', () => {
+    const blocks = i18nGoalMeasureBlocks();
+    expect(blocks.length, 'expected an EN and a TR goalMeasure namespace').toBe(2);
+    for (const block of blocks) {
+      const hits = predictionHits(stripCommentLines(block));
+      expect(hits, `prediction word in goalMeasure copy: ${hits.join(', ')}`).toEqual([]);
+    }
+    expect(blocks[0]).toMatch(/disclaimerCompany:.*a weighting of our set, not a measurement of \{company\}\\'s interview/);
+    expect(blocks[1]).toMatch(/disclaimerCompany:.*\{company\} mülakatının ölçümü değil/);
+    const hits = predictionHits(stripCommentLines(goalMeasureBody()));
+    expect(hits, `prediction word inside renderGoalMeasure: ${hits.join(', ')}`).toEqual([]);
+  });
+
   it('says in BOTH languages what the number is measured from', () => {
     const [en, tr] = i18nPrepBlocks();
     // EN: our own material, our own challenges, our own mock — and "not an

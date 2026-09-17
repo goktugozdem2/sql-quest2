@@ -34,99 +34,17 @@ import path from 'node:path';
 import { loadBank, facts, SKILL_PAGE } from './build-company-pages.mjs';
 import { isFreePreview } from '../src/utils/challenge-order.js';
 import { SKILL_TO_RADAR, mapTopicToSkill } from '../src/utils/skill-calc.js';
+import { QUESTIONS, companySkillWeights } from '../src/data/readiness-questions.js';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const SITE = 'https://sqlquest.app';
 
-// Ten questions. Every answer was worked by hand against the SQL shown; the
-// explanations say why, so a wrong answer still teaches the point.
-export const QUESTIONS = [
-  {
-    skill: 'Joins',
-    q: 'customers has 3 rows (Ana, Ben, Cy). orders has 3 rows: two for Ana, one for Ben, none for Cy. What does this return?',
-    sql: 'SELECT c.name, COUNT(o.id) AS orders\nFROM customers c\nLEFT JOIN orders o ON o.customer_id = c.id\nGROUP BY c.name;',
-    options: ['3 rows — Cy has 0', '2 rows — Cy is missing', '3 rows — Cy has 1', '3 rows — Cy has NULL'],
-    answer: 0,
-    why: 'The LEFT JOIN keeps Cy with NULLs on the orders side, and COUNT(o.id) skips NULLs, so Cy counts 0. COUNT(*) would have said 1.',
-  },
-  {
-    skill: 'Joins',
-    q: 'orders: (1, amount 100), (2, amount 50). order_items: two items for order 1, one for order 2. What is the result?',
-    sql: 'SELECT SUM(o.amount)\nFROM orders o\nJOIN order_items i ON i.order_id = o.id;',
-    options: ['150', '250', '300', 'An error'],
-    answer: 1,
-    why: 'The join repeats order 1 once per item, so its 100 is summed twice: 100 + 100 + 50 = 250. This fan-out is the most common wrong answer in analytics rounds; aggregate before joining.',
-  },
-  {
-    skill: 'Window Functions',
-    q: 'You need each employee\'s salary rank within their department. Ties share a rank and the next rank has no gap. Which expression?',
-    sql: null,
-    options: ['DENSE_RANK() OVER (PARTITION BY dept ORDER BY salary DESC)', 'RANK() OVER (ORDER BY salary DESC)', 'ROW_NUMBER() OVER (PARTITION BY dept ORDER BY salary DESC)', 'DENSE_RANK() OVER (ORDER BY dept, salary DESC)'],
-    answer: 0,
-    why: 'PARTITION BY restarts the ranking per department; DENSE_RANK gives ties the same rank without gaps. RANK leaves gaps, ROW_NUMBER breaks ties arbitrarily, and the last option ranks across all departments.',
-  },
-  {
-    skill: 'Window Functions',
-    q: 'daily_sales(day, revenue). Which expression gives each day\'s change versus the previous day?',
-    sql: null,
-    options: ['revenue - LAG(revenue) OVER (ORDER BY day)', 'revenue - LEAD(revenue) OVER (ORDER BY day)', 'revenue - MAX(revenue) OVER (ORDER BY day)', 'SUM(revenue) OVER (ORDER BY day) - revenue'],
-    answer: 0,
-    why: 'LAG looks one row back in the window order. LEAD looks forward, the MAX version compares with the running maximum, and the last one is the running total of the days before. The first day comes back NULL — say so in an interview.',
-  },
-  {
-    skill: 'Aggregation & Grouping',
-    q: 'Which query returns departments with more than 5 employees?',
-    sql: null,
-    options: ['SELECT dept FROM employees GROUP BY dept HAVING COUNT(*) > 5', 'SELECT dept FROM employees WHERE COUNT(*) > 5 GROUP BY dept', 'SELECT dept, COUNT(*) > 5 FROM employees GROUP BY dept', 'SELECT dept FROM employees GROUP BY dept WHERE COUNT(*) > 5'],
-    answer: 0,
-    why: 'WHERE filters rows before grouping, so it cannot see COUNT(*). HAVING filters the groups after they are formed. The third option returns every department with a true/false column.',
-  },
-  {
-    skill: 'Aggregation & Grouping',
-    q: 'payments has three rows: (user 1, 10), (user 1, NULL), (user 2, 20). What does this return?',
-    sql: 'SELECT COUNT(*), COUNT(amount), AVG(amount)\nFROM payments;',
-    options: ['3, 3, 10', '3, 2, 10', '3, 2, 15', '2, 2, 15'],
-    answer: 2,
-    why: 'COUNT(*) counts rows (3); COUNT(amount) and AVG(amount) ignore the NULL, so the average is (10 + 20) / 2 = 15, not 30 / 3.',
-  },
-  {
-    skill: 'Subqueries & CTEs',
-    q: 'Find customers whose total spend is above the average customer\'s total spend. Which query is correct?',
-    sql: null,
-    options: [
-      'WITH t AS (SELECT customer_id, SUM(amount) AS total FROM orders GROUP BY customer_id) SELECT customer_id FROM t WHERE total > (SELECT AVG(total) FROM t)',
-      'SELECT customer_id FROM orders GROUP BY customer_id HAVING SUM(amount) > AVG(amount)',
-      'SELECT customer_id FROM orders WHERE SUM(amount) > AVG(amount) GROUP BY customer_id',
-      'SELECT customer_id, AVG(SUM(amount)) FROM orders GROUP BY customer_id',
-    ],
-    answer: 0,
-    why: 'The average has to be taken over per-customer totals, so the totals are computed first (the CTE) and averaged second. The HAVING version compares a customer\'s total with their own average order, and nesting aggregates is not allowed.',
-  },
-  {
-    skill: 'NULL Handling',
-    q: 'users.referrer_id holds 5, 7, NULL and NULL. What does this return?',
-    sql: 'SELECT COUNT(*) FROM users\nWHERE referrer_id <> 5;',
-    options: ['1', '2', '3', '4'],
-    answer: 0,
-    why: 'NULL <> 5 is unknown, not true, so both NULL rows are filtered out; only the 7 survives. To keep them: WHERE referrer_id <> 5 OR referrer_id IS NULL.',
-  },
-  {
-    skill: 'Date Functions',
-    q: 'orders.created_at is a TIMESTAMP. Which filter returns every order placed in March 2026, and nothing else?',
-    sql: null,
-    options: ["created_at >= '2026-03-01' AND created_at < '2026-04-01'", "created_at BETWEEN '2026-03-01' AND '2026-03-31'", "EXTRACT(MONTH FROM created_at) = 3", "created_at LIKE '2026-03%'"],
-    answer: 0,
-    why: 'The half-open range includes all of 31 March. BETWEEN stops at midnight on the 31st, the EXTRACT version matches March of every year, and LIKE on a timestamp depends on the dialect\'s text conversion.',
-  },
-  {
-    skill: 'Conditional Logic',
-    q: 'In PostgreSQL, which expression gives the share of orders with status \'refunded\' as a decimal?',
-    sql: null,
-    options: ["AVG(CASE WHEN status = 'refunded' THEN 1.0 ELSE 0 END)", "COUNT(CASE WHEN status = 'refunded' THEN 1 END) / COUNT(*)", "SUM(CASE WHEN status = 'refunded' THEN 1 ELSE 0 END) / COUNT(*)", "COUNT(status = 'refunded') / COUNT(*)"],
-    answer: 0,
-    why: 'Averaging a 1.0/0 flag is the share, as a decimal. The next two divide integers, which truncates to 0 in PostgreSQL, and COUNT(status = \'refunded\') counts every non-NULL comparison, true or false.',
-  },
-];
+// The ten questions live in src/data/readiness-questions.js since 2026-09-17,
+// shared with the in-app goal check (app.jsx, behind `goalMeasure`), which
+// scores them with the module's `scoreReadiness` — the page's own inline
+// formula below is unchanged, and the built page is byte-identical to what
+// it was before the move. Re-exported so tests keep importing from here.
+export { QUESTIONS };
 
 const SKILLS = [...new Set(QUESTIONS.map(q => q.skill))];
 
@@ -167,8 +85,9 @@ export function buildData() {
     const f = facts(bank, name);
     if (!f.n) continue;
     const pool = f.ordered;
-    const weights = {};
-    for (const s of SKILLS) weights[s] = (f.dist.find(d => d.skill === s) || { share: 0 }).share;
+    // The same share-of-tagged-set numbers `f.dist` carries, from the shared
+    // module so the app's check weights a company exactly as this page does.
+    const { weights } = companySkillWeights({ tags: bank.tags, challenges: all, name, skills: SKILLS });
     const next = {};
     for (const s of SKILLS) next[s] = nextFor(s, pool, all);
     companies[slug] = { name, n: f.n, weights, next };

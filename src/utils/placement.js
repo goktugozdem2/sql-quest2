@@ -187,6 +187,9 @@ export function placementFromReadiness(storage, now = Date.now()) {
 export const FIRST_RUN_PLACEMENT_SOURCES = Object.freeze([
   'first_run_placement_quiz',
   'first_run_readiness_test',
+  // 2026-09-17: the in-app goal check (the same ten questions, behind
+  // `goalMeasure`) is a placement the way the public test is.
+  'first_run_goal_measure',
   'first_run_manual_or_recommendation',
   'first_run_completed',
 ]);
@@ -203,6 +206,29 @@ export const COACH_SEED_FLOORS = Object.freeze({
 
 export function seedFloorsFor(levelId) {
   return { ...(COACH_SEED_FLOORS[levelId] || {}) };
+}
+
+// ── Floors from a ten-question readiness result (2026-09-17) ──────────────
+// The in-app goal check scores seven skills directly. Its floors are the
+// tier's floors (above) raised by what the person actually evidenced: a
+// skill at 100 on the check clears the goals' higher skipIf (70); a skill at
+// 50 or more — only possible on a two-question skill — clears the lower one
+// (60). A skill scored 0 gets no floor: the check says the intro lesson is
+// wanted. Floors only, never the radar; `applySeedFloors` in coach.js is the
+// one reader.
+export const READINESS_FLOOR_FULL = 70;
+export const READINESS_FLOOR_HALF = 60;
+
+export function seedFloorsFromReadiness(levelId, scores) {
+  const floors = seedFloorsFor(levelId);
+  const s = asObject(scores);
+  for (const [skill, raw] of Object.entries(s)) {
+    const n = Number(raw);
+    if (!Number.isFinite(n)) continue;
+    const floor = n >= 100 ? READINESS_FLOOR_FULL : n >= 50 ? READINESS_FLOOR_HALF : 0;
+    if (floor > (floors[skill] || 0)) floors[skill] = floor;
+  }
+  return floors;
 }
 
 /** The first-run placement this browser holds, or null. Reads the legacy onboarding record the quiz and the manual pick both write. */

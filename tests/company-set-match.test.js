@@ -80,7 +80,7 @@ describe('intake — company and level for an interview goal', () => {
   });
 
   it('the company answer writes prepTarget; level lands on userGoals', () => {
-    const at = app.indexOf('const completeIntake = (draft) =>');
+    const at = app.indexOf('const completeIntake = (draft, { quiet = false } = {}) =>');
     const block = app.slice(at, at + 5000);
     expect(block).toMatch(/record\.company \? \{ company: record\.company \} : \{\}/);
     expect(block).toMatch(/level: record\.level/);

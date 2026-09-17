@@ -209,7 +209,9 @@ describe('source guards — app.jsx keeps the intake optional, early, and quiet'
     expect(block).toMatch(/onClick=\{\(\) => answerIntake\(intakeStep, null\)\}/);
     expect(block).toMatch(/INTAKE_GOALS\.map\(g => \(/);
     expect(block).toMatch(/INTAKE_ROLES\.map\(r => \(/);
-    expect(block).toMatch(/onClick=\{\(\) => answerIntake\('goal', g\.id\)\}/);
+    // the goal choices are one shared render (the returning ask uses it too)
+    expect(block).toMatch(/renderIntakeGoalChoices\(\(id\) => answerIntake\('goal', id\)\)/);
+    expect(block).toMatch(/onClick=\{\(\) => onPick\(g\.id\)\}/);
     // the skip affordance renders only on a non-required step, and the goal
     // step says why there is none
     expect(block).toMatch(/\{!isIntakeStepRequired\(intakeStep\) && \(\s*\n\s*<button\s*\n\s*type="button"\s*\n\s*data-intake-skip="true"/);

@@ -193,6 +193,38 @@ window.FEATURE_FLAGS = {
     // plan is the product for people with a date".
     interviewFirst: false,
 
+    // Goal measure (2026-09-17, the founder's directive: "ask the goal at
+    // once, measure where they stand ON THAT GOAL, show it honestly, plan it,
+    // monetise along the plan — we do not want a goalless person"). ON:
+    //   (B) right after the onboarding intake, the ten-question readiness
+    //       check the public /sql-interview-readiness-test/ asks — the same
+    //       questions, from src/data/readiness-questions.js, scored the same
+    //       way: per skill, overall weighted by the named company's tagged-set
+    //       skill mix (equal weights otherwise). The result screen is the gap
+    //       ("On the skills the Snowflake set asks for, you are at 43/100.
+    //       Weakest: …") with the public test's own disclaimer, never a pass
+    //       prediction; stored as `sqlquest_readiness_v1` in the page's shape,
+    //       mirrored to userData.readiness; per-skill seed floors for the
+    //       Coach's skipIf only (placement.js seedFloorsFromReadiness). A
+    //       fresh (< 7 d) result is shown back, not asked again. "Build my
+    //       plan" places the person from the result (one assessment, not two)
+    //       and lands an interview person with a plan target on the Coach's
+    //       countdown card; anyone else continues the first-run path.
+    //   (D) `?goal=interview|job_ready|learning` on /app/ writes the intent
+    //       the way the intake does (never over a declared one), fires
+    //       `intent_captured {source:'link'}`, pre-answers the intake's goal
+    //       step and continues into the check.
+    //   (E) the returning ask: a session with ≥ 1 solve and no goal on record
+    //       gets the intake's goal screen once (required), then the check
+    //       (skippable), then goes back to where it was. Never at 0 solves,
+    //       never twice, never over an open challenge.
+    // Events: goal_measure_started / _completed / _skipped /
+    // _plan_clicked, goal_ask_returning_shown; metric `goal_measure_funnel`;
+    // the cost line is `first_run_reach`. SHIPPED OFF; flips 2026-09-21 with
+    // onboardingIntake by the same scheduled task. Ledger: "the goal is
+    // asked, measured and planned before the first solve".
+    goalMeasure: false,
+
     // ── The quarterly plan (2026-09-14) ──────────────────────────────────
     // $49 every 3 months, between monthly and annual. The founder's call:
     // three packages, 1 month / 3 months / 1 year. Annual stays the

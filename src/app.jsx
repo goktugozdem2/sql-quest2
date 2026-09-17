@@ -32,8 +32,9 @@ import { interviewFirstReason } from './utils/interview-first.js';
 import { mergeProgress, hasProgress, isResumableGuest, GUEST_USER_KEY } from './utils/progress-merge.js';
 import { companySetMatch } from './utils/company-set-match.js';
 import { buildPracticePlan, PLAN_MIN_SOLVES_FOR_SKILLS } from './utils/practice-plan.js';
-import { INTAKE_KEY, INTAKE_GOALS, INTAKE_ROLES, INTAKE_STEPS, INTAKE_COMPANIES, INTAKE_LEVELS, intakeStepsFor, intakeGoalFor, nextIntakeStep, isIntakeStepRequired, isValidIntakeDate, buildIntakeRecord, readIntakeRecord, intakeEventPayload, newCoachGoalState, shouldShowIntake } from './utils/onboarding-intake.js';
-import { PLACEMENT_TIERS, placementResult, placementEventPayload, readFirstRunPlacement, seedFloorsFor, placementFromReadiness } from './utils/placement.js';
+import { INTAKE_KEY, INTAKE_GOALS, INTAKE_ROLES, INTAKE_STEPS, INTAKE_COMPANIES, INTAKE_LEVELS, intakeStepsFor, intakeGoalFor, intakeGoalForIntent, nextIntakeStep, isIntakeStepRequired, isIntakeLevel, isValidIntakeDate, buildIntakeRecord, isIntakeComplete, readIntakeRecord, intakeEventPayload, newCoachGoalState, shouldShowIntake } from './utils/onboarding-intake.js';
+import { PLACEMENT_TIERS, placementResult, placementEventPayload, readFirstRunPlacement, seedFloorsFor, seedFloorsFromReadiness, levelForReadiness, placementFromReadiness } from './utils/placement.js';
+import { QUESTIONS as READINESS_QUESTIONS, READINESS_SKILLS, READINESS_RECORD_KEY, companySkillWeights, scoreReadiness, summarizeScores, weakestSkills, readinessRecordFrom, readReadinessRecord } from './data/readiness-questions.js';
 import { paidWallFor, isColdStart } from './utils/paid-wall.js';
 import { companySetGate, companySetFreeIds, companySetProgress, quietAskDecision, deadlineOfferFor, deadlineEventMeta, withEarlyWall, pickProMockId, FREE_MOCK_ID, quotaGate, FREE_SOLVE_QUOTA } from './utils/free-tier-boundary.js';
 import { expandStageChallenges, placementStartIndex as roadmapPlacementStartIndex } from './utils/roadmap.js';
@@ -6498,6 +6499,18 @@ function SQLQuest() {
   const [intakeCompanyInput, setIntakeCompanyInput] = useState('');
   const [intakeDateInput, setIntakeDateInput] = useState('');
   const intakeStartedAtRef = useRef(null);
+  // Goal measure (2026-09-17): the ten-question check after the intake, the
+  // stored result it writes (the public test's own key and shape), whether
+  // this browser already took or skipped it, and the goal-ask overlay (a
+  // ?goal= link off the start screen, or the returning ask).
+  const [goalMeasureStatus, setGoalMeasureStatus] = useState(() => {
+    try { const r = JSON.parse(localStorage.getItem('sqlquest_goal_measure_v1') || 'null'); return r && typeof r === 'object' && typeof r.status === 'string' ? r : null; } catch (_) { return null; }
+  });
+  const [goalMeasure, setGoalMeasure] = useState({ stage: 'idle', index: 0, correct: [], picked: null, result: null, weights: null, weightN: null, stored: null });
+  const [readinessRecord, setReadinessRecord] = useState(() => {
+    try { const r = JSON.parse(localStorage.getItem('sqlquest_readiness_v1') || 'null'); return r && typeof r === 'object' && Number.isFinite(Number(r.at)) ? r : null; } catch (_) { return null; }
+  });
+  const [goalAsk, setGoalAsk] = useState(null);   // null | { stage: 'goal' | 'measure', source: 'link' | 'returning' }
   const companySetMatchShownRef = useRef(false);
   const [showFirstEntryTour, setShowFirstEntryTour] = useState(() => {
     try { return !localStorage.getItem(FIRST_ENTRY_TOUR_KEY); } catch (_) { return true; }
@@ -7575,6 +7588,9 @@ function SQLQuest() {
     if (!currentUser || !dbReady || isSessionLoading) return;
     if (firstRunCompleted || firstRunLevel || solvedChallenges.size > 0) return;
     if (readFirstRunPlacement(localStorage)) return;   // already placed — never overwrite
+    // 2026-09-17: with the goal flow on, the intake asks the goal first and
+    // the check shows a fresh result back; "Build my plan" owns the placement.
+    if (window.FF?.feature?.('goalMeasure') === true && !!window.FF?.feature('onboardingIntake') && !goalMeasureStatus) return;
     const placed = placementFromReadiness(localStorage);
     if (!placed) return;
     readinessPlacementRef.current = true;
@@ -7591,7 +7607,7 @@ function SQLQuest() {
     completeFirstRun(goal, placed.level);
     suppressLegacyOnboardingForPlacement(placed.level, { source: 'first_run_readiness_test', score: placed.overall, total: 100 });
     if (placed.company && !prepTarget.company) setPrepPreference({ company: placed.company });
-  }, [currentUser, dbReady, isSessionLoading, firstRunCompleted, firstRunLevel, solvedChallenges.size]);
+  }, [currentUser, dbReady, isSessionLoading, firstRunCompleted, firstRunLevel, solvedChallenges.size, goalMeasureStatus]);
   useEffect(() => { try { localStorage.setItem('sqlquest_practice_path', challengePathFilter); } catch (_) {} }, [challengePathFilter]);
   useEffect(() => { try { localStorage.setItem('sqlquest_practice_more_open', String(moreFiltersOpen)); } catch (_) {} }, [moreFiltersOpen]);
   useEffect(() => { try { localStorage.setItem('sqlquest_live_tutor', liveTutorMode); } catch (_) {} }, [liveTutorMode]);
@@ -8693,6 +8709,7 @@ function SQLQuest() {
           roadmapLessonCompletions: [...roadmapLessonCompletions],
           goals: userGoals,         // sector MVP — sector/role/motivation/etc; see docs/sector-mvp-plan.md
           intake: intakeRecord,     // onboarding intake — what was asked and skipped; never the date
+          readiness: readinessRecord, // the ten-question check / readiness test result, the public page's shape
           // The countdown / intake target rides the save from STATE, not only
           // from setPrepPreference's direct write: this effect re-reads the
           // record (cloud-first for a guest) and re-spreads it, so a field
@@ -11388,6 +11405,316 @@ CRITICAL RULES:
     }
   };
 
+  // ── Goal measure (2026-09-17, behind `goalMeasure`) ────────────────────
+  // The founder's directive: ask the goal at once, measure where the person
+  // stands ON THAT GOAL, show it honestly, plan it, monetise along the plan.
+  // The measure is the public readiness test's ten questions
+  // (src/data/readiness-questions.js — one module, both readers), scored the
+  // way the page scores them: per skill, overall weighted by the named
+  // company's tagged-set skill mix, equal weights otherwise. It renders in
+  // two places through ONE render function: on the first-run start screen
+  // right after the intake, and in the goal-ask overlay (a `?goal=` link
+  // arrival that landed off the start screen, or the returning ask). The
+  // result is stored in the page's own shape (`sqlquest_readiness_v1`) so
+  // `?src=readiness` and the placement hook keep working, mirrored to
+  // userData.readiness, and becomes seed floors for the Coach's skipIf only
+  // (placement.js seedFloorsFromReadiness) — never the radar. "Build my plan"
+  // is the placement (one assessment, not two): an interview person with a
+  // plan target lands on the Coach's countdown card; anyone else continues
+  // the existing first-run path. Nothing here mentions the paid tier, by test.
+  const GOAL_MEASURE_STATUS_KEY = 'sqlquest_goal_measure_v1';
+  const GOAL_ASK_RETURNING_KEY = 'sqlquest_goal_ask_returning_v1';
+  const goalMeasureOn = () => window.FF?.feature?.('goalMeasure') === true;
+
+  const setGoalMeasureStatusPersist = (status) => {
+    const rec = { status, at: new Date().toISOString() };
+    setGoalMeasureStatus(rec);
+    try { localStorage.setItem(GOAL_MEASURE_STATUS_KEY, JSON.stringify(rec)); } catch (_) {}
+  };
+
+  // Who is being measured, on what, and from where. `source` is what the
+  // funnel splits on: 'intake' (the start screen), 'link' (?goal=), or
+  // 'returning' (the ask after a solve).
+  const goalMeasureContext = () => {
+    const goal = intakeRecord?.goal || null;
+    const company = goal === 'interview' ? (intakeRecord?.company || prepTarget.company || null) : null;
+    return { goal, company, source: goalAsk ? goalAsk.source : (intakeRecord?.goalSource || 'intake'), firstRun: isFirstRunUser };
+  };
+
+  // The company's skill mix over the check's skills, or null → equal weights.
+  const goalMeasureWeightsFor = (company) => {
+    if (!company) return null;
+    const bank = window.challengesData || challenges || [];
+    const w = companySkillWeights({ tags: window.challengeCompanies || {}, challenges: bank, name: company });
+    return w.n > 0 ? { n: w.n, weights: w.weights } : null;
+  };
+
+  // The stored result (the public test, or an earlier check), fresh enough to
+  // show back instead of asking again; re-weighted to the goal's company.
+  const goalMeasureFromStored = () => {
+    const rec = readReadinessRecord(localStorage);
+    if (!rec) return null;
+    const ctx = goalMeasureContext();
+    const w = goalMeasureWeightsFor(ctx.company);
+    const summary = summarizeScores(rec.scores, w ? w.weights : null);
+    return {
+      stage: 'result', index: 0, correct: [], picked: null,
+      result: { overall: summary.overall, weakest: summary.weakest, scores: rec.scores, answered: null },
+      weights: w ? w.weights : null, weightN: w ? w.n : null, stored: rec.ageDays,
+    };
+  };
+
+  const GOAL_MEASURE_IDLE = { stage: 'idle', index: 0, correct: [], picked: null, result: null, weights: null, weightN: null, stored: null };
+
+  const showGoalMeasureOnStart = goalMeasureOn() && showFirstRunStart && !showZeroSqlLesson && !showIntake
+    && isIntakeComplete(intakeRecord) && !!intakeRecord?.goal && !goalMeasureStatus;
+  const goalMeasureMounted = showGoalMeasureOnStart || goalAsk?.stage === 'measure';
+
+  // Start (or show back) the measure the moment it mounts — once per mount.
+  useEffect(() => {
+    if (!goalMeasureMounted) { if (goalMeasure.stage !== 'idle') setGoalMeasure(GOAL_MEASURE_IDLE); return; }
+    if (goalMeasure.stage !== 'idle') return;
+    const stored = goalMeasureFromStored();
+    const ctx = goalMeasureContext();
+    if (stored) {
+      // Not asked again: the placement hook stands down, "Build my plan" owns it.
+      readinessPlacementRef.current = true;
+      setGoalMeasure(stored);
+      return;
+    }
+    const w = goalMeasureWeightsFor(ctx.company);
+    setGoalMeasure({ ...GOAL_MEASURE_IDLE, stage: 'questions', weights: w ? w.weights : null, weightN: w ? w.n : null });
+    trackActivationEvent('goal_measure_started', { goal: ctx.goal, company: ctx.company, source: ctx.source, weighted: !!w });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [goalMeasureMounted]);
+
+  const answerGoalMeasure = (k) => {
+    if (goalMeasure.picked !== null) return;
+    const q = READINESS_QUESTIONS[goalMeasure.index];
+    const correct = goalMeasure.correct.slice();
+    correct[goalMeasure.index] = k === q.answer;
+    setGoalMeasure({ ...goalMeasure, picked: k, correct });
+  };
+
+  const applyGoalMeasureToCoach = (result, level) => {
+    if (!coachState?.goalId || !result) return;
+    const at = new Date().toISOString();
+    const pending = !!coachState.placement && !coachState.placement.skipped;
+    const next = {
+      ...coachState,
+      ...(pending ? { placement: { ...coachState.placement, skipped: true, skippedBy: 'goal_measure', level, at } } : {}),
+      // Floors for skipIf only (coach.js applySeedFloors) — never the radar.
+      seedFloors: { source: 'goal_measure', level, floors: seedFloorsFromReadiness(level, result.scores), at },
+    };
+    setCoachState(next);
+    if (currentUser) {
+      try {
+        const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+        userData.coachState = next;
+        saveUserData(currentUser, userData);
+      } catch (_) {}
+    }
+    if (pending) {
+      trackActivationEvent('coach_placement_skipped', { by: 'goal_measure', level, tier: PLACEMENT_TIERS[level] || null, goalId: coachState.goalId, at: 'goal_measure' });
+    }
+  };
+
+  const persistReadinessRecord = (record) => {
+    setReadinessRecord(record);
+    try { localStorage.setItem(READINESS_RECORD_KEY, JSON.stringify(record)); } catch (_) {}
+    if (currentUser) {
+      try {
+        const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+        userData.readiness = record;
+        saveUserData(currentUser, userData);
+      } catch (_) {}
+    }
+  };
+
+  const finishGoalMeasure = () => {
+    const ctx = goalMeasureContext();
+    const result = scoreReadiness(goalMeasure.correct, { weights: goalMeasure.weights });
+    const record = readinessRecordFrom({ company: ctx.company, overall: result.overall, weakest: result.weakest, scores: result.scores });
+    persistReadinessRecord(record);
+    readinessPlacementRef.current = true;   // "Build my plan" owns the placement from here
+    setGoalMeasure({ ...goalMeasure, stage: 'result', picked: null, result });
+    trackActivationEvent('goal_measure_completed', {
+      goal: ctx.goal, company: ctx.company, source: ctx.source,
+      overall: result.overall, weakest: result.weakest, answered: result.answered, weighted: !!goalMeasure.weights,
+    });
+  };
+
+  const nextGoalMeasure = () => {
+    if (goalMeasure.picked === null) return;
+    if (goalMeasure.index + 1 < READINESS_QUESTIONS.length) {
+      setGoalMeasure({ ...goalMeasure, index: goalMeasure.index + 1, picked: null });
+      return;
+    }
+    finishGoalMeasure();
+  };
+
+  const skipGoalMeasure = () => {
+    const ctx = goalMeasureContext();
+    trackActivationEvent('goal_measure_skipped', { goal: ctx.goal, company: ctx.company, source: ctx.source, stage: goalMeasure.stage, answered: goalMeasure.correct.filter(v => v !== undefined).length });
+    setGoalMeasureStatusPersist('skipped');
+    if (goalAsk) setGoalAsk(null);
+  };
+
+  const buildGoalMeasurePlan = () => {
+    const ctx = goalMeasureContext();
+    const result = goalMeasure.result;
+    if (!result) return;
+    const bank = window.challengesData || challenges || [];
+    const target = ctx.goal === 'interview' && ctx.company
+      ? findPlanTarget(ctx.company, bank, window.challengeCompanies || {}, mockInterviews)
+      : null;
+    const level = levelForReadiness(result.overall, result.scores) || 'basics';
+    trackActivationEvent('goal_measure_plan_clicked', {
+      goal: ctx.goal, company: ctx.company, source: ctx.source, overall: result.overall,
+      hasPlan: !!target, planKind: target ? target.kind : null, level, tier: PLACEMENT_TIERS[level] || null, stored: goalMeasure.stored !== null,
+    });
+    setGoalMeasureStatusPersist('built');
+    if (ctx.goal === 'interview' && ctx.company && !prepTarget.company) setPrepPreference({ company: ctx.company });
+    if (ctx.firstRun && !firstRunCompleted) {
+      // The check IS the placement — one assessment, not two (the 09-14 rule).
+      if (target) {
+        completeFirstRun('interview', level);
+      } else {
+        startFirstRunPath(ctx.goal === 'interview' ? 'interview' : 'zero', level);
+      }
+      suppressLegacyOnboardingForPlacement(level, { source: 'first_run_goal_measure', score: result.overall, total: 100 });
+      trackActivationEvent('placement_completed', { source: 'goal_measure', levelId: level, tier: PLACEMENT_TIERS[level] || null, overall: result.overall, weakest: result.weakest, company: ctx.company });
+    }
+    applyGoalMeasureToCoach(result, level);
+    if (goalAsk) setGoalAsk(null);
+    if (target || ctx.goal === 'interview') {
+      // The plan card is on the Coach (interviewFirst puts it first; the
+      // countdown flag renders it) — no new door.
+      setCurrentChallenge(null);
+      setActiveTab('guide');
+    }
+  };
+
+  const renderGoalMeasure = () => {
+    const ctx = goalMeasureContext();
+    const m = goalMeasure;
+    const total = READINESS_QUESTIONS.length;
+    const optionStyle = { background: '#1F222B', border: '1px solid #2A2E38', borderRadius: '6px', color: '#F2F0EA' };
+    if (m.stage === 'result' && m.result) {
+      const r = m.result;
+      const weak = weakestSkills(r.scores, 2, m.weights);
+      const list = weak.map(w => `${w.skill} (${w.score})`).join(', ');
+      const company = ctx.company && m.weights ? ctx.company : null;
+      return (
+        <div data-onboarding="goal-measure" data-goal-measure-stage="result">
+          <p className="mb-2 text-xs font-bold uppercase tracking-wider text-purple-300">{i18n_t('goalMeasure', 'eyebrow')}</p>
+          <h2 className="mb-2 text-2xl font-bold text-[#F2F0EA] md:text-3xl" data-testid="goal-measure-gap">
+            {company
+              ? i18n_t('goalMeasure', 'resultCompany', { company, n: r.overall })
+              : i18n_t('goalMeasure', 'resultGeneral', { n: r.overall })}
+          </h2>
+          <p className="text-sm font-semibold text-gray-200">{i18n_t('goalMeasure', 'weakest', { list })}</p>
+          <p className="mt-2 max-w-2xl text-xs leading-relaxed" style={{ color: '#8A8E99' }} data-testid="goal-measure-disclaimer">
+            {company
+              ? i18n_t('goalMeasure', 'disclaimerCompany', { company, count: m.weightN })
+              : i18n_t('goalMeasure', 'disclaimerGeneral')}
+          </p>
+          {m.stored !== null && (
+            <p className="mt-1 text-xs" style={{ color: '#8A8E99' }}>{m.stored > 0 ? i18n_t('goalMeasure', 'stored', { days: m.stored }) : i18n_t('goalMeasure', 'storedToday')}</p>
+          )}
+          <p className="mt-5 text-xs font-bold uppercase tracking-wider text-gray-500">{i18n_t('goalMeasure', 'skillmap')}</p>
+          <div className="mt-2 space-y-2">
+            {READINESS_SKILLS.filter(s => r.scores[s] !== undefined).map(s => (
+              <div key={s} data-goal-measure-skill={s}>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-200">{s}</span>
+                  <span className="font-mono text-xs tabular-nums" style={{ color: '#F2F0EA' }}>{r.scores[s]}</span>
+                </div>
+                <div className="mt-1 h-1.5 w-full overflow-hidden rounded" style={{ background: '#2A2E38' }}>
+                  <div className="h-full" style={{ width: `${r.scores[s]}%`, background: s === r.weakest ? '#c084fc' : '#7c3aed' }} />
+                </div>
+              </div>
+            ))}
+          </div>
+          <button
+            type="button"
+            data-goal-measure-build="true"
+            onClick={buildGoalMeasurePlan}
+            className="mt-5 px-4 py-2.5 text-sm font-bold transition-colors"
+            style={{ background: '#FFE34D', color: '#0E0F13', borderRadius: '6px' }}
+          >
+            {i18n_t('goalMeasure', 'build')}
+          </button>
+          <p className="mt-2 text-xs" style={{ color: '#8A8E99' }}>{i18n_t('goalMeasure', 'buildSub')}</p>
+        </div>
+      );
+    }
+    const q = READINESS_QUESTIONS[m.index] || READINESS_QUESTIONS[0];
+    const picked = m.picked;
+    return (
+      <div data-onboarding="goal-measure" data-goal-measure-stage="questions" data-goal-measure-index={m.index}>
+        <div className="mb-2 flex items-center justify-between gap-3">
+          <p className="text-xs font-bold uppercase tracking-wider text-purple-300">{i18n_t('goalMeasure', 'eyebrow')}</p>
+          <p className="text-xs font-semibold tabular-nums" style={{ color: '#8A8E99' }}>{i18n_t('goalMeasure', 'count', { n: m.index + 1, m: total })}</p>
+        </div>
+        <div className="mb-4 h-1.5 w-full overflow-hidden rounded" style={{ background: '#2A2E38' }}>
+          <div className="h-full" style={{ width: `${(100 * m.index) / total}%`, background: '#7c3aed' }} />
+        </div>
+        {m.index === 0 && picked === null && (
+          <>
+            <h2 className="mb-1 text-2xl font-bold text-[#F2F0EA] md:text-3xl">{i18n_t('goalMeasure', 'title')}</h2>
+            <p className="mb-4 max-w-2xl text-sm leading-relaxed text-gray-300">{i18n_t('goalMeasure', 'sub')}</p>
+          </>
+        )}
+        <p className="text-xs font-bold text-purple-300">{q.skill}</p>
+        <p className="mt-1 text-sm leading-relaxed text-[#F2F0EA]">{q.q}</p>
+        {q.sql && (
+          <pre className="mt-2 max-w-full overflow-x-auto whitespace-pre-wrap break-words rounded-md p-3 text-xs leading-relaxed sm:whitespace-pre" style={{ background: '#0E0F13', border: '1px solid #2A2E38', color: '#F2F0EA' }}><code>{q.sql}</code></pre>
+        )}
+        <div className="mt-3 space-y-2">
+          {q.options.map((o, k) => {
+            const border = picked === null ? '#2A2E38' : k === q.answer ? '#B5E48C' : k === picked ? '#FF6B6B' : '#2A2E38';
+            return (
+              <button
+                key={k}
+                type="button"
+                data-goal-measure-option={k}
+                onClick={() => answerGoalMeasure(k)}
+                className="w-full p-3 text-left font-mono text-xs leading-relaxed transition-colors"
+                style={{ ...optionStyle, borderColor: border }}
+              >
+                {o}
+              </button>
+            );
+          })}
+        </div>
+        {picked !== null && (
+          <>
+            <p className="mt-3 text-sm leading-relaxed text-gray-300" data-goal-measure-why="true">{(m.correct[m.index] ? i18n_t('goalMeasure', 'correct') : i18n_t('goalMeasure', 'wrong')) + q.why}</p>
+            <button
+              type="button"
+              data-goal-measure-next="true"
+              onClick={nextGoalMeasure}
+              className="mt-3 px-4 py-2 text-sm font-bold transition-colors"
+              style={{ background: '#FFE34D', color: '#0E0F13', borderRadius: '6px' }}
+            >
+              {m.index + 1 < total ? i18n_t('goalMeasure', 'next') : i18n_t('goalMeasure', 'finish')}
+            </button>
+          </>
+        )}
+        <button
+          type="button"
+          data-goal-measure-skip="true"
+          onClick={skipGoalMeasure}
+          className="mt-4 block text-xs underline underline-offset-2 transition-colors"
+          style={{ color: '#8A8E99' }}
+        >
+          {i18n_t('goalMeasure', 'skip')}
+        </button>
+      </div>
+    );
+  };
+
   // ── Onboarding intake (P0-1, 2026-09-12) ───────────────────────────────
   // The goal, then optional questions, before the placement quiz. Each answer
   // lands in the store that already owns it (the intent key, the Coach goal,
@@ -11417,14 +11744,15 @@ CRITICAL RULES:
     }
   };
 
-  const completeIntake = (draft) => {
+  const completeIntake = (draft, { quiet = false } = {}) => {
     const now = Date.now();
     const record = buildIntakeRecord(draft, now);
     if (!record) return;   // no goal, no record — the goal step cannot be skipped
     const goal = intakeGoalFor(record.goal);
     if (goal) {
-      // The same two keys the post-solve ask writes, so the Interview door
-      // (src/utils/interview-nav.js) and every event's `intent` stamp agree.
+      // The same keys the post-solve ask writes, through the same helper, so
+      // the Interview door (src/utils/interview-nav.js), every event's
+      // `intent` stamp and the account record agree.
       try {
         localStorage.setItem('sqlquest_user_intent', goal.intent);
         localStorage.setItem('sqlquest_intent_asked', '1');
@@ -11481,6 +11809,9 @@ CRITICAL RULES:
       try { localStorage.setItem('sqlquest_user_goals', JSON.stringify(merged)); } catch (_) {}
     }
     persistIntakeRecord(record);
+    // `quiet`: the returning ask (2026-09-17) records a goal without having
+    // shown the intake, so it does not count as an intake completion.
+    if (quiet) return;
     trackActivationEvent('intake_completed', intakeEventPayload(record, {
       draftDate: draft.date,
       now,
@@ -11515,6 +11846,29 @@ CRITICAL RULES:
     completeIntake(draft);
   };
 
+  // The three goal buttons — the intake's goal step and the returning ask
+  // (2026-09-17) render the same choices through this one function.
+  const renderIntakeGoalChoices = (onPick) => {
+    const optionStyle = { background: '#1F222B', border: '1px solid #2A2E38', borderRadius: '6px', color: '#F2F0EA' };
+    const goalKey = { interview: 'goalInterview', job: 'goalJob', general: 'goalGeneral' };
+    return INTAKE_GOALS.map(g => (
+      <button
+        key={g.id}
+        type="button"
+        data-intake-goal={g.id}
+        onClick={() => onPick(g.id)}
+        className="w-full p-3 text-left transition-colors"
+        style={optionStyle}
+        onMouseEnter={e => { e.currentTarget.style.borderColor = '#8A8E99'; }}
+        onMouseLeave={e => { e.currentTarget.style.borderColor = '#2A2E38'; }}
+      >
+        <span className="mr-2">{g.emoji}</span>
+        <span className="text-sm font-semibold">{i18n_t('intake', goalKey[g.id])}</span>
+        <span className="mt-0.5 block text-xs" style={{ color: '#8A8E99' }}>{i18n_t('intake', `${goalKey[g.id]}Sub`)}</span>
+      </button>
+    ));
+  };
+
   const renderOnboardingIntake = () => {
     const intakeSteps = intakeStepsFor(intakeDraft.goal);
     const stepIndex = Math.max(0, intakeSteps.indexOf(intakeStep));
@@ -11538,22 +11892,7 @@ CRITICAL RULES:
             <h2 className="mb-2 text-2xl font-bold text-[#F2F0EA] md:text-3xl">{i18n_t('intake', 'goalTitle')}</h2>
             <p className="max-w-2xl text-sm leading-relaxed text-gray-300">{i18n_t('intake', 'goalSub')}</p>
             <div className="mt-5 space-y-2">
-              {INTAKE_GOALS.map(g => (
-                <button
-                  key={g.id}
-                  type="button"
-                  data-intake-goal={g.id}
-                  onClick={() => answerIntake('goal', g.id)}
-                  className="w-full p-3 text-left transition-colors"
-                  style={optionStyle}
-                  onMouseEnter={hoverOn}
-                  onMouseLeave={hoverOff}
-                >
-                  <span className="mr-2">{g.emoji}</span>
-                  <span className="text-sm font-semibold">{i18n_t('intake', goalKey[g.id])}</span>
-                  <span className="mt-0.5 block text-xs" style={{ color: '#8A8E99' }}>{i18n_t('intake', `${goalKey[g.id]}Sub`)}</span>
-                </button>
-              ))}
+              {renderIntakeGoalChoices((id) => answerIntake('goal', id))}
             </div>
             <p className="mt-3 text-xs" style={{ color: '#8A8E99' }} data-intake-goal-required="true">{i18n_t('intake', 'goalRequired')}</p>
           </>
@@ -15728,6 +16067,16 @@ CRITICAL RULES:
       if (userData.intake && typeof userData.intake === 'object' && typeof userData.intake.completedAt === 'string') {
         setIntakeRecord(userData.intake);
         try { localStorage.setItem(INTAKE_KEY, JSON.stringify(userData.intake)); } catch (_) {}
+      }
+      // The readiness result follows the account onto a new device, unless
+      // this browser holds a newer one of its own.
+      if (userData.readiness && typeof userData.readiness === 'object' && Number.isFinite(Number(userData.readiness.at))) {
+        let local = null;
+        try { local = JSON.parse(localStorage.getItem(READINESS_RECORD_KEY) || 'null'); } catch (_) { local = null; }
+        if (!local || !(Number(local.at) >= Number(userData.readiness.at))) {
+          setReadinessRecord(userData.readiness);
+          try { localStorage.setItem(READINESS_RECORD_KEY, JSON.stringify(userData.readiness)); } catch (_) {}
+        }
       }
       if (userData.loginCalendar) setLoginCalendar(userData.loginCalendar);
       if (userData.maxLoginStreak) setMaxLoginStreak(userData.maxLoginStreak);
@@ -31859,6 +32208,8 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                   </div>
                 ) : showIntake ? (
                   renderOnboardingIntake()
+                ) : showGoalMeasureOnStart ? (
+                  renderGoalMeasure()
                 ) : (
                   (() => {
                     const quizResult = getFirstRunQuizResult();
