@@ -524,7 +524,7 @@ SQL Quest's strongest positioning: "the only SQL practice site that feels like a
 - Shopify SQL Interview Questions — Practice Merchant & GMV Analytics | SQLQuest.app — https://sqlquest.app/shopify-sql-interview/
 - Spotify SQL Interview Questions — Practice Streaming & Listener Analytics | SQLQuest.app — https://sqlquest.app/spotify-sql-interview/
 - JPMorgan SQL Interview Questions — Practice Financial Analytics & Risk | SQLQuest.app — https://sqlquest.app/jpmorgan-sql-interview/
-- Snowflake SQL Practice — 95 Runnable Challenges + Interview Patterns | SQLQuest.app — https://sqlquest.app/snowflake-sql-interview/
+- Snowflake SQL Interview Questions & Practice — 95 Runnable Challenges | SQLQuest.app — https://sqlquest.app/snowflake-sql-interview/
 - NVIDIA SQL Interview Questions — Practice Data & Telemetry SQL | SQLQuest.app — https://sqlquest.app/nvidia-sql-interview/
 - OpenAI SQL Interview Questions — Practice Product Analytics SQL | SQLQuest.app — https://sqlquest.app/openai-sql-interview/
 - Anthropic SQL Interview Questions — Practice Usage Analytics SQL | SQLQuest.app — https://sqlquest.app/anthropic-sql-interview/

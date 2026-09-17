@@ -217,3 +217,33 @@ line to watch drift; the yield table is re-pulled with
 four-week read, not weekly, because 146 interview-intent people a month do
 not split across 50 pages in a week. A queued query that does not move in
 two four-week reads after its action shipped leaves the queue.
+
+## Applied 2026-09-17 — the copy batch (§4 items 1–5 and 8)
+
+One commit, `seo(copy): interview-intent titles, H1s and links from the
+long-tail queue`. Every page below is hand-written (`src/<slug>.html`); none
+of the seven generated pages was touched, and `src/data/company-interviews.js`
+is unchanged. No format claim was added anywhere; the only platform word
+added is on the Capital One page, which is in `SOURCED_PAGES`. Baselines are
+the read's numbers (GSC, 3 m to 09-14 · 28 d to 09-14, as i · c · pos); the
+Monday task re-reads each row and marks it *moved* on +2 positions or a first
+click.
+
+| § | Page | What changed (before → after) | Re-read on Monday |
+|---|---|---|---|
+| 1 · Q4 | `/snowflake-sql-interview/` | `<title>`, `og:title`, `twitter:title`: **"Snowflake SQL Practice — 95 Runnable Challenges + Interview Patterns \| SQLQuest.app" → "Snowflake SQL Interview Questions & Practice — 95 Runnable Challenges \| SQLQuest.app"**. H1 untouched — it already read "Snowflake SQL Interview / Questions". Description untouched. | `snowflake sql interview questions` 25 · 0 · 8.7 (28 d 6 · 0 · 9.0); W1 `"snowflake questions"` 19 · 0 · 14.6 (28 d 16 · 0 · 14.0). **Guardrail** `snowflake sql practice` 69 · 6 · 15.3, CTR 8.7% (28 d 17 · 1 · 4.3) — if its CTR falls at the 10-12 read, revert the title. |
+| 2 · Q1 | `/meta-sql-interview/` + `/blog/faang-sql-interview-guide/` | **H1 not changed** — it already reads "Meta SQL Interview / Questions" (the queue read only the text before the `<br>`). **"Facebook" not added** — the intro has carried "Meta (formerly Facebook)" since 09-07. The FAANG guide already linked the page from its company table and footer; the intro paragraph now links "Meta" as well. | `meta sql interview questions` 73 · 1 · 14.0 (28 d 19 · 0 · 12.7); `facebook sql interview questions` 14 · 0 · 46.0. Expect little — the on-page fixes were already in place. |
+| 3 · D1 | `/vs-hackerrank-sql/` | FAQ 7 → 8 entries, JSON-LD and the visible `FAQS` array identical (verified on the built page). New: **"Is the HackerRank SQL track enough for an interview?"** — the track described only from `docs/reads/alternatives-facts-2026-09-13.md` §4 (subdomains, free with an account, MySQL/Oracle/T-SQL/DB2), then what an interview adds and what we grade. Renamed: **"Is the HackerRank SQL certificate worth it?" → "Is the HackerRank SQL certification worth it?"** (answer unchanged) so the entry carries the query's own noun. No number about HackerRank was added. | `hackerrank sql track` 47 · 0 · 8.3 (28 d 10 · 0 · 7.6); `is hackerrank sql certification worth it` 15 · 0 · 9.3; `hackerrank sql practice official 2026` 20 · 0 · 9.6; `hackerrank sql official 2026` 12 · 0 · 8.6. Page: 95 · 0 · 8.4 (28 d 167 · 2 · 7.7). |
+| 4 · D2 | `/capital-one-sql-interview/` + `/blog/capital-one-codesignal-data-analyst-assessment/` | H1: **"Capital One SQL Interview / Questions" → "Capital One SQL Interview Questions / for the CodeSignal assessment"** (span text). The blog post's intro paragraph gained one sentence linking the company page ("The runnable practice cut for the same screen is the Capital One SQL interview questions page") — it already linked it from the skip-ahead box, day 9, the closing CTA and the related list. Title and description untouched. | `capital one data analyst assessment` 14 · 0 · 8.9 (same in 28 d); `capital one data analyst codesignal assessment` 5 · 0 · 4.8 (28 d). Blog 28 d 105 · 5 · 9.2; company page 28 d 24 · 0 · 7.8 — the read is whether the family's landing page shifts from the post to the company page. |
+| 5 · Q5 | `/apple-sql-interview/` + FAANG guide | **H1 not changed** — already "Apple SQL Interview / Questions". The FAANG guide had no link to the Apple page at all: added in the intro paragraph, on the company-table row (the only unlinked row), and in the footer strip. | `apple sql interview questions` 21 · 1 · 13.9 (28 d 12 · 1 · 11.7). |
+| 8 · W2 | `/jpmorgan-sql-interview/` | `description`, `og:description`, `twitter:description`: **"Practice the SQL patterns JPMorgan tests in data analyst and quantitative analyst interviews. Financial metrics, risk analytics, customer segmentation, and regulatory reporting with AI tutoring. Free." → "JPMorgan SQL interview questions with runnable answers: bank league tables, capital and credit-quality ratios, quarter-over-quarter growth on real FDIC call-report data. In-browser, AI tutor, no signup to start."** The queue said "lead with the format line the page already states"; the page states no format (it is not in `SOURCED_PAGES`), so the description leads with the query's noun and the page's real data instead. | `jp morgan sql interview questions` 11 · 0 · 7.3 (28 d 9 · 0 · 7.4); page (`morgan`) 17 · 0 · 5.8. |
+| 8 · W3 | `/google-sql-interview/` | `description`, `og:description`, `twitter:description`: **"Google SQL interview questions with runnable answers: ROW_NUMBER top-N per group, LAG month-over-month, CTEs. 32 challenges in-browser, no signup. Sep 2026." → "Google data analyst SQL interview questions with runnable answers: window functions (ROW_NUMBER top-N per group, LAG month-over-month), CTEs, conditional aggregation. 32 challenges in-browser, no signup."** Title/H1 untouched. | `google data analyst interview sql window functions` 16 · 0 · 7.7; `google sql interview questions` 30 · 0 · 32.0 (28 d 11 · 0 · 27.6). |
+
+Not applied, on purpose: **6** (B1, a generator change), **7** (Amazon —
+read 10-12 first), **9** (Uber — no dated candidate report exists in
+`docs/reads/`), **10** (read side). Homepage title and H1 untouched.
+
+Found while applying: `scripts/build-company-pages.mjs` is not idempotent on
+whitespace — every rerun prepends one more blank line before each injected
+block on all 30 company pages (20 unrelated pages moved on a no-data rerun).
+The churn was reverted here rather than committed; fix it in its own change.
