@@ -222,6 +222,15 @@ function renderBody(args: { username: string; solves: number; variant: Variant }
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
+  // Caller gate (2026-09-17): this function is deployed with JWT verification
+  // off, and the anon key ships in every browser — without this line anyone
+  // with the URL could mail the whole segment. Only the service role may call
+  // it, dry run included (the dry run lists usernames).
+  const expected = `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''}`
+  if (!Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || (req.headers.get('authorization') ?? '') !== expected) {
+    return new Response(JSON.stringify({ error: 'service role required' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+  }
+
   try {
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',

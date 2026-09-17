@@ -162,4 +162,11 @@ describe('goal-note: the one-time letter to everyone with no goal on record', ()
     expect(goalOnRecord({ coachState: { goalId: 'fundamentals' } })).toBe(true);
     expect(goalOnRecord({ prepTarget: { date: '2026-10-02' } })).toBe(true);
   });
+
+  it('only the service role may call it — the anon key is public (2026-09-17)', () => {
+    expect(fn).toContain("service role required");
+    expect(fn).toContain("(req.headers.get('authorization') ?? '') !== expected");
+    // The gate sits before any query.
+    expect(fn.indexOf('service role required')).toBeLessThan(fn.indexOf('createClient('));
+  });
 });

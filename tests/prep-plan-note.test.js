@@ -155,4 +155,11 @@ describe('prep-plan-note: the plan sorts by the app\'s curriculum order', () => 
     expect(app).toContain("import { SQL_ROADMAP_STAGES, SQL_ROADMAP_CHALLENGE_ORDER } from './data/roadmap-stages.js';");
     expect(app, 'app.jsx still defines its own copy of the stages').not.toContain('const SQL_ROADMAP_STAGES = [');
   });
+
+  it('only the service role may call it — the anon key is public (2026-09-17)', () => {
+    expect(fn).toContain("service role required");
+    expect(fn).toContain("(req.headers.get('authorization') ?? '') !== expected");
+    // The gate sits before any query.
+    expect(fn.indexOf('service role required')).toBeLessThan(fn.indexOf('createClient('));
+  });
 });
