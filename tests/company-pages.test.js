@@ -833,3 +833,38 @@ describe('6. provenance — sourced and general pages are labelled as such', () 
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// The goal door (founder's directive, 2026-09-17: ask every person their goal;
+// docs/plans/goal-capture-2026-09-17.md). A person who clicks into the app
+// from a company page has said what they are preparing for; the link carries
+// it. `src=` and `company=` stay exactly as they were — the arrival read keys
+// on them — and `goal=interview` rides alongside. The seven generated pages
+// get it from the template, the 23 older ones from a hand edit; this binds
+// both so the parameter cannot fall off one family silently.
+describe('every company-set link into the app declares the interview goal', () => {
+  const pages = fs.readdirSync(join(ROOT, 'src')).filter(f => /-sql-interview\.html$/.test(f)).sort();
+
+  it('on all 30 pages, every /app/?…company= href carries goal=interview and keeps company= and src=', () => {
+    expect(pages.length).toBeGreaterThanOrEqual(30);
+    let total = 0;
+    for (const f of pages) {
+      const hrefs = read('src', f).match(/href="\/app\/\?[^"]*company=[^"]*"/g) || [];
+      expect(hrefs.length, `${f}: no company link into the app`).toBeGreaterThanOrEqual(4);
+      for (const h of hrefs) {
+        expect(h, `${f}: ${h}`).toMatch(/[?&](?:amp;)?goal=interview(?:&|"|$)/);
+        expect(h, `${f}: ${h}`).toMatch(/[?&](?:amp;)?company=[^&"]+/);
+        expect((h.match(/goal=/g) || []).length, `${f}: goal twice in ${h}`).toBe(1);
+      }
+      total += hrefs.length;
+    }
+    expect(total).toBeGreaterThanOrEqual(120);
+  });
+
+  it('the generator writes it on all four company-set CTAs', () => {
+    const gen = read('scripts', 'build-company-pages.mjs');
+    const ctas = gen.match(/href="\/app\/\?company=\$\{encodeURIComponent\([^)]+\)\}[^"]*"/g) || [];
+    expect(ctas.length).toBe(4);
+    for (const c of ctas) expect(c).toContain('&amp;goal=interview"');
+  });
+});

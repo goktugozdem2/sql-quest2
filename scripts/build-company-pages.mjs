@@ -165,7 +165,7 @@ export function readinessBlock({ slug, name, src }) {
   <p style="font-size:15px;color:#94a3b8;max-width:620px;margin:0 auto 26px;line-height:1.75;">Ten questions, no signup. You get a readiness score weighted to the SQL this page covers, your Skillmap across joins, window functions, aggregation and the rest, and the weakest skill to practise first.</p>
   <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
     <a href="/sql-interview-readiness-test/?company=${slug}" class="btn bp" data-track="cta_readiness_${slug.replace(/-/g, '_')}">Check my ${esc(name)} readiness</a>
-    <a href="/app/?company=${encodeURIComponent(name)}&amp;src=${src}" class="btn bo" data-track="cta_start_set_${slug.replace(/-/g, '_')}">Start the ${esc(name)} set</a>
+    <a href="/app/?company=${encodeURIComponent(name)}&amp;src=${src}&amp;goal=interview" class="btn bo" data-track="cta_start_set_${slug.replace(/-/g, '_')}">Start the ${esc(name)} set</a>
   </div>
 </div></section>
 <!-- company-readiness:end -->`;
@@ -241,12 +241,16 @@ export function withSourcedFormat(html, slug) {
 
 /** Put it above the first claim on the page: after the hero, before section two. */
 export function withProvenance(html, { slug, name }) {
-  let out = html.replace(/<!-- company-provenance:start -->[\s\S]*?<!-- company-provenance:end -->\n?/, '');
+  // Strip the block AND the newlines around it, then put back exactly one
+  // blank line: with `\n?` every run left one newline behind and each rerun
+  // grew the page by a blank line (measured 2026-09-17: 44 added lines across
+  // the 23 older pages per run at HEAD). The same fix is in injectModules.
+  let out = html.replace(/<!-- company-provenance:start -->[\s\S]*?<!-- company-provenance:end -->\n*/, '');
   const hero = out.indexOf('<section class="hero"');
   if (hero < 0) return out;
   const next = out.indexOf('\n<section', hero + 1);
   if (next < 0) return out;
-  return `${out.slice(0, next + 1)}${provenanceBlock({ slug, name })}\n\n${out.slice(next + 1)}`;
+  return `${out.slice(0, next + 1).replace(/\n+$/, '\n')}${provenanceBlock({ slug, name })}\n\n${out.slice(next + 1)}`;
 }
 
 /**
@@ -396,7 +400,7 @@ ${ld}
   <h1 class="fd" style="font-size:clamp(36px,5vw,58px);font-weight:800;line-height:1.08;margin-bottom:18px;">${esc(d.name)} SQL Interview <span style="color:#FFE34D;">Questions</span></h1>
   <p style="font-size:18px;line-height:1.75;color:#94a3b8;max-width:720px;margin-bottom:28px;">${esc(d.hero)}</p>
   <div style="display:flex;gap:12px;flex-wrap:wrap;">
-    <a href="/app/?company=${encodeURIComponent(d.name)}&amp;src=${slug}" class="btn bp" data-track="cta_hero_primary">Start the ${esc(d.name)} set — free</a>
+    <a href="/app/?company=${encodeURIComponent(d.name)}&amp;src=${slug}&amp;goal=interview" class="btn bp" data-track="cta_hero_primary">Start the ${esc(d.name)} set — free</a>
     <a href="/sql-interview-readiness-test/?company=${key}" class="btn bo" data-track="cta_hero_readiness">Check my readiness</a>
   </div>
   <p style="font-size:13px;color:#8b98ab;margin-top:18px;">${f.n} practice challenges · ${f.easy} Easy / ${f.medium} Medium / ${f.hard} Hard · ${f.free} play free · runs in the browser</p>
@@ -431,7 +435,7 @@ ${shapes}
   <p style="font-size:14px;color:#e2e8f0;font-weight:700;margin:26px 0 12px;">Practise now — SQL Quest challenges matched to those patterns</p>
   <p style="font-size:13px;color:#8b98ab;margin-bottom:14px;max-width:760px;line-height:1.6;">Our challenges, chosen because their SQL matches the shapes above; not questions ${esc(d.name)} has asked. Each card opens the challenge in the browser — no signup.</p>
   <div class="qg" id="question-cards"></div>
-  <div style="margin-top:22px;"><a href="/app/?company=${encodeURIComponent(d.name)}&amp;src=${slug}" class="btn bo" data-track="cta_questions_all">Open all ${f.n} ${esc(d.name)} practice challenges →</a></div>
+  <div style="margin-top:22px;"><a href="/app/?company=${encodeURIComponent(d.name)}&amp;src=${slug}&amp;goal=interview" class="btn bo" data-track="cta_questions_all">Open all ${f.n} ${esc(d.name)} practice challenges →</a></div>
 </div></section>
 
 ${readinessBlock({ slug: key, name: d.name, src: slug })}
@@ -445,7 +449,7 @@ ${topicLinksBlock({ name: d.name, dist: f.dist, ordered: f.ordered })}
 <section class="cs"><div class="sec" style="text-align:center;padding:64px 24px;border-top:1px solid rgba(255,255,255,.04);">
   <h2 class="fd" style="font-size:clamp(28px,4vw,44px);font-weight:800;line-height:1.15;margin-bottom:14px;">Ready for the ${esc(d.name)} SQL round?</h2>
   <p style="font-size:16px;color:#94a3b8;max-width:560px;margin:0 auto 26px;">No signup, no card. Start with the free challenges in the set; the Skillmap shows what to fix before the interview.</p>
-  <a href="/app/?company=${encodeURIComponent(d.name)}&amp;src=${slug}" class="btn bp" data-track="cta_closing">Start the ${esc(d.name)} set — free</a>
+  <a href="/app/?company=${encodeURIComponent(d.name)}&amp;src=${slug}&amp;goal=interview" class="btn bp" data-track="cta_closing">Start the ${esc(d.name)} set — free</a>
 </div></section>
 
 <footer class="ft"><p class="fd" style="font-size:16px;font-weight:800;">SQL Quest</p><p style="font-size:13px;color:#7f8da1;margin-top:6px;">Personalized SQL interview practice.</p>
@@ -490,11 +494,11 @@ export function injectModules(bank) {
     const title = (html.match(/<title>([^<]*)<\/title>/) || [])[1] || '';
     const name = ((title.match(/^(.+?)\s+SQL\b/) || [])[1] || key).trim();
     const fx = facts(bank, name);
-    html = html.replace(/<!-- company-readiness:start -->[\s\S]*?<!-- company-readiness:end -->\n?/, '');
+    html = html.replace(/<!-- company-readiness:start -->[\s\S]*?<!-- company-readiness:end -->\n*/, '');
     html = html.replace(/<!-- company-topics:start -->[\s\S]*?<!-- company-topics:end -->\n?/, '');
     const faqAnchor = html.indexOf('<section id="faq"');
     if (faqAnchor < 0) continue;
-    html = html.slice(0, faqAnchor) + readinessBlock({ slug: key, name, src: `${key}-sql-interview` }) + '\n\n' + html.slice(faqAnchor);
+    html = html.slice(0, faqAnchor).replace(/\n+$/, '\n\n') + readinessBlock({ slug: key, name, src: `${key}-sql-interview` }) + '\n\n' + html.slice(faqAnchor);
     const rel = html.indexOf('<!-- related-companies:start -->');
     const at = rel >= 0 ? rel : html.indexOf('<section class="cs">');
     if (at >= 0) html = html.slice(0, at) + topicLinksBlock({ name, dist: fx.dist, ordered: fx.ordered }) + '\n' + html.slice(at);
