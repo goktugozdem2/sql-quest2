@@ -39,19 +39,20 @@ import {
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const APP_JSX = join(HERE, '..', 'src', 'app.jsx');
+const ROADMAP_JS = join(HERE, '..', 'src', 'data', 'roadmap-stages.js');   // the stages moved here 2026-09-17
 
 let challenges;
 let liveStages;
 let liveOrder;
 let appSource;
 
-// SQL_ROADMAP_STAGES lives inside app.jsx (a 32k-line React module we will not
-// import from a unit test). Reading the stage ids out of the source keeps this
+// SQL_ROADMAP_STAGES lives in src/data/roadmap-stages.js (moved out of app.jsx
+// on 2026-09-17). Reading the stage ids out of the source keeps this
 // bound to the LIVE sequence: re-order the roadmap and this test re-orders with
 // it, which is the whole point — a fixture copy would drift and certify itself.
 function extractRoadmapStageChallengeIds(source) {
   const start = source.indexOf('const SQL_ROADMAP_STAGES');
-  if (start < 0) throw new Error('SQL_ROADMAP_STAGES not found in app.jsx');
+  if (start < 0) throw new Error('SQL_ROADMAP_STAGES not found in roadmap-stages.js');
   const end = source.indexOf('const SQL_ROADMAP_CHALLENGE_ORDER', start);
   if (end < 0) throw new Error('SQL_ROADMAP_CHALLENGE_ORDER not found after stages');
   const block = source.slice(start, end);
@@ -71,7 +72,7 @@ beforeAll(async () => {
   challenges = globalThis.window.challengesData;
 
   appSource = readFileSync(APP_JSX, 'utf8');
-  liveStages = extractRoadmapStageChallengeIds(appSource);
+  liveStages = extractRoadmapStageChallengeIds(readFileSync(ROADMAP_JS, 'utf8'));
   liveOrder = buildCurriculumOrder(liveStages);
 });
 

@@ -30,6 +30,7 @@ import {
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const APP_JSX = join(HERE, '..', 'src', 'app.jsx');
+const ROADMAP_JS = join(HERE, '..', 'src', 'data', 'roadmap-stages.js');   // the stages moved here 2026-09-17
 
 let challenges;
 let liveStages;
@@ -39,7 +40,7 @@ let liveStages;
 // re-ordering the roadmap re-orders this test with it.
 function extractStages(source) {
   const start = source.indexOf('const SQL_ROADMAP_STAGES');
-  if (start < 0) throw new Error('SQL_ROADMAP_STAGES not found in app.jsx');
+  if (start < 0) throw new Error('SQL_ROADMAP_STAGES not found in roadmap-stages.js');
   const end = source.indexOf('const SQL_ROADMAP_CHALLENGE_ORDER', start);
   if (end < 0) throw new Error('SQL_ROADMAP_CHALLENGE_ORDER not found after stages');
   const block = source.slice(start, end);
@@ -65,7 +66,7 @@ beforeAll(async () => {
   await import('../src/data/challenges.js');
   await import('../src/data/sector-challenges.js');
   challenges = globalThis.window.challengesData;
-  liveStages = extractStages(readFileSync(APP_JSX, 'utf8'));
+  liveStages = extractStages(readFileSync(ROADMAP_JS, 'utf8'));
 });
 
 describe('the live roadmap is readable and annotated', () => {

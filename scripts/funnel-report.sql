@@ -854,7 +854,7 @@ FROM runs ORDER BY d;
 
 -- 14c. ON-1r: are opens governed by the default path filter?
 -- ROADMAP_STAGE_IDS is the 44 ids reachable from challengePathFilter=
--- 'recommended'. Keep in sync with SQL_ROADMAP_STAGES in src/app.jsx.
+-- 'recommended'. Keep in sync with SQL_ROADMAP_STAGES in src/data/roadmap-stages.js (moved out of src/app.jsx 2026-09-17).
 WITH roadmap(id) AS (
   -- Extracted from SQL_ROADMAP_STAGES on 2026-07-28; 44 ids of 185 challenges.
   SELECT unnest(ARRAY[1,6,7,8,10,19,23,24,31,33,34,35,37,43,44,47,50,57,67,73,79,

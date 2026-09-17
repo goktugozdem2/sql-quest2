@@ -171,6 +171,26 @@ window.FEATURE_FLAGS = {
     // listed — flipping this flag does not turn on 23 company flows.
     interviewCountdown: false,
 
+    // Interview-first (2026-09-17) — the frame everything else sits in:
+    // docs/plans/interview-first-2026-09-17.md. Every real purchase in the
+    // product's history (3 of 3) was interview-shaped; modal → plan click
+    // was 9.3% for declared interview intent against 0 of 81 with no intent.
+    // ON, for an interview person ONLY (src/utils/interview-first.js
+    // isInterviewPerson: intent interview/job_ready, a countdown date or
+    // company, the interview-prep goal, a company-page arrival, or any
+    // interview history — the Interview tab's own population plus the
+    // countdown target): the daily-reward calendar never opens, achievement
+    // toasts do not render (the achievement is still awarded and saved),
+    // the header's lives and coin are not drawn, and the countdown card
+    // renders ABOVE the Coach's next-step card. Everyone else sees exactly
+    // today's product; nothing is deleted. One helper in app.jsx reads this
+    // flag — `interviewFirstOn(surface)` — and tests/interview-first.test.js
+    // pins its call sites. Fires `interview_first_applied {reason}` once a
+    // session. SHIPPED OFF; flips 2026-09-21 by the same scheduled task as
+    // interviewCountdown (the card it moves). Ledger: "interview-first: the
+    // plan is the product for people with a date".
+    interviewFirst: false,
+
     // ── The quarterly plan (2026-09-14) ──────────────────────────────────
     // $49 every 3 months, between monthly and annual. The founder's call:
     // three packages, 1 month / 3 months / 1 year. Annual stays the

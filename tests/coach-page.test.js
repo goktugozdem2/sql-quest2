@@ -63,7 +63,7 @@ describe('Coach page — what the mockup promises is on the live tab', () => {
   it('keeps the countdown card inside the Coach tab, after the radar', () => {
     // tests/interview-prep.test.js pins the countdown to the Coach; this pins its order
     const radarAt = app.indexOf('data-testid="coach-radar-panel"', coachStart);
-    const countdownAt = app.indexOf("window.FF?.feature?.('interviewCountdown') === true && (() => {", coachStart);
+    const countdownAt = app.indexOf("!interviewFirstOn('coach_card_below') && renderInterviewPrepCard()" /* the countdown card's default mount (2026-09-17: one render fn, two mounts) */, coachStart);
     expect(radarAt).toBeGreaterThan(coachStart);
     expect(countdownAt).toBeGreaterThan(radarAt);
   });

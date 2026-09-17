@@ -142,3 +142,17 @@ describe('prep-plan-note: the plan follows the person out of the app', () => {
     expect(cfg).not.toContain('prep-plan-note');
   });
 });
+
+// 2026-09-17: the stages moved out of app.jsx into src/data/roadmap-stages.js
+// so the note's plan sorts by the SAME curriculum order the app's card does.
+// An empty map fell to difficulty-then-id, which can hand out challenge 1.
+describe('prep-plan-note: the plan sorts by the app\'s curriculum order', () => {
+  it('imports SQL_ROADMAP_CHALLENGE_ORDER from src/data/roadmap-stages.js and passes it', () => {
+    expect(plan).toContain("import { SQL_ROADMAP_CHALLENGE_ORDER } from '../../../src/data/roadmap-stages.js'");
+    expect(plan).toContain('curriculumOrder: SQL_ROADMAP_CHALLENGE_ORDER,');
+    expect(plan, 'the empty map is back').not.toContain('curriculumOrder: new Map()');
+    expect(fs.existsSync(join(ROOT, 'src/data/roadmap-stages.js'))).toBe(true);
+    expect(app).toContain("import { SQL_ROADMAP_STAGES, SQL_ROADMAP_CHALLENGE_ORDER } from './data/roadmap-stages.js';");
+    expect(app, 'app.jsx still defines its own copy of the stages').not.toContain('const SQL_ROADMAP_STAGES = [');
+  });
+});

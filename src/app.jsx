@@ -26,7 +26,9 @@ import { publishProfile } from './utils/profile-publish.js';
 import { backfillLegacyAttempts } from './utils/challenge-helpers.js';
 import { resolveProAccess, planLabel, lastLoginDay, planRenews } from './utils/pro-access.js';
 import { pickNextChallengeWith, pickTopNWith, makeChallengeComparator, hardPreviewCounts, isFreePreview } from './utils/challenge-order.js';
+import { SQL_ROADMAP_STAGES, SQL_ROADMAP_CHALLENGE_ORDER } from './data/roadmap-stages.js';
 import { shouldShowInterviewNav, interviewNavReason } from './utils/interview-nav.js';
+import { interviewFirstReason } from './utils/interview-first.js';
 import { mergeProgress, hasProgress, isResumableGuest, GUEST_USER_KEY } from './utils/progress-merge.js';
 import { companySetMatch } from './utils/company-set-match.js';
 import { buildPracticePlan, PLAN_MIN_SOLVES_FOR_SKILLS } from './utils/practice-plan.js';
@@ -37,7 +39,7 @@ import { companySetGate, companySetFreeIds, companySetProgress, quietAskDecision
 import { expandStageChallenges, placementStartIndex as roadmapPlacementStartIndex } from './utils/roadmap.js';
 import { shouldEmitLockEvent, lockEventKey } from './utils/lock-events.js';
 import { shouldAskForReview, enabledReviewPlatforms, REVIEW_ASK_REASONS } from './utils/review-ask.js';
-import { eligibleTargets, findTarget, companyReadiness, planToDate, daysUntil, readinessBucket, MIN_EVIDENCE_SOLVES, PREP_PLAN_STATUS } from './utils/interview-prep.js';
+import { eligibleTargets, findTarget, planTargets, findPlanTarget, companyReadiness, planToDate, daysUntil, readinessBucket, MIN_EVIDENCE_SOLVES, MIN_TAGGED_CHALLENGES, PREP_PLAN_STATUS, TARGET_KIND } from './utils/interview-prep.js';
 import { buildDivision as buildLeagueDivision, tierForXp as leagueTierForXp } from './utils/leagues.js';
 import { getPrimarySkeleton, getAllSkeletons } from './utils/skeletons.js';
 import { diagnoseResult, diagnosisShort, primaryHint } from './utils/diagnose.js';
@@ -1981,178 +1983,9 @@ const FOUNDATION_PRACTICE_BY_LESSON = {
   ],
 };
 
-const SQL_ROADMAP_STAGES = [
-  {
-    id: 'foundations',
-    title: 'Foundations',
-    level: 'Start from zero',
-    summary: 'Tables, rows, columns, SELECT, FROM, and LIMIT.',
-    lessonIds: [1, 2],
-    roadmapLessonIds: [1, 2],
-    requiredChallengeCount: 0,
-    challengeIds: [91, 92],
-    // Canonical skills this stage teaches, and the hardest difficulty it may
-    // ACQUIRE. Curated ids above are exempt from the ceiling; this bounds only
-    // what src/utils/roadmap.js appends. See that file for why.
-    skills: ["Querying Basics"],
-    maxDifficulty: 'Easy',
-    outcomes: ['Read a table', 'Choose columns', 'Run a safe small query'],
-  },
-  {
-    id: 'filtering',
-    title: 'Filtering and Sorting',
-    level: 'Beginner',
-    summary: 'WHERE, comparisons, AND / OR, IN, LIKE, ORDER BY, and LIMIT.',
-    lessonIds: [3, 4, 5],
-    roadmapLessonIds: ['filtering-where', 'filtering-logic'],
-    challengeIds: [93, 94, 95, 96, 97, 102],
-    // Canonical skills this stage teaches, and the hardest difficulty it may
-    // ACQUIRE. Curated ids above are exempt from the ceiling; this bounds only
-    // what src/utils/roadmap.js appends. See that file for why.
-    skills: ["Querying Basics"],
-    maxDifficulty: 'Easy',
-    outcomes: ['Filter rows', 'Combine conditions', 'Sort top results'],
-  },
-  {
-    id: 'aggregates',
-    title: 'Counting and Grouping',
-    level: 'Beginner+',
-    summary: 'COUNT, SUM, AVG, MIN, MAX, GROUP BY, and HAVING.',
-    lessonIds: [6, 7, 8],
-    roadmapLessonIds: ['aggregates-count', 'aggregates-group'],
-    challengeIds: [98, 99, 100, 107],
-    // Canonical skills this stage teaches, and the hardest difficulty it may
-    // ACQUIRE. Curated ids above are exempt from the ceiling; this bounds only
-    // what src/utils/roadmap.js appends. See that file for why.
-    skills: ["Aggregation & Grouping"],
-    maxDifficulty: 'Medium',
-    outcomes: ['Summarize rows', 'Group categories', 'Filter groups'],
-  },
-  {
-    id: 'joins',
-    title: 'Joining Tables',
-    level: 'Intermediate',
-    summary: 'INNER JOIN, LEFT JOIN, aliases, and unmatched rows.',
-    lessonIds: [9],
-    roadmapLessonIds: ['joins-inner', 'joins-left'],
-    challengeIds: [105, 106, 19, 34],
-    // Canonical skills this stage teaches, and the hardest difficulty it may
-    // ACQUIRE. Curated ids above are exempt from the ceiling; this bounds only
-    // what src/utils/roadmap.js appends. See that file for why.
-    skills: ["Joins"],
-    maxDifficulty: 'Medium',
-    outcomes: ['Connect tables', 'Keep unmatched records', 'Avoid duplicate surprises'],
-  },
-  {
-    id: 'cleanup',
-    title: 'Data Cleanup Logic',
-    level: 'Intermediate',
-    summary: 'NULL handling, calculated columns, CASE WHEN, dates, and text patterns.',
-    lessonIds: [],
-    roadmapLessonIds: ['cleanup-null-case', 'cleanup-text-dates'],
-    challengeIds: [103, 104, 109, 110, 37, 57],
-    // Canonical skills this stage teaches, and the hardest difficulty it may
-    // ACQUIRE. Curated ids above are exempt from the ceiling; this bounds only
-    // what src/utils/roadmap.js appends. See that file for why.
-    skills: ["Conditional Logic", "NULL Handling"],
-    maxDifficulty: 'Medium',
-    outcomes: ['Handle NULL safely', 'Create labels', 'Calculate useful fields'],
-  },
-  // Two of the nine canonical skills had no stage at all until 2026-09-09, so
-  // the recommended path could never route anyone to String or Date work no
-  // matter how weak their radar showed it. Both now have a topic page and a
-  // full challenge set behind them; these are the stages that reach them.
-  // No lessonIds yet — getSqlRoadmapState treats an empty lesson list as a
-  // zero-lesson goal, so the stage completes on its first solve.
-  {
-    id: 'strings',
-    // Gated by FEATURE_FLAGS.features.roadmapV2 — with the flag off this
-    // stage is filtered out entirely, so nothing renders an empty stage.
-    v2Only: true,
-    title: 'Working With Text',
-    level: 'Intermediate',
-    summary: 'SUBSTR, INSTR, REPLACE, TRIM, LIKE patterns, and splitting fields apart.',
-    lessonIds: [],
-    roadmapLessonIds: [],
-    challengeIds: [],
-    // Canonical skills this stage teaches, and the hardest difficulty it may
-    // ACQUIRE. Curated ids above are exempt from the ceiling; this bounds only
-    // what src/utils/roadmap.js appends. See that file for why.
-    skills: ["String Functions"],
-    maxDifficulty: 'Medium',
-    outcomes: ['Pull a field out of a string', 'Normalise messy text', 'Match a shape'],
-  },
-  {
-    id: 'dates',
-    // Gated by FEATURE_FLAGS.features.roadmapV2 — with the flag off this
-    // stage is filtered out entirely, so nothing renders an empty stage.
-    v2Only: true,
-    title: 'Dates and Time',
-    level: 'Intermediate',
-    summary: 'Date parts, ranges, truncation, and answering "per month" honestly.',
-    lessonIds: [],
-    roadmapLessonIds: [],
-    challengeIds: [],
-    // Canonical skills this stage teaches, and the hardest difficulty it may
-    // ACQUIRE. Curated ids above are exempt from the ceiling; this bounds only
-    // what src/utils/roadmap.js appends. See that file for why.
-    skills: ["Date Functions"],
-    maxDifficulty: 'Medium',
-    outcomes: ['Filter a date range', 'Group by month', 'Measure a span'],
-  },
-  {
-    id: 'subqueries',
-    title: 'Multi-Step Queries',
-    level: 'Intermediate+',
-    summary: 'Subqueries, derived tables, EXISTS / IN, and readable query decomposition.',
-    lessonIds: [10],
-    roadmapLessonIds: ['subqueries-compare', 'subqueries-derived'],
-    challengeIds: [108, 115, 31, 33, 35],
-    // Canonical skills this stage teaches, and the hardest difficulty it may
-    // ACQUIRE. Curated ids above are exempt from the ceiling; this bounds only
-    // what src/utils/roadmap.js appends. See that file for why.
-    skills: ["Subqueries & CTEs"],
-    maxDifficulty: 'Medium',
-    outcomes: ['Compare to averages', 'Use query results inside queries', 'Break analysis into steps'],
-  },
-  {
-    id: 'ctes',
-    title: 'CTEs and Pipelines',
-    level: 'Advanced',
-    summary: 'WITH clauses, multi-step analysis, recursive patterns, and reusable stages.',
-    lessonIds: [],
-    roadmapLessonIds: ['ctes-with', 'ctes-recursive'],
-    challengeIds: [111, 43, 44, 79],
-    // Canonical skills this stage teaches, and the hardest difficulty it may
-    // ACQUIRE. Curated ids above are exempt from the ceiling; this bounds only
-    // what src/utils/roadmap.js appends. See that file for why.
-    skills: ["Subqueries & CTEs"],
-    maxDifficulty: 'Medium',
-    outcomes: ['Name intermediate results', 'Build readable pipelines', 'Handle hierarchy problems'],
-  },
-  {
-    id: 'windows',
-    title: 'Window Functions',
-    level: 'Advanced',
-    summary: 'ROW_NUMBER, RANK, LAG, LEAD, running totals, and rolling analysis.',
-    lessonIds: [],
-    roadmapLessonIds: ['windows-rank', 'windows-compare'],
-    challengeIds: [112, 23, 24, 47, 50, 67, 73],
-    // Canonical skills this stage teaches, and the hardest difficulty it may
-    // ACQUIRE. Curated ids above are exempt from the ceiling; this bounds only
-    // what src/utils/roadmap.js appends. See that file for why.
-    skills: ["Window Functions"],
-    maxDifficulty: 'Medium',
-    outcomes: ['Rank within groups', 'Compare neighboring rows', 'Calculate running metrics'],
-  },
-];
-
-const SQL_ROADMAP_CHALLENGE_ORDER = new Map();
-SQL_ROADMAP_STAGES.forEach((stage, stageIndex) => {
-  (stage.challengeIds || []).forEach((challengeId, challengeIndex) => {
-    SQL_ROADMAP_CHALLENGE_ORDER.set(challengeId, (stageIndex * 1000) + challengeIndex);
-  });
-});
+// SQL_ROADMAP_STAGES + SQL_ROADMAP_CHALLENGE_ORDER moved to
+// src/data/roadmap-stages.js (2026-09-17) so prep-plan-note can import the
+// same map. Imported at the top of this file.
 
 // Every "what should I do next" pick routes through src/utils/challenge-order.js.
 // Raw `challenges` order is FAANG-interview ordered, so a bare `.find()` returns
@@ -5098,7 +4931,7 @@ function ReviewAskCard({ solves, platform, onShown, onReview, onPrivateNote, onC
  * score/XP value — the one place DESIGN.md permits it on this card.
  */
 function InterviewPrepCard({
-  targets, target, dateValue, readiness, plan, minEvidenceSolves, mockMinutes,
+  targets, target, dateValue, readiness, plan, minEvidenceSolves, minTagged, mockMinutes,
   onTargetChange, onDateChange, onClear, onOpenItem, onShown,
 }) {
   // One impression event per mount, like ReviewAskCard: if this is on screen
@@ -5109,6 +4942,14 @@ function InterviewPrepCard({
   }, []);
 
   if (!Array.isArray(targets) || targets.length === 0) return null;
+
+  // Two tiers in one picker (2026-09-17): the signed archetypes first — a
+  // number and a timed mock — then every company with enough tagged
+  // questions for a plan, by count. A tagged target renders the note where
+  // the score would be, and never a score.
+  const signedTargets = targets.filter(t => t && t.kind !== 'tagged');
+  const taggedTargetsList = targets.filter(t => t && t.kind === 'tagged');
+  const isTagged = target?.kind === 'tagged';
 
   const company = target?.company || null;
   const status = plan?.status || null;
@@ -5166,7 +5007,16 @@ function InterviewPrepCard({
             style={{ background: '#0E0F13', border: '1px solid #2A2E38', color: '#F2F0EA' }}
           >
             <option value="">{i18n_t('interviewPrep', 'targetPlaceholder')}</option>
-            {targets.map(t => <option key={t.company} value={t.company}>{t.company}</option>)}
+            {signedTargets.length > 0 && (
+              <optgroup label={i18n_t('interviewPrep', 'groupSigned')}>
+                {signedTargets.map(t => <option key={t.company} value={t.company}>{t.company}</option>)}
+              </optgroup>
+            )}
+            {taggedTargetsList.length > 0 && (
+              <optgroup label={i18n_t('interviewPrep', 'groupTagged')}>
+                {taggedTargetsList.map(t => <option key={t.company} value={t.company}>{t.company} · {t.challengeCount}</option>)}
+              </optgroup>
+            )}
           </select>
         </label>
         <label className="flex flex-col gap-1">
@@ -5200,13 +5050,19 @@ function InterviewPrepCard({
           a comment, because a user looking for their own employer deserves the
           reason rather than an empty list. */}
       <p className="text-[11px] mt-2" style={{ color: '#8A8E99' }}>
-        {i18n_t('interviewPrep', 'onlyTargets')}
+        {i18n_t('interviewPrep', 'onlyTargets', { n: minTagged })}
       </p>
 
       {company && (
         <div className="mt-4 pt-4" style={{ borderTop: '1px solid #2A2E38' }}>
           {/* ── the number, and immediately under it what it is ── */}
-          {readiness ? (
+          {isTagged ? (
+            // A tagged target: the plan and the note, no score. The note is
+            // the same sentence interview-prep.js taggedTargetNote() carries.
+            <p data-testid="interview-prep-tagged-note" className="text-[11px]" style={{ color: '#8A8E99' }}>
+              {i18n_t('interviewPrep', 'taggedNote', { company, n: target.challengeCount })}
+            </p>
+          ) : readiness ? (
             <>
               <div className="flex items-baseline gap-2">
                 <span className="text-xs" style={{ color: '#8A8E99' }}>
@@ -8160,6 +8016,34 @@ function SQLQuest() {
     solvedCount: solvedChallenges.size,
     ...interviewNavInputs,
   });
+  // Interview-first (2026-09-17, docs/plans/interview-first-2026-09-17.md).
+  // ONE helper reads the flag and the predicate, and the four surfaces it
+  // changes — the daily-reward calendar, the achievement toast, the header's
+  // lives/coin cluster, the countdown card's place on the Coach — call it and
+  // nothing else does. `surface` is a label, not a switch: every site gets
+  // the same answer, and tests/interview-first.test.js pins the sites by
+  // name and count. The population is the Interview tab's (interview-nav.js)
+  // plus a countdown target; the predicate lives in src/utils/interview-first.js.
+  const interviewFirstReasonNow = interviewFirstReason({
+    intent: interviewNavInputs.intent,
+    prepTarget,
+    coachGoalId: interviewNavInputs.goalId,
+    arrivalSrc: interviewNavInputs.arrivalSrc,
+    interviewHistory,
+  });
+  const interviewFirstOn = (surface) => (
+    window.FF?.feature?.('interviewFirst') === true && interviewFirstReasonNow !== null && !!surface
+  );
+  // `interview_first_applied {reason}` once per session, the first time the
+  // branch is taken for a loaded session — the read splits the cohort on it.
+  const interviewFirstAppliedRef = useRef(false);
+  useEffect(() => {
+    if (interviewFirstAppliedRef.current || !currentUser || isSessionLoading) return;
+    if (!interviewFirstOn('session')) return;
+    interviewFirstAppliedRef.current = true;
+    trackActivationEvent('interview_first_applied', { reason: interviewFirstReasonNow });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser, isSessionLoading, interviewFirstReasonNow]);
   // Which company this person is here for, and whether we can hand them a
   // screen for it (2026-09-12). Resolution order: a countdown target they set,
   // the Practice company filter (applyIntentRouting sets it from the arrival
@@ -16387,6 +16271,9 @@ CRITICAL RULES:
       const signedUpAt = parseInt(localStorage.getItem('sqlquest_signup_at') || '0', 10);
       if (signedUpAt && Date.now() - signedUpAt < 5 * 60 * 1000) return;
     } catch (_) {}
+    // Interview-first: the calendar never opens for an interview person. The
+    // streak above is still recorded; only the game surface is withheld.
+    if (interviewFirstOn('daily_reward')) return;
     setShowLoginReward(true);
   };
   
@@ -24353,12 +24240,130 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
   const firstRunFoundationContext = getFoundationSectorContext();
   const firstRunFoundationLesson = personalizeFoundationLesson(ROADMAP_LESSONS_BY_ID[1], firstRunFoundationContext);
 
+  // The countdown card (Coach tab). ONE render function so the card has one
+  // home in source and two mount points on the Coach — above the next-step
+  // card for an interview person under `interviewFirst`, below it for
+  // everyone else (its 2026-09-08 place). Lazy: nothing here runs unless a
+  // mount point calls it, so other tabs pay nothing.
+  const renderInterviewPrepCard = () => {
+                if (window.FF?.feature?.('interviewCountdown') !== true) return null;
+                const bank = window.challengesData || challenges || [];
+                // Signed targets first, then every company with enough tagged
+                // challenges for a plan (2026-09-17, the second tier). A signed
+                // target gets the number; a tagged one gets the plan and the
+                // note, never a number — src/utils/interview-prep.js header.
+                const targets = planTargets(bank, window.challengeCompanies || {}, mockInterviews);
+                if (targets.length === 0) return null;
+
+                const target = findPlanTarget(prepTarget.company, bank, window.challengeCompanies || {}, mockInterviews);
+                const mock = target ? mockInterviews.find(i => i.id === target.mockId) : null;
+
+                // The best sitting at THIS target's mock. `percentage` is the
+                // field the list card reads and `scorePercent` is the one the
+                // analytics aggregation reads; both are written on every new
+                // row, and older rows may carry only one — take either.
+                const sittings = target
+                  ? interviewHistory.filter(h => h.interviewId === target.mockId)
+                  : [];
+                const mockResult = sittings.length > 0
+                  ? {
+                      taken: true,
+                      scorePercent: sittings.reduce(
+                        (best, h) => Math.max(best, h.percentage ?? h.scorePercent ?? 0), 0),
+                    }
+                  : null;
+
+                const readiness = (target && target.kind === TARGET_KIND.ARCHETYPE)
+                  ? companyReadiness({
+                      skillLevels: calculateSkillLevelsFromPerformance(),
+                      solvedIds: solvedChallenges,
+                      target,
+                      bank,
+                      mockResult,
+                    })
+                  : null;
+
+                const now = Date.now();
+                const remaining = daysUntil(prepTarget.date, now);
+                const plan = (target && remaining !== null)
+                  ? planToDate({
+                      target,
+                      readiness,
+                      // A tagged target has no readiness; the drills still go
+                      // to the weakest skills the set demands.
+                      skillLevels: readiness ? null : calculateSkillLevelsFromPerformance(),
+                      solvedIds: solvedChallenges,
+                      bank,
+                      daysRemaining: remaining,
+                      now,
+                      // Never raw id order — see src/utils/challenge-order.js.
+                      curriculumOrder: SQL_ROADMAP_CHALLENGE_ORDER,
+                    })
+                  : null;
+
+                return (
+                  <InterviewPrepCard
+                    targets={targets}
+                    target={target}
+                    dateValue={prepTarget.date}
+                    readiness={readiness}
+                    plan={plan}
+                    minEvidenceSolves={MIN_EVIDENCE_SOLVES}
+                    minTagged={MIN_TAGGED_CHALLENGES}
+                    mockMinutes={mock ? Math.round((mock.totalTime || 0) / 60) : null}
+                    onTargetChange={(company) => {
+                      setPrepPreference({ company });
+                      trackActivationEvent('prep_target_set', {
+                        company: company || null,
+                        // The integer, never the date the user typed.
+                        daysOut: daysUntil(prepTarget.date, Date.now()),
+                        kind: findPlanTarget(company, bank, window.challengeCompanies || {}, mockInterviews)?.kind || null,
+                      });
+                    }}
+                    onDateChange={(date) => {
+                      setPrepPreference({ date });
+                      trackActivationEvent('prep_target_set', {
+                        company: prepTarget.company || null,
+                        daysOut: daysUntil(date, Date.now()),
+                        kind: target ? target.kind : null,
+                      });
+                    }}
+                    onClear={() => setPrepPreference({ company: null, date: null })}
+                    onOpenItem={openPrepItem}
+                    onShown={() => {
+                      trackActivationEvent('prep_readiness_shown', {
+                        company: prepTarget.company || null,
+                        // A coarse bucket, never the raw score: the score is a
+                        // progress measure, and a per-person number in the
+                        // funnel invites exactly the "how ready are our users"
+                        // reading this feature refuses to support.
+                        bucket: readinessBucket(readiness ? readiness.score : null),
+                        mockTaken: readiness ? readiness.parts.mock.taken : null,
+                      });
+                      if (plan && plan.status !== PREP_PLAN_STATUS.UNAVAILABLE) {
+                        trackActivationEvent('prep_plan_viewed', {
+                          company: prepTarget.company || null,
+                          kind: target ? target.kind : null,
+                          status: plan.status,
+                          daysOut: plan.daysRemaining,
+                          todayItems: plan.today.length,
+                          targetRemaining: plan.totals.targetRemaining,
+                        });
+                      }
+                    }}
+                  />
+                );
+  };
+
   return (
     <div className="min-h-screen bg-[#0E0F13] text-[#F2F0EA]">
       {/* Deferred while the soft email capture is up — the first solve
           fires both at once and they compete for the same moment. State
           stays set, so the popup mounts the instant the modal closes. */}
-      {showAchievement && !showSoftEmailCapture && <AchievementPopup achievement={showAchievement} onClose={() => setShowAchievement(null)} />}
+      {/* Interview-first: the toast does not render for an interview person.
+          unlockAchievement still awards, saves and scores it — hide, never
+          withhold. */}
+      {showAchievement && !showSoftEmailCapture && !interviewFirstOn('achievement_toast') && <AchievementPopup achievement={showAchievement} onClose={() => setShowAchievement(null)} />}
       {showConfetti && <ConfettiAnimation onComplete={() => setShowConfetti(false)} soundEnabled={soundEnabled} />}
       {floatingXP && <FloatingXP key={floatingXP.id} amount={floatingXP.amount} onComplete={() => setFloatingXP(null)} />}
       {showLevelUp && <LevelUpBanner levelName={showLevelUp} onComplete={() => setShowLevelUp(null)} />}
@@ -31436,10 +31441,17 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
             ) : (
               <span title={`Daily streak${streakFreezes > 0 ? ` · ${streakFreezes} freeze${streakFreezes > 1 ? 's' : ''} left this month` : ''}`} className="flex items-center gap-0.5"><PixelFlame active={dailyStreak > 0} size={14} /><span className="font-bold">{dailyStreak}</span></span>
             )}
-            <span className="text-gray-700">|</span>
-            <span title="Lives" className="flex gap-0.5">{[1,2,3].map(i => <PixelHeart key={i} filled={i <= lives} size={12} />)}</span>
-            <span className="text-gray-700">|</span>
-            <span title="XP" className="flex items-center gap-0.5 text-yellow-400"><PixelCoin size={12} /><span className="font-bold">{xp.toLocaleString()}</span></span>
+            {/* Interview-first (2026-09-17): the lives and the coin are game
+                surfaces; an interview person does not see them. The streak
+                stays — it is the one game element that is also a plan. */}
+            {!interviewFirstOn('header_game_cluster') && (
+              <>
+                <span className="text-gray-700">|</span>
+                <span title="Lives" className="flex gap-0.5">{[1,2,3].map(i => <PixelHeart key={i} filled={i <= lives} size={12} />)}</span>
+                <span className="text-gray-700">|</span>
+                <span title="XP" className="flex items-center gap-0.5 text-yellow-400"><PixelCoin size={12} /><span className="font-bold">{xp.toLocaleString()}</span></span>
+              </>
+            )}
             {/* 2026-09-14 declutter (founder): sound, replay-tour and the language
                 picker moved to the profile panel. A person chooses a language
                 once and toggles sound rarely; neither earns permanent space
@@ -32356,6 +32368,11 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
           const next = computeCoachNextStep();
           return (
             <div className="mb-4">
+              {/* Interview-first (2026-09-17): for an interview person the plan
+                  is the product — the countdown card renders FIRST, above the
+                  practice plan and the next-step card. One render function,
+                  two mount points, never both. */}
+              {interviewFirstOn('coach_card_above') && renderInterviewPrepCard()}
               {/* Your plan (founder's list, 2026-09-14): how long you have, what
                   is weakest, what to solve today, how much a day that is. Free
                   questions only — it never names a locked one, which is what
@@ -33311,103 +33328,9 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                   </div>
                 );
               })()}
-              {window.FF?.feature?.('interviewCountdown') === true && (() => {
-                const bank = window.challengesData || challenges || [];
-                const targets = eligibleTargets(bank, window.challengeCompanies || {}, mockInterviews);
-                if (targets.length === 0) return null;
-
-                const target = findTarget(prepTarget.company, bank, window.challengeCompanies || {}, mockInterviews);
-                const mock = target ? mockInterviews.find(i => i.id === target.mockId) : null;
-
-                // The best sitting at THIS target's mock. `percentage` is the
-                // field the list card reads and `scorePercent` is the one the
-                // analytics aggregation reads; both are written on every new
-                // row, and older rows may carry only one — take either.
-                const sittings = target
-                  ? interviewHistory.filter(h => h.interviewId === target.mockId)
-                  : [];
-                const mockResult = sittings.length > 0
-                  ? {
-                      taken: true,
-                      scorePercent: sittings.reduce(
-                        (best, h) => Math.max(best, h.percentage ?? h.scorePercent ?? 0), 0),
-                    }
-                  : null;
-
-                const readiness = target
-                  ? companyReadiness({
-                      skillLevels: calculateSkillLevelsFromPerformance(),
-                      solvedIds: solvedChallenges,
-                      target,
-                      bank,
-                      mockResult,
-                    })
-                  : null;
-
-                const now = Date.now();
-                const remaining = daysUntil(prepTarget.date, now);
-                const plan = (target && remaining !== null)
-                  ? planToDate({
-                      target,
-                      readiness,
-                      solvedIds: solvedChallenges,
-                      bank,
-                      daysRemaining: remaining,
-                      now,
-                      // Never raw id order — see src/utils/challenge-order.js.
-                      curriculumOrder: SQL_ROADMAP_CHALLENGE_ORDER,
-                    })
-                  : null;
-
-                return (
-                  <InterviewPrepCard
-                    targets={targets}
-                    target={target}
-                    dateValue={prepTarget.date}
-                    readiness={readiness}
-                    plan={plan}
-                    minEvidenceSolves={MIN_EVIDENCE_SOLVES}
-                    mockMinutes={mock ? Math.round((mock.totalTime || 0) / 60) : null}
-                    onTargetChange={(company) => {
-                      setPrepPreference({ company });
-                      trackActivationEvent('prep_target_set', {
-                        company: company || null,
-                        // The integer, never the date the user typed.
-                        daysOut: daysUntil(prepTarget.date, Date.now()),
-                      });
-                    }}
-                    onDateChange={(date) => {
-                      setPrepPreference({ date });
-                      trackActivationEvent('prep_target_set', {
-                        company: prepTarget.company || null,
-                        daysOut: daysUntil(date, Date.now()),
-                      });
-                    }}
-                    onClear={() => setPrepPreference({ company: null, date: null })}
-                    onOpenItem={openPrepItem}
-                    onShown={() => {
-                      trackActivationEvent('prep_readiness_shown', {
-                        company: prepTarget.company || null,
-                        // A coarse bucket, never the raw score: the score is a
-                        // progress measure, and a per-person number in the
-                        // funnel invites exactly the "how ready are our users"
-                        // reading this feature refuses to support.
-                        bucket: readinessBucket(readiness ? readiness.score : null),
-                        mockTaken: readiness ? readiness.parts.mock.taken : null,
-                      });
-                      if (plan && plan.status !== PREP_PLAN_STATUS.UNAVAILABLE) {
-                        trackActivationEvent('prep_plan_viewed', {
-                          company: prepTarget.company || null,
-                          status: plan.status,
-                          daysOut: plan.daysRemaining,
-                          todayItems: plan.today.length,
-                          targetRemaining: plan.totals.targetRemaining,
-                        });
-                      }
-                    }}
-                  />
-                );
-              })()}
+              {/* Interview-first OFF, or not an interview person: the card
+                  keeps its 2026-09-08 place below the next-step card. */}
+              {!interviewFirstOn('coach_card_below') && renderInterviewPrepCard()}
 
               {/* Quiet Pro entry on the default tab — the modal is otherwise only
                   reachable from Profile/Interview Prep or reactive walls, so most

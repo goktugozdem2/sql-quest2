@@ -70,6 +70,7 @@ const p = (rel) => fileURLToPath(new URL(rel, import.meta.url));
 const appSource = readFileSync(p('../src/app.jsx'), 'utf8');
 const i18nSource = readFileSync(p('../src/utils/i18n.js'), 'utf8');
 const moduleSource = readFileSync(p('../src/utils/interview-prep.js'), 'utf8');
+const roadmapSource = readFileSync(p('../src/data/roadmap-stages.js'), 'utf8');   // the stages moved here 2026-09-17
 
 // 2026-09-08T12:00:00Z, fixed. Every clock in this file is an argument.
 const NOW = Date.UTC(2026, 8, 8, 12, 0, 0);
@@ -872,7 +873,7 @@ describe('planToDate — curriculum order, never raw id order', () => {
     // next" for every Medium solver in four separate places. A revert of the
     // drill picker to raw order surfaces id 1 or 2 here.
     const [target] = eligibleTargets(bank, companyMap, mocks);
-    const order = buildCurriculumOrder(extractRoadmapStages(appSource));
+    const order = buildCurriculumOrder(extractRoadmapStages(roadmapSource));
     const solved = new Set(filler(20));
     const readiness = companyReadiness({ skillLevels: FULL_RADAR, solvedIds: solved, target, bank });
     const r = planToDate({
@@ -886,14 +887,15 @@ describe('planToDate — curriculum order, never raw id order', () => {
 });
 
 /**
- * SQL_ROADMAP_STAGES lives inside app.jsx. Read the ids out of the source so
+ * SQL_ROADMAP_STAGES lives in src/data/roadmap-stages.js (moved out of
+ * app.jsx 2026-09-17). Read the ids out of the source so
  * this test binds to the LIVE sequence — the same trick tests/challenge-order
  * uses, and for the same reason: a fixture copy drifts and then certifies
  * itself.
  */
 function extractRoadmapStages(source) {
   const start = source.indexOf('const SQL_ROADMAP_STAGES');
-  if (start < 0) throw new Error('SQL_ROADMAP_STAGES not found in app.jsx');
+  if (start < 0) throw new Error('SQL_ROADMAP_STAGES not found in roadmap-stages.js');
   const end = source.indexOf('const SQL_ROADMAP_CHALLENGE_ORDER', start);
   const block = source.slice(start, end);
   const stages = [];
@@ -1168,28 +1170,43 @@ const coachMockCardBody = () => {
 };
 
 describe('source guard: the countdown card lives on the Coach now', () => {
-  it('the flagged render sits inside the Coach tab, not the Interview Prep tab', () => {
-    const coach = coachTabBody();
-    expect(coach).toContain("window.FF?.feature?.('interviewCountdown') === true");
-    expect(coach).toContain('<InterviewPrepCard');
-    // …and nowhere in the Interview Prep tab any more.
+  it('the flagged render mounts inside the Coach tab, not the Interview Prep tab', () => {
+    // 2026-09-17: the card is built by ONE render function
+    // (`renderInterviewPrepCard`, defined before the main return, gated on
+    // the countdown flag default-OFF) and MOUNTED on the Coach. The element
+    // literal lives in the function; the mount points are in the tab.
+    const fn = appSource.slice(appSource.indexOf('const renderInterviewPrepCard = '));
+    expect(fn.slice(0, 200)).toMatch(/window\.FF\?\.feature\?\.\('interviewCountdown'\) !== true\) return null/);
+    expect(fn.slice(0, fn.indexOf('\n  };\n'))).toContain('<InterviewPrepCard');
+    expect(coachTabBody()).toContain('renderInterviewPrepCard()');
+    // …and nowhere in the Interview Prep tab.
     expect(trialsTabBody()).not.toContain('<InterviewPrepCard');
+    expect(trialsTabBody()).not.toContain('renderInterviewPrepCard');
   });
 
   it('exactly one InterviewPrepCard render site exists', () => {
     const hits = appSource.split('<InterviewPrepCard').length - 1;
     expect(hits, 'the card must have one home, not two').toBe(1);
+    expect(appSource.split('const renderInterviewPrepCard = ').length - 1).toBe(1);
   });
 
-  it('it sits BELOW the Coach next-step card, not above it', () => {
+  it('by default it sits BELOW the Coach next-step card; above it only under interviewFirst', () => {
     // The Coach's contract is one answer to "what do I do next"; this card
-    // asks a question. Answers before questions. If this ever flips it should
-    // be a decision, not a merge accident.
+    // asks a question. Answers before questions — for everyone who is not
+    // here for an interview. The flip above the next-step card for an
+    // interview person IS a decision (docs/plans/interview-first-2026-09-17.md,
+    // point 1) and it is gated: tests/interview-first.test.js pins the two
+    // mount points and the helper that chooses between them.
     const coach = coachTabBody();
     const nextStepAt = coach.indexOf("i18n_t('coachNext', 'label')");
-    const cardAt = coach.indexOf('<InterviewPrepCard');
+    const belowAt = coach.indexOf("!interviewFirstOn('coach_card_below') && renderInterviewPrepCard()");
+    const aboveAt = coach.indexOf("interviewFirstOn('coach_card_above') && renderInterviewPrepCard()");
     expect(nextStepAt).toBeGreaterThan(-1);
-    expect(cardAt).toBeGreaterThan(nextStepAt);
+    expect(belowAt, 'the default mount point is gone').toBeGreaterThan(nextStepAt);
+    expect(aboveAt, 'the interview-first mount point is gone').toBeGreaterThan(-1);
+    expect(aboveAt).toBeLessThan(nextStepAt);
+    // Never both: one is the negation of the other, on the same helper.
+    expect(coach.split('renderInterviewPrepCard()').length - 1).toBe(2);
   });
 
   it('both existing doors into the Interview Prep tab are untouched', () => {

@@ -204,3 +204,28 @@ describe('the profile panel stays trimmed', () => {
     expect(panel).toContain('handleLogout');
   });
 });
+
+// Interview-first (2026-09-17, docs/plans/interview-first-2026-09-17.md).
+// The header's lives and coin are game surfaces; an interview person under
+// `interviewFirst` does not see them. The founder's 09-14 count — logo ·
+// level · streak · lives · coin · notifications · avatar, seven — becomes
+// five for that person: logo · level · streak · notifications · avatar. The
+// identity button and the streak are NOT part of the cut, and the cut is
+// exactly one gate, on the one helper.
+describe('the header for an interview person: lives and coin out, identity and streak stay', () => {
+  it('the lives and the coin sit behind the one interview-first gate', () => {
+    const gate = header.indexOf("!interviewFirstOn('header_game_cluster')");
+    expect(gate, 'the gate is gone from the header').toBeGreaterThan(-1);
+    const gated = header.slice(gate, header.indexOf('</>', gate));
+    expect(gated).toContain('title="Lives"');
+    expect(gated).toContain('title="XP"');
+    expect(header.split('interviewFirstOn(').length - 1, 'one gate in the header, not two').toBe(1);
+  });
+
+  it('the streak is drawn before the gate, the identity after it, neither inside it', () => {
+    const gate = header.indexOf("!interviewFirstOn('header_game_cluster')");
+    const gateEnd = header.indexOf('</>', gate);
+    expect(header.indexOf('<PixelFlame')).toBeLessThan(gate);
+    expect(header.indexOf('data-testid="header-identity"')).toBeGreaterThan(gateEnd);
+  });
+});

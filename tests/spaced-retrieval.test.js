@@ -88,7 +88,7 @@ describe('source guards — the Coach card and the chip are flagged and off', ()
     expect(flags).toMatch(/^\s+dailyQuota: false,/m);
     const radarAt = app.indexOf('data-testid="coach-radar-panel"');
     const cardAt = app.indexOf('data-testid="coach-retrieval-card"');
-    const countdownAt = app.indexOf("window.FF?.feature?.('interviewCountdown') === true && (() => {");
+    const countdownAt = app.indexOf("!interviewFirstOn('coach_card_below') && renderInterviewPrepCard()" /* the countdown card's default mount (2026-09-17: one render fn, two mounts) */);
     expect(cardAt).toBeGreaterThan(radarAt);
     expect(cardAt).toBeLessThan(countdownAt);
     expect(app).toMatch(/ftbFlag\('spacedRetrievalCard'\)/);

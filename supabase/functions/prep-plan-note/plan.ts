@@ -30,6 +30,7 @@ import {
   targetDemandedSkills,
 } from '../../../src/utils/interview-prep.js'
 import { CANONICAL_SKILLS } from '../../../src/utils/skill-calc.js'
+import { SQL_ROADMAP_CHALLENGE_ORDER } from '../../../src/data/roadmap-stages.js'
 
 const W = globalThis as any
 export const BANK: any[] = W.challengesData || []
@@ -181,10 +182,10 @@ export function buildPrepNote(userData: any, now: number): PrepNote | null {
     },
   }
 
-  // curriculumOrder: the roadmap (SQL_ROADMAP_STAGES) lives in src/app.jsx
-  // and is not importable here, so the comparator falls to difficulty then
-  // id — Easy before Medium before Hard, never the raw FAANG order. See the
-  // plan doc; moving the stages to src/data would let this pass the real map.
+  // curriculumOrder: the SAME map the app's card sorts by — the stages moved
+  // to src/data/roadmap-stages.js on 2026-09-17 so this could import them.
+  // With an empty map the comparator fell to difficulty then id, which for a
+  // Snowflake plan could hand out challenge 1, the 24% opener.
   const plan = planToDate({
     target,
     readiness: readinessForPlan,
@@ -192,7 +193,7 @@ export function buildPrepNote(userData: any, now: number): PrepNote | null {
     bank: BANK,
     daysRemaining: daysOut,
     now,
-    curriculumOrder: new Map(),
+    curriculumOrder: SQL_ROADMAP_CHALLENGE_ORDER,
   })
 
   // Today's items first, topped up from the following days when today holds
