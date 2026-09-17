@@ -1,15 +1,18 @@
-// Onboarding intake (P0-1, 2026-09-12): three OPTIONAL questions in front of
-// the placement quiz. The pure half is src/utils/onboarding-intake.js; the
+// Onboarding intake (P0-1, 2026-09-12): the goal, then optional questions,
+// in front of the placement quiz. Since 2026-09-17 the GOAL IS REQUIRED
+// (founder's directive: no goalless person); date, role, company and level
+// stay skippable. The pure half is src/utils/onboarding-intake.js; the
 // guards below pin what app.jsx must keep true: the intake sits before the
-// quiz, behind its flag, shows once, never stores or sends the date, never
-// mentions Pro, and never fires the events that give other funnels their
-// meaning (goal_selected, prep_target_set, intent_captured).
+// quiz, behind its flag, shows once, has no skip on the goal step, never
+// stores or sends the date, never mentions Pro, and never fires the events
+// that give other funnels their meaning (goal_selected, prep_target_set,
+// intent_captured).
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import {
-  INTAKE_KEY, INTAKE_GOALS, INTAKE_ROLES, INTAKE_STEPS, INTAKE_MAX_DAYS_OUT,
-  intakeGoalFor, isIntakeRole, nextIntakeStep, daysOut, isValidIntakeDate,
+  INTAKE_KEY, INTAKE_GOALS, INTAKE_ROLES, INTAKE_STEPS, INTAKE_MAX_DAYS_OUT, INTAKE_REQUIRED_STEPS, INTAKE_GOAL_SOURCES,
+  intakeGoalFor, intakeGoalForIntent, isIntakeRole, isIntakeStepRequired, nextIntakeStep, daysOut, isValidIntakeDate,
   buildIntakeRecord, isIntakeComplete, readIntakeRecord, intakeEventPayload,
   newCoachGoalState, shouldShowIntake,
 } from '../src/utils/onboarding-intake.js';
@@ -20,10 +23,30 @@ const NOW = Date.UTC(2026, 8, 12, 12, 0, 0); // 2026-09-12 noon UTC
 describe('intake — the three steps and what each answer maps to', () => {
   it('walks goal → date → role and then stops', () => {
     expect(INTAKE_STEPS).toEqual(['goal', 'date', 'role']);
-    expect(nextIntakeStep('goal')).toBe('date');
+    expect(nextIntakeStep('goal', 'general')).toBe('date');
     expect(nextIntakeStep('date')).toBe('role');
     expect(nextIntakeStep('role')).toBeNull();
     expect(nextIntakeStep('nonsense')).toBe('goal');
+  });
+
+  it('the goal is the one required step: from goal without an answer there is no next step (2026-09-17)', () => {
+    expect(INTAKE_REQUIRED_STEPS).toEqual(['goal']);
+    expect(isIntakeStepRequired('goal')).toBe(true);
+    for (const step of ['company', 'date', 'level', 'role']) expect(isIntakeStepRequired(step), step).toBe(false);
+    expect(nextIntakeStep('goal')).toBe('goal');
+    expect(nextIntakeStep('goal', null)).toBe('goal');
+    expect(nextIntakeStep('goal', 'pro')).toBe('goal');
+    expect(nextIntakeStep('goal', 'interview')).toBe('company');
+    expect(nextIntakeStep('goal', 'job')).toBe('date');
+  });
+
+  it('maps an intent value back to the intake goal, for the ?goal= link and the returning ask', () => {
+    expect(intakeGoalForIntent('interview')).toBe('interview');
+    expect(intakeGoalForIntent('job_ready')).toBe('job');
+    expect(intakeGoalForIntent('learning')).toBe('general');
+    expect(intakeGoalForIntent('exploring')).toBeNull();
+    expect(intakeGoalForIntent(null)).toBeNull();
+    expect(INTAKE_GOAL_SOURCES).toEqual(['intake', 'link', 'returning']);
   });
 
   it('every goal maps to the intent the post-solve ask writes and to a live Coach goal', () => {
@@ -64,15 +87,33 @@ describe('intake — the three steps and what each answer maps to', () => {
 describe('intake record — what is kept, and what never is', () => {
   it('records the answers and lists the skipped steps', () => {
     const r = buildIntakeRecord({ goal: 'interview', date: '2026-10-01', role: 'analyst' }, NOW);
-    expect(r).toEqual({ version: 1, goal: 'interview', hasDate: true, role: 'analyst', company: null, level: null, skipped: ['company', 'level'], completedAt: '2026-09-12T12:00:00.000Z' });
+    expect(r).toEqual({ version: 1, goal: 'interview', goalSource: 'intake', hasDate: true, role: 'analyst', company: null, level: null, skipped: ['company', 'level'], completedAt: '2026-09-12T12:00:00.000Z' });
     expect(isIntakeComplete(r)).toBe(true);
   });
 
-  it('skipping all three is a completed intake — nobody is asked twice', () => {
-    const r = buildIntakeRecord({ goal: null, date: null, role: null }, NOW);
-    expect(r.skipped).toEqual(['goal', 'date', 'role']);
+  it('skipping everything but the goal is a completed intake — nobody is asked twice', () => {
+    const r = buildIntakeRecord({ goal: 'general', date: null, role: null }, NOW);
+    expect(r.skipped).toEqual(['date', 'role']);
     expect(isIntakeComplete(r)).toBe(true);
     expect(shouldShowIntake({ flagOn: true, onStartScreen: true, record: r })).toBe(false);
+  });
+
+  it('there is no record without a goal, and "goal" is never in skipped (2026-09-17)', () => {
+    expect(buildIntakeRecord({ goal: null, date: '2026-10-01', role: 'analyst' }, NOW)).toBeNull();
+    expect(buildIntakeRecord({ goal: 'pro' }, NOW)).toBeNull();
+    expect(buildIntakeRecord(null, NOW)).toBeNull();
+    expect(isIntakeComplete(null)).toBe(false);
+    for (const goal of ['interview', 'job', 'general']) {
+      expect(buildIntakeRecord({ goal }, NOW).skipped, goal).not.toContain('goal');
+    }
+  });
+
+  it('records where the goal came from, and only the three sources it knows', () => {
+    expect(buildIntakeRecord({ goal: 'job' }, NOW).goalSource).toBe('intake');
+    expect(buildIntakeRecord({ goal: 'job', goalSource: 'link' }, NOW).goalSource).toBe('link');
+    expect(buildIntakeRecord({ goal: 'job', goalSource: 'returning' }, NOW).goalSource).toBe('returning');
+    expect(buildIntakeRecord({ goal: 'job', goalSource: 'admin' }, NOW).goalSource).toBe('intake');
+    expect(intakeEventPayload(buildIntakeRecord({ goal: 'job', goalSource: 'link' }, NOW), { now: NOW }).goalSource).toBe('link');
   });
 
   it('never holds the date, only that one was given', () => {
@@ -85,11 +126,11 @@ describe('intake record — what is kept, and what never is', () => {
   });
 
   it('rejects garbage answers instead of storing them', () => {
-    const r = buildIntakeRecord({ goal: 'pro', date: 7, role: 'CEO' }, NOW);
-    expect(r.goal).toBeNull();
+    const r = buildIntakeRecord({ goal: 'job', date: 7, role: 'CEO' }, NOW);
+    expect(r.goal).toBe('job');
     expect(r.role).toBeNull();
-    expect(r.skipped).toEqual(['goal', 'date', 'role']);
-    expect(buildIntakeRecord(null, NOW).skipped.length).toBe(3);
+    expect(r.hasDate).toBe(false);
+    expect(r.skipped).toEqual(['date', 'role']);
   });
 
   it('reads only a complete record back from storage', () => {
@@ -108,9 +149,9 @@ describe('intake record — what is kept, and what never is', () => {
   it('the completion event carries daysOut, the skipped count and the seconds — never the date', () => {
     const r = buildIntakeRecord({ goal: 'interview', date: '2026-10-01', role: null }, NOW);
     const payload = intakeEventPayload(r, { draftDate: '2026-10-01', now: NOW, startedAt: NOW - 42_000 });
-    expect(payload).toEqual({ goal: 'interview', hasDate: true, daysOut: 19, role: null, company: null, level: null, skippedCount: 3, seconds: 42 });
+    expect(payload).toEqual({ goal: 'interview', goalSource: 'intake', hasDate: true, daysOut: 19, role: null, company: null, level: null, skippedCount: 3, seconds: 42 });
     expect(JSON.stringify(payload)).not.toContain('2026-10-01');
-    expect(intakeEventPayload(buildIntakeRecord({}, NOW), { now: NOW }).seconds).toBeNull();
+    expect(intakeEventPayload(buildIntakeRecord({ goal: 'general' }, NOW), { now: NOW }).seconds).toBeNull();
   });
 });
 
@@ -163,12 +204,20 @@ describe('source guards — app.jsx keeps the intake optional, early, and quiet'
     expect(block.length).toBeLessThan(16000);
   });
 
-  it('every step can be skipped, and the goal is one tap', () => {
+  it('every optional step can be skipped; the goal is one tap and has no skip (2026-09-17)', () => {
     expect(block).toMatch(/data-intake-skip="true"/);
     expect(block).toMatch(/onClick=\{\(\) => answerIntake\(intakeStep, null\)\}/);
     expect(block).toMatch(/INTAKE_GOALS\.map\(g => \(/);
     expect(block).toMatch(/INTAKE_ROLES\.map\(r => \(/);
     expect(block).toMatch(/onClick=\{\(\) => answerIntake\('goal', g\.id\)\}/);
+    // the skip affordance renders only on a non-required step, and the goal
+    // step says why there is none
+    expect(block).toMatch(/\{!isIntakeStepRequired\(intakeStep\) && \(\s*\n\s*<button\s*\n\s*type="button"\s*\n\s*data-intake-skip="true"/);
+    expect(block).toMatch(/data-intake-goal-required="true"/);
+    expect(block).toMatch(/i18n_t\('intake', 'goalRequired'\)/);
+    // and a skip of the goal from anywhere is a no-op, not a null record
+    expect(block).toMatch(/if \(skipped && isIntakeStepRequired\(step\)\) return;/);
+    expect(block).toMatch(/if \(!record\) return;/);
   });
 
   it('writes each answer to the store that already owns it', () => {
@@ -227,7 +276,7 @@ describe('source guards — app.jsx keeps the intake optional, early, and quiet'
   });
 
   it('copy exists in both languages', () => {
-    for (const key of ['optional', 'progress', 'skip', 'goalTitle', 'goalSub', 'goalInterview', 'goalInterviewSub', 'goalJob', 'goalJobSub',
+    for (const key of ['optional', 'progress', 'skip', 'goalTitle', 'goalSub', 'goalEyebrow', 'goalRequired', 'goalInterview', 'goalInterviewSub', 'goalJob', 'goalJobSub',
       'goalGeneral', 'goalGeneralSub', 'dateTitleInterview', 'dateTitleJob', 'dateTitleGeneral', 'dateSub', 'dateNone', 'dateContinue',
       'dateInvalid', 'roleTitle', 'roleSub', 'roleAnalyst', 'roleDataScientist', 'roleEngineer', 'roleProduct', 'roleStudent', 'roleOther', 'daysLeft']) {
       const intakeBlocks = i18n.split('    intake: {').slice(1).map(b => b.slice(0, b.indexOf('\n    },')));

@@ -1156,6 +1156,21 @@ of the verifier and must never be rounded to `FLAT`.
   deep-linked challenge opener never sees the start screen, and the
   cold-start dialog is unchanged. Guest continuity (09-26): an intake record
   rides the guest blob into the account like any other field.
+- **Amended 2026-09-17 — the goal is required from the flip.** By the
+  founder's directive of 09-17 ("hedefsiz adam istemiyoruz": ask the goal
+  at once, measure where they stand on it, plan it, monetise along the plan)
+  the goal step has no skip when this flips on 09-21; date, role, company
+  and level stay skippable; a record cannot exist without a goal
+  (`buildIntakeRecord` returns null; `tests/onboarding-intake.test.js`).
+  Target (i) above is therefore answered by construction — the goal answer
+  rate is 100% of completers — and the read moves to `first_run_reach`,
+  which now measures **the cost of a required question**, not of an
+  optional one: a fall there is people who left rather than name a goal.
+  The falsification stands as written (−10 → off the start screen the same
+  day); the "goal answered < 30%" arm is void, replaced by the measure's own
+  entry ("the goal is asked, measured and planned before the first solve"),
+  which makes the required goal skippable again if `first_run_reach` falls
+  more than 15 points.
 - **Verdict** _pending_
 
 ### the Coach page shows the goal, the step, the challenge and the radar

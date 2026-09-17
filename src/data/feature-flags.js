@@ -37,8 +37,10 @@ window.FEATURE_FLAGS = {
     // already exists — the intent key the post-solve ask writes, the Coach
     // goal it maps to (stamped source='intake'), prepTarget.date, and
     // userGoals.role — so there is no fourth profile to reconcile. Skipping
-    // all three is a completed intake; nobody is asked twice; a skipped goal
-    // still gets the one-question ask after the first solve, as today.
+    // the optional steps is a completed intake; nobody is asked twice.
+    // SINCE 2026-09-17 THE GOAL IS REQUIRED (founder: "hedefsiz adam
+    // istemiyoruz") — the goal step has no skip; the cost of that question
+    // is read on `first_run_reach` (ledger amendment of the same date).
     //
     // SHIPPED OFF (2026-09-12). It sits on the first-contact stretch that the
     // "105 opener" ledger claim reads until 2026-09-13, so it flips on

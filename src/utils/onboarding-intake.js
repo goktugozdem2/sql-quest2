@@ -1,7 +1,14 @@
-// Onboarding intake — three optional questions before the placement quiz
-// (P0-1 on the founder's 2026-09-12 list): what brings you here, by when,
-// and what you do. Every step can be skipped; skipping all three is a
-// completed intake, not an abandoned one, and nobody is asked twice.
+// Onboarding intake — the goal, then optional questions, before the
+// placement quiz (P0-1 on the founder's 2026-09-12 list): what brings you
+// here, by when, and what you do. Since 2026-09-17 THE GOAL IS REQUIRED
+// (founder's directive: "hedefsiz adam istemiyoruz" — we do not want a
+// goalless person; ask the goal first, measure where they are on it, plan
+// it, monetise along the plan). Every other step can be skipped; skipping
+// all of those is a completed intake, not an abandoned one, and nobody is
+// asked twice. There is no record without a goal: `buildIntakeRecord`
+// returns null for a draft with none, and `nextIntakeStep('goal')` stays on
+// the goal until one is picked. The cost of a required question is read on
+// the `first_run_reach` guardrail (ledger: "onboarding intake").
 //
 // This module is the pure half. app.jsx decides WHEN (a first-run user on
 // the Learning Path tab, before the quiz, behind `onboardingIntake`); this
@@ -18,9 +25,11 @@
 // holds what was asked and what was skipped — never the date. Events carry
 // `daysOut`, an integer, the way `prep_target_set` does.
 //
-// The goal is optional by design and is never a step toward checkout
-// (ledger: "goal-setting: a marker of a deadline, or something we can
-// manufacture?"). Nothing here reads or writes anything about Pro.
+// The goal is required, and is never a step toward checkout (ledger:
+// "goal-setting: a marker of a deadline, or something we can manufacture?").
+// Nothing here reads or writes anything about Pro. `goalSource` on the record
+// says where the goal came from — the intake itself, a `?goal=` link, or the
+// returning ask (2026-09-17, D and E) — so reads can split on it.
 
 import { daysUntil } from './interview-prep.js';
 import { coachPlacementFor } from './placement.js';
@@ -28,6 +37,8 @@ import { coachPlacementFor } from './placement.js';
 export const INTAKE_KEY = 'sqlquest_intake_v1';
 export const INTAKE_VERSION = 1;
 export const INTAKE_STEPS = ['goal', 'date', 'role'];
+export const INTAKE_REQUIRED_STEPS = ['goal'];
+export const INTAKE_GOAL_SOURCES = ['intake', 'link', 'returning'];
 export const INTAKE_MAX_DAYS_OUT = 730;
 
 export const INTAKE_GOALS = [
@@ -76,11 +87,23 @@ export function isIntakeRole(id) {
   return INTAKE_ROLES.includes(id);
 }
 
+export function isIntakeStepRequired(step) {
+  return INTAKE_REQUIRED_STEPS.includes(step);
+}
+
+/** The step after `step`. From 'goal' without a chosen goal there is no next: the goal is required. */
 export function nextIntakeStep(step, goal = null) {
+  if (step === 'goal' && !intakeGoalFor(goal)) return 'goal';
   const steps = intakeStepsFor(goal);
   const i = steps.indexOf(step);
   if (i < 0) return steps[0];
   return steps[i + 1] || null;
+}
+
+/** The intent value (`interview` / `job_ready` / `learning`) back to the intake goal id, or null. */
+export function intakeGoalForIntent(intent) {
+  const g = INTAKE_GOALS.find(x => x.intent === intent);
+  return g ? g.id : null;
 }
 
 /** Whole days from `now` to an ISO date — the countdown card's own arithmetic. */
@@ -93,17 +116,19 @@ export function isValidIntakeDate(isoDate, now = Date.now()) {
 }
 
 /**
- * The record written when the last step is answered or skipped.
- * `skipped` lists the steps with no answer; `hasDate` stands in for the date,
- * which lives in prepTarget and is not repeated here.
+ * The record written when the last step is answered or skipped — or null
+ * when the draft has no goal: a record without a goal does not exist.
+ * `skipped` lists the optional steps with no answer (never 'goal'); `hasDate`
+ * stands in for the date, which lives in prepTarget and is not repeated here.
  */
 export function buildIntakeRecord(draft, now = Date.now()) {
   const d = draft && typeof draft === 'object' ? draft : {};
   const goal = intakeGoalFor(d.goal) ? d.goal : null;
+  if (!goal) return null;
+  const goalSource = INTAKE_GOAL_SOURCES.includes(d.goalSource) ? d.goalSource : 'intake';
   const role = isIntakeRole(d.role) ? d.role : null;
   const hasDate = isValidIntakeDate(d.date, now);
   const skipped = [];
-  if (!goal) skipped.push('goal');
   if (!hasDate) skipped.push('date');
   if (!role) skipped.push('role');
   const interview = goal === 'interview';
@@ -114,6 +139,7 @@ export function buildIntakeRecord(draft, now = Date.now()) {
   return {
     version: INTAKE_VERSION,
     goal,
+    goalSource,
     hasDate,
     role,
     ...(interview ? { company, level } : {}),
@@ -142,6 +168,7 @@ export function intakeEventPayload(record, { draftDate = null, now = Date.now(),
   const r = record || {};
   return {
     goal: r.goal || null,
+    goalSource: r.goalSource || 'intake',
     hasDate: !!r.hasDate,
     daysOut: r.hasDate ? daysOut(draftDate, now) : null,
     role: r.role || null,

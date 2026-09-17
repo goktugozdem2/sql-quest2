@@ -32,7 +32,7 @@ import { interviewFirstReason } from './utils/interview-first.js';
 import { mergeProgress, hasProgress, isResumableGuest, GUEST_USER_KEY } from './utils/progress-merge.js';
 import { companySetMatch } from './utils/company-set-match.js';
 import { buildPracticePlan, PLAN_MIN_SOLVES_FOR_SKILLS } from './utils/practice-plan.js';
-import { INTAKE_KEY, INTAKE_GOALS, INTAKE_ROLES, INTAKE_STEPS, INTAKE_COMPANIES, INTAKE_LEVELS, intakeStepsFor, intakeGoalFor, nextIntakeStep, isValidIntakeDate, buildIntakeRecord, readIntakeRecord, intakeEventPayload, newCoachGoalState, shouldShowIntake } from './utils/onboarding-intake.js';
+import { INTAKE_KEY, INTAKE_GOALS, INTAKE_ROLES, INTAKE_STEPS, INTAKE_COMPANIES, INTAKE_LEVELS, intakeStepsFor, intakeGoalFor, nextIntakeStep, isIntakeStepRequired, isValidIntakeDate, buildIntakeRecord, readIntakeRecord, intakeEventPayload, newCoachGoalState, shouldShowIntake } from './utils/onboarding-intake.js';
 import { PLACEMENT_TIERS, placementResult, placementEventPayload, readFirstRunPlacement, seedFloorsFor, placementFromReadiness } from './utils/placement.js';
 import { paidWallFor, isColdStart } from './utils/paid-wall.js';
 import { companySetGate, companySetFreeIds, companySetProgress, quietAskDecision, deadlineOfferFor, deadlineEventMeta, withEarlyWall, pickProMockId, FREE_MOCK_ID, quotaGate, FREE_SOLVE_QUOTA } from './utils/free-tier-boundary.js';
@@ -11389,12 +11389,14 @@ CRITICAL RULES:
   };
 
   // ── Onboarding intake (P0-1, 2026-09-12) ───────────────────────────────
-  // Three optional questions before the placement quiz. Each answer lands in
-  // the store that already owns it (the intent key, the Coach goal, the
-  // countdown's prepTarget.date, the mentor's userGoals.role); the record only
-  // says what was asked and what was skipped. The goal is never a step toward
-  // checkout, and nothing here fires the picker's goal_selected, the
-  // countdown's prep_target_set or the post-solve ask's intent_captured —
+  // The goal, then optional questions, before the placement quiz. Each answer
+  // lands in the store that already owns it (the intent key, the Coach goal,
+  // the countdown's prepTarget.date, the mentor's userGoals.role); the record
+  // only says what was asked and what was skipped. The goal is REQUIRED since
+  // 2026-09-17 (the founder's directive: no goalless person) — the goal step
+  // has no skip, and a record cannot exist without one. The goal is never a
+  // step toward checkout, and nothing here fires the picker's goal_selected,
+  // the countdown's prep_target_set or the post-solve ask's intent_captured —
   // those funnels keep their meaning. Rules and shapes:
   // src/utils/onboarding-intake.js.
   useEffect(() => {
@@ -11418,6 +11420,7 @@ CRITICAL RULES:
   const completeIntake = (draft) => {
     const now = Date.now();
     const record = buildIntakeRecord(draft, now);
+    if (!record) return;   // no goal, no record — the goal step cannot be skipped
     const goal = intakeGoalFor(record.goal);
     if (goal) {
       // The same two keys the post-solve ask writes, so the Interview door
@@ -11487,6 +11490,7 @@ CRITICAL RULES:
 
   const answerIntake = (step, value) => {
     const skipped = value === null || value === undefined || value === '';
+    if (skipped && isIntakeStepRequired(step)) return;   // the goal is required
     const draft = { ...intakeDraft, [step]: skipped ? null : value };
     trackActivationEvent('intake_answered', {
       step,
@@ -11526,7 +11530,7 @@ CRITICAL RULES:
     return (
       <div data-onboarding="first-run-intake" data-intake-step={intakeStep}>
         <div className="mb-2 flex items-center justify-between gap-3">
-          <p className="text-xs font-bold uppercase tracking-wider text-purple-300">{i18n_t('intake', 'optional')}</p>
+          <p className="text-xs font-bold uppercase tracking-wider text-purple-300">{i18n_t('intake', intakeStep === 'goal' ? 'goalEyebrow' : 'optional')}</p>
           <p className="text-xs font-semibold tabular-nums" style={{ color: '#8A8E99' }}>{i18n_t('intake', 'progress', { n: stepIndex + 1, m: intakeSteps.length })}</p>
         </div>
         {intakeStep === 'goal' && (
@@ -11551,6 +11555,7 @@ CRITICAL RULES:
                 </button>
               ))}
             </div>
+            <p className="mt-3 text-xs" style={{ color: '#8A8E99' }} data-intake-goal-required="true">{i18n_t('intake', 'goalRequired')}</p>
           </>
         )}
         {intakeStep === 'company' && (
@@ -11655,15 +11660,18 @@ CRITICAL RULES:
             </div>
           </>
         )}
-        <button
-          type="button"
-          data-intake-skip="true"
-          onClick={() => answerIntake(intakeStep, null)}
-          className="mt-4 text-xs underline underline-offset-2 transition-colors"
-          style={{ color: '#8A8E99' }}
-        >
-          {intakeStep === 'date' ? i18n_t('intake', 'dateNone') : intakeStep === 'company' ? i18n_t('intake', 'companyNone') : i18n_t('intake', 'skip')}
-        </button>
+        {/* The goal has no skip (required since 2026-09-17); every other step keeps its own. */}
+        {!isIntakeStepRequired(intakeStep) && (
+          <button
+            type="button"
+            data-intake-skip="true"
+            onClick={() => answerIntake(intakeStep, null)}
+            className="mt-4 text-xs underline underline-offset-2 transition-colors"
+            style={{ color: '#8A8E99' }}
+          >
+            {intakeStep === 'date' ? i18n_t('intake', 'dateNone') : intakeStep === 'company' ? i18n_t('intake', 'companyNone') : i18n_t('intake', 'skip')}
+          </button>
+        )}
       </div>
     );
   };
