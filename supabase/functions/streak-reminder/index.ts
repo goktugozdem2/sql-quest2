@@ -109,6 +109,15 @@ async function sendAndLog(supabase: any, apiKey: string, args: {
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
+  // Caller gate (2026-09-17): the anon key ships in every browser, and JWT
+  // verification lets it through — without this line anyone with the URL
+  // could trigger a send. Only the service role may call this function.
+  // The pg_cron jobs must carry it (supabase/manual/20260917_cron_service_role.sql).
+  const expected = `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''}`
+  if (!Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || (req.headers.get('authorization') ?? '') !== expected) {
+    return new Response(JSON.stringify({ error: 'service role required' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+  }
+
   try {
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',

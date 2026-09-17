@@ -503,6 +503,18 @@ silently killed streak-reminder/skill-decay/welcome-back for months).
 | `lapsed-pro` | **NOT SCHEDULED** | win-back for expired Pro. `?dry=1` previews the audience. Targets `proStatus=true` AND expiry past — the stale flag IS the segment. 5+ solves, 3d after expiry, once per user ever, capped 8/run. The only channel that reaches them: they stopped returning, so no in-app trigger can fire. Cron deliberately unset — sending is a decision, not a default. **DO NOT SCHEDULE without rewriting the copy first (measured 2026-09-08).** The audience is now 50 accounts, and the email tells a non-payer "Your SQL Quest Pro trial ended {N} days ago" under the subject "Your trial ended before the best part shipped". For at least 7 of them that sentence is false in our favour: their trial did not lapse, the client's auto-renew branch kept pushing `proExpiry` forward on every login until **we** removed it on 2026-09-07 (src/utils/pro-access.js). Telling someone their trial ended, when what actually happened is that we withdrew access we had been giving them by mistake, is a lie of omission in an outward-facing email. Also measured: **0 of the 50 have been active since the fix**, so there is no confusion to clean up and no urgency — 44 were trials, expiries run 2026-03-26 to 09-04, 13 have 10+ solves, 47 have an email. If this segment is ever mailed, the honest version says we were still giving them Pro and stopped, and says why. That is the founder's call to make, not a default to inherit. |
 | `resend-webhook` | (webhook) | Resend delivered/opened/clicked/bounced → email_events |
 
+**Every sender refuses anything but the service role (2026-09-17).** Found
+after the first ten `goal-note` sends: all nine senders answered the ANON
+key — the one in every browser — with 200, dry run and send alike, and five
+pg_cron jobs were calling them with it. The gate is one inlined block per
+function (`service role required`, `tests/sender-gate.test.js`). Order of
+release: `supabase/manual/20260917_cron_service_role.sql` FIRST (moves the
+five jobs to the Vault secret, like capture-email-drip), THEN deploy the
+gated functions — the other way round 401s the crons. `goal-note` and
+`prep-plan-note` are gated and deployed; the rest await the founder.
+Webhooks (`stripe-webhook`, `resend-webhook`) are signature-checked, not
+gated.
+
 **Every sender must write a `sent` row carrying its `resend_id`.** resend-webhook
 resolves template+username by looking that id up; with no matching row it falls
 through to `template='unknown'`, and the engagement is unattributable forever.
