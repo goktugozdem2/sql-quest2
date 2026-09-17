@@ -193,10 +193,10 @@ function renderBody(args: { username: string; solves: number; variant: Variant }
   // One real number where the row has one. At zero the sentence is omitted
   // rather than padded.
   const numberA = solves > 0
-    ? ` You have ${solves} ${solves === 1 ? 'solve' : 'solves'} on the record, and I would rather ask than guess from them.`
+    ? ` You have solved ${solves} ${solves === 1 ? 'challenge' : 'challenges'} here, and I would rather ask than guess from that.`
     : ''
   const numberB = solves > 0
-    ? ` ${solves} ${solves === 1 ? 'solve' : 'solves'} in, you are one of the people we never asked.`
+    ? ` You have solved ${solves} ${solves === 1 ? 'challenge' : 'challenges'} here, and nobody ever asked you why.`
     : ''
   const body = variant === 'A'
     ? `
@@ -208,7 +208,7 @@ function renderBody(args: { username: string; solves: number; variant: Variant }
       <p style="${P}">I won't send another one of these. If it is none of the three, hit reply and tell me in a line; it comes straight to me.</p>`
     : `
       <p style="${P}">Hi ${username},</p>
-      <p style="${P}">This is not a sequence. There are a few dozen people on this list, and I am writing to each of you one at a time, because you are someone the product never asked.${numberB}</p>
+      <p style="${P}">This is not a sequence. There are a few dozen people on this list, and I am writing to each of you one at a time, because the product never asked you.${numberB}</p>
       <p style="${P}"><strong>What are you preparing for?</strong></p>
       <p style="${P}">${LINKS}</p>
       <p style="${P}">That one click is the whole answer, and it changes what the Coach puts in front of you from the next session on.</p>
