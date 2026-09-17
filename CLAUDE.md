@@ -507,11 +507,14 @@ silently killed streak-reminder/skill-decay/welcome-back for months).
 after the first ten `goal-note` sends: all nine senders answered the ANON
 key — the one in every browser — with 200, dry run and send alike, and five
 pg_cron jobs were calling them with it. The gate is one inlined block per
-function (`service role required`, `tests/sender-gate.test.js`). Order of
-release: `supabase/manual/20260917_cron_service_role.sql` FIRST (moves the
-five jobs to the Vault secret, like capture-email-drip), THEN deploy the
-gated functions — the other way round 401s the crons. `goal-note` and
-`prep-plan-note` are gated and deployed; the rest await the founder.
+function (`service role required`, `tests/sender-gate.test.js`). The
+Vault's `service_role_key` (April) is NOT the functions' own key — a cron
+call through it got 401 — so the gate accepts the function secret
+`SENDER_SECRET` (set 2026-09-17) or the service role key, and every mail
+cron reads `sender_secret` from Vault (the SQL is not in git; it carries
+the value). Gating a function before its cron carries the secret 401s the
+cron silently — pg_cron reports "succeeded" on any HTTP status; read
+`net._http_response.status_code`.
 Webhooks (`stripe-webhook`, `resend-webhook`) are signature-checked, not
 gated.
 
