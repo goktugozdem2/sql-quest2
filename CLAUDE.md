@@ -775,6 +775,12 @@ Rewritten Coach-forward:
   `kind: 'archetype'` (signed, gets the number) or `kind: 'tagged'` (≥ 5
   tagged challenges, generic Pro mock, the honest note, **never a score**).
   Ledger: "interview-first: the plan is the product for people with a date".
+- **Goal required, measured, planned (2026-09-17, flips 09-21):** the intake's
+  goal step has no skip; behind `goalMeasure` the public test's ten questions
+  follow it — ONE module `src/data/readiness-questions.js` for the page
+  generator and the app, scored the page's way, stored in the page's shape,
+  floors for skipIf only; `?goal=` link door, returning ask, `userData.intent`
+  (one writer, `setUserIntent`). Ledger: "the goal is asked, measured and planned before the first solve"; metric `goal_measure_funnel`.
 
 ### Revolut — the second interview-prep member (signed 2026-09-12)
 

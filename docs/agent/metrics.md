@@ -2222,6 +2222,11 @@ Traps, stated before the first read:
   (shown ≈ completed, or the block is stranding people).
 - **The date never arrives.** `daysOut` is the integer at answer time; there
   is no calendar date in any row, by test.
+- **From the 09-21 flip the goal is required** (ledger amendment 2026-09-17):
+  `goal_answered` equals `completed` by construction, and `intake_completed`
+  carries `goalSource` — `intake`, `link` (completed from a `?goal=` link off
+  the start screen, no `intake_shown` before it) or `returning`. Read the
+  answer rates for date / role / company / level; the goal rate is 100%.
 - **An intake goal is not a picker goal.** It maps a Coach goal with
   `coachState.source='intake'`; `goal_selected` does not fire. Read
   `coach_page_take_rate` and the `paywall_ask_efficiency` goal split with
@@ -2230,6 +2235,81 @@ Traps, stated before the first read:
   intake; the intent key is written directly, so `intent_captured` volume
   FALLS after the flip (fewer people reach the modal) for a structural
   reason. Declarers from the flip on = intake goal answers + modal answers.
+
+## `goal_measure_funnel`
+
+The founder's directive of 2026-09-17: ask the goal at once, measure where the
+person stands on it, show it honestly, plan it, monetise along the plan.
+People by `aid` (`COALESCE(aid, username)`), from the `goalMeasure` flip
+(scheduled 2026-09-21 with `onboardingIntake`; the deploy timestamp is the
+birth). Split every row by `goal` (interview / job / general) and by
+`company` named or not; and by `source` — where the goal came from:
+
+| source | who |
+|---|---|
+| `intake` | the first-run start screen (the intake's required goal step) |
+| `link` | `?goal=interview\|job_ready\|learning` on /app/ (company-page CTAs, the public test's plan link) |
+| `returning` | the returning ask — a session with a solve and no goal on record |
+| `ask` | the post-solve modal (intent only; it does not lead into the measure) |
+
+| step | event | notes |
+|---|---|---|
+| goal declared | `intake_completed {goal, goalSource}` · `intent_captured {intent, source}` · `goal_ask_returning_shown` | `intake_completed` with `goalSource='link'` has no `intake_shown` before it (the intake was completed from the link, off the start screen); the returning ask fires `intake_answered {step:'goal', returning:true}` and never `intake_completed` |
+| check started | `goal_measure_started {goal, company, source, weighted}` | once per mount; a fresh (< 7 d) stored result is shown back and fires nothing here |
+| check finished | `goal_measure_completed {goal, company, source, overall, weakest, answered, weighted}` | the score, never the answers |
+| check skipped | `goal_measure_skipped {goal, company, source, stage, answered}` | |
+| plan built | `goal_measure_plan_clicked {goal, company, source, overall, hasPlan, planKind, level, tier, stored}` | `hasPlan` = an interview goal with a `findPlanTarget` company |
+| plan viewed | `prep_plan_viewed {company, kind}` | the countdown card on the Coach; interview goal only |
+| plan item opened | `prep_plan_item_opened {kind, challengeId}` | within 24 h of `goal_measure_plan_clicked` |
+| paid | `pro_purchase_completed` with `reason='stripe_webhook'` | |
+
+```sql
+WITH e AS (
+  SELECT event, created_at, COALESCE(((metadata #>> '{}')::jsonb)->>'aid', username) AS p, ((metadata #>> '{}')::jsonb) AS md
+  FROM pro_events
+  WHERE created_at >= :flip
+    AND event IN ('intake_completed','goal_measure_started','goal_measure_completed','goal_measure_skipped',
+                  'goal_measure_plan_clicked','prep_plan_viewed','prep_plan_item_opened','pro_purchase_completed')
+    AND <shared filters>
+),
+g AS (SELECT p, min(md->>'goal') AS goal, bool_or(md->>'company' IS NOT NULL) AS named, min(md->>'source') AS source
+      FROM e WHERE event IN ('goal_measure_started','goal_measure_completed') GROUP BY 1),
+t AS (SELECT p, min(created_at) AS built FROM e WHERE event='goal_measure_plan_clicked' GROUP BY 1)
+SELECT g.goal, g.named, g.source,
+       count(DISTINCT e.p) FILTER (WHERE event='intake_completed')                                        AS intake_completed,
+       count(DISTINCT e.p) FILTER (WHERE event='goal_measure_started')                                    AS started,
+       count(DISTINCT e.p) FILTER (WHERE event='goal_measure_completed')                                  AS completed,
+       count(DISTINCT e.p) FILTER (WHERE event='goal_measure_plan_clicked')                               AS plan_built,
+       count(DISTINCT e.p) FILTER (WHERE event='prep_plan_viewed')                                        AS plan_viewed,
+       count(DISTINCT e.p) FILTER (WHERE event='prep_plan_item_opened' AND e.created_at < t.built + interval '24 hours') AS item_24h,
+       count(DISTINCT e.p) FILTER (WHERE event='pro_purchase_completed' AND md->>'reason'='stripe_webhook') AS paid
+FROM e JOIN g USING (p) LEFT JOIN t USING (p)
+GROUP BY 1, 2, 3 ORDER BY 1, 2, 3;
+```
+
+Traps, stated before the first read:
+
+- **`completed / started` is the length question.** Ten questions is the
+  public test's length; the ledger's falsification cuts it to six below 35%.
+  A skip at `stage='questions'` with `answered ≥ 5` is a length problem; a
+  skip with `answered = 0` is a wanting problem.
+- **The cost line is `first_run_reach`**, read from the same flip: the
+  required goal AND the ten questions now sit in front of the quiz. The
+  intake entry's amendment says what a fall there means.
+- **`prep_plan_viewed` needs `interviewCountdown`**, which flips the same
+  day; job / general goals never reach it — for them "plan viewed" is
+  `coach_tab_viewed shell='full'` after `goal_measure_plan_clicked`, and
+  "item opened" is the Coach's next-step start.
+- **A stored result re-weighted.** A person who took the public test and
+  then names a different company in the intake sees the stored per-skill
+  scores re-weighted by the intake's company (`stored` is set on
+  `goal_measure_plan_clicked`); `goal_measure_completed` did not fire for
+  them. `readiness_completed` on the page did.
+- **The goal on the account.** From this flip `users.data.intent`
+  = `{ goal, source, at }` exists — the first server-visible goal, and the
+  first place 'exploring' is stored as a value rather than read as
+  never-asked. Server-side goal counts (weekly-digest, prep-plan-note) start
+  at the flip; a `NULL` there before it means nothing.
 
 ## `first_run_reach`
 
