@@ -124,6 +124,7 @@ Per week, people (not events) with a goal captured, split by door:
 | `returning` | the other agent's returning-ask event |
 | `link` | the arrival hook's record on `?goal=` — the generated pages and every readiness-block CTA carry `src=<slug>-sql-interview`; the older pages' other CTAs carry `company=` only, and the arrival read keys on `company:` (`sqlquest_arrival_src`) |
 | `digest` | the same hook with `src=digest_goal`; `email_events.meta.goalAsked` gives the denominator |
+| `goal_note` | the same hook with `src=goal_note`; `email_events.template='goal_note'` (or `pro_events.goal_note_sent`) gives the denominator — door 5 below |
 
 Denominator for the target: people with ≥ 1 solve in the week, split
 has-goal / no-goal on the same proxies `goalOnRecord` reads plus the local
@@ -152,3 +153,81 @@ intent for the in-app half.
   goes out with the founder's deploy, and door 3 is live at merge — read
   each source on its own start date; the summed rate is the only line that
   spans all four.
+
+## Door 5 — goal-note (one-time)
+
+Door 4 reaches only the people the digest reaches, and the digest mails
+the people active that week: the last three Mondays it went to **4, 7 and
+3** people. The founder wants the goal from everyone who has none. So a
+one-time founder note, `supabase/functions/goal-note/index.ts` — the
+activated-note's plumbing (inlined `isInternalAccount` with the three
+internal domains, `emailOptOut`, unsub token, `sendAndLog` writing a `sent`
+row with `resend_id`, `?dry=1`, `?limit=`) around the digest's
+`goalOnRecord`, copied verbatim and pinned equal to the digest's by
+`tests/goal-note.test.js`.
+
+**Audience** — registered (not `guest_%`), has an email, not internal, not
+opted out, no goal on record (`goalOnRecord` false: `intake.goal`,
+`coachState.goalId`, `prepTarget.company|date`, `intent|userIntent`), active
+in the last 60 days (`users.data.lastActive`, epoch-ms or ISO, both parsed),
+never sent template `goal_note` (once per user ever: `email_events` and the
+`goalNoteAt` stamp on the row, `MAX_LIFETIME_SENDS = 1`), no other campaign
+in the last 48 hours. Cap **60 a run**, most recently active first.
+
+**Measured 2026-09-17** (Supabase MCP, read-only). Registered rows with an
+email, not internal by the same username and domain patterns, `emailOptOut`
+not true, none of the five goal fields set, no `goal_note` sent row, with
+`lastActive` parsed both ways and `>= now() - 60 days`:
+
+| | people |
+|---|---|
+| no goal on record, active in 60 days | **184** |
+| of those, eligible this minute (no campaign email in 48h) | 155 |
+| of the 184, with at least one solve | 139 |
+| no goal on record at any activity age | 266 |
+
+Every one of the 184 active rows carries `lastActive` as epoch-ms; the ISO
+branch exists for the older rows and costs nothing. Three or four runs of
+60 drain the segment.
+
+**The email.** Subject, by username hash, one of:
+
+- `A question from the person who builds SQL Quest`
+- `SQL Quest's founder here — one question`
+
+Two body wordings by a second hash (same substance, never byte-identical),
+each: written by hand to a short list; one number where the row has one
+(the solve count — attempts carry ids, not titles, and the bank is
+client-side, so no title); **one question, what are you preparing for**,
+three plain links `/app/?src=goal_note&goal=interview|job_ready|learning`
+(utm `goal_note`) that the app's `?goal=` arrival hook records as the
+answer; one line that the answer changes what the Coach puts in front of
+them; "I won't send another one of these"; signed `Göktuğ / Founder, SQL
+Quest`, reply-to goktug@datrick.com. Nothing about the paid plan, no price,
+no follow-up — the test fails on any of them.
+
+**Rows.** `email_events` `sent` with `resend_id` and `meta {solves,
+variant}`; `pro_events` `goal_note_sent {solves, variant}` reason `email`;
+`users.data.goalNoteAt`.
+
+**Deploy and run — the founder's step, not done here.** Sending is a
+decision, not a default; nothing schedules this function.
+
+```
+supabase functions deploy goal-note
+curl "$SUPABASE_URL/functions/v1/goal-note?dry=1"      # audience, skip reasons, both wordings on the first candidate
+curl "$SUPABASE_URL/functions/v1/goal-note?limit=10"   # a first small batch
+curl "$SUPABASE_URL/functions/v1/goal-note"            # the full 60; repeat daily until remaining is 0
+```
+
+Run it Tuesday to Thursday: the 48-hour quiet window then covers the
+Monday digest, so nobody active last week gets the question twice in a
+week. A person who answers through the link gets `intake.goal` on the row
+at the next save, and the digest's block stops for them on its own.
+
+**Read.** `goal_capture_by_door` gains the source `goal_note` (table
+above): people arriving on `src=goal_note` with a goal recorded, over the
+`goal_note` sent rows. It is read on its own start date — the day of the
+founder's first run — like the other doors; and it shares the claim's
+falsification with `link` and `digest`: if the three email/link doors
+together capture under 10 people in 3 weeks, drop them.
