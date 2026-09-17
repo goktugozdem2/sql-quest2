@@ -47,6 +47,19 @@
 //    what candidates report, says so in its own description, and this module
 //    only ever refers to "the mock" — never to what the company actually does.
 //
+// ── THE SECOND TIER: A PLAN FOR EVERY COMPANY (2026-09-17) ───────────────────
+//
+// Rule 2 stands for the NUMBER. It does not have to stand for the PLAN. Two
+// signed archetypes cannot serve the Snowflake / Revolut / Wise / Stripe
+// arrivals of a month (docs/plans/interview-first-2026-09-17.md, point 2), and
+// a person with a date at an unsigned company was handed an empty picker. So
+// `findPlanTarget` offers a second kind of target: for any company with at
+// least MIN_TAGGED_CHALLENGES tagged challenges, a plan built from those
+// challenges, the person's weakest skills, and the generic Pro mock — and a
+// `note` that says exactly that, in the card. No readiness number is ever
+// computed for a tagged target: `companyReadiness` still wants an archetype's
+// challenge set and the card renders the note where the score would be.
+//
 // Pure. No React, no DOM, no storage, no clock of its own — `now` is an
 // argument so every branch is assertable. Fails closed on malformed input and
 // on an unusable clock, the same posture as src/utils/review-ask.js.
@@ -55,6 +68,7 @@ import { SKILL_TO_RADAR, mapTopicToSkill } from './skill-calc.js';
 import { makeChallengeComparator, pickTopNWith } from './challenge-order.js';
 import { challengeMatchesSkill, DRILL_TARGET } from './skill-drill.js';
 import { INTERVIEW_ARCHETYPES } from '../data/interview-archetypes.js';
+import { pickProMockId } from './free-tier-boundary.js';
 
 // ───────────────────────────── the eligibility bar ──────────────────────────
 
@@ -69,6 +83,23 @@ import { INTERVIEW_ARCHETYPES } from '../data/interview-archetypes.js';
  * being offered rather than degrading quietly into a thin plan.
  */
 export const MIN_TARGET_CHALLENGES = 8;
+
+/**
+ * How many tagged challenges a company needs before a PLAN (not a number) is
+ * offered for it — the second tier, `findPlanTarget`.
+ *
+ * 5, from what a plan is: three items a day for a couple of days plus the
+ * weakest-skill drills around them. Under five the "plan" is the company
+ * filter with a calendar drawn on it. Measured 2026-09-17 against the live
+ * map: every one of the 30 tagged companies clears it (the thinnest is
+ * Morgan Stanley at 12), so today the bar is a floor for content drift, not a
+ * filter — a company whose tags are cut below it drops out of the picker
+ * rather than degrading into a two-item plan.
+ */
+export const MIN_TAGGED_CHALLENGES = 5;
+
+/** The two kinds of plan target. `prep_target_set` and `prep_plan_viewed` carry one. */
+export const TARGET_KIND = Object.freeze({ ARCHETYPE: 'archetype', TAGGED: 'tagged' });
 
 // WHAT USED TO BE HERE, AND WHY IT IS GONE (2026-09-08).
 //
@@ -319,6 +350,7 @@ export function eligibleTargets(bank, companyMap, mocks, archetypes = INTERVIEW_
       claimed.add(company);
       out.push({
         company,
+        kind: TARGET_KIND.ARCHETYPE,
         mockId: typeof mock.id === 'string' ? mock.id : null,
         dataset,
         archetypeId: typeof archetype.id === 'string' ? archetype.id : null,
@@ -336,6 +368,93 @@ export function findTarget(company, bank, companyMap, mocks, archetypes = INTERV
   if (typeof company !== 'string' || company.trim().length === 0) return null;
   const wanted = company.trim().toLowerCase();
   return eligibleTargets(bank, companyMap, mocks, archetypes)
+    .find(t => t.company.toLowerCase() === wanted) || null;
+}
+
+// ───────────────────────────── the tagged tier ──────────────────────────────
+
+/**
+ * The honest sentence a tagged target carries, rendered where the score would
+ * be. English here; the card renders the i18n copy of the same sentence
+ * (`interviewPrep.taggedNote`) and tests/interview-first.test.js pins the two
+ * to each other.
+ */
+export function taggedTargetNote(company, n) {
+  return `Built from the ${n} questions tagged ${company} and your weakest skills — not ${company}'s process.`;
+}
+
+/**
+ * Every company with at least MIN_TAGGED_CHALLENGES tagged challenges in the
+ * bank that is NOT a signed archetype member, sorted by tagged count (desc,
+ * then name). These get a plan and a note, never a number.
+ *
+ * Computed from the map on every call, like `eligibleTargets`: nothing in this
+ * file lists a company. The mock is the generic Pro one — `pickProMockId`
+ * with no company, so a mock keyed to some other company can never be handed
+ * to a person preparing for this one.
+ *
+ * @returns {Array<{company:string,kind:'tagged',challengeIds:number[],challengeCount:number,
+ *                  mockId:string|null,note:string}>}
+ */
+export function taggedTargets(bank, companyMap, mocks, archetypes = INTERVIEW_ARCHETYPES) {
+  if (!Array.isArray(bank) || !Array.isArray(mocks)) return [];
+  if (!companyMap || typeof companyMap !== 'object') return [];
+
+  const signed = new Set(
+    eligibleTargets(bank, companyMap, mocks, archetypes).map(t => t.company.toLowerCase()),
+  );
+  const idsByCompany = new Map();
+  const seenIds = new Set();
+  for (const ch of bank) {
+    if (!ch || !isFiniteNumber(ch.id) || seenIds.has(ch.id)) continue;
+    seenIds.add(ch.id);
+    for (const raw of tagsForId(companyMap, ch.id)) {
+      const company = raw.trim();
+      if (!company || signed.has(company.toLowerCase())) continue;
+      if (!idsByCompany.has(company)) idsByCompany.set(company, []);
+      idsByCompany.get(company).push(ch.id);
+    }
+  }
+
+  const mockId = pickProMockId(mocks, null);
+  const out = [];
+  for (const [company, ids] of idsByCompany) {
+    if (ids.length < MIN_TAGGED_CHALLENGES) continue;
+    out.push({
+      company,
+      kind: TARGET_KIND.TAGGED,
+      challengeIds: ids.slice().sort((a, b) => a - b),
+      challengeCount: ids.length,
+      mockId,
+      note: taggedTargetNote(company, ids.length),
+    });
+  }
+  return out.sort((a, b) => (b.challengeCount - a.challengeCount) || a.company.localeCompare(b.company));
+}
+
+/**
+ * The picker's list: the signed targets first (by name, as `eligibleTargets`
+ * orders them), then the tagged ones by count. Each entry carries `kind`.
+ */
+export function planTargets(bank, companyMap, mocks, archetypes = INTERVIEW_ARCHETYPES) {
+  return [
+    ...eligibleTargets(bank, companyMap, mocks, archetypes),
+    ...taggedTargets(bank, companyMap, mocks, archetypes),
+  ];
+}
+
+/**
+ * The plan target for this company name: the archetype target when one is
+ * signed (`kind: 'archetype'`, exactly what `findTarget` returns), else the
+ * tagged target when the company clears MIN_TAGGED_CHALLENGES, else null.
+ * Case-insensitive, like `findTarget`.
+ */
+export function findPlanTarget(company, bank, companyMap, mocks, archetypes = INTERVIEW_ARCHETYPES) {
+  if (typeof company !== 'string' || company.trim().length === 0) return null;
+  const signed = findTarget(company, bank, companyMap, mocks, archetypes);
+  if (signed) return signed;
+  const wanted = company.trim().toLowerCase();
+  return taggedTargets(bank, companyMap, mocks, archetypes)
     .find(t => t.company.toLowerCase() === wanted) || null;
 }
 
@@ -679,9 +798,16 @@ function stampDate(now, offsetDays) {
  *   malformed / no clock→ UNAVAILABLE, empty lists.
  *
  * @param {Object} args
- * @param {Object} args.target        an entry from eligibleTargets()
+ * @param {Object} args.target        an entry from eligibleTargets() or findPlanTarget()
+ *                                    — either kind; only challengeIds and mockId are read
  * @param {Object|null} args.readiness companyReadiness() output; its skills part
- *                                     supplies the levels the drills are chosen from
+ *                                     supplies the levels the drills are chosen from.
+ *                                     Null for a tagged target (no number is ever
+ *                                     computed for one) — pass `skillLevels` instead
+ * @param {Object} [args.skillLevels] canonical skill → 0-100, read only when
+ *                                    `readiness` is null, so the drills still go to
+ *                                    the weakest DEMANDED skills rather than to all
+ *                                    of them at level 0
  * @param {Set|Array} args.solvedIds  lifetime solved challenge ids
  * @param {Array} args.bank           window.challengesData
  * @param {number} args.daysRemaining from daysUntil()
@@ -690,7 +816,7 @@ function stampDate(now, offsetDays) {
  * @returns {{status:string, daysRemaining:number|null, planDays:number, beyondPlanDays:number,
  *            today:Array, days:Array, totals:Object}}
  */
-export function planToDate({ target, readiness, solvedIds, bank, daysRemaining, now, curriculumOrder } = {}) {
+export function planToDate({ target, readiness, skillLevels, solvedIds, bank, daysRemaining, now, curriculumOrder } = {}) {
   const empty = (status) => ({
     status,
     daysRemaining: toFiniteNumber(daysRemaining),
@@ -736,9 +862,13 @@ export function planToDate({ target, readiness, solvedIds, bank, daysRemaining, 
   // ── drills for the weakest DEMANDED skills ──
   // The levels come from the readiness parts so the drill choice and the
   // number on the card are computed from one radar reading, not two.
+  const levelsIn = (skillLevels && typeof skillLevels === 'object') ? skillLevels : {};
   const demanded = Array.isArray(readiness?.parts?.skills?.demanded)
     ? readiness.parts.skills.demanded
-    : targetDemandedSkills(target, bank).map(d => ({ ...d, level: 0 }));
+    : targetDemandedSkills(target, bank).map(d => ({
+        ...d,
+        level: Math.max(0, Math.min(100, toFiniteNumber(levelsIn[d.skill]) ?? 0)),
+      }));
 
   const weakest = demanded
     .filter(d => toFiniteNumber(d.level) !== null && d.level < DRILL_TARGET)
