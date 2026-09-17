@@ -127,7 +127,7 @@ describe('goal-note: the one-time letter to everyone with no goal on record', ()
 
   it('personalises with one real number and omits the sentence at zero', () => {
     expect(fn).toContain('solves > 0');
-    expect(fn).toContain("? ` You have ${solves}");
+    expect(fn).toContain("? ` You have solved ${solves}");
     expect(fn).toContain(": ''");
   });
 
