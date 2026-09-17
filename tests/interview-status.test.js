@@ -209,11 +209,22 @@ describe('interviewStatusModel — HOW FAR, from the plan', () => {
     expect(defaultItemLocked(null)).toBe(false);
   });
 
-  it('solved items leave the count', () => {
+  it('solved items leave the work — scheduled or deferred, the total drops', () => {
+    // A long window is capped at MAX_PLAN_DAYS × 3 items, so five solves may
+    // come out of `deferred` rather than the strip's two numbers; the sum is
+    // what must fall.
     const target = findPlanTarget('Snowflake', bank, companyMap, mocks);
+    const total = (h) => h.today + h.left + h.deferred;
     const before = build('Snowflake', 30).model.howFar;
     const after = build('Snowflake', 30, target.challengeIds.slice(0, 5)).model.howFar;
-    expect(after.today + after.left).toBeLessThan(before.today + before.left);
+    expect(total(after)).toBe(total(before) - 5);
+    // With the whole set solved the target items are gone; the plan keeps
+    // the drills and the mock (the engine's NOTHING_LEFT shape), and the
+    // strip says so through `status`, never by inventing target work.
+    const done = build('Snowflake', 2, target.challengeIds);
+    expect(done.plan.totals.targetRemaining).toBe(0);
+    expect(done.model.howFar.today + done.model.howFar.left)
+      .toBe(done.plan.totals.drills + done.plan.totals.mock - done.plan.totals.deferred);
   });
 
   it('a date behind us, or no plan: HOW FAR is null and nothing is invented', () => {

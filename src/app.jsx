@@ -5219,7 +5219,8 @@ function InterviewStatusStrip({ model, onCell }) {
       type="button"
       data-testid={`interview-status-${id}`}
       onClick={() => onCell && onCell(id)}
-      className="flex min-w-0 items-baseline gap-2 px-3 py-2 text-left transition hover:bg-white/5"
+      className="flex min-w-0 flex-col gap-0.5 px-3 py-2 text-left transition hover:bg-white/5 md:flex-row md:items-baseline md:gap-2"
+      style={{ background: '#16181F' }}
       title={label}
     >
       <span className="text-[10px] uppercase tracking-wide flex-shrink-0" style={muted}>{label}</span>
@@ -5268,8 +5269,11 @@ function InterviewStatusStrip({ model, onCell }) {
   return (
     <div
       data-testid="interview-status"
-      className="mb-3 grid grid-cols-2 md:grid-cols-4 divide-y md:divide-y-0 md:divide-x rounded-lg overflow-hidden"
-      style={{ background: '#16181F', border: '1px solid #2A2E38', borderColor: '#2A2E38' }}
+      className="mb-3 grid grid-cols-2 md:grid-cols-4 gap-px rounded-lg overflow-hidden"
+      // Hairlines between cells in both layouts: a 1px gap over the border
+      // colour. Tailwind's divide-* would border the first row's second
+      // cell on mobile.
+      style={{ background: '#2A2E38', border: '1px solid #2A2E38' }}
     >
       <Cell id="who" label={i18n_t('interviewStatus', 'labelWho')}>
         {who.hasCompany
@@ -24250,6 +24254,129 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
   ) : null;
 
   // Auth Screen
+  // The target, the readiness and the plan, computed once for the two
+  // surfaces that show them: the countdown card (below) and the status strip
+  // (2026-09-18). Lazy — call it, nothing runs on its own.
+  const buildInterviewPlan = () => {
+    const bank = window.challengesData || challenges || [];
+    // Signed targets first, then every company with enough tagged
+    // challenges for a plan (2026-09-17, the second tier). A signed
+    // target gets the number; a tagged one gets the plan and the
+    // note, never a number — src/utils/interview-prep.js header.
+    const targets = planTargets(bank, window.challengeCompanies || {}, mockInterviews);
+
+    const target = findPlanTarget(prepTarget.company, bank, window.challengeCompanies || {}, mockInterviews);
+    const mock = target ? mockInterviews.find(i => i.id === target.mockId) : null;
+
+    // The best sitting at THIS target's mock. `percentage` is the
+    // field the list card reads and `scorePercent` is the one the
+    // analytics aggregation reads; both are written on every new
+    // row, and older rows may carry only one — take either.
+    const sittings = target
+      ? interviewHistory.filter(h => h.interviewId === target.mockId)
+      : [];
+    const mockResult = sittings.length > 0
+      ? {
+          taken: true,
+          scorePercent: sittings.reduce(
+            (best, h) => Math.max(best, h.percentage ?? h.scorePercent ?? 0), 0),
+        }
+      : null;
+
+    const readiness = (target && target.kind === TARGET_KIND.ARCHETYPE)
+      ? companyReadiness({
+          skillLevels: calculateSkillLevelsFromPerformance(),
+          solvedIds: solvedChallenges,
+          target,
+          bank,
+          mockResult,
+        })
+      : null;
+
+    const now = Date.now();
+    const remaining = daysUntil(prepTarget.date, now);
+    const plan = (target && remaining !== null)
+      ? planToDate({
+          target,
+          readiness,
+          // A tagged target has no readiness; the drills still go
+          // to the weakest skills the set demands.
+          skillLevels: readiness ? null : calculateSkillLevelsFromPerformance(),
+          solvedIds: solvedChallenges,
+          bank,
+          daysRemaining: remaining,
+          now,
+          // Never raw id order — see src/utils/challenge-order.js.
+          curriculumOrder: SQL_ROADMAP_CHALLENGE_ORDER,
+        })
+      : null;
+    return { bank, targets, target, mock, readiness, plan, remaining, now };
+  };
+
+  // ── Interview-first status strip (2026-09-18) ──
+  // The founder's four fields — WHO · WHEN · WHERE I AM · HOW FAR — one line
+  // on every tab for an interview person. The seventh `interviewFirstOn`
+  // call site; the model is src/utils/interview-first.js
+  // `interviewStatusModel`, fed by the same buildInterviewPlan the card
+  // reads, so the strip and the card can never disagree on a number.
+  // Memoised on the inputs that move it: the plan is rebuilt on a solve, a
+  // target change, a sitting, or a new day — not on every keystroke.
+  const interviewStatusOn = interviewFirstOn('status_strip');
+  const interviewStatusDay = new Date().toISOString().slice(0, 10);
+  const interviewStatus = useMemo(() => {
+    if (!interviewStatusOn || !currentUser) return null;
+    let built;
+    try { built = buildInterviewPlan(); } catch (_) { return null; }
+    const { bank, target, readiness, plan, remaining } = built;
+    // The stored goal check (the public test or the in-app check), fresh
+    // within STATUS_CHECK_FRESH_DAYS, re-weighted to the company's set the
+    // way renderGoalMeasure shows it back.
+    let readinessRecord = null;
+    try {
+      const rec = readReadinessRecord(localStorage, { maxAgeDays: STATUS_CHECK_FRESH_DAYS });
+      if (rec) {
+        const w = goalMeasureWeightsFor(prepTarget.company);
+        readinessRecord = { overall: summarizeScores(rec.scores, w ? w.weights : null).overall, ageDays: rec.ageDays };
+      }
+    } catch (_) { readinessRecord = null; }
+    return interviewStatusModel({
+      prepTarget, target, readiness, readinessRecord, plan,
+      solvedIds: solvedChallenges, isPro, days: remaining, bankSize: bank.length,
+      // The card's own lock rule, so "N Pro" counts exactly the items its
+      // doors would stop a free user at.
+      isItemLocked: (item) => (item.kind === 'mock'
+        ? isContentLocked('interview', mockInterviews.find(m => m.id === item.interviewId) || null)
+        : isContentLocked('challenge', bank.find(c => c.id === item.challengeId) || item)),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [interviewStatusOn, currentUser, prepTarget.company, prepTarget.date, solvedChallenges, interviewHistory, isPro, challengeAttempts, interviewStatusDay]);
+
+  // `interview_status_shown` once a session, the first time the strip is on
+  // screen for a loaded session; `interview_status_clicked {cell}` per click.
+  const interviewStatusShownRef = useRef(false);
+  useEffect(() => {
+    if (interviewStatusShownRef.current || !interviewStatus || isSessionLoading) return;
+    interviewStatusShownRef.current = true;
+    trackActivationEvent('interview_status_shown', interviewStatus.event);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [interviewStatus, isSessionLoading]);
+
+  // Every cell goes to the Coach tab and the countdown card — the company
+  // picker and the date input live there. No new door into locked content.
+  const onInterviewStatusCell = (cell) => {
+    trackActivationEvent('interview_status_clicked', { cell });
+    setActiveTab('guide');
+    setCurrentChallenge(null);
+    setTimeout(() => {
+      try {
+        const card = document.querySelector('[data-testid="interview-prep-card"]');
+        if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        const focusId = cell === 'who' ? 'interview-prep-target' : cell === 'when' ? 'interview-prep-date' : null;
+        if (focusId) document.querySelector(`[data-testid="${focusId}"]`)?.focus();
+      } catch (_) {}
+    }, 120);
+  };
+
   if (showAuth) {
     return (
       <div className="min-h-screen bg-[#0E0F13] flex items-center justify-center p-4">
@@ -24807,6 +24934,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
     );
   }
 
+
   if (!dbReady) return (
     <div className="min-h-screen bg-gray-900 flex items-center justify-center">
       <div className="text-center max-w-xs">
@@ -24841,65 +24969,6 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
   // card for an interview person under `interviewFirst`, below it for
   // everyone else (its 2026-09-08 place). Lazy: nothing here runs unless a
   // mount point calls it, so other tabs pay nothing.
-  // The target, the readiness and the plan, computed once for the two
-  // surfaces that show them: the countdown card (below) and the status strip
-  // (2026-09-18). Lazy — call it, nothing runs on its own.
-  const buildInterviewPlan = () => {
-    const bank = window.challengesData || challenges || [];
-    // Signed targets first, then every company with enough tagged
-    // challenges for a plan (2026-09-17, the second tier). A signed
-    // target gets the number; a tagged one gets the plan and the
-    // note, never a number — src/utils/interview-prep.js header.
-    const targets = planTargets(bank, window.challengeCompanies || {}, mockInterviews);
-
-    const target = findPlanTarget(prepTarget.company, bank, window.challengeCompanies || {}, mockInterviews);
-    const mock = target ? mockInterviews.find(i => i.id === target.mockId) : null;
-
-    // The best sitting at THIS target's mock. `percentage` is the
-    // field the list card reads and `scorePercent` is the one the
-    // analytics aggregation reads; both are written on every new
-    // row, and older rows may carry only one — take either.
-    const sittings = target
-      ? interviewHistory.filter(h => h.interviewId === target.mockId)
-      : [];
-    const mockResult = sittings.length > 0
-      ? {
-          taken: true,
-          scorePercent: sittings.reduce(
-            (best, h) => Math.max(best, h.percentage ?? h.scorePercent ?? 0), 0),
-        }
-      : null;
-
-    const readiness = (target && target.kind === TARGET_KIND.ARCHETYPE)
-      ? companyReadiness({
-          skillLevels: calculateSkillLevelsFromPerformance(),
-          solvedIds: solvedChallenges,
-          target,
-          bank,
-          mockResult,
-        })
-      : null;
-
-    const now = Date.now();
-    const remaining = daysUntil(prepTarget.date, now);
-    const plan = (target && remaining !== null)
-      ? planToDate({
-          target,
-          readiness,
-          // A tagged target has no readiness; the drills still go
-          // to the weakest skills the set demands.
-          skillLevels: readiness ? null : calculateSkillLevelsFromPerformance(),
-          solvedIds: solvedChallenges,
-          bank,
-          daysRemaining: remaining,
-          now,
-          // Never raw id order — see src/utils/challenge-order.js.
-          curriculumOrder: SQL_ROADMAP_CHALLENGE_ORDER,
-        })
-      : null;
-    return { bank, targets, target, mock, readiness, plan, remaining, now };
-  };
-
   const renderInterviewPrepCard = () => {
                 if (window.FF?.feature?.('interviewCountdown') !== true) return null;
                 const { bank, targets, target, mock, readiness, plan } = buildInterviewPlan();
@@ -24956,70 +25025,6 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                     }}
                   />
                 );
-  };
-
-  // ── Interview-first status strip (2026-09-18) ──
-  // The founder's four fields — WHO · WHEN · WHERE I AM · HOW FAR — one line
-  // on every tab for an interview person. The seventh `interviewFirstOn`
-  // call site; the model is src/utils/interview-first.js
-  // `interviewStatusModel`, fed by the same buildInterviewPlan() the card
-  // reads, so the strip and the card can never disagree on a number.
-  // Memoised on the inputs that move it: the plan is rebuilt on a solve, a
-  // target change, a sitting, or a new day — not on every keystroke.
-  const interviewStatusOn = interviewFirstOn('status_strip');
-  const interviewStatusDay = new Date().toISOString().slice(0, 10);
-  const interviewStatus = useMemo(() => {
-    if (!interviewStatusOn || !currentUser) return null;
-    let built;
-    try { built = buildInterviewPlan(); } catch (_) { return null; }
-    const { bank, target, readiness, plan, remaining } = built;
-    // The stored goal check (the public test or the in-app check), fresh
-    // within STATUS_CHECK_FRESH_DAYS, re-weighted to the company's set the
-    // way renderGoalMeasure shows it back.
-    let readinessRecord = null;
-    try {
-      const rec = readReadinessRecord(localStorage, { maxAgeDays: STATUS_CHECK_FRESH_DAYS });
-      if (rec) {
-        const w = goalMeasureWeightsFor(prepTarget.company);
-        readinessRecord = { overall: summarizeScores(rec.scores, w ? w.weights : null).overall, ageDays: rec.ageDays };
-      }
-    } catch (_) { readinessRecord = null; }
-    return interviewStatusModel({
-      prepTarget, target, readiness, readinessRecord, plan,
-      solvedIds: solvedChallenges, isPro, days: remaining, bankSize: bank.length,
-      // The card's own lock rule, so "N Pro" counts exactly the items its
-      // doors would stop a free user at.
-      isItemLocked: (item) => (item.kind === 'mock'
-        ? isContentLocked('interview', mockInterviews.find(m => m.id === item.interviewId) || null)
-        : isContentLocked('challenge', bank.find(c => c.id === item.challengeId) || item)),
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [interviewStatusOn, currentUser, prepTarget.company, prepTarget.date, solvedChallenges, interviewHistory, isPro, challengeAttempts, interviewStatusDay]);
-
-  // `interview_status_shown` once a session, the first time the strip is on
-  // screen for a loaded session; `interview_status_clicked {cell}` per click.
-  const interviewStatusShownRef = useRef(false);
-  useEffect(() => {
-    if (interviewStatusShownRef.current || !interviewStatus || isSessionLoading) return;
-    interviewStatusShownRef.current = true;
-    trackActivationEvent('interview_status_shown', interviewStatus.event);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [interviewStatus, isSessionLoading]);
-
-  // Every cell goes to the Coach tab and the countdown card — the company
-  // picker and the date input live there. No new door into locked content.
-  const onInterviewStatusCell = (cell) => {
-    trackActivationEvent('interview_status_clicked', { cell });
-    setActiveTab('guide');
-    setCurrentChallenge(null);
-    setTimeout(() => {
-      try {
-        const card = document.querySelector('[data-testid="interview-prep-card"]');
-        if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        const focusId = cell === 'who' ? 'interview-prep-target' : cell === 'when' ? 'interview-prep-date' : null;
-        if (focusId) document.querySelector(`[data-testid="${focusId}"]`)?.focus();
-      } catch (_) {}
-    }, 120);
   };
 
   return (

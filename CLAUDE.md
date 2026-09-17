@@ -786,6 +786,13 @@ Rewritten Coach-forward:
   surface)`, six pinned call sites: no daily-reward calendar, no achievement
   toast (still awarded), no lives/coin in the header, countdown card above
   the Coach's next-step card. Everyone else: today's product, byte for byte.
+- **Status strip (2026-09-18):** the seventh call site, `status_strip` —
+  WHO · WHEN · WHERE I AM · HOW FAR, one line under the header on every tab
+  (`data-testid="interview-status"`); `interviewStatusModel` in
+  interview-first.js, fed by `buildInterviewPlan()` (the card's plan, moved
+  above the `showAuth` / `dbReady` early returns — hooks live there); the
+  WHERE cell always carries its label; accent only at ≤ 7 days; guards
+  tests/interview-status.test.js.
 - **A plan for every company:** `findPlanTarget` in interview-prep.js —
   `kind: 'archetype'` (signed, gets the number) or `kind: 'tagged'` (≥ 5
   tagged challenges, generic Pro mock, the honest note, **never a score**).

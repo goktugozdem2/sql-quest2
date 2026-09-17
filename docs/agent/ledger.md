@@ -53,6 +53,14 @@ of the verifier and must never be rounded to `FLAT`.
   the map clear the bar; the thinnest is Morgan Stanley at 12). The readiness
   NUMBER stays archetype-only — a tagged target shows the plan and the note,
   no score. `prep_target_set` and `prep_plan_viewed` carry `kind`.
+  (3, 2026-09-18) The status strip: WHO · WHEN · WHERE I AM · HOW FAR in
+  one line under the header on every tab for an interview person — the
+  seventh call site (`status_strip`), model `interviewStatusModel` in
+  src/utils/interview-first.js fed by the card's own plan; the WHERE cell is
+  always labelled (readiness / check score / set coverage), the accent only
+  at ≤ 7 days; events `interview_status_shown` (once a session:
+  hasCompany, hasDate, whereKind, proLeft) and `interview_status_clicked
+  {cell}`; every cell goes to the Coach card, never into locked content.
 - **Why** docs/plans/interview-first-2026-09-17.md: every real purchase in
   the product's history was interview-shaped — **3 of 3** (`stripe_webhook`,
   internal excluded); modal → plan click in the 30 days to 09-15 was
