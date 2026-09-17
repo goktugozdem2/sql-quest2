@@ -188,7 +188,9 @@ window.FEATURE_FLAGS = {
     // today's product; nothing is deleted. One helper in app.jsx reads this
     // flag — `interviewFirstOn(surface)` — and tests/interview-first.test.js
     // pins its call sites. Fires `interview_first_applied {reason}` once a
-    // session. SHIPPED OFF; flips 2026-09-21 by the same scheduled task as
+    // session. 2026-09-18: the status strip (WHO · WHEN · WHERE I AM · HOW
+    // FAR, one line on every tab) is the seventh call site, `status_strip`.
+    // SHIPPED OFF; flips 2026-09-21 by the same scheduled task as
     // interviewCountdown (the card it moves). Ledger: "interview-first: the
     // plan is the product for people with a date".
     interviewFirst: false,

@@ -1050,6 +1050,45 @@ describe('source guard: the score is never presented as a prediction', () => {
     expect(hits, `prediction word inside renderGoalMeasure: ${hits.join(', ')}`).toEqual([]);
   });
 
+  // 2026-09-18: the status strip puts a number in front of the person on
+  // every tab. Its WHERE cell always carries a two-word label saying what the
+  // number is ("readiness", "check score", "set coverage"), and neither the
+  // strip nor its namespace may name a prediction word.
+  const i18nStatusBlocks = () => {
+    const blocks = [];
+    const re = /\n {4}interviewStatus: \{\n([\s\S]*?)\n {4}\},/g;
+    let m;
+    while ((m = re.exec(i18nSource))) blocks.push(m[1]);
+    return blocks;
+  };
+  const statusStripBody = () => {
+    const start = appSource.indexOf('function InterviewStatusStrip(');
+    expect(start, 'InterviewStatusStrip not found in app.jsx').toBeGreaterThan(-1);
+    const rest = appSource.slice(start);
+    return rest.slice(0, rest.indexOf('\n}\n'));
+  };
+
+  it('the status strip names no prediction word in either language, and labels the number', () => {
+    const blocks = i18nStatusBlocks();
+    expect(blocks.length, 'expected an EN and a TR interviewStatus namespace').toBe(2);
+    for (const block of blocks) {
+      const hits = predictionHits(stripCommentLines(block));
+      expect(hits, `prediction word in interviewStatus copy: ${hits.join(', ')}`).toEqual([]);
+      for (const key of ['whereReadiness', 'whereCheck', 'whereCoverage', 'whereSolved']) {
+        expect(block, `${key} missing`).toContain(`${key}:`);
+      }
+    }
+    expect(blocks[0]).toMatch(/whereReadiness: 'readiness'/);
+    expect(blocks[0]).toMatch(/whereCheck: 'check score'/);
+    expect(blocks[0]).toMatch(/whereCoverage: 'set coverage'/);
+    const hits = predictionHits(stripCommentLines(statusStripBody()));
+    expect(hits, `prediction word inside InterviewStatusStrip: ${hits.join(', ')}`).toEqual([]);
+    // The label is rendered next to the number, never optional.
+    const body = statusStripBody();
+    expect(body).toContain('<Cell id="where" label={whereLabel}>');
+    expect(body).toContain("i18n_t('interviewStatus', 'whereReadiness')");
+  });
+
   it('says in BOTH languages what the number is measured from', () => {
     const [en, tr] = i18nPrepBlocks();
     // EN: our own material, our own challenges, our own mock — and "not an

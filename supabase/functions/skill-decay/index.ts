@@ -391,8 +391,14 @@ Deno.serve(async (req) => {
   // verification lets it through — without this line anyone with the URL
   // could trigger a send. Only the service role may call this function.
   // The pg_cron jobs must carry it (supabase/manual/20260917_cron_service_role.sql).
-  const expected = `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''}`
-  if (!Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || (req.headers.get('authorization') ?? '') !== expected) {
+  // Accepted: the SENDER_SECRET function secret (what pg_cron and the founder
+  // send — set 2026-09-17 after the Vault's service-role copy turned out not to
+  // equal the function's own), or the service role key itself.
+  const senderSecret = Deno.env.get('SENDER_SECRET') ?? ''
+  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+  const given = req.headers.get('authorization') ?? ''
+  const accepted = [senderSecret, serviceKey].filter(s => s.length >= 32).map(s => `Bearer ${s}`)
+  if (accepted.length === 0 || !accepted.includes(given)) {
     return new Response(JSON.stringify({ error: 'service role required' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
   }
 

@@ -158,7 +158,7 @@ describe('prep-plan-note: the plan sorts by the app\'s curriculum order', () => 
 
   it('only the service role may call it — the anon key is public (2026-09-17)', () => {
     expect(fn).toContain("service role required");
-    expect(fn).toContain("(req.headers.get('authorization') ?? '') !== expected");
+    expect(fn).toContain("!accepted.includes(given)");
     // The gate sits before any query.
     expect(fn.indexOf('service role required')).toBeLessThan(fn.indexOf('createClient('));
   });

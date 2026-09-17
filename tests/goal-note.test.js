@@ -165,7 +165,7 @@ describe('goal-note: the one-time letter to everyone with no goal on record', ()
 
   it('only the service role may call it — the anon key is public (2026-09-17)', () => {
     expect(fn).toContain("service role required");
-    expect(fn).toContain("(req.headers.get('authorization') ?? '') !== expected");
+    expect(fn).toContain("!accepted.includes(given)");
     // The gate sits before any query.
     expect(fn.indexOf('service role required')).toBeLessThan(fn.indexOf('createClient('));
   });

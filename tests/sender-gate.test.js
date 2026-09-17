@@ -26,7 +26,8 @@ describe('email senders are service-role only', () => {
     it(`${d} carries the gate before any query`, () => {
       const src = fs.readFileSync(path.join(FN, d, 'index.ts'), 'utf8');
       expect(src, `${d}: no caller gate`).toContain("service role required");
-      expect(src).toContain("(req.headers.get('authorization') ?? '') !== expected");
+      expect(src).toContain("Deno.env.get('SENDER_SECRET')");
+      expect(src).toContain("!accepted.includes(given)");
       const gateAt = src.indexOf('service role required');
       // Inside the handler, before the first awaited call — helpers defined
       // above the handler only run when the handler calls them.

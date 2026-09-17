@@ -229,3 +229,27 @@ describe('the header for an interview person: lives and coin out, identity and s
     expect(header.indexOf('data-testid="header-identity"')).toBeGreaterThan(gateEnd);
   });
 });
+
+// Interview-first status strip (2026-09-18). The founder's four fields —
+// WHO · WHEN · WHERE I AM · HOW FAR — are a one-line strip UNDER the header,
+// not a header element: the header keeps its one gate and its seven-or-five
+// count, and the strip is rendered only under the flag + the predicate,
+// through the same helper.
+describe('the interview status strip sits under the header, not in it', () => {
+  it('is not inside <header>', () => {
+    expect(header).not.toContain('data-testid="interview-status"');
+    expect(header).not.toContain('<InterviewStatusStrip');
+    expect(header.split('interviewFirstOn(').length - 1, 'the header still has exactly one gate').toBe(1);
+  });
+
+  it('renders after the header, before the tab strip, only under the flag + predicate', () => {
+    const headerEnd = src.indexOf('</header>');
+    const mount = src.indexOf('<InterviewStatusStrip model={interviewStatus}');
+    const tabs = src.indexOf('data-primary-learning-tabs="true"');
+    expect(mount).toBeGreaterThan(headerEnd);
+    expect(mount).toBeLessThan(tabs);
+    expect(src.slice(mount - 200, mount)).toContain('{interviewStatusOn && interviewStatus && (');
+    expect(src).toContain("const interviewStatusOn = interviewFirstOn('status_strip');");
+    expect(src.split('<InterviewStatusStrip').length - 1, 'one mount').toBe(1);
+  });
+});

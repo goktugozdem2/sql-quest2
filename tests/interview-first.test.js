@@ -180,6 +180,7 @@ describe('source guard: the flag is dark and ONE helper reads it', () => {
       'daily_reward',
       'header_game_cluster',
       'session',
+      'status_strip',      // 2026-09-18: the four-field status strip, every tab
     ]);
     // …and no call without a surface label, which is how a fifth surface
     // would slip in unnamed.
@@ -381,7 +382,9 @@ describe('planToDate on a tagged target — tagged questions, weakest-skill dril
 
 describe('the readiness NUMBER stays archetype-only', () => {
   it('app.jsx computes readiness only for kind archetype', () => {
-    const fn = appSource.slice(appSource.indexOf('const renderInterviewPrepCard = '));
+    // 2026-09-18: the computation moved out of the render function into
+    // buildInterviewPlan(), which the card and the status strip both read.
+    const fn = appSource.slice(appSource.indexOf('const buildInterviewPlan = '));
     expect(fn.slice(0, 4000)).toMatch(/const readiness = \(target && target\.kind === TARGET_KIND\.ARCHETYPE\)\s*\n\s*\? companyReadiness\(/);
     expect(fn.slice(0, 4000)).toMatch(/skillLevels: readiness \? null : calculateSkillLevelsFromPerformance\(\)/);
   });
