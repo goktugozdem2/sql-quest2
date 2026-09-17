@@ -223,8 +223,9 @@ describe('source guards — app.jsx keeps the intake optional, early, and quiet'
   });
 
   it('writes each answer to the store that already owns it', () => {
-    expect(block).toMatch(/localStorage\.setItem\('sqlquest_user_intent', goal\.intent\)/);
-    expect(block).toMatch(/localStorage\.setItem\('sqlquest_intent_asked', '1'\)/);
+    // through the one helper that also puts the goal on the account (2026-09-17)
+    expect(block).toMatch(/setUserIntent\(goal\.intent, record\.goalSource \|\| 'intake'\)/);
+    expect(block).not.toMatch(/localStorage\.setItem\('sqlquest_user_intent'/);
     expect(block).toMatch(/newCoachGoalState\(goal\.coachGoalId, \{\s*\n\s*source: 'intake'/);
     expect(block).toMatch(/\.\.\.\(record\.hasDate \? \{ date: draft\.date \} : \{\}\)/);
     expect(block).toMatch(/role: record\.role,/);

@@ -235,7 +235,7 @@ describe('source guards — app.jsx keeps the measure dark, honest, and quiet ab
   });
 
   it('fires its own events, and never the ones that give other funnels their meaning', () => {
-    for (const ev of ['goal_measure_started', 'goal_measure_completed', 'goal_measure_skipped', 'goal_measure_plan_clicked']) {
+    for (const ev of ['goal_measure_started', 'goal_measure_completed', 'goal_measure_skipped', 'goal_measure_plan_clicked', 'goal_ask_returning_shown']) {
       expect(block, ev).toContain(`trackActivationEvent('${ev}'`);
     }
     expect(block).toMatch(/trackActivationEvent\('goal_measure_completed', \{\s*\n\s*goal: ctx\.goal, company: ctx\.company, source: ctx\.source,\s*\n\s*overall: result\.overall, weakest: result\.weakest, answered: result\.answered/);
@@ -273,14 +273,50 @@ describe('source guards — app.jsx keeps the measure dark, honest, and quiet ab
 
   it('D — the ?goal= link writes the intent the intake\'s way, never over a declared one, and tags its source', () => {
     expect(block).toMatch(/const goalId = intakeGoalForIntent\(params\.get\('goal'\)\);/);
-    expect(block).toMatch(/if \(!had \|\| had === 'exploring'\) \{\s*\n\s*localStorage\.setItem\('sqlquest_user_intent', g\.intent\);\s*\n\s*localStorage\.setItem\('sqlquest_intent_asked', '1'\);\s*\n\s*trackActivationEvent\('intent_captured', \{ intent: g\.intent, source: 'link', src/);
+    expect(block).toMatch(/if \(!had \|\| had === 'exploring'\) \{\s*\n\s*setUserIntent\(g\.intent, 'link'\);\s*\n\s*trackActivationEvent\('intent_captured', \{ intent: g\.intent, source: 'link', src/);
     expect(block).toMatch(/applyIntentRouting\(g\.intent, 'link'\);/);
     expect(block).toMatch(/intent = had;\s*\/\/ a declared goal is never overwritten/);
     expect(block).toMatch(/goalSource: 'link'/);
     expect(block).toMatch(/if \(companyFilter && !prepTarget\.company\) setPrepPreference\(\{ company: companyFilter \}\);/);
     // the source enum the routing event carries
     expect(app).toMatch(/const applyIntentRouting = \(intent, source = 'ask'\) =>/);
-    expect(app).toContain("applyIntentRouting(g.intent, 'link')");
+    for (const s of ["'intake'", "'link'", "'returning'"]) expect(app).toContain(`applyIntentRouting(${s === "'intake'" ? 'getUserIntent(), ' : 'g.intent, '}${s})`);
   });
 
+  it('the declared goal has ONE writer, rides the autosave, and comes back on sign-in', () => {
+    // every write of the browser key is inside setUserIntent
+    expect(app.split("localStorage.setItem('sqlquest_user_intent'").length - 1).toBe(2);   // the helper, and the sign-in restore of an empty key
+    const helperAt = app.indexOf('const setUserIntent = (goal, source) =>');
+    expect(helperAt).toBeGreaterThan(-1);
+    expect(app.slice(helperAt, helperAt + 900)).toMatch(/if \(goal !== 'exploring'\) localStorage\.setItem\('sqlquest_user_intent', goal\);/);
+    expect(app.slice(helperAt, helperAt + 900)).toMatch(/userData\.intent = rec;/);
+    for (const call of ["setUserIntent(key, 'ask')", "setUserIntent('exploring', 'ask')", "setUserIntent(g.intent, 'link')", "setUserIntent(goal.intent, record.goalSource || 'intake')"]) {
+      expect(app, call).toContain(call);
+    }
+    expect(app).toMatch(/intent: intentRecord,/);
+    expect(app).toMatch(/if \(userData\.intent && typeof userData\.intent === 'object' && typeof userData\.intent\.goal === 'string'\) \{\s*\n\s*setIntentRecord\(userData\.intent\);/);
+    // the returning ask reads the account record too
+    expect(block).toMatch(/const intent = getUserIntent\(\) \|\| intentRecord\?\.goal \|\| null;/);
+    // the public test's plan link arrives with a goal
+    expect(read('../scripts/build-readiness-test.mjs')).toContain("(next ? '&challenge=' + next.id : '') + '&goal=interview'");
+    expect(read('../src/sql-interview-readiness-test.html')).toContain("+ '&goal=interview'");
+  });
+
+  it('E — the returning ask needs a solve, no goal on record, no open challenge; shows once; goal required', () => {
+    expect(block).toMatch(/if \(goalAsk \|\| currentChallenge \|\| solvedChallenges\.size < 1 \|\| isFirstRunUser\) return;/);
+    expect(block).toMatch(/if \(intent && intent !== 'exploring'\) return;/);
+    expect(block).toMatch(/if \(intakeRecord \|\| prepTarget\.company \|\| prepTarget\.date \|\| coachState\?\.goalId\) return;/);
+    expect(block).toMatch(/localStorage\.getItem\(GOAL_ASK_RETURNING_KEY\)\) return;/);
+    expect(block).toMatch(/localStorage\.setItem\(GOAL_ASK_RETURNING_KEY, new Date\(\)\.toISOString\(\)\)/);
+    expect(block).toMatch(/\}, \[currentUser, dbReady, isSessionLoading, currentChallenge, activeTab, solvedChallenges\.size\]\);/);
+    expect(block).toMatch(/trackActivationEvent\('intake_answered', \{ step: 'goal', value: goalId, daysOut: null, skipped: false, returning: true \}\)/);
+    expect(block).toMatch(/completeIntake\(\{ goal: goalId, goalSource: 'returning', company: null, level: null, date: null, role: null \}, \{ quiet: true \}\)/);
+    // the overlay's goal stage has no dismiss and no skip
+    const overlayAt = block.indexOf('const renderGoalAskOverlay = ');
+    const overlay = block.slice(overlayAt);
+    expect(overlay).toContain("goalAsk.stage === 'goal' ? (");
+    expect(overlay).not.toMatch(/data-intake-skip|onClose|dismiss/i);
+    expect(overlay).toContain('renderIntakeGoalChoices(answerReturningGoal)');
+    expect(app).toMatch(/\{renderGoalAskOverlay\(\)\}/);
+  });
 });

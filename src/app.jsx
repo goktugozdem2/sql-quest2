@@ -6589,6 +6589,35 @@ function SQLQuest() {
     try { return localStorage.getItem('sqlquest_user_intent') || null; } catch (_) { return null; }
   };
 
+  // The declared goal, on the account as well as in the browser (2026-09-17).
+  // Until this date `sqlquest_user_intent` was localStorage-only: the server
+  // (weekly-digest, prep-plan-note), a second device and every SQL read could
+  // not see a declared goal, and "just exploring" was indistinguishable from
+  // never-asked. ONE helper writes it now — the post-solve ask, the intake, the
+  // ?goal= link and the returning ask all go through here (source guard in
+  // tests/goal-measure.test.js) — and the record rides the autosave as
+  // `userData.intent = { goal, source, at }`. 'exploring' is stored as a goal
+  // value so it stops reading as never-asked; the browser key keeps its old
+  // meaning (a real intent, or nothing), so getUserIntent() is unchanged.
+  const [intentRecord, setIntentRecord] = useState(() => {
+    try { const v = localStorage.getItem('sqlquest_user_intent'); return v ? { goal: v, source: null, at: null } : null; } catch (_) { return null; }
+  });
+  const setUserIntent = (goal, source) => {
+    const rec = { goal, source, at: new Date().toISOString() };
+    setIntentRecord(rec);
+    try {
+      localStorage.setItem('sqlquest_intent_asked', '1');
+      if (goal !== 'exploring') localStorage.setItem('sqlquest_user_intent', goal);
+    } catch (_) {}
+    if (currentUser) {
+      try {
+        const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+        userData.intent = rec;
+        saveUserData(currentUser, userData);
+      } catch (_) {}
+    }
+  };
+
   // The intent modal promises "Your answer shapes what we recommend next."
   // Until 2026-09-11 it shaped nothing: getUserIntent() was read in exactly two
   // places, both analytics payloads, so 413 people in 60 days answered a
@@ -8709,6 +8738,7 @@ function SQLQuest() {
           roadmapLessonCompletions: [...roadmapLessonCompletions],
           goals: userGoals,         // sector MVP — sector/role/motivation/etc; see docs/sector-mvp-plan.md
           intake: intakeRecord,     // onboarding intake — what was asked and skipped; never the date
+          intent: intentRecord,     // the declared goal { goal, source, at } — 'exploring' included, so the server can tell asked from never-asked
           readiness: readinessRecord, // the ten-question check / readiness test result, the public page's shape
           // The countdown / intake target rides the save from STATE, not only
           // from setPrepPreference's direct write: this effect re-reads the
@@ -11735,8 +11765,7 @@ CRITICAL RULES:
       const had = getUserIntent();
       let intent = g.intent;
       if (!had || had === 'exploring') {
-        localStorage.setItem('sqlquest_user_intent', g.intent);
-        localStorage.setItem('sqlquest_intent_asked', '1');
+        setUserIntent(g.intent, 'link');
         trackActivationEvent('intent_captured', { intent: g.intent, source: 'link', src, company: companyFilter || null });
         applyIntentRouting(g.intent, 'link');
       } else {
@@ -11773,12 +11802,51 @@ CRITICAL RULES:
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser, dbReady, isSessionLoading, currentChallenge, showFirstRunStart, showIntake, intakeRecord]);
 
+  // E: the returning ask. A session with at least one solve and NO goal on
+  // record — no intent (or 'exploring'), no intake record, no countdown
+  // target, no Coach goal — sees the intake's goal screen once, required,
+  // then the measure (skippable), then goes back to where it was. Never at
+  // zero solves (the first-run intake's job), never twice (the marker is
+  // written at show time), never over an open challenge (it waits for the
+  // next tab change or app open — the deps below).
+  useEffect(() => {
+    if (!goalMeasureOn() || !currentUser || !dbReady || isSessionLoading) return;
+    if (goalAsk || currentChallenge || solvedChallenges.size < 1 || isFirstRunUser) return;
+    // The browser key, or the account record (a goal declared on another device).
+    const intent = getUserIntent() || intentRecord?.goal || null;
+    if (intent && intent !== 'exploring') return;
+    if (intakeRecord || prepTarget.company || prepTarget.date || coachState?.goalId) return;
+    try { if (localStorage.getItem(GOAL_ASK_RETURNING_KEY)) return; } catch (_) { return; }
+    try { localStorage.setItem(GOAL_ASK_RETURNING_KEY, new Date().toISOString()); } catch (_) {}
+    trackActivationEvent('goal_ask_returning_shown', { solves: solvedChallenges.size, intent: intent || null, registered: !isGuest });
+    setGoalAsk({ stage: 'goal', source: 'returning' });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser, dbReady, isSessionLoading, currentChallenge, activeTab, solvedChallenges.size]);
+
+  const answerReturningGoal = (goalId) => {
+    const g = intakeGoalFor(goalId);
+    if (!g) return;
+    trackActivationEvent('intake_answered', { step: 'goal', value: goalId, daysOut: null, skipped: false, returning: true });
+    completeIntake({ goal: goalId, goalSource: 'returning', company: null, level: null, date: null, role: null }, { quiet: true });
+    applyIntentRouting(g.intent, 'returning');
+    if (goalMeasureStatus) { setGoalAsk(null); return; }   // already measured or skipped on this browser
+    setGoalAsk({ stage: 'measure', source: 'returning' });
+  };
+
   const renderGoalAskOverlay = () => {
     if (!goalAsk || !goalMeasureOn()) return null;
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto p-4" style={{ background: 'rgba(14,15,19,0.85)' }} data-onboarding="goal-ask-overlay" data-goal-ask-source={goalAsk.source}>
         <div className="my-6 w-full max-w-2xl p-6" style={{ background: '#16181F', border: '1px solid #2A2E38', borderRadius: '10px' }}>
-          {renderGoalMeasure()}
+          {goalAsk.stage === 'goal' ? (
+            <div data-onboarding="first-run-intake" data-intake-step="goal" data-intake-returning="true">
+              <p className="mb-2 text-xs font-bold uppercase tracking-wider text-purple-300">{i18n_t('intake', 'goalEyebrow')}</p>
+              <h2 className="mb-2 text-2xl font-bold text-[#F2F0EA] md:text-3xl">{i18n_t('intake', 'goalTitle')}</h2>
+              <p className="max-w-2xl text-sm leading-relaxed text-gray-300">{i18n_t('intake', 'goalSub')}</p>
+              <div className="mt-5 space-y-2">{renderIntakeGoalChoices(answerReturningGoal)}</div>
+              <p className="mt-3 text-xs" style={{ color: '#8A8E99' }} data-intake-goal-required="true">{i18n_t('intake', 'goalRequired')}</p>
+            </div>
+          ) : renderGoalMeasure()}
         </div>
       </div>
     );
@@ -11822,10 +11890,7 @@ CRITICAL RULES:
       // The same keys the post-solve ask writes, through the same helper, so
       // the Interview door (src/utils/interview-nav.js), every event's
       // `intent` stamp and the account record agree.
-      try {
-        localStorage.setItem('sqlquest_user_intent', goal.intent);
-        localStorage.setItem('sqlquest_intent_asked', '1');
-      } catch (_) {}
+      setUserIntent(goal.intent, record.goalSource || 'intake');
       if (!coachState?.goalId) {
         const firstRun = (() => { try { return readFirstRunPlacement(localStorage); } catch (_) { return null; } })();
         const next = newCoachGoalState(goal.coachGoalId, {
@@ -16136,6 +16201,16 @@ CRITICAL RULES:
       if (userData.intake && typeof userData.intake === 'object' && typeof userData.intake.completedAt === 'string') {
         setIntakeRecord(userData.intake);
         try { localStorage.setItem(INTAKE_KEY, JSON.stringify(userData.intake)); } catch (_) {}
+      }
+      // The declared goal follows the account: the record wins over an empty
+      // browser key, and a real goal fills the key so the returning ask and
+      // the Interview door see it here too.
+      if (userData.intent && typeof userData.intent === 'object' && typeof userData.intent.goal === 'string') {
+        setIntentRecord(userData.intent);
+        try {
+          if (!localStorage.getItem('sqlquest_user_intent') && userData.intent.goal !== 'exploring') localStorage.setItem('sqlquest_user_intent', userData.intent.goal);
+          localStorage.setItem('sqlquest_intent_asked', '1');
+        } catch (_) {}
       }
       // The readiness result follows the account onto a new device, unless
       // this browser holds a newer one of its own.
@@ -26453,11 +26528,8 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                 <button
                   key={key}
                   onClick={() => {
-                    try {
-                      localStorage.setItem('sqlquest_intent_asked', '1');
-                      localStorage.setItem('sqlquest_user_intent', key);
-                    } catch (_) {}
-                    trackActivationEvent('intent_captured', { intent: key });
+                    setUserIntent(key, 'ask');
+                    trackActivationEvent('intent_captured', { intent: key, source: 'ask' });
                     setShowIntentAsk(false);
                     applyIntentRouting(key);
                   }}
@@ -26472,8 +26544,8 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
             </div>
             <button
               onClick={() => {
-                try { localStorage.setItem('sqlquest_intent_asked', '1'); } catch (_) {}
-                trackActivationEvent('intent_captured', { intent: 'exploring' });
+                setUserIntent('exploring', 'ask');
+                trackActivationEvent('intent_captured', { intent: 'exploring', source: 'ask' });
                 setShowIntentAsk(false);
               }}
               className="w-full text-center text-xs mt-3 underline"
