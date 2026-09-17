@@ -759,6 +759,23 @@ Rewritten Coach-forward:
   in the ledger. `/coach/` now redirects to `/app` (it 404'd; nothing linked
   to it).
 
+### Interview-first (2026-09-17)
+
+- **The frame:** `docs/plans/interview-first-2026-09-17.md` — SQL Quest is
+  interview prep for job-hunters (payers 3/3 interview-shaped); everything is
+  judged by arrived → on a plan → paid for the Pro part of it.
+- Flag `interviewFirst` (dark, flips 09-21 with `interviewCountdown`).
+  Predicate `isInterviewPerson` in `src/utils/interview-first.js` — the
+  Interview tab's population (interview-nav.js) plus a `prepTarget` date or
+  company; test-bound to agree. One helper in app.jsx, `interviewFirstOn(
+  surface)`, six pinned call sites: no daily-reward calendar, no achievement
+  toast (still awarded), no lives/coin in the header, countdown card above
+  the Coach's next-step card. Everyone else: today's product, byte for byte.
+- **A plan for every company:** `findPlanTarget` in interview-prep.js —
+  `kind: 'archetype'` (signed, gets the number) or `kind: 'tagged'` (≥ 5
+  tagged challenges, generic Pro mock, the honest note, **never a score**).
+  Ledger: "interview-first: the plan is the product for people with a date".
+
 ### Revolut — the second interview-prep member (signed 2026-09-12)
 
 - `neobank-analyst` on `finans_neobank`, member Revolut, `declaredBy:

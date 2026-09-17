@@ -27,6 +27,72 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### interview-first: the plan is the product for people with a date
+
+- **Claimed** 2026-09-17 · **Flips** 2026-09-21 by the scheduled task that
+  flips `interviewCountdown` (the card this moves) · **Read** 2026-10-12.
+- **Change** two things, both dark. (1) Flag `features.interviewFirst`: for
+  an interview person — `isInterviewPerson` in src/utils/interview-first.js:
+  declared intent interview / job_ready, a countdown date or company
+  (`prepTarget`), the `interview-prep` Coach goal, a `company:` arrival, or
+  any interview history; the Interview tab's own population
+  (interview-nav.js) plus the countdown target, test-bound to agree — the
+  daily-reward calendar never opens, achievement toasts do not render (the
+  achievement is still awarded and saved), the header's lives and coin are
+  not drawn, and the countdown card renders ABOVE the Coach's next-step card.
+  One helper in app.jsx (`interviewFirstOn(surface)`, six call sites, pinned
+  by tests/interview-first.test.js) reads the flag; nobody else sees a byte
+  of difference. `interview_first_applied {reason}` fires once a session.
+  (2) A plan target for every company, live with the countdown card
+  (`findPlanTarget` in src/utils/interview-prep.js): a signed archetype
+  returns the existing target as `kind: 'archetype'`; any other company with
+  ≥ 5 tagged challenges returns `kind: 'tagged'` — its tagged challenges, the
+  generic Pro mock (`pickProMockId`), and the note "Built from the N
+  questions tagged X and your weakest skills — not X's process." The picker
+  lists the signed two first, then the tagged companies by count (all 30 in
+  the map clear the bar; the thinnest is Morgan Stanley at 12). The readiness
+  NUMBER stays archetype-only — a tagged target shows the plan and the note,
+  no score. `prep_target_set` and `prep_plan_viewed` carry `kind`.
+- **Why** docs/plans/interview-first-2026-09-17.md: every real purchase in
+  the product's history was interview-shaped — **3 of 3** (`stripe_webhook`,
+  internal excluded); modal → plan click in the 30 days to 09-15 was
+  **9.3%** for declared interview intent (4/43) against **0 of 81** with no
+  intent. Two signed archetypes cannot serve the Snowflake / Revolut / Wise /
+  Stripe arrivals of a month; a person with a date at an unsigned company was
+  handed an empty picker.
+- **Metric** `interview_prep_funnel` (docs/agent/metrics.md), read from the
+  flip time and split by `kind` and by `interview_first_applied.reason`;
+  `interview_cohort_funnel` — the Friday task defines it (arrivals → plan →
+  Pro item met → paid, for intent interview/job_ready, a date, or a
+  `company:` arrival). Guardrail: `weekly_engaged` for the non-interview
+  population, which must not move (it sees no change, by construction).
+- **Baseline** 30 days to 2026-09-17 (pro_events, internal excluded, people
+  by aid): **357 interview-cohort people** — 205 by declared intent, 175 by a
+  `company:` arrival (23 both); **with a date: 0** by event (the intake and
+  the countdown are both dark; one registered account carries a
+  `prepTarget.date`); **with a company: 175** by arrival (three registered
+  accounts carry a `prepTarget.company`). Of the cohort 126 saw the Pro
+  modal, 5 clicked checkout, 1 purchased. Every `prep_*` and
+  `interview_first_applied` count is **0 by construction** until the flip.
+- **Target** ≥ 40% of interview people with a date open a plan item
+  (`prep_plan_item_opened`) within 7 days of the flip; ≥ 3 purchases from
+  the interview cohort in the 30 days after it (the cohort produced 1 in the
+  30 days before).
+- **Falsification, stated in advance:** < 20% of interview people with a date
+  open a plan item → the plan is not the product, the door is; revert the
+  card position (the `coach_card_above` mount), keep the flag and the tagged
+  tier — the game surfaces staying hidden is not what this claim reads.
+- **Confounds**
+  - `freeQuota` and `deadlineOffer` flip the same day (09-21). The
+    milestone ask and the quota wall change for the same interview person in
+    the same window; the purchase target above cannot be attributed to this
+    change alone, and the read says so.
+  - The intentRouting read (2026-10-16) becomes the read of the
+    interview-first batch, not of the tab alone — amended in that entry.
+  - `interviewCountdown` and this flip together by design: the card this
+    moves does not exist without it. `prep_*` events date from the flip.
+- **Verdict** _pending_
+
 ### the free quota: ten solves, then Pro (founder's week-1 plan, item 2)
 
 - **Claimed** 2026-09-12 · **Flips** 2026-09-21 by scheduled task, after the
@@ -2232,6 +2298,13 @@ of the verifier and must never be rounded to `FLAT`.
     must split by both and never sum across the intake flip time.
   - **roadmapV2** stays off (amended below); nothing else on the Practice
     path filter changes in the window.
+  - **Interview-first** (2026-09-17, flag `interviewFirst`, flips 09-21 with
+    `interviewCountdown`; ledger "interview-first: the plan is the product
+    for people with a date"): from 09-21 a routed person also sees the
+    countdown card first on the Coach and none of the game surfaces. The
+    10-16 read of this entry is therefore the read of the interview-first
+    batch, not of the tab alone (docs/plans/interview-first-2026-09-17.md);
+    split the window at the 09-21 flip time and never sum across it.
 - **Verdict** _pending_
 
 ### the recommended path stops hand-listing 38 of 287 challenges
