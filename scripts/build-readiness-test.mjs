@@ -268,7 +268,7 @@ function finish() {
   const next = base.next[weakest];
   const page = SKILL_PAGE[weakest];
   $('rtrain').innerHTML = 'Start with ' + (next ? '<a href="/questions/' + next.slug + '/" style="color:#e2e8f0;font-weight:700">' + next.title + '</a> (' + next.difficulty + ', free)' : 'the free challenges on this skill') + (co ? ' from the ' + co.name + ' set' : '') + ', then work through ' + (page ? '<a href="' + page[0] + '" style="color:#c084fc">' + page[1] + '</a>' : 'the practice bank') + '. The Coach keeps picking from your Skillmap as you solve.';
-  const href = '/app/?src=readiness' + (co ? '&company=' + encodeURIComponent(co.name) : '') + (next ? '&challenge=' + next.id : '');
+  const href = '/app/?src=readiness' + (co ? '&company=' + encodeURIComponent(co.name) : '') + (next ? '&challenge=' + next.id : '') + '&goal=interview';
   $('plan').href = href;
   $('retake').href = '/sql-interview-readiness-test/' + (slug ? '?company=' + slug : '');
   try { localStorage.setItem('sqlquest_readiness_v1', JSON.stringify({ at: Date.now(), company: co ? co.name : null, overall, weakest, scores: Object.fromEntries(skills.map(s => [s, score(s)])) })); } catch (_) {}

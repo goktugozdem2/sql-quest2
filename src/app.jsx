@@ -11715,6 +11715,75 @@ CRITICAL RULES:
     );
   };
 
+  // ── The goal from a link, and the returning ask (2026-09-17, D and E) ───
+  // D: `?goal=interview|job_ready|learning` on /app/ is how an SEO arrival
+  // comes in with a goal for free. It writes the intent the way the intake
+  // does — never over a declared one ('exploring' counts as none) — fires
+  // `intent_captured {source:'link'}`, applies the routing, and pre-answers
+  // the intake's goal step. On the start screen the intake then asks the
+  // rest (date, level, role) and the measure follows; off it (a company deep
+  // link lands on Practice) the intake is completed from the link and the
+  // measure opens in the overlay below, unless a fresh result exists.
+  const linkGoalRef = useRef(null);
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const goalId = intakeGoalForIntent(params.get('goal'));
+      if (!goalId) return;
+      const g = intakeGoalFor(goalId);
+      const src = params.get('src') || null;
+      const had = getUserIntent();
+      let intent = g.intent;
+      if (!had || had === 'exploring') {
+        localStorage.setItem('sqlquest_user_intent', g.intent);
+        localStorage.setItem('sqlquest_intent_asked', '1');
+        trackActivationEvent('intent_captured', { intent: g.intent, source: 'link', src, company: companyFilter || null });
+        applyIntentRouting(g.intent, 'link');
+      } else {
+        intent = had;   // a declared goal is never overwritten
+      }
+      const level = params.get('level');
+      const effectiveGoal = intakeGoalForIntent(intent) || goalId;
+      linkGoalRef.current = { goal: effectiveGoal, company: companyFilter || null, level: isIntakeLevel(level) ? level : null, src };
+      if (companyFilter && !prepTarget.company) setPrepPreference({ company: companyFilter });
+      if (!intakeRecord) {
+        const draft = { goal: effectiveGoal, goalSource: 'link', company: effectiveGoal === 'interview' ? (companyFilter || null) : null, level: effectiveGoal === 'interview' && isIntakeLevel(level) ? level : null, date: null, role: null };
+        let next = nextIntakeStep('goal', effectiveGoal);
+        if (next === 'company' && draft.company) next = nextIntakeStep('company', effectiveGoal);
+        setIntakeDraft(draft);
+        setIntakeStep(next || 'role');
+      }
+    } catch (_) {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Off the start screen, a link goal completes the intake from the link and
+  // opens the measure in the overlay; on it, the intake carries the goal.
+  useEffect(() => {
+    const link = linkGoalRef.current;
+    if (!link || !goalMeasureOn() || !currentUser || !dbReady || isSessionLoading) return;
+    if (currentChallenge || goalAsk) return;
+    if (showFirstRunStart || showIntake) return;   // the intake renders there with the goal pre-answered
+    linkGoalRef.current = null;
+    if (!intakeRecord) {
+      completeIntake({ goal: link.goal, goalSource: 'link', company: link.company, level: link.level, date: null, role: null });
+    }
+    if (goalMeasureStatus) return;
+    setGoalAsk({ stage: 'measure', source: 'link' });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser, dbReady, isSessionLoading, currentChallenge, showFirstRunStart, showIntake, intakeRecord]);
+
+  const renderGoalAskOverlay = () => {
+    if (!goalAsk || !goalMeasureOn()) return null;
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto p-4" style={{ background: 'rgba(14,15,19,0.85)' }} data-onboarding="goal-ask-overlay" data-goal-ask-source={goalAsk.source}>
+        <div className="my-6 w-full max-w-2xl p-6" style={{ background: '#16181F', border: '1px solid #2A2E38', borderRadius: '10px' }}>
+          {renderGoalMeasure()}
+        </div>
+      </div>
+    );
+  };
+
   // ── Onboarding intake (P0-1, 2026-09-12) ───────────────────────────────
   // The goal, then optional questions, before the placement quiz. Each answer
   // lands in the store that already owns it (the intent key, the Coach goal,
@@ -26363,6 +26432,10 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
           </div>
         );
       })()}
+      {/* The goal ask + measure overlay (2026-09-17): a ?goal= link arrival
+          off the start screen, or the returning ask. Required goal, then the
+          skippable check, then back to where they were. */}
+      {renderGoalAskOverlay()}
       {/* One-question intent ask — after first solve, sequenced behind the
           soft email capture. Every answer (including "just exploring") is
           recorded so segmentation has no silent-dismissal blind spot. */}

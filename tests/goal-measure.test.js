@@ -194,7 +194,7 @@ describe('source guards — app.jsx keeps the measure dark, honest, and quiet ab
     expect(intakeAt).toBeGreaterThan(-1);
     expect(measureAt).toBeGreaterThan(intakeAt);
     expect(quizAt).toBeGreaterThan(measureAt);
-    expect(app.split('renderGoalMeasure()').length - 1).toBe(1);   // the start screen
+    expect(app.split('renderGoalMeasure()').length - 1).toBe(2);   // the start screen and the overlay
     expect(app.split('const renderGoalMeasure = ').length - 1).toBe(1);
   });
 
@@ -269,6 +269,18 @@ describe('source guards — app.jsx keeps the measure dark, honest, and quiet ab
       'disclaimerCompany', 'disclaimerGeneral', 'stored', 'storedToday', 'skillmap', 'build', 'buildSub']) {
       for (const b of blocks) expect(b, `${key} in both languages`).toMatch(new RegExp(`\\b${key}: '`));
     }
+  });
+
+  it('D — the ?goal= link writes the intent the intake\'s way, never over a declared one, and tags its source', () => {
+    expect(block).toMatch(/const goalId = intakeGoalForIntent\(params\.get\('goal'\)\);/);
+    expect(block).toMatch(/if \(!had \|\| had === 'exploring'\) \{\s*\n\s*localStorage\.setItem\('sqlquest_user_intent', g\.intent\);\s*\n\s*localStorage\.setItem\('sqlquest_intent_asked', '1'\);\s*\n\s*trackActivationEvent\('intent_captured', \{ intent: g\.intent, source: 'link', src/);
+    expect(block).toMatch(/applyIntentRouting\(g\.intent, 'link'\);/);
+    expect(block).toMatch(/intent = had;\s*\/\/ a declared goal is never overwritten/);
+    expect(block).toMatch(/goalSource: 'link'/);
+    expect(block).toMatch(/if \(companyFilter && !prepTarget\.company\) setPrepPreference\(\{ company: companyFilter \}\);/);
+    // the source enum the routing event carries
+    expect(app).toMatch(/const applyIntentRouting = \(intent, source = 'ask'\) =>/);
+    expect(app).toContain("applyIntentRouting(g.intent, 'link')");
   });
 
 });
