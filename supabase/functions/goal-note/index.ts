@@ -219,6 +219,8 @@ function renderBody(args: { username: string; solves: number; variant: Variant }
     </div>`
 }
 
+const FOUNDER_MAILED_BY_HAND = new Set(['alexis_montesdeoca', 'harinivr02', 'rereremin'])
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
@@ -297,6 +299,10 @@ Deno.serve(async (req) => {
       const userData = row.data || {}
       if (!email || !email.includes('@')) { skip('no_email'); continue }
       if (isInternalAccount(username, email)) { skip('internal'); continue }
+      // The founder wrote to these three by hand on 2026-09-12 (ledger: "three
+      // hand-written founder emails of 09-12"), and that
+      // entry says: do not mail them again.
+      if (FOUNDER_MAILED_BY_HAND.has(username)) { skip('founder_mailed'); continue }
       if (userData.emailOptOut === true) { skip('opted_out'); continue }
       if (goalOnRecord(userData)) { skip('goal_on_record'); continue }
       const lastActive = activeAt(userData)

@@ -169,4 +169,9 @@ describe('goal-note: the one-time letter to everyone with no goal on record', ()
     // The gate sits before any query.
     expect(fn.indexOf('service role required')).toBeLessThan(fn.indexOf('createClient('));
   });
+
+  it('never mails the three the founder wrote to by hand on 09-12', () => {
+    for (const u of ['alexis_montesdeoca', 'harinivr02', 'rereremin']) expect(fn).toContain(`'${u}'`);
+    expect(fn).toContain("skip('founder_mailed')");
+  });
 });
