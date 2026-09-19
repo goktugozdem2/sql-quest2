@@ -113,7 +113,7 @@ window.gameAchievements = [
   { id: 'polyglot',        name: 'SQL Polyglot',    desc: 'Earn 3 different archetype badges',     icon: '🧭', xp: 250 },
 
   // === Interview Achievements ===
-  { id: 'first_interview',   name: 'Interview Ready',    desc: 'Complete your first mock interview',              icon: '💼', xp: 50 },
+  { id: 'first_interview',   name: 'Interview Ready',    desc: 'Pass your first mock interview',                  icon: '💼', xp: 50 },
   { id: 'interview_pass',    name: 'Hired!',             desc: 'Pass a mock interview',                           icon: '✅', xp: 75 },
   { id: 'perfect_interview', name: 'Perfect Candidate',  desc: 'Score 100% on any interview',                     icon: '💎', xp: 150 },
   { id: 'speed_demon',       name: 'Speed Demon',        desc: 'Pass an interview in under 50% of the time limit', icon: '🏎️', xp: 100 },

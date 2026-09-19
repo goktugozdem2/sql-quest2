@@ -45,6 +45,7 @@ import { eligibleTargets, findTarget, planTargets, findPlanTarget, companyReadin
 import { buildDivision as buildLeagueDivision, tierForXp as leagueTierForXp } from './utils/leagues.js';
 import { getPrimarySkeleton, getAllSkeletons } from './utils/skeletons.js';
 import { diagnoseResult, diagnosisShort, primaryHint } from './utils/diagnose.js';
+import { formatSqlForDisplay } from './utils/sql-format.js';
 import { buildUserSkill, pickNextBySkill, toCanonicalSkill, isLegacyMasteryRecord } from './utils/user-skill.js';
 import { classifyErrorPatterns, recordErrorPatterns, describeErrorPatterns, patternCount, emptyErrorStore } from './utils/error-patterns.js';
 import { dueRetrievals, pickRetrievalChallenge, recordRetrieval, dailyQuota, MAX_DUE_SHOWN } from './utils/spaced-retrieval.js';
@@ -61,7 +62,7 @@ import { resultsMatch, solutionRequiresOrder, sortRowsCanonical } from './utils/
 import { normalizeAiMessages } from './utils/ai-tutor-client.js';
 import { t as i18n_t, getCurrentLang, setLang as i18n_setLang, subscribeLang, SUPPORTED_LANGS, localizeChallenge, localizeInterview, localizeQuestion } from './utils/i18n.js';
 import { buildWeeklyReport, detectMilestones } from './utils/weekly-report.js';
-import { isMcqQuestion, scoreMcqAnswer, applyHintPenalty, nextOptionId, findOption } from './utils/mock-interview.js';
+import { isMcqQuestion, scoreMcqAnswer, applyHintPenalty, nextOptionId, findOption, mockMistakeDiagnosis, weakConceptsFromHistory } from './utils/mock-interview.js';
 
 // 2026-09-12 (founder's cleanup item 12): the sector deep-link parameter is
 // English on every link — ?sector=finance | real-estate | manufacturing |
@@ -274,6 +275,27 @@ function SkillSparkline({ data, color = '#06b6d4', width = 180, height = 32, fil
     </svg>
   );
 }
+
+// Column types for a schema panel, read off the table's own data: INTEGER,
+// REAL, DATE (YYYY-MM-DD…), TEXT. NULLs are skipped; an all-NULL column is
+// TEXT. Display only — SQLite is dynamically typed.
+const schemaColumnTypes = (tableInfo) => {
+  const cols = (tableInfo && tableInfo.columns) || [];
+  const rows = (tableInfo && Array.isArray(tableInfo.data)) ? tableInfo.data : [];
+  return cols.map((_, i) => {
+    let kind = null;
+    for (const r of rows) {
+      const v = r[i];
+      if (v === null || v === undefined) continue;
+      const k = typeof v === 'number'
+        ? (Number.isInteger(v) ? 'INTEGER' : 'REAL')
+        : (/^\d{4}-\d{2}-\d{2}/.test(String(v)) ? 'DATE' : 'TEXT');
+      if (kind === null) kind = k;
+      else if (kind !== k) kind = (kind === 'INTEGER' && k === 'REAL') || (kind === 'REAL' && k === 'INTEGER') ? 'REAL' : 'TEXT';
+    }
+    return kind || 'TEXT';
+  });
+};
 
 const formatCell = (cell, maxLength = null, columnDecimals = 0) => {
   if (cell === null || cell === undefined) return 'NULL';
@@ -2286,6 +2308,12 @@ const SQLEditor = ({ value, onChange, onKeyDown, placeholder, height = '10rem', 
     }
   }, [disabled]);
 
+  // The placeholder can change per challenge (the first-challenge starter
+  // hint); CodeMirror only reads it at creation unless told.
+  useEffect(() => {
+    if (editorRef.current) editorRef.current.setOption('placeholder', placeholder || '');
+  }, [placeholder]);
+
   return (
     <div
       ref={containerRef}
@@ -2481,7 +2509,7 @@ const updatePasswordWithToken = async (newPassword) => {
   }
   if (!session) {
     throw new Error(
-      'Şifre sıfırlama oturumu kurulamadı. Linki email\'den tekrar tıkla; eğer aynı hata sürerse "Şifremi unuttum" ile yeni bir link iste.'
+      i18n_t('authErrors', 'resetSessionFailed')
     );
   }
 
@@ -6091,6 +6119,21 @@ function SQLQuest() {
   // lose the pick — the same guarantee interviewQuery already had.
   const [interviewSelectedOption, setInterviewSelectedOption] = useState(null);
   const [interviewShowScratchpad, setInterviewShowScratchpad] = useState(false);
+  // The mock's scrolling pane. Every new question opens at its top — the
+  // pane used to keep the previous question's scroll, which put the next
+  // question's text above the fold (founder QA 2026-09-19, item 10).
+  const interviewContentRef = useRef(null);
+  const [interviewHintConfirm, setInterviewHintConfirm] = useState(false);
+  const [interviewLiveHint, setInterviewLiveHint] = useState(null);
+  useEffect(() => { setInterviewHintConfirm(false); setInterviewLiveHint(null); }, [interviewQuestion, activeInterview?.id]);
+  useEffect(() => {
+    // Only while a mock is open: closing one must not yank the page that
+    // the close navigated to (Study with AI scrolls to the tutor).
+    if (!activeInterview) return;
+    const el = interviewContentRef.current;
+    if (el) { try { el.scrollTo({ top: 0 }); } catch (_) { el.scrollTop = 0; } }
+    try { window.scrollTo({ top: 0 }); } catch (_) {}
+  }, [interviewQuestion, activeInterview?.id]);
 
   // Interview Enhancement States
   const [retryMode, setRetryMode] = useState(false); // Retry only failed questions
@@ -7525,6 +7568,28 @@ function SQLQuest() {
   const [challengeRunMs, setChallengeRunMs] = useState(null); // Query duration in ms — shown to user as "Ran in Xms" confirmation
   const [challengeExpected, setChallengeExpected] = useState({ columns: [], rows: [] });
   const [challengeStatus, setChallengeStatus] = useState(null);
+  const [challengeStarterHint, setChallengeStarterHint] = useState(null);
+  // After Run or Submit, bring the result into view if it landed below the
+  // fold — the verdict now sits right under the editor, but on a short
+  // laptop screen the editor itself can reach the bottom edge (founder QA
+  // 2026-09-19, item 1). Only scrolls when the anchor is off-screen, and
+  // only down: a person reading the problem above is never yanked.
+  const challengeResultRef = useRef(null);
+  const [challengeSubmitAt, setChallengeSubmitAt] = useState(null);
+  useEffect(() => {
+    if (!challengeRunAt && !challengeSubmitAt) return;
+    const el = challengeResultRef.current;
+    if (!el || typeof window === 'undefined') return;
+    const id = window.setTimeout(() => {
+      try {
+        const r = el.getBoundingClientRect();
+        // Bring the verdict to just under the middle of the screen, so the
+        // bottom of the editor and its buttons stay in view above it.
+        if (r.top > window.innerHeight - 140) window.scrollTo(0, Math.max(0, Math.round(window.scrollY + r.top - window.innerHeight * 0.45)));
+      } catch (_) {}
+    }, 60);
+    return () => window.clearTimeout(id);
+  }, [challengeRunAt, challengeSubmitAt]);
   const [showChallengeHint, setShowChallengeHint] = useState(false);
   // Structure = skeleton template for the challenge's SQL pattern. A step
   // between "Hint" (plain English nudge) and "Answer" (full solution).
@@ -8689,7 +8754,7 @@ function SQLQuest() {
         authError.code === 'otp_expired' ||
         /expired|invalid/i.test(authError.description);
       const msg = expired
-        ? 'Şifre sıfırlama linki süresi dolmuş veya kullanılmış. Lütfen yeni bir link iste — "Şifremi unuttum" butonuna tekrar tıkla.'
+        ? i18n_t('authErrors', 'resetLinkExpired')
         : `Auth error: ${authError.description || authError.code}`;
       // Clear the error from the URL so a refresh doesn't re-trigger.
       window.history.replaceState({}, document.title, window.location.pathname);
@@ -10253,42 +10318,6 @@ function SQLQuest() {
   };
   
   // Get peer comparison stats for an interview
-  const getPeerComparison = (interviewId) => {
-    // Generate simulated peer data based on difficulty
-    const interview = mockInterviews.find(i => i.id === interviewId);
-    if (!interview) return null;
-    
-    // Base stats vary by difficulty
-    const difficultyMultiplier = {
-      'Easy': { avgScore: 78, avgTime: 0.65, passRate: 82 },
-      'Medium': { avgScore: 65, avgTime: 0.75, passRate: 62 },
-      'Hard': { avgScore: 52, avgTime: 0.85, passRate: 35 }
-    };
-    
-    const base = difficultyMultiplier[interview.difficulty] || difficultyMultiplier['Medium'];
-    
-    // Add some randomness for realism (seeded by interview id)
-    const seed = interviewId.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
-    const variance = (seed % 10) - 5;
-    
-    return {
-      avgScore: Math.max(40, Math.min(90, base.avgScore + variance)),
-      avgTime: Math.round(interview.totalTime * base.avgTime),
-      passRate: Math.max(25, Math.min(90, base.passRate + variance)),
-      totalAttempts: 500 + (seed % 1000), // Simulated attempt count
-    };
-  };
-  
-  // Calculate user's percentile for an interview result
-  const calculatePercentile = (userScore, peerAvgScore) => {
-    // Simple percentile calculation based on how user compares to average
-    // If user scored average, they're at 50th percentile
-    // Each point above/below shifts percentile
-    const diff = userScore - peerAvgScore;
-    const percentile = Math.round(50 + (diff * 1.5));
-    return Math.max(1, Math.min(99, percentile));
-  };
-  
   // Auto-save interview progress
   const saveInterviewProgress = () => {
     if (!currentUser || !activeInterview || interviewCompleted) return;
@@ -10333,14 +10362,21 @@ function SQLQuest() {
     }
   };
 
-  const submitInterviewAnswer = (timedOut = false) => {
+  // `timedOut` is the clock running out; `opts.skipped` is the Skip button.
+  // Both leave the question unanswered, but they are different facts and the
+  // feedback overlay and results screen say which (founder QA 2026-09-19,
+  // item 9: a skip at 7:54 left used to read "Time is up" / "Timed out").
+  const submitInterviewAnswer = (timedOut = false, opts = {}) => {
     if (!activeInterview) return;
+    const skipped = !timedOut && !!opts.skipped;
+    const unanswered = timedOut || skipped;
     
     const currentQ = activeInterview.questions[interviewQuestion];
     let isCorrect = false;
     let score = 0;
     let expectedOutput = { columns: [], rows: [] };
     let userOutput = { columns: [], rows: [] };
+    let userError = null;
 
     // ── Multiple choice ───────────────────────────────────────────────────
     // Scored by scoreMcqAnswer (src/utils/mock-interview.js) but committed
@@ -10351,7 +10387,7 @@ function SQLQuest() {
     // .correctSolution. Keep the shape; branch only on the way in.
     if (isMcqQuestion(currentQ)) {
       const hintsUsedCount = interviewHintsUsed.filter(h => h === interviewQuestion).length;
-      const graded = timedOut
+      const graded = unanswered
         ? scoreMcqAnswer(currentQ, null, { hintsUsed: hintsUsedCount })
         : scoreMcqAnswer(currentQ, interviewSelectedOption, { hintsUsed: hintsUsedCount });
       const localizedQ = localizeQuestion(currentQ, lang);
@@ -10382,6 +10418,7 @@ function SQLQuest() {
         timeUsed: interviewTimer,
         timeLimit: currentQ.timeLimit,
         timedOut,
+        skipped,
         hintsUsed: hintsUsedCount,
       };
 
@@ -10392,6 +10429,7 @@ function SQLQuest() {
         score: graded.score,
         maxScore: graded.maxScore,
         timedOut,
+        skipped,
         isLast: interviewQuestion >= activeInterview.questions.length - 1,
         isPracticeMode: practiceMode,
         explanation: mcqAnswer.explanation,
@@ -10401,7 +10439,7 @@ function SQLQuest() {
       return;
     }
 
-    if (!timedOut && interviewQuery.trim()) {
+    if (!unanswered && interviewQuery.trim()) {
       try {
         const userResult = db.exec(interviewQuery);
         const expectedResult = db.exec(currentQ.solution);
@@ -10428,6 +10466,12 @@ function SQLQuest() {
         }
       } catch (err) {
         isCorrect = false;
+        userError = err && err.message ? err.message : String(err);
+        // The expected output is still worth keeping for the review.
+        try {
+          const expectedResult = db.exec(currentQ.solution);
+          if (expectedResult.length > 0) expectedOutput = { columns: expectedResult[0].columns, rows: expectedResult[0].values };
+        } catch (_) {}
       }
     } else {
       // Get expected output even for skipped/timed out questions
@@ -10457,6 +10501,8 @@ function SQLQuest() {
       timeUsed: interviewTimer,
       timeLimit: currentQ.timeLimit,
       timedOut,
+      skipped,
+      userError,
       hintsUsed: interviewHintsUsed.filter(h => h === interviewQuestion).length
     };
     
@@ -10472,7 +10518,9 @@ function SQLQuest() {
       score,
       maxScore: currentQ.points,
       timedOut,
+      skipped,
       isLast,
+      diagnosis: mockMistakeDiagnosis(answer, { diagnose: diagnoseResult, hint: primaryHint }),
       isPracticeMode: practiceMode,
       pendingAnswers: newAnswers, // captured here so completeInterview gets the
                                    // right list when the user clicks Finish
@@ -10493,7 +10541,8 @@ function SQLQuest() {
       setInterviewQuestion(interviewQuestion + 1);
       setInterviewQuery('');
       setInterviewSelectedOption(null);
-      setInterviewShowScratchpad(false);
+      // The scratchpad stays as the person left it (founder QA item 15):
+      // someone who opened it on Q1 wants it on Q2.
       setInterviewResult({ columns: [], rows: [], error: null });
       setInterviewTimer(0);
       setShowInterviewHint(false);
@@ -10545,7 +10594,10 @@ function SQLQuest() {
         hints: a.hints,
         userOutput: a.userOutput,
         expectedOutput: a.expectedOutput,
-        timedOut: a.timedOut
+        timedOut: a.timedOut,
+        skipped: a.skipped,
+        userError: a.userError || null,
+        diagnosis: mockMistakeDiagnosis(a, { diagnose: diagnoseResult, hint: primaryHint }),
       }));
     
     const scorePercent = Math.round(totalScore / maxScore * 100);
@@ -10597,8 +10649,10 @@ function SQLQuest() {
       const hintsUsedCount = interviewHintsUsed.length;
       const timePercent = (interviewTotalTimer / activeInterview.totalTime) * 100;
       
-      // First Interview
-      if (!unlockedAchievements.has('first_interview')) {
+      // "Interview Ready" is earned by a pass, never by a failed sitting —
+      // a fail used to unlock it behind a "Keep practicing" screen (founder
+      // QA 2026-09-19, item 11). No achievement fires on a fail.
+      if (passed && !unlockedAchievements.has('first_interview')) {
         unlockAchievement('first_interview');
       }
       
@@ -10632,7 +10686,7 @@ function SQLQuest() {
       // Interview Marathon (3 interviews today)
       const today = new Date().toISOString().split('T')[0];
       const todayInterviews = [...interviewHistory, results].filter(h => h.date === today);
-      if (todayInterviews.length >= 3 && !unlockedAchievements.has('interview_streak')) {
+      if (passed && todayInterviews.length >= 3 && !unlockedAchievements.has('interview_streak')) {
         unlockAchievement('interview_streak');
       }
       
@@ -10672,6 +10726,34 @@ function SQLQuest() {
     setShowConfetti(false);
   };
   
+  // Leaving the results screen: the same exit for the "Back to Interviews"
+  // button and the Escape key (founder QA 2026-09-19, items 6 and 24). It
+  // always lands on the Interview list, wherever the mock was started.
+  const leaveInterviewResults = () => {
+    setRetryMode(false);
+    setRetryQuestions([]);
+    closeInterview(false);
+    if (!firstRunCompleted) {
+      setFirstRunCompleted(true);
+      try { localStorage.setItem(FIRST_RUN_COMPLETED_KEY, 'true'); } catch (_) {}
+    }
+    setActiveTab('trials');
+    try { window.scrollTo({ top: 0 }); } catch (_) {}
+  };
+  useEffect(() => {
+    if (!interviewCompleted || !interviewResults) return;
+    const onKey = (e) => {
+      if (e.key !== 'Escape') return;
+      // A modal opened on top of the results (share, certificate) closes first.
+      if (document.querySelector('[data-modal-over-results="1"]')) return;
+      e.preventDefault();
+      leaveInterviewResults();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [interviewCompleted, interviewResults]);
+
   const restartInterview = (interview) => {
     // Clear saved progress
     if (currentUser) {
@@ -10688,9 +10770,34 @@ function SQLQuest() {
     startInterview(interview, true);
   };
 
+  // Founder QA 2026-09-19, item 17: a hint cost 15% on one click with no
+  // warning, and it was the same authored line whatever the person had
+  // written. Now the first click asks (in a timed mock; practice has no
+  // penalty), and the hint leads with what is wrong with THEIR current query
+  // when they have one — the same diagnosis the challenge page uses — before
+  // the authored line.
   const useInterviewHint = () => {
+    setInterviewHintConfirm(false);
     setInterviewHintsUsed([...interviewHintsUsed, interviewQuestion]);
     setShowInterviewHint(true);
+    setInterviewLiveHint(null);
+    try {
+      const q = activeInterview?.questions?.[interviewQuestion];
+      if (!db || !q || isMcqQuestion(q) || !q.solution || !interviewQuery.trim()) return;
+      let userShape = { columns: [], rows: [] };
+      let userErr = null;
+      try {
+        const r = db.exec(interviewQuery);
+        if (r.length > 0) userShape = { columns: r[0].columns, rows: r[0].values };
+      } catch (e) { userErr = e && e.message ? e.message : String(e); }
+      const ex = db.exec(q.solution);
+      const expShape = ex.length > 0 ? { columns: ex[0].columns, rows: ex[0].values } : { columns: [], rows: [] };
+      const ctx = { topics: q.concepts || [], query: interviewQuery, solution: q.solution };
+      const d = diagnoseResult(userShape, expShape, userErr, ctx);
+      if (!d || d.kind === 'identical') { setInterviewLiveHint({ sentence: 'Your current query already returns the expected result — submit it.', hint: null }); return; }
+      const h = primaryHint(d, { ...ctx, description: q.description || '' });
+      setInterviewLiveHint({ sentence: d.headline, hint: h && h !== d.headline ? h : null });
+    } catch (_) { /* the authored hint still shows */ }
   };
 
   const canAccessInterview = (interview) => {
@@ -10734,20 +10841,43 @@ function SQLQuest() {
       role: 'assistant',
       content: isMcqMistake
         ? `**You missed this one — let's fix that.**\n\n**Question:** ${mistake.questionTitle}\n\n${mistake.questionDescription?.replace(/\*\*(.*?)\*\*/g, '**$1**')}\n\n**You picked:** ${mistake.userQuery || '(No answer submitted)'}\n\n**Correct answer:** ${mistake.correctSolution}\n\n${mistake.explanation || ''}\n\nThis one is about ${mistake.concepts?.join(', ')}. **Before I go further** — can you say, in your own words, what made the option you picked wrong? Then I'll fill in the gaps.`
-        : `**You missed this one — let's fix that.**\n\n**Question:** ${mistake.questionTitle}\n\n${mistake.questionDescription?.replace(/\*\*(.*?)\*\*/g, '**$1**')}\n\n**Your answer:**\n${fence(mistake.userQuery || '(No answer submitted)')}\n\n**Correct solution:**\n${fence(mistake.correctSolution)}\n\n**What went wrong:**\n${mistake.userQuery ? `Your query uses ${mistake.concepts?.[0] || 'the right idea'}, but the issue is in how you applied it. Compare your answer to the solution — can you spot the difference?` : `You didn't submit an answer. No worries — let's break the solution down so you own this concept.`}\n\nThe solution uses ${mistake.concepts?.join(', ')}. ${mistake.hints?.[0] || ''}\n\n**Before I explain further** — look at the correct solution above. Can you describe in your own words why each part is needed? Give it a try, then I'll fill in the gaps.`
+        : `**You missed this one — let's fix that.**\n\n**Question:** ${mistake.questionTitle}\n\n${mistake.questionDescription?.replace(/\*\*(.*?)\*\*/g, '**$1**')}\n\n**Your answer:**\n${fence(mistake.userQuery || '(No answer submitted)')}\n\n**Correct solution:**\n${fence(formatSqlForDisplay(mistake.correctSolution))}\n\n**What went wrong:**\n${(() => { const dx = mistake.diagnosis || mockMistakeDiagnosis({ ...mistake, correct: false }, { diagnose: diagnoseResult, hint: primaryHint }); return mistake.userQuery ? `${dx?.sentence || 'Your result did not match the expected output.'}${dx?.hint ? ` ${dx.hint}` : ''} Compare your answer to the solution — can you spot where they part?` : `You didn't submit an answer. No worries — let's break the solution down so you own this concept.`; })()}\n\nThe solution uses ${mistake.concepts?.join(', ')}. ${mistake.hints?.[0] || ''}\n\n**Before I explain further** — look at the correct solution above. Can you describe in your own words why each part is needed? Give it a try, then I'll fill in the gaps.`
     }]);
   };
 
   // Study a topic/concept with AI tutor (for clickable topic badges)
   // Uses a multi-step interactive flow for fast responses and high engagement
-  const studyTopicWithAI = async (topicName) => {
-    // Close any open modals
+  const studyTopicWithAI = async (topicName, mistake = null) => {
+    // Close any open modals — including the mock's own results modal, which
+    // is fixed over every tab and used to stay on top of the tutor it had
+    // just opened (founder QA 2026-09-19, item 6).
     setShowProfile(false);
     setShowInterviewReview(null);
     setShowWeeklyReport(false);
+    if (interviewCompleted || activeInterview) closeInterview(false);
 
-    // Navigate to AI Tutor tab
+    // The tutor lives on the Learning Path tab, below the Coach cards, and
+    // the first-run shell hides it entirely. Someone who has sat a mock is
+    // past the first run; then bring the tutor itself into view instead of
+    // leaving the person at the top of the Learning Path.
+    if (!firstRunCompleted) {
+      setFirstRunCompleted(true);
+      try { localStorage.setItem(FIRST_RUN_COMPLETED_KEY, 'true'); } catch (_) {}
+    }
     setActiveTab('guide');
+    // The tutor mounts a render or two after the tab switch; look for it for
+    // up to two seconds, then scroll to it once.
+    {
+      let tries = 0;
+      const seek = () => {
+        const el = document.querySelector('[data-roadmap-target="ai-tutor"]');
+        // Instant scrollTo: smooth scrolling is a silent no-op in some
+        // webviews (see scrollToChallengeEditor).
+        if (el) { try { window.scrollTo(0, Math.max(0, Math.round(el.getBoundingClientRect().top + window.scrollY - 16))); } catch (_) {} return; }
+        if (++tries < 20) setTimeout(seek, 100);
+      };
+      setTimeout(seek, 100);
+    }
 
     // If not logged in, the learn tab will show login prompt
     if (!currentUser) {
@@ -10774,8 +10904,8 @@ function SQLQuest() {
     setAiLoading(true);
 
     // Build a SHORT, focused prompt for step 1 — concept only (no examples yet)
-    const contextLine = isFromInterview
-      ? `A student got "${topicName}" wrong in a mock interview.`
+    const contextLine = (isFromInterview || mistake)
+      ? `A student got "${topicName}" wrong in a mock interview.${mistake && mistake.questionType !== 'mcq' && mistake.userQuery ? ` Their query was: ${String(mistake.userQuery).slice(0, 600)}` : ''}`
       : `A student is weak at "${topicName}" from practice.`;
 
     const systemPrompt = `You are a sharp, no-nonsense SQL tutor. ${contextLine}
@@ -15815,10 +15945,13 @@ CRITICAL RULES:
   // Get interview recommendation based on user history
   const getInterviewRecommendation = () => {
     if (!interviewHistory || interviewHistory.length === 0) {
-      // New user - recommend the free Data Analyst interview
+      // New user - recommend the free interview, by its own title. This line
+      // used to say "free Data Analyst interview" while recommending SQL
+      // Fundamentals; Data Analyst is Pro (founder QA 2026-09-19, item 12).
+      const freeOne = mockInterviews.find(i => i.isFree) || mockInterviews[0];
       return {
-        interview: mockInterviews.find(i => i.isFree) || mockInterviews[0],
-        reason: "Start with our free Data Analyst interview to assess your skills!",
+        interview: freeOne,
+        reason: `Start with the free "${localizeInterview(freeOne, lang).title}" to see where you stand.`,
         type: 'new_user'
       };
     }
@@ -15828,21 +15961,9 @@ CRITICAL RULES:
     const passedIds = new Set(interviewHistory.filter(h => h.passed).map(h => h.interviewId));
     const failedInterviews = interviewHistory.filter(h => !h.passed);
     
-    // Get concept weaknesses from mistakes
-    const conceptMistakes = {};
-    interviewHistory.forEach(result => {
-      (result.mistakes || []).forEach(mistake => {
-        (mistake.concepts || []).forEach(concept => {
-          conceptMistakes[concept] = (conceptMistakes[concept] || 0) + 1;
-        });
-      });
-    });
-    
-    // Sort concepts by mistake count
-    const weakConcepts = Object.entries(conceptMistakes)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 3)
-      .map(([concept]) => concept);
+    // Focus areas: attempted misses net of correct answers, per concept
+    // (src/utils/mock-interview.js, founder QA 2026-09-19 item 13).
+    const weakConcepts = weakConceptsFromHistory(interviewHistory, 3);
     
     // Priority 1: Retry failed interviews
     if (failedInterviews.length > 0) {
@@ -16779,6 +16900,15 @@ CRITICAL RULES:
   };
 
   // ============ DAILY LOGIN REWARDS ============
+  // Founder QA 2026-09-19, item 8: after login the Pro modal and the reward
+  // calendar opened back to back, and a claimed reward came back on every
+  // reload. Two guards: the calendar never opens within ten minutes of a Pro
+  // modal (it waits for the next visit, nothing is lost), and a per-browser
+  // key records the day it was shown or claimed, so a cloud row that has not
+  // caught up yet cannot bring it back.
+  const proModalShownAtRef = useRef(0);
+  useEffect(() => { if (showProModal) proModalShownAtRef.current = Date.now(); }, [showProModal]);
+  const rewardSeenKey = (u) => `sqlquest_reward_seen_${u}`;
   
   // Compute current streak and max streak from loginCalendar
   const computeStreaksFromCalendar = (calendar) => {
@@ -16835,7 +16965,9 @@ CRITICAL RULES:
     
     const today = getTodayString();
     const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
-    const lastRewardShown = userData.lastRewardShownDate;
+    let seenHere = null;
+    try { seenHere = localStorage.getItem(rewardSeenKey(currentUser)); } catch (_) {}
+    const lastRewardShown = seenHere === today ? today : userData.lastRewardShownDate;
     const lastLoginDate = userData.lastLoginDate;
     
     // Already claimed reward today - don't show popup again
@@ -16880,8 +17012,17 @@ CRITICAL RULES:
     const milestoneBonus = newStreak % 7 === 0 ? 50 : 0; // Weekly milestone
     const totalReward = baseReward + streakBonus + milestoneBonus;
     
+    // A Pro modal was just on screen: do not stack the calendar on it. The
+    // streak state is set for display; the popup waits for the next visit.
+    if (Date.now() - proModalShownAtRef.current < 10 * 60 * 1000) {
+      setLoginStreak(newStreak);
+      setMaxLoginStreak(newMaxStreak);
+      return;
+    }
+
     // Mark that we showed the popup today, and persist the updated calendar
     userData.lastRewardShownDate = today;
+    try { localStorage.setItem(rewardSeenKey(currentUser), today); } catch (_) {}
     userData.loginCalendar = updatedCalendar;
     userData.maxLoginStreak = newMaxStreak;
     saveUserData(currentUser, userData);
@@ -16923,6 +17064,7 @@ CRITICAL RULES:
     userData.maxLoginStreak = maxLoginStreak;
     userData.lastLoginDate = today;
     userData.loginCalendar = { ...(userData.loginCalendar || {}), ...loginCalendar, [today]: true };
+    try { localStorage.setItem(rewardSeenKey(currentUser), today); } catch (_) {}
 
     setXP(prev => prev + loginRewardAmount);
     saveUserData(currentUser, userData);
@@ -21440,9 +21582,9 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     if (datasetsUsed.size >= 3 && !unlockedAchievements.has('data_explorer')) unlockAchievement('data_explorer');
     
     // Interview achievements
-    if (interviewHistory.length >= 1 && !unlockedAchievements.has('first_interview')) unlockAchievement('first_interview');
-    
     const passedInterviews = interviewHistory.filter(i => i.passed);
+    if (passedInterviews.length >= 1 && !unlockedAchievements.has('first_interview')) unlockAchievement('first_interview');
+
     if (passedInterviews.length >= 1 && !unlockedAchievements.has('interview_pass')) unlockAchievement('interview_pass');
     
     const perfectInterviews = interviewHistory.filter(i => i.score === 100);
@@ -22456,13 +22598,18 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
         dataset: challenge.dataset || null,
       }, { onceKey: 'first_challenge_started' });
     }
-    // For new users with no saved query, pre-fill a starter comment
+    // For new users with no saved query, show a starter hint
     const savedQuery = challengeQueries[challenge.id] || '';
+    setChallengeStarterHint(null);
     if (!savedQuery && solvedChallenges.size === 0 && challenge.id === 91) {
       setChallengeQuery(`${ZERO_SQL_FIRST_QUERY};`);
     } else if (!savedQuery && solvedChallenges.size === 0) {
+      // The starter line is a placeholder now, not text in the editor: as a
+      // comment it sat beside the person's own query and was submitted with
+      // it (founder QA 2026-09-19, item 21). It disappears on the first key.
       const mainTable = challenge.tables?.[0] || 'table_name';
-      setChallengeQuery(`-- Start here: SELECT * FROM ${mainTable} LIMIT 5;\n`);
+      setChallengeStarterHint(`Start here: SELECT * FROM ${mainTable} LIMIT 5;`);
+      setChallengeQuery('');
     } else {
       setChallengeQuery(savedQuery);
     }
@@ -23278,6 +23425,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
 
   const submitChallenge = () => {
     if (!db || !challengeQuery.trim() || !currentChallenge) return;
+    setChallengeSubmitAt(Date.now());
     try {
       // For a SELECT challenge, running the user's query then the solution on
       // the same db is harmless — neither changes anything. For a challenge
@@ -23697,7 +23845,13 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
           const expectedShape = expectedResultData.length > 0
             ? { columns: expectedResultData[0].columns, rows: expectedResultData[0].values }
             : { columns: [], rows: [] };
-          liveDiagnosis = diagnoseResult(userShape, expectedShape);
+          // The challenge's own tags go in, so a window challenge is read as
+          // one (founder QA 2026-09-19, item 3).
+          liveDiagnosis = diagnoseResult(userShape, expectedShape, null, {
+            topics: [...(currentChallenge.skills || []), currentChallenge.category].filter(Boolean),
+            query: challengeQuery,
+            solution: currentChallenge.solution,
+          });
           setChallengeDiagnosis(liveDiagnosis);
           setDiagnosisCollapsed(false); // expand fresh diagnosis so user sees it
           // Error patterns (2026-09-12, P1): name the habit behind this wrong
@@ -25612,7 +25766,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
       {showShareModal && (() => {
         const content = getShareContent(shareType, shareData);
         return (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setShowShareModal(false)}>
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" data-modal-over-results="1" onClick={() => setShowShareModal(false)}>
           <div className="bg-gray-900 rounded-2xl border border-purple-500/30 w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold flex items-center gap-2">📤 Share</h2>
@@ -25849,7 +26003,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
       
       {/* Certificate Modal */}
       {showCertificateModal && certificateData && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setShowCertificateModal(false)}>
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" data-modal-over-results="1" onClick={() => setShowCertificateModal(false)}>
           <div className="bg-gray-900 rounded-2xl border border-yellow-500/30 w-full max-w-2xl p-6" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold flex items-center gap-2">🎓 Your Certificate</h2>
@@ -28817,7 +28971,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
             </div>
             
             {/* Interview Content */}
-            <div className="flex-1 overflow-y-auto p-6">
+            <div className="flex-1 overflow-y-auto p-6" ref={interviewContentRef} data-testid="interview-content">
               {(() => {
                 const rawCurrentQ = activeInterview.questions[interviewQuestion];
                 // Localized view of the question for render — `currentQ`
@@ -28883,32 +29037,42 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                         <h4 className="text-sm font-bold text-cyan-400 mb-3 flex items-center gap-2">
                           <Database size={16} /> {i18n_t('practice', 'availableTables')}
                         </h4>
-                        <div className="space-y-3 max-h-40 overflow-y-auto">
-                          {datasetInfo && usedTables.length > 0 ? (
-                            usedTables.map(tableName => {
-                              const tableInfo = datasetInfo.tables[tableName];
+                        {/* Column types and one real row per table (founder QA
+                            2026-09-19, item 18) — what HackerRank and
+                            CodeSignal show. Types are read off the data
+                            (schemaColumnTypes); the row is the table's first. */}
+                        <div className="space-y-3 max-h-56 overflow-y-auto" data-testid="interview-schema">
+                          {datasetInfo ? (
+                            (usedTables.length > 0 ? usedTables.map(t => [t, datasetInfo.tables[t]]) : Object.entries(datasetInfo.tables).slice(0, 2)).map(([tableName, tableInfo]) => {
+                              const types = schemaColumnTypes(tableInfo);
+                              const sample = Array.isArray(tableInfo?.data) && tableInfo.data.length > 0 ? tableInfo.data[0] : null;
                               return (
                                 <div key={tableName} className="bg-gray-800/50 rounded-lg p-2">
                                   <p className="text-xs text-cyan-300 font-mono font-bold mb-1">{tableName}</p>
                                   <div className="flex flex-wrap gap-1">
                                     {tableInfo?.columns?.map((col, i) => (
-                                      <span key={i} className="text-xs px-1.5 py-0.5 bg-gray-700 rounded text-gray-300 font-mono">{col}</span>
+                                      <span key={i} className="text-xs px-1.5 py-0.5 bg-gray-700 rounded text-gray-300 font-mono">
+                                        {col} <span className="text-gray-500">{types[i]}</span>
+                                      </span>
                                     ))}
                                   </div>
+                                  {sample && (
+                                    <div className="mt-2 overflow-x-auto">
+                                      <table className="text-[11px] font-mono" data-testid="interview-schema-sample">
+                                        <tbody>
+                                          <tr>
+                                            <td className="pr-2 text-gray-500 whitespace-nowrap align-top">e.g.</td>
+                                            {sample.map((v, i) => (
+                                              <td key={i} className="px-1.5 text-gray-400 whitespace-nowrap">{v === null ? <span className="italic text-gray-600">NULL</span> : formatCell(v, 24)}</td>
+                                            ))}
+                                          </tr>
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                  )}
                                 </div>
                               );
                             })
-                          ) : datasetInfo ? (
-                            Object.entries(datasetInfo.tables).slice(0, 2).map(([tableName, tableInfo]) => (
-                              <div key={tableName} className="bg-gray-800/50 rounded-lg p-2">
-                                <p className="text-xs text-cyan-300 font-mono font-bold mb-1">{tableName}</p>
-                                <div className="flex flex-wrap gap-1">
-                                  {tableInfo?.columns?.map((col, i) => (
-                                    <span key={i} className="text-xs px-1.5 py-0.5 bg-gray-700 rounded text-gray-300 font-mono">{col}</span>
-                                  ))}
-                                </div>
-                              </div>
-                            ))
                           ) : (
                             <p className="text-gray-500 text-sm">Loading tables...</p>
                           )}
@@ -28955,14 +29119,27 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
 
                       {/* Hints */}
                       <div className="flex items-center gap-3 flex-wrap">
+                        {interviewHintConfirm && !practiceMode ? (
+                          <span className="flex items-center gap-2 text-sm" data-testid="interview-hint-confirm">
+                            <span className="text-yellow-300">{i18n_t('practice', 'hintConfirmQ', { n: Math.floor((currentQ.points || 0) * 0.15) })}</span>
+                            <button onClick={useInterviewHint} className="px-3 py-1.5 bg-yellow-500/30 hover:bg-yellow-500/40 border border-yellow-500/50 rounded-lg text-yellow-200 text-sm font-medium">
+                              {i18n_t('practice', 'hintConfirmYes')}
+                            </button>
+                            <button onClick={() => setInterviewHintConfirm(false)} className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg text-gray-300 text-sm">
+                              {i18n_t('practice', 'hintConfirmNo')}
+                            </button>
+                          </span>
+                        ) : (
                         <button
-                          onClick={useInterviewHint}
+                          onClick={() => (practiceMode ? useInterviewHint() : setInterviewHintConfirm(true))}
                           disabled={hintsTakenHere >= questionHints.length}
+                          data-testid="interview-hint"
                           className="px-3 py-1.5 bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/30 rounded-lg text-yellow-400 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           💡 {i18n_t('practice', 'hintCounter', { used: hintsTakenHere, total: questionHints.length })}
                           {!practiceMode && <span className="text-xs ml-1 text-yellow-500"> {i18n_t('practice', 'hintPenalty')}</span>}
                         </button>
+                        )}
 
                         {/* Practice Mode: Show Solution Button */}
                         {practiceMode && !isMcq && (
@@ -28985,6 +29162,11 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
 
                       {showInterviewHint && questionHints.length > 0 && (
                         <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3">
+                          {interviewLiveHint && (
+                            <p className="text-sm text-[#F2F0EA] mb-2" data-testid="interview-live-hint">
+                              {interviewLiveHint.sentence}{interviewLiveHint.hint ? <span className="text-yellow-200"> {interviewLiveHint.hint}</span> : null}
+                            </p>
+                          )}
                           <p className="text-yellow-300 text-sm">
                             💡 {questionHints[Math.min(Math.max(0, hintsTakenHere - 1), questionHints.length - 1)]}
                           </p>
@@ -28996,11 +29178,21 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                         <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-3">
                           <p className="text-xs text-cyan-400 mb-2">✨ Solution:</p>
                           <pre className="text-sm font-mono bg-black/30 p-2 rounded overflow-x-auto">
-                            <code className="language-sql" dangerouslySetInnerHTML={{ __html: highlightSQL(currentQ.solution) }} />
+                            <code className="language-sql" dangerouslySetInnerHTML={{ __html: highlightSQL(formatSqlForDisplay(currentQ.solution)) }} />
                           </pre>
                         </div>
                       )}
                       
+                    </div>
+
+                    {/* Right: the answer and, directly under it, what the
+                        query returned (2026-09-19, founder QA item 1). The
+                        editor used to sit at the bottom of the left column
+                        and the result at the top of the right one, so a Run
+                        on a laptop printed its table out of sight. On one
+                        column the order is the same: question, editor,
+                        result. */}
+                    <div className="space-y-4" data-testid="interview-answer-column">
                       {/* Answer input — the one place the two question types
                           diverge. MCQ gets a radio group; SQL keeps the editor
                           it has always had. Everything above and below this
@@ -29074,7 +29266,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                               <CheckCircle size={16} /> {practiceMode ? 'Check Answer' : 'Submit Answer'}
                             </button>
                             <button
-                              onClick={() => submitInterviewAnswer(true)}
+                              onClick={() => submitInterviewAnswer(false, { skipped: true })}
                               data-testid="interview-skip"
                               className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-gray-300"
                             >
@@ -29146,7 +29338,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                           <button
                             onClick={() => {
                               setShowSolution(false);
-                              submitInterviewAnswer(true);
+                              submitInterviewAnswer(false, { skipped: true });
                             }}
                             data-testid="interview-skip"
                             className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-gray-300"
@@ -29156,10 +29348,6 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                         </div>
                       </div>
                       )}
-                    </div>
-
-                    {/* Right: Results */}
-                    <div className="space-y-4">
                       {interviewResult.error && (
                         <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4">
                           <div className="flex items-start gap-2 mb-2">
@@ -29245,15 +29433,26 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
         <div className="fixed inset-0 bg-black/85 flex items-center justify-center z-50 p-4" onClick={advanceInterviewQuestion}>
           <div className={`bg-gray-900 rounded-2xl border w-full ${interviewFeedback.explanation ? 'max-w-lg' : 'max-w-md'} max-h-[88vh] overflow-y-auto p-6 text-center`} style={{ borderColor: interviewFeedback.correct ? 'rgba(34,197,94,0.5)' : 'rgba(239,68,68,0.5)' }} onClick={(e) => e.stopPropagation()}>
             <div className="text-6xl mb-3">
-              {interviewFeedback.timedOut ? '⏱️' : interviewFeedback.correct ? '✓' : '✗'}
+              {interviewFeedback.skipped ? '→' : interviewFeedback.timedOut ? '⏱️' : interviewFeedback.correct ? '✓' : '✗'}
             </div>
             <h3 className={`text-2xl font-bold mb-2 ${interviewFeedback.correct ? 'text-green-400' : 'text-red-400'}`}>
-              {interviewFeedback.timedOut ? 'Süre doldu' : interviewFeedback.correct ? 'Doğru!' : 'Yanlış'}
+              {interviewFeedback.skipped ? i18n_t('mockFeedback', 'skipped') : interviewFeedback.timedOut ? i18n_t('mockFeedback', 'timedOut') : interviewFeedback.correct ? i18n_t('mockFeedback', 'correct') : i18n_t('mockFeedback', 'wrong')}
             </h3>
             <p className="text-gray-300 text-sm mb-4">
               {interviewFeedback.correct
-                ? <>+{interviewFeedback.score} puan kazandın{interviewFeedback.score < interviewFeedback.maxScore && <> <span className="text-gray-500">(maks {interviewFeedback.maxScore})</span></>}</>
-                : <>Doğru çözümü sonuç ekranında inceleyebilirsin.</>
+                ? <>{i18n_t('mockFeedback', 'pointsEarned', { n: interviewFeedback.score })}{interviewFeedback.score < interviewFeedback.maxScore && <> <span className="text-gray-500">{i18n_t('mockFeedback', 'maxPoints', { n: interviewFeedback.maxScore })}</span></>}</>
+                : interviewFeedback.skipped
+                  ? <>{i18n_t('mockFeedback', 'skippedNote')}</>
+                  // The MCQ explanation below already names the correct
+                  // option; only a written answer defers to the results screen.
+                  : interviewFeedback.explanation ? null : (
+                    <>
+                      {interviewFeedback.diagnosis?.sentence && (
+                        <span className="block text-[#F2F0EA] mb-1" data-testid="interview-feedback-diagnosis">{interviewFeedback.diagnosis.sentence}</span>
+                      )}
+                      {i18n_t('mockFeedback', 'solutionOnResults')}
+                    </>
+                  )
               }
             </p>
             {/* MCQ only: the teaching moment is the explanation, and it is
@@ -29273,9 +29472,9 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
               onClick={advanceInterviewQuestion}
               className="w-full px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-lg font-bold text-[#F2F0EA] transition-all"
             >
-              {interviewFeedback.isLast ? 'Sonuçları Gör →' : 'Sonraki Soru →'}
+              {interviewFeedback.isLast ? i18n_t('mockFeedback', 'seeResults') : i18n_t('mockFeedback', 'nextQuestion')}
             </button>
-            <p className="text-xs text-gray-500 mt-3">Devam etmek için butona ya da boşluğa tıkla</p>
+            <p className="text-xs text-gray-500 mt-3">{i18n_t('mockFeedback', 'continueHint')}</p>
           </div>
         </div>
       )}
@@ -29347,51 +29546,12 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
               </div>
             )}
             
-            {/* Peer Comparison - only for timed interviews */}
-            {!practiceMode && (() => {
-              const peerStats = getPeerComparison(interviewResults.interviewId);
-              if (!peerStats) return null;
-              const percentile = calculatePercentile(interviewResults.percentage, peerStats.avgScore);
-              const fasterThanAvg = interviewResults.timeUsed < peerStats.avgTime;
-              
-              return (
-                <div className="bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/30 rounded-xl p-4 mb-6">
-                  <h3 className="font-bold text-purple-400 mb-3 flex items-center gap-2">
-                    👥 How You Compare
-                  </h3>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="text-center">
-                      <div className={`text-2xl font-bold ${percentile >= 50 ? 'text-green-400' : 'text-yellow-400'}`}>
-                        Top {100 - percentile}%
-                      </div>
-                      <div className="text-xs text-gray-400">
-                        Better than {percentile}% of users
-                      </div>
-                    </div>
-                    <div className="text-center">
-                      <div className={`text-2xl font-bold ${interviewResults.percentage >= peerStats.avgScore ? 'text-green-400' : 'text-yellow-400'}`}>
-                        {interviewResults.percentage >= peerStats.avgScore ? '+' : ''}{interviewResults.percentage - peerStats.avgScore}%
-                      </div>
-                      <div className="text-xs text-gray-400">
-                        vs avg score ({peerStats.avgScore}%)
-                      </div>
-                    </div>
-                    <div className="text-center">
-                      <div className={`text-2xl font-bold ${fasterThanAvg ? 'text-green-400' : 'text-blue-400'}`}>
-                        {fasterThanAvg ? '⚡ Faster' : '🐢 Slower'}
-                      </div>
-                      <div className="text-xs text-gray-400">
-                        Avg time: {formatTime(peerStats.avgTime)}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="mt-3 text-center text-sm text-gray-500">
-                    Based on {peerStats.totalAttempts.toLocaleString()} attempts • {peerStats.passRate}% pass rate
-                  </div>
-                </div>
-              );
-            })()}
-            
+            {/* The "How You Compare" block was removed on 2026-09-19 (founder
+                QA item 11). Its numbers were simulated — getPeerComparison
+                invents an average and an attempt count from the interview's
+                difficulty and a hash of its id — and it praised a failing
+                sitting as "Top 90%" and "⚡ Faster". We have no real peer
+                data for mocks; until we do, the screen shows none. */}
             {/* Mistakes to Review */}
             {interviewResults.mistakes && interviewResults.mistakes.length > 0 && (
               <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 mb-6">
@@ -29405,7 +29565,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                         <div>
                           <h4 
                             className="font-medium text-gray-200 hover:text-blue-400 cursor-pointer transition-colors"
-                            onClick={() => studyTopicWithAI(mistake.questionTitle)}
+                            onClick={() => studyTopicWithAI(mistake.questionTitle, mistake)}
                             title={`Click to learn about ${mistake.questionTitle}`}
                           >
                             📚 {mistake.questionTitle}
@@ -29424,7 +29584,8 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                           </div>
                         </div>
                         <button
-                          onClick={() => studyTopicWithAI(mistake.questionTitle)}
+                          onClick={() => studyTopicWithAI(mistake.questionTitle, mistake)}
+                          data-testid="interview-study-with-ai"
                           className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium flex items-center gap-1"
                         >
                           🤖 Study with AI
@@ -29445,12 +29606,24 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                           <p className="text-gray-500 mb-1">{mistake.questionType === 'mcq' ? 'Correct Answer:' : 'Correct Solution:'}</p>
                           {mistake.questionType === 'mcq'
                             ? <p className="text-green-300">{mistake.correctSolution}</p>
-                            : <pre className="font-mono whitespace-pre-wrap"><code className="language-sql" dangerouslySetInnerHTML={{ __html: highlightSQL(mistake.correctSolution) }} /></pre>}
+                            : <pre className="font-mono whitespace-pre-wrap"><code className="language-sql" dangerouslySetInnerHTML={{ __html: highlightSQL(formatSqlForDisplay(mistake.correctSolution)) }} /></pre>}
                         </div>
                       </div>
-                      {mistake.questionType === 'mcq' && mistake.explanation && (
-                        <p className="text-xs text-gray-400 mt-2 leading-relaxed">{mistake.explanation}</p>
-                      )}
+                      {/* One sentence on what went wrong, for every mistake
+                          (founder QA 2026-09-19, item 5). MCQ: the authored
+                          explanation. SQL: the diagnosis engine, fed the
+                          question's concepts; older saved results have no
+                          stored diagnosis and compute it here. */}
+                      {(() => {
+                        const dx = mistake.diagnosis || mockMistakeDiagnosis({ ...mistake, correct: false }, { diagnose: diagnoseResult, hint: primaryHint });
+                        if (!dx) return null;
+                        return (
+                          <div className="mt-2 text-xs leading-relaxed" data-testid="interview-mistake-diagnosis">
+                            <p className={mistake.questionType === 'mcq' ? 'text-gray-400' : 'text-orange-200'}>{dx.sentence}</p>
+                            {dx.hint && <p className="text-gray-400 mt-1">💡 {dx.hint}</p>}
+                          </div>
+                        );
+                      })()}
                     </div>
                   ))}
                 </div>
@@ -29476,7 +29649,8 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                         }`}>{qr.difficulty}</span>
                       </div>
                       <div className="flex items-center gap-4">
-                        {qr.timedOut && <span className="text-xs text-red-400">Timed out</span>}
+                        {qr.timedOut && <span className="text-xs text-red-400">{i18n_t('mockFeedback', 'timedOut')}</span>}
+                        {qr.skipped && <span className="text-xs text-gray-400">{i18n_t('mockFeedback', 'skipped')}</span>}
                         {qr.hintsUsed > 0 && <span className="text-xs text-yellow-400">{qr.hintsUsed} hint(s)</span>}
                         <span className="text-gray-400 text-sm">{formatTime(qr.timeUsed)}</span>
                         <span className={`font-medium ${qr.correct ? 'text-green-400' : 'text-gray-500'}`}>
@@ -29529,11 +29703,8 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                 🔄 {retryMode ? 'Full Interview' : 'Retry Interview'}
               </button>
               <button
-                onClick={() => {
-                  setRetryMode(false);
-                  setRetryQuestions([]);
-                  closeInterview(false);
-                }}
+                onClick={leaveInterviewResults}
+                data-testid="interview-back-to-list"
                 className="flex-1 py-3 bg-gray-700 hover:bg-gray-600 rounded-xl font-bold"
               >
                 Back to Interviews
@@ -36672,10 +36843,12 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                               not "this is row 93 in some internal table."
                               See Murat's trial, Apr 21 2026. */}
                           {(() => {
-                            const sortedList = getFilteredChallenges();
-                            const accessibleList = isPro
-                              ? sortedList
-                              : sortedList.filter(c => c.difficulty !== 'Hard');
+                            // One count everywhere (founder QA 2026-09-19, item
+                            // 19): the list header says 299, so the position is
+                            // out of the same list. Hard questions a free user
+                            // cannot open are still in the bank and still counted
+                            // — dropping them here made it "#56 of 220".
+                            const accessibleList = getFilteredChallenges();
                             const idx = accessibleList.findIndex(c => c.id === currentChallenge.id);
                             const displayNum = idx >= 0 ? idx + 1 : null;
                             // The position is what users think in ("I'm on
@@ -36880,7 +37053,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                         value={challengeQuery}
                         onChange={val => updateChallengeQuery(val)}
                         onKeyDown={(e) => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); submitChallenge(); }}}
-                        placeholder={i18n_t('practice', 'editorPlaceholder')}
+                        placeholder={challengeStarterHint || i18n_t('practice', 'editorPlaceholder')}
                         height="14rem"
                       />
                     </div>
@@ -36924,32 +37097,12 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                     </div>
                   </div>
 
-                  {/* Expected Output — moved below SQL Editor 2026-05-09 (was
-                       above) so the student lands on the editor right after the
-                       spec. The expected-output table is reference material the
-                       student consults WHILE writing, so a short scroll-down is
-                       fine — better than a long scroll-down before they type. */}
-                  {challengeExpected.rows.length > 0 && (
-                    <div className="bg-black/30 rounded-xl border border-blue-500/30 p-4" data-onboarding="expected">
-                      <h3 className="font-bold mb-3 text-blue-300">📋 {i18n_t('practice', 'expectedOutput', { n: challengeExpected.rows.length })}</h3>
-                      <div className="overflow-auto max-h-48">
-                        <table className="min-w-full text-xs border border-blue-500/30">
-                          <thead className="bg-blue-500/20">
-                            <tr>{challengeExpected.columns.map((c, i) => <th key={i} className="px-2 py-1 text-left font-medium text-blue-300 border-b border-blue-500/30">{c}</th>)}</tr>
-                          </thead>
-                          <tbody>
-                            {challengeExpected.rows.slice(0, 15).map((row, i) => (
-                              <tr key={i} className="hover:bg-blue-500/10">
-                                {row.map((cell, j) => <td key={j} className="px-2 py-1 border-b border-blue-500/20 text-gray-300">{cell === null ? <span className="text-gray-500">NULL</span> : formatCell(cell)}</td>)}
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                        {challengeExpected.rows.length > 15 && <p className="text-xs text-blue-400 mt-1">Showing 15 of {challengeExpected.rows.length} rows</p>}
-                      </div>
-                    </div>
-                  )}
-
+                  {/* Result first, reference second (founder QA 2026-09-19, item 1):
+                       the verdict, the diagnosis and the query's own output sit
+                       directly under Run/Submit; Expected Output follows them.
+                       It used to sit between the editor and the verdict and
+                       pushed "Wrong Answer" below the fold on a laptop. */}
+                  <div ref={challengeResultRef} data-testid="challenge-result-anchor" />
                   {/* Result Status */}
                   {challengeStatus && (
                     <div className={`p-4 rounded-xl border ${challengeStatus === 'success' ? 'bg-green-500/10 border-green-500/50' : challengeStatus === 'error' ? 'bg-amber-500/10 border-amber-500/50' : 'bg-red-500/10 border-red-500/50'}`}>
@@ -37289,7 +37442,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                           (2026-09-12, P1, `diagnosisHints`); the three-item
                           list stays for the flag-off arm and for the tutor. */}
                       {!diagnosisCollapsed && ftbFlag('diagnosisHints') && (() => {
-                        const one = primaryHint(challengeDiagnosis, { query: challengeQuery, description: currentChallenge?.description });
+                        const one = primaryHint(challengeDiagnosis, { query: challengeQuery, description: currentChallenge?.description, topics: [...(currentChallenge?.skills || []), currentChallenge?.category].filter(Boolean) });
                         return one ? (
                           <p className="mt-3 pl-8 text-xs text-orange-200 flex items-start gap-2" data-testid="primary-hint">
                             <span className="text-orange-400 mt-0.5">💡</span>
@@ -37339,26 +37492,35 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                                     </tr>
                                   </thead>
                                   <tbody>
-                                    {challengeDiagnosis.preview.rowDiffs.map((diff, di) => (
-                                      challengeDiagnosis.preview.columns.map((col, ci) => {
+                                    {/* Only the cells that actually differ (founder QA
+                                        2026-09-19, item 4: "Alice Johnson vs Alice
+                                        Johnson" was listed as a difference). The row
+                                        is named by its first matching cell instead. */}
+                                    {challengeDiagnosis.preview.rowDiffs.map((diff, di) => {
+                                      const labelIdx = diff.diffCols.findIndex(w => !w);
+                                      const label = labelIdx >= 0 ? diff.expectedRow[labelIdx] : null;
+                                      const flagged = challengeDiagnosis.preview.columns
+                                        .map((col, ci) => ({ col, ci }))
+                                        .filter(({ ci }) => diff.diffCols[ci]);
+                                      // Drop cells that print the same (3 vs 3.0); keep them
+                                      // only if nothing else is left, so a row never renders empty.
+                                      const visible = flagged.filter(({ ci }) => String(diff.userRow[ci]) !== String(diff.expectedRow[ci]));
+                                      const wrongCols = visible.length > 0 ? visible : flagged;
+                                      return wrongCols.map(({ col, ci }, k) => {
                                         const u = diff.userRow[ci];
                                         const e = diff.expectedRow[ci];
-                                        const isWrong = diff.diffCols[ci];
                                         return (
-                                          <tr
-                                            key={`${di}-${ci}`}
-                                            className={isWrong
-                                              ? 'bg-red-500/15 border-l-2 border-red-500/60'
-                                              : 'text-gray-500'}
-                                          >
-                                            <td className="px-2 py-1 font-bold text-gray-400">{ci === 0 ? `#${diff.rowIndex + 1}` : ''}</td>
+                                          <tr key={`${di}-${ci}`} className="bg-red-500/15 border-l-2 border-red-500/60" data-testid="diff-cell-row">
+                                            <td className="px-2 py-1 font-bold text-gray-400 whitespace-nowrap">
+                                              {k === 0 ? <>#{diff.rowIndex + 1}{label !== null && label !== undefined && <span className="font-normal text-gray-500"> · {String(label)}</span>}</> : ''}
+                                            </td>
                                             <td className="px-2 py-1">{col}</td>
-                                            <td className={'px-2 py-1' + (isWrong ? ' text-orange-200 font-bold' : '')}>{u === null ? <span className="text-gray-500 italic">NULL</span> : String(u)}</td>
-                                            <td className={'px-2 py-1' + (isWrong ? ' text-green-200' : '')}>{e === null ? <span className="text-gray-500 italic">NULL</span> : String(e)}</td>
+                                            <td className="px-2 py-1 text-orange-200 font-bold">{u === null ? <span className="text-gray-500 italic">NULL</span> : String(u)}</td>
+                                            <td className="px-2 py-1 text-green-200">{e === null ? <span className="text-gray-500 italic">NULL</span> : String(e)}</td>
                                           </tr>
                                         );
-                                      })
-                                    ))}
+                                      });
+                                    })}
                                     {challengeDiagnosis.preview.totalDiffRows > challengeDiagnosis.preview.rowDiffs.length && (
                                       <tr>
                                         <td colSpan="4" className="px-2 py-1.5 text-center text-gray-500 italic border-t border-gray-700">
@@ -37478,6 +37640,50 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                           )}
                         </div>
                       )}
+                    </div>
+                  )}
+
+                  {/* Your Output — key on challengeRunAt re-triggers flash animation on every run,
+                       even when the result data is identical to the previous run. Without this,
+                       users can't tell if the Run button fired. */}
+                  {(challengeResult.columns.length > 0 || challengeResult.error) && (
+                    <div
+                      key={challengeRunAt}
+                      className="bg-black/30 rounded-xl border border-green-500/30 p-4 animate-runflash"
+                    >
+                      <div className="flex items-center justify-between mb-3 gap-3">
+                        <h3 className="font-bold text-green-300">📊 Your Output {challengeResult.rows?.length > 0 && `(${challengeResult.rows.length} rows)`}</h3>
+                        {challengeRunMs !== null && (
+                          <span className="text-xs text-gray-400 whitespace-nowrap">✓ Ran in {challengeRunMs}ms</span>
+                        )}
+                      </div>
+                      <ResultsTable columns={challengeResult.columns} rows={challengeResult.rows} error={challengeResult.error} />
+                    </div>
+                  )}
+
+                  {/* Expected Output — moved below SQL Editor 2026-05-09 (was
+                       above) so the student lands on the editor right after the
+                       spec. The expected-output table is reference material the
+                       student consults WHILE writing, so a short scroll-down is
+                       fine — better than a long scroll-down before they type. */}
+                  {challengeExpected.rows.length > 0 && (
+                    <div className="bg-black/30 rounded-xl border border-blue-500/30 p-4" data-onboarding="expected">
+                      <h3 className="font-bold mb-3 text-blue-300">📋 {i18n_t('practice', 'expectedOutput', { n: challengeExpected.rows.length })}</h3>
+                      <div className="overflow-auto max-h-48">
+                        <table className="min-w-full text-xs border border-blue-500/30">
+                          <thead className="bg-blue-500/20">
+                            <tr>{challengeExpected.columns.map((c, i) => <th key={i} className="px-2 py-1 text-left font-medium text-blue-300 border-b border-blue-500/30">{c}</th>)}</tr>
+                          </thead>
+                          <tbody>
+                            {challengeExpected.rows.slice(0, 15).map((row, i) => (
+                              <tr key={i} className="hover:bg-blue-500/10">
+                                {row.map((cell, j) => <td key={j} className="px-2 py-1 border-b border-blue-500/20 text-gray-300">{cell === null ? <span className="text-gray-500">NULL</span> : formatCell(cell)}</td>)}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                        {challengeExpected.rows.length > 15 && <p className="text-xs text-blue-400 mt-1">Showing 15 of {challengeExpected.rows.length} rows</p>}
+                      </div>
                     </div>
                   )}
 
@@ -37709,23 +37915,6 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                     </div>
                   )}
                   
-                  {/* Your Output — key on challengeRunAt re-triggers flash animation on every run,
-                       even when the result data is identical to the previous run. Without this,
-                       users can't tell if the Run button fired. */}
-                  {(challengeResult.columns.length > 0 || challengeResult.error) && (
-                    <div
-                      key={challengeRunAt}
-                      className="bg-black/30 rounded-xl border border-green-500/30 p-4 animate-runflash"
-                    >
-                      <div className="flex items-center justify-between mb-3 gap-3">
-                        <h3 className="font-bold text-green-300">📊 Your Output {challengeResult.rows?.length > 0 && `(${challengeResult.rows.length} rows)`}</h3>
-                        {challengeRunMs !== null && (
-                          <span className="text-xs text-gray-400 whitespace-nowrap">✓ Ran in {challengeRunMs}ms</span>
-                        )}
-                      </div>
-                      <ResultsTable columns={challengeResult.columns} rows={challengeResult.rows} error={challengeResult.error} />
-                    </div>
-                  )}
                 </div>
                 
                 {/* Sidebar - Schema */}
@@ -38051,7 +38240,9 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                       onClick={() => startInterview(recommendation.interview)}
                       className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg font-medium flex items-center gap-2"
                     >
-                      <Play size={16} /> {i18n_t('interview', 'startNow')}
+                      {canAccessInterview(recommendation.interview)
+                        ? <><Play size={16} /> {i18n_t('interview', 'startNow')}</>
+                        : <><Lock size={16} /> {i18n_t('interviewList', 'btnUnlockPro')}</>}
                     </button>
                   </div>
                 </div>
@@ -38188,7 +38379,10 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                       onClick={() => startInterview(m)}
                       className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium flex items-center gap-2 whitespace-nowrap"
                     >
-                      {canAccess ? <Play size={16} /> : <Lock size={16} />} {i18n_t('interview', 'startNow')}
+                      {/* A locked mock says what the click does (founder QA
+                          2026-09-19, item 7): "Start Now" led a guest to a
+                          paywall. */}
+                      {canAccess ? <Play size={16} /> : <Lock size={16} />} {canAccess ? i18n_t('interview', 'startNow') : i18n_t('interviewList', 'btnUnlockPro')}
                     </button>
                   </div>
                 </div>

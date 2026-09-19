@@ -258,7 +258,13 @@ window.FEATURE_FLAGS = {
     // STRIPE_*_QUARTERLY maps, the >=4900 band, PLAN_DAYS[proType] on
     // renewal, ONE_TIME_PLANS={lifetime} and the payment-failure revoke
     // (stripe-webhook v14, 15:27:56).
-    quarterlyPlan: true,
+    //
+    // OFF again 2026-09-19 (founder QA item 20, "one price architecture"):
+    // the modal sold a $49 quarter that the homepage, the pricing section and
+    // every landing page do not show. In five days: 2 quarterly clicks, 0
+    // purchases (stripe_webhook). The webhook keeps its quarterly branch, so
+    // turning this back on is one line — but only together with the pages.
+    quarterlyPlan: false,
 
     // ── The account ask at the third solve (2026-09-14) ──────────────────
     // Founder: move the registration wall to the 3rd solve. Measured before

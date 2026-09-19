@@ -95,18 +95,23 @@ window.mockInterviewsData = [
         difficulty: 'Medium',
         points: 25,
         dataset: 'employees',
-        solution: "SELECT department, COUNT(*) AS high_earners, ROUND(100.0 * COUNT(*) / (SELECT COUNT(*) FROM employees e2 WHERE e2.department = employees.department), 1) AS pct_high_earners FROM employees WHERE salary > 60000 GROUP BY department HAVING COUNT(*) > 3 ORDER BY high_earners DESC",
+        // 2026-09-19 (founder QA item 23): the reference solution used a
+        // correlated subquery, which is not what this question teaches and is
+        // what a candidate copies. SUM(CASE …) counts the high earners inside
+        // one GROUP BY, COUNT(*) is the whole department, HAVING filters the
+        // groups. Same result on the employees dataset (checked with SQLite).
+        solution: "SELECT department,\n       SUM(CASE WHEN salary > 60000 THEN 1 ELSE 0 END) AS high_earners,\n       ROUND(100.0 * SUM(CASE WHEN salary > 60000 THEN 1 ELSE 0 END) / COUNT(*), 1) AS pct_high_earners\nFROM employees\nGROUP BY department\nHAVING SUM(CASE WHEN salary > 60000 THEN 1 ELSE 0 END) > 3\nORDER BY high_earners DESC, department",
         hints: [
-          'WHERE salary > 60000 filters individual rows BEFORE grouping — only high earners enter the aggregation',
-          'HAVING COUNT(*) > 3 filters whole groups AFTER aggregation — departments with 3 or fewer high earners are excluded',
-          'For the percentage, a correlated subquery counts all employees in the same department regardless of the WHERE filter'
+          'A WHERE salary > 60000 would drop the rest of each department before you can divide by its size — so count the high earners inside the group instead',
+          'SUM(CASE WHEN salary > 60000 THEN 1 ELSE 0 END) counts high earners per department; COUNT(*) in the same group is the whole department',
+          'HAVING filters whole groups AFTER aggregation — keep departments where that high-earner count is more than 3'
         ],
         hints_tr: [
-          'WHERE salary > 60000 gruplama ÖNCESİ tek tek satırları filtreler — sadece yüksek kazananlar aggregation\'a girer',
-          'HAVING COUNT(*) > 3 aggregation SONRASI grupların tamamını filtreler — 3 veya daha az yüksek kazananı olan department\'lar dışlanır',
-          'Yüzde için correlated subquery, WHERE filtresinden bağımsız olarak aynı department\'taki tüm çalışanları sayar'
+          'WHERE salary > 60000, yüzdeyi department büyüklüğüne bölmeden önce department\'ın geri kalanını düşürür — yüksek kazananları grup içinde say',
+          'SUM(CASE WHEN salary > 60000 THEN 1 ELSE 0 END) department başına yüksek kazananları sayar; aynı gruptaki COUNT(*) tüm department\'tır',
+          'HAVING aggregation SONRASI grupların tamamını filtreler — yüksek kazanan sayısı 3\'ten fazla olan department\'ları tut'
         ],
-        concepts: ['WHERE', 'GROUP BY', 'HAVING', 'COUNT', 'Correlated Subquery', 'Percentage']
+        concepts: ['GROUP BY', 'HAVING', 'CASE WHEN', 'COUNT', 'Percentage']
       }
     ],
     passingScore: 60
@@ -1175,7 +1180,7 @@ window.mockInterviewsData = [
         ],
         options: [
           { id: 'm2a', text: '7,190.81 — the extra join adds no rows, so the total is unchanged', text_tr: '7.190,81 — fazladan join satır eklemez, toplam değişmez', value: '7190.81' },
-          { id: 'm2b', text: '35,954.05', text_tr: '35.954,05', value: '35954.05' },
+          { id: 'm2b', text: '35,954.05 — each transaction repeats once for each of the 5 chargebacks', text_tr: '35.954,05 — her işlem 5 chargeback\'in her biri için birer kez tekrarlanır', value: '35954.05' },
           { id: 'm2c', text: '28,763.24 — each transaction repeats once for each of the other 4 chargebacks', text_tr: '28.763,24 — her işlem diğer 4 chargeback için birer kez tekrarlanır', value: '28763.24' },
           { id: 'm2d', text: '1,438.16 — the total is split across the 5 chargebacks', text_tr: '1.438,16 — toplam 5 chargeback\'e bölünür', value: '1438.16' }
         ],
@@ -1352,7 +1357,7 @@ window.mockInterviewsData = [
         ],
         options: [
           { id: 'm7a', text: '76 — COUNT always returns the number of rows in the table', text_tr: '76 — COUNT her zaman tablodaki satır sayısını döndürür', value: '76' },
-          { id: 'm7b', text: '59', text_tr: '59', value: '59' },
+          { id: 'm7b', text: '59 — COUNT of a column skips the rows where that column is NULL', text_tr: '59 — bir kolonun COUNT\'u o kolonun NULL olduğu satırları atlar', value: '59' },
           { id: 'm7c', text: '17 — COUNT of a column counts the NULLs in it', text_tr: '17 — bir kolonun COUNT\'u içindeki NULL\'ları sayar', value: '17' },
           { id: 'm7d', text: '0 — any NULL in the column makes the whole COUNT NULL, shown as 0', text_tr: '0 — kolondaki herhangi bir NULL tüm COUNT\'u NULL yapar, 0 olarak görünür', value: '0' }
         ],

@@ -804,6 +804,20 @@ Rewritten Coach-forward:
   generator and the app, scored the page's way, stored in the page's shape,
   floors for skipIf only; `?goal=` link door, returning ask, `userData.intent`
   (one writer, `setUserIntent`). Ledger: "the goal is asked, measured and planned before the first solve"; metric `goal_measure_funnel`.
+- **Founder QA pass, 2026-09-19 (24 items, one commit):** the mock's editor
+  sits in the right column with its result directly under it; the challenge
+  page renders verdict → diagnosis → Your Output → Expected Output under the
+  editor and scrolls there with an instant `scrollTo` (smooth scrolling is a
+  no-op in some webviews). The mock feedback overlay is `mockFeedback` i18n,
+  never hard-coded Turkish. Skip is `skipped`, not `timedOut`. The diagnosis
+  engine takes `ctx {topics, query, solution}` and reads window/rank columns
+  first (`window_rank`); every wrong mock answer gets one sentence
+  (`mockMistakeDiagnosis`). The simulated "How You Compare" block is gone —
+  its numbers were invented. Interview badges never fire on a fail. Focus
+  areas are attempted misses net of correct answers
+  (`weakConceptsFromHistory`). `quarterlyPlan` is off (one price
+  architecture). Reference solutions render through `formatSqlForDisplay`.
+  MCQ options: all carry a " — reason" or none do (tests/mcq-option-parity).
 - **The outcome is asked after the date (2026-09-19):** `interview-outcome-note`
   (unscheduled sender, table above) + the app's `?outcome=` door, which
   records `interview_outcome` and clears the past date. The event carries

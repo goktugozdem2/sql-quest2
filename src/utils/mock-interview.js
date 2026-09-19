@@ -163,3 +163,86 @@ export function nextOptionId(options, currentId, key) {
   const next = forward ? (at + 1) % ids.length : (at - 1 + ids.length) % ids.length;
   return ids[next];
 }
+
+/**
+ * One sentence on what went wrong with a mock answer, for the results
+ * screen and the feedback overlay (founder QA 2026-09-19, item 5: the
+ * Fundamentals mock showed "Your Answer / Correct Solution" side by side and
+ * nothing else; the Capital One MCQs carry an explanation for every option).
+ *
+ * An MCQ answer keeps its authored explanation. A written answer is read by
+ * the same diagnosis engine the challenge page uses, fed the question's own
+ * concepts so a window question is diagnosed as one. Pure: pass the engine in.
+ *
+ * @param {object} a  the answer object submitInterviewAnswer builds
+ * @param {{diagnose: Function, hint: Function}} engine  diagnoseResult / primaryHint
+ * @returns {{sentence: string, hint: string|null}|null}  null for a correct answer
+ */
+export function mockMistakeDiagnosis(a, engine) {
+  if (!a || a.correct) return null;
+  const mcq = isMcqQuestion({ type: a.questionType });
+  if (a.skipped) return { sentence: 'Skipped: no answer was submitted, so no points.', hint: mcq && a.explanation ? a.explanation : null };
+  if (mcq) {
+    return a.explanation ? { sentence: a.explanation, hint: null } : null;
+  }
+  const query = String(a.userQuery || '').trim();
+  if (!query) {
+    return a.timedOut
+      ? { sentence: 'Time ran out before an answer was submitted.', hint: null }
+      : { sentence: 'No answer was submitted.', hint: null };
+  }
+  if (!engine || typeof engine.diagnose !== 'function') return null;
+  const ctx = { topics: a.concepts || [], query, solution: a.correctSolution || '' };
+  let d;
+  try {
+    d = engine.diagnose(
+      a.userOutput || { columns: [], rows: [] },
+      a.expectedOutput || { columns: [], rows: [] },
+      a.userError || null,
+      ctx,
+    );
+  } catch (_) { d = null; }
+  if (!d || d.kind === 'identical') return { sentence: 'The query ran, but its result did not match the expected output.', hint: null };
+  let hint;
+  try { hint = engine.hint ? engine.hint(d, { ...ctx, description: a.questionDescription || '' }) : null; } catch (_) { hint = null; }
+  return { sentence: d.headline, hint: hint && hint !== d.headline ? hint : null };
+}
+
+/**
+ * Focus areas from mock history (founder QA 2026-09-19, item 13). The old
+ * read counted every concept of every missed question — a skipped question
+ * about window functions made "Window Functions" a focus area although it
+ * was never attempted, and a question missed on HAVING made its GROUP BY a
+ * focus area although the GROUP BY was right. Now: only attempted questions
+ * count (a skip or an empty timeout is not evidence), and a concept is weak
+ * only when it was missed more often than it was answered correctly.
+ *
+ * @param {Array} history  interviewHistory entries ({ questionResults | mistakes })
+ * @param {number} limit
+ * @returns {string[]} concepts, weakest first
+ */
+export function weakConceptsFromHistory(history, limit = 3) {
+  const miss = new Map();
+  const ok = new Map();
+  const attempted = (a) => !a.skipped && (
+    a.questionType === QUESTION_TYPE_MCQ ? !!a.selectedOptionId : String(a.userQuery || '').trim().length > 0
+  );
+  for (const result of (history || [])) {
+    const answers = Array.isArray(result?.questionResults) && result.questionResults.length > 0
+      ? result.questionResults
+      : (result?.mistakes || []).map(m => ({ ...m, correct: false }));
+    for (const a of answers) {
+      if (!a) continue;
+      const concepts = Array.isArray(a.concepts) ? a.concepts : [];
+      if (a.correct) { for (const c of concepts) ok.set(c, (ok.get(c) || 0) + 1); continue; }
+      if (!attempted(a)) continue;
+      for (const c of concepts) miss.set(c, (miss.get(c) || 0) + 1);
+    }
+  }
+  return [...miss.entries()]
+    .map(([c, m]) => [c, m - (ok.get(c) || 0)])
+    .filter(([, net]) => net > 0)
+    .sort((a, b) => b[1] - a[1] || String(a[0]).localeCompare(String(b[0])))
+    .slice(0, limit)
+    .map(([c]) => c);
+}

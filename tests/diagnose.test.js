@@ -275,3 +275,66 @@ describe('diagnoseResult', () => {
     expect(d.hints.some(h => /HAVING/i.test(h))).toBe(true);
   });
 });
+
+// Founder QA 2026-09-19, item 3: a window challenge is diagnosed as one.
+import { diagnoseResult as dx, primaryHint as ph, isWindowContext } from '../src/utils/diagnose.js';
+describe('window functions are read before the generic value branch', () => {
+  const cols = ['name', 'salary', 'rnk'];
+  const expectedRank = { columns: cols, rows: [['A', 90, 1], ['B', 90, 1], ['C', 80, 3], ['D', 70, 4]] };
+  const ctx = { topics: ['Window Functions', 'RANK'], query: 'SELECT name, salary, DENSE_RANK() OVER (ORDER BY salary DESC) AS rnk FROM e' };
+
+  it('DENSE_RANK where RANK is expected → names RANK, never AVG/COUNT/ROUND/CASE', () => {
+    const user = { columns: cols, rows: [['A', 90, 1], ['B', 90, 1], ['C', 80, 2], ['D', 70, 3]] };
+    const d = dx(user, expectedRank, null, ctx);
+    expect(d.kind).toBe('window_rank');
+    expect(d.headline).toMatch(/RANK, not DENSE_RANK/);
+    expect(d.details).toMatch(/You used DENSE_RANK/);
+    const all = [d.headline, d.details, ...d.hints, ph(d, ctx)].join(' ');
+    expect(all).not.toMatch(/AVG|COUNT\(\*\)|ROUND|CASE WHEN/);
+    expect(ph(d, ctx)).toMatch(/RANK\(\) instead of DENSE_RANK/);
+  });
+
+  it('RANK where DENSE_RANK is expected', () => {
+    const exp = { columns: cols, rows: [['A', 90, 1], ['B', 90, 1], ['C', 80, 2], ['D', 70, 3]] };
+    const user = { columns: cols, rows: [['A', 90, 1], ['B', 90, 1], ['C', 80, 3], ['D', 70, 4]] };
+    const d = dx(user, exp, null, { topics: ['Window Functions'] });
+    expect(d.headline).toMatch(/DENSE_RANK, not RANK/);
+  });
+
+  it('ROW_NUMBER where ties must share a rank', () => {
+    const user = { columns: cols, rows: [['A', 90, 1], ['B', 90, 2], ['C', 80, 3], ['D', 70, 4]] };
+    const d = dx(user, expectedRank, null, { topics: ['Window Functions'] });
+    expect(d.headline).toMatch(/ROW_NUMBER never ties/);
+  });
+
+  it('missing PARTITION BY: expected restarts at 1, user counts through', () => {
+    const c = ['dept', 'name', 'rn'];
+    const exp = { columns: c, rows: [['x', 'A', 1], ['x', 'B', 2], ['y', 'C', 1], ['y', 'D', 2]] };
+    const user = { columns: c, rows: [['x', 'A', 1], ['x', 'B', 2], ['y', 'C', 3], ['y', 'D', 4]] };
+    const d = dx(user, exp, null, { topics: ['ROW_NUMBER'] });
+    expect(d.headline).toMatch(/PARTITION BY/);
+  });
+
+  it('without window context the generic branch is unchanged', () => {
+    const user = { columns: cols, rows: [['A', 90, 1], ['B', 90, 1], ['C', 80, 2], ['D', 70, 3]] };
+    const d = dx(user, expectedRank, null, { topics: ['Aggregation'] });
+    expect(d.kind).toBe('cell_values');
+  });
+
+  it('a window challenge whose mismatch is not a rank column still gets window hints first', () => {
+    const c = ['name', 'running'];
+    const exp = { columns: c, rows: [['A', 10.5], ['B', 20.5]] };
+    const user = { columns: c, rows: [['A', 10.5], ['B', 30.5]] };
+    const d = dx(user, exp, null, { topics: ['Window Functions'] });
+    expect(d.kind).toBe('cell_values');
+    expect(d.hints[0]).toMatch(/PARTITION BY/);
+    expect(ph(d, { topics: ['Window Functions'], query: 'select avg(x) over () from t' })).not.toMatch(/AVG\(\) skips/);
+  });
+
+  it('isWindowContext reads tags, the query and the solution', () => {
+    expect(isWindowContext({ topics: ['Window Functions + CTE'] })).toBe(true);
+    expect(isWindowContext({ query: 'select rank() over (order by x) from t' })).toBe(true);
+    expect(isWindowContext({ solution: 'select sum(x) over (partition by y) from t' })).toBe(true);
+    expect(isWindowContext({ topics: ['GROUP BY'], query: 'select 1' })).toBe(false);
+  });
+});

@@ -24,7 +24,7 @@
  * Diagnosis shape:
  *   {
  *     kind:     'column_count' | 'column_name' | 'row_count' | 'sort_order'
- *             | 'null_mismatch' | 'cell_values' | 'empty_result'
+ *             | 'null_mismatch' | 'cell_values' | 'window_rank' | 'empty_result'
  *             | 'runtime_error' | 'identical',
  *     headline: string,            // one-line summary for the UI header
  *     details:  string,            // one-paragraph explanation
@@ -32,7 +32,7 @@
  *     preview:  { userSample, expectedSample }  // optional row-level comparison
  *   }
  */
-export function diagnoseResult(user, expected, userError = null) {
+export function diagnoseResult(user, expected, userError = null, ctx = {}) {
   // 1. Runtime error — query didn't execute at all
   if (userError) {
     return {
@@ -148,6 +148,16 @@ export function diagnoseResult(user, expected, userError = null) {
 
   // At this point: same columns in same order, same row count.
   // Now check if the VALUES match.
+
+  // 6b. Window functions first (founder QA 2026-09-19, item 3). A DENSE_RANK
+  // mistake used to fall through to the generic value branch and come back
+  // with AVG/NULL, COUNT(*), ROUND and CASE advice. When the challenge is
+  // tagged window (or the query or solution ranks), read the ranking column
+  // itself: gaps vs no gaps, ties vs none, resets per group, direction.
+  if (isWindowContext(ctx)) {
+    const w = diagnoseWindow(user, expected, ctx);
+    if (w) return w;
+  }
 
   // 7. Sort order issue — same rows, different order
   const userValues = JSON.stringify(user.rows);
@@ -272,7 +282,10 @@ export function diagnoseResult(user, expected, userError = null) {
       'Check your CASE WHEN branches — did you cover all the conditions in the challenge?',
     ];
     const integerDivPattern = detectIntegerDivisionPattern(allDiffs);
-    const hints = integerDivPattern
+    const windowCtx = isWindowContext(ctx);
+    const hints = windowCtx && !integerDivPattern
+      ? WINDOW_HINTS
+      : integerDivPattern
       ? [
           '⚠️ Looks like SQLite integer division. Your values appear to be floor()-ed versions of the expected values — fractional parts dropped. In SQLite, `X / Y` returns an integer when BOTH operands are integers. Fix: add `.0` to one side. Example: `SUM(amount) / 1000000.0` (not `/ 1000000`).',
           'Same trap with `100` for percentages: write `100.0 * SUM(x) / COUNT(*)` so the multiplication produces a float before division.',
@@ -282,6 +295,7 @@ export function diagnoseResult(user, expected, userError = null) {
 
     return {
       kind: 'cell_values',
+      window: windowCtx || undefined,
       headline,
       details: integerDivPattern
         ? 'Your columns, row count, and order all match — but the values look like SQLite did integer division. Read the first hint below.'
@@ -493,6 +507,126 @@ function sqlErrorHints(error) {
   return hints.slice(0, 3);
 }
 
+// ── Window functions (2026-09-19) ────────────────────────────────────────
+const WINDOW_TAG = /window|rank|row_number|dense_rank|ntile|lag|lead|partition|running|over\s*\(/i;
+const WINDOW_HINTS = [
+  'Check the PARTITION BY inside OVER(): it decides where the numbering or running total starts again.',
+  'Check the ORDER BY inside OVER(): it decides which row comes first in each partition, independently of the query\'s own ORDER BY.',
+  'RANK leaves gaps after ties (1, 1, 3), DENSE_RANK does not (1, 1, 2), ROW_NUMBER never ties (1, 2, 3).',
+];
+
+/** True when the challenge is tagged window, or the query / solution uses OVER(). */
+export function isWindowContext(ctx = {}) {
+  const tags = Array.isArray(ctx.topics) ? ctx.topics : [];
+  if (tags.some(t => WINDOW_TAG.test(String(t || '')))) return true;
+  const over = /\bover\s*\(/i;
+  return over.test(String(ctx.query || '')) || over.test(String(ctx.solution || ''));
+}
+
+const isIntCol = (rows, j) => rows.length > 0 && rows.every(r => Number.isInteger(r[j]));
+const usedFn = (query) => {
+  const q = String(query || '').toLowerCase();
+  if (/\bdense_rank\s*\(/.test(q)) return 'DENSE_RANK';
+  if (/\brow_number\s*\(/.test(q)) return 'ROW_NUMBER';
+  if (/\brank\s*\(/.test(q)) return 'RANK';
+  return null;
+};
+// Shape of one ranking column: does it tie, does it leave gaps after ties,
+// how many times does it start again at 1.
+const rankShape = (vals) => {
+  const counts = new Map();
+  for (const v of vals) counts.set(v, (counts.get(v) || 0) + 1);
+  const ties = [...counts.values()].some(c => c > 1);
+  const distinct = [...counts.keys()].sort((a, b) => a - b);
+  // A gap is a jump bigger than 1 between consecutive distinct values
+  // (inside one partition this is RANK after a tie).
+  const gaps = distinct.some((v, i) => i > 0 && v - distinct[i - 1] > 1);
+  const ones = vals.filter(v => v === 1).length;
+  // A restart is the numbering going DOWN from one row to the next — a new
+  // partition. Counting 1s instead would read a tie at rank 1 as a restart.
+  let restarts = 0;
+  for (let i = 1; i < vals.length; i++) if (vals[i] < vals[i - 1]) restarts++;
+  return { ties, gaps, ones, restarts, max: distinct[distinct.length - 1] };
+};
+
+/**
+ * The ranking-column read. Returns a diagnosis, or null when no integer
+ * column differs in a way that looks like ranking (the caller then falls
+ * through to the value branch, which also switches to window hints).
+ */
+function diagnoseWindow(user, expected, ctx = {}) {
+  if (!user || !expected || user.rows.length !== expected.rows.length || user.rows.length === 0) return null;
+  const allDiffs = findAllDifferingRows(user.rows, expected.rows);
+  if (allDiffs.length === 0) return null;
+  const cols = user.columns.map((_, j) => j).filter(j =>
+    allDiffs.some(d => d.diffCols[j]) && isIntCol(user.rows, j) && isIntCol(expected.rows, j));
+  if (cols.length === 0) return null;
+  const j = cols[0];
+  const col = user.columns[j];
+  const u = user.rows.map(r => r[j]);
+  const e = expected.rows.map(r => r[j]);
+  const us = rankShape(u);
+  const es = rankShape(e);
+  const fn = usedFn(ctx.query);
+  const said = fn ? `You used ${fn}. ` : '';
+
+  let headline, details, hint;
+  if (es.restarts > 0 && us.restarts === 0) {
+    headline = `"${col}" never starts again at 1 — the numbering is missing a PARTITION BY`;
+    details = `${said}The expected "${col}" starts again ${es.restarts + 1} times, once per group; yours counts straight through the whole result.`;
+    hint = 'Add PARTITION BY the grouping column inside OVER(), e.g. OVER (PARTITION BY department ORDER BY salary DESC).';
+  } else if (us.restarts > 0 && es.restarts === 0) {
+    headline = `"${col}" restarts at 1 where it should not — the PARTITION BY is extra`;
+    details = `${said}Your "${col}" starts again ${us.restarts + 1} times; the expected one ranks the whole result as one list.`;
+    hint = 'Remove the PARTITION BY from OVER(), or partition by a coarser column than the one you used.';
+  } else if (es.ties && es.gaps && us.ties && !us.gaps) {
+    headline = `Ties are right, but "${col}" should skip numbers after a tie — that is RANK, not DENSE_RANK`;
+    details = `${said}Expected ranks jump after a tie (1, 1, 3); yours continue without a gap (1, 1, 2).`;
+    hint = 'Use RANK() instead of DENSE_RANK(): RANK leaves a gap after tied rows.';
+  } else if (es.ties && !es.gaps && us.ties && us.gaps) {
+    headline = `Ties are right, but "${col}" should not skip numbers after a tie — that is DENSE_RANK, not RANK`;
+    details = `${said}Expected ranks continue without a gap after a tie (1, 1, 2); yours jump (1, 1, 3).`;
+    hint = 'Use DENSE_RANK() instead of RANK(): DENSE_RANK gives the next distinct value the next number.';
+  } else if (es.ties && !us.ties) {
+    headline = `Tied rows should share a number in "${col}" — ROW_NUMBER never ties`;
+    details = `${said}The expected "${col}" gives equal values the same number; yours numbers every row uniquely.`;
+    hint = es.gaps
+      ? 'Use RANK() so equal values share a rank (and the next rank skips).'
+      : 'Use DENSE_RANK() so equal values share a rank without gaps.';
+  } else if (!es.ties && us.ties) {
+    headline = `"${col}" should be unique per row — ties are not allowed here`;
+    details = `${said}The expected "${col}" numbers every row once; yours gives tied rows the same number.`;
+    hint = 'Use ROW_NUMBER(), and add a tie-breaker to the ORDER BY inside OVER() so the order is fixed.';
+  } else {
+    // Same tie/gap/partition shape: the order inside OVER() is what differs.
+    const reversed = u.every((v, i) => v === (us.max + 1) - e[i]);
+    headline = reversed
+      ? `"${col}" is numbered in the opposite direction`
+      : `"${col}" is numbered in a different order than expected`;
+    details = reversed
+      ? `${said}Your highest rank is where the expected 1 is. The ORDER BY inside OVER() needs the other direction.`
+      : `${said}The shape of the numbering matches (ties, gaps, partitions) but the rows get different numbers — the ORDER BY inside OVER() sorts by the wrong column or direction.`;
+    hint = reversed
+      ? 'Flip the direction inside OVER(): ORDER BY x DESC instead of ASC (or the reverse).'
+      : 'Check which column the ORDER BY inside OVER() sorts by, and its direction — the question says what ranks first.';
+  }
+  const cappedDiffs = allDiffs.slice(0, 5);
+  return {
+    kind: 'window_rank',
+    headline,
+    details,
+    hints: [hint, ...WINDOW_HINTS.filter(h => h !== hint)].slice(0, 3),
+    preview: {
+      rowIndex: allDiffs[0].rowIndex,
+      userRow: user.rows[allDiffs[0].rowIndex],
+      expectedRow: expected.rows[allDiffs[0].rowIndex],
+      columns: user.columns,
+      rowDiffs: cappedDiffs,
+      totalDiffRows: allDiffs.length,
+    },
+  };
+}
+
 /**
  * One-line summary of the diagnosis for compact displays (toast, tooltip).
  */
@@ -553,12 +687,21 @@ export function primaryHint(diagnosis, ctx = {}) {
     }
     case 'row_set':
       return hints[0];
+    case 'window_rank':
+      return hints[0];
     case 'sort_order':
       return sortAsk ? `Add ORDER BY ${sortAsk[4].trim()} — the question says how to sort, and the grader checks it.` : (hints[0] || 'Add the ORDER BY the question describes; the grader is strict about order.');
     case 'null_mismatch':
       return hints[0] || 'Wrap the column in COALESCE(column, 0) where the question wants NULL treated as a value.';
     case 'cell_values':
       if (/integer division/i.test((diagnosis.details || '') + ' ' + (hints[0] || ''))) return hints[0];
+      // A window challenge never gets AVG / ROUND / CASE advice first.
+      if (diagnosis.window || isWindowContext(ctx)) {
+        if (/\bover\s*\(/.test(q) && !/\bpartition\s+by\b/.test(q) && /\b(per|each|within|every)\b/.test(desc)) {
+          return 'The question works per group — add PARTITION BY that column inside OVER().';
+        }
+        return WINDOW_HINTS[1];
+      }
       if (/\bavg\s*\(/.test(q)) return 'AVG() skips NULLs — if the question counts them as 0, use SUM(x) / COUNT(*).';
       if (/\bround\s*\(/.test(q)) return 'Check the ROUND precision the question asks for — ROUND(x, 1) and ROUND(x, 2) are different answers.';
       if (/\bcase\b/.test(q)) return 'One CASE branch is off — compare a highlighted row above with the condition that should have caught it.';
