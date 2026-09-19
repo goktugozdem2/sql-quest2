@@ -46,6 +46,7 @@ import { buildDivision as buildLeagueDivision, tierForXp as leagueTierForXp } fr
 import { getPrimarySkeleton, getAllSkeletons } from './utils/skeletons.js';
 import { diagnoseResult, diagnosisShort, primaryHint, rowDiffSummary } from './utils/diagnose.js';
 import { formatSqlForDisplay } from './utils/sql-format.js';
+import { parseTutorContent } from './utils/tutor-render.js';
 import { SQLITE_TUTOR_RULES, mistakeStudyContext, buildMistakeContextBlock, mistakeOpeningPrompt } from './utils/tutor-context.js';
 import { buildUserSkill, pickNextBySkill, toCanonicalSkill, isLegacyMasteryRecord } from './utils/user-skill.js';
 import { classifyErrorPatterns, recordErrorPatterns, describeErrorPatterns, patternCount, emptyErrorStore } from './utils/error-patterns.js';
@@ -5632,6 +5633,29 @@ function SkillRadarChart({ skillLevels: rawLevels, size = 340, onPractice, onDri
   );
 }
 
+
+// Tutor message text (src/utils/tutor-render.js): code is never run through
+// a markdown rule, headings are drawn, ligatures are off in code so >= is
+// not drawn as ≥ (founder QA 2026-09-19, round 3, items 1–3).
+function TutorText({ content, codeClassName = 'bg-gray-900 text-green-400 p-2 rounded my-2 overflow-x-auto font-mono text-xs' }) {
+  const blocks = parseTutorContent(content);
+  const noLig = { fontVariantLigatures: 'none', fontFeatureSettings: '"liga" 0, "calt" 0' };
+  const renderParts = (parts) => parts.map((p, k) => (
+    p.t === 'code' ? <code key={k} className="font-mono text-[0.95em] px-1 rounded bg-black/40" style={noLig}>{p.v}</code>
+      : p.t === 'bold' ? <strong key={k} className="font-bold text-[#F2F0EA]">{p.v}</strong>
+      : p.t === 'question' ? <span key={k} className="block mt-4 mb-2 text-yellow-400 font-bold text-base">📝 QUESTION:</span>
+      : <span key={k}>{p.v}</span>
+  ));
+  return (
+    <div className="text-sm whitespace-pre-wrap" data-testid="tutor-text">
+      {blocks.map((b, j) => (
+        b.type === 'code' ? <pre key={j} className={codeClassName} style={noLig}>{b.code}</pre>
+          : b.type === 'heading' ? <p key={j} className="font-bold text-[#F2F0EA] mt-2 mb-1">{renderParts(b.parts)}</p>
+          : <span key={j}>{renderParts(b.parts)}</span>
+      ))}
+    </div>
+  );
+}
 
 function ResultsTable({ columns, rows, error, smartError, onTryFix, query }) {
   if (error) {
@@ -29031,7 +29055,11 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
       {/* Active Interview Modal */}
       {activeInterview && !interviewCompleted && (
         <div className="fixed inset-0 bg-black/95 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-900 rounded-2xl border border-purple-500/30 w-full max-w-6xl max-h-[95vh] overflow-hidden flex flex-col">
+          {/* A fixed height, not max-height (founder QA 2026-09-19, round 3,
+              item 8): the window was centred and sized by its content, so a
+              shorter question moved the whole window down — 8px on Q6, 52px
+              on Q5 — and the editor with it. The pane scrolls inside. */}
+          <div className="bg-gray-900 rounded-2xl border border-purple-500/30 w-full max-w-6xl h-[95vh] overflow-hidden flex flex-col" data-testid="interview-window">
             {/* Interview Header */}
             <div className={`bg-gray-800/50 p-4 border-b border-gray-700 ${!practiceMode && timerWarning === 'red' ? 'animate-pulse bg-red-900/30' : ''} ${practiceMode ? 'bg-gradient-to-r from-cyan-900/30 to-blue-900/30' : ''}`}>
               <div className="flex items-center justify-between">
@@ -34758,28 +34786,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                                 <span className="text-xs text-cyan-400 font-medium">{i18n_t('aiTutor', 'tutorBadge')}</span>
                               </div>
                             )}
-                            <div className="text-sm whitespace-pre-wrap">
-                              {msg.content
-                                .replace(/\*\*/g, '') // Remove markdown bold
-                                .replace(/\*/g, '')   // Remove markdown italic
-                                .split('```').map((part, j) => 
-                                j % 2 === 1 ? (
-                                  <pre key={j} className="bg-gray-900 text-green-400 p-2 rounded my-2 overflow-x-auto font-mono text-xs">
-                                    {part.replace(/^sql\n?/, '')}
-                                  </pre>
-                                ) : (
-                                  <span key={j}>
-                                    {part.split(/(QUESTION:)/g).map((segment, k) => 
-                                      segment === 'QUESTION:' ? (
-                                        <span key={k} className="block mt-4 mb-2 text-yellow-400 font-bold text-base">📝 QUESTION:</span>
-                                      ) : (
-                                        <span key={k}>{segment}</span>
-                                      )
-                                    )}
-                                  </span>
-                                )
-                              )}
-                            </div>
+                            <TutorText content={msg.content} />
                             {/* Show expected output inline for the last question */}
                             {msg.role === 'assistant' && i === aiMessages.length - 1 && (aiLessonPhase === 'practice' || aiLessonPhase === 'feedback') && !aiLoading && aiExpectedResult.rows.length > 0 && expectedResultMessageId === i && (
                               <div className="mt-3 p-3 bg-blue-500/10 rounded-lg border border-blue-500/30">
@@ -37963,7 +37970,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                                 ? 'bg-purple-600/30 text-purple-100'
                                 : 'bg-gray-800/80 text-gray-200 border border-gray-700/50'
                             }`}>
-                              {msg.content}
+                              {msg.role === 'user' ? msg.content : <TutorText content={msg.content} codeClassName="bg-black/40 text-green-400 p-2 rounded my-2 overflow-x-auto font-mono text-xs" />}
                             </div>
                           </div>
                         ))}

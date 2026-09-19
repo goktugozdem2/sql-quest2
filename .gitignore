@@ -24,3 +24,4 @@ public/kpis.json
 # Product Hunt gallery intermediates (scripts/ph-gallery/compose.mjs output is committed)
 scripts/ph-gallery/raw/
 scripts/ph-gallery/.frames/
+scripts/qa/out/

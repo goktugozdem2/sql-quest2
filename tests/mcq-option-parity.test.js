@@ -49,3 +49,16 @@ describe('capital-one: a screen, not a lesson', () => {
     expect(Math.max(...q.options.map(num))).toBeGreaterThan(num(correct));
   });
 });
+
+describe('capital-one: each MCQ names each subject once (round 3, item 5)', () => {
+  const c1 = mocks.find(m => m.id === 'capital-one-codesignal');
+  it('Q6: no merchant appears in two options', () => {
+    const q = c1.questions.find(x => x.id === 'c1-m6');
+    const names = q.options.map(o => String(o.value).split('|')[0]);
+    expect(new Set(names).size).toBe(names.length);
+  });
+  it('Q11: the reference aggregates before it joins', () => {
+    const q = c1.questions.find(x => x.id === 'c1-q3');
+    expect(q.solution).toMatch(/LEFT JOIN \(SELECT account_id, COUNT\(\*\)/);
+  });
+});

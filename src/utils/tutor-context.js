@@ -16,7 +16,9 @@ import { dateUpperBoundTrap, rowDiffSummary } from './diagnose.js';
 
 export const SQLITE_TUTOR_RULES = `SQL RULES FOR EVERY EXAMPLE YOU WRITE (SQLite):
 - Timestamp columns in these datasets are ISO-8601 TEXT, e.g. '2026-04-30T11:21:24.844Z'. NEVER filter them with BETWEEN 'YYYY-MM-01' AND 'YYYY-MM-31' or <= 'YYYY-MM-DD': text comparison puts '2026-04-30T11:21Z' after '2026-04-30', so the last day is silently lost. To filter a month use strftime('%Y-%m', col) = 'YYYY-MM'; for a range use col >= 'YYYY-MM-DD' AND col < 'next-day' (strict <), or DATE(col) BETWEEN 'a' AND 'b'.
-- Use strftime for date parts and || for string concatenation. Integer / integer is integer division: write 100.0 * x / y.`;
+- Use strftime for date parts and || for string concatenation. Integer / integer is integer division: write 100.0 * x / y.
+- Write SQL with plain ASCII operators only: >=, <=, <>, straight quotes. Never ≥, ≤, ≠ or curly quotes — a student copies your code.
+- No markdown headings (#). Label sections with **bold** text instead.`;
 
 const cell = (v) => (v === null || v === undefined ? 'NULL' : String(v));
 const rowText = (r) => (Array.isArray(r) ? r.map(cell).join(' | ') : '');

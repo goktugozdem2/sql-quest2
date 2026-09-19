@@ -1317,17 +1317,17 @@ window.mockInterviewsData = [
         options: [
           { id: 'm6a', text: 'RideHail Inc — 13,369.64', text_tr: 'RideHail Inc — 13.369,64', value: 'RideHail Inc|13369.64' },
           { id: 'm6b', text: 'Petra Gas — 37,510.23', text_tr: 'Petra Gas — 37.510,23', value: 'Petra Gas|37510.23' },
-          { id: 'm6c', text: 'Quick Stop — 33,517.90', text_tr: 'Quick Stop — 33.517,90', value: 'Quick Stop|33517.9' },
-          // 2026-09-19 (founder QA item 7): the correct total was the largest
-          // number on the list, so the question solved itself without a
-          // query. This distractor is Petra Gas summed through a join to
-          // chargebacks on account_id — the fan-out reading of Q2, computed
-          // from the data (70,091.38 over 36 joined rows).
-          { id: 'm6d', text: 'Petra Gas — 70,091.38', text_tr: 'Petra Gas — 70.091,38', value: 'Petra Gas|70091.38' }
+          { id: 'm6c', text: 'BigBox Mart — 28,241.27', text_tr: 'BigBox Mart — 28.241,27', value: 'BigBox Mart|28241.27' },
+          // 2026-09-19 (founder QA items 7, then round 3 item 5): the correct
+          // total must not be the largest number offered, and no merchant
+          // appears twice. This distractor is Quick Stop — really rank 2 at
+          // 33,517.90 — summed through a join to chargebacks on account_id,
+          // the fan-out from Q2 (38,548.55, computed from the data).
+          { id: 'm6d', text: 'Quick Stop — 38,548.55', text_tr: 'Quick Stop — 38.548,55', value: 'Quick Stop|38548.55' }
         ],
         correctOptionId: 'm6b',
-        explanation: 'Petra Gas, 37,510.23. RideHail Inc has the most transactions (101) but small ones, so it is rank 1 by count, not by total. Quick Stop is rank 2 by total. 70,091.38 is Petra Gas again, summed after a join to chargebacks on account_id: every transaction repeats once per chargeback on its account, which is the fan-out from Q2. Read which measure the ranking is over, and check the join did not multiply the rows it sums.',
-        explanation_tr: 'Petra Gas, 37.510,23. RideHail Inc en çok işleme sahip (101) ama tutarlar küçük; sayıda 1. sıra, toplamda değil. Quick Stop toplamda 2. sıra. 70.091,38 yine Petra Gas, ama chargebacks tablosuna account_id üzerinden join edildikten sonra toplanmış: her işlem hesabındaki her chargeback için bir kez tekrarlanır — Q2\'deki fan-out. Sıralamanın hangi ölçüt üzerinden olduğunu oku ve join\'in topladığı satırları katlamadığını kontrol et.',
+        explanation: 'Petra Gas, 37,510.23. RideHail Inc has the most transactions (101) but small ones, so it is rank 1 by count, not by total. BigBox Mart is rank 3. Quick Stop is really rank 2 at 33,517.90; 38,548.55 is its total after a join to chargebacks on account_id, where every transaction repeats once per chargeback on its account (the fan-out from Q2), which pushes it past the real leader. Read which measure the ranking is over, and check the join did not multiply the rows it sums.',
+        explanation_tr: 'Petra Gas, 37.510,23. RideHail Inc en çok işleme sahip (101) ama tutarlar küçük; sayıda 1. sıra, toplamda değil. BigBox Mart 3. sıra. Quick Stop gerçekte 33.517,90 ile 2. sıra; 38.548,55 onun chargebacks tablosuna account_id üzerinden join edildikten sonraki toplamı: her işlem hesabındaki her chargeback için bir kez tekrarlanır (Q2\'deki fan-out) ve bu onu gerçek liderin önüne taşır. Sıralamanın hangi ölçüt üzerinden olduğunu oku ve join\'in topladığı satırları katlamadığını kontrol et.',
         hints: [
           'Total amount and transaction count rank merchants in different orders — the busiest merchant is not the biggest',
           'ROW_NUMBER() OVER (ORDER BY SUM(t.amount) DESC) over a per-merchant aggregate gives you the ranking'
@@ -1490,7 +1490,14 @@ window.mockInterviewsData = [
         difficulty: 'Medium',
         points: 20,
         dataset: 'finans_fraud',
-        solution: "SELECT a.account_id, a.country, COUNT(t.txn_id) AS txn_count, ROUND(COALESCE(SUM(t.amount), 0), 2) AS total_spend, COUNT(cb.chargeback_id) AS chargeback_count FROM accounts a LEFT JOIN transactions t ON t.account_id = a.account_id LEFT JOIN chargebacks cb ON cb.txn_id = t.txn_id WHERE a.status = 'flagged' GROUP BY a.account_id, a.country ORDER BY chargeback_count DESC, total_spend DESC, a.account_id ASC",
+        // 2026-09-19 (founder QA round 3, item 4): the reference used to join
+        // transactions and chargebacks in one pass and COUNT / SUM over the
+        // result — correct on this data only because no transaction has two
+        // chargebacks. The question is about fan-out; the reference now
+        // aggregates each side to one row per account first, so it stays
+        // right when a transaction carries several. Identical rows on
+        // finans_fraud (checked with EXCEPT both ways).
+        solution: "SELECT a.account_id, a.country, COALESCE(t.txn_count, 0) AS txn_count, ROUND(COALESCE(t.total_spend, 0), 2) AS total_spend, COALESCE(c.chargeback_count, 0) AS chargeback_count FROM accounts a LEFT JOIN (SELECT account_id, COUNT(*) AS txn_count, SUM(amount) AS total_spend FROM transactions GROUP BY account_id) t ON t.account_id = a.account_id LEFT JOIN (SELECT tx.account_id, COUNT(*) AS chargeback_count FROM chargebacks cb JOIN transactions tx ON tx.txn_id = cb.txn_id GROUP BY tx.account_id) c ON c.account_id = a.account_id WHERE a.status = 'flagged' ORDER BY chargeback_count DESC, total_spend DESC, a.account_id ASC",
         hints: [
           'Join chargebacks to transactions on txn_id (one chargeback per transaction) — joining on account_id repeats every transaction once per chargeback and inflates SUM(amount)',
           'LEFT JOIN both tables so accounts with no transactions survive; COUNT(cb.chargeback_id) ignores the NULLs, and COALESCE(SUM(...), 0) turns an empty sum into 0'
