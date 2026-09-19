@@ -71,6 +71,14 @@ const preamble = `(() => {
 const click = (re) => `(() => { const b = [...document.querySelectorAll('button')].find(b => ${re}.test(b.textContent.trim())); if (b) b.click(); return !!b; })()`;
 
 const SCENARIOS = {
+  // Open a mock by id and report its shape as the runner shows it.
+  async open_mock() {
+    const id = arg('id', 'capital-one-live-sql');
+    await cdp('Page.navigate', { url: `${URL}/app/?interview=${id}` });
+    await wait(6000);
+    await shot(`open-${id}`);
+    return ev(`({ header: document.querySelector('[data-testid="interview-content"]')?.previousElementSibling?.innerText.replace(/\\s+/g, ' ').slice(0, 160), q: document.querySelector('[data-testid="interview-question"] h3')?.textContent, locked: /Unlock|Upgrade/.test(document.body.innerText.slice(0, 3000)) && !document.querySelector('[data-testid="interview-question"]') })`);
+  },
   // Walk Capital One to Q6 answering A each time; record the overlay's box
   // for every MCQ, and Q6's question-card box before and after a pick.
   async c1_overlay() {

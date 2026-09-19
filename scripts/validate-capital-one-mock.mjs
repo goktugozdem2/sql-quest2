@@ -37,13 +37,20 @@ const adhoc=process.argv[2];
 let qs;
 if(adhoc){ qs=[{id:'adhoc',title:'adhoc',solution:adhoc,timeLimit:0}]; }
 else {
-  const mi=loadWin('src/data/mock-interviews.js').mockInterviewsData.find(i=>i.id==='capital-one-codesignal');
-  if(!mi){console.error('interview not found');process.exit(2);}
+  // Both Capital One mocks run on finans_fraud: the screen and, from
+  // 2026-09-19, the live SQL round that took the screen's four hard written
+  // questions. Validate them as one question list.
+  const all=loadWin('src/data/mock-interviews.js').mockInterviewsData;
+  const screen=all.find(i=>i.id==='capital-one-codesignal');
+  const live=all.find(i=>i.id==='capital-one-live-sql');
+  if(!screen||!live){console.error('interview not found');process.exit(2);}
+  for (const x of [live]) console.log(`\n${x.title} — ${x.questions.length} questions, totalTime ${x.totalTime/60} min, sum timeLimit ${x.questions.reduce((s,q)=>s+q.timeLimit,0)/60} min`);
+  const mi=screen;
   const mcqCount=mi.questions.filter(isMcqQuestion).length;
   console.log(`\n${mi.title} — ${mi.questions.length} questions (${mcqCount} MCQ / ${mi.questions.length-mcqCount} SQL), totalTime ${mi.totalTime/60} min, sum timeLimit ${mi.questions.reduce((s,q)=>s+q.timeLimit,0)/60} min, points ${mi.questions.reduce((s,q)=>s+q.points,0)}`);
   if(mi.questionsCount!==mi.questions.length){console.log(`  WARN: questionsCount ${mi.questionsCount} != ${mi.questions.length} actual questions`);}
   if(mi.questions.reduce((s,q)=>s+q.timeLimit,0)>mi.totalTime){console.log('  WARN: per-question time limits exceed totalTime');}
-  qs=mi.questions;
+  qs=[...screen.questions, ...live.questions];
 }
 let fail=0;
 for(const q of qs){

@@ -28,7 +28,7 @@ describe('MCQ options: all with a reason, or none', () => {
 describe('capital-one: a screen, not a lesson', () => {
   const c1 = mocks.find(m => m.id === 'capital-one-codesignal');
   it('no SQL prompt names a method or warns about a trap', () => {
-    for (const q of c1.questions.filter(q => q.type !== 'mcq')) {
+    for (const q of mocks.filter(m => /^capital-one/.test(m.id)).flatMap(m => m.questions).filter(q => q.type !== 'mcq')) {
       for (const f of ['title', 'title_tr', 'description', 'description_tr']) {
         const t = q[f] || '';
         expect(t, `${q.id}.${f}`).not.toMatch(/strftime|natural tool|ROW_NUMBER|\(CTE\)|trap|tuzağı|Careful|Dikkat|conditional aggregation|Koşullu aggregation/i);
@@ -36,8 +36,9 @@ describe('capital-one: a screen, not a lesson', () => {
     }
   });
   it('practice notes exist where the warning moved', () => {
+    const all = mocks.filter(m => /^capital-one/.test(m.id)).flatMap(m => m.questions);
     for (const id of ['c1-q3', 'c1-q5', 'c1-q6']) {
-      const q = c1.questions.find(x => x.id === id);
+      const q = all.find(x => x.id === id);
       expect(q.practiceNote, id).toBeTruthy();
       expect(q.practiceNote_tr, id).toBeTruthy();
     }
@@ -57,8 +58,8 @@ describe('capital-one: each MCQ names each subject once (round 3, item 5)', () =
     const names = q.options.map(o => String(o.value).split('|')[0]);
     expect(new Set(names).size).toBe(names.length);
   });
-  it('Q11: the reference aggregates before it joins', () => {
-    const q = c1.questions.find(x => x.id === 'c1-q3');
+  it('Q11 (now the live round\'s first): the reference aggregates before it joins', () => {
+    const q = mocks.find(m => m.id === 'capital-one-live-sql').questions.find(x => x.id === 'c1-q3');
     expect(q.solution).toMatch(/LEFT JOIN \(SELECT account_id, COUNT\(\*\)/);
   });
 });

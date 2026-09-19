@@ -251,7 +251,7 @@ export const MOCK_OFFER_REACH = 0.8;
  * Days after a sitting before the same mock is offered again.
  *
  * 14. The mock is a FIXED question set (the Capital One one is 14 questions,
- * 8 multiple-choice + 6 written). Re-sitting it inside two weeks measures
+ * 12 multiple-choice + 2 written since 2026-09-19). Re-sitting it inside two weeks measures
  * recall of those 14 questions rather than readiness, and because
  * `companyReadiness` takes the BEST sitting, a fresh one can only move the
  * number up — so a short cooldown would inflate the score for the wrong

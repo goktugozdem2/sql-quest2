@@ -372,17 +372,22 @@ describe('live mock-interviews data shape', () => {
 describe('the Capital One mock is both halves of the screen', () => {
   const get = () => interviews.find(i => i.id === 'capital-one-codesignal');
 
-  it('runs 8 multiple-choice then 6 written-SQL questions inside 70 minutes', () => {
+  // 2026-09-19 (founder QA round 3, item 6): 12 multiple-choice + 2 written,
+  // the proportion the sources describe ("mostly multiple choice, plus one
+  // or a few written SQL questions"). The four harder written questions
+  // moved to capital-one-live-sql.
+  it('runs 12 multiple-choice then 2 written-SQL questions inside 70 minutes', () => {
     const mi = get();
     expect(mi).toBeTruthy();
     const mcqs = mi.questions.filter(isMcqQuestion);
     const sqls = mi.questions.filter(q => !isMcqQuestion(q));
-    expect(mcqs.length).toBe(8);
-    expect(sqls.length).toBe(6);
+    expect(mcqs.length).toBe(12);
+    expect(sqls.length).toBe(2);
     expect(mi.totalTime).toBe(70 * 60);
     expect(mi.questions.reduce((s, q) => s + q.timeLimit, 0)).toBe(70 * 60);
+    expect(mi.description).toMatch(/12 multiple-choice questions in 48 minutes, then 2 written-SQL questions in 22/);
     // MCQ section first, exactly as candidates describe the screen.
-    expect(mi.questions.slice(0, 8).every(isMcqQuestion)).toBe(true);
+    expect(mi.questions.slice(0, 12).every(isMcqQuestion)).toBe(true);
     expect(mi.questions.map(q => q.order)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]);
   });
 
@@ -410,5 +415,27 @@ describe('the Capital One mock is both halves of the screen', () => {
       for (const o of q.options) expect(o.text_tr, `${q.id}/${o.id} text_tr`).toBeTruthy();
       for (const c of (q.codeSnippets || [])) expect(c.label_tr, `${q.id} snippet label_tr`).toBeTruthy();
     }
+  });
+});
+
+describe('the Capital One live SQL round', () => {
+  const live = () => interviews.find(i => i.id === 'capital-one-live-sql');
+  it('is four written questions in 60 minutes, Pro, on the same dataset', () => {
+    const mi = live();
+    expect(mi).toBeTruthy();
+    expect(mi.isFree).toBe(false);
+    expect(mi.questions.length).toBe(4);
+    expect(mi.questionsCount).toBe(4);
+    expect(mi.questions.every(q => !isMcqQuestion(q) && q.dataset === 'finans_fraud')).toBe(true);
+    expect(mi.totalTime).toBe(60 * 60);
+    expect(mi.questions.reduce((s, q) => s + q.timeLimit, 0)).toBe(60 * 60);
+    expect(mi.questions.map(q => q.order)).toEqual([1, 2, 3, 4]);
+  });
+  it('never claims to be Capital One\'s own round', () => {
+    const mi = live();
+    const copy = `${mi.title} ${mi.description} ${mi.description_tr}`;
+    expect(copy).toMatch(/practice/i);
+    expect(copy).toMatch(/does not publish/);
+    expect(copy).toMatch(/not affiliated|bağlantılı ya da onun onaylı değildir/i);
   });
 });
