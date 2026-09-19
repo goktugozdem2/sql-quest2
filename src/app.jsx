@@ -44,8 +44,9 @@ import { shouldAskForReview, enabledReviewPlatforms, REVIEW_ASK_REASONS } from '
 import { eligibleTargets, findTarget, planTargets, findPlanTarget, companyReadiness, planToDate, daysUntil, readinessBucket, MIN_EVIDENCE_SOLVES, MIN_TAGGED_CHALLENGES, PREP_PLAN_STATUS, TARGET_KIND } from './utils/interview-prep.js';
 import { buildDivision as buildLeagueDivision, tierForXp as leagueTierForXp } from './utils/leagues.js';
 import { getPrimarySkeleton, getAllSkeletons } from './utils/skeletons.js';
-import { diagnoseResult, diagnosisShort, primaryHint } from './utils/diagnose.js';
+import { diagnoseResult, diagnosisShort, primaryHint, rowDiffSummary } from './utils/diagnose.js';
 import { formatSqlForDisplay } from './utils/sql-format.js';
+import { SQLITE_TUTOR_RULES, mistakeStudyContext, buildMistakeContextBlock, mistakeOpeningPrompt } from './utils/tutor-context.js';
 import { buildUserSkill, pickNextBySkill, toCanonicalSkill, isLegacyMasteryRecord } from './utils/user-skill.js';
 import { classifyErrorPatterns, recordErrorPatterns, describeErrorPatterns, patternCount, emptyErrorStore } from './utils/error-patterns.js';
 import { dueRetrievals, pickRetrievalChallenge, recordRetrieval, dailyQuota, MAX_DUE_SHOWN } from './utils/spaced-retrieval.js';
@@ -297,6 +298,30 @@ const schemaColumnTypes = (tableInfo) => {
   });
 };
 
+// Per-column decimal precision for a result table: the most decimals any
+// value in the column carries (capped at 4). A column that holds money —
+// amount, total, spend, revenue, price, fare, avg — is pinned to exactly 2
+// once it has any decimal, so 3835 and 3855.31 read as 3835.00 and 3855.31
+// (founder QA 2026-09-19, item 11).
+const MONEY_COL = /(amount|total|spend|revenue|price|fare|cost|balance|avg|average|value|sales|gbp|usd|eur)/i;
+const columnDecimalsFor = (columns, rows) => (columns || []).map((name, colIdx) => {
+  let maxDec = 0;
+  let hasDecimal = false;
+  for (const row of (rows || [])) {
+    const cell = row[colIdx];
+    if (typeof cell === 'number' && Number.isFinite(cell) && !Number.isInteger(cell)) {
+      hasDecimal = true;
+      const match = cell.toString().match(/\.(\d+)$/);
+      if (match) maxDec = Math.max(maxDec, Math.min(match[1].length, 4));
+    }
+  }
+  if (!hasDecimal) return 0;
+  return MONEY_COL.test(String(name || '')) ? 2 : maxDec;
+});
+
+// "1 row" / "2 rows" — founder QA 2026-09-19, item 10.
+const nRows = (n) => `${n} ${n === 1 ? 'row' : 'rows'}`;
+
 const formatCell = (cell, maxLength = null, columnDecimals = 0) => {
   if (cell === null || cell === undefined) return 'NULL';
 
@@ -305,6 +330,11 @@ const formatCell = (cell, maxLength = null, columnDecimals = 0) => {
 
   if (numValue !== null && typeof numValue === 'number' && !isNaN(numValue)) {
     if (!Number.isInteger(numValue)) {
+      // A column with a fixed precision prints every value at it.
+      if (columnDecimals > 0) {
+        const fixed = numValue.toFixed(columnDecimals);
+        return maxLength ? fixed.slice(0, maxLength) : fixed;
+      }
       const str = numValue.toString();
       const decMatch = str.match(/\.(\d+)$/);
       let formatted;
@@ -5646,22 +5676,7 @@ function ResultsTable({ columns, rows, error, smartError, onTryFix, query }) {
   // the max decimal places seen. Whole numbers in that column then display
   // with the same precision, so ROUND(x, 1) always shows "X.Y" even when
   // the underlying value is a whole number. Fixes student confusion.
-  const columnDecimals = columns.map((_, colIdx) => {
-    let maxDec = 0;
-    let hasDecimal = false;
-    for (const row of rows) {
-      const cell = row[colIdx];
-      if (typeof cell === 'number' && Number.isFinite(cell) && !Number.isInteger(cell)) {
-        hasDecimal = true;
-        const match = cell.toString().match(/\.(\d+)$/);
-        if (match) {
-          // Cap at 4 to avoid floating-point noise like 0.3333333333.
-          maxDec = Math.max(maxDec, Math.min(match[1].length, 4));
-        }
-      }
-    }
-    return hasDecimal ? maxDec : 0;
-  });
+  const columnDecimals = columnDecimalsFor(columns, rows);
   return (
     <div className="overflow-auto max-h-72">
       <table className="min-w-full text-sm border border-green-500/30">
@@ -5676,7 +5691,7 @@ function ResultsTable({ columns, rows, error, smartError, onTryFix, query }) {
           ))}
         </tbody>
       </table>
-      {rows.length > 100 && <p className="text-xs text-gray-500 mt-2">Showing 100 of {rows.length} rows</p>}
+      {rows.length > 100 && <p className="text-xs text-gray-500 mt-2">Showing 100 of {nRows(rows.length)}</p>}
     </div>
   );
 }
@@ -6124,8 +6139,30 @@ function SQLQuest() {
   // question's text above the fold (founder QA 2026-09-19, item 10).
   const interviewContentRef = useRef(null);
   const [interviewHintConfirm, setInterviewHintConfirm] = useState(false);
+  // Skip asks once in a timed mock (founder QA 2026-09-19, item 6): a stray
+  // click used to throw away the answer and open the solution.
+  const [interviewSkipConfirm, setInterviewSkipConfirm] = useState(false);
+  // After Run, the result block is brought into the mock pane's view when it
+  // landed below the fold — at 1470×660 the scratchpad's result sat just
+  // under the fold (founder QA 2026-09-19, item 12). Instant scroll: smooth
+  // is a no-op in some webviews.
+  const interviewResultAnchorRef = useRef(null);
+  const [interviewRunAt, setInterviewRunAt] = useState(0);
+  useEffect(() => {
+    if (!interviewRunAt) return;
+    const id = setTimeout(() => {
+      const a = interviewResultAnchorRef.current;
+      const pane = interviewContentRef.current;
+      if (!a || !pane) return;
+      const ar = a.getBoundingClientRect();
+      const pr = pane.getBoundingClientRect();
+      const bottom = Math.min(pr.bottom, window.innerHeight);
+      if (ar.top > bottom - 120) pane.scrollTop += Math.round(ar.top - (pr.top + pane.clientHeight * 0.35));
+    }, 30);
+    return () => clearTimeout(id);
+  }, [interviewRunAt]);
   const [interviewLiveHint, setInterviewLiveHint] = useState(null);
-  useEffect(() => { setInterviewHintConfirm(false); setInterviewLiveHint(null); }, [interviewQuestion, activeInterview?.id]);
+  useEffect(() => { setInterviewHintConfirm(false); setInterviewSkipConfirm(false); setInterviewLiveHint(null); }, [interviewQuestion, activeInterview?.id]);
   useEffect(() => {
     // Only while a mock is open: closing one must not yank the page that
     // the close navigated to (Study with AI scrolls to the tutor).
@@ -8043,6 +8080,14 @@ function SQLQuest() {
   const [showWeeklyReport, setShowWeeklyReport] = useState(false);
   const [weakTopicForTutor, setWeakTopicForTutor] = useState(null); // Topic to practice in AI Tutor
   const [studyingTopic, setStudyingTopic] = useState(null); // Currently studying a specific topic (from interview review)
+  // The mock mistake a study session is about (src/utils/tutor-context.js):
+  // query, reference solution, diagnosis, the rows lost or added, dataset.
+  // Every study prompt carries it; null for a plain topic session.
+  const [studyMistake, setStudyMistake] = useState(null);
+  // The tutor chat follows the newest message (founder QA item 4): to the
+  // bottom, or to the top of a reply taller than the panel so it is read
+  // from its first line.
+  const aiChatScrollRef = useRef(null);
   const [studyStep, setStudyStep] = useState(0); // 0=concept, 1=example, 2=challenge
   const [studyChallengeContext, setStudyChallengeContext] = useState(null); // { tables, expectedQuery, expectedResult, dataset }
   const [selectedChallengeReview, setSelectedChallengeReview] = useState(null); // For detailed challenge review
@@ -8051,6 +8096,17 @@ function SQLQuest() {
   const [aiMessages, setAiMessages] = useState([]);
   const [aiInput, setAiInput] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
+  useEffect(() => {
+    const el = aiChatScrollRef.current;
+    if (!el) return;
+    const last = el.firstElementChild && el.firstElementChild.lastElementChild;
+    if (last && last.offsetHeight > el.clientHeight - 24) {
+      // A reply taller than the panel is read from its first line.
+      el.scrollTop = Math.max(0, last.offsetTop - 8);
+    } else {
+      el.scrollTop = el.scrollHeight;
+    }
+  }, [aiMessages.length, aiLoading]);
   const [currentAiLesson, setCurrentAiLesson] = useState(0);
   const [aiLessonPhase, setAiLessonPhase] = useState('intro'); // 'intro', 'teaching', 'practice', 'feedback'
   const [aiQuestionCount, setAiQuestionCount] = useState(0);
@@ -10349,6 +10405,7 @@ function SQLQuest() {
 
   const runInterviewQuery = () => {
     if (!db || !interviewQuery.trim() || !activeInterview) return;
+    setInterviewRunAt(Date.now());
     try {
       const result = db.exec(interviewQuery);
       if (result.length > 0) {
@@ -10398,6 +10455,7 @@ function SQLQuest() {
         questionIndex: interviewQuestion,
         questionId: currentQ.id,
         questionType: 'mcq',
+        dataset: currentQ.dataset || null,
         questionTitle: currentQ.title,
         questionDescription: currentQ.description,
         difficulty: currentQ.difficulty,
@@ -10486,6 +10544,7 @@ function SQLQuest() {
     const answer = {
       questionIndex: interviewQuestion,
       questionId: currentQ.id,
+      dataset: currentQ.dataset || null,
       questionTitle: currentQ.title,
       questionDescription: currentQ.description,
       difficulty: currentQ.difficulty,
@@ -10520,7 +10579,7 @@ function SQLQuest() {
       timedOut,
       skipped,
       isLast,
-      diagnosis: mockMistakeDiagnosis(answer, { diagnose: diagnoseResult, hint: primaryHint }),
+      diagnosis: mockMistakeDiagnosis(answer, { diagnose: diagnoseResult, hint: primaryHint, rows: rowDiffSummary }),
       isPracticeMode: practiceMode,
       pendingAnswers: newAnswers, // captured here so completeInterview gets the
                                    // right list when the user clicks Finish
@@ -10597,7 +10656,8 @@ function SQLQuest() {
         timedOut: a.timedOut,
         skipped: a.skipped,
         userError: a.userError || null,
-        diagnosis: mockMistakeDiagnosis(a, { diagnose: diagnoseResult, hint: primaryHint }),
+        dataset: a.dataset || null,
+        diagnosis: mockMistakeDiagnosis(a, { diagnose: diagnoseResult, hint: primaryHint, rows: rowDiffSummary }),
       }));
     
     const scorePercent = Math.round(totalScore / maxScore * 100);
@@ -10806,6 +10866,9 @@ function SQLQuest() {
   
   // Study a mistake with AI Tutor
   const studyMistakeWithAI = (mistake, resultId) => {
+    // One path for studying a mock mistake (2026-09-19): the session that
+    // opens on the query and keeps it in context. The studied-mark below
+    // still records which result the mistake came from.
     // Mark mistake as studied
     if (currentUser && resultId) {
       const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
@@ -10826,6 +10889,7 @@ function SQLQuest() {
     
     // Navigate to AI Tutor with the mistake
     setShowInterviewReview(null);
+    if (mistake && mistake.questionType !== 'mcq') { studyTopicWithAI(mistake.questionTitle, mistake); return; }
     setActiveTab('guide');
 
     // Find relevant lesson based on concepts
@@ -10841,7 +10905,7 @@ function SQLQuest() {
       role: 'assistant',
       content: isMcqMistake
         ? `**You missed this one — let's fix that.**\n\n**Question:** ${mistake.questionTitle}\n\n${mistake.questionDescription?.replace(/\*\*(.*?)\*\*/g, '**$1**')}\n\n**You picked:** ${mistake.userQuery || '(No answer submitted)'}\n\n**Correct answer:** ${mistake.correctSolution}\n\n${mistake.explanation || ''}\n\nThis one is about ${mistake.concepts?.join(', ')}. **Before I go further** — can you say, in your own words, what made the option you picked wrong? Then I'll fill in the gaps.`
-        : `**You missed this one — let's fix that.**\n\n**Question:** ${mistake.questionTitle}\n\n${mistake.questionDescription?.replace(/\*\*(.*?)\*\*/g, '**$1**')}\n\n**Your answer:**\n${fence(mistake.userQuery || '(No answer submitted)')}\n\n**Correct solution:**\n${fence(formatSqlForDisplay(mistake.correctSolution))}\n\n**What went wrong:**\n${(() => { const dx = mistake.diagnosis || mockMistakeDiagnosis({ ...mistake, correct: false }, { diagnose: diagnoseResult, hint: primaryHint }); return mistake.userQuery ? `${dx?.sentence || 'Your result did not match the expected output.'}${dx?.hint ? ` ${dx.hint}` : ''} Compare your answer to the solution — can you spot where they part?` : `You didn't submit an answer. No worries — let's break the solution down so you own this concept.`; })()}\n\nThe solution uses ${mistake.concepts?.join(', ')}. ${mistake.hints?.[0] || ''}\n\n**Before I explain further** — look at the correct solution above. Can you describe in your own words why each part is needed? Give it a try, then I'll fill in the gaps.`
+        : `**You missed this one — let's fix that.**\n\n**Question:** ${mistake.questionTitle}\n\n${mistake.questionDescription?.replace(/\*\*(.*?)\*\*/g, '**$1**')}\n\n**Your answer:**\n${fence(mistake.userQuery || '(No answer submitted)')}\n\n**Correct solution:**\n${fence(formatSqlForDisplay(mistake.correctSolution))}\n\n**What went wrong:**\n${(() => { const dx = mistake.diagnosis || mockMistakeDiagnosis({ ...mistake, correct: false }, { diagnose: diagnoseResult, hint: primaryHint, rows: rowDiffSummary }); return mistake.userQuery ? `${dx?.sentence || 'Your result did not match the expected output.'}${dx?.hint ? ` ${dx.hint}` : ''} Compare your answer to the solution — can you spot where they part?` : `You didn't submit an answer. No worries — let's break the solution down so you own this concept.`; })()}\n\nThe solution uses ${mistake.concepts?.join(', ')}. ${mistake.hints?.[0] || ''}\n\n**Before I explain further** — look at the correct solution above. Can you describe in your own words why each part is needed? Give it a try, then I'll fill in the gaps.`
     }]);
   };
 
@@ -10891,6 +10955,42 @@ function SQLQuest() {
     setAiLessonPhase('study');
     setStudyStep(0);
 
+    // A session about one wrong mock answer opens ON that answer — the
+    // query, the reference, the diagnosis and the rows it lost — not on a
+    // generic concept lesson (founder QA 2026-09-19, item 1). The sandbox
+    // gets the mock's dataset (item 3).
+    const mctx = mistake ? mistakeStudyContext(mistake) : null;
+    setStudyMistake(mctx);
+    if (mctx && mctx.dataset && db) {
+      try { loadDataset(db, mctx.dataset); } catch (_) {}
+      setSandboxQuery('');
+      setSandboxResult({ columns: [], rows: [], error: null });
+    }
+    if (mctx) {
+      setAiMessages([{ role: 'assistant', content: `Let's look at **${mctx.title}** — what your answer did, and the smallest change that fixes it.\n\nReading your query...` }]);
+      setAiLoading(true);
+      const systemPrompt = `You are a sharp, direct SQL tutor reviewing ONE mistake a student made in a timed mock interview.
+
+${buildMistakeContextBlock(mctx)}
+
+Be specific to their query. Short sentences. No generic concept lecture.`;
+      const response = await callAI([{ role: 'user', content: mistakeOpeningPrompt(mctx) }], systemPrompt, 'study');
+      setAiMessages([{ role: 'assistant', content: response || `❌ **AI Tutor Unavailable**\n\nCouldn't connect. Check your internet and try again.` }]);
+      setAiLoading(false);
+      if (currentUser) {
+        const updatedHistory = interviewHistory.map(result => (
+          result.mistakes?.some(m => m.questionTitle === topicName)
+            ? { ...result, studiedMistakes: [...new Set([...(result.studiedMistakes || []), topicName])] }
+            : result
+        ));
+        setInterviewHistory(updatedHistory);
+        const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+        userData.interviewHistory = updatedHistory;
+        saveUserData(currentUser, userData);
+      }
+      return;
+    }
+
     // Show an instant local intro message while the AI call loads
     const isFromInterview = interviewHistory.some(h =>
       h.mistakes?.some(m => m.questionTitle === topicName)
@@ -10921,7 +11021,7 @@ FORMAT:
 
 **Key syntax:**
 \`\`\`sql
-[ONE minimal syntax template, no real data]
+[ONE minimal syntax template, no real data. If it filters dates or timestamps, follow the SQL rules below: strftime or a strict < upper bound, never BETWEEN with a bare-date upper bound.]
 \`\`\`
 
 Do NOT give examples with real data yet — that's step 2.
@@ -10982,7 +11082,7 @@ Use SQLite syntax (strftime for dates, || for concatenation).`;
       ]);
 
       const systemPrompt = `You are a concise SQL tutor teaching "${topic}".
-
+${studyMistake ? `\n${buildMistakeContextBlock(studyMistake)}\nThe example must show the correct pattern for THIS mistake, on these tables: ${studyMistakeTablesLine() || 'the tables below'}.\n` : ''}
 STEP 2 OF 3: Show ONE worked example. Keep it SHORT.
 
 FORMAT:
@@ -11022,7 +11122,7 @@ Do NOT ask questions. The UI handles navigation to step 3.`;
       setStudyChallengeContext(null);
 
       const systemPrompt = `You are a concise SQL tutor teaching "${topic}".
-
+${studyMistake && studyMistakeTablesLine() ? `\n${buildMistakeContextBlock(studyMistake)}\nUse ONLY these tables for the challenge (they are loaded in the student's sandbox): ${studyMistakeTablesLine()}. Ignore the table list below.\n` : ''}
 STEP 3 OF 3: Give ONE mini-challenge for the student to try.
 
 FORMAT:
@@ -11065,12 +11165,15 @@ CRITICAL RULES:
           const expectedSql = sqlMatch[1].trim();
 
           // Determine which tables are referenced
-          const tableNames = ['orders', 'customers', 'employees', 'movies', 'directors', 'passengers'];
+          const mistakeDs = studyMistake && studyMistake.dataset && publicDatasets[studyMistake.dataset];
+          const tableNames = mistakeDs ? Object.keys(mistakeDs.tables) : ['orders', 'customers', 'employees', 'movies', 'directors', 'passengers'];
           const usedTables = tableNames.filter(t => expectedSql.toLowerCase().includes(t));
 
-          // Determine which dataset to load
+          // Determine which dataset to load — the mistake's own, when the
+          // session is about one (its tables are what the prompt named).
           let dataset = 'ecommerce'; // default
-          if (usedTables.includes('passengers')) dataset = 'titanic';
+          if (studyMistake && studyMistake.dataset && publicDatasets[studyMistake.dataset]) dataset = studyMistake.dataset;
+          else if (usedTables.includes('passengers')) dataset = 'titanic';
           else if (usedTables.includes('movies') || usedTables.includes('directors')) dataset = 'movies';
           else if (usedTables.includes('employees')) dataset = 'employees';
 
@@ -11082,7 +11185,7 @@ CRITICAL RULES:
             const result = db.exec(expectedSql);
             if (result.length > 0) {
               challengeCtx = {
-                tables: usedTables.length > 0 ? usedTables : ['orders'],
+                tables: usedTables.length > 0 ? usedTables : [tableNames[0]],
                 expectedQuery: expectedSql,
                 expectedResult: { columns: result[0].columns, rows: result[0].values },
                 dataset
@@ -20225,7 +20328,10 @@ Adapt based on this student's level — but ALWAYS stay direct and code-first:`;
     
     // ENHANCE: Add student context to the system prompt
     const studentContext = getStudentContextPrompt();
-    let enhancedSystemPrompt = systemPrompt + '\n\n' + studentContext;
+    // The SQLite rules ride on every tutor call (src/utils/tutor-context.js):
+    // the concept step once taught the ISO-timestamp BETWEEN trap as "Key
+    // syntax" (founder QA 2026-09-19, item 2).
+    let enhancedSystemPrompt = systemPrompt + '\n\n' + SQLITE_TUTOR_RULES + '\n\n' + studentContext;
 
     // SECTOR CONTEXT (sector MVP — see docs/sector-mvp-plan.md):
     // If the user told the Goals Mentor what sector they're in, nudge the
@@ -20785,6 +20891,15 @@ If correct: confirm the key insight in 1 sentence. If wrong: explain the core id
   };
 
   // Generate response for study mode (when learning a specific topic from interview mistakes)
+  // Tables of the dataset a study session's mistake came from, as one line
+  // ("transactions (txn_id, …), merchants (…)") — null without a mistake.
+  const studyMistakeTablesLine = () => {
+    const key = studyMistake && studyMistake.dataset;
+    const ds = key && publicDatasets[key];
+    if (!ds) return null;
+    return Object.entries(ds.tables).map(([t, info]) => `${t} (${(info.columns || []).join(', ')})`).join('; ');
+  };
+
   const generateStudyResponse = async (userMessage, topic) => {
     // Get the initial explanation that was shown to the user
     const initialExplanation = aiMessages.length > 0 && aiMessages[0].role === 'assistant' 
@@ -20807,8 +20922,8 @@ Your approach:
 3. If they're going in circles, say so: "The problem is [X]. Here's the fix."
 4. If they ask for practice, give ONE specific challenge.
 5. Stay focused on "${topic}". If they drift, pull them back.
-
-Available tables: orders, customers, employees, movies, directors, passengers.
+${studyMistake ? `\n${buildMistakeContextBlock(studyMistake)}\n` : ''}
+Available tables: ${studyMistakeTablesLine() || 'orders, customers, employees, movies, directors, passengers.'}
 Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-first.`;
 
     // Build conversation history for context
@@ -21182,7 +21297,20 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     }
 
     try {
-      const result = db.exec(sandboxQuery);
+      let result;
+      try {
+        result = db.exec(sandboxQuery);
+      } catch (e) {
+        // A study session about a mock mistake runs on that mock's dataset;
+        // if another view reloaded the database since, load it back once.
+        const ds = studyMistake && studyMistake.dataset;
+        if (ds && /no such table/i.test(String(e && e.message)) && publicDatasets[ds]) {
+          loadDataset(db, ds);
+          result = db.exec(sandboxQuery);
+        } else {
+          throw e;
+        }
+      }
       const queryResult = result.length > 0 
         ? { columns: result[0].columns, rows: result[0].values, error: null }
         : { columns: [], rows: [], error: null };
@@ -26636,7 +26764,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                     
                     {dayResult.rows.length > 0 && (
                       <div className="bg-gray-800/50 rounded-xl p-4">
-                        <p className="text-sm text-gray-400 mb-2">Query Result ({dayResult.rows.length} rows)</p>
+                        <p className="text-sm text-gray-400 mb-2">Query Result ({nRows(dayResult.rows.length)})</p>
                         <div className="overflow-x-auto max-h-64">
                           <table className="w-full text-sm">
                             <thead>
@@ -26657,7 +26785,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                             </tbody>
                           </table>
                           {dayResult.rows.length > 20 && (
-                            <p className="text-xs text-gray-500 mt-2">Showing 20 of {dayResult.rows.length} rows</p>
+                            <p className="text-xs text-gray-500 mt-2">Showing 20 of {nRows(dayResult.rows.length)}</p>
                           )}
                         </div>
                       </div>
@@ -28024,7 +28152,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                 
                 {dailyChallengeResult.rows.length > 0 && (
                   <div className="bg-gray-800/50 rounded-xl p-4">
-                    <p className="text-sm text-gray-400 mb-2">Result ({dailyChallengeResult.rows.length} rows)</p>
+                    <p className="text-sm text-gray-400 mb-2">Result ({nRows(dailyChallengeResult.rows.length)})</p>
                     <div className="overflow-x-auto">
                       <table className="w-full text-sm">
                         <thead>
@@ -28998,7 +29126,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                       <div className="bg-gray-800/50 rounded-xl p-4">
                         <div className="flex items-center justify-between mb-3">
                           <h3 className="text-lg font-bold text-purple-400">
-                            {i18n_t('practice', 'questionPrefix', { n: currentQ.order, title: currentQ.title })}
+                            {i18n_t('practice', 'questionPrefix', { n: currentQ.order, title: (practiceMode && currentQ.practiceTitle) || currentQ.title })}
                           </h3>
                           <span className={`px-2 py-1 rounded text-xs ${
                             currentQ.difficulty === 'Easy' ? 'bg-green-500/20 text-green-400' :
@@ -29013,6 +29141,13 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                         <p className="text-gray-300" dangerouslySetInnerHTML={{
                           __html: currentQ.description.replace(/\*\*(.*?)\*\*/g, '<strong class="text-yellow-300">$1</strong>')
                         }} />
+                        {/* Practice mode only: the warning or the method a real
+                            screen would not give (founder QA 2026-09-19, items 8–9). */}
+                        {practiceMode && currentQ.practiceNote && (
+                          <p className="mt-2 text-sm text-cyan-300" data-testid="interview-practice-note" dangerouslySetInnerHTML={{
+                            __html: currentQ.practiceNote.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                          }} />
+                        )}
                         {/* Inline SQL the question is ABOUT (e.g. "which of
                             these two queries is right"), as opposed to the
                             answer. Rendered here rather than folded into the
@@ -29108,7 +29243,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                               </tbody>
                             </table>
                             {interviewExpectedOutput.rows.length > 3 && (
-                              <p className="text-xs text-gray-500 mt-1">...and {interviewExpectedOutput.rows.length - 3} more row(s)</p>
+                              <p className="text-xs text-gray-500 mt-1">...and {nRows(interviewExpectedOutput.rows.length - 3)} more</p>
                             )}
                           </div>
                         ) : (
@@ -29265,13 +29400,21 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                             >
                               <CheckCircle size={16} /> {practiceMode ? 'Check Answer' : 'Submit Answer'}
                             </button>
+{!practiceMode && interviewSkipConfirm ? (
+                              <span className="flex items-center gap-2" data-testid="interview-skip-confirm">
+                                <span className="text-sm text-gray-300">{i18n_t('mockFeedback', 'skipConfirmQ')}</span>
+                                <button onClick={() => { setInterviewSkipConfirm(false); submitInterviewAnswer(false, { skipped: true }); }} data-testid="interview-skip-yes" className="px-3 py-2 bg-gray-600 hover:bg-gray-500 rounded-lg text-sm text-[#F2F0EA]">{i18n_t('mockFeedback', 'skipConfirmYes')}</button>
+                                <button onClick={() => setInterviewSkipConfirm(false)} className="px-3 py-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg text-sm text-gray-300">{i18n_t('mockFeedback', 'skipConfirmNo')}</button>
+                              </span>
+                            ) : (
                             <button
-                              onClick={() => submitInterviewAnswer(false, { skipped: true })}
+                              onClick={() => (practiceMode ? submitInterviewAnswer(false, { skipped: true }) : setInterviewSkipConfirm(true))}
                               data-testid="interview-skip"
                               className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-gray-300"
                             >
                               {practiceMode ? 'Next Question →' : 'Skip →'}
                             </button>
+                            )}
                             {/* The scratchpad is the SAME editor and the SAME
                                 runner the SQL questions use — nothing new is
                                 built here. It is collapsed by default so the
@@ -29335,8 +29478,16 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                           >
                             <CheckCircle size={16} /> {practiceMode ? 'Check Answer' : 'Submit Answer'}
                           </button>
+{!practiceMode && interviewSkipConfirm ? (
+                              <span className="flex items-center gap-2" data-testid="interview-skip-confirm">
+                                <span className="text-sm text-gray-300">{i18n_t('mockFeedback', 'skipConfirmQ')}</span>
+                                <button onClick={() => { setInterviewSkipConfirm(false); setShowSolution(false); submitInterviewAnswer(false, { skipped: true }); }} data-testid="interview-skip-yes" className="px-3 py-2 bg-gray-600 hover:bg-gray-500 rounded-lg text-sm text-[#F2F0EA]">{i18n_t('mockFeedback', 'skipConfirmYes')}</button>
+                                <button onClick={() => setInterviewSkipConfirm(false)} className="px-3 py-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg text-sm text-gray-300">{i18n_t('mockFeedback', 'skipConfirmNo')}</button>
+                              </span>
+                            ) : (
                           <button
                             onClick={() => {
+                              if (!practiceMode) { setInterviewSkipConfirm(true); return; }
                               setShowSolution(false);
                               submitInterviewAnswer(false, { skipped: true });
                             }}
@@ -29345,9 +29496,11 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                           >
                             {practiceMode ? 'Next Question →' : 'Skip →'}
                           </button>
+                          )}
                         </div>
                       </div>
                       )}
+                      <div ref={interviewResultAnchorRef} data-testid="interview-result-anchor" />
                       {interviewResult.error && (
                         <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4">
                           <div className="flex items-start gap-2 mb-2">
@@ -29383,7 +29536,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                       
                       {interviewResult.rows.length > 0 && (
                         <div className="bg-gray-800/50 rounded-xl p-4">
-                          <p className="text-sm text-gray-400 mb-2">Query Result ({interviewResult.rows.length} rows)</p>
+                          <p className="text-sm text-gray-400 mb-2">Query Result ({nRows(interviewResult.rows.length)})</p>
                           <div className="overflow-x-auto max-h-64">
                             <table className="w-full text-sm">
                               <thead>
@@ -29394,17 +29547,20 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                                 </tr>
                               </thead>
                               <tbody>
-                                {interviewResult.rows.slice(0, 10).map((row, i) => (
-                                  <tr key={i} className="border-b border-gray-800">
-                                    {row.map((cell, j) => (
-                                      <td key={j} className="py-2 px-3 text-gray-300">{formatCell(cell)}</td>
-                                    ))}
-                                  </tr>
-                                ))}
+                                {(() => {
+                                  const decs = columnDecimalsFor(interviewResult.columns, interviewResult.rows);
+                                  return interviewResult.rows.slice(0, 10).map((row, i) => (
+                                    <tr key={i} className="border-b border-gray-800">
+                                      {row.map((cell, j) => (
+                                        <td key={j} className="py-2 px-3 text-gray-300">{formatCell(cell, null, decs[j])}</td>
+                                      ))}
+                                    </tr>
+                                  ));
+                                })()}
                               </tbody>
                             </table>
                             {interviewResult.rows.length > 10 && (
-                              <p className="text-xs text-gray-500 mt-2">Showing 10 of {interviewResult.rows.length} rows</p>
+                              <p className="text-xs text-gray-500 mt-2">Showing 10 of {nRows(interviewResult.rows.length)}</p>
                             )}
                           </div>
                         </div>
@@ -29615,7 +29771,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                           question's concepts; older saved results have no
                           stored diagnosis and compute it here. */}
                       {(() => {
-                        const dx = mistake.diagnosis || mockMistakeDiagnosis({ ...mistake, correct: false }, { diagnose: diagnoseResult, hint: primaryHint });
+                        const dx = mistake.diagnosis || mockMistakeDiagnosis({ ...mistake, correct: false }, { diagnose: diagnoseResult, hint: primaryHint, rows: rowDiffSummary });
                         if (!dx) return null;
                         return (
                           <div className="mt-2 text-xs leading-relaxed" data-testid="interview-mistake-diagnosis">
@@ -29651,7 +29807,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                       <div className="flex items-center gap-4">
                         {qr.timedOut && <span className="text-xs text-red-400">{i18n_t('mockFeedback', 'timedOut')}</span>}
                         {qr.skipped && <span className="text-xs text-gray-400">{i18n_t('mockFeedback', 'skipped')}</span>}
-                        {qr.hintsUsed > 0 && <span className="text-xs text-yellow-400">{qr.hintsUsed} hint(s)</span>}
+                        {qr.hintsUsed > 0 && <span className="text-xs text-yellow-400">{qr.hintsUsed} {qr.hintsUsed === 1 ? 'hint' : 'hints'}</span>}
                         <span className="text-gray-400 text-sm">{formatTime(qr.timeUsed)}</span>
                         <span className={`font-medium ${qr.correct ? 'text-green-400' : 'text-gray-500'}`}>
                           {qr.score}/{qr.maxScore}
@@ -34529,6 +34685,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                           <button
                             onClick={() => {
                               setStudyingTopic(null);
+                              setStudyMistake(null);
                               setStudyStep(0);
                               setAiLessonPhase('intro');
                               setAiMessages([]);
@@ -34584,7 +34741,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                   </div>
 
                   {/* Chat Messages */}
-                  <div className="bg-black/30 rounded-xl border border-gray-700 p-4 min-h-[200px] max-h-80 overflow-y-auto">
+                  <div ref={aiChatScrollRef} data-testid="ai-chat-scroll" className="relative bg-black/30 rounded-xl border border-gray-700 p-4 min-h-[200px] max-h-80 overflow-y-auto">
                     <div className="space-y-4">
                       {aiMessages.map((msg, i) => (
                         <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -34626,7 +34783,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                             {/* Show expected output inline for the last question */}
                             {msg.role === 'assistant' && i === aiMessages.length - 1 && (aiLessonPhase === 'practice' || aiLessonPhase === 'feedback') && !aiLoading && aiExpectedResult.rows.length > 0 && expectedResultMessageId === i && (
                               <div className="mt-3 p-3 bg-blue-500/10 rounded-lg border border-blue-500/30">
-                                <p className="text-xs text-blue-300 font-medium mb-2">📋 Expected Output ({aiExpectedResult.rows.length} rows)</p>
+                                <p className="text-xs text-blue-300 font-medium mb-2">📋 Expected Output ({nRows(aiExpectedResult.rows.length)})</p>
                                 <div className="overflow-auto max-h-32">
                                   <table className="min-w-full text-xs border border-blue-500/30">
                                     <thead className="bg-blue-500/20">
@@ -34729,11 +34886,11 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                             {aiUserResult.error ? (
                               <>❌ Error</>
                             ) : aiExpectedResult.rows.length === 0 ? (
-                              <>📊 Your Output ({aiUserResult.rows.length} rows)</>
+                              <>📊 Your Output ({nRows(aiUserResult.rows.length)})</>
                             ) : JSON.stringify(aiUserResult.rows) === JSON.stringify(aiExpectedResult.rows) ? (
-                              <>✅ Your Output - Correct! ({aiUserResult.rows.length} rows)</>
+                              <>✅ Your Output - Correct! ({nRows(aiUserResult.rows.length)})</>
                             ) : (
-                              <>⚠️ Your Output ({aiUserResult.rows.length} rows) - Check the differences</>
+                              <>⚠️ Your Output ({nRows(aiUserResult.rows.length)}) - Check the differences</>
                             )}
                           </h3>
                           
@@ -34778,7 +34935,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                                 </tbody>
                               </table>
                               {aiUserResult.rows.length > 10 && (
-                                <p className="text-xs text-gray-400 mt-2">Showing 10 of {aiUserResult.rows.length} rows</p>
+                                <p className="text-xs text-gray-400 mt-2">Showing 10 of {nRows(aiUserResult.rows.length)}</p>
                               )}
                             </div>
                           ) : (
@@ -34790,11 +34947,11 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                             <div className="mt-3 pt-3 border-t border-gray-700 text-xs">
                               <div className="flex gap-4">
                                 <span className="text-gray-400">
-                                  Expected: <span className="text-blue-400">{aiExpectedResult.rows.length} rows</span>
+                                  Expected: <span className="text-blue-400">{nRows(aiExpectedResult.rows.length)}</span>
                                 </span>
                                 <span className="text-gray-400">
                                   Got: <span className={aiUserResult.rows.length === aiExpectedResult.rows.length ? 'text-green-400' : 'text-red-400'}>
-                                    {aiUserResult.rows.length} rows
+                                    {nRows(aiUserResult.rows.length)}
                                   </span>
                                 </span>
                                 {JSON.stringify(aiUserResult.rows) === JSON.stringify(aiExpectedResult.rows) && (
@@ -35018,7 +35175,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                       {/* Expected Output */}
                       {studyChallengeContext.expectedResult && studyChallengeContext.expectedResult.rows.length > 0 && (
                         <div>
-                          <p className="text-xs font-bold text-green-400 mb-1">Expected Output ({studyChallengeContext.expectedResult.rows.length} rows)</p>
+                          <p className="text-xs font-bold text-green-400 mb-1">Expected Output ({nRows(studyChallengeContext.expectedResult.rows.length)})</p>
                           <div className="overflow-x-auto">
                             <table className="min-w-full text-xs border border-green-500/30">
                               <thead className="bg-green-500/10">
@@ -35033,7 +35190,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                               </tbody>
                             </table>
                             {studyChallengeContext.expectedResult.rows.length > 10 && (
-                              <p className="text-xs text-gray-500 mt-1">Showing 10 of {studyChallengeContext.expectedResult.rows.length} rows</p>
+                              <p className="text-xs text-gray-500 mt-1">Showing 10 of {nRows(studyChallengeContext.expectedResult.rows.length)}</p>
                             )}
                           </div>
                         </div>
@@ -35047,7 +35204,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                       <h3 className="font-bold text-purple-300 text-sm flex items-center gap-2">
                         <Database size={16} /> {i18n_t('aiTutor', 'sandboxTitle')}
                       </h3>
-                      <span className="text-xs text-gray-500">{i18n_t('aiTutor', 'sandboxSubtitle', { table: studyChallengeContext?.tables?.join(', ') || aiLessons[currentAiLesson]?.practiceTable })}</span>
+                      <span className="text-xs text-gray-500">{i18n_t('aiTutor', 'sandboxSubtitle', { table: (studyMistake?.dataset && publicDatasets[studyMistake.dataset] ? Object.keys(publicDatasets[studyMistake.dataset].tables).join(', ') : null) || studyChallengeContext?.tables?.join(', ') || aiLessons[currentAiLesson]?.practiceTable })}</span>
                     </div>
                     
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -35090,7 +35247,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                           </div>
                         ) : sandboxResult.columns.length > 0 ? (
                           <div>
-                            <p className="text-green-400 text-xs mb-2">✓ {sandboxResult.rows.length} rows</p>
+                            <p className="text-green-400 text-xs mb-2">✓ {nRows(sandboxResult.rows.length)}</p>
                             <table className="min-w-full text-sm border border-gray-700">
                               <thead className="bg-gray-800 sticky top-0">
                                 <tr>
@@ -37652,7 +37809,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                       className="bg-black/30 rounded-xl border border-green-500/30 p-4 animate-runflash"
                     >
                       <div className="flex items-center justify-between mb-3 gap-3">
-                        <h3 className="font-bold text-green-300">📊 Your Output {challengeResult.rows?.length > 0 && `(${challengeResult.rows.length} rows)`}</h3>
+                        <h3 className="font-bold text-green-300">📊 Your Output {challengeResult.rows?.length > 0 && `(${nRows(challengeResult.rows.length)})`}</h3>
                         {challengeRunMs !== null && (
                           <span className="text-xs text-gray-400 whitespace-nowrap">✓ Ran in {challengeRunMs}ms</span>
                         )}
@@ -37682,7 +37839,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                             ))}
                           </tbody>
                         </table>
-                        {challengeExpected.rows.length > 15 && <p className="text-xs text-blue-400 mt-1">Showing 15 of {challengeExpected.rows.length} rows</p>}
+                        {challengeExpected.rows.length > 15 && <p className="text-xs text-blue-400 mt-1">Showing 15 of {nRows(challengeExpected.rows.length)}</p>}
                       </div>
                     </div>
                   )}

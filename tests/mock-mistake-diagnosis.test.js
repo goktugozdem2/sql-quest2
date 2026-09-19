@@ -72,3 +72,19 @@ describe('weakConceptsFromHistory (founder QA item 13)', () => {
     expect(weakConceptsFromHistory(h)).toEqual(['JOIN']);
   });
 });
+
+import { rowDiffSummary } from '../src/utils/diagnose.js';
+describe('mock diagnosis names the rows and the cause (founder QA item 5)', () => {
+  it('Q9-shaped miss: names 2026-04-30 and the text BETWEEN', () => {
+    const cols = ['txn_day', 'txn_count', 'total_amount'];
+    const d = mockMistakeDiagnosis({
+      correct: false,
+      userQuery: "SELECT substr(txn_at,1,10) AS txn_day, COUNT(*) AS txn_count, ROUND(SUM(amount),2) AS total_amount FROM transactions WHERE txn_at BETWEEN '2026-04-01' AND '2026-04-30' GROUP BY txn_day",
+      userOutput: { columns: cols, rows: [['2026-04-29', 40, 3835]] },
+      expectedOutput: { columns: cols, rows: [['2026-04-29', 40, 3835], ['2026-04-30', 35, 3855.31]] },
+      concepts: ['WHERE', 'Date Functions'],
+    }, { diagnose: diagnoseResult, hint: primaryHint, rows: rowDiffSummary });
+    expect(d.sentence).toMatch(/Missing from yours: 2026-04-30 · 35 · 3855\.31/);
+    expect(d.hint).toMatch(/every row on 2026-04-30 is dropped/);
+  });
+});

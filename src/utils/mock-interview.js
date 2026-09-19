@@ -205,7 +205,19 @@ export function mockMistakeDiagnosis(a, engine) {
   if (!d || d.kind === 'identical') return { sentence: 'The query ran, but its result did not match the expected output.', hint: null };
   let hint;
   try { hint = engine.hint ? engine.hint(d, { ...ctx, description: a.questionDescription || '' }) : null; } catch (_) { hint = null; }
-  return { sentence: d.headline, hint: hint && hint !== d.headline ? hint : null };
+  // Name the rows (founder QA 2026-09-19, item 5): "missing rows, WHERE
+  // stricter than the question" said nothing a candidate could act on when
+  // the lost row was 2026-04-30 and the cause a text BETWEEN.
+  let rows;
+  try { rows = engine.rows ? engine.rows(a.userOutput, a.expectedOutput, 3) : null; } catch (_) { rows = null; }
+  const show = (r) => (Array.isArray(r) ? r.map(v => (v === null || v === undefined ? 'NULL' : String(v))).join(' · ') : '');
+  let sentence = d.headline;
+  if (rows && rows.missingTotal > 0 && rows.extraTotal === 0) {
+    sentence += `. Missing from yours: ${rows.missing.map(show).join('; ')}${rows.missingTotal > rows.missing.length ? ` (+${rows.missingTotal - rows.missing.length} more)` : ''}.`;
+  } else if (rows && rows.extraTotal > 0 && rows.missingTotal === 0) {
+    sentence += `. Extra in yours: ${rows.extra.map(show).join('; ')}${rows.extraTotal > rows.extra.length ? ` (+${rows.extraTotal - rows.extra.length} more)` : ''}.`;
+  }
+  return { sentence, hint: hint && hint !== d.headline ? hint : null, rows };
 }
 
 /**

@@ -818,6 +818,16 @@ Rewritten Coach-forward:
   (`weakConceptsFromHistory`). `quarterlyPlan` is off (one price
   architecture). Reference solutions render through `formatSqlForDisplay`.
   MCQ options: all carry a " — reason" or none do (tests/mcq-option-parity).
+- **Tutor pass, 2026-09-19 (second QA round):** every tutor call carries
+  `SQLITE_TUTOR_RULES` (src/utils/tutor-context.js, appended in `callAI`) —
+  ISO-string timestamps are never filtered with a bare-date BETWEEN upper
+  bound. "Study with AI" on a mock mistake opens on that mistake
+  (`studyMistake`: query, reference, diagnosis, rows lost/added, dataset);
+  follow-ups and the example/challenge steps carry it, and the sandbox runs
+  on the mock's dataset. `dateUpperBoundTrap` / `rowDiffSummary` in
+  diagnose.js name the lost day and the rows. Timed mocks confirm Skip.
+  Capital One SQL prompts name no method and announce no trap; that framing
+  lives in `practiceTitle` / `practiceNote`, shown in practice mode only.
 - **The outcome is asked after the date (2026-09-19):** `interview-outcome-note`
   (unscheduled sender, table above) + the app's `?outcome=` door, which
   records `interview_outcome` and clears the past date. The event carries

@@ -627,6 +627,57 @@ function diagnoseWindow(user, expected, ctx = {}) {
   };
 }
 
+
+// ── The ISO-timestamp BETWEEN trap (2026-09-19, founder QA items 2 and 5) ──
+// Timestamps in our datasets are ISO strings ('2026-04-30T11:21:24.844Z').
+// "txn_at BETWEEN '2026-04-01' AND '2026-04-30'" compares TEXT, and the
+// timestamp sorts after the bare upper bound, so the whole last day is lost —
+// no error, a plausible number. Same with "<= '2026-04-30'". Returns one
+// sentence naming the cause and the fix, or null.
+const nextDay = (iso) => {
+  const [y, m, d] = iso.split('-').map(Number);
+  const t = new Date(Date.UTC(y, m - 1, d + 1));
+  return t.toISOString().slice(0, 10);
+};
+export function dateUpperBoundTrap(query) {
+  const q = String(query || '').replace(/--.*$/gm, ' ');
+  // col BETWEEN 'a' AND 'b'  where col is a bare column (not DATE(col) / strftime(...))
+  const between = /([A-Za-z_][\w.]*)\s+between\s+'(\d{4}-\d{2}-\d{2})'\s+and\s+'(\d{4}-\d{2}-\d{2})'/i.exec(q);
+  if (between) {
+    const [, col, lo, hi] = between;
+    const before = q.slice(0, between.index).trimEnd();
+    if (!/(date|strftime|substr)\s*\($/i.test(before) && !/\)\s*$/.test(col)) {
+      return `${col} BETWEEN '${lo}' AND '${hi}' compares text: a timestamp like '${hi}T11:21:24.844Z' sorts after '${hi}', so every row on ${hi} is dropped. Use ${col} >= '${lo}' AND ${col} < '${nextDay(hi)}' (strict <), or compare DATE(${col}).`;
+    }
+  }
+  const le = /([A-Za-z_][\w.]*)\s*<=\s*'(\d{4}-\d{2}-\d{2})'/i.exec(q);
+  if (le) {
+    const [, col, hi] = le;
+    const before = q.slice(0, le.index).trimEnd();
+    if (!/(date|strftime|substr)\s*\($/i.test(before)) {
+      return `${col} <= '${hi}' compares text: '${hi}T…' sorts after '${hi}', so rows later on ${hi} are dropped. Use ${col} < '${nextDay(hi)}'.`;
+    }
+  }
+  return null;
+}
+
+/**
+ * Up to `limit` missing and extra rows by value, for naming them in a
+ * sentence or a small table. Rows are compared as whole tuples (multiset).
+ */
+export function rowDiffSummary(user, expected, limit = 3) {
+  if (!user || !expected) return null;
+  const { extraRows, missingRows } = diffRowsAsMultisets(user.rows || [], expected.rows || []);
+  if (extraRows.length === 0 && missingRows.length === 0) return null;
+  return {
+    columns: expected.columns || user.columns || [],
+    missing: missingRows.slice(0, limit).map(r => r.row),
+    missingTotal: missingRows.length,
+    extra: extraRows.slice(0, limit).map(r => r.row),
+    extraTotal: extraRows.length,
+  };
+}
+
 /**
  * One-line summary of the diagnosis for compact displays (toast, tooltip).
  */
@@ -665,6 +716,7 @@ export function primaryHint(diagnosis, ctx = {}) {
     case 'runtime_error':
       return hints[0] || 'Read the error message: it names the token or table the database could not resolve.';
     case 'empty_result':
+      if (dateUpperBoundTrap(ctx && ctx.query)) return dateUpperBoundTrap(ctx.query);
       if (eqNull) return 'WHERE column = NULL is never true. Use IS NULL / IS NOT NULL.';
       if (hasJoin && !hasLeft) return 'An INNER JOIN with no matches returns nothing — check the join keys, or try LEFT JOIN.';
       if (hasWhere) return 'Your WHERE removed every row. Run the query without it and add the conditions back one at a time.';
@@ -681,12 +733,13 @@ export function primaryHint(diagnosis, ctx = {}) {
         if (asksPer && !hasGroupBy) return 'The question asks for one row per group — add GROUP BY that column.';
         return 'You returned too many rows: add the condition the question states, or DISTINCT if duplicates are the extra ones.';
       }
+      if (dateUpperBoundTrap(ctx && ctx.query)) return dateUpperBoundTrap(ctx.query);
       if (eqNull) return 'WHERE column = NULL drops every row with a NULL. Use IS NULL.';
       if (hasJoin && !hasLeft) return 'Rows without a match vanish in an INNER JOIN — use LEFT JOIN to keep them.';
       return 'You are missing rows: one of your WHERE / HAVING conditions is stricter than the question.';
     }
     case 'row_set':
-      return hints[0];
+      return dateUpperBoundTrap(ctx && ctx.query) || hints[0];
     case 'window_rank':
       return hints[0];
     case 'sort_order':

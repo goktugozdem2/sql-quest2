@@ -1318,11 +1318,16 @@ window.mockInterviewsData = [
           { id: 'm6a', text: 'RideHail Inc — 13,369.64', text_tr: 'RideHail Inc — 13.369,64', value: 'RideHail Inc|13369.64' },
           { id: 'm6b', text: 'Petra Gas — 37,510.23', text_tr: 'Petra Gas — 37.510,23', value: 'Petra Gas|37510.23' },
           { id: 'm6c', text: 'Quick Stop — 33,517.90', text_tr: 'Quick Stop — 33.517,90', value: 'Quick Stop|33517.9' },
-          { id: 'm6d', text: 'BigBox Mart — 28,241.27', text_tr: 'BigBox Mart — 28.241,27', value: 'BigBox Mart|28241.27' }
+          // 2026-09-19 (founder QA item 7): the correct total was the largest
+          // number on the list, so the question solved itself without a
+          // query. This distractor is Petra Gas summed through a join to
+          // chargebacks on account_id — the fan-out reading of Q2, computed
+          // from the data (70,091.38 over 36 joined rows).
+          { id: 'm6d', text: 'Petra Gas — 70,091.38', text_tr: 'Petra Gas — 70.091,38', value: 'Petra Gas|70091.38' }
         ],
         correctOptionId: 'm6b',
-        explanation: 'Petra Gas, 37,510.23. Every distractor is rank 1 under a *different* ordering, which is exactly how ranking questions are lost: RideHail Inc has the most transactions (101) but small ones; Quick Stop is rank 2 by total; BigBox Mart is rank 3. Change the ORDER BY inside the window and the answer changes with it — read which measure the ranking is over before you read the name.',
-        explanation_tr: 'Petra Gas, 37.510,23. Her çeldirici *farklı* bir sıralamada 1. sıradır ve sıralama soruları tam olarak böyle kaybedilir: RideHail Inc en çok işleme sahip (101) ama tutarlar küçük; Quick Stop toplamda 2. sıra; BigBox Mart 3. sıra. Window içindeki ORDER BY değişince cevap da değişir — ismi okumadan önce sıralamanın hangi ölçüt üzerinden olduğunu oku.',
+        explanation: 'Petra Gas, 37,510.23. RideHail Inc has the most transactions (101) but small ones, so it is rank 1 by count, not by total. Quick Stop is rank 2 by total. 70,091.38 is Petra Gas again, summed after a join to chargebacks on account_id: every transaction repeats once per chargeback on its account, which is the fan-out from Q2. Read which measure the ranking is over, and check the join did not multiply the rows it sums.',
+        explanation_tr: 'Petra Gas, 37.510,23. RideHail Inc en çok işleme sahip (101) ama tutarlar küçük; sayıda 1. sıra, toplamda değil. Quick Stop toplamda 2. sıra. 70.091,38 yine Petra Gas, ama chargebacks tablosuna account_id üzerinden join edildikten sonra toplanmış: her işlem hesabındaki her chargeback için bir kez tekrarlanır — Q2\'deki fan-out. Sıralamanın hangi ölçüt üzerinden olduğunu oku ve join\'in topladığı satırları katlamadığını kontrol et.',
         hints: [
           'Total amount and transaction count rank merchants in different orders — the busiest merchant is not the biggest',
           'ROW_NUMBER() OVER (ORDER BY SUM(t.amount) DESC) over a per-merchant aggregate gives you the ranking'
@@ -1429,8 +1434,8 @@ window.mockInterviewsData = [
         order: 9,
         title: 'Daily card volume for April 2026',
         title_tr: 'Nisan 2026 günlük kart hacmi',
-        description: 'Operations wants a daily volume report for **April 2026** only. From **transactions**, show **txn_day** (the calendar day of **txn_at** as `YYYY-MM-DD`), **txn_count** (number of transactions that day), and **total_amount** (sum of **amount**, rounded to 2 decimal places). Use `strftime` on **txn_at** for both the filter and the day column — the timestamps are ISO strings. Sort by **txn_day** ascending.',
-        description_tr: 'Operasyon ekibi yalnızca **Nisan 2026** için günlük hacim raporu istiyor. **transactions** tablosundan **txn_day** (**txn_at** alanının `YYYY-MM-DD` biçiminde takvim günü), **txn_count** (o günkü işlem sayısı) ve **total_amount** (**amount** toplamı, 2 ondalık basamağa yuvarlı) kolonlarını göster. Hem filtre hem de gün kolonu için **txn_at** üzerinde `strftime` kullan — zaman damgaları ISO string biçimindedir. **txn_day** artan sırada sırala.',
+        description: 'Operations wants a daily volume report for **April 2026** only. From **transactions**, show **txn_day** (the calendar day of **txn_at** as `YYYY-MM-DD`), **txn_count** (number of transactions that day), and **total_amount** (sum of **amount**, rounded to 2 decimal places). **txn_at** is stored as an ISO timestamp string, e.g. `2026-04-30T11:21:24.844Z`. Sort by **txn_day** ascending.',
+        description_tr: 'Operasyon ekibi yalnızca **Nisan 2026** için günlük hacim raporu istiyor. **transactions** tablosundan **txn_day** (**txn_at** alanının `YYYY-MM-DD` biçiminde takvim günü), **txn_count** (o günkü işlem sayısı) ve **total_amount** (**amount** toplamı, 2 ondalık basamağa yuvarlı) kolonlarını göster. **txn_at** ISO zaman damgası string\'i olarak saklanır, örn. `2026-04-30T11:21:24.844Z`. **txn_day** artan sırada sırala.',
         timeLimit: 5 * 60,
         difficulty: 'Easy',
         points: 10,
@@ -1471,10 +1476,16 @@ window.mockInterviewsData = [
       {
         id: 'c1-q3',
         order: 11,
-        title: 'Flagged accounts: spend and chargebacks (fan-out trap)',
-        title_tr: 'Flagged hesaplar: harcama ve chargeback (fan-out tuzağı)',
-        description: 'Risk wants one row per **flagged** account (**accounts.status = \'flagged\'**). Show **account_id**, **country**, **txn_count** (number of transactions), **total_spend** (sum of transaction **amount**, rounded to 2 decimal places, **0** if the account has no transactions), and **chargeback_count** (number of chargebacks on that account\'s transactions, **0** if none). Accounts with no transactions must still appear. Careful: **chargebacks** carries both **account_id** and **txn_id** — joining it on the wrong key multiplies your spend. Sort by **chargeback_count** descending, then **total_spend** descending, then **account_id** ascending.',
-        description_tr: 'Risk ekibi her **flagged** hesap (**accounts.status = \'flagged\'**) için tek satır istiyor. **account_id**, **country**, **txn_count** (işlem sayısı), **total_spend** (işlem **amount** toplamı, 2 ondalık basamağa yuvarlı, hesabın işlemi yoksa **0**) ve **chargeback_count** (o hesabın işlemlerine ait chargeback sayısı, yoksa **0**) kolonlarını göster. İşlemi olmayan hesaplar da görünmeli. Dikkat: **chargebacks** tablosunda hem **account_id** hem **txn_id** var — yanlış anahtar üzerinden join yaparsan harcama katlanır. **chargeback_count** azalan, sonra **total_spend** azalan, sonra **account_id** artan sırada sırala.',
+        title: 'Flagged accounts: spend and chargebacks',
+        title_tr: 'Flagged hesaplar: harcama ve chargeback',
+        // Founder QA 2026-09-19, item 8: a real screen does not warn you.
+        // The warning shows in practice mode only (practiceTitle / practiceNote).
+        practiceTitle: 'Flagged accounts: spend and chargebacks (fan-out trap)',
+        practiceTitle_tr: 'Flagged hesaplar: harcama ve chargeback (fan-out tuzağı)',
+        practiceNote: 'Careful: **chargebacks** carries both **account_id** and **txn_id** — joining it on the wrong key multiplies your spend.',
+        practiceNote_tr: 'Dikkat: **chargebacks** tablosunda hem **account_id** hem **txn_id** var — yanlış anahtar üzerinden join yaparsan harcama katlanır.',
+        description: 'Risk wants one row per **flagged** account (**accounts.status = \'flagged\'**). Show **account_id**, **country**, **txn_count** (number of transactions), **total_spend** (sum of transaction **amount**, rounded to 2 decimal places, **0** if the account has no transactions), and **chargeback_count** (number of chargebacks on that account\'s transactions, **0** if none). Accounts with no transactions must still appear. Sort by **chargeback_count** descending, then **total_spend** descending, then **account_id** ascending.',
+        description_tr: 'Risk ekibi her **flagged** hesap (**accounts.status = \'flagged\'**) için tek satır istiyor. **account_id**, **country**, **txn_count** (işlem sayısı), **total_spend** (işlem **amount** toplamı, 2 ondalık basamağa yuvarlı, hesabın işlemi yoksa **0**) ve **chargeback_count** (o hesabın işlemlerine ait chargeback sayısı, yoksa **0**) kolonlarını göster. İşlemi olmayan hesaplar da görünmeli. **chargeback_count** azalan, sonra **total_spend** azalan, sonra **account_id** artan sırada sırala.',
         timeLimit: 9 * 60,
         difficulty: 'Medium',
         points: 20,
@@ -1495,8 +1506,10 @@ window.mockInterviewsData = [
         order: 12,
         title: 'Amount bands by merchant risk tier',
         title_tr: 'Merchant risk tier bazında tutar bantları',
-        description: 'Bucket every transaction by size and pivot the counts per **merchant risk tier**. Join **transactions** to **merchants** and show **risk_tier**, **under_50** (transactions with **amount < 50**), **from_50_to_200** (**amount** from **50** to **200** inclusive), **over_200** (**amount > 200**), and **pct_over_200** (share of that tier\'s transactions over 200, as a percentage rounded to 1 decimal place). Use conditional aggregation — one query, no UNION. Sort by **pct_over_200** descending, then **risk_tier** ascending.',
-        description_tr: 'Her işlemi büyüklüğüne göre banda ayır ve sayıları **merchant risk tier** bazında pivotla. **transactions** tablosunu **merchants** ile join et; **risk_tier**, **under_50** (**amount < 50** olan işlemler), **from_50_to_200** (**amount** **50** ile **200** arasında, sınırlar dahil), **over_200** (**amount > 200**) ve **pct_over_200** (o tier\'ın işlemleri içinde 200 üzerindekilerin payı, yüzde olarak 1 ondalık basamağa yuvarlı) kolonlarını göster. Koşullu aggregation kullan — tek sorgu, UNION yok. **pct_over_200** azalan, sonra **risk_tier** artan sırada sırala.',
+        practiceNote: 'One way: conditional aggregation — one query, no UNION.',
+        practiceNote_tr: 'Bir yol: koşullu aggregation — tek sorgu, UNION yok.',
+        description: 'Bucket every transaction by size and pivot the counts per **merchant risk tier**. Join **transactions** to **merchants** and show **risk_tier**, **under_50** (transactions with **amount < 50**), **from_50_to_200** (**amount** from **50** to **200** inclusive), **over_200** (**amount > 200**), and **pct_over_200** (share of that tier\'s transactions over 200, as a percentage rounded to 1 decimal place). Sort by **pct_over_200** descending, then **risk_tier** ascending.',
+        description_tr: 'Her işlemi büyüklüğüne göre banda ayır ve sayıları **merchant risk tier** bazında pivotla. **transactions** tablosunu **merchants** ile join et; **risk_tier**, **under_50** (**amount < 50** olan işlemler), **from_50_to_200** (**amount** **50** ile **200** arasında, sınırlar dahil), **over_200** (**amount > 200**) ve **pct_over_200** (o tier\'ın işlemleri içinde 200 üzerindekilerin payı, yüzde olarak 1 ondalık basamağa yuvarlı) kolonlarını göster. **pct_over_200** azalan, sonra **risk_tier** artan sırada sırala.',
         timeLimit: 7 * 60,
         difficulty: 'Medium',
         points: 15,
@@ -1515,10 +1528,14 @@ window.mockInterviewsData = [
       {
         id: 'c1-q5',
         order: 13,
-        title: 'Accounts spending above the average account (CTE)',
-        title_tr: 'Ortalama hesabın üzerinde harcayan hesaplar (CTE)',
-        description: 'Find the accounts whose total spend is above the **average total spend per account**. First compute each account\'s total from **transactions**, then compare it to the average of those totals — the average of an aggregate, so a CTE is the natural tool. Show **account_id**, **total_spend** (rounded to 2 decimal places), and **above_avg_by** (total minus the average account total, rounded to 2 decimal places). Only accounts strictly above the average. Sort by **total_spend** descending, then **account_id** ascending, and return the top **10**.',
-        description_tr: 'Toplam harcaması **hesap başına ortalama toplam harcamanın** üzerinde olan hesapları bul. Önce **transactions** tablosundan her hesabın toplamını hesapla, sonra bunu o toplamların ortalamasıyla karşılaştır — bir aggregate\'in ortalaması, yani CTE doğal araç. **account_id**, **total_spend** (2 ondalık basamağa yuvarlı) ve **above_avg_by** (toplam eksi ortalama hesap toplamı, 2 ondalık basamağa yuvarlı) kolonlarını göster. Sadece ortalamanın kesin üzerindeki hesaplar. **total_spend** azalan, sonra **account_id** artan sırada sırala ve ilk **10** satırı döndür.',
+        title: 'Accounts spending above the average account',
+        title_tr: 'Ortalama hesabın üzerinde harcayan hesaplar',
+        practiceTitle: 'Accounts spending above the average account (CTE)',
+        practiceTitle_tr: 'Ortalama hesabın üzerinde harcayan hesaplar (CTE)',
+        practiceNote: 'The average of an aggregate: a CTE (or a subquery) is the natural tool.',
+        practiceNote_tr: 'Bir aggregate\'in ortalaması: CTE (ya da subquery) doğal araç.',
+        description: 'Find the accounts whose total spend is above the **average total spend per account**. Each account\'s total comes from **transactions**; compare it to the average of those per-account totals. Show **account_id**, **total_spend** (rounded to 2 decimal places), and **above_avg_by** (total minus the average account total, rounded to 2 decimal places). Only accounts strictly above the average. Sort by **total_spend** descending, then **account_id** ascending, and return the top **10**.',
+        description_tr: 'Toplam harcaması **hesap başına ortalama toplam harcamanın** üzerinde olan hesapları bul. Her hesabın toplamı **transactions** tablosundan gelir; bunu hesap başına toplamların ortalamasıyla karşılaştır. **account_id**, **total_spend** (2 ondalık basamağa yuvarlı) ve **above_avg_by** (toplam eksi ortalama hesap toplamı, 2 ondalık basamağa yuvarlı) kolonlarını göster. Sadece ortalamanın kesin üzerindeki hesaplar. **total_spend** azalan, sonra **account_id** artan sırada sırala ve ilk **10** satırı döndür.',
         timeLimit: 8 * 60,
         difficulty: 'Medium',
         points: 20,
@@ -1537,10 +1554,14 @@ window.mockInterviewsData = [
       {
         id: 'c1-q6',
         order: 14,
-        title: 'Largest transaction per merchant category (ROW_NUMBER)',
-        title_tr: 'Merchant kategorisi başına en büyük işlem (ROW_NUMBER)',
-        description: 'For each **merchant category**, return the single largest transaction. Join **transactions** to **merchants** and show **category**, **txn_id**, **account_id**, and **amount**. Use **ROW_NUMBER()** partitioned by category and ordered by **amount** descending — break ties by the lower **txn_id** — and keep only rank 1. Exactly one row per category. Sort by **category** ascending.',
-        description_tr: 'Her **merchant category** için en büyük tek işlemi döndür. **transactions** tablosunu **merchants** ile join et; **category**, **txn_id**, **account_id** ve **amount** kolonlarını göster. Kategoriye göre partition\'lanmış, **amount** azalan sıralı **ROW_NUMBER()** kullan — eşitlikte küçük **txn_id** kazanır — ve sadece 1. sırayı tut. Her kategori için tam olarak bir satır. **category** artan sırada sırala.',
+        title: 'Largest transaction per merchant category',
+        title_tr: 'Merchant kategorisi başına en büyük işlem',
+        practiceTitle: 'Largest transaction per merchant category (ROW_NUMBER)',
+        practiceTitle_tr: 'Merchant kategorisi başına en büyük işlem (ROW_NUMBER)',
+        practiceNote: 'One way: ROW_NUMBER() partitioned by category, ordered by amount descending then txn_id, keeping row 1.',
+        practiceNote_tr: 'Bir yol: kategoriye göre partition\'lanmış, amount azalan sonra txn_id sıralı ROW_NUMBER() ve 1. satırı tutmak.',
+        description: 'For each **merchant category**, return the single largest transaction. Join **transactions** to **merchants** and show **category**, **txn_id**, **account_id**, and **amount**. If two transactions tie for the largest amount in a category, keep the one with the lower **txn_id**. Exactly one row per category. Sort by **category** ascending.',
+        description_tr: 'Her **merchant category** için en büyük tek işlemi döndür. **transactions** tablosunu **merchants** ile join et; **category**, **txn_id**, **account_id** ve **amount** kolonlarını göster. Bir kategoride en büyük tutarda eşitlik varsa küçük **txn_id**\'li işlemi tut. Her kategori için tam olarak bir satır. **category** artan sırada sırala.',
         timeLimit: 9 * 60,
         difficulty: 'Hard',
         points: 20,

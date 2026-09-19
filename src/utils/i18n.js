@@ -163,6 +163,7 @@ const TRANSLATIONS = {
       hideAlt: 'Hide',
       editorPlaceholder: 'Write your SQL solution here...',
       expectedOutput: 'Expected Output ({n} rows)',
+      expectedOutputOne: 'Expected Output (1 row)',
       // Header / guest banner
       logIn: 'Log in',
       logInTooltip: 'Already have an account? Log in and the progress here comes with you.',
@@ -272,6 +273,7 @@ const TRANSLATIONS = {
       hintCounter: 'Hint ({used}/{total})',
       hintPenalty: '(-15% pts)',
       hintConfirmQ: 'Use a hint? It costs {n} points on this question.',
+      hintConfirmQOne: 'Use a hint? It costs 1 point on this question.',
       hintConfirmYes: 'Use hint',
       hintConfirmNo: 'Not now',
       // Analytics modal
@@ -840,12 +842,14 @@ const TRANSLATIONS = {
       tablesToJoin: '🔗 Tables to JOIN:',
       joinKey: '💡 Join key: {key}',
       expectedOutput: '📋 Expected Output ({n} rows)',
+      expectedOutputOne: '📋 Expected Output (1 row)',
       queryPlaceholder: 'Write your SQL query here...',
       btnTest: 'Test',
       btnSubmit: 'Submit Answer',
       correctXP: '✅ Correct! +{n} XP',
       notQuiteRight: '⚠️ Not quite right. Check your query.',
       yourOutput: 'Your Output ({n} rows):',
+      yourOutputOne: 'Your Output (1 row):',
       errorPrefix: '❌ Error: {msg}',
       errorChecking: 'Error checking result.',
       availableTables: '📋 Available Tables & Columns',
@@ -1084,12 +1088,16 @@ const TRANSLATIONS = {
       correct: 'Correct!',
       wrong: 'Not quite',
       pointsEarned: '+{n} points',
+      pointsEarnedOne: '+1 point',
       maxPoints: '(max {n})',
       solutionOnResults: 'The correct solution is on the results screen.',
       skippedNote: 'No points for this one. The solution is on the results screen.',
       seeResults: 'See results →',
       nextQuestion: 'Next question →',
       continueHint: 'Click the button or anywhere outside to continue',
+      skipConfirmQ: 'Skip this question? It scores 0.',
+      skipConfirmYes: 'Skip',
+      skipConfirmNo: 'Keep working',
     },
     authErrors: {
       resetSessionFailed: 'We could not start the password reset. Open the link from the email again; if it keeps failing, request a new one with "Forgot password".',
@@ -2017,6 +2025,9 @@ const TRANSLATIONS = {
       seeResults: 'Sonuçları Gör →',
       nextQuestion: 'Sonraki Soru →',
       continueHint: 'Devam etmek için butona ya da boşluğa tıkla',
+      skipConfirmQ: 'Bu soru atlansın mı? 0 puan alır.',
+      skipConfirmYes: 'Atla',
+      skipConfirmNo: 'Devam et',
     },
     authErrors: {
       resetSessionFailed: 'Şifre sıfırlama oturumu kurulamadı. Linki email\'den tekrar tıkla; eğer aynı hata sürerse "Şifremi unuttum" ile yeni bir link iste.',
@@ -2106,7 +2117,12 @@ export function t(namespace, key, vars = null) {
   const lang = getCurrentLang();
   const dict = TRANSLATIONS[lang] || TRANSLATIONS[FALLBACK_LANG];
   const fallback = TRANSLATIONS[FALLBACK_LANG];
+  // Singular: a key with a `One` twin is used when vars.n === 1
+  // ("+1 point", "1 row") — founder QA 2026-09-19, item 10.
+  const oneKey = vars && Number(vars.n) === 1 ? `${key}One` : null;
   let str =
+    (oneKey && dict[namespace] && dict[namespace][oneKey]) ||
+    (oneKey && fallback[namespace] && fallback[namespace][oneKey]) ||
     (dict[namespace] && dict[namespace][key]) ||
     (fallback[namespace] && fallback[namespace][key]) ||
     key;
@@ -2201,7 +2217,7 @@ export function localizeQuestion(q, lang = getCurrentLang()) {
   // is never translated, only its label.
   const hasOptionTr = Array.isArray(q.options) && q.options.some(o => o && o[`text_${lang}`]);
   const hasSnippetTr = Array.isArray(q.codeSnippets) && q.codeSnippets.some(c => c && c[`label_${lang}`]);
-  if (!q[titleK] && !q[descK] && !q[hintsK] && !q[explK] && !hasOptionTr && !hasSnippetTr) return q;
+  if (!q[titleK] && !q[descK] && !q[hintsK] && !q[explK] && !hasOptionTr && !hasSnippetTr && !q[`practiceTitle_${lang}`] && !q[`practiceNote_${lang}`]) return q;
   const out = {
     ...q,
     title: q[titleK] || q.title,
@@ -2209,6 +2225,10 @@ export function localizeQuestion(q, lang = getCurrentLang()) {
     hints: q[hintsK] || q.hints,
   };
   if (q[explK] || q.explanation !== undefined) out.explanation = q[explK] || q.explanation;
+  // Practice-mode-only framing (2026-09-19): the trap warning and the
+  // method named in the title, which a timed screen does not give.
+  if (q[`practiceTitle_${lang}`]) out.practiceTitle = q[`practiceTitle_${lang}`];
+  if (q[`practiceNote_${lang}`]) out.practiceNote = q[`practiceNote_${lang}`];
   if (Array.isArray(q.options)) {
     out.options = q.options.map(o => (o ? { ...o, text: o[`text_${lang}`] || o.text } : o));
   }
