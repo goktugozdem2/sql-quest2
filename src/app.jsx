@@ -6166,6 +6166,9 @@ function SQLQuest() {
   // Skip asks once in a timed mock (founder QA 2026-09-19, item 6): a stray
   // click used to throw away the answer and open the solution.
   const [interviewSkipConfirm, setInterviewSkipConfirm] = useState(false);
+  // Live-round mocks (`explainApproach`): the person's own explanation of
+  // the current question and the tutor's short read of it.
+  const [interviewApproach, setInterviewApproach] = useState({ text: '', feedback: null, loading: false });
   // After Run, the result block is brought into the mock pane's view when it
   // landed below the fold — at 1470×660 the scratchpad's result sat just
   // under the fold (founder QA 2026-09-19, item 12). Instant scroll: smooth
@@ -6186,7 +6189,7 @@ function SQLQuest() {
     return () => clearTimeout(id);
   }, [interviewRunAt]);
   const [interviewLiveHint, setInterviewLiveHint] = useState(null);
-  useEffect(() => { setInterviewHintConfirm(false); setInterviewSkipConfirm(false); setInterviewLiveHint(null); }, [interviewQuestion, activeInterview?.id]);
+  useEffect(() => { setInterviewHintConfirm(false); setInterviewSkipConfirm(false); setInterviewLiveHint(null); setInterviewApproach({ text: '', feedback: null, loading: false }); }, [interviewQuestion, activeInterview?.id]);
   useEffect(() => {
     // Only while a mock is open: closing one must not yank the page that
     // the close navigated to (Study with AI scrolls to the tutor).
@@ -10586,6 +10589,8 @@ function SQLQuest() {
       timedOut,
       skipped,
       userError,
+      approachNote: activeInterview.explainApproach ? (interviewApproach.text.trim() || null) : undefined,
+      approachFeedback: activeInterview.explainApproach ? (interviewApproach.feedback || null) : undefined,
       hintsUsed: interviewHintsUsed.filter(h => h === interviewQuestion).length
     };
     
@@ -10882,6 +10887,25 @@ function SQLQuest() {
       const h = primaryHint(d, { ...ctx, description: q.description || '' });
       setInterviewLiveHint({ sentence: d.headline, hint: h && h !== d.headline ? h : null });
     } catch (_) { /* the authored hint still shows */ }
+  };
+
+  // The tutor's read of a spoken-style explanation (live round). 2–3
+  // sentences: is the approach sound, did they name the risk the question
+  // hides (fan-out, grain, ties, NULLs), what is missing. Never the solution.
+  const getApproachFeedback = async () => {
+    const q = activeInterview?.questions?.[interviewQuestion];
+    const text = interviewApproach.text.trim();
+    if (!q || !text || interviewApproach.loading) return;
+    setInterviewApproach(prev => ({ ...prev, loading: true }));
+    const systemPrompt = `You are the interviewer in a live SQL round, reading a candidate's explanation of their approach.
+QUESTION: ${q.title} — ${String(q.description || '').replace(/\*\*(.*?)\*\*/g, '$1')}
+THEIR QUERY SO FAR:
+${interviewQuery || '(none yet)'}
+REFERENCE APPROACH (never reveal it or write it out): ${q.solution}
+Reply in 2–3 sentences, plain text, no headings: first whether the approach would produce the right answer, then the one risk they named or missed (fan-out, grain, ties, NULLs, date bounds — whichever this question hides), then one thing to say or check next. Do not write SQL.`;
+    const reply = await callAI([{ role: 'user', content: `My approach: ${text}` }], systemPrompt, 'feedback');
+    setInterviewApproach(prev => ({ ...prev, loading: false, feedback: reply || 'Could not reach the tutor. Your explanation is saved with your answer.' }));
+    try { trackActivationEvent('interview_approach_feedback', { interviewId: activeInterview.id, questionId: q.id, chars: text.length, ok: !!reply }); } catch (_) {}
   };
 
   const canAccessInterview = (interview) => {
@@ -29560,6 +29584,34 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                           </button>
                           )}
                         </div>
+                        {activeInterview.explainApproach && (
+                          <div className="mt-4" data-testid="interview-approach">
+                            <label className="text-sm text-gray-400 mb-1 block">{i18n_t('mockFeedback', 'approachLabel')}</label>
+                            <textarea
+                              value={interviewApproach.text}
+                              onChange={(e) => setInterviewApproach(prev => ({ ...prev, text: e.target.value }))}
+                              placeholder={i18n_t('mockFeedback', 'approachPlaceholder')}
+                              rows={3}
+                              className="w-full rounded-lg bg-gray-800/60 border border-gray-700 p-3 text-sm text-[#F2F0EA] focus:border-purple-500 focus:outline-none"
+                            />
+                            <div className="flex items-center gap-3 mt-2">
+                              <button
+                                onClick={getApproachFeedback}
+                                disabled={!interviewApproach.text.trim() || interviewApproach.loading}
+                                data-testid="interview-approach-feedback"
+                                className="px-3 py-1.5 bg-purple-600/80 hover:bg-purple-500 disabled:opacity-50 rounded-lg text-sm font-medium"
+                              >
+                                {interviewApproach.loading ? i18n_t('mockFeedback', 'approachLoading') : i18n_t('mockFeedback', 'approachButton')}
+                              </button>
+                              <span className="text-xs text-gray-500">{i18n_t('mockFeedback', 'approachNote')}</span>
+                            </div>
+                            {interviewApproach.feedback && (
+                              <div className="mt-2 rounded-lg border border-purple-500/30 bg-purple-500/10 p-3" data-testid="interview-approach-reply">
+                                <TutorText content={interviewApproach.feedback} />
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                       )}
                       <div ref={interviewResultAnchorRef} data-testid="interview-result-anchor" />
@@ -29881,6 +29933,23 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
               </div>
             </div>
             
+            {/* Live round: what the person said about each question, and the
+                tutor's read of it (founder QA 2026-09-19, round 4, item 5). */}
+            {interviewResults.questionResults.some(qr => qr.approachNote) && (
+              <div className="bg-gray-800/30 rounded-xl p-4 mb-6" data-testid="interview-approach-review">
+                <h3 className="font-bold mb-3">{i18n_t('mockFeedback', 'approachReview')}</h3>
+                <div className="space-y-3">
+                  {interviewResults.questionResults.filter(qr => qr.approachNote).map((qr, i) => (
+                    <div key={i} className="bg-gray-800/50 rounded-lg p-3 text-sm">
+                      <p className="font-medium text-gray-200 mb-1">{qr.questionTitle}</p>
+                      <p className="text-gray-300 whitespace-pre-wrap">“{qr.approachNote}”</p>
+                      {qr.approachFeedback && <div className="mt-2 text-gray-400"><TutorText content={qr.approachFeedback} /></div>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Actions */}
             <div className="flex gap-4 flex-wrap">
               {/* Share & Certificate buttons - only for passed interviews */}

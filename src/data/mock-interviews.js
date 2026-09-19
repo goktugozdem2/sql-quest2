@@ -1639,6 +1639,10 @@ window.mockInterviewsData = [
   {
     id: 'capital-one-live-sql',
     title: 'Capital One Data Analyst — Live SQL Round (practice)',
+    // A live round is judged on how you explain as much as on the query
+    // (founder QA 2026-09-19, round 4, item 5): every question gets an
+    // "Explain your approach" box and a 2–3 sentence tutor read of it.
+    explainApproach: true,
     company: 'Capital One',
     role: 'Data Analyst',
     difficulty: 'Hard',

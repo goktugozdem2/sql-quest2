@@ -72,6 +72,31 @@ const preamble = `(() => {
 const click = (re) => `(() => { const b = [...document.querySelectorAll('button')].find(b => ${re}.test(b.textContent.trim())); if (b) b.click(); return !!b; })()`;
 
 const SCENARIOS = {
+  // Live round: the explanation box, its button, and the saved note on the results screen.
+  async approach() {
+    await cdp('Page.navigate', { url: `${URL}/app/?interview=capital-one-live-sql` });
+    await wait(6000);
+    return ev(`(async () => {
+      const w = ms => new Promise(r => setTimeout(r, ms));
+      const box = document.querySelector('[data-testid="interview-approach"] textarea');
+      if (!box) return { error: 'no box' };
+      const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set;
+      setter.call(box, 'Aggregate transactions and chargebacks per account first, then LEFT JOIN both to flagged accounts so nothing fans out.');
+      box.dispatchEvent(new Event('input', { bubbles: true })); await w(100);
+      document.querySelector('[data-testid="interview-approach-feedback"]').click(); await w(1500);
+      const reply = document.querySelector('[data-testid="interview-approach-reply"]')?.innerText || null;
+      const cm = document.querySelector('.sql-cm-editor .CodeMirror').CodeMirror; cm.setValue('SELECT 1'); await w(100);
+      document.querySelector('[data-testid="interview-submit-answer"]').click(); await w(500);
+      for (let i = 0; i < 3; i++) {
+        [...document.querySelectorAll('button')].find(b => /^Next question/.test(b.textContent.trim()))?.click(); await w(400);
+        document.querySelector('[data-testid="interview-skip"]')?.click(); await w(200);
+        document.querySelector('[data-testid="interview-skip-yes"]')?.click(); await w(400);
+      }
+      [...document.querySelectorAll('button')].find(b => /^See results/.test(b.textContent.trim()))?.click(); await w(800);
+      const review = document.querySelector('[data-testid="interview-approach-review"]')?.innerText || null;
+      return { reply, review: review && review.slice(0, 300) };
+    })()`);
+  },
   // The Interview tab's target pin for a Capital One learner.
   async pin() {
     await cdp('Page.navigate', { url: `${URL}/app/?interview=sql-fundamentals-free` });
