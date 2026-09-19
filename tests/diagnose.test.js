@@ -338,3 +338,30 @@ describe('window functions are read before the generic value branch', () => {
     expect(isWindowContext({ topics: ['GROUP BY'], query: 'select 1' })).toBe(false);
   });
 });
+
+// Founder QA 2026-09-19, round 4, item 2: every fix in the headline.
+import { windowQueryFixes, fixesHeadline } from '../src/utils/diagnose.js';
+describe('multiple window fixes are all named', () => {
+  const solution = 'SELECT name, department, salary, RANK() OVER (PARTITION BY department ORDER BY salary DESC) AS r FROM employees';
+  it('DENSE_RANK and a missing PARTITION BY → two fixes', () => {
+    const f = windowQueryFixes('SELECT name, department, salary, DENSE_RANK() OVER (ORDER BY salary DESC) AS r FROM employees', solution);
+    expect(f.map(x => x.kind)).toEqual(['function', 'partition']);
+    expect(fixesHeadline(f)).toBe('Two fixes: use RANK instead of DENSE_RANK, and add PARTITION BY department');
+  });
+  it('direction alone is one fix, no multi headline', () => {
+    const f = windowQueryFixes('SELECT RANK() OVER (PARTITION BY department ORDER BY salary ASC) r FROM employees', solution);
+    expect(f.map(x => x.kind)).toEqual(['direction']);
+    expect(fixesHeadline(f)).toBe(null);
+  });
+  it('three fixes read as a list', () => {
+    const f = windowQueryFixes('SELECT ROW_NUMBER() OVER (ORDER BY salary ASC) r FROM employees', solution);
+    expect(fixesHeadline(f)).toBe('Three fixes: use RANK instead of ROW_NUMBER, add PARTITION BY department, and sort inside OVER() DESC, not ASC');
+  });
+  it('the diagnosis headline carries both', () => {
+    const cols = ['name', 'department', 'salary', 'r'];
+    const exp = { columns: cols, rows: [['A', 'x', 9, 1], ['B', 'x', 9, 1], ['C', 'x', 5, 3], ['D', 'y', 8, 1]] };
+    const user = { columns: cols, rows: [['A', 'x', 9, 1], ['B', 'x', 9, 1], ['C', 'x', 5, 3], ['D', 'y', 8, 2]] };
+    const d = dx(user, exp, null, { topics: ['Window Functions'], query: 'SELECT name, department, salary, DENSE_RANK() OVER (ORDER BY salary DESC) AS r FROM employees', solution });
+    expect(d.headline).toMatch(/^Two fixes: use RANK instead of DENSE_RANK, and add PARTITION BY department/);
+  });
+});

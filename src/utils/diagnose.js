@@ -507,6 +507,67 @@ function sqlErrorHints(error) {
   return hints.slice(0, 3);
 }
 
+
+// ── Every window fix, not just the first (2026-09-19, founder QA round 4,
+// item 2) ── A query can use DENSE_RANK where RANK is wanted AND leave out
+// PARTITION BY department; the data shows one symptom, the second fix got
+// lost in a generic bullet. Comparing the query's window with the reference
+// solution's names each difference: the function, the PARTITION BY, the
+// ORDER BY inside OVER() and its direction.
+const WIN_FN = /\b(rank|dense_rank|row_number|ntile|lag|lead|sum|avg|count|min|max|first_value|last_value)\s*\(([^()]*)\)\s*over\s*\(([^()]*)\)/gi;
+function parseWindows(sql) {
+  const out = [];
+  const q = String(sql || '').replace(/--.*$/gm, ' ').replace(/\s+/g, ' ');
+  let m;
+  WIN_FN.lastIndex = 0;
+  while ((m = WIN_FN.exec(q)) !== null) {
+    const spec = m[3].trim();
+    const part = /partition\s+by\s+(.+?)(?=\s+order\s+by\b|\s+rows\b|\s+range\b|$)/i.exec(spec);
+    const ord = /order\s+by\s+(.+?)(?=\s+rows\b|\s+range\b|$)/i.exec(spec);
+    const normCols = (x) => (x || '').split(',').map(c => c.trim().replace(/^\w+\./, '').replace(/\s+(asc|desc)$/i, '').toLowerCase()).filter(Boolean);
+    const firstDir = ord ? (/\bdesc\b/i.test(ord[1].split(',')[0]) ? 'DESC' : 'ASC') : null;
+    out.push({
+      fn: m[1].toUpperCase(),
+      partition: part ? normCols(part[1]) : [],
+      partitionRaw: part ? part[1].trim() : '',
+      order: ord ? normCols(ord[1]) : [],
+      orderRaw: ord ? ord[1].trim() : '',
+      dir: firstDir,
+    });
+  }
+  return out;
+}
+const RANKERS = ['RANK', 'DENSE_RANK', 'ROW_NUMBER', 'NTILE'];
+export function windowQueryFixes(query, solution) {
+  const mine = parseWindows(query);
+  const ref = parseWindows(solution);
+  if (mine.length === 0 || ref.length === 0) return [];
+  // Pair the ranking window with the ranking window when both have one.
+  const pick = (ws) => ws.find(w => RANKERS.includes(w.fn)) || ws[0];
+  const a = pick(mine);
+  const b = pick(ref);
+  const fixes = [];
+  if (a.fn !== b.fn && (RANKERS.includes(a.fn) === RANKERS.includes(b.fn))) {
+    fixes.push({ kind: 'function', text: `use ${b.fn} instead of ${a.fn}` });
+  }
+  const pa = a.partition.join(','), pb = b.partition.join(',');
+  if (pb && !pa) fixes.push({ kind: 'partition', text: `add PARTITION BY ${b.partitionRaw.replace(/^\w+\./, '')}` });
+  else if (pa && !pb) fixes.push({ kind: 'partition', text: `remove PARTITION BY ${a.partitionRaw}` });
+  else if (pa && pb && pa !== pb) fixes.push({ kind: 'partition', text: `partition by ${b.partitionRaw.replace(/^\w+\./, '')}, not ${a.partitionRaw}` });
+  const oa = a.order[0], ob = b.order[0];
+  if (ob && oa && oa !== ob) fixes.push({ kind: 'order', text: `order inside OVER() by ${ob}, not ${oa}` });
+  else if (ob && oa && a.dir !== b.dir) fixes.push({ kind: 'direction', text: `sort inside OVER() ${b.dir}, not ${a.dir}` });
+  else if (ob && !oa) fixes.push({ kind: 'order', text: `add ORDER BY ${ob} ${b.dir} inside OVER()` });
+  return fixes;
+}
+const NUM_WORD = ['', 'One', 'Two', 'Three', 'Four'];
+export function fixesHeadline(fixes) {
+  if (!fixes || fixes.length < 2) return null;
+  const t = fixes.map(f => f.text);
+  const list = t.length === 2 ? `${t[0]}, and ${t[1]}` : `${t.slice(0, -1).join(', ')}, and ${t[t.length - 1]}`;
+  return `${NUM_WORD[t.length] || t.length} fixes: ${list}`;
+}
+
 // ── Window functions (2026-09-19) ────────────────────────────────────────
 const WINDOW_TAG = /window|rank|row_number|dense_rank|ntile|lag|lead|partition|running|over\s*\(/i;
 const WINDOW_HINTS = [
@@ -611,8 +672,18 @@ function diagnoseWindow(user, expected, ctx = {}) {
       : 'Check which column the ORDER BY inside OVER() sorts by, and its direction — the question says what ranks first.';
   }
   const cappedDiffs = allDiffs.slice(0, 5);
+  // More than one thing to change: say all of them in the headline.
+  const fixes = windowQueryFixes(ctx.query, ctx.solution);
+  const multi = fixesHeadline(fixes);
+  if (multi) {
+    // The headline carries every fix; the hints go back to the general
+    // window rules so nothing on screen says the same thing twice.
+    headline = multi.charAt(0).toUpperCase() + multi.slice(1);
+    hint = WINDOW_HINTS[0];
+  }
   return {
     kind: 'window_rank',
+    fixes: fixes.length ? fixes : undefined,
     headline,
     details,
     hints: [hint, ...WINDOW_HINTS.filter(h => h !== hint)].slice(0, 3),
@@ -741,7 +812,8 @@ export function primaryHint(diagnosis, ctx = {}) {
     case 'row_set':
       return dateUpperBoundTrap(ctx && ctx.query) || hints[0];
     case 'window_rank':
-      return hints[0];
+      // Several fixes are already listed in the headline.
+      return diagnosis.fixes && diagnosis.fixes.length > 1 ? null : hints[0];
     case 'sort_order':
       return sortAsk ? `Add ORDER BY ${sortAsk[4].trim()} — the question says how to sort, and the grader checks it.` : (hints[0] || 'Add the ORDER BY the question describes; the grader is strict about order.');
     case 'null_mismatch':

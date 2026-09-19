@@ -912,6 +912,7 @@ const TRANSLATIONS = {
       // could source, or says plainly that we could not.
       targetPinTitle: 'Your target: {company}',
       targetPinSub: 'The one screen format we could source. Everything below is general practice.',
+      targetPinSubMore: 'The screen in the format candidates describe, then a live SQL round to practise what follows it. Everything below is general practice.',
       noTargetTitle: 'No sourced screen format for {company} yet',
       noTargetSub: '{n} challenges carry the {company} tag. That is the honest prep; we do not invent a format.',
       noTargetCta: 'Open the {company} challenges',
@@ -1858,6 +1859,7 @@ const TRANSLATIONS = {
       viewAllPast: 'Tüm geçmiş mülakatları gör →',
       targetPinTitle: 'Hedefin: {company}',
       targetPinSub: 'Kaynağını gösterebildiğimiz tek ekran formatı. Aşağıdakiler genel pratik.',
+      targetPinSubMore: 'Adayların anlattığı formatta eleme sınavı, ardından sonrasını çalışmak için canlı bir SQL turu. Aşağıdakiler genel pratik.',
       noTargetTitle: '{company} için kaynaklı bir ekran formatı yok',
       noTargetSub: '{n} challenge {company} etiketi taşıyor. Dürüst hazırlık bu; format uydurmuyoruz.',
       noTargetCta: '{company} challenge\'larını aç',

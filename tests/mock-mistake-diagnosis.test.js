@@ -88,3 +88,13 @@ describe('mock diagnosis names the rows and the cause (founder QA item 5)', () =
     expect(d.hint).toMatch(/every row on 2026-04-30 is dropped/);
   });
 });
+
+describe('focus areas: submitted misses only (round 4, item 3)', () => {
+  it('a timed-out question with a half-written query is not evidence', () => {
+    const h = [{ questionResults: [
+      { correct: false, timedOut: true, userQuery: 'select sum(', concepts: ['Business Metrics'] },
+      { correct: false, userQuery: 'select 1', concepts: ['JOIN'] },
+    ] }];
+    expect(weakConceptsFromHistory(h)).toEqual(['JOIN']);
+  });
+});

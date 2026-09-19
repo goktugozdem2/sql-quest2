@@ -49,6 +49,7 @@ const preamble = `(() => {
         sqlquest_app_tour_v1: 'completed_1', sqlquest_first_entry_tour_v1: 'completed_1',
         sqlquest_challenges_entry_tour_v1: 'completed_1', sqlquest_lang: 'en',
         sqlquest_signup_at: String(Date.now() + 3600000),
+        sqlquest_prep_target_v1: JSON.stringify({ company: 'Capital One', date: null }),
       })};
       for (const [k, v] of Object.entries(seed)) localStorage.setItem(k, v);
       sessionStorage.setItem('qa_seeded', '1');
@@ -71,6 +72,47 @@ const preamble = `(() => {
 const click = (re) => `(() => { const b = [...document.querySelectorAll('button')].find(b => ${re}.test(b.textContent.trim())); if (b) b.click(); return !!b; })()`;
 
 const SCENARIOS = {
+  // The Interview tab's target pin for a Capital One learner.
+  async pin() {
+    await cdp('Page.navigate', { url: `${URL}/app/?interview=sql-fundamentals-free` });
+    await wait(5000);
+    return ev(`(async () => {
+      const w = ms => new Promise(r => setTimeout(r, ms));
+      window.confirm = () => true;
+      const quit = [...document.querySelectorAll('button')].find(b => /Quit/.test(b.textContent)); if (quit) quit.click();
+      await w(600);
+      const tab = [...document.querySelectorAll('button')].find(b => /Interview/i.test(b.textContent) && b.textContent.length < 30); if (tab) tab.click();
+      await w(1200);
+      const pin = document.querySelector('[data-interview-target]');
+      return pin ? { sub: pin.querySelector('p')?.textContent, text: pin.innerText.replace(/\\s+/g, ' ').slice(0, 400) } : { error: 'no pin', tabs: [...document.querySelectorAll('button')].map(b => b.textContent.trim()).filter(t => t.length < 25).slice(0, 20) };
+    })()`);
+  },
+  // Challenge 170 with DENSE_RANK and no PARTITION: the verdict, the Help
+  // panel's position and its opener.
+  async help170() {
+    await cdp('Page.navigate', { url: `${URL}/app/?challenge=170` });
+    await wait(5000);
+    return ev(`(async () => {
+      const w = ms => new Promise(r => setTimeout(r, ms));
+      const cm = document.querySelector('.sql-cm-editor .CodeMirror').CodeMirror;
+      cm.setValue('SELECT name, department, salary, DENSE_RANK() OVER (PARTITION BY department ORDER BY salary DESC) AS salary_rank FROM employees ORDER BY salary DESC, name');
+      await w(200);
+      document.querySelector('[data-onboarding="submit"]').click(); await w(1200);
+      const headline = document.querySelector('p.font-bold.text-orange-300')?.textContent;
+      const help = [...document.querySelectorAll('button')].find(b => /Help|Hide/.test(b.textContent) && b.title && /AI help/i.test(b.title));
+      help.click(); await w(600);
+      const panel = document.querySelector('[data-testid="inline-ai-help"]');
+      const dxPanel = document.querySelector('p.font-bold.text-orange-300')?.closest('.rounded-xl');
+      const out = [...document.querySelectorAll('h3')].find(h => /Your Output/.test(h.textContent));
+      return {
+        headline,
+        panelTitle: panel?.querySelector('h3')?.textContent,
+        opener: panel?.querySelector('[data-testid="tutor-text"]')?.innerText,
+        panelBelowDiagnosis: !!(panel && dxPanel && (dxPanel.compareDocumentPosition(panel) & Node.DOCUMENT_POSITION_FOLLOWING)),
+        panelAboveOutput: !!(panel && out && (panel.compareDocumentPosition(out) & Node.DOCUMENT_POSITION_FOLLOWING)),
+      };
+    })()`);
+  },
   // Open a mock by id and report its shape as the runner shows it.
   async open_mock() {
     const id = arg('id', 'capital-one-live-sql');

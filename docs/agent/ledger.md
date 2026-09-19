@@ -739,6 +739,16 @@ of the verifier and must never be rounded to `FLAT`.
 
 ### the tutor speaks to the query, climbs a ladder, and remembers the habit (P1 tutor)
 
+- **Amended 2026-09-19 (founder QA round 4, item 1), before the flip.** The
+  challenge Help panel's diagnosis opener is now LIVE for everyone, not
+  behind `socraticLadder`: it opens on the diagnosis (every window fix named),
+  then the tutor reads the query, the fixes and the rows lost or added; the
+  static topic lesson is gone and the panel sits under the diagnosis. What
+  the 09-30 flip still changes is the ladder (defect → clause → full query)
+  and the bypass. The 10-21 read therefore measures the ladder against a
+  baseline that already has the diagnosis opener; `inline_help_opened.opener`
+  carries `diagnosis | query | empty` from this date (was `diagnosis | topic`).
+
 - **Claimed** 2026-09-12 · **Flips** 2026-09-30 with the panel claim ·
   **Read** 2026-10-21. Live from 2026-09-12 regardless of the flag: the
   enriched context (both tutor doors carry the student's query as written,

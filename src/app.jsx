@@ -16089,8 +16089,18 @@ CRITICAL RULES:
     const failedInterviews = interviewHistory.filter(h => !h.passed);
     
     // Focus areas: attempted misses net of correct answers, per concept
-    // (src/utils/mock-interview.js, founder QA 2026-09-19 item 13).
+    // (src/utils/mock-interview.js, founder QA 2026-09-19 item 13), and only
+    // from ONE sitting (round 4, item 3): a 44% sitting showed a skipped
+    // question's tag and a concept from a different mock. `weakConcepts`
+    // still steers which new mock to suggest; what the banner SHOWS is
+    // `focusFrom(id)`, the latest sitting of the mock it recommends.
     const weakConcepts = weakConceptsFromHistory(interviewHistory, 3);
+    const lastSittingOf = (id) => [...interviewHistory].reverse().find(h => h.interviewId === id) || null;
+    const latestSitting = interviewHistory[interviewHistory.length - 1] || null;
+    const focusFrom = (id) => {
+      const sitting = (id && lastSittingOf(id)) || latestSitting;
+      return sitting ? weakConceptsFromHistory([sitting], 3) : [];
+    };
     
     // Priority 1: Retry failed interviews
     if (failedInterviews.length > 0) {
@@ -16101,7 +16111,7 @@ CRITICAL RULES:
           interview,
           reason: `Retry "${interview.title}" to improve your score from ${lastFailed.scorePercent}%`,
           type: 'retry_failed',
-          weakConcepts
+          weakConcepts: focusFrom(interview.id)
         };
       }
     }
@@ -16123,7 +16133,7 @@ CRITICAL RULES:
             interview,
             reason: `Practice ${matchingConcepts.join(', ')} with "${interview.title}"`,
             type: 'improve_weakness',
-            weakConcepts
+            weakConcepts: focusFrom(null)
           };
         }
       }
@@ -16149,7 +16159,7 @@ CRITICAL RULES:
         interview: nextDifficultyInterview,
         reason: `Ready for a challenge? Try "${nextDifficultyInterview.title}"!`,
         type: 'next_level',
-        weakConcepts
+        weakConcepts: focusFrom(null)
       };
     }
     
@@ -16159,7 +16169,7 @@ CRITICAL RULES:
         interview: notCompletedInterviews[0],
         reason: `Try "${notCompletedInterviews[0].title}" - you haven't attempted it yet!`,
         type: 'new_interview',
-        weakConcepts
+        weakConcepts: focusFrom(null)
       };
     }
     
@@ -16171,7 +16181,7 @@ CRITICAL RULES:
         interview,
         reason: `Improve your ${lowestScoreResult.scorePercent}% on "${interview.title}"`,
         type: 'improve_score',
-        weakConcepts
+        weakConcepts: focusFrom(interview.id)
       };
     }
     
@@ -23451,47 +23461,68 @@ HINT PROGRESSION (based on conversation length):
   };
 
   // Open inline AI help panel for current challenge
+  // The rows a wrong submit lost or added, for the tutor's context — the
+  // same read the mock's "Study with AI" gets (src/utils/tutor-context.js).
+  const rowsBlockForTutor = () => {
+    try {
+      if (!challengeResult?.columns?.length || !challengeExpected?.columns?.length) return '';
+      const r = rowDiffSummary(
+        { columns: challengeResult.columns, rows: challengeResult.rows || [] },
+        { columns: challengeExpected.columns, rows: challengeExpected.rows || [] },
+        3,
+      );
+      if (!r) return '';
+      const row = (x) => x.map(v => (v === null || v === undefined ? 'NULL' : String(v))).join(' | ');
+      const cols = r.columns.join(' | ');
+      return [
+        r.missingTotal > 0 ? `ROWS THE EXPECTED OUTPUT HAS AND THEIRS DOES NOT (${r.missingTotal}), columns ${cols}:\n${r.missing.map(row).join('\n')}` : '',
+        r.extraTotal > 0 ? `ROWS THEIRS RETURNS AND THE EXPECTED OUTPUT DOES NOT (${r.extraTotal}), columns ${cols}:\n${r.extra.map(row).join('\n')}` : '',
+      ].filter(Boolean).join('\n\n');
+    } catch (_) { return ''; }
+  };
+
+  // Help on a challenge (founder QA 2026-09-19, round 4, item 1). It used to
+  // open on a fixed topic lesson ("AI Help — Window Function") that never saw
+  // the query, at the bottom of the page. Now it sits under the diagnosis;
+  // after a wrong submit it opens on the diagnosis, instantly, and the tutor
+  // then reads THEIR query — the diagnosis, every fix it found, the rows lost
+  // or added — and says what to change, without writing the full solution.
+  // Before any submit it asks for an attempt. There is no generic lesson.
   const openInlineAiHelp = (challenge, userQuery) => {
-    const topicKey = getTopicForChallenge(challenge);
-    const topicData = topicKey ? TOPIC_EXPLANATIONS[topicKey] : null;
-
-    // Build the static explanation message
-    const explanation = topicData
-      ? `${topicData.title}\n\n${topicData.explanation}`
-      : `This challenge tests your ${challenge.category || 'SQL'} skills. Try breaking the problem into smaller parts — what columns do you need? What conditions should filter the rows?`;
-
-    // If user has a wrong query, add context
-    const contextNote = userQuery && userQuery.trim()
-      ? `\n\nI can see you're working on "${challenge.title}". Ask me anything about your approach!`
-      : `\n\nWorking on "${challenge.title}" — ask me a question when you need help!`;
-
-    // First message = a diagnosis of THEIR query, not a static lesson (P1,
-    // 2026-09-12, `socraticLadder`): the diff engine's headline, the one hint
-    // chosen for their SQL, and what the next two asks will give them. Free
-    // and instant — no AI call to open the panel. Flag off, or no diagnosis
-    // yet: the topic explanation, as before.
-    const diagnosisOpener = ftbFlag('socraticLadder') && challengeDiagnosis
-      ? (() => {
-          const one = primaryHint(challengeDiagnosis, { query: userQuery, description: challenge?.description });
-          return `${challengeDiagnosis.headline}. ${one || challengeDiagnosis.details || ''}`.trim()
-            + `\n\nAsk me for the next step and I'll name the exact clause to change. Ask for the answer and you'll get the full query.`;
-        })()
-      : null;
-    setInlineAiMessages([{ role: 'assistant', content: diagnosisOpener || (explanation + contextNote) }]);
+    const q = String(userQuery || '').trim();
+    const dx = (challengeStatus === 'wrong' || challengeStatus === 'error') ? challengeDiagnosis : null;
+    const one = dx ? primaryHint(dx, { query: q, description: challenge?.description, topics: [...(challenge?.skills || []), challenge?.category].filter(Boolean) }) : null;
+    const opener = dx
+      ? `${dx.headline}.${one && one !== dx.headline ? ` ${one}` : ''}`
+      : q
+        ? `I can see your query for "${challenge.title}". Submit it and I'll read what it returns — or ask me about any part of it.`
+        : `Working on "${challenge.title}". Write a first attempt and Submit; I'll read exactly what it returns. Or ask me where to start.`;
+    setInlineAiMessages([{ role: 'assistant', content: opener }]);
     setInlineAiInput('');
     setInlineAiLoading(false);
     setShowInlineAiHelp(true);
-    trackActivationEvent('inline_help_opened', { challengeId: challenge?.id ?? null, opener: diagnosisOpener ? 'diagnosis' : 'topic', hasDiagnosis: !!challengeDiagnosis });
+    trackActivationEvent('inline_help_opened', { challengeId: challenge?.id ?? null, opener: dx ? 'diagnosis' : (q ? 'query' : 'empty'), hasDiagnosis: !!dx });
+    setTimeout(() => {
+      try {
+        const el = document.querySelector('[data-testid="inline-ai-help"]');
+        if (el) { const r = el.getBoundingClientRect(); if (r.top > window.innerHeight - 120 || r.top < 0) window.scrollTo(0, Math.max(0, Math.round(window.scrollY + r.top - 80))); }
+      } catch (_) {}
+    }, 60);
+    if (dx && q) {
+      setTimeout(() => sendInlineAiMessage('Explain what went wrong with my query: the exact clause, every fix it needs, the rows it lost or added, and what to change. Do not write the full solution.', { silent: true }), 0);
+    }
   };
 
   // Send a follow-up message in the inline AI help panel
-  const sendInlineAiMessage = async (forcedMessage = null) => {
+  const sendInlineAiMessage = async (forcedMessage = null, opts = {}) => {
     const typed = typeof forcedMessage === 'string' ? forcedMessage : inlineAiInput;
     if (!typed.trim() || inlineAiLoading || !currentChallenge) return;
 
     const userMessage = typed.trim();
     setInlineAiInput('');
-    setInlineAiMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+    // A silent ask (the automatic first read) goes to the tutor but is not
+    // shown as if the person had typed it.
+    if (!opts.silent) setInlineAiMessages(prev => [...prev, { role: 'user', content: userMessage }]);
     setInlineAiLoading(true);
 
     // Build context-aware system prompt
@@ -23511,9 +23542,12 @@ DIFFICULTY: ${currentChallenge.difficulty}
 HINT: ${currentChallenge.hint || 'none'}
 ${topicData ? `\nRELEVANT CONCEPT: ${topicData.title}` : ''}
 ${challengeQuery ? `\nSTUDENT'S CURRENT QUERY:\n${challengeQuery}` : ''}
+${challengeDiagnosis?.fixes?.length ? `\nFIXES THE DIAGNOSIS FOUND (name all of them): ${challengeDiagnosis.fixes.map(f => f.text).join('; ')}` : ''}
+${(() => { const r = rowsBlockForTutor(); return r ? `\n${r}\n` : ''; })()}
 ${inlineCtx.parts.length > 0 ? `\n${inlineCtx.parts.join('\n\n')}\n` : ''}
+You can see their query above. Never ask them to paste it.
 ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
-- NO markdown (no **, ##, backticks). Use CAPS for SQL keywords.
+- No headings. Plain sentences; a short sql code block is fine for one changed line. Use CAPS for SQL keywords.
 - Do NOT give the full solution. Guide them to discover it.
 - If their query has an error, name the specific mistake and hint at the fix.
 - If a REPEAT line is present above, say so once, plainly and kindly, and name the rule.
@@ -23522,7 +23556,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
 - MAX 80 WORDS per response.`}`;
 
     // Build conversation history
-    const history = [...inlineAiMessages, { role: 'user', content: userMessage }]
+    const history = [...(opts.silent ? [] : inlineAiMessages), { role: 'user', content: userMessage }]
       .filter((m, i) => m.role === 'user' || i > 0)
       .slice(-6)
       .map(m => ({ role: m.role, content: m.content }));
@@ -37807,6 +37841,97 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                     </div>
                   )}
 
+                  {/* Inline AI Help Panel — directly under the verdict and diagnosis
+                       (founder QA 2026-09-19, round 4, item 1); it used to
+                       render at the bottom of the page. */}
+                  {showInlineAiHelp && (
+                    <div className="bg-black/30 rounded-xl border border-purple-500/30 p-4" data-testid="inline-ai-help">
+                      <div className="flex items-center justify-between mb-3 gap-2">
+                        <h3 className="font-bold text-purple-300 flex items-center gap-2 min-w-0">🤖 Tutor — your query</h3>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          {/* Visible quota at the point of use (DataCamp teardown):
+                              makes the free generosity felt AND warms a near-limit
+                              user toward Pro. Pro is unlimited, so no counter. */}
+                          {aiDailyUsage.plan === 'free' && (
+                            aiDailyUsage.remaining > 3 ? (
+                              <span className="text-xs text-gray-500 whitespace-nowrap">{aiDailyUsage.remaining} left today</span>
+                            ) : aiDailyUsage.remaining > 0 ? (
+                              <button
+                                onClick={() => { setProModalReason({ type: 'rate_limit', topic: null, solvedCount: solvedChallenges.size }); setShowProModal(true); }}
+                                className="text-xs whitespace-nowrap" style={{ color: '#FFB020' }}
+                                title="Pro removes the daily AI limit"
+                              >
+                                {aiDailyUsage.remaining} left · <span className="underline">go unlimited</span>
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => { setProModalReason({ type: 'rate_limit', topic: null, solvedCount: solvedChallenges.size }); setShowProModal(true); }}
+                                className="text-xs whitespace-nowrap underline" style={{ color: '#FF6B6B' }}
+                              >
+                                Daily limit — go unlimited
+                              </button>
+                            )
+                          )}
+                          <button onClick={() => setShowInlineAiHelp(false)} className="text-xs text-gray-500 hover:text-gray-300">Close</button>
+                        </div>
+                      </div>
+
+                      {/* Messages */}
+                      <div className="h-64 overflow-y-auto mb-3 space-y-3 pr-1">
+                        {inlineAiMessages.map((msg, i) => (
+                          <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                            <div className={`max-w-[85%] rounded-lg px-3 py-2 text-sm whitespace-pre-wrap ${
+                              msg.role === 'user'
+                                ? 'bg-purple-600/30 text-purple-100'
+                                : 'bg-gray-800/80 text-gray-200 border border-gray-700/50'
+                            }`}>
+                              {msg.role === 'user' ? msg.content : <TutorText content={msg.content} codeClassName="bg-black/40 text-green-400 p-2 rounded my-2 overflow-x-auto font-mono text-xs" />}
+                            </div>
+                          </div>
+                        ))}
+                        {inlineAiLoading && (
+                          <div className="flex justify-start">
+                            <div className="bg-gray-800/80 border border-gray-700/50 rounded-lg px-3 py-2 text-sm text-gray-400">
+                              Thinking...
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Input */}
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={inlineAiInput}
+                          onChange={e => setInlineAiInput(e.target.value)}
+                          onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendInlineAiMessage(); }}}
+                          placeholder="Ask about this challenge..."
+                          className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-sm text-[#F2F0EA] placeholder-gray-500 focus:outline-none focus:border-purple-500"
+                          disabled={inlineAiLoading}
+                        />
+                        {ftbFlag('socraticLadder') && (
+                          <button
+                            type="button"
+                            data-testid="tutor-bypass"
+                            onClick={() => { trackActivationEvent('tutor_bypass_clicked', { challengeId: currentChallenge?.id ?? null }); sendInlineAiMessage('Show me the full solution and one line on why it works.'); }}
+                            disabled={inlineAiLoading}
+                            className="px-3 py-2 rounded-lg text-xs font-medium text-gray-300 border border-gray-600 hover:border-gray-400 disabled:opacity-50 whitespace-nowrap"
+                            title="Skip the hints and see the answer"
+                          >
+                            Show me the answer
+                          </button>
+                        )}
+                        <button
+                          onClick={() => sendInlineAiMessage()}
+                          disabled={inlineAiLoading || !inlineAiInput.trim()}
+                          className="px-4 py-2 bg-purple-600 hover:bg-purple-500 disabled:bg-gray-700 disabled:text-gray-500 rounded-lg text-sm font-bold text-[#F2F0EA] transition-all"
+                        >
+                          Send
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Your Output — key on challengeRunAt re-triggers flash animation on every run,
                        even when the result data is identical to the previous run. Without this,
                        users can't tell if the Run button fired. */}
@@ -37924,95 +38049,6 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                           </button>
                           <button onClick={() => setShowAiNudge(false)} className="px-3 py-1.5 text-xs text-gray-500 hover:text-gray-300">I'll figure it out</button>
                         </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Inline AI Help Panel */}
-                  {showInlineAiHelp && (
-                    <div className="bg-black/30 rounded-xl border border-purple-500/30 p-4">
-                      <div className="flex items-center justify-between mb-3 gap-2">
-                        <h3 className="font-bold text-purple-300 flex items-center gap-2 min-w-0">🤖 AI Help — {getTopicForChallenge(currentChallenge) || currentChallenge.category}</h3>
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          {/* Visible quota at the point of use (DataCamp teardown):
-                              makes the free generosity felt AND warms a near-limit
-                              user toward Pro. Pro is unlimited, so no counter. */}
-                          {aiDailyUsage.plan === 'free' && (
-                            aiDailyUsage.remaining > 3 ? (
-                              <span className="text-xs text-gray-500 whitespace-nowrap">{aiDailyUsage.remaining} left today</span>
-                            ) : aiDailyUsage.remaining > 0 ? (
-                              <button
-                                onClick={() => { setProModalReason({ type: 'rate_limit', topic: null, solvedCount: solvedChallenges.size }); setShowProModal(true); }}
-                                className="text-xs whitespace-nowrap" style={{ color: '#FFB020' }}
-                                title="Pro removes the daily AI limit"
-                              >
-                                {aiDailyUsage.remaining} left · <span className="underline">go unlimited</span>
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => { setProModalReason({ type: 'rate_limit', topic: null, solvedCount: solvedChallenges.size }); setShowProModal(true); }}
-                                className="text-xs whitespace-nowrap underline" style={{ color: '#FF6B6B' }}
-                              >
-                                Daily limit — go unlimited
-                              </button>
-                            )
-                          )}
-                          <button onClick={() => setShowInlineAiHelp(false)} className="text-xs text-gray-500 hover:text-gray-300">Close</button>
-                        </div>
-                      </div>
-
-                      {/* Messages */}
-                      <div className="h-64 overflow-y-auto mb-3 space-y-3 pr-1">
-                        {inlineAiMessages.map((msg, i) => (
-                          <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                            <div className={`max-w-[85%] rounded-lg px-3 py-2 text-sm whitespace-pre-wrap ${
-                              msg.role === 'user'
-                                ? 'bg-purple-600/30 text-purple-100'
-                                : 'bg-gray-800/80 text-gray-200 border border-gray-700/50'
-                            }`}>
-                              {msg.role === 'user' ? msg.content : <TutorText content={msg.content} codeClassName="bg-black/40 text-green-400 p-2 rounded my-2 overflow-x-auto font-mono text-xs" />}
-                            </div>
-                          </div>
-                        ))}
-                        {inlineAiLoading && (
-                          <div className="flex justify-start">
-                            <div className="bg-gray-800/80 border border-gray-700/50 rounded-lg px-3 py-2 text-sm text-gray-400">
-                              Thinking...
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Input */}
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          value={inlineAiInput}
-                          onChange={e => setInlineAiInput(e.target.value)}
-                          onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendInlineAiMessage(); }}}
-                          placeholder="Ask about this challenge..."
-                          className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-sm text-[#F2F0EA] placeholder-gray-500 focus:outline-none focus:border-purple-500"
-                          disabled={inlineAiLoading}
-                        />
-                        {ftbFlag('socraticLadder') && (
-                          <button
-                            type="button"
-                            data-testid="tutor-bypass"
-                            onClick={() => { trackActivationEvent('tutor_bypass_clicked', { challengeId: currentChallenge?.id ?? null }); sendInlineAiMessage('Show me the full solution and one line on why it works.'); }}
-                            disabled={inlineAiLoading}
-                            className="px-3 py-2 rounded-lg text-xs font-medium text-gray-300 border border-gray-600 hover:border-gray-400 disabled:opacity-50 whitespace-nowrap"
-                            title="Skip the hints and see the answer"
-                          >
-                            Show me the answer
-                          </button>
-                        )}
-                        <button
-                          onClick={() => sendInlineAiMessage()}
-                          disabled={inlineAiLoading || !inlineAiInput.trim()}
-                          className="px-4 py-2 bg-purple-600 hover:bg-purple-500 disabled:bg-gray-700 disabled:text-gray-500 rounded-lg text-sm font-bold text-[#F2F0EA] transition-all"
-                        >
-                          Send
-                        </button>
                       </div>
                     </div>
                   )}
@@ -38520,12 +38556,16 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
               const m = interviewTarget.mock;
               const im = localizeInterview(m, lang);
               const canAccess = canAccessInterview(m);
+              // The company's other mocks (founder QA 2026-09-19, round 4,
+              // item 4): Capital One now has a live SQL round beside its
+              // screen, and the pin said "the one screen format".
+              const moreMocks = mockInterviews.filter(x => x.company === m.company && x.id !== m.id);
               return (
                 <div className="bg-purple-500/10 border border-purple-500/40 rounded-xl p-5" data-interview-target={m.id}>
                   <div className="text-xs font-bold uppercase tracking-wide text-purple-300 mb-1">
                     🎯 {i18n_t('interview', 'targetPinTitle', { company: interviewTarget.company })}
                   </div>
-                  <p className="text-xs text-gray-400 mb-3">{i18n_t('interview', 'targetPinSub')}</p>
+                  <p className="text-xs text-gray-400 mb-3">{i18n_t('interview', moreMocks.length > 0 ? 'targetPinSubMore' : 'targetPinSub')}</p>
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
                       <h3 className="text-lg font-bold">{im.title}</h3>
@@ -38549,6 +38589,26 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                       {canAccess ? <Play size={16} /> : <Lock size={16} />} {canAccess ? i18n_t('interview', 'startNow') : i18n_t('interviewList', 'btnUnlockPro')}
                     </button>
                   </div>
+                  {moreMocks.map(x => {
+                    const ix = localizeInterview(x, lang);
+                    const ok = canAccessInterview(x);
+                    return (
+                      <div key={x.id} className="flex items-center justify-between gap-4 mt-4 pt-4 border-t border-purple-500/20" data-interview-target-more={x.id}>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-bold">{ix.title}</h4>
+                          <p className="text-xs text-gray-500 mt-1">
+                            {i18n_t('interviewList', 'minutesLabel', { n: Math.floor(x.totalTime / 60) })} · {i18n_t('interviewList', 'questionsLabel', { n: x.questionsCount })}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => startInterview(x)}
+                          className="px-4 py-2 bg-gray-800 hover:bg-gray-700 border border-purple-500/40 rounded-lg font-medium flex items-center gap-2 whitespace-nowrap"
+                        >
+                          {ok ? <Play size={16} /> : <Lock size={16} />} {ok ? i18n_t('interview', 'startNow') : i18n_t('interviewList', 'btnUnlockPro')}
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
               );
             })()}

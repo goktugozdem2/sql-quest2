@@ -210,8 +210,11 @@ describe('source guards — the P1 wiring in app.jsx', () => {
     expect(app).toMatch(/const tutorCtx = buildChallengeTutorContext\(followUpMessage, challengeAiMessages, \{ includeDiagnosis: false \}\);/);
   });
 
-  it('the inline panel opens on the diagnosis under the flag, and offers a bypass', () => {
-    expect(app).toMatch(/const diagnosisOpener = ftbFlag\('socraticLadder'\) && challengeDiagnosis/);
+  // 2026-09-19 (founder QA round 4, item 1): the diagnosis opener is live for
+  // everyone, not behind socraticLadder; the flag keeps the ladder itself.
+  it('the inline panel opens on the diagnosis, and offers a bypass', () => {
+    expect(app).toMatch(/const dx = \(challengeStatus === 'wrong' \|\| challengeStatus === 'error'\) \? challengeDiagnosis : null;/);
+    expect(app).not.toMatch(/TOPIC_EXPLANATIONS\[topicKey\]\s*\n\s*\/\/ Build the static explanation message/);
     expect(app).toMatch(/trackActivationEvent\('inline_help_opened'/);
     expect(app).toMatch(/data-testid="tutor-bypass"/);
     expect(app).toMatch(/sendInlineAiMessage\('Show me the full solution and one line on why it works\.'\)/);

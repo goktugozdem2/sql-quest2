@@ -236,7 +236,10 @@ export function mockMistakeDiagnosis(a, engine) {
 export function weakConceptsFromHistory(history, limit = 3) {
   const miss = new Map();
   const ok = new Map();
-  const attempted = (a) => !a.skipped && (
+  // Submitted, not skipped and not timed out: a timed-out question was never
+  // submitted, even with a half-written query in the box (round 4, item 3),
+  // and before 2026-09-19 a Skip was stored as a time-out.
+  const attempted = (a) => !a.skipped && !a.timedOut && (
     a.questionType === QUESTION_TYPE_MCQ ? !!a.selectedOptionId : String(a.userQuery || '').trim().length > 0
   );
   for (const result of (history || [])) {
