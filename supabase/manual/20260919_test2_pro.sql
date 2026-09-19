@@ -16,7 +16,10 @@ update public.users
    set data = data || jsonb_build_object(
                 'proStatus', true,
                 'proType', 'annual',
-                'proExpiry', (now() + interval '1 year')::text,
+                -- ISO 8601 with a "T" and "Z", the shape the client writes
+                -- (`toISOString()`): Safari's Date parser rejects Postgres'
+                -- own "2027-09-19 09:56:08+00" text.
+                'proExpiry', to_char((now() + interval '1 year') at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
                 'proAutoRenew', false,
                 'proGrantReason', 'internal_test_20260919'),
        updated_at = now()
