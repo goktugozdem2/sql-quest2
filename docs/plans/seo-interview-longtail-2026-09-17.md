@@ -247,3 +247,43 @@ Found while applying: `scripts/build-company-pages.mjs` is not idempotent on
 whitespace — every rerun prepends one more blank line before each injected
 block on all 30 company pages (20 unrelated pages moved on a no-data rerun).
 The churn was reverted here rather than committed; fix it in its own change.
+
+## Added 2026-09-19 — "capital one sql interview", founder's observation
+
+The founder searched **capital one sql interview** and did not find
+`/capital-one-sql-interview/` in the top 10. What the data says, read before
+acting (GSC, 28 days to 09-17): the company page had **24 impressions, 0
+clicks, average position 7.8** across all its queries; the exact query has no
+impression row at all, and the family's clicks go to the blog post
+(`capital one data analyst assessment` 14 · 0 · 8.9). A single manual search is
+localised and personalised; it is a prompt to look, not a position.
+
+Not changed today, on purpose: the title and H1. The D2 copy change (H1 span
+"for the CodeSignal assessment", blog → page link) shipped on 09-17 and its
+read is whether the family's landing page moves from the post to the company
+page; a second title change inside that window makes both unreadable.
+
+What did change on 09-19, and confounds the same read (record it there): the
+page's mock paragraph now describes the 12 + 2 screen mock and links the new
+60-minute live SQL round (`?interview=capital-one-live-sql`), i.e. more
+unique, interview-specific text and one new outbound CTA. Sitemap lastmod and
+IndexNow were refreshed the same day.
+
+**Rule, written before the data.** The Monday task reads every GSC query
+containing `capital one` + `sql` for this page and the blog, by position. On
+**2026-10-12** (with the Amazon read): if the company page's `capital one sql
+interview*` rows average worse than 10 with ≥ 20 impressions, the move is the
+sourced-template rebuild (the Amazon path — `company-interviews.js` format rows
+from the dated reads, intern and full-time separated only if a dated source
+for the intern format exists). If there are still < 20 impressions, the
+problem is demand or crawl, not copy: request indexing again and change
+nothing.
+
+**Intern vs full-time (founder item 9), not built:** the intern shape quoted in
+the founder's note (a ~30-minute case, then two easy SQL questions in 15
+minutes, no window functions or CTEs) appears only in search-engine summaries
+attributing it to a Glassdoor review. Glassdoor answered 403 / a bot check and
+interviewquery 429 on 2026-09-19; the one page that loaded (linkjob, dated
+2025-08-01) does not separate intern from full-time. By the company-page rule
+("never a fact seen only in a search snippet"), nothing is published until a
+dated page is read.
