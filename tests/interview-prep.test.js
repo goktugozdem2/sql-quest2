@@ -1417,3 +1417,20 @@ describe('source guard: the interview deep link waits for the session', () => {
     expect(block, 'a re-running effect would mint a guest on every pass').toMatch(/interviewGuestStartedRef/);
   });
 });
+
+// Founder QA 2026-09-19, round 4, item 8: company tags are topical fit, not
+// reports that a company asked the question — no badge on a challenge card,
+// and no page says the sets are "built from candidate reports".
+describe('company tags are not presented as reported questions', () => {
+  it('challenge cards carry no company badges', async () => {
+    const fs = await import('node:fs');
+    const app = fs.readFileSync(new URL('../src/app.jsx', import.meta.url), 'utf8');
+    expect(app).not.toMatch(/c\.companies\.slice\(0, 3\)\.map/);
+  });
+  it('the homepage does not claim the sets were built from candidate reports', async () => {
+    const fs = await import('node:fs');
+    const home = fs.readFileSync(new URL('../src/index.html', import.meta.url), 'utf8');
+    expect(home).not.toMatch(/sets built from candidate reports/i);
+    expect(home).toMatch(/not questions any company has published/);
+  });
+});

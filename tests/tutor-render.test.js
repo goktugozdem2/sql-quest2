@@ -42,3 +42,20 @@ describe('tutor text rendering', () => {
     expect((app.match(/<TutorText /g) || []).length).toBeGreaterThanOrEqual(2);
   });
 });
+
+describe('single-star italic (round 4, item 6)', () => {
+  const parts = (t) => parseTutorContent(t)[0].parts;
+  it('*after* is italic', () => {
+    expect(parts('Filter *after* grouping.')).toEqual([
+      { t: 'text', v: 'Filter ' }, { t: 'em', v: 'after' }, { t: 'text', v: ' grouping.' },
+    ]);
+  });
+  it('COUNT(*), 3 * 4 and a*b stay literal', () => {
+    for (const t of ['Use COUNT(*) here', 'so 3 * 4 = 12', 'a*b and c*d']) {
+      expect(parts(t).every(p => p.t !== 'em'), t).toBe(true);
+    }
+  });
+  it('bold still wins over italic', () => {
+    expect(parts('**The rule** is *simple*.').map(p => p.t)).toEqual(['bold', 'text', 'em', 'text']);
+  });
+});

@@ -40,7 +40,25 @@ function inline(text) {
     last = re.lastIndex;
   }
   if (last < text.length) out.push({ t: 'text', v: text.slice(last) });
-  return out;
+  // *italic* in plain text only (founder QA 2026-09-19, round 4, item 6).
+  // A star opens only after a space, quote or line start and must hug a
+  // letter, and closes against a non-space before a space or punctuation —
+  // so COUNT(*), 3 * 4 and a*b stay literal.
+  const ITAL = /(^|[\s"“(])\*([A-Za-z][^*\n]*?[^\s*])\*(?=$|[\s).,!?:;"”])/g;
+  const split = [];
+  for (const seg of out) {
+    if (seg.t !== 'text') { split.push(seg); continue; }
+    let pos = 0; let m2;
+    ITAL.lastIndex = 0;
+    while ((m2 = ITAL.exec(seg.v)) !== null) {
+      const start = m2.index + m2[1].length;
+      if (start > pos) split.push({ t: 'text', v: seg.v.slice(pos, start) });
+      split.push({ t: 'em', v: m2[2] });
+      pos = ITAL.lastIndex;
+    }
+    if (pos < seg.v.length) split.push({ t: 'text', v: seg.v.slice(pos) });
+  }
+  return split;
 }
 
 /**

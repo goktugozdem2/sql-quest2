@@ -20,10 +20,20 @@ const resolveToCanonical = (raw) =>
 
 // True when any of challenge.skills or challenge.category resolves to the
 // requested canonical skill.
+//
+// Querying Basics is the exception (founder QA 2026-09-19, round 4, item 7):
+// every challenge carries SELECT, so "Querying Basics (299)" matched the whole
+// bank and told a learner nothing. It now matches only challenges whose
+// skills resolve to Querying Basics ALONE — the 32 that really are basic.
+// The Skillmap's own scoring (skill-calc.js) is unchanged.
 export const challengeMatchesSkill = (challenge, canonicalSkill) => {
   if (!challenge || !canonicalSkill) return false;
   const tags = [...(challenge.skills || []), challenge.category].filter(Boolean);
-  return tags.some(t => resolveToCanonical(t) === canonicalSkill);
+  const resolved = new Set(tags.map(resolveToCanonical).filter(Boolean));
+  if (canonicalSkill === 'Querying Basics') {
+    return resolved.size === 1 && resolved.has('Querying Basics');
+  }
+  return resolved.has(canonicalSkill);
 };
 
 /**

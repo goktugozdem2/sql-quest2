@@ -350,3 +350,15 @@ describe('buildDrillQueue — sector preference', () => {
     expect(queue.map(c => c.id)).toEqual([1, 2]);
   });
 });
+
+// Founder QA 2026-09-19, round 4, item 7.
+import { challengeMatchesSkill as cms } from '../src/utils/skill-drill.js';
+describe('Querying Basics matches only basics-only challenges', () => {
+  it('a SELECT + GROUP BY challenge is not Querying Basics', () => {
+    expect(cms({ skills: ['SELECT', 'GROUP BY'], category: 'Aggregation' }, 'Querying Basics')).toBe(false);
+    expect(cms({ skills: ['SELECT', 'GROUP BY'], category: 'Aggregation' }, 'Aggregation & Grouping')).toBe(true);
+  });
+  it('a SELECT + WHERE + ORDER BY challenge is', () => {
+    expect(cms({ skills: ['SELECT', 'WHERE', 'ORDER BY'], category: 'Filtering' }, 'Querying Basics')).toBe(true);
+  });
+});

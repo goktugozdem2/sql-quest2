@@ -5643,6 +5643,7 @@ function TutorText({ content, codeClassName = 'bg-gray-900 text-green-400 p-2 ro
   const renderParts = (parts) => parts.map((p, k) => (
     p.t === 'code' ? <code key={k} className="font-mono text-[0.95em] px-1 rounded bg-black/40" style={noLig}>{p.v}</code>
       : p.t === 'bold' ? <strong key={k} className="font-bold text-[#F2F0EA]">{p.v}</strong>
+      : p.t === 'em' ? <em key={k} className="italic">{p.v}</em>
       : p.t === 'question' ? <span key={k} className="block mt-4 mb-2 text-yellow-400 font-bold text-base">📝 QUESTION:</span>
       : <span key={k}>{p.v}</span>
   ));
@@ -36911,23 +36912,16 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                           <div className={(isLocked || isQuotaLocked) ? 'opacity-50' : undefined}>
                           <h3 className={`font-bold mb-1 ${isSolved ? 'text-green-300' : 'text-[#F2F0EA]'}`}>{dc.title}</h3>
                           <p className="text-xs text-gray-400 mb-2 line-clamp-2">{dc.description.replace(/\*\*/g, '')}</p>
-                          {/* Company tags — small badges under description. Shows up to 3, "+N" for overflow.
-                              Trust signal: user sees "Amazon · Meta · Google" and knows this pattern is real. */}
-                          {(c.companies && c.companies.length > 0) && (
-                            <div className="flex flex-wrap items-center gap-1 mb-2">
-                              {c.companies.slice(0, 3).map(co => (
-                                <span
-                                  key={co}
-                                  className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-300 border border-blue-500/20 font-medium"
-                                >
-                                  {co}
-                                </span>
-                              ))}
-                              {c.companies.length > 3 && (
-                                <span className="text-[10px] text-gray-500">+{c.companies.length - 3}</span>
-                              )}
-                            </div>
-                          )}
+                          {/* Company badges on challenge cards were removed on
+                              2026-09-19 (founder QA round 4, item 8). The tags in
+                              challenge-companies.js are topical fit, not reports
+                              that a company asked the question — a ROW_NUMBER
+                              exercise wore "Anthropic · OpenAI · Snowflake" with
+                              nothing saying so. The tags still build the company
+                              practice sets and search still matches them; the
+                              question pages say "matched to patterns reported for
+                              these companies — not a question any of them has
+                              published". */}
                           <div className="flex items-center justify-between">
                             {isSolved ? (
                               <span className="text-xs text-green-400">✓ {i18n_t('practice', 'xpEarned', { n: c.xpReward })}</span>
