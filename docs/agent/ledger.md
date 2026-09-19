@@ -101,6 +101,41 @@ of the verifier and must never be rounded to `FLAT`.
     moves does not exist without it. `prep_*` events date from the flip.
 - **Verdict** _pending_
 
+### the outcome is asked after the date: one question, three clicks (2026-09-19)
+
+- **Claimed** 2026-09-19 · **Live** on push (the app door); the sender is
+  deployed and NOT scheduled — the founder runs it · **Read** 2026-11-24,
+  with the goal-setting read, or the first time ten dates have passed.
+- **Change** `supabase/functions/interview-outcome-note`: to a registered,
+  reachable person whose `prepTarget.date` passed 1–14 days ago, once per
+  date, one founder-voice email — "How did it go?" — with three plain links
+  `/app/?src=outcome_note&outcome=passed|failed|moved` and a reply for
+  anything else; cap 20 a run, quiet 24 h, service-role gate, `sent` row
+  with `meta {company, date, daysSince}`, `outcome_note_sent {company,
+  daysSince}`. The app door (src/app.jsx): the click records
+  `interview_outcome {outcome, source:'link', src, company, daysSince}` —
+  never the date — stores `prepTarget.outcome {value, at}` and takes the
+  past date off the record; the company stays. Guards:
+  tests/interview-outcome-note.test.js.
+- **Why** the interview chain is measured to "paid" and then goes dark: the
+  only outcome we have ever learned (harinivr02, a Stripe round, "wasn't
+  entirely happy") came from a hand-written reply. Without the outcome the
+  frame's own promise — this prepares you for the screen — is never read.
+- **Metric** `interview_outcome` (docs/agent/metrics.md): answered / noted,
+  by outcome; replies by hand recorded with that provenance.
+- **Baseline** 0 notes, 0 outcomes, 0 dates on record (2026-09-19; the
+  intake that produces dates flips 09-21).
+- **Target** ≥ 50% of people noted answer by link within 7 days; ≥ 1 in 3
+  names the question in a reply.
+- **Falsification** < 25% answer → the question is asked too late or to the
+  wrong people; move MIN_DAYS_AFTER to 0 (the evening of) before changing
+  the words. Zero replies naming a question over ten notes → the reply ask
+  is dropped, the links stay.
+- **Confounds** the date is self-reported and may not be the screen's date;
+  `moved` is also the honest answer to "I never had one". Read `moved`
+  separately and never as a miss.
+- **Verdict** _pending_
+
 ### the free quota: ten solves, then Pro (founder's week-1 plan, item 2)
 
 - **Claimed** 2026-09-12 · **Flips** 2026-09-21 by scheduled task, after the
@@ -519,7 +554,7 @@ of the verifier and must never be rounded to `FLAT`.
   window passes. Read of batch 1: 2026-09-26.
 - **Verdict** _pending_
 
-### three hand-written founder emails to the checkout abandoners of 09-04 / 09-06 — **OPEN**
+### three hand-written founder emails to the checkout abandoners of 09-04 / 09-06 — **HIT**
 
 - **Sent** 2026-09-12 evening by the founder from Gmail (drafts written by the
   agent; addresses deliberately not in git). Three people who clicked a plan
@@ -541,7 +576,34 @@ of the verifier and must never be rounded to `FLAT`.
   reason stays unknown; do not mail these three again, and do not build the
   merchant-of-record change on an assumption — read the M1 wall's
   `pro_checkout_returned.outcome` split by `tz` instead.
-- **Verdict** _pending_
+- **Verdict, 2026-09-19 — HIT, 1 of 3 replied, and the reply became the
+  fourth payer.** Read from the founder's inbox (Gmail thread, subject "From
+  SQL Quest's founder — the Stripe prep, and the page you closed") and
+  `pro_events` / `users_public`, internal excluded.
+  - `harinivr02` — replied 2026-09-14 04:56Z, day 2. Verbatim on the
+    question asked: "The main reason I closed the checkout was the price."
+    Also: had just sat a Stripe SQL round and "wasn't entirely happy with my
+    performance"; asked for a discounted monthly; attached a CV. The founder
+    answered the same morning with a personal code (HARINI49, $49 first
+    year, expiring 09-21); she bought the annual plan 2026-09-19 02:19Z
+    (`pro_purchase_completed`, `stripe_webhook`, 4,900 cents) — day 7 of
+    this read, the fourth real purchase in the product's history, interview-
+    shaped like the other three. Within six hours of paying: 70 attempts, all
+    three Easy window-function questions solved (the gap named in the
+    founder's email), Window Functions 0 → 20. Reply drafted 09-19.
+  - `alexis_montesdeoca` — no reply. Kept solving: 18 solves since the
+    send (29 total), last active 2026-09-19 00:58Z. Still free.
+  - `rereremin` — no reply, not seen since 2026-09-06 (before the send).
+  - Contact load did not silence the one who was active. The abandonment
+    reason we have is one person's and it is **price of the monthly**, given
+    by someone who then paid $49 for a year — consistent with the price-story
+    claim's premise (annual first) and with the 09-12 finding that purchases
+    are first-session decisions only when the price fits the moment.
+  - The rule stands: none of the three is mailed by any campaign again
+    (`FOUNDER_MAILED_BY_HAND` in goal-note). The founder's own thread with
+    Harini continues by hand.
+  - Not a read of the merchant-of-record question: n=1, and the answer was
+    price, not card.
 
 ### Revolut membership: everything but the signature — **SIGNED 2026-09-12**
 
@@ -1298,7 +1360,7 @@ of the verifier and must never be rounded to `FLAT`.
   `intent_captured`.
 - **Verdict** _pending_
 
-### users writes restored: the referral trigger blocked every registered save for four days
+### users writes restored: the referral trigger blocked every registered save for four days — **HIT** (7-day read; day-30 line pending)
 
 - **Claimed** 2026-09-12 · **Read** 2026-09-19 (seven days of restored
   writes), and again inside the O1 day-30 read on 2026-10-09.
@@ -1363,6 +1425,25 @@ of the verifier and must never be rounded to `FLAT`.
   only and is unaffected. O1's day-0 baseline (2026-09-09) was measured
   inside the outage; treat 09-08 08:53Z → apply as a hole in the signups
   column at the day-30 read, and say so there.
+- **Verdict, 2026-09-19 (seven days) — HIT.** Read with the two counts
+  above, internal excluded (`users` directly; the read-only MCP).
+  - Signups completing with a `users` row within five minutes: **09-13 5/5,
+    09-14 10/10, 09-15 6/6, 09-16 10/11, 09-17 7/7, 09-18 5/5** — 43 of 44,
+    every day ≥ 5, against the target ≥ 5/day and the falsification < 3/day.
+    Before the fix, 09-08..09-11: 0 of 68.
+  - Registered rows written per day: **09-13 6, 09-14 5, 09-15 55, 09-16 12,
+    09-17 8, 09-18 21.** Four of six days clear the ≥ 8 line; the two that do
+    not are the first weekend after the fix (Sat/Sun) and both sit inside the
+    pre-break band (4–17). 09-15's 55 is not traffic: it is the founder's
+    run of `20260914_pro_without_payment.sql`, which rewrote the plan fields
+    on the 57 flagged accounts and bumped `updated_at`. Excluding it the band
+    is 5–21, i.e. the week before the break.
+  - Recovery of the 68 outage signups: 4 have a row today (1 from 09-08, 3
+    from 09-11 — same-browser returns). 64 accounts were never created; no
+    row, no email, nothing to write to. Carry this as the hole in the O1
+    day-30 signups column (2026-10-09), as the entry says.
+  - Postgres error log: no `permission denied for function gen_ref_code`
+    since 2026-09-12 10:58:12Z.
 
 ### validate AI-generated SQL: a non-brand answer door with a practice handoff
 

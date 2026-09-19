@@ -501,6 +501,7 @@ silently killed streak-reminder/skill-decay/welcome-back for months).
 | `weekly-digest` | Mon 09:00 | personalized weekly report (the "newsletter") |
 | `activated-note` | **NOT SCHEDULED** | the second ask (founder's week-2 item 8, 2026-09-12): registered, 6+ solves, never paid, once ever, 40 a run, quiet 7 days after any other campaign. `?dry=1` previews. The founder deploys and runs it; nothing schedules it. CTA `/app/?src=activated_note&pro=1` opens the Pro modal (reason `email_link`). Guards: tests/activated-note.test.js. |
 | `lapsed-pro` | **NOT SCHEDULED** | win-back for expired Pro. `?dry=1` previews the audience. Targets `proStatus=true` AND expiry past — the stale flag IS the segment. 5+ solves, 3d after expiry, once per user ever, capped 8/run. The only channel that reaches them: they stopped returning, so no in-app trigger can fire. Cron deliberately unset — sending is a decision, not a default. **DO NOT SCHEDULE without rewriting the copy first (measured 2026-09-08).** The audience is now 50 accounts, and the email tells a non-payer "Your SQL Quest Pro trial ended {N} days ago" under the subject "Your trial ended before the best part shipped". For at least 7 of them that sentence is false in our favour: their trial did not lapse, the client's auto-renew branch kept pushing `proExpiry` forward on every login until **we** removed it on 2026-09-07 (src/utils/pro-access.js). Telling someone their trial ended, when what actually happened is that we withdrew access we had been giving them by mistake, is a lie of omission in an outward-facing email. Also measured: **0 of the 50 have been active since the fix**, so there is no confusion to clean up and no urgency — 44 were trials, expiries run 2026-03-26 to 09-04, 13 have 10+ solves, 47 have an email. If this segment is ever mailed, the honest version says we were still giving them Pro and stopped, and says why. That is the founder's call to make, not a default to inherit. |
+| `interview-outcome-note` | **NOT SCHEDULED** | the one question after the date (2026-09-19): to a person whose `prepTarget.date` passed 1–14 days ago, once per date, "How did it go?" with three links (`?src=outcome_note&outcome=passed|failed|moved`) the app records as `interview_outcome` and takes the past date off the record. `?dry=1` previews, `?limit=` lowers the cap of 20. Founder runs it. Guards: tests/interview-outcome-note.test.js; metric `interview_outcome`. |
 | `resend-webhook` | (webhook) | Resend delivered/opened/clicked/bounced → email_events |
 
 **Every sender refuses anything but the service role (2026-09-17).** Found
@@ -803,6 +804,10 @@ Rewritten Coach-forward:
   generator and the app, scored the page's way, stored in the page's shape,
   floors for skipIf only; `?goal=` link door, returning ask, `userData.intent`
   (one writer, `setUserIntent`). Ledger: "the goal is asked, measured and planned before the first solve"; metric `goal_measure_funnel`.
+- **The outcome is asked after the date (2026-09-19):** `interview-outcome-note`
+  (unscheduled sender, table above) + the app's `?outcome=` door, which
+  records `interview_outcome` and clears the past date. The event carries
+  `daysSince`, never the date. Ledger: "the outcome is asked after the date".
 
 ### Revolut — the second interview-prep member (signed 2026-09-12)
 

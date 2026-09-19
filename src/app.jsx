@@ -11124,6 +11124,9 @@ CRITICAL RULES:
       const next = {
         company: patch.company !== undefined ? patch.company : prev.company,
         date: patch.date !== undefined ? patch.date : prev.date,
+        // The answer to the outcome note ({ value, at }); carried, never
+        // the date it referred to.
+        ...(patch.outcome !== undefined ? { outcome: patch.outcome } : (prev.outcome ? { outcome: prev.outcome } : {})),
       };
       try { localStorage.setItem(PREP_TARGET_KEY, JSON.stringify(next)); } catch (_) {}
       if (currentUser) {
@@ -11843,6 +11846,31 @@ CRITICAL RULES:
       </div>
     );
   };
+
+  // ── The outcome from a link (2026-09-19) ─────────────────────────────────
+  // `?outcome=passed|failed|moved` on /app/ is the answer to the interview-
+  // outcome-note email (supabase/functions/interview-outcome-note): one click
+  // records how the date on prepTarget went. The event carries the outcome
+  // and how many days after the date the click came — never the date itself
+  // (the prep_target_set rule). Then the past date comes off the record: a
+  // past date has no plan, and the Interview tab asks for the next one. The
+  // company stays. Second clicks on the same link are harmless: no date, no
+  // event.
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const outcome = params.get('outcome');
+      if (!['passed', 'failed', 'moved'].includes(outcome)) return;
+      if (!prepTarget.date) return;
+      const until = daysUntil(prepTarget.date, Date.now());
+      trackActivationEvent('interview_outcome', {
+        outcome, source: 'link', src: params.get('src') || null,
+        company: prepTarget.company || null, daysSince: until === null ? null : -until,
+      });
+      setPrepPreference({ date: null, outcome: { value: outcome, at: new Date().toISOString() } });
+    } catch (_) {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ── The goal from a link, and the returning ask (2026-09-17, D and E) ───
   // D: `?goal=interview|job_ready|learning` on /app/ is how an SEO arrival

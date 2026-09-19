@@ -748,6 +748,53 @@ where username = any(:recipients) and created_at >= :send_date
 group by 1;
 ```
 
+**Read 2026-09-19 (the 09-12 batch of three):** 1 of 3 replied (harinivr02,
+day 2, "the price"); the reply led to a personal code and a $49 annual
+purchase on day 7 — the fourth real payer. alexis_montesdeoca: no reply,
+18 solves since. rereremin: no reply, not seen since 09-06. Verdict in the
+ledger. Rule unchanged: those three are never mailed by a campaign again.
+
+## `interview_outcome`
+
+What happened at the screen. The one number the interview-first frame
+promises and, until 2026-09-19, never measured: the chain ends at "paid".
+
+Events:
+- `outcome_note_sent {company, daysSince, variant}` (reason `email`) — the
+  sender (`interview-outcome-note`) asked; `daysSince` is days after the
+  date on record, never the date.
+- `interview_outcome {outcome, source, src, company, daysSince}` — the
+  answer. `outcome` ∈ passed | failed | moved; `source='link'` from the
+  email's three links (`src=outcome_note`). Written by the app's outcome door
+  (src/app.jsx), which also stores `prepTarget.outcome` and takes the past
+  date off the record.
+- Replies by hand (the founder's inbox) are recorded in the ledger with that
+  provenance; they are the only place the *question* that decided it lives.
+
+Traps: `moved` is also "I never had one" — read it as its own line, never
+as a miss. A person with no email is never asked, so answered/noted is a
+rate over the reachable, not over everyone with a date. Second clicks on the
+same link write nothing (no date, no event).
+
+```sql
+-- Noted → answered, by outcome, people by username (registered only by construction).
+with noted as (
+  select username, min(created_at) as noted_at
+  from pro_events where event = 'outcome_note_sent' and created_at >= :since
+  group by 1
+), answered as (
+  select username, ((metadata #>> '{}')::jsonb)->>'outcome' as outcome, min(created_at) as at
+  from pro_events where event = 'interview_outcome' and created_at >= :since
+  group by 1, 2
+)
+select count(distinct n.username) as noted,
+       count(distinct a.username) filter (where a.at <= n.noted_at + interval '7 days') as answered_7d,
+       count(distinct a.username) filter (where a.outcome = 'passed') as passed,
+       count(distinct a.username) filter (where a.outcome = 'failed') as failed,
+       count(distinct a.username) filter (where a.outcome = 'moved')  as moved
+from noted n left join answered a on a.username = n.username;
+```
+
 ## `purchases`
 
 Verified payments. The ONLY money truth is the row the stripe-webhook edge
