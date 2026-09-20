@@ -47,6 +47,7 @@ import { getPrimarySkeleton, getAllSkeletons } from './utils/skeletons.js';
 import { diagnoseResult, diagnosisShort, primaryHint, rowDiffSummary } from './utils/diagnose.js';
 import { formatSqlForDisplay } from './utils/sql-format.js';
 import { parseTutorContent } from './utils/tutor-render.js';
+import { sessionLoadingAtBoot, shouldWaitForSession } from './utils/session-boot.js';
 import { SQLITE_TUTOR_RULES, mistakeStudyContext, buildMistakeContextBlock, mistakeOpeningPrompt } from './utils/tutor-context.js';
 import { buildUserSkill, pickNextBySkill, toCanonicalSkill, isLegacyMasteryRecord } from './utils/user-skill.js';
 import { classifyErrorPatterns, recordErrorPatterns, describeErrorPatterns, patternCount, emptyErrorStore } from './utils/error-patterns.js';
@@ -5942,7 +5943,10 @@ function SQLQuest() {
   // User state
   const [currentUser, setCurrentUser] = useState(null);
   const [isGuest, setIsGuest] = useState(false);
-  const [isSessionLoading, setIsSessionLoading] = useState(false); // Prevents save during load
+  // True from the first render when a saved account exists, so nothing
+  // treats the gap before the restore as "no session" (src/utils/session-boot.js).
+  // Cleared by loadUserSession, and by every bail-out on the restore path.
+  const [isSessionLoading, setIsSessionLoading] = useState(() => sessionLoadingAtBoot(typeof localStorage !== 'undefined' ? localStorage : null)); // Prevents save during load
   const suppressSoundsRef = React.useRef(true); // Suppress sounds during initial load
   const [showAuth, setShowAuth] = useState(true);
   const [authMode, setAuthMode] = useState('login'); // 'login' or 'register'
@@ -8524,6 +8528,7 @@ function SQLQuest() {
             localStorage.removeItem('sqlquest_user');
             localStorage.removeItem(`sqlquest_user_${savedUser}`);
             setShowAuth(true);
+            setIsSessionLoading(false);   // nothing will restore; release the hold
           }
         }).catch(err => {
           console.error('Failed to verify user:', err);
@@ -24341,8 +24346,9 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
   useEffect(() => {
     const target = pendingChallengeRef.current;
     if (!target) return;
-    // Only act once auth has resolved. If session is still loading, wait.
-    if (isSessionLoading) return;
+    // Only act once auth has resolved: a saved account whose session is still
+    // being restored is NOT a cold visitor (founder QA 2026-09-20, item 1).
+    if (shouldWaitForSession({ isSessionLoading, currentUser, storage: typeof localStorage !== 'undefined' ? localStorage : null })) return;
 
     if (currentUser) {
       // Logged in — just navigate to the challenge.
@@ -24397,11 +24403,8 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
   useEffect(() => {
     const target = pendingInterviewRef.current;
     if (!target) return;
-    if (isSessionLoading) return;
+    if (shouldWaitForSession({ isSessionLoading, currentUser, storage: typeof localStorage !== 'undefined' ? localStorage : null })) return;
     if (!currentUser) {
-      let savedUser = null;
-      try { savedUser = localStorage.getItem('sqlquest_user'); } catch (_) { /* ignore */ }
-      if (savedUser && !String(savedUser).startsWith('guest_')) return; // wait for the session
       // 2026-09-14: this used to start guest mode and then fall straight
       // through to startInterview in the same tick. startGuestMode is async —
       // it sets currentUser before awaiting loadUserSession — so the mock was
@@ -24444,7 +24447,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
   })());
   useEffect(() => {
     if (!pendingListDeepLinkRef.current) return;
-    if (isSessionLoading) return;
+    if (shouldWaitForSession({ isSessionLoading, currentUser, storage: typeof localStorage !== 'undefined' ? localStorage : null })) return;
     // Order matters: startGuestMode() lands on 'guide' and resets first-run
     // state; the writes below run in the same tick, so they win the batch.
     if (!currentUser) startGuestMode();

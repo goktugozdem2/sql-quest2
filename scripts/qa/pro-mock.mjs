@@ -19,7 +19,7 @@ const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const PORT = 9300 + (process.pid % 500);
 const OUT = path.join(import.meta.dirname, 'out');
 fs.mkdirSync(OUT, { recursive: true });
-const arg = (k, d) => { const a = process.argv.find(x => x.startsWith(`--${k}=`)); return a ? a.split('=')[1] : d; };
+const arg = (k, d) => { const a = process.argv.find(x => x.startsWith(`--${k}=`)); return a ? a.slice(k.length + 3) : d; };
 const W = Number(arg('width', 1470)); const H = Number(arg('height', 660));
 
 let ws; let msgId = 0; const pending = new Map();
@@ -39,6 +39,8 @@ const data = {
   hasSeenOnboarding: true, firstRunCompleted: true, lastActive: Date.now(), createdAt: Date.now() - 30 * 86400000,
 };
 const preamble = `(() => {
+  window.__log = [];
+  const _d = console.debug.bind(console); console.debug = (...a) => { try { window.__log.push(a.map(String).join(' ')); } catch (_) {} _d(...a); };
   window.__row = ${JSON.stringify({ username: U, data })};
   try {
     if (!sessionStorage.getItem('qa_seeded')) {
@@ -49,7 +51,7 @@ const preamble = `(() => {
         sqlquest_app_tour_v1: 'completed_1', sqlquest_first_entry_tour_v1: 'completed_1',
         sqlquest_challenges_entry_tour_v1: 'completed_1', sqlquest_lang: 'en',
         sqlquest_signup_at: String(Date.now() + 3600000),
-        sqlquest_prep_target_v1: JSON.stringify({ company: 'Capital One', date: null }),
+        ...(process.argv.includes('--no-target') ? {} : { sqlquest_prep_target_v1: JSON.stringify({ company: 'Capital One', date: null }) }),
       })};
       for (const [k, v] of Object.entries(seed)) localStorage.setItem(k, v);
       sessionStorage.setItem('qa_seeded', '1');
@@ -72,6 +74,46 @@ const preamble = `(() => {
 const click = (re) => `(() => { const b = [...document.querySelectorAll('button')].find(b => ${re}.test(b.textContent.trim())); if (b) b.click(); return !!b; })()`;
 
 const SCENARIOS = {
+  // Does a ?challenge= / ?company= link land where it promises, signed in?
+  async deeplink_lands() {
+    const path = arg('path', '/app/?challenge=23');
+    await cdp('Page.navigate', { url: `${URL}${path}` });
+    await wait(8000);
+    return ev(`({
+      user: localStorage.getItem('sqlquest_user'),
+      guest: /Playing as Guest/.test(document.body.innerText),
+      editorOpen: !!document.querySelector('.sql-cm-editor'),
+      heading: (document.querySelector('[data-onboarding="run"]') ? [...document.querySelectorAll('h2')].map(h => h.textContent.trim()).filter(Boolean)[0] : null),
+      idLine: [...document.querySelectorAll('span')].map(s => s.textContent.trim()).find(t => /^#\\d+ of \\d+/.test(t)) || null,
+      listCount: document.querySelectorAll('[data-onboarding="challenge-card"], button h3').length,
+      text: document.body.innerText.replace(/\\s+/g, ' ').slice(0, 400),
+      log: (window.__log || []).filter(l => /deep|challenge_started|lock_reached/i.test(l)).slice(0, 8),
+      href: location.href,
+      param: new URLSearchParams(location.search).get('challenge'),
+      inBank: !!(window.challengesData || []).find(c => c.id === 23),
+    })`);
+  },
+  // Founder QA 2026-09-20: a deep link opened while signed in must keep the
+  // session. Reports who the app thinks you are right after the load.
+  async deeplink_session() {
+    const path = arg('path', '/app/?challenge=23');
+    await cdp('Page.navigate', { url: `${URL}${path}` });
+    await wait(1200);
+    const early = await ev(`({ guestBanner: /Playing as Guest/.test(document.body.innerText), login: /Log in/.test(document.body.innerText) })`);
+    await wait(5000);
+    const late = await ev(`({
+      guestBanner: /Playing as Guest/.test(document.body.innerText),
+      login: /Log in/.test(document.body.innerText),
+      savedUser: localStorage.getItem('sqlquest_user'),
+      guestKeys: Object.keys(localStorage).filter(k => /^sqlquest_user_guest_/.test(k)).length,
+      pro: /PRO|Pro Member/i.test(document.body.innerText.slice(0, 2000)),
+      openedChallenge: (() => { const h = [...document.querySelectorAll('h2')].find(x => x.className.includes('fd') || x.previousElementSibling?.textContent?.includes('#')); return document.querySelector('.sql-cm-editor') ? (document.querySelector('[data-onboarding="submit"]') ? ([...document.querySelectorAll('h2')].map(x => x.textContent).find(t => t && t.length < 80) || 'editor open') : null) : null; })(),
+      tab: document.querySelector('[data-testid="interview-question"]') ? 'interview' : null,
+      solves: (JSON.parse(localStorage.getItem('sqlquest_user_qa_pro') || '{}').solvedChallenges || []).length,
+    })`);
+    await shot('deeplink');
+    return { early, late };
+  },
   // Live round: the explanation box, its button, and the saved note on the results screen.
   async approach() {
     await cdp('Page.navigate', { url: `${URL}/app/?interview=capital-one-live-sql` });

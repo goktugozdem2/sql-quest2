@@ -156,3 +156,48 @@ describe('source guard — restoring a session never celebrates a level-up', () 
     expect(app).not.toMatch(/setTimeout\(\(\) => setMilestoneShare\(\{ type: 'levelup'/);
   });
 });
+
+// Founder QA 2026-09-20, item 2: a guest blob may only ADD. Whatever the
+// account holds, the merge must never hand back less.
+describe('the merge is one-way: guest progress cannot move an account backwards', () => {
+  const account = {
+    username: 'test2', solvedChallenges: [1, 2, 3, 4, 5], xp: 26257, streak: 9, dailyStreak: 9,
+    maxDailyStreak: 20, level: 14, queryCount: 400, proStatus: true, proType: 'annual',
+    coachState: { goalId: 'sql-interview-prep', step: 12 }, goals: { role: 'analyst' },
+    unlockedAchievements: ['a', 'b'], challengeAttempts: [{ challengeId: 1, timestamp: 10 }],
+    weaknessTracking: { skillLevels: { Joins: 70 } }, lastStreakDay: '2026-09-19',
+  };
+  const guest = {
+    username: 'guest_1', solvedChallenges: [9], xp: 30, streak: 1, dailyStreak: 1, maxDailyStreak: 1,
+    level: 1, queryCount: 3, coachState: { goalId: 'fundamentals', step: 1 }, goals: { role: 'student' },
+    unlockedAchievements: ['c'], challengeAttempts: [{ challengeId: 9, timestamp: 20 }],
+    weaknessTracking: { skillLevels: { Joins: 5 } }, lastStreakDay: '2026-09-01', isGuest: true,
+  };
+  const { merged } = mergeProgress(account, guest, { challenges: [{ id: 9, xpReward: 30 }] });
+
+  it('keeps every solve and adds the guest\'s', () => {
+    expect(merged.solvedChallenges).toEqual([1, 2, 3, 4, 5, 9]);
+  });
+  it('never lowers a number the account holds', () => {
+    expect(merged.xp).toBe(26257 + 30);
+    expect(merged.streak).toBe(9);
+    expect(merged.maxDailyStreak).toBe(20);
+    expect(merged.queryCount).toBe(403);
+    expect(merged.level).toBe(14);
+  });
+  it('keeps the account\'s plan, coach state, goals and skill record', () => {
+    expect(merged.coachState).toEqual(account.coachState);
+    expect(merged.goals).toEqual(account.goals);
+    expect(merged.weaknessTracking).toEqual(account.weaknessTracking);
+    expect(merged.proStatus).toBe(true);
+    expect(merged.username).toBe('test2');
+    expect(merged.isGuest).toBeUndefined();
+    expect(merged.lastStreakDay).toBe('2026-09-19');
+  });
+  it('merging the same guest twice changes nothing the second time', () => {
+    const again = mergeProgress(merged, guest, { challenges: [{ id: 9, xpReward: 30 }] }).merged;
+    expect(again.xp).toBe(merged.xp);
+    expect(again.solvedChallenges).toEqual(merged.solvedChallenges);
+    expect(again.challengeAttempts.length).toBe(merged.challengeAttempts.length);
+  });
+});
