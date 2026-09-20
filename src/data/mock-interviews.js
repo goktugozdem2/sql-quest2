@@ -1813,7 +1813,7 @@ window.mockInterviewsData = [
           {
             label: 'The query',
             label_tr: 'Sorgu',
-            code: "SELECT merchant_category,\n       COUNT(*)                 AS payments,\n       ROUND(SUM(amount_gbp), 2) AS spend_gbp\nFROM transactions\nWHERE type = 'card_payment'\n  AND status = 'completed'\n  AND ts >= '2026-08-01' AND ts < '2026-09-01'\nGROUP BY merchant_category\nORDER BY spend_gbp DESC;"
+            sql: "SELECT merchant_category,\n       COUNT(*)                 AS payments,\n       ROUND(SUM(amount_gbp), 2) AS spend_gbp\nFROM transactions\nWHERE type = 'card_payment'\n  AND status = 'completed'\n  AND ts >= '2026-08-01' AND ts < '2026-09-01'\nGROUP BY merchant_category\nORDER BY spend_gbp DESC;"
           }
         ],
         options: [

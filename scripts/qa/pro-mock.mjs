@@ -38,7 +38,15 @@ const data = {
   // --solved=a,b,c mirrors a real account's progress (the founder's test2 by
   // default) so Learning Path locks can be read the way he sees them.
   solvedChallenges: (arg('solved', '1,2,3,4,6,7,8,9,10,12,13,14,15,16,17,5,11,18,19,20,21,22,23,24,26,28,37,38,39,35,29,30,31,32,33,34,25,118,45,46,103,116,42,57,66,122,91,92,93,94,95,96,112,97,119,64,120,36,53,43,56,106,227,206,207,208,235,244,247,249,108,63,146,164,166,167,137,41,65,157,136,143,132,239,170')).split(',').map(Number),
-  challengeAttempts: [], xp: 26257, coachState: { goalId: 'fundamentals', startedAt: '2026-04-17T13:18:17.571Z', stepsCompleted: ['f-4', 'f-6', 'f-8', 'f-9'] },
+  challengeAttempts: [], xp: 26257,
+  // An older FAILED Capital One sitting, so a later Revolut sitting can prove
+  // the recommendation follows the latest one (founder QA 2026-09-20, item 4).
+  interviewHistory: process.argv.includes('--seed-history') ? [{
+    id: 1, date: '2026-09-18', timestamp: '2026-09-18T10:00:00.000Z', interviewId: 'capital-one-codesignal',
+    interviewTitle: 'Capital One Data Analyst — CodeSignal-Style Mock', totalScore: 20, maxScore: 149,
+    percentage: 13, scorePercent: 13, passed: false, questionsCorrect: 1, questionsTotal: 14,
+    questionResults: [{ correct: false, userQuery: 'select 1', concepts: ['ROUND'], questionTitle: 'Old' }], mistakes: [], studiedMistakes: [],
+  }] : [], coachState: { goalId: 'fundamentals', startedAt: '2026-04-17T13:18:17.571Z', stepsCompleted: ['f-4', 'f-6', 'f-8', 'f-9'] },
   hasSeenOnboarding: true, firstRunCompleted: true, lastActive: Date.now(), createdAt: Date.now() - 30 * 86400000,
 };
 const preamble = `(() => {
@@ -77,6 +85,57 @@ const preamble = `(() => {
 const click = (re) => `(() => { const b = [...document.querySelectorAll('button')].find(b => ${re}.test(b.textContent.trim())); if (b) b.click(); return !!b; })()`;
 
 const SCENARIOS = {
+  // Fail a mock, then read what the list recommends.
+  async recommend_after() {
+    const id = arg('id', 'revolut-analytics-screen');
+    await cdp('Page.navigate', { url: `${URL}/app/?interview=${id}` });
+    await wait(6000);
+    return ev(`(async () => {
+      const w = ms => new Promise(r => setTimeout(r, ms));
+      const click = (re) => { const b = [...document.querySelectorAll('button')].find(b => re.test(b.textContent.trim())); if (b) b.click(); return !!b; };
+      for (let i = 0; i < 10; i++) {
+        const opt = document.querySelector('[data-testid^="interview-mcq-option-"]');
+        if (opt) { opt.click(); await w(150); document.querySelector('[data-testid="interview-mcq-submit"]').click(); }
+        else if (document.querySelector('[data-testid="interview-skip"]')) { document.querySelector('[data-testid="interview-skip"]').click(); await w(200); document.querySelector('[data-testid="interview-skip-yes"]')?.click(); }
+        await w(500);
+        if (!click(/^Next question/)) { click(/^See results/); await w(800); break; }
+        await w(500);
+      }
+      const score = [...document.querySelectorAll('div')].map(d => d.textContent).find(t => /Final Score/.test(t || ''))?.slice(0, 40) || null;
+      document.querySelector('[data-testid="interview-back-to-list"]')?.click(); await w(1500);
+      const rec = [...document.querySelectorAll('h3')].find(h => /Recommended/.test(h.textContent));
+      return { score, recommendation: rec ? rec.closest('div').parentElement.innerText.replace(/\\s+/g, ' ').slice(0, 240) : null };
+    })()`);
+  },
+  // Question body: the query block and inline code, for one question of a mock.
+  async question_body() {
+    const id = arg('id', 'revolut-analytics-screen');
+    const skip = Number(arg('skipTo', 0));
+    await cdp('Page.navigate', { url: `${URL}/app/?interview=${id}` });
+    await wait(6000);
+    return ev(`(async () => {
+      const w = ms => new Promise(r => setTimeout(r, ms));
+      for (let i = 0; i < ${skip}; i++) {
+        const o = document.querySelector('[data-testid^="interview-mcq-option-"]');
+        if (o) { o.click(); await w(150); document.querySelector('[data-testid="interview-mcq-submit"]').click(); }
+        else { document.querySelector('[data-testid="interview-skip"]')?.click(); await w(200); document.querySelector('[data-testid="interview-skip-yes"]')?.click(); }
+        await w(500);
+        [...document.querySelectorAll('button')].find(b => /^Next question/.test(b.textContent.trim()))?.click();
+        await w(600);
+      }
+      const pre = document.querySelector('[data-testid="interview-code-snippets"] pre');
+      const desc = document.querySelector('[data-testid="interview-question"] p');
+      return {
+        q: document.querySelector('[data-testid="interview-question"] h3')?.textContent,
+        snippetLabel: document.querySelector('[data-testid="interview-code-snippets"] p')?.textContent || null,
+        snippetLen: pre ? pre.textContent.trim().length : 0,
+        snippetHead: pre ? pre.textContent.trim().slice(0, 60) : null,
+        descHasBacktick: /\`/.test(desc?.textContent || ''),
+        descCodeTags: desc ? desc.querySelectorAll('code').length : 0,
+        descText: (desc?.textContent || '').slice(0, 130),
+      };
+    })()`);
+  },
   // Walk a mock's MCQs, answering the first option each time; report the
   // verdict, the explanation and the schema panel for the first question.
   async mock_walk() {

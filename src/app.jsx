@@ -322,6 +322,14 @@ const columnDecimalsFor = (columns, rows) => (columns || []).map((name, colIdx) 
   return MONEY_COL.test(String(name || '')) ? 2 : maxDec;
 });
 
+// Question text as authored: **bold** and `inline code` (founder QA
+// 2026-09-20, item 8 — a backtick used to print as a backtick, so
+// "`SELECT COUNT(decline_reason) …`" read as literal punctuation). The
+// strings are our own content, so this only adds tags, it does not escape.
+const questionHtml = (text) => String(text || '')
+  .replace(/`([^`\n]+)`/g, '<code class="px-1 rounded bg-black/40 font-mono text-[0.95em]" style="font-variant-ligatures:none">$1</code>')
+  .replace(/\*\*(.*?)\*\*/g, '<strong class="text-yellow-300">$1</strong>');
+
 // "1 row" / "2 rows" — founder QA 2026-09-19, item 10.
 const nRows = (n) => `${n} ${n === 1 ? 'row' : 'rows'}`;
 
@@ -16133,7 +16141,24 @@ CRITICAL RULES:
       return sitting ? weakConceptsFromHistory([sitting], 3) : [];
     };
     
-    // Priority 1: Retry failed interviews
+    // Priority 1: the sitting they just finished (founder QA 2026-09-20,
+    // item 4). It used to pick the last FAILED sitting in history order, so
+    // finishing Revolut could recommend retrying Capital One — a different
+    // mock, with Capital One's focus areas. The latest sitting leads; only
+    // if it passed do the older failures come back into play.
+    if (latestSitting && !latestSitting.passed) {
+      const interview = mockInterviews.find(i => i.id === latestSitting.interviewId);
+      if (interview && (interview.isFree || userProStatus)) {
+        return {
+          interview,
+          reason: `Retry "${interview.title}" to improve your score from ${latestSitting.scorePercent}%`,
+          type: 'retry_failed',
+          weakConcepts: focusFrom(interview.id)
+        };
+      }
+    }
+
+    // Priority 1b: an older failed sitting, most recent first.
     if (failedInterviews.length > 0) {
       const lastFailed = failedInterviews[failedInterviews.length - 1];
       const interview = mockInterviews.find(i => i.id === lastFailed.interviewId);
@@ -29239,15 +29264,11 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                               : currentQ.difficulty} • {currentQ.points} {i18n_t('practice', 'pointsLabelShort')}
                           </span>
                         </div>
-                        <p className="text-gray-300" dangerouslySetInnerHTML={{
-                          __html: currentQ.description.replace(/\*\*(.*?)\*\*/g, '<strong class="text-yellow-300">$1</strong>')
-                        }} />
+                        <p className="text-gray-300" dangerouslySetInnerHTML={{ __html: questionHtml(currentQ.description) }} />
                         {/* Practice mode only: the warning or the method a real
                             screen would not give (founder QA 2026-09-19, items 8–9). */}
                         {practiceMode && currentQ.practiceNote && (
-                          <p className="mt-2 text-sm text-cyan-300" data-testid="interview-practice-note" dangerouslySetInnerHTML={{
-                            __html: currentQ.practiceNote.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                          }} />
+                          <p className="mt-2 text-sm text-cyan-300" data-testid="interview-practice-note" dangerouslySetInnerHTML={{ __html: questionHtml(currentQ.practiceNote) }} />
                         )}
                         {/* Inline SQL the question is ABOUT (e.g. "which of
                             these two queries is right"), as opposed to the
@@ -29260,7 +29281,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                               <div key={si}>
                                 <p className="text-xs text-gray-400 mb-1">{snippet.label}</p>
                                 <pre className="text-xs font-mono bg-black/40 border border-gray-700 rounded-lg p-3 overflow-x-auto">
-                                  <code className="language-sql" dangerouslySetInnerHTML={{ __html: highlightSQL(snippet.sql) }} />
+                                  <code className="language-sql" dangerouslySetInnerHTML={{ __html: highlightSQL(snippet.sql || snippet.code || '') }} />
                                 </pre>
                               </div>
                             ))}

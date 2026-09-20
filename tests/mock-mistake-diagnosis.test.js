@@ -98,3 +98,16 @@ describe('focus areas: submitted misses only (round 4, item 3)', () => {
     expect(weakConceptsFromHistory(h)).toEqual(['JOIN']);
   });
 });
+
+// Founder QA 2026-09-20, item 4: the recommendation follows the sitting you
+// just finished, not the last failure in history order.
+describe('the recommendation banner points at the latest sitting', () => {
+  it('app.jsx checks latestSitting before older failures', async () => {
+    const fs = await import('node:fs');
+    const app = fs.readFileSync(new URL('../src/app.jsx', import.meta.url), 'utf8');
+    const rec = app.slice(app.indexOf('const getInterviewRecommendation = () =>'), app.indexOf('const getInterviewRecommendation = () =>') + 3000);
+    expect(rec).toMatch(/if \(latestSitting && !latestSitting\.passed\)/);
+    expect(rec.indexOf('if (latestSitting && !latestSitting.passed)')).toBeLessThan(rec.indexOf('if (failedInterviews.length > 0)'));
+    expect(rec).toMatch(/weakConcepts: focusFrom\(interview\.id\)/);
+  });
+});

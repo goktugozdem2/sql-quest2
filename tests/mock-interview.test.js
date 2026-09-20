@@ -455,3 +455,29 @@ describe('the live round asks for an explanation (round 4, item 5)', () => {
     expect(app).toContain('data-testid="interview-approach-review"');
   });
 });
+
+// Founder QA 2026-09-20, items 3 and 8: a question that says "the query
+// below" must have one, and its text renders `inline code`.
+describe('question bodies are complete and readable', () => {
+  it('every code snippet carries non-empty SQL under the key the runner reads', () => {
+    for (const mi of interviews) for (const q of (mi.questions || [])) {
+      for (const c of (q.codeSnippets || [])) {
+        expect(typeof c.sql, `${mi.id}/${q.id} snippet.sql`).toBe('string');
+        expect(c.sql.trim().length, `${mi.id}/${q.id} snippet.sql empty`).toBeGreaterThan(10);
+      }
+    }
+  });
+  it('a question that points at a query below has one', () => {
+    for (const mi of interviews) for (const q of (mi.questions || [])) {
+      const points = /query below|queries below|the query above/i.test(q.description || '');
+      if (points) expect((q.codeSnippets || []).length, `${mi.id}/${q.id} says "query below"`).toBeGreaterThan(0);
+    }
+  });
+  it('the runner renders backticks as code, not as backticks', async () => {
+    const fs = await import('node:fs');
+    const app = fs.readFileSync(new URL('../src/app.jsx', import.meta.url), 'utf8');
+    expect(app).toMatch(/const questionHtml = \(text\) =>/);
+    expect(app).toContain('__html: questionHtml(currentQ.description)');
+    expect(app).toMatch(/replace\(\/`\(\[\^`\\n\]\+\)`\/g/);
+  });
+});
