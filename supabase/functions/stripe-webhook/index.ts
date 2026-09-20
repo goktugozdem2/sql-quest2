@@ -2,7 +2,9 @@
 // Deploy: supabase functions deploy stripe-webhook --no-verify-jwt
 // Stripe endpoint events (dashboard → Developers → Webhooks): checkout.session.completed,
 // invoice.payment_succeeded, invoice.payment_failed, customer.subscription.deleted,
-// and since 2026-09-12 checkout.session.expired + customer.subscription.updated.
+// checkout.session.expired, customer.subscription.updated, and since
+// 2026-09-20 charge.refunded. An event the endpoint does not subscribe to is
+// an event this file never sees — adding a branch here is half the change.
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -31,6 +33,36 @@ async function logProEvent(event: string, username: string | null, reason: strin
   } catch (err) {
     console.warn("[stripe-webhook] pro_events insert failed:", err);
   }
+}
+
+// One lookup, one revocation. Four branches need "who is this Stripe
+// customer" and three need "take Pro away now"; before 2026-09-20 each one
+// carried its own copy and they had drifted (one forgot proAutoRenew, which
+// is the flag `lapsed-pro` segments on).
+async function findUserByCustomer(customerId: string | null) {
+  if (!customerId) return null;
+  const { data: users } = await supabase
+    .from("users")
+    .select("*")
+    .filter("data->>stripeCustomerId", "eq", customerId);
+  return users && users.length > 0 ? users[0] : null;
+}
+
+// proType is deliberately KEPT: pro-access.js needs it to tell a lapsed
+// subscriber from someone who never had Pro, and the win-back copy depends
+// on that difference.
+async function revokeProAccess(userRecord: { username: string; data: Record<string, unknown> } | null) {
+  if (!userRecord?.data) return false;
+  const userData = userRecord.data as Record<string, unknown>;
+  const had = userData.proStatus === true;
+  userData.proStatus = false;
+  userData.proExpiry = new Date().toISOString();
+  userData.proAutoRenew = false;
+  await supabase
+    .from("users")
+    .update({ data: userData, updated_at: new Date().toISOString() })
+    .eq("username", userRecord.username);
+  return had;
 }
 
 // Plan durations, in ONE place. Activation and renewal both read this: the
@@ -341,6 +373,24 @@ serve(async (req) => {
         billing_reason: invoice.billing_reason ?? null,
       });
 
+      // Stripe has stopped retrying: this person is not going to pay for the
+      // period they are in, so access ends here rather than running to an
+      // expiry they never bought. While retries are still scheduled we touch
+      // nothing — proExpiry already stops at the end of the period they DID
+      // pay for, and pro-access.js adds its three read-only days on top, so
+      // the grace window exists without anyone granting it. Downgrading on a
+      // first decline would punish a card that recovers on the second try.
+      if (!willRetry && userRecord) {
+        const had = await revokeProAccess(userRecord);
+        await logProEvent("pro_access_revoked", userRecord.username, "stripe_webhook", {
+          cause: "payment_failed_final",
+          invoice_id: invoice.id,
+          attempt_count: invoice.attempt_count ?? null,
+          had_access: had,
+        });
+        console.log(`\u26D4 Access revoked for ${userRecord.username} — Stripe gave up on invoice ${invoice.id}`);
+      }
+
       const toEmail = userRecord?.email || userRecord?.data?.email
         || invoice.customer_email || null;
       const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
@@ -447,15 +497,47 @@ serve(async (req) => {
       const previous = ((event.data as { previous_attributes?: Record<string, unknown> }).previous_attributes) || {};
       const flipped = Object.prototype.hasOwnProperty.call(previous, "cancel_at_period_end")
         && previous["cancel_at_period_end"] !== subscription.cancel_at_period_end;
-      if (!flipped) return new Response("Subscription update noted", { status: 200 });
+
+      // Stripe carries the lifecycle in `status`, and until 2026-09-20 this
+      // branch read only the cancel flag and returned — so a subscription
+      // going past_due or unpaid changed nothing on our side and the person
+      // kept whatever the stored expiry said. The statuses that matter:
+      //   past_due  the renewal failed and retries are running. Access is
+      //             already bounded by the period they paid for; we record
+      //             it so the state is readable, and change nothing.
+      //   unpaid    Stripe has given up. Access ends now.
+      //   active    recovered from past_due — worth a row, nothing to write
+      //             (invoice.payment_succeeded did the extending).
+      const statusChanged = Object.prototype.hasOwnProperty.call(previous, "status")
+        && previous["status"] !== subscription.status;
+      if (!flipped && !statusChanged) return new Response("Subscription update noted", { status: 200 });
 
       const customerId = subscription.customer as string;
-      const { data: users } = await supabase
-        .from("users")
-        .select("*")
-        .filter("data->>stripeCustomerId", "eq", customerId);
-      const userRecord = users && users.length > 0 ? users[0] : null;
+      const userRecord = await findUserByCustomer(customerId);
       const userData = userRecord?.data;
+
+      if (statusChanged) {
+        const from = (previous["status"] as string) || null;
+        if (subscription.status === "unpaid" || subscription.status === "incomplete_expired") {
+          const had = await revokeProAccess(userRecord);
+          await logProEvent("pro_access_revoked", userRecord?.username || null, "stripe_webhook", {
+            cause: `subscription_${subscription.status}`,
+            from_status: from,
+            stripe_customer_id: customerId,
+            had_access: had,
+          });
+        } else {
+          await logProEvent("pro_subscription_status", userRecord?.username || null, "stripe_webhook", {
+            status: subscription.status,
+            from_status: from,
+            plan_type: (userData as Record<string, unknown> | undefined)?.proType || "unknown",
+            period_end: subscription.current_period_end
+              ? new Date(subscription.current_period_end * 1000).toISOString() : null,
+          });
+        }
+        console.log(`\u2139\uFE0F Subscription ${from} \u2192 ${subscription.status} for ${userRecord?.username || customerId}`);
+        if (!flipped) return new Response("Subscription status recorded", { status: 200 });
+      }
       const daysSincePurchase = subscription.created
         ? Math.round((Date.now() - subscription.created * 1000) / 86400000)
         : null;
@@ -551,6 +633,70 @@ serve(async (req) => {
       }
       
       return new Response("Subscription cancelled", { status: 200 });
+    }
+
+    // A refund is the end of the relationship, not a discount on it. Until
+    // 2026-09-20 nothing here listened, so the money went back and the
+    // person kept Pro until their expiry — a year, on the annual plan.
+    //
+    // Two judgements are encoded:
+    //   - PARTIAL refunds do not revoke. They are a correction to an amount,
+    //     not an exit, and the period is still paid for.
+    //   - a FULL refund also CANCELS the subscription. Our only refund policy
+    //     is the 7-day money-back guarantee, which is a full exit; leaving the
+    //     subscription live would charge the person again next period while
+    //     they have no access, silently, which is the worst outcome available.
+    //     If a goodwill "here is this month back, please stay" case ever
+    //     exists, it needs its own path — do not quietly weaken this one.
+    if (event.type === "charge.refunded") {
+      const charge = event.data.object as Stripe.Charge;
+      const amount = charge.amount ?? 0;
+      const refunded = charge.amount_refunded ?? 0;
+      const full = amount > 0 && refunded >= amount;
+      let customerId = (charge.customer as string) || null;
+      let subscriptionId: string | null = null;
+
+      if (charge.invoice) {
+        try {
+          const invoice = await stripe.invoices.retrieve(charge.invoice as string);
+          customerId = customerId || (invoice.customer as string) || null;
+          subscriptionId = (invoice.subscription as string) || null;
+        } catch (err) {
+          console.warn("[stripe-webhook] could not read the refunded charge's invoice:", err);
+        }
+      }
+
+      const userRecord = await findUserByCustomer(customerId);
+      let cancelledSubscription: string | null = null;
+
+      if (full) {
+        await revokeProAccess(userRecord);
+        if (subscriptionId) {
+          try {
+            const sub = await stripe.subscriptions.retrieve(subscriptionId);
+            if (sub.status !== "canceled") {
+              await stripe.subscriptions.cancel(subscriptionId);
+              cancelledSubscription = subscriptionId;
+            }
+          } catch (err) {
+            console.error("[stripe-webhook] refund: subscription cancel failed:", err);
+          }
+        }
+      }
+
+      await logProEvent("pro_refunded", userRecord?.username || null, "stripe_webhook", {
+        full,
+        charge_id: charge.id,
+        amount_cents: amount,
+        amount_refunded_cents: refunded,
+        currency: charge.currency || null,
+        stripe_customer_id: customerId,
+        subscription_cancelled: cancelledSubscription,
+        revoked: full && !!userRecord,
+        matched_user: !!userRecord,
+      });
+      console.log(`\u21A9\uFE0F ${full ? "Full" : "Partial"} refund on ${charge.id} for ${userRecord?.username || customerId || "unknown customer"}${cancelledSubscription ? " (subscription cancelled)" : ""}`);
+      return new Response("Refund recorded", { status: 200 });
     }
 
     return new Response("Event received", { status: 200 });

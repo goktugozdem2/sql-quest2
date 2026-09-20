@@ -74,3 +74,66 @@ describe('stripe-webhook: the events that make abandonment and churn readable', 
     for (const m of calls) expect(m[2], m[1]).toBe('stripe_webhook');
   });
 });
+
+// ── The payment lifecycle (founder QA, 2026-09-20) ──────────────────────────
+// Until this date the webhook could take money and extend access, but almost
+// nothing could take access away: a refunded customer kept Pro to their
+// expiry (a year, on the annual plan), a card that finally stopped paying
+// kept it too, and a subscription moving to past_due or unpaid changed
+// nothing at all. These guard the four events that close the loop.
+describe('stripe-webhook: access comes back off', () => {
+  it('a full refund revokes access and cancels the subscription', () => {
+    const b = branch('charge.refunded');
+    expect(b).toContain('amount_refunded');
+    expect(b).toContain('revokeProAccess');
+    expect(b).toContain('stripe.subscriptions.cancel');
+    expect(b).toContain('logProEvent("pro_refunded"');
+  });
+
+  it('a partial refund revokes nothing', () => {
+    const b = branch('charge.refunded');
+    // every revoking action sits behind the `full` test
+    const guard = b.indexOf('if (full)');
+    expect(guard, 'the full-refund guard').toBeGreaterThan(-1);
+    expect(b.indexOf('revokeProAccess')).toBeGreaterThan(guard);
+    expect(b.indexOf('stripe.subscriptions.cancel')).toBeGreaterThan(guard);
+  });
+
+  it('a failed payment revokes only once Stripe has stopped retrying', () => {
+    const b = branch('invoice.payment_failed');
+    expect(b).toContain('if (!willRetry && userRecord)');
+    expect(b).toContain('revokeProAccess');
+    expect(b).toContain('"pro_access_revoked"');
+    // the revoke must not be reachable while retries are scheduled
+    const at = b.indexOf('revokeProAccess');
+    const guard = b.indexOf('if (!willRetry');
+    expect(at).toBeGreaterThan(guard);
+  });
+
+  it('an unpaid subscription revokes; past_due only records', () => {
+    const b = branch('customer.subscription.updated');
+    expect(b).toContain('statusChanged');
+    expect(b).toContain('subscription.status === "unpaid"');
+    expect(b).toContain('revokeProAccess');
+    expect(b).toContain('"pro_subscription_status"');
+  });
+
+  it('one lookup and one revocation, shared by every branch', () => {
+    expect(src).toContain('async function findUserByCustomer');
+    expect(src).toContain('async function revokeProAccess');
+    // revoking always clears all three fields — the flag lapsed-pro segments
+    // on is proAutoRenew, and a copy of this block once forgot it
+    const fn = src.slice(src.indexOf('async function revokeProAccess'), src.indexOf('// Plan durations'));
+    expect(fn).toContain('userData.proStatus = false');
+    expect(fn).toContain('userData.proExpiry = new Date().toISOString()');
+    expect(fn).toContain('userData.proAutoRenew = false');
+    expect(fn).not.toContain('proType =');
+  });
+
+  it('the header names every event the endpoint must subscribe to', () => {
+    const header = src.slice(0, src.indexOf('import '));
+    for (const type of ['charge.refunded', 'customer.subscription.updated', 'checkout.session.expired']) {
+      expect(header, `header mentions ${type}`).toContain(type);
+    }
+  });
+});

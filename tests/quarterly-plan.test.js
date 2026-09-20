@@ -133,7 +133,18 @@ describe('the modal offers two cards, never three', () => {
 // The mechanism half of that ask lives in customer.subscription.deleted, and
 // it was wrong in a way that costs money quietly.
 describe('a subscription that ends because nobody paid', () => {
-  const block = webhook.slice(webhook.indexOf('customer.subscription.deleted'));
+  // The HANDLER, not the first mention of the string: the file's header
+  // comment lists every event the endpoint subscribes to, so slicing from
+  // `indexOf('customer.subscription.deleted')` used to hand these tests the
+  // whole file. That passed only while the first `proExpiry = new Date` in
+  // the file happened to be this branch's; the moment a shared revoke helper
+  // appeared above it (2026-09-20) the slice collapsed to ''.
+  const block = (() => {
+    const at = webhook.indexOf('if (event.type === "customer.subscription.deleted")');
+    expect(at, 'the subscription.deleted handler').toBeGreaterThan(-1);
+    const next = webhook.indexOf('if (event.type ===', at + 10);
+    return webhook.slice(at, next === -1 ? webhook.length : next);
+  })();
 
   it('is told apart from someone who simply cancelled', () => {
     // Both arrive as the same event. Cancelling means they paid for the

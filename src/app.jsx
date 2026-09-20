@@ -31294,6 +31294,17 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                   <p className="text-xs mt-1.5" style={{ color: '#8A8E99' }} data-testid="billed-by">
                     Billed by Datrick, Inc. — that is the name on your card statement.
                   </p>
+                  {/* Stripe converts to the buyer's local currency on the
+                      checkout page and there is no way to stop it: Adaptive
+                      Pricing is "Always on" for Payment Links (verified in
+                      the dashboard 2026-09-20 — the toggles there cover
+                      Checkout Sessions, which we do not use). So a buyer in
+                      Turkey clicks $99 and is met with TRY 5,021.88. The
+                      number is right at the day's rate; the surprise is what
+                      loses them. Say it here instead. */}
+                  <p className="text-xs mt-1.5" style={{ color: '#8A8E99' }} data-testid="billed-currency">
+                    Billed in USD; your local currency may be shown at checkout.
+                  </p>
                 </div>
 
 
@@ -32268,12 +32279,32 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
             {(() => {
               const lastDay = lastLoginDay({ loginCalendar, lastActive: Date.now() });
               const fmt = d => { try { return new Date(d).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }); } catch (_) { return d; } };
+              const sittings = Array.isArray(interviewHistory) ? interviewHistory : [];
+              const scores = sittings
+                .map(h => (h && h.questionsTotal ? Math.round((h.questionsCorrect / h.questionsTotal) * 100) : null))
+                .filter(n => Number.isFinite(n));
+              const mockSittings = { count: sittings.length, best: scores.length ? Math.max(...scores) : null };
               return (
                 <div className="mb-4 p-4" data-testid="profile-progress" style={{ background: '#16181F', border: '1px solid #2A2E38', borderRadius: '10px' }}>
                   <p className="text-xs uppercase tracking-wide mb-3" style={{ color: '#8A8E99' }}>Progress</p>
                   <dl className="space-y-1.5 text-xs">
                     <div className="flex justify-between"><dt style={{ color: '#8A8E99' }}>Score</dt><dd style={{ color: '#F2F0EA' }}>{xp.toLocaleString()} XP · {currentLevel.name}</dd></div>
                     <div className="flex justify-between"><dt style={{ color: '#8A8E99' }}>Solved</dt><dd style={{ color: '#F2F0EA' }}>{solvedChallenges.size} challenges</dd></div>
+                    {/* Mock sittings are not challenge solves and never will
+                        be — but leaving them off the panel made it lie by
+                        omission: someone who had sat a whole mock, earned the
+                        XP and reached a rank read "Solved: 0 challenges" with
+                        nothing to account for any of it (founder QA
+                        2026-09-20). The work now has a row of its own. */}
+                    {mockSittings.count > 0 && (
+                      <div className="flex justify-between" data-testid="profile-mocks">
+                        <dt style={{ color: '#8A8E99' }}>Mock interviews</dt>
+                        <dd style={{ color: '#F2F0EA' }}>
+                          {mockSittings.count} {mockSittings.count === 1 ? 'sitting' : 'sittings'}
+                          {mockSittings.best !== null ? ` · best ${mockSittings.best}%` : ''}
+                        </dd>
+                      </div>
+                    )}
                     <div className="flex justify-between"><dt style={{ color: '#8A8E99' }}>Streak</dt><dd style={{ color: '#F2F0EA' }}>{streak} {streak === 1 ? 'day' : 'days'}</dd></div>
                     {lastDay && (
                       <div className="flex justify-between"><dt style={{ color: '#8A8E99' }}>Last login</dt><dd style={{ color: '#F2F0EA' }}>{fmt(lastDay)}</dd></div>

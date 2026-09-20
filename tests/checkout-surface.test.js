@@ -44,6 +44,13 @@ describe('the price the buyer reads', () => {
     expect(app).toContain(`$${perMonth}/month`);
   });
 
+  it('warns that checkout may show a local currency', () => {
+    // Adaptive Pricing is "Always on" for Payment Links, so a TRY buyer
+    // clicking $99 lands on TRY 5,021.88. The modal says so first.
+    expect(app).toMatch(/data-testid="billed-currency"/);
+    expect(app).toMatch(/Billed in USD; your local currency may be shown at checkout/);
+  });
+
   it('names the entity on the card statement', () => {
     expect(app).toMatch(/data-testid="billed-by"/);
     expect(app).toMatch(/Billed by Datrick, Inc\./);
