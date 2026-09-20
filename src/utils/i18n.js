@@ -747,8 +747,10 @@ const TRANSLATIONS = {
       // zero solves. No price, no "Pro", no Hard preview — they have not been
       // given anything yet, so nothing is asked of them.
       coldStartTitle: 'Start here first',
-      coldStartLine: "That one is part of Pro — but you haven't solved anything yet. Start with this instead: it's free, and it takes a couple of minutes.",
+      coldStartLine: "That one is part of Pro — but you haven't solved anything here yet. Solve one free challenge first and every Pro ask opens right after; this one takes a couple of minutes.",
       coldStartCta: 'Solve this one',
+      coldStartAnyway: 'Unlock Pro anyway →',
+      coldStartAnywayNote: 'Already decided? Go straight to the plans.',
       catcherUntouchedOne: "But you haven't touched your free one yet — 1 Hard preview, full problem, no card.",
       catcherUntouchedMany: "But you haven't touched your free ones yet — {n} Hard previews, full problem, no card.",
       catcherWaitingOne: 'But 1 of your free ones is still waiting — a Hard preview, full problem, no card.',
@@ -1727,8 +1729,10 @@ const TRANSLATIONS = {
       unlockHard: 'Zor soruları aç',
       catcherTitle: 'O soru Pro’da.',
       coldStartTitle: 'Önce buradan başla',
-      coldStartLine: 'O soru Pro\'ya dahil — ama henüz hiçbir şey çözmedin. Önce bunu yap: ücretsiz ve birkaç dakika sürüyor.',
+      coldStartLine: 'O soru Pro\'ya dahil — ama burada henüz hiçbir şey çözmedin. Önce bir ücretsiz soru çöz, ardından tüm Pro kapıları açılır; bu soru birkaç dakika sürer.',
       coldStartCta: 'Bunu çöz',
+      coldStartAnyway: 'Yine de Pro\'ya geç →',
+      coldStartAnywayNote: 'Kararını verdiysen doğrudan planlara git.',
       catcherUntouchedOne: 'Ama ücretsiz olana henüz dokunmadın — 1 Zor önizleme, tam soru, kart yok.',
       catcherUntouchedMany: 'Ama ücretsiz olanlara henüz dokunmadın — {n} Zor önizleme, tam soru, kart yok.',
       catcherWaitingOne: 'Ama ücretsiz olanlardan 1 tanesi hâlâ seni bekliyor — Zor önizleme, tam soru, kart yok.',

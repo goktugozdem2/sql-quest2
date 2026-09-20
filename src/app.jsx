@@ -22931,6 +22931,17 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
   // cleared first, then the Pro modal opens — never both (T8 asserts this in
   // the smoke test). Reason hard_challenge, the same one the D-5 banner's
   // "Unlock Hard" sends, so the read sees one reason for the preview surfaces.
+  // "Unlock Pro anyway" from the cold-start gate. Its own reason so the
+  // 09-29 cold-start read can tell an insisting buyer from a sold-to one:
+  // this modal was asked for, never offered.
+  const openProFromColdStart = () => {
+    setPreviewCatcher(null);
+    previewCatcherReturnFocusRef.current = null;
+    trackActivationEvent('cold_start_pro_anyway', { solvedCount: solvedChallenges.size });
+    setProModalReason({ type: 'cold_start_anyway', topic: null, solvedCount: solvedChallenges.size });
+    setShowProModal(true);
+  };
+
   const openProFromPreviewCatcher = () => {
     setPreviewCatcher(null);
     previewCatcherReturnFocusRef.current = null;
@@ -30861,6 +30872,8 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                       ? 'The interview run, before the interview.'
                       : proModalReason.type === 'pricing_link'
                       ? 'Two plans. Annual is the one most people choose.'
+                      : proModalReason.type === 'cold_start_anyway'
+                      ? 'Two plans. Annual is the one most people choose.'
                       : ['learning', 'job_ready'].includes(getUserIntent())
                       ? 'Make SQL second nature.'
                       : 'Walk into the interview ready.'}
@@ -31477,6 +31490,23 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                       </button>
                     </div>
                   )}
+                  {/* The door for someone who came to buy (founder QA
+                      2026-09-20, item 1). The cold-start rule is "never SELL
+                      to someone who has solved nothing" — it was never meant
+                      to refuse a person who asks for the plans. Secondary by
+                      design: the starter above stays the primary action. */}
+                  <button
+                    type="button"
+                    data-testid="cold-start-pro-anyway"
+                    onClick={openProFromColdStart}
+                    className="mt-4 w-full rounded-md border px-4 py-2.5 text-[14px] font-bold"
+                    style={{ borderColor: '#2A2E38', color: '#F2F0EA', background: '#16181F' }}
+                  >
+                    {i18n_t('paywall', 'coldStartAnyway')}
+                  </button>
+                  <p className="mt-2 text-center text-xs" style={{ color: '#8A8E99' }}>
+                    {i18n_t('paywall', 'coldStartAnywayNote')}
+                  </p>
                 </>
               ) : allBeaten ? (
                 <>

@@ -32,8 +32,15 @@ async function ev(expr) {
 }
 async function shot(name) { const r = await cdp('Page.captureScreenshot', { format: 'png' }); fs.writeFileSync(path.join(OUT, `${name}.png`), Buffer.from(r.data, 'base64')); }
 
-const U = 'qa_pro';
-const data = {
+// --free seeds a brand-new free account with zero solves (the founder's
+// test7 shape) so the cold-start gate and the paywall can be walked.
+const FREE = process.argv.includes('--free');
+const U = FREE ? 'qa_free' : 'qa_pro';
+const data = FREE ? {
+  proStatus: false, proType: null, proExpiry: null, solvedChallenges: [], challengeAttempts: [], xp: 0,
+  hasSeenOnboarding: true, firstRunCompleted: true, lastActive: Date.now(), createdAt: Date.now() - 3600000,
+  interviewHistory: [],
+} : {
   proStatus: true, proType: 'annual', proExpiry: new Date(Date.now() + 300 * 86400000).toISOString(),
   // --solved=a,b,c mirrors a real account's progress (the founder's test2 by
   // default) so Learning Path locks can be read the way he sees them.
@@ -85,6 +92,40 @@ const preamble = `(() => {
 const click = (re) => `(() => { const b = [...document.querySelectorAll('button')].find(b => ${re}.test(b.textContent.trim())); if (b) b.click(); return !!b; })()`;
 
 const SCENARIOS = {
+  // The founder's flow: a locked mock's "Unlock Pro" for a 0-solve account.
+  async cold_start_paywall() {
+    const id = arg('id', 'capital-one-codesignal');
+    await cdp('Page.navigate', { url: `${URL}/app/?interview=${id}` });
+    await wait(7000);
+    return ev(`(async () => {
+      const w = ms => new Promise(r => setTimeout(r, ms));
+      const out = {};
+      out.gate = document.querySelector('[data-state="cold_start"]') ? 'cold_start' : null;
+      out.gateText = document.querySelector('#preview-catcher-line')?.textContent || null;
+      const anyway = document.querySelector('[data-testid="cold-start-pro-anyway"]');
+      out.anywayLabel = anyway?.textContent || null;
+      out.text = document.body.innerText.replace(/\\s+/g, ' ').slice(0, 300);
+      out.modalOpen = /\\$99|\\$29/.test(document.body.innerText);
+      if (!anyway) return out;
+      anyway.click(); await w(900);
+      const plans = [...document.querySelectorAll('[data-pro-plans] button, [data-pro-plans] div[role=button]')];
+      out.modal = /\\$99|\\$29/.test(document.body.innerText);
+      out.planButtons = plans.map(b => b.textContent.replace(/\\s+/g, ' ').trim().slice(0, 40));
+      out.headline = document.querySelector('[data-pro-plans]')?.closest('div')?.parentElement?.querySelector('h2')?.textContent || null;
+      // Second click: close the modal, then use a locked card's own
+      // "Unlock Pro" again — it must raise the gate again, not go dead.
+      [...document.querySelectorAll('button')].find(b => /^✕$|Close|Maybe later|Not now/i.test(b.textContent.trim()))?.click();
+      await w(700);
+      const tab = [...document.querySelectorAll('button')].find(b => /Interview/i.test(b.textContent) && b.textContent.length < 30);
+      if (tab) { tab.click(); await w(1200); }
+      const unlock = [...document.querySelectorAll('button')].find(b => /Unlock Pro/.test(b.textContent));
+      out.secondClickButton = unlock?.textContent?.trim() || null;
+      if (unlock) { unlock.click(); await w(900); }
+      out.secondClickGate = !!document.querySelector('[data-state="cold_start"]');
+      out.secondClickAnyway = !!document.querySelector('[data-testid="cold-start-pro-anyway"]');
+      return out;
+    })()`);
+  },
   // Fail a mock, then read what the list recommends.
   async recommend_after() {
     const id = arg('id', 'revolut-analytics-screen');

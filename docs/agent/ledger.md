@@ -2155,6 +2155,18 @@ of the verifier and must never be rounded to `FLAT`.
     Recorded here, before the fix ships, so the 09-20 verdict is read against
     the change and not against a denominator nobody wrote down.
 ### cold start: nobody is asked to pay before they have solved anything
+
+- **Amended 2026-09-20 (founder QA round 6), nine days before the read.** The
+  rule was "never SELL to someone who has solved nothing"; in practice the
+  gate also REFUSED someone who came to buy. A new free account pressed
+  "Unlock Pro" on a locked mock, met the starter dialog, and had no way to
+  the plans at all. The dialog now carries a secondary button — "Unlock Pro
+  anyway" — under the starter, and says the threshold out loud (one free
+  solve). Nothing offers: the modal only opens on that click, with its own
+  reason `cold_start_anyway` plus the event `cold_start_pro_anyway`, so the
+  09-29 read can separate a buyer who insisted from a person who was sold to.
+  Read both: the claim is unharmed if `cold_start_anyway` shows and converts,
+  and it is only broken if the STARTER stops being taken.
 - **Claimed** 2026-09-08
 - **Change** `src/utils/paid-wall.js`: a person with zero solves never sees a
   Pro ask. All four gates (`challenge_hard`, `interview`, `thirty_day`,

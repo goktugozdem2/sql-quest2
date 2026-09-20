@@ -795,6 +795,27 @@ select count(distinct n.username) as noted,
 from noted n left join answered a on a.username = n.username;
 ```
 
+## `cold_start_anyway`
+
+The buyer who insisted (2026-09-20). The cold-start gate shows a starter
+challenge to anyone with zero solves; from this date its dialog also carries
+"Unlock Pro anyway", which fires `cold_start_pro_anyway {solvedCount}` and
+opens the Pro modal with `reason='cold_start_anyway'` — a NEW value in the
+`pro_modal_shown.reason` series, never auto-fired, always a click.
+
+Read it beside the cold-start claim: the point of that claim is that nobody
+is SOLD to before their first solve, not that nobody may buy. Three numbers:
+people shown the gate, people who clicked the door, people who then reached
+checkout.
+
+```sql
+select count(distinct case when event = 'cold_start_pro_anyway' then username end) as asked,
+       count(distinct case when event = 'pro_modal_shown'
+              and ((metadata #>> '{}')::jsonb)->>'reason' = 'cold_start_anyway' then username end) as modal,
+       count(distinct case when event = 'pro_checkout_clicked' then username end) as checkout
+from pro_events where created_at >= :since;
+```
+
 ## `purchases`
 
 Verified payments. The ONLY money truth is the row the stripe-webhook edge

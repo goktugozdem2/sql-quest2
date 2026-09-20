@@ -343,3 +343,36 @@ describe('companySetGate applies to authored sets only', () => {
     expect(i18n).toMatch(/companySetSourced:/);
   });
 });
+
+// Founder QA 2026-09-20 (round 6, items 1–3): the cold-start gate never sells
+// to someone who has solved nothing — but it must not refuse someone who came
+// to buy. A secondary door, the threshold in words, and a label that leads
+// somewhere on the second click too.
+describe('the cold-start gate has a door for a buyer', () => {
+  it('the dialog carries a secondary Pro button with its own reason', async () => {
+    const fs = await import('node:fs');
+    const app = fs.readFileSync(new URL('../src/app.jsx', import.meta.url), 'utf8');
+    expect(app).toContain('data-testid="cold-start-pro-anyway"');
+    expect(app).toContain('const openProFromColdStart = () => {');
+    expect(app).toMatch(/setProModalReason\(\{ type: 'cold_start_anyway'/);
+    expect(app).toMatch(/trackActivationEvent\('cold_start_pro_anyway'/);
+    // The starter stays the primary action: the Pro button is not the one
+    // carrying data-catcher-primary.
+    const dialog = app.slice(app.indexOf("i18n_t('paywall', 'coldStartLine')"), app.indexOf("i18n_t('paywall', 'coldStartAnywayNote')"));
+    expect(dialog.indexOf('data-catcher-primary="true"')).toBeLessThan(dialog.indexOf('cold-start-pro-anyway'));
+  });
+  it('the modal knows the new reason', async () => {
+    const fs = await import('node:fs');
+    const app = fs.readFileSync(new URL('../src/app.jsx', import.meta.url), 'utf8');
+    expect(app).toMatch(/proModalReason\.type === 'cold_start_anyway'/);
+  });
+  it('the gate says how many solves it wants, in both languages', async () => {
+    const fs = await import('node:fs');
+    const i18n = fs.readFileSync(new URL('../src/utils/i18n.js', import.meta.url), 'utf8');
+    expect(i18n).toMatch(/coldStartLine: "That one is part of Pro — but you haven't solved anything here yet\. Solve one free challenge first/);
+    expect(i18n).toMatch(/coldStartLine: 'O soru Pro\\'ya dahil — ama burada henüz hiçbir şey çözmedin\. Önce bir ücretsiz soru çöz/);
+    for (const k of ['coldStartAnyway', 'coldStartAnywayNote']) {
+      expect((i18n.match(new RegExp(`${k}:`, 'g')) || []).length, k).toBe(2);
+    }
+  });
+});
