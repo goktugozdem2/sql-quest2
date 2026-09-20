@@ -77,6 +77,54 @@ const preamble = `(() => {
 const click = (re) => `(() => { const b = [...document.querySelectorAll('button')].find(b => ${re}.test(b.textContent.trim())); if (b) b.click(); return !!b; })()`;
 
 const SCENARIOS = {
+  // Walk a mock's MCQs, answering the first option each time; report the
+  // verdict, the explanation and the schema panel for the first question.
+  async mock_walk() {
+    const id = arg('id', 'revolut-analytics-screen');
+    await cdp('Page.navigate', { url: `${URL}/app/?interview=${id}` });
+    await wait(6000);
+    return ev(`(async () => {
+      const w = ms => new Promise(r => setTimeout(r, ms));
+      const out = { header: document.querySelector('[data-testid="interview-content"]')?.previousElementSibling?.innerText.replace(/\\s+/g, ' ').slice(0, 120), schema: document.querySelector('[data-testid="interview-schema"]')?.innerText.replace(/\\s+/g, ' ').slice(0, 160), steps: [] };
+      for (let i = 0; i < 3; i++) {
+        const q = document.querySelector('[data-testid="interview-question"] h3')?.textContent;
+        const opt = document.querySelector('[data-testid^="interview-mcq-option-"]');
+        if (!opt) { out.steps.push({ q, note: 'not an MCQ' }); break; }
+        opt.click(); await w(200);
+        document.querySelector('[data-testid="interview-mcq-submit"]').click(); await w(600);
+        const verdict = [...document.querySelectorAll('.fixed h3')].map(h => h.textContent).pop();
+        const expl = document.querySelector('[data-testid="interview-mcq-explanation"]')?.innerText.replace(/\\s+/g, ' ').slice(0, 140) || null;
+        out.steps.push({ q, verdict, expl });
+        [...document.querySelectorAll('button')].find(b => /^Next question/.test(b.textContent.trim()))?.click(); await w(600);
+      }
+      return out;
+    })()`);
+  },
+  // Sit a mock: answer Q1 wrong, skip the rest, then read the recommendation
+  // banner's focus areas (must come from this sitting, submitted misses only).
+  async focus_after_sitting() {
+    const id = arg('id', 'sql-fundamentals-free');
+    await cdp('Page.navigate', { url: `${URL}/app/?interview=${id}` });
+    await wait(6000);
+    return ev(`(async () => {
+      const w = ms => new Promise(r => setTimeout(r, ms));
+      const click = (re) => { const b = [...document.querySelectorAll('button')].find(b => re.test(b.textContent.trim())); if (b) b.click(); return !!b; };
+      const cm = document.querySelector('.sql-cm-editor .CodeMirror').CodeMirror;
+      cm.setValue('SELECT name FROM employees'); await w(200);
+      document.querySelector('[data-testid="interview-submit-answer"]').click(); await w(600);
+      const wrongTitle = document.querySelector('[data-testid="interview-feedback-diagnosis"]')?.textContent || null;
+      click(/^Next question/); await w(500);
+      for (let i = 0; i < 3; i++) {
+        if (!document.querySelector('[data-testid="interview-skip-yes"]')) { document.querySelector('[data-testid="interview-skip"]')?.click(); await w(250); }
+        document.querySelector('[data-testid="interview-skip-yes"]')?.click(); await w(450);
+        click(i < 2 ? /^Next question/ : /^See results/); await w(600);
+      }
+      document.querySelector('[data-testid="interview-back-to-list"]')?.click(); await w(1500);
+      const rec = [...document.querySelectorAll('h3')].find(h => /Recommended/.test(h.textContent));
+      const box = rec ? rec.closest('div').parentElement : null;
+      return { wrongTitle, recommendation: box ? box.innerText.replace(/\\s+/g, ' ').slice(0, 260) : null };
+    })()`);
+  },
   // The in-app company view: does it say where the set came from?
   async company_banner() {
     const company = arg('company', 'Stripe');
