@@ -583,6 +583,30 @@ Prices live in the modal, not here — re-read the modal before quoting.
 Rewritten Coach-forward:
 - "Free includes the Coach. Pro adds:" → Unlimited AI Tutor, Hard challenges, Full Mock Interview bank, All Daily difficulties, Full Warm-Up bank, 30-Day Challenge, Priority support.
 
+**The Stripe side (walked and fixed 2026-09-20).** Checkout is Stripe
+**Payment Links** (`CHECKOUT_LINKS` in app.jsx), so the product name, the
+description, the branding and the currency all live in the dashboard, not in
+git — and they go stale silently. Found on the founder's first real run:
+the annual product was still named "Annual (Save 57%)", which is the
+$19-month arithmetic; the description sold "Boss Battles" and "Daily
+Workouts", neither of which exists; the header showed the Datrick logo. Now:
+products are `SQL Quest Pro — Annual` / `— Monthly` with descriptions that
+mirror the modal, public business name (DBA) is **SQL Quest** (legal name
+stays Datrick, Inc.), statement descriptor is **SQLQUEST.APP** (shortened
+`SQLQUEST`), support is support@sqlquest.app + sqlquest.app, privacy/terms
+URLs filled, brand icon is the bolt, brand colour #FFE34D.
+- A discount percentage never goes in a product NAME — that is what went
+  stale. `tests/checkout-surface.test.js` binds the modal's badge to the
+  modal's prices; nothing can bind Stripe's copy, so re-read it after any
+  price change.
+- The statement descriptor must resemble the business name or the URL, or
+  Stripe marks it **Invalid**. SQLQUEST.APP was invalid until the DBA became
+  SQL Quest.
+- **Currency is not ours to set.** Adaptive Pricing is "Always on" for
+  Payment Links (no toggle), so a Turkish buyer sees TRY by default with a
+  USD tab. The only fix is server-created Checkout Sessions — a real change
+  to the money path, not a setting.
+
 ### Testing
 - **1,406 tests passing** across 59 test files (vitest), incl. `tests/site-counts.test.js` — the guard that fails on any stale product count on a static page — and `tests/cloud-save-contract.test.js`, the guard on the one write that must never lie. Runs via `npm run test:run`. (Measured 2026-09-12 evening; this line goes stale fast — re-run before quoting it.)
 - `scripts/smoke-test.js` (headless Chrome e2e): 8/8 pass against a live dev server. Run with `npm run smoke` (dev server must be up on :4321 or pass URL arg).
