@@ -795,6 +795,37 @@ select count(distinct n.username) as noted,
 from noted n left join answered a on a.username = n.username;
 ```
 
+## `pro_revoked`
+
+From 2026-09-20 access can come back off, and every way it does writes a row.
+Three events, one question: who stopped being Pro, and why.
+
+- `pro_refunded` — `full` true/false, `subscription_cancelled`, `revoked`,
+  `matched_user`. A `matched_user: false` row is a refund we could not tie to
+  an account: the charge's customer id is not on any `users` row, so somebody
+  got their money back and may still hold access. Read these one by one.
+- `pro_access_revoked` — `cause` is `payment_failed_final` (Stripe stopped
+  retrying) or `subscription_unpaid` / `subscription_incomplete_expired`.
+- `pro_subscription_status` — `status` / `from_status`, for the transitions
+  that do NOT change access (past_due, and the recovery back to active).
+
+```sql
+select event, ((metadata #>> '{}')::jsonb)->>'cause' as cause,
+       ((metadata #>> '{}')::jsonb)->>'full' as full_refund,
+       count(*) as n
+from pro_events
+where event in ('pro_refunded','pro_access_revoked','pro_subscription_status')
+  and created_at >= :since
+group by 1,2,3 order by n desc;
+```
+
+**The gap before this date.** The endpoint subscribed to four events, not
+seven: `checkout.session.expired` and `customer.subscription.updated` were
+written on 2026-09-12 and never added in the dashboard, and `charge.refunded`
+did not exist. So `pro_checkout_expired` has NO rows before 2026-09-20 and
+that is not an absence of abandonment — it is an absence of delivery. Do not
+read any of these series across that date.
+
 ## `interview_tab_open`
 
 From 2026-09-20 the Interview tab has no solve floor: `interview_tab_viewed`

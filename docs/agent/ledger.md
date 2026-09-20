@@ -475,6 +475,42 @@ of the verifier and must never be rounded to `FLAT`.
   first-run door; read company pages against `/sql-exercises/` as control.
 - **Verdict** _pending_
 
+### access comes back off (founder QA 2026-09-20, P0 items 1-4)
+
+**Claim.** The money path could grant access and could not withdraw it, so
+some people held Pro they had stopped paying for. Closing that costs nothing
+in revenue (nobody pays more) and removes an unbounded liability.
+
+**Measured before the change.** `test7` had been refunded in full at 17:30 and
+still read `proStatus: true, proExpiry: 2026-10-20` at 18:00 — a month of
+access on money that had been given back. On the annual plan the same bug is
+a year. The Stripe endpoint was subscribed to FOUR events; the two written on
+2026-09-12 (`checkout.session.expired`, `customer.subscription.updated`) had
+never been added in the dashboard, so that code had never once run in
+production.
+
+**What shipped.** `charge.refunded` (full refund revokes and cancels the
+subscription; partial does neither), a revoke on the final payment failure,
+and status handling on `customer.subscription.updated`. Endpoint now
+subscribed to seven events; function deployed; `test7` corrected by hand
+(`supabase/manual/20260920_test7_refunded.sql`) because Stripe will not
+retro-deliver an event to a destination that was not subscribed when it
+fired.
+
+**Verified end to end.** Scheduling test7's cancellation at 17:59 produced
+`pro_subscription_cancelled {scheduled: true, cancel_at: 2026-10-20}` in
+`pro_events` 3 seconds later, through the newly subscribed event and the
+newly deployed function.
+
+**Falsification.** A `pro_refunded` row with `matched_user: false`, or a
+`pro_access_revoked` row for someone whose payment had in fact succeeded,
+means this is revoking the wrong people. Read 2026-10-21 with the rest of the
+billing series; metric `pro_revoked`.
+
+**Still open, deliberately.** A full refund cancels the subscription
+outright. If the founder ever wants "here is this month back, please stay",
+that needs its own path — the current rule is written down in the handler.
+
 ### the price story: page and modal tell it the same way (founder's items 3, 5, 16 — 2026-09-12)
 
 - **Amended 2026-09-20 (founder's first real walk through Stripe).** Three
