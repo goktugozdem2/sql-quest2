@@ -42,6 +42,7 @@ import { expandStageChallenges, placementStartIndex as roadmapPlacementStartInde
 import { shouldEmitLockEvent, lockEventKey } from './utils/lock-events.js';
 import { shouldAskForReview, enabledReviewPlatforms, REVIEW_ASK_REASONS } from './utils/review-ask.js';
 import { eligibleTargets, findTarget, planTargets, findPlanTarget, companyReadiness, planToDate, daysUntil, readinessBucket, MIN_EVIDENCE_SOLVES, MIN_TAGGED_CHALLENGES, PREP_PLAN_STATUS, TARGET_KIND } from './utils/interview-prep.js';
+import { archetypeForCompany } from './data/interview-archetypes.js';
 import { buildDivision as buildLeagueDivision, tierForXp as leagueTierForXp } from './utils/leagues.js';
 import { getPrimarySkeleton, getAllSkeletons } from './utils/skeletons.js';
 import { diagnoseResult, diagnosisShort, primaryHint, rowDiffSummary } from './utils/diagnose.js';
@@ -22420,8 +22421,18 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
 
   // The free three of a company's set under `companySetGate`, else null —
   // callers fall back to "everything not Hard-locked", today's meaning.
+  //
+  // 2026-09-20 (founder QA round 5, item 5): the gate only applies where the
+  // set was AUTHORED for that company — a signed archetype member (today
+  // Capital One and Revolut, src/data/interview-archetypes.js). Every other
+  // company's set is topical fit: our challenges matched to the topics
+  // candidates report, not questions that company asks. Walling the fourth
+  // of a topical set would sell a boundary we cannot defend.
+  const companyHasAuthoredSet = (company) => {
+    try { return !!company && !!archetypeForCompany(company); } catch (_) { return false; }
+  };
   const companyGateFreeIds = () => (
-    ftbFlag('companySetGate') && companyFilter && !isPro
+    ftbFlag('companySetGate') && companyFilter && !isPro && companyHasAuthoredSet(companyFilter)
       ? companySetFreeIds(companyScopedChallenges())
       : null
   );
@@ -36232,6 +36243,13 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                           <h3 className="text-lg sm:text-xl font-bold text-[#F2F0EA] mb-2">
                             You're practicing {companyFilter} SQL questions.
                           </h3>
+                          {/* Where the set came from, in the app too (founder QA
+                              2026-09-20, item 4). The company pages have carried
+                              this line under their question list since they
+                              shipped; the in-app view did not. */}
+                          <p className="text-xs text-gray-400 mb-2" data-testid="company-set-provenance">
+                            {i18n_t('practice', companyHasAuthoredSet(companyFilter) ? 'companySetSourced' : 'companySetMatched', { company: companyFilter })}
+                          </p>
                           <p className="text-gray-300 text-sm sm:text-base">
                             {(() => {
                               // Free-set progress makes completion a goal the visitor
@@ -37141,7 +37159,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                               "Databricks" visitor reading an Amazon-flavored
                               story feels handed someone else's homework. */}
                           {companyFilter && (currentChallenge.companies || []).includes(companyFilter) && (
-                            <span className="text-xs px-2 py-0.5 rounded bg-blue-500/20 text-blue-300">
+                            <span className="text-xs px-2 py-0.5 rounded bg-blue-500/20 text-blue-300" title={i18n_t('practice', companyHasAuthoredSet(companyFilter) ? 'companySetSourced' : 'companySetMatched', { company: companyFilter })}>
                               🎯 {companyFilter} pattern
                             </span>
                           )}

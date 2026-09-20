@@ -317,3 +317,29 @@ describe('source guards — the five flags are wired, and off', () => {
     expect(app).toMatch(/case 'challenge': return item\?\.difficulty === 'Hard' && !item\?\.freePreview;/);
   });
 });
+
+// Founder QA 2026-09-20, item 5: the company set gate (M1, flips 10-14) only
+// walls a set that was authored for that company — a signed archetype member.
+// Everything else is topical fit and stays open.
+describe('companySetGate applies to authored sets only', () => {
+  it('the app asks archetypeForCompany before gating', async () => {
+    const fs = await import('node:fs');
+    const app = fs.readFileSync(new URL('../src/app.jsx', import.meta.url), 'utf8');
+    expect(app).toContain('const companyHasAuthoredSet = (company) =>');
+    expect(app).toMatch(/ftbFlag\('companySetGate'\) && companyFilter && !isPro && companyHasAuthoredSet\(companyFilter\)/);
+  });
+  it('the signed members are the gated ones', async () => {
+    const { archetypeForCompany, archetypeMemberCompanies } = await import('../src/data/interview-archetypes.js');
+    expect(archetypeMemberCompanies().sort()).toEqual(['Capital One', 'Revolut']);
+    expect(archetypeForCompany('Stripe')).toBeFalsy();
+    expect(archetypeForCompany('Capital One')).toBeTruthy();
+  });
+  it('the in-app company banner says where the set came from', async () => {
+    const fs = await import('node:fs');
+    const app = fs.readFileSync(new URL('../src/app.jsx', import.meta.url), 'utf8');
+    const i18n = fs.readFileSync(new URL('../src/utils/i18n.js', import.meta.url), 'utf8');
+    expect(app).toContain('data-testid="company-set-provenance"');
+    expect(i18n).toMatch(/companySetMatched: 'These are SQL Quest challenges matched to the topics candidates report for \{company\}/);
+    expect(i18n).toMatch(/companySetSourced:/);
+  });
+});

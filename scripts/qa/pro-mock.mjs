@@ -35,7 +35,10 @@ async function shot(name) { const r = await cdp('Page.captureScreenshot', { form
 const U = 'qa_pro';
 const data = {
   proStatus: true, proType: 'annual', proExpiry: new Date(Date.now() + 300 * 86400000).toISOString(),
-  solvedChallenges: [91, 92, 93, 94, 95, 96, 97, 98], challengeAttempts: [], xp: 500,
+  // --solved=a,b,c mirrors a real account's progress (the founder's test2 by
+  // default) so Learning Path locks can be read the way he sees them.
+  solvedChallenges: (arg('solved', '1,2,3,4,6,7,8,9,10,12,13,14,15,16,17,5,11,18,19,20,21,22,23,24,26,28,37,38,39,35,29,30,31,32,33,34,25,118,45,46,103,116,42,57,66,122,91,92,93,94,95,96,112,97,119,64,120,36,53,43,56,106,227,206,207,208,235,244,247,249,108,63,146,164,166,167,137,41,65,157,136,143,132,239,170')).split(',').map(Number),
+  challengeAttempts: [], xp: 26257, coachState: { goalId: 'fundamentals', startedAt: '2026-04-17T13:18:17.571Z', stepsCompleted: ['f-4', 'f-6', 'f-8', 'f-9'] },
   hasSeenOnboarding: true, firstRunCompleted: true, lastActive: Date.now(), createdAt: Date.now() - 30 * 86400000,
 };
 const preamble = `(() => {
@@ -74,6 +77,33 @@ const preamble = `(() => {
 const click = (re) => `(() => { const b = [...document.querySelectorAll('button')].find(b => ${re}.test(b.textContent.trim())); if (b) b.click(); return !!b; })()`;
 
 const SCENARIOS = {
+  // The in-app company view: does it say where the set came from?
+  async company_banner() {
+    const company = arg('company', 'Stripe');
+    await cdp('Page.navigate', { url: `${URL}/app/?company=${encodeURIComponent(company)}` });
+    await wait(7000);
+    return ev(`({ user: localStorage.getItem('sqlquest_user'), guest: /Playing as Guest/.test(document.body.innerText), provenance: document.querySelector('[data-testid="company-set-provenance"]')?.textContent || null })`);
+  },
+  // The Learning Path as a signed-in account sees it: every stage, and
+  // whether it reads as locked (founder QA 2026-09-20, item 3).
+  async path_locks() {
+    await cdp('Page.navigate', { url: `${URL}/app/` });
+    await wait(7000);
+    await shot('path-locks');
+    return ev(`(() => {
+      const cards = [...document.querySelectorAll('button, div')].filter(el => /Data Cleanup Logic|Multi-Step Queries|CTEs|Window Functions|Joining Tables|Filtering and Sorting|Aggregations/.test(el.textContent || '') && el.children.length < 12);
+      const seen = new Map();
+      for (const el of cards) {
+        const name = (el.textContent.match(/Data Cleanup Logic|Multi-Step Queries|CTEs|Window Functions|Joining Tables|Filtering and Sorting|Aggregations/) || [])[0];
+        if (!name || seen.has(name)) continue;
+        seen.set(name, {
+          locked: /🔒|Locked/i.test(el.textContent) || el.getAttribute('aria-disabled') === 'true' || (el.tagName === 'BUTTON' && el.disabled),
+          text: el.textContent.replace(/\\s+/g, ' ').slice(0, 110),
+        });
+      }
+      return { user: localStorage.getItem('sqlquest_user'), guest: /Playing as Guest/.test(document.body.innerText), stages: Object.fromEntries(seen) };
+    })()`);
+  },
   // Does a ?challenge= / ?company= link land where it promises, signed in?
   async deeplink_lands() {
     const path = arg('path', '/app/?challenge=23');

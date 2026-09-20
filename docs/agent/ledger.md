@@ -818,6 +818,17 @@ of the verifier and must never be rounded to `FLAT`.
 
 ### company sets: three free, then Pro (free-tier boundary M1)
 
+- **Amended 2026-09-20 (founder QA round 5, item 5), before the flip.** The
+  gate applies ONLY where the set was authored for that company — a signed
+  archetype member, today Capital One and Revolut
+  (`archetypeForCompany`, src/data/interview-archetypes.js). Every other
+  company's set is topical fit: SQL Quest challenges matched to the topics
+  candidates report, which is now said in the app as well as on the page
+  (`companySetMatched` / `companySetSourced`). Walling the fourth question of
+  a topical set would sell a boundary we cannot defend. The read therefore
+  covers two companies, not thirty; if that n is too small on 10-14, the
+  honest move is to postpone, not to widen the gate.
+
 - **Claimed** 2026-09-12 · **Flips** 2026-10-14 by scheduled task — after the
   intent-routing read (10-13) on `reach_6_rate`, which this moves for company
   arrivals by design · **Read** 2026-11-04 (flip + 21 days).

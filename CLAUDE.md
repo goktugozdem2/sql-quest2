@@ -713,7 +713,9 @@ Rewritten Coach-forward:
   `goalWallEarly`) ·
   **10-14** `companySetGate` (M1, after the intent-routing reach-6 read it
   would confound). Nothing monetisation-adjacent flips before 09-29.
-- M1: in a company view the first three of the set are free, the fourth
+- M1 (amended 2026-09-20): the gate applies only to a company whose set was
+  authored for it — a signed archetype member (Capital One, Revolut). In such
+  a company view the first three of the set are free, the fourth
   meets `wall='company_set'` (`surface='challenge_set'`), reason
   `company_set`; the banner, the row locks and the set-complete ask all read
   `companyGateFreeIds()`. Solved is never taken back; the general list is
