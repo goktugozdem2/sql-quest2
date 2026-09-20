@@ -117,6 +117,29 @@ const SCENARIOS = {
       return out;
     })()`);
   },
+  // What the buyer reads at the moment of paying (founder QA 2026-09-20).
+  async price_modal_copy() {
+    await cdp('Page.navigate', { url: `${URL}/app/?pro=1` });
+    await wait(7000);
+    await shot('price-modal');
+    return ev(`(async () => {
+      const w = ms => new Promise(r => setTimeout(r, ms));
+      const anyway = document.querySelector('[data-testid="cold-start-pro-anyway"]');
+      if (anyway) { anyway.click(); await w(900); }
+      const plans = document.querySelector('[data-pro-plans]');
+      const modal = plans ? plans.closest('div[class*=rounded]') || plans.parentElement : null;
+      const text = (modal || document.body).innerText.replace(/\\s+/g, ' ');
+      return {
+        modalOpen: !!plans,
+        badge: (text.match(/SAVE \\d+%/) || [null])[0],
+        prices: (text.match(/\\$\\d+(\\.\\d+)?/g) || []).slice(0, 6),
+        billedBy: document.querySelector('[data-testid="billed-by"]')?.textContent.trim() || null,
+        verifyButton: [...document.querySelectorAll('button')].some(b => /Verify Payment/i.test(b.textContent)),
+        justCompleted: /Just completed payment/i.test(text),
+        guarantee: /7-day money-back/i.test(text),
+      };
+    })()`);
+  },
   // The founder's flow: a locked mock's "Unlock Pro" for a 0-solve account.
   async cold_start_paywall() {
     const id = arg('id', 'capital-one-codesignal');

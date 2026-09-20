@@ -477,6 +477,32 @@ of the verifier and must never be rounded to `FLAT`.
 
 ### the price story: page and modal tell it the same way (founder's items 3, 5, 16 — 2026-09-12)
 
+- **Amended 2026-09-20 (founder's first real walk through Stripe).** Three
+  things the buyer read at the moment of paying, none of them visible from
+  inside the app:
+  1. The modal said SAVE 72% and the Stripe product said 57%. Ours is the
+     true one ($29 x 12 = $348 -> $99). Stripe's name is left over from the
+     $19 month ($228 -> $99 = 57%) and is the founder's to change in the
+     dashboard; `tests/checkout-surface.test.js` now binds our badge to our
+     own prices so the two can't drift again on our side.
+  2. The card statement reads "Datrick, Inc." The modal says so now, above
+     the plan cards' fold, so the name on the statement is never a surprise
+     (a surprise there is a chargeback).
+  3. "Just completed payment? -> Verify Payment" sat next to the price. It
+     is gone from the buying surface. **Measured the same day:** for all
+     four real purchases the `stripe_webhook` row lands 3-6 seconds BEFORE
+     the buyer's browser returns (sergelafarge 6s, sab3r 5s, jeromezhao 4s,
+     harinivr02 3s), and the button never activated anyone — zero
+     `pro_purchase_completed` rows with source `existing_user_data` or
+     `pending_subscription`, ever. The same logic now sits on the pending
+     screen, which is reached only after six failed polls (~12s), i.e. only
+     when the sentence is true.
+- **What this does to the 10-03 read:** `modal_click_rate` (3.4% baseline,
+  15% target) is measured on a modal that changed on 09-20. If it moves,
+  that is this change plus the 09-13 rewrite, not the rewrite alone. The
+  removal is the one to watch: it takes a line OUT of the buying surface,
+  so a drop would be surprising and worth reverting.
+
 - **Claimed** 2026-09-12 · **Live** on push, no flag · **Read** 2026-10-03.
 - **Change** the Pro modal sells two plans — annual first and highlighted
   ($99, "most people choose this"), monthly beside it ($29) — and the $199

@@ -24535,6 +24535,64 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
   // the identity stashed at plan-click time (guest buyers — guest sessions
   // don't survive the checkout round-trip).
   const [paymentSuccessState, setPaymentSuccessState] = useState(null); // null | 'activated' | 'pending'
+  // Recovery for a purchase the webhook could not bind to this account.
+  //
+  // Measured 2026-09-20, all four real purchases: the stripe_webhook row
+  // lands 3-6 SECONDS BEFORE the buyer's browser gets back to the app, so
+  // the resolver above finds Pro already on and this path never runs. It
+  // used to sit inside the pricing modal, under "Just completed payment?",
+  // where the only people who ever read it were people deciding whether to
+  // pay — a manual verify button next to the price says the payment might
+  // not arrive. It has never activated anyone (zero pro_purchase_completed
+  // rows with source existing_user_data or pending_subscription). It now
+  // appears only on the pending screen, which is reached only after six
+  // failed polls, i.e. only when it is actually true.
+  const [verifyState, setVerifyState] = useState('idle'); // idle | checking | notfound | done
+  const verifyPurchase = async () => {
+    if (!currentUser) return;
+    setVerifyState('checking');
+    try {
+      const userData = await loadUserData(currentUser);
+      if (userData?.proStatus) {
+        setUserProStatus(true);
+        setProType(userData.proType);
+        setProExpiry(userData.proExpiry);
+        setProAutoRenew(userData.proAutoRenew);
+        trackActivationEvent('pro_purchase_completed', { plan: userData.proType || 'unknown', source: 'existing_user_data' });
+        setVerifyState('done');
+        setPaymentSuccessState('activated');
+        return;
+      }
+      if (isSupabaseConfigured() && userData?.email) {
+        const { data: pending } = await supabaseFetch(
+          `pending_subscriptions?email=eq.${encodeURIComponent(userData.email.toLowerCase())}&claimed=eq.false&limit=1`
+        );
+        if (pending && pending.length > 0) {
+          const sub = pending[0];
+          userData.proStatus = true;
+          userData.proType = sub.plan_type;
+          userData.proExpiry = sub.expiry;
+          userData.proAutoRenew = sub.plan_type !== 'lifetime';
+          setUserProStatus(true);
+          setProType(sub.plan_type);
+          setProExpiry(sub.expiry);
+          setProAutoRenew(sub.plan_type !== 'lifetime');
+          trackActivationEvent('pro_purchase_completed', { plan: sub.plan_type || 'unknown', source: 'pending_subscription' });
+          await supabaseFetch(`pending_subscriptions?id=eq.${sub.id}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ claimed: true, claimed_by: currentUser, claimed_at: new Date().toISOString() })
+          });
+          saveUserData(currentUser, userData);
+          setVerifyState('done');
+          setPaymentSuccessState('activated');
+          return;
+        }
+      }
+      setVerifyState('notfound');
+    } catch (_) {
+      setVerifyState('notfound');
+    }
+  };
   const pendingPaymentSuccessRef = useRef((() => {
     if (typeof window === 'undefined') return false;
     try { return new URLSearchParams(window.location.search).get('payment') === 'success'; } catch (_) { return false; }
@@ -24575,7 +24633,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
         }
       } catch (_) { /* transient fetch failure — keep polling */ }
       if (attempts < 6) setTimeout(poll, 2000);
-      else setPaymentSuccessState('pending'); // webhook slow — Verify Payment in the Pro menu remains the fallback
+      else setPaymentSuccessState('pending'); // webhook lag — the pending screen offers the recovery button
     };
     poll();
     return () => { cancelled = true; };
@@ -24700,6 +24758,21 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
           >
             {i18n_t('pro', 'payGuestCTA')}
           </button>
+        )}
+        {paymentSuccessState === 'pending' && currentUser && (
+          <div className="mb-3">
+            <button
+              onClick={verifyPurchase}
+              disabled={verifyState === 'checking'}
+              className="w-full py-2 rounded-lg text-sm font-medium"
+              style={{ background: 'transparent', color: '#F2F0EA', border: '1px solid #2A2E38', opacity: verifyState === 'checking' ? 0.6 : 1 }}
+            >
+              {verifyState === 'checking' ? i18n_t('pro', 'payVerifyChecking') : i18n_t('pro', 'payVerifyCTA')}
+            </button>
+            {verifyState === 'notfound' && (
+              <p className="text-xs mt-2" style={{ color: '#8A8E99' }}>{i18n_t('pro', 'payVerifyNotFound')}</p>
+            )}
+          </div>
         )}
         <button
           onClick={() => setPaymentSuccessState(null)}
@@ -31218,64 +31291,11 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                   <p className="text-xs mt-1.5" style={{ color: '#8A8E99' }}>
                     7-day money-back guarantee — if Pro doesn't move your prep, reply to your receipt for a full refund, no questions asked.
                   </p>
+                  <p className="text-xs mt-1.5" style={{ color: '#8A8E99' }} data-testid="billed-by">
+                    Billed by Datrick, Inc. — that is the name on your card statement.
+                  </p>
                 </div>
 
-                {/* Just paid section */}
-                <div className="p-3 mb-4" style={{ background: '#1F222B', border: '1px solid #2A2E38', borderRadius: '6px' }}>
-                  <p className="text-sm mb-2" style={{ color: '#8A8E99' }}>Just completed payment?</p>
-                  <button
-                    onClick={async () => {
-                      if (currentUser) {
-                        const userData = await loadUserData(currentUser);
-                        if (userData?.proStatus) {
-                          setUserProStatus(true);
-                          setProType(userData.proType);
-                          setProExpiry(userData.proExpiry);
-                          setProAutoRenew(userData.proAutoRenew);
-                          trackActivationEvent('pro_purchase_completed', { plan: userData.proType || 'unknown', source: 'existing_user_data' });
-                          alert('Pro activated! Thank you for your purchase!');
-                        } else {
-                          if (isSupabaseConfigured() && userData?.email) {
-                            const { data: pending } = await supabaseFetch(
-                              `pending_subscriptions?email=eq.${encodeURIComponent(userData.email.toLowerCase())}&claimed=eq.false&limit=1`
-                            );
-                            if (pending && pending.length > 0) {
-                              const sub = pending[0];
-                              userData.proStatus = true;
-                              userData.proType = sub.plan_type;
-                              userData.proExpiry = sub.expiry;
-                              userData.proAutoRenew = sub.plan_type !== 'lifetime';
-
-                              setUserProStatus(true);
-                              setProType(sub.plan_type);
-                              setProExpiry(sub.expiry);
-                              setProAutoRenew(sub.plan_type !== 'lifetime');
-                              trackActivationEvent('pro_purchase_completed', { plan: sub.plan_type || 'unknown', source: 'pending_subscription' });
-
-                              await supabaseFetch(`pending_subscriptions?id=eq.${sub.id}`, {
-                                method: 'PATCH',
-                                body: JSON.stringify({ claimed: true, claimed_by: currentUser, claimed_at: new Date().toISOString() })
-                              });
-
-                              saveUserData(currentUser, userData);
-                              alert('Pro activated! Thank you for your purchase!');
-                            } else {
-                              alert('Payment not found yet. It may take a minute to process. Please try again shortly.');
-                            }
-                          } else {
-                            alert('Payment not found yet. It may take a minute to process. Please try again shortly.');
-                          }
-                        }
-                      }
-                    }}
-                    className="w-full py-2 px-4 text-sm font-medium transition-colors"
-                    style={{ background: '#FFE34D', color: '#0E0F13', borderRadius: '6px' }}
-                    onMouseEnter={e => { e.currentTarget.style.opacity = '0.9'; }}
-                    onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}
-                  >
-                    Verify Payment
-                  </button>
-                </div>
 
                 <button
                   onClick={() => dismissProModal('button')}
