@@ -1,45 +1,31 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { shouldShowInterviewNav, interviewNavReason, HIRING_INTENTS, INTERVIEW_GOAL_ID } from '../src/utils/interview-nav.js';
+import { shouldShowInterviewNav, interviewNavReason, navReasonForEvent, HIRING_INTENTS, INTERVIEW_GOAL_ID } from '../src/utils/interview-nav.js';
 
 const read = (rel) => readFileSync(fileURLToPath(new URL(rel, import.meta.url)), 'utf8');
 
-describe('shouldShowInterviewNav — the two structural rules', () => {
-  const eligible = { flagOn: true, solvedCount: 1, intent: 'interview' };
-
-  it('flag off → never, whatever else is true', () => {
-    expect(shouldShowInterviewNav({ ...eligible, flagOn: false, hasInterviewHistory: true })).toBe(false);
+describe('shouldShowInterviewNav — open while the flag is on (2026-09-20)', () => {
+  // The solve floor was removed on 2026-09-20 (founder QA round 7): a person
+  // arriving from a company page for a named mock saw no interview surface at
+  // all — no mock, no Pro, no price — until their first solve. The tab is a
+  // surface; the mocks on it are locked cards and the modal still needs a
+  // click. What brought them is recorded on the event instead.
+  const eligible = { flagOn: true, solvedCount: 3, intent: 'interview' };
+  it('the flag still governs it', () => {
+    expect(shouldShowInterviewNav({ ...eligible, flagOn: false })).toBe(false);
+    expect(shouldShowInterviewNav({ flagOn: true })).toBe(true);
   });
-
-  it('zero solves → never, even with intent, history, goal and company arrival', () => {
-    expect(shouldShowInterviewNav({
-      flagOn: true, solvedCount: 0, intent: 'interview', hasInterviewHistory: true,
-      goalId: INTERVIEW_GOAL_ID, arrivalSrc: 'company:capital-one',
-    })).toBe(false);
-    expect(shouldShowInterviewNav({ ...eligible, solvedCount: undefined })).toBe(false);
-    expect(shouldShowInterviewNav({ ...eligible, solvedCount: 'nope' })).toBe(false);
+  it('a zero-solve visitor with no signal gets it too', () => {
+    expect(shouldShowInterviewNav({ flagOn: true, solvedCount: 0 })).toBe(true);
+    expect(shouldShowInterviewNav({ flagOn: true, solvedCount: 0, arrivalSrc: 'company:Capital One' })).toBe(true);
   });
-
-  it('declared hiring intent shows it; learning does not', () => {
-    expect(shouldShowInterviewNav({ ...eligible, intent: 'interview' })).toBe(true);
-    expect(shouldShowInterviewNav({ ...eligible, intent: 'job_ready' })).toBe(true);
-    expect(shouldShowInterviewNav({ ...eligible, intent: 'learning' })).toBe(false);
-    expect(shouldShowInterviewNav({ ...eligible, intent: null })).toBe(false);
-    expect([...HIRING_INTENTS].sort()).toEqual(['interview', 'job_ready']);
-  });
-
-  it('interview history, the interview goal, or a company arrival each suffice on their own', () => {
-    const base = { flagOn: true, solvedCount: 3, intent: 'learning' };
-    expect(shouldShowInterviewNav({ ...base, hasInterviewHistory: true })).toBe(true);
-    expect(shouldShowInterviewNav({ ...base, goalId: INTERVIEW_GOAL_ID })).toBe(true);
-    expect(shouldShowInterviewNav({ ...base, goalId: 'fundamentals' })).toBe(false);
-    expect(shouldShowInterviewNav({ ...base, arrivalSrc: 'company:stripe' })).toBe(true);
-    expect(shouldShowInterviewNav({ ...base, arrivalSrc: 'blog:sql-joins' })).toBe(false);
-  });
-
-  it('nobody else gets it', () => {
-    expect(shouldShowInterviewNav({ flagOn: true, solvedCount: 40 })).toBe(false);
+  it('but the hiring signal is unchanged: interviewNavReason still says null', () => {
+    expect(interviewNavReason({})).toBe(null);
+    expect(interviewNavReason({ intent: 'learning' })).toBe(null);
+    expect(navReasonForEvent({})).toBe('open');
+    expect(navReasonForEvent({ intent: 'interview' })).toBe('intent');
+    expect(navReasonForEvent({ arrivalSrc: 'company:Wise' })).toBe('company');
   });
 });
 

@@ -302,8 +302,10 @@ describe('source guards — the five flags are wired, and off', () => {
     expect(app).toMatch(/quietAskDecision\(\{ flagOn: ftbFlag\('quietEarlyAsks'\), reason: 'milestone_streak'/);
     expect(app).toMatch(/if \(companyFilter && quietAskDecision\(\{ flagOn: ftbFlag\('quietEarlyAsks'\), reason: 'company_hard'/);
     expect((app.match(/nudgeToFreeMock\(\(m\) => start/g) || []).length).toBe(2);
-    // the locked-mock ask is named, so the read can tell it from a header click
-    expect((app.match(/setProModalReason\(\{ type: 'interview_locked'/g) || []).length).toBe(2);
+    // the locked-mock ask is named, so the read can tell it from a header click.
+    // Three from 2026-09-20: the collision path inside startInterview, the
+    // deliberate "Unlock Pro" click (openProForLockedMock), and the list card.
+    expect((app.match(/setProModalReason\(\{ type: 'interview_locked'/g) || []).length).toBe(3);
     // the nudge still writes the lock row first: lock → cold-start → nudge → ask, in that order
     const at = app.indexOf('const startInterview = (interview, forceNew = false) => {');
     const block = app.slice(at, at + 1500);

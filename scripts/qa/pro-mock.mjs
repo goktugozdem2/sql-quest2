@@ -92,6 +92,31 @@ const preamble = `(() => {
 const click = (re) => `(() => { const b = [...document.querySelectorAll('button')].find(b => ${re}.test(b.textContent.trim())); if (b) b.click(); return !!b; })()`;
 
 const SCENARIOS = {
+  // A free, zero-solve account: is the Interview tab there, are the mocks
+  // visible-but-locked, and does "Unlock Pro" open the price modal?
+  async free_interview_surface() {
+    await cdp('Page.navigate', { url: `${URL}/app/` });
+    await wait(7000);
+    await shot('free-interview');
+    return ev(`(async () => {
+      const w = ms => new Promise(r => setTimeout(r, ms));
+      const navButtons = [...document.querySelectorAll('button')].map(b => b.textContent.trim()).filter(t => t && t.length < 24);
+      const tabs = document.querySelector('[data-primary-learning-tabs]');
+      const tab = document.querySelector('[data-onboarding="nav-trials"]') || [...document.querySelectorAll('button')].find(b => /Interview/i.test(b.textContent) && b.textContent.length < 30);
+      const navBar = [...document.querySelectorAll('nav, [role=tablist], div')].find(d => /Learning Path/.test(d.textContent || '') && (d.textContent || '').length < 120);
+      const out = { tabsText: tabs ? tabs.innerText.replace(/\\s+/g, ' ').slice(0, 140) : 'NO TABS BLOCK', tabsCols: tabs ? tabs.className.match(/grid-cols-\\d/)?.[0] : null, nav: navButtons.slice(0, 4), navBar: navBar ? navBar.innerText.replace(/\\s+/g, ' ').slice(0, 120) : null, ff: !!(window.FF && window.FF.feature && window.FF.feature('intentRouting')), hasInterviewTab: !!tab };
+      if (!tab) return out;
+      tab.click(); await w(1500);
+      out.mocks = [...document.querySelectorAll('h3')].map(h => h.textContent.trim()).filter(t => /Mock|Round|Screen|Interview|Assessment/.test(t)).slice(0, 8);
+      out.unlockButtons = [...document.querySelectorAll('button')].filter(b => /Unlock Pro/.test(b.textContent)).length;
+      const unlock = [...document.querySelectorAll('button')].find(b => /Unlock Pro/.test(b.textContent));
+      if (unlock) { unlock.click(); await w(900); }
+      out.priceModal = /\\$99|\\$29/.test(document.body.innerText);
+      out.gateInstead = !!document.querySelector('[data-state="cold_start"]');
+      out.headline = document.querySelector('[data-pro-plans]') ? 'plans shown' : null;
+      return out;
+    })()`);
+  },
   // The founder's flow: a locked mock's "Unlock Pro" for a 0-solve account.
   async cold_start_paywall() {
     const id = arg('id', 'capital-one-codesignal');

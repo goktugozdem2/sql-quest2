@@ -59,9 +59,19 @@ describe('source guard — every paid wall diverts before it sells', () => {
   it('all four gate sites label the wall through the resolver', () => {
     // challenge_hard, interview x2, thirty_day, daily_difficulty.
     const labelled = app.match(/wall: paidWallFor\(/g) || [];
-    expect(labelled.length, 'a gate stopped labelling its wall').toBe(5);
+    // 6 since 2026-09-20: openProForLockedMock labels its wall too.
+    expect(labelled.length, 'a gate stopped labelling its wall').toBe(6);
     expect(/wall: companyFilter \? 'company_modal' : 'preview_dialog'/.test(app),
       'the old inline wall label is back — it cannot express cold_start').toBe(false);
+  });
+
+  it('the only gate that asks without diverting is the deliberate Unlock Pro click', () => {
+    expect((app.match(/const openProForLockedMock = \(interview\) => \{/g) || []).length).toBe(1);
+    const at = app.indexOf('const openProForLockedMock = (interview) => {');
+    const fn = app.slice(at, at + 700);
+    expect(fn).toContain("trackLockReached('interview'");
+    expect(fn).toContain("setProModalReason({ type: 'interview_locked'");
+    expect(fn).not.toContain('openColdStartInstead(');
   });
 
   it('every trackLockReached is followed by a cold-start check before any ask', () => {
@@ -74,6 +84,15 @@ describe('source guard — every paid wall diverts before it sells', () => {
       const after = app.slice(m.index, m.index + 1400);
       const ask = after.search(/setShowProModal\(true\)|showSoftProGate\(/);
       if (ask === -1) continue;                       // this gate never asks
+      // EXEMPT (2026-09-20, founder QA round 7): openProForLockedMock is not
+      // a collision — it is the person pressing "Unlock Pro" on a locked mock
+      // card, i.e. asking for the price. The cold-start rule is "never SELL
+      // before the first solve", and it kept refusing buyers: a zero-solve
+      // account could not reach the plans from any entry point. Every other
+      // gate still diverts first, and the gate's own dialog now carries an
+      // "Unlock Pro anyway" door with its own reason.
+      const before = app.slice(Math.max(0, m.index - 600), m.index);
+      if (before.includes('const openProForLockedMock')) continue;
       const divert = after.indexOf('openColdStartInstead(');
       if (divert === -1 || divert > ask) {
         offenders.push(app.slice(0, m.index).split('\n').length);

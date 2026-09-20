@@ -2328,6 +2328,21 @@ of the verifier and must never be rounded to `FLAT`.
 - **Verdict** _pending_
 
 ### intent routing: a handle on the interview door
+
+- **Amended 2026-09-20 (founder QA round 7), 26 days before the read.** The
+  tab's solve floor is gone: it required one solve, so a person arriving from
+  a company page for a named mock saw a challenge list and NO interview
+  surface at all — no mock, no Pro, no price — until they solved something.
+  That is a conversion floor of zero for exactly the arrivals this claim is
+  about. From today the tab is open while the flag is on; `interview_tab_viewed`
+  carries `reason='open'` for a person with no hiring signal, so the 10-16 read
+  splits the population into the old one (intent / history / goal / company)
+  and the one the change added. The interview-FIRST surfaces did not move:
+  `isInterviewPerson` still reads the hiring signal, and a person with none
+  still gets today's product byte for byte (tests/interview-first.test.js).
+  Second change the same day: "Unlock Pro" on a locked mock card opens the
+  price modal directly instead of the cold-start gate — a click on a price
+  button is a request, not a collision (see the cold-start entry).
 - **Claimed** 2026-09-16, written and baselined before the flip · flag
   `features.intentRouting` flipped 2026-09-16 (the 09-13 task stalled before
   writing anything) · **flipped at 2026-09-15T22:18Z** (b33df19 pushed;

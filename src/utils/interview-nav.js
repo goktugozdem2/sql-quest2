@@ -8,15 +8,22 @@
 // (docs/designs/hiring-readiness-module.md). This is the handle on that door.
 //
 // Two reads must stay clean, so two rules are structural, not tunable:
-//   1. Never before the first solve. `first_contact_activation` (the 105
-//      opener) and `cold_start_first_solve` (reads 2026-09-29) both live in
-//      the zero-solve stretch; a tab that only exists after a solve cannot
-//      touch either.
-//   2. Only for people who said, or showed, that hiring is why they are here:
-//      declared intent interview / job_ready, an existing interview history,
-//      the interview-prep Coach goal, or arrival on a company page. Everyone
-//      else keeps the two-tab nav. The 2026-11-24 paywall claim wants fewer
-//      asks to people who came to learn, and 7 of the 8 mocks are Pro-locked.
+//   1. (REMOVED 2026-09-20, founder QA round 7.) The tab used to require one
+//      solve first, to keep the zero-solve stretch clean for the 105-opener
+//      read (window closed 2026-09-20 13:42Z) and the cold-start read
+//      (2026-09-29). Measured cost: a person arriving from a company page
+//      for the Capital One mock saw a challenge list and NO interview
+//      surface at all — no mock, no Pro, no price — until they solved
+//      something. That is a conversion floor of zero for the arrivals the
+//      whole interview-first frame is built on. The tab is a surface, not an
+//      ask: the mocks on it are locked cards, and the price modal still only
+//      opens on a click. `interview_tab_viewed.reason` carries 'open' for a
+//      person with no hiring signal, so the 09-29 read can split the
+//      population and see exactly who the change added.
+//   2. Everyone gets it while the flag is on. The reason still records what
+//      brought them: declared intent interview / job_ready, an existing
+//      interview history, the interview-prep Coach goal, arrival on a
+//      company page — or 'open' for nobody-in-particular.
 //
 // Gated by FEATURE_FLAGS.features.intentRouting at the call site.
 export const HIRING_INTENTS = new Set(['interview', 'job_ready']);
@@ -34,8 +41,7 @@ export function shouldShowInterviewNav({
   arrivalSrc = null,
 } = {}) {
   if (!flagOn) return false;
-  if (!(Number(solvedCount) >= 1)) return false;
-  return interviewNavReason({ intent, hasInterviewHistory, goalId, arrivalSrc }) !== null;
+  return true;
 }
 
 // Why the tab is showing — one word, carried on interview_tab_viewed so the
@@ -52,3 +58,13 @@ export function interviewNavReason({
   if (isCompanyArrival(arrivalSrc)) return 'company';
   return null;
 }
+
+/**
+ * The label for someone with no hiring signal at all, used ONLY on
+ * `interview_tab_viewed` so the 09-29 read can see who the open tab added.
+ * It is not a hiring signal: `interviewNavReason` still returns null for
+ * them, and `isInterviewPerson` (interview-first.js) still says no — the
+ * interview-first surfaces are for people who showed us something.
+ */
+export const NAV_REASON_OPEN = 'open';
+export const navReasonForEvent = (inputs) => interviewNavReason(inputs) || NAV_REASON_OPEN;

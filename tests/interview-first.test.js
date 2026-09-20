@@ -121,11 +121,21 @@ describe('isInterviewPerson agrees with the Interview tab on every input the tab
         const navReason = interviewNavReason({ intent, hasInterviewHistory, goalId, arrivalSrc });
         const ours = interviewFirstReason({ intent, interviewHistory: hasInterviewHistory, coachGoalId: goalId, arrivalSrc });
         expect(ours, JSON.stringify({ intent, hasInterviewHistory, goalId, arrivalSrc })).toBe(navReason);
+        // 2026-09-20: the TAB is open to everyone while the flag is on, so
+        // the agreement is with the hiring signal (interviewNavReason), not
+        // with the tab's visibility. Who the interview-first surfaces apply
+        // to is unchanged — that is the point of keeping the two apart.
         expect(isInterviewPerson({ intent, interviewHistory: hasInterviewHistory, coachGoalId: goalId, arrivalSrc }))
-          .toBe(shouldShowInterviewNav({ flagOn: true, solvedCount: 1, intent, hasInterviewHistory, goalId, arrivalSrc }));
+          .toBe(navReason !== null);
         cases += 1;
       }
     expect(cases).toBe(intents.length * histories.length * goals.length * arrivals.length);
+  });
+
+  it('the tab is open to everyone, the frame is not', () => {
+    expect(shouldShowInterviewNav({ flagOn: true, solvedCount: 0 })).toBe(true);
+    expect(isInterviewPerson({ intent: 'learning' })).toBe(false);
+    expect(isInterviewPerson({})).toBe(false);
   });
 
   it('and adds only the countdown target on top', () => {

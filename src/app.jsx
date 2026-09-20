@@ -27,7 +27,7 @@ import { backfillLegacyAttempts } from './utils/challenge-helpers.js';
 import { resolveProAccess, planLabel, lastLoginDay, planRenews } from './utils/pro-access.js';
 import { pickNextChallengeWith, pickTopNWith, makeChallengeComparator, hardPreviewCounts, isFreePreview } from './utils/challenge-order.js';
 import { SQL_ROADMAP_STAGES, SQL_ROADMAP_CHALLENGE_ORDER } from './data/roadmap-stages.js';
-import { shouldShowInterviewNav, interviewNavReason } from './utils/interview-nav.js';
+import { shouldShowInterviewNav, interviewNavReason, navReasonForEvent } from './utils/interview-nav.js';
 import { interviewFirstReason } from './utils/interview-first.js';
 import { interviewStatusModel, STATUS_CHECK_FRESH_DAYS } from './utils/interview-first.js';
 import { mergeProgress, hasProgress, isResumableGuest, GUEST_USER_KEY } from './utils/progress-merge.js';
@@ -8383,7 +8383,7 @@ function SQLQuest() {
       localStorage.setItem(key, '1');
       trackActivationEvent('interview_tab_viewed', {
         entry,
-        reason: interviewNavReason(interviewNavInputs),
+        reason: navReasonForEvent(interviewNavInputs),
         intent: interviewNavInputs.intent,
         solvedCount: solvedChallenges.size,
         hasHistory: interviewNavInputs.hasInterviewHistory,
@@ -10286,6 +10286,22 @@ function SQLQuest() {
     try { showMilestone('🎤', 'Start with the free mock', 'Pro mocks open after a few solves. This one is yours right now.'); } catch (_) {}
     open(free);
     return true;
+  };
+
+  // "Unlock Pro" on a locked mock card is a person asking for the price, not
+  // a collision with a wall (founder QA 2026-09-20, round 7). It opens the
+  // modal directly — the cold-start gate stays on the paths where the person
+  // was trying to DO something and met a wall (Start, a deep link, a locked
+  // Hard challenge).
+  const openProForLockedMock = (interview) => {
+    trackLockReached('interview', {
+      interviewId: interview?.id || null,
+      company: interview?.company || null,
+      difficulty: interview?.difficulty || null,
+      wall: paidWallFor({ isPro, solved: solvedChallenges }),
+    });
+    setProModalReason({ type: 'interview_locked', topic: interview?.company || null, solvedCount: solvedChallenges.size });
+    setShowProModal(true);
   };
 
   const startInterview = (interview, forceNew = false) => {
@@ -38572,7 +38588,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                       </div>
                     </div>
                     <button
-                      onClick={() => startInterview(recommendation.interview)}
+                      onClick={() => (canAccessInterview(recommendation.interview) ? startInterview(recommendation.interview) : openProForLockedMock(recommendation.interview))}
                       className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg font-medium flex items-center gap-2"
                     >
                       {canAccessInterview(recommendation.interview)
@@ -38715,7 +38731,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                       </div>
                     </div>
                     <button
-                      onClick={() => startInterview(m)}
+                      onClick={() => (canAccess ? startInterview(m) : openProForLockedMock(m))}
                       className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium flex items-center gap-2 whitespace-nowrap"
                     >
                       {/* A locked mock says what the click does (founder QA
@@ -38736,7 +38752,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                           </p>
                         </div>
                         <button
-                          onClick={() => startInterview(x)}
+                          onClick={() => (ok ? startInterview(x) : openProForLockedMock(x))}
                           className="px-4 py-2 bg-gray-800 hover:bg-gray-700 border border-purple-500/40 rounded-lg font-medium flex items-center gap-2 whitespace-nowrap"
                         >
                           {ok ? <Play size={16} /> : <Lock size={16} />} {ok ? i18n_t('interview', 'startNow') : i18n_t('interviewList', 'btnUnlockPro')}
@@ -38927,7 +38943,10 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                               onClick={(e) => {
                                 e.stopPropagation();
                                 if (canAccess) startInterview(interview);
-                                else setShowProModal(true);
+                                // A named ask, and the price modal itself —
+                                // this used to reopen the modal under whatever
+                                // reason it last held (founder QA 2026-09-20).
+                                else openProForLockedMock(interview);
                               }}
                             >
                               {canAccess ? i18n_t('interviewList', 'btnStart') : i18n_t('interviewList', 'btnUnlockPro')}

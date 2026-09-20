@@ -795,6 +795,23 @@ select count(distinct n.username) as noted,
 from noted n left join answered a on a.username = n.username;
 ```
 
+## `interview_tab_open`
+
+From 2026-09-20 the Interview tab has no solve floor: `interview_tab_viewed`
+fires for anyone while `intentRouting` is on, and its `reason` carries the old
+words (`history` / `intent` / `goal` / `company`) plus a new one, **`open`** —
+a person with no hiring signal at all. Never sum the two groups: the old
+series is the population the 10-16 intent-routing read was written for, and
+`open` is what the change added.
+
+```sql
+select ((metadata #>> '{}')::jsonb)->>'reason' as reason,
+       count(distinct username) as people
+from pro_events
+where event = 'interview_tab_viewed' and created_at >= :since
+group by 1 order by 2 desc;
+```
+
 ## `cold_start_anyway`
 
 The buyer who insisted (2026-09-20). The cold-start gate shows a starter
