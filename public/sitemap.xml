@@ -6,7 +6,7 @@
   <!-- Homepage (English, with Turkish alternate) -->
   <url>
     <loc>https://sqlquest.app/</loc>
-    <lastmod>2026-09-19</lastmod>
+    <lastmod>2026-09-21</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
     <xhtml:link rel="alternate" hreflang="en" href="https://sqlquest.app/" xmlns:xhtml="http://www.w3.org/1999/xhtml"/>

@@ -392,16 +392,18 @@ window.mockInterviewsData = [
 
   {
     id: 'faang-sql-interview',
-    title: 'FAANG-Style SQL Interview',
-    company: 'Big Tech',
+    // Renamed 2026-09-21 (founder QA): "FAANG-Style" named companies we hold
+    // no source for. The questions are hard general practice, and now say so.
+    title: 'Hard SQL Interview',
+    company: 'General',
     role: 'Software Engineer / Data Engineer',
     difficulty: 'Hard',
     totalTime: 50 * 60,
     questionsCount: 5,
     isFree: false,
-    description: 'Challenging interview simulating FAANG-level SQL questions. Tests advanced concepts and edge case handling.',
-    title_tr: 'FAANG Tarzı SQL Mülakatı',
-    description_tr: 'FAANG seviyesinde SQL sorularını simüle eden zorlu bir mülakat. İleri seviye kavramları ve uç durum yönetimini sınar.',
+    description: 'A hard general-practice SQL interview: advanced concepts and edge-case handling. Not modelled on any one company.',
+    title_tr: 'Zor SQL Mülakatı',
+    description_tr: 'Zorlu, genel pratik bir SQL mülakatı: ileri seviye kavramlar ve uç durum yönetimi. Belirli bir şirketin mülakatını örnek almaz.',
     role_tr: 'Software Engineer / Data Engineer',
     skills: ['Advanced Window Functions', 'CTEs', 'Complex Subqueries', 'Self-JOINs', 'Edge Cases'],
     questions: [
@@ -808,16 +810,20 @@ window.mockInterviewsData = [
   // ============ TOP 10 MOST ASKED ============
   {
     id: 'top-10-most-asked',
-    title: 'Top 10 Most-Asked SQL Questions',
-    company: 'FAANG',
+    // Rewritten 2026-09-21 (founder QA): the description claimed "hundreds of
+    // interview reports from Meta, Google, Amazon, Netflix and Stripe" and the
+    // title a measured frequency. No such source exists in docs/reads/. The ten
+    // patterns are real classics; the claim about where they came from was not.
+    title: 'Ten Classic SQL Interview Patterns',
+    company: 'General',
     role: 'Data Analyst / Data Engineer',
     difficulty: 'Hard',
     totalTime: 90 * 60,
     questionsCount: 10,
     isFree: false,
-    description: 'The 10 SQL patterns that appear most often in real FAANG interviews — based on hundreds of interview reports from Meta, Google, Amazon, Netflix and Stripe. Master these and you\'re ready for any data interview.',
-    title_tr: 'En Çok Sorulan 10 SQL Sorusu',
-    description_tr: 'Gerçek FAANG mülakatlarında en sık karşımıza çıkan 10 SQL kalıbı — Meta, Google, Amazon, Netflix ve Stripe\'tan yüzlerce mülakat raporuna dayanır. Bunlara hâkim olduğunda her veri mülakatına hazırsın.',
+    description: 'Ten patterns that come up again and again in data interviews — top N per group, running totals, duplicates, month-over-month growth, anti-joins, streaks, cohort retention and more. General practice, not drawn from any one company\'s interview.',
+    title_tr: 'On Klasik SQL Mülakat Kalıbı',
+    description_tr: 'Veri mülakatlarında tekrar tekrar çıkan on kalıp — grup içinde ilk N, kümülatif toplam, tekrarlar, aydan aya büyüme, anti-join, seri tespiti, kohort tutma ve daha fazlası. Genel pratik; belirli bir şirketin mülakatından alınmadı.',
     role_tr: 'Data Analyst / Data Engineer',
     skills: ['Window Functions', 'CTEs', 'Anti-joins', 'Running Totals', 'Retention', 'Ranking', 'Consecutive Days', 'Conditional Aggregation', 'Median'],
     questions: [
@@ -826,8 +832,8 @@ window.mockInterviewsData = [
         order: 1,
         title: 'Top N per group',
         title_tr: 'Grup başına Top N',
-        description: 'The single most common FAANG SQL pattern. Find the **top 2 highest-paid employees in each department**. Show department, name, salary, and their rank within the department. Handle ties so two employees with the same salary both appear.',
-        description_tr: 'FAANG\'de en sık karşılaşılan tek bir SQL kalıbı. **Her department\'taki en yüksek maaşlı 2 çalışanı** bul. department, name, salary ve department içindeki rank\'larını göster. Eşitlikleri ele al — aynı maaşa sahip iki çalışan da görünmeli.',
+        description: 'A classic interview pattern. Find the **top 2 highest-paid employees in each department**. Show department, name, salary, and their rank within the department. Handle ties so two employees with the same salary both appear.',
+        description_tr: 'Klasik bir mülakat kalıbı. **Her department\'taki en yüksek maaşlı 2 çalışanı** bul. department, name, salary ve department içindeki rank\'larını göster. Eşitlikleri ele al — aynı maaşa sahip iki çalışan da görünmeli.',
         timeLimit: 10 * 60,
         difficulty: 'Hard',
         points: 10,
@@ -1100,6 +1106,8 @@ window.mockInterviewsData = [
   //   node scripts/validate-capital-one-mock.mjs
   {
     id: 'capital-one-codesignal',
+    // Built from dated, readable sources (docs/reads/). Lists under Company mocks.
+    sourced: true,
     title: 'Capital One Data Analyst — CodeSignal-Style Mock',
     company: 'Capital One',
     role: 'Data Analyst',
@@ -1638,6 +1646,8 @@ window.mockInterviewsData = [
   },
   {
     id: 'capital-one-live-sql',
+    // Built from dated, readable sources (docs/reads/). Lists under Company mocks.
+    sourced: true,
     title: 'Capital One Data Analyst — Live SQL Round (practice)',
     // A live round is judged on how you explain as much as on the query
     // (founder QA 2026-09-19, round 4, item 5): every question gets an
@@ -1783,6 +1793,8 @@ window.mockInterviewsData = [
   // ---------------------------------------------------------------------------
   {
     id: 'revolut-analytics-screen',
+    // Built from dated, readable sources (docs/reads/). Lists under Company mocks.
+    sourced: true,
     title: 'Revolut Data Analyst — HackerRank-Style SQL Screen',
     company: 'Revolut',
     role: 'Data Analyst',
@@ -2052,10 +2064,10 @@ window.mockInterviewsData = [
 window.interviewCategories = [
   { id: 'all', label: 'All Interviews', icon: '📋' },
   { id: 'free', label: 'Free', icon: '🆓' },
-  { id: 'top10', label: 'Top 10 Most Asked', icon: '🔥' },
+  { id: 'top10', label: 'Classic Patterns', icon: '🔥' },
   { id: 'data-analyst', label: 'Data Analyst', icon: '📊' },
   { id: 'backend', label: 'Backend Engineer', icon: '⚙️' },
-  { id: 'faang', label: 'FAANG-Style', icon: '🏢' },
+  { id: 'faang', label: 'Hard', icon: '🏢' },
   { id: 'senior', label: 'Senior Level', icon: '👨‍💼' }
 ];
 

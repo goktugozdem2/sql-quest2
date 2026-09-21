@@ -564,6 +564,9 @@ that needs its own path — the current rule is written down in the handler.
      `pending_subscription`, ever. The same logic now sits on the pending
      screen, which is reached only after six failed polls (~12s), i.e. only
      when the sentence is true.
+- **Amended again 2026-09-21:** "most people choose this" removed from the
+  annual card on the modal and the homepage — 2 of 4 real subscriptions are
+  annual, so the line was false. Same read, one more change inside its window.
 - **What this does to the 10-03 read:** `modal_click_rate` (3.4% baseline,
   15% target) is measured on a modal that changed on 09-20. If it moves,
   that is this change plus the 09-13 rewrite, not the rewrite alone. The

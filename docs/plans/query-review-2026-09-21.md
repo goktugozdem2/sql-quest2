@@ -27,6 +27,15 @@ values. **The pasted query is never stored server-side and never written to
 `pro_events`** — events carry length and rule hits, not text. Say so next to
 the box. This is the condition for building it at all.
 
+Not stored is not the whole story (founder, 2026-09-21): the query still goes
+to the AI provider to be reviewed. So, before the box ships:
+- **The privacy policy says it plainly** (`/privacy/`): pasted queries are
+  sent to our model provider for the review and are not retained by SQL
+  Quest. The same sentence sits next to the box.
+- **No third-party analytics sees it** — not Vercel Analytics, not any
+  session tool, not error reporting payloads. The pasted text is excluded
+  everywhere, not just from `pro_events`.
+
 ## Claim (ledger-ready)
 - **Metric:** `query_review_use` — Hired users running at least one review a
   week. **Not in `docs/agent/metrics.md`**; define at build start.

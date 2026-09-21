@@ -10,7 +10,13 @@ modal since 2026-09-20 (`data-testid="billed-currency"`,
 for Payment Links, so a Turkish buyer who clicks $99 lands on TRY 5,021.88;
 the note says so first. **SHIPPED 2026-09-20.**
 
-## Annual emphasis — open, and one thing to fix first
+## Removed 2026-09-21: "most people choose this"
+Gone from the modal and from the homepage pricing card (it was on both).
+"SAVE 72%" stays — that is arithmetic, bound to the prices in
+`tests/checkout-surface.test.js`, which now also fails if the popularity line
+returns. If it ever comes back, it comes back with a measured share.
+
+## Annual emphasis — open
 Today the annual card is already the highlighted one: yellow border,
 "SAVE 72%", "$8.25/month". Its subline also says **"most people choose
 this"** — and that is not true. Of the four real subscriptions to date, two
@@ -37,4 +43,5 @@ track (`post-hire-track-2026-09-21.md`). Candidate changes, one at a time:
   09-20 modal change; land this after that read.
 
 ## Status
-Currency note SHIPPED. Annual emphasis OPEN — the false subline first.
+Currency note SHIPPED 09-20. False subline REMOVED 09-21. Annual emphasis
+OPEN — after the 2026-10-03 `modal_click_rate` read.

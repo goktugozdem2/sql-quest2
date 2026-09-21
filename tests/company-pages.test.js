@@ -868,3 +868,39 @@ describe('every company-set link into the app declares the interview goal', () =
     for (const c of ctas) expect(c).toContain('&amp;goal=interview"');
   });
 });
+
+// Mocks follow the company-page rule (founder QA 2026-09-21): a mock names a
+// company only if it was built from dated sources, and only such mocks list
+// under "Company mocks". "FAANG-Style SQL Interview" and "Top 10 Most-Asked"
+// ("based on hundreds of interview reports from Meta, Google, Amazon, Netflix
+// and Stripe") named companies and a frequency we hold no source for.
+import { readFileSync as _rf } from 'fs';
+describe('mocks: company claims only where sourced', () => {
+  const mocksSrc = _rf(new URL('../src/data/mock-interviews.js', import.meta.url), 'utf8');
+  const blocks = mocksSrc.split(/\n  \{\n    (?:\/\/[^\n]*\n    )*id: '/).slice(1).map(b => ({ id: b.slice(0, b.indexOf("'")), body: b }));
+  const head = b => b.body.slice(0, b.body.indexOf('questions:') > 0 ? b.body.indexOf('questions:') : 1500);
+  const code = b => head(b).split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
+  const SOURCED = ['capital-one-codesignal', 'capital-one-live-sql', 'revolut-analytics-screen'];
+
+  it('exactly the sourced mocks carry sourced: true', () => {
+    const flagged = blocks.filter(b => /\n\s*sourced: true,/.test(code(b))).map(b => b.id).sort();
+    expect(flagged).toEqual([...SOURCED].sort());
+  });
+
+  it('an unsourced mock names no big-tech company in its title, company or description', () => {
+    const NAMES = /FAANG|Big Tech|Meta|Google|Amazon|Netflix|Apple|Stripe|Microsoft/;
+    for (const b of blocks.filter(x => !SOURCED.includes(x.id))) {
+      const c = code(b);
+      const fields = ['title', 'company', 'description', 'title_tr', 'description_tr']
+        .map(f => (c.match(new RegExp(`\\n\\s*${f}: '((?:[^'\\\\]|\\\\.)*)'`)) || [])[1] || '').join(' | ');
+      expect(fields, b.id).not.toMatch(NAMES);
+      expect(fields, b.id).not.toMatch(/interview reports|most[- ]asked/i);
+    }
+  });
+
+  it('the Interview tab renders the two sections from that flag', () => {
+    const app = _rf(new URL('../src/app.jsx', import.meta.url), 'utf8');
+    expect(app).toContain("i18n_t('interviewList', interview.sourced ? 'sectionCompany' : 'sectionGeneral')");
+    expect(app).toContain('[...shownMocks.filter(i => i.sourced), ...shownMocks.filter(i => !i.sourced)]');
+  });
+});

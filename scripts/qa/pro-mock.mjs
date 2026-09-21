@@ -131,6 +131,27 @@ const SCENARIOS = {
       return out;
     })()`);
   },
+  // The Interview tab's two sections (founder QA 2026-09-21).
+  async mock_sections() {
+    await cdp('Page.navigate', { url: `${URL}/app/` });
+    await wait(7000);
+    const r = await ev(`(async () => {
+      const w = ms => new Promise(r => setTimeout(r, ms));
+      const tab = document.querySelector('[data-onboarding="nav-trials"]') || [...document.querySelectorAll('button')].find(b => /^Interview/.test(b.innerText.trim()));
+      tab && tab.click(); await w(1500);
+      const list = document.querySelector('[data-testid="mocks-section-company"]')?.parentElement;
+      if (!list) return { error: 'no sections' };
+      const out = [];
+      for (const el of list.children) {
+        const sec = el.getAttribute('data-testid');
+        if (sec) out.push('## ' + el.innerText.replace(/\\s+/g, ' ').trim());
+        else { const h = el.querySelector('h3'); if (h) out.push('- ' + h.textContent.trim()); }
+      }
+      return out;
+    })()`);
+    await shot('mock-sections');
+    return r;
+  },
   // The streak card's auto path: a real correct submit on the day's first
   // solve. Records whether the card waited for the other post-solve toasts.
   async streak_auto() {

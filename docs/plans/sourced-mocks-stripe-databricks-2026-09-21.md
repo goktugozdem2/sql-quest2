@@ -19,6 +19,12 @@ Per company, the Revolut recipe (signed 2026-09-12): a dated research read in
 the ledger, a mock whose MCQ answers are computed from the data, the page's
 sourced rounds section, and the registry test.
 
+## How the next company is chosen (founder, 2026-09-21)
+By where readable, dated sources exist — not by which name we want on the
+list. Run the research across candidate companies first and let it decide:
+the companies with enough dated candidate reports get mocks, in that order.
+Stripe and Databricks are candidates, not commitments.
+
 ## Next step
 A research read per company — candidate reports and prep guides with dates,
 fetched and readable, not snippets. If the read comes back thin, the answer is

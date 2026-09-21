@@ -21,13 +21,30 @@ without a source behind it.
   matched by topic (`companySetSourced` / `companySetMatched`), and the
   company-set gate only applies to authored sets (M1, amended 2026-09-20).
 
+## Shipped 2026-09-21 (founder's additions)
+- **Interview tab in two sections.** "Company mocks" lists only mocks marked
+  `sourced: true` (Capital One ×2, Revolut); the other seven sit under
+  "General practice — not modelled on any one company".
+- **"FAANG-Style SQL Interview" → "Hard SQL Interview"**, company `General`.
+- **"Top 10 Most-Asked SQL Questions" → "Ten Classic SQL Interview
+  Patterns"**, company `General`. Its description had claimed "hundreds of
+  interview reports from Meta, Google, Amazon, Netflix and Stripe"; no such
+  source exists in `docs/reads/`. It now names the ten real patterns it holds
+  and says it is general practice. The title's "Most-Asked" was the same
+  unsourced frequency claim, so it went too. One question's
+  "the single most common FAANG SQL pattern" became "a classic interview
+  pattern" (EN and TR). The unused `interviewCategories` labels were fixed so
+  they cannot bring the claims back.
+- Guards: `tests/company-pages.test.js` — exactly the sourced mocks carry
+  `sourced: true`; no unsourced mock names a big-tech company, "interview
+  reports" or "most-asked" in its title, company or description (EN and TR);
+  the tab renders the two sections from that flag.
+
 ## What is left
 1. **Pages:** turn the note into structure — a "How the interview runs
    (sourced)" section only where sources exist, and a separately headed
    "Topic practice" section for the challenge list on every page.
-2. **Interview tab:** two sections. "Company mocks" lists only mocks built
-   from dated sources. "Practice mocks" lists the rest, and their titles stop
-   naming companies they are not sourced from (rename "FAANG-Style").
+2. ~~Interview tab: two sections~~ — shipped 2026-09-21, above.
 
 ## What it does not change
 - No new format claim without a dated source (`tests/company-pages.test.js`).
@@ -41,4 +58,5 @@ without a source behind it.
   fall. This is a correctness change first.
 
 ## Status
-PARTIAL — provenance shipped; the two-section structure is open.
+PARTIAL — provenance and the Interview tab's two sections shipped; the
+company pages' two-section structure is open.

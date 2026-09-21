@@ -57,6 +57,17 @@ describe('the price the buyer reads', () => {
   });
 });
 
+describe('no popularity claim the data does not support', () => {
+  // 2026-09-21: "most people choose this" sat under the annual price on the
+  // modal and the homepage. Of four real subscriptions, two were annual. If a
+  // popularity line ever comes back, it comes back with a measured share.
+  const home = readFileSync(resolve(root, 'src/index.html'), 'utf8');
+  it('is gone from the modal and the homepage', () => {
+    expect(app).not.toContain('most people choose this</div>');
+    expect(home).not.toContain('most people choose this');
+  });
+});
+
 describe('the recovery button is not on the buying surface', () => {
   it('no manual verify prompt next to the price', () => {
     // rendered text, not the incident note above the recovery function

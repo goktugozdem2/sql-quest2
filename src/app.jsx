@@ -31232,7 +31232,11 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                     <div className="text-2xl font-bold" style={{ fontFamily: 'Geist Mono, monospace', fontVariantNumeric: 'tabular-nums', color: '#F2F0EA' }}>$99</div>
                     <div className="text-sm font-medium" style={{ color: '#F2F0EA' }}>Annual</div>
                     <div className="text-xs mt-1" style={{ color: '#8A8E99' }}>Billed yearly</div>
-                    <div className="text-xs mt-2" style={{ color: '#4ADE80' }}>$8.25/month · most people choose this</div>
+                    {/* "· most people choose this" removed 2026-09-21: of the four
+                        real subscriptions two are annual and two monthly. A claim on
+                        the payment page the data does not support. SAVE 72% stays —
+                        that one is arithmetic, bound in checkout-surface.test.js. */}
+                    <div className="text-xs mt-2" style={{ color: '#4ADE80' }}>$8.25/month</div>
                   </button>
                 </div>
 
@@ -38827,7 +38831,11 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
 
             {/* Interview List */}
             <div className="grid gap-4">
-              {mockInterviews.filter(interview => {
+              {/* Two sections (founder QA 2026-09-21): mocks built from dated
+                  sources first, under "Company mocks"; everything else under
+                  "General practice" — the same rule as the company pages.
+                  `sourced: true` on the mock is the only thing that decides. */}
+              {(() => { const shownMocks = mockInterviews.filter(interview => {
                 if (interviewTarget.mock && interview.id === interviewTarget.mock.id) return false; // pinned above
                 const hasPassed = interviewHistory.some(h => h.interviewId === interview.id && h.passed);
                 const hasAttempted = interviewHistory.some(h => h.interviewId === interview.id);
@@ -38846,7 +38854,9 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                   default:
                     return true;
                 }
-              }).map(interview => {
+              });
+              const orderedMocks = [...shownMocks.filter(i => i.sourced), ...shownMocks.filter(i => !i.sourced)];
+              return orderedMocks.map((interview, mockIdx) => {
                 const canAccess = canAccessInterview(interview);
                 const completedCount = interviewHistory.filter(h => h.interviewId === interview.id).length;
                 const bestScore = interviewHistory
@@ -38857,9 +38867,20 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                 // skill / difficulty / id matching keeps its existing
                 // shape; only the visible title + description get swapped.
                 const i18nInterview = localizeInterview(interview, lang);
+                const startsSection = mockIdx === 0 || !!orderedMocks[mockIdx - 1].sourced !== !!interview.sourced;
                 return (
+                  <React.Fragment key={interview.id}>
+                  {startsSection && (
+                    <div data-testid={interview.sourced ? 'mocks-section-company' : 'mocks-section-general'} className={mockIdx === 0 ? '' : 'mt-4'}>
+                      <p className="text-xs uppercase tracking-wide" style={{ color: '#8A8E99' }}>
+                        {i18n_t('interviewList', interview.sourced ? 'sectionCompany' : 'sectionGeneral')}
+                      </p>
+                      <p className="text-xs mt-0.5" style={{ color: '#8A8E99' }}>
+                        {i18n_t('interviewList', interview.sourced ? 'sectionCompanyNote' : 'sectionGeneralNote')}
+                      </p>
+                    </div>
+                  )}
                   <div
-                    key={interview.id}
                     className={`bg-gray-800/50 rounded-xl border p-5 transition-all ${
                       canAccess 
                         ? 'border-gray-700 hover:border-purple-500/50 cursor-pointer hover:bg-gray-800/70' 
@@ -38988,8 +39009,9 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                       </div>
                     </div>
                   </div>
+                  </React.Fragment>
                 );
-              })}
+              }); })()}
             </div>
 
             {/* Interview History */}

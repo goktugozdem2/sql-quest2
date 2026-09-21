@@ -869,6 +869,10 @@ const TRANSLATIONS = {
     // Mock Interview list — filter chips + card chrome (Best Score / X
     // attempts / Retry / Practice / Pass: N% / min / questions / +N more)
     interviewList: {
+      sectionCompany: 'Company mocks',
+      sectionCompanyNote: 'Built from dated candidate reports of that company\'s process.',
+      sectionGeneral: 'General practice',
+      sectionGeneralNote: 'Interview-style practice, not modelled on any one company.',
       filterAll: 'All',
       filterEasy: 'Easy',
       filterMedium: 'Medium',
@@ -1825,6 +1829,10 @@ const TRANSLATIONS = {
     },
 
     interviewList: {
+      sectionCompany: 'Şirket mockları',
+      sectionCompanyNote: 'O şirketin sürecine dair tarihli aday raporlarından hazırlandı.',
+      sectionGeneral: 'Genel pratik',
+      sectionGeneralNote: 'Mülakat tarzı pratik; belirli bir şirketi örnek almaz.',
       filterAll: 'Tümü',
       filterEasy: 'Kolay',
       filterMedium: 'Orta',

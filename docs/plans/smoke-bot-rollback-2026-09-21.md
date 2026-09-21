@@ -27,9 +27,14 @@ checks production after deploy, and nothing runs on a schedule.
 - CI's gates on push.
 - Who merges. A rollback is followed by a human fix, not a retry.
 
-## Needs from the founder
-- A Vercel token scoped to the project, stored as a GitHub secret.
-- Confirmation of the alert address.
+## Needs from the founder — done by the founder, never pasted anywhere
+- **A Vercel token scoped to the SQL Quest project only**, not the whole
+  account.
+- **Added directly as a GitHub secret** in the repo settings. The token is
+  never pasted into a chat, a file or a commit; the workflow reads it by
+  secret name only.
+- **The alert address:** one the founder checks on their phone — the point
+  is catching a failure while they are out.
 
 ## Claim
 Operational, not a product claim — no ledger entry. Track time from a broken
