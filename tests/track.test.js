@@ -452,7 +452,10 @@ describe('src/track.js — hero CTA copy test (P3.18)', () => {
     }
     expect(Object.keys(counts).sort()).toEqual(['control', 'plan', 'readiness', 'skills', 'start']);
     for (const n of Object.values(counts)) expect(n).toBeGreaterThan(120);
-  });
+    // 1,000 full track.js runs: ~3-5 s alone, over the 5 s default under a
+    // parallel build (it failed once that way on 2026-09-22). The sample size
+    // is the point of the test, so the limit moves, not the loop.
+  }, 20000);
 
   it('is not armed before 2026-10-04 without the preview override (the 10-03 homepage read)', () => {
     if (Date.now() >= Date.UTC(2026, 9, 4)) return;
