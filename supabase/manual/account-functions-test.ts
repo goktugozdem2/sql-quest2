@@ -20,12 +20,18 @@ const assert = (c: boolean, m: string) => { if (!c) { console.error('FAIL', m); 
 
 let r = await call(handlers.login, { login: 'alice', password: 'CorrectHorse1!' })
 assert(r.status === 200 && r.body.ok && r.body.username === 'alice' && r.body.data.xp === 5 && r.body.data.email === 'alice@example.com', 'login by username')
+const tok1 = r.body.sessionToken
+assert(/^[0-9a-f]{64}$/.test(tok1), 'login returns a 32-byte hex sessionToken')
+assert(g.__db.account_sessions.length === 1 && g.__db.account_sessions[0].username === 'alice' && g.__db.account_sessions[0].token_hash === await sha(tok1), 'only the token hash is stored, keyed to the username')
+assert(!g.__db.account_sessions.some((s: any) => s.token_hash === tok1), 'the raw token is never stored')
 r = await call(handlers.login, { login: 'ALICE@example.com', password: 'CorrectHorse1!' })
 assert(r.status === 200 && r.body.username === 'alice', 'login by email, case-insensitive')
+assert(r.body.sessionToken && r.body.sessionToken !== tok1 && g.__db.account_sessions.length === 2, 'each sign-in mints its own session')
 r = await call(handlers.login, { login: 'oldie@example.com', password: 'pw123456' })
 assert(r.status === 200 && r.body.username === 'oldie', 'login for an account whose hash lives only in data')
 r = await call(handlers.login, { login: 'nobody', password: 'x' })
 assert(r.status === 401 && r.body.error === 'invalid_credentials', 'unknown user is the same generic error')
+assert(!('sessionToken' in r.body) && g.__db.account_sessions.every((s: any) => s.username !== 'nobody'), 'a failed sign-in mints nothing')
 for (let i = 0; i < 4; i++) { r = await call(handlers.login, { login: 'alice', password: 'wrong' }); assert(r.status === 401, `wrong password ${i + 1} → 401`) }
 r = await call(handlers.login, { login: 'alice', password: 'wrong' })
 assert(r.status === 429 && r.body.error === 'locked', '5th failure locks')
@@ -36,10 +42,17 @@ r = await call(handlers.password, { username: 'alice', currentPassword: 'wrong',
 assert(r.status === 401, 'change password rejects a wrong current password')
 r = await call(handlers.password, { username: 'alice', currentPassword: 'CorrectHorse1!', newPassword: 'NewPass123!' })
 assert(r.status === 200 && r.body.ok && /^[0-9a-f]{64}$/.test(r.body.passwordHash), 'change password succeeds')
+const aliceSessions = g.__db.account_sessions.filter((s: any) => s.username === 'alice')
+assert(/^[0-9a-f]{64}$/.test(r.body.sessionToken) && aliceSessions.length === 1 && aliceSessions[0].token_hash === await sha(r.body.sessionToken), 'password change ends the other sessions and returns a fresh token')
+assert(g.__db.account_sessions.some((s: any) => s.username === 'oldie'), 'another account keeps its sessions')
 const row = g.__db.users.find((u: any) => u.username === 'alice')
 assert(row.password_hash === r.body.passwordHash && row.data.passwordHash === r.body.passwordHash && row.data.xp === 5, 'new hash in column and data, progress kept')
 r = await call(handlers.login, { login: 'alice', password: 'NewPass123!' })
 assert(r.status === 200, 'login with the new password')
 r = await call(handlers.login, { login: 'alice', password: 'CorrectHorse1!' })
 assert(r.status === 401, 'old password no longer works')
+g.__failInsert = 'account_sessions'
+r = await call(handlers.login, { login: 'alice', password: 'NewPass123!' })
+assert(r.status === 200 && r.body.ok && r.body.sessionToken === null, 'sign-in still succeeds when the sessions table is missing (step 1 never refuses)')
+g.__failInsert = null
 console.log('edge functions: all checks passed')

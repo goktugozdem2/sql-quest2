@@ -8,6 +8,12 @@
 // SHA-256 of salt || password) so every existing login path keeps working.
 //
 // Shares the failure counter with account-login.
+//
+// Session tokens (2026-09-23): a password change ends every session the
+// account has — a browser signed in with the old password (perhaps the reason
+// for the change) loses its token — and returns a fresh `sessionToken` for the
+// browser that made the change. Same minting as account-login: 32 random
+// bytes, only the SHA-256 stored in public.account_sessions.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -38,6 +44,12 @@ function timingSafeEqual(a: string, b: string): boolean {
   let diff = 0
   for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i)
   return diff === 0
+}
+
+function newSessionToken(): string {
+  const bytes = new Uint8Array(32)
+  crypto.getRandomValues(bytes)
+  return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('')
 }
 
 function newSalt(): string {
@@ -100,5 +112,20 @@ Deno.serve(async (req) => {
   if (error) return json({ ok: false, error: 'save_failed' }, 500)
 
   if (attempt) await supabase.from('account_login_attempts').delete().eq('login', username)
-  return json({ ok: true, salt, passwordHash: hash })
+
+  // Every other session ends; this browser gets a fresh one. A failure here
+  // (the migration not applied yet) must not fail a password change that has
+  // already been written, so it degrades to no token.
+  let sessionToken: string | null = null
+  try {
+    await supabase.from('account_sessions').delete().eq('username', row.username)
+    const token = newSessionToken()
+    const { error: sessErr } = await supabase.from('account_sessions').insert({ username: row.username, token_hash: await sha256Hex(token) })
+    if (!sessErr) sessionToken = token
+    else console.error('account_sessions insert failed:', sessErr.message || sessErr)
+  } catch (err) {
+    console.error('account_sessions rotate failed:', err)
+  }
+
+  return json({ ok: true, salt, passwordHash: hash, sessionToken })
 })

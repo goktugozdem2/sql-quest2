@@ -78,3 +78,15 @@ guests are in scope from the first release, not a follow-up:
 APPROVED 2026-09-22, build this week in the release order above. Reads
 narrowed (sq_load_account, anon select on users_public revoked); the
 regression guard is live; tokens not yet built.
+
+2026-09-23: steps 1–2 BUILT, not applied or deployed. Migration
+`20260923100000_account_session_tokens.sql` (tables account_sessions,
+guest_secrets, session_token_misses; token-aware sq_load_account /
+sq_save_user that record `missing` / `invalid` at most once per username per
+hour and refuse nothing), rollback `supabase/manual/20260923_account_session_tokens_rollback.sql`,
+local proof `supabase/manual/account-session-tokens-replica-test.sql`.
+account-login returns `sessionToken`; account-password rotates it; registration
+gets its token by calling account-login with the credentials it just set.
+Client: `src/utils/session-token.js`, p_token on every read and write.
+Release: migration → `supabase functions deploy account-login account-password`
+→ client. Step 3 reads `session_token_misses`.

@@ -10,6 +10,18 @@
 // Failed attempts are counted per login in public.account_login_attempts:
 // 5 failures inside 15 minutes lock that login for 15 minutes. The response
 // never says whether the username or the password was wrong.
+//
+// Session tokens (2026-09-23, docs/plans/account-session-tokens-2026-09-22.md):
+// a correct password mints a random 32-byte token, stores only its SHA-256 in
+// public.account_sessions, and returns the token as `sessionToken`. The client
+// sends it as p_token on every sq_load_account / sq_save_user call. This is the
+// ONLY place a token for an existing account is minted — anon cannot reach
+// account_sessions and there is no SQL function that mints one — so holding a
+// token means someone typed this account's password on that browser.
+// Registration gets its token here too: right after the registering save the
+// client signs in with the credentials it just set (no second function).
+// If the insert fails (the migration not applied yet) the sign-in still
+// succeeds without a token: step 1 records a missing token, it never refuses.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -33,6 +45,25 @@ function json(body: unknown, status = 200) {
 export async function sha256Hex(text: string): Promise<string> {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text))
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('')
+}
+
+export function newSessionToken(): string {
+  const bytes = new Uint8Array(32)
+  crypto.getRandomValues(bytes)
+  return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('')
+}
+
+// Mint, store the hash, return the token (null when the table is not there).
+export async function mintSession(supabase: any, username: string): Promise<string | null> {
+  const token = newSessionToken()
+  try {
+    const { error } = await supabase.from('account_sessions').insert({ username, token_hash: await sha256Hex(token) })
+    if (error) { console.error('account_sessions insert failed:', error.message || error); return null }
+  } catch (err) {
+    console.error('account_sessions insert failed:', err)
+    return null
+  }
+  return token
 }
 
 export function timingSafeEqual(a: string, b: string): boolean {
@@ -112,5 +143,7 @@ Deno.serve(async (req) => {
   data.salt = storedSalt
   if (row.email || data.email) data.email = row.email || data.email
 
-  return json({ ok: true, username: row.username, data })
+  const sessionToken = await mintSession(supabase, row.username)
+
+  return json({ ok: true, username: row.username, data, sessionToken })
 })
