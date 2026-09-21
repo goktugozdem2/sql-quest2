@@ -199,6 +199,8 @@ const SCENARIOS = {
       const chip = document.querySelector('[data-testid="streak-chip"]');
       out.chip = chip ? chip.innerText.replace(/\\s+/g, ' ').trim() : null;
       out.chipPulse = chip ? chip.className.includes('animate-pulse') : null;
+      out.emptyFlame = !!document.querySelector('[data-testid="streak-flame-empty"]');
+      out.dot = !!document.querySelector('[data-testid="streak-dot"]');
       out.autoOpen = !!document.querySelector('[data-testid="streak-card"]');
       if (chip && !out.autoOpen) { chip.click(); await w(500); }
       const card = document.querySelector('[data-testid="streak-card"]');
@@ -210,6 +212,13 @@ const SCENARIOS = {
       out.headlineFont = getComputedStyle(card.querySelector('p')).fontFamily.split(',')[0];
       out.dots = [...card.querySelectorAll('[data-state]')].map(d => d.dataset.state).join(' ');
       out.cta = card.querySelector('[data-testid="streak-claim"]') ? 'claim' : card.querySelector('[data-testid="streak-solve"]') ? 'solve' : null;
+      if (out.cta === 'solve' && ${process.argv.includes('--solve')}) {
+        card.querySelector('[data-testid="streak-solve"]').click();
+        await w(1800);
+        out.editorOpen = !!document.querySelector('.sql-cm-editor .CodeMirror');
+        out.openedTitle = (document.querySelector('h2') || {}).textContent || null;
+        out.listVisible = /Welcome back|Practice freely/.test(document.body.innerText.slice(0, 1500)) && !out.editorOpen;
+      }
       if (out.cta === 'claim' && ${process.argv.includes('--claim')}) {
         const before = JSON.parse(localStorage.getItem('sqlquest_user_' + localStorage.getItem('sqlquest_user')) || '{}').xp;
         card.querySelector('[data-testid="streak-claim"]').click();

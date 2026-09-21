@@ -13,6 +13,12 @@ checks production after deploy, and nothing runs on a schedule.
    (`scripts/qa/pro-mock.mjs`: app loads, a challenge opens and grades, the
    Pro modal opens, a deep link keeps the session) against
    `https://sqlquest.app` — daily, and after every production deploy.
+   **First check: interactive within 10 seconds** — the app shell rendered
+   and a click on the Learning Path tab responds within 10 s of navigation
+   (founder QA 2026-09-21: one tab sat past 30 s on script injection, most
+   likely a browser extension, but "it loads eventually" is not a pass).
+   Run from a clean headless profile so an extension can never mask or
+   cause the result.
 2. **Alerts.** On failure only, one email to the founder through Resend,
    deduplicated per failing check per day. Resend hit 80% of its daily quota
    on 2026-09-12; an alert that fires every run would compete with real mail.

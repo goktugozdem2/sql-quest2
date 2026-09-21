@@ -40,7 +40,8 @@ export function dayBefore(day, n = 1) {
 export function practiceDays(attempts) {
   const out = new Set();
   for (const a of Array.isArray(attempts) ? attempts : []) {
-    if (a && a.success && Number.isFinite(Number(a.timestamp))) out.add(appDayOf(a.timestamp));
+    // backfilled attempts are synthetic (dated ~30 days back) — never a practice day
+    if (a && a.success && !a.backfilled && Number.isFinite(Number(a.timestamp))) out.add(appDayOf(a.timestamp));
   }
   return out;
 }

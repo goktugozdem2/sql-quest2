@@ -29,7 +29,11 @@ export function detectSessions(attempts) {
 
   // Defensive sort — callers may pass unsorted
   const sorted = [...attempts]
-    .filter(a => a && typeof a.timestamp === 'number')
+    // Backfilled attempts (challenge-helpers backfillLegacyAttempts) are
+    // synthetic, stamped ~30 days back for the radar's sake. They are not a
+    // session anyone had: counting them made "Welcome back — last session 19
+    // days ago" appear for an account created the day before (2026-09-21).
+    .filter(a => a && !a.backfilled && typeof a.timestamp === 'number')
     .sort((a, b) => a.timestamp - b.timestamp);
 
   if (sorted.length === 0) return [];

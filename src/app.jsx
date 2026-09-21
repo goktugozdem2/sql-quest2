@@ -17271,6 +17271,37 @@ CRITICAL RULES:
     return () => clearTimeout(t);
   }, [streakCardPending, radarPop, showAchievement, showProModal]);
 
+  // "Solve one now" opens ONE question, not the list (founder QA 2026-09-21:
+  // the list asked the person to choose again, and the button promised one).
+  // Same source as the home plan card's "Today" — its first item — so the card
+  // and the plan cannot disagree; the curriculum's next unsolved question when
+  // the plan is empty.
+  const openStreakQuestion = () => {
+    const bank = window.challengesData || challenges || [];
+    let ch = null;
+    let from = 'plan';
+    try {
+      const plan = buildPracticePlan({
+        company: prepTarget.company || companyFilter || null,
+        bank,
+        companyMap: window.challengeCompanies || {},
+        skillLevels: calculateSkillLevelsFromPerformance(),
+        solvedIds: solvedChallenges,
+        daysLeft: daysUntil(prepTarget.date, Date.now()),
+      });
+      if (plan.today.length) ch = bank.find(c => c.id === plan.today[0].id) || null;
+    } catch (_) { /* fall through to the curriculum */ }
+    if (!ch) {
+      from = 'next';
+      ch = pickNextChallenge(bank, c => !solvedChallenges.has(c.id) && (isPro || c.difficulty !== 'Hard'));
+    }
+    setStreakCardOpen(null);
+    setActiveTab('quests');
+    setPracticeSubTab('challenges');
+    trackActivationEvent('streak_solve_started', { challengeId: ch ? ch.id : null, from });
+    if (ch) setTimeout(() => openChallenge(ch), 50);
+  };
+
   // +10 XP, once a day, only after a question has been solved that day. The
   // guard is the practice streak's own day marker, not the visit.
   const claimDailyReward = () => {
@@ -25715,11 +25746,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
             <button
               type="button"
               data-testid="streak-solve"
-              onClick={() => {
-                setStreakCardOpen(null);
-                setActiveTab('quests');
-                setPracticeSubTab('challenges');
-              }}
+              onClick={openStreakQuestion}
               className="mt-4 w-full py-2.5 text-sm font-semibold"
               style={{ background: '#FFE34D', color: '#0E0F13', borderRadius: '6px' }}
             >
@@ -32695,15 +32722,30 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                 if (!streakCardOpen) trackActivationEvent('streak_card_opened', { source: 'chip', streak: dailyStreak });
               }}
               aria-label={i18n_t('streakCard', 'chipTitle')}
-              className={`flex items-center gap-0.5 rounded px-1 -mx-1 ${streakChipPulse ? 'animate-pulse' : ''}`}
+              className={`relative flex items-center gap-0.5 rounded px-1 -mx-1 cursor-pointer hover:bg-[#1F222B] ${streakChipPulse ? 'animate-pulse' : ''}`}
               style={{ background: 'transparent' }}
             >
+              {/* A day with nothing solved yet gets a small dot: the chip has
+                  something to say, and the dot says it is clickable. The accent
+                  is allowed here — DESIGN.md lists streak indicators. */}
+              {currentUser && !isGuest && lastStreakDay !== todayString && !streakCardOpen && (
+                <span data-testid="streak-dot" aria-hidden="true" className="absolute -top-0.5 -right-0.5 block rounded-full" style={{ width: 6, height: 6, background: '#FFE34D' }} />
+              )}
               {dailyStreak > 0 && lastStreakDay !== todayString ? (
                 <span title={`${dailyStreak}-day streak at risk — solve one question today to keep it${streakFreezes > 0 ? ` · ${streakFreezes} freeze${streakFreezes > 1 ? 's' : ''} left` : ''}`} className="flex items-center gap-0.5">
                   <span className="text-sm leading-none">⏳</span><span className="font-bold text-orange-400">{dailyStreak}</span>
                 </span>
               ) : (
-                <span title={`Daily streak${streakFreezes > 0 ? ` · ${streakFreezes} freeze${streakFreezes > 1 ? 's' : ''} left this month` : ''}`} className="flex items-center gap-0.5"><PixelFlame active={dailyStreak > 0} size={14} /><span className="font-bold">{dailyStreak}</span></span>
+                <span title={`Daily streak${streakFreezes > 0 ? ` · ${streakFreezes} freeze${streakFreezes > 1 ? 's' : ''} left this month` : ''}`} className="flex items-center gap-0.5">
+                  {dailyStreak > 0 ? <PixelFlame active size={14} /> : (
+                    /* At 0 the filled grey pixel flame read as a drop (founder QA
+                       2026-09-21). An outlined flame says "flame, not lit yet". */
+                    <svg data-testid="streak-flame-empty" width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" style={{ display: 'block' }}>
+                      <path d="M8 1.5c.4 2.2 2.1 3.3 3.2 4.9 1 1.4 1.3 2.6 1.3 3.8A4.5 4.5 0 0 1 8 14.5a4.5 4.5 0 0 1-4.5-4.3c0-1.5.6-2.6 1.5-3.6.2 1 .8 1.7 1.6 2.1C6.2 6.4 6.9 3.8 8 1.5Z" fill="none" stroke="#8A8E99" strokeWidth="1.3" strokeLinejoin="round" />
+                    </svg>
+                  )}
+                  <span className="font-bold">{dailyStreak}</span>
+                </span>
               )}
             </button>
             {/* Interview-first (2026-09-17): the lives and the coin are game

@@ -227,3 +227,22 @@ describe('computeRecap', () => {
     expect(recap.topSkillGrowth[0].level).toBe(50);
   });
 });
+
+// 2026-09-21 (founder QA): "Welcome back — last session 19 days ago" for an
+// account created the day before. The recap was reading the synthetic
+// attempts backfillLegacyAttempts stamps ~30 days back for the radar.
+describe('backfilled attempts are not a session', () => {
+  const now = Date.UTC(2026, 8, 21, 12);
+  const day = 24 * 60 * 60 * 1000;
+  it('are ignored when finding sessions', () => {
+    const sessions = detectSessions([
+      { challengeId: 1, success: true, backfilled: true, timestamp: now - 19 * day },
+      { challengeId: 2, success: true, timestamp: now - 1 * day },
+    ]);
+    expect(sessions).toHaveLength(1);
+    expect(sessions[0].end).toBe(now - 1 * day);
+  });
+  it('alone, never show a recap', () => {
+    expect(shouldShowRecap([{ challengeId: 1, success: true, backfilled: true, timestamp: now - 19 * day }], now)).toBe(false);
+  });
+});

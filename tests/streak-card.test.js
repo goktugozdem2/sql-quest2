@@ -139,3 +139,28 @@ describe('source guards: the modal is gone', () => {
     for (const e of ['🎁', '🏆', '🎉', '⭐', '🥇', '👑']) expect(card).not.toContain(e);
   });
 });
+
+describe('founder QA round 2 (2026-09-21)', () => {
+  it('backfilled attempts are never a practice day', () => {
+    const days = practiceDays([
+      { success: true, backfilled: true, timestamp: Date.UTC(2026, 8, 20, 12) },
+      { success: true, timestamp: Date.UTC(2026, 8, 21, 12) },
+    ]);
+    expect([...days]).toEqual(['2026-09-21']);
+  });
+
+  it('"Solve one now" opens one question — the plan\'s first — not the list', () => {
+    const fn = app.slice(app.indexOf('const openStreakQuestion = () => {'), app.indexOf('const openStreakQuestion = () => {') + 1600);
+    expect(fn).toContain('buildPracticePlan(');
+    expect(fn).toContain('plan.today[0]');
+    expect(fn).toContain('pickNextChallenge(');       // fallback: curriculum order, never raw
+    expect(fn).toContain('openChallenge(ch)');
+    const card = app.slice(app.indexOf('data-testid="streak-solve"'), app.indexOf('data-testid="streak-solve"') + 200);
+    expect(card).toContain('onClick={openStreakQuestion}');
+  });
+
+  it('at 0 the header shows an outlined flame and a dot on an unpractised day', () => {
+    expect(app).toContain('data-testid="streak-flame-empty"');
+    expect(app).toContain('data-testid="streak-dot"');
+  });
+});

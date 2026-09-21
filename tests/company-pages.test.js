@@ -877,7 +877,7 @@ describe('every company-set link into the app declares the interview goal', () =
 import { readFileSync as _rf } from 'fs';
 describe('mocks: company claims only where sourced', () => {
   const mocksSrc = _rf(new URL('../src/data/mock-interviews.js', import.meta.url), 'utf8');
-  const blocks = mocksSrc.split(/\n  \{\n    (?:\/\/[^\n]*\n    )*id: '/).slice(1).map(b => ({ id: b.slice(0, b.indexOf("'")), body: b }));
+  const blocks = mocksSrc.split(/\n {2}\{\n {4}(?:\/\/[^\n]*\n {4})*id: '/).slice(1).map(b => ({ id: b.slice(0, b.indexOf("'")), body: b }));
   const head = b => b.body.slice(0, b.body.indexOf('questions:') > 0 ? b.body.indexOf('questions:') : 1500);
   const code = b => head(b).split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
   const SOURCED = ['capital-one-codesignal', 'capital-one-live-sql', 'revolut-analytics-screen'];
