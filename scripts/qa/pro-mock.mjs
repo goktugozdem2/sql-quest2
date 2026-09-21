@@ -131,6 +131,24 @@ const SCENARIOS = {
       return out;
     })()`);
   },
+  // The leaderboard read (2026-09-22): nothing while the tab is closed, one
+  // narrow read when it opens.
+  async leaderboard_load() {
+    await cdp('Page.navigate', { url: `${URL}/app/` });
+    await wait(3000);
+    return ev(`(async () => {
+      const w = ms => new Promise(r => setTimeout(r, ms));
+      const seen = [];
+      const orig = window.fetch;
+      window.fetch = function (input, init) { try { const u = typeof input === 'string' ? input : input.url; if (/leaderboard_public|order=data/.test(u)) seen.push(u.replace(/^.*rest\\/v1\\//, '')); } catch (_) {} return orig.apply(this, arguments); };
+      await w(${Number(arg('wait', '35'))} * 1000);
+      const beforeTab = seen.length;
+      const btn = [...document.querySelectorAll('button')].find(b => /🏅/.test(b.textContent));
+      if (btn) btn.click();
+      await w(2500);
+      return { beforeTab, navButton: !!btn, afterTab: seen.slice(beforeTab) };
+    })()`);
+  },
   // The Interview tab's two sections (founder QA 2026-09-21).
   async mock_sections() {
     await cdp('Page.navigate', { url: `${URL}/app/` });

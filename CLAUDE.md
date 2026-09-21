@@ -663,6 +663,14 @@ URLs filled, brand icon is the bolt, brand colour #FFE34D.
   (rollback file beside it). Never apply step 2 before the functions answer.
 - Never add a direct `users?` read or write in the client outside a fallback
   branch — the test fails on it.
+- **`users_public` computes its `data` column for every row** (the JSON minus
+  six private keys). Never ORDER BY or filter on it: LIMIT does not help, the
+  whole table is rebuilt per call. The leaderboard did exactly that, polled
+  every 30 s from every session, and cost ~39 h of DB time in nine days
+  (Supabase "running out of Disk IO Budget", 2026-09-21). Sorted reads get
+  their own narrow view with an index on the same expression —
+  `leaderboard_public` (migration 20260922100000) is the pattern. Check
+  `EXPLAIN ANALYZE` before shipping any read that sorts through a view.
 - **Plan and sender fields are server-owned** (migration
   `20260914100000_server_owned_account_fields.sql`): `sq_save_user` always
   keeps the row's proStatus/proType/proExpiry/proAutoRenew/proGrantReason,
