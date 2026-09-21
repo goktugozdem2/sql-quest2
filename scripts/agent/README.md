@@ -95,6 +95,7 @@ contents were never read.
 | `community-queue` | Tue 03:00 | Finds this week's public threads where someone asks where to practise SQL (five subreddits via `old.reddit.com` JSON, Hacker News via Algolia — read-only, no auth) and writes `docs/reads/community-YYYY-MM-DD.md`: max 5 threads, the question in one line, a DRAFT reply in the founder's voice that discloses he builds the site and names competitors fairly. **Never posts** — a removed self-promo comment poisons the sub for every later organic mention, and the engines cite organic threads. | low |
 | `ai-visibility` | Tue 03:30 | Runs `ai-visibility-probe.mjs`: asks Gemini, OpenAI, Anthropic and Perplexity the 25-prompt panel (`prompts/ai-visibility.json`, EN + TR) and writes `docs/reads/ai-visibility-YYYY-MM-DD.md` — `ai_mention_share` per lane, rank, which of our pages and which third-party pages get cited (`seo-page`'s targeting signal), competitors' share, the week-over-week delta. A lane with no key is skipped and says so. Max 30 prompts x 4 lanes per run. | low — read-only, spends only the optional keys |
 | `sensor-check` | daily 03:45 | Audits the measurements themselves: multi-fire events, constant-username identities, must-stay-zero counters, mid-window event births, contaminated aids, overdue or UNDEFINED-bound ledger entries. Runs before `verify` because a verdict written on a lying sensor is worse than no verdict. | low |
+| `flag-flip` | Wed 04:15 | Flips AT MOST one feature-flag row from `docs/agent/flag-queue.md` — one a week, activation first, money only with the founder's written go, never if `first_solve_10m` fell >3 points since the last flip. Opens a PR; the founder's merge is the flip. Moved here 2026-09-22 from the laptop scheduler, whose flip runs stalled on permission prompts. | medium — changes what users see, one flag at a time |
 | `verify` | daily 04:00 | Measures whether merged changes did what they claimed; writes verdicts to `docs/agent/ledger.md`. Exits without writing when nothing is due, which is most days. | low |
 
 The order encodes the loop: **sense → read → propose → verify**, with the
@@ -178,6 +179,17 @@ is never rounded to `FLAT` — one means "no signal available", the other means
 **A ledger that only records wins is a marketing document.** `MISS` is the
 outcome worth having, because the next triage decision gets made on this file:
 if content fixes keep moving numbers, do more of them; if they do not, stop.
+
+## The alarm
+
+A run that produces no output for `AGENT_STALL_MINUTES` (10), or exits
+non-zero, mails `AGENT_ALERT_EMAIL` once, through Resend with
+`AGENT_ALERT_RESEND_KEY` (`.env`; `run.sh` keeps the key out of the agent's
+environment). The agent runs with `--output-format stream-json` so "working"
+and "hung" look different from outside — text mode printed nothing until the
+end. SKIPs exit 0 and stay silent. Unconfigured, every run logs
+`WARN: alarm mail not configured`. Founder's rule, 2026-09-22, after two
+laptop-scheduled flips sat on permission prompts for a day and a half.
 
 ## Auth: subscription or API key
 

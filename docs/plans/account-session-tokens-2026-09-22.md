@@ -52,6 +52,29 @@ A mistake here signs people out or loses a save. `tests/cloud-save-contract`
 and `tests/account-access` must grow a token column before any of it ships;
 the e2e script's account section must pass against production.
 
+## Decision (founder, 2026-09-22)
+
+"Oturum anahtarı: onayla, bu hafta" — approved this week, including step 4's
+forced sign-in. "Misafirler de kapsamda olmalı. 6.833 misafir satırı var" —
+guests are in scope from the first release, not a follow-up:
+
+- **New guests** mint a 32-byte random secret with `crypto.getRandomValues`
+  at `startGuestMode`, kept in `localStorage` beside `sqlquest_guest_user`,
+  sent with every guest save/read. The row stores only its SHA-256.
+- **The 6,833 existing guest rows** have no secret. Trust on first use: the
+  first token-carrying save for a guest row with no stored hash sets it.
+  The exposure is a stranger claiming an idle guest row first — which costs
+  the owner only the CLOUD copy (guests are local-first; the local blob keeps
+  working and the next merge-on-login carries it). Accepted, written here so
+  it is a decision and not an oversight.
+- **Registered accounts** get their token from `account-login` / register;
+  step 4 signs everyone in once.
+- Until the cut, `sq_save_user` already refuses a save that drops solved
+  challenges or XP by more than 20% (migration 20260922160000, live; probe:
+  HTTP 400 "regression refused: solved 85 -> 0, xp 26447 -> 0"). That stops
+  the wipe, not the write: an attacker can still add, rename or edit.
+
 ## Status
-OPEN — reads narrowed 2026-09-22; writes and per-username reads waiting on
-the founder's decision about step 4.
+APPROVED 2026-09-22, build this week in the release order above. Reads
+narrowed (sq_load_account, anon select on users_public revoked); the
+regression guard is live; tokens not yet built.

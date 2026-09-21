@@ -20,13 +20,14 @@ need git  || MISSING=1
 need node || MISSING=1
 need gh   || MISSING=1
 need flock || MISSING=1   # util-linux; run.sh refuses to share the checkout without it
+need jq   || MISSING=1   # the stall alarm and the agent-output parse
 if [ "$MISSING" = 1 ]; then
   cat <<'EOF'
 
 Install the missing tools first. On Debian/Ubuntu:
 
   sudo apt update
-  sudo apt install -y git curl util-linux
+  sudo apt install -y git curl util-linux jq
   curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
   sudo apt install -y nodejs
   (type -p wget >/dev/null || sudo apt install wget -y) \
@@ -105,6 +106,15 @@ AGENT_MAX_OPEN_PRS=1
 # AGENT_MODEL=claude-sonnet-5
 
 # AGENT_MAX_CHANGED_LINES=400
+
+# --- Alarm (founder's rule, 2026-09-22) ------------------------------------
+# A run with no new output for AGENT_STALL_MINUTES, or one that exits
+# non-zero, mails this address once. Resend key: resend.com -> API keys,
+# "Sending access" only, domain send.sqlquest.app. Kept out of the agent's
+# environment by run.sh. Empty = the alarm goes to the log only.
+AGENT_ALERT_EMAIL=
+AGENT_ALERT_RESEND_KEY=
+AGENT_STALL_MINUTES=10
 EOF
   chmod 600 "$AGENT_HOME/.env"
   echo
@@ -227,13 +237,19 @@ make_unit sqlquest-verify       verify       '*-*-* 04:00:00'     'SQL Quest led
 # actually happened (constant-username events, 3x multi-fire, founder
 # localhost sessions writing to prod).
 make_unit sqlquest-sensor-check sensor-check '*-*-* 03:45:00'     'SQL Quest sensor audit'
+# Wednesday, one flag a week at most (docs/agent/flag-queue.md): the founder's
+# rule of 2026-09-22 — flags one at a time, a week each, activation first,
+# money only with his written go. Opens a PR; his merge is the flip. Moved
+# here from the laptop scheduler, whose flip runs stalled on permission
+# prompts for a day and a half. Wednesday fires four with this one.
+make_unit sqlquest-flag-flip    flag-flip    'Wed *-*-* 04:15:00' 'SQL Quest one-flag-a-week flip proposal'
 
 systemctl --user daemon-reload
 systemctl --user enable --now \
   sqlquest-weekly-read.timer sqlquest-seo-read.timer sqlquest-outreach.timer \
   sqlquest-content-fix.timer sqlquest-seo-page.timer \
   sqlquest-community-queue.timer sqlquest-ai-visibility.timer \
-  sqlquest-verify.timer sqlquest-sensor-check.timer
+  sqlquest-verify.timer sqlquest-sensor-check.timer sqlquest-flag-flip.timer
 
 cat <<EOF
 

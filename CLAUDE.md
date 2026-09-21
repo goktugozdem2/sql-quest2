@@ -750,7 +750,11 @@ URLs filled, brand icon is the bolt, brand colour #FFE34D.
 - Pure half `src/utils/free-tier-boundary.js`, guards
   `tests/free-tier-boundary.test.js`, flags in `feature-flags.js`, each with
   its own ledger claim and flip task. `ftbFlag(name)` in app.jsx reads
-  `=== true`. Flip calendar: **09-21** `deadlineOffer` (M3, moved from 10-06 by the
+  `=== true`. **Superseded 2026-09-22: every flag flips from
+  `docs/agent/flag-queue.md` — one a week, activation first, money only with
+  the founder's written go, as a VPS-fleet PR (`flag-flip`); the laptop flip
+  tasks are disabled. Nothing had flipped: they stalled on permission
+  prompts.** Old flip calendar, for the record: **09-21** `deadlineOffer` (M3, moved from 10-06 by the
   founder on 09-16; flips with `freeQuota`) · **09-29** `quietEarlyAsks` (M4) ·
   **10-12** `goalWallEarly` + `mockDoor` (M2, M5 — `mockDoor` is inert without
   `goalWallEarly`) ·

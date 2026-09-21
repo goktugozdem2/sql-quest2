@@ -96,6 +96,82 @@ if ! flock -w "$LOCK_WAIT" 9; then
   exit 0
 fi
 
+# --- Alarm: a stalled or failed run mails the founder ----------------------
+# 2026-09-21: two flag flips on the laptop scheduler sat in "running" for a
+# day and a half, each parked on a permission prompt nobody was there to
+# answer, and nothing said so — the founder found out from a status list.
+# The founder's rule (2026-09-22): a run that stops moving for ten minutes
+# sends an email. Two alarms, both once per run:
+#   stall  — no new output from the agent (stream-json events) or from this
+#            log for AGENT_STALL_MINUTES (10). Headless runs cannot stall on a
+#            prompt, but they can hang on a command that never returns.
+#   failed — the script exits non-zero (guard or build:check abort, crash,
+#            systemd's SIGTERM at TimeoutStartSec).
+# SKIPs exit 0 and never alarm. Mail goes through Resend's HTTP API with
+# AGENT_ALERT_RESEND_KEY to AGENT_ALERT_EMAIL (both in .env; the founder
+# picks the address). Neither set → the alarm is written to the log only, and
+# the log says so on every run, so a silent alarm is visible as one.
+STALL_MIN="${AGENT_STALL_MINUTES:-10}"
+alert() {
+  local subject="$1" body="$2"
+  echo "ALERT: $subject"
+  if [ -z "${AGENT_ALERT_EMAIL:-}" ] || [ -z "${AGENT_ALERT_RESEND_KEY:-}" ]; then
+    echo "ALERT NOT SENT: AGENT_ALERT_EMAIL / AGENT_ALERT_RESEND_KEY unset in $AGENT_HOME/.env"
+    return 0
+  fi
+  local payload
+  payload="$(jq -n --arg to "$AGENT_ALERT_EMAIL" --arg s "[sqlquest-agent] $subject" --arg t "$body" \
+    '{from: "SQL Quest agent <agent@send.sqlquest.app>", to: [$to], subject: $s, text: $t}')"
+  curl -sS -m 20 -o /dev/null -w 'alert mail: HTTP %{http_code}\n' \
+    -H "Authorization: Bearer $AGENT_ALERT_RESEND_KEY" -H 'Content-Type: application/json' \
+    -d "$payload" https://api.resend.com/emails || echo "ALERT NOT SENT: curl failed"
+}
+[ -n "${AGENT_ALERT_EMAIL:-}" ] && [ -n "${AGENT_ALERT_RESEND_KEY:-}" ] \
+  || echo "WARN: alarm mail not configured (AGENT_ALERT_EMAIL / AGENT_ALERT_RESEND_KEY)"
+command -v jq >/dev/null 2>&1 || { echo "jq not found; the alarm and the agent output parse need it" >&2; exit 2; }
+
+WATCH_PID=""
+on_exit() {
+  local rc=$?
+  [ -n "$WATCH_PID" ] && kill "$WATCH_PID" 2>/dev/null || true
+  if [ "$rc" -ne 0 ]; then
+    alert "$TASK failed (exit $rc)" "Task $TASK, run $STAMP, exited $rc on $(hostname).
+
+Last lines of $LOG:
+$(tail -n 40 "$LOG" 2>/dev/null)"
+  fi
+}
+trap on_exit EXIT
+trap 'exit 143' TERM
+
+# stall_watch <file>... — alarms once when none of the files has changed for
+# STALL_MIN minutes. Runs in the background for the whole run.
+stall_watch() {
+  local sent=0 newest now f m
+  while sleep 60; do
+    newest=0
+    for f in "$@"; do
+      [ -f "$f" ] || continue
+      m=$(stat -c %Y "$f" 2>/dev/null || stat -f %m "$f" 2>/dev/null || echo 0)
+      [ "$m" -gt "$newest" ] && newest=$m
+    done
+    now=$(date +%s)
+    if [ "$sent" = 0 ] && [ "$newest" -gt 0 ] && [ $((now - newest)) -ge $((STALL_MIN * 60)) ]; then
+      alert "$TASK stalled (${STALL_MIN} min without output)" "Task $TASK, run $STAMP, on $(hostname): no new output for ${STALL_MIN} minutes. It is still running; systemd kills it at TimeoutStartSec.
+
+Last lines of $LOG:
+$(tail -n 40 "$LOG" 2>/dev/null)"
+      sent=1
+    fi
+  done
+}
+# Watched from here to the end: the checkout, npm ci, the agent, the guard,
+# build:check and the push. Not the lock wait above — that one is quiet by
+# design and bounded by AGENT_LOCK_WAIT.
+AGENT_STREAM="$LOGDIR/$TASK-$STAMP.agent.jsonl"
+stall_watch "$AGENT_STREAM" "$LOG" 9>&- &
+WATCH_PID=$!
+
 # --- Daily cap -------------------------------------------------------------
 # A fleet that retry-storms through a rate limit does not just exhaust today's
 # window, it eats tomorrow's too. Count runs and stop.
@@ -194,20 +270,30 @@ npm ci --silent
 # fd 9 is the run lock; close it for the agent so a background process it
 # leaves behind (a dev server, say) cannot hold every later run at the door.
 AGENT_OUT="$LOGDIR/$TASK-$STAMP.agent.txt"
+# stream-json, not text: text mode prints nothing until the very end, so a
+# run that is working and a run that is hung look the same from outside. The
+# event stream moves on every tool call, which is what the stall alarm
+# watches; the final answer is pulled out of it into $AGENT_OUT as before.
 set +e
-claude -p "$(cat "$TASK_FILE")" \
+# The alarm's mail key is the founder's, not the agent's: keep it out of the
+# agent's environment (run.sh sources .env with set -a).
+env -u AGENT_ALERT_RESEND_KEY claude -p "$(cat "$TASK_FILE")" \
   ${AGENT_MODEL:+--model "$AGENT_MODEL"} \
   --dangerously-skip-permissions \
-  --output-format text 9>&- | tee "$AGENT_OUT"
-AGENT_RC=${PIPESTATUS[0]}
+  --output-format stream-json --verbose 9>&- > "$AGENT_STREAM"
+AGENT_RC=$?
 set -e
+jq -r 'select(.type == "result") | (.result // "")' "$AGENT_STREAM" > "$AGENT_OUT" 2>/dev/null || true
+# a stream that did not parse still has to reach the usage-limit check below
+[ -s "$AGENT_OUT" ] || cp "$AGENT_STREAM" "$AGENT_OUT"
+cat "$AGENT_OUT"
 echo "agent exit: $AGENT_RC"
 
 # --- Fail closed on a usage limit -----------------------------------------
 # On a subscription the quota is shared with the human. If we hit the ceiling,
 # stop for the day rather than retrying — a retry storm burns tomorrow's window
 # too, and leaves the founder rate-limited at their own keyboard.
-if grep -qiE 'usage limit|rate limit|quota exceeded|429' "$AGENT_OUT" 2>/dev/null; then
+if grep -qiE 'usage limit|rate limit|quota exceeded|429' "$AGENT_OUT" "$AGENT_STREAM" 2>/dev/null; then
   echo "STOP: hit a usage limit. Parking the fleet until tomorrow."
   echo "$CAP" > "$COUNTER"
   git checkout --quiet main 2>/dev/null || true
