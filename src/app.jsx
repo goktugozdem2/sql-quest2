@@ -3090,12 +3090,26 @@ const loadLeaderboard = async () => {
   // If Supabase configured, load from cloud
   if (isSupabaseConfigured()) {
     try {
-      const cloudUsers = await fetchAccountRows('select=username,data&order=data->>xp.desc&limit=50');
-      if (cloudUsers && cloudUsers.length > 0) {
-        realUsers = cloudUsers.map(u => ({
+      // leaderboard_public (2026-09-22) carries exactly what the board shows —
+      // username, xp, solved count — ordered by an index on users(data->'xp').
+      // The old query pulled 50 full account blobs through users_public, whose
+      // per-row JSON rebuild made every call a full-table pass, and it sorted
+      // on data->>xp: TEXT, so "999" outranked "26257" and the top 50 were the
+      // wrong 50. `->` keeps xp a JSON number and sorts numerically.
+      let rows = null;
+      try {
+        rows = await supabaseFetch('leaderboard_public?select=username,xp,solved&order=xp.desc.nullslast&limit=50', { throwOnError: true });
+        rows = (rows || []).map(u => ({ username: u.username, xp: Number(u.xp) || 0, solved: Number(u.solved) || 0 }));
+      } catch (err) {
+        if (!isMissingServerSide(err)) throw err;
+        const legacy = await fetchAccountRows('select=username,data&order=data->xp.desc.nullslast&limit=50');
+        rows = (legacy || []).map(u => ({ username: u.username, xp: Number(u.data?.xp) || 0, solved: u.data?.solvedChallenges?.length || 0 }));
+      }
+      if (rows && rows.length > 0) {
+        realUsers = rows.map(u => ({
           username: u.username,
-          xp: u.data?.xp || 0,
-          solvedCount: u.data?.solvedChallenges?.length || 0,
+          xp: u.xp,
+          solvedCount: u.solved,
           timestamp: Date.now(),
           isSeeded: false
         }));
@@ -9064,16 +9078,23 @@ function SQLQuest() {
     }
   }, [xp, solvedChallenges, unlockedAchievements, queryCount, aiLessonPhase, currentAiLesson, completedAiLessons, aiLessonCompletions, roadmapLessonCompletions, comprehensionCount, comprehensionCorrect, consecutiveCorrect, comprehensionConsecutive, completedExercises, challengeQueries, completedDailyChallenges, dailyStreak, challengeAttempts, dailyChallengeHistory, weeklyReports, weeklyReportLastSeen, weeklyDigestOptOut, earnedMilestones, coachState, userGoals, intakeRecord, prepTarget, goalsPromptDismissedAt, loginCalendar, speedRunHistory, explainHistory, userProStatus, proType, proExpiry, proAutoRenew, interviewHistory, challengeProgress, challengeStartDate, weaknessTracking, skillMastery, lessonSkillStats, errorPatterns, retrievalLog, dailyRewardClaimedDate]);
 
-  // Load leaderboard periodically
+  // Load the leaderboard only while its tab is open, and only while the page
+  // is visible (2026-09-22). It used to reload every 30 seconds in every open
+  // session, on every tab, visible or not — ~12,000 calls a day of a query
+  // that took 1.3 s (it rebuilt every account's JSON to sort on xp) and was
+  // the load behind Supabase's "running out of Disk IO Budget" warning of
+  // 2026-09-21. The board state is read nowhere else (userPercentile is set
+  // and never shown).
   useEffect(() => {
-    if (currentUser) {
+    if (!currentUser || activeTab !== 'leaderboard') return undefined;
+    const load = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
       loadLeaderboard().then(setLeaderboard);
-      const interval = setInterval(() => {
-        loadLeaderboard().then(setLeaderboard);
-      }, 30000);
-      return () => clearInterval(interval);
-    }
-  }, [currentUser]);
+    };
+    load();
+    const interval = setInterval(load, 60000);
+    return () => clearInterval(interval);
+  }, [currentUser, activeTab]);
 
   // True when the URL signals explicit content intent — user clicked a
   // deep-link from LinkedIn / sector landing / company landing / profile
