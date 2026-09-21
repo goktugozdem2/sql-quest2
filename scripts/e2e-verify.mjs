@@ -100,7 +100,7 @@ const preamble = (seed, cloudRow = null) => `
       if (/functions\\/v1\\/account-login/.test(url)) return new Response(JSON.stringify({ error: 'invalid_credentials' }), { status: 401, headers: J });
       if (/rpc\\/sq_save_user/.test(url)) return new Response('', { status: 204, headers: J });
       if (/\\/rest\\/v1\\/users\\?/.test(url)) return new Response(JSON.stringify({ message: 'permission denied for table users' }), { status: 401, headers: J });
-      if (/users_public\\?|rpc\/sq_load_account/.test(url) && window.__cloudRow) return new Response(JSON.stringify([window.__cloudRow]), { status: 200, headers: J });
+      if (/users_public\\?|rpc\\/sq_load_account/.test(url) && window.__cloudRow) return new Response(JSON.stringify([window.__cloudRow]), { status: 200, headers: J });
       return new Response('[]', { status: 200, headers: J });
     }
     return real(input, init);
@@ -300,7 +300,7 @@ async function main() {
           form: true,
           login: net.filter(r => /functions\\/v1\\/account-login/.test(r.url)).length,
           tableReads: net.filter(r => /\\/rest\\/v1\\/users\\?/.test(r.url)).length,
-          viewReads: net.filter(r => /users_public\\?|rpc\/sq_load_account/.test(r.url)).length,
+          viewReads: net.filter(r => /users_public\\?|rpc\\/sq_load_account/.test(r.url)).length,
           sentPassword: net.some(r => (r.body || '').includes('not-a-real-password') && !/account-login/.test(r.url)),
           urls: net.map(r => r.url.replace(/^https?:\\/\\/[^/]+/, '')).slice(-8),
         };
@@ -342,7 +342,7 @@ async function main() {
         const net = window.__net || [];
         return {
           rpcSaves: net.filter(r => /rpc\\/sq_save_user/.test(r.url)).length,
-          viewReads: net.filter(r => /users_public\\?|rpc\/sq_load_account/.test(r.url)).length,
+          viewReads: net.filter(r => /users_public\\?|rpc\\/sq_load_account/.test(r.url)).length,
           tableReads: net.filter(r => /\\/rest\\/v1\\/users\\?/.test(r.url)).length,
           tableWrites: net.filter(r => /\\/rest\\/v1\\/users\\?/.test(r.url) && r.method !== 'GET').length,
           urls: net.map(r => r.method + ' ' + r.url.replace(/^https?:\\/\\/[^/]+/, '')).slice(0, 12),

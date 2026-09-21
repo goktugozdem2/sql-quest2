@@ -48,3 +48,24 @@ describe('the database side', () => {
     expect(fs.existsSync(join(ROOT, 'supabase/manual/20260922b_users_public_anon_off_rollback.sql'))).toBe(true);
   });
 });
+
+describe('the save refuses a wipe (2026-09-22)', () => {
+  const guard = fs.readFileSync(join(ROOT, 'supabase/migrations/20260922160000_save_regression_guard.sql'), 'utf8');
+  it('the thresholds are the written ones', () => {
+    expect(guard).toMatch(/old_solved >= 3 and new_solved < old_solved \* 0\.8/);
+    expect(guard).toMatch(/old_xp >= 100 and new_xp < old_xp \* 0\.8/);
+    expect(guard).toMatch(/raise exception 'regression refused/);
+  });
+  it('the guard sits before the update, after the row is locked', () => {
+    const lock = guard.indexOf('for update;');
+    const check = guard.indexOf('regression guard');
+    const update = guard.indexOf('update public.users');
+    expect(lock).toBeGreaterThan(-1);
+    expect(check).toBeGreaterThan(lock);
+    expect(update).toBeGreaterThan(check);
+  });
+  it('the client reports a refusal as save_refused', () => {
+    expect(app).toContain("new CustomEvent('sq:save-refused'");
+    expect(app).toContain("trackActivationEvent('save_refused'");
+  });
+});

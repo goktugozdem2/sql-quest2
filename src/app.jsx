@@ -2863,6 +2863,16 @@ const _flushCloudSave = async (username, data, carryProFrom = null) => {
     return { ok: true };
   } catch (err) {
     console.error('Cloud sync failed:', err);
+    // sq_save_user refuses a save that would drop the solved count or XP by
+    // more than 20% (2026-09-22) — a wipe, or a stale tab landing on a newer
+    // row. The component turns this into a save_refused event; the row in the
+    // cloud is left as it was, which is the point.
+    try {
+      if (/regression refused/.test(String((err && err.message) || ''))
+          && typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+        window.dispatchEvent(new CustomEvent('sq:save-refused', { detail: { username, message: String(err.message).slice(0, 200) } }));
+      }
+    } catch (_) { /* measurement is best-effort */ }
     return { ok: false, error: err };
   }
 };
@@ -7052,6 +7062,22 @@ function SQLQuest() {
       });
     } catch (_) {}
   };
+
+  // A save the server refused as a regression (2026-09-22) — see _flushCloudSave
+  // and migration 20260922160000. One event per session is enough to count it.
+  const saveRefusedSentRef = useRef(false);
+  useEffect(() => {
+    const onRefused = (e) => {
+      if (saveRefusedSentRef.current) return;
+      saveRefusedSentRef.current = true;
+      const m = String((e && e.detail && e.detail.message) || '').match(/solved (\d+) -> (\d+), xp ([\d.]+) -> ([\d.]+)/);
+      trackActivationEvent('save_refused', m
+        ? { oldSolved: +m[1], newSolved: +m[2], oldXp: +m[3], newXp: +m[4] }
+        : {});
+    };
+    window.addEventListener('sq:save-refused', onRefused);
+    return () => window.removeEventListener('sq:save-refused', onRefused);
+  }, []);
 
   // ── Share loop ────────────────────────────────────────────────────
   // The shareable profile URL. Always /u/:handle (api/u.js writes the
