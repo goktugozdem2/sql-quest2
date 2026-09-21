@@ -1,5 +1,6 @@
 import { roundDownCount, companySetCount } from './utils/display-count.js';
 import { withLocalAccountKeys as withLocalAccountKeysPure, isMissingServerSide, accountFunctionStatus } from './utils/account-access.js';
+import { tokenForUsername, writeSessionToken, clearSessionToken, ensureGuestSecret, clearGuestSecret, withToken, rpcBodyFallbacks } from './utils/session-token.js';
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 // Re-expose on window for legacy inline handlers / computed renders that
 // still reference `React.createElement(...)` or `React.useRef(...)` without
@@ -2707,12 +2708,34 @@ const withLocalAccountKeys = (username, data) => {
 // so it asks rpc/sq_load_account for exactly that; users_public is then closed
 // to anon (supabase/manual/20260922b_users_public_anon_off.sql). Falls back to
 // the view only while the function is not deployed (404).
+//
+// Session tokens (2026-09-23): the call carries p_token — this account's
+// session token, or this guest's secret — whenever the browser holds one for
+// THIS username (src/utils/session-token.js). A 404 with a token means the
+// server predates 20260923100000, so the call is retried without it before the
+// view fallback (withTokenFallback).
+const withTokenFallback = async (path, body) => {
+  let lastErr = null;
+  for (const b of rpcBodyFallbacks(body)) {
+    try {
+      return await supabaseFetch(path, { method: 'POST', throwOnError: true, body: JSON.stringify(b) });
+    } catch (err) {
+      if (!isMissingServerSide(err)) throw err;
+      lastErr = err;
+    }
+  }
+  throw lastErr;
+};
+
+const sessionTokenFor = (username) => {
+  try {
+    return tokenForUsername(typeof localStorage !== 'undefined' ? localStorage : null, username, typeof window !== 'undefined' ? window.crypto : null);
+  } catch (_) { return null; }
+};
+
 const fetchAccountRow = async (username) => {
   try {
-    return await supabaseFetch('rpc/sq_load_account', {
-      method: 'POST', throwOnError: true,
-      body: JSON.stringify({ p_username: username }),
-    });
+    return await withTokenFallback('rpc/sq_load_account', withToken({ p_username: username }, sessionTokenFor(username)));
   } catch (err) {
     if (!isMissingServerSide(err)) throw err;
     return await fetchAccountRows(`select=username,data&username=eq.${encodeURIComponent(username)}`);
@@ -2831,6 +2854,9 @@ const _flushCloudSave = async (username, data, carryProFrom = null) => {
     // account names the guest row; the server copies the plan from that row.
     // A 404 with the argument means the server has the older five-argument
     // function, so the call is retried without it before any table fallback.
+    // p_token (2026-09-23): this row's session token or guest secret, when the
+    // browser holds one for this username. Same 404 rule: withTokenFallback
+    // drops p_token, then p_carry_pro_from, before the table path runs.
     const rpcBody = {
       p_username: username,
       p_data: data,
@@ -2839,16 +2865,10 @@ const _flushCloudSave = async (username, data, carryProFrom = null) => {
       p_email: cloudData.email,
     };
     try {
-      try {
-        await supabaseFetch('rpc/sq_save_user', {
-          method: 'POST',
-          throwOnError: true,
-          body: JSON.stringify(carryProFrom ? { ...rpcBody, p_carry_pro_from: carryProFrom } : rpcBody),
-        });
-      } catch (err) {
-        if (!carryProFrom || !isMissingServerSide(err)) throw err;
-        await supabaseFetch('rpc/sq_save_user', { method: 'POST', throwOnError: true, body: JSON.stringify(rpcBody) });
-      }
+      await withTokenFallback('rpc/sq_save_user', withToken(
+        carryProFrom ? { ...rpcBody, p_carry_pro_from: carryProFrom } : rpcBody,
+        sessionTokenFor(username),
+      ));
     } catch (err) {
       if (!isMissingServerSide(err)) throw err;
       await supabaseFetch('users?on_conflict=username', {
@@ -2990,13 +3010,16 @@ const saveUserData = async (username, data, options = {}) => {
       for (const [user, entry] of _cloudSaveQueue.entries()) {
         if (entry.timer) clearTimeout(entry.timer);
         try {
-          const body = JSON.stringify({
+          // p_token (2026-09-23): no retry is possible during unload, so a
+          // server without the parameter answers 404 here — the release order
+          // (migration before client) is what makes this safe.
+          const body = JSON.stringify(withToken({
             p_username: user,
             p_data: entry.data,
             p_password_hash: entry.data.passwordHash || '',
             p_salt: entry.data.salt || '',
             p_email: entry.data.email || null,
-          });
+          }, sessionTokenFor(user)));
           fetch(`${window.SUPABASE_URL}/rest/v1/rpc/sq_save_user`, {
             method: 'POST',
             keepalive: true,
@@ -18979,6 +19002,10 @@ CRITICAL RULES:
     // us synchronously still gets the last word on where the visitor lands.
     const resumeGuest = options.resumeGuest !== undefined ? options.resumeGuest : readResumableGuest();
     if (resumeGuest) {
+      // Session tokens (2026-09-23): a guest resumed from before this release
+      // has no secret yet; mint it now so its next save claims the row (trust
+      // on first use, founder's decision 2026-09-22).
+      try { ensureGuestSecret(localStorage, resumeGuest, window.crypto); } catch (_) { /* private mode */ }
       suppressSoundsRef.current = true;
       setIsGuest(true);
       setCurrentUser(resumeGuest);
@@ -19019,6 +19046,10 @@ CRITICAL RULES:
       const previous = localStorage.getItem(GUEST_USER_KEY);
       if (previous && previous !== sessionUsername) localStorage.removeItem(`sqlquest_user_${previous}`);
       localStorage.setItem(GUEST_USER_KEY, sessionUsername);
+      // Session tokens (2026-09-23): the new guest's own 32-byte secret, minted
+      // before the hello save below so the row is created with its hash. It
+      // replaces the previous guest's secret — one guest identity per browser.
+      ensureGuestSecret(localStorage, sessionUsername, window.crypto);
     } catch (_) { /* private mode — a guest that cannot be remembered is still a guest */ }
     setCurrentUser(sessionUsername);
     setIsGuest(true);
@@ -19165,7 +19196,23 @@ CRITICAL RULES:
     try {
       localStorage.removeItem(GUEST_USER_KEY);
       if (name) localStorage.removeItem(`sqlquest_user_${name}`);
+      if (name) clearGuestSecret(localStorage, name);
     } catch (_) { /* ignore */ }
+  };
+  // Session tokens (2026-09-23): a just-registered account gets its session
+  // token by signing in with the credentials it has just set, through the same
+  // account-login function every sign-in uses — no second minting door, so the
+  // anon key still cannot mint a token for an account it has no password to.
+  // Best-effort: step 1 records a missing token and refuses nothing, so a
+  // failure here costs a 'missing' row, never the registration.
+  const obtainSessionAfterRegister = async (username, password) => {
+    if (!isSupabaseConfigured()) return;
+    try {
+      const res = await callAccountFunction('account-login', { login: username, password });
+      if (res.status === 'ok' && res.username === username && res.sessionToken) {
+        writeSessionToken(localStorage, username, res.sessionToken);
+      }
+    } catch (_) { /* best-effort */ }
   };
   // Merge this browser's guest progress into an existing account (2026-09-12).
   // Until now logging in replaced state wholesale and the guest's solves were
@@ -19253,6 +19300,8 @@ CRITICAL RULES:
       alert('Could not finish creating your account. Please check your connection and try again.');
       return;
     }
+
+    await obtainSessionAfterRegister(username, password);
 
     // Update state
     setCurrentUser(username);
@@ -19411,6 +19460,9 @@ CRITICAL RULES:
         username = res.username;
         userData = res.data;
         try { localStorage.setItem(`sqlquest_user_${username}`, JSON.stringify(res.data)); } catch (_) {}
+        // Session tokens (2026-09-23): stored beside the username before the
+        // guest merge and the session load below, so both carry it.
+        if (res.sessionToken) { try { writeSessionToken(localStorage, username, res.sessionToken); } catch (_) {} }
         resetLoginAttempts(username);
         serverSignedIn = true;
       } else if (res.status === 'locked') {
@@ -19628,6 +19680,8 @@ CRITICAL RULES:
         // Non-critical: Supabase Auth signup is optional
       }
 
+      await obtainSessionAfterRegister(regUsername, authPassword);
+
       if (guestBlob) forgetGuest(guestName);
       trackActivationEvent('signup_completed', {
         source: 'direct',
@@ -19701,6 +19755,9 @@ CRITICAL RULES:
             local.passwordHash = res.passwordHash;
             localStorage.setItem(`sqlquest_user_${currentUser}`, JSON.stringify(local));
           } catch (_) {}
+          // Session tokens (2026-09-23): the change ended every session this
+          // account had, including this one; keep the fresh one it returned.
+          if (res.sessionToken) { try { writeSessionToken(localStorage, currentUser, res.sessionToken); } catch (_) {} }
           setCurrentPassword('');
           setNewPassword('');
           setConfirmPassword('');
@@ -19763,6 +19820,10 @@ CRITICAL RULES:
   };
 
   const handleLogout = () => {
+    // Session tokens (2026-09-23): the next person on this browser must not
+    // inherit this account's token. The server-side row stays until a password
+    // change; a stolen copy of a cleared token is a step-4 concern.
+    try { clearSessionToken(localStorage, currentUser); } catch (_) {}
     setCurrentUser(null);
     setShowAuth(true);
     setXP(0);

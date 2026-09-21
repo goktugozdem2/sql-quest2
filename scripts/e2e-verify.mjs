@@ -327,9 +327,12 @@ async function main() {
     });
     // The wire assertion: the session load must read the view, never the
     // table, and a save must go through the sq_save_user RPC.
+    // Session tokens (2026-09-23): the browser holds this account's token,
+    // and the read must carry it as p_token.
     await load({
       sqlquest_user: 'e2e_account',
       sqlquest_user_e2e_account: guest({ solvedChallenges: CH(5), xp: 90, level: 2 }),
+      sqlquest_session_token: { username: 'e2e_account', token: 'e2e-session-token-0000' },
     }, '/app/', { username: 'e2e_account', data: guest({ solvedChallenges: CH(5), xp: 90, level: 2 }) });
     const wire = await ev(`
       (async () => {
@@ -344,12 +347,15 @@ async function main() {
           rpcSaves: net.filter(r => /rpc\\/sq_save_user/.test(r.url)).length,
           viewReads: net.filter(r => /users_public\\?|rpc\\/sq_load_account/.test(r.url)).length,
           tableReads: net.filter(r => /\\/rest\\/v1\\/users\\?/.test(r.url)).length,
+          tokenReads: net.filter(r => /rpc\\/sq_load_account/.test(r.url) && (r.body || '').includes('"p_token":"e2e-session-token-0000"')).length,
           tableWrites: net.filter(r => /\\/rest\\/v1\\/users\\?/.test(r.url) && r.method !== 'GET').length,
           urls: net.map(r => r.method + ' ' + r.url.replace(/^https?:\\/\\/[^/]+/, '')).slice(0, 12),
         };
       })()`);
     if (wire.viewReads >= 1 && wire.tableReads === 0) pass(`a returning account loads its row through sq_load_account (${wire.viewReads} read${wire.viewReads > 1 ? 's' : ''}, 0 from the table)`);
     else fail('a returning account loads through sq_load_account, not the table', JSON.stringify(wire));
+    if (wire.tokenReads >= 1) pass(`the account read carries this browser's session token as p_token (${wire.tokenReads})`);
+    else fail('the account read carries p_token', JSON.stringify(wire));
     // The write half of cross-device sync. The table is 401 for anon in
     // production, so a save that still went straight to it would be silently
     // lost — the device would look fine and the other device would never see

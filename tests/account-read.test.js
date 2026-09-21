@@ -12,7 +12,8 @@ const mig = fs.readFileSync(join(ROOT, 'supabase/migrations/20260922120000_accou
 describe('the client reads one account row at a time', () => {
   it('the session load and the existence check go through rpc/sq_load_account', () => {
     const fn = app.slice(app.indexOf('const fetchAccountRow = async (username) => {'), app.indexOf('const fetchAccountRows = async (query) => {'));
-    expect(fn).toContain("supabaseFetch('rpc/sq_load_account'");
+    // Since 2026-09-23 through withTokenFallback, carrying p_token.
+    expect(fn).toContain("withTokenFallback('rpc/sq_load_account', withToken({ p_username: username }, sessionTokenFor(username)))");
     expect(fn).toContain('isMissingServerSide(err)');
     expect(app).toContain(': await fetchAccountRow(username);');
     expect(app).toContain('fetchAccountRow(savedUser).then(');

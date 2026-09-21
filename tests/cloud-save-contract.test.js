@@ -42,4 +42,16 @@ describe('cloud save contract (source guard on src/app.jsx)', () => {
     // and never leaks the flag into fetch() options
     expect(fetchFn).toMatch(/const \{ throwOnError = false, \.\.\.fetchOptions \} = options;/);
   });
+
+  // Session tokens (2026-09-23): the save carries p_token, and a 404 for the
+  // new parameter retries without it — it never turns into a failed save
+  // while the server is a release behind.
+  it('the save carries p_token and still throws on a real failure', () => {
+    expect(flush).toMatch(/withTokenFallback\('rpc\/sq_save_user', withToken\(/);
+    expect(flush).toMatch(/sessionTokenFor\(username\)/);
+    const helper = slice('const withTokenFallback = async', 'const sessionTokenFor = ');
+    expect(helper).toMatch(/throwOnError: true/);
+    expect(helper).toMatch(/if \(!isMissingServerSide\(err\)\) throw err;/);
+    expect(helper).toMatch(/throw lastErr;/);
+  });
 });

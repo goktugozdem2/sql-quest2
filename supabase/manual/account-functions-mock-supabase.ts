@@ -1,7 +1,7 @@
 const g = globalThis as any
-g.__db = g.__db || { users: [], account_login_attempts: [] }
+g.__db = g.__db || { users: [], account_login_attempts: [], account_sessions: [] }
 function q(table: string) {
-  const rows = () => g.__db[table] as any[]
+  const rows = () => (g.__db[table] = g.__db[table] || []) as any[]
   let filters: [string, any][] = []
   let op = 'select'; let payload: any = null; let lim = Infinity
   const get = (r: any, col: string) => col.startsWith('data->>') ? r.data?.[col.slice(7)] : r[col]
@@ -19,6 +19,7 @@ function q(table: string) {
     maybeSingle() { const r = run(); return Promise.resolve({ data: r.data?.[0] || null, error: null }) },
     update(p: any) { op = 'update'; payload = p; return b },
     delete() { op = 'delete'; return b },
+    insert(p: any) { if (g.__failInsert === table) return Promise.resolve({ data: null, error: { message: 'relation does not exist' } }); rows().push(structuredClone(p)); return Promise.resolve({ data: null, error: null }) },
     upsert(p: any) { const i = rows().findIndex(r => r.login === p.login); if (i >= 0) rows()[i] = { ...rows()[i], ...p }; else rows().push(p); return Promise.resolve({ data: null, error: null }) },
     then(res: any, rej: any) { return Promise.resolve(run()).then(res, rej) },
   }
