@@ -56,6 +56,20 @@ const data = FREE ? {
   }] : [], coachState: { goalId: 'fundamentals', startedAt: '2026-04-17T13:18:17.571Z', stepsCompleted: ['f-4', 'f-6', 'f-8', 'f-9'] },
   hasSeenOnboarding: true, firstRunCompleted: true, lastActive: Date.now(), createdAt: Date.now() - 30 * 86400000,
 };
+// --streak=n,best,solved seeds the practice streak the streak card reads:
+// dailyStreak n, maxDailyStreak best, and lastStreakDay today (solved=1) or
+// yesterday (solved=0), with one successful attempt on each streak day so the
+// week dots have something true to show. Uses the app's day (GMT+3, 11:00).
+if (arg('streak', '')) {
+  const [n, best, solved] = arg('streak', '').split(',').map(Number);
+  const appDay = ts => { const d = new Date(ts + 3 * 3600000); if (d.getUTCHours() < 11) d.setUTCDate(d.getUTCDate() - 1); return d.toISOString().slice(0, 10); };
+  const today = appDay(Date.now());
+  const back = (day, k) => { const d = new Date(day + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() - k); return d.toISOString().slice(0, 10); };
+  const last = solved ? today : back(today, 1);
+  data.dailyStreak = n; data.maxDailyStreak = best; data.lastStreakDay = n > 0 ? last : null;
+  data.challengeAttempts = Array.from({ length: n }, (_, i) => ({ challengeId: 91, success: true, timestamp: Date.parse(back(last, i) + 'T12:00:00Z') }));
+  data.loginCalendar = { [today]: true };
+}
 const preamble = `(() => {
   window.__log = [];
   const _d = console.debug.bind(console); console.debug = (...a) => { try { window.__log.push(a.map(String).join(' ')); } catch (_) {} _d(...a); };
@@ -116,6 +130,82 @@ const SCENARIOS = {
       out.headline = document.querySelector('[data-pro-plans]') ? 'plans shown' : null;
       return out;
     })()`);
+  },
+  // The streak card's auto path: a real correct submit on the day's first
+  // solve. Records whether the card waited for the other post-solve toasts.
+  async streak_auto() {
+    await cdp('Page.navigate', { url: `${URL}/app/?challenge=${arg('id', '91')}${arg('q', '')}` });
+    await wait(6000);
+    const r = await ev(`(async () => {
+      const w = ms => new Promise(r => setTimeout(r, ms));
+      const out = { before: document.querySelector('[data-testid="streak-chip"]')?.innerText.replace(/\\s+/g, ' ').trim() };
+      const cm = document.querySelector('.sql-cm-editor .CodeMirror').CodeMirror;
+      cm.setValue(${JSON.stringify(arg('sql', 'SELECT * FROM passengers LIMIT 10'))});
+      await w(200);
+      document.querySelector('[data-onboarding="submit"]').click();
+      const t0 = Date.now(); out.timeline = [];
+      let seenCard = false;
+      while (Date.now() - t0 < 15000) {
+        await w(300);
+        const radar = [...document.querySelectorAll('.fixed')].some(e => /Share your shape|shape/i.test(e.innerText || '') && e.className.includes('bottom-6'));
+        const card = !!document.querySelector('[data-testid="streak-card"]');
+        const tag = (radar ? 'R' : '-') + (card ? 'C' : '-');
+        if (out.timeline[out.timeline.length - 1] !== tag) out.timeline.push(tag);
+        if (card && !seenCard) { seenCard = true; out.cardAtMs = Date.now() - t0; out.radarVisibleWhenCardOpened = radar; }
+        if (seenCard && Date.now() - t0 > (out.cardAtMs + 600)) break;
+      }
+      out.after = document.querySelector('[data-testid="streak-chip"]')?.innerText.replace(/\\s+/g, ' ').trim();
+      const card = document.querySelector('[data-testid="streak-card"]');
+      out.card = card ? card.innerText.replace(/\\s+/g, ' ').trim() : null;
+      out.cardTop = card ? Math.round(card.getBoundingClientRect().top) : null;
+      return out;
+    })()`);
+    await shot('streak-auto');
+    return r;
+  },
+  // The streak card (founder QA 2026-09-21): no modal on load, a chip in the
+  // header, the card on click, the claim only after a solve.
+  async streak_card() {
+    await cdp('Page.navigate', { url: `${URL}/app/${arg('q', '')}` });
+    await wait(7500);
+    await shot('streak-load');
+    const r = await ev(`(async () => {
+      const w = ms => new Promise(r => setTimeout(r, ms));
+      const out = {};
+      const txt = document.body.innerText;
+      out.oldModal = /Daily Reward!|Claim Reward!|days logged|days to bonus/.test(txt);
+      out.blockingOverlay = [...document.querySelectorAll('.fixed.inset-0')].some(e => /streak|Reward/i.test(e.innerText || ''));
+      const chip = document.querySelector('[data-testid="streak-chip"]');
+      out.chip = chip ? chip.innerText.replace(/\\s+/g, ' ').trim() : null;
+      out.chipPulse = chip ? chip.className.includes('animate-pulse') : null;
+      out.autoOpen = !!document.querySelector('[data-testid="streak-card"]');
+      if (chip && !out.autoOpen) { chip.click(); await w(500); }
+      const card = document.querySelector('[data-testid="streak-card"]');
+      if (!card) return out;
+      out.card = card.innerText.replace(/\\s+/g, ' ').trim();
+      out.cardFixedInset0 = card.className.includes('inset-0');
+      out.radius = getComputedStyle(card).borderRadius;
+      out.bg = getComputedStyle(card).backgroundColor;
+      out.headlineFont = getComputedStyle(card.querySelector('p')).fontFamily.split(',')[0];
+      out.dots = [...card.querySelectorAll('[data-state]')].map(d => d.dataset.state).join(' ');
+      out.cta = card.querySelector('[data-testid="streak-claim"]') ? 'claim' : card.querySelector('[data-testid="streak-solve"]') ? 'solve' : null;
+      if (out.cta === 'claim' && ${process.argv.includes('--claim')}) {
+        const before = JSON.parse(localStorage.getItem('sqlquest_user_' + localStorage.getItem('sqlquest_user')) || '{}').xp;
+        card.querySelector('[data-testid="streak-claim"]').click();
+        await w(400);
+        out.afterClaim = (document.querySelector('[data-testid="streak-card"]') || {}).innerText?.replace(/\\s+/g, ' ').trim() || 'closed';
+        const after = JSON.parse(localStorage.getItem('sqlquest_user_' + localStorage.getItem('sqlquest_user')) || '{}');
+        out.xpDelta = (after.xp || 0) - (before || 0);
+        out.claimedDate = after.dailyRewardClaimedDate || null;
+        await w(1800);
+        out.closedAfter = !document.querySelector('[data-testid="streak-card"]');
+        const chip2 = document.querySelector('[data-testid="streak-chip"]');
+        out.chipPulseAfter = chip2 ? chip2.className.includes('animate-pulse') : null;
+      }
+      return out;
+    })()`);
+    await shot('streak-card');
+    return r;
   },
   // What the buyer reads at the moment of paying (founder QA 2026-09-20).
   async price_modal_copy() {

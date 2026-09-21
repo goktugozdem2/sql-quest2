@@ -810,7 +810,9 @@ URLs filled, brand icon is the bolt, brand colour #FFE34D.
   Predicate `isInterviewPerson` in `src/utils/interview-first.js` — the
   Interview tab's population (interview-nav.js) plus a `prepTarget` date or
   company; test-bound to agree. One helper in app.jsx, `interviewFirstOn(
-  surface)`, six pinned call sites: no daily-reward calendar, no achievement
+  surface)`, six pinned call sites: no XP handout on the streak card (the Daily Reward
+  modal itself is gone for everyone since 2026-09-21 — `src/utils/streak-card.js`),
+  no achievement
   toast (still awarded), no lives/coin in the header, countdown card above
   the Coach's next-step card. Everyone else: today's product, byte for byte.
 - **Status strip (2026-09-18):** the seventh call site, `status_strip` —

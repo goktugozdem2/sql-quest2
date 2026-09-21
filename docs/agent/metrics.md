@@ -795,6 +795,35 @@ select count(distinct n.username) as noted,
 from noted n left join answered a on a.username = n.username;
 ```
 
+## `practice_next_day`
+
+Of registered solvers who solved at least one challenge on app-day D, the
+share who solve again on D+1. App-day = the app's own day (GMT+3, rolling at
+11:00, i.e. UTC − 8h), the same boundary the streak uses. Excludes guests and
+internal accounts. Unit is solver-days, not people.
+
+```sql
+with solves as (
+  select distinct username,
+         ((created_at at time zone 'UTC') + interval '3 hours' - interval '11 hours')::date as app_day
+  from pro_events
+  where event = 'challenge_solved' and created_at >= :from and created_at < :to
+    and username not like 'guest%' and username not in ('test2','test7','sqlquest','unknown')
+    and username !~ '^(fabletest|linktest|internalroutine|qa_)'
+)
+select count(*) as solver_days,
+       round(100.0 * avg(case when exists (select 1 from solves n where n.username = s.username
+                                             and n.app_day = s.app_day + 1) then 1 else 0 end), 1) as pct_next_day
+from solves s where s.app_day < (:to)::date - 1;
+```
+
+Baseline 2026-08-24 → 09-20: **42.8%** (151 of 353 solver-days, 148 people).
+
+Events from 2026-09-21: `streak_card_opened {source: chip | auto, streak}` and
+`daily_reward_claimed {streak, xp}`. There is no event for the old modal; it
+never had one, which is why this baseline is read off solves and not off the
+reward.
+
 ## `pro_revoked`
 
 From 2026-09-20 access can come back off, and every way it does writes a row.

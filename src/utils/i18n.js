@@ -793,30 +793,20 @@ const TRANSLATIONS = {
       useFreeze: '🧊 Use Freeze',
     },
 
-    // Daily Login Reward modal — first thing users see after login. The
-    // 7-day streak dots, monthly calendar with milestone icons (Day 7/14/
-    // 21/28), reward claim CTA. Plus the share toasts that fire after
-    // level-ups / achievements.
-    streakModal: {
-      title: '🎁 Daily Reward!',
-      weeklyMilestone: '🎉 Weekly Milestone!',
-      daysToBonus: '{n} days to bonus',
-      dayStreak: 'day streak',
-      bestPrefix: 'best:',
-      daysLogged: '{n} days logged',
-      milestoneDay: 'Day {n}',
-      milestoneDone: '✓ Done',
-      yourReward: 'Your Reward',
-      streakBonus: 'Includes +{n} streak bonus!',
-      claimReward: 'Claim Reward! 🎉',
-      xpClaimed: '✓ +{n} XP Claimed!',
-      // Calendar — month names + weekday letters in case we want to swap
-      // alphabets later. Default keeps Jan-Dec / S-M-T-W-T-F-S.
-      monthJan: 'January', monthFeb: 'February', monthMar: 'March',
-      monthApr: 'April', monthMay: 'May', monthJun: 'June',
-      monthJul: 'July', monthAug: 'August', monthSep: 'September',
-      monthOct: 'October', monthNov: 'November', monthDec: 'December',
-      weekdayS: 'S', weekdayM: 'M', weekdayT: 'T', weekdayW: 'W', weekdayF: 'F',
+    // The streak card (2026-09-21): replaced the Daily Login Reward modal.
+    // One practice number, a week of dots, +10 XP once a question is solved
+    // today. Not a modal — the header chip opens it (src/utils/streak-card.js).
+    streakCard: {
+      headline: 'Day {n}. Keep it going.',
+      headlineStart: 'Day 1 starts with one question.',
+      bodyKeep: 'Solve one question today to keep your streak.',
+      bodyStart: 'Solve one question to start a streak.',
+      best: 'Best: {best}. {gap} to beat.',
+      claimed: '+{xp} XP claimed today.',
+      claimCta: 'Claim +{xp} XP',
+      solveCta: 'Solve one now',
+      chipTitle: 'Your practice streak',
+      close: 'Close',
     },
 
     // Share-progress toast (slides up after level-ups / achievements /
@@ -1776,24 +1766,17 @@ const TRANSLATIONS = {
       useFreeze: '🧊 Donma Kullan',
     },
 
-    streakModal: {
-      title: '🎁 Günlük Ödül!',
-      weeklyMilestone: '🎉 Haftalık Dönüm Noktası!',
-      daysToBonus: 'Bonusa {n} gün',
-      dayStreak: 'günlük seri',
-      bestPrefix: 'rekor:',
-      daysLogged: '{n} gün kayıtlı',
-      milestoneDay: 'Gün {n}',
-      milestoneDone: '✓ Tamam',
-      yourReward: 'Ödülün',
-      streakBonus: '+{n} seri bonusu dahil!',
-      claimReward: 'Ödülü Al! 🎉',
-      xpClaimed: '✓ +{n} XP alındı!',
-      monthJan: 'Ocak', monthFeb: 'Şubat', monthMar: 'Mart',
-      monthApr: 'Nisan', monthMay: 'Mayıs', monthJun: 'Haziran',
-      monthJul: 'Temmuz', monthAug: 'Ağustos', monthSep: 'Eylül',
-      monthOct: 'Ekim', monthNov: 'Kasım', monthDec: 'Aralık',
-      weekdayS: 'P', weekdayM: 'P', weekdayT: 'S', weekdayW: 'Ç', weekdayF: 'C',
+    streakCard: {
+      headline: '{n}. gün. Devam et.',
+      headlineStart: '1. gün tek bir soruyla başlar.',
+      bodyKeep: 'Serini korumak için bugün bir soru çöz.',
+      bodyStart: 'Seri başlatmak için bir soru çöz.',
+      best: 'En iyi: {best}. Geçmek için {gap} gün.',
+      claimed: 'Bugünün +{xp} XP’si alındı.',
+      claimCta: '+{xp} XP al',
+      solveCta: 'Şimdi bir soru çöz',
+      chipTitle: 'Pratik serin',
+      close: 'Kapat',
     },
 
     shareToast: {

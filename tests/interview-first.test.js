@@ -210,16 +210,32 @@ describe('source guard: the flag is dark and ONE helper reads it', () => {
 // ───────────────────────────── the four surfaces ────────────────────────────
 
 describe('source guard: the four surfaces, and only those', () => {
-  it('(a) the daily-reward calendar never opens — but the streak is still recorded', () => {
-    const at = appSource.indexOf('const checkDailyLoginReward = () => {');
-    const body = appSource.slice(at, appSource.indexOf('const claimLoginReward', at));
-    const guardAt = body.indexOf("interviewFirstOn('daily_reward')");
-    const openAt = body.indexOf('setShowLoginReward(true)');
+  it('(a) no daily-reward surface — but the streak is still recorded', () => {
+    // 2026-09-21: the Daily Reward modal is gone for everyone (the streak
+    // card replaced it). What stays interview-first is the XP handout: the
+    // card does not slide in, and the claim does nothing, for an interview
+    // person. The practice streak itself is recorded first, unconditionally.
+    const at = appSource.indexOf('const recordDailyActivity = () => {');
+    const body = appSource.slice(at, appSource.indexOf('\n  };\n', at));
+    const guardAt = body.indexOf('dailyRewardOn()');
+    const openAt = body.indexOf("setStreakCardPending(true)");
     expect(guardAt).toBeGreaterThan(-1);
     expect(openAt).toBeGreaterThan(guardAt);
-    // The streak bookkeeping happens BEFORE the guard.
-    expect(body.indexOf('setLoginStreak(newStreak)')).toBeLessThan(guardAt);
-    expect(body.indexOf('saveUserData(currentUser, userData)')).toBeLessThan(guardAt);
+    expect(body.indexOf('setDailyStreak(newStreak)')).toBeLessThan(guardAt);
+    expect(body.indexOf('setLastStreakDay(today)')).toBeLessThan(guardAt);
+
+    const claim = appSource.slice(appSource.indexOf('const claimDailyReward = () => {'), appSource.indexOf('const claimDailyReward = () => {') + 700);
+    const cGuard = claim.indexOf('if (!dailyRewardOn()) return;');
+    expect(cGuard).toBeGreaterThan(-1);
+    expect(claim.indexOf('setXP(')).toBeGreaterThan(cGuard);
+
+    // the helper is the surface's single reader
+    expect(appSource).toContain("function dailyRewardOn() { return !interviewFirstOn('daily_reward'); }");
+    // the visit check opens nothing at all any more
+    const vAt = appSource.indexOf('const checkDailyLoginReward = () => {');
+    const visit = appSource.slice(vAt, appSource.indexOf('\n  };\n', vAt));
+    expect(visit).not.toMatch(/setStreakCardOpen\(|setShowLoginReward/);
+    expect(visit).toContain('setLoginStreak(newStreak)');
   });
 
   it('(b) the achievement toast does not render — the award still happens', () => {

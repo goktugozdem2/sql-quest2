@@ -28,6 +28,7 @@ import { resolveProAccess, planLabel, lastLoginDay, planRenews } from './utils/p
 import { pickNextChallengeWith, pickTopNWith, makeChallengeComparator, hardPreviewCounts, isFreePreview } from './utils/challenge-order.js';
 import { SQL_ROADMAP_STAGES, SQL_ROADMAP_CHALLENGE_ORDER } from './data/roadmap-stages.js';
 import { shouldShowInterviewNav, interviewNavReason, navReasonForEvent } from './utils/interview-nav.js';
+import { streakCardModel, weekDots, practiceDays, DAILY_REWARD_XP } from './utils/streak-card.js';
 import { interviewFirstReason } from './utils/interview-first.js';
 import { interviewStatusModel, STATUS_CHECK_FRESH_DAYS } from './utils/interview-first.js';
 import { mergeProgress, hasProgress, isResumableGuest, GUEST_USER_KEY } from './utils/progress-merge.js';
@@ -6235,9 +6236,11 @@ function SQLQuest() {
   const [loginStreak, setLoginStreak] = useState(0);
   const [maxLoginStreak, setMaxLoginStreak] = useState(0);
   const [lastLoginDate, setLastLoginDate] = useState(null);
-  const [showLoginReward, setShowLoginReward] = useState(false);
-  const [loginRewardAmount, setLoginRewardAmount] = useState(0);
-  const [showLoginRewardClaimed, setShowLoginRewardClaimed] = useState(false);
+  // The streak card replaced the Daily Reward modal (2026-09-21, see
+  // src/utils/streak-card.js). null | 'chip' | 'auto' — how it was opened.
+  const [streakCardOpen, setStreakCardOpen] = useState(null);
+  const [dailyRewardClaimedDate, setDailyRewardClaimedDate] = useState(null);
+  const [streakCardPending, setStreakCardPending] = useState(false);
   
   // Sound Effects
   const [soundEnabled, setSoundEnabled] = useState(() => {
@@ -6911,17 +6914,14 @@ function SQLQuest() {
       setDailyStreak(newStreak);
       setLastStreakDay(today);
       if (newStreak > (maxDailyStreak || 0)) setMaxDailyStreak(newStreak);
-      // Low-tier celebrations matter most: the old ladder started at day 5,
-      // which nobody reached because the counter never counted.
-      if ([2, 3, 7, 14, 30, 50, 100].includes(newStreak)) {
-        setTimeout(() => showMilestone(
-          '🔥',
-          `${newStreak}-day streak!`,
-          newStreak < 7
-            ? 'Same time tomorrow — streaks are built one day at a time.'
-            : 'That\'s a real habit. Keep the chain alive.'
-        ), 900);
-      }
+      // The day's first solve is the one moment the streak card has news: it
+      // slides in once, bottom-right, without a backdrop, and carries the
+      // +10 XP claim. It replaced both the Daily Reward modal (which fired on
+      // the VISIT) and the milestone toast that used to fire here on days
+      // 2/3/7/14/… — two celebrations of the same event was one too many.
+      // An interview person keeps the streak in the header and gets no
+      // slide-in: the XP handout is a game surface (interviewFirstOn).
+      if (dailyRewardOn() && dailyRewardClaimedDate !== today) setStreakCardPending(true);
     } catch (_) {}
   };
 
@@ -8987,6 +8987,7 @@ function SQLQuest() {
           dailyStreak, // Save daily streak
           lastStreakDay, // Last local day any practice counted toward the streak
           maxDailyStreak, // Personal-best streak (identity stat)
+          dailyRewardClaimedDate, // Streak card: the day +10 XP was last claimed (after a solve)
           streakFreezes, // Streak freeze budget (0-2, refills monthly)
           lastFreezeRefillMonth, // YYYY-MM of last refill
           // Performance tracking data
@@ -9061,7 +9062,7 @@ function SQLQuest() {
         saveToLeaderboard(currentUser, xp, solvedChallenges.size);
       })();
     }
-  }, [xp, solvedChallenges, unlockedAchievements, queryCount, aiLessonPhase, currentAiLesson, completedAiLessons, aiLessonCompletions, roadmapLessonCompletions, comprehensionCount, comprehensionCorrect, consecutiveCorrect, comprehensionConsecutive, completedExercises, challengeQueries, completedDailyChallenges, dailyStreak, challengeAttempts, dailyChallengeHistory, weeklyReports, weeklyReportLastSeen, weeklyDigestOptOut, earnedMilestones, coachState, userGoals, intakeRecord, prepTarget, goalsPromptDismissedAt, loginCalendar, speedRunHistory, explainHistory, userProStatus, proType, proExpiry, proAutoRenew, interviewHistory, challengeProgress, challengeStartDate, weaknessTracking, skillMastery, lessonSkillStats, errorPatterns, retrievalLog]);
+  }, [xp, solvedChallenges, unlockedAchievements, queryCount, aiLessonPhase, currentAiLesson, completedAiLessons, aiLessonCompletions, roadmapLessonCompletions, comprehensionCount, comprehensionCorrect, consecutiveCorrect, comprehensionConsecutive, completedExercises, challengeQueries, completedDailyChallenges, dailyStreak, challengeAttempts, dailyChallengeHistory, weeklyReports, weeklyReportLastSeen, weeklyDigestOptOut, earnedMilestones, coachState, userGoals, intakeRecord, prepTarget, goalsPromptDismissedAt, loginCalendar, speedRunHistory, explainHistory, userProStatus, proType, proExpiry, proAutoRenew, interviewHistory, challengeProgress, challengeStartDate, weaknessTracking, skillMastery, lessonSkillStats, errorPatterns, retrievalLog, dailyRewardClaimedDate]);
 
   // Load leaderboard periodically
   useEffect(() => {
@@ -16584,6 +16585,7 @@ CRITICAL RULES:
       setDailyStreak(_streak);
       setLastStreakDay(_streak > 0 ? (_last || null) : null);
       setMaxDailyStreak(Math.max(userData.maxDailyStreak || 0, _streak));
+      setDailyRewardClaimedDate(userData.dailyRewardClaimedDate || null);
       setStreakFreezes(_freezes);
       setLastFreezeRefillMonth(_currentMonth);
       if (_toast) setStreakFreezeToast(_toast);
@@ -17215,73 +17217,77 @@ CRITICAL RULES:
       }
     }
     
-    // Calculate reward based on streak
-    const baseReward = 10;
-    const streakBonus = Math.min(newStreak - 1, 6) * 5; // Max +30 at day 7
-    const milestoneBonus = newStreak % 7 === 0 ? 50 : 0; // Weekly milestone
-    const totalReward = baseReward + streakBonus + milestoneBonus;
-    
-    // A Pro modal was just on screen: do not stack the calendar on it. The
-    // streak state is set for display; the popup waits for the next visit.
-    if (Date.now() - proModalShownAtRef.current < 10 * 60 * 1000) {
-      setLoginStreak(newStreak);
-      setMaxLoginStreak(newMaxStreak);
-      return;
-    }
-
-    // Mark that we showed the popup today, and persist the updated calendar
+    // The visit is still recorded — loginCalendar feeds the profile's "Last
+    // login" and the perfect_week / monthly_legend achievements — but opening
+    // the app is no longer rewarded and nothing pops up over the Learning Path.
+    // Until 2026-09-21 this is where the Daily Reward modal opened; the reward
+    // now waits for a solved question (claimDailyReward, the streak card).
     userData.lastRewardShownDate = today;
     try { localStorage.setItem(rewardSeenKey(currentUser), today); } catch (_) {}
     userData.loginCalendar = updatedCalendar;
     userData.maxLoginStreak = newMaxStreak;
+    userData.lastLoginDate = today;
     saveUserData(currentUser, userData);
-    
+
     setLoginStreak(newStreak);
     setMaxLoginStreak(newMaxStreak);
     setLastLoginDate(today);
-    setLoginRewardAmount(totalReward);
-    // Don't hijack the just-signed-up moment. A user who created an
-    // account seconds ago (to SAVE PROGRESS, mid-mission) should see
-    // "you're safe, keep going" — not a 28-day streak calendar. Streak
-    // state above is already recorded; only the popup is skipped, and
-    // it shows on their next visit instead.
-    try {
-      const signedUpAt = parseInt(localStorage.getItem('sqlquest_signup_at') || '0', 10);
-      if (signedUpAt && Date.now() - signedUpAt < 5 * 60 * 1000) return;
-    } catch (_) {}
-    // Interview-first: the calendar never opens for an interview person. The
-    // streak above is still recorded; only the game surface is withheld.
-    if (interviewFirstOn('daily_reward')) return;
-    setShowLoginReward(true);
   };
   
-  const claimLoginReward = () => {
-    if (!currentUser || isGuest) return;
-    
-    const today = getTodayString();
-    const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
-    
-    // Prevent double claiming
-    if (userData.lastLoginDate === today) {
-      setShowLoginReward(false);
-      return;
-    }
-    
-    // Award XP and save login calendar with today included
-    userData.xp = (userData.xp || 0) + loginRewardAmount;
-    userData.loginStreak = loginStreak;
-    userData.maxLoginStreak = maxLoginStreak;
-    userData.lastLoginDate = today;
-    userData.loginCalendar = { ...(userData.loginCalendar || {}), ...loginCalendar, [today]: true };
-    try { localStorage.setItem(rewardSeenKey(currentUser), today); } catch (_) {}
+  // The one reader of the daily_reward surface: the streak card's XP handout
+  // (slide-in and claim) is a game element an interview person does not get.
+  // The streak itself is never gated.
+  function dailyRewardOn() { return !interviewFirstOn('daily_reward'); }
 
-    setXP(prev => prev + loginRewardAmount);
+  // What the streak card says right now — one model for the chip's pulse and
+  // the card's copy, so the two cannot disagree (src/utils/streak-card.js).
+  const streakCardNow = (() => {
+    const today = getTodayString();
+    const rewardOn = dailyRewardOn();
+    const model = streakCardModel({
+      streak: dailyStreak,
+      best: maxDailyStreak,
+      solvedToday: lastStreakDay === today,
+      claimedToday: dailyRewardClaimedDate === today,
+      rewardOn,
+      t: (key, params) => i18n_t('streakCard', key, params),
+    });
+    const frozen = new Set(Object.entries(completedDailyChallenges || {}).filter(([, v]) => v === 'freeze').map(([d]) => d));
+    return { ...model, today, dots: weekDots({ today, practiced: practiceDays(challengeAttempts), frozen }) };
+  })();
+  const streakChipPulse = !!(currentUser && !isGuest && streakCardNow.pulse && !streakCardOpen);
+  // The day's first solve sets the card pending; it opens once the moment is
+  // clear. The skill-radar toast, the achievement toast and the Pro modal all
+  // fire on the same solve, and three things arriving at once read as noise —
+  // the card waits its turn, then slides in.
+  useEffect(() => {
+    if (!streakCardPending) return undefined;
+    if (radarPop || showAchievement || showProModal) return undefined;
+    const t = setTimeout(() => {
+      setStreakCardPending(false);
+      setStreakCardOpen(prev => prev || 'auto');
+      trackActivationEvent('streak_card_opened', { source: 'auto', streak: dailyStreak });
+    }, 900);
+    return () => clearTimeout(t);
+  }, [streakCardPending, radarPop, showAchievement, showProModal]);
+
+  // +10 XP, once a day, only after a question has been solved that day. The
+  // guard is the practice streak's own day marker, not the visit.
+  const claimDailyReward = () => {
+    if (!currentUser || isGuest) return;
+    const today = getTodayString();
+    if (lastStreakDay !== today) return;
+    if (!dailyRewardOn()) return;
+    const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+    if (userData.dailyRewardClaimedDate === today || dailyRewardClaimedDate === today) return;
+    userData.xp = (userData.xp || 0) + DAILY_REWARD_XP;
+    userData.dailyRewardClaimedDate = today;
+    setXP(prev => prev + DAILY_REWARD_XP);
+    setDailyRewardClaimedDate(today);
     saveUserData(currentUser, userData);
-    
     playSound('coin');
-    setShowLoginReward(false);
-    setShowLoginRewardClaimed(true);
-    setTimeout(() => setShowLoginRewardClaimed(false), 2000);
+    trackActivationEvent('daily_reward_claimed', { streak: dailyStreak, xp: DAILY_REWARD_XP });
+    setTimeout(() => setStreakCardOpen(null), 1600);
   };
 
   // ============ LEARNING GOALS ============
@@ -25637,149 +25643,95 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
         }}
       />}
       
-      {/* Daily Login Reward Modal */}
-      {showLoginReward && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={claimLoginReward}>
-          <div className="bg-gradient-to-br from-yellow-900/90 to-orange-900/90 rounded-2xl border border-yellow-500/50 w-full max-w-sm p-5 text-center" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-3">
-              <div className="text-left">
-                <h2 className="text-lg font-bold text-yellow-400">{i18n_t('streakModal', 'title')}</h2>
-                <p className="text-xs text-gray-400">
-                  {loginStreak % 7 === 0
-                    ? i18n_t('streakModal', 'weeklyMilestone')
-                    : i18n_t('streakModal', 'daysToBonus', { n: 7 - (loginStreak % 7) })}
-                </p>
-              </div>
-              <div className="text-right">
-                <div className="text-3xl font-bold text-[#F2F0EA]">{loginStreak}</div>
-                <p className="text-xs text-yellow-400">{i18n_t('streakModal', 'dayStreak')}</p>
-                {maxLoginStreak > loginStreak && (
-                  <p className="text-xs text-gray-500">{i18n_t('streakModal', 'bestPrefix')} {maxLoginStreak} 🏆</p>
-                )}
-              </div>
-            </div>
-            
-            {/* Streak Progress Dots */}
-            <div className="flex justify-center gap-1.5 mb-3">
-              {[1, 2, 3, 4, 5, 6, 7].map(day => (
-                <div key={day} className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
-                  (loginStreak % 7 || 7) >= day ? 'bg-yellow-500 text-black' : 'bg-gray-700 text-gray-500'
-                }`}>
-                  {day === 7 ? '🎁' : day}
-                </div>
-              ))}
-            </div>
-            
-            {/* Monthly Calendar Grid - inline styles to guarantee layout */}
-            <div className="bg-black/30 rounded-xl p-2 mb-3">
-              {(() => {
-                const calInfo = getCalendarDisplayInfo();
-                const monthPrefix = getCurrentMonthPrefix();
-                const monthKeys = ['monthJan','monthFeb','monthMar','monthApr','monthMay','monthJun','monthJul','monthAug','monthSep','monthOct','monthNov','monthDec'];
-                const monthNames = monthKeys.map(k => i18n_t('streakModal', k));
-                const daysThisMonth = Object.keys(loginCalendar).filter(d => d.startsWith(monthPrefix)).length;
-                const firstDay = new Date(Date.UTC(calInfo.year, calInfo.month, 1)).getUTCDay();
-                const daysInMonth = new Date(Date.UTC(calInfo.year, calInfo.month + 1, 0)).getUTCDate();
-                const milestoneIcons = { 7: '🎁', 14: '🏅', 21: '⭐', 28: '👑' };
-                // Weekday header letters — sourced from i18n so a TR build can
-                // show P/P/S/Ç/P/C/C (Pazar/Pazartesi/Salı/Çarşamba/Perşembe/
-                // Cuma/Cumartesi). Order S-M-T-W-T-F-S matches a US week
-                // starting Sunday — same in both locales.
-                const weekdayLetters = [
-                  i18n_t('streakModal', 'weekdayS'),
-                  i18n_t('streakModal', 'weekdayM'),
-                  i18n_t('streakModal', 'weekdayT'),
-                  i18n_t('streakModal', 'weekdayW'),
-                  i18n_t('streakModal', 'weekdayT'),
-                  i18n_t('streakModal', 'weekdayF'),
-                  i18n_t('streakModal', 'weekdayS'),
-                ];
-                return (
-                  <>
-                  <div className="flex items-center justify-between mb-1">
-                    <p className="text-xs text-gray-400">{monthNames[calInfo.month]} {calInfo.year}</p>
-                    <p className="text-xs text-yellow-400 font-bold">
-                      {i18n_t('streakModal', 'daysLogged', { n: daysThisMonth })}
-                    </p>
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px' }}>
-                    {weekdayLetters.map((d,i) => (
-                      <div key={i} style={{ textAlign: 'center', fontSize: '10px', color: '#6b7280', fontWeight: 'bold', padding: '2px 0' }}>{d}</div>
-                    ))}
-                    {(() => {
-                      const cells = [];
-                      for (let i = 0; i < firstDay; i++) cells.push(<div key={`e${i}`} />);
-                      for (let d = 1; d <= daysInMonth; d++) {
-                        const dateStr = `${calInfo.year}-${String(calInfo.month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-                        const isToday = d === calInfo.today;
-                        const isLogged = loginCalendar[dateStr];
-                        const isMilestone = d === 7 || d === 14 || d === 21 || d === 28;
-                        const bgColor = isToday && isLogged ? '#eab308' : isLogged ? 'rgba(34,197,94,0.7)' : isToday ? 'rgba(234,179,8,0.15)' : isMilestone && d > calInfo.today ? 'rgba(168,85,247,0.15)' : 'transparent';
-                        const textColor = isToday && isLogged ? '#000' : isLogged ? '#fff' : isToday ? '#eab308' : isMilestone && d > calInfo.today ? '#c084fc' : d < calInfo.today ? '#4b5563' : '#6b7280';
-                        const border = isToday ? '2px solid rgba(234,179,8,0.5)' : isMilestone && d > calInfo.today ? '1px solid rgba(168,85,247,0.3)' : 'none';
-                        cells.push(
-                          <div key={d} style={{
-                            width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            fontSize: '10px', fontWeight: 'bold', margin: '0 auto', background: bgColor, color: textColor, border
-                          }}>
-                            {isLogged ? '✓' : isMilestone && d >= calInfo.today ? milestoneIcons[d] : d}
-                          </div>
-                        );
-                      }
-                      return cells;
-                    })()}
-                  </div>
-
-                  {/* Milestone Legend */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px', marginTop: '8px', paddingTop: '6px', borderTop: '1px solid rgba(55,65,81,0.5)' }}>
-                    {[
-                      { day: 7, icon: '🎁' },
-                      { day: 14, icon: '🏅' },
-                      { day: 21, icon: '⭐' },
-                      { day: 28, icon: '👑' }
-                    ].map(m => {
-                      const reached = daysThisMonth >= m.day;
-                      const label = i18n_t('streakModal', 'milestoneDay', { n: m.day });
-                      return (
-                        <div key={m.day} style={{ textAlign: 'center', opacity: reached ? 1 : 0.5 }}>
-                          <div style={{ fontSize: '14px' }}>{m.icon}</div>
-                          <p style={{ fontSize: '9px', color: reached ? '#4ade80' : '#6b7280' }}>{reached ? i18n_t('streakModal', 'milestoneDone') : label}</p>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  </>
-                );
-              })()}
-            </div>
-            
-            {/* Reward + Claim */}
-            <div className="bg-black/30 rounded-xl p-3 mb-3">
-              <p className="text-gray-400 text-xs">{i18n_t('streakModal', 'yourReward')}</p>
-              <p className="text-2xl font-bold text-green-400 flex items-center justify-center gap-2"><PixelCoin size={20} /> +{loginRewardAmount} XP</p>
-              {loginStreak > 1 && (
-                <p className="text-xs text-yellow-400 mt-0.5">
-                  {i18n_t('streakModal', 'streakBonus', { n: Math.min(loginStreak - 1, 6) * 5 })}
-                </p>
-              )}
-            </div>
-
+      {/* The streak card (2026-09-21) — replaced the Daily Reward modal.
+          Not a modal: no backdrop, nothing behind it is blocked, the page
+          keeps scrolling. Opened by the header chip, or once on the day's
+          first solve. Style follows DESIGN.md: surface #16181F, 1px #2A2E38,
+          radius lg (10), Fraunces for the one line of display type, the
+          accent only on the claim button and the XP, and 🔥 the only emoji. */}
+      {streakCardOpen && currentUser && !isGuest && (
+        <div
+          data-testid="streak-card"
+          role="dialog"
+          aria-modal="false"
+          aria-label={i18n_t('streakCard', 'chipTitle')}
+          className="fixed z-40 right-4 top-16 w-[calc(100%-2rem)] max-w-xs p-4"
+          style={{ background: '#16181F', border: '1px solid #2A2E38', borderRadius: '10px', boxShadow: '0 12px 32px rgba(0,0,0,.45)' }}
+        >
+          <div className="flex items-start justify-between gap-3">
+            <p className="leading-tight" style={{ fontFamily: 'Fraunces, Georgia, serif', fontWeight: 600, fontSize: '20px', color: '#F2F0EA' }}>
+              <span aria-hidden="true" className="mr-1.5">🔥</span>{streakCardNow.headline}
+            </p>
             <button
-              onClick={claimLoginReward}
-              className="w-full py-2.5 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 rounded-xl font-bold text-black text-base"
-            >
-              {i18n_t('streakModal', 'claimReward')}
-            </button>
+              type="button"
+              onClick={() => setStreakCardOpen(null)}
+              aria-label={i18n_t('streakCard', 'close')}
+              className="text-sm leading-none px-1"
+              style={{ color: '#8A8E99' }}
+            >✕</button>
           </div>
-        </div>
-      )}
 
-      {/* Login Reward Claimed Toast */}
-      {showLoginRewardClaimed && (
-        <div className="fixed top-3 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-green-500 to-emerald-500 text-[#F2F0EA] px-4 py-2 rounded-lg shadow-lg z-50 text-sm font-medium">
-          {i18n_t('streakModal', 'xpClaimed', { n: loginRewardAmount })}
+          {streakCardNow.body && (
+            <p className="mt-2 text-sm" style={{ color: '#8A8E99' }}>{streakCardNow.body}</p>
+          )}
+
+          {/* One progress element: the last seven days, today last. */}
+          <div className="mt-3 flex justify-between" data-testid="streak-week">
+            {streakCardNow.dots.map(d => (
+              <div key={d.day} className="flex flex-col items-center gap-1" title={d.day}>
+                <span
+                  className="block rounded-full"
+                  style={{
+                    width: 12, height: 12,
+                    background: d.state === 'done' ? '#F2F0EA' : 'transparent',
+                    border: d.state === 'done' ? '1px solid #F2F0EA'
+                      : d.state === 'frozen' ? '1px dashed #8A8E99'
+                      : d.state === 'today' ? '1px solid #F2F0EA'
+                      : '1px solid #2A2E38',
+                  }}
+                  data-state={d.state}
+                />
+                <span className="text-[10px]" style={{ color: d.day === streakCardNow.today ? '#F2F0EA' : '#8A8E99' }}>{d.letter}</span>
+              </div>
+            ))}
+          </div>
+
+          {streakCardNow.bestLine && (
+            <p className="mt-3 text-xs" style={{ color: '#8A8E99', fontVariantNumeric: 'tabular-nums' }}>{streakCardNow.bestLine}</p>
+          )}
+
+          {streakCardNow.cta === 'claim' && (
+            <button
+              type="button"
+              data-testid="streak-claim"
+              onClick={claimDailyReward}
+              className="mt-4 w-full py-2.5 text-sm font-semibold"
+              style={{ background: '#FFE34D', color: '#0E0F13', borderRadius: '6px' }}
+            >
+              {streakCardNow.ctaLabel}
+            </button>
+          )}
+          {streakCardNow.cta === 'solve' && (
+            <button
+              type="button"
+              data-testid="streak-solve"
+              onClick={() => {
+                setStreakCardOpen(null);
+                setActiveTab('quests');
+                setPracticeSubTab('challenges');
+              }}
+              className="mt-4 w-full py-2.5 text-sm font-semibold"
+              style={{ background: '#FFE34D', color: '#0E0F13', borderRadius: '6px' }}
+            >
+              {streakCardNow.ctaLabel}
+            </button>
+          )}
+          {streakCardNow.claimedLine && (
+            <p className="mt-4 text-sm font-semibold" style={{ color: '#FFE34D', fontFamily: 'Geist Mono, monospace', fontVariantNumeric: 'tabular-nums' }}>{streakCardNow.claimedLine}</p>
+          )}
         </div>
       )}
+      {/* /streak-card */}
 
       {/* Warm Up Quiz Modal */}
       {showWarmUp && warmUpQuestion && (
@@ -32726,13 +32678,30 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
             {/* At-risk state (Snapchat's hourglass): streak alive but today
                 not yet earned → ⏳ instead of the flame. Practicing flips it
                 back the moment recordDailyActivity fires. */}
-            {dailyStreak > 0 && lastStreakDay !== todayString ? (
-              <span title={`${dailyStreak}-day streak at risk — practice anything today to keep it${streakFreezes > 0 ? ` · ${streakFreezes} freeze${streakFreezes > 1 ? 's' : ''} left` : ''}`} className="flex items-center gap-0.5">
-                <span className="text-sm leading-none">⏳</span><span className="font-bold text-orange-400">{dailyStreak}</span>
-              </span>
-            ) : (
-              <span title={`Daily streak${streakFreezes > 0 ? ` · ${streakFreezes} freeze${streakFreezes > 1 ? 's' : ''} left this month` : ''}`} className="flex items-center gap-0.5"><PixelFlame active={dailyStreak > 0} size={14} /><span className="font-bold">{dailyStreak}</span></span>
-            )}
+            {/* The streak chip (2026-09-21): the same number, now a button
+                that opens the streak card. It pulses only when there is
+                something to do — a reward waiting, or a live streak with
+                today still open. Guests have no card (nothing to claim to). */}
+            <button
+              type="button"
+              data-testid="streak-chip"
+              onClick={() => {
+                if (!currentUser || isGuest) return;
+                setStreakCardOpen(prev => (prev ? null : 'chip'));
+                if (!streakCardOpen) trackActivationEvent('streak_card_opened', { source: 'chip', streak: dailyStreak });
+              }}
+              aria-label={i18n_t('streakCard', 'chipTitle')}
+              className={`flex items-center gap-0.5 rounded px-1 -mx-1 ${streakChipPulse ? 'animate-pulse' : ''}`}
+              style={{ background: 'transparent' }}
+            >
+              {dailyStreak > 0 && lastStreakDay !== todayString ? (
+                <span title={`${dailyStreak}-day streak at risk — solve one question today to keep it${streakFreezes > 0 ? ` · ${streakFreezes} freeze${streakFreezes > 1 ? 's' : ''} left` : ''}`} className="flex items-center gap-0.5">
+                  <span className="text-sm leading-none">⏳</span><span className="font-bold text-orange-400">{dailyStreak}</span>
+                </span>
+              ) : (
+                <span title={`Daily streak${streakFreezes > 0 ? ` · ${streakFreezes} freeze${streakFreezes > 1 ? 's' : ''} left this month` : ''}`} className="flex items-center gap-0.5"><PixelFlame active={dailyStreak > 0} size={14} /><span className="font-bold">{dailyStreak}</span></span>
+              )}
+            </button>
             {/* Interview-first (2026-09-17): the lives and the coin are game
                 surfaces; an interview person does not see them. The streak
                 stays — it is the one game element that is also a plan. */}

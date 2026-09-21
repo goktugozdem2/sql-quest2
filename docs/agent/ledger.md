@@ -475,6 +475,37 @@ of the verifier and must never be rounded to `FLAT`.
   first-run door; read company pages against `/sql-exercises/` as control.
 - **Verdict** _pending_
 
+### the streak card: reward a solved question, not a visit (founder QA 2026-09-21)
+
+**What changed.** The Daily Reward modal opened over the Learning Path on the
+first visit of the day and paid up to 90 XP for opening the app. It read a
+visit streak (`loginStreak`) and, on the same card, the month's visit total,
+so it could say "1 day streak" and "5 days logged" at once. The header already
+held the right number — `dailyStreak`, moved only by a correct submit — and the
+modal ignored it. Now: no modal; the header streak is a chip; a card (not a
+modal: no backdrop) opens from it and slides in once after the day's first
+solve, waiting for the radar / achievement / Pro surfaces to clear. +10 XP
+flat, claimable only after a solve. The visit is still recorded (profile "Last
+login", the perfect_week / monthly_legend achievements), just not rewarded.
+Pure half `src/utils/streak-card.js`; guards `tests/streak-card.test.js` and
+guard (a) in `tests/interview-first.test.js`.
+
+**Claim.** Taking a blocking modal off the first screen of the day and moving
+the reward from the visit to the solve does not cost next-day practice, and
+should add to it: the only thing the card asks for is the thing that counts.
+
+**Metric** `practice_next_day`. **Baseline** 42.8% (151 / 353 solver-days,
+2026-08-24 → 09-20). **Guardrail** ≥ 40%. **Hope** ≥ 46%.
+**Falsification**: below 38% over the four weeks to the read — at n ≈ 350 that
+is ~2 standard errors down, not noise — and the modal comes back while we
+find out why.
+
+**Read 2026-10-19.** Confounded by design and on purpose written down now:
+`interviewFirst`, `deadlineOffer` and `freeQuota` are all scheduled to flip on
+2026-09-21, the same day. Read the metric split by interview person (who get
+the streak but no XP handout) vs everyone else; if only one side moves, the
+card is not the reason.
+
 ### access comes back off (founder QA 2026-09-20, P0 items 1-4)
 
 **Claim.** The money path could grant access and could not withdraw it, so
