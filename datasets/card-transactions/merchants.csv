@@ -1,0 +1,26 @@
+merchant_id,name,category,country,risk_tier
+1,BigBox Mart,Grocery,TR,high
+2,Quick Stop,Electronics,JP,high
+3,Aurora Cafe,Travel,TR,high
+4,Petra Gas,Pharmacy,TR,medium
+5,Flux Online,Clothing,US,medium
+6,Subscript Co,Travel,US,medium
+7,JetWings Travel,Travel,US,medium
+8,Tech Den,Gas,TR,medium
+9,Vespa Apparel,Clothing,GB,medium
+10,PillPath,Clothing,GB,medium
+11,RideHail Inc,Travel,DE,low
+12,Global Eats,Gas,DE,low
+13,StreamCloud,Pharmacy,JP,low
+14,BookHouse,Gas,DE,low
+15,PowerCharge,Gas,US,low
+16,CityMart,Rideshare,TR,low
+17,CloudKitchen,Grocery,GB,low
+18,TrainHub,Pharmacy,US,low
+19,GadgetWorks,Subscription,GB,low
+20,StyleHaus,Online Retail,TR,low
+21,MediCo,Clothing,JP,low
+22,TripStop,Clothing,DE,low
+23,BookFlight,Online Retail,JP,low
+24,AppPay,Grocery,GB,low
+25,NextDay,Subscription,GB,low

@@ -42,7 +42,7 @@ export const QUESTIONS = [
     sql: 'SELECT SUM(o.amount)\nFROM orders o\nJOIN order_items i ON i.order_id = o.id;',
     options: ['150', '250', '300', 'An error'],
     answer: 1,
-    why: 'The join repeats order 1 once per item, so its 100 is summed twice: 100 + 100 + 50 = 250. This fan-out is the most common wrong answer in analytics rounds; aggregate before joining.',
+    why: 'The join repeats order 1 once per item, so its 100 is summed twice: 100 + 100 + 50 = 250. This fan-out is a classic wrong answer in analytics rounds; aggregate before joining.',
   },
   {
     skill: 'Window Functions',

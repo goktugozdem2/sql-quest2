@@ -566,7 +566,7 @@
 <body>
 <body>
 
-<nav class="nav" id="nav"><div class="tr-banner" id="trBanner"><span class="tr-banner-text">SQL Quest artık Türkçe — Coach sorularına Türkçe cevap veriyor.</span><a href="app.html?src=home" data-track="cta_tr_banner">Hadi başla →</a><button class="tr-banner-close" onclick="dismissTrBanner()" title="Kapat" aria-label="Banner'ı kapat">×</button></div><div class="ni">
+<nav class="nav" id="nav"><div class="tr-banner" id="trBanner" lang="tr"></div><div class="ni">
   <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;">
     <div style="width:36px;height:36px;border-radius:10px;background:#7c3aed;display:flex;align-items:center;justify-content:center;color:#fff;"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
     <span class="fd" style="font-size:20px;font-weight:800;">SQL Quest</span>
@@ -776,7 +776,7 @@
     </a>
   </div>
   <div style="text-align:center;margin-top:32px;">
-    <a href="app.html?src=home" class="btn bp" data-track="cta_pricing_start">Start free</a>
+    <a href="/app/?src=home" class="btn bp" data-track="cta_pricing_start">Start free</a>
     <p style="font-size:12px;color:#8b98ab;margin-top:14px;">Upgrade inside the app when a screen has a date. Cancel anytime; 7-day full refund on both plans.</p>
   </div>
 </div></section>
@@ -801,7 +801,7 @@
     </a>
     <a href="/capital-one-sql-interview/" data-track="cta_set_page_capital-one" style="background:rgba(10,10,25,.6);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:18px 18px;display:flex;flex-direction:column;text-decoration:none;color:inherit;transition:border-color .15s ease-out;" onmouseenter="this.style.borderColor='rgba(192,132,252,.5)'" onmouseleave="this.style.borderColor='rgba(255,255,255,.08)'">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><span style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,.08);color:#e2e8f0;font-weight:800;font-size:14px;" class="fd">C</span><span class="fd" style="font-size:18px;font-weight:800;color:#f1f5f9;">Capital One</span><span style="margin-left:auto;font-size:13px;color:#c084fc;font-weight:700;">Open →</span></div>
-      <div style="font-size:12px;color:#c084fc;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:6px;"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> 70-min CodeSignal-style mock · 8 MCQ + 6 written SQL</div>
+      <div style="font-size:12px;color:#c084fc;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:6px;"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> 70-min CodeSignal-style mock · 12 MCQ + 2 written SQL</div>
       <div style="font-size:13px;color:#94a3b8;line-height:1.6;">Accounts, merchants, transactions, chargebacks: the reported data analyst screen, both halves.</div>
     </a>
     <a href="/stripe-sql-interview/" data-track="cta_set_page_stripe" style="background:rgba(10,10,25,.6);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:18px 18px;display:flex;flex-direction:column;text-decoration:none;color:inherit;transition:border-color .15s ease-out;" onmouseenter="this.style.borderColor='rgba(192,132,252,.5)'" onmouseleave="this.style.borderColor='rgba(255,255,255,.08)'">
@@ -958,7 +958,7 @@
 <section class="cs"><div class="cbg"></div><div class="sec" style="text-align:center;position:relative;z-index:2;">
   <h2 class="fd" style="font-size:clamp(32px,4.5vw,52px);font-weight:800;line-height:1.15;margin-bottom:20px;">Your interview has a company name.<br><span class="gt">So does your practice.</span></h2>
   <p style="font-size:18px;color:#94a3b8;max-width:540px;margin:0 auto 32px;">No signup. No card. First query in under 60 seconds.</p>
-  <a href="app.html?src=home" class="btn bp blg" style="box-shadow:0 14px 36px rgba(0,0,0,.45);" data-track="cta_closing">Start free</a>
+  <a href="/app/?src=home" class="btn bp blg" style="box-shadow:0 14px 36px rgba(0,0,0,.45);" data-track="cta_closing">Start free</a>
   <p style="font-size:13px;color:#7f8da1;margin-top:20px;">Runs in your browser. No install, no plugins.</p>
 </div></section>
 
@@ -1071,7 +1071,12 @@ function dismissTrBanner(){const b=document.getElementById('trBanner');if(b){b.c
   let dismissed=false;
   try{dismissed=localStorage.getItem('sqlquest_tr_banner_dismissed')==='1';}catch(_){}
   if(dismissed)return;
-  const show=()=>{const b=document.getElementById('trBanner');if(b)b.classList.add('show');};
+  // 2026-09-22 (SEO read): the Turkish copy used to sit in the static HTML,
+  // so every visitor and every crawler of the English homepage received it.
+  // It is now written here, only when the banner is actually shown.
+  const show=()=>{const b=document.getElementById('trBanner');if(!b)return;
+    b.innerHTML='<span class="tr-banner-text">SQL Quest artık Türkçe — Coach sorularına Türkçe cevap veriyor.</span><a href="/app/?src=home" data-track="cta_tr_banner">Hadi başla →</a><button class="tr-banner-close" onclick="dismissTrBanner()" title="Kapat" aria-label="Banner\'ı kapat">×</button>';
+    b.classList.add('show');};
   const byLanguage=()=>{const langs=[(navigator.language||'').toLowerCase(),...((navigator.languages||[]).map(l=>l.toLowerCase()))];return langs.some(l=>l.startsWith('tr'));};
   // QA override, never linked: /?geo=US shows the page as a US visitor sees
   // it, /?geo=TR as a Turkish one, without a VPN. Anything else is ignored.

@@ -70,7 +70,7 @@
       {
         "@type": "Question",
         "name": "What SQL topics are most important for interviews?",
-        "acceptedAnswer": { "@type": "Answer", "text": "By rough frequency in real interviews: GROUP BY and conditional aggregates (~30%), JOINs including self-joins and anti-joins (~25%), window functions like LAG/LEAD and ROW_NUMBER (~25%), CTEs and correlated subqueries (~15%), date/time functions and NULL handling (~5%). The biggest gap for candidates is window functions — they're asked in roughly 80% of mid-to-senior data interviews." }
+        "acceptedAnswer": { "@type": "Answer", "text": "In the order we would study them: GROUP BY and conditional aggregates; JOINs, including self-joins and anti-joins; window functions such as LAG/LEAD and ROW_NUMBER; CTEs and correlated subqueries; date/time functions and NULL handling. Nobody publishes how often each is asked, and we have not measured it. Window functions are the newest idea on the list for most people, so start them early." }
       },
       {
         "@type": "Question",
@@ -160,7 +160,7 @@
   <div style="text-align:center;margin-bottom:40px;">
     <span class="sl" style="color:#c084fc;">Company-Specific Tracks</span>
     <h2 class="st fd">Practice for <span class="gt">the company you're interviewing at</span></h2>
-    <p style="font-size:16px;color:#94a3b8;margin-top:16px;max-width:640px;margin:16px auto 0;">Each company asks SQL in its own flavor. The questions below are curated based on analysis of real interview reports across data and analytics roles.</p>
+    <p style="font-size:16px;color:#94a3b8;margin-top:16px;max-width:640px;margin:16px auto 0;">Each company page groups SQL Quest challenges on the kind of data that company works with. Where we hold dated candidate reports of a company's round, its page says how the round runs and cites them; the others say plainly that they don't.</p>
     <p style="font-size:15px;color:#94a3b8;max-width:640px;margin:18px auto 0;">Interviewing as an analyst specifically? Start with <a href="/sql-interview-questions-data-analyst/" style="color:#c084fc;font-weight:600;">SQL interview questions for data analysts</a> — the eight patterns to write cold, and how the questions change at 0–2, 2–5, and 5+ years.</p>
   </div>
 
@@ -232,7 +232,7 @@
     <div class="step">
       <p class="d">Days 11-20 — Advanced Patterns</p>
       <h3>Learn window functions cold</h3>
-      <p>ROW_NUMBER, RANK, DENSE_RANK, LAG, LEAD, running totals, rolling averages, top-N per group, cohort retention, sessionization. Window functions appear in ~80% of mid-to-senior SQL interviews — don't under-practice here.</p>
+      <p>ROW_NUMBER, RANK, DENSE_RANK, LAG, LEAD, running totals, rolling averages, top-N per group, cohort retention, sessionization. Window functions are where hard SQL questions live — don't under-practice here.</p>
     </div>
     <div class="step">
       <p class="d">Days 21-30 — Company Drills</p>
@@ -278,7 +278,7 @@
     <a class="cc" href="/finans-sql/"><p class="t">🏦 Banking &amp; Finance</p><p class="d">57 challenges — 27 on FDIC BankFind data (JPMorgan, BoA, Citi, Wells Fargo, 200 US banks: Tier1 capital, NPL ratio, branch geography, fraud detection) plus 30 on a transaction-level fraud set. Real RSSD/CERT IDs, regulatory schema. For analysts at JPMorgan, Goldman, Citi, Stripe, Capital One.</p></a>
     <a class="cc" href="/gayrimenkul-sql/"><p class="t">🏠 Real Estate</p><p class="d">20 challenges on NYC OpenData — PLUTO building footprints, ACRIS deeds and mortgages, DOB construction permits. Real BBL identifiers, real owner names. For analysts at Zillow, Redfin, Compass, REIT firms, proptech.</p></a>
     <a class="cc" href="/uretim-sql/"><p class="t">🏭 Manufacturing</p><p class="d">20 challenges on UCI AI4I 2020 predictive maintenance dataset — the industry-standard ML benchmark used by Siemens, GE Digital, Honeywell. Sensor analytics, FMEA failure modes, quality control. For industrial-IoT and predictive-maintenance roles.</p></a>
-    <a class="cc" href="/app.html?goals=mentor"><p class="t">✨ Not sure which track?</p><p class="d">Open the AI mentor — it asks 5 questions about your career goal, then tags challenges from your sector first. The Skillmap carries across, so progress on banking challenges still raises your Window Functions level for FAANG prep.</p></a>
+    <a class="cc" href="/app/?goals=mentor"><p class="t">✨ Not sure which track?</p><p class="d">Open the AI mentor — it asks 5 questions about your career goal, then tags challenges from your sector first. The Skillmap carries across, so progress on banking challenges still raises your Window Functions level for FAANG prep.</p></a>
   </div>
 </div></section>
 
@@ -319,7 +319,7 @@ window.addEventListener('scroll',()=>{document.getElementById('nav').classList.t
 
 const FAQS=[
   ['How do I prepare for a SQL interview?','Structured SQL interview prep has three phases. Phase 1 (Days 1-10): Master the fundamentals. SELECT/WHERE/GROUP BY/HAVING, all JOIN types, subqueries, and CTEs. Phase 2 (Days 11-20): Learn advanced patterns. Window functions (ROW_NUMBER, RANK, LAG/LEAD), cohort analysis, sessionization. Phase 3 (Days 21-30): Company-specific drills. Pick the companies you\'re interviewing at and work through their actual interview patterns. Practice daily, time-box each problem, and always explain your approach out loud before writing SQL.'],
-  ['What SQL topics are most important for interviews?','By rough frequency in real interviews: GROUP BY and conditional aggregates (~30%), JOINs including self-joins and anti-joins (~25%), window functions like LAG/LEAD and ROW_NUMBER (~25%), CTEs and correlated subqueries (~15%), date/time functions and NULL handling (~5%). The biggest gap for candidates is window functions — they\'re asked in roughly 80% of mid-to-senior data interviews.'],
+  ['What SQL topics are most important for interviews?','In the order we would study them: GROUP BY and conditional aggregates; JOINs, including self-joins and anti-joins; window functions such as LAG/LEAD and ROW_NUMBER; CTEs and correlated subqueries; date/time functions and NULL handling. Nobody publishes how often each is asked, and we have not measured it. Window functions are the newest idea on the list for most people, so start them early.'],
   ['How many SQL questions should I practice before an interview?','For entry-level Data Analyst: 60-80 problems covering all fundamentals plus basic window functions. For Data Scientist or mid-level Analyst: 100+ problems with strong coverage of advanced window functions, cohort retention, and A/B test analysis. For senior roles: 150+ problems plus ability to reason about SQL performance and data modeling. Quality of practice matters more than quantity — redo hard problems until you can solve them cold.'],
   ['Which companies ask the hardest SQL interviews?','By difficulty tier: Hardest — Meta, Stripe, and Databricks (deep window functions, business math precision, or scale-thinking). Hard — Google, Netflix, Amazon (strong fundamentals plus pattern recognition). Medium-hard — Uber, Airbnb, Apple (business judgment weighs as much as SQL technique). Medium — JPMorgan, Shopify, Spotify (standard patterns with domain context). Every company asks fundamentals — the differentiator is how deep they go on window functions and how much business reasoning they expect alongside the SQL.'],
   ['How long does it take to prepare for a SQL interview?','Depends on starting level. If you\'ve done SQL at work for 1+ years: 2-3 weeks of focused prep (1 hour/day). If you finished a SQL course but haven\'t used it daily: 4-6 weeks. If you\'re new to SQL: 8-12 weeks to build foundations plus interview-specific practice. The common mistake is under-practicing window functions — they take longer to internalize than candidates expect.'],

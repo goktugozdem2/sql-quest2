@@ -1679,3 +1679,52 @@ describe('5. topic counts quoted on other pages are the topic page\'s numbers', 
     }
   });
 });
+
+// 2026-09-22 (SEO read): the homepage Capital One card still said "8 MCQ + 6
+// written SQL" after the mock became 12 + 2 on 2026-09-19 — the FAQ on the
+// same page was right. The cards now answer to the mock data itself.
+describe('homepage mock cards match the mocks', () => {
+  const home = fs.readFileSync(join(HERE, '..', 'src/index.html'), 'utf8');
+  const mocksSrc = fs.readFileSync(join(HERE, '..', 'src/data/mock-interviews.js'), 'utf8');
+  const count = (id) => {
+    const at = mocksSrc.indexOf(`id: '${id}'`);
+    const end = mocksSrc.indexOf("\n  },\n  {", at) > 0 ? mocksSrc.indexOf("\n  },\n  {", at) : mocksSrc.length;
+    const body = mocksSrc.slice(at, end);
+    const mcq = (body.match(/\n\s*type: 'mcq',/g) || []).length;
+    const qs = (body.match(/\n\s{8}id: '[^']+',/g) || []).length;
+    return { mcq, written: qs - mcq, minutes: Number((body.match(/totalTime: (\d+) \* 60/) || [])[1]) };
+  };
+  for (const [id, label] of [['capital-one-codesignal', 'CodeSignal-style mock'], ['revolut-analytics-screen', 'analyst screen mock']]) {
+    it(`${id}: minutes and question mix`, () => {
+      const c = count(id);
+      expect(c.mcq, `${id} parsed`).toBeGreaterThan(0);
+      const line = home.slice(home.indexOf(label) - 20, home.indexOf(label) + 80);
+      expect(line).toContain(`${c.minutes}-min`);
+      expect(line).toContain(`${c.mcq} MCQ + ${c.written} written SQL`);
+    });
+  }
+});
+
+// 2026-09-22 (SEO read): vs-datalemur's meta description said "226-of-285"
+// while its body said "226 of 299". The sweep above does not read the
+// hyphenated form. Every "N of M" / "N-of-M" free-share claim, in body or in
+// meta/og/JSON-LD, must be the bank's own pair.
+describe('free-share claims ("N of M") are the bank\'s pair, everywhere', () => {
+  it('in every page, body and head alike', async () => {
+    const { collectBankFacts } = await import('../scripts/build-llms-txt.js');
+    const f = collectBankFacts(join(HERE, '..'));
+    const want = `${f.freeChallengeCount} of ${f.challengeCount}`;
+    const files = fs.readdirSync(join(HERE, '..', 'src')).filter(n => n.endsWith('.html'))
+      .map(n => join(HERE, '..', 'src', n))
+      .concat(fs.readdirSync(join(HERE, '..', 'src', 'blog')).filter(n => n.endsWith('.html')).map(n => join(HERE, '..', 'src', 'blog', n)));
+    const bad = [];
+    for (const file of files) {
+      const s = fs.readFileSync(file, 'utf8').replace(/<!--[\s\S]*?-->/g, '');
+      for (const m of s.matchAll(/\b(\d{3})[- ]of[- ](\d{3})\b(?=[^<"]{0,40}?(?:free|challenge|question|exercise))/g)) {
+        const got = `${m[1]} of ${m[2]}`;
+        if (Number(m[2]) >= 250 && got !== want) bad.push(`${file.split('/src/')[1]}: "${m[0]}"`);
+      }
+    }
+    expect(bad, `want ${want}`).toEqual([]);
+  });
+});

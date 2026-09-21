@@ -309,7 +309,7 @@
       <div class="cs-clause">
         <span class="name">Conditional aggregation</span>
         <span class="syn"><span class="qk">SUM</span>(<span class="qk">CASE WHEN</span> survived = <span class="qn">1</span> <span class="qk">THEN</span> <span class="qn">1</span> <span class="qk">ELSE</span> <span class="qn">0</span> <span class="qk">END</span>) <span class="qk">AS</span> survivors</span>
-        <span class="desc">The single most-asked technique in interview SQL. CASE WHEN inside SUM/COUNT/AVG counts only the rows that match — like an if-statement aggregate.</span>
+        <span class="desc">A core technique in interview SQL. CASE WHEN inside SUM/COUNT/AVG counts only the rows that match — like an if-statement aggregate.</span>
       </div>
     </div>
     <a href="/app/?src=sql-cheat-sheet" class="cs-cta">Drill GROUP BY challenges</a>
@@ -425,7 +425,7 @@
 <section id="window"><div class="sec" style="padding-top:20px;padding-bottom:40px;">
   <div class="cs-section">
     <div class="h"><h3>Window functions — the interview differentiator</h3><span class="lvl lvl-a">Advanced</span></div>
-    <p style="font-size:14px;color:#94a3b8;line-height:1.7;margin-bottom:14px;">Asked in roughly 80% of mid-to-senior data interviews. Drill them until you can choose between RANK, DENSE_RANK, and ROW_NUMBER without thinking.</p>
+    <p style="font-size:14px;color:#94a3b8;line-height:1.7;margin-bottom:14px;">What separates a medium question from a hard one. Drill them until you can choose between RANK, DENSE_RANK, and ROW_NUMBER without thinking.</p>
     <div class="cs-row">
       <div class="cs-clause">
         <span class="name">Ranking — three flavors</span>
@@ -465,7 +465,7 @@
   <span class="qk">FROM</span> employees
 )
 <span class="qk">SELECT</span> * <span class="qk">FROM</span> ranked <span class="qk">WHERE</span> rn &lt;= <span class="qn">3</span>;</span>
-        <span class="desc">The single most-asked window-function pattern. Wrap in a CTE because you can't filter on window-function results in the same WHERE.</span>
+        <span class="desc">The classic window-function pattern. Wrap in a CTE because you can't filter on window-function results in the same WHERE.</span>
       </div>
     </div>
     <a href="/challenges/window-functions/" class="cs-cta">64 window function challenges</a>

@@ -4,14 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SQL Window Functions Tutorial — RANK, LAG, Running Totals (2026) | SQLQuest.app</title>
-  <meta name="description" content="Window functions decoded. ROW_NUMBER vs RANK vs DENSE_RANK, PARTITION BY, LAG/LEAD, running totals, rolling averages, top-N per group. The most-asked SQL interview topic, with runnable examples.">
+  <meta name="description" content="Window functions decoded. ROW_NUMBER vs RANK vs DENSE_RANK, PARTITION BY, LAG/LEAD, running totals, rolling averages, top-N per group. A core SQL interview topic, with runnable examples.">
   <meta name="keywords" content="sql window functions, sql window functions tutorial, row_number sql, rank vs dense_rank, sql lag lead, running total sql, top n per group, partition by, sql interview window functions">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://sqlquest.app/blog/window-functions-tutorial/">
   <meta property="og:type" content="article">
   <meta property="og:url" content="https://sqlquest.app/blog/window-functions-tutorial/">
   <meta property="og:title" content="SQL Window Functions Tutorial — RANK, LAG, Running Totals (2026)">
-  <meta property="og:description" content="Window functions appear in ~80% of mid-to-senior data interviews. This tutorial walks every pattern with runnable examples and the gotchas that trip candidates.">
+  <meta property="og:description" content="Window functions are what harder data interviews lean on. This tutorial walks every pattern with runnable examples and the gotchas that trip candidates.">
   <meta property="og:image" content="https://sqlquest.app/og-image.png">
   <meta name="twitter:card" content="summary_large_image">
   <script type="application/ld+json">
@@ -22,7 +22,7 @@
     {"@type":"Question","name":"What is the difference between RANK, DENSE_RANK, and ROW_NUMBER?","acceptedAnswer":{"@type":"Answer","text":"All three rank rows by an ORDER BY column, but they handle ties differently. ROW_NUMBER assigns a unique number to every row — ties are broken arbitrarily. RANK assigns the same rank to ties and skips the next number; a 3-way tie at rank 1 means the next row is rank 4. DENSE_RANK assigns the same rank to ties without skipping; a 3-way tie at rank 1 means the next row is rank 2. Use ROW_NUMBER when you need a deterministic top-N. Use DENSE_RANK when ties should not waste rank slots."}},
     {"@type":"Question","name":"Why can't I filter on a window function in WHERE?","acceptedAnswer":{"@type":"Answer","text":"Because window functions execute after WHERE. The logical execution order is FROM, WHERE, GROUP BY, HAVING, then window functions, then SELECT projection, then ORDER BY. Trying to reference a window function alias in WHERE means it doesn't exist yet at that stage. The fix: wrap the windowed query in a CTE or subquery, then filter on the alias in the outer query."}},
     {"@type":"Question","name":"What does PARTITION BY do?","acceptedAnswer":{"@type":"Answer","text":"PARTITION BY divides the rows into groups (partitions) and runs the window function separately within each one. Without PARTITION BY, the window covers the entire result set. With PARTITION BY department, each department gets its own ranking, its own running total, its own rolling average. Think of it as 'GROUP BY for windows' — except it doesn't collapse rows, it just resets the window calculation per group."}},
-    {"@type":"Question","name":"What is the most common window function pattern in SQL interviews?","acceptedAnswer":{"@type":"Answer","text":"Top-N per group. Example: top 3 highest-paid employees in each department. The pattern is ROW_NUMBER() OVER (PARTITION BY group_col ORDER BY value_col DESC) inside a CTE, then filter rk <= 3 in the outer query. Variants ask for top-N by a different metric (top 3 longest-tenured, top 5 most-active customers per region) but the structural pattern is the same. Master this and you've covered roughly 30% of window-function interview questions."}},
+    {"@type":"Question","name":"Which window function pattern should I learn first for SQL interviews?","acceptedAnswer":{"@type":"Answer","text":"Top-N per group. Example: top 3 highest-paid employees in each department. The pattern is ROW_NUMBER() OVER (PARTITION BY group_col ORDER BY value_col DESC) inside a CTE, then filter rk <= 3 in the outer query. Variants ask for top-N by a different metric (top 3 longest-tenured, top 5 most-active customers per region) but the structural pattern is the same. Master this and you've covered roughly 30% of window-function interview questions."}},
     {"@type":"Question","name":"How are LAG and LEAD different?","acceptedAnswer":{"@type":"Answer","text":"LAG looks backward, LEAD looks forward, both relative to the current row's position within the window. LAG(col, 1) returns the previous row's value of col; LEAD(col, 1) returns the next row's value. The most common use is computing day-over-day deltas, churn detection, or sessionization — anywhere you need to compare a row to its neighbor. Both accept an optional default value for the boundary rows where there is no neighbor."}},
     {"@type":"Question","name":"What is the difference between ROWS BETWEEN and RANGE BETWEEN?","acceptedAnswer":{"@type":"Answer","text":"ROWS BETWEEN counts physical rows; RANGE BETWEEN considers logical values. Most queries want ROWS — for a 7-day moving average, ROWS BETWEEN 6 PRECEDING AND CURRENT ROW gives you exactly 7 rows. RANGE BETWEEN considers all rows where ORDER BY values fall within a range, which behaves unexpectedly with ties (multiple rows with the same date count as one). Default in many engines is RANGE, which is why explicit ROWS is safer."}}
   ]}
@@ -87,7 +87,7 @@
     <div style="width:32px;height:32px;border-radius:8px;background:#7c3aed;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
     <span class="fd" style="font-size:18px;font-weight:800;">SQL Quest</span>
   </a>
-  <a data-track="cta_blog" href="/app.html?src=blog-windows" class="bp">Practice Free →</a>
+  <a data-track="cta_blog" href="/app/?src=blog-windows" class="bp">Practice Free →</a>
 </div></nav>
 
 <article class="article">
@@ -104,7 +104,7 @@
   <p style="margin:18px 0 26px;padding:14px 18px;border:1px solid rgba(124,58,237,.3);border-radius:12px;background:rgba(124,58,237,.07);font-size:15px;line-height:1.7;">Skip ahead to practice: <a href="/challenges/window-functions/" data-track="cta_blog_practice" style="color:#c084fc;font-weight:700;">solve window function questions in the browser →</a> · or <a href="/sql-interview-readiness-test/" data-track="cta_blog_readiness" style="color:#c084fc;font-weight:700;">check your SQL interview readiness</a> (10 questions, no signup).</p>
   <!-- blog-practice:end -->
 
-  <p class="intro">Window functions appear in roughly 80% of mid-to-senior data-interview screens, and most candidates under-prepare. They're harder than JOINs and aggregates because they introduce a third way of thinking about rows — neither one row at a time, nor collapsed into groups, but each row with a calculation drawn from a window of its neighbors. Get the mental model right and the syntax falls into place.</p>
+  <p class="intro">Window functions are what harder data-interview screens lean on, and they are easy to under-prepare. They're harder than JOINs and aggregates because they introduce a third way of thinking about rows — neither one row at a time, nor collapsed into groups, but each row with a calculation drawn from a window of its neighbors. Get the mental model right and the syntax falls into place.</p>
 
   <div class="toc">
     <p class="toc-title">Contents</p>
@@ -116,7 +116,7 @@
       <li><a href="#lag-lead">LAG and LEAD — neighbor lookup</a></li>
       <li><a href="#frames">Window frames — ROWS BETWEEN</a></li>
       <li><a href="#running">Running totals and rolling averages</a></li>
-      <li><a href="#top-n">Top-N per group (the most-asked pattern)</a></li>
+      <li><a href="#top-n">Top-N per group (learn this first)</a></li>
       <li><a href="#filter-bug">Why you can't filter on a window function in WHERE</a></li>
       <li><a href="#performance">Performance notes</a></li>
       <li><a href="#patterns">Five interview patterns to memorize</a></li>
@@ -245,7 +245,7 @@
   <div class="callout"><p><strong>ROWS vs RANGE.</strong> <code>ROWS BETWEEN</code> counts physical rows. <code>RANGE BETWEEN</code> uses the ORDER BY column's values, which behaves unexpectedly with ties — multiple rows that share a date count as a single position. Default in PostgreSQL is RANGE, in SQLite it's RANGE for unbounded frames. Use ROWS unless you have a specific reason for RANGE.</p></div>
 
   <h2 id="running">Running totals and rolling averages</h2>
-  <p>Two of the most-asked window patterns. Both use aggregate functions over an explicit frame.</p>
+  <p>Two core window patterns. Both use aggregate functions over an explicit frame.</p>
 
   <h3>Running total</h3>
   <div class="code-block">
@@ -276,7 +276,7 @@
 
   <p>For the first 6 rows of each ticker, the window includes fewer than 7 rows — the first row's MA is just itself, the second is the average of rows 1 and 2, and so on. Some queries need a "warmup" filter: <code>WHERE day &gt;= start_date + 6 days</code> to drop the partial windows. Decide based on whether partial values are misleading for your use case.</p>
 
-  <h2 id="top-n">Top-N per group (the most-asked pattern)</h2>
+  <h2 id="top-n">Top-N per group (learn this first)</h2>
   <p>If you take only one window-function pattern from this guide, take this one. It appears in nearly every interview that asks any window-function question, and the variations are mostly cosmetic.</p>
 
   <div class="code-block">

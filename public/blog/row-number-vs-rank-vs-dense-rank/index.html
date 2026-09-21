@@ -75,7 +75,7 @@
   <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:#e2e8f0;"><span style="width:32px;height:32px;border-radius:9px;background:#7c3aed;display:inline-flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg></span><span class="fd" style="font-size:18px;font-weight:800;">SQL Quest</span></a>
   <div style="display:flex;gap:12px;align-items:center;">
     <a href="/blog/" style="font-size:14px;color:#94a3b8;">Blog</a>
-    <a href="/app.html?src=blog-ranking" class="bp" data-track="cta_blog">Practice Free →</a>
+    <a href="/app/?src=blog-ranking" class="bp" data-track="cta_blog">Practice Free →</a>
   </div>
 </div></nav>
 
@@ -124,7 +124,7 @@
 <div id="sq-quiz-root"></div>
 
   <h2 id="topn">The top-N-per-group pattern</h2>
-  <p>The most-asked window question in analytics interviews — "highest-paid person per department" — is one CTE plus one ranking function:</p>
+  <p>The classic window question in analytics interviews — "highest-paid person per department" — is one CTE plus one ranking function:</p>
   <div class="code-block"><div class="code-label">Top earner per department — swap the function to change tie behavior</div><pre><code><span class="kw">WITH</span> ranked <span class="kw">AS</span> (
   <span class="kw">SELECT</span> name, department, salary,
     <span class="kw">ROW_NUMBER</span>() <span class="kw">OVER</span> (<span class="kw">PARTITION BY</span> department <span class="kw">ORDER BY</span> salary <span class="kw">DESC</span>) <span class="kw">AS</span> rn

@@ -310,7 +310,7 @@
     <a href="#dataset">Dataset</a>
     <a href="#challenges">Challenges</a>
     <a href="#faq">FAQ</a>
-    <a href="/app.html?challenge=270&ref=lp_fraud" class="btn bp" style="font-size:14px;padding:10px 24px;">Start Free →</a>
+    <a href="/app/?challenge=270&ref=lp_fraud" class="btn bp" style="font-size:14px;padding:10px 24px;">Start Free →</a>
   </div>
 </div></nav>
 
@@ -330,7 +330,7 @@
       A real synthetic dataset — 2,165 card transactions with fraud rings injected. Learn the five SQL patterns fraud teams actually ship: 3-sigma anomaly bounds, velocity rules, impossible-travel detection, collusion rings via shared device fingerprint, and recursive CTEs that walk a chargeback chain.
     </p>
     <div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center;animation:fadeUp .6s .4s both;">
-      <a href="/app.html?challenge=270&ref=lp_fraud" class="btn bp">Start Practicing — Free</a>
+      <a href="/app/?challenge=270&ref=lp_fraud" class="btn bp">Start Practicing — Free</a>
       <a href="#patterns" class="btn bo">See the patterns ↓</a>
     </div>
     <div class="stats" style="animation:fadeUp .6s .5s both;">
@@ -523,73 +523,73 @@
     </div>
     <div class="ch-grid">
 
-      <a href="/app.html?challenge=270&ref=lp_fraud" class="ch-card">
+      <a href="/app/?challenge=270&ref=lp_fraud" class="ch-card">
         <div><span class="ch-diff ch-hard">Hard</span><span class="ch-id">#270</span></div>
         <div class="ch-title">3-Sigma Anomaly: Transaction Amount Outliers</div>
         <div class="ch-prev">CTE + CROSS JOIN to compute mean/sigma, then filter transactions above the 3-sigma threshold. The classic anomaly-detection SQL pattern.</div>
       </a>
 
-      <a href="/app.html?challenge=271&ref=lp_fraud" class="ch-card">
+      <a href="/app/?challenge=271&ref=lp_fraud" class="ch-card">
         <div><span class="ch-diff ch-hard">Hard</span><span class="ch-id">#271</span></div>
         <div class="ch-title">Velocity Rule — 5+ Transactions in 5 Minutes</div>
         <div class="ch-prev">Self-join with julianday-based time math to find accounts with rapid burst activity. The bread-and-butter velocity check.</div>
       </a>
 
-      <a href="/app.html?challenge=272&ref=lp_fraud" class="ch-card">
+      <a href="/app/?challenge=272&ref=lp_fraud" class="ch-card">
         <div><span class="ch-diff ch-hard">Hard</span><span class="ch-id">#272</span></div>
         <div class="ch-title">Geographic Mismatch — Impossible Travel</div>
         <div class="ch-prev">LAG over (PARTITION BY account_id ORDER BY txn_at) plus a degree-distance proxy. Catches cards used in two cities within 25 minutes.</div>
       </a>
 
-      <a href="/app.html?challenge=273&ref=lp_fraud" class="ch-card">
+      <a href="/app/?challenge=273&ref=lp_fraud" class="ch-card">
         <div><span class="ch-diff ch-medium">Medium</span><span class="ch-id">#273</span></div>
         <div class="ch-title">Cross-Account Collusion — Shared Device Fingerprint</div>
         <div class="ch-prev">Self-join accounts on device_fingerprint with a.id &lt; b.id to dedupe pairs. Surfaces coordinated rings hiding behind separate accounts.</div>
       </a>
 
-      <a href="/app.html?challenge=274&ref=lp_fraud" class="ch-card">
+      <a href="/app/?challenge=274&ref=lp_fraud" class="ch-card">
         <div><span class="ch-diff ch-hard">Hard</span><span class="ch-id">#274</span></div>
         <div class="ch-title">Recursive CTE — Chargeback Chain Investigation</div>
         <div class="ch-prev">Walk a chargeback network via related_chargeback_id with a depth guard. The recursive CTE pattern fraud teams ship in production.</div>
       </a>
 
-      <a href="/app.html?challenge=260&ref=lp_fraud" class="ch-card">
+      <a href="/app/?challenge=260&ref=lp_fraud" class="ch-card">
         <div><span class="ch-diff ch-hard">Hard</span><span class="ch-id">#260</span></div>
         <div class="ch-title">Banks with NPL Above 2-Sigma</div>
         <div class="ch-prev">Same stats pattern as #270, applied to bank non-performing loan ratios — flag banks with risk profiles outside the 2-sigma envelope.</div>
       </a>
 
-      <a href="/app.html?challenge=261&ref=lp_fraud" class="ch-card">
+      <a href="/app/?challenge=261&ref=lp_fraud" class="ch-card">
         <div><span class="ch-diff ch-hard">Hard</span><span class="ch-id">#261</span></div>
         <div class="ch-title">NPL Quarter-over-Quarter Acceleration</div>
         <div class="ch-prev">LAG window function for QoQ deltas. Catches risk profile deteriorating fast, the leading indicator of a bank failure.</div>
       </a>
 
-      <a href="/app.html?challenge=262&ref=lp_fraud" class="ch-card">
+      <a href="/app/?challenge=262&ref=lp_fraud" class="ch-card">
         <div><span class="ch-diff ch-medium">Medium</span><span class="ch-id">#262</span></div>
         <div class="ch-title">Tier 1 Capital Below Well-Capitalized Threshold</div>
         <div class="ch-prev">Filter banks under the 8% regulatory floor. The simplest risk rule — a regulator's first query of the morning.</div>
       </a>
 
-      <a href="/app.html?challenge=263&ref=lp_fraud" class="ch-card">
+      <a href="/app/?challenge=263&ref=lp_fraud" class="ch-card">
         <div><span class="ch-diff ch-medium">Medium</span><span class="ch-id">#263</span></div>
         <div class="ch-title">Failure Clustering — State + Year</div>
         <div class="ch-prev">CAST + SUBSTR to extract year from a date, then GROUP BY (state, year) to surface contagion clusters during 2008-style waves.</div>
       </a>
 
-      <a href="/app.html?challenge=264&ref=lp_fraud" class="ch-card">
+      <a href="/app/?challenge=264&ref=lp_fraud" class="ch-card">
         <div><span class="ch-diff ch-medium">Medium</span><span class="ch-id">#264</span></div>
         <div class="ch-title">ROA Outliers — Top 5% by Return</div>
         <div class="ch-prev">Percentile via OFFSET trick (or PERCENT_RANK). Surfaces banks with suspiciously high profitability — sometimes legitimate, sometimes a yellow flag.</div>
       </a>
 
-      <a href="/app.html?challenge=265&ref=lp_fraud" class="ch-card">
+      <a href="/app/?challenge=265&ref=lp_fraud" class="ch-card">
         <div><span class="ch-diff ch-medium">Medium</span><span class="ch-id">#265</span></div>
         <div class="ch-title">Geographic Concentration — Single-State Banks</div>
         <div class="ch-prev">Self-join + ratio. Banks with all branches in one state carry concentration risk — the technique generalizes to single-merchant or single-IP fraud rings.</div>
       </a>
 
-      <a href="/app.html?challenge=266&ref=lp_fraud" class="ch-card">
+      <a href="/app/?challenge=266&ref=lp_fraud" class="ch-card">
         <div><span class="ch-diff ch-medium">Medium</span><span class="ch-id">#266</span></div>
         <div class="ch-title">Trust Banks vs Others — NPL Profile Comparison</div>
         <div class="ch-prev">CASE-based segmentation with conditional aggregation. The query shape applies cleanly to fraud-vs-legit account profile comparisons.</div>
@@ -597,7 +597,7 @@
 
     </div>
     <div style="text-align:center;margin-top:48px;">
-      <a href="/app.html?challenge=270&ref=lp_fraud" class="btn bp blg">Start with #270 — 3-Sigma Anomaly →</a>
+      <a href="/app/?challenge=270&ref=lp_fraud" class="btn bp blg">Start with #270 — 3-Sigma Anomaly →</a>
       <p style="font-size:13px;color:#8b98ab;margin-top:14px;">Browser-based · No signup · No credit card</p>
     </div>
   </div>
@@ -707,7 +707,7 @@
       <span class="gt">other queries miss.</span>
     </h2>
     <p style="font-size:18px;color:#94a3b8;max-width:560px;margin:0 auto 32px;">12 challenges, 6 free. Real synthetic fraud dataset. Your first query in 60 seconds.</p>
-    <a href="/app.html?challenge=270&ref=lp_fraud" class="btn bp blg" style="box-shadow:0 0 40px rgba(124,58,237,.3);">Start Practicing — Free ⚡</a>
+    <a href="/app/?challenge=270&ref=lp_fraud" class="btn bp blg" style="box-shadow:0 0 40px rgba(124,58,237,.3);">Start Practicing — Free ⚡</a>
     <p style="font-size:13px;color:#7f8da1;margin-top:20px;">Browser-based. No signup. SQLite-WASM runs on your machine.</p>
   </div>
 </section>
@@ -720,7 +720,7 @@
   </div>
   <p style="font-size:13px;color:#7f8da1;">Practice the SQL fraud analysts actually run.</p>
   <div class="flk">
-    <a href="/app.html?challenge=270&ref=lp_fraud">Start Free</a>
+    <a href="/app/?challenge=270&ref=lp_fraud">Start Free</a>
     <a href="/blog/sql-for-fraud-analytics/">Tutorial</a>
     <a href="/sql-interview-prep/">Interview Prep</a>
     <a href="/finans-sql/">Finance SQL (TR)</a>

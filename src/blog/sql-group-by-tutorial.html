@@ -89,7 +89,7 @@
     <div style="width:32px;height:32px;border-radius:8px;background:#7c3aed;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
     <span class="fd" style="font-size:18px;font-weight:800;">SQL Quest</span>
   </a>
-  <a data-track="cta_blog" href="/app.html?src=blog-groupby" class="bp">Practice Free →</a>
+  <a data-track="cta_blog" href="/app/?src=blog-groupby" class="bp">Practice Free →</a>
 </div></nav>
 
 <article class="article">
@@ -113,7 +113,7 @@
     <ol>
       <li><a href="#mental-model">The mental model — collapsing rows into groups</a></li>
       <li><a href="#grouping-rule">The grouping rule (the one rule)</a></li>
-      <li><a href="#having-vs-where">HAVING vs WHERE — the most-asked interview question</a></li>
+      <li><a href="#having-vs-where">HAVING vs WHERE — the classic interview question</a></li>
       <li><a href="#multi-column">GROUP BY on multiple columns</a></li>
       <li><a href="#aggregates">The five aggregates and how they handle NULL</a></li>
       <li><a href="#mistakes">The 5 mistakes that defeat most analysts</a></li>
@@ -170,7 +170,7 @@
 
   <p>The fix: either group by name as well (creating per-(department, name) buckets), or replace name with an aggregate that defines which name you want — <code>MIN(name)</code>, <code>MAX(name)</code>, or <code>STRING_AGG(name, ', ')</code> to concatenate them.</p>
 
-  <h2 id="having-vs-where">HAVING vs WHERE — the most-asked interview question</h2>
+  <h2 id="having-vs-where">HAVING vs WHERE — the classic interview question</h2>
 
   <p>If you've ever interviewed for a SQL role, you've been asked the difference between WHERE and HAVING. Here's the answer that interviewers want, in two sentences:</p>
 
@@ -359,7 +359,7 @@
 
   <p>Reading is the easy part. The patterns above stick when you write them cold five times — that's why every SQL Quest aggregation challenge gives you a wrong-answer diagnostic instead of just "incorrect." Here are 4 challenges that drill GROUP BY at increasing difficulty:</p>
 
-  <a data-track="cta_blog" class="practice-link" href="/app.html?ref=blog_groupby">📊 Aggregation track — 12+ challenges</a>
+  <a data-track="cta_blog" class="practice-link" href="/app/?ref=blog_groupby">📊 Aggregation track — 12+ challenges</a>
 
   <p>Then the related deep-dives:</p>
 
@@ -372,7 +372,7 @@
       <li><a href="/blog/window-functions-tutorial/">SQL Window Functions Tutorial</a> — when GROUP BY collapses too aggressively, window functions let you keep the rows AND compute per-group aggregates side-by-side.</li>
       <li><a href="/blog/sql-cte-tutorial/">SQL CTEs Explained</a> — multi-step aggregations are clearer with CTEs than nested subqueries.</li>
       <li><a href="/sql-find-duplicates/">How to Find Duplicates in SQL</a> — the single most common real use of <code>HAVING COUNT(*) &gt; 1</code>, plus why GROUP BY can't tell you which duplicate to keep.</li>
-      <li><a href="/sql-interview-prep/">SQL Interview Prep</a> — HAVING vs WHERE is the most-asked SQL interview question. Full curriculum.</li>
+      <li><a href="/sql-interview-prep/">SQL Interview Prep</a> — HAVING vs WHERE is a classic SQL interview question. Full curriculum.</li>
       <li><a href="/finans-sql/">Finans &amp; Bankacılık SQL (TR)</a> — bankacılık metrikleri (NPL, tier 1, ROA) GROUP BY ile hesaplanır.</li>
     </ul>
   </div>

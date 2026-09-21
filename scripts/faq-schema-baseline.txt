@@ -101,7 +101,7 @@ src/blog/window-functions-tutorial.html	How are LAG and LEAD different?
 src/blog/window-functions-tutorial.html	What does PARTITION BY do?
 src/blog/window-functions-tutorial.html	What is the difference between RANK, DENSE_RANK, and ROW_NUMBER?
 src/blog/window-functions-tutorial.html	What is the difference between ROWS BETWEEN and RANGE BETWEEN?
-src/blog/window-functions-tutorial.html	What is the most common window function pattern in SQL interviews?
+src/blog/window-functions-tutorial.html	Which window function pattern should I learn first for SQL interviews?
 src/blog/window-functions-tutorial.html	Why can't I filter on a window function in WHERE?
 src/learn-sql-for-beginners.html	Do I need a programming background to learn SQL?
 src/sql-tutorial.html	How long does this SQL tutorial take to complete?

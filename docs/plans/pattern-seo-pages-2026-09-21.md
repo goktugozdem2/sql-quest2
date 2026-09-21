@@ -15,6 +15,12 @@ averages (c1-m11).
 - Generated, like the question and topic pages, so counts and links cannot
   drift.
 
+## Added 2026-09-22 (SEO read, item 8)
+The blog already explains NOT IN with NULLs, WHERE vs ON and COUNT(*) vs
+COUNT(col). Each becomes its own page for the search as typed ("not in null
+sql"), and links to the mock question that tests it (Capital One c1-m9 for
+NOT IN, c1-m10 for LEFT JOIN + WHERE, c1-m11 for the average of averages).
+
 ## Rules that apply
 - Ship with internal links in the same commit (homepage footer + the
   relevant hub) — an orphan page does not get crawled (the fintech-pages

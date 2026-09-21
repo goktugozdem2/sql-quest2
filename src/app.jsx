@@ -32772,7 +32772,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
               the login form. `?signin=1` forces the auth screen on reload. */}
           {isGuest && (
             <a
-              href="/app.html?signin=1"
+              href="/app/?signin=1"
               className="px-3 py-1.5 rounded-lg text-xs font-bold bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/40 transition-all whitespace-nowrap"
               title={i18n_t('practice', 'logInTooltip')}
             >

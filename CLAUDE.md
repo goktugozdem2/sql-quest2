@@ -402,6 +402,13 @@ so a landing view and a later solve are joinable for the first time.
   `docs/reads/seo-weekly-<date>.md` from both consoles and
   `scripts/seo-dashboard.sql`. Grow/prune rules, written before the data:
   `docs/plans/seo-measurement-2026-09-13.md`.
+- **No claim about how often something is asked in interviews, and no claim
+  about a company's interview, without a dated source** — "most-asked",
+  "by frequency", "~80% of interviews" are all out (2026-09-22; the FAANG
+  guide had described a user survey that never existed).
+  `tests/seo-consistency.test.js` scans every page under `src/` plus the
+  challenge, mock and readiness text. Link the app as `/app/`, never
+  `/app.html` (a 308).
 - To noindex a page, add it to `src/data/seo-prune.json` with a dated note;
   `scripts/apply-seo-prune.mjs` (last build step) does the rest. No pruning
   before 2026-11-09; never a hand-written page without the founder.

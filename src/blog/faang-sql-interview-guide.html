@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>The Complete FAANG SQL Interview Guide (2026) | SQLQuest.app</title>
-  <meta name="description" content="Everything you need to ace the SQL interview at Meta, Google, Amazon, Apple, and Netflix in 2026. All SQL topics, question patterns by company, and a 30-day study plan.">
+  <meta name="description" content="Everything you need to ace the SQL interview at Meta, Google, Amazon, Apple, and Netflix in 2026. All SQL topics, practice on each company's kind of data, and a 30-day study plan.">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://sqlquest.app/blog/faang-sql-interview-guide/">
   <meta property="og:type" content="article">
@@ -66,7 +66,7 @@
     <div style="width:32px;height:32px;border-radius:8px;background:#7c3aed;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
     <span class="fd" style="font-size:18px;font-weight:800;">SQL Quest</span>
   </a>
-  <a href="/app.html" class="bp">Practice Free →</a>
+  <a href="/app/" class="bp">Practice Free →</a>
 </div></nav>
 
 <article class="article">
@@ -77,7 +77,7 @@
     <span>·</span>
     <span>18 min read</span>
     <span>·</span>
-    <a href="/app.html">Practice the questions →</a>
+    <a href="/app/">Practice the questions →</a>
   </div>
   <!-- blog-practice:start -->
   <p style="margin:18px 0 26px;padding:14px 18px;border:1px solid rgba(124,58,237,.3);border-radius:12px;background:rgba(124,58,237,.07);font-size:15px;line-height:1.7;">Skip ahead to practice: <a href="/sql-exercises/" data-track="cta_blog_practice" style="color:#c084fc;font-weight:700;">solve SQL questions in the browser →</a> · or <a href="/sql-interview-readiness-test/" data-track="cta_blog_readiness" style="color:#c084fc;font-weight:700;">check your SQL interview readiness</a> (10 questions, no signup).</p>
@@ -97,20 +97,20 @@
   </nav>
 
   <h2 id="how-tested" class="fd">1. How SQL is tested at FAANG</h2>
-  <p>SQL interviews at large tech companies take one of three forms:</p>
+  <p>SQL interviews for data roles usually take one of three forms. Which one a given company and team uses varies, and none of these five companies publishes its format — ask your recruiter.</p>
   <h3>Online assessment (OA)</h3>
-  <p>A timed take-home screen — 60–90 minutes with 2–4 SQL problems. Common at Amazon for data analyst and business analyst roles. Speed and accuracy both matter. There is no partial credit.</p>
+  <p>A timed take-home screen — 60–90 minutes with 2–4 SQL problems. Speed and accuracy both matter.</p>
   <h3>Live technical screen</h3>
-  <p>A 45–60 minute call where you write SQL in a shared editor (CoderPad, HackerRank) while thinking aloud. Common at Meta and Google. The interviewer cares as much about your reasoning as your final answer.</p>
+  <p>A 45–60 minute call where you write SQL in a shared editor (CoderPad, HackerRank) while thinking aloud. The interviewer cares as much about your reasoning as your final answer.</p>
   <h3>Onsite SQL round</h3>
-  <p>One or two dedicated SQL sessions during a full-day onsite. Questions are harder — you may be asked to optimise a query, propose an index, or explain a query plan. Common for senior data engineer and data scientist roles.</p>
+  <p>One or two dedicated SQL sessions during a full-day onsite. Questions are harder — you may be asked to optimise a query, propose an index, or explain a query plan. More likely at senior levels.</p>
   <div class="callout"><p><strong>Key insight:</strong> In live interviews, talking through your approach earns points even when your syntax isn't perfect. Practice writing SQL while narrating your thinking.</p></div>
 
   <h2 id="core-topics" class="fd">2. The 6 core SQL topics</h2>
   <p>Across all FAANG companies, six topics account for the vast majority of interview questions.</p>
 
   <h3>1. Window functions</h3>
-  <p>The single most-tested advanced SQL concept — appearing in roughly 70% of hard interview questions.</p>
+  <p>The advanced concept that separates a hard question from a medium one: ranking, running totals and comparisons across rows all need it.</p>
   <ul>
     <li><code>ROW_NUMBER()</code>, <code>RANK()</code>, <code>DENSE_RANK()</code> — ranking within groups</li>
     <li><code>LAG(col, n)</code>, <code>LEAD(col, n)</code> — comparing to previous/future rows</li>
@@ -183,9 +183,10 @@ user_months <span class="kw">AS</span> (
   <script type="application/json" id="sq-quiz">{"topic":"FAANG SQL core topics","questions":[{"q":"Rank employees by salary within each department. Two people tie at the top — you want them both to show rank 1, and the next person to be rank 3. Which function?","options":["ROW_NUMBER()","RANK()","DENSE_RANK()","COUNT() with a subquery"],"correct":1,"why":"On salaries 100, 100, 90: <code>RANK()</code> gives 1, 1, 3 — ties share, and the gap is kept. <code>DENSE_RANK()</code> gives 1, 1, 2 (no gap) and <code>ROW_NUMBER()</code> gives 1, 2, 3, breaking the tie arbitrarily. Interviewers ask this exact distinction constantly."},{"q":"You need each month’s revenue next to the previous month’s, on the same row. What gets you there?","options":["A self-join on month - 1","LAG() OVER (ORDER BY month)","GROUP BY month with HAVING","Two subqueries and a UNION"],"correct":1,"why":"<code>LAG()</code> reaches back one row in the ordered window, so January’s total lands on February’s row and the difference is a subtraction. The self-join works too, but it is longer, slower, and quietly drops the first month."},{"q":"The guide’s examples use DATE_TRUNC to bucket by month. SQL Quest grades on SQLite. What happens?","options":["It works — DATE_TRUNC is standard SQL","It fails: SQLite has no DATE_TRUNC, use strftime('%Y-%m', d)","It works but returns text instead of a date","It only fails inside a CTE"],"correct":1,"why":"SQLite answers <code>no such function: DATE_TRUNC</code>. That function is Postgres/Redshift; MySQL spells it differently again. Use <code>strftime('%Y-%m', d)</code> here. Knowing which dialect you are writing is itself an interview skill — a correct query in the wrong dialect still fails to run."}],"cta":{"href":"/app?challenge=rank-everyone-by-salary&src=blog-faang","label":"Try a real ranking question →","high":"You already think the way these rounds are scored. Go run one against real data — free, no signup.","low":"These three come up in almost every FAANG SQL round. Practise them against real data — free, no signup."}}</script>
 <div id="sq-quiz-root"></div>
 
-  <h2 id="by-company" class="fd">3. SQL patterns by company</h2>
+  <h2 id="by-company" class="fd">3. Practise on each company's kind of data</h2>
+  <p>This table pairs each company's public business with SQL topics that fit that kind of data. It is our study pairing, not a report of what these companies ask: we hold no dated source for any of their SQL rounds.</p>
   <table>
-    <thead><tr><th>Company</th><th>Data domain</th><th>Key topics</th></tr></thead>
+    <thead><tr><th>Company</th><th>Data domain</th><th>Topics that fit that data</th></tr></thead>
     <tbody>
       <tr><td><a href="/meta-sql-interview/"><strong>Meta</strong></a></td><td>Social graphs, ads, user behaviour</td><td>Retention, DAU/MAU, window functions, self-joins</td></tr>
       <tr><td><a href="/google-sql-interview/"><strong>Google</strong></a></td><td>Search, ads, product analytics</td><td>Ranking, median, YoY growth, conditional aggregation</td></tr>
@@ -244,29 +245,17 @@ user_months <span class="kw">AS</span> (
   <h3>Clean syntax signals experience</h3>
   <p>Use consistent indentation, uppercase keywords, and meaningful aliases. <code>e.name, d.dept_name</code> is clearer than <code>a.name, b.name</code>. Small things matter in live interviews.</p>
 
-  <h2 id="methodology" class="fd">6. Methodology — how we built this guide</h2>
-  <p>The percentages on the homepage and the patterns in this guide are not pulled from thin air. Here is exactly how we built them.</p>
+  <h2 id="methodology" class="fd">6. How this guide was written</h2>
+  <p>Plainly, so you can weigh it.</p>
 
-  <h3>Sources</h3>
+  <h3>What it is</h3>
+  <p>A study guide for SQL interviews at large tech companies: the topics that recur in SQL interviews generally, in the order we think is easiest to learn them, and practice on SQL Quest challenges.</p>
+
+  <h3>What it is not</h3>
   <ul>
-    <li><strong>Glassdoor interview reports</strong> — public candidate-submitted accounts of SQL questions asked at Meta, Google, Amazon, Apple, and Netflix data analyst, data scientist, and data engineer roles.</li>
-    <li><strong>Blind threads</strong> — anonymized post-interview discussions, particularly useful for senior and staff-level patterns.</li>
-    <li><strong>LeetCode SQL discussion forums</strong> — candidates often post the company tag alongside problem patterns they were asked.</li>
-    <li><strong>SQL Quest user surveys</strong> — when Pro users land a FAANG role, we ask what came up. About 40 responses to date.</li>
-  </ul>
-
-  <h3>How the curated question set was built</h3>
-  <p>SQL Quest's challenge bank includes <strong>50+ company-tagged questions</strong> across Meta, Google, Amazon, Apple, and Netflix. Each one is either a real reported question (paraphrased and adapted to our schema) or a pattern variant of a reported question. Every tagged challenge has a citation note in our internal tracker, even though we do not publish those citations to protect candidate privacy.</p>
-
-  <h3>How the percentages were computed</h3>
-  <p>We tagged each curated question with its primary SQL skill (Window Functions, JOINs, Aggregation, etc.). The homepage percentages are the share of FAANG-tagged questions whose primary skill falls into each bucket, cross-checked against the topic frequency observed in Glassdoor and Blind reports for 2023–2025.</p>
-
-  <h3>Caveats — read these before you over-index</h3>
-  <ul>
-    <li><strong>Distribution varies by company.</strong> Apple asks far less SQL than Meta. Netflix leans system design. Google's bar varies by team. Treat the percentages as "what to be ready for," not "what you will be asked."</li>
-    <li><strong>Distribution varies by role level.</strong> Senior and staff candidates get more business-context questions; new grads get more pure technique. Window functions show up more often at senior than at new-grad level.</li>
-    <li><strong>The guide updates as data updates.</strong> Last refreshed March 2026.</li>
-    <li><strong>Reported interviews skew recent.</strong> Most of our sources are 2023–2025. Older patterns (heavy GROUP BY, light Window) appear less often than they once did.</li>
+    <li><strong>Not a report of any company's interview.</strong> Meta, Google, Amazon, Apple and Netflix do not publish their SQL formats, and we hold no dated, readable source for any of them. Where SQL Quest does hold such sources — today Capital One and Revolut — the company page says so and cites them.</li>
+    <li><strong>Not a frequency ranking.</strong> The order of the topics is our teaching order. We have not measured how often any topic is asked.</li>
+    <li><strong>An earlier version of this section was wrong.</strong> It described sources and a user survey that we cannot show you. We removed them on 22 September 2026 rather than leave a claim we could not back.</li>
   </ul>
 
   <h3>Found something off?</h3>

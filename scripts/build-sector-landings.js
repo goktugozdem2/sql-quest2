@@ -9,7 +9,7 @@
 //   - Title + meta description with sector keywords
 //   - Hero copy + sector emoji
 //   - "Real data" callout block (which dataset, what tables, what licence)
-//   - 3 sample challenges (deep links into /app.html?challenge=N)
+//   - 3 sample challenges (deep links into /app/?challenge=N)
 //   - Sector-specific FAQ
 //   - Attribution footer
 //   - CTA links carry ?ref=lp_<sector>&goals=mentor for attribution
@@ -289,7 +289,7 @@ function generateLandingHtml(s) {
       {
         '@type': 'DataDownload',
         'encodingFormat': 'application/sql',
-        'contentUrl': `https://sqlquest.app/app.html?sector=${s.id}`,
+        'contentUrl': `https://sqlquest.app/app/?sector=${s.id}`,
         'description': `In-browser SQLite WASM database with ${s.tr_name} sector tables, queryable via SQL practice challenges`,
       },
     ],
@@ -356,7 +356,7 @@ function generateLandingHtml(s) {
   </a>
   <div class="nl">
     <a href="/turkce-sql-ogren/">Türkçe</a><a href="#dataset">Veri</a><a href="#challenges">Challenge</a><a href="#faq">SSS</a>
-    <a href="/app.html?lang=tr&sector=${s.id}&challenge=${s.sample_challenges[0].id}&ref=lp_${s.id}" class="btn bp" style="font-size:14px;padding:10px 24px;">Hemen Başla →</a>
+    <a href="/app/?lang=tr&sector=${s.id}&challenge=${s.sample_challenges[0].id}&ref=lp_${s.id}" class="btn bp" style="font-size:14px;padding:10px 24px;">Hemen Başla →</a>
   </div>
 </div></nav>
 
@@ -367,7 +367,7 @@ function generateLandingHtml(s) {
     <h1 class="fd" style="font-size:clamp(36px,5vw,60px);font-weight:800;line-height:1.08;margin-bottom:24px;animation:fadeUp .6s .2s both;">${s.hero_h1_top}<br><span class="gt">${s.hero_h1_bottom}</span></h1>
     <p style="font-size:18px;line-height:1.8;color:#94a3b8;margin-bottom:36px;max-width:680px;margin-left:auto;margin-right:auto;animation:fadeUp .6s .3s both;">${s.hero_lead}</p>
     <div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center;animation:fadeUp .6s .4s both;">
-      <a href="/app.html?lang=tr&sector=${s.id}&challenge=${s.sample_challenges[0].id}&ref=lp_${s.id}" class="btn bp">Hemen Başla — Ücretsiz</a>
+      <a href="/app/?lang=tr&sector=${s.id}&challenge=${s.sample_challenges[0].id}&ref=lp_${s.id}" class="btn bp">Hemen Başla — Ücretsiz</a>
       <a href="#dataset" class="btn bo">Veriyi gör ↓</a>
     </div>
     <div class="pills" style="animation:fadeUp .6s .5s both;">
@@ -403,14 +403,14 @@ function generateLandingHtml(s) {
     <p style="font-size:15px;color:#94a3b8;margin-top:16px;max-width:660px;margin:16px auto 0;line-height:1.7;">20 challenge mevcut, hepsi gerçek sektör verisi üzerinde. Burada 3 örnek — Easy / Medium / Hard.</p>
   </div>
   <div class="ch-grid">
-    ${s.sample_challenges.map(c => `<a href="/app.html?challenge=${c.id}&lang=tr&ref=lp_${s.id}" class="ch-card">
+    ${s.sample_challenges.map(c => `<a href="/app/?challenge=${c.id}&lang=tr&ref=lp_${s.id}" class="ch-card">
       <div class="ch-diff ch-${c.difficulty.toLowerCase()}">${c.difficulty}</div>
       <div class="ch-title">${c.title}</div>
       <div class="ch-prev">${c.preview}</div>
     </a>`).join('')}
   </div>
   <div style="text-align:center;margin-top:40px;">
-    <a href="/app.html?lang=tr&sector=${s.id}&challenge=${s.sample_challenges[0].id}&ref=lp_${s.id}" class="btn bp">Tümünü Görmek İçin Başla →</a>
+    <a href="/app/?lang=tr&sector=${s.id}&challenge=${s.sample_challenges[0].id}&ref=lp_${s.id}" class="btn bp">Tümünü Görmek İçin Başla →</a>
   </div>
 </div></section>
 
@@ -423,14 +423,14 @@ function generateLandingHtml(s) {
 <section class="cs"><div class="cbg"></div><div class="sec" style="text-align:center;position:relative;z-index:2;">
   <h2 class="fd" style="font-size:clamp(30px,4.5vw,48px);font-weight:800;line-height:1.15;margin-bottom:20px;">${s.tr_name} için<br><span class="gt">SQL pratik başlasın.</span></h2>
   <p style="font-size:18px;color:#94a3b8;max-width:540px;margin:0 auto 32px;">Kayıt yok. Kart yok. İlk sorgun 60 saniyede.</p>
-  <a href="/app.html?lang=tr&sector=${s.id}&challenge=${s.sample_challenges[0].id}&ref=lp_${s.id}" class="btn bp blg" style="box-shadow:0 0 40px ${accentMid};">Başlat — Ücretsiz ⚡</a>
+  <a href="/app/?lang=tr&sector=${s.id}&challenge=${s.sample_challenges[0].id}&ref=lp_${s.id}" class="btn bp blg" style="box-shadow:0 0 40px ${accentMid};">Başlat — Ücretsiz ⚡</a>
   <p style="font-size:13px;color:#7f8da1;margin-top:20px;">Tarayıcıda çalışır. Kurulum yok.</p>
 </div></section>
 
 <!-- ── Footer ─────────────────────────────────────────────────── -->
 <footer class="ft"><div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:16px;"><div style="width:28px;height:28px;border-radius:8px;background:#7c3aed;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0;"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg></div><span class="fd" style="font-size:16px;font-weight:800;">SQL Quest</span></div>
 <p style="font-size:13px;color:#7f8da1;">Sektörünün gerçek verisiyle SQL pratiği.</p>
-<div class="flk"><a href="/app.html?lang=tr&sector=${s.id}&challenge=${s.sample_challenges[0].id}&ref=lp_${s.id}">Hemen Başla</a><a href="/turkce-sql-ogren/">Türkçe ana sayfa</a><a href="/sql-exercises/">SQL Alıştırmaları</a><a href="/best-sql-practice-sites/">SQL Pratik Siteleri</a><a href="/finans-sql/">Finans</a><a href="/gayrimenkul-sql/">Gayrimenkul</a><a href="/uretim-sql/">Üretim</a></div>
+<div class="flk"><a href="/app/?lang=tr&sector=${s.id}&challenge=${s.sample_challenges[0].id}&ref=lp_${s.id}">Hemen Başla</a><a href="/turkce-sql-ogren/">Türkçe ana sayfa</a><a href="/sql-exercises/">SQL Alıştırmaları</a><a href="/best-sql-practice-sites/">SQL Pratik Siteleri</a><a href="/finans-sql/">Finans</a><a href="/gayrimenkul-sql/">Gayrimenkul</a><a href="/uretim-sql/">Üretim</a></div>
 <p style="font-size:11px;color:#79879b;margin-top:24px;">© 2026 SQL Quest</p></footer>
 
 <script>
