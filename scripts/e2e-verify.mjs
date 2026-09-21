@@ -23,7 +23,8 @@
  *     logins through `account-login` in production (docs/reads/
  *     account-security-2026-09-14.md) and the 11:00 auth health-check task.
  *   - a second real device reading the row back. The check here is that the
- *     write goes through sq_save_user and the read through users_public,
+ *     write goes through sq_save_user and the read through rpc/sq_load_account
+ *     (users_public until 2026-09-22),
  *     which is the whole of what the client controls.
  *
  * Usage:
@@ -99,7 +100,7 @@ const preamble = (seed, cloudRow = null) => `
       if (/functions\\/v1\\/account-login/.test(url)) return new Response(JSON.stringify({ error: 'invalid_credentials' }), { status: 401, headers: J });
       if (/rpc\\/sq_save_user/.test(url)) return new Response('', { status: 204, headers: J });
       if (/\\/rest\\/v1\\/users\\?/.test(url)) return new Response(JSON.stringify({ message: 'permission denied for table users' }), { status: 401, headers: J });
-      if (/users_public\\?/.test(url) && window.__cloudRow) return new Response(JSON.stringify([window.__cloudRow]), { status: 200, headers: J });
+      if (/users_public\\?|rpc\/sq_load_account/.test(url) && window.__cloudRow) return new Response(JSON.stringify([window.__cloudRow]), { status: 200, headers: J });
       return new Response('[]', { status: 200, headers: J });
     }
     return real(input, init);
@@ -299,7 +300,7 @@ async function main() {
           form: true,
           login: net.filter(r => /functions\\/v1\\/account-login/.test(r.url)).length,
           tableReads: net.filter(r => /\\/rest\\/v1\\/users\\?/.test(r.url)).length,
-          viewReads: net.filter(r => /users_public\\?/.test(r.url)).length,
+          viewReads: net.filter(r => /users_public\\?|rpc\/sq_load_account/.test(r.url)).length,
           sentPassword: net.some(r => (r.body || '').includes('not-a-real-password') && !/account-login/.test(r.url)),
           urls: net.map(r => r.url.replace(/^https?:\\/\\/[^/]+/, '')).slice(-8),
         };
@@ -341,14 +342,14 @@ async function main() {
         const net = window.__net || [];
         return {
           rpcSaves: net.filter(r => /rpc\\/sq_save_user/.test(r.url)).length,
-          viewReads: net.filter(r => /users_public\\?/.test(r.url)).length,
+          viewReads: net.filter(r => /users_public\\?|rpc\/sq_load_account/.test(r.url)).length,
           tableReads: net.filter(r => /\\/rest\\/v1\\/users\\?/.test(r.url)).length,
           tableWrites: net.filter(r => /\\/rest\\/v1\\/users\\?/.test(r.url) && r.method !== 'GET').length,
           urls: net.map(r => r.method + ' ' + r.url.replace(/^https?:\\/\\/[^/]+/, '')).slice(0, 12),
         };
       })()`);
-    if (wire.viewReads >= 1 && wire.tableReads === 0) pass(`a returning account loads its row from users_public (${wire.viewReads} read${wire.viewReads > 1 ? 's' : ''}, 0 from the table)`);
-    else fail('a returning account loads from users_public, not the table', JSON.stringify(wire));
+    if (wire.viewReads >= 1 && wire.tableReads === 0) pass(`a returning account loads its row through sq_load_account (${wire.viewReads} read${wire.viewReads > 1 ? 's' : ''}, 0 from the table)`);
+    else fail('a returning account loads through sq_load_account, not the table', JSON.stringify(wire));
     // The write half of cross-device sync. The table is 401 for anon in
     // production, so a save that still went straight to it would be silently
     // lost — the device would look fine and the other device would never see

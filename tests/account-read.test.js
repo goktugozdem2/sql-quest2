@@ -1,0 +1,49 @@
+// Account reads (2026-09-22). The anon key could list the whole users_public
+// view in one request. The client now reads ONE row through
+// rpc/sq_load_account, and the view is closed to anon in step 2.
+import { describe, it, expect } from 'vitest';
+import fs from 'node:fs';
+import { join } from 'node:path';
+
+const ROOT = join(import.meta.dirname, '..');
+const app = fs.readFileSync(join(ROOT, 'src/app.jsx'), 'utf8');
+const mig = fs.readFileSync(join(ROOT, 'supabase/migrations/20260922120000_account_read_one_row.sql'), 'utf8');
+
+describe('the client reads one account row at a time', () => {
+  it('the session load and the existence check go through rpc/sq_load_account', () => {
+    const fn = app.slice(app.indexOf('const fetchAccountRow = async (username) => {'), app.indexOf('const fetchAccountRows = async (query) => {'));
+    expect(fn).toContain("supabaseFetch('rpc/sq_load_account'");
+    expect(fn).toContain('isMissingServerSide(err)');
+    expect(app).toContain(': await fetchAccountRow(username);');
+    expect(app).toContain('fetchAccountRow(savedUser).then(');
+  });
+
+  it('users_public is read only inside that 404 fallback', () => {
+    const calls = [...app.matchAll(/fetchAccountRows\(/g)].length;
+    expect(calls, 'the one fallback call').toBe(1);
+    const fallback = app.slice(app.indexOf('const fetchAccountRow = async (username) => {'), app.indexOf('const fetchAccountRows = async (query) => {'));
+    expect(fallback).toContain('fetchAccountRows(`select=username,data&username=eq.');
+  });
+
+  it('nothing lists accounts: no unfiltered or ordered read of users_public', () => {
+    expect(app).not.toMatch(/fetchAccountRows\('select=[^']*order=/);
+    expect(app).not.toMatch(/users_public\?select=[^`'"]*order=/);
+  });
+});
+
+describe('the database side', () => {
+  it('sq_load_account returns at most one row, with owner rights, to anon', () => {
+    expect(mig).toMatch(/create or replace function public\.sq_load_account\(p_username text\)/);
+    expect(mig).toMatch(/security definer/);
+    expect(mig).toMatch(/where v\.username = p_username\s+limit 1;/);
+    expect(mig).toContain('grant execute on function public.sq_load_account(text) to anon, authenticated;');
+  });
+  it('the leaderboard view exposes the top 50 names, not the whole table', () => {
+    expect(mig).toMatch(/order by u\.data -> 'xp' desc nulls last\s+limit 50;/);
+  });
+  it('step 2 revokes the view from anon, with a rollback beside it', () => {
+    const off = fs.readFileSync(join(ROOT, 'supabase/manual/20260922b_users_public_anon_off.sql'), 'utf8');
+    expect(off).toContain('revoke select on public.users_public from anon, authenticated;');
+    expect(fs.existsSync(join(ROOT, 'supabase/manual/20260922b_users_public_anon_off_rollback.sql'))).toBe(true);
+  });
+});

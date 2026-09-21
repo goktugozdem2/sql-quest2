@@ -2702,6 +2702,24 @@ const withLocalAccountKeys = (username, data) => {
 };
 
 // Read account rows: the view first, the table only if the view is not deployed.
+// ONE account row, by username (2026-09-22). The anon key used to read the
+// whole users_public view — one request listed all 7,251 rows with each
+// person's queries, attempts and plan. The client only ever needs its own row,
+// so it asks rpc/sq_load_account for exactly that; users_public is then closed
+// to anon (supabase/manual/20260922b_users_public_anon_off.sql). Falls back to
+// the view only while the function is not deployed (404).
+const fetchAccountRow = async (username) => {
+  try {
+    return await supabaseFetch('rpc/sq_load_account', {
+      method: 'POST', throwOnError: true,
+      body: JSON.stringify({ p_username: username }),
+    });
+  } catch (err) {
+    if (!isMissingServerSide(err)) throw err;
+    return await fetchAccountRows(`select=username,data&username=eq.${encodeURIComponent(username)}`);
+  }
+};
+
 const fetchAccountRows = async (query) => {
   try {
     return await supabaseFetch(`users_public?${query}`, { throwOnError: true });
@@ -3003,7 +3021,7 @@ const loadUserData = async (username, allowLocalFallback = true, options = {}) =
     try {
       const cloudData = options.legacyTable
         ? await supabaseFetch(`users?username=eq.${encodeURIComponent(username)}`)
-        : await fetchAccountRows(`select=username,data&username=eq.${encodeURIComponent(username)}`);
+        : await fetchAccountRow(username);
       
       if (cloudData && cloudData.length > 0) {
         const userData = withLocalAccountKeys(username, cloudData[0].data);
@@ -3101,9 +3119,10 @@ const loadLeaderboard = async () => {
         rows = await supabaseFetch('leaderboard_public?select=username,xp,solved&order=xp.desc.nullslast&limit=50', { throwOnError: true });
         rows = (rows || []).map(u => ({ username: u.username, xp: Number(u.xp) || 0, solved: Number(u.solved) || 0 }));
       } catch (err) {
+        // No fallback to users_public: that view is closed to the anon key
+        // (2026-09-22). Without leaderboard_public the local board is shown.
         if (!isMissingServerSide(err)) throw err;
-        const legacy = await fetchAccountRows('select=username,data&order=data->xp.desc.nullslast&limit=50');
-        rows = (legacy || []).map(u => ({ username: u.username, xp: Number(u.data?.xp) || 0, solved: u.data?.solvedChallenges?.length || 0 }));
+        rows = [];
       }
       if (rows && rows.length > 0) {
         realUsers = rows.map(u => ({
@@ -8542,7 +8561,7 @@ function SQLQuest() {
       // When Supabase is configured, verify user still exists before restoring session
       if (isSupabaseConfigured()) {
         // Check if user exists in Supabase
-        fetchAccountRows(`select=username&username=eq.${encodeURIComponent(savedUser)}`).then(cloudData => {
+        fetchAccountRow(savedUser).then(cloudData => {
           if (cloudData && cloudData.length > 0) {
             // User exists in Supabase, restore session
             loadUserSession(savedUser);
