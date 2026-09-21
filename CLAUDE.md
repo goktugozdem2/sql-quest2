@@ -646,8 +646,12 @@ URLs filled, brand icon is the bolt, brand colour #FFE34D.
 
 ### Account access — view, save function, server sign-in (2026-09-13)
 
-- **Reads** of account rows go through `public.users_public` (no
-  passwordHash, salt, email, unsubToken, stripe ids); **writes** through
+- **Reads** of account rows: ONE row at a time through
+  `rpc/sq_load_account` (2026-09-22) — anon can no longer SELECT the
+  `users_public` view (it listed all 7,251 rows in one request). The view
+  still strips passwordHash, salt, email, unsubToken, stripe ids for the
+  function. **Writes are still keyed by username alone** — see
+  docs/plans/account-session-tokens-2026-09-22.md (P0). **Writes** through
   `rpc/sq_save_user`, which keeps an existing row's own credential, email and
   payment-id fields; **sign-in** and **password change** run in the
   `account-login` / `account-password` edge functions (service role, failure

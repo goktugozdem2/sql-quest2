@@ -19,6 +19,14 @@ checks production after deploy, and nothing runs on a schedule.
    likely a browser extension, but "it loads eventually" is not a pass).
    Run from a clean headless profile so an extension can never mask or
    cause the result.
+   **Daily database check (founder, 2026-09-22):** any statement with a mean
+   above 200 ms AND more than 1,000 calls in the last 24 hours. The
+   leaderboard query crossed both on 2026-09-13 and was noticed on 09-21, when
+   Supabase's Disk IO email arrived — this check would have caught it the next
+   day. pg_stat_statements is cumulative since its last reset (2026-01-20), so
+   the check keeps a daily snapshot (`ops.query_stats_daily`: queryid, calls,
+   total_exec_time, captured_at) and alerts on the 24-hour delta: calls_24h >
+   1,000 and (Δtotal_exec_time / Δcalls) > 200 ms. Read-only role; no reset.
 2. **Alerts.** On failure only, one email to the founder through Resend,
    deduplicated per failing check per day. Resend hit 80% of its daily quota
    on 2026-09-12; an alert that fires every run would compete with real mail.

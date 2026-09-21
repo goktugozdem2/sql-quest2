@@ -795,6 +795,56 @@ select count(distinct n.username) as noted,
 from noted n left join answered a on a.username = n.username;
 ```
 
+## `first_solve_10m`
+
+**The activation number (founder, 2026-09-22).** Of people whose FIRST
+`app_opened` falls in the window, the share whose first `challenge_solved`
+(a correct submit) lands within 10 minutes of that first open. People by
+`coalesce(metadata->>'aid', username)`; internal accounts excluded.
+
+Measured from first contact, not from signup, on purpose: 88% of new people
+never sign up (12.4% did, 2026-08-24 → 09-20), and a signup-anchored rate
+would describe the minority who already cleared the hardest step.
+
+```sql
+with ev as (
+  select coalesce(((metadata #>> '{}')::jsonb)->>'aid', username) pid, event, created_at
+  from pro_events
+  where reason = 'activation_funnel' and event in ('app_opened','challenge_solved','challenge_opened','signup_completed')
+    and username !~* '^(test|qa_|fabletest|linktest|internalroutine|sqlquest$)'
+),
+first_open as (select pid, min(created_at) t0 from ev where event = 'app_opened' group by pid),
+cohort as (select * from first_open where t0 >= :from and t0 < :to),
+per as (
+  select c.pid, c.t0,
+    min(e.created_at) filter (where e.event='challenge_opened' and e.created_at >= c.t0) first_open_ch,
+    min(e.created_at) filter (where e.event='challenge_solved' and e.created_at >= c.t0) first_solve
+  from cohort c left join ev e on e.pid = c.pid group by c.pid, c.t0
+)
+select count(*) people,
+  round(100.0*avg(coalesce(first_solve <= t0 + interval '10 minutes', false)::int),1) pct_solve_10m,
+  round(100.0*avg(coalesce(first_open_ch <= t0 + interval '10 minutes', false)::int),1) pct_open_ch_10m,
+  round(100.0*avg((first_solve is not null)::int),1) pct_ever_solved
+from per;
+```
+`coalesce(…, false)` is not decoration: without it the average silently
+drops everyone who never solved, and the first draft of this query reported
+51.6% instead of 12.4%.
+
+**Baseline, first open 2026-08-24 → 09-20: 12.4%** (181 of 1,465 people).
+Around it: 54.7% open a challenge within 10 minutes (58.0% ever); 22.9%
+solve within 24 hours; 24.0% ever. Half of everyone who will ever solve does
+it in the first ten minutes, and almost nobody after the first day. Two
+leaks, in order: 42% never open a challenge; of those who do, 59% never
+solve one. Registered people only: 36.3%.
+
+**What it can and cannot read.** It reads first-contact changes: the intake,
+placement, the first challenge, the cold-start gate. It cannot read the
+streak card — the card and its "Solve one now" are not shown to guests, who
+are 88% of new people; the card is read through `practice_next_day`.
+Not yet confounded: as of 2026-09-22 `onboardingIntake`, `interviewFirst`,
+`goalMeasure`, `freeQuota` and `deadlineOffer` are all still off.
+
 ## `practice_next_day`
 
 Of registered solvers who solved at least one challenge on app-day D, the

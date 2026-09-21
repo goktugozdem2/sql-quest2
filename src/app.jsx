@@ -44,7 +44,6 @@ import { shouldEmitLockEvent, lockEventKey } from './utils/lock-events.js';
 import { shouldAskForReview, enabledReviewPlatforms, REVIEW_ASK_REASONS } from './utils/review-ask.js';
 import { eligibleTargets, findTarget, planTargets, findPlanTarget, companyReadiness, planToDate, daysUntil, readinessBucket, MIN_EVIDENCE_SOLVES, MIN_TAGGED_CHALLENGES, PREP_PLAN_STATUS, TARGET_KIND } from './utils/interview-prep.js';
 import { archetypeForCompany } from './data/interview-archetypes.js';
-import { buildDivision as buildLeagueDivision, tierForXp as leagueTierForXp } from './utils/leagues.js';
 import { getPrimarySkeleton, getAllSkeletons } from './utils/skeletons.js';
 import { diagnoseResult, diagnosisShort, primaryHint, rowDiffSummary } from './utils/diagnose.js';
 import { formatSqlForDisplay } from './utils/sql-format.js';
@@ -3074,84 +3073,6 @@ const loadUserData = async (username, allowLocalFallback = true, options = {}) =
   return null;
 };
 
-const saveToLeaderboard = async (username, xp, solvedCount) => {
-  // Save locally
-  try {
-    const leaderboard = JSON.parse(localStorage.getItem('sqlquest_leaderboard') || '{}');
-    leaderboard[username] = { username, xp, solvedCount, timestamp: Date.now() };
-    localStorage.setItem('sqlquest_leaderboard', JSON.stringify(leaderboard));
-  } catch (err) {
-    console.error('Failed to save to leaderboard:', err);
-  }
-  return true;
-};
-
-// NOTE (2026-04-21): An April-4 "one-time password reset" block for
-// test2/test11 lived here. It overwrote those accounts' password hashes
-// in Supabase the first time the app booted in any browser, locking the
-// legitimate owner out of their own accounts. Removed. If you need to
-// reset a test account, do it via the admin panel (Ctrl+Shift+A) or
-// directly in Supabase SQL — never via a client-side auto-run.
-
-// Seed users for leaderboard (appear alongside real users)
-// The leaderboard used to be padded with 49 fabricated accounts here —
-// generated names in three styles, algorithmic daily XP, a 30% chance of a
-// simulated rest day — merged in and rendered indistinguishably from real
-// people. Removed 2026-07-26 along with the switch to leagues: a board that
-// matches you against peers by engagement cannot be built on invented
-// engagement. 134 real users have XP and the top real user is ~5x the top
-// seed was, so the padding had outlived its reason anyway.
-
-const loadLeaderboard = async () => {
-  let realUsers = [];
-  
-  // If Supabase configured, load from cloud
-  if (isSupabaseConfigured()) {
-    try {
-      // leaderboard_public (2026-09-22) carries exactly what the board shows —
-      // username, xp, solved count — ordered by an index on users(data->'xp').
-      // The old query pulled 50 full account blobs through users_public, whose
-      // per-row JSON rebuild made every call a full-table pass, and it sorted
-      // on data->>xp: TEXT, so "999" outranked "26257" and the top 50 were the
-      // wrong 50. `->` keeps xp a JSON number and sorts numerically.
-      let rows = null;
-      try {
-        rows = await supabaseFetch('leaderboard_public?select=username,xp,solved&order=xp.desc.nullslast&limit=50', { throwOnError: true });
-        rows = (rows || []).map(u => ({ username: u.username, xp: Number(u.xp) || 0, solved: Number(u.solved) || 0 }));
-      } catch (err) {
-        // No fallback to users_public: that view is closed to the anon key
-        // (2026-09-22). Without leaderboard_public the local board is shown.
-        if (!isMissingServerSide(err)) throw err;
-        rows = [];
-      }
-      if (rows && rows.length > 0) {
-        realUsers = rows.map(u => ({
-          username: u.username,
-          xp: u.xp,
-          solvedCount: u.solved,
-          timestamp: Date.now(),
-          isSeeded: false
-        }));
-      }
-    } catch (err) {
-      console.error('Failed to load cloud leaderboard:', err);
-    }
-  }
-  
-  // Fall back to local leaderboard if no cloud users
-  if (realUsers.length === 0) {
-    try {
-      const leaderboard = JSON.parse(localStorage.getItem('sqlquest_leaderboard') || '{}');
-      realUsers = Object.values(leaderboard).map(u => ({ ...u, isSeeded: false }));
-    } catch (err) {
-      console.error('Failed to load leaderboard:', err);
-      realUsers = [];
-    }
-  }
-  
-  // Real users only — see the note above the deleted seed block.
-  return realUsers.sort((a, b) => b.xp - a.xp);
-};
 
 // ============ LOAD EXTERNAL DATA ============
 // Data is loaded from separate files in /data folder
@@ -5997,7 +5918,6 @@ function SQLQuest() {
   const [authPassword, setAuthPassword] = useState('');
   const [authEmail, setAuthEmail] = useState(''); // For registration
   const [authError, setAuthError] = useState('');
-  const [leaderboard, setLeaderboard] = useState([]);
   const [queryHistory, setQueryHistory] = useState([]);
   const [showProfile, setShowProfile] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
@@ -7613,7 +7533,6 @@ function SQLQuest() {
   const [emailBannerStatus, setEmailBannerStatus] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
 
   // === PROGRESS COMPARISON ===
-  const [userPercentile, setUserPercentile] = useState(null); // e.g. 73
 
   // === WARM UP QUIZ ===
   const [showWarmUp, setShowWarmUp] = useState(false);
@@ -8457,27 +8376,6 @@ function SQLQuest() {
     } catch (_) { /* ignore */ }
   }, [activeTab, currentUser, isSessionLoading, showFirstRunSimpleShell, showFoundationsFocusShell]);
 
-  // Leaderboard-tab telemetry (2026-09-08). The referral loop's ONLY entry
-  // point in the whole app is the 🎁 button in this tab's header, and this tab
-  // had no view event at all — so "zero referrals" could not be read. It could
-  // mean nobody wants to invite anyone, or that nobody has ever been on this
-  // screen, and there was no way to tell. One event per user per day, same
-  // shape as coach_tab_viewed. Measurement only.
-  useEffect(() => {
-    if (activeTab !== 'leaderboard' || !currentUser || isSessionLoading) return;
-    try {
-      const day = new Date().toISOString().slice(0, 10);
-      const key = `sqlquest_board_view_${day}`;
-      if (localStorage.getItem(key)) return;
-      localStorage.setItem(key, '1');
-      trackActivationEvent('leaderboard_tab_viewed', {
-        // Guests see the invite button but cannot have a code, so they are a
-        // separate population in this funnel, not a smaller version of it.
-        isGuest: typeof currentUser === 'string' && currentUser.startsWith('guest_'),
-        boardSize: Array.isArray(leaderboard) ? leaderboard.length : null,
-      });
-    } catch (_) { /* ignore */ }
-  }, [activeTab, currentUser, isSessionLoading]);
 
   useEffect(() => {
     if (activeTab === 'quests' && practiceSubTab !== 'challenges') {
@@ -9092,28 +8990,10 @@ function SQLQuest() {
           lastActive: Date.now()
         };
         saveUserData(currentUser, userData);
-        saveToLeaderboard(currentUser, xp, solvedChallenges.size);
       })();
     }
   }, [xp, solvedChallenges, unlockedAchievements, queryCount, aiLessonPhase, currentAiLesson, completedAiLessons, aiLessonCompletions, roadmapLessonCompletions, comprehensionCount, comprehensionCorrect, consecutiveCorrect, comprehensionConsecutive, completedExercises, challengeQueries, completedDailyChallenges, dailyStreak, challengeAttempts, dailyChallengeHistory, weeklyReports, weeklyReportLastSeen, weeklyDigestOptOut, earnedMilestones, coachState, userGoals, intakeRecord, prepTarget, goalsPromptDismissedAt, loginCalendar, speedRunHistory, explainHistory, userProStatus, proType, proExpiry, proAutoRenew, interviewHistory, challengeProgress, challengeStartDate, weaknessTracking, skillMastery, lessonSkillStats, errorPatterns, retrievalLog, dailyRewardClaimedDate]);
 
-  // Load the leaderboard only while its tab is open, and only while the page
-  // is visible (2026-09-22). It used to reload every 30 seconds in every open
-  // session, on every tab, visible or not — ~12,000 calls a day of a query
-  // that took 1.3 s (it rebuilt every account's JSON to sort on xp) and was
-  // the load behind Supabase's "running out of Disk IO Budget" warning of
-  // 2026-09-21. The board state is read nowhere else (userPercentile is set
-  // and never shown).
-  useEffect(() => {
-    if (!currentUser || activeTab !== 'leaderboard') return undefined;
-    const load = () => {
-      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
-      loadLeaderboard().then(setLeaderboard);
-    };
-    load();
-    const interval = setInterval(load, 60000);
-    return () => clearInterval(interval);
-  }, [currentUser, activeTab]);
 
   // True when the URL signals explicit content intent — user clicked a
   // deep-link from LinkedIn / sector landing / company landing / profile
@@ -10168,20 +10048,6 @@ function SQLQuest() {
     setDismissedNotifs(prev => new Set([...prev, id]));
     setSmartNotifications(prev => prev.filter(n => n.id !== id));
   };
-  const calculateLeaderboardPercentile = () => {
-    if (leaderboard.length < 2) return null;
-    const userIdx = leaderboard.findIndex(e => e.username === currentUser);
-    if (userIdx === -1) return null;
-    const percentile = Math.round(((leaderboard.length - userIdx) / leaderboard.length) * 100);
-    return Math.min(percentile, 99);
-  };
-
-  // Update percentile when leaderboard changes
-  useEffect(() => {
-    if (currentUser && leaderboard.length > 0) {
-      setUserPercentile(calculateLeaderboardPercentile());
-    }
-  }, [leaderboard, currentUser, xp]);
 
   // === LOGIN CALENDAR ===
   const recordLoginDay = () => {
@@ -19377,9 +19243,6 @@ CRITICAL RULES:
     setProExpiry(userData.proExpiry || null);
     setProAutoRenew(userData.proAutoRenew === true);
 
-    // Save to leaderboard
-    saveToLeaderboard(username, xp, solvedChallenges.size);
-
     trackActivationEvent('signup_completed', {
       source: 'guest_conversion',
       newUsername: username,
@@ -28337,7 +28200,6 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                           userData.lastDailyChallenge = todayString;
                           userData.dailyChallengeHistory = [...(userData.dailyChallengeHistory || []), dailyHistory];
                           saveUserData(currentUser, userData);
-                          saveToLeaderboard(currentUser, newXP, solvedChallenges.size);
                           
                           // Update learning goals
                           updateGoalProgress('xp_earn', xpReward);
@@ -33489,7 +33351,6 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
               { id: 'guide', label: '🧭 ' + i18n_t('nav', 'coach'), flag: 'guide' },
               { id: 'quests', label: '📝 ' + i18n_t('nav', 'practice'), flag: 'quests' },
               { id: 'trials', label: '💼 ' + i18n_t('nav', 'interview'), flag: 'trials' },
-              { id: 'leaderboard', label: '🏅 ' + i18n_t('nav', 'board'), flag: 'leaderboard' },
               { id: 'hero', label: '👤 ' + i18n_t('nav', 'profile'), flag: 'hero' }
             ]
             .filter(t => window.FF?.tab(t.flag) !== false)
@@ -39253,108 +39114,6 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
           </div>
         )}
 
-        {activeTab === 'leaderboard' && (
-          <div className="space-y-4">
-            <div className="bg-black/30 rounded-xl border border-yellow-500/30 p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold flex items-center gap-2"><Crown className="text-yellow-400" /> {i18n_t('board', 'title')}</h2>
-                <div className="flex items-center gap-2">
-                  <button onClick={() => { setShareType('general'); setShareData(null); setShowShareModal(true); }} className="text-sm px-3 py-1.5 bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 rounded-lg border border-purple-500/30 transition-all">📤 {i18n_t('board', 'shareBtn')}</button>
-                  <button onClick={() => { trackActivationEvent('referral_modal_opened', { hasCode: !!referralCode, isGuest: typeof currentUser === 'string' && currentUser.startsWith('guest_') }); setShowReferralModal(true); }} className="text-sm px-3 py-1.5 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 rounded-lg border border-yellow-500/30 transition-all">🎁 {i18n_t('board', 'inviteBtn')}</button>
-                  <button onClick={() => loadLeaderboard().then(setLeaderboard)} className="text-sm text-purple-400 hover:text-purple-300">↻</button>
-                </div>
-              </div>
-              
-              {leaderboard.length > 0 ? (() => {
-                // Leagues: show the user their own division, not a global top-20
-                // they can never place on. Ranks are positions within the TIER,
-                // so they stay honest when the window sits mid-tier.
-                const div = buildLeagueDivision(leaderboard, currentUser);
-                return (
-                <div className="space-y-2">
-                  <div className="rounded-xl p-4 mb-4" style={{ background: '#16181F', border: '1px solid #2A2E38' }}>
-                    <div className="flex items-center justify-between gap-3 flex-wrap">
-                      <div>
-                        <p className="text-lg font-bold" style={{ color: '#F2F0EA' }}>
-                          <span className="mr-2">{div.tier.icon}</span>{div.tier.name} {i18n_t('board', 'league')}
-                        </p>
-                        <p className="text-xs mt-0.5" style={{ color: '#8A8E99' }}>{div.tier.blurb}</p>
-                      </div>
-                      <div className="text-right">
-                        {div.myRank ? (
-                          <p className="text-sm font-bold" style={{ color: '#F2F0EA' }}>
-                            {i18n_t('board', 'yourPlace', { rank: div.myRank, total: div.tierSize })}
-                          </p>
-                        ) : (
-                          <p className="text-sm" style={{ color: '#8A8E99' }}>{i18n_t('board', 'notPlacedYet')}</p>
-                        )}
-                        {div.next && (
-                          <p className="text-xs mt-0.5" style={{ color: '#8A8E99' }}>
-                            {i18n_t('board', 'toNextTier', { xp: div.next.xpToGo.toLocaleString(), tier: div.next.tier.name })}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  {div.rows.map((entry) => {
-                    const isCurrentUser = currentUser && entry.username.toLowerCase() === String(currentUser).toLowerCase();
-                    const r = entry.rank;
-                    const rankColor = r === 1 ? 'text-yellow-400' : r === 2 ? 'text-gray-300' : r === 3 ? 'text-orange-400' : 'text-gray-500';
-                    const RankIcon = r === 1 ? Crown : r === 2 ? Medal : r === 3 ? Award : null;
-                    return (
-                      <div key={entry.username} className={`flex items-center gap-4 p-4 rounded-xl ${isCurrentUser ? 'bg-purple-500/20 border border-purple-500/50' : 'bg-gray-800/50'}`}>
-                        <div className={`w-10 h-10 flex items-center justify-center font-bold text-lg ${rankColor}`}>
-                          {RankIcon ? <RankIcon size={24} /> : `#${r}`}
-                        </div>
-                        <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center font-bold">
-                          {entry.username.charAt(0).toUpperCase()}
-                        </div>
-                        <div className="flex-1">
-                          <p className="font-bold">{entry.username} {isCurrentUser && <span className="text-purple-400 text-sm">(You)</span>}</p>
-                          <p className="text-xs text-gray-400">{(() => { const lvl = levels.reduce((acc, l) => entry.xp >= l.minXP ? l : acc, levels[0]); return `${lvl.icon || ''} ${lvl.name}`; })()}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-bold text-purple-400 flex items-center gap-1"><PixelCoin size={14} /> {entry.xp.toLocaleString()} XP</p>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-                );
-              })() : (
-                <div className="text-center py-12">
-                  <Crown className="mx-auto text-gray-600 mb-4" size={48} />
-                  <p className="text-gray-400">No players yet. Be the first!</p>
-                </div>
-              )}
-            </div>
-            
-            {/* Your Rank Card */}
-            {currentUser && (
-              <div className="bg-black/30 rounded-xl border border-purple-500/30 p-6">
-                <h3 className="font-bold mb-4">📊 Your Standing</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="bg-gray-800/50 p-4 rounded-lg text-center">
-                    <p className="text-3xl font-bold text-yellow-400">#{leaderboard.findIndex(e => e.username === currentUser) + 1 || '-'}</p>
-                    <p className="text-sm text-gray-400">Global Rank</p>
-                  </div>
-                  <div className="bg-gray-800/50 p-4 rounded-lg text-center">
-                    <p className="text-3xl font-bold text-purple-400">{xp}</p>
-                    <p className="text-sm text-gray-400">Total XP</p>
-                  </div>
-                  <div className="bg-gray-800/50 p-4 rounded-lg text-center">
-                    <p className="text-3xl font-bold text-green-400">{solvedChallenges.size}</p>
-                    <p className="text-sm text-gray-400">Challenges</p>
-                  </div>
-                  <div className="bg-gray-800/50 p-4 rounded-lg text-center">
-                    <p className="text-3xl font-bold text-blue-400">{queryCount}</p>
-                    <p className="text-sm text-gray-400">Total Queries</p>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
         
         {/* Skill Radar (Progress subtab) */}
         {activeTab === 'hero' && progressSubTab === 'skills' && (

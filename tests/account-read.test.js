@@ -38,8 +38,9 @@ describe('the database side', () => {
     expect(mig).toMatch(/where v\.username = p_username\s+limit 1;/);
     expect(mig).toContain('grant execute on function public.sq_load_account(text) to anon, authenticated;');
   });
-  it('the leaderboard view exposes the top 50 names, not the whole table', () => {
-    expect(mig).toMatch(/order by u\.data -> 'xp' desc nulls last\s+limit 50;/);
+  it('the leaderboard view is dropped with the board (2026-09-22)', () => {
+    const drop = fs.readFileSync(join(ROOT, 'supabase/migrations/20260922140000_drop_leaderboard_public.sql'), 'utf8');
+    expect(drop).toContain('drop view if exists public.leaderboard_public;');
   });
   it('step 2 revokes the view from anon, with a rollback beside it', () => {
     const off = fs.readFileSync(join(ROOT, 'supabase/manual/20260922b_users_public_anon_off.sql'), 'utf8');
