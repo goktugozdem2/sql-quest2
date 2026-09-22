@@ -15,6 +15,10 @@
 --   * anon cannot read or write the three new tables or call the check;
 --   * exactly one sq_save_user and one sq_load_account exist;
 --   * the rollback restores the old signatures and an old client still works.
+-- Then the gaps before the cut (20260924100000_session_token_gaps.sql,
+-- 2026-09-24): the "username taken" function, the carried plan checked
+-- against the guest's secret, the email reset ending sessions, logout's
+-- sq_end_session — and that migration's rollback and re-apply.
 --
 -- Run (from the repo root, against a throwaway local cluster):
 --   psql -v ON_ERROR_STOP=1 -h 127.0.0.1 -p <port> -U postgres -d postgres -f supabase/manual/account-session-tokens-replica-test.sql
@@ -224,5 +228,169 @@ do $$ begin
   perform public.sq_save_user(p_username => 'guest_old', p_data => '{"xp":6}'::jsonb, p_token => 'guest-old-secret');
 end $$;
 reset role;
+
+-- ══ the gaps before the cut (20260924100000_session_token_gaps.sql) ══
+-- Proves, as the roles that will call them:
+--   1. sq_username_registered answers "is this name taken" for anon with no
+--      token, and calls a guest row free (why the client reserves guest_*);
+--   2. a carried plan needs the guest's own secret: a match carries, no
+--      stored secret carries and records 'missing' against the guest, no
+--      p_carry_token carries (old client) and records 'missing', a WRONG
+--      secret does not carry and records 'invalid'; an old client's call
+--      shapes still resolve; exactly one sq_save_user;
+--   3. an email reset ends every session of the reset account, and only its;
+--   4. sq_end_session ends the one row matching username AND token, and
+--      nothing without the token;
+--   and the rollback puts back the seven-argument save and drops sq_end_session.
+
+\ir ../migrations/20260924100000_session_token_gaps.sql
+
+do $$ begin
+  if (select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+       where n.nspname = 'public' and p.proname = 'sq_save_user') <> 1 then raise exception 'gaps: more than one sq_save_user'; end if;
+end $$;
+
+-- fixtures, as the service role would leave them
+delete from public.session_token_misses;
+insert into public.users (username, password_hash, salt, email, data) values
+  ('bob', repeat('b', 64), 'saltbob123', 'bob@example.com', '{"xp":50,"solvedChallenges":[1]}'),
+  ('guest_paid', '', '', null, '{"xp":9,"proStatus":true,"proType":"annual","proExpiry":"2027-09-24","stripeCustomerId":"cus_g"}'),
+  ('guest_paid2', '', '', null, '{"xp":9,"proStatus":true,"proType":"monthly"}'),
+  ('guest_paid_nosecret', '', '', null, '{"xp":9,"proStatus":true,"proType":"monthly"}'),
+  ('guest_free', '', '', null, '{"xp":9,"proStatus":false}');
+insert into public.guest_secrets (username, secret_hash) values
+  ('guest_paid', encode(sha256(convert_to('paid-guest-secret', 'UTF8')), 'hex')),
+  ('guest_paid2', encode(sha256(convert_to('paid2-guest-secret', 'UTF8')), 'hex')),
+  ('guest_free', encode(sha256(convert_to('free-guest-secret', 'UTF8')), 'hex'));
+delete from public.account_sessions;
+insert into public.account_sessions (username, token_hash) values
+  ('alice', encode(sha256(convert_to('alice-t1', 'UTF8')), 'hex')),
+  ('alice', encode(sha256(convert_to('alice-t2', 'UTF8')), 'hex')),
+  ('alice', encode(sha256(convert_to('alice-t3', 'UTF8')), 'hex')),
+  ('bob',   encode(sha256(convert_to('bob-t1', 'UTF8')), 'hex'));
+
+set role anon;
+do $$
+declare d jsonb;
+begin
+  -- ── gap 1 ──
+  if public.sq_username_registered('alice') is not true then raise exception 'gap1: alice not registered'; end if;
+  if public.sq_username_registered(' Alice ') is not true then raise exception 'gap1: not normalised'; end if;
+  if public.sq_username_registered('nobody_here') is not false then raise exception 'gap1: invented name taken'; end if;
+  if public.sq_username_registered('guest_paid') is not false then raise exception 'gap1: guest rows are expected to read free'; end if;
+
+  -- ── gap 2 ──
+  -- the owner's secret: carried
+  perform public.sq_save_user(p_username => 'carol_ok', p_data => '{"xp":0}'::jsonb, p_password_hash => repeat('c', 64), p_salt => 'saltcarol1',
+                              p_carry_pro_from => 'guest_paid', p_carry_token => 'paid-guest-secret');
+  -- a stranger's secret: not carried
+  perform public.sq_save_user(p_username => 'carol_wrong', p_data => '{"xp":0,"proStatus":true,"proType":"annual"}'::jsonb, p_password_hash => repeat('c', 64), p_salt => 'saltcarol2',
+                              p_carry_pro_from => 'guest_paid', p_carry_token => 'not-the-secret');
+  -- an old client (no p_carry_token, 20260923 shape by name): still carried
+  perform public.sq_save_user(p_username => 'carol_old', p_data => '{"xp":0}'::jsonb, p_password_hash => repeat('c', 64), p_salt => 'saltcarol3',
+                              p_carry_pro_from => 'guest_paid2', p_token => null);
+  -- a guest that never stored a secret: carried, recorded
+  perform public.sq_save_user(p_username => 'carol_tofu', p_data => '{"xp":0}'::jsonb, p_password_hash => repeat('c', 64), p_salt => 'saltcarol4',
+                              p_carry_pro_from => 'guest_paid_nosecret', p_carry_token => 'whatever-it-holds');
+  -- an unpaid guest, the right secret: nothing to carry, nothing recorded
+  perform public.sq_save_user(p_username => 'carol_free', p_data => '{"xp":0}'::jsonb, p_password_hash => repeat('c', 64), p_salt => 'saltcarol5',
+                              p_carry_pro_from => 'guest_free', p_carry_token => 'wrong-for-free');
+  -- an invented guest: nothing recorded
+  perform public.sq_save_user(p_username => 'carol_ghost', p_data => '{"xp":0}'::jsonb, p_password_hash => repeat('c', 64), p_salt => 'saltcarol6',
+                              p_carry_pro_from => 'guest_does_not_exist', p_carry_token => 'x');
+  -- the old positional six- and seven-argument calls still resolve
+  perform public.sq_save_user('dave6', '{"xp":0}'::jsonb, '', '', null, null);
+  perform public.sq_save_user('dave7', '{"xp":0}'::jsonb, '', '', null, null, null);
+  perform public.sq_save_user('bob', '{"xp":60,"solvedChallenges":[1]}'::jsonb, '', '', null, null, 'bob-t1', null);
+
+  -- ── gap 4 ──
+  perform public.sq_end_session('alice', 'not-a-token');     -- wrong token: nothing
+  perform public.sq_end_session('bob', 'alice-t1');          -- right token, wrong name: nothing
+  perform public.sq_end_session('alice', null);              -- no token: nothing
+  perform public.sq_end_session('alice', '');                -- empty token: nothing
+  perform public.sq_end_session('alice', 'alice-t1');        -- the one row
+  perform public.sq_end_session('alice', 'alice-t1');        -- twice: harmless
+
+  -- anon still cannot reach the tables, or the reset
+  begin perform 1 from public.account_sessions; raise exception 'gaps: anon can read account_sessions';
+  exception when insufficient_privilege then null; end;
+  begin perform public.sq_set_password_for_session_email('saltsalt99', repeat('e', 64)); raise exception 'gaps: anon can reset';
+  exception when insufficient_privilege then null; end;
+end $$;
+reset role;
+
+do $$
+declare d jsonb;
+begin
+  select data into d from public.users where username = 'carol_ok';
+  if d->>'proStatus' <> 'true' or d->>'proType' <> 'annual' or d->>'stripeCustomerId' <> 'cus_g' then raise exception 'gap2: owner carry lost: %', d; end if;
+  select data into d from public.users where username = 'carol_wrong';
+  if d->>'proStatus' <> 'false' or d ? 'stripeCustomerId' or d->'proType' <> 'null'::jsonb then raise exception 'gap2: a wrong secret carried Pro: %', d; end if;
+  if not exists (select 1 from public.users where username = 'carol_wrong') then raise exception 'gap2: a wrong secret refused the account itself'; end if;
+  select data into d from public.users where username = 'carol_old';
+  if d->>'proStatus' <> 'true' or d->>'proType' <> 'monthly' then raise exception 'gap2: old client carry lost: %', d; end if;
+  select data into d from public.users where username = 'carol_tofu';
+  if d->>'proStatus' <> 'true' then raise exception 'gap2: no-secret guest carry lost: %', d; end if;
+  select data into d from public.users where username = 'carol_free';
+  if d->>'proStatus' <> 'false' then raise exception 'gap2: unpaid guest carried: %', d; end if;
+
+  if (select kind from public.session_token_misses where username = 'guest_paid') <> 'invalid' then raise exception 'gap2: wrong secret not recorded invalid'; end if;
+  if (select kind from public.session_token_misses where username = 'guest_paid2') <> 'missing' then raise exception 'gap2: old client not recorded missing'; end if;
+  if (select kind from public.session_token_misses where username = 'guest_paid_nosecret') <> 'missing' then raise exception 'gap2: no-secret guest not recorded missing'; end if;
+  if exists (select 1 from public.session_token_misses where username in ('guest_free', 'guest_does_not_exist', 'carol_ok', 'carol_wrong', 'bob')) then
+    raise exception 'gap2: a miss recorded where none belongs';
+  end if;
+  if exists (select 1 from public.guest_secrets where username = 'guest_paid_nosecret') then raise exception 'gap2: a carry claimed a guest'; end if;
+  if (select (data->>'xp')::int from public.users where username = 'bob') <> 60 then raise exception 'gap2: eight-arg positional save lost'; end if;
+
+  if exists (select 1 from public.account_sessions where token_hash = encode(sha256(convert_to('alice-t1', 'UTF8')), 'hex')) then raise exception 'gap4: logout did not end the row'; end if;
+  if (select count(*) from public.account_sessions where username = 'alice') <> 2 then raise exception 'gap4: logout ended more than its own row'; end if;
+  if (select count(*) from public.account_sessions where username = 'bob') <> 1 then raise exception 'gap4: another account touched'; end if;
+end $$;
+
+-- ── gap 3: an email reset, as the recovery session would call it ──
+set role authenticated;
+select set_config('request.jwt.claims', '{"email":"alice@example.com"}', false);
+do $$ begin
+  if public.sq_set_password_for_session_email('saltreset1', repeat('f', 64)) <> 'alice' then raise exception 'gap3: reset did not answer alice'; end if;
+end $$;
+select set_config('request.jwt.claims', '', false);
+reset role;
+do $$ begin
+  if exists (select 1 from public.account_sessions where username = 'alice') then raise exception 'gap3: reset left alice sessions'; end if;
+  if (select count(*) from public.account_sessions where username = 'bob') <> 1 then raise exception 'gap3: reset ended another account'; end if;
+  if (select password_hash from public.users where username = 'alice') <> repeat('f', 64) then raise exception 'gap3: reset did not write the hash'; end if;
+end $$;
+
+-- ── rollback of the gaps ──
+\ir 20260924_session_token_gaps_rollback.sql
+
+do $$ begin
+  if (select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+       where n.nspname = 'public' and p.proname = 'sq_save_user') <> 1 then raise exception 'gaps rollback: more than one sq_save_user'; end if;
+  if exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+       where n.nspname = 'public' and p.proname = 'sq_end_session') then raise exception 'gaps rollback: sq_end_session left'; end if;
+end $$;
+set role anon;
+do $$ begin
+  perform public.sq_save_user(p_username => 'bob', p_data => '{"xp":61,"solvedChallenges":[1]}'::jsonb, p_token => 'bob-t1');
+  begin
+    perform public.sq_save_user(p_username => 'bob', p_data => '{"xp":62,"solvedChallenges":[1]}'::jsonb, p_carry_token => 'x');
+    raise exception 'gaps rollback left p_carry_token';
+  exception when undefined_function then null;
+  end;
+end $$;
+reset role;
+
+-- ── and forward again ──
+\ir ../migrations/20260924100000_session_token_gaps.sql
+set role anon;
+do $$ begin
+  perform public.sq_end_session('bob', 'bob-t1');
+end $$;
+reset role;
+do $$ begin
+  if exists (select 1 from public.account_sessions where username = 'bob') then raise exception 'gaps forward-again: sq_end_session broken'; end if;
+end $$;
 
 select 'account session tokens replica test: all assertions passed' as result;

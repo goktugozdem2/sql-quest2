@@ -1,6 +1,6 @@
 import { roundDownCount, companySetCount } from './utils/display-count.js';
 import { withLocalAccountKeys as withLocalAccountKeysPure, isMissingServerSide, accountFunctionStatus } from './utils/account-access.js';
-import { tokenForUsername, writeSessionToken, clearSessionToken, ensureGuestSecret, clearGuestSecret, withToken, rpcBodyFallbacks } from './utils/session-token.js';
+import { tokenForUsername, writeSessionToken, clearSessionToken, ensureGuestSecret, clearGuestSecret, withToken, withCarry, endSessionBody, isGuestUsername, rpcBodyFallbacks } from './utils/session-token.js';
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 // Re-expose on window for legacy inline handlers / computed renders that
 // still reference `React.createElement(...)` or `React.useRef(...)` without
@@ -2782,6 +2782,34 @@ const isUsernameRegistered = async (username) => {
   }
 };
 
+// Logout ends the session on the server (2026-09-24, gap 4 of the
+// session-token cut). Until now logout cleared the token only in this
+// browser; the account_sessions row lived on until a password change, so a
+// copy of the token taken before logout kept working. rpc/sq_end_session
+// deletes the one row matching BOTH the username and the token's hash.
+// Best-effort by design: fire-and-forget with keepalive (the page may go
+// away), every failure swallowed — a 404 from a server before 20260924100000,
+// a network error, anything. Logout must never wait on it or fail because of
+// it. Read the token BEFORE clearSessionToken removes it.
+const endServerSession = (username) => {
+  try {
+    if (!isSupabaseConfigured()) return;
+    const body = endSessionBody(typeof localStorage !== 'undefined' ? localStorage : null, username);
+    if (!body) return;
+    fetch(`${window.SUPABASE_URL}/rest/v1/rpc/sq_end_session`, {
+      method: 'POST',
+      keepalive: true,
+      headers: {
+        'apikey': window.SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${window.SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal',
+      },
+      body: JSON.stringify(body),
+    }).catch(() => {});
+  } catch (_) { /* best-effort */ }
+};
+
 // POST to an account edge function. status: ok | invalid | locked | unavailable.
 const callAccountFunction = async (name, body) => {
   try {
@@ -2857,6 +2885,10 @@ const _flushCloudSave = async (username, data, carryProFrom = null) => {
     // p_token (2026-09-23): this row's session token or guest secret, when the
     // browser holds one for this username. Same 404 rule: withTokenFallback
     // drops p_token, then p_carry_pro_from, before the table path runs.
+    // p_carry_token (2026-09-24): the carried guest's own secret, so the
+    // server can tell the guest's owner from anyone who knows a paid guest's
+    // name (withCarry; migration 20260924100000). A server before that
+    // migration answers 404 and withTokenFallback drops it first.
     const rpcBody = {
       p_username: username,
       p_data: data,
@@ -2864,9 +2896,11 @@ const _flushCloudSave = async (username, data, carryProFrom = null) => {
       p_salt: cloudData.salt,
       p_email: cloudData.email,
     };
+    let carryStorage = null;
+    try { carryStorage = typeof localStorage !== 'undefined' ? localStorage : null; } catch (_) { carryStorage = null; }
     try {
       await withTokenFallback('rpc/sq_save_user', withToken(
-        carryProFrom ? { ...rpcBody, p_carry_pro_from: carryProFrom } : rpcBody,
+        carryProFrom ? withCarry(rpcBody, carryProFrom, carryStorage) : rpcBody,
         sessionTokenFor(username),
       ));
     } catch (err) {
@@ -19573,9 +19607,31 @@ CRITICAL RULES:
         return;
       }
 
-      // Check if username already exists
-      const existingUser = await loadUserData(regUsername);
-      if (existingUser) {
+      // "Username taken" (2026-09-24, gap 1 of the session-token cut). This
+      // read the row through loadUserData → rpc/sq_load_account, with no
+      // token (nobody holds one for a name they are about to register). Once
+      // the cut makes sq_load_account refuse a missing token it would answer
+      // nothing for every name, and a taken name would sail through into
+      // sq_save_user. rpc/sq_username_registered answers the question itself,
+      // needs no token and returns only a boolean — the same call the guest
+      // conversion form already makes. guest_* is reserved: a guest row has
+      // no password, so sq_username_registered calls it free, and registering
+      // one would write over that guest's cloud row.
+      if (isGuestUsername(regUsername)) {
+        setAuthError('Usernames starting with guest_ are reserved. Please choose another.');
+        return;
+      }
+      let usernameTaken = false;
+      try {
+        usernameTaken = isSupabaseConfigured()
+          ? await isUsernameRegistered(regUsername)
+          : !!(await loadUserData(regUsername));
+      } catch (err) {
+        console.error('Username check failed:', err);
+        setAuthError('Could not check that username. Please check your connection and try again.');
+        return;
+      }
+      if (usernameTaken) {
         setAuthError('Username already exists');
         return;
       }
@@ -19821,8 +19877,10 @@ CRITICAL RULES:
 
   const handleLogout = () => {
     // Session tokens (2026-09-23): the next person on this browser must not
-    // inherit this account's token. The server-side row stays until a password
-    // change; a stolen copy of a cleared token is a step-4 concern.
+    // inherit this account's token. 2026-09-24: the server row ends too
+    // (endServerSession → rpc/sq_end_session, fire-and-forget), read before
+    // the local copy is cleared.
+    endServerSession(currentUser);
     try { clearSessionToken(localStorage, currentUser); } catch (_) {}
     setCurrentUser(null);
     setShowAuth(true);
@@ -27365,6 +27423,13 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                 return;
               }
 
+              // guest_* is reserved (2026-09-24): sq_username_registered calls
+              // a guest row free (no password), and taking the name would
+              // write over that guest's cloud row.
+              if (isGuestUsername(username)) {
+                setAuthError('Usernames starting with guest_ are reserved. Please choose another.');
+                return;
+              }
               // Check if username exists
               const existing = isSupabaseConfigured()
                 ? await isUsernameRegistered(username)

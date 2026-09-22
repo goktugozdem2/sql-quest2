@@ -8,6 +8,7 @@ import {
   readSessionToken, writeSessionToken, clearSessionToken,
   readGuestSecret, clearGuestSecret, ensureGuestSecret,
   tokenForUsername, withToken, rpcBodyFallbacks,
+  withCarry, endSessionBody,
 } from '../src/utils/session-token.js';
 import { GUEST_USER_KEY } from '../src/utils/progress-merge.js';
 
@@ -157,5 +158,62 @@ describe('rpc bodies', () => {
     expect(rpcBodyFallbacks(b)).toEqual([b]);
     expect(rpcBodyFallbacks({ p_username: 'a', p_token: 't' })).toEqual([{ p_username: 'a', p_token: 't' }, { p_username: 'a' }]);
     expect(rpcBodyFallbacks({ p_username: 'a', p_carry_pro_from: 'g' })).toEqual([{ p_username: 'a', p_carry_pro_from: 'g' }, { p_username: 'a' }]);
+  });
+});
+
+// ── The gaps before the cut (2026-09-24) ──
+describe('withCarry — a carried plan carries the guest\'s own secret', () => {
+  const body = { p_username: 'newbie', p_data: {} };
+  it('sends the secret this browser holds for THAT guest', () => {
+    const s = memStorage({ [GUEST_SECRET_KEY]: JSON.stringify({ username: 'guest_1', token: 'sec1' }) });
+    expect(withCarry(body, 'guest_1', s)).toEqual({ ...body, p_carry_pro_from: 'guest_1', p_carry_token: 'sec1' });
+  });
+  it('a secret kept for another guest is never sent; none held means none sent', () => {
+    const s = memStorage({ [GUEST_SECRET_KEY]: JSON.stringify({ username: 'guest_2', token: 'sec2' }) });
+    expect(withCarry(body, 'guest_1', s)).toEqual({ ...body, p_carry_pro_from: 'guest_1' });
+    expect(withCarry(body, 'guest_1', memStorage())).toEqual({ ...body, p_carry_pro_from: 'guest_1' });
+    expect(withCarry(body, 'guest_1', throwing)).toEqual({ ...body, p_carry_pro_from: 'guest_1' });
+    expect(withCarry(body, 'guest_1', null)).toEqual({ ...body, p_carry_pro_from: 'guest_1' });
+  });
+  it('never mints a secret, even for the current guest', () => {
+    const s = memStorage({ [CURRENT_GUEST_KEY]: 'guest_1' });
+    withCarry(body, 'guest_1', s);
+    expect(s._m.has(GUEST_SECRET_KEY)).toBe(false);
+  });
+  it('carries only from a guest_ name', () => {
+    expect(withCarry(body, 'alice', memStorage())).toBe(body);
+    expect(withCarry(body, null, memStorage())).toBe(body);
+  });
+  it('an old server sheds p_carry_token first, then p_token, then p_carry_pro_from', () => {
+    const full = { ...body, p_carry_pro_from: 'guest_1', p_carry_token: 'sec1', p_token: 't' };
+    expect(rpcBodyFallbacks(full)).toEqual([
+      full,
+      { ...body, p_carry_pro_from: 'guest_1', p_token: 't' },
+      { ...body, p_carry_pro_from: 'guest_1' },
+      body,
+    ]);
+    // a brand-new account holds no token of its own
+    expect(rpcBodyFallbacks({ ...body, p_carry_pro_from: 'guest_1', p_carry_token: 'sec1' })).toEqual([
+      { ...body, p_carry_pro_from: 'guest_1', p_carry_token: 'sec1' },
+      { ...body, p_carry_pro_from: 'guest_1' },
+      body,
+    ]);
+  });
+});
+
+describe('endSessionBody — what logout sends to sq_end_session', () => {
+  it('the username with ITS token', () => {
+    const s = memStorage({ [SESSION_TOKEN_KEY]: JSON.stringify({ username: 'alice', token: 'tok' }) });
+    expect(endSessionBody(s, 'alice')).toEqual({ p_username: 'alice', p_token: 'tok' });
+  });
+  it('nothing for a guest, another account\'s token, no token, or no storage', () => {
+    const s = memStorage({ [SESSION_TOKEN_KEY]: JSON.stringify({ username: 'bob', token: 'tok' }) });
+    expect(endSessionBody(s, 'alice')).toBeNull();
+    expect(endSessionBody(memStorage(), 'alice')).toBeNull();
+    expect(endSessionBody(throwing, 'alice')).toBeNull();
+    expect(endSessionBody(null, 'alice')).toBeNull();
+    expect(endSessionBody(s, null)).toBeNull();
+    const g = memStorage({ [SESSION_TOKEN_KEY]: JSON.stringify({ username: 'guest_1', token: 'tok' }) });
+    expect(endSessionBody(g, 'guest_1')).toBeNull();
   });
 });
