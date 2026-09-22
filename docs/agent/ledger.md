@@ -27,6 +27,40 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### the first screen is a challenge, not a quiz
+
+- **Claimed** 2026-09-23 · **Flips** from docs/agent/flag-queue.md (row 2,
+  after `diagnosisHints`), by the founder's merge · **Read** flip + 21 days.
+- **Change** behind `firstScreenChallenge` (off): a first-run visitor on the
+  Learning Path start screen — no deep link, no level chosen, no intake or
+  lesson on screen — is assigned an arm by a hash of their aid, once
+  (`first_screen_assigned {arm, test: 'first_screen_v1'}`, sticky in
+  `localStorage.sqlquest_first_screen_v1`). Arm `quiz`: today's four-question
+  "Find your SQL starting point". Arm `challenge`: straight into challenge 91
+  in the editor, the zero-SQL lesson skipped — the door the quiz's "Start from
+  zero" already opens. `src/utils/first-screen.js`, tests/first-screen.test.js;
+  preview-verified both arms, flag off and a `?challenge=` deep link.
+- **Why** measured 2026-09-23 over first opens 08-24 → 09-20: 646 of 1,533
+  people (42%) never opened a challenge. 406 of them saw the quiz screen in
+  their first minute; 15 finished it. Mobile never-open 64% (n 140), desktop
+  40% (n 1,323). No other flag in the queue reaches these people.
+- **Metric** `first_screen_split` (docs/agent/metrics.md): `first_solve_10m`
+  by arm, among people assigned within two minutes of their first
+  `app_opened`. Secondary: opened-a-challenge-in-10-minutes by arm, split by
+  device.
+- **Target** challenge arm ≥ quiz arm + 5 points on first_solve_10m at
+  n ≥ 300 per arm.
+- **Falsification, stated in advance:** challenge arm flat or lower at n ≥ 300
+  per arm → the quiz was not the wall; keep the quiz, and the next question
+  is load and first paint (86% of never-openers left within 30 s by their
+  event trail). Challenge arm up but `pct_ever_solved` down (a forced first
+  challenge that people fail and leave) → revert. n < 300 per arm at the read
+  → extend by 14 days, change nothing.
+- **Confounds** `diagnosisHints` (row 1) is live by then for both arms alike —
+  randomised, so it shifts both; the cold-start dialog stays as it is.
+  Localhost preview rows (2026-09-23) carry arms too: exclude localhost aids.
+- **Verdict** _pending_
+
 ### interview-first: the plan is the product for people with a date
 
 - **Claimed** 2026-09-17 · **Flips** 2026-09-21 by the scheduled task that

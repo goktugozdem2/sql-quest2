@@ -35,6 +35,7 @@ import { interviewStatusModel, STATUS_CHECK_FRESH_DAYS } from './utils/interview
 import { mergeProgress, hasProgress, isResumableGuest, GUEST_USER_KEY } from './utils/progress-merge.js';
 import { companySetMatch } from './utils/company-set-match.js';
 import { buildPracticePlan, PLAN_MIN_SOLVES_FOR_SKILLS } from './utils/practice-plan.js';
+import { FIRST_SCREEN_STORAGE_KEY, firstScreenDecision } from './utils/first-screen.js';
 import { INTAKE_KEY, INTAKE_GOALS, INTAKE_ROLES, INTAKE_STEPS, INTAKE_COMPANIES, INTAKE_LEVELS, intakeStepsFor, intakeGoalFor, intakeGoalForIntent, nextIntakeStep, isIntakeStepRequired, isIntakeLevel, isValidIntakeDate, buildIntakeRecord, isIntakeComplete, readIntakeRecord, intakeEventPayload, newCoachGoalState, shouldShowIntake } from './utils/onboarding-intake.js';
 import { PLACEMENT_TIERS, placementResult, placementEventPayload, readFirstRunPlacement, seedFloorsFor, seedFloorsFromReadiness, levelForReadiness, placementFromReadiness } from './utils/placement.js';
 import { QUESTIONS as READINESS_QUESTIONS, READINESS_SKILLS, READINESS_RECORD_KEY, companySkillWeights, scoreReadiness, summarizeScores, weakestSkills, readinessRecordFrom, readReadinessRecord } from './data/readiness-questions.js';
@@ -23241,7 +23242,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
       localStorage.setItem(FIRST_RUN_LEVEL_KEY, normalizedLevel);
       localStorage.setItem(FIRST_RUN_TRACK_KEY, track.trackId);
     } catch (_) { /* ignore */ }
-    suppressLegacyOnboardingForPlacement(normalizedLevel, { source: 'first_run_manual_or_recommendation' });
+    suppressLegacyOnboardingForPlacement(normalizedLevel, { source: options.source || 'first_run_manual_or_recommendation' });
     if (normalizedLevel === 'brand-new' && !options.skipLesson) {
       setShowZeroSqlLesson(true);
       setActiveTab('guide');
@@ -23255,6 +23256,39 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     setPracticeSubTab('challenges');
     openChallenge(starter);
   };
+
+  // The first screen test (src/utils/first-screen.js, flag
+  // `firstScreenChallenge`, ledger "the first screen is a challenge, not a
+  // quiz"). On the first-run start screen — nothing else on it, no level
+  // chosen, no deep link waiting to open — a visitor is assigned an arm once
+  // (`first_screen_assigned`); the challenge arm goes straight into challenge
+  // 91 with the zero-SQL lesson skipped, the quiz arm sees today's screen.
+  const firstScreenDoneRef = useRef(false);
+  useEffect(() => {
+    if (firstScreenDoneRef.current || !currentUser) return;
+    let stored = null;
+    try { stored = JSON.parse(localStorage.getItem(FIRST_SCREEN_STORAGE_KEY) || 'null'); } catch (_) { stored = null; }
+    let deepLink = false;
+    try {
+      const q = new URLSearchParams(window.location.search);
+      deepLink = ['challenge', 'lesson', 'mock', 'interview', 'goal', 'outcome'].some(k => q.has(k)) || q.get('pro') === '1';
+    } catch (_) { /* ignore */ }
+    const decision = firstScreenDecision({
+      flagOn: !!window.FF?.feature('firstScreenChallenge'),
+      onStartScreen: showFirstRunStart && !deepLink,
+      showingOtherStep: showZeroSqlLesson || showIntake || showGoalMeasureOnStart,
+      levelChosen: !!firstRunLevel,
+      stored,
+      aid: getAnonId(),
+    });
+    if (!decision.arm) return;
+    firstScreenDoneRef.current = true;
+    if (decision.assign) {
+      try { localStorage.setItem(FIRST_SCREEN_STORAGE_KEY, JSON.stringify({ arm: decision.arm, at: Date.now() })); } catch (_) { /* ignore */ }
+      trackActivationEvent('first_screen_assigned', { arm: decision.arm, test: 'first_screen_v1' });
+    }
+    if (decision.act) startFirstRunPath('zero', 'brand-new', { skipLesson: true, source: 'first_screen_test' });
+  }, [currentUser, showFirstRunStart, showZeroSqlLesson, showIntake, showGoalMeasureOnStart, firstRunLevel]);
 
   // Recompute Expected Output when db finishes loading AFTER a challenge was
   // opened. Otherwise a guest who lands on a challenge while sql.js is still

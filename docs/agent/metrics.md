@@ -845,6 +845,42 @@ are 88% of new people; the card is read through `practice_next_day`.
 Not yet confounded: as of 2026-09-22 `onboardingIntake`, `interviewFirst`,
 `goalMeasure`, `freeQuota` and `deadlineOffer` are all still off.
 
+## `first_screen_split`
+
+The first screen test (2026-09-23, ledger "the first screen is a challenge,
+not a quiz"). People assigned an arm (`first_screen_assigned`) within two
+minutes of their first `app_opened`, by arm: share with a `challenge_solved`
+within 10 minutes of that first open (the `first_solve_10m` definition), and
+share with a `challenge_opened` within 10 minutes. People by aid, internal
+accounts excluded, and exclude aids whose events carry a localhost origin
+(preview checks on 2026-09-23 wrote real rows).
+
+```sql
+with ev as (
+  select coalesce(((metadata #>> '{}')::jsonb)->>'aid', username) pid, event, created_at, (metadata #>> '{}')::jsonb m
+  from pro_events
+  where username !~* '^(test|qa_|fabletest|linktest|internalroutine|sqlquest$)'
+    and created_at >= :flip
+),
+first_open as (select pid, min(created_at) t0 from ev where event = 'app_opened' group by pid),
+assigned as (select distinct on (pid) pid, m->>'arm' arm, created_at ta from ev where event = 'first_screen_assigned' order by pid, created_at),
+cohort as (select a.pid, a.arm, f.t0 from assigned a join first_open f using (pid) where a.ta <= f.t0 + interval '2 minutes'),
+per as (
+  select c.pid, c.arm, c.t0,
+    min(e.created_at) filter (where e.event = 'challenge_opened') first_ch,
+    min(e.created_at) filter (where e.event = 'challenge_solved') first_solve
+  from cohort c left join ev e on e.pid = c.pid group by 1, 2, 3
+)
+select arm, count(*) people,
+  round(100.0*avg(coalesce(first_solve <= t0 + interval '10 minutes', false)::int), 1) pct_solve_10m,
+  round(100.0*avg(coalesce(first_ch <= t0 + interval '10 minutes', false)::int), 1) pct_open_10m,
+  round(100.0*avg((first_solve is not null)::int), 1) pct_ever_solved
+from per group by arm;
+```
+
+Baseline (no test, quiz for everyone), first opens 08-24 → 09-20:
+first_solve_10m 12.4%, opened a challenge within 10 minutes 54.7%.
+
 ## `practice_next_day`
 
 Of registered solvers who solved at least one challenge on app-day D, the

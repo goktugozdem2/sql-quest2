@@ -369,6 +369,14 @@ window.FEATURE_FLAGS = {
     // The new `row_set` diagnosis kind (right count, wrong rows) is live
     // either way — it is a truer report, not a different surface.
     diagnosisHints: false,
+    // The first screen test (2026-09-23, src/utils/first-screen.js): half of
+    // first-run visitors land in challenge 91's editor instead of the
+    // four-question placement quiz (42% of first visitors never opened a
+    // challenge, 08-24 → 09-20; 15 of the 406 who saw the quiz in their first
+    // minute finished it). Split by aid hash, sticky; `first_screen_assigned`.
+    // Flips from docs/agent/flag-queue.md. Ledger: "the first screen is a
+    // challenge, not a quiz"; metric `first_screen_split`.
+    firstScreenChallenge: false,
     // The inline tutor's ladder: request 1 names the defect in THEIR query,
     // 2 gives the exact clause, 3+ the full corrected query; asking for the
     // answer outright bypasses the ladder. Off, the tutor never reveals the
