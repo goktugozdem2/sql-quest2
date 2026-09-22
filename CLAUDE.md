@@ -654,8 +654,10 @@ URLs filled, brand icon is the bolt, brand colour #FFE34D.
   `p_token` (account token from account-login, guest secret minted in the
   browser; `src/utils/session-token.js`) and RECORD a missing/invalid one in
   `session_token_misses` — they refuse nothing yet. Watch that table fall;
-  the cut (step 4) needs the founder's go and the four gaps listed in
-  docs/plans/account-session-tokens-2026-09-22.md closed first. **Writes** through
+  the cut (step 4) needs the founder's go; the four gaps it needed closed
+  2026-09-23 (migration 20260924100000: username-taken check via
+  `sq_username_registered`, Pro carried only with the guest's secret
+  (`p_carry_token`), reset ends sessions, logout calls `sq_end_session`). **Writes** through
   `rpc/sq_save_user`, which keeps an existing row's own credential, email and
   payment-id fields; **sign-in** and **password change** run in the
   `account-login` / `account-password` edge functions (service role, failure
