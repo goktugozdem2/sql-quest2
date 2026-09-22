@@ -125,10 +125,11 @@ describe('server-owned plan fields (2026-09-14)', () => {
     expect((app.match(/carryProFrom: /g) || []).length).toBeGreaterThanOrEqual(2);
     // Since 2026-09-23 the retry is rpcBodyFallbacks (p_token, then
     // p_carry_pro_from) inside withTokenFallback; tests/session-token.test.js
-    // pins the order.
+    // pins the order. Since 2026-09-24 withCarry adds p_carry_pro_from (and
+    // the guest's secret as p_carry_token) — pinned in session-token.test.js.
     const at = app.indexOf('const _flushCloudSave');
-    const block = app.slice(at, at + 3500);
-    expect(block).toMatch(/carryProFrom \? \{ \.\.\.rpcBody, p_carry_pro_from: carryProFrom \} : rpcBody/);
+    const block = app.slice(at, at + 4000);
+    expect(block).toMatch(/carryProFrom \? withCarry\(rpcBody, carryProFrom, carryStorage\) : rpcBody/);
     expect(block).toMatch(/withTokenFallback\('rpc\/sq_save_user'/);
     const helper = app.slice(app.indexOf('const withTokenFallback = async'), app.indexOf('const sessionTokenFor = '));
     expect(helper).toMatch(/for \(const b of rpcBodyFallbacks\(body\)\)/);
@@ -260,5 +261,146 @@ describe('session tokens (2026-09-23)', () => {
     expect(mint).toBeGreaterThan(0);
     expect(block.indexOf('saveUserData(sessionUsername, {')).toBeGreaterThan(mint);
     expect(block).toMatch(/ensureGuestSecret\(localStorage, resumeGuest, window\.crypto\)/);
+  });
+});
+
+// ── The gaps before the cut (2026-09-24) ──
+// docs/plans/account-session-tokens-2026-09-22.md, Status. Four holes the
+// step-4 cut would open or leave open; the SQL behaviour is proved by
+// supabase/manual/account-session-tokens-replica-test.sql on a local Postgres.
+describe('session-token gaps (2026-09-24)', () => {
+  const tok = fs.readFileSync(path.join(ROOT, 'supabase/migrations/20260923100000_account_session_tokens.sql'), 'utf8');
+  const gaps = fs.readFileSync(path.join(ROOT, 'supabase/migrations/20260924100000_session_token_gaps.sql'), 'utf8');
+  const rollback = fs.readFileSync(path.join(ROOT, 'supabase/manual/20260924_session_token_gaps_rollback.sql'), 'utf8');
+  const replica = fs.readFileSync(path.join(ROOT, 'supabase/manual/account-session-tokens-replica-test.sql'), 'utf8');
+  // One function's text, from its create to its closing dollar quote.
+  const fnOf = (src, name = 'sq_save_user') => {
+    const at = src.indexOf(`create or replace function public.${name}(`);
+    expect(at, name).toBeGreaterThan(-1);
+    const quote = src.slice(at).match(/\nas (\$\w*\$)/)[1];
+    return src.slice(at, src.indexOf(quote + ';', at));
+  };
+
+  it('sq_save_user is the 20260923100000 body, byte for byte, plus the marked carry check', () => {
+    const before = fnOf(tok);
+    let after = fnOf(gaps);
+    after = after.replace(',\n  p_carry_token text default null::text\n)', '\n)');
+    after = after.replace('\n  v_carry text; -- session tokens (2026-09-24)', '');
+    after = after.replace(/\n {6}-- ── session tokens \(2026-09-24\): the carried plan proves the guest ──\n[\s\S]*?\n {6}-- ── end session tokens \(2026-09-24\) ──/, '');
+    expect(after).toBe(before);
+    expect(fnOf(gaps)).not.toBe(before);
+  });
+
+  it('keeps the regression guard, the step-1 token check and every server-owned field', () => {
+    const fn = fnOf(gaps);
+    expect(fn).toContain("raise exception 'regression refused: solved % -> %, xp % -> %'");
+    expect(fn).toContain('old_solved >= 3 and new_solved < old_solved * 0.8');
+    expect(fn).toContain('old_xp >= 100 and new_xp < old_xp * 0.8');
+    expect(fn).toContain('perform public.sq_session_token_check(p_username, p_token, true);');
+    for (const k of ['unsubToken', 'stripeCustomerId', 'stripeSessionId', 'proStatus', 'proType', 'proExpiry', 'proAutoRenew', 'proGrantReason', 'emailOptOut', 'trialReminder_2days_sent_at', 'trialReminder_1day_sent_at', 'checkoutAbandonEmailAt', 'lastSkillDecayEmail', 'lastWelcomeBackEmail']) {
+      expect(fn, k).toContain(`'${k}'`);
+    }
+    expect(fn).toMatch(/security definer/);
+  });
+
+  it('one sq_save_user: the seven-argument one is dropped, the eight-argument one granted, schema reloaded', () => {
+    expect(gaps).toContain('drop function if exists public.sq_save_user(text, jsonb, text, text, text, text, text);');
+    expect(gaps).toMatch(/grant execute on function public\.sq_save_user\(text, jsonb, text, text, text, text, text, text\) to anon, authenticated, service_role;/);
+    expect(gaps).toMatch(/^begin;$/m);
+    expect(gaps).toMatch(/^commit;$/m);
+    expect(gaps.trim().endsWith("notify pgrst, 'reload schema';")).toBe(true);
+  });
+
+  it('gap 2: the carry is checked against the guest (never claiming it); only a wrong secret stops it', () => {
+    const fn = fnOf(gaps);
+    expect(fn).toContain('v_carry := public.sq_session_token_check(p_carry_pro_from, p_carry_token, false);');
+    expect(fn).toMatch(/if v_carry = 'invalid' then\n\s+g := null;/);
+    expect(fn).toMatch(/v_carry = 'unclaimed'[\s\S]*insert into public\.session_token_misses \(username, kind\) values \(p_carry_pro_from, 'missing'\)/);
+    // the check sits inside the paid-guest condition: no misses for invented names
+    const block = fn.slice(fn.indexOf('the carried plan proves the guest'), fn.indexOf('end session tokens (2026-09-24)'));
+    expect(block).toMatch(/if found and jsonb_typeof\(g\.data\) = 'object' and coalesce\(g\.data->>'proStatus', ''\) = 'true' then\n\s+v_carry :=/);
+    expect(block).not.toMatch(/raise exception/);
+  });
+
+  it('gap 3: an email reset deletes the reset account\'s sessions in the same statement', () => {
+    const fn = fnOf(gaps, 'sq_set_password_for_session_email');
+    expect(fn).toMatch(/ended as \(\n\s+delete from public\.account_sessions s\n\s+using changed c\n\s+where s\.username = c\.username/);
+    expect(gaps).toContain('revoke execute on function public.sq_set_password_for_session_email(text, text) from anon;');
+    expect(gaps).toContain('grant execute on function public.sq_set_password_for_session_email(text, text) to authenticated;');
+    expect(gaps).not.toMatch(/sq_set_password_for_session_email\(text, text\) to anon/);
+  });
+
+  it('gap 4: sq_end_session deletes only the row matching username AND token hash, returns nothing, anon may call it', () => {
+    const fn = fnOf(gaps, 'sq_end_session');
+    expect(fn).toMatch(/returns void/);
+    expect(fn).toMatch(/delete from public\.account_sessions s\n\s+where s\.username = p_username\n\s+and s\.token_hash = encode\(sha256\(convert_to\(p_token, 'UTF8'\)\), 'hex'\);/);
+    expect(fn).toMatch(/p_token is null or length\(p_token\) = 0/);
+    expect(gaps).toMatch(/grant execute on function public\.sq_end_session\(text, text\) to anon, authenticated, service_role;/);
+    // still nothing in SQL that mints a session
+    expect(gaps).not.toMatch(/insert into public\.account_sessions/);
+  });
+
+  it('the rollback restores 20260923100000\'s save and 20260913130000\'s reset, and drops sq_end_session', () => {
+    expect(fnOf(rollback)).toBe(fnOf(tok));
+    const mig0913 = fs.readFileSync(path.join(ROOT, 'supabase/migrations/20260913130000_account_access_functions.sql'), 'utf8');
+    expect(fnOf(rollback, 'sq_set_password_for_session_email')).toBe(fnOf(mig0913, 'sq_set_password_for_session_email'));
+    expect(rollback).toContain('drop function if exists public.sq_end_session(text, text);');
+    expect(rollback).toContain('drop function if exists public.sq_save_user(text, jsonb, text, text, text, text, text, text);');
+  });
+
+  it('the replica test proves all four, and the rollback', () => {
+    expect(replica).toContain('\\ir ../migrations/20260924100000_session_token_gaps.sql');
+    expect(replica).toContain('\\ir 20260924_session_token_gaps_rollback.sql');
+    for (const g of ['gap1:', 'gap2:', 'gap3:', 'gap4:']) expect(replica, g).toContain(g);
+  });
+
+  it('gap 1: no "username taken" check reads through sq_load_account', () => {
+    // the auth-modal register form
+    const at = app.indexOf("if (authMode === 'register') {");
+    // code only: the comment above the check explains the old path by name
+    const reg = app.slice(at, app.indexOf('// Validate email - mandatory', at)).replace(/^\s*\/\/.*$/gm, '');
+    expect(reg).toMatch(/await isUsernameRegistered\(regUsername\)/);
+    expect(reg).not.toMatch(/fetchAccountRow|sq_load_account/);
+    expect(reg).toMatch(/isGuestUsername\(regUsername\)/);
+    // loadUserData only on the no-Supabase branch (local blob, no cloud read)
+    expect(reg).toMatch(/isSupabaseConfigured\(\)\s*\?\s*await isUsernameRegistered\(regUsername\)\s*:\s*!!\(await loadUserData\(regUsername\)\)/);
+    // the guest-conversion form
+    const cv = app.indexOf("setAuthError('Username already taken')");
+    const conv = app.slice(cv - 900, cv);
+    expect(conv).toMatch(/isSupabaseConfigured\(\)\s*\?\s*await isUsernameRegistered\(username\)/);
+    expect(conv).toMatch(/isGuestUsername\(username\)/);
+    // isUsernameRegistered itself asks the boolean function, never the row
+    const fnAt = app.indexOf('const isUsernameRegistered = async');
+    const fn = app.slice(fnAt, app.indexOf('\n};', fnAt));
+    expect(fn).toContain("'rpc/sq_username_registered'");
+    expect(fn).not.toMatch(/sq_load_account|fetchAccountRow/);
+  });
+
+  it('gap 2: the carried save sends the guest\'s secret, read before the guest is forgotten', () => {
+    const at = app.indexOf('const _flushCloudSave = async');
+    const flush = app.slice(at, at + 4000);
+    expect(flush).toMatch(/carryProFrom \? withCarry\(rpcBody, carryProFrom, carryStorage\) : rpcBody/);
+    // both signup paths save (with the carry) before forgetGuest clears the secret
+    const conv = app.slice(app.indexOf('const convertGuestToUser = async'));
+    expect(conv.indexOf('carryProFrom: previousGuestName')).toBeGreaterThan(0);
+    expect(conv.indexOf('forgetGuest(previousGuestName)')).toBeGreaterThan(conv.indexOf('carryProFrom: previousGuestName'));
+    const reg = app.slice(app.indexOf("if (authMode === 'register') {"));
+    expect(reg.indexOf('carryProFrom: guestBlob')).toBeGreaterThan(0);
+    expect(reg.indexOf('if (guestBlob) forgetGuest(guestName)')).toBeGreaterThan(reg.indexOf('carryProFrom: guestBlob'));
+  });
+
+  it('gap 4: logout ends the server session, best-effort, before the local token is cleared', () => {
+    const logoutAt = app.indexOf('const handleLogout = () => {');
+    const logout = app.slice(logoutAt, logoutAt + 900);
+    const end = logout.indexOf('endServerSession(currentUser);');
+    expect(end).toBeGreaterThan(0);
+    expect(logout.indexOf('clearSessionToken(localStorage, currentUser)')).toBeGreaterThan(end);
+    expect(logout).not.toMatch(/await endServerSession/);
+    const helperAt = app.indexOf('const endServerSession = (username) => {');
+    const helper = app.slice(helperAt, app.indexOf('\n};', helperAt));
+    expect(helper).toContain('rest/v1/rpc/sq_end_session');
+    expect(helper).toMatch(/endSessionBody\(/);
+    expect(helper).toMatch(/keepalive: true/);
+    expect(helper).toMatch(/\.catch\(\(\) => \{\}\)/);
   });
 });

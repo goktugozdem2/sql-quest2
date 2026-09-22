@@ -18,7 +18,9 @@
 //
 // The server only ever sees the token as p_token and stores only its hash.
 // Step 1 of the release records a missing or wrong token and refuses nothing;
-// step 4 is the cut. tests/session-token.test.js pins this module and the
+// step 4 is the cut. The four gaps found before the cut (2026-09-24) add two
+// helpers here: withCarry (a carried plan proves the guest) and
+// endSessionBody (logout ends the server row). tests/session-token.test.js pins this module and the
 // source guards in tests/account-access.test.js pin every call site.
 
 export const SESSION_TOKEN_KEY = 'sqlquest_session_token';
@@ -124,25 +126,50 @@ export function withToken(body, token) {
   return token ? { ...body, p_token: token } : body;
 }
 
+// The save body for a new account that carries a paid guest's plan
+// (2026-09-24, gap 2 of the step-4 cut). p_carry_pro_from names the guest
+// row; p_carry_token is THAT guest's own secret, read from this browser and
+// never minted here — a secret the server has never seen proves nothing, so a
+// browser that holds none sends none and the server records 'missing' against
+// the guest. Only a guest_* name is ever carried from (the server ignores
+// anything else anyway). Read the secret BEFORE forgetGuest clears it.
+export function withCarry(body, carryProFrom, storage) {
+  if (!isGuestUsername(carryProFrom)) return body;
+  const secret = readGuestSecret(storage, carryProFrom);
+  return secret
+    ? { ...body, p_carry_pro_from: carryProFrom, p_carry_token: secret }
+    : { ...body, p_carry_pro_from: carryProFrom };
+}
+
+// The body for rpc/sq_end_session (2026-09-24, gap 4): logout ends the
+// session on the server, not only in this browser. null when there is
+// nothing to end — a guest, or an account this browser holds no token for.
+// The server deletes only the row matching BOTH the username and the token's
+// hash, so without the token itself the call can do nothing.
+export function endSessionBody(storage, username) {
+  if (!username || isGuestUsername(username)) return null;
+  const token = readSessionToken(storage, username);
+  return token ? { p_username: username, p_token: token } : null;
+}
+
 // The rpc bodies to try, in order, for a server that may not have every
 // parameter yet (PostgREST answers 404 when no function matches the named
-// arguments). Full body first; then without p_token (a server before
-// 20260923100000); then without p_carry_pro_from as well (a server before
-// 20260914100000). Duplicates (same parameter names) are dropped — compared by
-// key set, never by stringifying p_data, which can be a 100 KB blob.
+// arguments). Parameters are dropped newest first, cumulatively:
+//   p_carry_token    — a server before 20260924100000,
+//   p_token          — a server before 20260923100000,
+//   p_carry_pro_from — a server before 20260914100000.
+// Duplicates (same parameter names) are dropped — compared by key set, never
+// by stringifying p_data, which can be a 100 KB blob.
+const PARAMS_NEWEST_FIRST = ['p_carry_token', 'p_token', 'p_carry_pro_from'];
 export function rpcBodyFallbacks(body) {
   const out = [body];
   const sig = (b) => Object.keys(b).sort().join(',');
-  const push = (b) => {
-    if (!out.some(x => sig(x) === sig(b))) out.push(b);
-  };
-  if ('p_token' in body) {
-    const { p_token, ...rest } = body; // eslint-disable-line no-unused-vars
-    push(rest);
-  }
-  if ('p_carry_pro_from' in body) {
-    const { p_token, p_carry_pro_from, ...rest } = body; // eslint-disable-line no-unused-vars
-    push(rest);
+  let cur = body;
+  for (const key of PARAMS_NEWEST_FIRST) {
+    if (!(key in cur)) continue;
+    const { [key]: _dropped, ...rest } = cur; // eslint-disable-line no-unused-vars
+    cur = rest;
+    if (!out.some(x => sig(x) === sig(cur))) out.push(cur);
   }
   return out;
 }

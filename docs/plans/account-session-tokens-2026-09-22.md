@@ -91,6 +91,42 @@ close (found in the build review):
 - email password reset does not end existing sessions; logout clears the
   token only in the browser.
 
+2026-09-24: the four gaps BUILT, not applied (branch, not main). Migration
+`20260924100000_session_token_gaps.sql`, rollback
+`supabase/manual/20260924_session_token_gaps_rollback.sql`, local proof
+appended to `supabase/manual/account-session-tokens-replica-test.sql`
+(passes; mutation-checked on gaps 2 and 3). Additive — nothing that works
+today is refused:
+1. **Username taken — CLOSED (client only).** Both register forms ask
+   `rpc/sq_username_registered` (anon, boolean, no token); no existence check
+   reads through `sq_load_account`. `guest_*` names are now refused at
+   registration: a guest row has no password, so the function calls it free,
+   and taking the name would write over that guest's cloud row. Residual:
+   3 named rows in production have no password (read 2026-09-23) and read as
+   free — the old check blocked them; `sq_save_user` would give the
+   registrant that row. Small, pre-existing on the guest-conversion form;
+   a server-side "a new password never lands on an existing row" rule would
+   close it.
+2. **Carried Pro — CLOSED in the step-1 sense.** `sq_save_user` gains
+   `p_carry_token` (the guest's own secret, sent by `withCarry`). Match →
+   carried; the guest has no stored secret → carried + 'missing' recorded
+   against the guest; no `p_carry_token` sent (an old tab) → carried +
+   'missing'; a WRONG secret → not carried, 'invalid'. **At the cut, a
+   missing carry token must stop the carry too** — same rule as p_token.
+3. **Reset ends sessions — CLOSED.** `sq_set_password_for_session_email`
+   deletes the account's `account_sessions` rows in the same statement.
+   (account-password already did; there is no other reset path.)
+4. **Logout ends the server row — CLOSED.** `sq_end_session(p_username,
+   p_token)`, anon-callable, deletes only the row matching both; the client
+   calls it fire-and-forget before clearing the local token.
+
+Release: migration → client (either order is safe: the new client sheds
+`p_carry_token` on a 404 and ignores a failed `sq_end_session`; the old
+client resolves to the new function unchanged). What remains for the cut:
+watch `session_token_misses` fall (step 3); then one migration that turns
+'missing'/'invalid' into refusals in `sq_load_account`, `sq_save_user` AND
+the carry; the founder's go.
+
 Original build note: steps 1–2 BUILT. Migration
 `20260923100000_account_session_tokens.sql` (tables account_sessions,
 guest_secrets, session_token_misses; token-aware sq_load_account /
