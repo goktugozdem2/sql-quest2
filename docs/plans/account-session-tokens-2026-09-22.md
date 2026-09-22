@@ -79,7 +79,19 @@ APPROVED 2026-09-22, build this week in the release order above. Reads
 narrowed (sq_load_account, anon select on users_public revoked); the
 regression guard is live; tokens not yet built.
 
-2026-09-23: steps 1–2 BUILT, not applied or deployed. Migration
+2026-09-22 (UTC 00:00): steps 1–2 LIVE — migration applied after a
+rolled-back dry run, account-login / account-password deployed, client
+pushed (abb52079). Nothing refuses yet. Before the step-4 cut, these must
+close (found in the build review):
+- the register form's "username taken" check reads through sq_load_account
+  with no token; after the cut it would see nothing — move it to
+  `sq_username_registered` first;
+- `p_carry_pro_from` copies Pro from any paid guest row without the guest's
+  secret — require it;
+- email password reset does not end existing sessions; logout clears the
+  token only in the browser.
+
+Original build note: steps 1–2 BUILT. Migration
 `20260923100000_account_session_tokens.sql` (tables account_sessions,
 guest_secrets, session_token_misses; token-aware sq_load_account /
 sq_save_user that record `missing` / `invalid` at most once per username per

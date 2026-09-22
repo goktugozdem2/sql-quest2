@@ -650,8 +650,12 @@ URLs filled, brand icon is the bolt, brand colour #FFE34D.
   `rpc/sq_load_account` (2026-09-22) — anon can no longer SELECT the
   `users_public` view (it listed all 7,251 rows in one request). The view
   still strips passwordHash, salt, email, unsubToken, stripe ids for the
-  function. **Writes are still keyed by username alone** — see
-  docs/plans/account-session-tokens-2026-09-22.md (P0). **Writes** through
+  function. **Session tokens, steps 1–2 LIVE 2026-09-22:** both RPCs take
+  `p_token` (account token from account-login, guest secret minted in the
+  browser; `src/utils/session-token.js`) and RECORD a missing/invalid one in
+  `session_token_misses` — they refuse nothing yet. Watch that table fall;
+  the cut (step 4) needs the founder's go and the four gaps listed in
+  docs/plans/account-session-tokens-2026-09-22.md closed first. **Writes** through
   `rpc/sq_save_user`, which keeps an existing row's own credential, email and
   payment-id fields; **sign-in** and **password change** run in the
   `account-login` / `account-password` edge functions (service role, failure
