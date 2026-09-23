@@ -49,7 +49,7 @@ two real problems:
 | 2 | Breadcrumb links the topic page; every question links one topic guide (rotated across the skill's guides) and the three SQL tools in its footer; Capital One-tagged questions link the CodeSignal guide; the hub links the seven weakest guides | **done** 09-23 |
 | 3 | `tests/link-graph.test.js`: no sitemap page under 2 inbound links, no question under 6, tools ≥ 50, every guide target live | **done** 09-23 |
 | 4 | Recrawl signal: IndexNow for every changed page (no quota), and Bing URL Submission for the hubs Bing crawls (`/`, `sql-exercises`, `best-sql-practice-sites`, `/questions/`) so it re-reads the pages that carry the links | IndexNow on deploy; the four hubs on 09-24 (today's 100 went to the uncrawled pages) |
-| 5 | Bing URL Submission for the remaining ~225 question pages, 100 a day | 99 sent 09-23; rest 09-24 → 09-26 |
+| 5 | Bing URL Submission for the remaining question pages, 100 a day — log in `docs/reads/bing-url-submissions.txt`; the next batch is every sitemap question URL not in that file | 99 sent 09-23; 224 left, 09-24 → 09-26 |
 | 6 | Check crawl settings: Bing "Crawl Control" and whether IndexNow has been accepted for this host (the IndexNow panel) | 09-24 |
 | 7 | Read on **2026-10-07**: `bing_indexed` (below) | scheduled |
 
