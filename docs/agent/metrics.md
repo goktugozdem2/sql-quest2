@@ -2921,7 +2921,7 @@ Where a person who clicked a plan stops, people by `aid`, in order:
 |---|---|---|
 | shown | `pro_modal_shown` (`reason`) | app |
 | plan clicked | `pro_plan_clicked` (`plan`) | app |
-| email step | `checkout_email_captured` / `checkout_email_skipped` | app |
+| email step | `checkout_email_step_shown` (from 2026-09-23), then `checkout_email_captured` / `checkout_email_skipped`, or `modal_dismissed` with `emailStepPending` = the plan (a buyer lost at the step) | app |
 | sent to Stripe | `pro_checkout_clicked` | app |
 | came back without paying | `pro_checkout_returned` (`outcome`, seconds away) | app, only if they return |
 | never came back, session expired | `pro_checkout_expired` (`plan_type`, `email_present`) | stripe-webhook, from the next deploy — needs `checkout.session.expired` on the Stripe endpoint |

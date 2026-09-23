@@ -23,3 +23,10 @@ describe('activation events', () => {
     expect(app).toMatch(/if \(!showChallengeHint && currentChallenge\) trackActivationEvent\('challenge_hint_opened'/);
   });
 });
+
+describe('the receipt-email step is visible in the data (2026-09-23)', () => {
+  it('records the step when it is shown, and a close with a plan pending', () => {
+    expect(app).toMatch(/setCheckoutPendingPlan\(plan\);\n\s*trackActivationEvent\('checkout_email_step_shown', \{ plan \}\);/);
+    expect(app).toMatch(/emailStepPending: checkoutPendingPlan \|\| null/);
+  });
+});
