@@ -2925,7 +2925,7 @@ const _flushCloudSave = async (username, data, carryProFrom = null) => {
     try {
       if (/regression refused/.test(String((err && err.message) || ''))
           && typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
-        window.dispatchEvent(new CustomEvent('sq:save-refused', { detail: { username, message: String(err.message).slice(0, 200) } }));
+        window.dispatchEvent(new CustomEvent('sq:save-refused', { detail: { username, data, message: String(err.message).slice(0, 200) } }));
       }
     } catch (_) { /* measurement is best-effort */ }
     return { ok: false, error: err };
@@ -7140,14 +7140,46 @@ function SQLQuest() {
   // A save the server refused as a regression (2026-09-22) — see _flushCloudSave
   // and migration 20260922160000. One event per session is enough to count it.
   const saveRefusedSentRef = useRef(false);
+  // Recovery (2026-09-24): the first refusal in production (09-23, a
+  // registered account, solved 8 -> 4) showed the guard's other half. It kept
+  // the cloud's 8, but the tab holding 4 would be refused on every autosave
+  // for the rest of the session, so anything solved in it was lost too. Now a
+  // refusal pulls the cloud row, merges the tab's copy into it with the same
+  // union the guest merge uses (cloud wins scalars and identity, collections
+  // union, XP only for solves the cloud lacks), saves that — which the guard
+  // accepts, it can only grow — and reloads the session from it. Once per
+  // session: a second refusal after a merge means something else is wrong,
+  // and looping would hide it. `save_recovered` / `save_recovery_failed`.
+  const saveRecoveryTriedRef = useRef(false);
   useEffect(() => {
     const onRefused = (e) => {
-      if (saveRefusedSentRef.current) return;
-      saveRefusedSentRef.current = true;
-      const m = String((e && e.detail && e.detail.message) || '').match(/solved (\d+) -> (\d+), xp ([\d.]+) -> ([\d.]+)/);
-      trackActivationEvent('save_refused', m
-        ? { oldSolved: +m[1], newSolved: +m[2], oldXp: +m[3], newXp: +m[4] }
-        : {});
+      const detail = (e && e.detail) || {};
+      const m = String(detail.message || '').match(/solved (\d+) -> (\d+), xp ([\d.]+) -> ([\d.]+)/);
+      if (!saveRefusedSentRef.current) {
+        saveRefusedSentRef.current = true;
+        trackActivationEvent('save_refused', m
+          ? { oldSolved: +m[1], newSolved: +m[2], oldXp: +m[3], newXp: +m[4] }
+          : {});
+      }
+      if (saveRecoveryTriedRef.current || !detail.username || !detail.data) return;
+      saveRecoveryTriedRef.current = true;
+      const username = detail.username;
+      const isGuestRow = /^guest_/.test(username);
+      (async () => {
+        try {
+          const cloudRows = await fetchAccountRow(username);
+          const cloud = cloudRows && cloudRows[0] && cloudRows[0].data;
+          if (!cloud) throw new Error('no cloud row');
+          const { merged, summary } = mergeProgress(withLocalAccountKeys(username, cloud), detail.data, { challenges: window.challengesData || challenges || [] });
+          const res = await _flushCloudSave(username, merged);
+          if (!res || !res.ok) throw (res && res.error) || new Error('merged save failed');
+          try { localStorage.setItem(`sqlquest_user_${username}`, JSON.stringify(merged)); } catch (_) {}
+          trackActivationEvent('save_recovered', { newSolves: summary.newSolves, newAttempts: summary.newAttempts, cloudSolves: (cloud.solvedChallenges || []).length });
+          await loadUserSession(username, isGuestRow ? { localOnly: true } : {});
+        } catch (err) {
+          trackActivationEvent('save_recovery_failed', { message: String((err && err.message) || err).slice(0, 120) });
+        }
+      })();
     };
     window.addEventListener('sq:save-refused', onRefused);
     return () => window.removeEventListener('sq:save-refused', onRefused);
