@@ -54,14 +54,12 @@ Russian cards; Nigerian cards fail often on international merchants; and
 Payment Links run Adaptive Pricing ("Always on"), so the page shows local
 currency. The two who paid were in India and the US.
 
-**Open question for the founder:** harinivr02's annual purchase was
-$49.00 USD (Stripe → Payments, "Subscription creation", 19 Sept 05:19),
-not $99. The webhook mapped it to the ANNUAL price correctly (the quarterly
-price id's digest matches `STRIPE_PRICE_QUARTERLY`; no "fell back" line in
-the log), so either a coupon was applied or the annual price in Stripe was
-$49 that night. Check the subscription in Stripe → Subscriptions → harinivr02:
-the price and any discount. If the annual price itself is $49, every annual
-sale since has been half price.
+**Closed 2026-09-24 — the $49 annual:** harinivr02 asked for a discount by
+email and the founder gave one; that is what let them buy. The annual price
+in Stripe is not in question. Two things to keep from it: a negotiated
+discount is a real door (read `amount_cents`, not the plan, when summing
+revenue), and the one buyer from India wrote in before paying — the reply
+channel (support@ → goktug@) is part of the checkout for some people.
 
 ## The plan
 
