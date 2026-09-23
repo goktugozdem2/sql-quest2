@@ -19,6 +19,14 @@
 -- 2026-09-24): the "username taken" function, the carried plan checked
 -- against the guest's secret, the email reset ending sessions, logout's
 -- sq_end_session — and that migration's rollback and re-apply.
+-- Then the cut prep (20260925100000_session_token_cut_prep.sql, 2026-09-25):
+-- a password-less named row reads taken and never takes a password without
+-- its token. Then THE CUT (supabase/manual/20260925b_session_token_cut.sql,
+-- not a migration): tokenless and wrong-token reads and writes of an existing
+-- row refused, new rows and first-use guest claims still allowed, the service
+-- role never refused — and each file's rollback and re-apply.
+-- Mutation-checked 2026-09-25: nine single-line mutations of the two new
+-- files (each rule switched off or inverted) each fail this run by name.
 --
 -- Run (from the repo root, against a throwaway local cluster):
 --   psql -v ON_ERROR_STOP=1 -h 127.0.0.1 -p <port> -U postgres -d postgres -f supabase/manual/account-session-tokens-replica-test.sql
@@ -392,5 +400,308 @@ reset role;
 do $$ begin
   if exists (select 1 from public.account_sessions where username = 'bob') then raise exception 'gaps forward-again: sq_end_session broken'; end if;
 end $$;
+
+-- ══ cut prep (20260925100000_session_token_cut_prep.sql, 2026-09-25) ══
+-- Proves, as anon:
+--   prep1. sq_username_registered calls every existing non-guest row taken,
+--          password or not; an invented name and a guest row read free;
+--   prep2. a password never lands on an existing password-less named row
+--          without that row's session token — by p_password_hash, by
+--          p_data.passwordHash, or with a made-up token; the row's own saves
+--          without a password still work; a new row still takes its password;
+--          a row that has a password still ignores the request's;
+--          and a valid session token for the row is accepted;
+--   and the rollback restores the old meaning of both, then forward again.
+
+\ir ../migrations/20260925100000_session_token_cut_prep.sql
+
+do $$ begin
+  if (select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+       where n.nspname = 'public' and p.proname = 'sq_save_user') <> 1 then raise exception 'prep: more than one sq_save_user'; end if;
+end $$;
+
+-- the three production rows, as read 2026-09-23 (no password)
+insert into public.users (username, password_hash, salt, email, data) values
+  ('brallie', '', '', null, '{"xp":130,"solvedChallenges":[1,2,3,4,5,6,7,8,9,10,11,12,13]}'),
+  ('mike_sql', '', '', null, '{"xp":90,"solvedChallenges":[1,2,3,4,5,6,7,8,9]}'),
+  ('saida240690', '', '', 'saida@example.com', '{"xp":160,"solvedChallenges":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]}');
+
+set role anon;
+do $$ begin
+  -- ── prep1 ──
+  if public.sq_username_registered('brallie') is not true then raise exception 'prep1: brallie reads free'; end if;
+  if public.sq_username_registered(' Mike_SQL ') is not true then raise exception 'prep1: mike_sql reads free'; end if;
+  if public.sq_username_registered('saida240690') is not true then raise exception 'prep1: saida240690 reads free'; end if;
+  if public.sq_username_registered('dave6') is not true then raise exception 'prep1: a password-less row made by save reads free'; end if;
+  if public.sq_username_registered('alice') is not true then raise exception 'prep1: alice reads free'; end if;
+  if public.sq_username_registered('nobody_here') is not false then raise exception 'prep1: invented name taken'; end if;
+  if public.sq_username_registered('guest_old') is not false then raise exception 'prep1: a guest row should read free (client reserves guest_*)'; end if;
+
+  -- ── prep2: the takeover, three ways ──
+  begin
+    perform public.sq_save_user(p_username => 'brallie', p_data => '{"xp":130,"solvedChallenges":[1,2,3,4,5,6,7,8,9,10,11,12,13]}'::jsonb,
+                                p_password_hash => repeat('9', 64), p_salt => 'saltthief1', p_email => 'thief@example.com');
+    raise exception 'prep2: a password landed on brallie';
+  exception when sqlstate '28000' then
+    if sqlerrm not like 'password refused%' then raise; end if;
+  end;
+  begin
+    perform public.sq_save_user(p_username => 'mike_sql',
+                                p_data => ('{"xp":90,"solvedChallenges":[1,2,3,4,5,6,7,8,9],"passwordHash":"' || repeat('9', 64) || '","salt":"saltthief2"}')::jsonb);
+    raise exception 'prep2: a password in p_data landed on mike_sql';
+  exception when sqlstate '28000' then
+    if sqlerrm not like 'password refused%' then raise; end if;
+  end;
+  begin
+    perform public.sq_save_user(p_username => 'saida240690', p_data => '{"xp":160,"solvedChallenges":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]}'::jsonb,
+                                p_password_hash => repeat('9', 64), p_salt => 'saltthief3', p_token => 'a-made-up-token');
+    raise exception 'prep2: a made-up token let a password land';
+  exception when sqlstate '28000' then
+    if sqlerrm not like 'password refused%' then raise; end if;
+  end;
+
+  -- the row's own save, with no password in it: still works
+  perform public.sq_save_user('mike_sql', '{"xp":95,"solvedChallenges":[1,2,3,4,5,6,7,8,9,10]}'::jsonb);
+  -- a new row takes its password as before (registration)
+  perform public.sq_save_user(p_username => 'erin_new', p_data => '{"xp":0}'::jsonb, p_password_hash => repeat('e', 64), p_salt => 'salterin01');
+  -- a row with a password keeps its own; the request's is ignored, not refused
+  perform public.sq_save_user(p_username => 'carol_ok', p_data => '{"xp":1}'::jsonb, p_password_hash => repeat('9', 64), p_salt => 'saltthief4');
+  -- guests are outside the rule
+  perform public.sq_save_user(p_username => 'guest_old', p_data => '{"xp":8}'::jsonb, p_token => 'guest-old-secret');
+end $$;
+reset role;
+
+do $$ begin
+  if (select password_hash from public.users where username = 'brallie') <> '' then raise exception 'prep2: brallie hash changed'; end if;
+  if (select data from public.users where username = 'brallie') ? 'passwordHash' then raise exception 'prep2: brallie data took a hash'; end if;
+  if (select email from public.users where username = 'brallie') is not null then raise exception 'prep2: brallie took an email'; end if;
+  if (select password_hash from public.users where username = 'mike_sql') <> '' then raise exception 'prep2: mike_sql hash changed'; end if;
+  if (select (data->>'xp')::int from public.users where username = 'mike_sql') <> 95 then raise exception 'prep2: mike_sql own save lost'; end if;
+  if (select password_hash from public.users where username = 'saida240690') <> '' then raise exception 'prep2: saida hash changed'; end if;
+  if (select password_hash from public.users where username = 'erin_new') <> repeat('e', 64) then raise exception 'prep2: new row lost its password'; end if;
+  if (select password_hash from public.users where username = 'carol_ok') <> repeat('c', 64) then raise exception 'prep2: an existing hash was replaced'; end if;
+  if (select (data->>'xp')::int from public.users where username = 'guest_old') <> 8 then raise exception 'prep2: guest save refused'; end if;
+end $$;
+
+-- the one accepted proof: a session token for the row (no password-less row
+-- can mint one today — this only proves the rule's exception is exact)
+insert into public.account_sessions (username, token_hash)
+values ('saida240690', encode(sha256(convert_to('saida-token-0123456789', 'UTF8')), 'hex'));
+set role anon;
+do $$ begin
+  perform public.sq_save_user(p_username => 'saida240690', p_data => '{"xp":161,"solvedChallenges":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]}'::jsonb,
+                              p_password_hash => repeat('5', 64), p_salt => 'saltsaida1', p_token => 'saida-token-0123456789');
+end $$;
+reset role;
+do $$ begin
+  if (select password_hash from public.users where username = 'saida240690') <> repeat('5', 64) then raise exception 'prep2: a valid token was refused'; end if;
+end $$;
+
+-- ── rollback of the prep ──
+\ir 20260925_session_token_cut_prep_rollback.sql
+set role anon;
+do $$ begin
+  if public.sq_username_registered('brallie') is not false then raise exception 'prep rollback: old meaning not restored'; end if;
+  perform public.sq_save_user(p_username => 'brallie', p_data => '{"xp":130,"solvedChallenges":[1,2,3,4,5,6,7,8,9,10,11,12,13]}'::jsonb,
+                              p_password_hash => repeat('9', 64), p_salt => 'saltthief1');
+end $$;
+reset role;
+do $$ begin
+  if (select password_hash from public.users where username = 'brallie') <> repeat('9', 64) then raise exception 'prep rollback: old save not restored'; end if;
+  if (select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+       where n.nspname = 'public' and p.proname = 'sq_save_user') <> 1 then raise exception 'prep rollback: more than one sq_save_user'; end if;
+end $$;
+update public.users set password_hash = '', salt = '', data = data - 'passwordHash' - 'salt' where username = 'brallie';
+
+-- ── and forward again ──
+\ir ../migrations/20260925100000_session_token_cut_prep.sql
+set role anon;
+do $$ begin
+  if public.sq_username_registered('brallie') is not true then raise exception 'prep forward-again: brallie reads free'; end if;
+end $$;
+reset role;
+
+-- ══ the cut (supabase/manual/20260925b_session_token_cut.sql — NOT a migration) ══
+-- Called the way PostgREST calls it: request.jwt.claims carries the role.
+-- Proves:
+--   cut1. an existing account read or written with no token, or a wrong one,
+--         raises 28000 "session token required";
+--   cut2. the right token reads and writes; a username with no row reads empty;
+--   cut3. a NEW row needs no token (registration; a new guest), and a new
+--         guest's secret is stored on that first save;
+--   cut4. a guest row with no stored secret: a tokenless save is refused, the
+--         first token-carrying save claims it, a second secret is refused; a
+--         read never claims;
+--   cut5. a carried plan needs the guest's own secret (missing / wrong carry
+--         nothing, an unclaimed paid guest is claimed by the carry);
+--   cut6. the regression guard and the server-owned fields still hold;
+--   cut7. service_role and a direct database session are never refused;
+--   and the rollback puts back step 1, then forward again.
+
+\ir 20260925b_session_token_cut.sql
+
+do $$ begin
+  if (select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+       where n.nspname = 'public' and p.proname = 'sq_save_user') <> 1 then raise exception 'cut: more than one sq_save_user'; end if;
+  if (select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+       where n.nspname = 'public' and p.proname = 'sq_load_account') <> 1 then raise exception 'cut: more than one sq_load_account'; end if;
+end $$;
+
+delete from public.account_sessions;
+insert into public.account_sessions (username, token_hash) values
+  ('alice', encode(sha256(convert_to('alice-cut-token', 'UTF8')), 'hex')),
+  ('bob',   encode(sha256(convert_to('bob-cut-token', 'UTF8')), 'hex'));
+update public.users set data = '{"xp":700,"solvedChallenges":[1,2,3,4,5],"proStatus":true,"proType":"annual","stripeCustomerId":"cus_a"}'::jsonb
+ where username = 'alice';
+insert into public.users (username, password_hash, salt, email, data) values
+  ('guest_unclaimed', '', '', null, '{"xp":4}'),
+  ('guest_paid_tofu', '', '', null, '{"xp":9,"proStatus":true,"proType":"monthly"}');
+
+select set_config('request.jwt.claims', '{"role":"anon"}', false);
+set role anon;
+do $$
+declare d jsonb;
+begin
+  -- ── cut1 ──
+  begin perform * from public.sq_load_account('alice'); raise exception 'cut1: tokenless read';
+  exception when sqlstate '28000' then if sqlerrm <> 'session token required' then raise; end if; end;
+  begin perform * from public.sq_load_account('alice', 'bob-cut-token'); raise exception 'cut1: another account''s token read';
+  exception when sqlstate '28000' then if sqlerrm <> 'session token required' then raise; end if; end;
+  begin perform public.sq_save_user('alice', '{"xp":701,"solvedChallenges":[1,2,3,4,5]}'::jsonb); raise exception 'cut1: tokenless write';
+  exception when sqlstate '28000' then if sqlerrm <> 'session token required' then raise; end if; end;
+  begin perform public.sq_save_user(p_username => 'alice', p_data => '{"xp":701,"solvedChallenges":[1,2,3,4,5]}'::jsonb, p_token => 'wrong'); raise exception 'cut1: wrong-token write';
+  exception when sqlstate '28000' then if sqlerrm <> 'session token required' then raise; end if; end;
+  -- a password-less named row is refused too (and could never take a password)
+  begin perform public.sq_save_user('mike_sql', '{"xp":96,"solvedChallenges":[1,2,3,4,5,6,7,8,9,10]}'::jsonb); raise exception 'cut1: tokenless write to mike_sql';
+  exception when sqlstate '28000' then if sqlerrm <> 'session token required' then raise; end if; end;
+
+  -- ── cut2 ──
+  perform public.sq_save_user(p_username => 'alice', p_data => '{"xp":710,"solvedChallenges":[1,2,3,4,5,6],"proStatus":false}'::jsonb, p_token => 'alice-cut-token');
+  select l.data into d from public.sq_load_account('alice', 'alice-cut-token') l;
+  if (d->>'xp')::int <> 710 then raise exception 'cut2: right-token save/load broken: %', d; end if;
+  if (select count(*) from public.sq_load_account('nobody_at_all')) <> 0 then raise exception 'cut2: a missing name answered a row'; end if;
+
+  -- ── cut6 ──
+  if d->>'proStatus' <> 'true' or d->>'proType' <> 'annual' or d->>'stripeCustomerId' <> 'cus_a' then raise exception 'cut6: plan fields lost: %', d; end if;
+  begin
+    perform public.sq_save_user(p_username => 'alice', p_data => '{"xp":0,"solvedChallenges":[]}'::jsonb, p_token => 'alice-cut-token');
+    raise exception 'cut6: regression guard did not fire';
+  exception when sqlstate 'P0001' then
+    if sqlerrm not like 'regression refused%' then raise; end if;
+  end;
+
+  -- ── cut3 ──
+  perform public.sq_save_user(p_username => 'frank_new', p_data => '{"xp":0}'::jsonb, p_password_hash => repeat('f', 64), p_salt => 'saltfrank1');
+  perform public.sq_save_user(p_username => 'guest_cutnew', p_data => '{"xp":1}'::jsonb, p_token => 'cutnew-secret');
+  perform public.sq_save_user(p_username => 'guest_cutnew', p_data => '{"xp":2}'::jsonb, p_token => 'cutnew-secret');
+  if (select count(*) from public.sq_load_account('guest_cutnew', 'cutnew-secret')) <> 1 then raise exception 'cut3: new guest cannot read itself'; end if;
+  perform public.sq_save_user('guest_cutbare', '{"xp":1}'::jsonb);  -- a new guest row with no secret: created
+
+  -- ── cut4 ──
+  begin perform public.sq_save_user('guest_unclaimed', '{"xp":5}'::jsonb); raise exception 'cut4: tokenless guest save';
+  exception when sqlstate '28000' then if sqlerrm <> 'session token required' then raise; end if; end;
+  begin perform * from public.sq_load_account('guest_unclaimed', 'reader-secret'); raise exception 'cut4: a read of an unclaimed guest';
+  exception when sqlstate '28000' then if sqlerrm <> 'session token required' then raise; end if; end;
+  perform public.sq_save_user(p_username => 'guest_unclaimed', p_data => '{"xp":6}'::jsonb, p_token => 'owner-secret');
+  begin perform public.sq_save_user(p_username => 'guest_unclaimed', p_data => '{"xp":7}'::jsonb, p_token => 'stranger-secret'); raise exception 'cut4: a second secret saved';
+  exception when sqlstate '28000' then if sqlerrm <> 'session token required' then raise; end if; end;
+  select l.data into d from public.sq_load_account('guest_unclaimed', 'owner-secret') l;
+  if (d->>'xp')::int <> 6 then raise exception 'cut4: claimed guest read wrong: %', d; end if;
+  begin perform public.sq_save_user('guest_cutbare', '{"xp":2}'::jsonb); raise exception 'cut4: tokenless save to a bare new guest';
+  exception when sqlstate '28000' then if sqlerrm <> 'session token required' then raise; end if; end;
+  perform public.sq_save_user(p_username => 'guest_cutbare', p_data => '{"xp":3}'::jsonb, p_token => 'bare-secret');
+
+  -- ── cut5 ──
+  perform public.sq_save_user(p_username => 'gina_nocarry', p_data => '{"xp":0}'::jsonb, p_password_hash => repeat('g', 64), p_salt => 'saltgina01',
+                              p_carry_pro_from => 'guest_paid');
+  perform public.sq_save_user(p_username => 'gina_wrong', p_data => '{"xp":0}'::jsonb, p_password_hash => repeat('g', 64), p_salt => 'saltgina02',
+                              p_carry_pro_from => 'guest_paid', p_carry_token => 'not-the-secret');
+  perform public.sq_save_user(p_username => 'gina_ok', p_data => '{"xp":0}'::jsonb, p_password_hash => repeat('g', 64), p_salt => 'saltgina03',
+                              p_carry_pro_from => 'guest_paid', p_carry_token => 'paid-guest-secret');
+  perform public.sq_save_user(p_username => 'gina_tofu', p_data => '{"xp":0}'::jsonb, p_password_hash => repeat('g', 64), p_salt => 'saltgina04',
+                              p_carry_pro_from => 'guest_paid_tofu', p_carry_token => 'tofu-secret');
+end $$;
+reset role;
+
+do $$
+declare d jsonb;
+begin
+  if not exists (select 1 from public.users where username = 'frank_new') then raise exception 'cut3: registration row not created'; end if;
+  if (select secret_hash from public.guest_secrets where username = 'guest_cutnew')
+     <> encode(sha256(convert_to('cutnew-secret', 'UTF8')), 'hex') then raise exception 'cut3: new guest secret not stored'; end if;
+  if (select secret_hash from public.guest_secrets where username = 'guest_unclaimed')
+     <> encode(sha256(convert_to('owner-secret', 'UTF8')), 'hex') then raise exception 'cut4: first-use secret not stored, or overwritten'; end if;
+  if (select (data->>'xp')::int from public.users where username = 'guest_cutbare') <> 3 then raise exception 'cut4: bare guest not claimed by its first secret'; end if;
+  if (select (data->>'xp')::int from public.users where username = 'alice') <> 710 then raise exception 'cut1: a refused write landed'; end if;
+  if (select (data->>'xp')::int from public.users where username = 'mike_sql') <> 95 then raise exception 'cut1: a refused write landed on mike_sql'; end if;
+  select data into d from public.users where username = 'gina_nocarry';
+  if d->>'proStatus' <> 'false' then raise exception 'cut5: a missing carry token carried: %', d; end if;
+  select data into d from public.users where username = 'gina_wrong';
+  if d->>'proStatus' <> 'false' then raise exception 'cut5: a wrong carry token carried: %', d; end if;
+  select data into d from public.users where username = 'gina_ok';
+  if d->>'proStatus' <> 'true' or d->>'stripeCustomerId' <> 'cus_g' then raise exception 'cut5: the owner''s carry lost: %', d; end if;
+  select data into d from public.users where username = 'gina_tofu';
+  if d->>'proStatus' <> 'true' then raise exception 'cut5: an unclaimed paid guest''s carry lost: %', d; end if;
+  if (select secret_hash from public.guest_secrets where username = 'guest_paid_tofu')
+     <> encode(sha256(convert_to('tofu-secret', 'UTF8')), 'hex') then raise exception 'cut5: the carry did not claim the unclaimed guest'; end if;
+end $$;
+
+-- ── cut7: the service role, through PostgREST ──
+select set_config('request.jwt.claims', '{"role":"service_role"}', false);
+set role service_role;
+do $$ begin
+  if (select count(*) from public.sq_load_account('alice')) <> 1 then raise exception 'cut7: service role read refused'; end if;
+  perform public.sq_save_user('alice', '{"xp":720,"solvedChallenges":[1,2,3,4,5,6]}'::jsonb);
+end $$;
+reset role;
+-- the older PostgREST GUC shape: role in request.jwt.claim.role, anon refused
+select set_config('request.jwt.claims', '', false);
+select set_config('request.jwt.claim.role', 'anon', false);
+set role anon;
+do $$ begin
+  begin perform * from public.sq_load_account('alice'); raise exception 'cut7: claim.role anon read';
+  exception when sqlstate '28000' then null; end;
+end $$;
+reset role;
+select set_config('request.jwt.claim.role', '', false);
+-- a direct database session (no claims, not authenticator): never refused
+do $$ begin
+  if (select count(*) from public.sq_load_account('alice')) <> 1 then raise exception 'cut7: direct session read refused'; end if;
+  if (select (data->>'xp')::int from public.users where username = 'alice') <> 720 then raise exception 'cut7: service role write lost'; end if;
+end $$;
+
+-- ── rollback of the cut: step 1 again ──
+\ir 20260925b_session_token_cut_rollback.sql
+do $$ begin
+  if exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+       where n.nspname = 'public' and p.proname = 'sq_session_trusted_caller') then raise exception 'cut rollback: helper left'; end if;
+  if (select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+       where n.nspname = 'public' and p.proname = 'sq_save_user') <> 1 then raise exception 'cut rollback: more than one sq_save_user'; end if;
+end $$;
+select set_config('request.jwt.claims', '{"role":"anon"}', false);
+set role anon;
+do $$ begin
+  if (select count(*) from public.sq_load_account('alice')) <> 1 then raise exception 'cut rollback: tokenless read still refused'; end if;
+  perform public.sq_save_user('alice', '{"xp":730,"solvedChallenges":[1,2,3,4,5,6]}'::jsonb);
+  -- the prep rule survives the rollback of the cut
+  begin
+    perform public.sq_save_user(p_username => 'brallie', p_data => '{"xp":130,"solvedChallenges":[1,2,3,4,5,6,7,8,9,10,11,12,13]}'::jsonb,
+                                p_password_hash => repeat('9', 64), p_salt => 'saltthief1');
+    raise exception 'cut rollback: the prep rule was lost';
+  exception when sqlstate '28000' then
+    if sqlerrm not like 'password refused%' then raise; end if;
+  end;
+end $$;
+reset role;
+
+-- ── and forward again ──
+\ir 20260925b_session_token_cut.sql
+set role anon;
+do $$ begin
+  begin perform * from public.sq_load_account('alice'); raise exception 'cut forward-again: tokenless read';
+  exception when sqlstate '28000' then null; end;
+end $$;
+reset role;
+select set_config('request.jwt.claims', '', false);
 
 select 'account session tokens replica test: all assertions passed' as result;

@@ -127,6 +127,86 @@ watch `session_token_misses` fall (step 3); then one migration that turns
 'missing'/'invalid' into refusals in `sq_load_account`, `sq_save_user` AND
 the carry; the founder's go.
 
+2026-09-25: the cut, PREPARED — nothing applied, deployed or pushed
+(branch only). Three pieces, and the order is the whole defence:
+
+**A — migration `20260925100000_session_token_cut_prep.sql`** (additive).
+Closes the residual of gap 1: `sq_username_registered` now answers true for
+ANY existing non-guest row (a row exists = the name is taken), so
+brallie / mike_sql / saida240690 read taken. Its only callers are the two
+sign-up forms in app.jsx (auth-screen register, guest signup prompt); both
+want "is this name free for a new account", both refuse `guest_*` first, no
+edge or SQL function calls it — so the meaning changed in place, no second
+function. `sq_save_user` refuses (28000, "password refused: …") to set a
+password on an existing non-guest row that has none unless the save carries
+that row's valid session token — byte-identical body plus one marked block.
+Rollback `supabase/manual/20260925_session_token_cut_prep_rollback.sql`.
+
+**C — the client (ships before B; inert until B).** On "session token
+required" from `sq_load_account` or `sq_save_user`: a registered account
+that is the one on screen (or when nobody is — page load, sign-in) has its
+token and `sqlquest_user` cleared, its local blob KEPT, a relogin marker
+set, and the sign-in screen opens with "For your account's security, please
+sign in again — your progress is safe." The sign-in reads the kept blob
+before account-login's record overwrites it and merges it the save-recovery
+way (`mergeProgress` over `withLocalAccountKeys`, saved with force). A
+refused name stops sending for the rest of the page; `loadUserSession` no
+longer reads a refusal as "account deleted" (which would have dropped the
+local copy). Guests: keep the local blob; a fresh identity only when this
+browser's guest has nothing to keep, at most once per page (a local probe
+that refused every save looped without that guard). A late debounced flush
+for an account no longer on screen is recorded and signs nobody out.
+Events `session_token_refused {kind, registered, action[, guest]}`,
+`session_relogin_shown {kind}`, `session_relogin_completed {carriedSolves,
+carriedAttempts}`. Guards: `tests/session-token-cut.test.js`.
+Rollback: revert the commit (nothing server-side depends on it).
+
+**B — `supabase/manual/20260925b_session_token_cut.sql`, NOT a migration.**
+On an EXISTING row with a missing or wrong token, `sq_load_account` and
+`sq_save_user` RAISE 28000 "session token required" (the load raises rather
+than returning nothing: empty means "no such account" to the client, which
+deletes its local copy then). A new row needs no token (registration, a new
+guest); a guest row with no stored secret is claimed by the first
+token-carrying save (a tokenless one is refused); a carried plan needs the
+guest's own secret (an unclaimed paid guest is claimed by the carry);
+JWT role `service_role` and a direct database session are never refused.
+Regression guard, server-owned fields and A's rule kept. A refused call
+rolls back, so from the cut on `session_token_misses` no longer counts
+refusals — read `session_token_refused` and the postgres error log.
+Rollback `supabase/manual/20260925b_session_token_cut_rollback.sql` (back to
+step 1 exactly; A's rule stays). Local proof for A and B:
+`supabase/manual/account-session-tokens-replica-test.sql` (passes; nine
+single-line mutations each fail it by name).
+
+**Release order.**
+1. `supabase db query --linked -f supabase/migrations/20260925100000_session_token_cut_prep.sql`
+2. Push the client (C); confirm the live bundle carries `relogin-notice`.
+3. Watch, daily: distinct named usernames with a 'missing' per day in
+   `session_token_misses`, until it is near zero AND it is at least 7 days
+   since 2026-09-22 (so not before 2026-09-29), with C live for several of
+   those days so open tabs have reloaded.
+4. Founder's explicit go in chat — then
+   `supabase db query --linked -f supabase/manual/20260925b_session_token_cut.sql`.
+5. Same day: read `session_token_refused` / `session_relogin_completed` and
+   the postgres error log; roll back B if accounts cannot get back in.
+
+**What the founder will see.** Everyone signed out by B is a registered
+account whose browser holds no token for it: they get the sign-in screen
+with the sentence, once, and their progress is merged back after the
+password. Measured 2026-09-24 (read-only): 23 distinct named usernames
+recorded a 'missing' in the 7 days (18 on 09-22, 12 on 09-23), 18 of which
+have never held a session; 10 guests; 0 'invalid'; 36 accounts hold a
+session. Re-measure the day before the go:
+`select count(distinct username) from session_token_misses where username
+not like 'guest\_%' and kind = 'missing' and at > now() - interval '7 days';`
+— that number is the upper bound on who B signs out (anyone active but not
+in it already holds a token). Some 'missing' rows are not people at all: a
+debounced save that fires after logout carries no token. Three accounts
+cannot sign in at all, before or after the cut, because their rows have no
+password — brallie, mike_sql, saida240690 (only saida has an email for the
+reset); B makes them unable to save too. Setting a password for them is a
+founder decision.
+
 Original build note: steps 1–2 BUILT. Migration
 `20260923100000_account_session_tokens.sql` (tables account_sessions,
 guest_secrets, session_token_misses; token-aware sq_load_account /

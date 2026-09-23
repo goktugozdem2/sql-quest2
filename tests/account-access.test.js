@@ -76,7 +76,8 @@ describe('the SQL and the client agree', () => {
 describe('client call sites', () => {
   it('saves go through sq_save_user; the table upsert is the 404 fallback only', () => {
     const at = app.indexOf('const _flushCloudSave');
-    const block = app.slice(at, at + 3000);
+    // 3000 → 3600 (2026-09-25): the session-refused early return sits above the call.
+    const block = app.slice(at, at + 3600);
     expect(block).toMatch(/rpc\/sq_save_user/);
     const fallback = block.indexOf("users?on_conflict=username");
     expect(fallback).toBeGreaterThan(block.indexOf('isMissingServerSide(err)'));
@@ -402,5 +403,81 @@ describe('session-token gaps (2026-09-24)', () => {
     expect(helper).toMatch(/endSessionBody\(/);
     expect(helper).toMatch(/keepalive: true/);
     expect(helper).toMatch(/\.catch\(\(\) => \{\}\)/);
+  });
+});
+
+// ── Cut prep: the password-less named rows (2026-09-25) ──
+// supabase/migrations/20260925100000_session_token_cut_prep.sql. The SQL
+// behaviour is proved by supabase/manual/account-session-tokens-replica-test.sql
+// (section "cut prep"); these guards pin the text.
+describe('session-token cut prep (2026-09-25)', () => {
+  const gaps = fs.readFileSync(path.join(ROOT, 'supabase/migrations/20260924100000_session_token_gaps.sql'), 'utf8');
+  const prep = fs.readFileSync(path.join(ROOT, 'supabase/migrations/20260925100000_session_token_cut_prep.sql'), 'utf8');
+  const rollback = fs.readFileSync(path.join(ROOT, 'supabase/manual/20260925_session_token_cut_prep_rollback.sql'), 'utf8');
+  const replica = fs.readFileSync(path.join(ROOT, 'supabase/manual/account-session-tokens-replica-test.sql'), 'utf8');
+  const fnOf = (src, name = 'sq_save_user') => {
+    const at = src.indexOf(`create or replace function public.${name}(`);
+    expect(at, name).toBeGreaterThan(-1);
+    const quote = src.slice(at).match(/\nas (\$\w*\$)/)[1];
+    return src.slice(at, src.indexOf(quote + ';', at));
+  };
+  const PREP_BLOCK = /\n\n {2}-- ── session tokens \(2026-09-25\): a password never lands on a password-less named row ──\n[\s\S]*?\n {2}-- ── end session tokens \(2026-09-25\) ──(?=\n)/;
+
+  it('sq_save_user is the 20260924100000 body, byte for byte, plus the one marked block', () => {
+    const after = fnOf(prep);
+    expect(after).toMatch(PREP_BLOCK);
+    expect(after.replace(PREP_BLOCK, '')).toBe(fnOf(gaps));
+    expect(after).not.toBe(fnOf(gaps));
+  });
+
+  it('the block refuses a password on an existing named row without one, unless the row\'s token is ok', () => {
+    const block = fnOf(prep).match(PREP_BLOCK)[0];
+    expect(block).toContain("if p_username not like 'guest\\_%'");
+    expect(block).toContain("coalesce(nullif(o.password_hash, ''), nullif(o.data->>'passwordHash', '')) is null");
+    expect(block).toContain("coalesce(nullif(p_password_hash, ''), nullif(p_data->>'passwordHash', '')) is not null");
+    expect(block).toContain("if public.sq_session_token_check(p_username, p_token, false) <> 'ok' then");
+    expect(block).toMatch(/raise exception 'password refused: this username belongs to an existing account'\n\s+using errcode = '28000'/);
+    // in the existing-row path, after the step-1 check and before the guard
+    const fn = fnOf(prep);
+    expect(fn.indexOf('password never lands')).toBeGreaterThan(fn.indexOf('perform public.sq_session_token_check(p_username, p_token, true);'));
+    expect(fn.indexOf('password never lands')).toBeLessThan(fn.indexOf('-- ── the regression guard (2026-09-22) ──'));
+  });
+
+  it('sq_username_registered: any existing non-guest row is taken; same signature, anon may call it', () => {
+    const fn = fnOf(prep, 'sq_username_registered');
+    expect(fn).toContain('where u.username = lower(trim(p_username))');
+    expect(fn).toMatch(/and \(u\.username not like 'guest\\_%'\n\s+or coalesce\(nullif\(u\.password_hash, ''\), nullif\(u\.data->>'passwordHash', ''\)\) is not null\)/);
+    expect(prep).toMatch(/grant execute on function public\.sq_username_registered\(text\) to anon, authenticated;/);
+    // the callers the header names are the only ones: the wrapper + two sign-up forms
+    expect(app.match(/'rpc\/sq_username_registered'/g).length).toBe(1);
+    expect(app.match(/const isUsernameRegistered = async/g).length).toBe(1);
+    expect(app.match(/await isUsernameRegistered\(/g).length).toBe(2);
+    expect(prep).toContain("src/app.jsx handleLogin, authMode 'register'");
+    expect(prep).toContain('src/app.jsx guest signup prompt');
+    // both callers refuse guest_* before asking — why a guest row may read free
+    const reg = app.slice(app.indexOf("if (authMode === 'register') {"));
+    expect(reg.indexOf('isGuestUsername(regUsername)')).toBeLessThan(reg.indexOf('await isUsernameRegistered(regUsername)'));
+    const cv = app.indexOf("setAuthError('Username already taken')");
+    const conv = app.slice(cv - 900, cv);
+    expect(conv.indexOf('isGuestUsername(username)')).toBeLessThan(conv.indexOf('await isUsernameRegistered(username)'));
+  });
+
+  it('same eight-argument signature: no drop, no second overload; one transaction; schema reloaded', () => {
+    expect(prep).not.toMatch(/drop function/);
+    expect(prep).toMatch(/grant execute on function public\.sq_save_user\(text, jsonb, text, text, text, text, text, text\) to anon, authenticated, service_role;/);
+    expect(prep).toMatch(/^begin;$/m);
+    expect(prep).toMatch(/^commit;$/m);
+    expect(prep.trim().endsWith("notify pgrst, 'reload schema';")).toBe(true);
+  });
+
+  it('the rollback restores 20260924100000\'s save and 20260913130000\'s name check', () => {
+    expect(fnOf(rollback)).toBe(fnOf(gaps));
+    expect(fnOf(rollback, 'sq_username_registered')).toBe(fnOf(migration, 'sq_username_registered'));
+  });
+
+  it('the replica test proves the prep and its rollback', () => {
+    expect(replica).toContain('\\ir ../migrations/20260925100000_session_token_cut_prep.sql');
+    expect(replica).toContain('\\ir 20260925_session_token_cut_prep_rollback.sql');
+    for (const k of ['prep1:', 'prep2:', 'prep rollback:']) expect(replica, k).toContain(k);
   });
 });
