@@ -1042,6 +1042,15 @@ from pro_events where created_at >= :since;
 
 ## `purchases`
 
+**Join trap (2026-09-23):** the `stripe_webhook` purchase row has no `aid`
+— only `username`. A join from any aid-keyed funnel (modal shown, plan
+clicked) to purchases must go through the username, or through the app-side
+`pro_purchase_completed` row (reason `activation_funnel`, which does carry
+the aid). Joining on the webhook row's aid silently drops every buyer; the
+first modal → Stripe read made exactly that mistake and concluded the
+automatic modal sold nothing, when it had produced both purchases.
+
+
 Verified payments. The ONLY money truth is the row the stripe-webhook edge
 function writes: `event='pro_purchase_completed'` with `reason='stripe_webhook'`
 — it carries `amount_cents` and a `cs_live_` session id.
