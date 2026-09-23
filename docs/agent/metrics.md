@@ -899,6 +899,17 @@ Baseline 2026-09-23: **211 indexed** / 93 warning / 38 excluded / 0 error,
 "Discovered but not crawled", 1 "Not discovered"). Plan and target:
 docs/plans/internal-links-bing-2026-09-23.md.
 
+**Trap: a rendering crawler counts as new people (found 2026-09-23).**
+From 2026-09-17 a crawler executing the app arrived through the topic pages'
+`/app/?challenge=…&src=challenges-…` links: first `app_opened` with tz
+`America/Los_Angeles`, viewport exactly `desktop:1920x1080`, no
+`landingSrc`, 2–3 events each — 220 "new people" in the week to 09-23 (199
+on 09-19 alone), which halved `first_solve_10m` on paper. Exclude people
+whose first `app_opened` has an empty `landingSrc` and (tz
+America/Los_Angeles + viewport desktop:1920x1080, or tz UTC + viewport
+desktop:1280x720). robots.txt disallows `/app/?` from 2026-09-23, so the
+flow should stop; keep the filter for any window that spans 09-17 → 09-23.
+
 ## `practice_next_day`
 
 Of registered solvers who solved at least one challenge on app-day D, the
