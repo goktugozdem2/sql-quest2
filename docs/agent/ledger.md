@@ -27,6 +27,29 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### Bing crawls what the link graph and a recrawl signal hand it
+
+- **Claimed** 2026-09-23 · **Read** 2026-10-07.
+- **Change** scripts/build-question-pages.mjs: related questions as a ring
+  (every question linked from six skill siblings, was min 1 / median 6
+  inbound), the breadcrumb links the topic page, each question links one
+  topic guide and the three SQL tools; the hub links the seven weakest
+  guides; tests/link-graph.test.js holds the floors. Plus 99 URLs through
+  Bing URL Submission on 09-23 (24 uncrawled top-level/topic pages, the
+  questions hub, 74 question pages) and IndexNow on the deploy.
+- **Why** Bing (the channel that produces solvers) had 211 of 405 sitemap
+  URLs indexed; the 09-13 batch sat at "discovered but not crawled". Bing
+  last crawled `sql-exercises` on 09-12, before its links to the new pages
+  existed. Plan: docs/plans/internal-links-bing-2026-09-23.md.
+- **Metric** `bing_indexed` (docs/agent/metrics.md).
+- **Target** ≥ 300 indexed on 2026-10-07, and at least 6 of the 12 sampled
+  URLs indexed.
+- **Falsification, stated in advance:** under 250 indexed on 10-07 → links
+  and submissions are not Bing's constraint; read the 93 "SEO/GEO issues"
+  warnings before building or submitting anything more. 250–299 → extend
+  to 10-21, keep submitting, change nothing else.
+- **Verdict** _pending_
+
 ### the first screen is a challenge, not a quiz
 
 - **Claimed** 2026-09-23 · **Flips** from docs/agent/flag-queue.md (row 2,

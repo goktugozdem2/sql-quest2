@@ -37,7 +37,7 @@ h1{font-size:clamp(28px,4vw,42px);font-weight:800;line-height:1.15;margin-bottom
 <body>
 <nav class="nav"><div class="ni"><a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:#e2e8f0;"><span style="width:32px;height:32px;border-radius:9px;background:#7c3aed;display:inline-flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg></span><span class="fd" style="font-weight:800;font-size:18px;">SQL Quest</span></a><a href="/sql-interview-readiness-test/" style="font-size:14px;">Readiness test</a></div></nav>
 <main class="wrap">
-  <p class="crumb"><a href="/">SQL Quest</a> › <a href="/questions/">SQL Interview Questions</a> › Subqueries &amp; CTEs</p>
+  <p class="crumb"><a href="/">SQL Quest</a> › <a href="/questions/">SQL Interview Questions</a> › <a href="/challenges/cte/">Subqueries &amp; CTEs</a></p>
   <h1 class="fd">Correlated Subquery: Employees Above Department Median</h1>
   <div class="meta"><span class="tag hard">Hard</span><span class="tag">Pro</span><span class="tag">Querying Basics</span><span class="tag">Subqueries &amp; CTEs</span><span class="tag">Aggregation &amp; Grouping</span></div>
   <div class="prob"><p>Find employees whose salary is <strong>above the median salary</strong> in their department. Use a correlated subquery to compute the median (the salary where at least half the department earns less and at least half earns more). Show <strong>name</strong>, <strong>department</strong>, <strong>salary</strong>, and <strong>dept_rank</strong> (their rank by salary within the department, highest=1). Sort by department, salary DESC. Correlated subqueries for median computation are asked at Google because they test deep understanding of row-level vs aggregate-level thinking.</p></div>
@@ -54,13 +54,14 @@ h1{font-size:clamp(28px,4vw,42px);font-weight:800;line-height:1.15;margin-bottom
   <h2 class="fd">Concepts</h2>
   <p style="font-size:15px;color:#94a3b8;"><code>SELECT</code> <code>Correlated Subquery</code> <code>COUNT</code> <code>WHERE</code></p>
   <p style="font-size:15px;color:#94a3b8;margin-top:8px;">Practise the topic: <a href="/sql-exercises/">SQL practice questions</a> · <a href="/challenges/cte/">CTE practice</a> · <a href="/challenges/aggregation/">GROUP BY exercises</a> · <a href="/challenges/advanced/">Advanced SQL interview questions</a></p>
+  <p style="font-size:15px;color:#94a3b8;margin-top:8px;">Read the concept: <a href="/blog/what-is-a-cte-in-sql/">What is a CTE?</a></p>
 
   <h2 class="fd">In these company practice sets</h2>
   <p style="font-size:15px;color:#94a3b8;"><a href="/google-sql-interview/">Google</a> · <a href="/snowflake-sql-interview/">Snowflake</a> · <a href="/microsoft-sql-interview/">Microsoft</a></p>
   <p style="font-size:13px;color:#8b98ab;margin-top:6px;">A SQL Quest challenge matched to patterns reported for these companies — not a question any of them has published.</p>
 
   <h2 class="fd">Related questions</h2>
-  <div class="rel"><a href="/questions/cumulative-distinct-customers-over-time/">Cumulative Distinct Customers Over Time<span>Hard · Free</span></a><a href="/questions/running-total-revenue/">Running Total Revenue<span>Hard · Free</span></a><a href="/questions/year-over-year-growth/">Year-over-Year Growth<span>Hard · Free</span></a><a href="/questions/7-day-rolling-revenue-average/">7-Day Rolling Revenue Average<span>Hard · Free</span></a><a href="/questions/multi-cte-revenue-pipeline/">Multi-CTE Revenue Pipeline<span>Hard · Free</span></a><a href="/questions/wealthy-survivor-profile/">Wealthy Survivor Profile<span>Hard · Pro</span></a></div>
+  <div class="rel"><a href="/questions/highest-fare-per-port/">Highest Fare Per Port<span>Hard · Pro</span></a><a href="/questions/nth-highest-salary-per-department/">Nth Highest Salary per Department<span>Hard · Pro</span></a><a href="/questions/year-over-year-growth/">Year-over-Year Growth<span>Hard · Free</span></a><a href="/questions/recursive-team-size-rollup/">Recursive Team Size Rollup<span>Hard · Pro</span></a><a href="/questions/genres-in-common-intersect/">Genres in Common (INTERSECT)<span>Hard · Pro</span></a><a href="/questions/engagement-streaks-3-orders-7-day-gaps/">Engagement Streaks (3+ Orders, ≤7-Day Gaps)<span>Hard · Pro</span></a></div>
 
   <div class="box" style="margin-top:34px;text-align:center;">
     <p class="fd" style="font-size:19px;font-weight:800;margin-bottom:6px;">Where would this cost you points in an interview?</p>
@@ -69,6 +70,6 @@ h1{font-size:clamp(28px,4vw,42px);font-weight:800;line-height:1.15;margin-bottom
   </div>
 </main>
 <script defer src="/track.js"></script>
-<footer class="ft">SQL Quest — personalized SQL interview practice · <a href="/questions/">All SQL interview questions</a> · <a href="/sql-exercises/">Practice by difficulty</a> · <a href="/sql-interview-prep/">Company guides</a> · <a href="/sql-tools/">Free SQL tools</a> · <a href="/privacy/">Privacy</a></footer>
+<footer class="ft">SQL Quest — personalized SQL interview practice · <a href="/questions/">All SQL interview questions</a> · <a href="/sql-exercises/">Practice by difficulty</a> · <a href="/sql-interview-prep/">Company guides</a> · <a href="/sql-tools/">Free SQL tools</a>: <a href="/sql-query-checker/">query checker</a>, <a href="/sql-query-explainer/">explainer</a>, <a href="/sql-query-optimizer/">optimizer</a> · <a href="/privacy/">Privacy</a></footer>
 </body>
 </html>

@@ -46,6 +46,49 @@ const plain = s => String(s || '').replace(/\*\*|`/g, '').replace(/\s+/g, ' ').t
 const squashWs = s => String(s || '').replace(/\s+/g, ' ').trim();
 export const showHint = c => !!c.hint && !squashWs(c.hint).includes(squashWs(c.solution).slice(0, 60));
 const RANKING = /\b(?:ROW_NUMBER|DENSE_RANK|RANK|NTILE|PERCENT_RANK)\s*\(/i;
+export const primarySkill = c => { const skills = canon(c); return skills.find(s => s !== 'Querying Basics') || skills[0] || 'Querying Basics'; };
+
+// Related questions — a ring, not a ranking (2026-09-23). The first version
+// sorted every same-skill question by difficulty distance and took the top
+// six, so the same few low-id questions were "related" to everything and
+// most were related to nothing: 299 pages, median 6 inbound links, and pages
+// like /questions/distinct-values/ linked from the hub alone. Bing had crawled
+// almost none of the 09-13 batch ("discovered but not crawled"). Now each
+// question's primary-skill group is ordered by difficulty then id, and a page
+// links the three before and the three after it, wrapping round — so every
+// question in a group of seven or more is linked from exactly six siblings,
+// still near its own difficulty. tests/link-graph.test.js holds the floor.
+// One guide per question, by primary skill, rotated by id so a skill's
+// questions spread their links across its guides instead of all pointing at
+// the first (2026-09-23). The guides were the weakest-linked pages on the site
+// — two to five inbound links each while Bing still ranked some of them
+// (sql-find-duplicates: 463 impressions on 4 links). Every target is a live
+// page; tests/link-graph.test.js fails on a dead one.
+export const SKILL_GUIDES = {
+  'Joins': [['/blog/left-join-vs-inner-join/', 'LEFT JOIN vs INNER JOIN'], ['/blog/sql-joins-explained/', 'SQL JOINs explained'], ['/blog/sql-anti-join/', 'The anti-join, three ways']],
+  'Window Functions': [['/blog/window-functions-tutorial/', 'Window functions tutorial'], ['/blog/row-number-vs-rank-vs-dense-rank/', 'ROW_NUMBER vs RANK vs DENSE_RANK'], ['/blog/sql-running-total/', 'SQL running total']],
+  'Subqueries & CTEs': [['/blog/sql-cte-tutorial/', 'SQL CTE tutorial'], ['/blog/what-is-a-cte-in-sql/', 'What is a CTE?'], ['/blog/recursive-cte-explained/', 'Recursive CTE explained']],
+  'Aggregation & Grouping': [['/blog/sql-group-by-tutorial/', 'SQL GROUP BY tutorial'], ['/blog/where-vs-having/', 'WHERE vs HAVING'], ['/sql-find-duplicates/', 'How to find duplicates in SQL']],
+  'Conditional Logic': [['/blog/sql-case-when-tutorial/', 'SQL CASE WHEN tutorial']],
+  'Date Functions': [['/blog/time-series-sql-hardware-interviews/', 'Time-series SQL: the ordering trap'], ['/blog/sql-running-total/', 'SQL running total']],
+  'NULL Handling': [['/blog/is-null-vs-equals-null/', 'IS NULL vs = NULL'], ['/blog/null-handling-mistakes/', 'NULL handling mistakes']],
+  'String Functions': [['/sql-cheat-sheet/', 'SQL cheat sheet']],
+  'Querying Basics': [['/learn-sql-for-beginners/', 'Learn SQL for beginners'], ['/sql-tutorial/', 'SQL tutorial'], ['/practice-sql-no-setup/', 'Practice SQL with no setup']],
+};
+export const guideFor = c => { const g = SKILL_GUIDES[primarySkill(c)] || SKILL_GUIDES['Querying Basics']; return g[c.id % g.length]; };
+
+export function relatedQuestions(c, bank, primary = primarySkill(c)) {
+  const group = bank.filter(o => primarySkill(o) === primary)
+    .sort((a, b) => RANK[a.difficulty] - RANK[b.difficulty] || a.id - b.id);
+  const i = group.findIndex(o => o.id === c.id);
+  if (i < 0 || group.length < 2) return [];
+  const out = [];
+  for (const d of [-3, -2, -1, 1, 2, 3]) {
+    const o = group[((i + d) % group.length + group.length) % group.length];
+    if (o.id !== c.id && !out.includes(o)) out.push(o);
+  }
+  return out;
+}
 
 function loadDatasets() {
   const ctx = { window: {}, console: { log() {}, warn() {} } };
@@ -120,7 +163,7 @@ ${ld.map(o => `  <script type="application/ld+json">${JSON.stringify(o)}</script
 <nav class="nav"><div class="ni"><a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:#e2e8f0;"><span style="width:32px;height:32px;border-radius:9px;background:#7c3aed;display:inline-flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg></span><span class="fd" style="font-weight:800;font-size:18px;">SQL Quest</span></a><a href="/sql-interview-readiness-test/" style="font-size:14px;">Readiness test</a></div></nav>`;
 
 const foot = `<script defer src="/track.js"></script>
-<footer class="ft">SQL Quest — personalized SQL interview practice · <a href="/questions/">All SQL interview questions</a> · <a href="/sql-exercises/">Practice by difficulty</a> · <a href="/sql-interview-prep/">Company guides</a> · <a href="/sql-tools/">Free SQL tools</a> · <a href="/privacy/">Privacy</a></footer>
+<footer class="ft">SQL Quest — personalized SQL interview practice · <a href="/questions/">All SQL interview questions</a> · <a href="/sql-exercises/">Practice by difficulty</a> · <a href="/sql-interview-prep/">Company guides</a> · <a href="/sql-tools/">Free SQL tools</a>: <a href="/sql-query-checker/">query checker</a>, <a href="/sql-query-explainer/">explainer</a>, <a href="/sql-query-optimizer/">optimizer</a> · <a href="/privacy/">Privacy</a></footer>
 </body>
 </html>
 `;
@@ -139,10 +182,7 @@ export function renderQuestion(c, ctx) {
   const topicLinks = skills.filter(s => SKILL_PAGE[s]).map(s => `<a href="${SKILL_PAGE[s][0]}">${esc(SKILL_PAGE[s][1])}</a>`);
   if (RANKING.test(c.solution || '')) topicLinks.push('<a href="/challenges/ranking-functions/">Ranking function practice</a>');
   if (c.difficulty === 'Hard') topicLinks.push('<a href="/challenges/advanced/">Advanced SQL interview questions</a>');
-  const related = bank
-    .filter(o => o.id !== c.id && canon(o).includes(primary))
-    .sort((a, b) => Math.abs(RANK[a.difficulty] - RANK[c.difficulty]) - Math.abs(RANK[b.difficulty] - RANK[c.difficulty]) || (playableFree(b) - playableFree(a)) || a.id - b.id)
-    .slice(0, 6);
+  const related = relatedQuestions(c, bank, primary);
   const appUrl = `/app/?challenge=${c.id}&amp;src=question-${slug}`;
   const ld = [
     { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [
@@ -156,7 +196,7 @@ export function renderQuestion(c, ctx) {
   ];
   return `${head({ title, description, url, ld })}
 <main class="wrap">
-  <p class="crumb"><a href="/">SQL Quest</a> › <a href="/questions/">SQL Interview Questions</a> › ${esc(primary)}</p>
+  <p class="crumb"><a href="/">SQL Quest</a> › <a href="/questions/">SQL Interview Questions</a> › ${SKILL_PAGE[primary] ? `<a href="${SKILL_PAGE[primary][0]}">${esc(primary)}</a>` : esc(primary)}</p>
   <h1 class="fd">${esc(c.title)}</h1>
   <div class="meta"><span class="tag ${c.difficulty.toLowerCase()}">${c.difficulty}</span><span class="tag">${free ? 'Free' : 'Pro'}</span>${skills.map(s => `<span class="tag">${esc(s)}</span>`).join('')}</div>
   <div class="prob">${paras(c.description)}</div>
@@ -173,10 +213,12 @@ export function renderQuestion(c, ctx) {
   <h2 class="fd">Concepts</h2>
   <p style="font-size:15px;color:#94a3b8;">${concepts.map(t => `<code>${esc(t)}</code>`).join(' ')}</p>
   ${topicLinks.length ? `<p style="font-size:15px;color:#94a3b8;margin-top:8px;">Practise the topic: ${topicLinks.join(' · ')}</p>` : ''}
+  <p style="font-size:15px;color:#94a3b8;margin-top:8px;">Read the concept: <a href="${guideFor(c)[0]}">${esc(guideFor(c)[1])}</a></p>
 
   ${cos.length ? `<h2 class="fd">In these company practice sets</h2>
   <p style="font-size:15px;color:#94a3b8;">${cos.map(x => `<a href="${x.url}">${esc(x.name)}</a>`).join(' · ')}</p>
-  <p style="font-size:13px;color:#8b98ab;margin-top:6px;">A SQL Quest challenge matched to patterns reported for these companies — not a question any of them has published.</p>` : ''}
+  <p style="font-size:13px;color:#8b98ab;margin-top:6px;">A SQL Quest challenge matched to patterns reported for these companies — not a question any of them has published.</p>${cos.some(x => /capital one/i.test(x.name)) ? `
+  <p style="font-size:14px;color:#94a3b8;margin-top:6px;">Preparing for Capital One? <a href="/blog/capital-one-codesignal-data-analyst-assessment/">How the CodeSignal data analyst assessment works</a>.</p>` : ''}` : ''}
 
   <h2 class="fd">Related questions</h2>
   <div class="rel">${related.map(o => `<a href="/questions/${slugs.get(o.id)}/">${esc(o.title)}<span>${o.difficulty} · ${playableFree(o) ? 'Free' : 'Pro'}</span></a>`).join('')}</div>
@@ -214,6 +256,7 @@ export function renderHub(bank, slugs) {
   <p style="font-size:17px;color:#94a3b8;max-width:720px;margin-bottom:18px;">Every practice question in the SQL Quest bank, grouped by the Skillmap skill it leans on. Each page has the problem, the schema with sample rows, a hint and a link into the browser editor.</p>
   <p style="margin-bottom:10px;"><a class="btn bp" href="/sql-interview-readiness-test/" data-track="cta_questions_hub_readiness">Find your weakest skill first</a></p>
   <p style="font-size:14px;color:#94a3b8;">Jump to: ${order.map(s => `<a href="#${s.toLowerCase().replace(/[^a-z]+/g, '-')}">${esc(s)}</a>`).join(' · ')}</p>
+  <p style="font-size:14px;color:#94a3b8;margin-top:8px;">Guides: <a href="/sql-interview-questions-data-analyst/">SQL questions for data analyst interviews</a> · <a href="/blog/sql-for-ai-company-interviews/">SQL for AI-company interviews</a> · <a href="/fraud-analytics-sql/">Fraud analytics SQL</a> · <a href="/sql-for-the-ai-era/">SQL in the AI era</a> · <a href="/blog/validate-ai-generated-sql/">Validating AI-generated SQL</a> · <a href="/after-bootcamp/">After a bootcamp</a> · <a href="/after-the-sql-course/">After an SQL course</a></p>
   ${sections}
 </main>
 ${foot}`;

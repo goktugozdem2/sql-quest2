@@ -37,7 +37,7 @@ h1{font-size:clamp(28px,4vw,42px);font-weight:800;line-height:1.15;margin-bottom
 <body>
 <nav class="nav"><div class="ni"><a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:#e2e8f0;"><span style="width:32px;height:32px;border-radius:9px;background:#7c3aed;display:inline-flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg></span><span class="fd" style="font-weight:800;font-size:18px;">SQL Quest</span></a><a href="/sql-interview-readiness-test/" style="font-size:14px;">Readiness test</a></div></nav>
 <main class="wrap">
-  <p class="crumb"><a href="/">SQL Quest</a> › <a href="/questions/">SQL Interview Questions</a> › NULL Handling</p>
+  <p class="crumb"><a href="/">SQL Quest</a> › <a href="/questions/">SQL Interview Questions</a> › <a href="/challenges/null-handling/">NULL Handling</a></p>
   <h1 class="fd">Handling NULL Values</h1>
   <div class="meta"><span class="tag easy">Easy</span><span class="tag">Free</span><span class="tag">Querying Basics</span><span class="tag">NULL Handling</span></div>
   <div class="prob"><p>NULL means 'unknown', not zero. Find passengers whose <strong>age is NULL</strong> (unknown). Show <strong>name</strong>, <strong>pclass</strong>, <strong>fare</strong>, and a column called <strong>age_display</strong> that shows 'Unknown' when age is NULL, or the age value when it's known. Sort by fare descending. Limit to <strong>15 rows</strong>.</p></div>
@@ -54,11 +54,12 @@ h1{font-size:clamp(28px,4vw,42px);font-weight:800;line-height:1.15;margin-bottom
   <h2 class="fd">Concepts</h2>
   <p style="font-size:15px;color:#94a3b8;"><code>SELECT</code> <code>IS NULL</code> <code>COALESCE</code> <code>NULL Handling</code></p>
   <p style="font-size:15px;color:#94a3b8;margin-top:8px;">Practise the topic: <a href="/sql-exercises/">SQL practice questions</a> · <a href="/challenges/null-handling/">NULL handling practice</a></p>
+  <p style="font-size:15px;color:#94a3b8;margin-top:8px;">Read the concept: <a href="/blog/null-handling-mistakes/">NULL handling mistakes</a></p>
 
   
 
   <h2 class="fd">Related questions</h2>
-  <div class="rel"><a href="/questions/default-age-for-missing-records-coalesce/">Default Age for Missing Records (COALESCE)<span>Easy · Free</span></a><a href="/questions/left-join-watch-the-nulls-appear/">LEFT JOIN: Watch the NULLs Appear<span>Easy · Free</span></a><a href="/questions/failures-with-no-loss-estimate/">Failures with No Loss Estimate<span>Easy · Free</span></a><a href="/questions/properties-without-listed-owner/">Properties Without Listed Owner<span>Easy · Free</span></a><a href="/questions/chargeback-reason-codes-resolved-and-still-open/">Chargeback Reason Codes: Resolved and Still Open<span>Easy · Free</span></a><a href="/questions/genre-box-office-report/">Genre Box Office Report<span>Medium · Free</span></a></div>
+  <div class="rel"><a href="/questions/properties-without-listed-owner/">Properties Without Listed Owner<span>Easy · Free</span></a><a href="/questions/fare-imputation-analysis/">Fare Imputation Analysis<span>Medium · Free</span></a><a href="/questions/handle-null-ages/">Handle NULL Ages<span>Medium · Free</span></a><a href="/questions/default-age-for-missing-records-coalesce/">Default Age for Missing Records (COALESCE)<span>Easy · Free</span></a><a href="/questions/failures-with-no-loss-estimate/">Failures with No Loss Estimate<span>Easy · Free</span></a></div>
 
   <div class="box" style="margin-top:34px;text-align:center;">
     <p class="fd" style="font-size:19px;font-weight:800;margin-bottom:6px;">Where would this cost you points in an interview?</p>
@@ -67,6 +68,6 @@ h1{font-size:clamp(28px,4vw,42px);font-weight:800;line-height:1.15;margin-bottom
   </div>
 </main>
 <script defer src="/track.js"></script>
-<footer class="ft">SQL Quest — personalized SQL interview practice · <a href="/questions/">All SQL interview questions</a> · <a href="/sql-exercises/">Practice by difficulty</a> · <a href="/sql-interview-prep/">Company guides</a> · <a href="/sql-tools/">Free SQL tools</a> · <a href="/privacy/">Privacy</a></footer>
+<footer class="ft">SQL Quest — personalized SQL interview practice · <a href="/questions/">All SQL interview questions</a> · <a href="/sql-exercises/">Practice by difficulty</a> · <a href="/sql-interview-prep/">Company guides</a> · <a href="/sql-tools/">Free SQL tools</a>: <a href="/sql-query-checker/">query checker</a>, <a href="/sql-query-explainer/">explainer</a>, <a href="/sql-query-optimizer/">optimizer</a> · <a href="/privacy/">Privacy</a></footer>
 </body>
 </html>

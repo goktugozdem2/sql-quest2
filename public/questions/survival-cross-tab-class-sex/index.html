@@ -37,7 +37,7 @@ h1{font-size:clamp(28px,4vw,42px);font-weight:800;line-height:1.15;margin-bottom
 <body>
 <nav class="nav"><div class="ni"><a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:#e2e8f0;"><span style="width:32px;height:32px;border-radius:9px;background:#7c3aed;display:inline-flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg></span><span class="fd" style="font-weight:800;font-size:18px;">SQL Quest</span></a><a href="/sql-interview-readiness-test/" style="font-size:14px;">Readiness test</a></div></nav>
 <main class="wrap">
-  <p class="crumb"><a href="/">SQL Quest</a> › <a href="/questions/">SQL Interview Questions</a> › Aggregation &amp; Grouping</p>
+  <p class="crumb"><a href="/">SQL Quest</a> › <a href="/questions/">SQL Interview Questions</a> › <a href="/challenges/aggregation/">Aggregation &amp; Grouping</a></p>
   <h1 class="fd">Survival Cross-Tab: Class × Sex</h1>
   <div class="meta"><span class="tag medium">Medium</span><span class="tag">Free</span><span class="tag">Querying Basics</span><span class="tag">Aggregation &amp; Grouping</span></div>
   <div class="prob"><p>Build a cross-tabulation of survival by <strong>passenger class AND sex</strong> — 6 combinations (3 classes × 2 sexes). For each combination show: <strong>pclass</strong>, <strong>sex</strong>, <strong>passengers</strong>, <strong>survivors</strong>, <strong>survival_rate</strong> (%, 1 dec), <strong>avg_fare</strong> (2 dec). Sort by pclass, then sex. This multi-dimension breakdown is a classic data analyst question.</p></div>
@@ -54,13 +54,14 @@ h1{font-size:clamp(28px,4vw,42px);font-weight:800;line-height:1.15;margin-bottom
   <h2 class="fd">Concepts</h2>
   <p style="font-size:15px;color:#94a3b8;"><code>SELECT</code> <code>GROUP BY</code> <code>Aggregation</code> <code>ORDER BY</code></p>
   <p style="font-size:15px;color:#94a3b8;margin-top:8px;">Practise the topic: <a href="/sql-exercises/">SQL practice questions</a> · <a href="/challenges/aggregation/">GROUP BY exercises</a></p>
+  <p style="font-size:15px;color:#94a3b8;margin-top:8px;">Read the concept: <a href="/blog/where-vs-having/">WHERE vs HAVING</a></p>
 
   <h2 class="fd">In these company practice sets</h2>
   <p style="font-size:15px;color:#94a3b8;"><a href="/snowflake-sql-interview/">Snowflake</a></p>
   <p style="font-size:13px;color:#8b98ab;margin-top:6px;">A SQL Quest challenge matched to patterns reported for these companies — not a question any of them has published.</p>
 
   <h2 class="fd">Related questions</h2>
-  <div class="rel"><a href="/questions/class-survival-breakdown/">Class Survival Breakdown<span>Medium · Free</span></a><a href="/questions/department-roster-with-group-concat/">Department Roster with GROUP_CONCAT<span>Medium · Free</span></a><a href="/questions/movie-rating-tier-breakdown/">Movie Rating Tier Breakdown<span>Medium · Free</span></a><a href="/questions/full-survival-dashboard-by-class/">Full Survival Dashboard by Class<span>Medium · Free</span></a><a href="/questions/genre-financial-report/">Genre Financial Report<span>Medium · Free</span></a><a href="/questions/department-compensation-report/">Department Compensation Report<span>Medium · Free</span></a></div>
+  <div class="rel"><a href="/questions/title-social-survival-analysis/">Title Social Survival Analysis<span>Medium · Free</span></a><a href="/questions/find-duplicate-emails/">Find Duplicate Emails<span>Medium · Free</span></a><a href="/questions/department-performance-rate/">Department Performance Rate<span>Medium · Free</span></a><a href="/questions/performance-vs-salary-analysis/">Performance vs Salary Analysis<span>Medium · Free</span></a><a href="/questions/director-consistency-report/">Director Consistency Report<span>Medium · Free</span></a><a href="/questions/group-by-having/">GROUP BY + HAVING<span>Medium · Free</span></a></div>
 
   <div class="box" style="margin-top:34px;text-align:center;">
     <p class="fd" style="font-size:19px;font-weight:800;margin-bottom:6px;">Where would this cost you points in an interview?</p>
@@ -69,6 +70,6 @@ h1{font-size:clamp(28px,4vw,42px);font-weight:800;line-height:1.15;margin-bottom
   </div>
 </main>
 <script defer src="/track.js"></script>
-<footer class="ft">SQL Quest — personalized SQL interview practice · <a href="/questions/">All SQL interview questions</a> · <a href="/sql-exercises/">Practice by difficulty</a> · <a href="/sql-interview-prep/">Company guides</a> · <a href="/sql-tools/">Free SQL tools</a> · <a href="/privacy/">Privacy</a></footer>
+<footer class="ft">SQL Quest — personalized SQL interview practice · <a href="/questions/">All SQL interview questions</a> · <a href="/sql-exercises/">Practice by difficulty</a> · <a href="/sql-interview-prep/">Company guides</a> · <a href="/sql-tools/">Free SQL tools</a>: <a href="/sql-query-checker/">query checker</a>, <a href="/sql-query-explainer/">explainer</a>, <a href="/sql-query-optimizer/">optimizer</a> · <a href="/privacy/">Privacy</a></footer>
 </body>
 </html>

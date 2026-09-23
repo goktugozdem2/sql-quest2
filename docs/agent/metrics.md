@@ -881,6 +881,24 @@ from per group by arm;
 Baseline (no test, quiz for everyone), first opens 08-24 → 09-20:
 first_solve_10m 12.4%, opened a challenge within 10 minutes 54.7%.
 
+## `bing_indexed`
+
+Bing's index coverage of the site (2026-09-23). Read by hand in Bing
+Webmaster Tools → Site Explorer (`/webmasters/siteexplorer?siteUrl=https://sqlquest.app/`):
+the "Crawl information" bar — Indexed / Warning / Excluded / Error — and the
+"URLs" count (known). Plus a fixed sample through URL Inspection (set the
+input via the native setter, click Inspect, wait 14 s, read the line after
+"Request indexing"): /questions/, /questions/order-status-dashboard/,
+/questions/inactive-customers-by-tier/, /questions/give-the-top-performers-a-raise/,
+/questions/top-failure-mode-by-quality/, /challenges/ranking-functions/,
+/challenges/aggregation/, /goldman-sachs-sql-interview/, /linkedin-sql-interview/,
+/microsoft-sql-interview/, /sql-query-checker/, /sql-query-optimizer/.
+
+Baseline 2026-09-23: **211 indexed** / 93 warning / 38 excluded / 0 error,
+342 known, 405 in the sitemap; of the twelve sampled, **0 indexed** (11
+"Discovered but not crawled", 1 "Not discovered"). Plan and target:
+docs/plans/internal-links-bing-2026-09-23.md.
+
 ## `practice_next_day`
 
 Of registered solvers who solved at least one challenge on app-day D, the
