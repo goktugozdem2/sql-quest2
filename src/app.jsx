@@ -23793,8 +23793,29 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
     setInlineAiLoading(false);
   };
 
+  // The first run on a challenge, once per challenge per page session
+  // (2026-09-23). Measured that day over 30 days: 92% of the challenge opens
+  // that never became a solve had no submit at all — no SQL error, no wrong
+  // result — while 89% of wrong results went on to a solve. The leak is before
+  // the first run, and nothing recorded a run that was not a submit.
+  // `challenge_first_run {challengeId, via: 'run'|'submit', secondsOpen}`;
+  // metric `open_to_first_run`.
+  const firstRunSentRef = useRef(new Set());
+  const challengeOpenedAtRef = useRef({ id: null, at: 0 });
+  if (currentChallenge && challengeOpenedAtRef.current.id !== currentChallenge.id) {
+    challengeOpenedAtRef.current = { id: currentChallenge.id, at: Date.now() };
+  }
+  const markChallengeFirstRun = (via) => {
+    const id = currentChallenge?.id;
+    if (id == null || firstRunSentRef.current.has(id)) return;
+    firstRunSentRef.current.add(id);
+    const at = challengeOpenedAtRef.current.id === id ? challengeOpenedAtRef.current.at : 0;
+    trackActivationEvent('challenge_first_run', { challengeId: id, via, secondsOpen: at ? Math.round((Date.now() - at) / 1000) : null });
+  };
+
   const runChallengeQuery = () => {
     if (!db || !challengeQuery.trim()) return;
+    markChallengeFirstRun('run');
     // Track execution time so user gets "Ran in Xms" confirmation.
     // Before this, re-running a query with identical output showed no visual
     // change, leaving users confused whether the Run button actually fired.
@@ -23823,6 +23844,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
 
   const submitChallenge = () => {
     if (!db || !challengeQuery.trim() || !currentChallenge) return;
+    markChallengeFirstRun('submit');
     setChallengeSubmitAt(Date.now());
     try {
       // For a SELECT challenge, running the user's query then the solution on
@@ -37501,7 +37523,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                             {showChallengeStructure ? `🙈 ${i18n_t('practice', 'hideStructure')}` : `🧩 ${i18n_t('practice', 'showStructure')}`}
                           </button>
                         )}
-                        <button onClick={() => setShowChallengeHint(!showChallengeHint)} className="text-sm text-yellow-400 hover:text-yellow-300">
+                        <button onClick={() => { if (!showChallengeHint && currentChallenge) trackActivationEvent('challenge_hint_opened', { challengeId: currentChallenge.id, difficulty: currentChallenge.difficulty }); setShowChallengeHint(!showChallengeHint); }} className="text-sm text-yellow-400 hover:text-yellow-300">
                           {showChallengeHint ? `🙈 ${i18n_t('practice', 'hideHint')}` : `💡 ${i18n_t('practice', 'showHint')}`}
                         </button>
                       </div>

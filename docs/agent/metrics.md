@@ -910,6 +910,38 @@ America/Los_Angeles + viewport desktop:1920x1080, or tz UTC + viewport
 desktop:1280x720). robots.txt disallows `/app/?` from 2026-09-23, so the
 flow should stop; keep the filter for any window that spans 09-17 → 09-23.
 
+## `open_to_first_run`
+
+Of person-challenge opens (`challenge_opened`, by `aid` and `challengeId`),
+the share with a `challenge_first_run` for the same challenge (born
+2026-09-23; `via` run | submit, `secondsOpen`). Measured before the event
+existed, 30 days to 09-23: of opens that never became a solve, 92.3% had no
+submit at all (no `challenge_error_pattern`, no `challenge_errored`). Read
+split by `via` and by first-contact vs later opens. Scorecard §1.
+
+## `hint_opened_rate`
+
+Of `challenge_solved` rows (by `aid` and `challengeId`), the share with a
+`challenge_hint_opened` for that challenge before the solve (event born
+2026-09-23; `attempts[].hintsUsed` in `users.data` covers synced accounts
+before that). Tracked, no target yet — a difficulty-balance signal per
+challenge. Scorecard §2.
+
+## `second_session_7d`
+
+Of people whose first `app_opened` falls in the window (and at least seven
+days before the read), the share with another `app_opened` more than one hour
+and at most seven days after it. Crawler filter from `first_solve_10m`.
+Baseline, first opens 2026-08-17 → 09-16: **16.2%** (n = 1,177). Scorecard §4.
+
+## `visitor_to_payer`
+
+People (by `aid`) with a `landing_view` or an `app_opened` in the 30-day
+window, and `pro_purchase_completed` rows with `reason='stripe_webhook'` in
+the same window; the rate is purchases ÷ people. 30 days to 2026-09-23:
+2 ÷ 3,864 = **0.05%** (landing views still include crawlers — a floor).
+Scorecard §3.
+
 ## `practice_next_day`
 
 Of registered solvers who solved at least one challenge on app-day D, the

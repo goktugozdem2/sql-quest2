@@ -93,6 +93,14 @@ claims; objectives hold what the claims are *for*. Read it at the start of a
 session, before the ledger. Current: **50 paying customers per month by
 2026-12-08**, from 2 on 2026-09-09.
 
+## Scorecard — the five numbers (2026-09-23)
+`docs/agent/scorecard.md` is the founder's metric frame with measured
+baselines. Read weekly, in the Friday table: `first_solve_10m`,
+`visitor_to_payer`, `hint_to_solve`, `second_session_7d`, active subscribers.
+Two findings that set priority: 92% of challenge opens that never became a
+solve had no run at all (event `challenge_first_run` from 09-23), and the
+middle-funnel leak is modal → Stripe (2.3%), not reaching the modal (52%).
+
 ## Data-driven development
 The operating system for measurement and product decisions is
 `docs/data-driven-product.md` — principles (people-not-events, kill
