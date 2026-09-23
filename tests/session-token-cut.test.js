@@ -52,8 +52,8 @@ const throwing = { getItem() { throw new Error('denied'); }, setItem() { throw n
 // ── the SQL ──
 describe('the cut file (supabase/manual/20260925b_session_token_cut.sql)', () => {
   const STEP1 = "  -- ── session tokens (2026-09-23, step 1: recorded, never refused) ──\n  perform public.sq_session_token_check(p_username, p_token, true);\n";
-  const CUT_SAVE = /  -- ── session token cut \(step 4\): an existing row needs its token ──\n[\s\S]*?  -- ── end session token cut ──\n/;
-  const CUT_LOAD = /  -- ── session token cut \(step 4\): an existing row is read only with its token ──\n[\s\S]*?  -- ── end session token cut ──\n/;
+  const CUT_SAVE = / {2}-- ── session token cut \(step 4\): an existing row needs its token ──\n[\s\S]*? {2}-- ── end session token cut ──\n/;
+  const CUT_LOAD = / {2}-- ── session token cut \(step 4\): an existing row is read only with its token ──\n[\s\S]*? {2}-- ── end session token cut ──\n/;
 
   it('is not a migration, and no migration raises "session token required"', () => {
     expect(fs.existsSync(path.join(ROOT, 'supabase/migrations/20260925b_session_token_cut.sql'))).toBe(false);
@@ -71,7 +71,7 @@ describe('the cut file (supabase/manual/20260925b_session_token_cut.sql)', () =>
     after = after.replace(CUT_SAVE, STEP1);
     after = after.replace('\n  v_tok text; -- session token cut (step 4)', '');
     after = after.replace(
-      /        -- session token cut \(step 4\): only the guest's own secret carries the\n[\s\S]*?        v_carry := public\.sq_session_token_check\(p_carry_pro_from, p_carry_token, true\);\n        if v_carry not in \('ok', 'claimed'\) then\n/,
+      / {8}-- session token cut \(step 4\): only the guest's own secret carries the\n[\s\S]*? {8}v_carry := public\.sq_session_token_check\(p_carry_pro_from, p_carry_token, true\);\n {8}if v_carry not in \('ok', 'claimed'\) then\n/,
       "        v_carry := public.sq_session_token_check(p_carry_pro_from, p_carry_token, false);\n        if v_carry = 'unclaimed' and not exists (\n          select 1 from public.session_token_misses m\n           where m.username = p_carry_pro_from and m.at > now() - interval '1 hour'\n        ) then\n          insert into public.session_token_misses (username, kind) values (p_carry_pro_from, 'missing');\n        end if;\n        if v_carry = 'invalid' then\n",
     );
     expect(after).toBe(before);
