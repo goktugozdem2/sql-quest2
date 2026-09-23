@@ -22,6 +22,9 @@
 // helpers here: withCarry (a carried plan proves the guest) and
 // endSessionBody (logout ends the server row). tests/session-token.test.js pins this module and the
 // source guards in tests/account-access.test.js pin every call site.
+// The cut's client half (2026-09-25) adds isSessionTokenRequired,
+// sessionRefusalAction, RELOGIN_MESSAGE and the relogin marker; pinned by
+// tests/session-token-cut.test.js.
 
 export const SESSION_TOKEN_KEY = 'sqlquest_session_token';
 export const GUEST_SECRET_KEY = 'sqlquest_guest_secret';
@@ -150,6 +153,64 @@ export function endSessionBody(storage, username) {
   if (!username || isGuestUsername(username)) return null;
   const token = readSessionToken(storage, username);
   return token ? { p_username: username, p_token: token } : null;
+}
+
+// ── The cut (step 4), client half (2026-09-25) ──
+// supabase/manual/20260925b_session_token_cut.sql makes sq_load_account and
+// sq_save_user RAISE "session token required" (errcode 28000, HTTP 403) when
+// an EXISTING row is reached with a missing or wrong token. This half ships
+// FIRST and is inert until then: nothing answers that message before the cut.
+// Matched on the message, never on the status — a 403 has other causes.
+export const SESSION_TOKEN_REQUIRED = 'session token required';
+export function isSessionTokenRequired(err) {
+  const msg = err && typeof err === 'object' ? err.message : err;
+  return typeof msg === 'string' && msg.includes(SESSION_TOKEN_REQUIRED);
+}
+
+// The one sentence the sign-in screen shows after a refusal.
+export const RELOGIN_MESSAGE = "For your account's security, please sign in again — your progress is safe.";
+
+// What to do when the server refuses a row for want of its token:
+//   'relogin'    a registered account that is the one on screen (activeUser),
+//                or when nobody is (a page load, a sign-in, a registration:
+//                activeUser empty or the sign-in screen open) — clear its
+//                token and session, keep the local progress, ask for the
+//                password once;
+//   'new_guest'  this browser's current guest, with nothing worth keeping
+//                locally — a fresh guest identity (new row, new secret);
+//   'keep_local' a guest with progress (its truth is local; the cloud copy is
+//                only a copy), or a late flush for an account or a guest that
+//                is no longer the one on screen (a debounced save that fires
+//                after logout carries no token) — record it, stop sending,
+//                keep the blob, and never sign out whoever is using the app.
+export function sessionRefusalAction({ username, activeUser, authScreenOpen, currentGuest, localHasProgress }) {
+  if (!username) return 'keep_local';
+  if (!isGuestUsername(username)) {
+    return (!activeUser || activeUser === username || authScreenOpen) ? 'relogin' : 'keep_local';
+  }
+  if (username === currentGuest && !localHasProgress) return 'new_guest';
+  return 'keep_local';
+}
+
+// "This account was signed out by a refusal and owes a merge on sign-in."
+// Stored as {"username", "at"}; the progress itself stays where it always
+// is, under sqlquest_user_<username>, which a successful sign-in overwrites —
+// so the sign-in path reads it BEFORE writing (readStaleOwnBlob in app.jsx).
+export const RELOGIN_PENDING_KEY = 'sqlquest_relogin_pending';
+export function markReloginPending(storage, username, now = Date.now()) {
+  if (!storage || !username || isGuestUsername(username)) return false;
+  try { storage.setItem(RELOGIN_PENDING_KEY, JSON.stringify({ username, at: now })); return true; } catch { return false; }
+}
+export function isReloginPending(storage, username) {
+  if (!storage || !username) return false;
+  try {
+    const rec = JSON.parse(storage.getItem(RELOGIN_PENDING_KEY) || 'null');
+    return !!(rec && typeof rec === 'object' && rec.username === username);
+  } catch { return false; }
+}
+export function clearReloginPending(storage) {
+  if (!storage) return;
+  try { storage.removeItem(RELOGIN_PENDING_KEY); } catch { /* private mode */ }
 }
 
 // The rpc bodies to try, in order, for a server that may not have every

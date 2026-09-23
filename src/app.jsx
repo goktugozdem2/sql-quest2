@@ -1,6 +1,6 @@
 import { roundDownCount, companySetCount } from './utils/display-count.js';
 import { withLocalAccountKeys as withLocalAccountKeysPure, isMissingServerSide, accountFunctionStatus } from './utils/account-access.js';
-import { tokenForUsername, writeSessionToken, clearSessionToken, ensureGuestSecret, clearGuestSecret, withToken, withCarry, endSessionBody, isGuestUsername, rpcBodyFallbacks } from './utils/session-token.js';
+import { tokenForUsername, writeSessionToken, clearSessionToken, ensureGuestSecret, clearGuestSecret, withToken, withCarry, endSessionBody, isGuestUsername, rpcBodyFallbacks, isSessionTokenRequired, sessionRefusalAction, RELOGIN_MESSAGE, markReloginPending, isReloginPending, clearReloginPending } from './utils/session-token.js';
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 // Re-expose on window for legacy inline handlers / computed renders that
 // still reference `React.createElement(...)` or `React.useRef(...)` without
@@ -2734,10 +2734,34 @@ const sessionTokenFor = (username) => {
   } catch (_) { return null; }
 };
 
+// The cut (step 4), client half (2026-09-25). Once
+// supabase/manual/20260925b_session_token_cut.sql is applied, sq_load_account
+// and sq_save_user RAISE "session token required" for an existing row reached
+// without its token. Until then nothing answers that, so this is inert. A
+// refused username is remembered for the page's life: its cloud saves stop
+// (every one would be refused — the local blob already holds them), and
+// loadUserSession must not read the refusal as "account deleted" and drop the
+// local copy. The component turns the event into a sign-in (registered) or a
+// kept local blob (guest); see the 'sq:session-refused' listener.
+const _sessionRefused = new Set();
+const noteSessionRefusal = (username, kind, err) => {
+  if (!username || !isSessionTokenRequired(err)) return false;
+  _sessionRefused.add(username);
+  try {
+    if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+      window.dispatchEvent(new CustomEvent('sq:session-refused', { detail: { username, kind } }));
+    }
+  } catch (_) { /* the refusal itself is still remembered */ }
+  return true;
+};
+const wasSessionRefused = (username) => !!username && _sessionRefused.has(username);
+const clearSessionRefusal = (username) => { _sessionRefused.delete(username); };
+
 const fetchAccountRow = async (username) => {
   try {
     return await withTokenFallback('rpc/sq_load_account', withToken({ p_username: username }, sessionTokenFor(username)));
   } catch (err) {
+    if (noteSessionRefusal(username, 'read', err)) throw err;
     if (!isMissingServerSide(err)) throw err;
     return await fetchAccountRows(`select=username,data&username=eq.${encodeURIComponent(username)}`);
   }
@@ -2853,6 +2877,8 @@ const CLOUD_SAVE_DEBOUNCE_MS = 5000;
 
 const _flushCloudSave = async (username, data, carryProFrom = null) => {
   if (!isSupabaseConfigured()) return { ok: true, skipped: true };
+  // Refused for want of a token on this page (2026-09-25): not sent, not ok.
+  if (wasSessionRefused(username)) return { ok: false, error: new Error('session token required (not sent)') };
   try {
     // No created_at here. PostgREST's merge-duplicates sets EVERY column in
     // the payload on conflict, so sending created_at overwrote it on every
@@ -2928,6 +2954,8 @@ const _flushCloudSave = async (username, data, carryProFrom = null) => {
         window.dispatchEvent(new CustomEvent('sq:save-refused', { detail: { username, data, message: String(err.message).slice(0, 200) } }));
       }
     } catch (_) { /* measurement is best-effort */ }
+    // The cut (2026-09-25): no token for this row — sign in again, keep local.
+    noteSessionRefusal(username, 'write', err);
     return { ok: false, error: err };
   }
 };
@@ -3044,6 +3072,7 @@ const saveUserData = async (username, data, options = {}) => {
     window.addEventListener('beforeunload', () => {
       for (const [user, entry] of _cloudSaveQueue.entries()) {
         if (entry.timer) clearTimeout(entry.timer);
+        if (wasSessionRefused(user)) continue;
         try {
           // p_token (2026-09-23): no retry is possible during unload, so a
           // server without the parameter answers 404 here — the release order
@@ -7185,6 +7214,112 @@ function SQLQuest() {
     return () => window.removeEventListener('sq:save-refused', onRefused);
   }, []);
 
+  // ── The cut (step 4), client half (2026-09-25) ──
+  // docs/plans/account-session-tokens-2026-09-22.md. When the server answers
+  // "session token required" (supabase/manual/20260925b_session_token_cut.sql,
+  // applied only on the founder's go and only after this ships), the module
+  // half remembers the username and fires 'sq:session-refused'. Here:
+  //   registered → clear this account's token and session, keep the local
+  //     progress blob, cancel its queued cloud save, and open the sign-in
+  //     screen with one sentence (RELOGIN_MESSAGE). The sign-in merges the
+  //     kept blob back (carryStaleOwnBlob, the save-recovery merge).
+  //   guest → the guest's truth is local. Keep the blob and stop sending; a
+  //     fresh guest identity only when this browser's guest has nothing to keep.
+  // Once per username per page: a second refusal of the same row changes
+  // nothing. The listener only records; the effect below acts with the
+  // current render's closures.
+  // Events: session_token_refused {kind, registered[, guest, action]},
+  // session_relogin_shown {kind}, session_relogin_completed {carriedSolves, …}.
+  const [reloginNotice, setReloginNotice] = useState(false);
+  const [sessionRefusal, setSessionRefusal] = useState(null);
+  const sessionRefusalHandledRef = useRef(new Set());
+  // One fresh guest identity per page, at most: if the new guest's own first
+  // save were refused too, minting again would loop (found in a local probe
+  // that refused every save). After one, a refused guest keeps its blob.
+  const freshGuestMintedRef = useRef(false);
+  useEffect(() => {
+    const onSessionRefused = (e) => {
+      const detail = (e && e.detail) || {};
+      if (!detail.username) return;
+      setSessionRefusal({ username: detail.username, kind: detail.kind === 'write' ? 'write' : 'read', at: Date.now() });
+    };
+    window.addEventListener('sq:session-refused', onSessionRefused);
+    return () => window.removeEventListener('sq:session-refused', onSessionRefused);
+  }, []);
+  useEffect(() => {
+    if (!sessionRefusal) return;
+    const { username, kind } = sessionRefusal;
+    if (sessionRefusalHandledRef.current.has(username)) return;
+    sessionRefusalHandledRef.current.add(username);
+    const registered = !isGuestUsername(username);
+    let local = null;
+    try { local = JSON.parse(localStorage.getItem(`sqlquest_user_${username}`) || 'null'); } catch (_) { local = null; }
+    let currentGuest = null;
+    try { currentGuest = localStorage.getItem(GUEST_USER_KEY); } catch (_) { currentGuest = null; }
+    let action = sessionRefusalAction({ username, activeUser: currentUser, authScreenOpen: showAuth, currentGuest, localHasProgress: hasProgress(local) });
+    if (action === 'new_guest' && freshGuestMintedRef.current) action = 'keep_local';
+    trackActivationEvent('session_token_refused', registered
+      ? { kind, registered: true, action }
+      : { kind, registered: false, guest: true, action });
+    if (action === 'relogin') {
+      const queued = _cloudSaveQueue.get(username);
+      if (queued && queued.timer) clearTimeout(queued.timer);
+      _cloudSaveQueue.delete(username);
+      try { clearSessionToken(localStorage, username); } catch (_) {}
+      try { localStorage.removeItem('sqlquest_user'); } catch (_) {}
+      try { markReloginPending(localStorage, username); } catch (_) {}
+      // The local blob (sqlquest_user_<username>) is left exactly as it is.
+      setCurrentUser(null);
+      setIsGuest(false);
+      setAuthMode('login');
+      setAuthUsername(username);
+      setAuthPassword('');
+      setAuthError('');
+      setShowForgotPassword(false);
+      setReloginNotice(true);
+      setShowAuth(true);
+      setIsSessionLoading(false);
+      trackActivationEvent('session_relogin_shown', { kind });
+    } else if (action === 'new_guest') {
+      freshGuestMintedRef.current = true;
+      startGuestMode({ resumeGuest: null });
+    }
+    // keep_local: nothing to do — the blob stays, and _flushCloudSave no
+    // longer sends for this guest on this page.
+  }, [sessionRefusal]);
+
+  // This account's own local copy, when a refusal signed it out — read BEFORE
+  // the sign-in writes the server's record over sqlquest_user_<username>.
+  const readStaleOwnBlob = (username) => {
+    try {
+      if (!isReloginPending(localStorage, username)) return null;
+      const blob = JSON.parse(localStorage.getItem(`sqlquest_user_${username}`) || 'null');
+      return blob && typeof blob === 'object' ? blob : null;
+    } catch (_) { return null; }
+  };
+  // After the sign-in: merge that copy into the account the way save recovery
+  // does (mergeProgress over withLocalAccountKeys — the cloud keeps identity,
+  // money and scalars, collections union, XP only for solves the cloud lacks,
+  // so the regression guard accepts it) and save it with the new token.
+  const carryStaleOwnBlob = async (username, cloudData, stale) => {
+    let summary = { newSolves: 0, newAttempts: 0 };
+    try {
+      if (stale && hasProgress(stale) && cloudData && typeof cloudData === 'object') {
+        const res = mergeProgress(withLocalAccountKeys(username, cloudData), stale, { challenges: window.challengesData || challenges || [] });
+        summary = res.summary;
+        if (summary.newSolves > 0 || summary.newAttempts > 0) {
+          await saveUserData(username, res.merged, { force: true });
+        }
+      }
+      trackActivationEvent('session_relogin_completed', { carriedSolves: summary.newSolves || 0, carriedAttempts: summary.newAttempts || 0 });
+    } catch (err) {
+      trackActivationEvent('session_relogin_completed', { carriedSolves: 0, carryFailed: true, message: String((err && err.message) || err).slice(0, 120) });
+    } finally {
+      try { clearReloginPending(localStorage); } catch (_) {}
+      setReloginNotice(false);
+    }
+  };
+
   // ── Share loop ────────────────────────────────────────────────────
   // The shareable profile URL. Always /u/:handle (api/u.js writes the
   // per-profile og: tags there) and always carrying ?ref=, so the
@@ -8604,6 +8739,10 @@ function SQLQuest() {
           }
         }).catch(err => {
           console.error('Failed to verify user:', err);
+          // The cut (2026-09-25): refused for want of a token — the
+          // 'sq:session-refused' handler signs the person in again; loading
+          // the session would only be refused a second time.
+          if (isSessionTokenRequired(err)) { setIsSessionLoading(false); return; }
           // On error, try to restore session anyway
           loadUserSession(savedUser);
         });
@@ -16555,6 +16694,15 @@ CRITICAL RULES:
     // When Supabase is configured, don't allow localStorage fallback — except
     // for a resuming guest, whose only record IS the local blob.
     const userData = await loadUserData(username, !isSupabaseConfigured() || !!options.localOnly, options);
+    // Refused for want of a session token (the cut, 2026-09-25) is NOT "user
+    // not found": the account exists and the local copy is the progress this
+    // browser holds. Leave both; the 'sq:session-refused' handler asks for
+    // the password and the sign-in merges this copy back.
+    if (!userData && wasSessionRefused(username)) {
+      setIsSessionLoading(false);
+      setTimeout(() => { suppressSoundsRef.current = false; }, 1000);
+      return;
+    }
     if (!userData) {
       // User not found - clear session and show login
       localStorage.removeItem('sqlquest_user');
@@ -19542,10 +19690,16 @@ CRITICAL RULES:
       if (res.status === 'ok' && res.username && res.data) {
         username = res.username;
         userData = res.data;
+        // The cut (2026-09-25): a refusal signed this account out and kept its
+        // local copy. Read it before the line below overwrites it.
+        const staleOwn = readStaleOwnBlob(username);
         try { localStorage.setItem(`sqlquest_user_${username}`, JSON.stringify(res.data)); } catch (_) {}
         // Session tokens (2026-09-23): stored beside the username before the
         // guest merge and the session load below, so both carry it.
         if (res.sessionToken) { try { writeSessionToken(localStorage, username, res.sessionToken); } catch (_) {} }
+        clearSessionRefusal(username);
+        sessionRefusalHandledRef.current.delete(username);
+        if (staleOwn) await carryStaleOwnBlob(username, res.data, staleOwn);
         resetLoginAttempts(username);
         serverSignedIn = true;
       } else if (res.status === 'locked') {
@@ -25227,6 +25381,11 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
           </div>
           
           <form onSubmit={(e) => { e.preventDefault(); handleLogin(); }} className="space-y-4">
+            {reloginNotice && authMode === 'login' && (
+              <p data-testid="relogin-notice" className="p-3 bg-purple-500/10 border border-purple-500/30 rounded-lg text-sm text-gray-200">
+                {RELOGIN_MESSAGE}
+              </p>
+            )}
             <div>
               <label className="block text-sm text-gray-400 mb-2">
                 {authMode === 'login' ? 'Username or Email' : 'Username'}
