@@ -30,3 +30,14 @@ describe('the receipt-email step is visible in the data (2026-09-23)', () => {
     expect(app).toMatch(/emailStepPending: checkoutPendingPlan \|\| null/);
   });
 });
+
+describe('direct checkout (2026-09-23)', () => {
+  const flags = fs.readFileSync(path.join(import.meta.dirname, '..', 'src/data/feature-flags.js'), 'utf8');
+  it('is on, and a plan click without an email goes straight to Stripe', () => {
+    expect(flags).toMatch(/directCheckout: true/);
+    expect(app).toMatch(/feature\('directCheckout'\) === true\) \{\n\s*trackActivationEvent\('checkout_email_step_bypassed', \{ plan \}\);\n\s*launchCheckout\(plan, ''\);/);
+  });
+  it('the email branch still exists for the flag off', () => {
+    expect(app).toMatch(/trackActivationEvent\('checkout_email_step_shown', \{ plan \}\)/);
+  });
+});

@@ -27,6 +27,30 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### a plan click goes straight to Stripe (modal → Stripe, item 1)
+
+- **Claimed** 2026-09-23 · **Flipped** 2026-09-23 on the founder's go ("bugün
+  yapılacakları yap") · **Read** 2026-10-23.
+- **Change** flag `directCheckout` (on): a plan click with no email on file
+  goes to Stripe (`launchCheckout(plan, '')`, event
+  `checkout_email_step_bypassed`) instead of "Where should your receipt
+  go?". `false` restores the step. Preview-verified: one click, Stripe page.
+- **Why** 30 days to 09-23: 10 people clicked a plan; the 6 with an email on
+  file reached Stripe, the 4 without one all stopped at the step (no capture,
+  no skip). docs/plans/modal-to-stripe-2026-09-23.md.
+- **Metric** `checkout_abandonment` — people with `pro_plan_clicked`
+  `hadEmailOnFile=false` who reach `pro_checkout_clicked`.
+- **Target** ≥ 3 of 4 (≥ 75%) such people reach Stripe in the 30 days.
+- **Falsification, stated in advance:** under half reach Stripe → the step
+  was not what stopped them; look at the modal close timing
+  (`modal_dismissed.msOpen`) for those people. Fewer than 4 such people in
+  the window → UNREADABLE with the n, extend 30 days.
+- **Cost, stated:** a guest who abandons on Stripe now leaves no email for
+  `checkout-abandon` (it read the click event's email).
+- **Noise:** one live Stripe session opened from the localhost preview on
+  2026-09-23 (guest, monthly, abandoned) — exclude its `pro_checkout_expired`.
+- **Verdict** _pending_
+
 ### Bing crawls what the link graph and a recrawl signal hand it
 
 - **Claimed** 2026-09-23 · **Read** 2026-10-07.

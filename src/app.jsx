@@ -7075,6 +7075,17 @@ function SQLQuest() {
       // ask for, between deciding to buy and being allowed to pay.
     });
     if (email) { launchCheckout(plan, email); return; }
+    // Direct checkout (founder's go, 2026-09-23): no receipt-email step.
+    // 4 of 4 plan clickers without an email on file stopped at it in 30 days
+    // and none reached Stripe; Stripe asks for the email itself and the
+    // purchase is linked by client_reference_id. Cost: a guest who abandons
+    // on Stripe leaves no email for checkout-abandon. Flag `directCheckout`;
+    // docs/plans/modal-to-stripe-2026-09-23.md item 1.
+    if (window.FF?.feature('directCheckout') === true) {
+      trackActivationEvent('checkout_email_step_bypassed', { plan });
+      launchCheckout(plan, '');
+      return;
+    }
     setCheckoutEmailInput('');
     setCheckoutPendingPlan(plan);
     trackActivationEvent('checkout_email_step_shown', { plan });

@@ -265,6 +265,12 @@ window.FEATURE_FLAGS = {
     // purchases (stripe_webhook). The webhook keeps its quarterly branch, so
     // turning this back on is one line — but only together with the pages.
     quarterlyPlan: false,
+    // Direct checkout (2026-09-23, founder's go the same day): a plan click
+    // without an email on file goes straight to Stripe instead of the
+    // "Where should your receipt go?" step, which lost 4 of 4 such buyers in
+    // 30 days. `false` restores the step. Ledger: "a plan click goes straight
+    // to Stripe"; docs/plans/modal-to-stripe-2026-09-23.md item 1.
+    directCheckout: true,
 
     // ── The account ask at the third solve (2026-09-14) ──────────────────
     // Founder: move the registration wall to the 3rd solve. Measured before
