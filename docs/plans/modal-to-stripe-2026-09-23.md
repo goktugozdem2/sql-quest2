@@ -8,21 +8,27 @@ past the modal; read the shape, not the decimals.
 
 ## What the data says
 
-**1. The automatic modal has not produced a purchase in 30 days.** Both
-payers in the window reached Stripe from the homepage pricing link
-(`arrivalSrc=home`, `landingSrc=ref:buy.stripe.com`), not from a modal the
-app opened on them. harinivr02 saw the modal on 09-06, clicked monthly,
-never reached Stripe (`never_navigated`), and bought the annual plan
-thirteen days later from the pricing section.
+**1. CORRECTED the same day: the automatic modal produced both purchases.**
+The first read of this file said the opposite — "no purchase from the
+automatic modal, both payers came through the homepage pricing link" — and
+it was wrong. The join matched purchases to modal viewers by `aid`, but the
+`stripe_webhook` purchase row carries only the username, so both payers fell
+out of the join. Read by username:
 
-| Modal reason | People | Plan clicked | To Stripe | Paid |
-|---|---|---|---|---|
-| `milestone_solves` (automatic, after N solves) | 215 | 8 | 5 | 0 |
-| `generic` | 36 | 2 | 2 | 0 |
-| `milestone_streak` | 16 | 0 | 0 | 0 |
-| `company_hard` | 10 | 1 | 0 | 0 |
-| `rate_limit` | 6 | 1 | 1 | 0 |
-| every other reason | 13 | 2 | 1 | 0 |
+- **jeromezhao** (09-01): `milestone_solves` modal at 22:05:02, paid monthly
+  at 22:05:34 — thirty-two seconds.
+- **harinivr02** (09-19): `milestone_solves` modal at 02:09 on desktop and
+  again at 02:16 on the phone, clicked quarterly, monthly and annual across
+  two devices over five minutes, paid at 02:19 (annual, $49 — see the note).
+
+The `landingSrc=ref:buy.stripe.com` on their return rows is Stripe's
+redirect back, not the door they came in by. Per reason, then:
+`milestone_solves` 215 people → 8 plan clicks → 5 to Stripe → **2 paid**
+(all the purchases in the window); every other reason 0.
+
+**Trap for every future read:** join purchases to people by username (or
+by the `aid` on the app-side `pro_purchase_completed` row, reason
+`activation_funnel`), never by the webhook row's `aid` — it has none.
 
 **2. The modal meets people who are content with the free tier.** The median
 modal stays open 4.1 s; 59% close within 5 s. After a `milestone_solves`
@@ -48,9 +54,14 @@ Russian cards; Nigerian cards fail often on international merchants; and
 Payment Links run Adaptive Pricing ("Always on"), so the page shows local
 currency. The two who paid were in India and the US.
 
-**Side note to check, not act on:** harinivr02's annual purchase recorded
-`amount_cents: 4900`, not 9900. Most likely a promo code (`sqlquest_promo`
-prefills one); confirm in Stripe → Payments.
+**Open question for the founder:** harinivr02's annual purchase was
+$49.00 USD (Stripe → Payments, "Subscription creation", 19 Sept 05:19),
+not $99. The webhook mapped it to the ANNUAL price correctly (the quarterly
+price id's digest matches `STRIPE_PRICE_QUARTERLY`; no "fell back" line in
+the log), so either a coupon was applied or the annual price in Stripe was
+$49 that night. Check the subscription in Stripe → Subscriptions → harinivr02:
+the price and any discount. If the annual price itself is $49, every annual
+sale since has been half price.
 
 ## The plan
 
@@ -59,26 +70,27 @@ flag queue's rule: they ship dark and flip on the founder's written Go.
 
 | # | Change | Why | Cost | Needs |
 |---|---|---|---|---|
-| 1 | **Remove the email step.** A plan click goes straight to Stripe; Stripe collects the email; `prefilled_email` only when we have one | 4 of 4 without an email stopped there; Stripe already asks | an hour, behind a flag | founder's Go (money path) |
-| 2 | **Make the pricing link the main door, not the popup.** The Pro modal's automatic `milestone_solves` open moves to a quiet banner (in the solve result, one line, dismissible); the full modal opens when the person asks — header "Pro", locked content, pricing link | both payers came through a door they chose; the automatic popup produced 0 in 30 days and is closed in 4 s | a day, behind a flag | founder's Go |
+| 1 | **Remove the email step.** A plan click goes straight to Stripe; Stripe collects the email; `prefilled_email` only when we have one | 4 of 4 without an email stopped there; Stripe already asks | an hour, behind a flag | **done 2026-09-23** on the founder's go — flag `directCheckout` on, ledger read 10-23 |
+| 2 | ~~Demote the automatic popup to a banner~~ — **withdrawn 2026-09-23.** It rested on the wrong read in §1: the automatic `milestone_solves` modal is the door both payers used. Keep it. | — | — | — |
 | 3 | **Ask behind paid value, not in front of it.** This is the free-tier boundary work already built and queued: `freeQuota` + `deadlineOffer` (row 8), `goalWallEarly` + `mockDoor` (row 10), `companySetGate` (row 11) | the modal meets people with nothing locked; the asks that sold (first-session, 6–10 solves, interview date) were at a wall | built, dark | founder's Go, after activation (the queue's rule) |
-| 4 | **Payment methods on the Stripe page:** check Payments → Payment methods for Link, Apple Pay, Google Pay; decide whether to keep Adaptive Pricing's local currency | 3 of 5 left Stripe inside 30 s, all on non-US/India cards | dashboard, 15 min | founder (Stripe dashboard) |
-| 5 | **Measure the step we cannot see:** `checkout_email_step_shown` and an abandon event when the modal closes with a plan pending (moot if #1 ships) | the four were invisible until someone read plan clicks by hand | 20 min | none — ships now |
+| 4 | **Payment methods on the Stripe page** | 3 of 5 left Stripe inside 30 s, all on non-US/India cards | — | **checked 2026-09-23: nothing to change.** The Default configuration already enables Cards, Apple Pay, Google Pay, Link and ACH Direct Debit. Russian cards cannot be fixed; local currency is Adaptive Pricing, always on for Payment Links |
+| 5 | **Measure the step we cannot see:** `checkout_email_step_shown` and `modal_dismissed.emailStepPending` | the four were invisible until someone read plan clicks by hand | 20 min | **done 2026-09-23** |
 
 **Not doing:** another modal copy rewrite. The copy was rewritten 09-12 and
 09-21; the reader closes it in 4 s either way, so copy is not the constraint.
-Not doing: lower prices. Nobody reached the price in a state to pay it.
+Not doing: lower prices. The two who paid did so within minutes of seeing
+the price; the leak is the step between the modal and Stripe, not the
+number on it.
 
 ## How it is read
 
 - Metric `modal_click_rate` (already defined; `pro_modal_shown` →
   `pro_plan_clicked`/`pro_checkout_clicked`) and `checkout_abandonment` for
-  the steps after it, split by modal `reason` — never the total, since #2
-  changes who is shown.
+  the steps after it, split by modal `reason` — never the total, since the
+  free-tier flags (#3) change who is shown.
 - Guardrail: `purchases` (stripe_webhook) must not fall; at 1–2 a month it
   cannot be read inside a month, so each change gets a 30-day window and the
   step rates (plan click → Stripe, Stripe → paid) are read, not the
   purchase count.
-- #1 is read at 30 days: plan clickers without an email reaching Stripe ≥ 3
-  of 4. #2 at 30 days: `plan_click_rate` per person who saw any ask ≥ the
-  3.4% baseline, with the pricing-link door counted.
+- #1 is read at 30 days (2026-10-23): plan clickers without an email
+  reaching Stripe ≥ 3 of 4. #3 is read under each flag's own ledger claim.
