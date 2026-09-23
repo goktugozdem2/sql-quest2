@@ -52,7 +52,7 @@ two real problems:
 | 5 | Bing URL Submission for the remaining question pages, 100 a day — log in `docs/reads/bing-url-submissions.txt`; the next batch is every sitemap question URL not in that file | 99 sent 09-23; 224 left, 09-24 → 09-26 |
 | 6 | Check crawl settings: Bing "Crawl Control" and whether IndexNow has been accepted for this host (the IndexNow panel) | **done** 09-23 — findings below |
 | 6a | robots.txt keeps the parameterised app shell out of every crawler group (`/app/?`, `/app?`, `/app.html`); `tests/robots.test.js` | **done** 09-23 |
-| 6b | Crawl Control from Default to a custom "faster" rate at all hours — Bing's own recommendation. An account setting: the founder's go | waiting on the founder |
+| 6b | Crawl Control from Default to a custom "faster" rate at all hours — Bing's own recommendation. An account setting: the founder's go | **done** 09-23 ~15:53 TR on the founder's go; re-read after reload: Custom, all 24 hours at the top. The 10-07 read measures links + robots + crawl rate together |
 | 7 | Read on **2026-10-07**: `bing_indexed` (below) | scheduled |
 
 Not doing: more pages. A new page on a domain Bing is already slow to crawl
