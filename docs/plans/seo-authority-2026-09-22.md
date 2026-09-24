@@ -55,7 +55,22 @@ disturbed.
    40 pages pointed at the redirect. All now point at `/app/`; the guard
    fails on any new one.
 
-## Item 6 — the open dataset (prepared, NOT published)
+## Item 6 — the open dataset (GitHub: published 2026-09-24; Kaggle: the founder's step)
+
+**Published 2026-09-24 on the founder's go:**
+https://github.com/goktugozdem2/card-transactions-sql-dataset — public,
+CC0, homepage /fraud-analytics-sql/, topics sql / dataset / fraud-detection /
+synthetic-data / sql-practice / csv / data-analytics. Re-scanned before
+publishing: only reserved email domains (example.com, inbox.example,
+mail.test) and RFC 5737 IPs. The blog post and the fraud landing link the
+download; the blog's dataset sentence was corrected to the README's verified
+counts (it said 2,000 transactions, "10+ txns in 5 min", "3-deep" chains).
+Still owed: the fraud landing's "truth table" (10 fraud accounts, 3 geo
+mismatches, amount ranges) has not been checked against the files — verify
+before quoting it anywhere else. Kaggle needs the founder's account: upload
+the same four CSVs + README and link the GitHub repo.
+
+### Prepared 2026-09-22
 `datasets/card-transactions/` — four CSVs (200 accounts, 25 merchants, 2,165
 transactions, 76 chargebacks), README with verified counts, CC0 licence.
 Regenerate with `node scripts/export-open-dataset.mjs`.
