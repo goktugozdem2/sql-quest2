@@ -1,8 +1,19 @@
 <!DOCTYPE html>
 <html><head><meta charset="UTF-8">
+<!--
+  The og:image every shared link unfurls with (public/og-image.png).
+  Rebuilt 2026-09-24 (founder's request): the old card still sold the
+  "Adaptive SQL tutor", a "10-Skill Radar" and "200+ challenges" — the
+  positioning since 2026-09-13 is personalized SQL interview practice, the
+  Skillmap has nine skills, and the bank passed 300. The bank count here is
+  the rounded public form ("300+"), the same floor-to-50 the site uses;
+  update it when the bank crosses 350. Homepage type and colours: Space
+  Grotesk / DM Sans, purple brand, yellow only on the action.
+  Rebuild: bash scripts/build-og.sh (needs the :4321 static server).
+-->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700;800&family=DM+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700;800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
 <style>html,body{margin:0;padding:0;background:#06060f;overflow:hidden}canvas{display:block}</style>
 </head><body>
 <canvas id="og" width="1200" height="630"></canvas>
@@ -10,107 +21,98 @@
 (async () => {
   const ctx = document.getElementById('og').getContext('2d');
   const W = 1200, H = 630;
-  await document.fonts.load('800 56px "Space Grotesk"');
-  await document.fonts.load('500 22px "DM Sans"');
-  await document.fonts.load('700 15px "DM Sans"');
+  await document.fonts.load('800 60px "Space Grotesk"');
+  await document.fonts.load('600 16px "Space Grotesk"');
+  await document.fonts.load('500 24px "DM Sans"');
+  await document.fonts.load('700 16px "DM Sans"');
   await document.fonts.ready;
 
+  // background: near-black, one quiet purple glow, faint grid
   ctx.fillStyle = '#06060f'; ctx.fillRect(0, 0, W, H);
-
-  const g1 = ctx.createRadialGradient(200, -50, 0, 200, -50, 700);
-  g1.addColorStop(0, 'rgba(124,58,237,0.28)'); g1.addColorStop(1, 'rgba(124,58,237,0)');
+  const g1 = ctx.createRadialGradient(180, -60, 0, 180, -60, 720);
+  g1.addColorStop(0, 'rgba(124,58,237,0.26)'); g1.addColorStop(1, 'rgba(124,58,237,0)');
   ctx.fillStyle = g1; ctx.fillRect(0, 0, W, H);
-
-  const g2 = ctx.createRadialGradient(W - 150, H + 50, 0, W - 150, H + 50, 700);
-  g2.addColorStop(0, 'rgba(219,39,119,0.22)'); g2.addColorStop(1, 'rgba(219,39,119,0)');
-  ctx.fillStyle = g2; ctx.fillRect(0, 0, W, H);
-
   ctx.strokeStyle = 'rgba(255,255,255,0.025)'; ctx.lineWidth = 1;
   for (let x = 0; x < W; x += 60) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
   for (let y = 0; y < H; y += 60) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
 
-  const logoX = 72, logoY = 68;
-  const lg = ctx.createLinearGradient(logoX, logoY, logoX + 48, logoY + 48);
-  lg.addColorStop(0, '#7c3aed'); lg.addColorStop(1, '#db2777');
-  ctx.fillStyle = lg;
-  roundRect(ctx, logoX, logoY, 48, 48, 12); ctx.fill();
-  ctx.fillStyle = '#fff';
-  ctx.font = 'bold 28px "Space Grotesk"'; ctx.textBaseline = 'middle';
-  ctx.fillText('⚡', logoX + 14, logoY + 26);
+  // logo: purple tile with a line bolt, wordmark, grey eyebrow
+  const lx = 72, ly = 64;
+  ctx.fillStyle = '#7c3aed'; roundRect(ctx, lx, ly, 48, 48, 12); ctx.fill();
+  ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 3; ctx.lineJoin = 'round';
+  ctx.beginPath();
+  ctx.moveTo(lx + 27, ly + 10); ctx.lineTo(lx + 15, ly + 27); ctx.lineTo(lx + 24, ly + 27);
+  ctx.lineTo(lx + 21, ly + 38); ctx.lineTo(lx + 33, ly + 21); ctx.lineTo(lx + 24, ly + 21); ctx.closePath();
+  ctx.stroke();
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#e2e8f0'; ctx.font = '800 26px "Space Grotesk"';
+  ctx.fillText('SQL Quest', lx + 64, ly + 18);
+  ctx.fillStyle = '#8b98ab'; ctx.font = '600 13px "Space Grotesk"';
+  ctx.fillText('PERSONALIZED SQL INTERVIEW PRACTICE', lx + 64, ly + 40);
 
-  ctx.fillStyle = '#e2e8f0';
-  ctx.font = '800 26px "Space Grotesk"';
-  ctx.fillText('SQL Quest', logoX + 64, logoY + 20);
-
-  ctx.fillStyle = '#c084fc';
-  ctx.font = '700 13px "DM Sans"';
-  ctx.fillText('ADAPTIVE SQL TUTOR', logoX + 64, logoY + 44);
-
+  // headline: white first half, purple second half (the hero's .gt)
   ctx.textBaseline = 'alphabetic';
-  ctx.fillStyle = '#f1f5f9';
-  ctx.font = '800 56px "Space Grotesk"';
-  ctx.fillText('You finished the course.', 72, 260);
-
-  const tg = ctx.createLinearGradient(72, 280, 900, 340);
-  tg.addColorStop(0, '#c084fc'); tg.addColorStop(0.5, '#f472b6'); tg.addColorStop(1, '#fb923c');
+  ctx.fillStyle = '#f1f5f9'; ctx.font = '800 60px "Space Grotesk"';
+  ctx.fillText('Pass the', 72, 250);
+  const tg = ctx.createLinearGradient(72, 270, 640, 330);
+  tg.addColorStop(0, '#c084fc'); tg.addColorStop(1, '#a78bfa');
   ctx.fillStyle = tg;
-  ctx.font = '800 56px "Space Grotesk"';
-  ctx.fillText('Now actually write the queries.', 72, 330);
+  ctx.fillText('SQL interview.', 72, 322);
 
-  ctx.fillStyle = '#94a3b8';
-  ctx.font = '500 22px "DM Sans"';
-  ctx.fillText('The adaptive coach picks your next challenge, gates advancement', 72, 390);
-  ctx.fillText('on mastery checks, and uses spaced retrieval so SQL sticks.', 72, 422);
+  ctx.fillStyle = '#94a3b8'; ctx.font = '500 24px "DM Sans"';
+  wrap(ctx, 'An AI coach finds your SQL skill gaps and builds your practice around them.', 72, 378, 560, 34);
 
-  const chips = [
-    { icon: '🎯', label: 'Adaptive Coach' },
-    { icon: '💪', label: 'Mastery Checks' },
-    { icon: '⏳', label: 'Spaced Retrieval' },
-    { icon: '📡', label: '10-Skill Radar' },
-  ];
-  let chipX = 72;
-  const chipY = 472;
-  ctx.font = '700 15px "DM Sans"';
-  for (const chip of chips) {
-    const label = chip.icon + '  ' + chip.label;
-    const w = ctx.measureText(label).width + 28;
-    ctx.fillStyle = 'rgba(124,58,237,0.14)';
-    ctx.strokeStyle = 'rgba(124,58,237,0.38)'; ctx.lineWidth = 1;
-    roundRect(ctx, chipX, chipY, w, 40, 20); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = '#c084fc'; ctx.textBaseline = 'middle';
-    ctx.fillText(label, chipX + 14, chipY + 20);
-    ctx.textBaseline = 'alphabetic';
-    chipX += w + 10;
+  // chips, line style
+  const chips = ['300+ questions', '9-skill Skillmap', 'Company sets', 'Timed mocks'];
+  let cx = 72; const cy = 470;
+  ctx.font = '700 16px "DM Sans"';
+  for (const c of chips) {
+    const w = ctx.measureText(c).width + 32;
+    ctx.strokeStyle = 'rgba(192,132,252,0.45)'; ctx.lineWidth = 1;
+    roundRect(ctx, cx, cy, w, 40, 20); ctx.stroke();
+    ctx.fillStyle = '#e2e8f0'; ctx.textBaseline = 'middle';
+    ctx.fillText(c, cx + 16, cy + 21);
+    cx += w + 12;
   }
 
-  ctx.fillStyle = '#64748b';
-  ctx.font = '700 18px "DM Sans"';
-  ctx.fillText('sqlquest.app', 72, 583);
+  // footer: domain and the one action
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillStyle = '#8b98ab'; ctx.font = '700 18px "DM Sans"';
+  ctx.fillText('sqlquest.app', 72, 578);
 
-  ctx.font = '800 14px "DM Sans"';
-  const freeLabel = '200+ CHALLENGES · FREE TO START';
-  const freeW = ctx.measureText(freeLabel).width + 28;
-  const freeX = W - 72 - freeW;
-  ctx.fillStyle = 'rgba(34,197,94,0.14)';
-  ctx.strokeStyle = 'rgba(34,197,94,0.42)';
-  roundRect(ctx, freeX, 563, freeW, 34, 17); ctx.fill(); ctx.stroke();
-  ctx.fillStyle = '#22c55e'; ctx.textBaseline = 'middle';
-  ctx.fillText(freeLabel, freeX + 14, 580);
+  // the Skillmap: nine axes, one person's shape
+  const skills = ['Querying Basics','Aggregation','Joins','Subqueries & CTEs','Conditional Logic','Window Functions','String Functions','Date Functions','NULL Handling'];
+  const vals =   [0.92, 0.78, 0.66, 0.48, 0.72, 0.34, 0.58, 0.44, 0.62];
+  const rx = 895, ry = 300, R = 170, n = skills.length;
+  const pt = (i, r) => { const a = -Math.PI / 2 + i * 2 * Math.PI / n; return [rx + r * Math.cos(a), ry + r * Math.sin(a)]; };
+  ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 1;
+  for (const f of [0.25, 0.5, 0.75, 1]) {
+    ctx.beginPath(); for (let i = 0; i < n; i++) { const [x, y] = pt(i, R * f); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); } ctx.closePath(); ctx.stroke();
+  }
+  for (let i = 0; i < n; i++) { const [x, y] = pt(i, R); ctx.beginPath(); ctx.moveTo(rx, ry); ctx.lineTo(x, y); ctx.stroke(); }
+  ctx.beginPath(); for (let i = 0; i < n; i++) { const [x, y] = pt(i, R * vals[i]); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); } ctx.closePath();
+  ctx.fillStyle = 'rgba(124,58,237,0.30)'; ctx.fill();
+  ctx.strokeStyle = '#a78bfa'; ctx.lineWidth = 2.5; ctx.stroke();
+  // the weakest line, marked the way the product marks it
+  const weak = vals.indexOf(Math.min(...vals));
+  const [wx, wy] = pt(weak, R * vals[weak]);
+  ctx.fillStyle = '#FFE34D'; ctx.beginPath(); ctx.arc(wx, wy, 6, 0, Math.PI * 2); ctx.fill();
+  ctx.font = '600 13px "Space Grotesk"'; ctx.fillStyle = '#8b98ab'; ctx.textBaseline = 'middle';
+  for (let i = 0; i < n; i++) {
+    const [x, y] = pt(i, R + 18); const label = skills[i];
+    ctx.textAlign = x < rx - 10 ? 'right' : (x > rx + 10 ? 'left' : 'center');
+    ctx.fillStyle = i === weak ? '#FFE34D' : '#8b98ab';
+    ctx.fillText(label, x, y);
+  }
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#FFE34D'; ctx.font = '700 15px "DM Sans"'; ctx.textAlign = 'center';
+  ctx.fillText('next question: your weakest line', rx, ry + R + 60);
+  ctx.textAlign = 'left';
 
-  document.body.dataset.ready = '1';
+  document.title = 'ready';
+
+  function roundRect(c, x, y, w, h, r) { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
+  function wrap(c, text, x, y, max, lh) { const words = text.split(' '); let line = ''; for (const w of words) { const t = line ? line + ' ' + w : w; if (c.measureText(t).width > max && line) { c.fillText(line, x, y); line = w; y += lh; } else line = t; } if (line) c.fillText(line, x, y); }
 })();
-
-function roundRect(ctx, x, y, w, h, r) {
-  ctx.beginPath();
-  ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y);
-  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-  ctx.lineTo(x + w, y + h - r);
-  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-  ctx.lineTo(x + r, y + h);
-  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-  ctx.lineTo(x, y + r);
-  ctx.quadraticCurveTo(x, y, x + r, y);
-  ctx.closePath();
-}
 </script>
 </body></html>
