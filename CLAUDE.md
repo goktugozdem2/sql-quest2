@@ -182,6 +182,9 @@ Subqueries & CTEs had none, and its gentlest entry was "Your First CTE" at
 Medium (a CTE plus COUNT plus AVG plus GROUP BY, four ideas at once).
 String Functions is the inverse shape: a floor but no ceiling, 1 Hard.
 Re-measure before quoting; this table went stale twice within a day.
+2026-09-24: IDs 312-316 added String Functions 1 Medium + 2 Hard and NULL
+Handling 1 Medium + 1 Hard (full bank now: String 7 / 7 / 3, NULL 6 / 13 / 4);
+their solutions are run and pinned by `tests/challenges-312-316.test.js`.
 
 ### Recent skill-calc fixes (all shipped)
 1. **Provenance policy** — require attempt corroboration for credit when user has ANY attempt history. Legacy pre-tracking users (zero attempts) still get full credit. Fixes "user has N solves in the Set but never really attempted them."
@@ -296,7 +299,8 @@ so a landing view and a later solve are joinable for the first time.
   (five rows), built-in-public, the final CTA, a six-question FAQ.
 - Founder's rules on this page (12–13 Sep lists): exactly three **Start
   free** buttons (hero, pricing, final) and one **See pricing**; one bank
-  number (299); no free count, difficulty split or per-company counts; none
+  number, rounded ("300+" — see the next bullet); no free count, difficulty
+  split or per-company counts; none
   of "free forever", "no trial clock", "free is the product"; a four-item nav
   (Practice, Interview Prep, Pricing, Log In) with every mega-menu link in the
   footer; three accents — purple brand, yellow action (`.bp` is #FFE34D),
@@ -304,6 +308,17 @@ so a landing view and a later solve are joinable for the first time.
   the final; line icons, never emoji; the Turkish banner purple, body type,
   one line, geo-targeted via `/api/geo/` (browser language only as fallback;
   `/?geo=US` previews).
+- **The bank's size is always said rounded (founder, 2026-09-24).** Every
+  sentence, title, meta/OG text, JSON-LD text, stat block, llms.txt and
+  app marketing line states the whole bank as its floor to 50 with a "+"
+  (304 → "300+"), from ONE helper: `bankCountLabel` in
+  `src/utils/display-count.js` (the generators and app.jsx call it). Exact
+  stays exact only where exactness is the point: the free count ("228
+  free"), the Easy/Medium/Hard and core/sector splits, a topic page's own
+  counts, the numerator of a ratio ("228 of the 300+"), a list badge or
+  solved/total in the app, JSON-LD `numberOfItems`. `tests/site-counts.test.js`
+  fails a page that states the exact total (with or without a noun) or a
+  floor that is not the bank's, so a bank that crosses 350 forces "350+".
 - Pro section speaks in outcomes tied to the interview and mirrors the modal:
   the Hard question on the day, the screen sat before the screen, help that
   does not stall. Two plans, annual first. "Unlimited" is never claimed

@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SQL String Functions Practice — 14 Challenges (13 Free): SUBSTR, TRIM, LIKE | SQLQuest.app</title>
+  <title>SQL String Functions Practice — 17 Challenges (14 Free): SUBSTR, TRIM, LIKE | SQLQuest.app</title>
   <!-- 2026-09-08: new topic page (docs/reads/keywords-2026-09-07.md §3 deferred list — "Date/String concept pages (content-gated: 2 Easy Date…)"; the full bank gives 6 Easy, so the gate is open on the Date side. String Functions still is not). Every count is computed, not typed: the page total is challengeMatchesSkill(c, 'Date Functions') over the FULL bank (src/data/challenges.js + sector-challenges.js), "free" = Easy + Medium + Hard freePreview — this skill has NO Hard freePreview, so free is exactly Easy + Medium. Sections are predicates over the reference solution: strftime() or SUBSTR() over a date column (#truncation — SQLite has no DATE_TRUNC, and the FDIC and NYC columns are text dates SUBSTR is the only way into), julianday() (#date-arithmetic), and a date column on the left of a range operator or BETWEEN (#date-ranges). TOPIC_PAGES in tests/site-counts.test.js binds all of them — re-run the test, do not retype. #rolling-windows was DROPPED: eight challenges here open an OVER(), and all eight are already listed in a section of /challenges/window-functions/ — it would have been that page under a second name. Three challenges carry the skill and land in no section (two are those window ones, one pins a year with LIKE). Cards are Easy → Medium → Hard, curriculum order inside each band (CLAUDE.md, the raw-array trap) — never id order. -->
-  <meta name="description" content="14 SQL string challenges, 13 free: pulling a piece out with SUBSTR and INSTR, rewriting values with TRIM and REPLACE, and matching shapes with LIKE. Runs in your browser, no signup.">
+  <meta name="description" content="17 SQL string challenges, 14 free: pulling a piece out with SUBSTR and INSTR, rewriting values with TRIM and REPLACE, and matching shapes with LIKE. Runs in your browser, no signup.">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://sqlquest.app/challenges/string-functions/">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://sqlquest.app/challenges/string-functions/">
-  <meta property="og:title" content="SQL String Functions Practice — 14 Challenges (13 Free): SUBSTR, TRIM, LIKE | SQLQuest.app">
-  <meta property="og:description" content="14 SQL string challenges, 13 free: pulling a piece out with SUBSTR and INSTR, rewriting values with TRIM and REPLACE, and matching shapes with LIKE. Runs in your browser, no signup.">
+  <meta property="og:title" content="SQL String Functions Practice — 17 Challenges (14 Free): SUBSTR, TRIM, LIKE | SQLQuest.app">
+  <meta property="og:description" content="17 SQL string challenges, 14 free: pulling a piece out with SUBSTR and INSTR, rewriting values with TRIM and REPLACE, and matching shapes with LIKE. Runs in your browser, no signup.">
   <meta property="og:image" content="https://sqlquest.app/og-image.png">
   <meta name="twitter:card" content="summary_large_image">
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"SQL String Functions Practice","description":"14 SQL string challenges, 13 free: SUBSTR and INSTR, TRIM and REPLACE, and LIKE pattern matching.","url":"https://sqlquest.app/challenges/string-functions/","breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"SQL Exercises","item":"https://sqlquest.app/sql-exercises/"},{"@type":"ListItem","position":3,"name":"SQL String Functions","item":"https://sqlquest.app/challenges/string-functions/"}]}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"SQL String Functions Practice","description":"17 SQL string challenges, 14 free: SUBSTR and INSTR, TRIM and REPLACE, and LIKE pattern matching.","url":"https://sqlquest.app/challenges/string-functions/","breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"SQL Exercises","item":"https://sqlquest.app/sql-exercises/"},{"@type":"ListItem","position":3,"name":"SQL String Functions","item":"https://sqlquest.app/challenges/string-functions/"}]}}</script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
   <style>
@@ -53,11 +53,11 @@
 </div></nav>
 <div class="wrap">
   <p class="breadcrumb"><a href="/">SQL Quest</a> › <a href="/sql-exercises/">SQL Exercises</a> › SQL String Functions</p>
-  <h1 class="fd">SQL String Functions Practice — <span style="background:linear-gradient(135deg,#c084fc,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">14 Challenges (13 Free)</span></h1>
-  <p class="lede">Text arrives messy: a full name in one column, a code with the meaning buried in characters 4 to 6, a category that is sometimes "Retail" and sometimes " retail ". These 14 challenges are the three moves that fix it — pull a piece out, rewrite the value, match a shape — on real tables in your browser. Thirteen are free.</p>
+  <h1 class="fd">SQL String Functions Practice — <span style="background:linear-gradient(135deg,#c084fc,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">17 Challenges (14 Free)</span></h1>
+  <p class="lede">Text arrives messy: a full name in one column, a code with the meaning buried in characters 4 to 6, a category that is sometimes "Retail" and sometimes " retail ". These 17 challenges are the three moves that fix it — pull a piece out, rewrite the value, match a shape — on real tables in your browser. Fourteen are free.</p>
 
   <section class="sec" id="extract">
-    <h2 class="fd">Pulling a piece out — SUBSTR, INSTR and LENGTH: 8 challenges (7 free)</h2>
+    <h2 class="fd">Pulling a piece out — SUBSTR, INSTR and LENGTH: 11 challenges (8 free)</h2>
     <p><code>SUBSTR(col, 4, 3)</code> takes three characters starting at the fourth; <code>INSTR(col, '@')</code> finds where a character sits so you can cut there instead of guessing an offset. Together they are how a domain comes out of an email, a year out of a text date, or a branch code out of an account number. <code>LENGTH</code> is the one that tells you the cut worked.</p>
     <p class="stamp">Counted from the challenge bank, September 2026. Easy first, then Medium, then Hard.</p>
     <div class="q-grid">
@@ -104,16 +104,34 @@
         <a href="/app/?challenge=167&amp;src=challenges-string-functions" class="btn-practice">Try it →</a>
       </div>
       <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3><a href="/questions/names-that-dont-match-their-email/" style="color:inherit;">Names That Don't Match Their Email</a></h3>
+        <p class="concepts">Uses: <code>SUBSTR</code> <code>REPLACE</code> <code>Self-Join</code></p>
+        <a href="/app/?challenge=312&amp;src=challenges-string-functions" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
         <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
         <h3><a href="/questions/passenger-family-survival-analysis/" style="color:inherit;">Passenger Family Survival Analysis</a></h3>
         <p class="concepts">Uses: <code>String Functions</code> <code>GROUP BY</code> <code>HAVING</code></p>
         <a href="/app/?challenge=38&amp;src=challenges-string-functions" class="btn-practice">Try it →</a>
       </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3><a href="/questions/her-own-first-name/" style="color:inherit;">Her Own First Name</a></h3>
+        <p class="concepts">Uses: <code>SUBSTR</code> <code>INSTR</code> <code>NULLIF</code></p>
+        <a href="/app/?challenge=313&amp;src=challenges-string-functions" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3><a href="/questions/shelve-the-films-library-style/" style="color:inherit;">Shelve the Films Library-Style</a></h3>
+        <p class="concepts">Uses: <code>SUBSTR</code> <code>CASE</code> <code>CTE</code></p>
+        <a href="/app/?challenge=314&amp;src=challenges-string-functions" class="btn-practice">Try it →</a>
+      </div>
     </div>
   </section>
 
   <section class="sec" id="transform">
-    <h2 class="fd">Rewriting the value — TRIM, REPLACE, UPPER and concatenation: 4 challenges (4 free)</h2>
+    <h2 class="fd">Rewriting the value — TRIM, REPLACE, UPPER and concatenation: 7 challenges (5 free)</h2>
     <p>The same category written three ways groups into three rows, and it is almost always whitespace or case. <code>TRIM</code> and <code>UPPER</code> collapse that before the <code>GROUP BY</code> sees it. <code>||</code> goes the other way and joins columns into one label, and <code>GROUP_CONCAT</code> folds a whole group into a single readable cell — the roster in one row rather than twelve.</p>
     <p class="stamp">Counted from the challenge bank, September 2026. Easy first, then Medium, then Hard.</p>
     <div class="q-grid">
@@ -141,11 +159,29 @@
         <p class="concepts">Uses: <code>GROUP BY</code> <code>GROUP_CONCAT</code> <code>Aggregation</code></p>
         <a href="/app/?challenge=4&amp;src=challenges-string-functions" class="btn-practice">Try it →</a>
       </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3><a href="/questions/names-that-dont-match-their-email/" style="color:inherit;">Names That Don't Match Their Email</a></h3>
+        <p class="concepts">Uses: <code>SUBSTR</code> <code>REPLACE</code> <code>Self-Join</code></p>
+        <a href="/app/?challenge=312&amp;src=challenges-string-functions" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3><a href="/questions/her-own-first-name/" style="color:inherit;">Her Own First Name</a></h3>
+        <p class="concepts">Uses: <code>SUBSTR</code> <code>INSTR</code> <code>NULLIF</code></p>
+        <a href="/app/?challenge=313&amp;src=challenges-string-functions" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3><a href="/questions/shelve-the-films-library-style/" style="color:inherit;">Shelve the Films Library-Style</a></h3>
+        <p class="concepts">Uses: <code>SUBSTR</code> <code>CASE</code> <code>CTE</code></p>
+        <a href="/app/?challenge=314&amp;src=challenges-string-functions" class="btn-practice">Try it →</a>
+      </div>
     </div>
   </section>
 
   <section class="sec" id="pattern">
-    <h2 class="fd">Matching a shape — LIKE and its two wildcards: 3 challenges (3 free)</h2>
+    <h2 class="fd">Matching a shape — LIKE and its two wildcards: 5 challenges (3 free)</h2>
     <p><code>LIKE 'A%'</code> anchors at the start, <code>'%bank%'</code> matches anywhere, and <code>_</code> stands for exactly one character. The judgement is the anchor: a leading <code>%</code> means the database cannot use an index and has to read everything, which is fine on the tables here and matters on a real one.</p>
     <p class="stamp">Counted from the challenge bank, September 2026. Easy first, then Medium, then Hard.</p>
     <div class="q-grid">
@@ -166,6 +202,18 @@
         <h3><a href="/questions/llc-vs-individual-buyers/" style="color:inherit;">LLC vs Individual Buyers</a></h3>
         <p class="concepts">Uses: <code>CASE</code> <code>GROUP BY</code> <code>Aggregation</code></p>
         <a href="/app/?challenge=234&amp;src=challenges-string-functions" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3><a href="/questions/her-own-first-name/" style="color:inherit;">Her Own First Name</a></h3>
+        <p class="concepts">Uses: <code>SUBSTR</code> <code>INSTR</code> <code>NULLIF</code></p>
+        <a href="/app/?challenge=313&amp;src=challenges-string-functions" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3><a href="/questions/shelve-the-films-library-style/" style="color:inherit;">Shelve the Films Library-Style</a></h3>
+        <p class="concepts">Uses: <code>SUBSTR</code> <code>CASE</code> <code>CTE</code></p>
+        <a href="/app/?challenge=314&amp;src=challenges-string-functions" class="btn-practice">Try it →</a>
       </div>
     </div>
   </section>
