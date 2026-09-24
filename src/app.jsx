@@ -31390,7 +31390,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                       </p>
                     </div>
                   ) : proModalReason.type === 'rate_limit' ? (
-                    <p className="mt-2" style={{ color: '#8A8E99' }}>You've used all 10 free AI tutor calls for today. The Coach has more work for you — Pro removes the daily cap so you can keep practicing without waiting until tomorrow.</p>
+                    <p className="mt-2" style={{ color: '#8A8E99' }}>You've used today's free AI tutor calls. The Coach has more work for you — Pro raises the daily cap so you can keep practicing without waiting until tomorrow.</p>
                   ) : ['learning', 'job_ready'].includes(getUserIntent()) ? (
                     <p className="mt-2" style={{ color: '#8A8E99' }}>A tutor that stays with you the moment you're stuck. A 30-day path that builds the habit. 200+ warm-up drills for daily fluency. Real sector data to practice on — and Hard challenges waiting when you're ready.</p>
                   ) : (
@@ -38384,7 +38384,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                         <div className="flex items-center gap-2 flex-shrink-0">
                           {/* Visible quota at the point of use (DataCamp teardown):
                               makes the free generosity felt AND warms a near-limit
-                              user toward Pro. Pro is unlimited, so no counter. */}
+                              user toward Pro. Pro raises the cap (ai-tutor DAILY_LIMITS); no counter shown. */}
                           {aiDailyUsage.plan === 'free' && (
                             aiDailyUsage.remaining > 3 ? (
                               <span className="text-xs text-gray-500 whitespace-nowrap">{aiDailyUsage.remaining} left today</span>
@@ -38392,16 +38392,16 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                               <button
                                 onClick={() => { setProModalReason({ type: 'rate_limit', topic: null, solvedCount: solvedChallenges.size }); setShowProModal(true); }}
                                 className="text-xs whitespace-nowrap" style={{ color: '#FFB020' }}
-                                title="Pro removes the daily AI limit"
+                                title="Pro raises the daily AI tutor limit"
                               >
-                                {aiDailyUsage.remaining} left · <span className="underline">go unlimited</span>
+                                {aiDailyUsage.remaining} left · <span className="underline">go Pro</span>
                               </button>
                             ) : (
                               <button
                                 onClick={() => { setProModalReason({ type: 'rate_limit', topic: null, solvedCount: solvedChallenges.size }); setShowProModal(true); }}
                                 className="text-xs whitespace-nowrap underline" style={{ color: '#FF6B6B' }}
                               >
-                                Daily limit — go unlimited
+                                Daily limit — go Pro
                               </button>
                             )
                           )}

@@ -148,7 +148,7 @@ Deno.serve(async (req) => {
         to: email,
         subject,
         preheader: isLastDay
-          ? "Don't lose Hard challenges, sectors, mock interviews, and unlimited AI tutor."
+          ? "Don't lose Hard challenges, sectors, mock interviews, and the AI tutor beyond the free daily cap."
           // Was "$19/month" — a price we have never charged on this plan. The
           // live modal in src/app.jsx is the source of truth and reads $29/mo.
           // This preheader is the first line a trial user sees in their inbox.
@@ -221,8 +221,8 @@ function renderEmail(args: { username: string; email: string; isLastDay: boolean
     : "2 days left in your Pro trial";
 
   const lead = isLastDay
-    ? "Today is the last day of your free 7-day Pro trial. After today, Hard challenges, sector tracks (banking, real estate, manufacturing), the full mock-interview bank, and unlimited AI tutor will lock."
-    : "You have about " + hoursLeft + " hours left on your free 7-day Pro trial. Hard challenges, sector tracks, mock interviews, and unlimited AI tutor will lock when the trial ends.";
+    ? "Today is the last day of your free 7-day Pro trial. After today, Hard challenges, sector tracks (banking, real estate, manufacturing), the full mock-interview bank, and the AI tutor beyond the free daily cap will lock."
+    : "You have about " + hoursLeft + " hours left on your free 7-day Pro trial. Hard challenges, sector tracks, mock interviews, and the AI tutor beyond the free daily cap will lock when the trial ends.";
 
   const upgradeUrl = `https://buy.stripe.com/bJe14o2uleSw8m20nOdMI0a?client_reference_id=${encodeURIComponent(username)}`;
   const appUrl = `https://sqlquest.app/app.html`;
@@ -252,7 +252,7 @@ function renderEmail(args: { username: string; email: string; isLastDay: boolean
               <li>Hard challenges (FAANG-level interview prep)</li>
               <li>Sector tracks — banking, real estate, manufacturing</li>
               <li>Full Mock Interview bank with timed pressure</li>
-              <li>Unlimited AI tutor (Free is capped at 10/day)</li>
+              <li>The AI tutor beyond the free daily cap (Free: 20 a day)</li>
               <li>30-Day Challenge full streak path</li>
             </ul>
           </div>

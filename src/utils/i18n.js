@@ -185,7 +185,7 @@ const TRANSLATIONS = {
       allSkillsAbove50: 'All skills above 50%! Keep practicing to master them.',
       // Mock interview free-trial banner
       freeTrialAvailable: 'Free Trial Available',
-      freeTrialSub: 'Try our SQL Fundamentals interview for free! Upgrade to Pro for unlimited access to all interviews.',
+      freeTrialSub: 'Try our SQL Fundamentals interview for free! Upgrade to Pro for every interview.',
       // Score explainer panel
       whatNumbersMean: 'What these numbers mean',
       scoringIntro: 'Each skill is scored 0–100 based on five signals:',
@@ -1243,7 +1243,7 @@ const TRANSLATIONS = {
       drillInCoach: "Coach'ta Pratik Yap →",
       allSkillsAbove50: 'Tüm becerilerin %50 üstünde! Ustalaşmak için pratiğe devam.',
       freeTrialAvailable: 'Ücretsiz Deneme Mevcut',
-      freeTrialSub: 'SQL Fundamentals mülakatını ücretsiz dene! Tüm mülakatlara sınırsız erişim için Pro\'ya geç.',
+      freeTrialSub: 'SQL Fundamentals mülakatını ücretsiz dene! Tüm mülakatlar için Pro\'ya geç.',
       whatNumbersMean: 'Bu sayılar ne anlama geliyor',
       scoringIntro: 'Her beceri beş sinyale göre 0–100 arası puanlanır:',
       signalSuccessRate: 'Başarı oranı',
