@@ -129,6 +129,10 @@ accounts that share an address still share one.
 - In the browser, graded: [SQL Quest](https://sqlquest.app/) — the fraud
   analytics track and a timed card-transactions mock screen
 - The walkthrough: [SQL for fraud analytics](https://sqlquest.app/blog/sql-for-fraud-analytics/)
+- A starter notebook: \`card-transactions-sql-starter.ipynb\` — the four CSVs in
+  SQLite, six fraud questions worked in plain SQL (risk tiers, outliers,
+  velocity windows, the shared-device ring, impossible travel, the chargeback
+  chain), run end to end with outputs
 - On Kaggle: [Card Transactions: Synthetic Fraud SQL Practice](https://www.kaggle.com/datasets/goktugozdem/card-transactions-synthetic-fraud-sql-practice)
 
 ## Licence
