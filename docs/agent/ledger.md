@@ -70,7 +70,14 @@ of the verifier and must never be rounded to `FLAT`.
   moves the same metric: the flag queue's 7-day spacing now counts from
   09-25, so row 1 flips no earlier than 10-02. Localhost preview rows on
   2026-09-24/25 (aid `c39bd4ca5fbb4664…`) carry goal_gate events: exclude.
-- **Verdict** _pending_
+- **Withdrawn 2026-09-25, before any read.** The founder replaced it the same
+  night with a skippable, inline question after the first solve
+  (`intakeAfterFirstSolve`, dark, A/B), because a required screen at the door
+  is exactly what puts `first_solve_10m` at risk. `goalGate` is off; the only
+  `goal_gate_shown` row in production was the localhost preview. The
+  component stays as the candidate for the one required screen, after
+  payment (plan item 6). The 7-day spacing note above no longer applies.
+- **Verdict** `UNREADABLE` — withdrawn before it reached anyone.
 
 ### a plan click goes straight to Stripe (modal → Stripe, item 1)
 

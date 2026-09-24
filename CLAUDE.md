@@ -728,7 +728,12 @@ URLs filled, brand icon is the bolt, brand colour #FFE34D.
   → `guest_continuity` in `docs/agent/metrics.md`. Tests:
   `tests/progress-merge.test.js` (unit + source guards).
 
-### The goal gate — nobody uses the app without a goal (2026-09-25)
+### The goal gate — nobody uses the app without a goal (2026-09-25) — OFF
+
+**Off the same night (founder): the ask moved after the first solve, inline
+and skippable — `intakeAfterFirstSolve`. `goalGate: false`; the component is
+kept for the one required screen, after payment. What follows describes it
+as built.**
 
 - Founder's directive: every person, guest or registered, states **goal,
   deadline, target level, industry** (company optional for an interview).

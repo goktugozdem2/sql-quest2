@@ -67,4 +67,4 @@ The 42% of first visitors who never open a challenge: row 2 (added
 
 | Row | Flipped (merge, UTC) | PR | Guardrail read | Note |
 |---|---|---|---|---|
-| — `goalGate` (not a queue row) | 2026-09-25, pushed to main on the founder's directive | — | read 10-09 in the ledger | A required goal screen for everyone; it moves `first_solve_10m`, so rule 1's 7-day spacing counts from here: row 1 no earlier than 2026-10-02. |
+| — `goalGate` (not a queue row) | on 2026-09-25, **off again the same night** | — | none — withdrawn before it reached anyone | Replaced by `intakeAfterFirstSolve` (after the first solve, skippable). Live for minutes; the only shown row was the localhost preview, so rule 1's spacing is unaffected: row 1 stays at its own Earliest (2026-09-30). |

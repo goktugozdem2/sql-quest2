@@ -136,9 +136,11 @@ describe('the app wiring (source guards)', () => {
     expect(app).toContain("record.goalSource === 'gate' ? 'goal_gate' : 'intake'");
   });
 
-  it('is on', () => {
+  it('is off since 2026-09-25 (the ask moved after the first solve)', () => {
     const flags = fs.readFileSync(new URL('../src/data/feature-flags.js', import.meta.url), 'utf8');
-    expect(flags).toMatch(/\n\s*goalGate: true,/);
+    expect(flags).toMatch(/\n\s*goalGate: false,/);
+    // off must mean off: the app reads the flag with === true
+    expect(fs.readFileSync(new URL('../src/app.jsx', import.meta.url), 'utf8')).toContain("flagOn: window.FF?.feature?.('goalGate') === true");
   });
 });
 

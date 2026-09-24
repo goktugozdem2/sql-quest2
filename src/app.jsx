@@ -12504,7 +12504,7 @@ CRITICAL RULES:
   const goalGateInTimedMock = !!(activeInterview && interviewTimerActive && !interviewCompleted);
   const goalGateStatus = goalProfileStatus(goalProfile, goalGateNow);
   const goalGateDue = shouldShowGoalGate({
-    flagOn: window.FF?.feature?.('goalGate') !== false,
+    flagOn: window.FF?.feature?.('goalGate') === true,
     hasUser: !!currentUser,
     dbReady,
     sessionLoading: isSessionLoading,
@@ -12512,7 +12512,7 @@ CRITICAL RULES:
     profile: goalProfile,
     now: goalGateNow,
   });
-  const goalGateVisible = (goalGateDue || goalGateEditing) && !goalGateInTimedMock;
+  const goalGateVisible = (goalGateDue || (goalGateEditing && window.FF?.feature?.('goalGate') === true)) && !goalGateInTimedMock;
 
   useEffect(() => {
     if (!goalGateVisible) { goalGateOpenRef.current = null; return; }
@@ -35027,8 +35027,10 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                             </span>
                           );
                         })()}
-                        <button type="button" data-testid="coach-edit-goal" onClick={() => setGoalGateEditing(true)}
-                          className="underline" style={{ color: '#8A8E99' }}>{i18n_t('goalGate', 'edit')}</button>
+                        {window.FF?.feature?.('goalGate') === true && (
+                          <button type="button" data-testid="coach-edit-goal" onClick={() => setGoalGateEditing(true)}
+                            className="underline" style={{ color: '#8A8E99' }}>{i18n_t('goalGate', 'edit')}</button>
+                        )}
                         <span className="font-bold text-yellow-400">{xp} XP</span>
                       </div>
                     </div>
