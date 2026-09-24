@@ -16,6 +16,7 @@
 //   5. company pages (/<company>-sql-interview/): impressions and position
 
 import { pathToFileURL } from 'node:url';
+import { supabaseAuthHeaders } from './auth.mjs';
 
 export const MIN_IMPRESSIONS_MOVE = 20;
 export const MIN_IMPRESSIONS_NOCLICK = 10;
@@ -117,7 +118,7 @@ async function restAll(pathQuery, { url, serviceKey, fetchImpl }) {
   const out = [];
   for (let from = 0; ; from += 1000) {
     const res = await fetchImpl(`${url.replace(/\/$/, '')}/rest/v1/${pathQuery}`, {
-      headers: { apikey: serviceKey, authorization: `Bearer ${serviceKey}`, range: `${from}-${from + 999}` },
+      headers: { ...supabaseAuthHeaders(serviceKey), range: `${from}-${from + 999}` },
     });
     if (!res.ok) throw new Error(`GET ${pathQuery.split('?')[0]} → HTTP ${res.status}`);
     const page = await res.json();

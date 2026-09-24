@@ -17,7 +17,7 @@
 // upserts over whatever is there.
 
 import { pathToFileURL } from 'node:url';
-import { getAccessToken, googleFetch, GSC_PROPERTY } from './auth.mjs';
+import { getAccessToken, googleFetch, supabaseAuthHeaders, GSC_PROPERTY } from './auth.mjs';
 
 export const SLICES = [
   { name: 'query', dimensions: ['date', 'query'] },
@@ -81,8 +81,7 @@ export async function upsertRows(rows, { url, serviceKey, fetchImpl = fetch, bat
     const res = await fetchImpl(`${url.replace(/\/$/, '')}/rest/v1/gsc_daily?on_conflict=date,query,page`, {
       method: 'POST',
       headers: {
-        apikey: serviceKey,
-        authorization: `Bearer ${serviceKey}`,
+        ...supabaseAuthHeaders(serviceKey),
         'content-type': 'application/json',
         prefer: 'resolution=merge-duplicates,return=minimal',
       },

@@ -4,7 +4,7 @@
 import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import { generateKeyPairSync } from 'node:crypto';
-import { readServiceAccount, getAccessToken, googleFetch, GSC_PROPERTY } from '../scripts/gsc/auth.mjs';
+import { readServiceAccount, getAccessToken, googleFetch, supabaseAuthHeaders, GSC_PROPERTY } from '../scripts/gsc/auth.mjs';
 import { dateWindows, toRecord, fetchSlice, upsertRows, SLICES, ROW_LIMIT } from '../scripts/gsc/fetch.mjs';
 import { parseSitemap, pickBatch, toStatus, summarize, renderReport } from '../scripts/gsc/inspect.mjs';
 import { weeks, aggregate, buildReport, renderMarkdown } from '../scripts/gsc/report.mjs';
@@ -96,7 +96,12 @@ describe('fetch', () => {
     expect(calls).toHaveLength(3);
     expect(calls[0].u).toBe('https://p.supabase.co/rest/v1/gsc_daily?on_conflict=date,query,page');
     expect(calls[0].o.headers.prefer).toContain('resolution=merge-duplicates');
-    expect(calls[0].o.headers.authorization).toBe('Bearer srv');
+    expect(calls[0].o.headers.apikey).toBe('srv');
+  });
+
+  it('a new-format secret key goes in apikey only; a legacy JWT key in both headers', () => {
+    expect(supabaseAuthHeaders('sb_secret_abc')).toEqual({ apikey: 'sb_secret_abc' });
+    expect(supabaseAuthHeaders('eyJhbGciOi.x.y')).toEqual({ apikey: 'eyJhbGciOi.x.y', authorization: 'Bearer eyJhbGciOi.x.y' });
   });
 });
 

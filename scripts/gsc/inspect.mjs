@@ -13,7 +13,7 @@
 // covered over consecutive runs.
 
 import { pathToFileURL } from 'node:url';
-import { getAccessToken, googleFetch, GSC_PROPERTY } from './auth.mjs';
+import { getAccessToken, googleFetch, supabaseAuthHeaders, GSC_PROPERTY } from './auth.mjs';
 
 export const SITEMAP_URL = 'https://sqlquest.app/sitemap.xml';
 export const DAILY_BUDGET = 1900;          // of Google's 2,000/day, leaving room for manual checks
@@ -75,7 +75,7 @@ export function renderReport(sum, { date = new Date().toISOString().slice(0, 10)
 }
 
 async function restGet(path, { url, serviceKey, fetchImpl }) {
-  const res = await fetchImpl(`${url.replace(/\/$/, '')}/rest/v1/${path}`, { headers: { apikey: serviceKey, authorization: `Bearer ${serviceKey}` } });
+  const res = await fetchImpl(`${url.replace(/\/$/, '')}/rest/v1/${path}`, { headers: supabaseAuthHeaders(serviceKey) });
   if (!res.ok) throw new Error(`GET ${path.split('?')[0]} → HTTP ${res.status}`);
   return res.json();
 }
@@ -84,7 +84,7 @@ async function upsertStatus(records, { url, serviceKey, fetchImpl }) {
   if (!records.length) return 0;
   const res = await fetchImpl(`${url.replace(/\/$/, '')}/rest/v1/gsc_index_status?on_conflict=url`, {
     method: 'POST',
-    headers: { apikey: serviceKey, authorization: `Bearer ${serviceKey}`, 'content-type': 'application/json', prefer: 'resolution=merge-duplicates,return=minimal' },
+    headers: { ...supabaseAuthHeaders(serviceKey), 'content-type': 'application/json', prefer: 'resolution=merge-duplicates,return=minimal' },
     body: JSON.stringify(records),
   });
   if (!res.ok) throw new Error(`gsc_index_status upsert → HTTP ${res.status} ${(await res.text().catch(() => '')).slice(0, 300)}`);

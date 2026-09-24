@@ -71,3 +71,14 @@ export async function googleFetch(url, { token, method = 'GET', body = null, ret
     await sleep(wait);
   }
 }
+
+/**
+ * PostgREST auth headers for the service key. A legacy `service_role` key is
+ * a JWT and goes in both headers. A new-format secret key (`sb_secret_…`) is
+ * not a JWT: it goes in `apikey` only — the gateway swaps it for a JWT, and
+ * the same string as a Bearer token is rejected as a malformed JWT (401).
+ */
+export function supabaseAuthHeaders(serviceKey) {
+  const key = String(serviceKey || '');
+  return key.startsWith('eyJ') ? { apikey: key, authorization: `Bearer ${key}` } : { apikey: key };
+}
