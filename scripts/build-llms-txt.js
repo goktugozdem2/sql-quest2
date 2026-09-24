@@ -41,6 +41,7 @@ import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { CANONICAL_SKILLS } from '../src/utils/skill-calc.js';
 import { isFreePreview } from '../src/utils/challenge-order.js';
+import { bankCountLabel } from '../src/utils/display-count.js';
 import SKELETONS from '../src/utils/skeletons.js';
 
 const __dirname = import.meta.dirname;
@@ -306,7 +307,10 @@ export function collectBankFacts(rootDir = ROOT) {
 export function templateValues(facts, generatedOn) {
   return {
     generatedOn,
-    challengeCount: facts.challengeCount,
+    // 2026-09-24: the bank's size is said as a floor to 50 ("300+"), the one
+    // rule every page follows — src/utils/display-count.js bankCountLabel. The
+    // exact total stays in `facts` for the tests and the build log.
+    challengeCountLabel: bankCountLabel(facts.challengeCount),
     coreChallengeCount: facts.coreChallengeCount,
     sectorChallengeCount: facts.sectorChallengeCount,
     easyCount: facts.easyCount,

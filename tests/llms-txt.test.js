@@ -25,6 +25,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { buildLlmsTxt } from '../scripts/build-llms-txt.js';
 import { CANONICAL_SKILLS } from '../src/utils/skill-calc.js';
+import { bankCountLabel } from '../src/utils/display-count.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..');
@@ -96,7 +97,9 @@ describe('counts match the bank (recomputed independently)', () => {
     expect(facts.sectorChallengeCount).toBe(bank.sectorChallengesData.length);
     expect(facts.coreChallengeCount).toBe(all.length - bank.sectorChallengesData.length);
 
-    expect(text).toContain(`**${all.length} hands-on SQL challenges**`);
+    // 2026-09-24: the total is said floored to 50 with a "+", never exact.
+    expect(text).toContain(`**${bankCountLabel(all.length)} hands-on SQL challenges**`);
+    expect(text).not.toMatch(new RegExp(`\\b${all.length}\\+? (?:hands-on|SQL|challenges)`));
     expect(text).toContain(`${easy} Easy, ${medium} Medium, ${hard} Hard`);
     expect(text).toContain(`Adds all ${hard} Hard challenges`);
   });

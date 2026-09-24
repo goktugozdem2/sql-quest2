@@ -283,21 +283,46 @@ const COUNT_CLAIM = /(?<![\w$.,~-])(?<!industry tracks \()(\d+)(\+?)(?=(?!(?:[\s
 // Free" claims across the site had never been checked at all.
 const FREE_CLAIM = /(?<![\w$.,-])(\d+)(\+?) free\b/gi;
 
+// 2026-09-24 — THE BANK TOTAL IS ROUNDED, EVERYWHERE (founder: "299 soruysa
+// rakamı yuvarla … rakamlar yuvarlanınca daha rahat anlaşılır olsun"). The
+// size of the whole bank is said one way: floored to 50 with a "+", exactly
+// what bankCountLabel() in src/utils/display-count.js returns — 304 is
+// "300+". The exact total is no longer an accepted claim anywhere a sentence
+// can carry it (prose, <title>, meta/OG/Twitter content, JSON-LD text, stat
+// blocks, "N of M" ratios); only the floor is. What stays EXACT, on purpose,
+// because the exact number is the point of the sentence:
+//   - the free count ("228 free") — a pricing statement, bound below;
+//   - the Easy/Medium/Hard split and the core/sector split — the breakdown
+//     is the content of /sql-exercises/ #by-difficulty and of llms.txt;
+//   - a topic page's own population and sections (rule 4);
+//   - the numerator of a free-share ratio: "228 of the 300+" — exact free,
+//     rounded total;
+//   - in the app, a list's own badge or "solved/total" progress, and the
+//     question hub's JSON-LD numberOfItems (a schema count of the list, not
+//     a sentence — it lives in public/, outside this page set).
+// A floor that is not the bank's floor ("250+" at 304, "300+" at 350) fails,
+// so the rounded number moves with the bank instead of rotting.
 const floor50 = n => Math.floor(n / 50) * 50;
 const isFloorOf = (n, count) => n % 50 === 0 && n <= count && n > count - 50;
 
-// A claim is fine when it is a number the bank actually has — the total, the
-// free count, the core (non-sector) count, Easy+Medium ("every Easy and
-// Medium challenge") or a single difficulty — or a true rounded floor: a multiple of 50 no more than
-// 49 below the total, written "N+" (or "over N" / "more than N"). A floor of
-// the FREE count is accepted only in a sentence that says "free", so that
-// "150+ challenges" cannot pass as a floor of 195 while reading as a floor of
-// the bank. Returns null when acceptable, else the reason.
+// A claim is fine when it is a number the bank actually has — the free
+// count, the core (non-sector) count, Easy+Medium ("every Easy and Medium
+// challenge") or a single difficulty — or the bank's rounded floor: the
+// multiple of 50 no more than 49 below the total, written "N+" (or "over N" /
+// "more than N"). The exact TOTAL is not on that list (2026-09-24, above). A
+// floor of the FREE count is accepted only in a sentence that says "free", so
+// that "150+ challenges" cannot pass as a floor of 195 while reading as a
+// floor of the bank. Returns null when acceptable, else the reason.
 export function challengeClaimVerdict(n, plus, sentence, facts) {
+  if (!plus && n === facts.challengeCount) {
+    return `${n} is the exact bank total — the bank is said rounded: "${floor50(facts.challengeCount)}+" (bankCountLabel, 2026-09-24)`;
+  }
   const exact = {
-    total: facts.challengeCount,
     free: facts.freeChallengeCount,
     core: facts.coreChallengeCount,
+    // 2026-09-24: the sector half of the core/sector split, exact like the
+    // core half (it crossed 100 on 2026-09-12 and /sql-exercises/ states it).
+    sector: facts.sectorChallengeCount,
     'Easy+Medium': facts.easyCount + facts.mediumCount,
     Easy: facts.easyCount,
     Medium: facts.mediumCount,
@@ -309,7 +334,7 @@ export function challengeClaimVerdict(n, plus, sentence, facts) {
   }
   if (isFloorOf(n, facts.challengeCount)) return null;
   if (/\bfree\b/i.test(sentence) && isFloorOf(n, facts.freeChallengeCount)) return null;
-  return `${n}+ is not a multiple of 50 within 49 of the total ${facts.challengeCount} — write "${floor50(facts.challengeCount)}+" or the exact count`;
+  return `${n}+ is not the bank's floor — ${facts.challengeCount} is said "${floor50(facts.challengeCount)}+" (bankCountLabel)`;
 }
 
 export function freeClaimVerdict(n, plus, facts) {
@@ -347,15 +372,17 @@ export function findChallengeClaims(text, facts) {
       if (why) offenders.push({ index: s.index + m.index, why, text: s.text });
     }
     for (const m of s.text.matchAll(FREE_CLAIM)) {
-      // "195 of 257 free challenges": the free claim is the first number and
-      // the second must be the total.
-      const ofTotal = /(\d+) of\s*$/.exec(s.text.slice(Math.max(0, m.index - 12), m.index));
+      // "195 of 250+ free challenges": the free claim is the first number and
+      // the second is the total — since 2026-09-24 its rounded floor, never
+      // the exact figure ("195 of 257 free" now fails).
+      const ofTotal = /(\d+) of (?:the |its )?$/.exec(s.text.slice(Math.max(0, m.index - 16), m.index));
       if (ofTotal) {
         const free = Number(ofTotal[1]);
         const total = Number(m[1]);
         if (free < 100 && total < 100) continue;
-        if (free !== facts.freeChallengeCount || total !== facts.challengeCount) {
-          offenders.push({ index: s.index + m.index, why: `"${free} of ${total} free" — the bank has ${facts.freeChallengeCount} of ${facts.challengeCount}`, text: s.text });
+        const want = `${facts.freeChallengeCount} of ${floor50(facts.challengeCount)}+`;
+        if (free !== facts.freeChallengeCount || m[2] !== '+' || !isFloorOf(total, facts.challengeCount)) {
+          offenders.push({ index: s.index + m.index, why: `"${free} of ${total}${m[2]} free" — write "${want}"`, text: s.text });
         }
         continue;
       }
@@ -366,6 +393,23 @@ export function findChallengeClaims(text, facts) {
     }
   }
   return offenders;
+}
+
+// 2026-09-24: the exact bank total, as a bare number, anywhere a reader or a
+// crawler sees text — prose, <title>, meta/OG/Twitter content, JSON-LD, inline
+// FAQ arrays — whatever noun follows it or none ("304 challenge'ın", "the
+// 304-challenge bank", "SQL Quest has 304."). The noun-bound rules above miss
+// those shapes; this one does not need a noun. Numbers glued to an id, a
+// query string, a CSS length or a decimal are not claims: "challenge=304",
+// "#304", "304px", "3.304".
+export function findExactBankTotal(text, total) {
+  const flat = flatten(text);
+  const re = new RegExp(`(?<![\\w$.,/#=:+\\-])${total}(?![\\w%+]|[.,]\\d)`, 'g');
+  return [...flat.matchAll(re)].map(m => ({
+    index: m.index,
+    why: `the exact bank total ${total} — say "${floor50(total)}+" (bankCountLabel)`,
+    text: flat.slice(Math.max(0, m.index - 60), m.index + 60).replace(/\0+/g, ' '),
+  }));
 }
 
 // "9-skill radar", "9-axis", "9 axes", "9 canonical skills" always name the
@@ -412,31 +456,40 @@ const SKILL_LOOSE = /(?<![\w-])(\d+) (?:SQL )?skills\b/gi;
 // wrong and would otherwise pass by naming a bank we do not have.
 export function findRatioClaims(text, facts) {
   const offenders = [];
+  // 2026-09-24: the total side is written as the bank's rounded floor —
+  // "228 of the 300+ challenges", "228 FREE of 300+" — and the exact total
+  // there is now an offence like any other. The free side stays exact. The
+  // fourth shape ("226 free challenges of 287", "226 FREE of 287") is new the
+  // same day: nine of them were on the vs-pages, stale by two bank sizes,
+  // because the only rules here expected "of" straight after the number.
   const rules = [
-    // N of [the|its] M challenges/exercises/problems/questions
-    [/(\d+)\s+of\s+(?:the\s+|its\s+|our\s+|SQL Quest's\s+)?(\d+)(?=\s+(?:challenges?|exercises?|problems?|questions?)\b)/gi, 'free', 'total'],
-    // M challenges, N of them free   |   M challenge (N ücretsiz)
-    [/(\d+)\s+challenges?,\s*(\d+)\s+of\s+them\s+free/gi, 'total', 'free'],
-    // N of M  — only when "free" is the next few words
-    [/(\d+)\s+of\s+(\d+)(?=[^.<]{0,40}\bfree\b)/gi, 'free', 'total'],
+    // N of [the|its] M(+) challenges/exercises/problems/questions
+    /(?<free>\d+)\s+of\s+(?:the\s+|its\s+|our\s+|SQL Quest's\s+)?(?<total>\d+)(?<plus>\+?)(?=\s+(?:challenges?|exercises?|problems?|questions?)\b)/gi,
+    // M(+) challenges, N of them free
+    /(?<total>\d+)(?<plus>\+?)\s+challenges?,\s*(?<free>\d+)\s+of\s+them\s+free/gi,
+    // N of M(+)  — only when "free" is the next few words
+    /(?<free>\d+)\s+of\s+(?<total>\d+)(?<plus>\+?)(?=[^.<]{0,40}\bfree\b)/gi,
+    // N free [challenges] of / out of M(+)
+    /(?<free>\d+)\s+free\s+(?:challenges\s+)?(?:of|out of)\s+(?:the\s+)?(?<total>\d+)(?<plus>\+?)/gi,
   ];
-  const want = { free: facts.freeChallengeCount, total: facts.challengeCount };
+  const want = `${facts.freeChallengeCount} of ${floor50(facts.challengeCount)}+`;
   const seen = new Set();
-  for (const [rx, roleA, roleB] of rules) {
+  for (const rx of rules) {
     for (const m of text.matchAll(rx)) {
       if (seen.has(m.index)) continue;
-      const a = Number(m[1]);
-      const b = Number(m[2]);
-      // Only judge a pair that is plausibly OUR ratio: the larger side must be
-      // the bank total or the number we have drifted from. A competitor's
-      // "50-80 of 250+" must never be "corrected" against our bank.
-      if (Math.max(a, b) < 100 || Math.abs(Math.max(a, b) - facts.challengeCount) > 20) continue;
+      const free = Number(m.groups.free);
+      const total = Number(m.groups.total);
+      const plus = m.groups.plus === '+';
+      // Only judge a pair that is plausibly OUR ratio: the total side must be
+      // the bank total, a floor of it, or a number we have drifted from, and
+      // the free side a three-digit count. A competitor's "50-80 of 250+" or
+      // "75+ free of 1000+" must never be "corrected" against our bank.
+      if (free < 100 || Math.abs(total - facts.challengeCount) > (plus ? 60 : 20)) continue;
       seen.add(m.index);
-      const got = { [roleA]: a, [roleB]: b };
-      if (got.free === want.free && got.total === want.total) continue;
+      if (free === facts.freeChallengeCount && plus && isFloorOf(total, facts.challengeCount)) continue;
       offenders.push({
         index: m.index,
-        why: `"${m[0].trim()}" — the bank is ${want.free} free of ${want.total}`,
+        why: `"${m[0].trim()}" — write "${want}": the free count exact, the bank rounded`,
         text: m[0].trim(),
       });
     }
@@ -462,19 +515,22 @@ export function findRatioClaims(text, facts) {
 
 export function findStatBlockClaims(text, facts, skillCount) {
   const offenders = [];
-  const BLOCK = /stat-num"[^>]*>\s*([\d,]+)\s*<\/div>\s*<div class="stat-lbl"[^>]*>\s*([^<]+?)\s*<\/div>/gi;
+  const BLOCK = /stat-num"[^>]*>\s*([\d,]+)(\+?)\s*<\/div>\s*<div class="stat-lbl"[^>]*>\s*([^<]+?)\s*<\/div>/gi;
   for (const m of text.matchAll(BLOCK)) {
     const n = Number(m[1].replace(/,/g, ''));
-    const label = m[2];
+    const plus = m[2] === '+';
+    const label = m[3];
     if (!Number.isFinite(n)) continue;
+    // 2026-09-24: a block that counts the whole bank shows its rounded floor
+    // ("300+ Exercises"), like every sentence; skills and free stay exact.
     let want = null;
-    if (/\bskill/i.test(label)) want = skillCount;
-    else if (/\bfree\b/i.test(label)) want = facts.freeChallengeCount;
-    else if (/\b(?:exercis|challeng|problem|question)/i.test(label)) want = facts.challengeCount;
-    if (want === null || n === want) continue;
+    if (/\bskill/i.test(label)) want = String(skillCount);
+    else if (/\bfree\b/i.test(label)) want = String(facts.freeChallengeCount);
+    else if (/\b(?:exercis|challeng|problem|question)/i.test(label)) want = `${floor50(facts.challengeCount)}+`;
+    if (want === null || `${n}${plus ? '+' : ''}` === want) continue;
     offenders.push({
       index: m.index,
-      why: `stat block "${n} ${label}" — the bank has ${want}`,
+      why: `stat block "${n}${plus ? '+' : ''} ${label}" — write ${want}`,
       text: m[0],
     });
   }
@@ -1115,12 +1171,12 @@ describe('helpers (fixtures)', () => {
     expect(findStalePro19(page('<p>SQL Quest Pro: $199 lifetime, $199/yr equivalent.</p>'), FIXTURE_MODAL)).toEqual([]);
   });
 
-  it('challenge claims: exact bank numbers and true 50-floors pass, everything else fails', () => {
+  it('challenge claims: the bank\'s 50-floor and exact subsets pass; the exact total and any other floor fail', () => {
     const ok = [
-      '257 challenges', '257 hands-on SQL challenges', '250+ challenges', 'over 250 challenges',
+      '250+ challenges', 'over 250 challenges', '250+ hands-on SQL challenges',
       'more than 250 challenges', '195 free challenges', '195 challenges', '185 core challenges',
-      '189 Easy and Medium challenges', '195 of 257 challenges', '150+ free challenges', '257 exercises',
-      '12 fraud challenges', '68 Hard challenges', '257-challenge bank', '250+ hands-on SQL exercises',
+      '189 Easy and Medium challenges', '195 of 250+ challenges', '150+ free challenges', '250+ exercises',
+      '12 fraud challenges', '68 Hard challenges', '250+ hands-on SQL exercises',
       '109 exercises, all free', '80 Easy challenges',
     ];
     for (const s of ok) expect(findChallengeClaims(s, FIXTURE_FACTS), s).toEqual([]);
@@ -1128,6 +1184,8 @@ describe('helpers (fixtures)', () => {
       '200+ challenges', '250 challenges', '257+ challenges', '150+ challenges', '120 Easy and Medium challenges',
       '300+ challenges', '125+ hands-on challenges', '150+ gamified challenges', '100 challenges', '200+ exercises',
       '120 challenges',
+      // 2026-09-24: the exact total is no longer a claim a page may make.
+      '257 challenges', '257 hands-on SQL challenges', '257 exercises', '257-challenge bank', '195 of 257 challenges',
     ];
     for (const s of bad) expect(findChallengeClaims(s, FIXTURE_FACTS).length, s).toBe(1);
     // "problems" is LeetCode's noun on these pages and is not bound.
@@ -1135,11 +1193,24 @@ describe('helpers (fixtures)', () => {
   });
 
   it('free claims: the free count or a 50-floor of it', () => {
-    for (const s of ['195 free', '150+ free', '257 challenges (195 free)', '6 free Hard previews', '75+ free questions', '195 of 257 free challenges', "SQL Quest's 195 of 257 free"]) {
+    for (const s of ['195 free', '150+ free', '250+ challenges (195 free)', '6 free Hard previews', '75+ free questions', '195 of 250+ free challenges', "SQL Quest's 195 of 250+ free", '195 of the 250+ free']) {
       expect(findChallengeClaims(s, FIXTURE_FACTS), s).toEqual([]);
     }
-    for (const s of ['120 free', '100+ free', '200+ free', '195+ free', '150 of 257 free challenges', '195 of 239 free challenges']) {
+    for (const s of ['120 free', '100+ free', '200+ free', '195+ free', '150 of 250+ free challenges', '195 of 239 free challenges',
+                     '195 of 257 free challenges', '195 of 200+ free challenges', '257 challenges (195 free)']) {
       expect(findChallengeClaims(s, FIXTURE_FACTS).length, s).toBeGreaterThan(0);
+    }
+  });
+
+  it('the exact bank total is caught with or without a noun, and ids, lengths and decimals are left alone', () => {
+    for (const s of ['<p>SQL Quest has 257 challenges.</p>', '<p>the 257-challenge bank</p>', "<p>257 challenge'ın 195'i</p>",
+                     '<meta name="description" content="Practice with 257 hands-on challenges">', '<p>We have 257.</p>',
+                     '<script type="application/ld+json">{"description":"257 SQL exercises"}</script>']) {
+      expect(findExactBankTotal(s, 257).length, s).toBe(1);
+    }
+    for (const s of ['<p>250+ challenges</p>', '<a href="/app/?challenge=257">x</a>', '<p>id #257</p>', '<p style="width:257px">x</p>',
+                     '<p>2.257 and 257.5</p>', '<svg><path d="M257 12"/></svg>', '<p>1257 rows</p>', '<p>257+ is not a floor</p>']) {
+      expect(findExactBankTotal(s, 257), s).toEqual([]);
     }
   });
 
@@ -1217,14 +1288,17 @@ describe('helpers (fixtures)', () => {
 
   it('findRatioClaims judges our free ratio and difficulty split, and leaves competitors alone', () => {
     const F = { challengeCount: 287, freeChallengeCount: 219, easyCount: 93, mediumCount: 120, hardCount: 74 };
-    for (const s of ['219 of 287 challenges', '219 of the 287 exercises are free', '287 challenges, 219 of them free',
-                     "219 of SQL Quest's 287 challenges are playable free", '(93 Easy / 120 Medium / 74 Hard)',
-                     '93 Easy, 120 Medium, 74 Hard']) {
+    for (const s of ['219 of 250+ challenges', '219 of the 250+ exercises are free', '250+ challenges, 219 of them free',
+                     "219 of SQL Quest's 250+ challenges are playable free", '(93 Easy / 120 Medium / 74 Hard)',
+                     '93 Easy, 120 Medium, 74 Hard', '219 FREE of 250+', '219 free challenges of 250+']) {
       expect(findRatioClaims(s, F), s).toEqual([]);
     }
-    // The exact regressions this rule was written for.
+    // The exact regressions this rule was written for — and, from 2026-09-24,
+    // the exact total on the right-hand side and a floor that is not the bank's.
     for (const s of ['217 of 287 challenges', '217 of the 287 exercises are free', '287 challenges, 217 of them free',
-                     '(91 Easy / 120 Medium / 74 Hard)', '219 of 285 challenges']) {
+                     '(91 Easy / 120 Medium / 74 Hard)', '219 of 285 challenges',
+                     '219 of 287 challenges', '287 challenges, 219 of them free', '219 of 300+ challenges', '218 of 250+ challenges',
+                     '226 FREE of 287', '226 free challenges of 287', '219 free challenges out of 287']) {
       expect(findRatioClaims(s, F).length, s).toBeGreaterThan(0);
     }
     // A topic page's own subset split sums nowhere near the bank; rule 4 owns those.
@@ -1243,12 +1317,15 @@ describe('helpers (fixtures)', () => {
     const F = { challengeCount: 287, freeChallengeCount: 219 };
     const block = (n, lbl) => `<div class="stat"><div class="stat-num">${n}</div><div class="stat-lbl">${lbl}</div></div>`;
     // Clean.
-    for (const s of [block(287, 'Exercises'), block(219, 'Free to solve'), block(9, 'Skill categories'),
-                     block('287', 'Practice questions'), block(22, 'Company tags'), block(3, 'Industry tracks')]) {
+    for (const s of [block('250+', 'Exercises'), block(219, 'Free to solve'), block(9, 'Skill categories'),
+                     block('250+', 'Practice questions'), block(22, 'Company tags'), block(3, 'Industry tracks')]) {
       expect(findStatBlockClaims(s, F, 9), s).toEqual([]);
     }
     // The exact regression this rule was written for.
     expect(findStatBlockClaims(block(285, 'Exercises'), F, 9).length).toBe(1);
+    // 2026-09-24: the exact total and a floor that is not the bank's both fail.
+    expect(findStatBlockClaims(block(287, 'Exercises'), F, 9).length).toBe(1);
+    expect(findStatBlockClaims(block('200+', 'Exercises'), F, 9).length).toBe(1);
     expect(findStatBlockClaims(block(217, 'Free to solve'), F, 9).length).toBe(1);
     expect(findStatBlockClaims(block(10, 'Skill categories'), F, 9).length).toBe(1);
     // "free" wins over the unit noun when a label carries both.
@@ -1452,7 +1529,7 @@ describe('1. retired literals — none outside an HTML comment', () => {
 });
 
 describe('2. every count a page states is the bank\'s count', () => {
-  it('"N challenges" (N ≥ 100) is the total, the free / core / Easy+Medium count, or a true 50-floor written "N+"', () => {
+  it('"N challenges" (N ≥ 100) is the 50-floor of the bank written "N+" or an exact subset (free / core / sector / Easy+Medium / one difficulty) — never the exact total', () => {
     // The challenge topic pages are exempt, and only from this one rule.
     // Its premise — a three-digit number next to "challenges" is a claim
     // about the whole bank — broke on 2026-09-08 with /challenges/aggregation/,
@@ -1476,7 +1553,7 @@ describe('2. every count a page states is the bank\'s count', () => {
     expect(offenders, `ratio claims off the bank (${facts.freeChallengeCount} free of ${facts.challengeCount}; ${facts.easyCount}/${facts.mediumCount}/${facts.hardCount}):\n${report(offenders)}`).toEqual([]);
     // Not vacuous: the site does state the ratio and the split.
     const all = pages.map(p => p.text).join('\n');
-    expect(all).toMatch(new RegExp(`${facts.freeChallengeCount} of (?:the )?${facts.challengeCount}`));
+    expect(all).toMatch(new RegExp(`${facts.freeChallengeCount} of (?:the |its )?${Math.floor(facts.challengeCount / 50) * 50}\\+`));
     expect(all).toMatch(new RegExp(`${facts.easyCount}\\s*(?:Easy)`));
   });
 
@@ -1509,11 +1586,26 @@ describe('2. every count a page states is the bank\'s count', () => {
     expect(withRadar).toContain('scripts/coach-mock-snippet.html');
   });
 
+  it('no page states the exact bank total, with or without a noun — only its rounded floor (2026-09-24)', () => {
+    const offenders = collect(p => findExactBankTotal(p.text, facts.challengeCount));
+    // The question hub is generated into public/ and states the bank in its
+    // <title>; it is read here as built. Its JSON-LD numberOfItems is exact on
+    // purpose and is not text a reader sees ("numberOfItems":N is excluded by
+    // the ":" before the number).
+    const hubFile = join('public', 'questions', 'index.html');
+    if (fs.existsSync(join(ROOT, hubFile))) {
+      const hub = stripComments(read(hubFile));
+      for (const o of findExactBankTotal(hub, facts.challengeCount)) offenders.push({ file: hubFile, line: lineAt(hub, o.index), why: o.why, text: o.text });
+      expect(hub).toMatch(new RegExp(`${Math.floor(facts.challengeCount / 50) * 50}\\+ Practice Problems`));
+    }
+    expect(offenders, `exact bank total on a page:\n${report(offenders)}`).toEqual([]);
+  });
+
   it('the bindings are not vacuous — the pages do state each number', () => {
     // If no page states the count, the checks above prove nothing. Each
     // number is expected in at least one sentence somewhere on the site.
     const all = pages.map(p => p.text).join('\n');
-    expect(all).toMatch(new RegExp(`\\b${facts.challengeCount} (?:[\\w-]+ ){0,3}challenges\\b`));
+    expect(all).toMatch(new RegExp(`\\b${Math.floor(facts.challengeCount / 50) * 50}\\+ (?:[\\w-]+ ){0,3}challenges\\b`));
     expect(all).toMatch(new RegExp(`\\b${facts.freeChallengeCount} free\\b`));
     expect(all).toMatch(new RegExp(`\\b${CANONICAL_SKILLS.length}-skill\\b`));
     expect(all).toMatch(new RegExp(`\\b${facts.companies.length} company (?:pages|tracks)\\b`));
@@ -1713,15 +1805,16 @@ describe('free-share claims ("N of M") are the bank\'s pair, everywhere', () => 
   it('in every page, body and head alike', async () => {
     const { collectBankFacts } = await import('../scripts/build-llms-txt.js');
     const f = collectBankFacts(join(HERE, '..'));
-    const want = `${f.freeChallengeCount} of ${f.challengeCount}`;
+    // 2026-09-24: the right-hand side is the bank's rounded floor, "N of 300+".
+    const want = `${f.freeChallengeCount} of ${Math.floor(f.challengeCount / 50) * 50}+`;
     const files = fs.readdirSync(join(HERE, '..', 'src')).filter(n => n.endsWith('.html'))
       .map(n => join(HERE, '..', 'src', n))
       .concat(fs.readdirSync(join(HERE, '..', 'src', 'blog')).filter(n => n.endsWith('.html')).map(n => join(HERE, '..', 'src', 'blog', n)));
     const bad = [];
     for (const file of files) {
       const s = fs.readFileSync(file, 'utf8').replace(/<!--[\s\S]*?-->/g, '');
-      for (const m of s.matchAll(/\b(\d{3})[- ]of[- ](\d{3})\b(?=[^<"]{0,40}?(?:free|challenge|question|exercise))/g)) {
-        const got = `${m[1]} of ${m[2]}`;
+      for (const m of s.matchAll(/\b(\d{3})[- ]of[- ](?:the |its )?(\d{3})\b(\+?)(?=[^<"]{0,40}?(?:free|challenge|question|exercise))/g)) {
+        const got = `${m[1]} of ${m[2]}${m[3]}`;
         if (Number(m[2]) >= 250 && got !== want) bad.push(`${file.split('/src/')[1]}: "${m[0]}"`);
       }
     }

@@ -9,8 +9,8 @@ _Generated 2026-09-24 from the live content bank by `scripts/build-llms-txt.js`.
 - **No signup to start.** Open https://sqlquest.app/app/ and the first challenge is runnable immediately; an account is only needed to sync progress across devices.
 - **Queries run in the browser.** A WebAssembly SQLite engine grades every query locally — no install, no server round-trip, no Docker, no local Postgres.
 - **The free tier includes the Coach.** The adaptive Coach, placement check, Skillmap, weekly report and every Easy and Medium challenge are free. Pro adds Hard challenges and the deeper banks (see Pricing).
-- **299 hands-on SQL challenges** in the bank right now: 94 Easy, 126 Medium, 79 Hard. 190 are general and interview-focused; 109 are sector-specific on real public data.
-- **226 of those are free** — every Easy and Medium challenge plus 6 free Hard previews, so a free user can sample the Pro-tier difficulty before deciding.
+- **300+ hands-on SQL challenges** in the bank — 94 Easy, 128 Medium, 82 Hard on the date above. 195 are general and interview-focused; 109 are sector-specific on real public data.
+- **228 of those are free** — every Easy and Medium challenge plus 6 free Hard previews, so a free user can sample the Pro-tier difficulty before deciding.
 - **30 company interview pages**, **3 industry tracks**, **10 Socratic lessons**, **3 Coach goal paths**, and a Skillmap over **9 skills**.
 - **SQL dialect: SQLite.** Standard SQL — SELECT, JOIN, GROUP BY, CTEs, window functions, CASE — behaves as it does on PostgreSQL, MySQL, BigQuery and Snowflake. Vendor extensions (PL/SQL, ROWNUM, CONNECT BY, RETURNING, ARRAY types, lateral joins) are not supported.
 - **Languages:** English and Turkish. The Coach answers in Turkish when you write Turkish; there is a dedicated Turkish landing at https://sqlquest.app/turkce-sql-ogren/.
@@ -160,8 +160,8 @@ SQL Quest's strongest positioning: "the only SQL practice site that feels like a
 
 ## Pricing
 
-- **Free** (no account needed to start): the Coach and placement check, every Easy and Medium challenge (226 challenges including 6 free Hard previews, sector tracks included), Skillmap, daily streaks, weekly report, basic mock interviews, and a daily allowance of AI tutor calls.
-- **Pro**: $29/month or $99/year. Adds all 79 Hard challenges, the full Mock Interview bank, AI tutor access without the free tier's daily cap, all Daily difficulties, the full Warm-Up bank, the 30-Day Challenge, and priority support. Payment via Stripe, cancel anytime, progress is kept either way.
+- **Free** (no account needed to start): the Coach and placement check, every Easy and Medium challenge (228 challenges including 6 free Hard previews, sector tracks included), Skillmap, daily streaks, weekly report, basic mock interviews, and a daily allowance of AI tutor calls.
+- **Pro**: $29/month or $99/year. Adds all 82 Hard challenges, the full Mock Interview bank, AI tutor access without the free tier's daily cap, all Daily difficulties, the full Warm-Up bank, the 30-Day Challenge, and priority support. Payment via Stripe, cancel anytime, progress is kept either way.
 - **Refunds**: 7-day full refund on Monthly and Annual. Full terms: https://sqlquest.app/refund/
 
 ## Pages
@@ -182,7 +182,7 @@ SQL Quest's strongest positioning: "the only SQL practice site that feels like a
 - How to Find Duplicates in SQL — Find, Inspect, and Delete Them | SQLQuest.app — https://sqlquest.app/sql-find-duplicates/
 - CTE vs Subquery vs Temp Table — When Each One Actually Matters | SQLQuest.app — https://sqlquest.app/sql-cte-vs-subquery/
 - SQL Interview Questions for Data Analysts — By Experience Level | SQLQuest.app — https://sqlquest.app/sql-interview-questions-data-analyst/
-- SQL Practice Questions — 299 Exercises With Solutions (226 Free) | SQLQuest.app — https://sqlquest.app/sql-exercises/
+- SQL Practice Questions — 300+ Exercises With Solutions (228 Free) | SQLQuest.app — https://sqlquest.app/sql-exercises/
 - After the SQL Course: The 14 Minutes That Makes It Stick | SQLQuest.app — https://sqlquest.app/after-the-sql-course/
 - After the Bootcamp: Close Your SQL Gap in Weeks | SQLQuest.app — https://sqlquest.app/after-bootcamp/
 - Want to Work in AI? Learn SQL First. | SQLQuest.app — https://sqlquest.app/sql-for-the-ai-era/
@@ -194,7 +194,7 @@ SQL Quest's strongest positioning: "the only SQL practice site that feels like a
 - SQL Query Optimizer — Free Suggestions to Make a Query Faster | SQLQuest.app — https://sqlquest.app/sql-query-optimizer/
 - DataLemur Alternatives (2026): SQL Interview Practice Sites Compared | SQLQuest.app — https://sqlquest.app/datalemur-alternatives/
 - StrataScratch Alternatives (2026): SQL Interview Practice Sites Compared | SQLQuest.app — https://sqlquest.app/stratascratch-alternatives/
-- SQL Interview Questions — 299 Practice Problems by Topic | SQLQuest.app — https://sqlquest.app/questions/
+- SQL Interview Questions — 300+ Practice Problems by Topic | SQLQuest.app — https://sqlquest.app/questions/
 - Class Survival Breakdown — SQL Interview Question (Medium) | SQLQuest.app — https://sqlquest.app/questions/class-survival-breakdown/
 - Salary Percentile Ranking — SQL Interview Question (Hard) | SQLQuest.app — https://sqlquest.app/questions/salary-percentile-ranking/
 - Wealthy Survivor Profile — SQL Interview Question (Hard) | SQLQuest.app — https://sqlquest.app/questions/wealthy-survivor-profile/
@@ -494,6 +494,11 @@ SQL Quest's strongest positioning: "the only SQL practice site that feels like a
 - Days to KYC Verification by Country — SQL Interview Question (Medium) | SQLQuest.app — https://sqlquest.app/questions/days-to-kyc-verification-by-country/
 - Top 3 Spending Categories per Country — SQL Interview Question (Hard) | SQLQuest.app — https://sqlquest.app/questions/top-3-spending-categories-per-country/
 - Referred vs Organic: First-Month Spend — SQL Interview Question (Medium) | SQLQuest.app — https://sqlquest.app/questions/referred-vs-organic-first-month-spend/
+- Names That Don't Match Their Email — SQL Interview Question (Medium) | SQLQuest.app — https://sqlquest.app/questions/names-that-dont-match-their-email/
+- Her Own First Name — SQL Interview Question (Hard) | SQLQuest.app — https://sqlquest.app/questions/her-own-first-name/
+- Shelve the Films Library-Style — SQL Interview Question (Hard) | SQLQuest.app — https://sqlquest.app/questions/shelve-the-films-library-style/
+- Out-Earning the Boss: What COUNT Counts — SQL Interview Question (Medium) | SQLQuest.app — https://sqlquest.app/questions/out-earning-the-boss-what-count-counts/
+- Blank Is Not NULL: A Port Data-Quality Report — SQL Interview Question (Hard) | SQLQuest.app — https://sqlquest.app/questions/blank-is-not-null-a-port-data-quality-report/
 
 **Comparisons**
 - Is DataLemur Free? 2026 Pricing, Free Tier & SQL Practice | SQLQuest.app — https://sqlquest.app/vs-datalemur/
@@ -545,17 +550,17 @@ SQL Quest's strongest positioning: "the only SQL practice site that feels like a
 - Üretim SQL — Predictive Maintenance Benchmark ile | SQLQuest.app — https://sqlquest.app/uretim-sql/
 
 **Challenge topic pages**
-- SQL GROUP BY and Aggregation Practice — 156 Challenges (116 Free): COUNT, SUM, HAVING | SQLQuest.app — https://sqlquest.app/challenges/aggregation/
-- SQL CASE WHEN Practice — 51 Challenges (40 Free): Buckets, Conditional Aggregation, Pivots | SQLQuest.app — https://sqlquest.app/challenges/case-when/
-- SQL CTE Practice — 62 Challenges (26 Free): Multiple CTEs to Recursive | SQLQuest.app — https://sqlquest.app/challenges/cte/
+- SQL GROUP BY and Aggregation Practice — 159 Challenges (117 Free): COUNT, SUM, HAVING | SQLQuest.app — https://sqlquest.app/challenges/aggregation/
+- SQL CASE WHEN Practice — 54 Challenges (41 Free): Buckets, Conditional Aggregation, Pivots | SQLQuest.app — https://sqlquest.app/challenges/case-when/
+- SQL CTE Practice — 65 Challenges (26 Free): Multiple CTEs to Recursive | SQLQuest.app — https://sqlquest.app/challenges/cte/
 - SQL Date Functions Practice — 37 Challenges (27 Free): strftime, julianday, Date Ranges | SQLQuest.app — https://sqlquest.app/challenges/date-functions/
-- SQL NULL Handling Practice — 20 Challenges (18 Free): IS NULL, COALESCE, Counting Nullable Columns | SQLQuest.app — https://sqlquest.app/challenges/null-handling/
-- SQL String Functions Practice — 14 Challenges (13 Free): SUBSTR, TRIM, LIKE | SQLQuest.app — https://sqlquest.app/challenges/string-functions/
-- SQL Joins Practice — 87 Challenges (58 Free): INNER, LEFT, Self-Join, Anti-Join | SQLQuest.app — https://sqlquest.app/challenges/joins/
+- SQL NULL Handling Practice — 23 Challenges (19 Free): IS NULL, COALESCE, Counting Nullable Columns | SQLQuest.app — https://sqlquest.app/challenges/null-handling/
+- SQL String Functions Practice — 17 Challenges (14 Free): SUBSTR, TRIM, LIKE | SQLQuest.app — https://sqlquest.app/challenges/string-functions/
+- SQL Joins Practice — 89 Challenges (60 Free): INNER, LEFT, Self-Join, Anti-Join | SQLQuest.app — https://sqlquest.app/challenges/joins/
 - SQL Subquery Practice — 57 Challenges (42 Free): Correlated, EXISTS, IN, Derived Tables | SQLQuest.app — https://sqlquest.app/challenges/subqueries/
-- SQL Window Functions Practice — 64 Challenges (23 Free): RANK, LAG, Running Totals | SQLQuest.app — https://sqlquest.app/challenges/window-functions/
+- SQL Window Functions Practice — 65 Challenges (23 Free): RANK, LAG, Running Totals | SQLQuest.app — https://sqlquest.app/challenges/window-functions/
 - SQL Ranking Functions Practice — 32 Challenges (10 Free): ROW_NUMBER, RANK, DENSE_RANK | SQLQuest.app — https://sqlquest.app/challenges/ranking-functions/
-- Advanced SQL Interview Questions — 79 Challenges (6 Free): Hard Window, CTE and Join Problems | SQLQuest.app — https://sqlquest.app/challenges/advanced/
+- Advanced SQL Interview Questions — 82 Challenges (6 Free): Hard Window, CTE and Join Problems | SQLQuest.app — https://sqlquest.app/challenges/advanced/
 
 **Blog**
 - SQLQuest.app Blog — Tutorials, Deep-Dives, Interview Prep — https://sqlquest.app/blog/

@@ -27,6 +27,7 @@ import { questionSlugs, loadQuestionBank } from './question-slugs.mjs';
 import { SKILL_PAGE } from './build-company-pages.mjs';
 import { SKILL_TO_RADAR, mapTopicToSkill, CANONICAL_SKILLS } from '../src/utils/skill-calc.js';
 import { isFreePreview } from '../src/utils/challenge-order.js';
+import { bankCountLabel } from '../src/utils/display-count.js';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const PUB = path.join(ROOT, 'public');
@@ -240,7 +241,9 @@ export function renderHub(bank, slugs) {
     (groups[s] = groups[s] || []).push(c);
   }
   const order = CANONICAL_SKILLS.filter(s => groups[s]);
-  const title = `SQL Interview Questions — ${bank.length} Practice Problems by Topic | SQLQuest.app`;
+  // 2026-09-24: the bank size in words is floored to 50 (bankCountLabel);
+  // numberOfItems below stays exact — it is a schema count of the list, not a sentence.
+  const title = `SQL Interview Questions — ${bankCountLabel(bank.length)} Practice Problems by Topic | SQLQuest.app`;
   const description = `Every SQL Quest practice question as its own page: joins, window functions, aggregation, CTEs, CASE, dates, NULLs and strings. Easy to Hard, runnable in the browser.`;
   const ld = [{ '@context': 'https://schema.org', '@type': 'CollectionPage', name: 'SQL Interview Questions', url, description,
     mainEntity: { '@type': 'ItemList', numberOfItems: bank.length, itemListElement: bank.slice(0, 50).map((c, i) => ({ '@type': 'ListItem', position: i + 1, url: `${SITE}/questions/${slugs.get(c.id)}/`, name: c.title })) } }];

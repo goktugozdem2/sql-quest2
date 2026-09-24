@@ -17,6 +17,8 @@
 // The pool is large enough (~70 challenges) that a single year
 // of weekly rotation never repeats.
 
+import { bankCountLabel } from './display-count.js';
+
 // ISO 8601 week-of-year. Returns the ISO year + week number for any
 // date. ISO weeks start on Monday and the year of the week is the
 // year that contains the Thursday of that week — so Jan 1 in some
@@ -104,7 +106,12 @@ export function currentWeeklyChallenge(allChallenges = [], now = new Date()) {
 // week label and difficulty — rather than full prose. The user
 // solving the challenge will edit these in their share dialog
 // anyway, so the template is just a starting point.
-export function buildShareText(weekLabel, challenge, kind = 'generic') {
+// 2026-09-24: the bank size follows bankCountLabel (floor to 50, "300+"),
+// the one rule every page uses; it said a hard-coded "200+" while the bank
+// held 299 and weekly.html's mirror said the exact 299. `bankSize` defaults
+// to the loaded bank; with no bank the sentence names no number.
+export function buildShareText(weekLabel, challenge, kind = 'generic', bankSize = (typeof window !== 'undefined' && window.challengesData ? window.challengesData.length : 0)) {
+  const bank = bankCountLabel(bankSize);
   const title = challenge?.title || 'this week\'s challenge';
   const diff = challenge?.difficulty || 'Medium';
   const url = 'https://sqlquest.app/weekly/';
@@ -113,7 +120,7 @@ export function buildShareText(weekLabel, challenge, kind = 'generic') {
       return `Just solved Week #${weekLabel.split('W')[1]} SQL Challenge on @sqlquest_app: "${title}" (${diff})\n\nBeat my time? ${url}`;
     case 'linkedin':
       return `Solved this week's SQL Challenge on SQL Quest — "${title}" (${diff} difficulty).\n\n` +
-        `Each Monday SQL Quest features a fresh challenge from their 200+ practice bank. Free to try, no signup, ` +
+        `Each Monday SQL Quest features a fresh challenge from their practice bank${bank ? ` of ${bank} challenges` : ''}. Free to try, no signup, ` +
         `runs in your browser. Useful weekly habit if you're sharpening for a data interview.\n\n${url}`;
     case 'generic':
     default:

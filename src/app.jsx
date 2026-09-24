@@ -1,4 +1,4 @@
-import { roundDownCount, companySetCount } from './utils/display-count.js';
+import { roundDownCount, bankCountLabel, companySetCount } from './utils/display-count.js';
 import { withLocalAccountKeys as withLocalAccountKeysPure, isMissingServerSide, accountFunctionStatus } from './utils/account-access.js';
 import { tokenForUsername, writeSessionToken, clearSessionToken, ensureGuestSecret, clearGuestSecret, withToken, withCarry, endSessionBody, isGuestUsername, rpcBodyFallbacks, isSessionTokenRequired, sessionRefusalAction, RELOGIN_MESSAGE, markReloginPending, isReloginPending, clearReloginPending } from './utils/session-token.js';
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
@@ -25615,11 +25615,12 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
 
           {/* Social Proof — counts come from the live bank, rounded down
               (src/utils/display-count.js); never an exact number and no
-              lifetime-free promise (2026-09-14). */}
+              lifetime-free promise (2026-09-14). The bank count steps by 50 via
+              bankCountLabel since 2026-09-24 — the same rule as the site. */}
           <div className="mt-6 pt-5 border-t border-gray-800">
             <div className="flex items-start justify-center gap-6 text-xs text-gray-400">
               {(() => {
-                const questions = roundDownCount((window.challengesData || challenges || []).length, 100);
+                const questions = bankCountLabel((window.challengesData || challenges || []).length);
                 const companies = roundDownCount(companySetCount(window.challengeCompanies), 10);
                 return (
                   <>
@@ -31347,7 +31348,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                         You've solved {proModalReason.used} — the free quota is {proModalReason.quota}.
                       </p>
                       <p className="text-sm mt-2" style={{ color: '#8A8E99' }}>
-                        Everything you've solved stays open, and the lessons, warm-ups, the daily and the Coach stay free. Pro opens the rest of the bank — all {challenges.length} challenges, the Hard set and the mock interviews.
+                        Everything you've solved stays open, and the lessons, warm-ups, the daily and the Coach stay free. Pro opens the rest of the bank — all {bankCountLabel(challenges.length) || challenges.length} challenges, the Hard set and the mock interviews.
                       </p>
                     </div>
                   ) : proModalReason.type === 'coach_mock' ? (

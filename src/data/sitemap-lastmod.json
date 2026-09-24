@@ -3,12 +3,12 @@
   "updated": "2026-09-24",
   "pages": {
     "/": {
-      "hash": "c36811bbd4eae6b7",
-      "lastmod": "2026-09-21"
+      "hash": "ef9ac52c70e80e71",
+      "lastmod": "2026-09-24"
     },
     "/turkce-sql-ogren/": {
-      "hash": "b8b71e9079d7d3ec",
-      "lastmod": "2026-09-21"
+      "hash": "2cdda19908d209da",
+      "lastmod": "2026-09-24"
     },
     "/finans-sql/": {
       "hash": "721bda19578d7daf",
@@ -59,8 +59,8 @@
       "lastmod": "2026-09-19"
     },
     "/wise-sql-interview/": {
-      "hash": "9be3bc549cab14fc",
-      "lastmod": "2026-09-17"
+      "hash": "5a7fbd5f2716cb99",
+      "lastmod": "2026-09-24"
     },
     "/apple-sql-interview/": {
       "hash": "e0bd562bcdcc8f5c",
@@ -95,168 +95,168 @@
       "lastmod": "2026-09-17"
     },
     "/practice-sql-no-setup/": {
-      "hash": "a533f45dea53e014",
-      "lastmod": "2026-09-21"
+      "hash": "0178c8501bdf7452",
+      "lastmod": "2026-09-24"
     },
     "/sql-quiz/": {
-      "hash": "d5d20724869aa2e3",
-      "lastmod": "2026-09-14"
+      "hash": "aabd1699c407530c",
+      "lastmod": "2026-09-24"
     },
     "/weekly/": {
-      "hash": "dfc4983f8a69ae23",
+      "hash": "abd84bd74a7d03ce",
       "lastmod": "2026-09-24"
     },
     "/fraud-analytics-sql/": {
-      "hash": "69b42d4b47a698aa",
+      "hash": "41c5c03a68513a3e",
       "lastmod": "2026-09-24"
     },
     "/vs-datalemur/": {
-      "hash": "aea4c3773e19e995",
-      "lastmod": "2026-09-21"
+      "hash": "df50ca4bc5a7e3ae",
+      "lastmod": "2026-09-24"
     },
     "/datalemur-karsilastirma/": {
-      "hash": "3fc75f99b6ece06e",
-      "lastmod": "2026-09-14"
+      "hash": "9464aabcb74b4692",
+      "lastmod": "2026-09-24"
     },
     "/vs-sqlbolt/": {
-      "hash": "52ce16690b840bc9",
-      "lastmod": "2026-09-21"
+      "hash": "5a42ea3b191bf4f5",
+      "lastmod": "2026-09-24"
     },
     "/vs-sqlzoo/": {
-      "hash": "0a1f4c3ff9a20a11",
-      "lastmod": "2026-09-14"
+      "hash": "c483f4f2fcced93f",
+      "lastmod": "2026-09-24"
     },
     "/vs-stratascratch/": {
-      "hash": "c7e0facfb46ba962",
-      "lastmod": "2026-09-14"
+      "hash": "ff63a22d2ee17caa",
+      "lastmod": "2026-09-24"
     },
     "/vs-leetcode-sql/": {
-      "hash": "5974f16e39897963",
-      "lastmod": "2026-09-14"
+      "hash": "73f52400cb18f72b",
+      "lastmod": "2026-09-24"
     },
     "/vs-hackerrank-sql/": {
-      "hash": "8a6ef7d503c6a57d",
-      "lastmod": "2026-09-17"
+      "hash": "2ff73955e39950b5",
+      "lastmod": "2026-09-24"
     },
     "/sql-practice-comparison/": {
-      "hash": "6c78b8eec7eb2e4c",
-      "lastmod": "2026-09-14"
+      "hash": "891a9062818f8a0c",
+      "lastmod": "2026-09-24"
     },
     "/best-sql-practice-sites/": {
-      "hash": "9e748b42e31dbce9",
-      "lastmod": "2026-09-14"
+      "hash": "a1ffc1eb67e82236",
+      "lastmod": "2026-09-24"
     },
     "/sql-interview-prep/": {
-      "hash": "e2a55fc178ffc46e",
-      "lastmod": "2026-09-21"
+      "hash": "d2174d43a3c4f5c9",
+      "lastmod": "2026-09-24"
     },
     "/learn-sql/": {
-      "hash": "8f51563e437ceed5",
-      "lastmod": "2026-09-21"
+      "hash": "328adfdfb3d82504",
+      "lastmod": "2026-09-24"
     },
     "/sql-cheat-sheet/": {
-      "hash": "ef092f8102351706",
-      "lastmod": "2026-09-21"
+      "hash": "df5e0665f11c8847",
+      "lastmod": "2026-09-24"
     },
     "/sql-tutorial/": {
-      "hash": "815e3ecfcf89c3df",
-      "lastmod": "2026-09-21"
+      "hash": "6452522db4d27f37",
+      "lastmod": "2026-09-24"
     },
     "/learn-sql-for-beginners/": {
       "hash": "be9675c01ddff280",
       "lastmod": "2026-09-14"
     },
     "/sql-find-duplicates/": {
-      "hash": "c8002fdd423b30fa",
-      "lastmod": "2026-09-21"
+      "hash": "39c6c7a77882e879",
+      "lastmod": "2026-09-24"
     },
     "/sql-cte-vs-subquery/": {
-      "hash": "4d383f1259626bfd",
-      "lastmod": "2026-09-14"
+      "hash": "1e3a2f6585eb9597",
+      "lastmod": "2026-09-24"
     },
     "/sql-interview-questions-data-analyst/": {
-      "hash": "60eddbf85a457622",
-      "lastmod": "2026-09-21"
+      "hash": "32f8dd8c0da2d3dc",
+      "lastmod": "2026-09-24"
     },
     "/sql-exercises/": {
-      "hash": "1d279b2ad0989ddd",
-      "lastmod": "2026-09-14"
+      "hash": "b05b7d39fa5f883d",
+      "lastmod": "2026-09-24"
     },
     "/after-the-sql-course/": {
-      "hash": "105918e31db2e3b4",
-      "lastmod": "2026-09-14"
+      "hash": "2dcdb8dcb9a65aa2",
+      "lastmod": "2026-09-24"
     },
     "/after-bootcamp/": {
-      "hash": "b2276b66256a9416",
-      "lastmod": "2026-09-21"
+      "hash": "9e6896d03141df6b",
+      "lastmod": "2026-09-24"
     },
     "/sql-for-the-ai-era/": {
-      "hash": "cb03bb768436de67",
-      "lastmod": "2026-09-14"
+      "hash": "4c162b220e4136d3",
+      "lastmod": "2026-09-24"
     },
     "/challenges/": {
-      "hash": "b93311032cd4ec57",
-      "lastmod": "2026-09-21"
+      "hash": "15d1c398b426d88f",
+      "lastmod": "2026-09-24"
     },
     "/challenges/aggregation/": {
-      "hash": "04ff8a148a66eed5",
-      "lastmod": "2026-09-21"
+      "hash": "823cf7227e8c39b3",
+      "lastmod": "2026-09-24"
     },
     "/challenges/case-when/": {
-      "hash": "0a5f856f62d50248",
-      "lastmod": "2026-09-21"
+      "hash": "70050a34512ed7a7",
+      "lastmod": "2026-09-24"
     },
     "/challenges/cte/": {
-      "hash": "db82fb56319a5bc5",
-      "lastmod": "2026-09-21"
+      "hash": "686ef6a725c849e0",
+      "lastmod": "2026-09-24"
     },
     "/challenges/date-functions/": {
-      "hash": "73f62cb2f7510506",
-      "lastmod": "2026-09-21"
+      "hash": "8e9cc74d85125db3",
+      "lastmod": "2026-09-24"
     },
     "/challenges/null-handling/": {
-      "hash": "8b7e578261f4879a",
-      "lastmod": "2026-09-21"
+      "hash": "77e2e7119de9e06e",
+      "lastmod": "2026-09-24"
     },
     "/challenges/string-functions/": {
-      "hash": "b00f8353c0ff1c48",
-      "lastmod": "2026-09-21"
+      "hash": "21db7a1ead387011",
+      "lastmod": "2026-09-24"
     },
     "/challenges/joins/": {
-      "hash": "deff9509443b0168",
-      "lastmod": "2026-09-21"
+      "hash": "c3ef605ddfa66a3f",
+      "lastmod": "2026-09-24"
     },
     "/challenges/subqueries/": {
       "hash": "10a0489f5f2d14b3",
       "lastmod": "2026-09-21"
     },
     "/challenges/window-functions/": {
-      "hash": "eeee56991d627f9c",
-      "lastmod": "2026-09-21"
+      "hash": "2f7391dfbd135019",
+      "lastmod": "2026-09-24"
     },
     "/challenges/ranking-functions/": {
       "hash": "13b85b4859548723",
       "lastmod": "2026-09-14"
     },
     "/challenges/advanced/": {
-      "hash": "e2c2e24db2b4dc6a",
-      "lastmod": "2026-09-14"
+      "hash": "cd2abea704b0098c",
+      "lastmod": "2026-09-24"
     },
     "/blog/": {
       "hash": "48594859ca9718db",
       "lastmod": "2026-09-21"
     },
     "/blog/faang-sql-interview-guide/": {
-      "hash": "330155b44e824d44",
-      "lastmod": "2026-09-21"
+      "hash": "c87050b60dea6bcc",
+      "lastmod": "2026-09-24"
     },
     "/blog/sql-joins-explained/": {
-      "hash": "230abec929e09334",
-      "lastmod": "2026-09-21"
+      "hash": "af616538433f63ff",
+      "lastmod": "2026-09-24"
     },
     "/blog/window-functions-tutorial/": {
-      "hash": "f6f2a2e37551e712",
-      "lastmod": "2026-09-21"
+      "hash": "582517c8536ddac6",
+      "lastmod": "2026-09-24"
     },
     "/blog/null-handling-mistakes/": {
       "hash": "7931b60e07dde672",
@@ -275,8 +275,8 @@
       "lastmod": "2026-09-21"
     },
     "/blog/sql-case-when-tutorial/": {
-      "hash": "f51cea1e89ed3dda",
-      "lastmod": "2026-09-21"
+      "hash": "5790adf72701863a",
+      "lastmod": "2026-09-24"
     },
     "/privacy/": {
       "hash": "b2ac2d31c67d871c",
@@ -415,16 +415,16 @@
       "lastmod": "2026-09-14"
     },
     "/datalemur-alternatives/": {
-      "hash": "fea2682176f7517c",
-      "lastmod": "2026-09-14"
+      "hash": "88a3f8bc7a8d379b",
+      "lastmod": "2026-09-24"
     },
     "/stratascratch-alternatives/": {
-      "hash": "cac470c3855d5cdc",
-      "lastmod": "2026-09-14"
+      "hash": "d9bd1be18cb0d8b4",
+      "lastmod": "2026-09-24"
     },
     "/questions/": {
-      "hash": "8820813239cf7db0",
-      "lastmod": "2026-09-23"
+      "hash": "d6bc88e4ff8e0b2c",
+      "lastmod": "2026-09-24"
     },
     "/questions/class-survival-breakdown/": {
       "hash": "fcd88e697c61654c",
@@ -523,8 +523,8 @@
       "lastmod": "2026-09-23"
     },
     "/questions/fare-imputation-analysis/": {
-      "hash": "799ffc827d26bc70",
-      "lastmod": "2026-09-23"
+      "hash": "ed1ada168aa42186",
+      "lastmod": "2026-09-24"
     },
     "/questions/detect-repeat-buyers-within-7-days/": {
       "hash": "a36a5b6e30e812c4",
@@ -575,12 +575,12 @@
       "lastmod": "2026-09-23"
     },
     "/questions/passenger-family-survival-analysis/": {
-      "hash": "35e62b8bddfb393c",
-      "lastmod": "2026-09-23"
+      "hash": "65b27cffc4fec126",
+      "lastmod": "2026-09-24"
     },
     "/questions/email-provider-customer-analysis/": {
-      "hash": "6b6fa98d4154a06e",
-      "lastmod": "2026-09-23"
+      "hash": "e3959fc25b7036ba",
+      "lastmod": "2026-09-24"
     },
     "/questions/rank-movies-by-rating/": {
       "hash": "045459ed46966620",
@@ -651,8 +651,8 @@
       "lastmod": "2026-09-23"
     },
     "/questions/handle-null-ages/": {
-      "hash": "e744f2c4c28c1566",
-      "lastmod": "2026-09-23"
+      "hash": "36229c9ee45d48ba",
+      "lastmod": "2026-09-24"
     },
     "/questions/customer-lifetime-value/": {
       "hash": "53a6ba2e7cec86a3",
@@ -835,8 +835,8 @@
       "lastmod": "2026-09-23"
     },
     "/questions/handling-null-values/": {
-      "hash": "cf5c1b8ecf7e1aa9",
-      "lastmod": "2026-09-23"
+      "hash": "eca79459b3b2a4c9",
+      "lastmod": "2026-09-24"
     },
     "/questions/calculated-columns/": {
       "hash": "dba00a63d1e94d3d",
@@ -899,8 +899,8 @@
       "lastmod": "2026-09-23"
     },
     "/questions/long-named-passengers/": {
-      "hash": "d134b90b4f6c125c",
-      "lastmod": "2026-09-23"
+      "hash": "bc7fab0ae229172d",
+      "lastmod": "2026-09-24"
     },
     "/questions/earliest-movie-per-genre/": {
       "hash": "a654d68f79a4c66d",
@@ -963,16 +963,16 @@
       "lastmod": "2026-09-23"
     },
     "/questions/employee-display-cards-concat/": {
-      "hash": "6dc149639a66cbe6",
-      "lastmod": "2026-09-23"
+      "hash": "123b8d9c21f1c22b",
+      "lastmod": "2026-09-24"
     },
     "/questions/country-codes-in-uppercase/": {
-      "hash": "cff9ea8089512979",
-      "lastmod": "2026-09-23"
+      "hash": "380ac1614dfa7261",
+      "lastmod": "2026-09-24"
     },
     "/questions/default-age-for-missing-records-coalesce/": {
-      "hash": "2f697206f60a04f4",
-      "lastmod": "2026-09-23"
+      "hash": "8c92969166b60130",
+      "lastmod": "2026-09-24"
     },
     "/questions/monthly-order-count/": {
       "hash": "375144aeba46a3aa",
@@ -1087,12 +1087,12 @@
       "lastmod": "2026-09-23"
     },
     "/questions/position-of-in-email-instr/": {
-      "hash": "aeccbae2c511b69c",
-      "lastmod": "2026-09-23"
+      "hash": "c493ced36fa0da25",
+      "lastmod": "2026-09-24"
     },
     "/questions/email-username-extract-substr-instr/": {
-      "hash": "e4e677dc59a774c8",
-      "lastmod": "2026-09-23"
+      "hash": "9ff7228ada2b2468",
+      "lastmod": "2026-09-24"
     },
     "/questions/your-first-window-function/": {
       "hash": "3d17b660b4a44ac1",
@@ -1211,8 +1211,8 @@
       "lastmod": "2026-09-23"
     },
     "/questions/failures-with-no-loss-estimate/": {
-      "hash": "feb4115f9ecec53d",
-      "lastmod": "2026-09-23"
+      "hash": "29a63e2fceff3bf0",
+      "lastmod": "2026-09-24"
     },
     "/questions/states-with-5-or-more-banks/": {
       "hash": "7db2b39ce81b0b24",
@@ -1291,8 +1291,8 @@
       "lastmod": "2026-09-23"
     },
     "/questions/properties-without-listed-owner/": {
-      "hash": "03e4fa977bb532cf",
-      "lastmod": "2026-09-23"
+      "hash": "314c5d2b67379334",
+      "lastmod": "2026-09-24"
     },
     "/questions/building-age-tier/": {
       "hash": "cce87ab65ec287cf",
@@ -1621,6 +1621,26 @@
     "/questions/referred-vs-organic-first-month-spend/": {
       "hash": "1c774b23319381d4",
       "lastmod": "2026-09-23"
+    },
+    "/questions/names-that-dont-match-their-email/": {
+      "hash": "0ae89b3599e1be09",
+      "lastmod": "2026-09-24"
+    },
+    "/questions/her-own-first-name/": {
+      "hash": "d670a13176648e85",
+      "lastmod": "2026-09-24"
+    },
+    "/questions/shelve-the-films-library-style/": {
+      "hash": "e24ef34e7f2bbdc8",
+      "lastmod": "2026-09-24"
+    },
+    "/questions/out-earning-the-boss-what-count-counts/": {
+      "hash": "0d31e0535412d08b",
+      "lastmod": "2026-09-24"
+    },
+    "/questions/blank-is-not-null-a-port-data-quality-report/": {
+      "hash": "70cf49fe8c979151",
+      "lastmod": "2026-09-24"
     }
   }
 }
