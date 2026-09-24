@@ -124,6 +124,32 @@ describe('inspect', () => {
   });
 });
 
+describe('inspect run', () => {
+  it('runs calls in parallel, writes every 20, and keeps going to the end', async () => {
+    const { run } = await import('../scripts/gsc/inspect.mjs');
+    const urls = Array.from({ length: 45 }, (_, i) => `https://sqlquest.app/p${i}/`);
+    const sitemap = `<urlset>${urls.map(u => `<url><loc>${u}</loc></url>`).join('')}</urlset>`;
+    let inFlight = 0, maxInFlight = 0;
+    const writes = [];
+    const fetchImpl = async (u, o = {}) => {
+      if (u.endsWith('/sitemap.xml')) return { ok: true, status: 200, text: async () => sitemap };
+      if (u.includes('oauth2')) return json(200, { access_token: 't' });
+      if (u.includes('gsc_index_status?select=url')) return json(200, []);
+      if (u.includes('gsc_index_status?on_conflict')) { writes.push(JSON.parse(o.body).length); return json(201, {}); }
+      if (u.includes('gsc_index_status?select=*')) return json(200, []);
+      inFlight++; maxInFlight = Math.max(maxInFlight, inFlight);
+      await new Promise(r => setTimeout(r, 2));
+      inFlight--;
+      return json(200, { inspectionResult: { indexStatusResult: { verdict: 'PASS' } } });
+    };
+    const out = await run({ argv: [], env: { GSC_SA_KEY: KEY, SUPABASE_URL: 'https://p.supabase.co', SUPABASE_SERVICE_ROLE_KEY: 'sb_secret_x' }, fetchImpl, log: () => {}, pace: 0 });
+    expect(out.inspected).toBe(45);
+    expect(maxInFlight).toBe(5);
+    expect(writes.reduce((a, b) => a + b, 0)).toBe(45);
+    expect(Math.max(...writes)).toBeLessThanOrEqual(24);
+  });
+});
+
 describe('report', () => {
   it('ends the week on the last date in the data', () => {
     expect(weeks('2026-09-23')).toEqual({ cur: { start: '2026-09-17', end: '2026-09-23' }, prev: { start: '2026-09-10', end: '2026-09-16' } });
@@ -186,7 +212,7 @@ describe('the workflows', () => {
   });
 
   it('a failed run opens (or comments on) an issue', () => {
-    for (const wf of [daily, weekly]) expect(wf).toMatch(/if: failure\(\)[\s\S]*notify-failure\.sh/);
+    for (const wf of [daily, weekly]) expect(wf).toMatch(/if: failure\(\) \|\| cancelled\(\)[\s\S]*notify-failure\.sh/);
   });
 
   it('no service-account key is committed anywhere in scripts/gsc', () => {

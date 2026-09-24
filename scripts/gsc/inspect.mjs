@@ -17,7 +17,13 @@ import { getAccessToken, googleFetch, supabaseAuthHeaders, GSC_PROPERTY } from '
 
 export const SITEMAP_URL = 'https://sqlquest.app/sitemap.xml';
 export const DAILY_BUDGET = 1900;          // of Google's 2,000/day, leaving room for manual checks
-export const MIN_INTERVAL_MS = 150;        // ~400/min, under the 600/min limit
+export const MIN_INTERVAL_MS = 150;        // per worker, after each call
+// URL Inspection answers slowly — ~9 s a call measured in Actions on
+// 2026-09-25 (200 URLs in the 30-minute job limit, no 429s). Five calls in
+// flight is ~30 a minute, far under the 600/min quota, and covers the
+// 410-URL sitemap in ~15 minutes.
+export const CONCURRENCY = 5;
+export const WRITE_EVERY = 20;
 export const STALE_CRAWL_DAYS = 30;
 
 export function parseSitemap(xml) {
@@ -93,7 +99,7 @@ async function upsertStatus(records, { url, serviceKey, fetchImpl }) {
 
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
-export async function run({ argv = process.argv.slice(2), env = process.env, fetchImpl = fetch, log = console.log, now = new Date(), pace = MIN_INTERVAL_MS } = {}) {
+export async function run({ argv = process.argv.slice(2), env = process.env, fetchImpl = fetch, log = console.log, now = new Date(), pace = MIN_INTERVAL_MS, concurrency = CONCURRENCY } = {}) {
   const dryRun = argv.includes('--dry-run');
   const li = argv.indexOf('--limit');
   const limit = li >= 0 ? Math.max(1, Math.min(DAILY_BUDGET, Number(argv[li + 1]) || DAILY_BUDGET)) : DAILY_BUDGET;
@@ -110,16 +116,32 @@ export async function run({ argv = process.argv.slice(2), env = process.env, fet
 
   const { token } = await getAccessToken({ env, fetchImpl });
   const records = [];
-  for (const u of batch) {
-    const result = await googleFetch('https://searchconsole.googleapis.com/v1/urlInspection/index:inspect', {
-      token, method: 'POST', fetchImpl, log,
-      body: { inspectionUrl: u, siteUrl: GSC_PROPERTY },
-    });
-    records.push(toStatus(u, result, now));
-    if (!dryRun && records.length % 100 === 0) await upsertStatus(records.slice(-100), db);
-    if (pace) await sleep(pace);
-  }
-  if (!dryRun && records.length % 100) await upsertStatus(records.slice(-(records.length % 100)), db);
+  let pending = [];
+  const flush = async () => {
+    if (dryRun || !pending.length) return;
+    const out = pending; pending = [];
+    await upsertStatus(out, db);
+  };
+  // A small worker pool; results are written every WRITE_EVERY so a run cut
+  // short (timeout, cancel) keeps what it inspected.
+  let next = 0;
+  const worker = async () => {
+    while (next < batch.length) {
+      const u = batch[next++];
+      const result = await googleFetch('https://searchconsole.googleapis.com/v1/urlInspection/index:inspect', {
+        token, method: 'POST', fetchImpl, log,
+        body: { inspectionUrl: u, siteUrl: GSC_PROPERTY },
+      });
+      const rec = toStatus(u, result, new Date());
+      records.push(rec);
+      pending.push(rec);
+      if (pending.length >= WRITE_EVERY) await flush();
+      if (records.length % 50 === 0) log(`  ${records.length}/${batch.length} inspected`);
+      if (pace) await sleep(pace);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(concurrency, batch.length) }, worker));
+  await flush();
 
   // The report covers the whole table, not only this run's batch.
   const all = dryRun ? records : await restGet('gsc_index_status?select=*', db);

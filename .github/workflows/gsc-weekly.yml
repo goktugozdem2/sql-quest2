@@ -25,7 +25,7 @@ jobs:
   inspect:
     if: github.event_name == 'workflow_dispatch' && inputs.job != 'report' || github.event.schedule == '0 5 * * 1'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -38,7 +38,7 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: node scripts/gsc/inspect.mjs
       - name: Report the failure as an issue
-        if: failure()
+        if: failure() || cancelled()
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
@@ -61,7 +61,7 @@ jobs:
           REPORT_TO: ${{ secrets.REPORT_TO }}
         run: node scripts/gsc/report.mjs
       - name: Report the failure as an issue
-        if: failure()
+        if: failure() || cancelled()
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}

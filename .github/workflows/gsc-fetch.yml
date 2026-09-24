@@ -48,7 +48,7 @@ jobs:
         run: node scripts/gsc/fetch.mjs ${{ inputs.backfill && '--backfill' || '' }}
 
       - name: Report the failure as an issue
-        if: failure()
+        if: failure() || cancelled()
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
