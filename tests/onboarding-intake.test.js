@@ -46,7 +46,7 @@ describe('intake — the three steps and what each answer maps to', () => {
     expect(intakeGoalForIntent('learning')).toBe('general');
     expect(intakeGoalForIntent('exploring')).toBeNull();
     expect(intakeGoalForIntent(null)).toBeNull();
-    expect(INTAKE_GOAL_SOURCES).toEqual(['intake', 'link', 'returning']);
+    expect(INTAKE_GOAL_SOURCES).toEqual(['intake', 'link', 'returning', 'gate']);   // 'gate': the goal gate, 2026-09-25
   });
 
   it('every goal maps to the intent the post-solve ask writes and to a live Coach goal', () => {
@@ -226,7 +226,7 @@ describe('source guards — app.jsx keeps the intake optional, early, and quiet'
     // through the one helper that also puts the goal on the account (2026-09-17)
     expect(block).toMatch(/setUserIntent\(goal\.intent, record\.goalSource \|\| 'intake'\)/);
     expect(block).not.toMatch(/localStorage\.setItem\('sqlquest_user_intent'/);
-    expect(block).toMatch(/newCoachGoalState\(goal\.coachGoalId, \{\s*\n\s*source: 'intake'/);
+    expect(block).toMatch(/newCoachGoalState\(goal\.coachGoalId, \{\s*\n\s*source: record\.goalSource === 'gate' \? 'goal_gate' : 'intake'/);
     expect(block).toMatch(/\.\.\.\(record\.hasDate \? \{ date: draft\.date \} : \{\}\)/);
     expect(block).toMatch(/role: record\.role,/);
     expect(block).toMatch(/localStorage\.setItem\('sqlquest_user_goals', JSON\.stringify\(merged\)\)/);
@@ -266,7 +266,7 @@ describe('source guards — app.jsx keeps the intake optional, early, and quiet'
     expect(app).toMatch(/setIntakeRecord\(userData\.intake\);/);
     // the date rides the autosave from state — the direct write alone was dropped by the next autosave
     expect(app).toMatch(/\.\.\.\(\(prepTarget\.company \|\| prepTarget\.date\) \? \{ prepTarget \} : \{\}\),/);
-    expect(app).toMatch(/intakeRecord, prepTarget, goalsPromptDismissedAt,/);
+    expect(app).toMatch(/intakeRecord, goalProfile, prepTarget, goalsPromptDismissedAt,/);
   });
 
   it('shows the date back as days on the Coach radar panel, display only', () => {

@@ -728,6 +728,27 @@ URLs filled, brand icon is the bolt, brand colour #FFE34D.
   → `guest_continuity` in `docs/agent/metrics.md`. Tests:
   `tests/progress-merge.test.js` (unit + source guards).
 
+### The goal gate — nobody uses the app without a goal (2026-09-25)
+
+- Founder's directive: every person, guest or registered, states **goal,
+  deadline, target level, industry** (company optional for an interview).
+  Required — no close, no skip, no Escape; shown at every session start and
+  re-checked every ten minutes until complete; asked again, prefilled, when
+  the deadline passes; never over a running timed mock. Flag `goalGate`.
+  Pure half `src/utils/goal-gate.js`, guards `tests/goal-gate.test.js`
+  (incl. "no close button" source guards and both languages' labels).
+- Answers go through `completeIntake(…, goalSource 'gate')` (intent, Coach
+  goal only when none is active, `prepTarget`, intake record) plus
+  `userGoals.targetLevel/industry/sector` and `userData.goalProfile` (rides
+  the autosave; the newer of account and browser wins on sign-in). Events
+  `goal_gate_shown` / `goal_gate_completed` (daysOut, never the date);
+  metric `goal_gate_funnel`; ledger "every person states a goal…". "Edit
+  goal" on the Coach reopens it (`data-testid="coach-edit-goal"`).
+- z-order: the gate is 10000 (above the first-run tour's 9999); the feedback
+  box is 10001 so a person can still write to us from behind it.
+- It supersedes the intake card and the returning ask for goal capture;
+  those stay dark. Its cost is read on `first_solve_10m` (baseline 12.4%).
+
 ### Onboarding intake — three optional questions before the quiz (2026-09-12)
 
 - Behind `onboardingIntake` (off until the 2026-09-16 scheduled flip, after

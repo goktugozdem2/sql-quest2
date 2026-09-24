@@ -38,7 +38,7 @@ export const INTAKE_KEY = 'sqlquest_intake_v1';
 export const INTAKE_VERSION = 1;
 export const INTAKE_STEPS = ['goal', 'date', 'role'];
 export const INTAKE_REQUIRED_STEPS = ['goal'];
-export const INTAKE_GOAL_SOURCES = ['intake', 'link', 'returning'];
+export const INTAKE_GOAL_SOURCES = ['intake', 'link', 'returning', 'gate'];
 export const INTAKE_MAX_DAYS_OUT = 730;
 
 export const INTAKE_GOALS = [

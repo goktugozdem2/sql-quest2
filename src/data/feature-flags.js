@@ -50,6 +50,11 @@ window.FEATURE_FLAGS = {
     // docs/agent/ledger.md, "onboarding intake". Never a step toward
     // checkout: the block renders nothing about Pro, by test.
     onboardingIntake: false,
+    // The goal gate (founder, 2026-09-25: "zorunlu olsun"): goal, deadline,
+    // target level, industry — required from every user at session start and
+    // on a ten-minute tick until answered. ON by the founder's directive; set
+    // false only to kill it. src/utils/goal-gate.js, tests/goal-gate.test.js.
+    goalGate: true,
     // Company practice-set match on the Coach (SEO plan P3.21, 2026-09-13):
     // for a named prepTarget.company that has NO interview archetype, how the
     // Skillmap matches what that company's practice set asks, plus the next

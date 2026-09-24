@@ -27,6 +27,51 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### every person states a goal before using the app (the goal gate)
+
+- **Claimed** 2026-09-25 · **Live** 2026-09-25, flag `goalGate` on, by the
+  founder's directive ("herkese hedef belirttirelim … zorunlu olsun bu
+  zorunlu") · **Read** 2026-10-09 (14 days) and 2026-10-23 (28 days).
+- **Change** a required overlay for every person, guest or registered, new
+  or returning: goal (interview / job-ready / SQL in general), deadline
+  (2 weeks · 1 month · 3 months · 6 months · a date), target level
+  (Foundations / Intermediate / Advanced / Interview-ready), industry (ten),
+  and the company when the goal is an interview (optional). No close, no
+  skip, no Escape. Shown at every session start and re-checked every ten
+  minutes until complete; asked again, prefilled, when the deadline passes;
+  never over a running timed mock. Answers land in the intent, the Coach goal
+  (only when none is active), `prepTarget.date/company`, `userGoals`
+  (`targetLevel`, `industry`, and `sector` where the industry has one) and
+  `userData.goalProfile`. "Edit goal" on the Coach reopens it.
+  `src/utils/goal-gate.js`, tests/goal-gate.test.js; preview-verified
+  2026-09-25 (new guest, empty submit, Escape, fill + save, reload, expired
+  deadline, Turkish).
+- **Why** 2 accounts in the product's history had ever set a date and 8 a
+  company (2026-09-24), so every deadline-shaped feature — the countdown,
+  `deadlineOffer`, the daily quota, the outcome note — had an audience of
+  about zero (docs/plans/monetization-2026-09-24.md, finding 3).
+- **Metric** `goal_gate_funnel` (docs/agent/metrics.md): people shown →
+  completed, median seconds, answers by field. Coverage: share of active
+  people (7 days) with a complete profile.
+- **Target** ≥ 85% of people shown complete it; ≥ 70% of people active in
+  the last 7 days carry a complete profile by 10-09; date holders 2 → ≥ 300.
+- **Guardrail, the cost of a required screen before the first solve:**
+  `first_solve_10m` was 12.4% (08-24 → 09-20, n 1,465 first opens). A drop
+  of more than 3 points in the 14 days after 09-25, against the 14 days
+  before, is the stop signal. Also watch the share of first opens that end
+  on the gate (`goal_gate_shown` with no `goal_gate_completed` and no later
+  event).
+- **Falsification, stated in advance:** `first_solve_10m` down > 3 points
+  AND more than 30% of new visitors leave on the gate → the founder decides
+  between keeping it (goal coverage is worth the loss) and moving the first
+  ask after the first solve; the numbers go to the founder, the agent reverts
+  nothing. Completion ≥ 85% and the guardrail inside 3 points → HIT.
+- **Confounds** it lands 5 days before `diagnosisHints` (queue row 1), which
+  moves the same metric: the flag queue's 7-day spacing now counts from
+  09-25, so row 1 flips no earlier than 10-02. Localhost preview rows on
+  2026-09-24/25 (aid `c39bd4ca5fbb4664…`) carry goal_gate events: exclude.
+- **Verdict** _pending_
+
 ### a plan click goes straight to Stripe (modal → Stripe, item 1)
 
 - **Claimed** 2026-09-23 · **Flipped** 2026-09-23 on the founder's go ("bugün

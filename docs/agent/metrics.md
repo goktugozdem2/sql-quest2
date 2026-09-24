@@ -3031,3 +3031,40 @@ the page's clicks (`cta_hero_primary`, `cta_readiness_<slug>`,
 goldman-sachs, walmart, tiktok, linkedin, microsoft, bloomberg — shipped
 2026-09-13) apart from the 23 older ones, and both against `/sql-exercises/`.
 Search Console impressions per page sit beside it (the SEO dashboard).
+
+## `goal_gate_funnel`
+
+The goal gate (2026-09-25, ledger "every person states a goal before using
+the app"). People by aid, internal accounts and localhost aids excluded
+(`c39bd4ca5fbb4664…`, the 09-24/25 preview). Shown = `goal_gate_shown`;
+completed = `goal_gate_completed` (carries goal, intent, daysOut, targetLevel,
+industry, hasCompany, company, status missing | expired | edit, prefilled,
+seconds — never the date). Left on the gate = shown, not completed, no later
+event from that aid. `status='edit'` rows are the Coach's "Edit goal" and are
+read apart.
+
+```sql
+with ev as (
+  select coalesce(((metadata #>> '{}')::jsonb)->>'aid', username) pid, event, created_at, (metadata #>> '{}')::jsonb m
+  from pro_events
+  where username !~* '^(test|qa_|fabletest|linktest|internalroutine|sqlquest$)'
+    and created_at >= '2026-09-25'
+    and coalesce(((metadata #>> '{}')::jsonb)->>'aid', '') not like 'c39bd4ca5fbb4664%'
+),
+shown as (select pid, min(created_at) t from ev where event = 'goal_gate_shown' and m->>'status' <> 'edit' group by pid),
+done as (select distinct on (pid) pid, created_at t, m from ev where event = 'goal_gate_completed' and m->>'status' <> 'edit' order by pid, created_at),
+last_ev as (select pid, max(created_at) t from ev group by pid)
+select
+  count(*) shown,
+  count(d.pid) completed,
+  round(100.0 * count(d.pid) / nullif(count(*), 0), 1) pct_completed,
+  count(*) filter (where d.pid is null and l.t <= s.t + interval '1 minute') left_on_gate,
+  percentile_cont(0.5) within group (order by (d.m->>'seconds')::int) median_seconds
+from shown s left join done d using (pid) left join last_ev l using (pid);
+```
+
+By answer: group `done` by `m->>'goal'`, `m->>'targetLevel'`, `m->>'industry'`
+and by bands of `(m->>'daysOut')::int` (≤ 14, ≤ 30, ≤ 90, > 90).
+Coverage (the claim's second target) is read from `users.data->'goalProfile'`
+for accounts with `lastActive` in the last 7 days — mind the epoch/ISO
+mix in `lastActive` (CLAUDE.md, email lifecycle).

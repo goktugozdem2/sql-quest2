@@ -37,6 +37,7 @@ import { companySetMatch } from './utils/company-set-match.js';
 import { buildPracticePlan, PLAN_MIN_SOLVES_FOR_SKILLS } from './utils/practice-plan.js';
 import { FIRST_SCREEN_STORAGE_KEY, firstScreenDecision } from './utils/first-screen.js';
 import { INTAKE_KEY, INTAKE_GOALS, INTAKE_ROLES, INTAKE_STEPS, INTAKE_COMPANIES, INTAKE_LEVELS, intakeStepsFor, intakeGoalFor, intakeGoalForIntent, nextIntakeStep, isIntakeStepRequired, isIntakeLevel, isValidIntakeDate, buildIntakeRecord, isIntakeComplete, readIntakeRecord, intakeEventPayload, newCoachGoalState, shouldShowIntake } from './utils/onboarding-intake.js';
+import { GOAL_PROFILE_KEY, GOAL_GATE_RECHECK_MS, GOAL_GATE_GOALS, TARGET_LEVELS, INDUSTRIES, DEADLINE_PRESETS, industryFor, isoDateInDays, isValidDeadline, missingFields, buildGoalProfile, goalProfileStatus, shouldShowGoalGate, prefillDraft, goalGateEventPayload, readGoalProfile, GOAL_GATE_MAX_DAYS_OUT } from './utils/goal-gate.js';
 import { PLACEMENT_TIERS, placementResult, placementEventPayload, readFirstRunPlacement, seedFloorsFor, seedFloorsFromReadiness, levelForReadiness, placementFromReadiness } from './utils/placement.js';
 import { QUESTIONS as READINESS_QUESTIONS, READINESS_SKILLS, READINESS_RECORD_KEY, companySkillWeights, scoreReadiness, summarizeScores, weakestSkills, readinessRecordFrom, readReadinessRecord } from './data/readiness-questions.js';
 import { paidWallFor, isColdStart } from './utils/paid-wall.js';
@@ -4782,12 +4783,12 @@ function FeedbackWidget({ open, onOpen, onClose, onSubmit, onTopicPick, screen, 
     }
   };
 
-  // z-[10000] puts this above the first-run tour (9999) — the tour is the only
-  // thing that outranks normal overlays, and a feedback box the user
-  // deliberately opened should never render underneath something else.
+  // z-[10001] puts this above the first-run tour (9999) and the goal gate
+  // (10000) — a feedback box the user deliberately opened should never
+  // render underneath something else.
   return (
     <div
-      className="fixed inset-0 z-[10000] flex items-end sm:items-center justify-center p-4"
+      className="fixed inset-0 z-[10001] flex items-end sm:items-center justify-center p-4"
       style={{ background: 'rgba(0,0,0,0.6)' }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       role="dialog" aria-modal="true" aria-label={i18n_t('feedback', 'title')}
@@ -6784,6 +6785,17 @@ function SQLQuest() {
     try { const r = JSON.parse(localStorage.getItem('sqlquest_readiness_v1') || 'null'); return r && typeof r === 'object' && Number.isFinite(Number(r.at)) ? r : null; } catch (_) { return null; }
   });
   const [goalAsk, setGoalAsk] = useState(null);   // null | { stage: 'goal' | 'measure', source: 'link' | 'returning' }
+  // The goal gate (founder, 2026-09-25): goal, deadline, target level and
+  // industry, all required, asked at every session start and on a ten-minute
+  // tick until answered; asked again when the deadline passes. Browser
+  // record mirrored to userData.goalProfile. Pure half: src/utils/goal-gate.js.
+  const [goalProfile, setGoalProfile] = useState(() => { try { return readGoalProfile(localStorage); } catch (_) { return null; } });
+  const [goalGateDraft, setGoalGateDraft] = useState(null);   // null until the gate opens; then the prefilled draft
+  const [goalGateCustomDate, setGoalGateCustomDate] = useState(false);
+  const [goalGateTried, setGoalGateTried] = useState(false);
+  const [goalGateEditing, setGoalGateEditing] = useState(false);   // opened on purpose from "Edit goal"
+  const [goalGateNow, setGoalGateNow] = useState(() => Date.now());   // the ten-minute tick
+  const goalGateOpenRef = useRef(null);   // { at, status, prefilled } while open
   const companySetMatchShownRef = useRef(false);
   const [showFirstEntryTour, setShowFirstEntryTour] = useState(() => {
     try { return !localStorage.getItem(FIRST_ENTRY_TOUR_KEY); } catch (_) { return true; }
@@ -9203,6 +9215,7 @@ function SQLQuest() {
           roadmapLessonCompletions: [...roadmapLessonCompletions],
           goals: userGoals,         // sector MVP — sector/role/motivation/etc; see docs/sector-mvp-plan.md
           intake: intakeRecord,     // onboarding intake — what was asked and skipped; never the date
+          ...(goalProfile ? { goalProfile } : {}),   // the goal gate's answers (goal, deadline, target level, industry)
           intent: intentRecord,     // the declared goal { goal, source, at } — 'exploring' included, so the server can tell asked from never-asked
           readiness: readinessRecord, // the ten-question check / readiness test result, the public page's shape
           // The countdown / intake target rides the save from STATE, not only
@@ -9263,7 +9276,7 @@ function SQLQuest() {
         saveUserData(currentUser, userData);
       })();
     }
-  }, [xp, solvedChallenges, unlockedAchievements, queryCount, aiLessonPhase, currentAiLesson, completedAiLessons, aiLessonCompletions, roadmapLessonCompletions, comprehensionCount, comprehensionCorrect, consecutiveCorrect, comprehensionConsecutive, completedExercises, challengeQueries, completedDailyChallenges, dailyStreak, challengeAttempts, dailyChallengeHistory, weeklyReports, weeklyReportLastSeen, weeklyDigestOptOut, earnedMilestones, coachState, userGoals, intakeRecord, prepTarget, goalsPromptDismissedAt, loginCalendar, speedRunHistory, explainHistory, userProStatus, proType, proExpiry, proAutoRenew, interviewHistory, challengeProgress, challengeStartDate, weaknessTracking, skillMastery, lessonSkillStats, errorPatterns, retrievalLog, dailyRewardClaimedDate]);
+  }, [xp, solvedChallenges, unlockedAchievements, queryCount, aiLessonPhase, currentAiLesson, completedAiLessons, aiLessonCompletions, roadmapLessonCompletions, comprehensionCount, comprehensionCorrect, consecutiveCorrect, comprehensionConsecutive, completedExercises, challengeQueries, completedDailyChallenges, dailyStreak, challengeAttempts, dailyChallengeHistory, weeklyReports, weeklyReportLastSeen, weeklyDigestOptOut, earnedMilestones, coachState, userGoals, intakeRecord, goalProfile, prepTarget, goalsPromptDismissedAt, loginCalendar, speedRunHistory, explainHistory, userProStatus, proType, proExpiry, proAutoRenew, interviewHistory, challengeProgress, challengeStartDate, weaknessTracking, skillMastery, lessonSkillStats, errorPatterns, retrievalLog, dailyRewardClaimedDate]);
 
 
   // True when the URL signals explicit content intent — user clicked a
@@ -12469,6 +12482,226 @@ CRITICAL RULES:
     );
   };
 
+
+  // ── The goal gate (founder, 2026-09-25) ────────────────────────────────
+  // Nobody uses the app without a goal: what for, by when, to what level, in
+  // which industry. Required — no close button, no skip, no Escape. Shown at
+  // every session start and re-checked on a ten-minute tick until the profile
+  // is complete, and again when its deadline passes. Never over a running
+  // timed mock (the tick after it picks it up). Answers land in the stores
+  // that already own them — the intent and Coach goal (through
+  // completeIntake, source 'gate'), prepTarget.date/company, userGoals
+  // (targetLevel, industry, sector) — and the profile says what was answered.
+  // Pure half and the rules: src/utils/goal-gate.js. Guards:
+  // tests/goal-gate.test.js.
+  useEffect(() => {
+    const id = setInterval(() => setGoalGateNow(Date.now()), GOAL_GATE_RECHECK_MS);
+    return () => clearInterval(id);
+  }, []);
+  // A login is a session start: re-read the clock so the check runs now.
+  useEffect(() => { setGoalGateNow(Date.now()); }, [currentUser]);
+
+  const goalGateInTimedMock = !!(activeInterview && interviewTimerActive && !interviewCompleted);
+  const goalGateStatus = goalProfileStatus(goalProfile, goalGateNow);
+  const goalGateDue = shouldShowGoalGate({
+    flagOn: window.FF?.feature?.('goalGate') !== false,
+    hasUser: !!currentUser,
+    dbReady,
+    sessionLoading: isSessionLoading,
+    inTimedMock: goalGateInTimedMock,
+    profile: goalProfile,
+    now: goalGateNow,
+  });
+  const goalGateVisible = (goalGateDue || goalGateEditing) && !goalGateInTimedMock;
+
+  useEffect(() => {
+    if (!goalGateVisible) { goalGateOpenRef.current = null; return; }
+    if (goalGateOpenRef.current) return;
+    const draft = prefillDraft({
+      profile: goalProfile,
+      intent: getUserIntent() || intentRecord?.goal || null,
+      prepTarget,
+      userGoals,
+      now: Date.now(),
+    });
+    const prefilled = ['goal', 'deadline', 'targetLevel', 'industry'].filter(k => !!draft[k]).length;
+    goalGateOpenRef.current = { at: Date.now(), status: goalGateEditing ? 'edit' : goalGateStatus, prefilled };
+    setGoalGateDraft(draft);
+    setGoalGateCustomDate(!!draft.deadline && !DEADLINE_PRESETS.some(d => isoDateInDays(d) === draft.deadline));
+    setGoalGateTried(false);
+    trackActivationEvent('goal_gate_shown', {
+      status: goalGateEditing ? 'edit' : goalGateStatus,
+      prefilled,
+      solves: solvedChallenges.size,
+      registered: !isGuest,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [goalGateVisible]);
+
+  const submitGoalGate = () => {
+    const now = Date.now();
+    const draft = goalGateDraft || {};
+    const profile = buildGoalProfile(draft, now);
+    if (!profile) { setGoalGateTried(true); return; }
+    // Intent, Coach goal (only when none is active), prepTarget date/company
+    // and the intake record, through the one path that already writes them.
+    completeIntake({ goal: profile.goal, goalSource: 'gate', company: profile.company, level: null, date: profile.deadline, role: null }, { quiet: true });
+    // completeIntake sets the date only through the record; an edit must also
+    // clear a company the person just took off.
+    setPrepPreference({ date: profile.deadline, company: profile.company || null });
+    const industry = industryFor(profile.industry);
+    let saved = null;
+    try { saved = JSON.parse(localStorage.getItem('sqlquest_user_goals') || 'null'); } catch (_) { saved = null; }
+    const base = userGoals || saved || {};
+    const goals = {
+      ...base,
+      targetLevel: profile.targetLevel,
+      industry: profile.industry,
+      ...(industry?.sector ? { sector: industry.sector } : {}),
+      inferred_at: new Date(now).toISOString(),
+      user_confirmed: true,
+    };
+    setUserGoals(goals);
+    try { localStorage.setItem('sqlquest_user_goals', JSON.stringify(goals)); } catch (_) {}
+    setGoalProfile(profile);
+    try { localStorage.setItem(GOAL_PROFILE_KEY, JSON.stringify(profile)); } catch (_) {}
+    if (currentUser) {
+      try {
+        const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+        userData.goalProfile = profile;
+        userData.goals = goals;
+        saveUserData(currentUser, userData);
+      } catch (_) {}
+    }
+    const open = goalGateOpenRef.current || {};
+    trackActivationEvent('goal_gate_completed', goalGateEventPayload(profile, { now, startedAt: open.at, status: open.status || 'missing', prefilled: open.prefilled || 0 }));
+    goalGateOpenRef.current = null;
+    setGoalGateEditing(false);
+    setGoalGateNow(now);
+  };
+
+  const renderGoalGate = () => {
+    if (!goalGateVisible || !goalGateDraft) return null;
+    const d = goalGateDraft;
+    const set = (patch) => setGoalGateDraft(prev => ({ ...(prev || {}), ...patch }));
+    const missing = missingFields(d);
+    const card = { background: '#1F222B', border: '1px solid #2A2E38', borderRadius: '6px', color: '#F2F0EA' };
+    const picked = { ...card, borderColor: '#F2F0EA' };
+    const q = (text, extra = null) => (
+      <p className="mb-2 mt-6 text-sm font-semibold text-[#F2F0EA]">{text}{extra}</p>
+    );
+    const need = (field) => goalGateTried && missing.includes(field)
+      ? <span className="ml-2 text-xs font-normal" style={{ color: '#FF6B6B' }}>{i18n_t('goalGate', 'required')}</span>
+      : null;
+    const goalKey = { interview: 'goalInterview', job: 'goalJob', general: 'goalGeneral' };
+    const today = isoDateInDays(0);
+    const maxDate = isoDateInDays(GOAL_GATE_MAX_DAYS_OUT);
+    const daysOutNow = d.deadline && isValidDeadline(d.deadline) ? Math.round((Date.parse(d.deadline + 'T12:00:00') - Date.parse(today + 'T12:00:00')) / 86400000) : null;
+    return (
+      <div className="fixed inset-0 flex items-start justify-center overflow-y-auto p-4" style={{ zIndex: 10000, background: 'rgba(14,15,19,0.92)' }}
+        data-goal-gate="true" data-goal-gate-status={goalGateOpenRef.current?.status || goalGateStatus} role="dialog" aria-modal="true" aria-labelledby="goal-gate-title">
+        <div className="my-6 w-full max-w-2xl p-6" style={{ background: '#16181F', border: '1px solid #2A2E38', borderRadius: '10px' }}>
+          <p className="mb-2 text-xs font-bold uppercase tracking-wider" style={{ color: '#8A8E99' }}>{i18n_t('goalGate', 'eyebrow')}</p>
+          <h2 id="goal-gate-title" className="mb-2 text-2xl font-bold text-[#F2F0EA] md:text-3xl">
+            {goalGateStatus === 'expired' && !goalGateEditing ? i18n_t('goalGate', 'titleExpired') : i18n_t('goalGate', 'title')}
+          </h2>
+          <p className="max-w-2xl text-sm leading-relaxed" style={{ color: '#8A8E99' }}>{i18n_t('goalGate', 'sub')}</p>
+
+          {q(i18n_t('goalGate', 'goalQ'), need('goal'))}
+          <div className="grid gap-2 sm:grid-cols-3">
+            {GOAL_GATE_GOALS.map(g => (
+              <button key={g} type="button" data-goal-gate-goal={g} aria-pressed={d.goal === g}
+                onClick={() => set({ goal: g, ...(g !== 'interview' ? { company: null } : {}) })}
+                className="p-3 text-left" style={d.goal === g ? picked : card}>
+                <span className="block text-sm font-semibold">{i18n_t('intake', goalKey[g])}</span>
+                <span className="mt-0.5 block text-xs" style={{ color: '#8A8E99' }}>{i18n_t('intake', `${goalKey[g]}Sub`)}</span>
+              </button>
+            ))}
+          </div>
+
+          {d.goal === 'interview' && (
+            <>
+              {q(i18n_t('goalGate', 'companyQ'), <span className="ml-2 text-xs font-normal" style={{ color: '#8A8E99' }}>{i18n_t('goalGate', 'companyOptional')}</span>)}
+              <select data-goal-gate-company="true" value={d.company || ''} onChange={e => set({ company: e.target.value || null })}
+                className="w-full p-2 text-sm" style={card}>
+                <option value="">{i18n_t('goalGate', 'companyNone')}</option>
+                {INTAKE_COMPANIES.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </>
+          )}
+
+          {q(i18n_t('goalGate', d.goal === 'interview' ? 'deadlineQInterview' : 'deadlineQ'), need('deadline'))}
+          <div className="flex flex-wrap gap-2">
+            {DEADLINE_PRESETS.map(n => {
+              const iso = isoDateInDays(n);
+              const on = !goalGateCustomDate && d.deadline === iso;
+              return (
+                <button key={n} type="button" data-goal-gate-deadline={n} aria-pressed={on}
+                  onClick={() => { setGoalGateCustomDate(false); set({ deadline: iso }); }}
+                  className="px-3 py-2 text-sm font-semibold" style={on ? picked : card}>
+                  {i18n_t('goalGate', `in${n}`)}
+                </button>
+              );
+            })}
+            <button type="button" data-goal-gate-deadline="custom" aria-pressed={goalGateCustomDate}
+              onClick={() => setGoalGateCustomDate(true)}
+              className="px-3 py-2 text-sm font-semibold" style={goalGateCustomDate ? picked : card}>
+              {i18n_t('goalGate', 'pickDate')}
+            </button>
+          </div>
+          {goalGateCustomDate && (
+            <input type="date" data-goal-gate-date="true" min={today} max={maxDate} value={d.deadline || ''}
+              onChange={e => set({ deadline: e.target.value || null })}
+              className="mt-2 p-2 text-sm" style={{ ...card, colorScheme: 'dark' }} />
+          )}
+          {daysOutNow !== null && (
+            <p className="mt-2 text-xs tabular-nums" style={{ color: '#8A8E99' }}>{i18n_t('goalGate', 'daysOut', { n: daysOutNow })}</p>
+          )}
+
+          {q(i18n_t('goalGate', 'levelQ'), need('targetLevel'))}
+          <div className="grid gap-2 sm:grid-cols-2">
+            {TARGET_LEVELS.map(l => (
+              <button key={l} type="button" data-goal-gate-level={l} aria-pressed={d.targetLevel === l}
+                onClick={() => set({ targetLevel: l })}
+                className="p-3 text-left" style={d.targetLevel === l ? picked : card}>
+                <span className="block text-sm font-semibold">{i18n_t('goalGate', `level_${l}`)}</span>
+                <span className="mt-0.5 block text-xs" style={{ color: '#8A8E99' }}>{i18n_t('goalGate', `level_${l}Sub`)}</span>
+              </button>
+            ))}
+          </div>
+
+          {q(i18n_t('goalGate', 'industryQ'), need('industry'))}
+          <div className="grid gap-2 sm:grid-cols-2">
+            {INDUSTRIES.map(ind => (
+              <button key={ind.id} type="button" data-goal-gate-industry={ind.id} aria-pressed={d.industry === ind.id}
+                onClick={() => set({ industry: ind.id })}
+                className="px-3 py-2 text-left text-sm" style={d.industry === ind.id ? picked : card}>
+                {i18n_t('goalGate', `ind_${ind.id}`)}
+              </button>
+            ))}
+          </div>
+
+          <div className="mt-8 flex flex-wrap items-center gap-4">
+            <button type="button" data-goal-gate-submit="true" onClick={submitGoalGate}
+              className="px-5 py-3 text-sm font-bold" style={{ background: '#FFE34D', color: '#0E0F13', borderRadius: '6px' }}>
+              {i18n_t('goalGate', 'submit')}
+            </button>
+            {goalGateTried && missing.length > 0 && (
+              <p className="text-xs" style={{ color: '#FF6B6B' }} data-goal-gate-missing={missing.join(',')}>
+                {i18n_t('goalGate', 'stillNeeded', { list: missing.map(f => i18n_t('goalGate', `f_${f}`)).join(', ') })}
+              </p>
+            )}
+          </div>
+          {isGuest && (
+            <a href="/app/?signin=1" className="mt-5 inline-block text-xs underline" style={{ color: '#8A8E99' }} data-goal-gate-login="true">
+              {i18n_t('goalGate', 'login')}
+            </a>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   // ── Onboarding intake (P0-1, 2026-09-12) ───────────────────────────────
   // The goal, then optional questions, before the placement quiz. Each answer
   // lands in the store that already owns it (the intent key, the Coach goal,
@@ -12511,7 +12744,7 @@ CRITICAL RULES:
       if (!coachState?.goalId) {
         const firstRun = (() => { try { return readFirstRunPlacement(localStorage); } catch (_) { return null; } })();
         const next = newCoachGoalState(goal.coachGoalId, {
-          source: 'intake',
+          source: record.goalSource === 'gate' ? 'goal_gate' : 'intake',
           cold: _coachUserIsCold() && !_userIsSelfDeclaredAdvanced(),
           placementIds: COACH_PLACEMENT_CHALLENGE_IDS,
           now,
@@ -16846,6 +17079,17 @@ CRITICAL RULES:
       if (userData.intake && typeof userData.intake === 'object' && typeof userData.intake.completedAt === 'string') {
         setIntakeRecord(userData.intake);
         try { localStorage.setItem(INTAKE_KEY, JSON.stringify(userData.intake)); } catch (_) {}
+      }
+      // Goal gate profile: the newer of the account's and this browser's wins,
+      // so a goal set as a guest five minutes ago survives a sign-in and a goal
+      // set on another device arrives here.
+      if (userData.goalProfile && typeof userData.goalProfile === 'object' && typeof userData.goalProfile.completedAt === 'string') {
+        let local = null;
+        try { local = readGoalProfile(localStorage); } catch (_) { local = null; }
+        if (!local || !(String(local.completedAt || '') >= userData.goalProfile.completedAt)) {
+          setGoalProfile(userData.goalProfile);
+          try { localStorage.setItem(GOAL_PROFILE_KEY, JSON.stringify(userData.goalProfile)); } catch (_) {}
+        }
       }
       // The declared goal follows the account: the record wins over an empty
       // browser key, and a real goal fills the key so the returning ask and
@@ -27505,6 +27749,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
           off the start screen, or the returning ask. Required goal, then the
           skippable check, then back to where they were. */}
       {renderGoalAskOverlay()}
+      {renderGoalGate()}
       {/* One-question intent ask — after first solve, sequenced behind the
           soft email capture. Every answer (including "just exploring") is
           recorded so segmentation has no silent-dismissal blind spot. */}
@@ -34782,6 +35027,8 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                             </span>
                           );
                         })()}
+                        <button type="button" data-testid="coach-edit-goal" onClick={() => setGoalGateEditing(true)}
+                          className="underline" style={{ color: '#8A8E99' }}>{i18n_t('goalGate', 'edit')}</button>
                         <span className="font-bold text-yellow-400">{xp} XP</span>
                       </div>
                     </div>

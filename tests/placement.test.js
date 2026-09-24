@@ -234,7 +234,7 @@ describe('a first-run placement is a placement', () => {
   it('source guards: off by default, wired at both goal doors and at the quiz, floors reach skipIf only', () => {
     expect(flags).toMatch(/coachTrustQuizPlacement: false,/);
     expect(app).toMatch(/newCoachGoalState\(goalId, \{ source: 'picker', cold: shouldPlace, placementIds: COACH_PLACEMENT_CHALLENGE_IDS, firstRun, trustFirstRun \}\)/);
-    expect(app).toMatch(/source: 'intake',\s*\n\s*cold: _coachUserIsCold\(\) && !_userIsSelfDeclaredAdvanced\(\),\s*\n\s*placementIds: COACH_PLACEMENT_CHALLENGE_IDS,\s*\n\s*now,\s*\n\s*firstRun,\s*\n\s*trustFirstRun: !!window\.FF\?\.feature\('coachTrustQuizPlacement'\),/);
+    expect(app).toMatch(/source: record\.goalSource === 'gate' \? 'goal_gate' : 'intake',\s*\n\s*cold: _coachUserIsCold\(\) && !_userIsSelfDeclaredAdvanced\(\),\s*\n\s*placementIds: COACH_PLACEMENT_CHALLENGE_IDS,\s*\n\s*now,\s*\n\s*firstRun,\s*\n\s*trustFirstRun: !!window\.FF\?\.feature\('coachTrustQuizPlacement'\),/);
     expect(app).toMatch(/applyFirstRunPlacementToCoach\(levelId, metadata\.source \|\| 'first_run_placement'\);\n {2}\};/);
     expect(app).toMatch(/seedFloors: coachState\?\.seedFloors \|\| null,/);
     expect((app.match(/trackActivationEvent\('coach_placement_skipped', \{ by: 'first_run_quiz'/g) || []).length).toBe(3);
