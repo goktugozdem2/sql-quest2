@@ -98,14 +98,16 @@ good for recursive CTEs).
 Generated with a fixed seed (20260503), so every run of the generator gives
 the same data. On top of ordinary activity the generator injects:
 
-- 5 accounts flagged (\`accounts.status = 'flagged'\`), all sharing one device
-  fingerprint — a collusion ring
+- 5 accounts flagged (\`accounts.status = 'flagged'\`)
+- 5 accounts sharing one device fingerprint (\`dev_x4f2a9b1c7e\`) — a collusion
+  ring; three of them are among the flagged
 - 15 amount outliers (more than 3 standard deviations above the mean)
 - 4 accounts with velocity bursts (6 or more transactions inside 5 minutes)
 - accounts with impossible travel (a home-country purchase, then one on the
   other side of the world minutes later)
 - chargebacks concentrated on the flagged accounts
-- a chain of 5 chargebacks linked through \`related_chargeback_id\`
+- 6 chargebacks linked through \`related_chargeback_id\`: one 3-deep chain and
+  one parent with two children
 
 Every count above was checked against the published files. Some fraud is
 planted without a label, on purpose: finding it is the exercise.

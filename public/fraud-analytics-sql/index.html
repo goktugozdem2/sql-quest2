@@ -71,7 +71,7 @@
     "@context": "https://schema.org",
     "@type": "Dataset",
     "name": "Card Transactions (Synthetic Fraud) — Practice Dataset",
-    "description": "Synthetic credit-card transactions dataset for SQL fraud-detection practice. 200 accounts, 25 merchants, 2,165 transactions, 76 chargebacks across 5 countries. Includes 10 fraud-marked accounts (5%), 1 collusion ring sharing a device fingerprint, 15 amount outliers, 4 velocity bursts (6-10 transactions in <5 min), 3 geographic mismatches (US↔Tokyo within 25 min), and 5x higher chargeback rate on fraud accounts. Generated deterministically with seed 20260503. No real PII.",
+    "description": "Synthetic credit-card transactions dataset for SQL fraud-detection practice. 200 accounts, 25 merchants, 2,165 transactions, 76 chargebacks across 5 countries. Includes 5 flagged accounts, 1 five-account collusion ring sharing a device fingerprint, 15 amount outliers, 4 velocity bursts (6 transactions in under 5 min), 3 geographic mismatches (NYC↔Tokyo within 11 min), and a chargeback rate about 8x higher on flagged accounts. Generated deterministically with seed 20260503. No real PII.",
     "url": "https://sqlquest.app/fraud-analytics-sql/",
     "keywords": "fraud detection, transaction fraud, payments fraud, anomaly detection, velocity rules, chargeback, collusion, synthetic dataset",
     "license": "https://creativecommons.org/publicdomain/zero/1.0/",
@@ -107,7 +107,7 @@
       {
         "@type": "Question",
         "name": "Is the dataset real?",
-        "acceptedAnswer": { "@type": "Answer", "text": "Synthetic but realistic. The dataset has 200 accounts, 25 merchants, 2,165 transactions, and 76 chargebacks across 5 countries. Fraud is INJECTED on top of legitimate baseline activity — 10 accounts marked as fraud, 1 five-account collusion ring sharing device fingerprint dev_x4f2a9b1c7e, 15 amount outliers in the $2,500-$9,500 range, 4 velocity bursts of 6-10 transactions within 5 minutes, 3 geographic mismatch pairs (NYC↔Tokyo, London↔Sydney, Istanbul↔Mexico City within 25 minutes), and a 5x higher chargeback rate on fraud-marked accounts. Generated with seed 20260503 for reproducibility. No real personal data." }
+        "acceptedAnswer": { "@type": "Answer", "text": "Synthetic but realistic. The dataset has 200 accounts, 25 merchants, 2,165 transactions, and 76 chargebacks across 5 countries. Fraud is INJECTED on top of legitimate baseline activity — 5 accounts flagged as fraud, 1 five-account collusion ring sharing device fingerprint dev_x4f2a9b1c7e (three of the five are flagged), 15 amount outliers in the $2,500-$9,500 range, 4 velocity bursts of 6 transactions within 5 minutes, 3 geographic mismatch pairs (NYC↔Tokyo, London↔Sydney, Istanbul↔Mexico City within 25 minutes), and a chargeback rate about 8x higher on flagged accounts. Generated with seed 20260503 for reproducibility. No real personal data." }
       },
       {
         "@type": "Question",
@@ -471,12 +471,12 @@
     <div class="schema-grid">
       <div class="schema-card">
         <div class="schema-name">accounts</div>
-        <div class="schema-rows">200 rows · 10 marked as fraud</div>
+        <div class="schema-rows">200 rows · 5 flagged</div>
         <div class="schema-cols">account_id · email · signup_at · country · device_fingerprint · ip_block · status</div>
       </div>
       <div class="schema-card">
         <div class="schema-name">merchants</div>
-        <div class="schema-rows">25 rows · 5 risk tiers</div>
+        <div class="schema-rows">25 rows · 3 risk tiers</div>
         <div class="schema-cols">merchant_id · name · category · country · risk_tier</div>
       </div>
       <div class="schema-card">
@@ -486,7 +486,7 @@
       </div>
       <div class="schema-card">
         <div class="schema-name">chargebacks</div>
-        <div class="schema-rows">76 rows · 5x rate on fraud accounts</div>
+        <div class="schema-rows">76 rows · ~8x rate on flagged accounts</div>
         <div class="schema-cols">chargeback_id · txn_id · account_id · merchant_id · reason_code · opened_at · resolved_at · status · related_chargeback_id</div>
       </div>
     </div>
@@ -494,12 +494,12 @@
     <div style="max-width:780px;margin:36px auto 0;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.05);border-radius:14px;padding:24px 28px;">
       <p style="font-size:14px;font-weight:700;color:#fb923c;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:14px;">📊 Fraud injection truth table</p>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;font-size:13px;line-height:1.7;color:#cbd5e1;">
-        <div><strong style="color:#f1f5f9;">10 fraud accounts</strong><br>5% of total — your detection rate should land here</div>
-        <div><strong style="color:#f1f5f9;">15 amount outliers</strong><br>$2,500-$9,500 vs ~$50 baseline mean</div>
-        <div><strong style="color:#f1f5f9;">4 velocity bursts</strong><br>6-10 transactions within 5 minutes</div>
+        <div><strong style="color:#f1f5f9;">5 flagged accounts</strong><br>2.5% of total — more fraud is planted without a label</div>
+        <div><strong style="color:#f1f5f9;">15 amount outliers</strong><br>$2,500-$9,500 vs a ~$130 baseline mean</div>
+        <div><strong style="color:#f1f5f9;">4 velocity bursts</strong><br>6 transactions within 5 minutes</div>
         <div><strong style="color:#f1f5f9;">3 geo mismatches</strong><br>NYC↔Tokyo, London↔Sydney, Istanbul↔Mexico City</div>
         <div><strong style="color:#f1f5f9;">5 collusion accounts</strong><br>shared device dev_x4f2a9b1c7e</div>
-        <div><strong style="color:#f1f5f9;">5 chained chargebacks</strong><br>3-deep + branching for recursive CTE</div>
+        <div><strong style="color:#f1f5f9;">6 linked chargebacks</strong><br>a 3-deep chain + a branching pair, for recursive CTE</div>
       </div>
       <p style="font-size:12px;color:#8b98ab;margin-top:18px;line-height:1.6;">
         Generated deterministically with seed <code class="fm" style="color:#fb923c;">20260503</code>. Re-running the generator produces byte-identical data, so your validation queries always pass against the same expected counts.
@@ -737,7 +737,7 @@ window.addEventListener('scroll',()=>{document.getElementById('nav').classList.t
 
 const FAQS = [
   ["What is SQL for fraud analytics?", "SQL for fraud analytics is the practice of writing SQL queries to detect suspicious patterns in transaction data — statistical outliers (a transaction 5x larger than the account average), velocity bursts (10 transactions in 90 seconds), geographic mismatches (a card used in NYC and Tokyo within 25 minutes), shared device fingerprints across multiple accounts (a collusion ring), and chargeback chains that reveal coordinated fraud networks. Most fraud analyst roles list SQL as the #1 required hard skill, ahead of Python or Excel."],
-  ["Is the dataset real?", "Synthetic but realistic. The dataset has 200 accounts, 25 merchants, 2,165 transactions, and 76 chargebacks across 5 countries. Fraud is INJECTED on top of legitimate baseline activity — 10 accounts marked as fraud, 1 five-account collusion ring sharing device fingerprint dev_x4f2a9b1c7e, 15 amount outliers in the $2,500-$9,500 range, 4 velocity bursts of 6-10 transactions within 5 minutes, 3 geographic mismatch pairs (NYC↔Tokyo, London↔Sydney, Istanbul↔Mexico City within 25 minutes), and a 5x higher chargeback rate on fraud-marked accounts. Generated with seed 20260503 for reproducibility. No real personal data."],
+  ["Is the dataset real?", "Synthetic but realistic. The dataset has 200 accounts, 25 merchants, 2,165 transactions, and 76 chargebacks across 5 countries. Fraud is INJECTED on top of legitimate baseline activity — 5 accounts flagged as fraud, 1 five-account collusion ring sharing device fingerprint dev_x4f2a9b1c7e (three of the five are flagged), 15 amount outliers in the $2,500-$9,500 range, 4 velocity bursts of 6 transactions within 5 minutes, 3 geographic mismatch pairs (NYC↔Tokyo, London↔Sydney, Istanbul↔Mexico City within 25 minutes), and a chargeback rate about 8x higher on flagged accounts. Generated with seed 20260503 for reproducibility. No real personal data."],
   ["What patterns will I learn?", "Five core patterns. (1) Statistical anomaly bounds — flag transactions outside 3 standard deviations of the mean using CTEs and CROSS JOIN aggregates. (2) Velocity rules — find accounts with 5+ transactions in a 5-minute sliding window via self-join with julianday math. (3) Geographic mismatch — use LAG window function plus a degree-distance proxy to flag impossible travel. (4) Cross-account collusion — self-join on device_fingerprint with a.account_id < b.account_id to find unique pairs sharing a device. (5) Recursive CTEs — walk chargeback chains via related_chargeback_id with a depth guard. These patterns transfer directly to production fraud systems."],
   ["Can I use this for fraud analyst interview prep?", "Yes — fraud analyst SQL interviews almost always include 2-3 questions on statistical thresholds, time-window aggregations, and joins to surface suspicious patterns. The 12 challenges here cover the core SQL question types asked at PayPal, Stripe, Block, JPMorgan, and most fintech risk teams. The 'Recursive CTE chargeback chain' (challenge #274) is a standout — recursive CTEs are uncommon in interview banks but show up frequently in real fraud investigation work, so practicing one well-designed example puts you ahead of most candidates."],
   ["Do I need Python or just SQL?", "Most fraud analyst roles want SQL fluency first, Python second. SQL handles ~70% of the actual day-to-day work — pulling transactions, computing rolling thresholds, joining to account history, exporting flagged cases. Python comes in for ML scoring (gradient-boosted models on engineered features), but those features themselves are usually computed in SQL. Senior fraud analyst and fraud data scientist roles weight Python more heavily. If you're early-career, focus on SQL until you're fluent, then add Python."],
