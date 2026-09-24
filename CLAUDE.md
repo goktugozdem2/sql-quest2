@@ -419,6 +419,33 @@ so a landing view and a later solve are joinable for the first time.
   (no readiness number over a tag filter) stands; the set match uses the
   public readiness test's wording instead.
 
+### Search Console data pipeline (2026-09-25)
+
+- Service account `gsc-reader@sqlquest-prod.iam.gserviceaccount.com`,
+  `siteFullUser` on **`sc-domain:sqlquest.app`** (always that form in API
+  calls, never `https://sqlquest.app`). Auth without dependencies:
+  `scripts/gsc/auth.mjs` (RS256 JWT via node:crypto). The key lives ONLY in
+  the `GSC_SA_KEY` env var / GitHub Secret; `.gitignore` blocks key files.
+- `scripts/gsc/verify.mjs` (permission check) · `fetch.mjs` → `gsc_daily`
+  (three slices `[date,query]`, `[date,page]`, `[date,query,page]`; the absent
+  dimension is NULL, the key is `UNIQUE NULLS NOT DISTINCT (date,query,page)`
+  because a PK cannot hold NULL — never sum across slices; last 7 days
+  re-written daily, `--backfill` = 16 months) · `inspect.mjs` →
+  `gsc_index_status` (sitemap URLs, stalest first, 1,900/day budget) ·
+  `report.mjs` (Markdown, week ends on the last date in the table; mailed via
+  Resend when `RESEND_API_KEY` + `REPORT_TO` are set).
+- Tables: migration `20260925110000_gsc_tables.sql` (applied 2026-09-25),
+  rollback `supabase/manual/20260925_gsc_tables_rollback.sql`. RLS on, no
+  policies, anon/authenticated revoked — service role only.
+- Workflows: `.github/workflows/gsc-fetch.yml` (daily 06:00 UTC; manual run
+  with backfill), `gsc-weekly.yml` (Mondays: inspect 05:00, report 07:00).
+  Failures open or comment on an issue labelled `gsc-pipeline`. Secrets the
+  founder adds: `GSC_SA_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`,
+  `RESEND_API_KEY`, `REPORT_TO`. Guards: `tests/gsc-pipeline.test.js`.
+- `/app/` stays crawlable in robots.txt on purpose: noindex must be read to
+  work (URL Inspection: "Excluded by 'noindex' tag"). Technical SEO facts are
+  pinned in `tests/technical-seo.test.js`.
+
 ### SEO operating rules (2026-09-13)
 
 - Weekly: scheduled task `weekly-seo-dashboard` (Mondays) writes

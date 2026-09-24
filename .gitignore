@@ -25,3 +25,8 @@ public/kpis.json
 scripts/ph-gallery/raw/
 scripts/ph-gallery/.frames/
 scripts/qa/out/
+
+# Google service-account keys (the GSC pipeline reads GSC_SA_KEY from the
+# environment; a key file never belongs in the repo)
+sqlquest-prod-*.json
+*service-account*.json

@@ -1,0 +1,55 @@
+# Google Search Console → Supabase gsc_daily (scripts/gsc/fetch.mjs).
+# Daily at 06:00 UTC: the last 7 days, re-written (GSC data lands 2–3 days
+# late and is revised). Manual run: tick "backfill" for 16 months.
+#
+# Secrets (repo → Settings → Secrets and variables → Actions):
+#   GSC_SA_KEY                 the whole service-account JSON
+#   SUPABASE_URL               https://<ref>.supabase.co
+#   SUPABASE_SERVICE_ROLE_KEY  the service role key
+# The key is only ever an environment variable: nothing writes it to disk.
+name: GSC fetch
+
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+    inputs:
+      backfill:
+        description: 'Backfill 16 months (monthly chunks)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: gsc-fetch
+  cancel-in-progress: false
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Fetch search analytics
+        env:
+          GSC_SA_KEY: ${{ secrets.GSC_SA_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scripts/gsc/fetch.mjs ${{ inputs.backfill && '--backfill' || '' }}
+
+      - name: Report the failure as an issue
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: bash scripts/gsc/notify-failure.sh "GSC fetch failed" "$RUN_URL"
