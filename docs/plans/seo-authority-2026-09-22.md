@@ -64,6 +64,22 @@ planted fraud patterns for SQL practice", the README as description (links
 to /fraud-analytics-sql/, the blog walkthrough and GitHub), tags SQL /
 Finance / Banking / Tabular / Beginner. The GitHub README links it back.
 Read in the weekly SEO file: referrals from kaggle.com and github.com.
+Same day: provenance, per-file descriptions, update frequency "Never" and a
+dataset cover (dark palette, a four-line SQL query, the four row counts —
+not the site's og-image) took Kaggle's usability score from 2.35 to 8.82;
+left: column descriptors (29) and a starter notebook. 9 views in the first
+hour.
+
+**Every number was re-counted from the files first (2026-09-24)** — the
+fraud landing, its FAQ and JSON-LD, the blog and the README had eight wrong
+claims (commit 393c5a1d lists them). The GitHub README and the Kaggle
+description were corrected in the same pass.
+
+**Found on the way — the site's og-image is stale.** public/og-image.png,
+the card every shared link unfurls with, still says "Adaptive SQL tutor",
+"10-Skill Radar" and "200+ challenges" (the bank is 299, the Skillmap has
+nine skills, the positioning is interview practice). Needs a new image
+under the current positioning; not done here.
 
 **Published 2026-09-24 on the founder's go:**
 https://github.com/goktugozdem2/card-transactions-sql-dataset — public,
