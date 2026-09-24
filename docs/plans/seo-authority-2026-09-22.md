@@ -55,7 +55,15 @@ disturbed.
    40 pages pointed at the redirect. All now point at `/app/`; the guard
    fails on any new one.
 
-## Item 6 — the open dataset (GitHub: published 2026-09-24; Kaggle: the founder's step)
+## Item 6 — the open dataset (GitHub and Kaggle: published 2026-09-24)
+
+**Kaggle, 2026-09-24**, from the founder's logged-in account:
+https://www.kaggle.com/datasets/goktugozdem/card-transactions-synthetic-fraud-sql-practice
+— public, CC0, the four CSVs, subtitle "200 accounts, 2,165 transactions,
+planted fraud patterns for SQL practice", the README as description (links
+to /fraud-analytics-sql/, the blog walkthrough and GitHub), tags SQL /
+Finance / Banking / Tabular / Beginner. The GitHub README links it back.
+Read in the weekly SEO file: referrals from kaggle.com and github.com.
 
 **Published 2026-09-24 on the founder's go:**
 https://github.com/goktugozdem2/card-transactions-sql-dataset — public,
