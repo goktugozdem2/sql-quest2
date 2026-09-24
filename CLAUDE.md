@@ -728,6 +728,28 @@ URLs filled, brand icon is the bolt, brand colour #FFE34D.
   → `guest_continuity` in `docs/agent/metrics.md`. Tests:
   `tests/progress-merge.test.js` (unit + source guards).
 
+### The company ask — one question after the first solve (2026-09-25, dark)
+
+- Founder's plan (P0 1–3, 9): at the FIRST correct solve, one inline line
+  under the result — "Which company are you preparing for?" (search over
+  the 30 `INTAKE_COMPANIES`, "Not sure yet", Skip). Not a modal. Unanswered →
+  once more at the third solve, then silent. A company → `prepTarget.company`
+  (+ intent `interview` if none), which already drives the Coach's "Your
+  {company} plan" and the Interview tab's company pin; the confirmation links
+  to both. Behind `intakeAfterFirstSolve` (off) + A/B by aid, assigned at the
+  first solve (`company_ask_assigned`); flag-queue row 13, needs the
+  founder's go. The ask arm does not get the first-solve intent modal (one
+  question, not two). Pure half `src/utils/company-ask.js`, guards
+  `tests/company-ask.test.js`, metric `company_ask_split`.
+- **A/B hash trap:** the FNV hash used by the first-screen and CTA tests has
+  an odd multiplier, so its low bit is the parity of the characters' sum —
+  every two-arm test hashed that way with `% 2` gets arms that are exact
+  opposites of every other one, salt or not. `companyAskArm` adds a murmur3
+  finalizer; any new two-arm test must too (the test checks independence).
+- Next in the founder's order: after one week, items 4 (date at the second
+  session) and 5 (Skillmap proof after the third solve); item 6 (a required
+  page after payment) is separate — it touches the payment flow.
+
 ### The goal gate — nobody uses the app without a goal (2026-09-25) — OFF
 
 **Off the same night (founder): the ask moved after the first solve, inline

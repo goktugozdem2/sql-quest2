@@ -3068,3 +3068,48 @@ and by bands of `(m->>'daysOut')::int` (≤ 14, ≤ 30, ≤ 90, > 90).
 Coverage (the claim's second target) is read from `users.data->'goalProfile'`
 for accounts with `lastActive` in the last 7 days — mind the epoch/ISO
 mix in `lastActive` (CLAUDE.md, email lifecycle).
+
+## `company_ask_split`
+
+The company ask (2026-09-25, ledger "one question after the first solve").
+Population: people with a `company_ask_assigned` row since the flip, by
+`arm`. People by aid; internal accounts out; exclude the localhost preview
+aids `0da741eb852fc963…` and `f2777777777777777…`.
+
+- **Answer rate (ask arm):** people with `intake_answered` (step `company`,
+  surface `post_solve`) over people with `intake_shown` (same step/surface).
+  Split `value`: a company vs `undecided`. By `askNumber` (1 = first solve,
+  2 = third solve). Ignored = shown − answered − `intake_skipped`.
+- **Guardrail (both arms):** share of assigned people with a
+  `challenge_solved` whose `solvedCount >= 2` within 24 h of assignment.
+  Ask arm must not trail control by more than 3 points.
+- **first_solve_10m:** read overall as usual (the ask comes after the first
+  solve, so the test cannot move it; the founder asked for it anyway).
+- **Payoff:** `company_ask_payoff_clicked` by `to` (plan | interview) over
+  people who named a company.
+
+```sql
+with ev as (
+  select coalesce(((metadata #>> '{}')::jsonb)->>'aid', username) pid, event, created_at, (metadata #>> '{}')::jsonb m
+  from pro_events
+  where username !~* '^(test|qa_|fabletest|linktest|internalroutine|sqlquest$)'
+    and created_at >= :flip
+),
+arm as (select distinct on (pid) pid, m->>'arm' arm, created_at ta from ev where event = 'company_ask_assigned'
+        and pid not like '0da741eb852fc963%' and pid not like 'f2777777777777777%' order by pid, created_at),
+shown as (select distinct pid from ev where event = 'intake_shown' and m->>'step' = 'company'),
+answered as (select distinct on (pid) pid, m->>'value' v from ev where event = 'intake_answered' and m->>'step' = 'company' order by pid, created_at),
+second as (select distinct e.pid from ev e join arm a using (pid) where e.event = 'challenge_solved'
+           and (e.m->>'solvedCount')::int >= 2 and e.created_at <= a.ta + interval '24 hours')
+select a.arm,
+  count(*) assigned,
+  count(s.pid) shown,
+  count(an.pid) answered,
+  count(an.pid) filter (where an.v <> 'undecided') named_company,
+  round(100.0 * count(sec.pid) / nullif(count(*), 0), 1) pct_second_solve_24h
+from arm a
+left join shown s using (pid)
+left join answered an using (pid)
+left join second sec using (pid)
+group by a.arm;
+```

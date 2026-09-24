@@ -59,6 +59,13 @@ window.FEATURE_FLAGS = {
     // is the candidate for the one required screen, after payment (plan
     // item 6). src/utils/goal-gate.js, tests/goal-gate.test.js.
     goalGate: false,
+    // The company ask (founder's plan, 2026-09-25, P0 1–3): one inline
+    // question after the FIRST correct solve — which company? — asked again
+    // at the third solve if unanswered, then silent. When on, an A/B by aid
+    // (arm `ask` | `control`, assigned at the first solve). SHIPPED OFF; one
+    // week on, then the founder decides. src/utils/company-ask.js,
+    // tests/company-ask.test.js; ledger "one question after the first solve".
+    intakeAfterFirstSolve: false,
     // Company practice-set match on the Coach (SEO plan P3.21, 2026-09-13):
     // for a named prepTarget.company that has NO interview archetype, how the
     // Skillmap matches what that company's practice set asks, plus the next

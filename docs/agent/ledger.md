@@ -27,6 +27,53 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### one question after the first solve: which company (the company ask)
+
+- **Claimed** 2026-09-25 · **Flips** on the founder's go, after the founder
+  walks the flow in production (`/app/?ff_features_intakeAfterFirstSolve=true`)
+  · **Read** flip + 7 days (founder's plan: one week, then decide).
+- **Change** behind `intakeAfterFirstSolve` (off): at a person's FIRST
+  correct solve they are assigned an arm by a hash of their aid
+  (`company_ask_assigned {arm, test: 'company_ask_v1'}`; the hash has a
+  finalizer, so the arm is independent of the first-screen test — without it
+  the two tests' arms were exact opposites). Arm `ask`: one inline line under
+  the result — "Which company are you preparing for?", search over the 30
+  companies, "Not sure yet", Skip; not a modal; the first-solve intent modal
+  stays shut on that solve (one question, not two; `intent_ask_suppressed`).
+  Unanswered → asked once more at the third solve, then silent. A company
+  → `prepTarget.company` (+ intent `interview` when none was declared), which
+  already fills the Coach's "Your {company} plan" and pins the company on the
+  Interview tab; the confirmation links to both (`company_ask_payoff_clicked`).
+  Arm `control`: today's product, intent modal included. Events per step:
+  `intake_shown` / `intake_answered` / `intake_skipped` with `step:'company',
+  surface:'post_solve', askNumber`. `src/utils/company-ask.js`,
+  tests/company-ask.test.js; preview-verified 2026-09-25 (ask arm: line at
+  solve 1, no intent modal, Capital One → plan card + Interview pin; skip →
+  nothing at solve 2 → line at solve 3 → "not sure yet"; control: no line,
+  intent modal as today).
+- **Why** 8 accounts in the product's history carry a company (2026-09-24);
+  the plan card and the company pin exist and almost nobody reaches them.
+  The mandatory door screen that tried to fix this was withdrawn the same
+  night because it sits in front of the first solve.
+- **Metric** `company_ask_split` (docs/agent/metrics.md).
+- **Target** ask arm: ≥ 40% of people shown the line answer it (a company or
+  "not sure yet") across the two asks; ≥ 25% name a company.
+- **Guardrail** (founder: "first_solve_10m düşmesin, %12,4'ün altına inerse
+  geri al"): the ask comes after the first solve, so `first_solve_10m`
+  cannot move by construction — it is still read, overall, as the founder
+  asked. The guardrail that CAN move is what happens after the ask: second
+  solve within 24 h of assignment, ask arm vs control, must not be more than
+  3 points lower.
+- **Falsification, stated in advance:** answer rate < 20% → the question or
+  its moment is wrong; do not build item 4. Second-solve rate down > 3 points
+  in the ask arm → the line costs momentum; revert (flag off). Answered well
+  and no cost → keep, and build items 4 and 5 (founder's order).
+- **Confounds** control keeps the first-solve intent modal and the ask arm
+  does not, by design; read the intent series split by arm from the flip.
+  Localhost preview rows 2026-09-25 (aids `0da741eb…`, `f2777777…`) carry
+  arms: exclude.
+- **Verdict** _pending_
+
 ### every person states a goal before using the app (the goal gate)
 
 - **Claimed** 2026-09-25 · **Live** 2026-09-25, flag `goalGate` on, by the

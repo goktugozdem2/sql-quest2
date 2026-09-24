@@ -104,7 +104,7 @@ describe('what an event carries', () => {
 describe('the app wiring (source guards)', () => {
   const app = fs.readFileSync(new URL('../src/app.jsx', import.meta.url), 'utf8');
   const start = app.indexOf('const renderGoalGate = () => {');
-  const end = app.indexOf('// ── Onboarding intake (P0-1', start);
+  const end = app.indexOf('// ── The company ask', start);
   const gate = app.slice(start, end);
 
   it('renders, and is required: no close, no skip, no Escape, no backdrop dismissal', () => {
@@ -126,7 +126,7 @@ describe('the app wiring (source guards)', () => {
 
   it('the answers ride the autosave and the session restore', () => {
     expect(app).toMatch(/goalProfile \? \{ goalProfile \} : \{\}/);
-    expect(app).toMatch(/intakeRecord, goalProfile, prepTarget/);
+    expect(app).toMatch(/intakeRecord, goalProfile, companyAskRecord, prepTarget/);
     expect(app).toContain('userData.goalProfile && typeof userData.goalProfile');
   });
 

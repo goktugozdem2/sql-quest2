@@ -266,7 +266,7 @@ describe('source guards — app.jsx keeps the intake optional, early, and quiet'
     expect(app).toMatch(/setIntakeRecord\(userData\.intake\);/);
     // the date rides the autosave from state — the direct write alone was dropped by the next autosave
     expect(app).toMatch(/\.\.\.\(\(prepTarget\.company \|\| prepTarget\.date\) \? \{ prepTarget \} : \{\}\),/);
-    expect(app).toMatch(/intakeRecord, goalProfile, prepTarget, goalsPromptDismissedAt,/);
+    expect(app).toMatch(/intakeRecord, goalProfile, companyAskRecord, prepTarget, goalsPromptDismissedAt,/);
   });
 
   it('shows the date back as days on the Coach radar panel, display only', () => {

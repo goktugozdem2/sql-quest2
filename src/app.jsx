@@ -37,6 +37,7 @@ import { companySetMatch } from './utils/company-set-match.js';
 import { buildPracticePlan, PLAN_MIN_SOLVES_FOR_SKILLS } from './utils/practice-plan.js';
 import { FIRST_SCREEN_STORAGE_KEY, firstScreenDecision } from './utils/first-screen.js';
 import { INTAKE_KEY, INTAKE_GOALS, INTAKE_ROLES, INTAKE_STEPS, INTAKE_COMPANIES, INTAKE_LEVELS, intakeStepsFor, intakeGoalFor, intakeGoalForIntent, nextIntakeStep, isIntakeStepRequired, isIntakeLevel, isValidIntakeDate, buildIntakeRecord, isIntakeComplete, readIntakeRecord, intakeEventPayload, newCoachGoalState, shouldShowIntake } from './utils/onboarding-intake.js';
+import { COMPANY_ASK_KEY, COMPANY_ASK_TEST_ID, COMPANY_ASK_UNDECIDED, companyAskDecision, normalizeCompanyAskRecord, matchCompanies, isCompanyAskAnswer } from './utils/company-ask.js';
 import { GOAL_PROFILE_KEY, GOAL_GATE_RECHECK_MS, GOAL_GATE_GOALS, TARGET_LEVELS, INDUSTRIES, DEADLINE_PRESETS, industryFor, isoDateInDays, isValidDeadline, missingFields, buildGoalProfile, goalProfileStatus, shouldShowGoalGate, prefillDraft, goalGateEventPayload, readGoalProfile, GOAL_GATE_MAX_DAYS_OUT } from './utils/goal-gate.js';
 import { PLACEMENT_TIERS, placementResult, placementEventPayload, readFirstRunPlacement, seedFloorsFor, seedFloorsFromReadiness, levelForReadiness, placementFromReadiness } from './utils/placement.js';
 import { QUESTIONS as READINESS_QUESTIONS, READINESS_SKILLS, READINESS_RECORD_KEY, companySkillWeights, scoreReadiness, summarizeScores, weakestSkills, readinessRecordFrom, readReadinessRecord } from './data/readiness-questions.js';
@@ -6796,6 +6797,16 @@ function SQLQuest() {
   const [goalGateEditing, setGoalGateEditing] = useState(false);   // opened on purpose from "Edit goal"
   const [goalGateNow, setGoalGateNow] = useState(() => Date.now());   // the ten-minute tick
   const goalGateOpenRef = useRef(null);   // { at, status, prefilled } while open
+  // The company ask (2026-09-25): one inline question after the first solve,
+  // again at the third if unanswered, behind `intakeAfterFirstSolve` and an
+  // A/B by aid. Pure half: src/utils/company-ask.js.
+  const [companyAskRecord, setCompanyAskRecord] = useState(() => {
+    try { return normalizeCompanyAskRecord(JSON.parse(localStorage.getItem(COMPANY_ASK_KEY) || 'null')); } catch (_) { return normalizeCompanyAskRecord(null); }
+  });
+  const [companyAsk, setCompanyAsk] = useState(null);   // { challengeId, askNumber, answered: null | company | 'undecided' } on the panel it belongs to
+  const [companyAskQuery, setCompanyAskQuery] = useState('');
+  const companyAskEvaluatedRef = useRef(null);   // `${challengeId}:${solves}` already decided
+  const companyAskShowingRef = useRef(false);   // the line is on screen — the first-solve intent modal stays shut (one question, not two)
   const companySetMatchShownRef = useRef(false);
   const [showFirstEntryTour, setShowFirstEntryTour] = useState(() => {
     try { return !localStorage.getItem(FIRST_ENTRY_TOUR_KEY); } catch (_) { return true; }
@@ -9216,6 +9227,7 @@ function SQLQuest() {
           goals: userGoals,         // sector MVP — sector/role/motivation/etc; see docs/sector-mvp-plan.md
           intake: intakeRecord,     // onboarding intake — what was asked and skipped; never the date
           ...(goalProfile ? { goalProfile } : {}),   // the goal gate's answers (goal, deadline, target level, industry)
+          ...((companyAskRecord.arm || companyAskRecord.asks) ? { companyAsk: companyAskRecord } : {}),   // the company ask: arm, asks, answer
           intent: intentRecord,     // the declared goal { goal, source, at } — 'exploring' included, so the server can tell asked from never-asked
           readiness: readinessRecord, // the ten-question check / readiness test result, the public page's shape
           // The countdown / intake target rides the save from STATE, not only
@@ -9276,7 +9288,7 @@ function SQLQuest() {
         saveUserData(currentUser, userData);
       })();
     }
-  }, [xp, solvedChallenges, unlockedAchievements, queryCount, aiLessonPhase, currentAiLesson, completedAiLessons, aiLessonCompletions, roadmapLessonCompletions, comprehensionCount, comprehensionCorrect, consecutiveCorrect, comprehensionConsecutive, completedExercises, challengeQueries, completedDailyChallenges, dailyStreak, challengeAttempts, dailyChallengeHistory, weeklyReports, weeklyReportLastSeen, weeklyDigestOptOut, earnedMilestones, coachState, userGoals, intakeRecord, goalProfile, prepTarget, goalsPromptDismissedAt, loginCalendar, speedRunHistory, explainHistory, userProStatus, proType, proExpiry, proAutoRenew, interviewHistory, challengeProgress, challengeStartDate, weaknessTracking, skillMastery, lessonSkillStats, errorPatterns, retrievalLog, dailyRewardClaimedDate]);
+  }, [xp, solvedChallenges, unlockedAchievements, queryCount, aiLessonPhase, currentAiLesson, completedAiLessons, aiLessonCompletions, roadmapLessonCompletions, comprehensionCount, comprehensionCorrect, consecutiveCorrect, comprehensionConsecutive, completedExercises, challengeQueries, completedDailyChallenges, dailyStreak, challengeAttempts, dailyChallengeHistory, weeklyReports, weeklyReportLastSeen, weeklyDigestOptOut, earnedMilestones, coachState, userGoals, intakeRecord, goalProfile, companyAskRecord, prepTarget, goalsPromptDismissedAt, loginCalendar, speedRunHistory, explainHistory, userProStatus, proType, proExpiry, proAutoRenew, interviewHistory, challengeProgress, challengeStartDate, weaknessTracking, skillMastery, lessonSkillStats, errorPatterns, retrievalLog, dailyRewardClaimedDate]);
 
 
   // True when the URL signals explicit content intent — user clicked a
@@ -12698,6 +12710,138 @@ CRITICAL RULES:
             </a>
           )}
         </div>
+      </div>
+    );
+  };
+
+
+  // ── The company ask (founder's plan, 2026-09-25, P0 1–3 and 9) ─────────
+  // After the FIRST correct solve, one line under the result: which company
+  // are you preparing for? Search over the 30 companies, "Not sure yet", Skip.
+  // Unanswered → asked once more at the third solve, then silent. Behind
+  // `intakeAfterFirstSolve` (off) with an A/B by aid assigned at the first
+  // solve, so both arms are people whose first solve happened in the test.
+  // The answer goes to prepTarget.company, which already drives the Coach's
+  // "Your {company} plan" card and the Interview tab's company pin; the
+  // confirmation links to both. Events: company_ask_assigned, intake_shown /
+  // intake_answered / intake_skipped with step 'company', surface 'post_solve'.
+  const persistCompanyAskRecord = (next) => {
+    setCompanyAskRecord(next);
+    try { localStorage.setItem(COMPANY_ASK_KEY, JSON.stringify(next)); } catch (_) {}
+    if (currentUser) {
+      try {
+        const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
+        userData.companyAsk = next;
+        saveUserData(currentUser, userData);
+      } catch (_) {}
+    }
+  };
+
+  useEffect(() => {
+    if (challengeStatus !== 'success' || !currentChallenge) return;
+    const solves = solvedChallenges.has(currentChallenge.id) ? solvedChallenges.size : solvedChallenges.size + 1;
+    const key = `${currentChallenge.id}:${solves}`;
+    if (companyAskEvaluatedRef.current === key) return;
+    companyAskEvaluatedRef.current = key;
+    const decision = companyAskDecision({
+      flagOn: window.FF?.feature?.('intakeAfterFirstSolve') === true,
+      solves,
+      record: companyAskRecord,
+      aid: getAnonId(),
+      knownCompany: prepTarget.company || null,
+    });
+    if (!decision.assign && !decision.ask) return;
+    let next = { ...companyAskRecord };
+    if (decision.assign) {
+      next = { ...next, arm: decision.arm };
+      trackActivationEvent('company_ask_assigned', { arm: decision.arm, test: COMPANY_ASK_TEST_ID, challengeId: currentChallenge.id });
+    }
+    if (decision.ask) {
+      next = { ...next, asks: next.asks + 1 };
+      setCompanyAsk({ challengeId: currentChallenge.id, askNumber: decision.askNumber, answered: null });
+      companyAskShowingRef.current = true;
+      setCompanyAskQuery('');
+      trackActivationEvent('intake_shown', { step: 'company', surface: 'post_solve', askNumber: decision.askNumber, solves, arm: decision.arm, challengeId: currentChallenge.id });
+    }
+    persistCompanyAskRecord(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [challengeStatus, currentChallenge?.id, solvedChallenges.size]);
+
+  const answerCompanyAsk = (value) => {
+    if (!companyAsk || !isCompanyAskAnswer(value)) return;
+    const now = new Date().toISOString();
+    persistCompanyAskRecord({ ...companyAskRecord, answer: value, answeredAt: now });
+    if (value !== COMPANY_ASK_UNDECIDED) {
+      setPrepPreference({ company: value });
+      // A company named is an interview being prepared for; never overwrite
+      // an intent the person already declared.
+      const intent = getUserIntent() || intentRecord?.goal || null;
+      if (!intent || intent === 'exploring') setUserIntent('interview', 'company_ask');
+    }
+    trackActivationEvent('intake_answered', { step: 'company', surface: 'post_solve', askNumber: companyAsk.askNumber, value, undecided: value === COMPANY_ASK_UNDECIDED });
+    setCompanyAsk({ ...companyAsk, answered: value });
+  };
+
+  const skipCompanyAsk = () => {
+    if (!companyAsk) return;
+    trackActivationEvent('intake_skipped', { step: 'company', surface: 'post_solve', askNumber: companyAsk.askNumber, typed: companyAskQuery.trim().length > 0 });
+    // companyAskShowingRef stays set: a skip inside the intent modal's
+    // 3-second delay must not let that modal open as a second question.
+    setCompanyAsk(null);
+  };
+
+  const renderCompanyAsk = () => {
+    if (!companyAsk || !currentChallenge || companyAsk.challengeId !== currentChallenge.id) return null;
+    const muted = { color: '#8A8E99' };
+    const chip = { background: '#1F222B', border: '1px solid #2A2E38', borderRadius: '6px', color: '#F2F0EA' };
+    if (companyAsk.answered) {
+      if (companyAsk.answered === COMPANY_ASK_UNDECIDED) {
+        return (
+          <div className="border-t border-green-500/20 pt-3 mb-3 text-sm" style={muted} data-company-ask="done" data-company-ask-answer="undecided">
+            {i18n_t('companyAsk', 'undecidedDone')}
+          </div>
+        );
+      }
+      const company = companyAsk.answered;
+      return (
+        <div className="border-t border-green-500/20 pt-3 mb-3" data-company-ask="done" data-company-ask-answer={company}>
+          <p className="text-sm text-[#F2F0EA]">{i18n_t('companyAsk', 'done', { company })}</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <button type="button" data-company-ask-go="plan" className="px-3 py-1.5 text-xs font-semibold" style={chip}
+              onClick={() => { trackActivationEvent('company_ask_payoff_clicked', { to: 'plan', company }); setCurrentChallenge(null); setActiveTab('guide'); }}>
+              {i18n_t('companyAsk', 'seePlan', { company })}
+            </button>
+            <button type="button" data-company-ask-go="interview" className="px-3 py-1.5 text-xs font-semibold" style={chip}
+              onClick={() => { trackActivationEvent('company_ask_payoff_clicked', { to: 'interview', company }); setCurrentChallenge(null); setActiveTab('trials'); }}>
+              {i18n_t('companyAsk', 'seeInterview', { company })}
+            </button>
+          </div>
+        </div>
+      );
+    }
+    const matches = matchCompanies(companyAskQuery);
+    return (
+      <div className="border-t border-green-500/20 pt-3 mb-3" data-company-ask={companyAsk.askNumber}>
+        <label htmlFor="company-ask-input" className="block text-sm font-semibold text-[#F2F0EA]">{i18n_t('companyAsk', 'question')}</label>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <input id="company-ask-input" type="text" autoComplete="off" data-company-ask-input="true"
+            value={companyAskQuery} placeholder={i18n_t('companyAsk', 'placeholder')}
+            onChange={e => setCompanyAskQuery(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter' && companyAskQuery.trim() && matches[0]) { e.preventDefault(); answerCompanyAsk(matches[0]); } }}
+            className="min-w-0 flex-1 px-3 py-2 text-sm" style={{ ...chip, minWidth: '12rem' }} />
+          <button type="button" data-company-ask-undecided="true" onClick={() => answerCompanyAsk(COMPANY_ASK_UNDECIDED)}
+            className="px-3 py-2 text-xs font-semibold" style={chip}>{i18n_t('companyAsk', 'undecided')}</button>
+          <button type="button" data-company-ask-skip="true" onClick={skipCompanyAsk}
+            className="px-2 py-2 text-xs underline" style={muted}>{i18n_t('companyAsk', 'skip')}</button>
+        </div>
+        {companyAskQuery.trim() && (
+          <div className="mt-2 flex flex-wrap gap-2" data-company-ask-matches="true">
+            {matches.length ? matches.map(c => (
+              <button key={c} type="button" data-company-ask-option={c} onClick={() => answerCompanyAsk(c)}
+                className="px-3 py-1.5 text-xs font-semibold" style={chip}>{c}</button>
+            )) : <span className="text-xs" style={muted}>{i18n_t('companyAsk', 'noMatch')}</span>}
+          </div>
+        )}
       </div>
     );
   };
@@ -17079,6 +17223,18 @@ CRITICAL RULES:
       if (userData.intake && typeof userData.intake === 'object' && typeof userData.intake.completedAt === 'string') {
         setIntakeRecord(userData.intake);
         try { localStorage.setItem(INTAKE_KEY, JSON.stringify(userData.intake)); } catch (_) {}
+      }
+      // Company ask record: the account's wins when it holds an answer or more
+      // asks than this browser, so a person is never asked a third time.
+      if (userData.companyAsk && typeof userData.companyAsk === 'object') {
+        const acct = normalizeCompanyAskRecord(userData.companyAsk);
+        let local = null;
+        try { local = normalizeCompanyAskRecord(JSON.parse(localStorage.getItem(COMPANY_ASK_KEY) || 'null')); } catch (_) { local = null; }
+        if (!local || acct.answer || acct.asks > local.asks || (!local.arm && acct.arm)) {
+          const merged = { ...acct, arm: acct.arm || local?.arm || null };
+          setCompanyAskRecord(merged);
+          try { localStorage.setItem(COMPANY_ASK_KEY, JSON.stringify(merged)); } catch (_) {}
+        }
       }
       // Goal gate profile: the newer of the account's and this browser's wins,
       // so a goal set as a guest five minutes ago survives a sign-in and a goal
@@ -24533,7 +24689,15 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
             // load, so a user-scoped key would re-fire every session.
             try {
               if (!localStorage.getItem('sqlquest_intent_asked')) {
-                setTimeout(() => setShowIntentAsk(true), 3000);
+                setTimeout(() => {
+                  // The company ask (ask arm) is this solve's one question;
+                  // the intent modal would be a second, and it covers the line.
+                  if (companyAskShowingRef.current) {
+                    trackActivationEvent('intent_ask_suppressed', { by: 'company_ask' });
+                    return;
+                  }
+                  setShowIntentAsk(true);
+                }, 3000);
               } else if (intakeRecord?.goal) {
                 // The intake answered the question at the door; the routing
                 // the modal would apply happens here, at the same moment —
@@ -38225,6 +38389,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                               </button>
                             </div>
                           )}
+                          {renderCompanyAsk()}
                           {/* Review ask (2026-09-07). A CARD, not a modal, and
                               it renders HERE — in the post-solve success
                               panel, above "what's next" — for two reasons.

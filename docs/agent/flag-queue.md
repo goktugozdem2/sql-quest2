@@ -59,6 +59,7 @@ first solves in a hundred first visits (`first_solve_10m`, 12.4%, 08-24 →
 | 10 | `goalWallEarly` + `mockDoor` | **money** | founder's go | `mockDoor` is inert without `goalWallEarly`. | M2 + M5 | needs Go |
 | 11 | `companySetGate` | **money** | founder's go | Signed archetype companies only. | M1 | needs Go |
 | 12 | `adaptivePlacement` | placement | founder's go | Changes who reaches challenge 1; read with the placement mix. | placement entry | needs Go |
+| 13 | `intakeAfterFirstSolve` | activation — **A/B, ask after the first solve** | founder's go, after the founder walks it in production | The founder's plan of 2026-09-25 (P0 1–3): one company question after the first solve, again at the third, then silent; replaces the withdrawn door gate. Cannot move `first_solve_10m` (it comes after the first solve); its guardrail is the second solve in 24 h by arm. | "one question after the first solve" · `company_ask_split` · Read = flip + 7 days | needs Go |
 
 The 42% of first visitors who never open a challenge: row 2 (added
 2026-09-23) is the first flag that reaches them.
