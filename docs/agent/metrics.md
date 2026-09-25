@@ -946,6 +946,16 @@ the same window; the rate is purchases ÷ people. 30 days to 2026-09-23:
 2 ÷ 3,864 = **0.05%** (landing views still include crawlers — a floor).
 Scorecard §3.
 
+**Trap: a crawler on the question pages (found 2026-09-25).** On 2026-09-13
+and 2026-09-16 (the question pages went live on 09-13) 557 "people" viewed
+only `/questions/…` pages, tz `America/Los_Angeles`, no `ref` and no
+`landingSrc`, almost all a single view, bunched in a few UTC hours; **none**
+of them ever opened the app. They are 314 of 416 landing people on 09-13
+and 248 of 375 on 09-16. Exclude people whose landing views are all
+`page ~ '^questions/'` with that tz and no ref/landingSrc before reading
+any landing count or `visitor_to_payer` across those dates. Without them the
+week 09-11 → 09-18 had 786 landing people, not 1,336.
+
 ## `practice_next_day`
 
 Of registered solvers who solved at least one challenge on app-day D, the
