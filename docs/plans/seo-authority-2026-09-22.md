@@ -139,6 +139,23 @@ StrataScratch. Rule stands: competitor facts only from a dated read — write
 `docs/reads/competitors-<date>.md` first; the SQLPad row on the alternatives
 pages is from an earlier read and predates its AI mock offer.
 
+## GSC data, first read (2026-09-25)
+The pipeline (`scripts/gsc/`, tables `gsc_daily` / `gsc_index_status`) holds
+2026-03-08 → 09-23. What it changed in this plan:
+- 34% of the last 28 days' impressions are competitor-brand navigational
+  queries ("stratascratch" 7,332 · 1 click; "datalemur" family) on the two
+  vs-pages; CTR without them is 2.44%, not 1.63%. Kept as they are (founder,
+  09-25); every read separates them.
+- Company pages: 3,110 impressions, CTR 5.1% — the best asset. Second-tier
+  fintech/tech (Revolut 14.4%, Wise 17.8%, Anthropic, OpenAI, Ramp ~10%)
+  outclick the giants (Google 1.1%, Amazon 1.8%). Direction: deepen those.
+- Tesla: the one company page with zero impressions — "Crawled - currently
+  not indexed" (last crawl 07-26), not thin (2,182 words, like Wise/Ramp).
+  Indexing requested by hand 2026-09-25 (priority crawl queue). Sitemap
+  resubmitted the same day (Google had last read it 09-20: 405 of 410).
+- Shopify retitled (ledger claim, read 10-23). Google's page waits for the
+  10-12 read.
+
 ## The gate on new traffic
 The homepage shows 1,195 active people in 30 days against 2 payments a month
 — about two in a thousand. There is traffic; conversion is weak. The payment

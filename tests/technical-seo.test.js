@@ -97,6 +97,20 @@ describe('homepage and hub claims match the data', () => {
     expect(hub).not.toMatch(/12 Company-Specific Tracks|200\+ challenges/);
   });
 
+  it('a company page title that counts its problems states its tagged-challenge count', () => {
+    // Shopify, 2026-09-25: "(2026): 15 Practice Problems" — the count must follow the tags.
+    let checked = 0;
+    for (const c of BANK.companies) {
+      const f = `public/${c.slug}/index.html`;
+      if (!exists(f)) continue;
+      const m = read(f).match(/<title>[^<]*?(\d+) Practice Problems/);
+      if (!m) continue;
+      expect(Number(m[1]), c.slug).toBe(c.taggedChallenges);
+      checked++;
+    }
+    expect(checked).toBeGreaterThanOrEqual(1);
+  });
+
   it('every "N of M" free-share claim on the site is the one pair from the bank', () => {
     const free = BANK.freeChallengeCount;
     const label = bankCountLabel(BANK.challengeCount);

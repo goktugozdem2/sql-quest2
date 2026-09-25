@@ -27,6 +27,35 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### the Shopify page's title and description say what the page is
+
+- **Claimed** 2026-09-25 · **Live** on push · **Read** 2026-10-23 (28 days).
+- **Change** `/shopify-sql-interview/` `<title>` / og / twitter: "Shopify SQL
+  Interview Questions — Practice Merchant & GMV Analytics" → "Shopify SQL
+  Interview Questions (2026): 15 Practice Problems"; description (all three)
+  from "Practice the SQL patterns Shopify tests in …" — an unsourced claim
+  about Shopify's interview — to "15 runnable SQL interview practice problems
+  on e-commerce data: merchant metrics, GMV, conversion funnels, cohort
+  retention. In the browser, instant feedback, no setup. Free." H1 and body
+  untouched. The "15" is bound to the tagged-challenge count
+  (tests/technical-seo.test.js). The year-and-count pattern is the one
+  `/best-sql-practice-sites/` carries (2,527 impressions, 3.0% CTR, 6.4).
+- **Why** 28 days to 09-23: 297 impressions, 0 clicks, position 6.8 — while
+  Revolut (6.9) took 14.4% and Wise (6.3) 17.8%. Clicks stopped on 08-26;
+  only ~10% of the impressions carry a visible query (the largest:
+  "shopify data science sql question leaked", 18). Not in the 10-12 title
+  read, so it confounds nothing there. `/google-sql-interview/` was NOT
+  touched: its description is in the 10-12 read (W3, 09-17), and its 7.0
+  average is flattered by our own brand query "sqlquest" at position 1 (58
+  impressions, sitelinks) — "google sql interview questions" sits at 25.
+- **Metric** gsc_daily page slice for the page: CTR and clicks, 28 days.
+- **Target** ≥ 3 clicks and CTR ≥ 1% at a position within ±2 of 6.8.
+- **Falsification, stated in advance:** still 0 clicks at ≥ 150 impressions
+  → the impressions are intent the page cannot serve (like the competitor
+  brand queries); stop spending titles on it. Position worse by > 3 →
+  revert the title.
+- **Verdict** _pending_
+
 ### one question after the first solve: which company (the company ask)
 
 - **Claimed** 2026-09-25 · **Flips** on the founder's go, after the founder
@@ -609,6 +638,15 @@ of the verifier and must never be rounded to `FLAT`.
   and the CTA above the description.
 - **Confounds** `onboardingIntake` (09-16) and `freeQuota` (09-21) move every
   first-run door; read against `/sql-exercises/` as control.
+- **Interim, 2026-09-25 (gsc_daily, not a verdict):** 210 question pages
+  earned impressions since 09-13 (target ≥ 30 by 10-27), 1,901 impressions,
+  19 clicks, position 17.2; last 7 days 1,353 · 16. URL Inspection: 399 of
+  the 410 sitemap URLs indexed (the 5 newest question pages unknown to
+  Google on 09-25). Their own click share is small — of September's +10.4
+  clicks/day over August, question pages carry +0.8 — but the topic pages
+  they link into moved 47.1 → 14.3 in position and blog 31.4 → 16.2. The
+  index and impression targets are met early; the conversion target
+  (`question_page_door`) is still the read on 10-27.
 - **Verdict** _pending_
 
 ### the company template, seven new company pages, and the readiness funnel (founder's SEO plan P0.4–P0.6, 2026-09-13)

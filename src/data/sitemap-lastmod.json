@@ -1,6 +1,6 @@
 {
   "note": "Written by scripts/sitemap-lastmod.mjs. A page's date moves only when its built bytes change.",
-  "updated": "2026-09-24",
+  "updated": "2026-09-25",
   "pages": {
     "/": {
       "hash": "ef9ac52c70e80e71",
@@ -79,8 +79,8 @@
       "lastmod": "2026-09-17"
     },
     "/shopify-sql-interview/": {
-      "hash": "92ef3749856aff50",
-      "lastmod": "2026-09-17"
+      "hash": "0151fdfc4a1cf2ac",
+      "lastmod": "2026-09-25"
     },
     "/spotify-sql-interview/": {
       "hash": "dacf5c9474190c96",
@@ -103,8 +103,8 @@
       "lastmod": "2026-09-24"
     },
     "/weekly/": {
-      "hash": "abd84bd74a7d03ce",
-      "lastmod": "2026-09-24"
+      "hash": "73b76f824f377522",
+      "lastmod": "2026-09-25"
     },
     "/fraud-analytics-sql/": {
       "hash": "41c5c03a68513a3e",
