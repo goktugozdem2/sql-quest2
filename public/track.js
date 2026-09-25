@@ -407,11 +407,36 @@
     }
   })();
 
+  // Extra props on a [data-track] element (2026-09-26, /for-teams/): every
+  // data-track-<name>="value" attribute rides on the event as props.<name>.
+  // `data-track-seats="20"` → {seats: 20}. A plain integer becomes a number;
+  // anything else stays a string, capped at 120 chars. The page owns what it
+  // puts there — /for-teams/ keeps them in sync with its form, and sets
+  // data-track-email only when the visitor typed one (pro_events is
+  // insert-only for anon, so a row cannot be read back from the browser).
+  // `href` is reserved and never overwritten.
+  var MAX_PROP_LEN = 120;
+  function trackProps(el) {
+    var props = { href: (el.getAttribute('href') || null) };
+    try {
+      var ds = el.dataset;
+      for (var k in ds) {
+        if (!Object.prototype.hasOwnProperty.call(ds, k)) continue;
+        if (k.length <= 5 || k.indexOf('track') !== 0) continue;
+        var name = k.charAt(5).toLowerCase() + k.slice(6);
+        if (!name || name === 'href') continue;
+        var v = String(ds[k]);
+        props[name] = /^\d{1,9}$/.test(v) ? Number(v) : v.slice(0, MAX_PROP_LEN);
+      }
+    } catch (_) {}
+    return props;
+  }
+
   document.addEventListener('click', function (e) {
     try {
       var el = e.target && e.target.closest && e.target.closest('[data-track]');
       if (!el || !el.dataset || !el.dataset.track) return;
-      send(el.dataset.track, { href: (el.getAttribute('href') || null) });
+      send(el.dataset.track, trackProps(el));
     } catch (_) {}
   }, true);
 })();

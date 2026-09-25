@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!--
+    /for-teams/ — the seat door (docs/plans/monetization-2026-09-24.md, row 6).
+    A test, not a product: no checkout, no instructor dashboard. The one button
+    writes a `team_interest` row (seat count, optional work email) through the
+    [data-track] relay in src/track.js. Kill rule, written before the data:
+    fewer than 3 team_interest rows (distinct aids) in 30 days → drop it.
+
+    NOT PUBLISHED: noindex, not in the sitemap, linked from nowhere on purpose.
+    The founder decides publication. tests/for-teams.test.js pins all three.
+    Styled from DESIGN.md: Fraunces / Geist / Geist Mono / JetBrains Mono, the
+    dark palette with its light-mode twin, #FFE34D only on the primary button.
+    No price is stated here — the seat price is the founder's pick
+    (docs/outreach/teams-2026-09-26.md).
+  -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SQL Practice Seats for Cohorts | SQLQuest.app</title>
+  <meta name="description" content="SQL Quest seats for bootcamps, university programs and SQL instructors: every learner gets Pro, and the instructor gets each learner's Skillmap and progress.">
+  <meta name="robots" content="noindex">
+  <link rel="canonical" href="https://sqlquest.app/for-teams/">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+  <script>
+    window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+  </script>
+  <script defer src="/_vercel/insights/script.js"></script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,800;1,9..144,600;1,9..144,800&family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#0E0F13;--surface:#16181F;--surface-2:#1F222B;--border:#2A2E38;
+      --text:#F2F0EA;--text-muted:#8A8E99;--accent:#FFE34D;--accent-ink:#0E0F13;
+      --sql-keyword:#7CC4FF;--sql-string:#B5E48C;--sql-number:#FFB86C;
+      --success:#4ADE80;--error:#FF6B6B;
+    }
+    @media (prefers-color-scheme: light){
+      :root{
+        --bg:#F6F4EE;--surface:#FFFFFF;--surface-2:#EFEDE5;--border:#E0DCD0;
+        --text:#15171C;--text-muted:#6B6E78;--accent:#F5C518;
+        --sql-keyword:#0B5FB8;--sql-string:#3F7A2E;
+      }
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{background:var(--bg);color:var(--text);font-family:'Geist',system-ui,sans-serif;font-size:15px;line-height:1.6;font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased}
+    a{color:inherit}
+    .wrap{max-width:1120px;margin:0 auto;padding:0 24px}
+
+
+    header.top{border-bottom:1px solid var(--border)}
+    header.top .wrap{display:flex;align-items:center;justify-content:space-between;height:56px}
+    .mark{font-family:'Fraunces',serif;font-style:italic;font-weight:800;font-size:20px;text-decoration:none;letter-spacing:-.01em}
+    .top-note{font-size:12px;color:var(--text-muted)}
+    @media (max-width:520px){.top-note{display:none}}
+
+    .eyebrow{font-family:'Geist Mono',monospace;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:12px}
+    h1{font-family:'Fraunces',serif;font-style:italic;font-weight:800;font-size:clamp(40px,6vw,56px);line-height:1.05;letter-spacing:-.02em;margin-bottom:24px}
+    h2{font-family:'Fraunces',serif;font-weight:600;font-size:28px;line-height:1.15;letter-spacing:-.01em;margin-bottom:12px}
+    h3{font-size:17px;font-weight:600;margin-bottom:4px}
+    p.lede{font-size:17px;color:var(--text-muted);max-width:620px}
+
+    section{padding:48px 0;border-bottom:1px solid var(--border)}
+    section.hero{padding:72px 0 48px}
+
+    .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:24px}
+    .col-7{grid-column:span 7}.col-5{grid-column:span 5}.col-6{grid-column:span 6}
+    @media (max-width:860px){.col-7,.col-5,.col-6{grid-column:span 12}}
+
+    ul.plain{list-style:none}
+    ul.plain li{padding:12px 0;border-top:1px solid var(--border)}
+    ul.plain li:first-child{border-top:none;padding-top:0}
+    ul.plain li p{color:var(--text-muted);font-size:14px}
+
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:24px}
+    .card + .card{margin-top:16px}
+    .tag{display:inline-block;font-family:'Geist Mono',monospace;font-size:12px;color:var(--text-muted);border:1px solid var(--border);border-radius:4px;padding:2px 8px;margin-bottom:12px}
+
+    .skills{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+    .skills span{font-size:12px;border:1px solid var(--border);border-radius:9999px;padding:4px 12px;color:var(--text-muted)}
+
+    pre.sample{font-family:'JetBrains Mono',monospace;font-variant-ligatures:none;font-size:13px;line-height:1.7;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:16px;overflow-x:auto;margin-top:16px;color:var(--text)}
+    .kw{color:var(--sql-keyword)}.st{color:var(--sql-string)}.nu{color:var(--sql-number)}
+
+    form{display:block}
+    label{display:block;font-size:14px;font-weight:500;margin-bottom:8px}
+    .hint{font-size:12px;color:var(--text-muted);margin-top:8px}
+    input[type=number],input[type=email]{width:100%;font:inherit;font-size:17px;color:var(--text);background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:12px 16px;outline:none;transition:border-color 150ms ease-out}
+    input[type=number]{font-family:'Geist Mono',monospace;max-width:160px}
+    input:focus{border-color:var(--text-muted)}
+    .field + .field{margin-top:24px}
+    .btn{display:inline-flex;align-items:center;justify-content:center;font:inherit;font-size:15px;font-weight:600;border:none;border-radius:6px;padding:12px 24px;cursor:pointer;margin-top:24px;transition:opacity 150ms ease-out}
+    .btn-primary{background:var(--accent);color:var(--accent-ink)}
+    .btn[disabled]{opacity:.45;cursor:not-allowed}
+    .status{margin-top:16px;font-size:14px;min-height:22px}
+    .status.ok{color:var(--success)}
+    .status.err{color:var(--error)}
+
+    details{border-top:1px solid var(--border);padding:16px 0;max-width:720px}
+    details:last-of-type{border-bottom:1px solid var(--border)}
+    summary{cursor:pointer;font-weight:600;list-style:none}
+    summary::-webkit-details-marker{display:none}
+    details p{color:var(--text-muted);font-size:14px;margin-top:8px;max-width:680px}
+
+    footer{padding:32px 0;color:var(--text-muted);font-size:12px}
+    @media (prefers-reduced-motion: reduce){*{transition:none!important}}
+  </style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="mark" href="/">SQL Quest</a>
+    <span class="top-note">For bootcamps, programs and instructors</span>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">SQL Quest for cohorts</p>
+      <h1>Timed SQL practice for your whole cohort.</h1>
+      <p class="lede">Seats for bootcamps, master's programs and SQL instructors. Every learner gets SQL Quest Pro. You get each learner's Skillmap and progress, so you can see who is ready for a technical screen and who is not, one skill at a time.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap grid">
+      <div class="col-7">
+        <p class="eyebrow">What a seat is</p>
+        <h2>One Pro account per learner, for the length of your cohort.</h2>
+        <ul class="plain">
+          <li><h3>300+ runnable SQL challenges</h3><p>Easy through Hard, run in the browser against real tables. Nothing to install, nothing for your team to host.</p></li>
+          <li><h3>Timed mock interviews</h3><p>Company-style screens on a clock and scored, including the 60-minute Revolut and 70-minute Capital One formats.</p></li>
+          <li><h3>A tutor that reads the wrong query</h3><p>It looks at what the learner actually wrote and names the defect, one step at a time. Pro lifts the free tier's daily cap.</p></li>
+          <li><h3>A Skillmap for every learner</h3><p>Nine skills, scored from what each learner solves and misses, not from a self-assessment.</p>
+            <div class="skills"><span>Querying Basics</span><span>Aggregation &amp; Grouping</span><span>Joins</span><span>Subqueries &amp; CTEs</span><span>Conditional Logic</span><span>Window Functions</span><span>String Functions</span><span>Date Functions</span><span>NULL Handling</span></div>
+          </li>
+        </ul>
+      </div>
+      <div class="col-5">
+        <p class="eyebrow">What the instructor sees</p>
+        <div class="card">
+          <span class="tag">Honest status</span>
+          <h3>There is no instructor dashboard yet.</h3>
+          <p class="lede" style="font-size:14px;margin-top:8px">For the first cohorts, the founder sets up every seat by hand and sends the instructor a per-learner summary each week: the nine Skillmap scores, challenges solved, and mock interview results. Learners are told when they join that their instructor receives it.</p>
+        </div>
+        <div class="card">
+          <span class="tag">What a learner practises</span>
+          <pre class="sample"><span class="kw">SELECT</span> customer_id,
+       <span class="kw">SUM</span>(amount) <span class="kw">AS</span> spend,
+       <span class="kw">RANK</span>() <span class="kw">OVER</span> (<span class="kw">ORDER BY</span> <span class="kw">SUM</span>(amount) <span class="kw">DESC</span>) <span class="kw">AS</span> rnk
+<span class="kw">FROM</span> transactions
+<span class="kw">WHERE</span> status = <span class="st">'settled'</span>
+<span class="kw">GROUP BY</span> customer_id
+<span class="kw">HAVING</span> <span class="kw">COUNT</span>(*) &gt;= <span class="nu">3</span>;</pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="interest">
+    <div class="wrap grid">
+      <div class="col-6">
+        <p class="eyebrow">Tell us your cohort size</p>
+        <h2>How many seats would your next cohort need?</h2>
+        <p class="lede">There is no checkout on this page. Pressing the button records your cohort size, and your email if you leave one, so the founder can write back with a price for that number of seats. Nothing is charged and you are not added to any list.</p>
+      </div>
+      <div class="col-6">
+        <div class="card">
+          <form id="team-form" novalidate onsubmit="return false">
+            <div class="field">
+              <label for="seats">Seats</label>
+              <input id="seats" name="seats" type="number" inputmode="numeric" min="1" max="500" step="1" value="20" required>
+              <p class="hint">One seat per learner. Between 1 and 500.</p>
+            </div>
+            <div class="field">
+              <label for="work-email">Work email <span style="color:var(--text-muted);font-weight:400">(optional)</span></label>
+              <input id="work-email" name="email" type="email" autocomplete="email" placeholder="you@your-program.edu" maxlength="120">
+              <p class="hint">Only used to reply about seats. Leave it empty and nothing but the number is recorded.</p>
+            </div>
+            <button type="button" id="team-interest" class="btn btn-primary" data-track="team_interest" data-track-seats="20">Ask for seats</button>
+            <p class="status" id="team-status" role="status" aria-live="polite"></p>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <p class="eyebrow">Questions</p>
+      <details>
+        <summary>Do learners need to install anything?</summary>
+        <p>No. Everything runs in the browser, including the database each challenge queries.</p>
+      </details>
+      <details>
+        <summary>Can a learner keep practising after the cohort ends?</summary>
+        <p>Yes. The seat ends, the account does not: the Coach, the Skillmap and every Easy and Medium challenge stay free.</p>
+      </details>
+      <details>
+        <summary>Who am I talking to?</summary>
+        <p>The founder, Göktuğ, who builds SQL Quest. Seats are set up by hand while there are only a few cohorts, which is also why the instructor report is written by a person and not a dashboard.</p>
+      </details>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">SQL Quest · <a href="/privacy/">Privacy</a> · <a href="/terms/">Terms</a></div>
+</footer>
+
+<script>
+  // Keeps the [data-track] button's data-track-* attributes equal to the form,
+  // so src/track.js's click relay (capture phase, runs before this) sends
+  // team_interest {seats, email?}. The button is disabled — and so fires no
+  // click at all — while the seat count or a typed email is invalid.
+  (function () {
+    var seats = document.getElementById('seats');
+    var email = document.getElementById('work-email');
+    var btn = document.getElementById('team-interest');
+    var status = document.getElementById('team-status');
+    var DONE_KEY = 'sqlquest_team_interest_v1';
+    var EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+    function sync() {
+      var n = parseInt(seats.value, 10);
+      var seatsOk = /^\d{1,3}$/.test(String(seats.value).trim()) && n >= 1 && n <= 500;
+      var e = String(email.value || '').trim();
+      var emailOk = e === '' || (e.length <= 120 && EMAIL_RE.test(e));
+      if (seatsOk) btn.setAttribute('data-track-seats', String(n)); else btn.removeAttribute('data-track-seats');
+      if (e && emailOk) btn.setAttribute('data-track-email', e.toLowerCase()); else btn.removeAttribute('data-track-email');
+      btn.disabled = !(seatsOk && emailOk) || btn.getAttribute('data-sent') === '1';
+      status.className = 'status' + (!seatsOk || !emailOk ? ' err' : '');
+      if (btn.getAttribute('data-sent') !== '1') {
+        status.textContent = !seatsOk ? 'Enter a seat count between 1 and 500.'
+          : !emailOk ? 'That email does not look complete. Fix it or leave it empty.' : '';
+      }
+    }
+
+    seats.addEventListener('input', sync);
+    email.addEventListener('input', sync);
+
+    btn.addEventListener('click', function () {
+      // track.js has already relayed the click by now (document capture phase).
+      btn.setAttribute('data-sent', '1');
+      btn.disabled = true;
+      status.className = 'status ok';
+      status.textContent = 'Recorded: ' + btn.getAttribute('data-track-seats') + ' seats. ' +
+        (btn.getAttribute('data-track-email') ? 'The founder will reply to that address.' : 'Leave an email next time if you want a reply.');
+      try { localStorage.setItem(DONE_KEY, String(Date.now())); } catch (_) {}
+    });
+
+    try {
+      if (localStorage.getItem(DONE_KEY)) {
+        btn.setAttribute('data-sent', '1');
+        status.className = 'status ok';
+        status.textContent = 'Your cohort size is already recorded from this browser.';
+      }
+    } catch (_) {}
+    sync();
+  })();
+</script>
+</body>
+</html>

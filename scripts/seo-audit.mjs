@@ -23,7 +23,9 @@ const SITE = 'https://sqlquest.app';
 // Pages that are deliberately not for the index. The app shell is noindex by
 // design (every deep link is the same document); the affiliate page is a
 // partner-only landing.
-export const NOINDEX_OK = new Set(['/app/', '/affiliate/']);
+// /for-teams/ (2026-09-26) is the seat-interest test page, noindex until the
+// founder publishes it (tests/for-teams.test.js).
+export const NOINDEX_OK = new Set(['/app/', '/affiliate/', '/for-teams/']);
 // Pages built only as public/<slug>.html and served at /<slug>/ by cleanUrls.
 const FLAT_PAGES = ['privacy', 'terms', 'refund'];
 // Weekly archive permalinks are real pages but deliberately not in the sitemap.
