@@ -356,6 +356,11 @@ so a landing view and a later solve are joinable for the first time.
   in app.jsx + SOURCED_PAGES + sitemap. The company-page count (now 30) is
   bound across pages by site-counts.
 
+- **2026-10-12, first job: the Capital One page** — plan with the branches
+  and the ready changes: `docs/plans/capital-one-2026-10-12.md` (competitor
+  read `docs/reads/capital-one-serp-2026-09-25.md`). Nothing on the page or
+  its blog post changes before that read.
+
 ### The interview hub is generated (2026-09-14)
 
 - `src/sql-interview-prep.html`'s company grid is rendered by
