@@ -26,6 +26,8 @@ import { dirname, join } from 'node:path';
 import { buildLlmsTxt } from '../scripts/build-llms-txt.js';
 import { CANONICAL_SKILLS } from '../src/utils/skill-calc.js';
 import { bankCountLabel } from '../src/utils/display-count.js';
+import { FREE_SOLVE_QUOTA, COMPANY_SET_FREE_COUNT } from '../src/utils/free-tier-boundary.js';
+import { freeTierFlags } from './free-tier-state.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..');
@@ -101,7 +103,7 @@ describe('counts match the bank (recomputed independently)', () => {
     expect(text).toContain(`**${bankCountLabel(all.length)} hands-on SQL challenges**`);
     expect(text).not.toMatch(new RegExp(`\\b${all.length}\\+? (?:hands-on|SQL|challenges)`));
     expect(text).toContain(`${easy} Easy, ${medium} Medium, ${hard} Hard`);
-    expect(text).toContain(`Adds all ${hard} Hard challenges`);
+    expect(text).toContain(`including all ${hard} Hard challenges`);
   });
 
   it('free previews and the free tier mirror isContentLocked (Hard is Pro unless freePreview)', () => {
@@ -112,8 +114,26 @@ describe('counts match the bank (recomputed independently)', () => {
 
     expect(facts.freePreviewCount).toBe(previews);
     expect(facts.freeChallengeCount).toBe(free);
-    expect(text).toContain(`**${free} of those are free**`);
-    expect(text).toContain(`${previews} free Hard previews`);
+    expect(text).toContain(`one of ${previews} Hard previews`);
+  });
+
+  // 2026-09-26: llms.txt is what an assistant reads when asked "is SQL Quest
+  // free?". It says the free tier the way the gates decide it — the quota the
+  // gate reads and the signed sets' free three — and is bound to the flags in
+  // both states: never a count of free challenges once the quota is on, never
+  // the quota before it.
+  it('states the free tier the flags describe', () => {
+    const { freeQuota, companySetGate } = freeTierFlags();
+    const free = facts.freeChallengeCount;
+    if (freeQuota) {
+      expect(text).toContain(`**${FREE_SOLVE_QUOTA} free challenge solves**`);
+      expect(text).not.toMatch(new RegExp(`\\b${free}\\b[^\\n]{0,40}\\bfree\\b|\\bfree\\b[^\\n]{0,40}\\b${free}\\b`, 'i'));
+      expect(text).not.toMatch(/every Easy and Medium challenge (?:is|are) free|free Hard previews/);
+    } else {
+      expect(text).not.toContain(`${FREE_SOLVE_QUOTA} free challenge solves`);
+    }
+    if (companySetGate) expect(text).toContain(`Capital One and Revolut company sets the first ${COMPANY_SET_FREE_COUNT} are free to try`);
+    else expect(text).not.toMatch(/company sets the first \d+ are free/);
   });
 
   it('company pages are exactly src/*-sql-interview.html, each linked', () => {

@@ -28,7 +28,7 @@ import { questionSlugs, loadQuestionBank } from './question-slugs.mjs';
 import { SKILL_PAGE } from './build-company-pages.mjs';
 import { SKILL_TO_RADAR, mapTopicToSkill, CANONICAL_SKILLS } from '../src/utils/skill-calc.js';
 import { isFreePreview } from '../src/utils/challenge-order.js';
-import { bankCountLabel } from '../src/utils/display-count.js';
+import { bankCountLabel, FREE_SOLVE_QUOTA } from '../src/utils/display-count.js';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const PUB = path.join(ROOT, 'public');
@@ -203,7 +203,7 @@ export function renderQuestion(c, ctx) {
   <div class="meta"><span class="tag ${c.difficulty.toLowerCase()}">${c.difficulty}</span><span class="tag">${free ? 'Free' : 'Pro'}</span>${skills.map(s => `<span class="tag">${esc(s)}</span>`).join('')}</div>
   <div class="prob">${paras(c.description)}</div>
   <p style="margin-top:22px;"><a class="btn bp" href="${appUrl}" data-track="cta_question_solve">Solve it in the browser editor →</a></p>
-  <p style="font-size:13px;color:#8b98ab;margin-top:10px;">Runs on SQLite in your browser, graded against the expected result, no signup. A wrong answer gets a diagnosis, not just "incorrect".</p>
+  <p style="font-size:13px;color:#8b98ab;margin-top:10px;">Runs on SQLite in your browser, graded against the expected result, no signup. A wrong answer gets a diagnosis, not just "incorrect".${free ? ` Free accounts get ${FREE_SOLVE_QUOTA} free challenge solves, and this can be one of them.` : ''}</p>
 
   <h2 class="fd">Schema</h2>
   ${schemaHtml(c, datasets) || '<p style="color:#94a3b8;">The tables are listed in the editor.</p>'}
@@ -260,6 +260,7 @@ export function renderHub(bank, slugs) {
   <h1 class="fd">SQL Interview Questions, one page each</h1>
   <p style="font-size:17px;color:#94a3b8;max-width:720px;margin-bottom:18px;">Every practice question in the SQL Quest bank, grouped by the Skillmap skill it leans on. Each page has the problem, the schema with sample rows, a hint and a link into the browser editor.</p>
   <p style="margin-bottom:10px;"><a class="btn bp" href="/sql-interview-readiness-test/" data-track="cta_questions_hub_readiness">Find your weakest skill first</a></p>
+  <p style="font-size:14px;color:#94a3b8;margin-bottom:8px;">Questions marked Free are open to free accounts — your first ${FREE_SOLVE_QUOTA} challenge solves are free — and Pro opens every question.</p>
   <p style="font-size:14px;color:#94a3b8;">Jump to: ${order.map(s => `<a href="#${s.toLowerCase().replace(/[^a-z]+/g, '-')}">${esc(s)}</a>`).join(' · ')}</p>
   <p style="font-size:14px;color:#94a3b8;margin-top:8px;">Guides: <a href="/sql-interview-questions-data-analyst/">SQL questions for data analyst interviews</a> · <a href="/blog/sql-for-ai-company-interviews/">SQL for AI-company interviews</a> · <a href="/fraud-analytics-sql/">Fraud analytics SQL</a> · <a href="/sql-for-the-ai-era/">SQL in the AI era</a> · <a href="/blog/validate-ai-generated-sql/">Validating AI-generated SQL</a> · <a href="/after-bootcamp/">After a bootcamp</a> · <a href="/after-the-sql-course/">After an SQL course</a></p>
   ${sections}

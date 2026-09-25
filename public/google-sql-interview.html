@@ -66,7 +66,7 @@
         "name": "Which window functions come up in the Google data analyst SQL round?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Two shapes recur in analyst-round questions: ranking inside a group with ROW_NUMBER, RANK or DENSE_RANK over PARTITION BY (top-N per group, dedupe, second-highest per department), and comparing a row with its neighbour using LAG or LEAD (month-over-month growth, consecutive-day streaks, gaps in a sequence). NTILE and PERCENT_RANK for percentiles come next. The window-functions section on this page has both core shapes as runnable queries with their output. 8 of the 32 Google-tagged challenges on SQL Quest are window-function problems — all Hard — and each shape has a free Medium on-ramp."
+          "text": "Two shapes recur in analyst-round questions: ranking inside a group with ROW_NUMBER, RANK or DENSE_RANK over PARTITION BY (top-N per group, dedupe, second-highest per department), and comparing a row with its neighbour using LAG or LEAD (month-over-month growth, consecutive-day streaks, gaps in a sequence). NTILE and PERCENT_RANK for percentiles come next. The window-functions section on this page has both core shapes as runnable queries with their output. 8 of the 32 Google-tagged challenges on SQL Quest are window-function problems — all Hard — and each shape has a Medium on-ramp."
         }
       },
       {
@@ -90,7 +90,7 @@
         "name": "Are the Google practice challenges free?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "14 of the 32 play free with no signup — every Easy and Medium challenge. The other 18 are Hard and sit on Pro ($29/mo or $99/yr). Every challenge runs in the browser and shows its solution once solved."
+          "text": "Your first 10 challenge solves are free, with no signup — pick them from the Easy and Medium challenges in this set. Pro ($29/mo or $99/yr) opens all 32, and the rest of the 300+ bank. Every challenge runs in the browser and shows its solution once solved."
         }
       },
       {
@@ -171,7 +171,7 @@
     <h1 class="fd" style="font-size:clamp(38px,5vw,62px);font-weight:800;line-height:1.08;margin-bottom:24px;animation:fadeUp .6s .15s both;">Google SQL<br><span class="gt">Interview Questions</span></h1>
     <p style="font-size:18px;line-height:1.8;color:#94a3b8;margin-bottom:36px;max-width:600px;margin-left:auto;margin-right:auto;animation:fadeUp .6s .25s both;">Practice the exact SQL patterns Google asks in L3-L6 data analyst and data engineer interviews. Window functions, CTEs, BigQuery-style queries, and optimization — with AI tutoring.</p>
     <div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center;animation:fadeUp .6s .35s both;">
-      <a href="/app/?company=Google&amp;goal=interview" class="btn bp">Practice the 32 Google-tagged challenges — 14 free</a>
+      <a href="/app/?company=Google&amp;goal=interview" class="btn bp">Practice the 32 Google-tagged challenges — start free</a>
       <a href="#questions" class="btn bo">See all 32 Google-tagged challenges ↓</a>
     </div>
     <div style="display:flex;gap:28px;margin-top:44px;flex-wrap:wrap;justify-content:center;animation:fadeUp .6s .45s both;">
@@ -206,11 +206,11 @@
   <div style="text-align:center;margin-bottom:28px;">
     <span class="sl" style="color:#4285F4;">Practice Questions</span>
     <h2 class="st fd">Six SQL Quest challenges <span style="color:#4285F4;">matched to Google&rsquo;s patterns</span></h2>
-    <p style="font-size:15px;line-height:1.75;color:#94a3b8;max-width:720px;margin:18px auto 0;">These are SQL Quest challenges chosen because their SQL matches the work — Querying Basics, Subqueries &amp; CTEs, Aggregation &amp; Grouping. They are <strong style="color:#e2e8f0;font-weight:600;">not questions Google has asked</strong>, and this page does not claim to know its questions. All of the six play free; each card opens the challenge itself.</p>
+    <p style="font-size:15px;line-height:1.75;color:#94a3b8;max-width:720px;margin:18px auto 0;">These are SQL Quest challenges chosen because their SQL matches the work — Querying Basics, Subqueries &amp; CTEs, Aggregation &amp; Grouping. They are <strong style="color:#e2e8f0;font-weight:600;">not questions Google has asked</strong>, and this page does not claim to know its questions. Each card opens the challenge itself. Cards marked Free are open to free accounts — any of the six can be one of your 10 free challenge solves — and Pro opens every card.</p>
   </div>
   <div class="qg" id="question-cards"></div>
     <div style="text-align:center;margin-top:40px;">
-      <a href="/app/?company=Google&amp;goal=interview" class="btn bp">Open all 32 Google-tagged challenges — 14 play free →</a>
+      <a href="/app/?company=Google&amp;goal=interview" class="btn bp">Open all 32 Google-tagged challenges →</a>
     </div>
   </div>
 </section>
@@ -445,7 +445,7 @@ document.getElementById('question-cards').innerHTML=FQ.map(f=>`<a class="qc" hre
 document.getElementById('format-cards').innerHTML=[
   ['📋','General guidance, not a company process','This page states no round length, no tool and no process for this company, because we have no dated, citable source for any of them — and an invented specific is worse than an honest gap. What follows is general guidance about analytics SQL work. The one page on this site with dated public sources for a company’s screen is the <a href="/capital-one-sql-interview/" style="color:${accent}">Capital One CodeSignal page</a>.','#4285F4'],
   ['🎯','What an analytics SQL answer has to be','The output is the answer. A query that runs but counts the wrong rows is simply wrong, so the first question is always the grain: one row per what? Say it out loud before typing GROUP BY. Then read the prompt for the filter it hides — a period, a status, an exclusion — and put it where it belongs.','#34A853'],
-  ['🔧','Where the marks actually go','Three failures cover most of it, and none of them are company-specific: fan-out, where a one-to-many join multiplies whatever you are summing; NULLs, where COUNT(col) skips them, COUNT(*) does not, and an outer join manufactures them; and ties, where RANK and ROW_NUMBER disagree. Work the free challenges above first, then the Hard ones — each shows its reference solution once solved.','#FBBC05']
+  ['🔧','Where the marks actually go','Three failures cover most of it, and none of them are company-specific: fan-out, where a one-to-many join multiplies whatever you are summing; NULLs, where COUNT(col) skips them, COUNT(*) does not, and an outer join manufactures them; and ties, where RANK and ROW_NUMBER disagree. Work the challenges above first, then the Hard ones — each shows its reference solution once solved.','#FBBC05']
 ].map(f=>`<div class="fc" onmouseenter="this.style.borderColor='${f[3]}33'" onmouseleave="this.style.borderColor='rgba(255,255,255,0.05)'"><div style="position:absolute;top:-30px;right:-30px;width:100px;height:100px;background:radial-gradient(circle,${f[3]}10 0%,transparent 70%)"></div><div style="font-size:32px;margin-bottom:14px">${f[0]}</div><h3 class="fd" style="font-size:18px;font-weight:800;color:#f1f5f9;margin-bottom:8px">${f[1]}</h3><p style="font-size:14px;line-height:1.7;color:#94a3b8">${f[2]}</p></div>`).join('');
 
 // FAQ accordion
@@ -454,10 +454,10 @@ document.getElementById('format-cards').innerHTML=[
 // a page fixed only in its visible text is not fixed for the assistants that
 // read the JSON-LD.
 const FAQS=[
-  ['Which window functions come up in the Google data analyst SQL round?','Two shapes recur in analyst-round questions: ranking inside a group with ROW_NUMBER, RANK or DENSE_RANK over PARTITION BY (top-N per group, dedupe, second-highest per department), and comparing a row with its neighbour using LAG or LEAD (month-over-month growth, consecutive-day streaks, gaps in a sequence). NTILE and PERCENT_RANK for percentiles come next. The window-functions section on this page has both core shapes as runnable queries with their output. 8 of the 32 Google-tagged challenges on SQL Quest are window-function problems — all Hard — and each shape has a free Medium on-ramp.'],
+  ['Which window functions come up in the Google data analyst SQL round?','Two shapes recur in analyst-round questions: ranking inside a group with ROW_NUMBER, RANK or DENSE_RANK over PARTITION BY (top-N per group, dedupe, second-highest per department), and comparing a row with its neighbour using LAG or LEAD (month-over-month growth, consecutive-day streaks, gaps in a sequence). NTILE and PERCENT_RANK for percentiles come next. The window-functions section on this page has both core shapes as runnable queries with their output. 8 of the 32 Google-tagged challenges on SQL Quest are window-function problems — all Hard — and each shape has a Medium on-ramp.'],
   ['Does this page know what SQL questions Google asks?','No, and it does not claim to. Google does not publish its interview questions, and we have no dated, citable source for them — so this page states no round length, no tool and no process. What it has instead is the 32 challenges tagged Google in the SQL Quest bank (1 Easy, 13 Medium, 18 Hard), chosen because their SQL matches the analytics work, with the reference solution shown once you solve one. The one page on this site that does carry dated public sources for a company\'s screen is the Capital One page.'],
   ['Which SQL skills does the Google practice set cover?','Resolving every challenge tag onto the nine canonical skills the app\'s radar uses, the 32 tagged challenges lean on Querying Basics (32), Subqueries & CTEs (22), Aggregation & Grouping (20) and Window Functions (8) — counts, not shares of an interview. A challenge exercises several skills, so the counts add up to more than 32. The composition section on this page shows all 9 skills the set touches.'],
-  ['Are the Google practice challenges free?','14 of the 32 play free with no signup — every Easy and Medium challenge. The other 18 are Hard and sit on Pro ($29/mo or $99/yr). Every challenge runs in the browser and shows its solution once solved.'],
+  ['Are the Google practice challenges free?','Your first 10 challenge solves are free, with no signup — pick them from the Easy and Medium challenges in this set. Pro ($29/mo or $99/yr) opens all 32, and the rest of the 300+ bank. Every challenge runs in the browser and shows its solution once solved.'],
   ['What SQL dialect should I practice for Google?','We have no source for what Google runs internally, so this page does not guess at it. Practise standard SQL: everything here runs on SQLite in the browser, and joins, GROUP BY, CTEs, window functions and date logic transfer unchanged to PostgreSQL, MySQL, Snowflake and BigQuery. Vendor-specific syntax is rarely what an analytics question is actually testing.']
 ];
 FAQS.forEach(f=>{

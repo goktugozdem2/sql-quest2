@@ -23221,6 +23221,12 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
       : null
   );
 
+  // Free quota (`freeQuota`, 2026-09-26): true once a non-Pro person has
+  // spent the FREE_SOLVE_QUOTA solves. Every surface that says something is
+  // "free" to open reads this, so none of them offers a free preview or a
+  // "free" set the quota wall will then refuse.
+  const freeQuotaSpent = () => quotaGate({ flagOn: ftbFlag('freeQuota'), isPro, solvedCount: solvedChallenges.size }).gated;
+
   // The title of the mock that belongs to a company (via the interview-prep
   // registry), or null. Never invents one: a company without a mock gets no
   // mock line anywhere (free-tier boundary M5).
@@ -23491,6 +23497,14 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
         const active = typeof document !== 'undefined' ? document.activeElement : null;
         previewCatcherReturnFocusRef.current = active && active !== document.body ? active : null;
       } catch (_) { previewCatcherReturnFocusRef.current = null; }
+      // Free quota spent (`freeQuota`): the catcher would offer Hard
+      // previews as "free", and the quota wall would refuse them. Say the
+      // true thing instead — the lock row above is already written.
+      if (freeQuotaSpent()) {
+        setProModalReason({ type: 'free_quota', used: solvedChallenges.size, quota: FREE_SOLVE_QUOTA, solvedCount: solvedChallenges.size, topic: null });
+        setShowProModal(true);
+        return;
+      }
       setPreviewCatcher({ challengeId: challenge.id, at: Date.now() });
       return;
     }
@@ -31601,7 +31615,9 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                   {isLastDay ? 'Pro trial ends today' : `${daysLeft} days left in your Pro trial`}
                 </p>
                 <p className="text-xs opacity-80 mt-0.5 truncate">
-                  Hard challenges, sector tracks, mock interviews, and the tutor beyond the free daily cap will lock without Pro.
+                  {ftbFlag('freeQuota')
+                    ? `Unsolved challenges past your ${FREE_SOLVE_QUOTA} free solves, the Hard set, mock interviews, and the tutor beyond the free daily cap will lock without Pro.`
+                    : 'Hard challenges, sector tracks, mock interviews, and the tutor beyond the free daily cap will lock without Pro.'}
                 </p>
               </div>
               <button
@@ -31812,7 +31828,9 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                     <div className="mt-3">
                       <p className="font-medium" style={{ color: '#F2F0EA' }}>Welcome back to Free.</p>
                       <p className="text-sm mt-2" style={{ color: '#8A8E99' }}>
-                        The Coach, Skillmap, daily streak, and your first ~75 challenges stay yours forever. But Hard challenges, sector tracks, mock interviews, and the AI tutor without the free tier's daily cap are now locked. Pick up Pro to keep going where you left off.
+                        {ftbFlag('freeQuota')
+                          ? `The Coach, Skillmap, daily streak, lessons, warm-ups and every challenge you've solved stay yours. Past ${FREE_SOLVE_QUOTA} free challenge solves, the rest of the bank, the Hard set, mock interviews and the AI tutor without the free tier's daily cap are Pro. Pick up Pro to keep going where you left off.`
+                          : 'The Coach, Skillmap, daily streak, and your first ~75 challenges stay yours forever. But Hard challenges, sector tracks, mock interviews, and the AI tutor without the free tier\'s daily cap are now locked. Pick up Pro to keep going where you left off.'}
                       </p>
                     </div>
                   ) : proModalReason.type === 'company_set' ? (
@@ -31924,7 +31942,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                 <div className="p-4 mb-6" style={{ background: '#1F222B', borderRadius: '6px' }}>
                   <p className="text-xs mb-3 font-medium uppercase tracking-wider" style={{ color: '#8A8E99' }}>What you get with Pro:</p>
                   <div className="grid grid-cols-2 gap-3">
-                    {(['learning', 'job_ready'].includes(getUserIntent()) ? [
+                    {(ftbFlag('freeQuota') ? [`Keep solving past your ${FREE_SOLVE_QUOTA} free — all ${bankCountLabel(challenges.length) || challenges.length} challenges open`] : []).concat(['learning', 'job_ready'].includes(getUserIntent()) ? [
                       'Get unstuck the moment it happens — the tutor reads your wrong query and stays with you; the daily cap lifted',
                       'Build the 30-day habit — full streak path, no Pro paywall mid-week',
                       '200+ warm-up questions — micro-drills for daily fluency',
@@ -34588,7 +34606,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                       ))}
                     </div>
                     <p className="mt-3 text-xs" style={{ color: '#8A8E99' }} data-testid="plan-remaining">
-                      {i18n_t('plan', 'remaining', { done: plan.solvedInScope, total: plan.totalInScope })}
+                      {i18n_t('plan', ftbFlag('freeQuota') ? 'remainingQuota' : 'remaining', { done: plan.solvedInScope, total: plan.totalInScope })}
                     </p>
                   </div>
                 );
@@ -34726,7 +34744,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                             <p className="text-xs text-gray-400 mt-1">{track.description}</p>
                             <div className="mt-2 flex items-center gap-3 text-xs flex-wrap">
                               <span className="text-green-400">{i18n_t('coach', 'solvedFraction', { n: solvedCount, total: trackChallenges.length })}</span>
-                              {!isPro && freePreviewCount > 0 && (
+                              {!isPro && freePreviewCount > 0 && !freeQuotaSpent() && (
                                 <span className="text-cyan-400">{freePreviewCount} free Hard previews</span>
                               )}
                             </div>
@@ -34767,7 +34785,9 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                                       // This row fires no lock event, as before.
                                       showSoftProGate(
                                         'Hard challenge — Pro only',
-                                        'Keep solving Easy + Medium first. Pro unlocks the full Hard bank when you are ready for interview-level practice.'
+                                        freeQuotaSpent()
+                                          ? `Your ${FREE_SOLVE_QUOTA} free challenge solves are used. Pro opens the rest of the bank, the Hard set included.`
+                                          : 'Keep solving Easy + Medium first. Pro unlocks the full Hard bank when you are ready for interview-level practice.'
                                       );
                                     } else {
                                       setActiveTab('quests');
@@ -35488,7 +35508,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                   users never learn Pro exists (5 modal impressions/week). */}
               {!userProStatus && (
                 <div className="flex items-center justify-between gap-3 rounded-lg border border-[#2A2E38] bg-[#16181F] px-4 py-2.5 mb-4">
-                  <p className="text-xs text-gray-400 truncate">{i18n_t('pro', 'coachStripLine')}</p>
+                  <p className="text-xs text-gray-400 truncate">{i18n_t('pro', ftbFlag('freeQuota') ? 'coachStripLineQuota' : 'coachStripLine', { quota: FREE_SOLVE_QUOTA })}</p>
                   <button
                     onClick={() => { setProModalReason({ type: 'generic', topic: null, solvedCount: 0 }); setShowProModal(true); }}
                     className="text-xs font-bold text-[#FFE34D] hover:underline whitespace-nowrap"
@@ -37237,6 +37257,12 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                               // free set is the first three, whatever their
                               // difficulty, and the banner says so before anyone
                               // clicks a fourth.
+                              // Free quota spent (`freeQuota`): nothing unsolved in
+                              // the set opens free any more, whichever set it is.
+                              if (freeQuotaSpent()) {
+                                const solvedHere = scoped.filter(c => solvedChallenges.has(c.id)).length;
+                                return `Your ${FREE_SOLVE_QUOTA} free challenge solves are used — ${solvedHere} of ${companyFilter}'s ${scoped.length} solved. Pro opens the rest of the set.`;
+                              }
                               const gateIds = companyGateFreeIds();
                               if (gateIds) {
                                 const p = companySetProgress({ scoped, solved: solvedChallenges, freeIds: gateIds });
@@ -37250,6 +37276,11 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                               const freeSolved = free.filter(c => solvedChallenges.has(c.id)).length;
                               const proCount = scoped.length - free.length;
                               if (freeSolved === 0) {
+                                // Under the quota "N free" would promise more than
+                                // FREE_SOLVE_QUOTA solves; say what is open and what the quota is.
+                                if (ftbFlag('freeQuota')) {
+                                  return `${free.length} open on the free tier + ${proCount} Pro challenges below, ranked by difficulty. Your first ${FREE_SOLVE_QUOTA} challenge solves are free — pick any one to start, no signup required.`;
+                                }
                                 return `${free.length} free + ${proCount} Pro challenges below, ranked by difficulty. Pick any one to start — no signup required.`;
                               }
                               if (free.length > 0 && freeSolved >= free.length) {
@@ -37775,7 +37806,11 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                       ? filtered.slice().sort(makeChallengeComparator(SQL_ROADMAP_CHALLENGE_ORDER, { previewsFirst: true }))
                       : filtered;
                     const previewCounts = hardListMode ? hardPreviewCounts(challenges, solvedChallenges) : null;
-                    const showPreviewBanner = !!previewCounts && previewCounts.previewTotal > 0;
+                    // Free quota spent: unsolved previews are locked like the rest,
+                    // so the "free previews" banner would be untrue — only the
+                    // all-beaten state (which offers Pro) still shows.
+                    const showPreviewBanner = !!previewCounts && previewCounts.previewTotal > 0
+                      && !(freeQuotaSpent() && previewCounts.previewUnsolved > 0);
                     return (
                   <>
                   {showPreviewBanner && (
@@ -37847,7 +37882,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                       const isQuotaLocked = quotaGate({ flagOn: ftbFlag('freeQuota'), isPro, solvedCount: solvedChallenges.size, alreadySolved: isSolved }).gated;
                       // A free Hard preview, shown to someone it is a preview
                       // FOR. Pro users never see the tag or the blue border.
-                      const isPreview = !isPro && isFreePreview(c);
+                      const isPreview = !isPro && isFreePreview(c) && !isQuotaLocked;
                       const diffColor = c.difficulty === 'Easy' ? 'text-green-400' : c.difficulty === 'Medium' ? 'text-yellow-400' : 'text-red-400';
                       // Localized title + description for the card. Filter
                       // logic above runs against raw English fields, so id /
@@ -38403,7 +38438,11 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                               : new Set([...solvedChallenges, currentChallenge.id]);
                             const counts = hardPreviewCounts(challenges, solvedNow);
                             if (counts.previewTotal === 0) return null;
-                            const remaining = counts.previewUnsolved === 0
+                            // Free quota (`freeQuota`): once this solve spends the
+                            // quota the other previews are locked — never say "N
+                            // more are free" then; the last-one line reads true.
+                            const quotaNowSpent = quotaGate({ flagOn: ftbFlag('freeQuota'), isPro, solvedCount: solvedNow.size }).gated;
+                            const remaining = (counts.previewUnsolved === 0 || quotaNowSpent)
                               ? i18n_t('paywall', 'winRemainingLast')
                               : counts.previewUnsolved === 1
                                 ? i18n_t('paywall', 'winRemainingOne')

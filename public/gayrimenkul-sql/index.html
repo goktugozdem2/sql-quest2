@@ -92,7 +92,7 @@
       "name": "Pro'ya ihtiyacım var mı?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Free tier 20 challenge'ın hepsini çözmeye yeter. Pro AI tutor unlimited + Hard challenge'lar açıyor."
+        "text": "İlk 10 challenge çözümü ücretsiz; dersler, ısınmalar ve günlük soru da ücretsiz. Bu track'in geri kalanı ve Hard challenge'lar Pro ile açılır; Pro ayrıca AI tutor'un günlük limitini yükseltir."
       }
     }
   ]
@@ -118,7 +118,7 @@
     {
       "@type": "DataDownload",
       "encodingFormat": "application/sql",
-      "contentUrl": "https://sqlquest.app/app.html?sector=gayrimenkul",
+      "contentUrl": "https://sqlquest.app/app/?sector=gayrimenkul",
       "description": "In-browser SQLite WASM database with Gayrimenkul sector tables, queryable via SQL practice challenges"
     }
   ],
@@ -298,7 +298,7 @@
 
 <script>
 window.addEventListener('scroll',()=>{document.getElementById('nav').classList.toggle('s',window.scrollY>50)},{passive:true});
-const FAQS=[["Veri gerçekten gerçek mi?","Evet. NYC OpenData public API — Aug 2025'teki $1.08B Manhattan deed gerçek. 1920 yapımı Brooklyn binası gerçek. NYC OpenData Terms commercial use'a izin veriyor."],["Türkiye'de gayrimenkul mü çalışıyorum, NYC mı?","Schema universal. Property → sale → buyer → permit yapısı her şehirde aynı. Hepsiemlak'ın schema'sı da PLUTO'ya çok benzer. BBL yerine TC Kimlik No, ACRIS yerine Tapu Müdürlüğü."],["Sadece New York'a mı odaklı?","Şu an evet — public real estate data en zengin orada. Gelecekte Türkiye Tapu Müdürlüğü veya Hepsiemlak public dataset'i eklersek genişletiriz."],["LLC alıcı analizleri yapabilir miyim?","Evet — sales_parties tablosu real buyer isimleri içeriyor (LLC, INC, CORP, TRUST gibi). Çoğu Manhattan deal'i LLC üzerinden. Challenge #234 tam bunu kapsıyor."],["Pro'ya ihtiyacım var mı?","Free tier 20 challenge'ın hepsini çözmeye yeter. Pro AI tutor unlimited + Hard challenge'lar açıyor."]];
+const FAQS=[["Veri gerçekten gerçek mi?","Evet. NYC OpenData public API — Aug 2025'teki $1.08B Manhattan deed gerçek. 1920 yapımı Brooklyn binası gerçek. NYC OpenData Terms commercial use'a izin veriyor."],["Türkiye'de gayrimenkul mü çalışıyorum, NYC mı?","Schema universal. Property → sale → buyer → permit yapısı her şehirde aynı. Hepsiemlak'ın schema'sı da PLUTO'ya çok benzer. BBL yerine TC Kimlik No, ACRIS yerine Tapu Müdürlüğü."],["Sadece New York'a mı odaklı?","Şu an evet — public real estate data en zengin orada. Gelecekte Türkiye Tapu Müdürlüğü veya Hepsiemlak public dataset'i eklersek genişletiriz."],["LLC alıcı analizleri yapabilir miyim?","Evet — sales_parties tablosu real buyer isimleri içeriyor (LLC, INC, CORP, TRUST gibi). Çoğu Manhattan deal'i LLC üzerinden. Challenge #234 tam bunu kapsıyor."],["Pro'ya ihtiyacım var mı?","İlk 10 challenge çözümü ücretsiz; dersler, ısınmalar ve günlük soru da ücretsiz. Bu track'in geri kalanı ve Hard challenge'lar Pro ile açılır; Pro ayrıca AI tutor'un günlük limitini yükseltir."]];
 const faqc=document.getElementById('faqc');
 FAQS.forEach(f=>{const d=document.createElement('div');d.className='fi';d.innerHTML=`<div class="fh"><p style="font-size:16px;font-weight:700;color:#e2e8f0;padding-right:16px">${f[0]}</p><span class="ftg">+</span></div><div class="fa"><p style="font-size:14px;line-height:1.8;color:#94a3b8;padding-top:12px">${f[1]}</p></div>`;d.addEventListener('click',()=>d.classList.toggle('o'));faqc.appendChild(d);});
 </script>

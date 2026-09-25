@@ -248,6 +248,23 @@ describe('the free quota — ten solves, then Pro (founder, 2026-09-12, item 2)'
     expect(set).toBeLessThan(at);
   });
 
+  // 2026-09-26: with the quota spent, no surface may still call something
+  // "free" that the quota wall will refuse — the preview pill, the preview
+  // banner, the catcher, the Focus Tracks pill, the company banner.
+  it('the in-app "free" surfaces read the quota', () => {
+    const app = read('../src/app.jsx');
+    expect(app).toMatch(/const freeQuotaSpent = \(\) => quotaGate\(\{ flagOn: ftbFlag\('freeQuota'\), isPro, solvedCount: solvedChallenges\.size \}\)\.gated;/);
+    const catcher = app.indexOf('setPreviewCatcher({ challengeId: challenge.id, at: Date.now() });');
+    const spent = app.lastIndexOf('if (freeQuotaSpent()) {', catcher);
+    expect(spent).toBeGreaterThan(-1);
+    expect(catcher - spent).toBeLessThan(400);
+    expect(app).toMatch(/const isPreview = !isPro && isFreePreview\(c\) && !isQuotaLocked;/);
+    expect(app).toMatch(/&& !\(freeQuotaSpent\(\) && previewCounts\.previewUnsolved > 0\)/);
+    expect(app).toMatch(/!isPro && freePreviewCount > 0 && !freeQuotaSpent\(\) &&/);
+    expect(app).toMatch(/if \(freeQuotaSpent\(\)\) \{\n\s+const solvedHere/);
+    expect(app).toMatch(/ftbFlag\('freeQuota'\) \? 'coachStripLineQuota' : 'coachStripLine'/);
+  });
+
   it('item 1 (live): the sixth-solve ask waits for the celebration, once-keys written at once', () => {
     const app = read('../src/app.jsx');
     const at = app.indexOf('const milestoneReason = {');

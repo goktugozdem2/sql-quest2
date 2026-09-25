@@ -81,7 +81,7 @@
         "name": "Are the Revolut practice challenges free?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "21 of the 38 play free with no signup — every Easy and Medium challenge plus 2 free Hard previews. The other 17 are Hard and sit on Pro ($29/mo or $99/yr). Every challenge runs in the browser and shows its solution once solved."
+          "text": "In the Revolut set in the app, the first 3 of the 38 are free to try, with no signup — they count toward your 10 free challenge solves. Pro ($29/mo or $99/yr) opens all 38, the timed mock and the rest of the 300+ bank. Every challenge runs in the browser and shows its solution once solved."
         }
       },
       {
@@ -194,7 +194,7 @@
   <div style="margin:32px auto 0;max-width:720px;padding:22px 24px;border:1px solid rgba(124,58,237,.35);border-radius:14px;background:rgba(124,58,237,.06);text-align:center;">
     <p style="margin:0 0 12px;font-size:15px;line-height:1.6;">Practice the screen under the clock: a <strong>60-minute HackerRank-style SQL mock</strong> on a synthetic multi-currency neobank ledger — six multiple-choice questions read off real query output, then the two written tasks the reports name first: monthly active users with completed transactions, and the top 10% of users by volume.</p>
     <a href="/app/?interview=revolut-analytics-screen&amp;src=revolut-sql-interview" class="cta" data-track="cta_revolut_mock">Start the 60-minute SQL mock →</a>
-    <p style="margin:14px 0 0;font-size:13px;color:#94A3B8;">Free first: the twelve ledger challenges below, three of them with no signup.</p>
+    <p style="margin:14px 0 0;font-size:13px;color:#94A3B8;">Before the mock: in the app&rsquo;s Revolut set the first 3 of the 38 are free to try — they count toward your 10 free challenge solves — and Pro opens all 38 and the timed mock.</p>
   </div>
 </div></section>
 
@@ -213,10 +213,10 @@
   <div style="text-align:center;margin-bottom:28px;">
     <span class="sl" style="color:#a5b4fc;">Practice Questions</span>
     <h2 class="st fd">Six SQL Quest challenges <span style="color:#a5b4fc;">matched to Revolut&rsquo;s patterns</span></h2>
-    <p style="font-size:15px;line-height:1.75;color:#94a3b8;max-width:720px;margin:18px auto 0;">These are SQL Quest challenges chosen because their SQL matches the work — Querying Basics, Aggregation &amp; Grouping, Date Functions. They are <strong style="color:#e2e8f0;font-weight:600;">not questions Revolut has asked</strong>, and this page does not claim to know its questions. All of the six play free; each card opens the challenge itself.</p>
+    <p style="font-size:15px;line-height:1.75;color:#94a3b8;max-width:720px;margin:18px auto 0;">These are SQL Quest challenges chosen because their SQL matches the work — Querying Basics, Aggregation &amp; Grouping, Date Functions. They are <strong style="color:#e2e8f0;font-weight:600;">not questions Revolut has asked</strong>, and this page does not claim to know its questions. Each card opens the challenge itself. Cards marked Free are open to free accounts — any of the six can be one of your 10 free challenge solves — and Pro opens every card.</p>
   </div>
   <div class="qg" id="question-cards"></div>
-  <div style="text-align:center;margin-top:32px;"><a href="/app/?company=Revolut&amp;goal=interview" class="btn bp">Open all 38 Revolut-tagged challenges — 21 play free →</a></div>
+  <div style="text-align:center;margin-top:32px;"><a href="/app/?company=Revolut&amp;goal=interview" class="btn bp">Open all 38 Revolut-tagged challenges →</a></div>
 </div></section>
 
 <!-- ── How Revolut SQL Interviews Work ────────────────────────── -->
@@ -347,7 +347,7 @@ document.getElementById('question-cards').innerHTML=FQ.map(f=>`<a class="qc" hre
 document.getElementById('format-cards').innerHTML=[
   ['📋','Sourced, and it says so','As described publicly in September 2026 — interviewquery\'s guide from 27 candidate reports stamped Q3 2026, not Revolut itself — the screen is a HackerRank round of about 60 minutes: two written SQL questions plus multiple choice, then a live session of four questions on users, transactions, events and subscriptions. The sources sit under the rounds section above; Revolut does not publish the format, so every specific is candidate-reported.','#3b82f6'],
   ['🎯','What an analytics SQL answer has to be','The output is the answer. A query that runs but counts the wrong rows is simply wrong, so the first question is always the grain: one row per what? Say it out loud before typing GROUP BY. Then read the prompt for the filter it hides — a period, a status, an exclusion — and put it where it belongs.','#22d3ee'],
-  ['🔧','Where the marks actually go','Three failures cover most of it, and none of them are company-specific: fan-out, where a one-to-many join multiplies whatever you are summing; NULLs, where COUNT(col) skips them, COUNT(*) does not, and an outer join manufactures them; and ties, where RANK and ROW_NUMBER disagree. Work the free challenges above first, then the Hard ones — each shows its reference solution once solved.','#c084fc']
+  ['🔧','Where the marks actually go','Three failures cover most of it, and none of them are company-specific: fan-out, where a one-to-many join multiplies whatever you are summing; NULLs, where COUNT(col) skips them, COUNT(*) does not, and an outer join manufactures them; and ties, where RANK and ROW_NUMBER disagree. Work the challenges above first, then the Hard ones — each shows its reference solution once solved.','#c084fc']
 ].map(f=>`<div class="fc" onmouseenter="this.style.borderColor='${f[3]}33'" onmouseleave="this.style.borderColor='rgba(255,255,255,0.05)'"><div style="position:absolute;top:-30px;right:-30px;width:100px;height:100px;background:radial-gradient(circle,${f[3]}10 0%,transparent 70%)"></div><div style="font-size:32px;margin-bottom:14px">${f[0]}</div><h3 class="fd" style="font-size:18px;font-weight:800;color:#f1f5f9;margin-bottom:8px">${f[1]}</h3><p style="font-size:14px;line-height:1.7;color:#94a3b8">${f[2]}</p></div>`).join('');
 
 // GENERATED — mirrors the FAQPage JSON-LD in <head> exactly; both are written
@@ -357,7 +357,7 @@ document.getElementById('format-cards').innerHTML=[
 const FAQS=[
   ['Does this page know what SQL questions Revolut asks?','As described publicly in September 2026 — interviewquery\'s guide synthesised from 27 candidate reports stamped Q3 2026, not Revolut itself — there are two SQL rounds: a HackerRank screen of about 60 minutes with two written SQL questions plus multiple choice, then a live session of four sequential questions on interconnected users, transactions, events and subscriptions tables: monthly active users with completed transactions, the top 10% of users by transaction volume, joins, CTEs, date logic, window functions, cohort and conversion analysis. Twelve of the 38 challenges tagged Revolut here were written to that shape on a synthetic multi-currency neobank ledger, and the 60-minute mock mirrors the screen; the other 26 (the set is 3 Easy, 16 Medium, 19 Hard) match the analytics patterns on ecommerce and card-transaction data. Revolut does not publish the format; every specific is candidate-reported, and the reference solution is shown once you solve a challenge.'],
   ['Which SQL skills does the Revolut practice set cover?','Resolving every challenge tag onto the nine canonical skills the app\'s radar uses, the 38 tagged challenges lean on Querying Basics (38), Aggregation & Grouping (28), Joins (17) and Subqueries & CTEs (14) — counts, not shares of an interview. A challenge exercises several skills, so the counts add up to more than 38. The composition section on this page shows all 8 skills the set touches.'],
-  ['Are the Revolut practice challenges free?','21 of the 38 play free with no signup — every Easy and Medium challenge plus 2 free Hard previews. The other 17 are Hard and sit on Pro ($29/mo or $99/yr). Every challenge runs in the browser and shows its solution once solved.'],
+  ['Are the Revolut practice challenges free?','In the Revolut set in the app, the first 3 of the 38 are free to try, with no signup — they count toward your 10 free challenge solves. Pro ($29/mo or $99/yr) opens all 38, the timed mock and the rest of the 300+ bank. Every challenge runs in the browser and shows its solution once solved.'],
   ['What SQL dialect should I practice for Revolut?','We have no source for what Revolut runs internally, so this page does not guess at it. Practise standard SQL: everything here runs on SQLite in the browser, and joins, GROUP BY, CTEs, window functions and date logic transfer unchanged to PostgreSQL, MySQL, Snowflake and BigQuery. Vendor-specific syntax is rarely what an analytics question is actually testing.']
 ];
 const faqc=document.getElementById('faqc');

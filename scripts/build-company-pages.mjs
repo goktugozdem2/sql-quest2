@@ -33,6 +33,8 @@ import vm from 'node:vm';
 import { COMPANY_INTERVIEWS, NEW_COMPANY_TAGS, SOURCED_FORMATS } from '../src/data/company-interviews.js';
 import { SKILL_TO_RADAR, mapTopicToSkill, CANONICAL_SKILLS } from '../src/utils/skill-calc.js';
 import { isFreePreview } from '../src/utils/challenge-order.js';
+import { bankCountLabel, FREE_SOLVE_QUOTA, COMPANY_SET_FREE_COUNT } from '../src/utils/display-count.js';
+import { archetypeForCompany } from '../src/data/interview-archetypes.js';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const SITE = 'https://sqlquest.app';
@@ -127,7 +129,13 @@ export function facts(bank, name) {
     - (DIFF_RANK[b.difficulty] * 2 + (b.difficulty === 'Hard' && !isFreePreview(b) ? 1 : 0))
     || a.id - b.id);
   const by = d => tagged.filter(c => c.difficulty === d).length;
-  return { n: tagged.length, free: tagged.filter(playableFree).length, easy: by('Easy'), medium: by('Medium'), hard: by('Hard'), dist, ordered };
+  return {
+    n: tagged.length,
+    free: tagged.filter(playableFree).length,
+    previews: tagged.filter(c => c.difficulty === 'Hard' && isFreePreview(c)).length,
+    bank: bankCountLabel(bank.byId.size),
+    easy: by('Easy'), medium: by('Medium'), hard: by('Hard'), dist, ordered,
+  };
 }
 
 // ── 3. shared pieces (also used to inject modules into the older pages) ────
@@ -302,6 +310,20 @@ export function breadcrumbLd(slug, name) {
 }
 
 // ── 4. the page ────────────────────────────────────────────────────────────
+// What is free, said the way the gates decide it (2026-09-26, `freeQuota` +
+// `companySetGate`): FREE_SOLVE_QUOTA challenge solves across the bank, and —
+// only for a signed company set (archetypeForCompany) — the first
+// COMPANY_SET_FREE_COUNT of that set in the company view. Never a count of
+// "free challenges": under the quota there is none.
+export function freeSetAnswer(d, f) {
+  const previews = f.previews ? ` or its ${f.previews} Hard preview${f.previews === 1 ? '' : 's'}` : '';
+  const signed = !!archetypeForCompany(d.name);
+  const lead = signed
+    ? `In the app's ${d.name} set the first ${COMPANY_SET_FREE_COUNT} are free to try, and they count toward your ${FREE_SOLVE_QUOTA} free challenge solves.`
+    : `Your first ${FREE_SOLVE_QUOTA} challenge solves are free, with no signup — pick them from this set's Easy and Medium challenges${previews}.`;
+  return `${lead} Pro ($29/mo or $99/yr) opens all ${f.n}, and the rest of the ${f.bank} bank. Everything runs in the browser, and the readiness check on this page needs no account.`;
+}
+
 function faqFor(key, d, f) {
   const src = Object.values(d.sources);
   const newest = src.map(s => s[2]).filter(x => /20\d\d/.test(x)).map(x => Number(x.match(/20\d\d/)[0])).sort().pop();
@@ -310,7 +332,7 @@ function faqFor(key, d, f) {
     [`How does the ${d.name} SQL interview work?`, `${d.name} does not publish the format, so everything on this page is what candidates and prep guides have described publicly, with the source and date beside each fact. In short: ${d.format.map(r => r[1]).join(' ')} Sources are dated up to ${newest}; formats change, so treat every specific as reported, not official.`],
     [`What SQL topics come up in ${d.name} interviews?`, `Reported most often: ${d.reportedTopics.slice(0, 5).join('; ')}. ${d.difficulty}`],
     [`Are these the real ${d.name} interview questions?`, `No. The question shapes on this page are paraphrased from the public sources cited beside them, and the practice set is ${f.n} SQL Quest challenges chosen because their SQL matches those reported patterns — not questions ${d.name} has asked. By skill, the set leans on ${top}.`],
-    [`Is the ${d.name} practice set free?`, `${f.free} of the ${f.n} challenges play free with no signup — every Easy and Medium plus any free Hard previews. The rest sit on Pro ($29/mo or $99/yr). Everything runs in the browser, and the readiness check on this page needs no account.`],
+    [`Is the ${d.name} practice set free?`, freeSetAnswer(d, f)],
   ];
 }
 
@@ -403,7 +425,7 @@ ${ld}
     <a href="/app/?company=${encodeURIComponent(d.name)}&amp;src=${slug}&amp;goal=interview" class="btn bp" data-track="cta_hero_primary">Start the ${esc(d.name)} set — free</a>
     <a href="/sql-interview-readiness-test/?company=${key}" class="btn bo" data-track="cta_hero_readiness">Check my readiness</a>
   </div>
-  <p style="font-size:13px;color:#8b98ab;margin-top:18px;">${f.n} practice challenges · ${f.easy} Easy / ${f.medium} Medium / ${f.hard} Hard · ${f.free} play free · runs in the browser</p>
+  <p style="font-size:13px;color:#8b98ab;margin-top:18px;">${f.n} practice challenges · ${f.easy} Easy / ${f.medium} Medium / ${f.hard} Hard · your first ${FREE_SOLVE_QUOTA} solves free · runs in the browser</p>
 </div></section>
 
 ${formatSection(d, { accessed: '13 Sep 2026' })}
@@ -433,7 +455,7 @@ ${formatSection(d, { accessed: '13 Sep 2026' })}
 ${shapes}
   </ul>
   <p style="font-size:14px;color:#e2e8f0;font-weight:700;margin:26px 0 12px;">Practise now — SQL Quest challenges matched to those patterns</p>
-  <p style="font-size:13px;color:#8b98ab;margin-bottom:14px;max-width:760px;line-height:1.6;">Our challenges, chosen because their SQL matches the shapes above; not questions ${esc(d.name)} has asked. Each card opens the challenge in the browser — no signup.</p>
+  <p style="font-size:13px;color:#8b98ab;margin-bottom:14px;max-width:760px;line-height:1.6;">Our challenges, chosen because their SQL matches the shapes above; not questions ${esc(d.name)} has asked. Each card opens the challenge in the browser — no signup; a card marked Free can be one of your ${FREE_SOLVE_QUOTA} free challenge solves.</p>
   <div class="qg" id="question-cards"></div>
   <div style="margin-top:22px;"><a href="/app/?company=${encodeURIComponent(d.name)}&amp;src=${slug}&amp;goal=interview" class="btn bo" data-track="cta_questions_all">Open all ${f.n} ${esc(d.name)} practice challenges →</a></div>
 </div></section>
@@ -448,7 +470,7 @@ ${topicLinksBlock({ name: d.name, dist: f.dist, ordered: f.ordered })}
 
 <section class="cs"><div class="sec" style="text-align:center;padding:64px 24px;border-top:1px solid rgba(255,255,255,.04);">
   <h2 class="fd" style="font-size:clamp(28px,4vw,44px);font-weight:800;line-height:1.15;margin-bottom:14px;">Ready for the ${esc(d.name)} SQL round?</h2>
-  <p style="font-size:16px;color:#94a3b8;max-width:560px;margin:0 auto 26px;">No signup, no card. Start with the free challenges in the set; the Skillmap shows what to fix before the interview.</p>
+  <p style="font-size:16px;color:#94a3b8;max-width:560px;margin:0 auto 26px;">No signup, no card. Your first ${FREE_SOLVE_QUOTA} challenge solves are free; the Skillmap shows what to fix before the interview.</p>
   <a href="/app/?company=${encodeURIComponent(d.name)}&amp;src=${slug}&amp;goal=interview" class="btn bp" data-track="cta_closing">Start the ${esc(d.name)} set — free</a>
 </div></section>
 
@@ -538,7 +560,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       if (m) html = html.replace('<section class="cs"', `${m[0]}<section class="cs"`);
     }
     fs.writeFileSync(file, html);
-    console.log(`[company-pages] ${key}: ${f.n} tagged (E${f.easy}/M${f.medium}/H${f.hard}, ${f.free} free)`);
+    console.log(`[company-pages] ${key}: ${f.n} tagged (E${f.easy}/M${f.medium}/H${f.hard}, ${f.previews} Hard previews)`);
   }
   console.log(`[company-pages] ${added} new tags merged`);
   const injected = injectModules(loadBank());

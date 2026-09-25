@@ -18,7 +18,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { loadQuestionBank } from './question-slugs.mjs';
 import { isFreePreview } from '../src/utils/challenge-order.js';
-import { bankCountLabel } from '../src/utils/display-count.js';
+import { bankCountLabel, FREE_SOLVE_QUOTA } from '../src/utils/display-count.js';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const SITE = 'https://sqlquest.app';
@@ -110,12 +110,13 @@ export function tools(sq) {
     },
     sqlquest: {
       name: 'SQL Quest', url: `${SITE}/`, src: `${SITE}/`, ours: true,
-      free: `${sq.free} of ${sq.bank} questions (every Easy and Medium plus the Hard previews) run free in the browser with no signup; the Coach, the Skillmap and a daily AI tutor allowance are free`,
+      // 2026-09-26 (freeQuota): the free tier is a quota of solves, not a share of the bank.
+      free: `${FREE_SOLVE_QUOTA} free challenge solves (any Easy or Medium, or a Hard preview) in the browser with no signup; the lessons, warm-ups, the daily challenge, the Coach, the Skillmap and a daily AI tutor allowance are free; Pro opens all ${sq.bank}`,
       paid: 'Pro $29/month or $99/year',
       bank: `${sq.bank} SQL questions; company practice sets on ${sq.companies} company pages`,
       dialects: 'SQLite, in the browser',
       best: 'SQL interview practice that finds your weakest skill — a Skillmap across nine SQL skills — and builds the next question around it, with a diagnosis of which rows a wrong answer got wrong.',
-      favour: [`A free tier of ${sq.free} questions that needs no account`, 'Wrong answers are diagnosed, not just marked', 'Practice ordered by your weakest skill', 'A free readiness test and free query tools'],
+      favour: [`${FREE_SOLVE_QUOTA} free challenge solves that need no account`, 'Wrong answers are diagnosed, not just marked', 'Practice ordered by your weakest skill', 'A free readiness test and free query tools'],
       against: ['A smaller bank than StrataScratch, LeetCode or DataInterview', 'SQL only: no Python, R or ML questions', 'One dialect (SQLite), where others offer four', 'A younger product with a smaller community'],
       instead: 'you need Python or ML prep, or to practise in a specific dialect such as SQL Server or Oracle.',
     },
@@ -143,7 +144,7 @@ const PAGES = {
     pick: [
       ['More questions and Python', 'stratascratch'],
       ['Free and structured', 'leetcode'],
-      ['A diagnosis of your weakest skill, mostly free', 'sqlquest'],
+      ['A diagnosis of your weakest skill, free to start', 'sqlquest'],
       ['The analyst toolkit beyond SQL', 'analystbuilder'],
       ['Data science breadth and company guides', 'interviewquery'],
     ],
@@ -158,7 +159,7 @@ const PAGES = {
     pick: [
       ['The lowest paid price', 'datalemur'],
       ['Free and structured', 'leetcode'],
-      ['A diagnosis of your weakest skill, mostly free', 'sqlquest'],
+      ['A diagnosis of your weakest skill, free to start', 'sqlquest'],
       ['The analyst toolkit beyond SQL', 'analystbuilder'],
       ['Data science breadth and company guides', 'interviewquery'],
     ],
@@ -191,7 +192,7 @@ export function renderAlternatives(slug) {
   const url = `${SITE}/${slug}/`;
   const list = pg.order.map(k => [k, T[k]]);
   const faq = [
-    [`What is the best free alternative to ${subject.name}?`, `For a structured free plan, LeetCode's SQL 50 (it needs an account to run code). For the largest free tier that needs no account, SQL Quest: ${sq.free} of its ${sq.bank} questions run free in the browser. For learning from zero, SQLBolt or SQLZoo.`],
+    [`What is the best free alternative to ${subject.name}?`, `For a structured free plan, LeetCode's SQL 50 (it needs an account to run code). To start without an account, SQL Quest: ${FREE_SOLVE_QUOTA} free challenge solves in the browser, plus a free readiness test and free query tools. For learning from zero, SQLBolt or SQLZoo.`],
     [`Is there an alternative to ${subject.name} with Python questions?`, pg.subject === 'stratascratch' ? 'DataLemur, SQLPad, Analyst Builder and Interview Query all cover Python as well as SQL, according to their own pages. SQL Quest and HackerRank\'s SQL track are SQL only.' : 'StrataScratch has the largest Python bank alongside SQL. SQLPad, Analyst Builder and Interview Query also cover Python, according to their own pages. SQL Quest is SQL only.'],
     ['How were these prices checked?', `Each price and free tier was read off the vendor's own pricing page on ${CHECKED}, and the page is linked under each tool. Prices change and some sites localise them, so check the vendor's page before you pay. Promotions running on the day are labelled as promotions.`],
     ['Who wrote this comparison?', 'The team that builds SQL Quest, which is one of the alternatives listed. That is why the SQL Quest section lists what it is worse at, and why no competitor fact on this page is from memory.'],

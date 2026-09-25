@@ -7,6 +7,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { collectBankFacts } from '../scripts/build-llms-txt.js';
 import { bankCountLabel } from '../src/utils/display-count.js';
+import { freeTierFlags } from './free-tier-state.js';
+
+const QUOTA_ON = freeTierFlags().freeQuota;
 
 const ROOT = new URL('../', import.meta.url).pathname;
 const BANK = collectBankFacts(ROOT);   // the live bank, read the way the build reads it
@@ -118,7 +121,9 @@ describe('homepage and hub claims match the data', () => {
       const text = read(f).replace(/<!--[\s\S]*?-->/g, '');
       for (const m of text.matchAll(/\b(\d{3}) of (?:the )?(\d{3}\+?)(?!\d)/g)) {
         if (/accounts|rows|transactions/.test(text.slice(m.index, m.index + 60))) continue;   // dataset facts, not the bank
-        expect(`${m[1]} of ${m[2]}`, f).toBe(`${free} of ${label}`);
+        // Under the free quota (2026-09-26) there is no free share: any such pair is stale.
+        if (QUOTA_ON) expect(`${m[1]} of ${m[2]}`, `${f}: a free-share pair while freeQuota is on`).toBe('');
+        else expect(`${m[1]} of ${m[2]}`, f).toBe(`${free} of ${label}`);
       }
     }
   });

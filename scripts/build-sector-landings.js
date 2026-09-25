@@ -20,6 +20,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { FREE_SOLVE_QUOTA } from '../src/utils/display-count.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -81,7 +82,7 @@ const SECTORS = [
       ['Türkiye\'de banka mı çalışıyorum, ABD bankaları mı?', 'Schema universal — tier1, NPL, ROA, transaction tablolarının yapısı her bankada aynı. Garanti, İş Bankası, Akbank\'ta da bu sütunları görürsün. Mülakatta Garanti soruyu "ABD bankası neden daha kârlı?" sormaz, "tier1 ne anlama gelir?" sorar.'],
       ['FAANG mülakatına da iyi mi?', 'Stripe, JPMorgan Chase\'in technology arm, Capital One — bu şirketler finans-shaped data ile çalışır. Coach seni finans tagged challenge\'lara öncelik vererek yönlendirir.'],
       ['Üretim, e-ticaret de var mı?', 'Üretim (UCI AI4I 2020 — Siemens/GE benchmark) ve gayrimenkul (NYC OpenData) sektörleri de hazır. Mentor onboarding\'inde sektörünü söyle, Coach ona göre prioritize ediyor.'],
-      ['$19/ay Pro\'ya ihtiyacım var mı?', 'Free tier 20 challenge\'ın hepsini çözmeye yeter (ücretsiz). Pro Hard challenge\'ları ve unlimited AI tutor açıyor. Bankacı kariyerine ciddiysen Pro\'ya değer.'],
+      ['Pro\'ya ihtiyacım var mı?', `İlk ${FREE_SOLVE_QUOTA} challenge çözümü ücretsiz; dersler, ısınmalar ve günlük soru da ücretsiz. Bu track\'in geri kalanı ve Hard challenge\'lar Pro ile açılır; Pro ayrıca AI tutor\'un günlük limitini yükseltir. Bankacı kariyerine ciddiysen Pro\'ya değer.`],
     ],
   },
 
@@ -138,7 +139,7 @@ const SECTORS = [
       ['Türkiye\'de gayrimenkul mü çalışıyorum, NYC mı?', 'Schema universal. Property → sale → buyer → permit yapısı her şehirde aynı. Hepsiemlak\'ın schema\'sı da PLUTO\'ya çok benzer. BBL yerine TC Kimlik No, ACRIS yerine Tapu Müdürlüğü.'],
       ['Sadece New York\'a mı odaklı?', 'Şu an evet — public real estate data en zengin orada. Gelecekte Türkiye Tapu Müdürlüğü veya Hepsiemlak public dataset\'i eklersek genişletiriz.'],
       ['LLC alıcı analizleri yapabilir miyim?', 'Evet — sales_parties tablosu real buyer isimleri içeriyor (LLC, INC, CORP, TRUST gibi). Çoğu Manhattan deal\'i LLC üzerinden. Challenge #234 tam bunu kapsıyor.'],
-      ['Pro\'ya ihtiyacım var mı?', 'Free tier 20 challenge\'ın hepsini çözmeye yeter. Pro AI tutor unlimited + Hard challenge\'lar açıyor.'],
+      ['Pro\'ya ihtiyacım var mı?', `İlk ${FREE_SOLVE_QUOTA} challenge çözümü ücretsiz; dersler, ısınmalar ve günlük soru da ücretsiz. Bu track\'in geri kalanı ve Hard challenge\'lar Pro ile açılır; Pro ayrıca AI tutor\'un günlük limitini yükseltir.`],
     ],
   },
 
@@ -194,7 +195,7 @@ const SECTORS = [
       ['Türkiye\'de fabrika çalışıyorum, ABD endüstrisi mı?', 'Schema universal. FMEA codes (TWF, HDF, PWF, OSF, RNF) global maintenance engineering standartı — Tüpraş, Bosch Turkey, Aselsan\'da da aynı kategoriler. Sensor parametre adları (rotational_speed_rpm, torque_nm, tool_wear_min) ISO standartı.'],
       ['Real factory data nereden bulurum?', 'Public olarak yok. Lisans-locked: Bosch Production Line (Kaggle competition-only), Siemens Predictive Maintenance API (kurumsal). AI4I academic-rigorous synthetic alternative — onay altında redistribution serbest.'],
       ['Coach beni FMEA-spesifik yönlendirir mi?', 'Evet. Mentor onboarding\'de "üretim sektöründeyim" dediğinde Coach üretim challenge\'larını öne alıyor + AI Tutor sektörel context veriyor (sensor parametreleri, FMEA terminology).'],
-      ['Pro\'ya ihtiyacım var mı?', 'Free tier 20 challenge\'ın hepsini çözmeye yeter. Pro AI tutor unlimited + Hard challenge\'lar açıyor (#256-258 hard tier window function + multi-CTE).'],
+      ['Pro\'ya ihtiyacım var mı?', `İlk ${FREE_SOLVE_QUOTA} challenge çözümü ücretsiz; dersler, ısınmalar ve günlük soru da ücretsiz. Bu track\'in geri kalanı ve Hard challenge\'lar Pro ile açılır; Pro ayrıca AI tutor\'un günlük limitini yükseltir. (Hard tier: #256-258, window function + multi-CTE.)`],
     ],
   },
 ];

@@ -22,6 +22,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { loadQuestionBank, questionSlugs } from './question-slugs.mjs';
 import { isFreePreview } from '../src/utils/challenge-order.js';
+import { FREE_SOLVE_QUOTA } from '../src/utils/display-count.js';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const SITE = 'https://sqlquest.app';
@@ -71,7 +72,7 @@ const COPY = {
     name: 'SQL Ranking Functions Practice',
     short: 'Ranking functions',
     tail: 'ROW_NUMBER, RANK, DENSE_RANK',
-    description: t => `${t.count} SQL ranking function challenges, ${t.free} free: ROW_NUMBER for one row per group, RANK and DENSE_RANK for ties, and the top-N-per-group query interviews ask most. Runs in your browser, no signup.`,
+    description: t => `${t.count} SQL ranking function challenges: ROW_NUMBER for one row per group, RANK and DENSE_RANK for ties, and the top-N-per-group query interviews ask most. Runs in your browser, no signup; your first ${FREE_SOLVE_QUOTA} challenge solves are free.`,
     lede: t => `"The top three products in each category", "the latest order per customer", "the second-highest salary": most ranking questions are one of these, and every one is a ranking function over a <code>PARTITION BY</code>, then a filter on the rank. These ${t.count} challenges are every one in the bank whose reference solution ranks rows.`,
     sections: {
       'row-number': ['ROW_NUMBER — exactly one row per position', 'Numbers rows 1, 2, 3 with no ties, even when two rows are equal. That is what you want for "the latest order per customer": <code>ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY ordered_at DESC)</code>, then keep rank 1. Add a tie-breaker to the <code>ORDER BY</code>, or the row you keep is arbitrary.'],
@@ -88,8 +89,8 @@ const COPY = {
     name: 'Advanced SQL Interview Questions',
     short: 'Advanced SQL interview questions',
     tail: 'Hard Window, CTE and Join Problems',
-    description: t => `${t.count} Hard SQL interview questions, ${t.free} free to open: multi-step CTEs, window functions over partitions, multi-table joins and subqueries, on real tables. Runs in your browser, no signup.`,
-    lede: t => `These are the ${t.count} Hard challenges in the bank: the questions a senior analyst or data scientist screen ends on. Most of them combine two or three ideas in one query, so the sections below overlap on purpose. ${t.previews ? `The ${t.previews} free previews are listed first inside each section.` : ''}`,
+    description: t => `${t.count} Hard SQL interview questions: multi-step CTEs, window functions over partitions, multi-table joins and subqueries, on real tables. Runs in your browser, no signup.`,
+    lede: t => `These are the ${t.count} Hard challenges in the bank: the questions a senior analyst or data scientist screen ends on. Most of them combine two or three ideas in one query, so the sections below overlap on purpose. ${t.previews ? `The ${t.previews} Hard previews, which a free solve can open, are listed first inside each section.` : ''}`,
     sections: {
       'window-hard': ['Hard window function questions', 'Ranking inside partitions, running totals with explicit frames, gaps and islands, period-over-period change with <code>LAG</code>. The hard part is rarely the function. It is choosing the partition and the order that make the numbers mean what the question asked.'],
       'multi-step-ctes': ['Multi-step CTE questions', 'Two or more named steps, where a later one reads an earlier one: build the per-user table, then the per-cohort table, then the ratio. Interviewers watch whether each step has one job.'],
@@ -125,7 +126,9 @@ export function renderTopic(slug, bank, qslugs) {
   // The brand token is the DOMAIN: "SQLQuest" alone is another product's
   // exact name (docs/reads/google-position-2026-09-11.md §4). Never drop
   // the ".app" — it is the whole of the differentiation.
-  const title = `${copy.name} — ${t.count} Challenges (${t.free} Free): ${copy.tail} | SQLQuest.app`;
+  // 2026-09-26 (freeQuota): no "(N Free)" — under the quota a free account
+  // has FREE_SOLVE_QUOTA solves, not a free share of this page.
+  const title = `${copy.name} — ${t.count} Challenges: ${copy.tail} | SQLQuest.app`;
   const desc = copy.description(t);
   const faqLd = { '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: copy.faq.map(([q, a]) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a } })) };
   const ld = [
@@ -143,7 +146,7 @@ export function renderTopic(slug, bank, qslugs) {
     const st = tallyOf(list);
     const [h, p] = copy.sections[id];
     return `  <section class="sec" id="${id}">
-    <h2 class="fd">${h}: ${st.count} challenges (${st.free > 0 ? `${st.free} free` : 'all Pro'})</h2>
+    <h2 class="fd">${h}: ${st.count} challenges</h2>
     <p>${p}</p>
     <p class="stamp">Counted from the challenge bank, September 2026. Easy first, then Medium, then Hard.</p>
     <div class="q-grid">
@@ -183,8 +186,9 @@ ${ld.map(o => `  <script type="application/ld+json">${JSON.stringify(o)}</script
 </div></nav>
 <div class="wrap">
   <p class="breadcrumb"><a href="/">SQL Quest</a> › <a href="/challenges/">Practice by topic</a> › ${esc(copy.short)}</p>
-  <h1 class="fd">${esc(copy.name)} — <span style="background:linear-gradient(135deg,#c084fc,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">${t.count} Challenges (${t.free} Free)</span></h1>
+  <h1 class="fd">${esc(copy.name)} — <span style="background:linear-gradient(135deg,#c084fc,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">${t.count} Challenges</span></h1>
   <p class="lede">${copy.lede(t)}</p>
+  <p class="lede">Cards marked Free are open to free accounts — your first ${FREE_SOLVE_QUOTA} challenge solves are free — and Pro opens every card.</p>
   <a href="/sql-interview-readiness-test/" class="cta" data-track="cta_topic_readiness">Find your weakest skill first →</a>
 
 ${sections}
@@ -215,7 +219,7 @@ ${copy.faq.map(([q, a]) => `    <h3 style="font-size:16px;font-weight:700;color:
 
 const HUB_CARDS = {
   'ranking-functions': ['Ranking functions', 'ROW_NUMBER, RANK and DENSE_RANK on their own page: one row per group, ties handled on purpose, and the top-N-per-group query that most ranking questions turn out to be.', 'Ranking function challenges →'],
-  advanced: ['Advanced SQL interview questions', 'Every Hard challenge in the bank, sorted into Hard window questions, multi-step CTEs, and multi-table joins with subqueries. The free previews come first.', 'Advanced questions →'],
+  advanced: ['Advanced SQL interview questions', 'Every Hard challenge in the bank, sorted into Hard window questions, multi-step CTEs, and multi-table joins with subqueries. The Hard previews come first.', 'Advanced questions →'],
 };
 
 export function hubBlock(bank) {
@@ -224,7 +228,7 @@ export function hubBlock(bank) {
     const [title, d, go] = HUB_CARDS[slug];
     return `    <a class="t-card" href="/challenges/${slug}/" data-topic="${slug}">
       <p class="t-title">${title}</p>
-      <p class="t-count"><strong><span class="t-n">${t.count}</span> challenges</strong> · <span class="t-f">${t.free}</span> free · <span class="t-e">${t.Easy}</span> Easy</p>
+      <p class="t-count"><strong><span class="t-n">${t.count}</span> challenges</strong> · <span class="t-e">${t.Easy}</span> Easy</p>
       <p class="t-desc">${d}</p>
       <p class="t-go">${go}</p>
     </a>`;

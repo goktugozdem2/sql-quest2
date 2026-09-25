@@ -690,6 +690,8 @@ const TRANSLATIONS = {
     // placement check inline state.
     pro: {
       coachStripLine: 'Free includes the Coach. Pro adds the AI Tutor without the daily cap, Hard challenges, and the full interview bank.',
+      // Under `freeQuota` (2026-09-26): the free tier is {quota} challenge solves.
+      coachStripLineQuota: 'Free includes the Coach and {quota} challenge solves. Pro opens the whole bank, Hard included, the AI Tutor without the daily cap, and the full interview bank.',
       coachStripCTA: 'See plans',
       paySuccessTitle: "You're Pro now.",
       paySuccessBody: 'Payment confirmed — your {plan} plan is active. Every Pro feature is unlocked.',
@@ -1057,6 +1059,7 @@ const TRANSLATIONS = {
       needSolves: 'Solve {n} questions and this plan names your weakest skills.',
       today: 'Today',
       remaining: '{done} of {total} free questions done.',
+      remainingQuota: '{done} of {total} questions done.',
     },
     companySetMatch: {
       eyebrow: '{company} practice set',
@@ -1738,6 +1741,7 @@ const TRANSLATIONS = {
 
     pro: {
       coachStripLine: "Ücretsiz plan Coach'u içerir. Pro; günlük tavanı kalkmış AI Tutor, Zor sorular ve tüm mülakat bankasını ekler.",
+      coachStripLineQuota: "Ücretsiz plan Coach'u ve {quota} challenge çözümünü içerir. Pro; Zor sorular dahil tüm bankayı, günlük tavanı kalkmış AI Tutor'u ve tüm mülakat bankasını açar.",
       coachStripCTA: 'Planları gör',
       paySuccessTitle: 'Artık Pro’sun.',
       paySuccessBody: 'Ödeme onaylandı — {plan} planın aktif. Tüm Pro özellikler açık.',
@@ -2068,6 +2072,7 @@ const TRANSLATIONS = {
       needSolves: '{n} soru çöz, plan en zayıf becerilerini söylesin.',
       today: 'Bugün',
       remaining: '{total} ücretsiz sorudan {done} tanesi bitti.',
+      remainingQuota: '{total} sorudan {done} tanesi bitti.',
     },
     companySetMatch: {
       eyebrow: '{company} pratik seti',

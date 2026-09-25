@@ -231,7 +231,7 @@
         "priceCurrency": "USD",
         "url": "https://sqlquest.app/app/",
         "availability": "https://schema.org/InStock",
-        "description": "The Coach, the Skillmap, the weekly report and every Easy and Medium challenge. No account needed to start."
+        "description": "10 free challenge solves (any Easy or Medium, or a Hard preview), the lessons, warm-ups, the daily challenge, the Coach, the Skillmap and the weekly report. No account needed to start."
       },
       {
         "@type": "Offer",
@@ -246,7 +246,7 @@
           "priceCurrency": "USD",
           "unitText": "year"
         },
-        "description": "$99 a year, or $29 a month. Adds the Hard set, the timed mock bank including the Revolut and Capital One screens, the tutor without the daily cap, all Daily difficulties, the full Warm-Up bank, the 30-Day Challenge and priority support."
+        "description": "$99 a year, or $29 a month. Opens all 300+ challenges, the Hard set, the timed mock bank including the Revolut and Capital One screens, the tutor without the daily cap, all Daily difficulties, the full Warm-Up bank, the 30-Day Challenge and priority support."
       }
     ]
   }
@@ -285,7 +285,7 @@
         "name": "Is SQL Quest free?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Yes, to start: every Easy and Medium challenge, the Coach, the Skillmap and a daily tutor allowance are free, with no card. Pro is $99 a year or $29 a month, and adds the Hard set, the timed mock bank including the company screens, the tutor without the daily cap, and the full industry tracks."
+          "text": "Yes, to start: 10 free challenge solves (any Easy or Medium, or a Hard preview), the lessons, warm-ups, the daily challenge, the Coach, the Skillmap and a daily tutor allowance, with no card. Pro is $99 a year or $29 a month, and opens all 300+ challenges, the Hard set, the timed mock bank including the company screens, the tutor without the daily cap, and the full industry tracks."
         }
       },
       {
@@ -899,8 +899,8 @@
             <td class="cmp-n">—</td>
           </tr>
                     <tr>
-            <td style="text-align:left;">Substantial free tier</td>
-            <td class="cmp-me"><span class="cmp-y">✓</span></td>
+            <td style="text-align:left;">Free tier</td>
+            <td class="cmp-me">10 free solves</td>
             <td class="cmp-p">partial</td>
             <td><span class="cmp-y">✓</span></td>
             <td><span class="cmp-y">✓</span></td>
@@ -1022,7 +1022,7 @@ window.addEventListener('scroll',()=>{document.getElementById('nav').classList.t
 
 // FAQ — the visible list. tests/faq-schema.test.js requires every question in
 // the FAQPage JSON-LD above to appear here verbatim; keep the two in step.
-const FAQS=[["Which companies does SQL Quest have interview practice for?", "Company pages and tagged challenge sets for Revolut, Wise, Stripe, Capital One, JPMorgan, Plaid, Ramp, Morgan Stanley, Snowflake, Spotify, Amazon, Google, Meta, Apple, Netflix, Uber, Airbnb, Shopify, Databricks, NVIDIA, OpenAI, Anthropic and Tesla. Revolut and Capital One also have a timed mock built to the screen format candidates report. Open a company page for its set, or filter the app with ?company= and the name."], ["Are the company question sets the real interview questions?", "No, and every page says so. Each set is built from what candidates report on Glassdoor, Blind and forums: the table shapes, the task types, the time limit. Each page lists and dates its sources. No set is affiliated with or endorsed by the company it is named for, and companies change their screens, so treat every specific as candidate-reported rather than official."], ["What is in a company mock, and how long is it?", "The Revolut mock runs 60 minutes: 6 multiple-choice questions and 2 written SQL tasks on a synthetic multi-currency neobank ledger, HackerRank-style. The Capital One mock runs 70 minutes: 12 multiple-choice and 2 written SQL questions on a synthetic card-transactions dataset, CodeSignal-style, with a separate 60-minute live SQL round of four written questions. Both are timed and scored and belong to Pro; a free general mock lets you try the format first."], ["Is SQL Quest free?", "Yes, to start: every Easy and Medium challenge, the Coach, the Skillmap and a daily tutor allowance are free, with no card. Pro is $99 a year or $29 a month, and adds the Hard set, the timed mock bank including the company screens, the tutor without the daily cap, and the full industry tracks."], ["What happens when my query is wrong?", "You get a diagnosis, not the word incorrect. SQL Quest compares your result to the expected one and names the gap: wrong column count, the right rows in a different order, the right shape with wrong values shown side by side, NULL handling, or a syntax error translated into plain English. Show Structure then gives you the skeleton of a correct query without the answer, and the AI tutor reads the diagnosis before it says anything."], ["What is the refund policy on Pro?", "A 7-day full refund on both plans, Monthly and Annual. Email support@sqlquest.app or see /refund.html for the full terms."]];
+const FAQS=[["Which companies does SQL Quest have interview practice for?", "Company pages and tagged challenge sets for Revolut, Wise, Stripe, Capital One, JPMorgan, Plaid, Ramp, Morgan Stanley, Snowflake, Spotify, Amazon, Google, Meta, Apple, Netflix, Uber, Airbnb, Shopify, Databricks, NVIDIA, OpenAI, Anthropic and Tesla. Revolut and Capital One also have a timed mock built to the screen format candidates report. Open a company page for its set, or filter the app with ?company= and the name."], ["Are the company question sets the real interview questions?", "No, and every page says so. Each set is built from what candidates report on Glassdoor, Blind and forums: the table shapes, the task types, the time limit. Each page lists and dates its sources. No set is affiliated with or endorsed by the company it is named for, and companies change their screens, so treat every specific as candidate-reported rather than official."], ["What is in a company mock, and how long is it?", "The Revolut mock runs 60 minutes: 6 multiple-choice questions and 2 written SQL tasks on a synthetic multi-currency neobank ledger, HackerRank-style. The Capital One mock runs 70 minutes: 12 multiple-choice and 2 written SQL questions on a synthetic card-transactions dataset, CodeSignal-style, with a separate 60-minute live SQL round of four written questions. Both are timed and scored and belong to Pro; a free general mock lets you try the format first."], ["Is SQL Quest free?", "Yes, to start: 10 free challenge solves (any Easy or Medium, or a Hard preview), the lessons, warm-ups, the daily challenge, the Coach, the Skillmap and a daily tutor allowance, with no card. Pro is $99 a year or $29 a month, and opens all 300+ challenges, the Hard set, the timed mock bank including the company screens, the tutor without the daily cap, and the full industry tracks."], ["What happens when my query is wrong?", "You get a diagnosis, not the word incorrect. SQL Quest compares your result to the expected one and names the gap: wrong column count, the right rows in a different order, the right shape with wrong values shown side by side, NULL handling, or a syntax error translated into plain English. Show Structure then gives you the skeleton of a correct query without the answer, and the AI tutor reads the diagnosis before it says anything."], ["What is the refund policy on Pro?", "A 7-day full refund on both plans, Monthly and Annual. Email support@sqlquest.app or see /refund.html for the full terms."]];
 FAQS.forEach(f=>{const d=document.createElement('div');d.className='fi';d.innerHTML=`<div class="fh"><p style="font-size:16px;font-weight:600;color:#e2e8f0;flex:1;padding-right:16px">${f[0]}</p><span class="ftg">+</span></div><div class="fa"><p style="font-size:14px;line-height:1.8;color:#94a3b8;padding-top:12px">${f[1]}</p></div>`;d.addEventListener('click',()=>{const opened=!d.classList.contains('o');d.classList.toggle('o');if(opened)trackLanding('faq_open',{question:f[0].slice(0,60)});});document.getElementById('faqc').appendChild(d);});
 
 // Auto-detect returning user

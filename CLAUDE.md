@@ -313,12 +313,28 @@ so a landing view and a later solve are joinable for the first time.
   app marketing line states the whole bank as its floor to 50 with a "+"
   (304 → "300+"), from ONE helper: `bankCountLabel` in
   `src/utils/display-count.js` (the generators and app.jsx call it). Exact
-  stays exact only where exactness is the point: the free count ("228
-  free"), the Easy/Medium/Hard and core/sector splits, a topic page's own
-  counts, the numerator of a ratio ("228 of the 300+"), a list badge or
+  stays exact only where exactness is the point: the Easy/Medium/Hard and
+  core/sector splits, a topic page's own counts, a list badge or
   solved/total in the app, JSON-LD `numberOfItems`. `tests/site-counts.test.js`
   fails a page that states the exact total (with or without a noun) or a
   floor that is not the bank's, so a bank that crosses 350 forces "350+".
+- **What is free is said the way the gates decide it (2026-09-26, ships with
+  the `freeQuota` + `companySetGate` flip).** There is no "N free
+  challenges" any more: a free account gets `FREE_SOLVE_QUOTA` (10) challenge
+  solves — any Easy or Medium, or a Hard preview — then the unsolved rest is
+  Pro; solved challenges, the lessons, warm-ups, the daily challenge, the
+  Coach and the Skillmap stay free. In the Capital One and Revolut company
+  views the first `COMPANY_SET_FREE_COUNT` (3) of the set are free to try.
+  Say it as "10 free challenge solves … Pro opens all 300+" (Turkish: "İlk 10
+  challenge çözümü ücretsiz"); never "228 free", "N of M play free", "free
+  Hard previews", "every Easy and Medium is free", or a "(N Free)" in a
+  topic-page title. Both numbers come from `src/utils/free-tier-boundary.js`
+  via `src/utils/display-count.js` (`freeSolvesLabel`, `freeTierSentence`);
+  the generators import them. `tests/site-counts.test.js` section 6
+  (`findFreeTierClaims`) reads the two flags (`tests/free-tier-state.js`)
+  and fails the copy that contradicts them in EITHER state — the quota's
+  copy while the flag is off, a free count while it is on.
+  `FREE_TIER_FLAGS=on npx vitest run` previews the flipped state.
 - Pro section speaks in outcomes tied to the interview and mirrors the modal:
   the Hard question on the day, the screen sat before the screen, help that
   does not stall. Two plans, annual first. "Unlimited" is never claimed
@@ -912,8 +928,9 @@ as built.**
   meets `wall='company_set'` (`surface='challenge_set'`), reason
   `company_set`; the banner, the row locks and the set-complete ask all read
   `companyGateFreeIds()`. Solved is never taken back; the general list is
-  untouched. Company-page copy ("21 free") changes at the flip — count
-  guards will force it.
+  untouched. The company-page copy for the flip is written (2026-09-26):
+  "the first 3 of the 25 are free to try" on the two signed sets, the
+  general 10-solve quota on every other company page.
 - M2/M5: `withEarlyWall` reorders interview-prep at read time — one
   resolver (`resolveCoachGoal`) for the engine AND the card, so "Step N of
   M" and the next step cannot disagree. Locked steps offer "Set aside for

@@ -92,7 +92,7 @@
       "name": "Pro'ya ihtiyacım var mı?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Free tier 20 challenge'ın hepsini çözmeye yeter. Pro AI tutor unlimited + Hard challenge'lar açıyor (#256-258 hard tier window function + multi-CTE)."
+        "text": "İlk 10 challenge çözümü ücretsiz; dersler, ısınmalar ve günlük soru da ücretsiz. Bu track'in geri kalanı ve Hard challenge'lar Pro ile açılır; Pro ayrıca AI tutor'un günlük limitini yükseltir. (Hard tier: #256-258, window function + multi-CTE.)"
       }
     }
   ]
@@ -118,7 +118,7 @@
     {
       "@type": "DataDownload",
       "encodingFormat": "application/sql",
-      "contentUrl": "https://sqlquest.app/app.html?sector=uretim",
+      "contentUrl": "https://sqlquest.app/app/?sector=uretim",
       "description": "In-browser SQLite WASM database with Üretim & Endüstri sector tables, queryable via SQL practice challenges"
     }
   ],
@@ -298,7 +298,7 @@
 
 <script>
 window.addEventListener('scroll',()=>{document.getElementById('nav').classList.toggle('s',window.scrollY>50)},{passive:true});
-const FAQS=[["Veri gerçekten gerçek mi?","Net olalım: dataset SYNTHETIC ama industrial benchmark. UCI AI4I 2020 — Siemens/GE/Honeywell ML ekiplerinin kullandığı standart predictive maintenance dataset'i. Schema gerçek (rotational_speed_rpm, FMEA failure codes), data row'ları Matzka 2020 paper'ında matematiksel formüllerle generate edildi. Real factory IoT data permissive license altında public değil — bu en yaklaşıbilen."],["Türkiye'de fabrika çalışıyorum, ABD endüstrisi mı?","Schema universal. FMEA codes (TWF, HDF, PWF, OSF, RNF) global maintenance engineering standartı — Tüpraş, Bosch Turkey, Aselsan'da da aynı kategoriler. Sensor parametre adları (rotational_speed_rpm, torque_nm, tool_wear_min) ISO standartı."],["Real factory data nereden bulurum?","Public olarak yok. Lisans-locked: Bosch Production Line (Kaggle competition-only), Siemens Predictive Maintenance API (kurumsal). AI4I academic-rigorous synthetic alternative — onay altında redistribution serbest."],["Coach beni FMEA-spesifik yönlendirir mi?","Evet. Mentor onboarding'de \"üretim sektöründeyim\" dediğinde Coach üretim challenge'larını öne alıyor + AI Tutor sektörel context veriyor (sensor parametreleri, FMEA terminology)."],["Pro'ya ihtiyacım var mı?","Free tier 20 challenge'ın hepsini çözmeye yeter. Pro AI tutor unlimited + Hard challenge'lar açıyor (#256-258 hard tier window function + multi-CTE)."]];
+const FAQS=[["Veri gerçekten gerçek mi?","Net olalım: dataset SYNTHETIC ama industrial benchmark. UCI AI4I 2020 — Siemens/GE/Honeywell ML ekiplerinin kullandığı standart predictive maintenance dataset'i. Schema gerçek (rotational_speed_rpm, FMEA failure codes), data row'ları Matzka 2020 paper'ında matematiksel formüllerle generate edildi. Real factory IoT data permissive license altında public değil — bu en yaklaşıbilen."],["Türkiye'de fabrika çalışıyorum, ABD endüstrisi mı?","Schema universal. FMEA codes (TWF, HDF, PWF, OSF, RNF) global maintenance engineering standartı — Tüpraş, Bosch Turkey, Aselsan'da da aynı kategoriler. Sensor parametre adları (rotational_speed_rpm, torque_nm, tool_wear_min) ISO standartı."],["Real factory data nereden bulurum?","Public olarak yok. Lisans-locked: Bosch Production Line (Kaggle competition-only), Siemens Predictive Maintenance API (kurumsal). AI4I academic-rigorous synthetic alternative — onay altında redistribution serbest."],["Coach beni FMEA-spesifik yönlendirir mi?","Evet. Mentor onboarding'de \"üretim sektöründeyim\" dediğinde Coach üretim challenge'larını öne alıyor + AI Tutor sektörel context veriyor (sensor parametreleri, FMEA terminology)."],["Pro'ya ihtiyacım var mı?","İlk 10 challenge çözümü ücretsiz; dersler, ısınmalar ve günlük soru da ücretsiz. Bu track'in geri kalanı ve Hard challenge'lar Pro ile açılır; Pro ayrıca AI tutor'un günlük limitini yükseltir. (Hard tier: #256-258, window function + multi-CTE.)"]];
 const faqc=document.getElementById('faqc');
 FAQS.forEach(f=>{const d=document.createElement('div');d.className='fi';d.innerHTML=`<div class="fh"><p style="font-size:16px;font-weight:700;color:#e2e8f0;padding-right:16px">${f[0]}</p><span class="ftg">+</span></div><div class="fa"><p style="font-size:14px;line-height:1.8;color:#94a3b8;padding-top:12px">${f[1]}</p></div>`;d.addEventListener('click',()=>d.classList.toggle('o'));faqc.appendChild(d);});
 </script>

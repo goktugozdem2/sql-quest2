@@ -50,6 +50,13 @@ import { CANONICAL_SKILLS } from '../src/utils/skill-calc.js';
 import { challengeMatchesSkill } from '../src/utils/skill-drill.js';
 import { EXTRA_TOPIC_SPECS } from '../scripts/build-topic-extra.mjs';
 import { isFreePreview } from '../src/utils/challenge-order.js';
+import { FREE_SOLVE_QUOTA, COMPANY_SET_FREE_COUNT } from '../src/utils/free-tier-boundary.js';
+import { freeTierFlags } from './free-tier-state.js';
+
+// The free-tier flags this run binds the copy to — see findFreeTierClaims.
+const FLAGS = freeTierFlags();
+const QUOTA_ON = FLAGS.freeQuota;
+const SET_GATE_ON = FLAGS.companySetGate;
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..');
@@ -410,6 +417,129 @@ export function findExactBankTotal(text, total) {
     why: `the exact bank total ${total} — say "${floor50(total)}+" (bankCountLabel)`,
     text: flat.slice(Math.max(0, m.index - 60), m.index + 60).replace(/\0+/g, ' '),
   }));
+}
+
+// ---------------------------------------------------------------------------
+// 2026-09-26 — WHAT IS FREE IS WHAT THE FLAGS SAY (freeQuota, companySetGate)
+//
+// Until the quota, "free" on this site was a COUNT of challenges: every Easy
+// and Medium plus the Hard previews — "228 free", "13 of the 27 play free",
+// "52 Challenges (18 Free)". With `freeQuota` on there is no such count. A
+// free account gets FREE_SOLVE_QUOTA challenge solves (any Easy or Medium, or
+// a Hard preview), then the unsolved rest of the bank is Pro; the lessons,
+// warm-ups, the daily challenge, the Coach and the Skillmap stay free. With
+// `companySetGate` on, a signed company set (Capital One, Revolut) frees its
+// first COMPANY_SET_FREE_COUNT in the company view. Every "228 free" left on a
+// page after the flip is a promise the app breaks on the eleventh solve, and
+// "is SQL Quest free?" is the question assistants answer from these pages.
+//
+// So this rule reads the flags (tests/free-tier-state.js) and binds the copy
+// to them in BOTH states:
+//   quota ON  — a number of free challenges/questions/exercises, a free-share
+//               ratio ("13 of the 27 … free"), "plays free", "free Hard
+//               previews", "every Easy and Medium … free", "Easy and Medium
+//               are free", a free count in a Turkish sentence ("228'i
+//               ücretsiz") are all offences. "N free (challenge) solves" and
+//               "first N … free" must carry the quota (or, with the set gate
+//               on, the set's free count). Lessons and tools may be counted.
+//   quota OFF — the quota's own phrasing ("10 free challenge solves", "first
+//               10 solves", "İlk 10 challenge çözümü") is an offence: that
+//               copy ships with the flip, not before it.
+//   set gate OFF — "the first 3 of the 25 … free" is an offence.
+// A number whose nearest owner in the preceding text is a competitor
+// ("StrataScratch … 75+ free questions") is theirs and never judged; so is an
+// approximation ("~50-80 free"), which is how this site writes their figures.
+// ---------------------------------------------------------------------------
+const FREE_OK_NOUNS = /^(?:lessons?|tools?|days?|calls?|guides?|tests?|mocks?|readiness)$/i;
+const CHALLENGE_NOUNS = /^(?:challenges?|questions?|exercises?|problems?|previews?|hard|easy|medium|sql|practice|graded|interview|to)$/i;
+function ownerBefore(flat, index) {
+  const before = flat.slice(Math.max(0, index - 300), index).replace(/\0+/g, ' ');
+  let comp = -1;
+  let us = -1;
+  for (const m of before.matchAll(new RegExp(COMPETITOR_NAMES.source, 'gi'))) comp = m.index;
+  for (const m of before.matchAll(/\bMode\b/g)) comp = Math.max(comp, m.index);
+  for (const m of before.matchAll(/SQL Quest|\bPro\b|\bours?\b/g)) us = m.index;
+  return comp > us ? 'competitor' : 'us';
+}
+
+export function findFreeTierClaims(text, { quotaOn, setGateOn, quota = FREE_SOLVE_QUOTA, setFree = COMPANY_SET_FREE_COUNT }) {
+  const out = [];
+  const flat = flatten(text);
+  const add = (s, m, why) => out.push({ index: s.index + m.index, why, text: s.text });
+  const firstAllowed = new Set([quota, ...(setGateOn ? [setFree] : [])]);
+  for (const s of sentencesOf(text)) {
+    const theirs = m => ownerBefore(flat, s.index + m.index) === 'competitor';
+    if (!quotaOn) {
+      for (const m of s.text.matchAll(/(?<![\w$.,~-])(\d+) free (?:challenge )?solves?\b|\bfirst (\d+) (?:challenge )?solves\b|İlk (\d+) challenge çözüm/gi)) {
+        add(s, m, `"${m[0]}" — the free quota's copy, but freeQuota is OFF: it ships with the flip, not before`);
+      }
+    } else {
+      // R1 "N free …"
+      for (const m of s.text.matchAll(/(?<![\w$.,~-])(\d+)(\+?)\s+free\b(?:\s+([A-Za-z-]+))?(?:\s+([A-Za-z-]+))?/gi)) {
+        if (theirs(m)) continue;
+        const n = Number(m[1]);
+        const w1 = (m[3] || '').toLowerCase();
+        const w2 = (m[4] || '').toLowerCase();
+        if (/^solves?$/.test(w1) || (w1 === 'challenge' && /^solves?$/.test(w2))) {
+          if (n !== quota || m[2]) add(s, m, `"${squash(m[0])}" — the quota is ${quota} free challenge solves`);
+          continue;
+        }
+        if ((FREE_OK_NOUNS.test(w1) || FREE_OK_NOUNS.test(w2)) && !CHALLENGE_NOUNS.test(w1)) continue;
+        add(s, m, `"${squash(m[0])}" — a count of free challenges; under the quota the free tier is ${quota} free challenge solves`);
+      }
+      // R2 "N of (the) M … free" — a free-share ratio
+      for (const m of s.text.matchAll(/(?<![\w$.,~-])(\d+)\s+of\s+(?:the\s+|its\s+|our\s+)?(\d+)(\+?)(?=[^.<]{0,60}\bfree\b)/gi)) {
+        if (theirs(m)) continue;
+        if (/\bfirst\s+$/i.test(s.text.slice(Math.max(0, m.index - 8), m.index))) continue; // R4's
+        if (Number(m[2]) === quota && /^\s*free (?:challenge )?solves/i.test(s.text.slice(m.index + m[0].length))) continue; // "3 of 10 free solves used"
+        add(s, m, `"${squash(m[0])}" — a free-share ratio; under the quota nothing is "N of M free"`);
+      }
+      // R3 phrases that describe the pre-quota tier
+      const phrases = [
+        [/\bplay(?:s|able)? free\b/gi, '"play free" — under the quota a challenge is one of your free solves, not free'],
+        [/\bfree Hard previews?\b/gi, '"free Hard previews" — a Hard preview is one of the quota\'s solves, not free on its own'],
+        [/\bEasy and Medium (?:challenges )?(?:are|is|stay) free\b/gi, '"Easy and Medium are free" — under the quota ' + quota + ' solves are'],
+        [/\bfree forever\b/gi, '"free forever" — never said of the challenges, and never at all under the quota'],
+      ];
+      for (const [re, why] of phrases) for (const m of s.text.matchAll(re)) if (!theirs(m)) add(s, m, why);
+      if (/\bfree\b/i.test(s.text)) {
+        for (const m of s.text.matchAll(/\bevery Easy and Medium\b/gi)) if (!theirs(m)) add(s, m, '"every Easy and Medium … free" — the pre-quota tier');
+        // "free challenges include the Easy and Medium ones": Easy/Medium named
+        // as what is free, in a sentence that never mentions the quota.
+        if (!/\bfree (?:challenge )?solves?\b|\bsolves? (?:are|is) free\b|\bfirst \d+\b|\bevery Easy and Medium\b/i.test(s.text)) {
+          for (const m of s.text.matchAll(/\bEasy (?:and|\+|&amp;|&) Medium\b/gi)) if (!theirs(m)) add(s, m, '"Easy and Medium" named as the free part, with no quota in the sentence — the pre-quota tier');
+        }
+      }
+      // R5 Turkish
+      if (/ücretsiz/i.test(s.text)) {
+        for (const m of s.text.matchAll(/(?<![\w$.,~-])(\d+)'[iıuü]\b/g)) if (!theirs(m)) add(s, m, `"${m[0]} … ücretsiz" — a free-share count; under the quota: "İlk ${quota} challenge çözümü ücretsiz"`);
+        for (const m of s.text.matchAll(/ücretsiz[^.<]{0,40}?(?<![\w~-])(\d+) challenge|(?<![\w~-])(\d+) challenge[^.<]{0,30}ücretsiz/gi)) {
+          const n = Number(m[1] || m[2]);
+          if (!theirs(m) && n !== quota) add(s, m, `"${squash(m[0])}" — under the quota the Turkish is "İlk ${quota} challenge çözümü ücretsiz"`);
+        }
+      }
+      // R6 "free tier … N challenges"
+      for (const m of s.text.matchAll(/\bfree tier\b[^.<]{0,30}?(?<![\w~-])(\d+) challenge/gi)) {
+        if (!theirs(m) && Number(m[1]) !== quota) add(s, m, `"${squash(m[0])}" — the free tier is ${quota} challenge solves`);
+      }
+    }
+    // R4 "first N … free"
+    if (/\bfree\b|ücretsiz/i.test(s.text)) {
+      for (const m of s.text.matchAll(/\bfirst (\d+)\b/gi)) {
+        const n = Number(m[1]);
+        if (theirs(m)) continue;
+        if (quotaOn && firstAllowed.has(n)) continue;
+        if (!quotaOn && !setGateOn) {
+          if (n === setFree && /\bfirst \d+ of\b/i.test(s.text.slice(m.index, m.index + 16))) add(s, m, `"${squash(m[0])} of …" — a company set's free three, but companySetGate is OFF`);
+          continue;
+        }
+        if (!quotaOn && setGateOn && n === setFree) continue;
+        if (!quotaOn) continue;
+        add(s, m, `"${squash(m[0])}" — the first ${[...firstAllowed].join(' or ')} are what is free`);
+      }
+    }
+  }
+  return out;
 }
 
 // "9-skill radar", "9-axis", "9 axes", "9 canonical skills" always name the
@@ -951,17 +1081,25 @@ export const TOPIC_PAGES = {
 // /challenges/ stopped being a 404 under five live topic pages.
 export const TOPIC_INDEX = 'index';
 const INDEX_CARD = /data-topic="([\w-]+)"[\s\S]*?<span class="t-n">(\d+)<\/span> challenges<\/strong> · <span class="t-f">(\d+)<\/span> free · <span class="t-e">(\d+)<\/span> Easy/g;
+// Under the free quota (2026-09-26) a card states no free count — there is no
+// such count any more; it says the population and the Easy on-ramp.
+const INDEX_CARD_QUOTA = /data-topic="([\w-]+)"[\s\S]*?<span class="t-n">(\d+)<\/span> challenges<\/strong> · <span class="t-e">(\d+)<\/span> Easy/g;
 
-export function indexCardProblems(text, allTopics) {
+export function indexCardProblems(text, allTopics, { quotaOn = false } = {}) {
   const problems = [];
   const seen = [];
-  for (const m of text.matchAll(INDEX_CARD)) {
-    const [, slug, count, free, easy] = m;
+  if (quotaOn) {
+    for (const m of text.matchAll(/<span class="t-f">\d+<\/span> free/g)) {
+      problems.push({ index: m.index, why: 'a hub card states a free count — under the free quota there is none', text: m[0] });
+    }
+  }
+  for (const m of text.matchAll(quotaOn ? INDEX_CARD_QUOTA : INDEX_CARD)) {
+    const [slug, count, free, easy] = quotaOn ? [m[1], m[2], null, m[3]] : [m[1], m[2], m[3], m[4]];
     seen.push(slug);
     const t = allTopics[slug];
     if (!t) { problems.push({ index: m.index, why: `card names "${slug}", which is not a topic page`, text: m[0] }); continue; }
-    const want = { challenges: t.count, free: t.free, Easy: t.Easy };
-    const got = { challenges: Number(count), free: Number(free), Easy: Number(easy) };
+    const want = quotaOn ? { challenges: t.count, Easy: t.Easy } : { challenges: t.count, free: t.free, Easy: t.Easy };
+    const got = quotaOn ? { challenges: Number(count), Easy: Number(easy) } : { challenges: Number(count), free: Number(free), Easy: Number(easy) };
     for (const k of Object.keys(want)) {
       if (want[k] !== got[k]) problems.push({ index: m.index, why: `the ${slug} card says ${got[k]} ${k}, the bank gives ${want[k]}`, text: m[0] });
     }
@@ -996,19 +1134,28 @@ export function topicFacts(challenges, spec) {
 // The numbers a page may state: its own population, split, previews and
 // sections, plus every topic page's total and free count (the pages
 // cross-link each other with those).
-export function topicAllowedNumbers(facts, allTopics) {
-  const allowed = new Set([facts.count, facts.free, facts.previews, facts.Easy, facts.Medium, facts.Hard]);
-  for (const s of Object.values(facts.sections)) { allowed.add(s.count); allowed.add(s.free); }
-  for (const t of Object.values(allTopics)) { allowed.add(t.count); allowed.add(t.free); }
+// Under the free quota (2026-09-26) the free counts leave the set: a topic
+// page no longer says how many of its challenges are free.
+export function topicAllowedNumbers(facts, allTopics, { quotaOn = false } = {}) {
+  const allowed = new Set([facts.count, facts.previews, facts.Easy, facts.Medium, facts.Hard]);
+  if (!quotaOn) allowed.add(facts.free);
+  else allowed.add(FREE_SOLVE_QUOTA); // "your first 10 challenge solves are free"
+  for (const s of Object.values(facts.sections)) { allowed.add(s.count); if (!quotaOn) allowed.add(s.free); }
+  for (const t of Object.values(allTopics)) { allowed.add(t.count); if (!quotaOn) allowed.add(t.free); }
   allowed.delete(0);
   return allowed;
 }
 
 const textOf = html => squash(decode(html.replace(/<[^>]+>/g, ' ')));
 
-export function topicHeadProblems(text, facts) {
+export function topicHeadProblems(text, facts, { quotaOn = false } = {}) {
   const problems = [];
-  const want = `${facts.count} Challenges (${facts.free} Free)`;
+  // Under the free quota the head says the population only: "(18 Free)" was a
+  // count of challenges a free account could play, and that count is gone.
+  const want = quotaOn ? `${facts.count} Challenges` : `${facts.count} Challenges (${facts.free} Free)`;
+  if (quotaOn) {
+    for (const m of text.matchAll(/\(\d+ Free\)/g)) problems.push({ index: m.index, why: `"${m[0]}" in the head — under the free quota there is no free count`, text: m[0] });
+  }
   const title = /<title>([^<]*)<\/title>/i.exec(text);
   if (!title) problems.push({ index: 0, why: 'no <title>', text: '' });
   else if (!decode(title[1]).includes(want)) problems.push({ index: title.index, why: `<title> does not carry "${want}"`, text: title[1] });
@@ -1025,7 +1172,7 @@ const DIFF_RANK = { Easy: 0, Medium: 1, Hard: 2 };
 // Easy → Medium → Hard; inside Hard the free previews come first. Never id order.
 const cardRank = (difficulty, preview) => DIFF_RANK[difficulty] * 2 + (difficulty === 'Hard' && !preview ? 1 : 0);
 
-export function topicSectionProblems(text, facts) {
+export function topicSectionProblems(text, facts, { quotaOn = false } = {}) {
   const problems = [];
   for (const [id, want] of Object.entries(facts.sections)) {
     const open = new RegExp(`<section\\b[^>]*\\bid="${id}"[^>]*>`).exec(text);
@@ -1038,9 +1185,14 @@ export function topicSectionProblems(text, facts) {
     if (!new RegExp(`\\b${want.count} (?:[\\w-]+ ){0,3}challenges\\b`).test(heading)) {
       problems.push({ index: at, why: `#${id} heading does not say "${want.count} challenges"`, text: heading });
     }
-    const freeWord = want.free > 0 ? `${want.free} free` : 'all Pro';
-    if (!new RegExp(`\\b${freeWord}\\b`, 'i').test(heading)) {
-      problems.push({ index: at, why: `#${id} heading does not say "${freeWord}"`, text: heading });
+    if (quotaOn) {
+      const stated = /\b\d+ free\b/i.exec(heading);
+      if (stated) problems.push({ index: at, why: `#${id} heading says "${stated[0]}" — under the free quota a section states no free count`, text: heading });
+    } else {
+      const freeWord = want.free > 0 ? `${want.free} free` : 'all Pro';
+      if (!new RegExp(`\\b${freeWord}\\b`, 'i').test(heading)) {
+        problems.push({ index: at, why: `#${id} heading does not say "${freeWord}"`, text: heading });
+      }
     }
     const byId = new Map(want.items.map(i => [i.id, i]));
     const cards = [...body.matchAll(/<div class="q-card">([\s\S]*?)<\/div>/g)];
@@ -1441,6 +1593,11 @@ let pages;      // [{ file, raw, text }]
 let facts;      // collectBankFacts()
 let modal;      // { Monthly, Annual, Lifetime } from the Pro modal
 let topics;     // { slug: topicFacts } for every TOPIC_PAGES entry
+// The bank facts the count rules judge against. Under the free quota the
+// "free count" a sentence may state is the quota itself — so "228 free",
+// "228 of 300+" and a "Free to solve: 228" stat block all fail through the
+// same rules that used to bind them to 228 (2026-09-26).
+let claimFacts;
 
 const collect = fn => {
   const out = [];
@@ -1456,6 +1613,7 @@ beforeAll(() => {
     return { file, raw, text: stripComments(raw) };
   });
   facts = collectBankFacts(ROOT);
+  claimFacts = QUOTA_ON ? { ...facts, freeChallengeCount: FREE_SOLVE_QUOTA } : facts;
   modal = readProModal(read('src', 'app.jsx'));
   const bank = loadBank(ROOT).challengesData;   // the FULL bank: sector-challenges.js appends itself
   topics = Object.fromEntries(Object.entries(TOPIC_PAGES).map(([slug, spec]) => [slug, topicFacts(bank, spec)]));
@@ -1538,9 +1696,9 @@ describe('2. every count a page states is the bank\'s count', () => {
     // numbers the bank gives that page, so 147 passes there and the bank total
     // would not. The hub is exempt for the same reason (indexCardProblems
     // reads its cards against each topic's own tally).
-    const offenders = collect(p => findChallengeClaims(p.text, facts))
+    const offenders = collect(p => findChallengeClaims(p.text, claimFacts))
       .filter(o => !o.file.startsWith(TOPIC_DIR));
-    expect(offenders, `challenge counts off the bank (total ${facts.challengeCount}, free ${facts.freeChallengeCount}):\n${report(offenders)}`).toEqual([]);
+    expect(offenders, `challenge counts off the bank (total ${facts.challengeCount}, free ${claimFacts.freeChallengeCount}):\n${report(offenders)}`).toEqual([]);
   });
 
   it('"N-skill" / "N-axis" / "N canonical skills" is the canonical skill count', () => {
@@ -1549,17 +1707,18 @@ describe('2. every count a page states is the bank\'s count', () => {
   });
 
   it('"N of M" free-tier ratios and the Easy/Medium/Hard split are the bank\'s', () => {
-    const offenders = collect(p => findRatioClaims(p.text, facts));
-    expect(offenders, `ratio claims off the bank (${facts.freeChallengeCount} free of ${facts.challengeCount}; ${facts.easyCount}/${facts.mediumCount}/${facts.hardCount}):\n${report(offenders)}`).toEqual([]);
-    // Not vacuous: the site does state the ratio and the split.
+    const offenders = collect(p => findRatioClaims(p.text, claimFacts));
+    expect(offenders, `ratio claims off the bank (${claimFacts.freeChallengeCount} free of ${facts.challengeCount}; ${facts.easyCount}/${facts.mediumCount}/${facts.hardCount}):\n${report(offenders)}`).toEqual([]);
+    // Not vacuous: the site does state the ratio (before the free quota — after
+    // it there is no free share to state) and the split.
     const all = pages.map(p => p.text).join('\n');
-    expect(all).toMatch(new RegExp(`${facts.freeChallengeCount} of (?:the |its )?${Math.floor(facts.challengeCount / 50) * 50}\\+`));
+    if (!QUOTA_ON) expect(all).toMatch(new RegExp(`${facts.freeChallengeCount} of (?:the |its )?${Math.floor(facts.challengeCount / 50) * 50}\\+`));
     expect(all).toMatch(new RegExp(`${facts.easyCount}\\s*(?:Easy)`));
   });
 
   it('a stat block\'s number matches its own label — the shape prose rules cannot see', () => {
-    const offenders = collect(p => findStatBlockClaims(p.text, facts, CANONICAL_SKILLS.length));
-    expect(offenders, `stat blocks off the bank (total ${facts.challengeCount}, free ${facts.freeChallengeCount}):\n${report(offenders)}`).toEqual([]);
+    const offenders = collect(p => findStatBlockClaims(p.text, claimFacts, CANONICAL_SKILLS.length));
+    expect(offenders, `stat blocks off the bank (total ${facts.challengeCount}, free ${claimFacts.freeChallengeCount}):\n${report(offenders)}`).toEqual([]);
     // Not vacuous: the site does carry stat blocks this rule reads.
     const seen = pages.filter(p => /stat-num"[^>]*>\s*[\d,]+\s*<\/div>\s*<div class="stat-lbl"/i.test(p.text));
     expect(seen.length, 'no page has a stat block — the rule proved nothing').toBeGreaterThan(0);
@@ -1606,7 +1765,8 @@ describe('2. every count a page states is the bank\'s count', () => {
     // number is expected in at least one sentence somewhere on the site.
     const all = pages.map(p => p.text).join('\n');
     expect(all).toMatch(new RegExp(`\\b${Math.floor(facts.challengeCount / 50) * 50}\\+ (?:[\\w-]+ ){0,3}challenges\\b`));
-    expect(all).toMatch(new RegExp(`\\b${facts.freeChallengeCount} free\\b`));
+    // The free tier's own number: the free count before the quota, the quota after (section 6).
+    expect(all).toMatch(QUOTA_ON ? new RegExp(`\\b${FREE_SOLVE_QUOTA} free challenge solves\\b`) : new RegExp(`\\b${facts.freeChallengeCount} free\\b`));
     expect(all).toMatch(new RegExp(`\\b${CANONICAL_SKILLS.length}-skill\\b`));
     expect(all).toMatch(new RegExp(`\\b${facts.companies.length} company (?:pages|tracks)\\b`));
     const finans = facts.sectors.find(s => s.id === 'finans').challengeCount;
@@ -1651,7 +1811,7 @@ describe('4. challenge topic pages — every count is the bank\'s', () => {
 
   it('the /challenges/ hub states each topic page\'s bank numbers', () => {
     const hub = pages.find(p => p.file === join(TOPIC_DIR, `${TOPIC_INDEX}.html`));
-    const offenders = indexCardProblems(hub.text, topics)
+    const offenders = indexCardProblems(hub.text, topics, { quotaOn: QUOTA_ON })
       .map(o => ({ file: hub.file, line: lineAt(hub.text, o.index), why: o.why, text: o.text }));
     expect(offenders, `/challenges/ hub cards:\n${report(offenders)}`).toEqual([]);
     // Not vacuous: five cards, one per topic page.
@@ -1672,25 +1832,25 @@ describe('4. challenge topic pages — every count is the bank\'s', () => {
     }
   });
 
-  it('<title>, og:title and the H1 agree and carry the population count and free count', () => {
-    const offenders = collectTopics((p, t) => topicHeadProblems(p.text, t));
+  it(`<title>, og:title and the H1 agree and carry the population count${QUOTA_ON ? ' (no free count: freeQuota is on)' : ' and free count'}`, () => {
+    const offenders = collectTopics((p, t) => topicHeadProblems(p.text, t, { quotaOn: QUOTA_ON }));
     expect(offenders, `topic-page heads:\n${report(offenders)}`).toEqual([]);
   });
 
   it('each section exists, states its count, and lists exactly the predicate\'s challenges — Easy → Medium → Hard, previews before Pro', () => {
-    const offenders = collectTopics((p, t) => topicSectionProblems(p.text, t));
+    const offenders = collectTopics((p, t) => topicSectionProblems(p.text, t, { quotaOn: QUOTA_ON }));
     expect(offenders, `topic-page sections:\n${report(offenders)}`).toEqual([]);
   });
 
   it('every small count in the prose is one of the bank\'s numbers for that page, never an "N+" floor', () => {
-    const offenders = collectTopics((p, t) => topicNumberProblems(p.text, topicAllowedNumbers(t, topics)));
+    const offenders = collectTopics((p, t) => topicNumberProblems(p.text, topicAllowedNumbers(t, topics, { quotaOn: QUOTA_ON })));
     expect(offenders, `topic-page prose:\n${report(offenders)}`).toEqual([]);
   });
 
   it('is not vacuous — the pages do state the counts and list the cards', () => {
     for (const p of topicPages()) {
       const t = topics[slugOf(p)];
-      expect(p.text, p.file).toMatch(new RegExp(`\\b${t.count} Challenges \\(${t.free} Free\\)`));
+      expect(p.text, p.file).toMatch(QUOTA_ON ? new RegExp(`\\b${t.count} Challenges\\b(?! \\(\\d)`) : new RegExp(`\\b${t.count} Challenges \\(${t.free} Free\\)`));
       expect((p.text.match(/<div class="q-card">/g) || []).length, p.file).toBe(
         Object.values(t.sections).reduce((n, s) => n + s.count, 0),
       );
@@ -1724,7 +1884,7 @@ export const TOPIC_WORDS = [
 ];
 const TOPIC_COUNT_RE = /\b(\d+)(\+?)\s+(?:[\w-]+\s+){0,2}?((?:JOIN|join|window|CTE|CASE|subquer|conditional-aggregation|Conditional Logic|GROUP BY|group by|aggregat|HAVING|having|date)[\w-]*)\s+(?:function\s+)?(?:challenges|exercises|problems)\b/g;
 
-export function findTopicCountClaims(text, allTopics) {
+export function findTopicCountClaims(text, allTopics, { quotaOn = false } = {}) {
   const offenders = [];
   const seen = [];
   TOPIC_COUNT_RE.lastIndex = 0;
@@ -1739,7 +1899,7 @@ export function findTopicCountClaims(text, allTopics) {
       offenders.push({ index: m.index, why: `"${m[0]}" — a floor; the ${topic.slug} page states the bank's exact numbers`, text: m[0] });
       continue;
     }
-    if (n >= 6 && !topicAllowedNumbers(allTopics[topic.slug], allTopics).has(n)) {
+    if (n >= 6 && !topicAllowedNumbers(allTopics[topic.slug], allTopics, { quotaOn }).has(n)) {
       offenders.push({ index: m.index, why: `"${m[0]}" — ${n} is not a number the bank gives the ${topic.slug} page (total ${allTopics[topic.slug].count}, free ${allTopics[topic.slug].free})`, text: m[0] });
     }
   }
@@ -1759,7 +1919,7 @@ describe('5. topic counts quoted on other pages are the topic page\'s numbers', 
   });
 
   it('no page quotes a topic count that is a floor or is not the bank\'s', () => {
-    const offenders = collect(p => findTopicCountClaims(p.text, topics).offenders).filter(o => !o.file.startsWith(TOPIC_DIR));
+    const offenders = collect(p => findTopicCountClaims(p.text, topics, { quotaOn: QUOTA_ON }).offenders).filter(o => !o.file.startsWith(TOPIC_DIR));
     expect(offenders, `topic counts on other pages:\n${report(offenders)}`).toEqual([]);
   });
 
@@ -1815,9 +1975,99 @@ describe('free-share claims ("N of M") are the bank\'s pair, everywhere', () => 
       const s = fs.readFileSync(file, 'utf8').replace(/<!--[\s\S]*?-->/g, '');
       for (const m of s.matchAll(/\b(\d{3})[- ]of[- ](?:the |its )?(\d{3})\b(\+?)(?=[^<"]{0,40}?(?:free|challenge|question|exercise))/g)) {
         const got = `${m[1]} of ${m[2]}${m[3]}`;
-        if (Number(m[2]) >= 250 && got !== want) bad.push(`${file.split('/src/')[1]}: "${m[0]}"`);
+        // Under the free quota (2026-09-26) there is no free share to state at all.
+        if (Number(m[2]) >= 250 && (QUOTA_ON || got !== want)) bad.push(`${file.split('/src/')[1]}: "${m[0]}"`);
       }
     }
     expect(bad, `want ${want}`).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 6. What is free is what the flags say (2026-09-26) — findFreeTierClaims.
+// ---------------------------------------------------------------------------
+describe('6. free-tier copy matches freeQuota / companySetGate', () => {
+  const ON = { quotaOn: true, setGateOn: true };
+  const OFF = { quotaOn: false, setGateOn: false };
+  const whys = (html, st) => findFreeTierClaims(html, st).map(o => o.text.trim());
+
+  it('fixture, quota ON: every pre-quota free count fails, the quota and the set\'s three pass', () => {
+    for (const bad of [
+      '<p>300+ challenges (228 free), no signup.</p>',
+      '<p>SQL Quest has 228 free challenges of 300+.</p>',
+      '<p>13 of the 27 play free with no signup.</p>',
+      '<p>Practice the 27 Airbnb-tagged challenges — 13 free</p>',
+      '<p>Every Easy and Medium challenge is free, plus the Hard previews.</p>',
+      '<p>Easy and Medium are free; Hard is Pro.</p>',
+      '<p>12 challenges, 6 free.</p>',
+      '<p>SQL Quest has 6 free Hard previews.</p>',
+      '<p>SQL Quest: 11 free solves, then Pro.</p>',
+      '<p>The first 5 are free to try.</p>',
+      "<p>300+ challenge'ın 228'i ücretsiz.</p>",
+      '<p>SQL Quest ücretsiz tier: 228 challenge, AI Coach.</p>',
+      "<p>Free tier 20 challenge'ın hepsini çözmeye yeter.</p>",
+      '<p>SQL Quest\'s free tier is free forever.</p>',
+      '<p>It runs in the browser with no signup, and free challenges include the Easy and Medium ones.</p>',
+    ]) expect(findFreeTierClaims(bad, ON).length, bad).toBeGreaterThan(0);
+    for (const good of [
+      `<p>300+ challenges; your first ${FREE_SOLVE_QUOTA} solves are free.</p>`,
+      `<p>${FREE_SOLVE_QUOTA} free challenge solves, plus the lessons, warm-ups and the daily challenge — Pro opens all 300+.</p>`,
+      `<p>The first ${COMPANY_SET_FREE_COUNT} of the 25 are free to try; Pro opens the set.</p>`,
+      '<p>SQL Tutorial — 12 Free Lessons, Each With a Live Challenge</p>',
+      '<p>Are these SQL tools free? Yes, all five.</p>',
+      '<h3>StrataScratch</h3><p>75+ free questions with hints.</p>',
+      '<p>LeetCode: ~50-80 free SQL questions.</p>',
+      `<p>İlk ${FREE_SOLVE_QUOTA} challenge çözümü ücretsiz.</p>`,
+      `<p>3 of ${FREE_SOLVE_QUOTA} free solves used</p>`,
+    ]) expect(whys(good, ON), good).toEqual([]);
+  });
+
+  it('fixture, quota OFF: the quota\'s copy is early, and "first 3 of" needs the set gate', () => {
+    expect(findFreeTierClaims(`<p>${FREE_SOLVE_QUOTA} free challenge solves, then Pro.</p>`, OFF).length).toBe(1);
+    expect(findFreeTierClaims(`<p>Your first ${FREE_SOLVE_QUOTA} solves are free.</p>`, OFF).length).toBe(1);
+    expect(findFreeTierClaims(`<p>İlk ${FREE_SOLVE_QUOTA} challenge çözümü ücretsiz.</p>`, OFF).length).toBe(1);
+    expect(findFreeTierClaims(`<p>The first ${COMPANY_SET_FREE_COUNT} of the 25 are free to try.</p>`, OFF).length).toBe(1);
+    expect(findFreeTierClaims(`<p>The first ${COMPANY_SET_FREE_COUNT} of the 25 are free to try.</p>`, { quotaOn: false, setGateOn: true })).toEqual([]);
+    expect(findFreeTierClaims('<p>300+ challenges (228 free).</p>', OFF)).toEqual([]);
+    // …and with the quota on but the set gate off, the set's three is not a claim to make.
+    expect(findFreeTierClaims(`<p>The first ${COMPANY_SET_FREE_COUNT} of the 25 are free to try.</p>`, { quotaOn: true, setGateOn: false }).length).toBe(1);
+  });
+
+  it('fixture, quota ON: topic pages and the hub state no free count', () => {
+    const item = (id, difficulty, preview = false) => ({ id, difficulty, free: difficulty !== 'Hard' || preview, preview });
+    const T = { count: 5, free: 3, previews: 1, Easy: 1, Medium: 2, Hard: 2,
+      sections: { s1: { count: 3, free: 2, previews: 1, Easy: 0, Medium: 1, Hard: 2, items: [item(3, 'Medium'), item(7, 'Hard', true), item(9, 'Hard')] } } };
+    const head = t => `<title>X — ${t}</title><meta property="og:title" content="X — ${t}"><h1>X — <span>${t}</span></h1>`;
+    const q = { quotaOn: true };
+    expect(topicHeadProblems(head('5 Challenges'), T, q)).toEqual([]);
+    expect(topicHeadProblems(head('5 Challenges (3 Free)'), T, q).map(p => p.why)).toContain('"(3 Free)" in the head — under the free quota there is no free count');
+    const card = (d, a, l, id) => `<div class="q-card"><span class="tag ${d}">D</span><span class="tag ${a}">${l}</span><a href="/app/?challenge=${id}">go</a></div>`;
+    const body = h => `<section id="s1"><h2>${h}</h2>${card('medium', 'free', 'Free', 3)}${card('hard', 'free', 'Free preview', 7)}${card('hard', 'pro', 'Pro', 9)}</section>`;
+    expect(topicSectionProblems(body('S1: 3 challenges'), T, q)).toEqual([]);
+    expect(topicSectionProblems(body('S1: 3 challenges (2 free)'), T, q).map(p => p.why)).toEqual(['#s1 heading says "2 free" — under the free quota a section states no free count']);
+    // the free counts leave the prose's allowed numbers (3 stays: it is also the section count)
+    expect(topicAllowedNumbers({ ...T, free: 4 }, {}, q).has(4)).toBe(false);
+    expect(topicAllowedNumbers({ ...T, free: 4 }, {}).has(4)).toBe(true);
+    const hubCard = f => `<a class="t-card" href="/challenges/x/" data-topic="x"><p class="t-count"><strong><span class="t-n">5</span> challenges</strong> · ${f}<span class="t-e">1</span> Easy</p></a>`;
+    expect(indexCardProblems(hubCard(''), { x: T }, q)).toEqual([]);
+    expect(indexCardProblems(hubCard('<span class="t-f">3</span> free · '), { x: T }, q).map(p => p.why)).toContain('a hub card states a free count — under the free quota there is none');
+  });
+
+  it(`no page's free-tier copy contradicts the flags (freeQuota ${QUOTA_ON ? 'ON' : 'OFF'}, companySetGate ${SET_GATE_ON ? 'ON' : 'OFF'}${FLAGS.overridden ? ', overridden by FREE_TIER_FLAGS' : ''})`, () => {
+    const offenders = collect(p => findFreeTierClaims(p.text, { quotaOn: QUOTA_ON, setGateOn: SET_GATE_ON }));
+    expect(offenders, `free-tier copy off the flags:\n${report(offenders)}`).toEqual([]);
+  });
+
+  it('is not vacuous — the site states the free tier the flags describe', () => {
+    const all = pages.map(p => p.text).join('\n');
+    if (QUOTA_ON) {
+      expect(all).toMatch(new RegExp(`\\b${FREE_SOLVE_QUOTA} free challenge solves\\b`));
+      expect(all).toMatch(new RegExp(`İlk ${FREE_SOLVE_QUOTA} challenge çözümü ücretsiz`));
+    } else {
+      expect(all).toMatch(new RegExp(`\\b${facts.freeChallengeCount} free\\b`));
+    }
+    const co = pages.find(p => p.file === 'src/capital-one-sql-interview.html');
+    if (SET_GATE_ON) expect(co.text).toMatch(new RegExp(`first ${COMPANY_SET_FREE_COUNT} of`));
+    else expect(co.text).not.toMatch(new RegExp(`first ${COMPANY_SET_FREE_COUNT} of`));
   });
 });

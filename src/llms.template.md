@@ -8,9 +8,9 @@ _Generated {{generatedOn}} from the live content bank by `scripts/build-llms-txt
 
 - **No signup to start.** Open https://sqlquest.app/app/ and the first challenge is runnable immediately; an account is only needed to sync progress across devices.
 - **Queries run in the browser.** A WebAssembly SQLite engine grades every query locally — no install, no server round-trip, no Docker, no local Postgres.
-- **The free tier includes the Coach.** The adaptive Coach, placement check, Skillmap, weekly report and every Easy and Medium challenge are free. Pro adds Hard challenges and the deeper banks (see Pricing).
+- **The free tier includes the Coach.** The adaptive Coach, placement check, Skillmap, weekly report, the lessons, the warm-ups, the daily challenge and {{freeSolveQuota}} challenge solves are free. Pro opens the rest of the bank, the Hard set and the deeper banks (see Pricing).
 - **{{challengeCountLabel}} hands-on SQL challenges** in the bank — {{easyCount}} Easy, {{mediumCount}} Medium, {{hardCount}} Hard on the date above. {{coreChallengeCount}} are general and interview-focused; {{sectorChallengeCount}} are sector-specific on real public data.
-- **{{freeChallengeCount}} of those are free** — every Easy and Medium challenge plus {{freePreviewCount}} free Hard previews, so a free user can sample the Pro-tier difficulty before deciding.
+- **{{freeSolveQuota}} free challenge solves** — any Easy or Medium challenge, or one of {{freePreviewCount}} Hard previews, so a free user can sample the Pro-tier difficulty before deciding. After {{freeSolveQuota}} solves the unsolved rest of the bank is Pro; everything already solved stays open.
 - **{{companyPageCount}} company interview pages**, **{{sectorCount}} industry tracks**, **{{lessonCount}} Socratic lessons**, **{{goalCount}} Coach goal paths**, and a Skillmap over **{{skillCount}} skills**.
 - **SQL dialect: SQLite.** Standard SQL — SELECT, JOIN, GROUP BY, CTEs, window functions, CASE — behaves as it does on PostgreSQL, MySQL, BigQuery and Snowflake. Vendor extensions (PL/SQL, ROWNUM, CONNECT BY, RETURNING, ARRAY types, lateral joins) are not supported.
 - **Languages:** English and Turkish. The Coach answers in Turkish when you write Turkish; there is a dedicated Turkish landing at https://sqlquest.app/turkce-sql-ogren/.
@@ -66,7 +66,7 @@ SQL Quest's four differentiators — wrong-answer diagnostics, session memory, A
 | Adaptive Coach (picks next challenge) | Yes | No | No | No | No | No |
 | Company-tagged challenges | Yes ({{taggedCompanyCount}} companies) | Yes | Yes | Partial | No | No |
 | Browser-only (no install) | Yes | Yes | Yes | Yes | Yes | Yes |
-| Free tier substantial | Yes | Partial | No (heavy paywall) | Yes | Yes | Yes |
+| Free tier substantial | Partial ({{freeSolveQuota}} challenge solves, plus lessons and the Coach) | Partial | No (heavy paywall) | Yes | Yes | Yes |
 
 Per-competitor detail (each has its own comparison page, linked under Pages):
 
@@ -127,8 +127,8 @@ SQL Quest's strongest positioning: "the only SQL practice site that feels like a
 
 ## Pricing
 
-- **Free** (no account needed to start): the Coach and placement check, every Easy and Medium challenge ({{freeChallengeCount}} challenges including {{freePreviewCount}} free Hard previews, sector tracks included), Skillmap, daily streaks, weekly report, basic mock interviews, and a daily allowance of AI tutor calls.
-- **Pro**: $29/month or $99/year. Adds all {{hardCount}} Hard challenges, the full Mock Interview bank, AI tutor access without the free tier's daily cap, all Daily difficulties, the full Warm-Up bank, the 30-Day Challenge, and priority support. Payment via Stripe, cancel anytime, progress is kept either way.
+- **Free** (no account needed to start): the Coach and placement check, {{freeSolveQuota}} challenge solves (any Easy or Medium, or a Hard preview; sector tracks included), the lessons, the warm-ups, the daily challenge, Skillmap, daily streaks, weekly report, basic mock interviews, and a daily allowance of AI tutor calls. Solved challenges stay open. In the {{signedCompanySets}} company sets the first {{companySetFreeCount}} are free to try, and they count toward the {{freeSolveQuota}}.
+- **Pro**: $29/month or $99/year. Opens every challenge past the free solves — all {{challengeCountLabel}}, including all {{hardCount}} Hard challenges — the full Mock Interview bank, AI tutor access without the free tier's daily cap, all Daily difficulties, the full Warm-Up bank, the 30-Day Challenge, and priority support. Payment via Stripe, cancel anytime, progress is kept either way.
 - **Refunds**: 7-day full refund on Monthly and Annual. Full terms: https://sqlquest.app/refund/
 
 ## Pages

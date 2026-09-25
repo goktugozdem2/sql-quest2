@@ -41,7 +41,8 @@ import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { CANONICAL_SKILLS } from '../src/utils/skill-calc.js';
 import { isFreePreview } from '../src/utils/challenge-order.js';
-import { bankCountLabel } from '../src/utils/display-count.js';
+import { bankCountLabel, FREE_SOLVE_QUOTA, COMPANY_SET_FREE_COUNT } from '../src/utils/display-count.js';
+import { archetypeMemberCompanies } from '../src/data/interview-archetypes.js';
 import SKELETONS from '../src/utils/skeletons.js';
 
 const __dirname = import.meta.dirname;
@@ -317,7 +318,13 @@ export function templateValues(facts, generatedOn) {
     mediumCount: facts.mediumCount,
     hardCount: facts.hardCount,
     freePreviewCount: facts.freePreviewCount,
-    freeChallengeCount: facts.freeChallengeCount,
+    // 2026-09-26 (freeQuota + companySetGate): the free tier is said as the
+    // quota the gate reads, never as a count of free challenges — there is no
+    // such count once the quota is on. facts.freeChallengeCount stays in the
+    // facts (what a free solve can be spent on) for the tests.
+    freeSolveQuota: FREE_SOLVE_QUOTA,
+    companySetFreeCount: COMPANY_SET_FREE_COUNT,
+    signedCompanySets: archetypeMemberCompanies().join(' and '),
     companyPageCount: facts.companies.length,
     taggedCompanyCount: facts.companies.filter(c => c.taggedChallenges > 0).length,
     companies: facts.companies.map(c => c.name).join(', '),

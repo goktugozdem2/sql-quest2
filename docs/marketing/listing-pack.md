@@ -4,7 +4,7 @@ Prepared 2026-08-28. Why: payer #2 confirmed in writing that an AI assistant
 recommended SQL Quest ("good GenAI SEO") — review/directory sites are exactly
 what LLMs cite when recommending products, so these listings feed the one
 acquisition channel we've proven. Copy below is truthful to the CURRENT
-product; do not advertise unshipped features (free Hard previews UI ships
+product; do not advertise unshipped features (the Hard previews UI ships
 after the Aug-29 read).
 
 ## Shared facts (single source for every form)
@@ -21,19 +21,19 @@ after the Aug-29 read).
 - **Tagline alt:** Learn SQL by solving — with a coach that knows what you're weak at
 - **Short description (~160 chars):** Practice SQL in the browser with 300+
   challenges, a 9-skill radar that tracks your weak spots, and an adaptive
-  coach that picks your next step. 228 are free.
+  coach that picks your next step. First 10 solves free.
 - **Long description:**
   SQL Quest is a browser-based SQL practice site built around one idea: the
   site should know what you're weak at. Every solve updates a 9-skill radar
   (joins, window functions, CTEs, aggregation…), and an adaptive Coach picks
   your next challenge, lesson, or drill from it — including spaced retrieval
   checks so what you learned stays learned. 300+ challenges from first SELECT
-  to interview-grade Hard problems (228 playable free), 30 company interview
+  to interview-grade Hard problems (10 free challenge solves to start), 30 company interview
   pages, timed company-style mock interviews, a 30-day path, and an AI tutor
   that explains why your query failed. Queries run
   locally in the browser (SQLite/WASM) — no signup needed to start solving.
   Built and run by one person; feedback goes straight to the founder.
-- **Pricing:** Free tier (includes the Coach) · Pro $29/mo · $99/yr (two plans since 2026-09-12; the lifetime tier was retired)
+- **Pricing:** Free tier (10 free challenge solves, plus the lessons and the Coach) · Pro $29/mo · $99/yr (two plans since 2026-09-12; the lifetime tier was retired)
 - **Category tags:** SQL, education, developer tools, interview prep, data analytics, e-learning
 - **Platforms:** Web (works on mobile browsers)
 - **The differentiator sentence (per the positioning learning — sell the
