@@ -1307,7 +1307,7 @@ describe('source guard: the countdown card lives on the Coach now', () => {
     // The ?interview= deep link still resolves to the trials tab and hands the
     // mock to startInterview.
     expect(appSource).toContain("const interviewParam = urlParams.get('interview');");
-    expect(appSource).toMatch(/setActiveTab\('trials'\);[\s\S]{0,400}startInterview\(target\)/);
+    expect(appSource).toMatch(/setActiveTab\('trials'\);[\s\S]{0,400}startInterview\(target(, false, \{ patternSlug \})?\)/);
     // The onboarding interview branch still routes there.
     expect(appSource).toMatch(/onboardingData\.goal === 'interview'\)\s*\{\s*\n\s*setActiveTab\('trials'\);/);
   });
@@ -1400,7 +1400,8 @@ describe('source guard: the interview deep link waits for the session', () => {
 
   it('the resolver exists and is still one block', () => {
     expect(block.length).toBeGreaterThan(400);
-    expect(block).toContain('startInterview(target)');
+    // 2026-09-25: the trap-page source rides along ({ patternSlug }).
+    expect(block).toMatch(/startInterview\(target(, false, \{ patternSlug \})?\)/);
   });
 
   it('starting guest mode returns instead of falling through to startInterview', () => {

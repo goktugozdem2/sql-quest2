@@ -307,11 +307,16 @@ describe('source guards — the five flags are wired, and off', () => {
     // deliberate "Unlock Pro" click (openProForLockedMock), and the list card.
     expect((app.match(/setProModalReason\(\{ type: 'interview_locked'/g) || []).length).toBe(3);
     // the nudge still writes the lock row first: lock → cold-start → nudge → ask, in that order
-    const at = app.indexOf('const startInterview = (interview, forceNew = false) => {');
-    const block = app.slice(at, at + 1500);
+    const at = app.indexOf('const startInterview = (interview, forceNew = false, opts = {}) => {');
+    const block = app.slice(at, at + 3000);
     expect(block.indexOf("trackLockReached('interview'")).toBeLessThan(block.indexOf('openColdStartInstead()'));
     expect(block.indexOf('openColdStartInstead()')).toBeLessThan(block.indexOf('nudgeToFreeMock('));
-    expect(block.indexOf('nudgeToFreeMock(')).toBeLessThan(block.indexOf('setShowProModal(true)'));
+    // 2026-09-25: the one ask before the cold-start check is the trap-page
+    // entry (pattern_mock, the founder's call); every other path keeps
+    // lock → cold-start → nudge → ask.
+    const firstAsk = block.indexOf('setShowProModal(true)');
+    expect(block.slice(0, firstAsk)).toContain("type: 'pattern_mock'");
+    expect(block.indexOf('setShowProModal(true)', block.indexOf('nudgeToFreeMock('))).toBeGreaterThan(block.indexOf('nudgeToFreeMock('));
   });
 
   it('nothing here touches the Easy/Medium bank or the six-solve rung', () => {

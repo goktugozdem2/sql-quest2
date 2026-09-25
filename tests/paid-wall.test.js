@@ -93,6 +93,19 @@ describe('source guard — every paid wall diverts before it sells', () => {
       // "Unlock Pro anyway" door with its own reason.
       const before = app.slice(Math.max(0, m.index - 600), m.index);
       if (before.includes('const openProForLockedMock')) continue;
+      // EXEMPT (2026-09-25, founder): the SQL trap page's "question N of our
+      // … mock" link. The visitor asked for the timed screen, so the answer
+      // is the price with the trap as context. Only that branch is exempt:
+      // the rest of the same gate must still divert before its own ask.
+      if (after.slice(0, ask).includes("type: 'pattern_mock'")) {
+        // wider window: the pattern branch is long, and the rest of the gate
+        // must be in view or this check passes vacuously (caught 2026-09-25).
+        const rest = app.slice(m.index, m.index + 4000).slice(ask + 1);
+        const ask2 = rest.search(/setShowProModal\(true\)|showSoftProGate\(/);
+        const divert2 = rest.indexOf('openColdStartInstead(');
+        if (ask2 !== -1 && (divert2 === -1 || divert2 > ask2)) offenders.push(app.slice(0, m.index).split('\n').length);
+        continue;
+      }
       const divert = after.indexOf('openColdStartInstead(');
       if (divert === -1 || divert > ask) {
         offenders.push(app.slice(0, m.index).split('\n').length);

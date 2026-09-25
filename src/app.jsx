@@ -25272,7 +25272,8 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
       return;
     }
     const patternSlug = pendingInterviewPatternRef.current;
-    interviewEntryRef.current = patternSlug ? 'pattern' : 'deeplink';
+    interviewEntryRef.current = 'deeplink';
+    if (patternSlug) interviewEntryRef.current = 'pattern';   // from a SQL trap page
     setActiveTab('trials');
     // Skip the first-run shell — it renders regardless of tab and would
     // swallow the interview the link promised (same as the list resolver).
