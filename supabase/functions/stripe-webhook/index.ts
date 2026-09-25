@@ -5,6 +5,15 @@
 // checkout.session.expired, customer.subscription.updated, and since
 // 2026-09-20 charge.refunded. An event the endpoint does not subscribe to is
 // an event this file never sees — adding a branch here is half the change.
+//
+// Trials (2026-09-26, with create-checkout-session): a card-required 7-day
+// trial arrives as checkout.session.completed on a TRIALING subscription with
+// amount_total 0. That grants Pro to the trial end and logs
+// `pro_trial_started` — never `pro_purchase_completed`. The money arrives as
+// invoice.payment_succeeded (billing_reason subscription_cycle) at the trial
+// end, and THAT logs the one `pro_purchase_completed` (after_trial: true).
+// A trial cancelled before paying logs `pro_trial_cancelled` and ends Pro at
+// the trial end. No new endpoint events are needed for any of it.
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -93,12 +102,74 @@ const PRODUCT_TO_PLAN: Record<string, { type: string; durationDays: number }> = 
   [Deno.env.get("STRIPE_PRODUCT_LIFETIME") || ""]: plan("lifetime"),
 };
 
+// The India prices (2026-09-26) are separate Price objects on the same plans.
+// They are mapped by id here AND caught by the interval rule below, because
+// the amount fallback would otherwise read a regional annual (well under
+// $99) as a MONTH of access.
 const PRICE_TO_PLAN: Record<string, { type: string; durationDays: number }> = {
   [Deno.env.get("STRIPE_PRICE_MONTHLY") || ""]: plan("monthly"),
   [Deno.env.get("STRIPE_PRICE_QUARTERLY") || ""]: plan("quarterly"),
   [Deno.env.get("STRIPE_PRICE_ANNUAL") || ""]: plan("annual"),
   [Deno.env.get("STRIPE_PRICE_LIFETIME") || ""]: plan("lifetime"),
+  [Deno.env.get("STRIPE_PRICE_MONTHLY_IN") || ""]: plan("monthly"),
+  [Deno.env.get("STRIPE_PRICE_ANNUAL_IN") || ""]: plan("annual"),
 };
+delete PRICE_TO_PLAN[""];
+delete PRODUCT_TO_PLAN[""];
+
+// The plan a recurring price bills for, read from the price itself. Runs
+// AFTER the id maps and BEFORE the amount fallback: a price whose id no
+// secret names still says how often it bills, and that is the truth the
+// amount only guesses at. (The amount fallback turned any unmapped price
+// under $49 into 30 days — a $39/yr regional annual would have been sold as
+// a month.) A one-time price has no `recurring` and falls through.
+function planFromInterval(price: Stripe.Price | null | undefined) {
+  const r = price?.recurring;
+  if (!r) return null;
+  const count = r.interval_count || 1;
+  if (r.interval === "year" && count === 1) return plan("annual");
+  if (r.interval === "month" && count === 3) return plan("quarterly");
+  if (r.interval === "month" && count === 1) return plan("monthly");
+  return null;
+}
+
+// A user record's affiliate conversion row. Written when money first
+// arrives: at checkout for a paid purchase, at the first charge for a trial.
+async function recordReferralConversion(
+  userRecord: { username: string },
+  userData: Record<string, unknown>,
+  email: string | null,
+  planType: string,
+  amountCents: number | null,
+  metadata: Record<string, unknown>,
+) {
+  // Affiliate attribution: if this user signed up via a referrer, log
+  // the conversion. We read userData.refCode (stamped at signup, see
+  // src/app.jsx → saveUserData) so this never depends on the client
+  // round-tripping the ref code through Stripe metadata. Best-effort —
+  // a missing refCode is normal (most users come direct).
+  try {
+    if (userData.refCode && typeof userData.refCode === "string") {
+      await supabase.from("referrals").insert({
+        ref_code:     userData.refCode.toLowerCase(),
+        event_type:   "pro_conversion",
+        username:     userRecord.username,
+        email:        email || (userData.email as string) || null,
+        plan_type:    planType,
+        amount_cents: amountCents,
+        metadata: {
+          ...metadata,
+          ref_code_at:       userData.refCodeAt || null,
+          auto_renew:        userData.proAutoRenew,
+        },
+      });
+    }
+  } catch (err) {
+    // Conversion logging is supplementary — never fail the Pro
+    // activation because the referrals table couldn't be written.
+    console.error("[stripe-webhook] referral insert failed:", err);
+  }
+}
 
 // A plan that does not renew. Stripe sends no invoice for these, so
 // proAutoRenew must be false — the 2026-09-07 incident was exactly an
@@ -144,8 +215,10 @@ serve(async (req) => {
       const priceId = lineItems.data[0]?.price?.id;
       const productId = lineItems.data[0]?.price?.product as string;
       
-      // Determine plan type
-      let planInfo = PRICE_TO_PLAN[priceId] || PRODUCT_TO_PLAN[productId];
+      // Determine plan type: the id maps, then the price's own billing
+      // interval, and only then the amount.
+      let planInfo = PRICE_TO_PLAN[priceId] || PRODUCT_TO_PLAN[productId]
+        || planFromInterval(lineItems.data[0]?.price);
       
       // Fallback: determine by amount. Order matters — the old
       // `else { monthly }` meant ANY unmapped amount became 30 days, so a $49
@@ -166,9 +239,22 @@ serve(async (req) => {
         console.warn(`No price/product mapping for ${priceId || productId}; fell back to ${planInfo.type} on amount ${amount}`);
       }
 
-      // Calculate expiry date
-      const expiry = new Date();
-      expiry.setDate(expiry.getDate() + planInfo.durationDays);
+      // A trial? Only a $0 subscription checkout can be one, so the extra
+      // Stripe read happens only then — a paid checkout never waits on it.
+      // If the read fails we answer non-2xx and Stripe redelivers: guessing
+      // here would either sell a trial as a purchase or a purchase as a trial.
+      let trialEnd: number | null = null;
+      const subscriptionId: string | null = (session.subscription as string) || null;
+      if (session.mode === "subscription" && subscriptionId && (session.amount_total ?? 0) === 0) {
+        const sub = await stripe.subscriptions.retrieve(subscriptionId);
+        if (sub.status === "trialing" && sub.trial_end) trialEnd = sub.trial_end;
+      }
+      const isTrial = trialEnd !== null;
+
+      // Calculate expiry date. A trial runs to its own end; the first charge
+      // (invoice.payment_succeeded, below) extends it by the plan.
+      const expiry = isTrial ? new Date((trialEnd as number) * 1000) : new Date();
+      if (!isTrial) expiry.setDate(expiry.getDate() + planInfo.durationDays);
 
       console.log(`Activating ${planInfo.type} plan for ${username || email}, expires: ${expiry.toISOString()}`);
 
@@ -218,6 +304,16 @@ serve(async (req) => {
           stripe_session_id: session.id,
           created_at: new Date().toISOString(),
         });
+        if (isTrial) {
+          await logProEvent("pro_trial_started", username || null, "stripe_webhook", {
+            plan_type: planInfo.type,
+            trial_end: expiry.toISOString(),
+            stripe_session_id: session.id,
+            stripe_subscription_id: subscriptionId,
+            pending: true,
+          });
+          return new Response("User not found, trial stored for later", { status: 200 });
+        }
         await logProEvent("pro_purchase_pending", username || null, "stripe_webhook", {
           plan_type: planInfo.type,
           amount_cents: session.amount_total || null,
@@ -227,6 +323,17 @@ serve(async (req) => {
         return new Response("User not found, payment stored for later", { status: 200 });
       }
 
+      // Redelivery: Stripe retries an event our reply did not acknowledge,
+      // and the money truth must not count one session twice. The session id
+      // is stamped in the same write that grants Pro, so a row that already
+      // carries it has been processed.
+      const alreadyProcessed = userData.stripeSessionId === session.id;
+
+      if (alreadyProcessed) {
+        console.log(`↺ checkout ${session.id} already processed for ${userRecord.username}`);
+        return new Response("Already processed", { status: 200 });
+      }
+
       // Update user's Pro status
       userData.proStatus = true;
       userData.proType = planInfo.type;
@@ -234,6 +341,13 @@ serve(async (req) => {
       userData.proAutoRenew = !ONE_TIME_PLANS.has(planInfo.type);
       userData.stripeCustomerId = session.customer as string;
       userData.stripeSessionId = session.id;
+      if (isTrial) {
+        userData.proTrial = true;
+        userData.proTrialEnd = expiry.toISOString();
+      } else {
+        delete userData.proTrial;
+        delete userData.proTrialEnd;
+      }
 
       const { error } = await supabase
         .from("users")
@@ -245,49 +359,68 @@ serve(async (req) => {
         return new Response("Database update failed", { status: 500 });
       }
 
+      // A trial is not money. It gets its own row, and the purchase row is
+      // written when the first real charge lands (invoice.payment_succeeded,
+      // after_trial: true). pro_purchase_completed/stripe_webhook is the only
+      // money truth in this company — a $0 trial in it would be a sale that
+      // never happened.
+      if (isTrial) {
+        console.log(`🧪 Trial started for ${userRecord.username} (${planInfo.type}) until ${expiry.toISOString()}`);
+        await logProEvent("pro_trial_started", userRecord.username, "stripe_webhook", {
+          plan_type: planInfo.type,
+          trial_end: expiry.toISOString(),
+          stripe_session_id: session.id,
+          stripe_subscription_id: subscriptionId,
+        });
+        return new Response("Trial started", { status: 200 });
+      }
+
       console.log(`✅ Successfully activated Pro for ${userRecord.username}`);
       await logProEvent("pro_purchase_completed", userRecord.username, "stripe_webhook", {
         plan_type: planInfo.type,
         amount_cents: session.amount_total || null,
         stripe_session_id: session.id,
+        stripe_subscription_id: subscriptionId,
         auto_renew: userData.proAutoRenew,
       });
 
-      // Affiliate attribution: if this user signed up via a referrer, log
-      // the conversion. We read userData.refCode (stamped at signup, see
-      // src/app.jsx → saveUserData) so this never depends on the client
-      // round-tripping the ref code through Stripe metadata. Best-effort —
-      // a missing refCode is normal (most users come direct).
-      try {
-        if (userData.refCode && typeof userData.refCode === "string") {
-          await supabase.from("referrals").insert({
-            ref_code:     userData.refCode.toLowerCase(),
-            event_type:   "pro_conversion",
-            username:     userRecord.username,
-            email:        email || userData.email || null,
-            plan_type:    planInfo.type,
-            amount_cents: session.amount_total || null,
-            metadata: {
-              stripe_session_id: session.id,
-              ref_code_at:       userData.refCodeAt || null,
-              auto_renew:        userData.proAutoRenew,
-            },
-          });
-        }
-      } catch (err) {
-        // Conversion logging is supplementary — never fail the Pro
-        // activation because the referrals table couldn't be written.
-        console.error("[stripe-webhook] referral insert failed:", err);
-      }
+      await recordReferralConversion(userRecord, userData, email || null, planInfo.type, session.amount_total || null, {
+        stripe_session_id: session.id,
+      });
 
       return new Response("Pro activated", { status: 200 });
     }
 
     // Handle subscription updates (for recurring payments)
+    //
+    // Three kinds of paid invoice arrive here, and only one of them is a
+    // renewal (2026-09-26, with the trial):
+    //   - $0 (the trial's opening invoice, or a 100% coupon): no money, no
+    //     extension. Before this guard a trial's $0 invoice would have added
+    //     a whole plan period on top of the trial.
+    //   - billing_reason subscription_create: the FIRST invoice of a new
+    //     subscription. checkout.session.completed owns activation and the
+    //     purchase row; extending here as well granted a second period
+    //     whenever this event happened to land after the checkout event.
+    //   - subscription_cycle: a renewal — or, once, the first real charge
+    //     after a trial, which is the purchase (after_trial: true).
+    // invoice.paid is deliberately NOT handled: the endpoint subscribes to
+    // invoice.payment_succeeded, and answering both would count one charge
+    // twice.
     if (event.type === "invoice.payment_succeeded") {
       const invoice = event.data.object as Stripe.Invoice;
       const customerId = invoice.customer as string;
-      
+      const amountPaid = invoice.amount_paid ?? 0;
+
+      if (amountPaid <= 0) {
+        console.log(`\u2139\uFE0F $0 invoice ${invoice.id} (${invoice.billing_reason}) — nothing to extend`);
+        return new Response("Zero-amount invoice ignored", { status: 200 });
+      }
+      if (invoice.billing_reason === "subscription_create") {
+        console.log(`\u2139\uFE0F first invoice ${invoice.id} — activation is checkout.session.completed's`);
+        return new Response("Activation handled by checkout", { status: 200 });
+      }
+
       // Find user by Stripe customer ID
       const { data: users } = await supabase
         .from("users")
@@ -297,7 +430,31 @@ serve(async (req) => {
       if (users && users.length > 0) {
         const userRecord = users[0];
         const userData = userRecord.data;
-        
+
+        // The first charge after a trial. Stripe's own record decides it:
+        // the subscription had a trial, and this invoice's period starts
+        // where the trial ended (later renewals start a whole interval
+        // after it). The read is made only for cycle invoices; if it fails
+        // for someone we know is trialing, answer non-2xx and let Stripe
+        // redeliver rather than file a purchase as a renewal.
+        let afterTrial = false;
+        const subscriptionId = (invoice.subscription as string) || null;
+        if (invoice.billing_reason === "subscription_cycle" && subscriptionId) {
+          try {
+            const sub = await stripe.subscriptions.retrieve(subscriptionId);
+            const periodStart = invoice.lines?.data?.[0]?.period?.start ?? invoice.created;
+            afterTrial = !!sub.trial_end && Math.abs(periodStart - sub.trial_end) <= 6 * 3600;
+          } catch (err) {
+            if (userData.proTrial === true) throw err;
+            console.warn("[stripe-webhook] subscription read failed; treating as a renewal:", err);
+          }
+        }
+
+        // Redelivery of the conversion we already recorded.
+        if (afterTrial && userData.proTrialConvertedInvoice === invoice.id) {
+          return new Response("Already processed", { status: 200 });
+        }
+
         // Extend subscription
         const currentExpiry = new Date(userData.proExpiry || new Date());
         const newExpiry = new Date(Math.max(currentExpiry.getTime(), Date.now()));
@@ -314,17 +471,37 @@ serve(async (req) => {
 
         userData.proExpiry = newExpiry.toISOString();
         userData.proStatus = true;
+        if (afterTrial) {
+          userData.proTrial = false;
+          userData.proTrialConvertedInvoice = invoice.id;
+        }
 
         await supabase
           .from("users")
           .update({ data: userData, updated_at: new Date().toISOString() })
           .eq("username", userRecord.username);
 
-        console.log(`✅ Extended subscription for ${userRecord.username} until ${newExpiry.toISOString()}`);
-        await logProEvent("pro_renewal_completed", userRecord.username, "stripe_webhook", {
-          plan_type: userData.proType || "unknown",
-          invoice_id: invoice.id,
-        });
+        if (afterTrial) {
+          // The trial's money. This is the ONE purchase row for a trial
+          // subscription: its checkout wrote pro_trial_started, not this.
+          console.log(`✅ Trial converted for ${userRecord.username} until ${newExpiry.toISOString()}`);
+          await logProEvent("pro_purchase_completed", userRecord.username, "stripe_webhook", {
+            plan_type: userData.proType || "unknown",
+            amount_cents: amountPaid,
+            after_trial: true,
+            invoice_id: invoice.id,
+            stripe_subscription_id: subscriptionId,
+            auto_renew: userData.proAutoRenew,
+          });
+          await recordReferralConversion(userRecord, userData, invoice.customer_email || null,
+            userData.proType || "unknown", amountPaid, { invoice_id: invoice.id, after_trial: true });
+        } else {
+          console.log(`✅ Extended subscription for ${userRecord.username} until ${newExpiry.toISOString()}`);
+          await logProEvent("pro_renewal_completed", userRecord.username, "stripe_webhook", {
+            plan_type: userData.proType || "unknown",
+            invoice_id: invoice.id,
+          });
+        }
       }
       
       return new Response("Subscription extended", { status: 200 });
@@ -470,7 +647,8 @@ serve(async (req) => {
         const lineItems = await stripe.checkout.sessions.listLineItems(session.id);
         const priceId = lineItems.data[0]?.price?.id || "";
         const productId = (lineItems.data[0]?.price?.product as string) || "";
-        planType = (PRICE_TO_PLAN[priceId] || PRODUCT_TO_PLAN[productId])?.type || "unknown";
+        planType = (PRICE_TO_PLAN[priceId] || PRODUCT_TO_PLAN[productId]
+          || planFromInterval(lineItems.data[0]?.price))?.type || "unknown";
       } catch (_) { /* the row still says the session expired */ }
       await logProEvent("pro_checkout_expired", username, "stripe_webhook", {
         plan_type: planType,
@@ -549,6 +727,26 @@ serve(async (req) => {
           .update({ data: userData, updated_at: new Date().toISOString() })
           .eq("username", userRecord.username);
       }
+
+      // A trial cancelled before its first charge is not a paying customer
+      // leaving, so it stays out of payer_churn (pro_subscription_cancelled).
+      // Access needs no write: a trial's proExpiry already IS the trial end,
+      // and Stripe ends the subscription there without charging.
+      if (subscription.status === "trialing") {
+        await logProEvent(
+          subscription.cancel_at_period_end ? "pro_trial_cancelled" : "pro_trial_reactivated",
+          userRecord?.username || null,
+          "stripe_webhook",
+          {
+            plan_type: userData?.proType || "unknown",
+            scheduled: true,
+            trial_end: subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null,
+          },
+        );
+        console.log(`${subscription.cancel_at_period_end ? "⚠️ Trial cancellation scheduled" : "↩️ Trial cancellation undone"} for ${userRecord?.username || customerId}`);
+        return new Response("Trial update recorded", { status: 200 });
+      }
+
       await logProEvent(
         subscription.cancel_at_period_end ? "pro_subscription_cancelled" : "pro_subscription_reactivated",
         userRecord?.username || null,
@@ -594,9 +792,19 @@ serve(async (req) => {
         || subscription.status === "unpaid"
         || subscription.status === "incomplete_expired";
 
+      // A trial that never became a payment (2026-09-26): it ended inside
+      // the trial — cancelled during it, or at its end — or the record says
+      // the first charge never landed. Such a person keeps Pro to the trial
+      // end, not a day longer, and is logged as pro_trial_cancelled: they
+      // were never a paying customer, so they are not payer churn.
+      const trialEndIso = subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null;
+      const endedAt = subscription.ended_at || subscription.canceled_at || null;
+      const endedInsideTrial = !!subscription.trial_end && !!endedAt && endedAt <= subscription.trial_end + 3600;
+
       if (users && users.length > 0) {
         const userRecord = users[0];
         const userData = userRecord.data;
+        const trialNeverPaid = endedInsideTrial || userData.proTrial === true;
 
         userData.proAutoRenew = false;
         if (endedForNonPayment) {
@@ -606,12 +814,27 @@ serve(async (req) => {
           // win-back copy depends on that difference.
           userData.proStatus = false;
           userData.proExpiry = new Date().toISOString();
+        } else if (trialNeverPaid && trialEndIso) {
+          // Cancelled mid-trial: the trial runs to its end, as promised.
+          userData.proExpiry = trialEndIso;
         }
 
         await supabase
           .from("users")
           .update({ data: userData, updated_at: new Date().toISOString() })
           .eq("username", userRecord.username);
+
+        if (trialNeverPaid) {
+          await logProEvent("pro_trial_cancelled", userRecord.username, "stripe_webhook", {
+            plan_type: userData.proType || "unknown",
+            ended: true,
+            reason: cancelReason,
+            revoked: endedForNonPayment,
+            trial_end: trialEndIso,
+          });
+          console.log(`⚠️ Trial ended unpaid for ${userRecord.username} (${cancelReason || subscription.status})`);
+          return new Response("Trial cancelled", { status: 200 });
+        }
 
         // 2026-09-12: this branch logged to the console and nothing else, so
         // the date a paying customer left was recorded nowhere in our data.

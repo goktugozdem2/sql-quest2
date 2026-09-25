@@ -99,6 +99,22 @@ Deno.serve(async (req) => {
 
   for (const user of users) {
     try {
+      // Stripe trials (2026-09-26, create-checkout-session) are NOT this
+      // email's audience, and never will be. This file is the reminder for
+      // the old card-less in-app trial (proType 'trial'): its copy says the
+      // trial will LOCK and links a Payment Link to buy Pro. A Stripe
+      // trialist already has a subscription that will CHARGE them at the
+      // trial end — sending them this would tell them the wrong thing and
+      // invite a second subscription. They carry proType monthly/annual +
+      // proTrial, so the query above already excludes them; this line keeps
+      // it so if the query ever widens. Their reminder, if any, belongs to
+      // Stripe's side (its trial-reminder email setting, or a sender built
+      // on customer.subscription.trial_will_end), which knows the charge
+      // date and the amount — see docs/plans/checkout-sessions-release.md.
+      if (user.data?.proTrial === true) {
+        log.push({ user: user.username, skip: "stripe_trial" });
+        continue;
+      }
       const email = user.email || user.data?.email;
       if (!email) {
         log.push({ user: user.username, skip: "no_email" });

@@ -137,3 +137,142 @@ describe('stripe-webhook: access comes back off', () => {
     }
   });
 });
+
+// ── Trials and regional prices (2026-09-26, create-checkout-session) ────────
+// pro_purchase_completed with reason stripe_webhook is the only money truth in
+// this company. A card-required trial takes no money at checkout, so its
+// checkout must never write that row; the row is written ONCE, at the first
+// real charge. These guard the branches that decide it.
+describe('stripe-webhook: a trial is not a purchase', () => {
+  it('the checkout trial path returns before any purchase row', () => {
+    const b = branch('checkout.session.completed');
+    const trialReturn = b.indexOf('return new Response("Trial started"');
+    expect(trialReturn, 'the trial path returns on its own').toBeGreaterThan(-1);
+    const trialBlock = b.slice(b.lastIndexOf('if (isTrial) {', trialReturn), trialReturn);
+    expect(trialBlock).toContain('logProEvent("pro_trial_started"');
+    expect(trialBlock).not.toContain('pro_purchase');
+    // every purchase row in the branch sits after the trial has returned
+    const purchases = [...b.matchAll(/logProEvent\("pro_purchase_completed"/g)].map(m => m.index);
+    expect(purchases).toHaveLength(1);
+    for (const at of purchases) expect(at).toBeGreaterThan(trialReturn);
+  });
+
+  it('an unmatched trial is not filed as a pending purchase', () => {
+    const b = branch('checkout.session.completed');
+    const pendingPurchase = b.indexOf('logProEvent("pro_purchase_pending"');
+    const trialPendingReturn = b.indexOf('return new Response("User not found, trial stored for later"');
+    expect(trialPendingReturn).toBeGreaterThan(-1);
+    expect(pendingPurchase).toBeGreaterThan(trialPendingReturn);
+  });
+
+  it('a trial is read from Stripe, only for a $0 subscription checkout', () => {
+    const b = branch('checkout.session.completed');
+    expect(b).toMatch(/session\.mode === "subscription" && subscriptionId && \(session\.amount_total \?\? 0\) === 0/);
+    expect(b).toContain('sub.status === "trialing"');
+    expect(b).toContain('userData.proTrial = true');
+    // Pro runs to the trial end, not a plan period
+    expect(b).toContain('new Date((trialEnd as number) * 1000)');
+  });
+
+  it('a redelivered checkout is not counted twice', () => {
+    const b = branch('checkout.session.completed');
+    const check = b.indexOf('userData.stripeSessionId === session.id');
+    expect(check).toBeGreaterThan(-1);
+    expect(b.indexOf('logProEvent("pro_purchase_completed"')).toBeGreaterThan(check);
+    expect(b.indexOf('logProEvent("pro_trial_started", userRecord.username')).toBeGreaterThan(check);
+  });
+
+  it('$0 and first invoices return before anything is extended or logged', () => {
+    const b = branch('invoice.payment_succeeded');
+    const zero = b.indexOf('if (amountPaid <= 0)');
+    const create = b.indexOf('if (invoice.billing_reason === "subscription_create")');
+    expect(zero).toBeGreaterThan(-1);
+    expect(create).toBeGreaterThan(zero);
+    const firstEffect = Math.min(b.indexOf('logProEvent('), b.indexOf('proExpiry ='), b.indexOf('from("users")'));
+    expect(firstEffect).toBeGreaterThan(create);
+    expect(b).not.toContain('"invoice.paid"');
+  });
+
+  it('the first charge after a trial is the one purchase row, with after_trial', () => {
+    const b = branch('invoice.payment_succeeded');
+    const purchase = b.indexOf('logProEvent("pro_purchase_completed"');
+    expect(purchase).toBeGreaterThan(-1);
+    // the nearest condition above the purchase row is the afterTrial test
+    const guard = b.lastIndexOf('if (', purchase);
+    expect(b.slice(guard, guard + 17), 'the purchase row is behind afterTrial').toBe('if (afterTrial) {');
+    expect(b.slice(guard, purchase)).not.toContain('} else');
+    expect(b.slice(purchase, purchase + 300)).toContain('after_trial: true');
+    // every other paid cycle stays a renewal
+    expect(b).toContain('logProEvent("pro_renewal_completed"');
+    expect(b.indexOf('logProEvent("pro_renewal_completed"')).toBeGreaterThan(b.indexOf('} else {', purchase));
+    // afterTrial is decided by the subscription's trial end, not guessed
+    expect(b).toContain('sub.trial_end');
+    expect(b).toContain('userData.proTrialConvertedInvoice === invoice.id');
+  });
+
+  it('exactly two purchase rows exist in the whole file: checkout, and after a trial', () => {
+    expect(src.match(/logProEvent\("pro_purchase_completed"/g)).toHaveLength(2);
+  });
+
+  it('a trial cancelled before paying is pro_trial_cancelled, and ends at the trial end', () => {
+    const u = branch('customer.subscription.updated');
+    const trialing = u.indexOf('if (subscription.status === "trialing")');
+    expect(trialing).toBeGreaterThan(-1);
+    expect(u.indexOf('"pro_trial_cancelled"')).toBeGreaterThan(trialing);
+    expect(u.indexOf('"pro_trial_cancelled"')).toBeLessThan(u.indexOf('"pro_subscription_cancelled"'));
+
+    const d = branch('customer.subscription.deleted');
+    expect(d).toContain('userData.proExpiry = trialEndIso');
+    const trialLog = d.indexOf('logProEvent("pro_trial_cancelled"');
+    const trialReturn = d.indexOf('return new Response("Trial cancelled"');
+    expect(trialLog).toBeGreaterThan(-1);
+    expect(trialReturn).toBeGreaterThan(trialLog);
+    expect(d.indexOf('logProEvent("pro_subscription_cancelled"')).toBeGreaterThan(trialReturn);
+  });
+});
+
+describe('stripe-webhook: the plan comes from the price before the amount', () => {
+  // The function itself, run: strip the one type annotation and hand it the
+  // file's own `plan` helper.
+  const start = src.indexOf('function planFromInterval(');
+  const fnSrc = src.slice(start, src.indexOf('\n}\n', start) + 2).replace(/\(price: [^)]*\)/, '(price)');
+  const planFromInterval = new Function('plan', `${fnSrc}; return planFromInterval;`)(
+    type => ({ type, durationDays: { monthly: 30, quarterly: 90, annual: 365 }[type] }),
+  );
+
+  it('reads the billing interval', () => {
+    expect(planFromInterval({ recurring: { interval: 'year', interval_count: 1 } }).type).toBe('annual');
+    expect(planFromInterval({ recurring: { interval: 'month', interval_count: 3 } }).type).toBe('quarterly');
+    expect(planFromInterval({ recurring: { interval: 'month', interval_count: 1 } }).type).toBe('monthly');
+    expect(planFromInterval({ recurring: { interval: 'month' } }).type).toBe('monthly');
+    expect(planFromInterval({ recurring: null })).toBeNull();
+    expect(planFromInterval(undefined)).toBeNull();
+    expect(planFromInterval({ recurring: { interval: 'week', interval_count: 1 } })).toBeNull();
+  });
+
+  it('runs before the amount fallback at checkout', () => {
+    const b = branch('checkout.session.completed');
+    const byInterval = b.indexOf('planFromInterval(');
+    const byAmount = b.indexOf('amount >= 9900');
+    expect(byInterval).toBeGreaterThan(-1);
+    expect(byAmount).toBeGreaterThan(byInterval);
+  });
+
+  it('the India prices are mapped by id', () => {
+    const block = src.slice(src.indexOf('const PRICE_TO_PLAN'), src.indexOf('};', src.indexOf('const PRICE_TO_PLAN')));
+    expect(block).toMatch(/Deno\.env\.get\("STRIPE_PRICE_MONTHLY_IN"\) \|\| ""\]: plan\("monthly"\)/);
+    expect(block).toMatch(/Deno\.env\.get\("STRIPE_PRICE_ANNUAL_IN"\) \|\| ""\]: plan\("annual"\)/);
+    // an unset secret must not become a "" key that matches an empty id
+    expect(src).toContain('delete PRICE_TO_PLAN[""]');
+  });
+});
+
+describe('trial-reminder-cron: not the Stripe trial reminder', () => {
+  const cron = fs.readFileSync(join(ROOT, 'supabase/functions/trial-reminder-cron/index.ts'), 'utf8');
+  it('skips a Stripe trialist before any send', () => {
+    const skip = cron.indexOf('if (user.data?.proTrial === true)');
+    expect(skip).toBeGreaterThan(-1);
+    expect(cron.indexOf('sendViaResend(RESEND_KEY')).toBeGreaterThan(skip);
+    expect(cron).toContain('data->>proType=eq.trial');
+  });
+});
