@@ -457,6 +457,12 @@ so a landing view and a later solve are joinable for the first time.
   data moves. **Never reuse the Capital One mock's question or show its
   answer** — the mock is Pro; the test compares against its snippets and
   correct options. Company names only as "question N of our … mock".
+- A trap page's "question N of our … mock" link (`/app/?interview=…&src=pattern-<slug>`)
+  sends a non-Pro visitor straight to the Pro modal, reason `pattern_mock`,
+  with the trap as context — never the cold-start gate or the free-mock
+  swap; a Pro visitor gets the mock. Funnel: `pattern_to_checkout`
+  (metrics.md); `pro_plan_clicked` / `pro_checkout_clicked` carry
+  `modalReason` + `patternSlug` from 2026-09-25.
 - A wrong mock answer whose question is in `PATTERN_FOR_MOCK_QUESTION` shows
   "Read this trap in detail" (feedback, results, Study with AI). Question
   pages of cited challenges link back (`PATTERNS_FOR_CHALLENGE`).
@@ -681,6 +687,11 @@ URLs filled, brand icon is the bolt, brand colour #FFE34D.
   to the money path, not a setting.
 
 ### Testing
+- **Rule (founder, 2026-09-25): a new test is proven by at least one
+  deliberate break.** Change the code (or the data) so the thing the test
+  guards is wrong, watch the test fail by name, then restore. A test that
+  passed the first time is not trusted until it has been shown to catch
+  something — say in the commit which break it caught.
 - **1,406 tests passing** across 59 test files (vitest), incl. `tests/site-counts.test.js` — the guard that fails on any stale product count on a static page — and `tests/cloud-save-contract.test.js`, the guard on the one write that must never lie. Runs via `npm run test:run`. (Measured 2026-09-12 evening; this line goes stale fast — re-run before quoting it.)
 - `scripts/smoke-test.js` (headless Chrome e2e): 8/8 pass against a live dev server. Run with `npm run smoke` (dev server must be up on :4321 or pass URL arg).
 

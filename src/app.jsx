@@ -48,7 +48,7 @@ import { shouldEmitLockEvent, lockEventKey } from './utils/lock-events.js';
 import { shouldAskForReview, enabledReviewPlatforms, REVIEW_ASK_REASONS } from './utils/review-ask.js';
 import { eligibleTargets, findTarget, planTargets, findPlanTarget, companyReadiness, planToDate, daysUntil, readinessBucket, MIN_EVIDENCE_SOLVES, MIN_TAGGED_CHALLENGES, PREP_PLAN_STATUS, TARGET_KIND } from './utils/interview-prep.js';
 import { archetypeForCompany } from './data/interview-archetypes.js';
-import { PATTERN_FOR_MOCK_QUESTION } from './data/sql-patterns.js';
+import { PATTERN_FOR_MOCK_QUESTION, SQL_PATTERNS } from './data/sql-patterns.js';
 import { getPrimarySkeleton, getAllSkeletons } from './utils/skeletons.js';
 import { diagnoseResult, diagnosisShort, primaryHint, rowDiffSummary } from './utils/diagnose.js';
 import { formatSqlForDisplay } from './utils/sql-format.js';
@@ -7035,7 +7035,7 @@ function SQLQuest() {
     try { localStorage.setItem('sqlquest_purchase_user', currentUser || ''); } catch (_) {}
     // Email rides on the click event so the checkout-abandon cron can
     // reach guests — they have no users-table row to look up.
-    trackActivationEvent('pro_checkout_clicked', { plan, email: email || null });
+    trackActivationEvent('pro_checkout_clicked', { plan, email: email || null, modalReason: proModalReason?.type || null, patternSlug: proModalReason?.patternSlug || null });
     // Leave a breadcrumb so the next app load can tell WHY a click didn't
     // become a purchase. Until now the funnel went silent between the click
     // and the Stripe webhook, so "the button did nothing" and "they saw the
@@ -7123,6 +7123,10 @@ function SQLQuest() {
     // silently rewrite the history it is used to read.
     trackActivationEvent('pro_plan_clicked', {
       plan,
+      // Which ask this click answered, and the trap page behind it
+      // (2026-09-25) — so a pattern page → checkout funnel joins by aid.
+      modalReason: proModalReason?.type || null,
+      patternSlug: proModalReason?.patternSlug || null,
       hadEmailOnFile: !!email,
       // false here means the user is about to meet an email form they did not
       // ask for, between deciding to buy and being allowed to pay.
@@ -7639,6 +7643,8 @@ function SQLQuest() {
         // trusting a stale proStatus flag. Lets the read separate newly
         // unblocked users from the ones who were always going to be asked.
         staleProRecovered: !!proModalReason?.staleProRecovered,
+        // The trap page behind a pattern_mock ask (2026-09-25).
+        patternSlug: proModalReason?.patternSlug || null,
         // Free-tier boundary M3: did this ask lead with a date, and how far.
         ...deadlineEventMeta(proModalReason),
       });
@@ -8926,6 +8932,12 @@ function SQLQuest() {
       const mi = mockInterviews.find(i => i.id === interviewParam);
       if (mi) {
         pendingInterviewRef.current = mi;
+        // From a SQL trap page (?src=pattern-<slug>, 2026-09-25): a non-Pro
+        // visitor goes straight to the price with the trap as context —
+        // not the cold-start gate, not the free-mock swap.
+        const src = urlParams.get('src') || '';
+        const slug = src.startsWith('pattern-') ? src.slice('pattern-'.length) : null;
+        pendingInterviewPatternRef.current = slug && SQL_PATTERNS.some(p => p.slug === slug) ? slug : null;
       }
     }
 
@@ -10508,7 +10520,7 @@ function SQLQuest() {
     setShowProModal(true);
   };
 
-  const startInterview = (interview, forceNew = false) => {
+  const startInterview = (interview, forceNew = false, opts = {}) => {
     saveLastActivity('interview', `Interview: ${interview.title || interview.company}`, 'trials', null);
     if (!interview.isFree && !userProStatus) {
       trackLockReached('interview', {
@@ -10517,6 +10529,21 @@ function SQLQuest() {
         difficulty: interview.difficulty || null,
         wall: paidWallFor({ isPro, solved: solvedChallenges }),
       });
+      // Arrived from a SQL trap page (2026-09-25): the visitor clicked
+      // "question N of our … mock" — a request for the timed screen, so the
+      // answer is the price with that trap as the context. No cold-start
+      // gate, no swap to the free mock.
+      const fromPattern = opts.patternSlug ? SQL_PATTERNS.find(p => p.slug === opts.patternSlug) : null;
+      if (fromPattern) {
+        const m = [fromPattern.mock, fromPattern.alsoIn].find(x => x && x.id === interview.id) || fromPattern.mock;
+        setProModalReason({
+          type: 'pattern_mock', topic: interview.company || null, patternSlug: fromPattern.slug,
+          trap: fromPattern.short, questionNumber: m.number, mockTitle: m.name, interviewId: interview.id || null,
+          solvedCount: solvedChallenges.size,
+        });
+        setShowProModal(true);
+        return;
+      }
       if (openColdStartInstead()) return;
       if (nudgeToFreeMock((m) => startInterview(m, forceNew), interview)) return;
       // 2026-09-12: this ask used to land under whatever reason the modal
@@ -25219,6 +25246,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
   }, Date.now());
 
   const pendingInterviewRef = useRef(null);
+  const pendingInterviewPatternRef = useRef(null);   // the trap page a ?interview= link came from
   const interviewGuestStartedRef = useRef(false);
   useEffect(() => {
     const target = pendingInterviewRef.current;
@@ -25243,14 +25271,16 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
       }
       return;
     }
-    interviewEntryRef.current = 'deeplink';
+    const patternSlug = pendingInterviewPatternRef.current;
+    interviewEntryRef.current = patternSlug ? 'pattern' : 'deeplink';
     setActiveTab('trials');
     // Skip the first-run shell — it renders regardless of tab and would
     // swallow the interview the link promised (same as the list resolver).
     setFirstRunCompleted(true);
     try { localStorage.setItem(FIRST_RUN_COMPLETED_KEY, 'true'); } catch (_) { /* ignore */ }
-    setTimeout(() => startInterview(target), 100);
+    setTimeout(() => startInterview(target, false, { patternSlug }), 100);
     pendingInterviewRef.current = null; // consume once
+    pendingInterviewPatternRef.current = null;
   }, [isSessionLoading, currentUser]);
   // ?company= / ?sector= deep-links: the landing-page CTA promises a filtered
   // list ("Practice 20 Databricks Questions Free"), but the app defaults to
@@ -31782,6 +31812,17 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                       </p>
                       <p className="text-sm mt-2" style={{ color: '#8A8E99' }}>
                         Everything you've solved stays open, and the lessons, warm-ups, the daily and the Coach stay free. Pro opens the rest of the bank — all {bankCountLabel(challenges.length) || challenges.length} challenges, the Hard set and the mock interviews.
+                      </p>
+                    </div>
+                  ) : proModalReason.type === 'pattern_mock' ? (
+                    // From a SQL trap page (2026-09-25): the person asked for
+                    // the timed screen that tests the trap they just read.
+                    <div className="mt-3" data-testid="pro-modal-pattern-mock">
+                      <p className="font-medium" style={{ color: '#F2F0EA' }}>
+                        Try this trap under the clock.
+                      </p>
+                      <p className="text-sm mt-2" style={{ color: '#8A8E99' }}>
+                        {proModalReason.trap} is question {proModalReason.questionNumber} of our {proModalReason.mockTitle} — a timed, scored screen on the same card data, asked in a different form than the page. Pro opens it and every other mock, plus the Hard set. Everything you have solved stays yours.
                       </p>
                     </div>
                   ) : proModalReason.type === 'coach_mock' ? (

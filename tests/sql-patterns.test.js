@@ -183,12 +183,32 @@ describe('wiring', () => {
     expect(SQL_PATTERNS.find(p => p.slug === 'sql-not-in-null').readMore.href).toBe('/blog/null-handling-mistakes/');
   });
 
+  it('a trap page → mock link goes straight to the price, with the trap as context', () => {
+    const app = read('src/app.jsx');
+    // the deep link carries ?src=pattern-<slug> into startInterview
+    expect(app).toMatch(/src\.startsWith\('pattern-'\)/);
+    expect(app).toContain('startInterview(target, false, { patternSlug })');
+    // for a non-Pro visitor the pattern branch runs BEFORE the cold-start gate and the free-mock nudge
+    const gate = app.slice(app.indexOf('const startInterview = (interview, forceNew = false, opts = {}) => {'));
+    const iPattern = gate.indexOf("type: 'pattern_mock'");
+    expect(iPattern).toBeGreaterThan(0);
+    expect(iPattern).toBeLessThan(gate.indexOf('if (openColdStartInstead()) return;'));
+    expect(iPattern).toBeLessThan(gate.indexOf('nudgeToFreeMock('));
+    expect(app).toContain('data-testid="pro-modal-pattern-mock"');
+    // the funnel joins: modal, plan click and checkout click all carry the trap page
+    expect(app).toMatch(/'pro_modal_shown', \{[\s\S]{0,700}patternSlug: proModalReason\?\.patternSlug \|\| null/);
+    expect(app).toMatch(/'pro_plan_clicked', \{[\s\S]{0,300}modalReason: proModalReason\?\.type \|\| null,\s*\n\s*patternSlug: proModalReason\?\.patternSlug \|\| null/);
+    expect(app).toMatch(/'pro_checkout_clicked', \{ plan, email: email \|\| null, modalReason: proModalReason\?\.type \|\| null, patternSlug: proModalReason\?\.patternSlug \|\| null \}/);
+    // and the trap page's link says where it came from
+    for (const p of SQL_PATTERNS) expect(renderPattern(p, { slugs, bank })).toContain(`src=pattern-${p.slug}`);
+  });
+
   it('a wrong mock answer links to its trap: in the feedback, on the results, and in Study with AI', () => {
     const app = read('src/app.jsx');
     const slugSet = new Set(SQL_PATTERNS.map(p => p.slug));
     for (const s of Object.values(PATTERN_FOR_MOCK_QUESTION)) expect(slugSet.has(s)).toBe(true);
     for (const id of Object.keys(PATTERN_FOR_MOCK_QUESTION)) expect(mocks.some(m => m.questions.some(q => q.id === id)), id).toBe(true);
-    expect(app).toContain("import { PATTERN_FOR_MOCK_QUESTION } from './data/sql-patterns.js';");
+    expect(app).toContain("import { PATTERN_FOR_MOCK_QUESTION, SQL_PATTERNS } from './data/sql-patterns.js';");
     for (const tid of ['interview-pattern-link', 'interview-results-pattern-link', 'study-pattern-link']) expect(app).toContain(`data-testid="${tid}"`);
     expect(app.match(/PATTERN_FOR_MOCK_QUESTION\[currentQ\.id\]/g)).toHaveLength(2);
   });

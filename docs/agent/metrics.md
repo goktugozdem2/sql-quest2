@@ -3113,3 +3113,30 @@ left join answered an using (pid)
 left join second sec using (pid)
 group by a.arm;
 ```
+
+## `pattern_to_checkout`
+
+SQL trap page → paid, end to end (2026-09-25). People by `aid` (the landing
+script and the app stamp the same one); internal accounts and localhost out
+(analytics are muted on localhost, so the preview writes nothing).
+
+1. **Clicked the mock link on a trap page** — `cta_pattern_mock`
+   (`reason='landing'`), `m.page` = the trap page slug, `m.href` carries
+   `src=pattern-<slug>`.
+2. **Saw the price with the trap as context** — `pro_modal_shown` with
+   `reason='pattern_mock'` and `patternSlug`. (A Pro visitor skips this: the
+   mock opens — `interview_started` with `interviewId`.)
+3. **Chose a plan** — `pro_plan_clicked` with `modalReason='pattern_mock'`
+   and `patternSlug`.
+4. **Went to Stripe** — `pro_checkout_clicked` with the same two fields.
+5. **Paid** — `stripe_webhook` `pro_purchase_completed`, joined by
+   **username** (the webhook row has no aid — shared traps), within 24 h of
+   step 4.
+
+The founder's names map as: `pattern_link_clicked` (the app's mock → trap
+page link, the other direction) is not this funnel's step 1; the entry click
+is `cta_pattern_mock`. "pricing_modal_open" = `pro_modal_shown`,
+"checkout_started" = `pro_checkout_clicked`. Split every step by
+`patternSlug`. Before 2026-09-25 `pro_plan_clicked` / `pro_checkout_clicked`
+carried neither `modalReason` nor `patternSlug`; read the funnel from that
+date.
