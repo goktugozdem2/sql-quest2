@@ -187,7 +187,7 @@ describe('wiring', () => {
     const app = read('src/app.jsx');
     // the deep link carries ?src=pattern-<slug> into startInterview
     expect(app).toMatch(/src\.startsWith\('pattern-'\)/);
-    expect(app).toContain('startInterview(target, false, { patternSlug })');
+    expect(app).toContain('startInterview(target, false, { patternSlug, fromLink: true, linkSrc })');
     // for a non-Pro visitor the pattern branch runs BEFORE the cold-start gate and the free-mock nudge
     const gate = app.slice(app.indexOf('const startInterview = (interview, forceNew = false, opts = {}) => {'));
     const iPattern = gate.indexOf("type: 'pattern_mock'");
@@ -198,7 +198,7 @@ describe('wiring', () => {
     // the funnel joins: modal, plan click and checkout click all carry the trap page
     expect(app).toMatch(/'pro_modal_shown', \{[\s\S]{0,700}patternSlug: proModalReason\?\.patternSlug \|\| null/);
     expect(app).toMatch(/'pro_plan_clicked', \{[\s\S]{0,300}modalReason: proModalReason\?\.type \|\| null,\s*\n\s*patternSlug: proModalReason\?\.patternSlug \|\| null/);
-    expect(app).toMatch(/'pro_checkout_clicked', \{ plan, email: email \|\| null, modalReason: proModalReason\?\.type \|\| null, patternSlug: proModalReason\?\.patternSlug \|\| null \}/);
+    expect(app).toMatch(/'pro_checkout_clicked', \{ plan, email: email \|\| null, modalReason: proModalReason\?\.type \|\| null, patternSlug: proModalReason\?\.patternSlug \|\| null/);
     // and the trap page's link says where it came from
     for (const p of SQL_PATTERNS) expect(renderPattern(p, { slugs, bank })).toContain(`src=pattern-${p.slug}`);
   });

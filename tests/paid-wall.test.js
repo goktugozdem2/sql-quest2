@@ -97,13 +97,21 @@ describe('source guard — every paid wall diverts before it sells', () => {
       // … mock" link. The visitor asked for the timed screen, so the answer
       // is the price with the trap as context. Only that branch is exempt:
       // the rest of the same gate must still divert before its own ask.
-      if (after.slice(0, ask).includes("type: 'pattern_mock'")) {
-        // wider window: the pattern branch is long, and the rest of the gate
-        // must be in view or this check passes vacuously (caught 2026-09-25).
-        const rest = app.slice(m.index, m.index + 4000).slice(ask + 1);
-        const ask2 = rest.search(/setShowProModal\(true\)|showSoftProGate\(/);
-        const divert2 = rest.indexOf('openColdStartInstead(');
-        if (ask2 !== -1 && (divert2 === -1 || divert2 > ask2)) offenders.push(app.slice(0, m.index).split('\n').length);
+      // Same for a link that named the mock (mock_link, a company page's CTA).
+      // Walk past every exempt ask; the first NON-exempt ask after them must
+      // still be preceded by the cold-start check.
+      if (/type: '(pattern_mock|mock_link)'/.test(after.slice(0, ask))) {
+        const wide = app.slice(m.index, m.index + 5000);
+        let from = 0, next;
+        for (;;) {
+          const rel = wide.slice(from).search(/setShowProModal\(true\)|showSoftProGate\(/);
+          if (rel === -1) { next = -1; break; }
+          const at = from + rel;
+          if (/type: '(pattern_mock|mock_link)'/.test(wide.slice(from, at))) { from = at + 1; continue; }
+          next = at; break;
+        }
+        const divert2 = wide.indexOf('openColdStartInstead(', from);
+        if (next !== -1 && (divert2 === -1 || divert2 > next)) offenders.push(app.slice(0, m.index).split('\n').length);
         continue;
       }
       const divert = after.indexOf('openColdStartInstead(');
@@ -156,5 +164,54 @@ describe('copy — the cold-start dialog exists in both languages and sells noth
     const lines = i18n.split('\n').filter(l => /coldStart(Title|Line|Cta):/.test(l));
     expect(lines.length).toBe(6);
     for (const l of lines) expect(l, `price in cold-start copy: ${l.trim()}`).not.toMatch(/\$\d/);
+  });
+});
+
+// ── A correct mock answer is a solve (founder, 2026-09-25) ──────────────────
+// test7 passed the free SQL Fundamentals mock 4/4 with no challenge solved,
+// then met "you haven't solved anything here yet" on a locked mock, and the
+// profile read "Solved: 0 challenges". One count now feeds the gate, the wall
+// label and the profile.
+import { mockQuestionsSolved, practiceSolves } from '../src/utils/paid-wall.js';
+
+describe('practiceSolves — challenges plus mock questions answered correctly', () => {
+  const passed = { interviewId: 'sql-fundamentals', questionsCorrect: 4, questionsTotal: 4,
+    questionResults: ['a', 'b', 'c', 'd'].map(q => ({ questionId: q, correct: true })) };
+
+  it('a person who passed a mock and solved no challenge is not cold', () => {
+    const n = practiceSolves({ solved: new Set(), interviewHistory: [passed] });
+    expect(n).toBe(4);
+    expect(isColdStart(n)).toBe(false);
+    expect(paidWallFor({ isPro: false, solved: n })).not.toBe('cold_start');
+  });
+
+  it('nobody with nothing solved anywhere gets past the gate', () => {
+    expect(isColdStart(practiceSolves({ solved: new Set(), interviewHistory: [] }))).toBe(true);
+    const failed = { interviewId: 'x', questionsCorrect: 0, questionResults: [{ questionId: 'q', correct: false }] };
+    expect(isColdStart(practiceSolves({ solved: new Set(), interviewHistory: [failed] }))).toBe(true);
+  });
+
+  it('a question counts once however many sittings got it right; legacy sittings count their best', () => {
+    expect(mockQuestionsSolved([passed, passed])).toBe(4);
+    expect(mockQuestionsSolved([{ interviewId: 'old', questionsCorrect: 2 }, { interviewId: 'old', questionsCorrect: 3 }])).toBe(3);
+    expect(mockQuestionsSolved(null)).toBe(0);
+    expect(practiceSolves({ solved: new Set([1, 2]), interviewHistory: [passed] })).toBe(6);
+  });
+
+  it('the app reads one count for the gate, every wall label and the profile', () => {
+    expect(app).toContain('const practiceSolveCount = practiceSolves({ solved: solvedChallenges, interviewHistory })');
+    expect(app).toContain('if (!isColdStart(practiceSolveCount)) return false;');
+    expect(app).not.toMatch(/paidWallFor\(\{ isPro, solved: solvedChallenges/);
+    const profile = app.slice(app.indexOf('data-testid="profile-solved"'), app.indexOf('data-testid="profile-solved"') + 400);
+    expect(profile).toContain('practiceSolveCount');
+  });
+
+  it("a link that names a mock (a company page's CTA) goes to the price, not the gate", () => {
+    const gate = app.slice(app.indexOf('const startInterview = (interview, forceNew = false, opts = {}) => {'));
+    const iLink = gate.indexOf("type: 'mock_link'");
+    expect(iLink).toBeGreaterThan(0);
+    expect(iLink).toBeLessThan(gate.indexOf('if (openColdStartInstead()) return;'));
+    expect(app).toContain('data-testid="pro-modal-mock-link"');
+    expect(app).toMatch(/linkSrc: proModalReason\?\.linkSrc \|\| null/);
   });
 });

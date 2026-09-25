@@ -49,6 +49,56 @@ export function isColdStart(solved) {
   return n < COLD_START_SOLVE_THRESHOLD;
 }
 
+/**
+ * Mock-interview questions this person has answered correctly, counted once
+ * each (founder, 2026-09-25): a correct mock answer IS delivered value. Before
+ * this, a free user who passed the SQL Fundamentals mock 4/4 with no challenge
+ * solved met the cold-start gate — "you haven't solved anything here yet" —
+ * and the profile read "Solved: 0 challenges". One question counts once
+ * however many sittings got it right. A sitting saved before per-question
+ * results were kept (no `questionResults` ids) contributes its
+ * `questionsCorrect`, the best of its interview's sittings.
+ *
+ * @param {Array<object>|null|undefined} history `interviewHistory`
+ * @returns {number}
+ */
+export function mockQuestionsSolved(history) {
+  if (!Array.isArray(history)) return 0;
+  const byId = new Set();
+  const legacyBest = new Map();
+  for (const h of history) {
+    if (!h || typeof h !== 'object') continue;
+    const iid = String(h.interviewId || h.interviewTitle || 'unknown').replace(' (Retry)', '');
+    const rows = Array.isArray(h.questionResults) ? h.questionResults : null;
+    if (rows && rows.some(r => r && r.questionId)) {
+      for (const r of rows) if (r && r.correct && r.questionId) byId.add(`${iid}::${r.questionId}`);
+    } else {
+      const n = Number(h.questionsCorrect);
+      if (Number.isFinite(n) && n > 0) legacyBest.set(iid, Math.max(legacyBest.get(iid) || 0, n));
+    }
+  }
+  let legacy = 0;
+  for (const [iid, n] of legacyBest) {
+    const known = [...byId].filter(k => k.startsWith(`${iid}::`)).length;
+    legacy += Math.max(0, n - known);
+  }
+  return byId.size + legacy;
+}
+
+/**
+ * The one "how much has this person solved" count: challenges solved plus
+ * mock questions answered correctly. The cold-start gate, the wall label and
+ * the profile's Solved row all read this, so they cannot disagree.
+ *
+ * @param {{solved?: any, interviewHistory?: Array<object>}} ctx
+ * @returns {number|null} null when the challenge count is unreadable
+ */
+export function practiceSolves({ solved = null, interviewHistory = null } = {}) {
+  const n = countOf(solved);
+  if (n === null) return null;
+  return n + mockQuestionsSolved(interviewHistory);
+}
+
 function countOf(solved) {
   if (typeof solved === 'number') return Number.isFinite(solved) ? solved : null;
   if (solved == null) return null;

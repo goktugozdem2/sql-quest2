@@ -41,7 +41,7 @@ import { COMPANY_ASK_KEY, COMPANY_ASK_TEST_ID, COMPANY_ASK_UNDECIDED, companyAsk
 import { GOAL_PROFILE_KEY, GOAL_GATE_RECHECK_MS, GOAL_GATE_GOALS, TARGET_LEVELS, INDUSTRIES, DEADLINE_PRESETS, industryFor, isoDateInDays, isValidDeadline, missingFields, buildGoalProfile, goalProfileStatus, shouldShowGoalGate, prefillDraft, goalGateEventPayload, readGoalProfile, GOAL_GATE_MAX_DAYS_OUT } from './utils/goal-gate.js';
 import { PLACEMENT_TIERS, placementResult, placementEventPayload, readFirstRunPlacement, seedFloorsFor, seedFloorsFromReadiness, levelForReadiness, placementFromReadiness } from './utils/placement.js';
 import { QUESTIONS as READINESS_QUESTIONS, READINESS_SKILLS, READINESS_RECORD_KEY, companySkillWeights, scoreReadiness, summarizeScores, weakestSkills, readinessRecordFrom, readReadinessRecord } from './data/readiness-questions.js';
-import { paidWallFor, isColdStart } from './utils/paid-wall.js';
+import { paidWallFor, isColdStart, practiceSolves } from './utils/paid-wall.js';
 import { companySetGate, companySetFreeIds, companySetProgress, quietAskDecision, deadlineOfferFor, deadlineEventMeta, withEarlyWall, pickProMockId, FREE_MOCK_ID, quotaGate, FREE_SOLVE_QUOTA } from './utils/free-tier-boundary.js';
 import { expandStageChallenges, placementStartIndex as roadmapPlacementStartIndex } from './utils/roadmap.js';
 import { shouldEmitLockEvent, lockEventKey } from './utils/lock-events.js';
@@ -7035,7 +7035,7 @@ function SQLQuest() {
     try { localStorage.setItem('sqlquest_purchase_user', currentUser || ''); } catch (_) {}
     // Email rides on the click event so the checkout-abandon cron can
     // reach guests — they have no users-table row to look up.
-    trackActivationEvent('pro_checkout_clicked', { plan, email: email || null, modalReason: proModalReason?.type || null, patternSlug: proModalReason?.patternSlug || null });
+    trackActivationEvent('pro_checkout_clicked', { plan, email: email || null, modalReason: proModalReason?.type || null, patternSlug: proModalReason?.patternSlug || null, linkSrc: proModalReason?.linkSrc || null });
     // Leave a breadcrumb so the next app load can tell WHY a click didn't
     // become a purchase. Until now the funnel went silent between the click
     // and the Stripe webhook, so "the button did nothing" and "they saw the
@@ -7127,6 +7127,7 @@ function SQLQuest() {
       // (2026-09-25) — so a pattern page → checkout funnel joins by aid.
       modalReason: proModalReason?.type || null,
       patternSlug: proModalReason?.patternSlug || null,
+      linkSrc: proModalReason?.linkSrc || null,
       hadEmailOnFile: !!email,
       // false here means the user is about to meet an email form they did not
       // ask for, between deciding to buy and being allowed to pay.
@@ -7645,6 +7646,7 @@ function SQLQuest() {
         staleProRecovered: !!proModalReason?.staleProRecovered,
         // The trap page behind a pattern_mock ask (2026-09-25).
         patternSlug: proModalReason?.patternSlug || null,
+        linkSrc: proModalReason?.linkSrc || null,
         // Free-tier boundary M3: did this ask lead with a date, and how far.
         ...deadlineEventMeta(proModalReason),
       });
@@ -7789,6 +7791,11 @@ function SQLQuest() {
   const [unlockedAchievements, setUnlockedAchievements] = useState(new Set());
   const [showAchievement, setShowAchievement] = useState(null);
   const [solvedChallenges, setSolvedChallenges] = useState(new Set());
+  // The one "has solved something" count (2026-09-25): challenges + mock
+  // questions answered correctly. The cold-start gate, the wall label and the
+  // profile's Solved row read it, so a free user who passed a mock is never
+  // told "you haven't solved anything". src/utils/paid-wall.js practiceSolves.
+  const practiceSolveCount = practiceSolves({ solved: solvedChallenges, interviewHistory }) ?? solvedChallenges.size;
 
   // === SPEED RUN MODE ===
   const [speedRunActive, setSpeedRunActive] = useState(false);
@@ -8938,6 +8945,7 @@ function SQLQuest() {
         const src = urlParams.get('src') || '';
         const slug = src.startsWith('pattern-') ? src.slice('pattern-'.length) : null;
         pendingInterviewPatternRef.current = slug && SQL_PATTERNS.some(p => p.slug === slug) ? slug : null;
+        pendingInterviewSrcRef.current = src || null;
       }
     }
 
@@ -10514,7 +10522,7 @@ function SQLQuest() {
       interviewId: interview?.id || null,
       company: interview?.company || null,
       difficulty: interview?.difficulty || null,
-      wall: paidWallFor({ isPro, solved: solvedChallenges }),
+      wall: paidWallFor({ isPro, solved: practiceSolveCount }),
     });
     setProModalReason({ type: 'interview_locked', topic: interview?.company || null, solvedCount: solvedChallenges.size });
     setShowProModal(true);
@@ -10527,7 +10535,7 @@ function SQLQuest() {
         interviewId: interview.id || null,
         company: interview.company || null,
         difficulty: interview.difficulty || null,
-        wall: paidWallFor({ isPro, solved: solvedChallenges }),
+        wall: paidWallFor({ isPro, solved: practiceSolveCount }),
       });
       // Arrived from a SQL trap page (2026-09-25): the visitor clicked
       // "question N of our … mock" — a request for the timed screen, so the
@@ -10540,6 +10548,20 @@ function SQLQuest() {
           type: 'pattern_mock', topic: interview.company || null, patternSlug: fromPattern.slug,
           trap: fromPattern.short, questionNumber: m.number, mockTitle: m.name, interviewId: interview.id || null,
           solvedCount: solvedChallenges.size,
+        });
+        setShowProModal(true);
+        return;
+      }
+      // Any other ?interview= link — a company page's "sit the mock" (2026-09-25,
+      // founder, after test7 met "Start here first" from /capital-one-sql-interview/):
+      // the link asked for this mock by name, so answer with its price and what
+      // it is, not with the cold-start gate.
+      if (opts.fromLink) {
+        setProModalReason({
+          type: 'mock_link', topic: interview.company || null, mockTitle: interview.title || null,
+          minutes: interview.totalTime ? Math.round(interview.totalTime / 60) : null,
+          questions: interview.questionsCount || (interview.questions || []).length || null,
+          linkSrc: opts.linkSrc || null, interviewId: interview.id || null, solvedCount: solvedChallenges.size,
         });
         setShowProModal(true);
         return;
@@ -10627,7 +10649,7 @@ function SQLQuest() {
         interviewId: interview.id || null,
         company: interview.company || null,
         difficulty: interview.difficulty || null,
-        wall: paidWallFor({ isPro, solved: solvedChallenges }),
+        wall: paidWallFor({ isPro, solved: practiceSolveCount }),
       });
       if (openColdStartInstead()) return;
       if (nudgeToFreeMock((m) => startPracticeMode(m), interview)) return;
@@ -18447,7 +18469,7 @@ CRITICAL RULES:
       trackLockReached('thirty_day', {
         day: dayNumber,
         freeLimit: THIRTY_DAY_FREE_LIMIT,
-        wall: paidWallFor({ isPro, solved: solvedChallenges }),
+        wall: paidWallFor({ isPro, solved: practiceSolveCount }),
       });
       if (openColdStartInstead()) return;
       showSoftProGate(
@@ -23248,7 +23270,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
   // 09-20 read that fewer people are hitting walls when in fact fewer people
   // are being sold to. See src/utils/paid-wall.js.
   const openColdStartInstead = (challengeId = null) => {
-    if (!isColdStart(solvedChallenges)) return false;
+    if (!isColdStart(practiceSolveCount)) return false;
     try {
       const active = typeof document !== 'undefined' ? document.activeElement : null;
       previewCatcherReturnFocusRef.current = active && active !== document.body ? active : null;
@@ -23418,7 +23440,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
         // who has solved nothing. They still collide with the gate — the row
         // is written — but they are routed, never sold to. See
         // src/utils/paid-wall.js and metrics.md for the discontinuity.
-        wall: paidWallFor({ isPro, solved: solvedChallenges, companyFilter }),
+        wall: paidWallFor({ isPro, solved: practiceSolveCount, companyFilter }),
       });
       // Satisfy first, then ask. Two of the eight people who met a wall in
       // the 34h after the 09-06 deploy had zero solves; one of them got the
@@ -25247,6 +25269,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
 
   const pendingInterviewRef = useRef(null);
   const pendingInterviewPatternRef = useRef(null);   // the trap page a ?interview= link came from
+  const pendingInterviewSrcRef = useRef(null);       // the ?src= of any ?interview= link (a company page, a trap page)
   const interviewGuestStartedRef = useRef(false);
   useEffect(() => {
     const target = pendingInterviewRef.current;
@@ -25279,9 +25302,11 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
     // swallow the interview the link promised (same as the list resolver).
     setFirstRunCompleted(true);
     try { localStorage.setItem(FIRST_RUN_COMPLETED_KEY, 'true'); } catch (_) { /* ignore */ }
-    setTimeout(() => startInterview(target, false, { patternSlug }), 100);
+    const linkSrc = pendingInterviewSrcRef.current;
+    setTimeout(() => startInterview(target, false, { patternSlug, fromLink: true, linkSrc }), 100);
     pendingInterviewRef.current = null; // consume once
     pendingInterviewPatternRef.current = null;
+    pendingInterviewSrcRef.current = null;
   }, [isSessionLoading, currentUser]);
   // ?company= / ?sector= deep-links: the landing-page CTA promises a filtered
   // list ("Practice 20 Databricks Questions Free"), but the app defaults to
@@ -28392,7 +28417,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                           if (isDiffLocked) {
                             trackLockReached('daily_difficulty', {
                               difficulty: diff,
-                              wall: paidWallFor({ isPro, solved: solvedChallenges }),
+                              wall: paidWallFor({ isPro, solved: practiceSolveCount }),
                             });
                             if (openColdStartInstead()) return;
                             showSoftProGate(
@@ -31826,6 +31851,19 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                         {proModalReason.trap} is question {proModalReason.questionNumber} of our {proModalReason.mockTitle} — a timed, scored screen on the same card data, asked in a different form than the page. Pro opens it and every other mock, plus the Hard set. Everything you have solved stays yours.
                       </p>
                     </div>
+                  ) : proModalReason.type === 'mock_link' ? (
+                    // A link that named this mock (a company page's CTA).
+                    <div className="mt-3" data-testid="pro-modal-mock-link">
+                      <p className="font-medium" style={{ color: '#F2F0EA' }}>
+                        {proModalReason.mockTitle || 'This mock'} is Pro.
+                      </p>
+                      <p className="text-sm mt-2" style={{ color: '#8A8E99' }}>
+                        {proModalReason.minutes && proModalReason.questions
+                          ? `${proModalReason.minutes} minutes, ${proModalReason.questions} questions, timed and scored — sit the screen before you sit the screen. `
+                          : 'A timed, scored sitting — sit the screen before you sit the screen. '}
+                        Pro opens it and every other mock, plus the Hard set. Everything you have solved stays yours.
+                      </p>
+                    </div>
                   ) : proModalReason.type === 'coach_mock' ? (
                     // Free-tier boundary M5: a Pro mock as a curriculum step,
                     // met by a free user on the Coach card.
@@ -33065,7 +33103,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                   <p className="text-xs uppercase tracking-wide mb-3" style={{ color: '#8A8E99' }}>Progress</p>
                   <dl className="space-y-1.5 text-xs">
                     <div className="flex justify-between"><dt style={{ color: '#8A8E99' }}>Score</dt><dd style={{ color: '#F2F0EA' }}>{xp.toLocaleString()} XP · {currentLevel.name}</dd></div>
-                    <div className="flex justify-between"><dt style={{ color: '#8A8E99' }}>Solved</dt><dd style={{ color: '#F2F0EA' }}>{solvedChallenges.size} challenges</dd></div>
+                    <div className="flex justify-between" data-testid="profile-solved"><dt style={{ color: '#8A8E99' }}>Solved</dt><dd style={{ color: '#F2F0EA' }}>{practiceSolveCount}{practiceSolveCount !== solvedChallenges.size ? ` · ${solvedChallenges.size} ${solvedChallenges.size === 1 ? 'challenge' : 'challenges'}, ${practiceSolveCount - solvedChallenges.size} mock ${practiceSolveCount - solvedChallenges.size === 1 ? 'question' : 'questions'}` : ` ${solvedChallenges.size === 1 ? 'challenge' : 'challenges'}`}</dd></div>
                     {/* Mock sittings are not challenge solves and never will
                         be — but leaving them off the panel made it lie by
                         omission: someone who had sat a whole mock, earned the

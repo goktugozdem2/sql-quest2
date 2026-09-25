@@ -468,6 +468,16 @@ so a landing view and a later solve are joinable for the first time.
   swap; a Pro visitor gets the mock. Funnel: `pattern_to_checkout`
   (metrics.md); `pro_plan_clicked` / `pro_checkout_clicked` carry
   `modalReason` + `patternSlug` from 2026-09-25.
+- Any other `?interview=` link (a company page's CTA) does the same with
+  reason `mock_link` ("… is Pro. 70 minutes, 14 questions, timed and scored")
+  and `linkSrc` on the modal, plan and checkout events (2026-09-25, after
+  test7 met "Start here first" from /capital-one-sql-interview/).
+- **The cold-start gate counts mock answers.** `practiceSolves` in
+  src/utils/paid-wall.js = challenges + mock questions answered correctly
+  (each once); `practiceSolveCount` in app.jsx feeds the gate, every
+  `paidWallFor` label and the profile's Solved row. A free user who passed a
+  mock is never told "you haven't solved anything" (test7, 4/4 on SQL
+  Fundamentals, 0 challenges). Guards: tests/paid-wall.test.js.
 - A wrong mock answer whose question is in `PATTERN_FOR_MOCK_QUESTION` shows
   "Read this trap in detail" (feedback, results, Study with AI). Question
   pages of cited challenges link back (`PATTERNS_FOR_CHALLENGE`).

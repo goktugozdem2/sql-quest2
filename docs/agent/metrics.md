@@ -509,6 +509,10 @@ routing dialog instead of a price, so from this date:
   asked to pay".
 - The three non-challenge gates (`interview`, `thirty_day`,
   `daily_difficulty`) carry a `wall` field for the first time from this date.
+
+A company page's mock link is the same funnel with `reason='mock_link'` and
+`linkSrc` (the page slug) in place of `pattern_mock` / `patternSlug`, from
+2026-09-25.
   Before 09-08 they wrote `wall: null`; a null on a row after it is a stale
   cached bundle, not a fourth branch.
 - The cold-start dialog's own CTA opens a challenge with **no `openedFrom`
