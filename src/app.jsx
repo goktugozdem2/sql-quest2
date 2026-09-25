@@ -48,6 +48,7 @@ import { shouldEmitLockEvent, lockEventKey } from './utils/lock-events.js';
 import { shouldAskForReview, enabledReviewPlatforms, REVIEW_ASK_REASONS } from './utils/review-ask.js';
 import { eligibleTargets, findTarget, planTargets, findPlanTarget, companyReadiness, planToDate, daysUntil, readinessBucket, MIN_EVIDENCE_SOLVES, MIN_TAGGED_CHALLENGES, PREP_PLAN_STATUS, TARGET_KIND } from './utils/interview-prep.js';
 import { archetypeForCompany } from './data/interview-archetypes.js';
+import { PATTERN_FOR_MOCK_QUESTION } from './data/sql-patterns.js';
 import { getPrimarySkeleton, getAllSkeletons } from './utils/skeletons.js';
 import { diagnoseResult, diagnosisShort, primaryHint, rowDiffSummary } from './utils/diagnose.js';
 import { formatSqlForDisplay } from './utils/sql-format.js';
@@ -10753,6 +10754,8 @@ function SQLQuest() {
         isPracticeMode: practiceMode,
         explanation: mcqAnswer.explanation,
         correctOptionText: mcqAnswer.correctSolution,
+        // The SQL trap page that explains this question's trap (2026-09-25).
+        patternSlug: graded.correct ? null : (PATTERN_FOR_MOCK_QUESTION[currentQ.id] || null),
         pendingAnswers: nextAnswers,
       });
       return;
@@ -10844,6 +10847,7 @@ function SQLQuest() {
       isLast,
       diagnosis: mockMistakeDiagnosis(answer, { diagnose: diagnoseResult, hint: primaryHint, rows: rowDiffSummary }),
       isPracticeMode: practiceMode,
+      patternSlug: isCorrect ? null : (PATTERN_FOR_MOCK_QUESTION[currentQ.id] || null),
       pendingAnswers: newAnswers, // captured here so completeInterview gets the
                                    // right list when the user clicks Finish
     });
@@ -10921,6 +10925,8 @@ function SQLQuest() {
         userError: a.userError || null,
         dataset: a.dataset || null,
         diagnosis: mockMistakeDiagnosis(a, { diagnose: diagnoseResult, hint: primaryHint, rows: rowDiffSummary }),
+        questionId: a.questionId || null,
+        patternSlug: PATTERN_FOR_MOCK_QUESTION[a.questionId] || null,
       }));
     
     const scorePercent = Math.round(totalScore / maxScore * 100);
@@ -11241,7 +11247,7 @@ Reply in 2–3 sentences, plain text, no headings: first whether the approach wo
     // query, the reference, the diagnosis and the rows it lost — not on a
     // generic concept lesson (founder QA 2026-09-19, item 1). The sandbox
     // gets the mock's dataset (item 3).
-    const mctx = mistake ? mistakeStudyContext(mistake) : null;
+    const mctx = mistake ? { ...mistakeStudyContext(mistake), patternSlug: mistake.patternSlug || null } : null;
     setStudyMistake(mctx);
     if (mctx && mctx.dataset && db) {
       try { loadDataset(db, mctx.dataset); } catch (_) {}
@@ -30580,6 +30586,16 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                 <p className="text-sm text-gray-300 leading-relaxed">{interviewFeedback.explanation}</p>
               </div>
             )}
+            {/* The SQL trap page for this question's trap (2026-09-25). New
+                tab: a timed mock must not be lost to a click. */}
+            {!interviewFeedback.correct && interviewFeedback.patternSlug && (
+              <p className="text-left text-sm mb-4">
+                <a href={`/${interviewFeedback.patternSlug}/`} target="_blank" rel="noopener"
+                  data-testid="interview-pattern-link"
+                  onClick={() => trackActivationEvent('pattern_link_clicked', { surface: 'mock_feedback', slug: interviewFeedback.patternSlug, interviewId: activeInterview?.id || null })}
+                  className="text-purple-300 underline">{i18n_t('mockFeedback', 'readTrap')}</a>
+              </p>
+            )}
             <button
               onClick={advanceInterviewQuestion}
               className="w-full px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-lg font-bold text-[#F2F0EA] transition-all"
@@ -30695,13 +30711,21 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                             ))}
                           </div>
                         </div>
-                        <button
-                          onClick={() => studyTopicWithAI(mistake.questionTitle, mistake)}
-                          data-testid="interview-study-with-ai"
-                          className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium flex items-center gap-1"
-                        >
-                          🤖 Study with AI
-                        </button>
+                        <div className="flex flex-col items-end gap-1">
+                          <button
+                            onClick={() => studyTopicWithAI(mistake.questionTitle, mistake)}
+                            data-testid="interview-study-with-ai"
+                            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium flex items-center gap-1"
+                          >
+                            🤖 Study with AI
+                          </button>
+                          {mistake.patternSlug && (
+                            <a href={`/${mistake.patternSlug}/`} target="_blank" rel="noopener"
+                              data-testid="interview-results-pattern-link"
+                              onClick={() => trackActivationEvent('pattern_link_clicked', { surface: 'mock_results', slug: mistake.patternSlug })}
+                              className="text-xs text-purple-300 underline">{i18n_t('mockFeedback', 'readTrap')}</a>
+                          )}
+                        </div>
                       </div>
                       
                       {/* Show user's answer vs correct. MCQ answers are
@@ -35689,6 +35713,12 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                         )}
                       </div>
                       <div className="flex items-center gap-3">
+                        {studyingTopic && studyMistake?.patternSlug && (
+                          <a href={`/${studyMistake.patternSlug}/`} target="_blank" rel="noopener"
+                            data-testid="study-pattern-link"
+                            onClick={() => trackActivationEvent('pattern_link_clicked', { surface: 'study_with_ai', slug: studyMistake.patternSlug })}
+                            className="text-sm text-purple-300 underline">{i18n_t('mockFeedback', 'readTrap')}</a>
+                        )}
                         {/* Back to lessons button when studying */}
                         {studyingTopic && (
                           <button

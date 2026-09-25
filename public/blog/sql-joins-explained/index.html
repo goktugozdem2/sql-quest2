@@ -257,7 +257,7 @@
   </ul>
 
   <h2 id="where-vs-on">The WHERE vs ON bug (critical)</h2>
-  <p>This is the single most common SQL bug in production analytics code. It's worth reading slowly.</p>
+  <p>This is the single most common SQL bug in production analytics code. It's worth reading slowly. (A worked example on card data — 15 merchants returned where there are 25 — is on <a href="/sql-left-join-where-filter/">SQL LEFT JOIN with a WHERE filter</a>.)</p>
 
   <p>Suppose you want every customer plus their <em>paid</em> orders. Customers without paid orders should still appear (with NULL order columns). The intuitive query is:</p>
 
@@ -350,7 +350,7 @@
   <h2 id="mistakes">Five common JOIN mistakes</h2>
 
   <h3>1. Slapping DISTINCT on a row-multiplied result</h3>
-  <p>If your query returns more rows than expected, the fix isn't <code>DISTINCT</code>. The fix is identifying which join is producing the multiplication. DISTINCT scans every row to deduplicate — slow on large tables — and hides the cardinality issue without explaining it. Trace the join graph: which side is "one" and which is "many"? Is the multiplication actually correct (one row per order) or do you want one row per customer (then GROUP BY customer or pre-aggregate)?</p>
+  <p>If your query returns more rows than expected, the fix isn't <code>DISTINCT</code>. The fix is identifying which join is producing the multiplication. DISTINCT scans every row to deduplicate — slow on large tables — and hides the cardinality issue without explaining it. Trace the join graph: which side is "one" and which is "many"? Is the multiplication actually correct (one row per order) or do you want one row per customer (then GROUP BY customer or pre-aggregate)? When the multiplication reaches a SUM, the total inflates with no error: see <a href="/sql-join-fan-out/">SQL join fan-out</a> for a worked example and both fixes.</p>
 
   <h3>2. Forgetting table aliases in multi-table queries</h3>
   <p>If two tables both have an <code>id</code> column, <code>SELECT id</code> is ambiguous. Always alias: <code>SELECT c.id, o.id</code>. Most engines reject ambiguous unqualified columns; the ones that don't pick arbitrarily, which is worse — you get a result that looks fine but is wrong.</p>

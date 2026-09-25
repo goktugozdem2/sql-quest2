@@ -165,7 +165,7 @@
 
   <p>Why: <code>NOT IN (...)</code> logically expands to <code>!= a AND != b AND != c AND ...</code>. If any value in that list is NULL, that comparison becomes unknown. Unknown ANDed with anything stays unknown. The whole WHERE clause becomes unknown for every customer, and every row drops.</p>
 
-  <p>The bug is invisible until production data has its first NULL. Two safe alternatives:</p>
+  <p>The bug is invisible until production data has its first NULL. (A worked example with the numbers — 0 rows where the answer is 49 — is on <a href="/sql-not-in-null/">SQL NOT IN with NULL</a>.) Two safe alternatives:</p>
 
   <div class="code-block">
     <div class="code-label">✅ Pattern A: NOT EXISTS</div>

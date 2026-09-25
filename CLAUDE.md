@@ -446,6 +446,22 @@ so a landing view and a later solve are joinable for the first time.
   work (URL Inspection: "Excluded by 'noindex' tag"). Technical SEO facts are
   pinned in `tests/technical-seo.test.js`.
 
+### SQL trap pages (2026-09-25)
+
+- `/sql-not-in-null/`, `/sql-join-fan-out/`, `/sql-between-timestamp/`,
+  `/sql-average-of-averages/`, `/sql-left-join-where-filter/`: content in
+  `src/data/sql-patterns.js`, pages by `scripts/build-pattern-pages.mjs`
+  (sitemap block `patterns:start/end`). Do not hand-edit `public/<slug>/`.
+- Every number on a page has its query in the data file;
+  `tests/sql-patterns.test.js` runs them on `finans_fraud` and fails when the
+  data moves. **Never reuse the Capital One mock's question or show its
+  answer** — the mock is Pro; the test compares against its snippets and
+  correct options. Company names only as "question N of our … mock".
+- A wrong mock answer whose question is in `PATTERN_FOR_MOCK_QUESTION` shows
+  "Read this trap in detail" (feedback, results, Study with AI). Question
+  pages of cited challenges link back (`PATTERNS_FOR_CHALLENGE`).
+- Next batch only if the 10-23 read passes (ledger).
+
 ### SEO operating rules (2026-09-13)
 
 - Weekly: scheduled task `weekly-seo-dashboard` (Mondays) writes

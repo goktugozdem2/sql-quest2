@@ -20,6 +20,7 @@
  * Run: node scripts/build-question-pages.mjs   (part of `npm run build`)
  */
 
+import { SQL_PATTERNS, PATTERNS_FOR_CHALLENGE } from '../src/data/sql-patterns.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
@@ -214,7 +215,8 @@ export function renderQuestion(c, ctx) {
   <h2 class="fd">Concepts</h2>
   <p style="font-size:15px;color:#94a3b8;">${concepts.map(t => `<code>${esc(t)}</code>`).join(' ')}</p>
   ${topicLinks.length ? `<p style="font-size:15px;color:#94a3b8;margin-top:8px;">Practise the topic: ${topicLinks.join(' · ')}</p>` : ''}
-  <p style="font-size:15px;color:#94a3b8;margin-top:8px;">Read the concept: <a href="${guideFor(c)[0]}">${esc(guideFor(c)[1])}</a></p>
+  <p style="font-size:15px;color:#94a3b8;margin-top:8px;">Read the concept: <a href="${guideFor(c)[0]}">${esc(guideFor(c)[1])}</a></p>${(PATTERNS_FOR_CHALLENGE[c.id] || []).length ? `
+  <p style="font-size:15px;color:#94a3b8;margin-top:8px;">The trap to watch for: ${PATTERNS_FOR_CHALLENGE[c.id].map(s => SQL_PATTERNS.find(p => p.slug === s)).map(p => `<a href="/${p.slug}/">${esc(p.short)}</a>`).join(' · ')}</p>` : ''}
 
   ${cos.length ? `<h2 class="fd">In these company practice sets</h2>
   <p style="font-size:15px;color:#94a3b8;">${cos.map(x => `<a href="${x.url}">${esc(x.name)}</a>`).join(' · ')}</p>

@@ -1144,6 +1144,7 @@ const TRANSLATIONS = {
       noPlan: 'no plan yet',
     },
     mockFeedback: {
+      readTrap: 'Read this trap in detail →',
       timedOut: 'Time is up',
       skipped: 'Skipped',
       correct: 'Correct!',
@@ -2145,6 +2146,7 @@ const TRANSLATIONS = {
       noPlan: 'henüz plan yok',
     },
     mockFeedback: {
+      readTrap: 'Bu tuzağı detaylı oku →',
       timedOut: 'Süre doldu',
       skipped: 'Atlandı',
       correct: 'Doğru!',

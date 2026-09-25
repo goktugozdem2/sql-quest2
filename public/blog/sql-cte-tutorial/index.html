@@ -352,6 +352,7 @@ first_order <span class="kw">AS</span> (
   <p>For day-to-day analytics work, write CTEs for readability and trust the optimizer. If performance is a problem, use <code>EXPLAIN ANALYZE</code> to see what the engine is doing — it usually inlines, sometimes materializes, and you'll see which.</p>
 
   <h2 id="patterns">Three real-world patterns</h2>
+  <p>One more job CTEs do well: aggregating two child tables separately before joining them, so neither multiplies the other's rows. That is the second fix on <a href="/sql-join-fan-out/">SQL join fan-out</a>.</p>
 
   <h3>1. Top-N per group via CTE</h3>
   <p>The classic top-N window pattern uses a CTE because you can't filter on a window function in the same WHERE.</p>
