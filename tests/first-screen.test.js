@@ -49,8 +49,8 @@ describe('firstScreenDecision', () => {
 });
 
 describe('wiring (source guards)', () => {
-  it('ships dark', () => {
-    expect(flags).toMatch(/firstScreenChallenge:\s*false/);
+  it('is on (flipped 2026-09-26, ahead of the queue, founder\'s go)', () => {
+    expect(flags).toMatch(/firstScreenChallenge:\s*true/);
   });
   it('app reads the flag through the pure decision and writes the assignment event', () => {
     expect(app).toMatch(/firstScreenDecision\(/);

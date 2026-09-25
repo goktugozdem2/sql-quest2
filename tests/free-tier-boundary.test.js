@@ -228,10 +228,10 @@ describe('the free quota — ten solves, then Pro (founder, 2026-09-12, item 2)'
     expect(quotaGate().gated).toBe(false);
   });
 
-  it('is wired: its own wall value, cold-start diversion before the ask, row locks, the counter, the modal — and off', () => {
+  it('is wired: its own wall value, cold-start diversion before the ask, row locks, the counter, the modal — and on (founder Go, 2026-09-26)', () => {
     const app = read('../src/app.jsx');
     const flags = read('../src/data/feature-flags.js');
-    expect(flags).toMatch(/^\s+freeQuota: false,/m);
+    expect(flags).toMatch(/^\s+freeQuota: true,/m);
     const at = app.indexOf("trackLockReached('challenge_quota'");
     expect(at).toBeGreaterThan(-1);
     const block = app.slice(at, at + 900);
@@ -279,9 +279,12 @@ describe('source guards — the five flags are wired, and off', () => {
   const app = read('../src/app.jsx');
   const flags = read('../src/data/feature-flags.js');
 
-  it('all five flags exist and ship OFF', () => {
-    for (const f of ['companySetGate', 'goalWallEarly', 'deadlineOffer', 'quietEarlyAsks', 'mockDoor']) {
-      expect(flags, f).toMatch(new RegExp(`^\\s+${f}: false,`, 'm'));
+  // Founder's written Go, 2026-09-26: M1, M2, M3 and M5 on; M4 (quietEarlyAsks)
+  // was not in the Go and stays off.
+  it('the five flags exist, in the state the founder chose on 2026-09-26', () => {
+    const expected = { companySetGate: true, goalWallEarly: true, deadlineOffer: true, quietEarlyAsks: false, mockDoor: true };
+    for (const [f, on] of Object.entries(expected)) {
+      expect(flags, f).toMatch(new RegExp(`^\\s+${f}: ${on},`, 'm'));
     }
   });
 

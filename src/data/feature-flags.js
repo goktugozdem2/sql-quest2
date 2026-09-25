@@ -339,7 +339,7 @@ window.FEATURE_FLAGS = {
     // Pro buys. New wall value `company_set`, reason `company_set`.
     // Flips 2026-09-29 (with M4, a different surface). Ledger: "company
     // sets: three free, then Pro".
-    companySetGate: false,
+    companySetGate: true,
     // M2 — the interview-prep goal meets the wall at step 4, not 11: the
     // free Hard preview (challenge 23) moves to 3, a locked Hard (71, Top-N
     // per Category) to 4. A free user can set the locked step aside
@@ -347,7 +347,7 @@ window.FEATURE_FLAGS = {
     // 79 interview-intent people in 30 days, 68 never opened a Hard.
     // Flips 2026-10-12, after the Coach-trust read (10-11) — it changes
     // what that goal's first steps ARE. Ledger: "the wall at step 4".
-    goalWallEarly: false,
+    goalWallEarly: true,
     // M3 — the milestone modal leads with the date. A person whose
     // intake / countdown date is inside 45 days sees "N days to your
     // interview" and what stands between them and it (the locked Hard set,
@@ -356,7 +356,7 @@ window.FEATURE_FLAGS = {
     // 2026-10-06 after the intake read; the founder moved it on 2026-09-16
     // to flip WITH freeQuota on 2026-09-21 (same scheduled task).
     // Ledger: "the six-solve ask speaks to the deadline".
-    deadlineOffer: false,
+    deadlineOffer: true,
     // M4 — the asks that have never sold go quiet: the streak modal (13
     // people/30d, 0 clicks ever) never fires; a company Hard wall or a
     // locked mock at ≤3 solves gets the free-preview catcher or the free
@@ -370,7 +370,7 @@ window.FEATURE_FLAGS = {
     // one) step 6; the company wall (M1) names the company's mock. The
     // Interview tab was reached by 3 people in 30 days. Flips 2026-10-12
     // with M2 (it is M2's steps 5–6). Ledger: "the mocks get a door".
-    mockDoor: false,
+    mockDoor: true,
 
     // ── P1 (2026-09-12): skill model, diff engine, tutor ─────────────────
     // Built the same day as the free-tier boundary; LIVE parts: the user_skill
@@ -398,7 +398,7 @@ window.FEATURE_FLAGS = {
     // minute finished it). Split by aid hash, sticky; `first_screen_assigned`.
     // Flips from docs/agent/flag-queue.md. Ledger: "the first screen is a
     // challenge, not a quiz"; metric `first_screen_split`.
-    firstScreenChallenge: false,
+    firstScreenChallenge: true,
     // The inline tutor's ladder: request 1 names the defect in THEIR query,
     // 2 gives the exact clause, 3+ the full corrected query; asking for the
     // answer outright bypasses the ladder. Off, the tutor never reveals the
@@ -433,7 +433,7 @@ window.FEATURE_FLAGS = {
     // paywall-surfaces read (09-20) — the previews it measures sit behind
     // this wall for anyone past ten solves. Ledger: "the free quota: ten
     // solves, then Pro".
-    freeQuota: false,
+    freeQuota: true,
   },
 };
 
