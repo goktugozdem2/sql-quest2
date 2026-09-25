@@ -690,6 +690,13 @@ the live modal in `src/app.jsx` (~line 26320), which is the surface that calls
 `beginCheckout`. This line previously read "$19/mo" and was wrong; 13 landing
 pages correctly said $29 and nearly got "corrected" to match the stale doc.
 Prices live in the modal, not here — re-read the modal before quoting.
+**Regional price (2026-09-26, founder's Go):** a visitor Vercel's country
+header puts in India (`/api/geo/`, never the browser) sees **$9/mo · $39/yr**
+and gets those Payment Links; everyone else sees $29 / $99. Every modal price
+and the annual badge come from `PRICE_TABLE` in `src/utils/regional-price.js`
+(flag `regionalPrice`); events carry `priceRegion`. The Stripe prices sit under
+the existing Monthly/Annual products — ids in
+docs/plans/monetization-2026-09-24.md. Public pages quote the default region.
 Rewritten Coach-forward:
 - "Free includes the Coach. Pro adds:" → Unlimited AI Tutor, Hard challenges, Full Mock Interview bank, All Daily difficulties, Full Warm-Up bank, 30-Day Challenge, Priority support.
 

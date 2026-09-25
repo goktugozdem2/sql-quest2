@@ -281,6 +281,14 @@ window.FEATURE_FLAGS = {
     // purchases (stripe_webhook). The webhook keeps its quarterly branch, so
     // turning this back on is one line — but only together with the pages.
     quarterlyPlan: false,
+    // Regional price (founder's written Go, 2026-09-26): a visitor whom
+    // Vercel's country header places in India sees $9/month and $39/year and
+    // is sent to those Payment Links; everyone else sees $29 / $99 exactly as
+    // before. src/utils/regional-price.js; prices under the existing Stripe
+    // products (docs/plans/monetization-2026-09-24.md). Events carry
+    // `priceRegion`. Read: India shown → plan click (3.6%, 90 d) → ≥ 8%, and
+    // non-India purchases must not fall.
+    regionalPrice: true,
     // Direct checkout (2026-09-23, founder's go the same day): a plan click
     // without an email on file goes straight to Stripe instead of the
     // "Where should your receipt go?" step, which lost 4 of 4 such buyers in

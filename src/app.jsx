@@ -42,6 +42,7 @@ import { GOAL_PROFILE_KEY, GOAL_GATE_RECHECK_MS, GOAL_GATE_GOALS, TARGET_LEVELS,
 import { PLACEMENT_TIERS, placementResult, placementEventPayload, readFirstRunPlacement, seedFloorsFor, seedFloorsFromReadiness, levelForReadiness, placementFromReadiness } from './utils/placement.js';
 import { QUESTIONS as READINESS_QUESTIONS, READINESS_SKILLS, READINESS_RECORD_KEY, companySkillWeights, scoreReadiness, summarizeScores, weakestSkills, readinessRecordFrom, readReadinessRecord } from './data/readiness-questions.js';
 import { paidWallFor, isColdStart, practiceSolves } from './utils/paid-wall.js';
+import { priceRegionFor, planPrices, checkoutLinkFor } from './utils/regional-price.js';
 import { companySetGate, companySetFreeIds, companySetProgress, quietAskDecision, deadlineOfferFor, deadlineEventMeta, withEarlyWall, pickProMockId, FREE_MOCK_ID, quotaGate, FREE_SOLVE_QUOTA } from './utils/free-tier-boundary.js';
 import { expandStageChallenges, placementStartIndex as roadmapPlacementStartIndex } from './utils/roadmap.js';
 import { shouldEmitLockEvent, lockEventKey } from './utils/lock-events.js';
@@ -6999,6 +7000,31 @@ function SQLQuest() {
     } catch (_) {}
   };
 
+  // ── Regional price (founder's Go, 2026-09-26) ──────────────────────
+  // India sees $9 / $39; everyone else today's prices. The country is the
+  // server's reading of the request (Vercel's x-vercel-ip-country via
+  // /api/geo/), cached for the tab. Until it answers, the default prices
+  // show — never the regional ones by guess. src/utils/regional-price.js.
+  const [priceRegion, setPriceRegion] = useState('default');
+  useEffect(() => {
+    const flagOn = !!window.FF?.feature?.('regionalPrice');
+    if (!flagOn) return;
+    let cached = null;
+    try { cached = sessionStorage.getItem('sqlquest_geo_country'); } catch (_) {}
+    if (cached) { setPriceRegion(priceRegionFor(cached, true)); return; }
+    let alive = true;
+    fetch('/api/geo/', { cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(j => {
+        const country = j && j.country ? String(j.country) : '';
+        try { if (country) sessionStorage.setItem('sqlquest_geo_country', country); } catch (_) {}
+        if (alive) setPriceRegion(priceRegionFor(country, true));
+      })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, []);
+  const shownPrices = planPrices(priceRegion);
+
   // ── Checkout launch (H11) ──────────────────────────────────────────
   const CHECKOUT_LINKS = {
     monthly: 'https://buy.stripe.com/bJe14o2uleSw8m20nOdMI0a',
@@ -7013,6 +7039,16 @@ function SQLQuest() {
     // matters: stripe-webhook must know the price before the link is
     // reachable, or a buyer pays $49 every quarter and is extended 30 days.
     quarterly: 'https://buy.stripe.com/7sY28sc4V9ycbye6McdMI0i',
+  };
+  // India prices, 2026-09-26: price_1UJhVkKfw2tJmZR5xUOZq2wr ($9/mo, under
+  // the Monthly product) and price_1UJhXBKfw2tJmZR5yNUiaOEa ($39/yr, under
+  // the Annual product) — docs/plans/monetization-2026-09-24.md.
+  const CHECKOUT_LINKS_BY_REGION = {
+    default: CHECKOUT_LINKS,
+    IN: {
+      monthly: 'https://buy.stripe.com/eVq14ob0R5hWgSyb2sdMI0k',
+      annual: 'https://buy.stripe.com/aFa9AU8SJ25KfOugmMdMI0j',
+    },
   };
 
   const resolveCheckoutEmail = () => {
@@ -7035,7 +7071,7 @@ function SQLQuest() {
     try { localStorage.setItem('sqlquest_purchase_user', currentUser || ''); } catch (_) {}
     // Email rides on the click event so the checkout-abandon cron can
     // reach guests — they have no users-table row to look up.
-    trackActivationEvent('pro_checkout_clicked', { plan, email: email || null, modalReason: proModalReason?.type || null, patternSlug: proModalReason?.patternSlug || null, linkSrc: proModalReason?.linkSrc || null });
+    trackActivationEvent('pro_checkout_clicked', { plan, email: email || null, modalReason: proModalReason?.type || null, patternSlug: proModalReason?.patternSlug || null, linkSrc: proModalReason?.linkSrc || null, priceRegion });
     // Leave a breadcrumb so the next app load can tell WHY a click didn't
     // become a purchase. Until now the funnel went silent between the click
     // and the Stripe webhook, so "the button did nothing" and "they saw the
@@ -7058,7 +7094,7 @@ function SQLQuest() {
     } catch (_) { /* ignore */ }
     const promo = (() => { try { return sessionStorage.getItem('sqlquest_promo') || ''; } catch (_) { return ''; } })();
     const promoSuffix = promo ? `&prefilled_promo_code=${encodeURIComponent(promo)}` : '';
-    window.location.href = `${CHECKOUT_LINKS[plan]}?prefilled_email=${encodeURIComponent(email || '')}&client_reference_id=${encodeURIComponent(currentUser)}${promoSuffix}`;
+    window.location.href = `${checkoutLinkFor(plan, priceRegion, CHECKOUT_LINKS_BY_REGION)}?prefilled_email=${encodeURIComponent(email || '')}&client_reference_id=${encodeURIComponent(currentUser)}${promoSuffix}`;
   };
 
   // Plan button entry point: users with an email on file go straight to
@@ -7128,6 +7164,7 @@ function SQLQuest() {
       modalReason: proModalReason?.type || null,
       patternSlug: proModalReason?.patternSlug || null,
       linkSrc: proModalReason?.linkSrc || null,
+      priceRegion,
       hadEmailOnFile: !!email,
       // false here means the user is about to meet an email form they did not
       // ask for, between deciding to buy and being allowed to pay.
@@ -7647,6 +7684,7 @@ function SQLQuest() {
         // The trap page behind a pattern_mock ask (2026-09-25).
         patternSlug: proModalReason?.patternSlug || null,
         linkSrc: proModalReason?.linkSrc || null,
+        priceRegion,
         // Free-tier boundary M3: did this ask lead with a date, and how far.
         ...deadlineEventMeta(proModalReason),
       });
@@ -32068,10 +32106,10 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                     onMouseEnter={e => { e.currentTarget.style.borderColor = '#8A8E99'; }}
                     onMouseLeave={e => { e.currentTarget.style.borderColor = '#2A2E38'; }}
                   >
-                    <div className="text-2xl font-bold" style={{ fontFamily: 'Geist Mono, monospace', fontVariantNumeric: 'tabular-nums', color: '#F2F0EA' }}>$29</div>
+                    <div className="text-2xl font-bold" style={{ fontFamily: 'Geist Mono, monospace', fontVariantNumeric: 'tabular-nums', color: '#F2F0EA' }}>{shownPrices.monthly}</div>
                     <div className="text-sm font-medium" style={{ color: '#F2F0EA' }}>Monthly</div>
                     <div className="text-xs mt-1" style={{ color: '#8A8E99' }}>Billed monthly</div>
-                    <div className="text-xs mt-2" style={{ color: '#8A8E99' }}>$29/month</div>
+                    <div className="text-xs mt-2" style={{ color: '#8A8E99' }}>{shownPrices.monthlyPerMonth}</div>
                   </button>
 
                   {/* Quarterly — the founder's third package (2026-09-14):
@@ -32103,16 +32141,16 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                       className="absolute -top-2 left-1/2 -translate-x-1/2 px-2 py-0.5 text-xs font-bold whitespace-nowrap"
                       style={{ background: '#4ADE80', color: '#0E0F13', borderRadius: '4px' }}
                     >
-                      SAVE 72%
+                      {shownPrices.saveBadge}
                     </div>
-                    <div className="text-2xl font-bold" style={{ fontFamily: 'Geist Mono, monospace', fontVariantNumeric: 'tabular-nums', color: '#F2F0EA' }}>$99</div>
+                    <div className="text-2xl font-bold" style={{ fontFamily: 'Geist Mono, monospace', fontVariantNumeric: 'tabular-nums', color: '#F2F0EA' }}>{shownPrices.annual}</div>
                     <div className="text-sm font-medium" style={{ color: '#F2F0EA' }}>Annual</div>
                     <div className="text-xs mt-1" style={{ color: '#8A8E99' }}>Billed yearly</div>
                     {/* "· most people choose this" removed 2026-09-21: of the four
                         real subscriptions two are annual and two monthly. A claim on
                         the payment page the data does not support. SAVE 72% stays —
                         that one is arithmetic, bound in checkout-surface.test.js. */}
-                    <div className="text-xs mt-2" style={{ color: '#4ADE80' }}>$8.25/month</div>
+                    <div className="text-xs mt-2" style={{ color: '#4ADE80' }}>{shownPrices.annualPerMonth}</div>
                   </button>
                 </div>
 

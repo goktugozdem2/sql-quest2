@@ -42,6 +42,7 @@
 // clean. Failures name the file, the line and the offending text.
 
 import { describe, it, expect, beforeAll } from 'vitest';
+import { PRICE_TABLE } from '../src/utils/regional-price.js';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -849,6 +850,10 @@ export function readProModal(appSource) {
   const modal = {};
   const re = /className="text-2xl font-bold"[^>]*>\$(\d+)<\/div>\s*<div[^>]*>(Monthly|Annual|Lifetime)<\/div>/g;
   for (const m of appSource.matchAll(re)) modal[m[2]] = m[1];
+  // From 2026-09-26 the cards render from src/utils/regional-price.js
+  // ({shownPrices.monthly}); the public pages quote the default region.
+  const reRegional = /className="text-2xl font-bold"[^>]*>\{shownPrices\.(monthly|annual)\}<\/div>\s*<div[^>]*>(Monthly|Annual)<\/div>/g;
+  for (const m of appSource.matchAll(reRegional)) modal[m[2]] = String(PRICE_TABLE.default[m[1]]);
   return modal;
 }
 

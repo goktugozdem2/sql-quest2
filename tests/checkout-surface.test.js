@@ -22,26 +22,67 @@ import { fileURLToPath } from 'url';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const app = readFileSync(resolve(root, 'src/app.jsx'), 'utf8');
 
+import { PRICE_TABLE, planPrices, priceRegionFor, checkoutLinkFor } from '../src/utils/regional-price.js';
+
+// The modal renders every price from src/utils/regional-price.js (2026-09-26,
+// when India got its own price). These bind the table to the prices the
+// founder set and the badge/per-month lines to arithmetic, per region.
 const MONTHLY = 29;
 const ANNUAL = 99;
 
 describe('the price the buyer reads', () => {
-  it('shows the two live prices', () => {
-    expect(app).toContain('>$29<');
-    expect(app).toContain('>$99<');
+  it('shows the two live prices, from the one table', () => {
+    expect(PRICE_TABLE.default).toEqual({ monthly: MONTHLY, annual: ANNUAL });
+    expect(planPrices('default')).toMatchObject({ monthly: '$29', annual: '$99' });
+    expect(app).toMatch(/\{shownPrices\.monthly\}/);
+    expect(app).toMatch(/\{shownPrices\.annual\}/);
+    expect(app).not.toMatch(/>\$(29|99|9|39)</); // no hard-coded price left in the modal
   });
 
-  it('claims the discount the prices actually give', () => {
-    const badge = app.match(/SAVE (\d+)%/);
-    expect(badge, 'the annual badge').not.toBeNull();
-    const claimed = Number(badge[1]);
-    const real = Math.round((1 - ANNUAL / (MONTHLY * 12)) * 100);
-    expect(claimed).toBe(real); // 29*12 = 348, 99 -> 72%
+  it('claims the discount the prices actually give, in every region', () => {
+    for (const region of Object.keys(PRICE_TABLE)) {
+      const { monthly, annual } = PRICE_TABLE[region];
+      const real = Math.round((1 - annual / (monthly * 12)) * 100);
+      expect(planPrices(region).saveBadge, region).toBe(`SAVE ${real}%`);
+    }
+    expect(planPrices('default').saveBadge).toBe('SAVE 72%'); // 29*12 = 348, 99 -> 72%
+    expect(app).toMatch(/\{shownPrices\.saveBadge\}/);
   });
 
-  it('breaks the annual price down correctly', () => {
-    const perMonth = (ANNUAL / 12).toFixed(2);
-    expect(app).toContain(`$${perMonth}/month`);
+  it('breaks the annual price down correctly, in every region', () => {
+    for (const region of Object.keys(PRICE_TABLE)) {
+      const perMonth = (PRICE_TABLE[region].annual / 12).toFixed(2);
+      expect(planPrices(region).annualPerMonth, region).toBe(`$${perMonth}/month`);
+    }
+    expect(app).toMatch(/\{shownPrices\.annualPerMonth\}/);
+  });
+
+  it('India is $9 / $39, and only a server-read IN with the flag on gets it', () => {
+    expect(PRICE_TABLE.IN).toEqual({ monthly: 9, annual: 39 });
+    expect(priceRegionFor('IN', true)).toBe('IN');
+    expect(priceRegionFor('in', true)).toBe('IN');
+    expect(priceRegionFor('IN', false)).toBe('default');
+    expect(priceRegionFor('US', true)).toBe('default');
+    expect(priceRegionFor(null, true)).toBe('default');
+    // The region is the server's reading (/api/geo/), never the browser's.
+    expect(app).toMatch(/fetch\('\/api\/geo\/'/);
+    expect(app).not.toMatch(/priceRegionFor\([^)]*(navigator|Intl|timeZone)/);
+  });
+
+  it('the checkout link follows the region and falls back to the default', () => {
+    const links = { default: { monthly: 'D-m', annual: 'D-a' }, IN: { monthly: 'I-m', annual: 'I-a' } };
+    expect(checkoutLinkFor('monthly', 'IN', links)).toBe('I-m');
+    expect(checkoutLinkFor('annual', 'default', links)).toBe('D-a');
+    expect(checkoutLinkFor('quarterly', 'IN', { ...links, default: { ...links.default, quarterly: 'D-q' } })).toBe('D-q');
+    expect(app).toMatch(/checkoutLinkFor\(plan, priceRegion, CHECKOUT_LINKS_BY_REGION\)/);
+  });
+
+  it('every ask and click says which price the person saw', () => {
+    for (const ev of ['pro_modal_shown', 'pro_plan_clicked', 'pro_checkout_clicked']) {
+      const at = app.indexOf(`trackActivationEvent('${ev}'`);
+      expect(at, ev).toBeGreaterThan(-1);
+      expect(app.slice(at, at + 1200), ev).toMatch(/priceRegion/);
+    }
   });
 
   it('warns that checkout may show a local currency', () => {

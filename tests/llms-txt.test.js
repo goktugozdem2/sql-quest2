@@ -18,6 +18,7 @@
 // not in any doc.
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { PRICE_TABLE } from '../src/utils/regional-price.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import vm from 'node:vm';
@@ -228,6 +229,9 @@ describe('pricing guard — llms.txt quotes the Pro modal in app.jsx, nothing el
     // The price cards: a tabular-nums <div>$N</div> followed by its plan label.
     const re = /className="text-2xl font-bold"[^>]*>\$(\d+)<\/div>\s*<div[^>]*>(Monthly|Annual|Lifetime)<\/div>/g;
     for (const m of app.matchAll(re)) modal[m[2]] = m[1];
+    // From 2026-09-26 the cards render from src/utils/regional-price.js.
+    const reRegional = /className="text-2xl font-bold"[^>]*>\{shownPrices\.(monthly|annual)\}<\/div>\s*<div[^>]*>(Monthly|Annual)<\/div>/g;
+    for (const m of app.matchAll(reRegional)) modal[m[2]] = String(PRICE_TABLE.default[m[1]]);
 
     const start = text.indexOf('## Pricing');
     const end = text.indexOf('\n## ', start + 1);
