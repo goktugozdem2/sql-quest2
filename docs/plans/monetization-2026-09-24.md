@@ -80,3 +80,24 @@ them is enough alone, and this file does not pretend otherwise.
    close to what harinivr02 paid.
 2. Agree that `deadlineOffer` waits for 30 date-holders after row 6.
 3. Go on the next `activated-note` run (dry run first).
+
+## Stripe objects for the India price (created 2026-09-26, live mode)
+
+Founder's Go 2026-09-26: `regionalPrice` for India at **$9/month · $39/year**.
+Created under the EXISTING products, so stripe-webhook's `PRODUCT_TO_PLAN`
+maps them to the right plan length even before any secret is set (a new
+product would have fallen to the amount fallback — $39 → 30 days).
+
+| | Product | Price id | Lookup key | Payment Link id |
+|---|---|---|---|---|
+| Monthly $9 | `prod_TvzQ6tzLE52H9y` (SQL Quest Pro — Monthly) | `price_1UJhVkKfw2tJmZR5xUOZq2wr` | `sqlquest_pro_monthly_in` | `plink_1UJhacKfw2tJmZR5WCr4TQwS` |
+| Annual $39 | `prod_TvzU4y1aU9t7x9` (SQL Quest Pro — Annual) | `price_1UJhXBKfw2tJmZR5yNUiaOEa` | `sqlquest_pro_annual_in` | `plink_1UJhZ1Kfw2tJmZR5FlGU3oqN` |
+
+Both links copy the live links' settings: promotion codes on, redirect to
+`/app/?payment=success`, CTA "Subscribe", no address/phone/tax collection,
+no trial. Neither price is the product default. The buy.stripe.com URLs are
+deliberately NOT written here (public repo): anyone holding one pays the
+India price. Nothing in the app points at them yet — wiring waits for the
+flag permission, and the region must come from a server-side country header
+(Vercel `x-vercel-ip-country`), never the browser, before either the links
+or the `STRIPE_PRICE_*_IN` secrets are used.
