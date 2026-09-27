@@ -283,8 +283,8 @@ function renderEmail(args: { username: string; email: string; isLastDay: boolean
             Or come back to the app: <a href="${appUrl}" style="color:#a78bfa;text-decoration:underline;">sqlquest.app</a>
           </p>
           <p style="font-size:12px;line-height:1.6;color:#64748b;text-align:center;margin:24px 0 0;">
-            No commitment. Cancel anytime. The Coach, skill radar, and ~75 challenges
-            stay yours forever on the free tier.
+            No commitment. Cancel anytime. The Coach, the Skillmap and every challenge
+            you have solved stay yours on the free tier.
           </p>
         </td></tr>
       </table>

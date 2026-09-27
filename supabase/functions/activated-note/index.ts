@@ -189,7 +189,7 @@ function renderBody(args: { username: string; solves: number; weakest: string | 
         </a>
       </div>
       <p style="font-size: 15px; line-height: 1.8;">
-        If you are not interviewing, ignore this — the free bank is not going anywhere. And if something stopped you last time, hit reply; it comes straight to me.
+        If you are not interviewing, ignore this — everything you have solved stays yours, and so do the lessons and the Coach. And if something stopped you last time, hit reply; it comes straight to me.
       </p>
       <p style="font-size: 15px; line-height: 1.8;">Göktuğ<br><span style="color:#6b7280;">Founder, SQL Quest</span></p>
     </div>`

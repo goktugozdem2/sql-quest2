@@ -58,3 +58,23 @@ describe('activated-note: the second ask, in the founder voice', () => {
     expect(app).toContain("proModalReason.type === 'email_link'");
   });
 });
+
+// freeQuota went live 2026-09-26: after ten solves the rest of the bank is
+// Pro, so this email may not promise a free bank to people past ten.
+describe('activated-note copy matches the free tier', () => {
+  it('never promises that the free bank stays', () => {
+    const src = fs.readFileSync(join(ROOT, 'supabase/functions/activated-note/index.ts'), 'utf8');
+    expect(src).not.toMatch(/free bank is not going anywhere/i);
+    expect(src).not.toMatch(/every (Easy|Medium)[^.]*free/i);
+  });
+  it('no scheduled sender promises a challenge count on the free tier', () => {
+    const dir = join(ROOT, 'supabase/functions');
+    for (const fn of fs.readdirSync(dir)) {
+      const file = join(dir, fn, 'index.ts');
+      if (!fs.existsSync(file)) continue;
+      const src = fs.readFileSync(file, 'utf8');
+      expect(src, fn).not.toMatch(/~?\d+ challenges\s+stay yours/i);
+      expect(src, fn).not.toMatch(/free bank is not going anywhere/i);
+    }
+  });
+});
