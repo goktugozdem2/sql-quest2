@@ -18,3 +18,66 @@ verify_jwt = false
 
 [functions.publish-profile]
 verify_jwt = false
+
+# ── Mirrors production (read 2026-09-27 via list_edge_functions) ──────────
+# 2026-09-27: `supabase functions deploy activated-note` without
+# --no-verify-jwt switched the gateway's JWT check back ON; SENDER_SECRET is
+# not a JWT, so every founder run and the trial-reminder cron got
+# "Invalid JWT" for two minutes. These entries make a plain deploy keep each
+# function as it runs in production. The senders do their own caller check
+# ("service role required"); the webhooks check signatures; account-login /
+# account-password and email-unsubscribe serve people without a Supabase JWT.
+# tests/function-jwt-config.test.js binds the senders to this file.
+[functions.welcome-back]
+verify_jwt = false
+
+[functions.streak-reminder]
+verify_jwt = false
+
+[functions.skill-decay]
+verify_jwt = false
+
+[functions.stripe-webhook]
+verify_jwt = false
+
+[functions.capture-email]
+verify_jwt = false
+
+[functions.capture-email-drip]
+verify_jwt = false
+
+[functions.email-unsubscribe]
+verify_jwt = false
+
+[functions.trial-reminder-cron]
+verify_jwt = false
+
+[functions.weekly-digest]
+verify_jwt = false
+
+[functions.checkout-abandon]
+verify_jwt = false
+
+[functions.resend-webhook]
+verify_jwt = false
+
+[functions.lapsed-pro]
+verify_jwt = false
+
+[functions.activated-note]
+verify_jwt = false
+
+[functions.account-login]
+verify_jwt = false
+
+[functions.account-password]
+verify_jwt = false
+
+[functions.prep-plan-note]
+verify_jwt = false
+
+[functions.goal-note]
+verify_jwt = false
+
+[functions.interview-outcome-note]
+verify_jwt = false
