@@ -138,7 +138,11 @@ describe('prep-plan-note: the plan follows the person out of the app', () => {
     for (const m of migrations) {
       expect(fs.readFileSync(join(ROOT, 'supabase/migrations', m), 'utf8')).not.toContain('prep-plan-note');
     }
-    const cfg = fs.readFileSync(join(ROOT, 'supabase/config.toml'), 'utf8');
+    // config.toml may carry the function's verify_jwt = false block (added
+    // 2026-09-27 so a plain deploy keeps the gateway check off) and nothing
+    // else: no schedule, no cron, no other key.
+    const cfg = fs.readFileSync(join(ROOT, 'supabase/config.toml'), 'utf8')
+      .replace(/\[functions\.prep-plan-note\]\s*\n\s*verify_jwt\s*=\s*false\s*\n/, '');
     expect(cfg).not.toContain('prep-plan-note');
   });
 });
