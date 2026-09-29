@@ -38,3 +38,12 @@ describe('ai-tutor calls Claude Sonnet 5.5 the way it accepts', () => {
     expect(src).toMatch(/stop_reason === "refusal"\) return REFUSAL_TEXT/);
   });
 });
+
+describe('ai-tutor prefers its own workspace key, and only a real one', () => {
+  it('reads ANTHROPIC_API_KEY_TUTOR first, falls back when it is not an sk-ant- key, and logs which ran', () => {
+    expect(src).toMatch(/Deno\.env\.get\("ANTHROPIC_API_KEY_TUTOR"\)/);
+    expect(src).toMatch(/TUTOR_KEY\.startsWith\("sk-ant-"\) \? "tutor_workspace" : "default_workspace"/);
+    expect(src).toMatch(/KEY_SOURCE === "tutor_workspace" \? TUTOR_KEY : \(Deno\.env\.get\("ANTHROPIC_API_KEY"\) \|\| ""\)/);
+    expect(src).toMatch(/key: KEY_SOURCE,/);
+  });
+});

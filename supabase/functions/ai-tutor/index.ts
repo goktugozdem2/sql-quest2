@@ -5,7 +5,13 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY") || "";
+// The tutor's own key, from the `sqlquest-tutor` workspace (2026-09-30, its
+// own $10 monthly limit), wins when it holds a real key; until the founder
+// pastes one in, the secret carries a placeholder and the Default workspace's
+// ANTHROPIC_API_KEY keeps the tutor answering. The log says which one ran.
+const TUTOR_KEY = Deno.env.get("ANTHROPIC_API_KEY_TUTOR") || "";
+const KEY_SOURCE = TUTOR_KEY.startsWith("sk-ant-") ? "tutor_workspace" : "default_workspace";
+const ANTHROPIC_API_KEY = KEY_SOURCE === "tutor_workspace" ? TUTOR_KEY : (Deno.env.get("ANTHROPIC_API_KEY") || "");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 const ALLOWED_ORIGIN = Deno.env.get("ALLOWED_ORIGIN") || "";
@@ -397,6 +403,7 @@ function textOf(aiResponse: any): string {
   const usage = aiResponse?.usage || {};
   console.log("tutor_usage", JSON.stringify({
     model: aiResponse?.model,
+    key: KEY_SOURCE,
     input: usage.input_tokens,
     output: usage.output_tokens,
     cache_read: usage.cache_read_input_tokens,
