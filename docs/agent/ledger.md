@@ -2555,10 +2555,31 @@ that needs its own path — the current rule is written down in the handler.
   note as well. The two must be read together, and the ≥ 15 preview-opener
   target there is now harder to reach for a reason that has nothing to do
   with the surfaces.
-- **Verdict** _pending_
+- **Verdict, read 2026-09-29 (deploy 09-08 → 09-28): INCONCLUSIVE — extended
+  to 2026-10-13, nothing changes.** 118 people met `wall='cold_start'`; 74 of
+  them are the rendering crawler of 09-17 → 09-23 (the `first_solve_10m` trap:
+  no landingSrc, LA/1920×1080 or UTC/1280×720, arriving through
+  `challenges-advanced` links; none opened a challenge afterwards). Of the
+  **44 people**, 19 opened a challenge after the dialog and **10 solved one —
+  22.7%**, against 7.9% (14.3% without the 08-26 cluster) before the change
+  and the 25% target. Inside the 15–25% band the rule says extend. The lock
+  was the last event for 17 of 44 (39%; 22 of 38 = 58% before). "Unlock Pro
+  anyway" (added 09-20): 3 people pressed it, 0 reached checkout, 0 bought —
+  the starter is still what gets taken. Purchases in the window: 1
+  (stripe_webhook, 09-19); the guardrail only applies at ≥ 25%. Where the
+  44 came from: the topic pages' `?challenge=` links (advanced, aggregation,
+  ranking, dates — 0 of 24 solved) and company pages (Revolut, Snowflake,
+  Databricks — 3 of 7 solved). That split is the falsification branch's
+  hint even before the verdict lands: the topic-page links hand a
+  zero-solve visitor a locked Hard. **Confound for the extension:**
+  `diagnosisHints` flips 2026-09-30 (flag-queue row 1) and changes the
+  wrong-answer panel every cold-start solver meets — read the 10-13 window
+  split at the flip. Re-read 2026-10-13 on the 09-08 → 10-12 cohort, crawler
+  excluded.
 ### paywall: ask fewer people, at most twice, and never the ones who came to learn
 - **Claimed** 2026-09-08 — **NOT YET SHIPPED.** Ships after the cold-start read
-  on **2026-09-29**, because `purchases` is a directional guardrail on both
+  on **2026-09-29** (read: inconclusive, extended to 2026-10-13 — this waits
+  with it), because `purchases` is a directional guardrail on both
   that claim and the paywall-surfaces claim reading 09-20, and changing who
   sees the Pro modal moves it. Plan:
   `docs/plans/signup-to-subscriber-2026-09-08.md`.
