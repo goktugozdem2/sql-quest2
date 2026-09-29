@@ -66,3 +66,26 @@ pages, /challenges/advanced/, /questions/inactive-customers-by-tier/ (already
 rewrites for the five zero-click pages: separate commit. The
 `weekly-seo-dashboard` run of 09-28 hung at 07:12 UTC and is still marked running (the founder stops it); watch
 the 10-05 run. Plan: docs/plans/seo-october-2026-09-29.md.
+
+## Coverage check, 2026-09-29 (both consoles)
+
+**Google.** Sitemap 415 URLs = `gsc_index_status` 415 (none uninspected, none
+extra); 409 indexed, the 6 others requested 09-29. Sitemaps report: submitted
+and read 09-25, Success, 415 discovered. The Page indexing report (last
+update 09-21, it lags) lists 7 × 404 — all old relative links
+(`/meta-sql-interview/terms.html`, `/after-bootcamp/app.html`, …, last
+crawled May–July) that now 308 to the right page; nothing on the site links
+that way any more — 1 redirect error (`/shopify-sql-interview` without the
+slash, crawled 04-25; now 308 → 200), 38 noindex (the `/app/?…` variants, by
+design), 12 redirects (legacy `app.html` / sector links, by design). Nothing
+to fix.
+
+**Bing.** Site Explorer: 443 known, **269 indexed** (211 on 09-23), 176
+warning, 30 excluded, 0 error. Sitemap read 09-27, Success, 415. The gap is
+the ~146 sitemap URLs Bing has not indexed. 216 sitemap URLs had never gone
+through URL Submission (130 question pages, 23 blog posts, the rest company
+and comparison pages); 09-29: IndexNow accepted 394 URLs (lastmod ≤ 7 d,
+HTTP 200) and URL Submission took 100 question pages (quota 100 → 0). Next
+batch 09-30: the remaining 30 question pages, the 23 blog posts and the
+company/comparison pages. The 176 warnings are read in the 10-07 task
+(`read-bing-indexed-1007`).
