@@ -27,6 +27,50 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### "Explain your approach" in every live / talk-through mock
+
+- **Claimed** 2026-09-29 · **Live** on push (no flag) · **Read** 2026-10-20 (21 days).
+- **Change** the "Explain your approach" box (free text + a 2–3 sentence tutor
+  read, never points) moves from one mock-level flag on `capital-one-live-sql`
+  to a per-question flag, `explainApproach: true`
+  (src/utils/mock-approach.js). It is on for every written question of the
+  seven generic practice mocks (39 questions) and the four of
+  `capital-one-live-sql` — 43 questions in 8 mocks. It stays OFF, with the
+  reason in the data file, on the two written questions of
+  `capital-one-codesignal` and the two of `revolut-analytics-screen`: both
+  are sourced as timed online screens with nobody to talk to (Blind reports
+  2021–2025 and prep guides for the CodeSignal screen; interviewquery's Q3
+  2026 reports for the HackerRank screen — the Revolut talk-through is round
+  two, which has no mock). No MCQ ever carries it. Scores unchanged. The box's
+  copy and the feedback prompt were already generic (question, query,
+  reference — no company or dataset); tested to stay so. New event
+  `mock_approach_submitted` once per written answer in an enabled question,
+  `chars` 0 when the box stayed empty. Guards: tests/mock-approach.test.js
+  (deliberate breaks: a flag on an MCQ, a flag missing from a generic
+  question, a flag on the CodeSignal written question — each failed by name).
+- **Why** a live SQL round grades the reasoning, not only the query
+  (docs/plans/explain-approach-mocks-2026-09-21.md, founder-approved
+  2026-09-29, backlog #5). The box shipped in one mock nobody arm's-length
+  has sat; the generic mocks are where written answers actually happen.
+- **Metric** `approach_box_use` — share of written answers in enabled mocks
+  with a non-empty note, per `interviewId` (metrics.md). **Baseline** none:
+  no per-answer event existed before 2026-09-29, and the one live mock had
+  1 start / 0 completions / 1 feedback click, all internal (`test2`). The
+  share is undefined before this date, not 0%.
+- **Target** on 2026-10-20, over the eight enabled mocks: at least 20 written
+  answers from arm's-length people, and a note in ≥ 25% of them in at least
+  one mock with ≥ 10 answers.
+- **Falsification, stated in advance:** ≥ 20 answers and < 10% with a note
+  in every mock → nobody writes in an optional box under a timer; the next
+  step is not more mocks with the box but making the explanation part of
+  the answer (asked before Submit on the live-round mock only), or removing
+  it from the timed generic mocks. Fewer than 20 answers → UNREADABLE; extend
+  to 2026-11-10, and the finding is about mock traffic, not the box.
+- **Confounds** the `mockDoor` / `goalWallEarly` flips (10-12) change who
+  reaches a mock; read the share per mock and per arrival week, and note the
+  flip date in the read. The free mock will dominate rows — never sum.
+- **Verdict** _pending_
+
 ### five SQL trap pages, linked into the graph (the first pattern batch)
 
 - **Claimed** 2026-09-25 · **Live** on push · **Read** 2026-10-23 (28 days).

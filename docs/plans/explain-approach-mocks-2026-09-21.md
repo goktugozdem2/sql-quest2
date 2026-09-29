@@ -22,4 +22,14 @@ one mock — `capital-one-live-sql` (`explainApproach: true`, feedback via
   build start (the one live mock gives the first number).
 
 ## Status
-OPEN. Small: a flag per question plus copy.
+BUILT 2026-09-29 (founder-approved 2026-09-29, backlog #5). Per-question flag
+`explainApproach: true` (src/utils/mock-approach.js): on for the seven generic
+practice mocks' 39 written questions and `capital-one-live-sql`'s four; off,
+with the reason in the data file, on the written questions of
+`capital-one-codesignal` (CodeSignal, timed, untalked) and
+`revolut-analytics-screen` (HackerRank round one; the talk-through is round
+two, no mock yet). Event `mock_approach_submitted`; metric `approach_box_use`
+defined in docs/agent/metrics.md with the baseline (none — no per-answer event
+before this date, and the one live mock had only internal traffic). Ledger
+claim: "Explain your approach in every live / talk-through mock", read
+2026-10-20. Guards: tests/mock-approach.test.js.

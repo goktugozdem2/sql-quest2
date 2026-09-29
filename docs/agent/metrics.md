@@ -758,6 +758,61 @@ purchase on day 7 — the fourth real payer. alexis_montesdeoca: no reply,
 18 solves since. rereremin: no reply, not seen since 09-06. Verdict in the
 ledger. Rule unchanged: those three are never mailed by a campaign again.
 
+## `approach_box_use`
+
+Share of written mock answers, in the approach-enabled questions, that
+include an "Explain your approach" note — per mock. The box is the live
+round's practice (a live round grades the reasoning, not only the query);
+the metric asks whether anyone writes in it when it is there. Defined
+2026-09-29, at build start, per docs/plans/explain-approach-mocks-2026-09-21.md.
+
+Events:
+- `mock_approach_submitted {interviewId, questionId, chars, hasApproach,
+  skipped, timedOut}` — ONE row per written answer in an approach-enabled
+  question (`explainApproach: true` on the question, src/utils/mock-approach.js),
+  fired from `submitInterviewAnswer` on submit, skip and time-out alike.
+  `chars` is the trimmed note's length; 0 = the box stayed empty. Born
+  2026-09-29; the denominator and the numerator live in this one event.
+- `interview_approach_feedback {interviewId, questionId, chars, ok}` — the
+  person asked the tutor to read the note (the older event, from 2026-09-19).
+  Not the metric: a note can be written and never read back.
+
+Baseline, measured 2026-09-29 before the change: the box existed in one mock
+(`capital-one-live-sql`, all four questions) and **no arm's-length person
+ever sat it** — 1 `interview_started`, 0 `interview_completed`, 1
+`interview_approach_feedback`, all from `test2` (internal). There was no
+per-answer event, so the share is **undefined before 2026-09-29** ("no event
+before that date"), not 0%.
+
+Which mocks carry the box (and which do not, on purpose): the seven generic
+practice mocks (every question written), `capital-one-live-sql`; NOT
+`capital-one-codesignal` nor `revolut-analytics-screen` — both are sourced
+as timed online screens with nobody to talk to. `tests/mock-approach.test.js`
+pins the split, so a new mock forces a decision here too.
+
+Traps: the seven generic mocks were free of the box until this date — read
+their rows from 2026-09-29 only. `sql-fundamentals-free` is the free mock
+and will dominate the row count; read per `interviewId`, never summed. A
+skipped or timed-out answer is in the denominator (the box was there); split
+on `skipped` if the read wants "answers actually written".
+
+```sql
+-- Per mock: written answers, notes written, share; people by username.
+select ((metadata #>> '{}')::jsonb)->>'interviewId' as interview_id,
+       count(*)                                                      as written_answers,
+       count(*) filter (where (((metadata #>> '{}')::jsonb)->>'chars')::int > 0) as with_approach,
+       round(100.0 * count(*) filter (where (((metadata #>> '{}')::jsonb)->>'chars')::int > 0) / count(*), 1) as approach_pct,
+       count(distinct username)                                      as people,
+       round(avg((((metadata #>> '{}')::jsonb)->>'chars')::int) filter (where (((metadata #>> '{}')::jsonb)->>'chars')::int > 0)) as avg_chars
+from pro_events
+where event = 'mock_approach_submitted'
+  and created_at >= '2026-09-29'
+  and username !~* '^(test|demo|admin|qa)[0-9]*$' and username <> 'sqlquest'
+  and username not ilike '%fabletest%' and username not ilike 'linktest%'
+  and username not ilike 'internalroutine%' and username <> 'elena'
+group by 1 order by written_answers desc;
+```
+
 ## `interview_outcome`
 
 What happened at the screen. The one number the interview-first frame

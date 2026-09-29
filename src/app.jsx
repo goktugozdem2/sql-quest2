@@ -73,6 +73,7 @@ import { normalizeAiMessages } from './utils/ai-tutor-client.js';
 import { t as i18n_t, getCurrentLang, setLang as i18n_setLang, subscribeLang, SUPPORTED_LANGS, localizeChallenge, localizeInterview, localizeQuestion } from './utils/i18n.js';
 import { buildWeeklyReport, detectMilestones } from './utils/weekly-report.js';
 import { isMcqQuestion, scoreMcqAnswer, applyHintPenalty, nextOptionId, findOption, mockMistakeDiagnosis, weakConceptsFromHistory } from './utils/mock-interview.js';
+import { explainsApproach, approachSubmittedEvent } from './utils/mock-approach.js';
 
 // 2026-09-12 (founder's cleanup item 12): the sector deep-link parameter is
 // English on every link — ?sector=finance | real-estate | manufacturing |
@@ -10913,11 +10914,18 @@ function SQLQuest() {
       timedOut,
       skipped,
       userError,
-      approachNote: activeInterview.explainApproach ? (interviewApproach.text.trim() || null) : undefined,
-      approachFeedback: activeInterview.explainApproach ? (interviewApproach.feedback || null) : undefined,
+      approachNote: explainsApproach(currentQ) ? (interviewApproach.text.trim() || null) : undefined,
+      approachFeedback: explainsApproach(currentQ) ? (interviewApproach.feedback || null) : undefined,
       hintsUsed: interviewHintsUsed.filter(h => h === interviewQuestion).length
     };
-    
+    // Metric `approach_box_use` (docs/agent/metrics.md): one row per written
+    // answer in an approach-enabled question, `chars` 0 when the box stayed
+    // empty — the denominator and the numerator in one event.
+    try {
+      const ev = approachSubmittedEvent(activeInterview, currentQ, interviewApproach.text);
+      if (ev) trackActivationEvent('mock_approach_submitted', { ...ev, skipped: !!skipped, timedOut: !!timedOut });
+    } catch (_) {}
+
     const newAnswers = [...interviewAnswers, answer];
     setInterviewAnswers(newAnswers);
 
@@ -30540,7 +30548,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                           </button>
                           )}
                         </div>
-                        {activeInterview.explainApproach && (
+                        {explainsApproach(rawCurrentQ) && (
                           <div className="mt-4" data-testid="interview-approach">
                             <label className="text-sm text-gray-400 mb-1 block">{i18n_t('mockFeedback', 'approachLabel')}</label>
                             <textarea

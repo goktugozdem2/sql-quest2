@@ -441,16 +441,18 @@ describe('the Capital One live SQL round', () => {
 });
 
 describe('the live round asks for an explanation (round 4, item 5)', () => {
-  it('capital-one-live-sql carries explainApproach; the screen does not', () => {
-    expect(interviews.find(i => i.id === 'capital-one-live-sql').explainApproach).toBe(true);
-    expect(interviews.find(i => i.id === 'capital-one-codesignal').explainApproach).toBeFalsy();
+  it('every capital-one-live-sql question carries explainApproach; the screen has none', () => {
+    // Per question since 2026-09-29 (src/utils/mock-approach.js); the full
+    // enabled / off split is pinned in tests/mock-approach.test.js.
+    expect(interviews.find(i => i.id === 'capital-one-live-sql').questions.every(q => q.explainApproach === true)).toBe(true);
+    expect(interviews.find(i => i.id === 'capital-one-codesignal').questions.some(q => q.explainApproach)).toBe(false);
   });
   it('the runner renders the box, asks the tutor, and saves the note with the answer', async () => {
     const fs = await import('node:fs');
     const app = fs.readFileSync(new URL('../src/app.jsx', import.meta.url), 'utf8');
-    expect(app).toContain('{activeInterview.explainApproach && (');
+    expect(app).toContain('{explainsApproach(rawCurrentQ) && (');
     expect(app).toContain('data-testid="interview-approach-feedback"');
-    expect(app).toContain("approachNote: activeInterview.explainApproach ? (interviewApproach.text.trim() || null) : undefined,");
+    expect(app).toContain("approachNote: explainsApproach(currentQ) ? (interviewApproach.text.trim() || null) : undefined,");
     expect(app).toMatch(/REFERENCE APPROACH \(never reveal it/);
     expect(app).toContain('data-testid="interview-approach-review"');
   });

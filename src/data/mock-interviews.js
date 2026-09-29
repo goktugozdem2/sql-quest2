@@ -21,6 +21,7 @@ window.mockInterviewsData = [
       {
         id: 'free-q1',
         order: 1,
+        explainApproach: true,
         title: 'Multi-column sort',
         title_tr: 'Çok kolonlu sıralama',
         description: 'The HR team wants a report on high earners. Find all employees with a salary over **$70,000**. Show their **name**, **department**, **position**, **salary**, and **performance_rating**. Sort by department A→Z first, then by salary within each department highest-first.',
@@ -43,6 +44,7 @@ window.mockInterviewsData = [
       {
         id: 'free-q2',
         order: 2,
+        explainApproach: true,
         title: 'Department salary summary',
         title_tr: 'Department maaş özeti',
         description: 'Generate a salary summary for each department. Show **department**, **headcount** (number of employees), **avg_salary** (rounded to 2 decimal places), **max_salary**, and **min_salary**. Sort by average salary descending.',
@@ -65,6 +67,7 @@ window.mockInterviewsData = [
       {
         id: 'free-q3',
         order: 3,
+        explainApproach: true,
         title: 'High-value order report',
         title_tr: 'Yüksek tutarlı sipariş raporu',
         description: 'Customer support needs to prioritise big orders. List all orders with a total over **$200** showing the **order_id**, **customer name**, **product**, **quantity**, and **total**. Sort by total descending so the largest orders appear first.',
@@ -87,6 +90,7 @@ window.mockInterviewsData = [
       {
         id: 'free-q4',
         order: 4,
+        explainApproach: true,
         title: 'WHERE vs HAVING — high-earning departments',
         title_tr: 'WHERE vs HAVING — yüksek kazançlı department\'lar',
         description: 'Finance needs two numbers per department: the count of employees earning above **$60,000** and what percentage of the department that represents. Show **department**, **high_earners** (count above $60k), and **pct_high_earners** (rounded to 1 decimal place). Only include departments where **more than 3** employees clear the threshold. This question tests the WHERE vs HAVING distinction — one of the most commonly confused concepts in SQL.',
@@ -136,6 +140,7 @@ window.mockInterviewsData = [
       {
         id: 'da-q1',
         order: 1,
+        explainApproach: true,
         title: 'Monthly revenue report',
         title_tr: 'Aylık ciro raporu',
         description: 'Build a monthly revenue summary across all available data. Show the **month** (YYYY-MM format), **total_orders** (count of orders), **revenue** (sum of totals), and **avg_order_value** (rounded to 2 decimal places). Sort chronologically.',
@@ -158,6 +163,7 @@ window.mockInterviewsData = [
       {
         id: 'da-q2',
         order: 2,
+        explainApproach: true,
         title: 'Customer Segmentation',
         title_tr: 'Müşteri segmentasyonu',
         description: 'Categorize customers by total spending: **"VIP"** (>$500), **"Regular"** ($100-$500), **"Low"** (<$100). Show customer name and category.',
@@ -180,6 +186,7 @@ window.mockInterviewsData = [
       {
         id: 'da-q3',
         order: 3,
+        explainApproach: true,
         title: 'Inactive Customers',
         title_tr: 'Aktif olmayan müşteriler',
         description: 'Find customers who registered but have **never placed an order**. Show their name, email, and signup date.',
@@ -202,6 +209,7 @@ window.mockInterviewsData = [
       {
         id: 'da-q4',
         order: 4,
+        explainApproach: true,
         title: 'Customer revenue ranking',
         title_tr: 'Müşteri ciro sıralaması',
         description: 'Rank **all customers** by total spending and show each customer\'s revenue share. Show **revenue_rank**, **customer name**, **total_spent**, and **pct_of_total** (their percentage of total company revenue, rounded to 2 decimal places). Unlike a simple TOP 5, this ranks all customers and calculates each one\'s contribution — which requires both RANK and a grand-total window.',
@@ -228,6 +236,7 @@ window.mockInterviewsData = [
       {
         id: 'da-q5',
         order: 5,
+        explainApproach: true,
         title: 'Month-over-month revenue change',
         title_tr: 'Ay üstüne ay ciro değişimi',
         description: 'For every month in the dataset, calculate the **absolute revenue change** versus the previous month. Show **month** (YYYY-MM), **revenue**, **prev_revenue**, and **revenue_change** (current minus previous, rounded to 2 decimal places). Exclude the first month — it has no previous month to compare.',
@@ -273,6 +282,7 @@ window.mockInterviewsData = [
       {
         id: 'be-q1',
         order: 1,
+        explainApproach: true,
         title: 'Multi-table completed orders',
         title_tr: 'Çok tablolu tamamlanmış siparişler',
         description: 'Get a complete order summary: **order_id**, **customer name**, **product**, and **order total**. Only include orders with status = **\'completed\'** (lowercase). Sort by order_id ascending.',
@@ -295,6 +305,7 @@ window.mockInterviewsData = [
       {
         id: 'be-q2',
         order: 2,
+        explainApproach: true,
         title: 'Above Average Query',
         title_tr: 'Ortalama üstü sorgu',
         description: 'Find employees who earn **more than the average salary in their department**. Show name, department, salary, and department average.',
@@ -317,6 +328,7 @@ window.mockInterviewsData = [
       {
         id: 'be-q3',
         order: 3,
+        explainApproach: true,
         title: 'Employee–manager lookup (self-join)',
         title_tr: 'Çalışan–yönetici eşleştirme (self-join)',
         description: 'The org-chart tool needs manager names. For each employee, show their **name**, **department**, and their **manager_name**. Employees with no manager (NULL manager_id) should show **\'No Manager\'**. This is the **self-join pattern** — joining the employees table to itself using manager_id → emp_id.',
@@ -343,6 +355,7 @@ window.mockInterviewsData = [
       {
         id: 'be-q4',
         order: 4,
+        explainApproach: true,
         title: 'Running Total',
         title_tr: 'Kümülatif toplam',
         description: 'Calculate the **running total of daily revenue**. Show order_date, daily total, and cumulative total.',
@@ -365,6 +378,7 @@ window.mockInterviewsData = [
       {
         id: 'be-q5',
         order: 5,
+        explainApproach: true,
         title: 'Duplicate email detection',
         title_tr: 'Yinelenen email tespiti',
         description: 'A data quality check has flagged potential duplicate accounts. Find all **email addresses shared by more than one customer**. Show the **email**, the **duplicate_count**, and a **customer_names** list (comma-separated) of everyone using that email. Sort by duplicate count descending. In production, this query would feed an alert pipeline.',
@@ -410,6 +424,7 @@ window.mockInterviewsData = [
       {
         id: 'faang-q1',
         order: 1,
+        explainApproach: true,
         title: 'Second highest salary',
         title_tr: 'İkinci en yüksek maaş',
         description: 'Find the **second highest distinct salary** in the employees table. Return a single column called **second_highest**. If every employee earns the same salary (no second distinct value), return NULL. Write the solution using **DENSE_RANK** — the approach expected in a senior interview — rather than a nested MAX subquery.',
@@ -436,6 +451,7 @@ window.mockInterviewsData = [
       {
         id: 'faang-q2',
         order: 2,
+        explainApproach: true,
         title: 'Consecutive Orders',
         title_tr: 'Ardışık siparişler',
         description: 'Find customers who placed orders on **at least 2 consecutive days**. Show customer name and their consecutive dates.',
@@ -458,6 +474,7 @@ window.mockInterviewsData = [
       {
         id: 'faang-q3',
         order: 3,
+        explainApproach: true,
         title: 'Longest-tenured employee per department',
         title_tr: 'Department başına en kıdemli çalışan',
         description: 'Find the **most tenured employee in each department** — the one who joined earliest. Show **department**, **name**, **hire_date**, and **years_tenure** (years since hire_date, rounded to 1 decimal). Handle ties: if two people share the same earliest hire_date, show both. This is a PARTITION BY pattern with ascending date order — different from salary ranking.',
@@ -484,6 +501,7 @@ window.mockInterviewsData = [
       {
         id: 'faang-q4',
         order: 4,
+        explainApproach: true,
         title: 'Gap to Next',
         title_tr: 'Bir sonrakine fark',
         description: 'For each employee, find the **salary gap** to the next highest earner in their department. Show name, salary, and gap.',
@@ -506,6 +524,7 @@ window.mockInterviewsData = [
       {
         id: 'faang-q5',
         order: 5,
+        explainApproach: true,
         title: 'Percentile and quartile ranking',
         title_tr: 'Yüzdelik ve çeyreklik sıralama',
         description: 'Categorise every order by two different distribution metrics. Show **order_id**, **total**, **percentile** (0–100, using PERCENT_RANK, rounded to the nearest integer), and **quartile** (1–4, using NTILE). Sort by total descending. Understanding the difference between PERCENT_RANK and NTILE is a real senior interview differentiator — PERCENT_RANK places rows in relative position, NTILE divides them into equal-sized buckets.',
@@ -551,6 +570,7 @@ window.mockInterviewsData = [
       {
         id: 'ba-q1',
         order: 1,
+        explainApproach: true,
         title: 'Daily customer and order metrics',
         title_tr: 'Günlük müşteri ve sipariş metrikleri',
         description: 'Build a daily dashboard row. For each order date, show the **order_date**, number of **unique_customers**, total **orders**, and **avg_order_value** (rounded to 2 decimal places). Sort by date ascending. This combines COUNT(*), COUNT(DISTINCT), and AVG in a single GROUP BY — a standard business reporting pattern.',
@@ -575,6 +595,7 @@ window.mockInterviewsData = [
       {
         id: 'ba-q2',
         order: 2,
+        explainApproach: true,
         title: 'Average order value by country',
         title_tr: 'Ülkeye göre ortalama sipariş değeri',
         description: 'Calculate the **Average Order Value (AOV)** for each country. Show the **country** (from the orders table), the **order_count**, and **aov** rounded to 2 decimal places. Sort by AOV descending. Note: country is stored on the order, not the customer.',
@@ -599,6 +620,7 @@ window.mockInterviewsData = [
       {
         id: 'ba-q3',
         order: 3,
+        explainApproach: true,
         title: 'Repeat Purchase Rate',
         title_tr: 'Tekrar satın alma oranı',
         description: 'Calculate the **percentage of customers** who have placed more than one order. Return a single percentage value.',
@@ -621,6 +643,7 @@ window.mockInterviewsData = [
       {
         id: 'ba-q4',
         order: 4,
+        explainApproach: true,
         title: 'Order Status Breakdown',
         title_tr: 'Sipariş statüsü dağılımı',
         description: 'Show the **count and percentage** of orders in each status (pending, completed, cancelled).',
@@ -643,6 +666,7 @@ window.mockInterviewsData = [
       {
         id: 'ba-q5',
         order: 5,
+        explainApproach: true,
         title: 'Revenue and orders by day of week',
         title_tr: 'Haftanın günü bazında ciro ve siparişler',
         description: 'The marketing team wants to know which days drive the most business. For each day of the week show: **day_num** (0=Sunday, 6=Saturday), **day_name**, **total_orders**, **total_revenue**, and **avg_order_value** (rounded to 2 decimal places). Sort by day_num so the week reads in order. This requires SQLite date functions plus CASE WHEN to translate numbers to names.',
@@ -686,6 +710,7 @@ window.mockInterviewsData = [
       {
         id: 'sde-q1',
         order: 1,
+        explainApproach: true,
         title: '7-day rolling average revenue',
         title_tr: '7 günlük hareketli ciro ortalaması',
         description: 'Calculate a **7-day rolling average of daily revenue** to smooth out day-to-day noise. Show **day** (DATE format), **daily_revenue**, and **rolling_7day_avg** (rounded to 2 decimal places). The first 6 rows will have a rolling average over fewer than 7 days — that is expected. This is one of the most common advanced window frame patterns in data engineering.',
@@ -712,6 +737,7 @@ window.mockInterviewsData = [
       {
         id: 'sde-q2',
         order: 2,
+        explainApproach: true,
         title: 'Customer Cohort',
         title_tr: 'Müşteri kohortu',
         description: 'Group customers by **signup month** and calculate how many orders each cohort placed in their first 30 days. Show signup month and order count.',
@@ -734,6 +760,7 @@ window.mockInterviewsData = [
       {
         id: 'sde-q3',
         order: 3,
+        explainApproach: true,
         title: 'Top 10% orders with category context',
         title_tr: 'Kategori bağlamıyla en üst %10 siparişler',
         description: 'Find all orders in the **top 10% by total value**. Show **order_id**, **category**, **total**, **percentile_rank** (0–100 rounded to 1 decimal), and **category_rank** (rank within the order\'s own category by total, highest first). This combines a global percentile filter with a within-group ranking — two different window partitions on the same query.',
@@ -762,6 +789,7 @@ window.mockInterviewsData = [
       {
         id: 'sde-q4',
         order: 4,
+        explainApproach: true,
         title: 'Gap Detection',
         title_tr: 'Boşluk tespiti',
         description: 'Find **gaps in order IDs** (missing sequence numbers). Show the start and end of each gap.',
@@ -784,6 +812,7 @@ window.mockInterviewsData = [
       {
         id: 'sde-q5',
         order: 5,
+        explainApproach: true,
         title: 'Cumulative Distinct',
         title_tr: 'Kümülatif benzersiz',
         description: 'Calculate the **cumulative count of unique customers** over time. Show date and running unique customer count.',
@@ -830,6 +859,7 @@ window.mockInterviewsData = [
       {
         id: 'top10-q1',
         order: 1,
+        explainApproach: true,
         title: 'Top N per group',
         title_tr: 'Grup başına Top N',
         description: 'A classic interview pattern. Find the **top 2 highest-paid employees in each department**. Show department, name, salary, and their rank within the department. Handle ties so two employees with the same salary both appear.',
@@ -854,6 +884,7 @@ window.mockInterviewsData = [
       {
         id: 'top10-q2',
         order: 2,
+        explainApproach: true,
         title: 'Running total (cumulative sum)',
         title_tr: 'Kümülatif toplam (running total)',
         description: 'Calculate the **running total of revenue** across all orders, ordered by order date. Show order_id, order_date, total (for that order), and cumulative_revenue (running total up to and including that order).',
@@ -878,6 +909,7 @@ window.mockInterviewsData = [
       {
         id: 'top10-q3',
         order: 3,
+        explainApproach: true,
         title: 'Finding duplicates',
         title_tr: 'Yinelenenleri bulma',
         description: 'Find all **email addresses that are shared by more than one customer**. Return the email and how many customers share it, sorted by count descending. This tests GROUP BY + HAVING — the most commonly confused clause pair.',
@@ -902,6 +934,7 @@ window.mockInterviewsData = [
       {
         id: 'top10-q4',
         order: 4,
+        explainApproach: true,
         title: 'Employees with shared salaries',
         title_tr: 'Aynı maaşı paylaşan çalışanlar',
         description: 'Find all salaries that are **shared by more than one employee**. For each such salary, show the **salary**, how many employees **share_it**, and a comma-separated **employees_list** of their names. Order by salary descending. This tests CTE + HAVING + GROUP_CONCAT — a common pattern for detecting collisions and duplicates in real data.',
@@ -928,6 +961,7 @@ window.mockInterviewsData = [
       {
         id: 'top10-q5',
         order: 5,
+        explainApproach: true,
         title: 'Month-over-month revenue growth',
         title_tr: 'Ay üstüne ay ciro büyümesi',
         description: 'Calculate the **month-over-month revenue growth rate** for each month. Show the month (YYYY-MM), that month\'s revenue, the previous month\'s revenue, and the percentage change rounded to 2 decimal places. Return NULL for the first month.',
@@ -954,6 +988,7 @@ window.mockInterviewsData = [
       {
         id: 'top10-q6',
         order: 6,
+        explainApproach: true,
         title: 'Anti-join: ordered but never completed',
         title_tr: 'Anti-join: sipariş verdi ama hiç tamamlamadı',
         description: 'Find all customers who have **placed at least one order** but have **no completed orders** (status = \'completed\'). Return the customer name and their total number of orders. This tests the anti-join pattern — one of the most important SQL patterns for funnel analysis.',
@@ -980,6 +1015,7 @@ window.mockInterviewsData = [
       {
         id: 'top10-q7',
         order: 7,
+        explainApproach: true,
         title: 'Consecutive days with orders (streak detection)',
         title_tr: 'Ardışık sipariş günleri (seri tespiti)',
         description: 'Find all customers who placed orders on **at least 3 consecutive days**. Return the customer name, the start date of their streak, and the streak length. This is the classic "gaps and islands" pattern.',
@@ -1006,6 +1042,7 @@ window.mockInterviewsData = [
       {
         id: 'top10-q8',
         order: 8,
+        explainApproach: true,
         title: 'Click-through rate (conditional aggregation)',
         title_tr: 'Click-through rate (koşullu aggregation)',
         description: 'From the orders table, calculate the **conversion rate by product category**: the percentage of orders with status = \'Completed\' out of all orders, per category. Show category, total_orders, completed_orders, and conversion_rate rounded to 1 decimal place.',
@@ -1030,6 +1067,7 @@ window.mockInterviewsData = [
       {
         id: 'top10-q9',
         order: 9,
+        explainApproach: true,
         title: 'Median salary (without MEDIAN function)',
         title_tr: 'Medyan maaş (MEDIAN fonksiyonu olmadan)',
         description: 'Calculate the **median salary** across all employees. SQLite has no MEDIAN() function, so derive it manually. Return a single value labelled median_salary. This is a Google favourite and tests whether you understand window frame arithmetic.',
@@ -1058,6 +1096,7 @@ window.mockInterviewsData = [
       {
         id: 'top10-q10',
         order: 10,
+        explainApproach: true,
         title: 'Customer cohort retention (Day-1)',
         title_tr: 'Müşteri kohort retention (Day-1)',
         description: 'For each customer\'s **first order month** (their cohort), find how many customers placed another order **at least 30 days later**. Show the cohort month, total customers in that cohort, retained customers, and retention rate as a percentage. This is Meta\'s most famous interview question pattern.',
@@ -1597,6 +1636,12 @@ window.mockInterviewsData = [
       },
       // ---- Section 2: written SQL (2 questions, 22 min). The four harder
       // written questions moved to capital-one-live-sql (2026-09-19). ----
+      // No `explainApproach` here, on purpose (2026-09-29): every dated source
+      // this mock is built from (candidate reports on Blind 2021–2025, prep
+      // guides 2025–2026 — src/capital-one-sql-interview.html, `Sources`)
+      // describes a timed CodeSignal assessment with nobody to talk to. The
+      // "Explain your approach" box would train the wrong format; it lives in
+      // capital-one-live-sql, the round after this one.
       {
         id: 'c1-q1',
         order: 13,
@@ -1651,8 +1696,10 @@ window.mockInterviewsData = [
     title: 'Capital One Data Analyst — Live SQL Round (practice)',
     // A live round is judged on how you explain as much as on the query
     // (founder QA 2026-09-19, round 4, item 5): every question gets an
-    // "Explain your approach" box and a 2–3 sentence tutor read of it.
-    explainApproach: true,
+    // "Explain your approach" box and a 2–3 sentence tutor read of it. The
+    // flag is per question (`explainApproach: true`, src/utils/mock-approach.js)
+    // since 2026-09-29, when the box reached every written question of a
+    // live / talk-through mock (docs/plans/explain-approach-mocks-2026-09-21.md).
     company: 'Capital One',
     role: 'Data Analyst',
     difficulty: 'Hard',
@@ -1668,6 +1715,7 @@ window.mockInterviewsData = [
       {
         id: 'c1-q3',
         order: 1,
+        explainApproach: true,
         title: 'Flagged accounts: spend and chargebacks',
         title_tr: 'Flagged hesaplar: harcama ve chargeback',
         // Founder QA 2026-09-19, item 8: a real screen does not warn you.
@@ -1703,6 +1751,7 @@ window.mockInterviewsData = [
       {
         id: 'c1-q4',
         order: 2,
+        explainApproach: true,
         title: 'Amount bands by merchant risk tier',
         title_tr: 'Merchant risk tier bazında tutar bantları',
         practiceNote: 'One way: conditional aggregation — one query, no UNION.',
@@ -1727,6 +1776,7 @@ window.mockInterviewsData = [
       {
         id: 'c1-q5',
         order: 3,
+        explainApproach: true,
         title: 'Accounts spending above the average account',
         title_tr: 'Ortalama hesabın üzerinde harcayan hesaplar',
         practiceTitle: 'Accounts spending above the average account (CTE)',
@@ -1753,6 +1803,7 @@ window.mockInterviewsData = [
       {
         id: 'c1-q6',
         order: 4,
+        explainApproach: true,
         title: 'Largest transaction per merchant category',
         title_tr: 'Merchant kategorisi başına en büyük işlem',
         practiceTitle: 'Largest transaction per merchant category (ROW_NUMBER)',
@@ -2011,6 +2062,12 @@ window.mockInterviewsData = [
       // ---- Section 2: written SQL (2 questions, 42 min). The two tasks the
       // candidate reports name first: MAU with completed transactions, and the
       // top 10% of users by transaction volume.
+      // No `explainApproach` here, on purpose (2026-09-29): this mock mirrors
+      // round ONE of the sourced process — the ~60-minute HackerRank screen,
+      // online and untalked (interviewquery's 2026 guide, 27 candidate reports
+      // stamped Q3 2026; src/revolut-sql-interview.html, `Sources`). The
+      // talk-through is round two, the live session, which has no mock yet;
+      // the box belongs there when it is written.
       {
         id: 'rv-q1',
         order: 7,
