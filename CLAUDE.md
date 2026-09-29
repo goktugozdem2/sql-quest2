@@ -372,10 +372,24 @@ so a landing view and a later solve are joinable for the first time.
   in app.jsx + SOURCED_PAGES + sitemap. The company-page count (now 30) is
   bound across pages by site-counts.
 
+- **Two sections on every page (2026-09-29):** the format rows sit under
+  **"How the interview runs (sourced)"** — only on `SOURCED_SLUGS` pages,
+  never on a general one — and the tagged challenge list sits under
+  **"Topic practice"** (`topicPracticeBlock` / `withTopicPractice`, the
+  `company-topics` markers, right after the challenge cards) with one
+  sentence saying what the set is: the app's `companySetSourced` line + the
+  set gate's free three on a signed archetype, the app's `companySetMatched`
+  line on a sourced page, "tagged by topic from the 300+ bank, not modelled
+  on {Company}'s interview" on a general one (`practiceSentence`). Guards:
+  `tests/company-sections.test.js`. Plan:
+  `docs/plans/company-sourced-vs-topical-2026-09-21.md`.
 - **2026-10-12, first job: the Capital One page** — plan with the branches
   and the ready changes: `docs/plans/capital-one-2026-10-12.md` (competitor
   read `docs/reads/capital-one-serp-2026-09-25.md`). Nothing on the page or
-  its blog post changes before that read.
+  its blog post changes before that read. The generator skips it
+  (`SKIP_UNTIL_READ`) and `tests/company-sections.test.js` pins the page,
+  its built HTML and the blog post to git HEAD + a content hash until then;
+  on 10-12 remove the skip entry and the frozen test block together.
 
 ### The interview hub is generated (2026-09-14)
 

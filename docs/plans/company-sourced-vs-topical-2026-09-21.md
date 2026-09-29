@@ -40,11 +40,47 @@ without a source behind it.
   reports" or "most-asked" in its title, company or description (EN and TR);
   the tab renders the two sections from that flag.
 
+## Shipped 2026-09-29 (founder's go, backlog item #3)
+- **Pages, two sections.** Every sourced page's format rows now sit under
+  the heading **"How the interview runs (sourced)"** (`formatSection` on the
+  seven template pages and the Amazon/Meta injections; the Revolut page's own
+  rounds section was relabelled from "The Two SQL Rounds"). No general page
+  carries the heading — it has nothing sourced to put there. Nothing new is
+  claimed; the rows and `Sources:` lines are the ones that already existed.
+- **"Topic practice" on every page** (`topicPracticeBlock` /
+  `withTopicPractice` in `scripts/build-company-pages.mjs`, same
+  `company-topics` markers as the old strip, now a headed `<section
+  id="topic-practice">` right after the challenge cards): the full tagged
+  question list, the skill drill links, and one sentence saying what the set
+  is, in three honest versions —
+  - signed archetype (Revolut; Capital One once its freeze lifts): the app's
+    `companySetSourced` line + "In the app's Revolut set the first 3 are free
+    to try." (companySetGate, live 2026-09-26);
+  - sourced, not signed (the seven template pages, Amazon, Meta): the app's
+    `companySetMatched` line, read from `src/utils/i18n.js`;
+  - general (19 pages): "These are SQL Quest challenges tagged by topic from
+    the 300+ bank, not modelled on {Company}'s interview — we have no dated
+    public source for it, so this is general practice on the kind of data
+    {Company} works with." The app's matched line says "topics candidates
+    report for {company}", which a page that has just said it holds no source
+    cannot repeat — the app copy for unsourced companies is a separate item.
+- **Capital One is skipped** (`SKIP_UNTIL_READ` in the generator) and pinned
+  to git HEAD + a content hash by `tests/company-sections.test.js` until the
+  2026-10-12 read (docs/plans/capital-one-2026-10-12.md); the blog post too.
+- Guards: `tests/company-sections.test.js` — exactly one "Topic practice"
+  heading per page; the format heading only on `SOURCED_SLUGS`; the archetype
+  sentence only on the signed pages; the sentence equals what the generator
+  and the app's i18n say. Proven by five deliberate breaks (commit message).
+
 ## What is left
-1. **Pages:** turn the note into structure — a "How the interview runs
-   (sourced)" section only where sources exist, and a separately headed
-   "Topic practice" section for the challenge list on every page.
+1. ~~Pages: two sections~~ — shipped 2026-09-29, above. Capital One joins on
+   or after 2026-10-12: remove it from `SKIP_UNTIL_READ`, delete the frozen
+   block in `tests/company-sections.test.js`, rerun the build chain.
 2. ~~Interview tab: two sections~~ — shipped 2026-09-21, above.
+3. The app's `companySetMatched` line ("topics candidates report for
+   {company}") shows for every unsigned company, sourced or not; the pages
+   now say "tagged by topic" where no source exists. Decide whether the app
+   should split the same way.
 
 ## What it does not change
 - No new format claim without a dated source (`tests/company-pages.test.js`).
@@ -58,5 +94,6 @@ without a source behind it.
   fall. This is a correctness change first.
 
 ## Status
-PARTIAL — provenance and the Interview tab's two sections shipped; the
-company pages' two-section structure is open.
+SHIPPED 2026-09-29 for 29 of 30 pages — provenance, the Interview tab's two
+sections, and the company pages' two-section structure. Capital One follows
+after its 2026-10-12 read. Read: `company_page_door` does not fall.

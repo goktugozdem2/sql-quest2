@@ -13,10 +13,18 @@
  *   4. difficulty — as reported, next to our set's Easy/Medium/Hard split
  *   5. sample questions — shapes candidates report (paraphrased, cited) and
  *      the real SQL Quest challenges tagged to the company (FQ, from the bank)
+ *   5b. "Topic practice" — every tagged challenge, one sentence saying what
+ *      the set is (authored / matched to reports / tagged by topic), and the
+ *      topic links (the canonical skills the set leans on → /challenges/*).
+ *      On every page, 2026-09-29 (topicPracticeBlock / withTopicPractice).
  *   6. interactive practice + Skillmap readiness CTA
- *   7. topic links (the canonical skills the set leans on → /challenges/*)
- *   8. FAQ (visible array and JSON-LD written from one source)
- *   9. the related-companies strip (scripts/build-company-crosslinks.mjs)
+ *   7. FAQ (visible array and JSON-LD written from one source)
+ *   8. the related-companies strip (scripts/build-company-crosslinks.mjs)
+ *
+ * Section 2 is headed "How the interview runs (sourced)" and exists only on a
+ * page in SOURCED_SLUGS; the two hand-written sourced pages (Capital One,
+ * Revolut) carry the same heading over their own rows. SKIP_UNTIL_READ names
+ * the pages a run must not touch.
  *
  * Data: src/data/company-interviews.js. Tags: the same file's NEW_COMPANY_TAGS
  * are merged into src/data/challenge-companies.js (idempotent). Output:
@@ -35,9 +43,22 @@ import { SKILL_TO_RADAR, mapTopicToSkill, CANONICAL_SKILLS } from '../src/utils/
 import { isFreePreview } from '../src/utils/challenge-order.js';
 import { bankCountLabel, FREE_SOLVE_QUOTA, COMPANY_SET_FREE_COUNT } from '../src/utils/display-count.js';
 import { archetypeForCompany } from '../src/data/interview-archetypes.js';
+import { t as i18nT, setLang } from '../src/utils/i18n.js';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const SITE = 'https://sqlquest.app';
+
+// The pages are English; i18n's default follows navigator.language, which on
+// a Turkish machine would render the app strings below in Turkish.
+setLang('en');
+
+// Pages the generator must not touch, each with the read that frees it.
+// `injectModules` skips them whole — no readiness, topics, format or
+// provenance re-injection — so a run cannot change them by accident.
+// tests/company-sections.test.js pins the built HTML to git HEAD meanwhile.
+export const SKIP_UNTIL_READ = new Set([
+  'capital-one', // untouched until the 2026-10-12 read (docs/plans/capital-one-2026-10-12.md)
+]);
 
 // ── 1. tags ────────────────────────────────────────────────────────────────
 const TAGS_FILE = path.join(ROOT, 'src/data/challenge-companies.js');
@@ -185,15 +206,69 @@ const qslug = id => {
   return QSLUGS.get(id);
 };
 
-export function topicLinksBlock({ name, dist, ordered = [] }) {
+// ── 3a. "Topic practice" — the tagged challenge list, headed and labelled ──
+//
+// docs/plans/company-sourced-vs-topical-2026-09-21.md, "What is left" item 1
+// (founder's go 2026-09-29): the challenge list on every company page sits
+// under its own heading, with one sentence saying what the set is. Three
+// honest versions, decided by what the page actually holds:
+//
+//   signed archetype (Capital One, Revolut) — the app's `companySetSourced`
+//     line plus the company-set gate's free three (M1, live 2026-09-26);
+//   sourced, not signed (the template pages, Amazon, Meta) — the app's
+//     `companySetMatched` line: the topics ARE what candidates report, and the
+//     page cites the reports;
+//   general (no dated source) — tagged by topic from the bank, not modelled
+//     on the company's interview. The app's matched line says "topics
+//     candidates report for {company}", which a page with no source cannot
+//     say two paragraphs under a note that says no source exists.
+//
+// The first two come from src/utils/i18n.js so page and app cannot drift.
+export function practiceSentence({ slug, name, bank }) {
+  if (archetypeForCompany(name)) {
+    return `${i18nT('practice', 'companySetSourced', { company: name })} In the app's ${name} set the first ${COMPANY_SET_FREE_COUNT} are free to try.`;
+  }
+  if (SOURCED_SLUGS.has(slug)) return i18nT('practice', 'companySetMatched', { company: name });
+  return `These are SQL Quest challenges tagged by topic from the ${bank} bank, not modelled on ${name}'s interview — we have no dated public source for it, so this is general practice on the kind of data ${name} works with.`;
+}
+
+export function topicPracticeBlock({ slug, name, dist, ordered = [], bank }) {
   const qs = ordered.filter(c => qslug(c.id))
     .map(c => `<a href="/questions/${qslug(c.id)}/" style="color:#c084fc;text-decoration:none;">${esc(c.title)}</a>`);
   const links = dist.filter(d => SKILL_PAGE[d.skill] && d.skill !== 'Querying Basics').slice(0, 5)
     .map(d => `<a href="${SKILL_PAGE[d.skill][0]}" style="color:#c084fc;text-decoration:none;font-weight:600;">${SKILL_PAGE[d.skill][1]}</a>`);
   return `<!-- company-topics:start -->
-<p data-crosslink="topics" style="margin:28px auto;max-width:720px;padding:16px 20px;border:1px solid rgba(124,58,237,.25);border-radius:12px;background:rgba(124,58,237,.06);font-size:14px;line-height:1.8;color:#94a3b8;">Drill the skills the ${esc(name)} set leans on, one at a time: ${links.join(' · ')} — or browse every <a href="/sql-exercises/" style="color:#c084fc;text-decoration:none;font-weight:600;">SQL practice question</a>.</p>${qs.length ? `
-<p data-crosslink="questions" style="margin:-12px auto 28px;max-width:720px;padding:0 20px;font-size:13px;line-height:1.9;color:#8b98ab;">Every question in the ${esc(name)} set, one page each with the schema and a hint: ${qs.join(' · ')}.</p>` : ''}
+<section id="topic-practice" data-section="topic-practice" style="border-top:1px solid rgba(255,255,255,.04);"><div class="sec" style="padding:48px 24px;">
+  <span class="sl">Topic practice</span>
+  <h2 class="st fd">Every challenge in the ${esc(name)} set, by topic</h2>
+  <p data-practice-kind="${archetypeForCompany(name) ? 'archetype' : SOURCED_SLUGS.has(slug) ? 'sourced' : 'general'}" style="font-size:15px;color:#94a3b8;margin:14px 0 22px;max-width:760px;line-height:1.75;">${esc(practiceSentence({ slug, name, bank }))}</p>
+  <p data-crosslink="topics" style="margin:0 0 16px;max-width:760px;padding:16px 20px;border:1px solid rgba(124,58,237,.25);border-radius:12px;background:rgba(124,58,237,.06);font-size:14px;line-height:1.8;color:#94a3b8;">Drill the skills the ${esc(name)} set leans on, one at a time: ${links.join(' · ')} — or browse every <a href="/sql-exercises/" style="color:#c084fc;text-decoration:none;font-weight:600;">SQL practice question</a>.</p>${qs.length ? `
+  <p data-crosslink="questions" style="margin:0;max-width:760px;padding:0 20px;font-size:13px;line-height:1.9;color:#8b98ab;">Every question in the ${esc(name)} set, one page each with the schema and a hint: ${qs.join(' · ')}.</p>` : ''}
+</div></section>
 <!-- company-topics:end -->`;
+}
+
+/** Put the Topic practice section right after the page's challenge-card
+ *  section (`#questions`; Meta's is `#meta-questions`), or, on a page with no
+ *  such section, before the readiness block. Idempotent: the old strip (which
+ *  sat before the related-companies strip) and any earlier copy are removed
+ *  first, and exactly one blank line is kept on each side. */
+export function withTopicPractice(html, opts) {
+  let out = html.replace(/\n*<!-- company-topics:start -->[\s\S]*?<!-- company-topics:end -->\n*/, '\n\n');
+  const q = out.search(/<section id="(?:[a-z]+-)?questions"/);
+  let at;
+  if (q >= 0) {
+    at = out.indexOf('</section>', q);
+    if (at < 0) return out;
+    at += '</section>'.length;
+  } else {
+    at = out.indexOf('<!-- company-readiness:start -->');
+    if (at < 0) at = out.indexOf('<section id="faq"');
+    if (at < 0) return out;
+  }
+  const before = out.slice(0, at).replace(/\n+$/, '');
+  const after = out.slice(at).replace(/^\n+/, '');
+  return `${before}\n\n${topicPracticeBlock(opts)}\n\n${after}`;
 }
 
 // ── 3b. provenance, on every company page ──────────────────────────────────
@@ -283,8 +358,10 @@ export function formatSection(d, { accessed, role = null } = {}) {
     return `<li id="src-${k}" style="margin:4px 0;">[${i + 1}] ${href ? `<a href="${href}" rel="nofollow noopener" target="_blank" style="color:#94a3b8;">${text}</a>` : text}</li>`;
   }).join('');
   const sentence = `Sources: ${srcKeys.map(k => `${d.sources[k][0]} (${d.sources[k][2]})`).join('; ')}.`;
-  return `<section id="format" style="border-top:1px solid rgba(255,255,255,.04);"><div class="sec">
-  <span class="sl">How the interview runs</span>
+  // "(sourced)" in the heading itself: this section exists only on a page in
+  // SOURCED_SLUGS, and the label says why (docs/plans/company-sourced-vs-topical-2026-09-21.md).
+  return `<section id="format" data-section="format-sourced" style="border-top:1px solid rgba(255,255,255,.04);"><div class="sec">
+  <span class="sl">How the interview runs (sourced)</span>
   <h2 class="st fd">The ${esc(d.name)} SQL interview, as candidates report it</h2>
   <p style="font-size:15px;color:#94a3b8;margin:14px 0 22px;max-width:760px;line-height:1.75;">${esc(d.name)} does not publish the format. Each row is what candidates and prep guides have described publicly, with its source; where sources disagree, the row says so. Formats change — treat every specific as reported, not official.${role ? ` The sources below describe ${esc(role)}; other teams at ${esc(d.name)} may run a different loop.` : ''}</p>
   <div class="tbl"><table>
@@ -460,13 +537,13 @@ ${shapes}
   <div style="margin-top:22px;"><a href="/app/?company=${encodeURIComponent(d.name)}&amp;src=${slug}&amp;goal=interview" class="btn bo" data-track="cta_questions_all">Open all ${f.n} ${esc(d.name)} practice challenges →</a></div>
 </div></section>
 
+${topicPracticeBlock({ slug: key, name: d.name, dist: f.dist, ordered: f.ordered, bank: f.bank })}
+
 ${readinessBlock({ slug: key, name: d.name, src: slug })}
 
 <section id="faq" style="border-top:1px solid rgba(255,255,255,.04);"><div class="sec" style="max-width:760px;" id="faqc">
   <h2 class="fd" style="font-size:30px;font-weight:800;text-align:center;margin-bottom:28px;">Frequently asked</h2>
 </div></section>
-
-${topicLinksBlock({ name: d.name, dist: f.dist, ordered: f.ordered })}
 
 <section class="cs"><div class="sec" style="text-align:center;padding:64px 24px;border-top:1px solid rgba(255,255,255,.04);">
   <h2 class="fd" style="font-size:clamp(28px,4vw,44px);font-weight:800;line-height:1.15;margin-bottom:14px;">Ready for the ${esc(d.name)} SQL round?</h2>
@@ -511,19 +588,17 @@ export function injectModules(bank) {
   for (const f of fs.readdirSync(path.join(ROOT, 'src')).filter(x => /-sql-interview\.html$/.test(x))) {
     const key = f.replace(/-sql-interview\.html$/, '');
     if (COMPANY_INTERVIEWS[key]) continue;
+    if (SKIP_UNTIL_READ.has(key)) continue;
     const file = path.join(ROOT, 'src', f);
     let html = fs.readFileSync(file, 'utf8');
     const title = (html.match(/<title>([^<]*)<\/title>/) || [])[1] || '';
     const name = ((title.match(/^(.+?)\s+SQL\b/) || [])[1] || key).trim();
     const fx = facts(bank, name);
     html = html.replace(/<!-- company-readiness:start -->[\s\S]*?<!-- company-readiness:end -->\n*/, '');
-    html = html.replace(/<!-- company-topics:start -->[\s\S]*?<!-- company-topics:end -->\n?/, '');
     const faqAnchor = html.indexOf('<section id="faq"');
     if (faqAnchor < 0) continue;
     html = html.slice(0, faqAnchor).replace(/\n+$/, '\n\n') + readinessBlock({ slug: key, name, src: `${key}-sql-interview` }) + '\n\n' + html.slice(faqAnchor);
-    const rel = html.indexOf('<!-- related-companies:start -->');
-    const at = rel >= 0 ? rel : html.indexOf('<section class="cs">');
-    if (at >= 0) html = html.slice(0, at) + topicLinksBlock({ name, dist: fx.dist, ordered: fx.ordered }) + '\n' + html.slice(at);
+    html = withTopicPractice(html, { slug: key, name, dist: fx.dist, ordered: fx.ordered, bank: fx.bank });
     html = withSourcedFormat(html, key);
     html = withProvenance(html, { slug: key, name });
     fs.writeFileSync(file, html);
