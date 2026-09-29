@@ -17,9 +17,18 @@
 
 import { spawn } from 'child_process';
 import http from 'http';
+import { resolveChrome, HERMETIC_PREAMBLE } from './smoke/lib.mjs';
 
 const URL = process.argv[2] || 'http://127.0.0.1:4321';
-const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+// CHROME env first (the GitHub runner), then the platform defaults.
+const CHROME = resolveChrome();
+// Hermetic mode (smoke bot, 2026-09-29): against anything but localhost, every
+// request to our backend is answered in-page (scripts/smoke/lib.mjs), so a run
+// against production writes no guest row, no pro_events, no analytics. The
+// muted-analytics console line the T8 checks read is rebuilt by the stub.
+// SMOKE_HERMETIC=1 forces it on, =0 off.
+const HERMETIC = process.env.SMOKE_HERMETIC === '1'
+  || (process.env.SMOKE_HERMETIC !== '0' && !/^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:|\/|$)/.test(URL));
 const DEBUG_PORT = 9222;
 
 const checks = [];
@@ -98,8 +107,9 @@ async function main() {
     '--headless=new',
     '--disable-gpu',
     '--no-first-run',
+    '--disable-extensions',
     '--user-data-dir=/tmp/chrome-smoke-' + Date.now(),
-    URL + '/app.html',
+    'about:blank',
   ], { stdio: 'ignore' });
 
   // Wait for Chrome debug port
@@ -130,6 +140,15 @@ async function main() {
       }
     }
   });
+
+  // Start on about:blank so the hermetic preamble is in place before the
+  // first byte of app code runs, then navigate.
+  await cdp(tab, 'Page.enable', {});
+  if (HERMETIC) {
+    console.log('hermetic: backend requests answered in-page — nothing is written to production');
+    await cdp(tab, 'Page.addScriptToEvaluateOnNewDocument', { source: HERMETIC_PREAMBLE });
+  }
+  await cdp(tab, 'Page.navigate', { url: URL + '/app.html' });
 
   // Wait for app to render
   await new Promise(r => setTimeout(r, 3000));

@@ -15,7 +15,7 @@ import fs from 'fs';
 import path from 'path';
 
 const URL = process.env.QA_URL || 'http://127.0.0.1:4321';
-const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+const CHROME = process.env.CHROME || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const PORT = 9300 + (process.pid % 500);
 const OUT = path.join(import.meta.dirname, 'out');
 fs.mkdirSync(OUT, { recursive: true });
