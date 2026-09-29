@@ -44,5 +44,25 @@ Index: 409 of 415 "Submitted and indexed". Not: /datalemur-alternatives/,
 258 / 0 / 11.0. Head terms ("cte sql", "sql joins", "sql group by") sit at
 position 40–70 — impressions, not reach.
 
-Actions: see the chat of 2026-09-29 (request indexing for the six, Shopify
-recrawl, snippet rewrites for the zero-click pages, Bing read).
+## Bing (Webmaster Tools, read 2026-09-29 by hand)
+
+| Week | Impressions | Clicks | CTR |
+|---|---|---|---|
+| 09-14 → 09-20 | 4,848 | 214 | 4.4% |
+| 09-21 → 09-27 | 5,569 | 292 | 5.2% |
+
+Bing sends more clicks than Google (292 vs 209 last week); 3 months: 34.9K
+impressions, 1.3K clicks, 3.86%. Bing's top queries are the generic practice
+head: "sql practice" 2.1K imp / 32 clicks (pos 7.7), "sql practice questions"
+1.7K / 70 (6.5), "sql practice exercises" 911 / 77 (5.2), "sql exercises"
+588 / 54 (3.7), "sql practice problems" 44 / 12 (27% CTR). That is the
+/sql-exercises/ family — the page Google still ranks at 15.
+
+## Done 2026-09-29
+
+Request indexing (7/7 queued, no refusal): the four discovered-not-crawled
+pages, /challenges/advanced/, /questions/inactive-customers-by-tier/ (already
+"on Google" by then), and /shopify-sql-interview/ for the 09-25 title. Snippet
+rewrites for the five zero-click pages: separate commit. The
+`weekly-seo-dashboard` run of 09-28 hung at 07:12 UTC (stopped 09-29); watch
+the 10-05 run. Plan: docs/plans/seo-october-2026-09-29.md.
