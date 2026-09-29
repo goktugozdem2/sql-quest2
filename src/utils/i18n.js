@@ -275,6 +275,8 @@ const TRANSLATIONS = {
       hintConfirmQ: 'Use a hint? It costs {n} points on this question.',
       companySetMatched: 'These are SQL Quest challenges matched to the topics candidates report for {company} — not questions {company} has asked.',
       companySetSourced: 'A {company} set written for their reported screen, on data shaped like theirs — still SQL Quest\'s own questions, not {company}\'s.',
+      // No dated public source for this company: the set is topic practice, and the page and the app both say so (2026-09-29).
+      companySetGeneral: 'These are SQL Quest challenges tagged by topic from the {bank} bank, not modelled on {company}\'s interview — we have no dated public source for it, so this is general practice on the kind of data {company} works with.',
       hintConfirmQOne: 'Use a hint? It costs 1 point on this question.',
       hintConfirmYes: 'Use hint',
       hintConfirmNo: 'Not now',
@@ -1386,6 +1388,7 @@ const TRANSLATIONS = {
       hintConfirmQ: 'İpucu kullanılsın mı? Bu sorudan {n} puan düşer.',
       companySetMatched: 'Bunlar, adayların {company} için anlattığı konulara eşleştirilmiş SQL Quest sorularıdır — {company}\'ın sorduğu sorular değil.',
       companySetSourced: 'Adayların anlattığı {company} ekranı için, onlarınkine benzer veri üzerine yazılmış bir set — yine de SQL Quest\'in kendi soruları, {company}\'ınkiler değil.',
+      companySetGeneral: 'Bunlar {bank} soruluk bankadan konuya göre etiketlenmiş SQL Quest sorularıdır, {company} mülakatına göre modellenmemiştir — elimizde tarihli, herkese açık bir kaynak yok; bu, {company}\'ın çalıştığı türde veri üzerinde genel pratiktir.',
       hintConfirmYes: 'İpucunu kullan',
       hintConfirmNo: 'Şimdi değil',
       analyticsTitle: 'Mülakat Performans Analitiği',

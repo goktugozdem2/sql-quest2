@@ -309,3 +309,12 @@ export const SOURCED_FORMATS = {
     },
   },
 };
+
+// Every company with a dated source for its own process — the two registries
+// above. The app reads this to say, in its company view, whether a set is
+// matched to what candidates report or is general topic practice; the page
+// generator's SOURCED_SLUGS adds the two signed archetypes to the same lists.
+export const SOURCED_COMPANY_NAMES = new Set([
+  ...Object.values(COMPANY_INTERVIEWS).map(c => c.name),
+  ...Object.values(SOURCED_FORMATS).map(c => c.name),
+]);

@@ -229,7 +229,7 @@ export function practiceSentence({ slug, name, bank }) {
     return `${i18nT('practice', 'companySetSourced', { company: name })} In the app's ${name} set the first ${COMPANY_SET_FREE_COUNT} are free to try.`;
   }
   if (SOURCED_SLUGS.has(slug)) return i18nT('practice', 'companySetMatched', { company: name });
-  return `These are SQL Quest challenges tagged by topic from the ${bank} bank, not modelled on ${name}'s interview — we have no dated public source for it, so this is general practice on the kind of data ${name} works with.`;
+  return i18nT('practice', 'companySetGeneral', { company: name, bank });
 }
 
 export function topicPracticeBlock({ slug, name, dist, ordered = [], bank }) {

@@ -207,3 +207,25 @@ describe.skipIf(Date.now() >= FROZEN_UNTIL)('Capital One is untouched until the 
     }
   });
 });
+
+// 2026-09-29: the app's company view says the same thing the page does. It
+// used to show `companySetMatched` ("topics candidates report") for every
+// company without an authored set — including the 19 with no source at all.
+describe('the app and the page agree on where a company set came from', () => {
+  const app = fs.readFileSync(path.join(ROOT, 'src/app.jsx'), 'utf8');
+  const i18n = fs.readFileSync(path.join(ROOT, 'src/utils/i18n.js'), 'utf8');
+
+  it('i18n carries companySetGeneral in both languages, with the bank count', () => {
+    expect(i18n.match(/companySetGeneral: '/g)).toHaveLength(2);
+    expect(t('practice', 'companySetGeneral', { company: 'Acme', bank: '300+' }))
+      .toBe("These are SQL Quest challenges tagged by topic from the 300+ bank, not modelled on Acme's interview — we have no dated public source for it, so this is general practice on the kind of data Acme works with.");
+  });
+
+  it('the app picks sourced / matched / general from the same registries as the page', async () => {
+    expect(app).toMatch(/companyHasAuthoredSet\(company\) \? 'companySetSourced' : companyHasSourcedFormat\(company\) \? 'companySetMatched' : 'companySetGeneral'/);
+    expect(app.match(/i18n_t\('practice', companySetProvenanceKey\(companyFilter\), \{ company: companyFilter, bank: bankCountLabel\(challenges\.length\) \}\)/g)).toHaveLength(2);
+    const { SOURCED_COMPANY_NAMES, COMPANY_INTERVIEWS, SOURCED_FORMATS } = await import('../src/data/company-interviews.js');
+    for (const c of [...Object.values(COMPANY_INTERVIEWS), ...Object.values(SOURCED_FORMATS)]) expect(SOURCED_COMPANY_NAMES.has(c.name), c.name).toBe(true);
+    expect(SOURCED_COMPANY_NAMES.has('Anthropic')).toBe(false);
+  });
+});

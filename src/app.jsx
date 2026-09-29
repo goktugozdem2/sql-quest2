@@ -1,4 +1,5 @@
 import { roundDownCount, bankCountLabel, companySetCount } from './utils/display-count.js';
+import { SOURCED_COMPANY_NAMES } from './data/company-interviews.js';
 import { withLocalAccountKeys as withLocalAccountKeysPure, isMissingServerSide, accountFunctionStatus } from './utils/account-access.js';
 import { tokenForUsername, writeSessionToken, clearSessionToken, ensureGuestSecret, clearGuestSecret, withToken, withCarry, endSessionBody, isGuestUsername, rpcBodyFallbacks, isSessionTokenRequired, sessionRefusalAction, RELOGIN_MESSAGE, markReloginPending, isReloginPending, clearReloginPending } from './utils/session-token.js';
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
@@ -23261,6 +23262,17 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
   const companyHasAuthoredSet = (company) => {
     try { return !!company && !!archetypeForCompany(company); } catch (_) { return false; }
   };
+  // A company with a dated source for its process (the company page's sourced
+  // registries) but no authored set: "matched to what candidates report".
+  // Anything else is topic practice, and the app says so the way the page
+  // does (2026-09-29 — until then the app claimed candidate reports for
+  // companies that have none).
+  const companyHasSourcedFormat = (company) => {
+    try { return !!company && SOURCED_COMPANY_NAMES.has(company); } catch (_) { return false; }
+  };
+  const companySetProvenanceKey = (company) => (
+    companyHasAuthoredSet(company) ? 'companySetSourced' : companyHasSourcedFormat(company) ? 'companySetMatched' : 'companySetGeneral'
+  );
   const companyGateFreeIds = () => (
     ftbFlag('companySetGate') && companyFilter && !isPro && companyHasAuthoredSet(companyFilter)
       ? companySetFreeIds(companyScopedChallenges())
@@ -37287,7 +37299,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                               this line under their question list since they
                               shipped; the in-app view did not. */}
                           <p className="text-xs text-gray-400 mb-2" data-testid="company-set-provenance">
-                            {i18n_t('practice', companyHasAuthoredSet(companyFilter) ? 'companySetSourced' : 'companySetMatched', { company: companyFilter })}
+                            {i18n_t('practice', companySetProvenanceKey(companyFilter), { company: companyFilter, bank: bankCountLabel(challenges.length) })}
                           </p>
                           <p className="text-gray-300 text-sm sm:text-base">
                             {(() => {
@@ -38213,7 +38225,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                               "Databricks" visitor reading an Amazon-flavored
                               story feels handed someone else's homework. */}
                           {companyFilter && (currentChallenge.companies || []).includes(companyFilter) && (
-                            <span className="text-xs px-2 py-0.5 rounded bg-blue-500/20 text-blue-300" title={i18n_t('practice', companyHasAuthoredSet(companyFilter) ? 'companySetSourced' : 'companySetMatched', { company: companyFilter })}>
+                            <span className="text-xs px-2 py-0.5 rounded bg-blue-500/20 text-blue-300" title={i18n_t('practice', companySetProvenanceKey(companyFilter), { company: companyFilter, bank: bankCountLabel(challenges.length) })}>
                               🎯 {companyFilter} pattern
                             </span>
                           )}
