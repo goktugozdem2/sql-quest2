@@ -3,19 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SQL Window Functions Tutorial — RANK, LAG, Running Totals (2026) | SQLQuest.app</title>
-  <meta name="description" content="Window functions decoded. ROW_NUMBER vs RANK vs DENSE_RANK, PARTITION BY, LAG/LEAD, running totals, rolling averages, top-N per group. A core SQL interview topic, with runnable examples.">
+  <!-- 2026-09-29: snippet rewrite — 360 Google impressions, 0 clicks at position 11.7 in 28 days (docs/reads/seo-weekly-2026-09-28.md). Title/description only; body and H1 untouched. -->
+  <title>SQL Window Functions Tutorial: RANK, LAG (2026) | SQLQuest.app</title>
+  <meta name="description" content="ROW_NUMBER vs RANK vs DENSE_RANK on ties, PARTITION BY, LAG/LEAD, frames and top-N per group, each with query and output — and why WHERE can't filter a window.">
   <meta name="keywords" content="sql window functions, sql window functions tutorial, row_number sql, rank vs dense_rank, sql lag lead, running total sql, top n per group, partition by, sql interview window functions">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://sqlquest.app/blog/window-functions-tutorial/">
   <meta property="og:type" content="article">
   <meta property="og:url" content="https://sqlquest.app/blog/window-functions-tutorial/">
-  <meta property="og:title" content="SQL Window Functions Tutorial — RANK, LAG, Running Totals (2026)">
-  <meta property="og:description" content="Window functions are what harder data interviews lean on. This tutorial walks every pattern with runnable examples and the gotchas that trip candidates.">
+  <meta property="og:title" content="SQL Window Functions Tutorial: RANK, LAG (2026)">
+  <meta property="og:description" content="ROW_NUMBER vs RANK vs DENSE_RANK on ties, PARTITION BY, LAG/LEAD, frames and top-N per group, each with query and output — and why WHERE can't filter a window.">
   <meta property="og:image" content="https://sqlquest.app/og-image.png">
   <meta name="twitter:card" content="summary_large_image">
   <script type="application/ld+json">
-  {"@context":"https://schema.org","@type":"Article","headline":"SQL Window Functions Tutorial — RANK, LAG, Running Totals (2026)","description":"Complete tutorial on SQL window functions. ROW_NUMBER, RANK, DENSE_RANK, LAG, LEAD, running totals, top-N per group, with runnable examples.","url":"https://sqlquest.app/blog/window-functions-tutorial/","datePublished":"2026-05-02","dateModified":"2026-05-02","author":{"@type":"Organization","name":"SQL Quest","url":"https://sqlquest.app/"},"publisher":{"@type":"Organization","name":"SQL Quest","logo":{"@type":"ImageObject","url":"https://sqlquest.app/og-image.png"}},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"Blog","item":"https://sqlquest.app/blog/"},{"@type":"ListItem","position":3,"name":"Window Functions Tutorial","item":"https://sqlquest.app/blog/window-functions-tutorial/"}]}}
+  {"@context":"https://schema.org","@type":"Article","headline":"SQL Window Functions Tutorial: RANK, LAG (2026)","description":"ROW_NUMBER vs RANK vs DENSE_RANK on ties, PARTITION BY, LAG/LEAD, frames and top-N per group, each with query and output — and why WHERE can't filter a window.","url":"https://sqlquest.app/blog/window-functions-tutorial/","datePublished":"2026-05-02","dateModified":"2026-05-02","author":{"@type":"Organization","name":"SQL Quest","url":"https://sqlquest.app/"},"publisher":{"@type":"Organization","name":"SQL Quest","logo":{"@type":"ImageObject","url":"https://sqlquest.app/og-image.png"}},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"Blog","item":"https://sqlquest.app/blog/"},{"@type":"ListItem","position":3,"name":"Window Functions Tutorial","item":"https://sqlquest.app/blog/window-functions-tutorial/"}]}}
   </script>
   <script type="application/ld+json">
   {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[

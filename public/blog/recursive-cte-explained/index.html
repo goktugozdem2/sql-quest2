@@ -3,19 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Recursive CTE Explained — Org Charts, Trees, and When You Actually Need One | SQLQuest.app</title>
-  <meta name="description" content="Anchor, step, stop: how WITH RECURSIVE walks hierarchies of unknown depth. A real org chart traversed both directions, a number generator, the infinite-loop trap, and when NOT to reach for recursion.">
+  <!-- 2026-09-29: snippet rewrite — 180 Google impressions, 0 clicks at position 5.0 in 28 days (docs/reads/seo-weekly-2026-09-28.md). Title/description only; body and H1 untouched. -->
+  <title>Recursive CTE Explained — Org Chart Example | SQLQuest.app</title>
+  <meta name="description" content="WITH RECURSIVE as anchor, step, stop — walked up and down a real org chart with the output shown, plus the fix for a recursive CTE that never terminates.">
   <meta name="keywords" content="recursive cte, recursive cte sql, with recursive, sql recursive query, recursive query example, cte hierarchy, org chart sql, nested cte, sql tree traversal, recursive cte explained">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://sqlquest.app/blog/recursive-cte-explained/">
   <meta property="og:type" content="article">
   <meta property="og:url" content="https://sqlquest.app/blog/recursive-cte-explained/">
-  <meta property="og:title" content="Recursive CTE Explained — Org Charts, Trees, and When You Actually Need One">
-  <meta property="og:description" content="Anchor, step, stop: WITH RECURSIVE on a real org chart, both directions, plus the infinite-loop trap.">
+  <meta property="og:title" content="Recursive CTE Explained — Org Chart Example">
+  <meta property="og:description" content="WITH RECURSIVE as anchor, step, stop — walked up and down a real org chart with the output shown, plus the fix for a recursive CTE that never terminates.">
   <meta property="og:image" content="https://sqlquest.app/og-image.png">
   <meta name="twitter:card" content="summary_large_image">
   <script type="application/ld+json">
-  {"@context":"https://schema.org","@type":"Article","headline":"Recursive CTE Explained — Org Charts, Trees, and When You Actually Need One","description":"Anchor, step, stop: how WITH RECURSIVE walks hierarchies of unknown depth. A real org chart traversed both directions, a number generator, the infinite-loop trap.","url":"https://sqlquest.app/blog/recursive-cte-explained/","datePublished":"2026-08-02","dateModified":"2026-08-02","author":{"@type":"Organization","name":"SQL Quest","url":"https://sqlquest.app/"},"publisher":{"@type":"Organization","name":"SQL Quest","logo":{"@type":"ImageObject","url":"https://sqlquest.app/og-image.png"}},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"Blog","item":"https://sqlquest.app/blog/"},{"@type":"ListItem","position":3,"name":"Recursive CTE Explained","item":"https://sqlquest.app/blog/recursive-cte-explained/"}]}}
+  {"@context":"https://schema.org","@type":"Article","headline":"Recursive CTE Explained — Org Chart Example","description":"WITH RECURSIVE as anchor, step, stop — walked up and down a real org chart with the output shown, plus the fix for a recursive CTE that never terminates.","url":"https://sqlquest.app/blog/recursive-cte-explained/","datePublished":"2026-08-02","dateModified":"2026-08-02","author":{"@type":"Organization","name":"SQL Quest","url":"https://sqlquest.app/"},"publisher":{"@type":"Organization","name":"SQL Quest","logo":{"@type":"ImageObject","url":"https://sqlquest.app/og-image.png"}},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"Blog","item":"https://sqlquest.app/blog/"},{"@type":"ListItem","position":3,"name":"Recursive CTE Explained","item":"https://sqlquest.app/blog/recursive-cte-explained/"}]}}
   </script>
   <script type="application/ld+json">
   {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[

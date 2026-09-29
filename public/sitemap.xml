@@ -167,7 +167,7 @@
   <!-- Positioning page: "practice SQL without setup" (captures DBeaver-refugee traffic) -->
   <url>
     <loc>https://sqlquest.app/practice-sql-no-setup/</loc>
-    <lastmod>2026-09-25</lastmod>
+    <lastmod>2026-09-29</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.85</priority>
   </url>
@@ -183,7 +183,7 @@
   <!-- Weekly Challenge — viral loop, rotates every Monday -->
   <url>
     <loc>https://sqlquest.app/weekly/</loc>
-    <lastmod>2026-09-25</lastmod>
+    <lastmod>2026-09-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.95</priority>
   </url>
@@ -353,7 +353,7 @@
   </url>
   <url>
     <loc>https://sqlquest.app/challenges/aggregation/</loc>
-    <lastmod>2026-09-25</lastmod>
+    <lastmod>2026-09-29</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -439,7 +439,7 @@
   </url>
   <url>
     <loc>https://sqlquest.app/blog/window-functions-tutorial/</loc>
-    <lastmod>2026-09-24</lastmod>
+    <lastmod>2026-09-29</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.85</priority>
   </url>
@@ -553,7 +553,7 @@
   </url>
   <url>
     <loc>https://sqlquest.app/blog/recursive-cte-explained/</loc>
-    <lastmod>2026-09-21</lastmod>
+    <lastmod>2026-09-29</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -577,7 +577,7 @@
   </url>
   <url>
     <loc>https://sqlquest.app/blog/sql-running-total/</loc>
-    <lastmod>2026-09-21</lastmod>
+    <lastmod>2026-09-29</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>

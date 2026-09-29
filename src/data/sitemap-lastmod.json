@@ -1,6 +1,6 @@
 {
   "note": "Written by scripts/sitemap-lastmod.mjs. A page's date moves only when its built bytes change.",
-  "updated": "2026-09-25",
+  "updated": "2026-09-29",
   "pages": {
     "/": {
       "hash": "57e18b31369351ab",
@@ -95,16 +95,16 @@
       "lastmod": "2026-09-25"
     },
     "/practice-sql-no-setup/": {
-      "hash": "00f90b324be4708a",
-      "lastmod": "2026-09-25"
+      "hash": "8cc250273a854dcb",
+      "lastmod": "2026-09-29"
     },
     "/sql-quiz/": {
       "hash": "6889311e8698a518",
       "lastmod": "2026-09-25"
     },
     "/weekly/": {
-      "hash": "1370ebc36aa3d371",
-      "lastmod": "2026-09-25"
+      "hash": "b667625c4b97f31b",
+      "lastmod": "2026-09-29"
     },
     "/fraud-analytics-sql/": {
       "hash": "d410e55fe9e20359",
@@ -199,8 +199,8 @@
       "lastmod": "2026-09-25"
     },
     "/challenges/aggregation/": {
-      "hash": "859fc2710105acf4",
-      "lastmod": "2026-09-25"
+      "hash": "c29f0afc7746da50",
+      "lastmod": "2026-09-29"
     },
     "/challenges/case-when/": {
       "hash": "0d030bceee2c6a44",
@@ -255,8 +255,8 @@
       "lastmod": "2026-09-25"
     },
     "/blog/window-functions-tutorial/": {
-      "hash": "582517c8536ddac6",
-      "lastmod": "2026-09-24"
+      "hash": "3d16231303654cfb",
+      "lastmod": "2026-09-29"
     },
     "/blog/null-handling-mistakes/": {
       "hash": "04ada530d034dea1",
@@ -327,8 +327,8 @@
       "lastmod": "2026-09-21"
     },
     "/blog/recursive-cte-explained/": {
-      "hash": "dce0a30a4567556f",
-      "lastmod": "2026-09-21"
+      "hash": "2aea5dee2079230c",
+      "lastmod": "2026-09-29"
     },
     "/blog/row-number-vs-rank-vs-dense-rank/": {
       "hash": "f016459c12a7c1c3",
@@ -343,8 +343,8 @@
       "lastmod": "2026-09-21"
     },
     "/blog/sql-running-total/": {
-      "hash": "c8d5859c426f3b3a",
-      "lastmod": "2026-09-21"
+      "hash": "919db1c4a8c5a7c5",
+      "lastmod": "2026-09-29"
     },
     "/blog/sql-anti-join/": {
       "hash": "c41ec98644b6f044",
