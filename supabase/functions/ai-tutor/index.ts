@@ -255,7 +255,7 @@ serve(async (req) => {
       }
 
       const aiResponse = await response.json();
-      const text = aiResponse.content?.[0]?.text || "";
+      const text = textOf(aiResponse);
 
       // Log tutor event (fire-and-forget, fallback path)
       supabase
@@ -327,7 +327,7 @@ serve(async (req) => {
     }
 
     const aiResponse = await response.json();
-    const text = aiResponse.content?.[0]?.text || "";
+    const text = textOf(aiResponse);
 
     // --- 4. Log tutor event (fire-and-forget) ---
     supabase
@@ -366,6 +366,49 @@ serve(async (req) => {
   }
 });
 
+// Model (founder, 2026-09-30): Claude Sonnet 5.5, moved up from Haiku 4.5
+// for the quality of the diagnosis and the step-by-step guidance ($2 / $10
+// per MTok against $1 / $5). Budget: the `sqlquest-tutor` workspace carries
+// a $10 monthly spend limit; the organisation's limit was $1 until then,
+// which is what switched the tutor off on 2026-09-27 00:39 UTC.
+//
+// - `thinking: between_tools` + effort `low`: no extended thinking. The phase
+//   budgets above (120-500 tokens) exist to keep replies short, and thinking
+//   tokens count toward max_tokens, so adaptive thinking could spend a
+//   nudge's whole budget and return no text. Sonnet 5.5 rejects
+//   `{type: "disabled"}`; `between_tools` is its lowest setting.
+// - Top-level `cache_control`: the API caches the prefix up to the last block,
+//   so the next turn of the same conversation reads the system prompt and
+//   the history at a tenth of the price. The minimum cacheable prefix is 512
+//   tokens on this model (4,096 on Haiku 4.5, which is why caching did
+//   nothing before). Caching never changes the answer.
+// - `fallbacks: "default"` (beta server-side-fallback-2026-07-01): a safety
+//   decline is retried on a suitable model inside the same call; one that
+//   still declines comes back as stop_reason "refusal" and textOf() answers
+//   it politely instead of returning nothing.
+const TUTOR_MODEL = "claude-sonnet-5-5";
+
+const REFUSAL_TEXT = "I can't help with that one here. Ask me about the SQL in this challenge and I'll walk you through it.";
+
+// Read the reply by block type, never by position: a response can carry
+// thinking blocks before the text.
+function textOf(aiResponse: any): string {
+  if (aiResponse?.stop_reason === "refusal") return REFUSAL_TEXT;
+  const usage = aiResponse?.usage || {};
+  console.log("tutor_usage", JSON.stringify({
+    model: aiResponse?.model,
+    input: usage.input_tokens,
+    output: usage.output_tokens,
+    cache_read: usage.cache_read_input_tokens,
+    cache_write: usage.cache_creation_input_tokens,
+  }));
+  return (Array.isArray(aiResponse?.content) ? aiResponse.content : [])
+    .filter((b: any) => b?.type === "text")
+    .map((b: any) => b.text || "")
+    .join("")
+    .trim();
+}
+
 // Helper: Call Claude API
 async function callClaude(messages: any[], systemPrompt: string | undefined, maxTokens: number) {
   return fetch("https://api.anthropic.com/v1/messages", {
@@ -374,10 +417,15 @@ async function callClaude(messages: any[], systemPrompt: string | undefined, max
       "Content-Type": "application/json",
       "x-api-key": ANTHROPIC_API_KEY,
       "anthropic-version": "2023-06-01",
+      "anthropic-beta": "server-side-fallback-2026-07-01",
     },
     body: JSON.stringify({
-      model: "claude-haiku-4-5-20251001",
+      model: TUTOR_MODEL,
       max_tokens: maxTokens,
+      thinking: { type: "between_tools" },
+      output_config: { effort: "low" },
+      cache_control: { type: "ephemeral" },
+      fallbacks: "default",
       system: systemPrompt || "You are a helpful SQL tutor.",
       messages: messages,
     }),
