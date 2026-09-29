@@ -64,5 +64,5 @@ Request indexing (7/7 queued, no refusal): the four discovered-not-crawled
 pages, /challenges/advanced/, /questions/inactive-customers-by-tier/ (already
 "on Google" by then), and /shopify-sql-interview/ for the 09-25 title. Snippet
 rewrites for the five zero-click pages: separate commit. The
-`weekly-seo-dashboard` run of 09-28 hung at 07:12 UTC (stopped 09-29); watch
+`weekly-seo-dashboard` run of 09-28 hung at 07:12 UTC and is still marked running (the founder stops it); watch
 the 10-05 run. Plan: docs/plans/seo-october-2026-09-29.md.
