@@ -73,6 +73,9 @@ rewrite is a content mismatch, not a snippet problem.
 
 ## 5. Plumbing
 
+- The five rewritten snippets need a recrawl to show: request indexing for
+  them on **10-01** (≥ 24 h after the 09-29 batch — the quota is a rolling
+  window, memory `gsc-request-indexing-recipe`), never in the same batch.
 - Google indexing requests 09-29: 7/7 queued. Check `gsc_index_status` after
   the 10-05 inspect run; anything still "discovered, not indexed" gets a
   second request 10-06 (24 h after the last request, never sooner).
