@@ -1,0 +1,27 @@
+# Verifies the smoke bot's rollback credentials WITHOUT rolling anything back:
+# reads the project and its production deployments with VERCEL_TOKEN and
+# prints which deployment a rollback WOULD go to. Manual only; --dry always.
+# The real rollback lives in smoke.yml and runs only on a dead front end.
+name: Rollback check (dry)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dry:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Dry rollback (no POST)
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+        run: node scripts/smoke/vercel-rollback.mjs --dry

@@ -307,3 +307,18 @@ describe('the battery record', () => {
     expect(batteryResult('smoke-battery', 0, '27/27 passed', { advisory: true }).class).toBe('ok');
   });
 });
+
+// The credential check must never become a rollback: manual trigger only,
+// and the one command it runs carries --dry (2026-09-29).
+describe('rollback-check.yml is a dry, manual check', () => {
+  const wf = fs.readFileSync(new URL('../.github/workflows/rollback-check.yml', import.meta.url), 'utf8');
+  it('runs only on workflow_dispatch', () => {
+    expect(wf).toMatch(/^on:\s*\n\s+workflow_dispatch:\s*$/m);
+    expect(wf).not.toMatch(/^\s+(push|schedule|pull_request):/m);
+  });
+  it('every rollback invocation carries --dry', () => {
+    const calls = wf.match(/vercel-rollback\.mjs[^\n]*/g) || [];
+    expect(calls.length).toBeGreaterThan(0);
+    for (const c of calls) expect(c).toMatch(/--dry\b/);
+  });
+});
