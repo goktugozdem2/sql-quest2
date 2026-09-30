@@ -198,8 +198,24 @@ export function diagnoseResult(user, expected, userError = null, ctx = {}) {
     {
       const positional = findAllDifferingRows(user.rows, expected.rows);
       const wholeRow = positional.filter(d => d.diffCols.every(Boolean)).length;
-      if (positional.length > 0 && wholeRow * 2 >= positional.length && user.columns.length > 1) {
-        const { extraRows, missingRows } = diffRowsAsMultisets(user.rows, expected.rows);
+      // Second signal (2026-09-30, found on the flip-day walk of challenge
+      // 93): `WHERE survived = 0` for `= 1` returns twenty OTHER passengers,
+      // but sex and class repeat across people, so few rows differ in every
+      // column and the filter mistake was reported as "wrong values" with an
+      // AVG() hint. A row is a different entity when its value in the most
+      // distinctive text column (the name, the id-like label) does not occur
+      // in the expected result at all.
+      const { extraRows, missingRows } = positional.length > 0 && user.columns.length > 1
+        ? diffRowsAsMultisets(user.rows, expected.rows)
+        : { extraRows: [], missingRows: [] };
+      const idCol = identityColumn(expected.rows, user.columns.length);
+      let foreign = 0;
+      if (idCol !== -1 && extraRows.length > 0) {
+        const known = new Set(expected.rows.map(r => r[idCol]));
+        foreign = extraRows.filter(e => !known.has(e.row[idCol])).length;
+      }
+      const differentEntities = extraRows.length > 0 && foreign * 2 >= extraRows.length;
+      if (positional.length > 0 && user.columns.length > 1 && (wholeRow * 2 >= positional.length || differentEntities)) {
         if (extraRows.length > 0 && missingRows.length > 0) {
           return {
             kind: 'row_set',
@@ -338,6 +354,22 @@ function findFirstDifferingRow(userRows, expectedRows) {
  * Used by the V1 wrong-answer diff visualization (Elena's "I have the
  * output but can't find the mistake" feedback, May 2026).
  */
+// The column that names the row: among the text columns of the expected
+// result, the one with the most distinct values. -1 when there is none (an
+// all-numeric result has no identity to compare) or when it barely varies.
+function identityColumn(rows, width) {
+  let best = -1, bestDistinct = 0;
+  for (let j = 0; j < width; j++) {
+    const vals = rows.map(r => r[j]).filter(v => v !== null && v !== undefined);
+    if (vals.length === 0) continue;
+    const texty = vals.filter(v => typeof v === 'string' && v.trim() !== '' && Number.isNaN(Number(v))).length;
+    if (texty * 2 < vals.length) continue;
+    const distinct = new Set(vals).size;
+    if (distinct > bestDistinct) { best = j; bestDistinct = distinct; }
+  }
+  return bestDistinct >= Math.max(2, Math.ceil(rows.length / 2)) ? best : -1;
+}
+
 function findAllDifferingRows(userRows, expectedRows) {
   const out = [];
   const minLen = Math.min(userRows.length, expectedRows.length);
@@ -830,7 +862,10 @@ export function primaryHint(diagnosis, ctx = {}) {
       if (/\bavg\s*\(/.test(q)) return 'AVG() skips NULLs — if the question counts them as 0, use SUM(x) / COUNT(*).';
       if (/\bround\s*\(/.test(q)) return 'Check the ROUND precision the question asks for — ROUND(x, 1) and ROUND(x, 2) are different answers.';
       if (/\bcase\b/.test(q)) return 'One CASE branch is off — compare a highlighted row above with the condition that should have caught it.';
-      return hints[0] || 'Compare one highlighted row with its expected value: the difference tells you which expression is wrong.';
+      if (/\bcount\s*\(/.test(q)) return 'COUNT(column) skips NULLs; COUNT(*) counts every row — check which one the question wants.';
+      // Never the first stock hint here: it is about AVG(), and a query
+      // without an aggregate was being told about averaging (2026-09-30).
+      return 'Compare one highlighted row with its expected value: the difference tells you which expression is wrong.';
     default:
       return hints[0] || null;
   }

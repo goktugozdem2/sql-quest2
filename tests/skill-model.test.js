@@ -222,9 +222,10 @@ describe('source guards — the P1 wiring in app.jsx', () => {
     expect(app).toMatch(/- Do NOT give the full solution\. Guide them to discover it\./);
   });
 
-  it('the three visible changes are flagged and off; the skill filter is live', () => {
+  // Flipped 2026-09-30 (flag queue, after the 09-29 cold-start read).
+  it('the three visible changes are flagged and ON since 2026-09-30; the skill filter is live', () => {
     for (const f of ['weakSkillNext', 'diagnosisHints', 'socraticLadder']) {
-      expect(flags, f).toMatch(new RegExp(`^\\s+${f}: false,`, 'm'));
+      expect(flags, f).toMatch(new RegExp(`^\\s+${f}: true,`, 'm'));
     }
     expect(app).toMatch(/const weakPick = ftbFlag\('weakSkillNext'\)/);
     expect(app).toMatch(/ftbFlag\('diagnosisHints'\) && challengeDiagnosis \? diagnosisShort\(challengeDiagnosis\) : i18n_t\('practice', 'wrongDesc'\)/);

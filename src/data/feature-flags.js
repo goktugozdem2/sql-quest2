@@ -404,13 +404,13 @@ window.FEATURE_FLAGS = {
     // difficulty above what the person has solved on it (src/utils/
     // user-skill.js pickNextBySkill), instead of curriculum-next at the same
     // difficulty. Strip carries the why; `next_rec_started` carries source.
-    weakSkillNext: false,
+    weakSkillNext: true,
     // The wrong-answer panel says WHAT is wrong (the diagnosis headline) in
     // place of "Try again!", and shows ONE hint chosen for the diagnosis
     // and the query (diagnose.js primaryHint) instead of the fixed three.
     // The new `row_set` diagnosis kind (right count, wrong rows) is live
     // either way — it is a truer report, not a different surface.
-    diagnosisHints: false,
+    diagnosisHints: true,
     // The first screen test (2026-09-23, src/utils/first-screen.js): half of
     // first-run visitors land in challenge 91's editor instead of the
     // four-question placement quiz (42% of first visitors never opened a
@@ -423,7 +423,7 @@ window.FEATURE_FLAGS = {
     // 2 gives the exact clause, 3+ the full corrected query; asking for the
     // answer outright bypasses the ladder. Off, the tutor never reveals the
     // solution (today's rule 1). Bypass button on the panel is flag-only.
-    socraticLadder: false,
+    socraticLadder: true,
 
     // ── P2 (2026-09-12): retention ─────────────────────────────────────────
     // A "Due today · spaced retrieval" card on the Coach tab: weak canonical

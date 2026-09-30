@@ -365,3 +365,44 @@ describe('multiple window fixes are all named', () => {
     expect(d.headline).toMatch(/^Two fixes: use RANK instead of DENSE_RANK, and add PARTITION BY department/);
   });
 });
+
+// 2026-09-30, found walking challenge 93 on the diagnosisHints flip day.
+describe('a filter that keeps the wrong people is a row-set problem, not wrong values', () => {
+  const columns = ['name', 'sex', 'age', 'pclass'];
+  const expected = { columns, rows: [
+    ['Cumings, Mrs. John', 'female', 38, 1], ['Heikkinen, Miss. Laina', 'female', 26, 3],
+    ['Futrelle, Mrs. Jacques', 'female', 35, 1], ['Williams, Mr. Charles', 'male', null, 2],
+  ] };
+  const wrongFilter = { columns, rows: [
+    // every row shares sex or class with the expected row in its position,
+    // so the "differs in every column" rule alone does not see it
+    ['Braund, Mrs. Owen', 'female', 22, 3], ['Allen, Mr. William', 'male', 35, 3],
+    ['Moran, Miss. Jane', 'female', null, 3], ['McCarthy, Mr. Timothy', 'male', 54, 1],
+  ] };
+  const query = 'SELECT name, sex, age, pclass FROM passengers WHERE survived = 0 LIMIT 20;';
+
+  it('says the rows are the wrong rows even when sex / class repeat across people', () => {
+    const d = diagnoseResult(wrongFilter, expected, null, { query });
+    expect(d.kind).toBe('row_set');
+    expect(ph(d, { query })).toMatch(/extra row|condition|filter/i);
+    expect(ph(d, { query })).not.toMatch(/AVG/);
+  });
+
+  it('a wrong computed cell on the right rows stays a value problem', () => {
+    const exp = { columns: ['dept', 'avg_salary'], rows: [['Eng', 120.5], ['Ops', 90.25], ['Sales', 70]] };
+    const usr = { columns: ['dept', 'avg_salary'], rows: [['Eng', 120], ['Ops', 90], ['Sales', 70]] };
+    expect(diagnoseResult(usr, exp, null, { query: 'SELECT dept, SUM(s)/COUNT(*) FROM e GROUP BY dept' }).kind).toBe('cell_values');
+    const label = { columns: ['name', 'tier'], rows: [['Ann', 'High'], ['Bob', 'Low'], ['Cy', 'Low']] };
+    const labelUsr = { columns: ['name', 'tier'], rows: [['Ann', 'High'], ['Bob', 'High'], ['Cy', 'Low']] };
+    expect(diagnoseResult(labelUsr, label, null, { query: "SELECT name, CASE WHEN x > 5 THEN 'High' ELSE 'Low' END FROM t" }).kind).toBe('cell_values');
+  });
+
+  it('a value problem with no aggregate in the query is never answered with the AVG() hint', () => {
+    const exp = { columns: ['name', 'total'], rows: [['Ann', 10], ['Bob', 20]] };
+    const usr = { columns: ['name', 'total'], rows: [['Ann', 11], ['Bob', 21]] };
+    const q = 'SELECT name, price + 1 AS total FROM t';
+    const d = diagnoseResult(usr, exp, null, { query: q });
+    expect(d.kind).toBe('cell_values');
+    expect(ph(d, { query: q })).not.toMatch(/AVG|averag/i);
+  });
+});
