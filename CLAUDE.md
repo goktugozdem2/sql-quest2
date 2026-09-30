@@ -429,6 +429,19 @@ so a landing view and a later solve are joinable for the first time.
   card title to its question page; `build-company-pages.mjs` adds the
   question list to every company page.
 
+### /sql-exercises/ — five worked solutions and the topic traps (2026-09-30)
+
+- The Bing door (64% of Bing clicks; plan docs/plans/bing-growth-2026-09-30.md).
+  `scripts/build-exercise-solutions.mjs` writes `<section id="solutions">`
+  (five exercises: ids 94, 107, 106, 111, 112 — the bank's own reference
+  solution, formatted) and the nine per-topic trap lines between
+  `solutions:start/end` and `topic-traps:start/end` markers; it runs in
+  `npm run build` before `build-static-pages.js`. Do not hand-edit those
+  blocks. It refuses a Hard, sector, Revolut-set, archetype-tagged or
+  mock-answer challenge; `tests/exercise-solutions.test.js` runs every shown
+  query against the bank. The `/questions/` pages still publish no solution.
+- The title is 67 characters and pinned (`tests/snippet-length.test.js`).
+
 ### Free SQL tools and alternatives pages (2026-09-13)
 
 - `src/utils/sql-tools.js` is the tools' engine (checker, explainer,
