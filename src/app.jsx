@@ -44,6 +44,7 @@ import { PLACEMENT_TIERS, placementResult, placementEventPayload, readFirstRunPl
 import { QUESTIONS as READINESS_QUESTIONS, READINESS_SKILLS, READINESS_RECORD_KEY, companySkillWeights, scoreReadiness, summarizeScores, weakestSkills, readinessRecordFrom, readReadinessRecord } from './data/readiness-questions.js';
 import { paidWallFor, isColdStart, practiceSolves } from './utils/paid-wall.js';
 import { priceRegionFor, planPrices, checkoutLinkFor } from './utils/regional-price.js';
+import { wantsTrial, buildCheckoutSessionBody, requestCheckoutSession, launchWithFallback } from './utils/checkout-session.js';
 import { companySetGate, companySetFreeIds, companySetProgress, quietAskDecision, deadlineOfferFor, deadlineEventMeta, withEarlyWall, pickProMockId, FREE_MOCK_ID, quotaGate, FREE_SOLVE_QUOTA } from './utils/free-tier-boundary.js';
 import { expandStageChallenges, placementStartIndex as roadmapPlacementStartIndex } from './utils/roadmap.js';
 import { shouldEmitLockEvent, lockEventKey } from './utils/lock-events.js';
@@ -7065,7 +7066,7 @@ function SQLQuest() {
   // block window.open silently, killing checkout with no error. The
   // ?payment=success redirect is built for a same-tab round trip; the
   // purchase-user stash survives navigation.
-  const launchCheckout = (plan, email) => {
+  const launchCheckout = (plan, email, opts = {}) => {
     // Stash the purchasing identity: the payment-link redirect lands in
     // the checkout tab as a FRESH app load, and guest sessions don't
     // survive reloads — without this the buyer returns as a different
@@ -7073,7 +7074,13 @@ function SQLQuest() {
     try { localStorage.setItem('sqlquest_purchase_user', currentUser || ''); } catch (_) {}
     // Email rides on the click event so the checkout-abandon cron can
     // reach guests — they have no users-table row to look up.
-    trackActivationEvent('pro_checkout_clicked', { plan, email: email || null, modalReason: proModalReason?.type || null, patternSlug: proModalReason?.patternSlug || null, linkSrc: proModalReason?.linkSrc || null, priceRegion });
+    // Server-created session (checkoutSessions) or the Payment Link. A
+    // fallback re-enters with linkFallback and does not count a second click.
+    const sessionsOn = !opts.linkFallback && window.FF?.feature?.('checkoutSessions') === true;
+    const trial = wantsTrial({ sessionsOn, trialOn: window.FF?.feature?.('checkoutTrial') === true, plan });
+    if (!opts.linkFallback) {
+      trackActivationEvent('pro_checkout_clicked', { plan, email: email || null, modalReason: proModalReason?.type || null, patternSlug: proModalReason?.patternSlug || null, linkSrc: proModalReason?.linkSrc || null, priceRegion, via: sessionsOn ? 'session' : 'link', trial });
+    }
     // Leave a breadcrumb so the next app load can tell WHY a click didn't
     // become a purchase. Until now the funnel went silent between the click
     // and the Stripe webhook, so "the button did nothing" and "they saw the
@@ -7095,6 +7102,26 @@ function SQLQuest() {
       window.addEventListener('pagehide', markLeft, { once: true });
     } catch (_) { /* ignore */ }
     const promo = (() => { try { return sessionStorage.getItem('sqlquest_promo') || ''; } catch (_) { return ''; } })();
+    if (sessionsOn) {
+      // The region is the one the modal priced with — the server's reading
+      // of the request (/api/geo/), never the browser's time zone.
+      const body = buildCheckoutSessionBody({ plan, username: currentUser, email, trial, promo, region: priceRegion });
+      launchWithFallback({
+        sessionsOn: true,
+        request: () => requestCheckoutSession({
+          fetchImpl: window.fetch.bind(window),
+          endpoint: `${window.SUPABASE_URL}/functions/v1/create-checkout-session`,
+          anonKey: window.SUPABASE_ANON_KEY,
+          body,
+        }),
+        navigate: url => { window.location.href = url; },
+        fallback: reason => {
+          trackActivationEvent('checkout_session_fallback', { plan, reason, trial, priceRegion });
+          launchCheckout(plan, email, { linkFallback: true });
+        },
+      });
+      return;
+    }
     const promoSuffix = promo ? `&prefilled_promo_code=${encodeURIComponent(promo)}` : '';
     window.location.href = `${checkoutLinkFor(plan, priceRegion, CHECKOUT_LINKS_BY_REGION)}?prefilled_email=${encodeURIComponent(email || '')}&client_reference_id=${encodeURIComponent(currentUser)}${promoSuffix}`;
   };
@@ -25513,7 +25540,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
           setPaymentSuccessState('activated');
           try { playSound('levelup'); setShowConfetti(true); } catch (_) { /* ignore */ }
           try { localStorage.removeItem('sqlquest_purchase_user'); } catch (_) { /* ignore */ }
-          trackActivationEvent('pro_purchase_completed', { plan: fresh.proType || 'unknown', source: 'redirect_return' });
+          trackActivationEvent(fresh.proTrial === true ? 'pro_trial_started' : 'pro_purchase_completed', { plan: fresh.proType || 'unknown', source: 'redirect_return' });
           return;
         }
       } catch (_) { /* transient fetch failure — keep polling */ }

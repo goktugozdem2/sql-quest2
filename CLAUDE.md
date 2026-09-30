@@ -733,10 +733,19 @@ URLs filled, brand icon is the bolt, brand colour #FFE34D.
 - The statement descriptor must resemble the business name or the URL, or
   Stripe marks it **Invalid**. SQLQUEST.APP was invalid until the DBA became
   SQL Quest.
-- **Currency is not ours to set.** Adaptive Pricing is "Always on" for
-  Payment Links (no toggle), so a Turkish buyer sees TRY by default with a
-  USD tab. The only fix is server-created Checkout Sessions — a real change
-  to the money path, not a setting.
+- **Currency: fixed by Checkout Sessions (LIVE 2026-09-30, flag
+  `checkoutSessions`).** Payment Links force the local currency (Adaptive
+  Pricing "Always on"); a plan click now asks
+  `supabase/functions/create-checkout-session` for a session with Adaptive
+  Pricing off, in the region the modal priced with (`priceRegion`), and falls
+  back to the Payment Link on any failure (`checkout_session_fallback`).
+  Verified live: $29/mo, $99/yr, India $39/yr, all USD from a Turkish browser.
+  The function's `STRIPE_PRICE_MONTHLY` pointed at the old $19 price until
+  that check — **open a real session and read the page after any price
+  change.** The restricted key `check` carries Checkout Sessions/
+  Subscriptions Write + Prices/Promotion Codes/Invoices Read. `checkoutTrial`
+  stays off until the first session purchase is seen through the webhook.
+  Release notes: docs/plans/checkout-sessions-release.md.
 
 ### Testing
 - **Rule (founder, 2026-09-25): a new test is proven by at least one

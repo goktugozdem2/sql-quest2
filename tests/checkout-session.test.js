@@ -248,3 +248,32 @@ describe('create-checkout-session: the edge function', () => {
     expect(open).toBeGreaterThan(discounts);
   });
 });
+
+// The app wiring (2026-09-30, checkoutSessions flipped on after the live
+// check). The Payment Link stays the fallback for every failure.
+describe('launchCheckout wiring', () => {
+  const app = fs.readFileSync(new URL('../src/app.jsx', import.meta.url), 'utf8');
+  const flags = fs.readFileSync(new URL('../src/data/feature-flags.js', import.meta.url), 'utf8');
+  const fn = app.slice(app.indexOf('const launchCheckout = (plan, email, opts = {}) => {'));
+  const body = fn.slice(0, fn.indexOf('\n  };\n'));
+
+  it('sessions on, trial off', () => {
+    expect(flags).toMatch(/^\s+checkoutSessions: true,/m);
+    expect(flags).toMatch(/^\s+checkoutTrial: false,/m);
+  });
+  it('asks create-checkout-session with the server-read region, and falls back to the link', () => {
+    expect(body).toMatch(/feature\?\.\('checkoutSessions'\) === true/);
+    expect(body).toMatch(/buildCheckoutSessionBody\(\{ plan, username: currentUser, email, trial, promo, region: priceRegion \}\)/);
+    expect(body).toMatch(/functions\/v1\/create-checkout-session/);
+    expect(body).toMatch(/launchCheckout\(plan, email, \{ linkFallback: true \}\)/);
+    expect(body).not.toMatch(/pickRegion|timeZone/);
+  });
+  it('counts one click per plan press and says which door it used', () => {
+    expect(body).toMatch(/if \(!opts\.linkFallback\) \{\s*trackActivationEvent\('pro_checkout_clicked'/);
+    expect(body).toMatch(/via: sessionsOn \? 'session' : 'link'/);
+    expect(body).toMatch(/'checkout_session_fallback'/);
+  });
+  it('a returning trialist is not counted as a purchase', () => {
+    expect(app).toMatch(/fresh\.proTrial === true \? 'pro_trial_started' : 'pro_purchase_completed'/);
+  });
+});

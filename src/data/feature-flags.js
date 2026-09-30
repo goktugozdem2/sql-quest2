@@ -295,6 +295,18 @@ window.FEATURE_FLAGS = {
     // 30 days. `false` restores the step. Ledger: "a plan click goes straight
     // to Stripe"; docs/plans/modal-to-stripe-2026-09-23.md item 1.
     directCheckout: true,
+    // Server-created Stripe Checkout Sessions (founder's written go 2026-09-26,
+    // "deploy'unu yap" 2026-09-30): a plan click asks
+    // supabase/functions/create-checkout-session for a session with Adaptive
+    // Pricing OFF, so the buyer pays the USD the modal showed (Payment Links
+    // force the local currency - 0 of 11 checkouts paid in the week to 09-29).
+    // ANY failure falls back to the Payment Link (launchWithFallback).
+    // Verified live 2026-09-30 before the flip: US$29/mo, US$99/yr, India
+    // US$39/yr, no currency switch; stripe-webhook v23 knows every price.
+    checkoutSessions: true,
+    // Card-required 7-day free trial on the session path. Stays off until the
+    // first real session purchase has been seen through the webhook.
+    checkoutTrial: false,
 
     // ── The account ask at the third solve (2026-09-14) ──────────────────
     // Founder: move the registration wall to the 3rd solve. Measured before
