@@ -8623,12 +8623,6 @@ function SQLQuest() {
   const showLegacyPrimaryNav = false;
   const showPracticeSubtabs = false;
 
-  useEffect(() => {
-    if (isGuest && isFirstRunUser && !currentChallenge && !['guide', 'quests'].includes(activeTab)) {
-      setActiveTab('guide');
-    }
-  }, [isGuest, isFirstRunUser, currentChallenge, activeTab]);
-
   // Interview tab: who sees the nav entry, and one view event per user per
   // day (same shape as coach_tab_viewed). The rules and the reason for each
   // live in src/utils/interview-nav.js; the flag is features.intentRouting.
@@ -8645,6 +8639,16 @@ function SQLQuest() {
     solvedCount: solvedChallenges.size,
     ...interviewNavInputs,
   });
+  // A first-run guest stays on the tabs the first-run shell shows. Since
+  // 2026-09-20 that includes Interview: the May guard still bounced it back
+  // to the quiz, so the tab was drawn for every new guest and did nothing
+  // when clicked (found by the smoke battery rewrite, 2026-09-30).
+  useEffect(() => {
+    const firstRunTabs = showInterviewNav ? ['guide', 'quests', 'trials'] : ['guide', 'quests'];
+    if (isGuest && isFirstRunUser && !currentChallenge && !firstRunTabs.includes(activeTab)) {
+      setActiveTab('guide');
+    }
+  }, [isGuest, isFirstRunUser, currentChallenge, activeTab, showInterviewNav]);
   // Interview-first (2026-09-17, docs/plans/interview-first-2026-09-17.md).
   // ONE helper reads the flag and the predicate, and the four surfaces it
   // changes — the daily-reward calendar, the achievement toast, the header's

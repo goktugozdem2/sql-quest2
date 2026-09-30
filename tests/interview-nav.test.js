@@ -102,3 +102,16 @@ describe('source guards — the entry, the events, the copy', () => {
     }
   });
 });
+
+// 2026-09-30: the Interview tab was drawn for every first-run guest (since
+// 09-20) and a May guard bounced the click straight back to the quiz.
+describe('a first-run guest can open the Interview tab it is shown', () => {
+  const app = readFileSync(new URL('../src/app.jsx', import.meta.url), 'utf8');
+  it('the first-run tab guard lets `trials` through whenever the nav entry is shown', () => {
+    expect(app).toMatch(/const firstRunTabs = showInterviewNav \? \['guide', 'quests', 'trials'\] : \['guide', 'quests'\];/);
+    expect(app).toMatch(/isGuest && isFirstRunUser && !currentChallenge && !firstRunTabs\.includes\(activeTab\)/);
+    expect(app).not.toMatch(/!\['guide', 'quests'\]\.includes\(activeTab\)/);
+    // the guard must read showInterviewNav after it is declared
+    expect(app.indexOf('const firstRunTabs = showInterviewNav')).toBeGreaterThan(app.indexOf('const showInterviewNav = shouldShowInterviewNav('));
+  });
+});

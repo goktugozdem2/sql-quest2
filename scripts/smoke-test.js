@@ -359,6 +359,32 @@ async function main() {
     ) pass('first-run screen shows exactly the Learning Path, Challenges and Interview tabs, and holds the tour back');
     else fail('first-run screen shows exactly the Learning Path, Challenges and Interview tabs, and holds the tour back', JSON.stringify(simpleStartState));
 
+    // The tab must also WORK for a first-run guest (2026-09-30): it was drawn
+    // and a May guard bounced the click back to the quiz.
+    const interviewTabState = await evalInPage(tab, `
+      (async () => {
+        const btn = document.querySelector('[data-onboarding="nav-trials"]');
+        if (!btn) return { hasTab: false };
+        btn.click();
+        await new Promise(r => setTimeout(r, 1500));
+        const now = document.querySelector('[data-onboarding="nav-trials"]');
+        const text = document.body.textContent || '';
+        const out = {
+          hasTab: true,
+          selected: !!now && /bg-slate-800/.test(now.className),
+          showsMocks: /SQL Mock Interviews/i.test(text),
+          quizStillShown: /Find your SQL starting point/i.test(text),
+        };
+        const back = document.querySelector('[data-onboarding="nav-guide"]')
+          || [...document.querySelectorAll('button')].find(b => /^Learning Path/i.test((b.textContent || '').trim()));
+        if (back) { back.click(); await new Promise(r => setTimeout(r, 800)); }
+        return out;
+      })()
+    `);
+    if (interviewTabState && interviewTabState.hasTab && interviewTabState.selected && interviewTabState.showsMocks && !interviewTabState.quizStillShown) {
+      pass('a first-run guest who clicks the Interview tab lands on the mock list, not back on the quiz');
+    } else fail('a first-run guest who clicks the Interview tab lands on the mock list, not back on the quiz', JSON.stringify(interviewTabState));
+
     await cdp(tab, 'Emulation.setDeviceMetricsOverride', {
       width: 390,
       height: 1200,
