@@ -146,3 +146,16 @@ describe('the five zero-click pages carry a snippet that fits the result', () =>
     });
   }
 });
+
+// Bing, 2026-09-30: /sql-exercises/ carries 64% of Bing clicks and its title
+// was 86 characters ("Title too long", high severity in Webmaster Tools).
+// Founder's option A: shorten this one title, leading words unchanged.
+describe('/sql-exercises/ title fits Bing', () => {
+  const titleOf = (p) => (fs.readFileSync(path.join(ROOT, p), 'utf8').match(/<title>([^<]*)<\/title>/) || [])[1] || '';
+  it('is at most 70 characters, leads with the searched phrase, in src and in the served copy', () => {
+    const src = titleOf('src/sql-exercises.html');
+    expect(src.length).toBeLessThanOrEqual(70);
+    expect(src).toMatch(/^SQL Practice Questions — /);
+    expect(titleOf('public/sql-exercises/index.html')).toBe(src);
+  });
+});
