@@ -1,0 +1,16 @@
+https://sqlquest.app/questions/top-3-sales-per-borough/
+https://sqlquest.app/questions/top-3-spending-categories-per-country/
+https://sqlquest.app/questions/top-5-torque-per-quality/
+https://sqlquest.app/questions/top-buyers-by-volume/
+https://sqlquest.app/questions/top-failure-mode-by-quality/
+https://sqlquest.app/questions/top-up-methods-by-plan/
+https://sqlquest.app/questions/total-assessed-value/
+https://sqlquest.app/questions/transaction-share-by-merchant-category/
+https://sqlquest.app/questions/transactions-at-high-risk-merchants/
+https://sqlquest.app/questions/trust-and-savings-banks/
+https://sqlquest.app/questions/trust-banks-vs-others-npl-profile-comparison/
+https://sqlquest.app/questions/two-swipes-at-the-same-merchant-inside-a-day/
+https://sqlquest.app/questions/users-who-never-sent-money/
+https://sqlquest.app/questions/velocity-rule-5-transactions-in-5-minutes/
+https://sqlquest.app/questions/who-manages-nobody/
+https://sqlquest.app/questions/yoy-sales-volume-per-borough/
