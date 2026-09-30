@@ -3,7 +3,10 @@
 // the pure halves of every script. No network, no Chrome: fake fetch only.
 import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
-import { classifyRun, touchesBackend, HERMETIC_PREAMBLE, chromeArgs, CLASSES } from '../scripts/smoke/lib.mjs';
+import { classifyRun, touchesBackend, HERMETIC_PREAMBLE, chromeArgs, CLASSES, FIRST_SCREEN_KEY, FIRST_SCREEN_ARMS as SMOKE_ARMS, firstScreenArmPreamble } from '../scripts/smoke/lib.mjs';
+import { FIRST_SCREEN_STORAGE_KEY, FIRST_SCREEN_ARMS, firstScreenDecision } from '../src/utils/first-screen.js';
+import * as tutor from '../scripts/smoke/tutor-health.mjs';
+import { changedUrls, sitemapLastmods, waitForSitemap, run as runIndexNow } from '../scripts/smoke/indexnow-after-deploy.mjs';
 import { MIN_MEAN_MS, MIN_CALLS, WINDOW_HOURS, RPC, offendersOf, run as runDb } from '../scripts/smoke/db-slow-queries.mjs';
 import { BUDGET_MS, judgeStatic, probeStatic } from '../scripts/smoke/interactive.mjs';
 import { committedAppHash, hashOf, waitForDeploy, CEILING_MS } from '../scripts/smoke/wait-for-deploy.mjs';
@@ -34,11 +37,29 @@ describe('the workflow file', () => {
     expect(CEILING_MS).toBe(10 * 60_000);
   });
 
-  it('runs the four checks, the battery hermetic, each with continue-on-error so all four report', () => {
-    for (const s of ['scripts/smoke/interactive.mjs', 'scripts/smoke-test.js', 'scripts/smoke/pro-mock-checks.mjs', 'scripts/smoke/db-slow-queries.mjs']) expect(wf).toContain(s);
-    expect(wf.match(/continue-on-error: true/g)).toHaveLength(4);
+  it('runs the five checks, the battery hermetic, each with continue-on-error so all five report', () => {
+    for (const s of ['scripts/smoke/interactive.mjs', 'scripts/smoke-test.js', 'scripts/smoke/pro-mock-checks.mjs', 'scripts/smoke/db-slow-queries.mjs', 'scripts/smoke/tutor-health.mjs']) expect(wf).toContain(s);
+    expect(wf.match(/continue-on-error: true/g)).toHaveLength(5);
     expect(wf).toMatch(/SMOKE_HERMETIC: '1'[\s\S]*smoke-test\.js/);
     expect(wf).toContain('record.mjs --verdict');
+    // Every check runs before the verdict reads smoke-out/.
+    const verdictAt = wf.indexOf('record.mjs --verdict');
+    for (const s of ['interactive.mjs', 'smoke-test.js', 'pro-mock-checks.mjs', 'db-slow-queries.mjs', 'tutor-health.mjs']) {
+      expect(wf.indexOf(`node scripts/${s === 'smoke-test.js' ? '' : 'smoke/'}${s}`)).toBeGreaterThan(0);
+      expect(wf.indexOf(`node scripts/${s === 'smoke-test.js' ? '' : 'smoke/'}${s}`)).toBeLessThan(verdictAt);
+    }
+  });
+
+  it('the battery counts: nothing in the workflow is advisory', () => {
+    // 28/28 on 2026-09-30, locally and hermetically against production. The
+    // flag may come back only for one named check with a written reason —
+    // and then this line changes with it.
+    expect(wf).not.toContain('SMOKE_BATTERY_ADVISORY');
+    expect(wf).not.toMatch(/advisory/i);
+  });
+
+  it('never submits to IndexNow from the smoke workflow (it has a schedule)', () => {
+    expect(wf).not.toMatch(/indexnow/i);
   });
 
   it('the rollback job is gated on the class AND the path guard AND the push AND the token', () => {
@@ -80,7 +101,30 @@ describe('the run classification (lib)', () => {
   it('an advisory failure is shown but never counts: not failed, not dead', () => {
     const r = classifyRun([{ check: 'smoke-battery', ok: false, class: 'advisory' }, { check: 'interactive', ok: true }]);
     expect(r).toEqual({ failed: [], advisory: ['smoke-battery'], frontendDead: false, classes: [] });
-    expect(wf).toMatch(/SMOKE_BATTERY_ADVISORY: '1'[\s\S]*smoke-test\.js/);
+  });
+
+  it('pins the first-screen arm with the app\'s own stored assignment', () => {
+    // Bound to the module: a renamed key or arm would otherwise leave the
+    // battery tossing the A/B coin again without a single check noticing.
+    expect(FIRST_SCREEN_KEY).toBe(FIRST_SCREEN_STORAGE_KEY);
+    expect([...SMOKE_ARMS]).toEqual(FIRST_SCREEN_ARMS);
+    for (const arm of FIRST_SCREEN_ARMS) {
+      const store = {};
+      new Function('localStorage', firstScreenArmPreamble(arm))({ setItem: (k, v) => { store[k] = v; } });
+      const stored = JSON.parse(store[FIRST_SCREEN_STORAGE_KEY]);
+      expect(stored.arm).toBe(arm);
+      // What the app does with that record on the start screen, whatever the aid hashes to.
+      for (const aid of ['a', 'b', 'c', 'd']) {
+        expect(firstScreenDecision({ flagOn: true, onStartScreen: true, stored, aid })).toEqual({ assign: false, arm, act: arm === 'challenge' });
+      }
+    }
+    expect(() => firstScreenArmPreamble('coin')).toThrow(/unknown first-screen arm/);
+    const battery = read('scripts/smoke-test.js');
+    expect(battery).toMatch(/await pinFirstScreenArm\('quiz'\);\s*\n\s*await cdp\(tab, 'Page\.navigate'/);
+    expect(battery.match(/pinFirstScreenArm\('challenge'\)/g)).toHaveLength(1);
+    // The query goes into CodeMirror, never its hidden textarea.
+    expect(battery).not.toMatch(/HTMLTextAreaElement\.prototype, 'value'\)\.set;\s*\n\s*ta\.focus/);
+    expect(battery).toMatch(/\.CodeMirror'\)\?\.CodeMirror/);
   });
 
   it('the path guard: supabase/** and api/** are backend; src/ and public/ are not', () => {
@@ -305,6 +349,183 @@ describe('the battery record', () => {
     expect(batteryResult('smoke-battery', 2, '').class).toBe(CLASSES.INFRA);
     expect(batteryResult('smoke-battery', 1, '✗ x\n26/27 passed', { advisory: true }).class).toBe(CLASSES.ADVISORY);
     expect(batteryResult('smoke-battery', 0, '27/27 passed', { advisory: true }).class).toBe('ok');
+  });
+});
+
+// The one real call (2026-09-30): the tutor returned 502 for three days and
+// every hermetic check stayed green, because they stub the backend.
+describe('tutor-health: one real call to the production tutor', () => {
+  const ANON = `eyJhbGciOiJIUzI1NiJ9.${Buffer.from(JSON.stringify({ role: 'anon' })).toString('base64url')}.sig`;
+  const SERVICE = `eyJhbGciOiJIUzI1NiJ9.${Buffer.from(JSON.stringify({ role: 'service_role' })).toString('base64url')}.sig`;
+  const bundle = (key) => `window.SUPABASE_URL="https://abc123.supabase.co",window.SUPABASE_ANON_KEY="${key}";`;
+  const files = (key) => (p) => { if (p.endsWith('public/data.js')) return bundle(key); throw new Error('ENOENT'); };
+
+  it('judges: 200 with a text passes; 429 passes with a note; 502, an empty or a short text fail', () => {
+    expect(tutor.MIN_TEXT).toBe(20);
+    expect(tutor.judge({ status: 200, body: { text: 'Think about which column splits the rows.' } })).toEqual({ ok: true });
+    const limited = tutor.judge({ status: 429, body: { error: 'Daily AI limit reached', used: 20, limit: 20 } });
+    expect(limited.ok).toBe(true);
+    expect(limited.note).toMatch(/429.*20\/20/);
+    expect(tutor.judge({ status: 502, body: { error: 'AI service error', status: 400 } })).toEqual({ ok: false, why: 'HTTP 502 — AI service error (upstream 400)' });
+    expect(tutor.judge({ status: 200, body: { text: '' } }).ok).toBe(false);
+    expect(tutor.judge({ status: 200, body: { text: 'x'.repeat(19) } }).ok).toBe(false);
+    expect(tutor.judge({ status: 200, body: { text: 'x'.repeat(20) } }).ok).toBe(true);
+    expect(tutor.judge({ status: 200, body: null }).ok).toBe(false);
+    expect(tutor.judge({ status: 404, body: { error: 'User not found' } }).ok).toBe(false);
+  });
+
+  it('sends ONE live_nudge as the internal account, with the public anon key and the site origin', async () => {
+    const calls = [];
+    const r = await tutor.run({
+      env: { SUPABASE_URL: 'https://p.supabase.co/' },
+      readFile: files(ANON),
+      fetchImpl: async (u, o) => { calls.push({ u, o }); return res(200, { text: 'AVG collapses the table into one group; which column splits it?', usage: { used: 1 } }); },
+    });
+    expect(calls).toHaveLength(1);
+    expect(calls[0].u).toBe('https://p.supabase.co/functions/v1/ai-tutor');
+    expect(calls[0].o.method).toBe('POST');
+    expect(calls[0].o.headers).toMatchObject({ apikey: ANON, authorization: `Bearer ${ANON}`, origin: 'https://sqlquest.app' });
+    const body = JSON.parse(calls[0].o.body);
+    expect(body).toMatchObject({ username: 'sqlquest', mode: 'live_nudge', phase: 'live_nudge' });
+    expect(body.messages).toHaveLength(1);
+    expect(r).toMatchObject({ ok: true, status: 200, keySource: 'public/data.js' });
+    // live_nudge is the cheapest phase the function has.
+    expect(read('supabase/functions/ai-tutor/index.ts')).toMatch(/live_nudge: 120,/);
+  });
+
+  it('reads the key the page ships, falls back to the URL beside it, and refuses a key that is not anon', async () => {
+    expect(tutor.anonKeyFrom(read('public/data.js'))).toMatch(/^eyJ/);
+    expect(tutor.roleOf(tutor.anonKeyFrom(read('public/data.js')))).toBe('anon');
+    expect(tutor.KEY_SOURCES[0]).toBe('public/data.js');
+    let url;
+    await tutor.run({ env: {}, readFile: files(ANON), fetchImpl: async (u) => { url = u; return res(200, { text: 'x'.repeat(40) }); } });
+    expect(url).toBe('https://abc123.supabase.co/functions/v1/ai-tutor');
+    let called = 0;
+    const err = await tutor.run({ env: {}, readFile: files(SERVICE), fetchImpl: async () => { called++; return res(200, {}); } }).catch(e => e);
+    expect(err.infra).toBe(true);
+    expect(err.message).toMatch(/not an anon key/);
+    expect(called).toBe(0);
+    await expect(tutor.run({ env: {}, readFile: () => { throw new Error('ENOENT'); } })).rejects.toThrow(/no SUPABASE_ANON_KEY/);
+    // No secret is added for it: the workflow passes the URL only.
+    const step = wf.slice(wf.indexOf('id: tutor'), wf.indexOf('- name: Verdict'));
+    expect(step).toContain('SUPABASE_URL: ${{ secrets.SUPABASE_URL }}');
+    expect(step).not.toMatch(/SERVICE_ROLE|ANON_KEY/);
+  });
+
+  it('an outage is a business failure — never frontend_dead, so never a rollback', async () => {
+    const down = await tutor.run({ env: {}, readFile: files(ANON), fetchImpl: async () => res(502, { error: 'AI service error', status: 400 }) });
+    expect(down).toMatchObject({ ok: false, status: 502 });
+    const dead = await tutor.run({ env: {}, readFile: files(ANON), fetchImpl: async () => { throw new Error('fetch failed'); } });
+    expect(dead).toMatchObject({ ok: false, status: 0 });
+    expect(dead.why).toMatch(/no answer/);
+    const src = read('scripts/smoke/tutor-health.mjs');
+    expect(src).toContain("class: r.ok ? 'ok' : CLASSES.BUSINESS");
+    expect(src).not.toMatch(/FRONTEND_DEAD|frontend_dead'/);
+    expect(classifyRun([{ check: tutor.CHECK, ok: false, class: CLASSES.BUSINESS }])).toEqual({ failed: ['tutor-health'], advisory: [], frontendDead: false, classes: ['business'] });
+    expect(subjectFor(['tutor-health'])).toBe('[smoke] tutor-health failed on sqlquest.app');
+  });
+
+  it('a 429 pass says so in the alert body', () => {
+    const body = renderBody({ results: [{ check: 'interactive', ok: false, class: 'slow', detail: {} }, { check: 'tutor-health', ok: true, detail: { note: 'HTTP 429 — the internal account\'s daily limit is used up' } }], failed: ['interactive'], day: '2026-09-30' });
+    expect(body).toContain('note, tutor-health: HTTP 429');
+  });
+});
+
+// IndexNow after every deploy (2026-09-30): push only, after the deploy is
+// live, only what the push changed, and it can fail nothing.
+describe('indexnow.yml: after a deploy, never on a schedule, never a failure', () => {
+  const iw = read('.github/workflows/indexnow.yml');
+  const sm = (rows) => `<urlset>${rows.map(([loc, lastmod]) => `<url><loc>${loc}</loc>${lastmod ? `<lastmod>${lastmod}</lastmod>` : ''}</url>`).join('')}</urlset>`;
+  const BEFORE = sm([['https://sqlquest.app/', '2026-09-20'], ['https://sqlquest.app/a/', '2026-09-21'], ['https://sqlquest.app/gone/', '2026-09-01']]);
+  const AFTER = sm([['https://sqlquest.app/', '2026-09-20'], ['https://sqlquest.app/a/', '2026-09-30'], ['https://sqlquest.app/new/', '2026-09-30']]);
+  const APP = '<script src="/app.js?v=42d4a302"></script>';
+  const io = (over = {}) => {
+    const calls = { submit: [], order: [] };
+    return {
+      calls,
+      args: {
+        env: { GITHUB_EVENT_NAME: 'push', BEFORE: 'abc' },
+        readFile: (p) => (p.endsWith('sitemap.xml') ? AFTER : APP),
+        showAt: () => BEFORE,
+        waitApp: async ({ expected }) => { calls.order.push(`app:${expected}`); return { live: true, waitedMs: 0 }; },
+        waitSitemap: async ({ committed }) => { calls.order.push(committed === AFTER ? 'sitemap' : 'sitemap:WRONG'); return { live: true, waitedMs: 0 }; },
+        submit: (urls) => { calls.order.push('submit'); calls.submit.push(urls); return { ok: true }; },
+        log: () => {},
+        ...over,
+      },
+    };
+  };
+
+  it('triggers on a push to main that touched public/** and on nothing else', () => {
+    const on = iw.slice(iw.indexOf('\non:'), iw.indexOf('permissions:'));
+    expect(on).toMatch(/push:\s*\n\s+branches: \[main\]\s*\n\s+paths:\s*\n\s+- 'public\/\*\*'\s*\n/);
+    expect(on.match(/^\s+- '/gm)).toHaveLength(1);
+    expect(iw).not.toMatch(/^\s+(schedule|workflow_dispatch|pull_request|workflow_run):/m);
+    expect(iw).not.toContain('cron');
+  });
+
+  it('cannot fail anything: continue-on-error, exit 0 always, no smoke-out record, read-only token', () => {
+    expect(iw).toMatch(/continue-on-error: true[\s\S]*indexnow-after-deploy\.mjs/);
+    expect(iw).toMatch(/permissions:\s*\n\s+contents: read\s*\n/);
+    expect(iw).not.toMatch(/issues: write|secrets\./);
+    const src = read('scripts/smoke/indexnow-after-deploy.mjs');
+    expect(src).toMatch(/\.finally\(\(\) => process\.exit\(0\)\)/);
+    expect(src.match(/process\.exit\(/g)).toHaveLength(1);
+    expect(src).not.toMatch(/writeResult|smoke-out\/?['"`]|lib\.mjs/);
+    expect(iw).toContain('BEFORE: ${{ github.event.before }}');
+  });
+
+  it('submits only the URLs whose lastmod the push changed or added', () => {
+    expect([...sitemapLastmods(AFTER).keys()]).toHaveLength(3);
+    expect(changedUrls(BEFORE, AFTER)).toEqual(['https://sqlquest.app/a/', 'https://sqlquest.app/new/']);
+    expect(changedUrls(AFTER, AFTER)).toEqual([]);
+    expect(changedUrls('', AFTER)).toHaveLength(3);
+    // The live sitemap parses, and every entry carries a lastmod to compare.
+    const live = sitemapLastmods(read('public/sitemap.xml'));
+    expect(live.size).toBeGreaterThan(300);
+    expect([...live.values()].every(Boolean)).toBe(true);
+  });
+
+  it('waits for the app marker, then the served sitemap, and only then submits', async () => {
+    const { calls, args } = io();
+    const r = await runIndexNow(args);
+    expect(calls.order).toEqual(['app:42d4a302', 'sitemap', 'submit']);
+    expect(calls.submit).toEqual([['https://sqlquest.app/a/', 'https://sqlquest.app/new/']]);
+    expect(r).toMatchObject({ submitted: 2 });
+  });
+
+  it('submits nothing when the deploy is not live, when no lastmod moved, or when it is not a push', async () => {
+    const notLive = io({ waitApp: async () => ({ live: false, waitedMs: 600_000 }) });
+    expect(await runIndexNow(notLive.args)).toMatchObject({ submitted: 0, skipped: expect.stringMatching(/did not go live/) });
+    const stale = io({ waitSitemap: async () => ({ live: false, waitedMs: 600_000 }) });
+    expect(await runIndexNow(stale.args)).toMatchObject({ submitted: 0, skipped: expect.stringMatching(/sitemap\.xml was not served/) });
+    const same = io({ showAt: () => AFTER });
+    expect(await runIndexNow(same.args)).toMatchObject({ submitted: 0, skipped: 'no <lastmod> changed in this push' });
+    for (const ev of ['schedule', 'workflow_dispatch', undefined]) {
+      const x = io({ env: { GITHUB_EVENT_NAME: ev, BEFORE: 'abc' } });
+      expect(await runIndexNow(x.args)).toMatchObject({ submitted: 0, skipped: expect.stringMatching(/not a push/) });
+      expect(x.calls.order).toEqual([]);
+    }
+    for (const x of [notLive, stale, same]) expect(x.calls.submit).toEqual([]);
+  });
+
+  it('a failed ping is reported, not thrown; a force push falls back to the 7-day default', async () => {
+    const failed = io({ submit: () => ({ ok: false, why: 'scripts/indexnow.mjs exited 1' }) });
+    expect(await runIndexNow(failed.args)).toEqual({ submitted: 0, error: 'scripts/indexnow.mjs exited 1' });
+    const forced = io({ showAt: () => null });
+    const r = await runIndexNow(forced.args);
+    expect(forced.calls.submit).toEqual([[]]); // no explicit URLs = the script's own default window
+    expect(r.mode).toMatch(/7 days/);
+  });
+
+  it('the served sitemap must be byte-equal to the committed one', async () => {
+    let t = 0;
+    const clock = { now: () => t, sleep: async (ms) => { t += ms; }, log: () => {} };
+    let served = BEFORE;
+    const fetchImpl = async (u) => { expect(u).toBe('https://x/sitemap.xml'); return res(200, null, served); };
+    expect((await waitForSitemap({ base: 'https://x', committed: AFTER, fetchImpl, ...clock, ceilingMs: 45_000, pollMs: 15_000 })).live).toBe(false);
+    served = AFTER; t = 0;
+    expect(await waitForSitemap({ base: 'https://x', committed: AFTER, fetchImpl, ...clock })).toEqual({ live: true, waitedMs: 0 });
   });
 });
 

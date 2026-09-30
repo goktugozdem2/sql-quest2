@@ -48,11 +48,14 @@ export function renderBody({ results, failed, runUrl, rollback, deployLive, day 
   }
   const advisory = results.filter(r => r.ok === false && r.class === 'advisory');
   if (advisory.length) {
-    lines.push('', 'advisory (not counted as a failure — stale battery, see scripts/smoke/lib.mjs classifyRun):');
+    lines.push('', 'advisory (not counted as a failure — see scripts/smoke/lib.mjs classifyRun):');
     for (const r of advisory) lines.push(`  ~ ${r.check}: ${JSON.stringify(r.detail).slice(0, 600)}`);
   }
   const passed = results.filter(r => r.ok === true).map(r => r.check);
   if (passed.length) lines.push('', `passed: ${passed.join(', ')}`);
+  // A pass that carries a note (tutor-health on a 429: the limiter answered,
+  // the model was not reached) is said, so a pass is never read as more than it was.
+  for (const r of results.filter(r => r.ok === true && r.detail && r.detail.note)) lines.push(`  note, ${r.check}: ${r.detail.note}`);
   lines.push('', `Run: ${runUrl || '(local)'}`);
   lines.push('', ...failed.map(c => markerFor(c, day)));
   return lines.join('\n');

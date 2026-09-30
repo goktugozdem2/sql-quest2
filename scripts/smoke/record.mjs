@@ -13,8 +13,10 @@ export function batteryResult(check, exitCode, log, { advisory = false } = {}) {
   const ok = Number(exitCode) === 0;
   // Exit 2 is the script's own "crashed" (no Chrome, no tab, socket lost);
   // exit 1 is a check that ran and failed. With `advisory` (env
-  // SMOKE_BATTERY_ADVISORY=1 in the workflow) a failure is recorded as such
-  // and does not fail the run — see classifyRun in lib.mjs for why.
+  // SMOKE_BATTERY_ADVISORY=1) a failure is recorded as such and does not fail
+  // the run — see classifyRun in lib.mjs. The workflow does NOT set it since
+  // 2026-09-30 (the battery is green and counts); the switch stays for the
+  // day a check is known-stale again and has a written reason.
   const crashed = Number(exitCode) === 2 || /Smoke test crashed/.test(log);
   return {
     check,

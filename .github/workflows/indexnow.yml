@@ -1,0 +1,45 @@
+# IndexNow after every deploy (founder, 2026-09-30).
+# `npm run indexnow` tells Bing / Yandex / Seznam / Naver which pages changed;
+# until this date it was run by hand. Here it runs after a push to main that
+# touched public/**, once the deploy is live, for the URLs whose <lastmod> the
+# push changed (scripts/smoke/indexnow-after-deploy.mjs has the rules).
+#
+# Push only — there is no schedule and no manual trigger on purpose: with
+# nothing pushed there is nothing new, and resubmitting unchanged URLs is what
+# IndexNow asks you not to do. It is its own workflow, writes nothing to
+# smoke-out/, and always exits 0: a failed ping is a warning in this log,
+# never a smoke failure, an alert mail or a rollback.
+name: IndexNow
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'public/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: indexnow
+  cancel-in-progress: false
+
+jobs:
+  indexnow:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # Waits for the deploy (the app marker, then the served sitemap), then
+      # submits. No dependencies: node built-ins only, so no npm ci.
+      - name: Submit the changed URLs once the deploy is live
+        continue-on-error: true
+        env:
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
+        run: node scripts/smoke/indexnow-after-deploy.mjs https://sqlquest.app

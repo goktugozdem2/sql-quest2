@@ -1,9 +1,12 @@
 # The smoke bot (docs/plans/smoke-bot-rollback-2026-09-21.md, backlog #1).
 # Daily at 07:00 UTC, by hand, and after every push to main that touches the
-# deployed surface. Four checks against https://sqlquest.app, all hermetic
-# (nothing they do writes a row or an event): interactive-within-10-s,
+# deployed surface. Five checks against https://sqlquest.app. Four are
+# hermetic (nothing they do writes a row or an event): interactive-within-10-s,
 # scripts/smoke-test.js, three pro-mock scenarios, and the 24 h slow-query
-# read. On failure: one issue comment + one Resend mail, deduplicated per
+# read. The fifth, tutor-health, is the one real call: a single live_nudge to
+# the production tutor as the internal account `sqlquest` (~$0.002) — the
+# hermetic checks stub the backend, which is how a three-day tutor outage
+# went unseen on 2026-09-27. On failure: one issue comment + one Resend mail, deduplicated per
 # check per day (scripts/smoke/alert.mjs). Rollback ONLY for the
 # frontend_dead class, only on a push that touched no supabase/** or api/**,
 # and only when VERCEL_TOKEN is set (scripts/smoke/vercel-rollback.mjs).
@@ -105,17 +108,16 @@ jobs:
         continue-on-error: true
         run: node scripts/smoke/interactive.mjs "$SMOKE_URL"
 
-      # ADVISORY until the battery is green against the current build: six of
-      # its 27 checks are stale (measured 2026-09-29 on the live site AND on a
-      # local build of the same commit). Its result is recorded and shown in
-      # every alert body, but it does not fail the run or mail on its own.
-      # Remove SMOKE_BATTERY_ADVISORY once it passes 27/27.
+      # Counts since 2026-09-30: 28/28 against production (hermetic) and
+      # against a local build. For one day (09-29) its result was recorded
+      # but did not count, while eight of its checks were stale; a failure
+      # here is now a `business` failure like any other — it mails, it never
+      # rolls back.
       - name: Smoke battery (scripts/smoke-test.js)
         id: battery
         continue-on-error: true
         env:
           SMOKE_HERMETIC: '1'
-          SMOKE_BATTERY_ADVISORY: '1'
         run: |
           set +e
           node scripts/smoke-test.js "$SMOKE_URL" 2>&1 | tee smoke-battery.log
@@ -135,6 +137,18 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: node scripts/smoke/db-slow-queries.mjs
+
+      # The one check that is NOT hermetic: one real live_nudge call to the
+      # production tutor (120 output tokens at most, ~$0.002). Pass = HTTP 200
+      # with a text; a 429 (the internal account's daily limit) passes with a
+      # note; anything else is a `business` failure — mailed, never a
+      # rollback. The anon key is read from the built bundle, not a secret.
+      - name: The tutor answers (one real call)
+        id: tutor
+        continue-on-error: true
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+        run: node scripts/smoke/tutor-health.mjs
 
       - name: Verdict
         id: verdict

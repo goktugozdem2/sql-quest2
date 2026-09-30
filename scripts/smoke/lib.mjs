@@ -41,11 +41,12 @@ export function readResults(dir = OUT_DIR) {
 // still a dead front end. But a live shell with a broken flow is not.)
 // An `advisory` failure is written and shown in any alert body, but it is not
 // a failing check: it never fails the run, never mails by itself, never rolls
-// back. Used for scripts/smoke-test.js while it is stale against the current
-// build (six of its 27 checks fail on the live site AND on a local build of
-// the same commit, 2026-09-29 — the first-run screen has grown an Interview
-// tab, the catcher persona no longer earns its solve). Drop the flag once the
-// battery is green again.
+// back. It was used for scripts/smoke-test.js on 2026-09-29/30 while eight of
+// its checks were stale (the first-run screen had grown an Interview tab, the
+// first-screen A/B test tossed a coin per step, the catcher persona wrote its
+// query into CodeMirror's hidden textarea). Nothing is advisory now: the
+// workflow no longer sets SMOKE_BATTERY_ADVISORY and tests/smoke-workflow
+// fails if it comes back without a reason.
 export function classifyRun(results) {
   const failed = results.filter(r => r && r.ok === false && r.class !== CLASSES.ADVISORY);
   const advisory = results.filter(r => r && r.ok === false && r.class === CLASSES.ADVISORY);
@@ -129,6 +130,19 @@ export const HERMETIC_PREAMBLE = `(() => {
   };
   try { navigator.sendBeacon = () => true; } catch (_) {}
 })();`;
+
+// Pin the first-screen A/B arm (src/utils/first-screen.js) for a browser
+// check. The app keeps a visitor's arm sticky in localStorage and reads the
+// stored assignment before it hashes the anonymous id, so writing that record
+// before any app code runs — on every document, since the battery clears
+// storage between personas — is the app's own mechanism, not a test hook.
+// tests/smoke-workflow.test.js binds the key and the arm names to the module.
+export const FIRST_SCREEN_KEY = 'sqlquest_first_screen_v1';
+export const FIRST_SCREEN_ARMS = Object.freeze(['quiz', 'challenge']);
+export function firstScreenArmPreamble(arm) {
+  if (!FIRST_SCREEN_ARMS.includes(arm)) throw new Error(`unknown first-screen arm: ${arm}`);
+  return `(() => { try { localStorage.setItem(${JSON.stringify(FIRST_SCREEN_KEY)}, JSON.stringify({ arm: ${JSON.stringify(arm)}, at: Date.now() })); } catch (_) {} })();`;
+}
 
 export function getJSON(url) {
   return new Promise((resolve, reject) => {

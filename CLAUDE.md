@@ -767,7 +767,8 @@ URLs filled, brand icon is the bolt, brand colour #FFE34D.
   passed the first time is not trusted until it has been shown to catch
   something — say in the commit which break it caught.
 - **1,406 tests passing** across 59 test files (vitest), incl. `tests/site-counts.test.js` — the guard that fails on any stale product count on a static page — and `tests/cloud-save-contract.test.js`, the guard on the one write that must never lie. Runs via `npm run test:run`. (Measured 2026-09-12 evening; this line goes stale fast — re-run before quoting it.)
-- `scripts/smoke-test.js` (headless Chrome e2e): 8/8 pass against a live dev server. Run with `npm run smoke` (dev server must be up on :4321 or pass URL arg).
+- `scripts/smoke-test.js` (headless Chrome e2e): **28/28** against a local `npx serve public` AND hermetically against production (`SMOKE_HERMETIC=1 node scripts/smoke-test.js https://sqlquest.app`), measured 2026-09-30. Run with `npm run smoke` (dev server must be up on :4321 or pass URL arg). It counts in the daily smoke workflow — no advisory flag. Three things it depends on, each of which made it stale once: the first-screen A/B arm is **pinned** per step (`firstScreenArmPreamble` in scripts/smoke/lib.mjs — never let a step toss the coin); the challenge editor is CodeMirror, so a query goes in through `.CodeMirror.setValue`, never the hidden textarea; the first-run shell has three primary tabs.
+- The smoke workflow's fifth check, `scripts/smoke/tutor-health.mjs`, is the only one that is not hermetic: one real `live_nudge` call to the production tutor as the internal account `sqlquest` (2026-09-30, after the tutor returned 502 for three days unseen). Class `business` — it mails, it can never roll back. A 429 is a pass with a note.
 
 ### Database writes — read before touching `users` or its triggers (2026-09-12)
 
@@ -1184,6 +1185,13 @@ shown /anthropic-sql-interview/ crawled-but-not-indexed as the cost.
   7 days, so run it after any deploy that bumps lastmod. Ownership key is
   `public/<32-hex>.txt`; the script derives the key from the filename and probes
   that it's live before POSTing. Feeds Bing/Yandex/Seznam/Naver — Google ignores it.
+  **Automatic since 2026-09-30:** `.github/workflows/indexnow.yml` runs
+  `scripts/smoke/indexnow-after-deploy.mjs` on a push to main that touched
+  `public/**` — after the deploy is live (app marker, then the served
+  sitemap byte-equal to the committed one), only for the URLs whose
+  `<lastmod>` that push changed, never on a schedule, and it never fails
+  anything (a failed ping is a warning in its own log). The by-hand command
+  is still there for a backfill (`--days`, `--all`).
 
 ### Known deferred items (no urgency)
 - Coach Phase 3 item 3: AI daily intro + step summary (rate-capped)

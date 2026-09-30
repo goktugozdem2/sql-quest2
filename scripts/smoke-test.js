@@ -17,7 +17,7 @@
 
 import { spawn } from 'child_process';
 import http from 'http';
-import { resolveChrome, HERMETIC_PREAMBLE } from './smoke/lib.mjs';
+import { resolveChrome, HERMETIC_PREAMBLE, firstScreenArmPreamble } from './smoke/lib.mjs';
 
 const URL = process.argv[2] || 'http://127.0.0.1:4321';
 // CHROME env first (the GitHub runner), then the platform defaults.
@@ -148,6 +148,22 @@ async function main() {
     console.log('hermetic: backend requests answered in-page — nothing is written to production');
     await cdp(tab, 'Page.addScriptToEvaluateOnNewDocument', { source: HERMETIC_PREAMBLE });
   }
+  // The first-screen A/B test (src/utils/first-screen.js, flag
+  // firstScreenChallenge, live since 2026-09-23) splits a first-run visitor by
+  // a hash of a random anonymous id: `quiz` sees the placement quiz, `challenge`
+  // is put straight into challenge 91. Every localStorage.clear() below mints a
+  // new id, so each step used to toss a coin — that is why "Start here" went
+  // missing in a different check on every run. The arm is pinned the way the
+  // app itself keeps it sticky (the stored assignment), before any app code
+  // runs, on every document: `quiz` for the whole battery, `challenge` only
+  // inside the one step that checks that arm.
+  let armScript = null;
+  const pinFirstScreenArm = async (arm) => {
+    if (armScript) await cdp(tab, 'Page.removeScriptToEvaluateOnNewDocument', { identifier: armScript });
+    const r = await cdp(tab, 'Page.addScriptToEvaluateOnNewDocument', { source: firstScreenArmPreamble(arm) });
+    armScript = r.identifier;
+  };
+  await pinFirstScreenArm('quiz');
   await cdp(tab, 'Page.navigate', { url: URL + '/app.html' });
 
   // Wait for app to render
@@ -327,16 +343,21 @@ async function main() {
       && simpleStartState.hasQuiz
       && simpleStartState.hidesGoalChoices
       && simpleStartState.legacyNavCount === 0
-      && simpleStartState.primaryTabs.length === 2
-      && /Learning Path/i.test(simpleStartState.primaryTabs[0])
-      && /Challenges/i.test(simpleStartState.primaryTabs[1])
+      // Three primary tabs since 2026-09-20 (src/utils/interview-nav.js: the
+      // Interview tab is shown to everyone while intentRouting is on — a
+      // company-page arrival used to see no interview surface at all). Exactly
+      // these three, in this order; the old five-tab nav stays out (above).
+      && simpleStartState.primaryTabs.length === 3
+      && /^Learning Path/i.test(simpleStartState.primaryTabs[0])
+      && /^Challenges/i.test(simpleStartState.primaryTabs[1])
+      && /^Interview/i.test(simpleStartState.primaryTabs[2])
       && simpleStartState.switchedToChallenges
       && simpleStartState.hasUnlockedPathPicker
       && simpleStartState.allChallengesShowsAllWithoutChip
       && simpleStartState.hidesNestedChallengeFork
       && simpleStartState.returnedToLearningPath
-    ) pass('first-run screen shows only Learning Path and Challenges tabs, and holds the tour back');
-    else fail('first-run screen shows only Learning Path and Challenges tabs, and holds the tour back', JSON.stringify(simpleStartState));
+    ) pass('first-run screen shows exactly the Learning Path, Challenges and Interview tabs, and holds the tour back');
+    else fail('first-run screen shows exactly the Learning Path, Challenges and Interview tabs, and holds the tour back', JSON.stringify(simpleStartState));
 
     await cdp(tab, 'Emulation.setDeviceMetricsOverride', {
       width: 390,
@@ -611,7 +632,8 @@ async function main() {
       && lessonStartState.challengeTabKeepsTabsStable
       && lessonStartState.guestBannerStaysBelowTabs
       && lessonStartState.navTabs.length === 0
-      && lessonStartState.primaryTabs.length === 2
+      && lessonStartState.primaryTabs.length === 3
+      && /^Interview/i.test(lessonStartState.primaryTabs[2])
       && lessonStartState.hidesDashboardExtras
       && lessonStartState.hidesAiAlternative
       && lessonStartState.hidesChallengeEscape
@@ -1520,6 +1542,70 @@ async function main() {
       fail('legacy saved guest lands on first-run assessment', `savedUser=${legacyGuestState.savedUser} hasFirstRun=${legacyGuestState.hasFirstRun}`);
     }
 
+    // The other half of first contact (2026-09-30). Everything above runs in
+    // the `quiz` arm of the first-screen test; half of production's new
+    // visitors are in the `challenge` arm and never see that quiz — they are
+    // put straight into challenge 91 with the lesson skipped. Nothing in this
+    // battery had ever opened that door. Pin the arm, arrive as a brand-new
+    // visitor, and do what the arm asks of a person: read the problem, write
+    // the query, submit it, and have the solve kept.
+    await pinFirstScreenArm('challenge');
+    await evalInPage(tab, `
+      (() => {
+        localStorage.clear();
+        location.href = ${JSON.stringify(URL + '/app.html')};
+        return true;
+      })()`);
+    await new Promise(r => setTimeout(r, 5000));
+    const challengeArmState = await evalInPage(tab, `
+      (async () => {
+        const wait = ms => new Promise(r => setTimeout(r, ms));
+        const buttons = () => Array.from(document.querySelectorAll('button'));
+        const text = document.body.textContent || '';
+        const starter = (window.challengesData || []).find(c => c.id === 91) || null;
+        const cm = document.querySelector('[data-scroll-target="challenge-editor"] .CodeMirror')?.CodeMirror || null;
+        const before = {
+          noQuiz: !/Find your SQL starting point/i.test(text) && !/Placement quiz/i.test(text),
+          firstChallengeShell: /your first challenge/i.test(text),
+          // The description renders its **bold** markers as markup.
+          showsStarterProblem: !!starter && text.includes(String(starter.description || '').replace(/[*\`]/g, '').slice(0, 60)),
+          editorPresent: !!cm,
+          primaryTabs: document.querySelectorAll('[data-primary-learning-tabs="true"] button').length,
+        };
+        if (!cm || !starter) return { ...before, solved: null };
+        buttons().find(b => /Skip tour/i.test(b.textContent || ''))?.click();
+        await wait(300);
+        cm.setValue(starter.solution);
+        await wait(400);
+        buttons().find(b => (b.textContent || '').trim() === 'Submit')?.click();
+        await wait(3000);
+        const cu = localStorage.getItem('sqlquest_current_user');
+        let rec = {};
+        try { rec = JSON.parse(localStorage.getItem('sqlquest_user_' + cu) || '{}'); } catch (_) {}
+        return {
+          ...before,
+          guest: /^guest_/.test(cu || ''),
+          solved: rec.solvedChallenges || [],
+          firstRunCompleted: localStorage.getItem('sqlquest_first_run_completed_v1'),
+        };
+      })()`);
+    await pinFirstScreenArm('quiz');
+    if (
+      challengeArmState.noQuiz
+      && challengeArmState.firstChallengeShell
+      && challengeArmState.showsStarterProblem
+      && challengeArmState.editorPresent
+      && challengeArmState.primaryTabs === 3
+      && challengeArmState.guest
+      && Array.isArray(challengeArmState.solved)
+      && challengeArmState.solved.length === 1
+      && Number(challengeArmState.solved[0]) === 91
+    ) {
+      pass('first-screen challenge arm: a new visitor lands in challenge 91, not the quiz, and the solve is kept');
+    } else {
+      fail('first-screen challenge arm: a new visitor lands in challenge 91, not the quiz, and the solve is kept', JSON.stringify(challengeArmState));
+    }
+
     // ── Paywall surfaces (2026-09-06, docs/plans/paywall-surfaces-plan.md, T8) ──
     // Three steps over the collision catcher a non-Pro user gets for clicking
     // a locked Hard row (plan D-2). They run on a guest (seeded as a returning
@@ -1611,9 +1697,9 @@ async function main() {
     // above asserts. There is no way to seed a warm guest: every page load
     // mints a fresh guest id and a hand-written user record is ignored
     // (verified 2026-09-08 against the live bundle). So the persona earns its
-    // solve the way a person does — open challenge 91, submit the reference
-    // answer, come back to the Hard list. It must run WITHOUT a reload; a
-    // reload would mint a new guest and throw the solve away.
+    // solve the way a person does — open the first free Hard preview, submit
+    // the reference answer, come back to the Hard list. It must run WITHOUT a
+    // reload in between.
     const warmUpWithOneSolve = `
       (async () => {
         const wait = ms => new Promise(r => setTimeout(r, ms));
@@ -1652,12 +1738,18 @@ async function main() {
         }
         previewRow.click();
         await wait(1400);
-        const ta = document.querySelector('textarea');
-        if (!ta) return { solved: null, reason: 'no editor', id, shell: (document.body.textContent || '').slice(0, 90) };
-        const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set;
-        ta.focus();
-        setter.call(ta, solution);
-        ta.dispatchEvent(new Event('input', { bubbles: true }));
+        // A first challenge opens the six-step tour over the editor.
+        buttons().find(b => /Skip tour/i.test(b.textContent || ''))?.click();
+        await wait(300);
+        // The editor is CodeMirror 5 (SQLEditor in app.jsx): its own hidden
+        // textarea is an input device, not the value. Writing to that textarea
+        // — what this step did until 2026-09-30 — never reached the editor, so
+        // Submit ran on an empty query and the solve was never registered
+        // ({"solved":0}). setValue fires CodeMirror's change event, which is
+        // the same path a keystroke takes into the app's onChange.
+        const cm = document.querySelector('[data-scroll-target="challenge-editor"] .CodeMirror')?.CodeMirror;
+        if (!cm) return { solved: null, reason: 'no editor', id, shell: (document.body.textContent || '').slice(0, 90) };
+        cm.setValue(solution);
         await wait(400);
         buttons().find(b => (b.textContent || '').trim() === 'Submit')?.click();
         await wait(3000);
@@ -1665,7 +1757,7 @@ async function main() {
         await wait(800);
         const cu = localStorage.getItem('sqlquest_current_user');
         const rec = JSON.parse(localStorage.getItem('sqlquest_user_' + cu) || '{}');
-        return { solved: (rec.solvedChallenges || []).length, id };
+        return { solved: (rec.solvedChallenges || []).length, solvedIds: (rec.solvedChallenges || []).map(Number), id };
       })()`;
 
     // Step 0 — a person who has solved NOTHING must not be sold to. The exact
@@ -1724,8 +1816,15 @@ async function main() {
     await evalInPage(tab, seedResumedGuest);
     await new Promise(r => setTimeout(r, 5000));
     const warmUp1 = await evalInPage(tab, warmUpWithOneSolve);
-    if (!warmUp1 || !warmUp1.solved) {
-      fail('warm-up solve for the catcher steps', JSON.stringify(warmUp1));
+    // Counted either way (2026-09-30): this used to be recorded only when it
+    // failed, so the total moved between 26 and 27 with the result. Exactly
+    // one solve, and it is the free Hard preview that was opened — the three
+    // catcher checks below are about a person with one solve and mean nothing
+    // without it.
+    if (warmUp1 && warmUp1.solved === 1 && warmUp1.solvedIds?.[0] === warmUp1.id) {
+      pass('warm-up: a guest solves a free Hard preview through the editor and the solve is kept');
+    } else {
+      fail('warm-up: a guest solves a free Hard preview through the editor and the solve is kept', JSON.stringify(warmUp1));
     }
     consoleCapture.length = 0;
     await cdp(tab, 'Runtime.discardConsoleEntries', {});
