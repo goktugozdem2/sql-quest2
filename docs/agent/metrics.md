@@ -958,7 +958,8 @@ Baseline 2026-09-23: **211 indexed** / 93 warning / 38 excluded / 0 error,
 "Discovered but not crawled", 1 "Not discovered"). Plan and target:
 docs/plans/internal-links-bing-2026-09-23.md.
 
-**From the API (built 2026-10-01, not yet verified against the dashboard).**
+**From the API (built 2026-10-01; first live read the same day: `in_index`
+319 on 09-30 — not yet compared with the Site Explorer bar on the same day).**
 `bing_crawl_daily.in_index` (GetCrawlStats, daily) is the indexed count, and
 `bing_url_status` (GetUrlInfo for every sitemap URL, Mondays) is the sample
 grown to the whole sitemap: `last_crawled IS NULL` = never crawled. Until

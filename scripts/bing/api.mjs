@@ -16,8 +16,9 @@ export const BING_SITE = 'https://sqlquest.app/';
 export const BING_API = 'https://ssl.bing.com/webmaster/api.svc/json';
 
 // The docs' JSON samples wrap every string parameter except siteUrl in JSON
-// quotes (url=%22example.com%22). scripts/bing/verify.mjs tries both forms
-// against the live API and says which one answers; this is the switch.
+// quotes (url=%22example.com%22). The live API wants them PLAIN: measured
+// 2026-10-01, the quoted form answers 400 SiteUriSchemeIsNotSupported.
+// scripts/bing/verify.mjs still tries both, so a change would show.
 export const QUOTE_STRING_PARAMS = false;
 
 export function readKey(env = process.env) {
@@ -29,10 +30,11 @@ export function readKey(env = process.env) {
 
 /**
  * WCF's JSON date, "/Date(1316156400000-0700)/", as { at, date }: the instant
- * (ISO) and the calendar day in the offset the API sent — the stats are
- * bucketed in that zone, and reading the instant as a UTC day would move
- * every bucket one day late. A missing value, or WCF's "no date"
- * (0001-01-01), is null.
+ * (ISO) and the calendar day in the offset the API sent. The reference's
+ * samples carry -0700; the live API (2026-10-01) sends midnight UTC with no
+ * offset, "/Date(1790553600000)/". Both read to the right day here; reading
+ * an offset date as a UTC day would move every bucket one day late. A
+ * missing value, or WCF's "no date" (0001-01-01), is null.
  */
 export function parseBingDate(value) {
   const m = /\/Date\((-?\d+)([+-]\d{4})?\)\//.exec(String(value ?? ''));

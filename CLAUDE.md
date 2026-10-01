@@ -515,10 +515,15 @@ so a landing view and a later solve are joinable for the first time.
   labelled `gsc-pipeline`. Migration `20261001100000_bing_tables.sql`
   (rollback in `supabase/manual/`), dry-run in a rolled-back transaction
   2026-10-01 — **the founder applies it**. Guards: `tests/bing-pipeline.test.js`.
-- **Not yet verified live** (no key on 10-01): position scale, daily vs
-  weekly buckets, plain vs JSON-quoted `url` param — `verify.mjs` prints
-  all three; see docs/plans/bing-growth-2026-09-30.md. Copilot citations
-  (AI Performance) have no API; that stays a hand read.
+- **Verified live 2026-10-01** (`verify` job, key added by the founder):
+  the key sees sqlquest.app, claudequest.app and datrick.com; site and crawl
+  rows are DAILY, query and page rows are WEEKLY buckets (a `bing_stats`
+  date is a week, never a day); positions are plain whole numbers and
+  `AvgClickPosition` is always -1 (stored NULL); dates arrive as midnight
+  UTC with no offset; `url` / `page` parameters go PLAIN (the reference's
+  JSON-quoted form answers 400); `HttpStatus` is 0 on a freshly crawled
+  page. `in_index` was 319 on 09-30. Copilot citations (AI Performance)
+  have no API; that stays a hand read.
 
 ### SQL trap pages (2026-09-25)
 

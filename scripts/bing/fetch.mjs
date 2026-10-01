@@ -14,7 +14,10 @@
 //                            TOP_PAGES pages by impressions in the last 35 days
 //   GetCrawlStats          → bing_crawl_daily  (crawled, errors, InIndex, daily)
 // Same rule as gsc_daily: each slice is a whole, never sum across slices.
-// Query and page stats are refreshed by Bing weekly; site and crawl daily.
+// Measured 2026-10-01: site and crawl rows are one per DAY; query and page
+// rows are one per WEEK, dated seven days apart (…, 09-18, 09-25) — so a
+// `date` in bing_stats is a week's bucket, never a day, and must not be
+// joined to a day in bing_site_daily. Positions are plain whole numbers.
 
 import { pathToFileURL } from 'node:url';
 import { supabaseAuthHeaders } from '../gsc/auth.mjs';
@@ -25,6 +28,9 @@ export const TOP_PAGES_WINDOW_DAYS = 35;
 
 const int = (v) => (Number.isFinite(Number(v)) ? Math.round(Number(v)) : 0);
 const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : null);
+// A position is 1 or more. The API sends -1 where it has none — measured
+// 2026-10-01: AvgClickPosition is -1 on every row, clicks or not.
+const pos = (v) => (num(v) != null && num(v) >= 1 ? num(v) : null);
 
 /** A QueryStats row → a bing_stats record for the slice ('query' | 'page' | 'query_page'). */
 export function toStatRecord(row, slice, page = null) {
@@ -36,8 +42,8 @@ export function toStatRecord(row, slice, page = null) {
     page: slice === 'page' ? String(row.Query) : slice === 'query_page' ? page : null,
     clicks: int(row.Clicks),
     impressions: int(row.Impressions),
-    avg_click_position: num(row.AvgClickPosition),
-    avg_impression_position: num(row.AvgImpressionPosition),
+    avg_click_position: pos(row.AvgClickPosition),
+    avg_impression_position: pos(row.AvgImpressionPosition),
   };
 }
 

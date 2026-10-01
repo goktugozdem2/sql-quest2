@@ -35,6 +35,19 @@ async function main() {
     console.log(`  newest: ${JSON.stringify(newest(rows) || null)}`);
   }
 
+  // Query and page rows come in weekly buckets. Which seven days is a bucket?
+  // Top pages can never out-click the whole site, so the window whose site
+  // total is BELOW the bucket's page clicks is ruled out.
+  const day = (r) => parseBingDate(r.Date)?.date;
+  const site = (await bingCall('GetRankAndTrafficStats', { key, params: { siteUrl: BING_SITE } })) || [];
+  const pages = (await bingCall('GetPageStats', { key, params: { siteUrl: BING_SITE } })) || [];
+  const shift = (d, n) => new Date(Date.parse(`${d}T00:00:00Z`) + n * 86400000).toISOString().slice(0, 10);
+  const siteClicks = (from, to) => site.filter(r => day(r) >= from && day(r) <= to).reduce((s, r) => s + (r.Clicks || 0), 0);
+  for (const b of [...new Set(pages.map(day))].filter(Boolean).sort().slice(-3)) {
+    const pageClicks = pages.filter(r => day(r) === b).reduce((s, r) => s + (r.Clicks || 0), 0);
+    console.log(`bucket ${b}: page clicks ${pageClicks} · site clicks in the 7 days ending on it ${siteClicks(shift(b, -6), b)} · in the 7 days starting on it ${siteClicks(b, shift(b, 6))}`);
+  }
+
   for (const quote of [false, true]) {
     try {
       const info = await bingCall('GetUrlInfo', { key, quote, params: { siteUrl: BING_SITE, url: BING_SITE } });

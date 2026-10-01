@@ -13,7 +13,8 @@
 //   5. pages at position 10–20 with real impressions — content / link work
 //   6. sitemap URLs never crawled, and crawled before their last change
 // The week ends on the last date in the data, never on today. Query and page
-// numbers are read over the last 28 days because Bing refreshes them weekly.
+// rows are WEEKLY buckets (one date every seven days), so sections 3–5 read
+// the four newest buckets — 28 days — and are never compared day by day.
 
 import { pathToFileURL } from 'node:url';
 import { supabaseAuthHeaders } from '../gsc/auth.mjs';
@@ -103,7 +104,7 @@ export function renderMarkdown(r) {
       : 'No crawl statistics yet.',
     u ? `Sitemap URLs: ${u.ok.length} crawled since their last change, ${u.stale.length} crawled before it, ${u.never.length} never crawled, ${u.error.length} with an error.` : '',
     '',
-    `## The door: /sql-exercises/ (${r.win.start} → ${r.win.end})`,
+    `## The door: /sql-exercises/ (weekly buckets ${r.win.start} → ${r.win.end})`,
     `${r.door.clicks} of ${r.door.totalClicks} page clicks (${pct(r.door.share)}), ${r.door.impressions} impressions, position ${f1(r.door.position)}.`,
     '',
     t('| Query | Impressions | Clicks | Position |', r.doorQueries.map(q => `| ${q.key} | ${q.impressions} | ${q.clicks} | ${f1(q.position)} |`)),

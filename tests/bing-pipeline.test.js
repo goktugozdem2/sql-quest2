@@ -32,7 +32,8 @@ describe('the client', () => {
     expect(parseBingDate('/Date(1316156400000-0700)/')).toEqual({ at: '2011-09-16T07:00:00.000Z', date: '2011-09-16' });
     // 23:30 Pacific is already the next day in UTC — the bucket is still the Pacific day.
     expect(parseBingDate(`/Date(${Date.parse('2026-09-28T06:30:00Z')}-0700)/`).date).toBe('2026-09-27');
-    expect(parseBingDate('/Date(1790000000000)/').date).toBe('2026-09-21');
+    // What the live API sends: midnight UTC, no offset (2026-09-28).
+    expect(parseBingDate('/Date(1790553600000)/')).toEqual({ at: '2026-09-28T00:00:00.000Z', date: '2026-09-28' });
   });
 
   it("WCF's empty date and a missing value are null", () => {
@@ -98,6 +99,8 @@ describe('fetch', () => {
     expect(toStatRecord(q, 'query')).toEqual({ date: '2011-09-16', query: 'sql exercises', page: null, clicks: 15, impressions: 100, avg_click_position: 18, avg_impression_position: 17 });
     expect(toStatRecord({ ...q, Query: DOOR }, 'page')).toMatchObject({ query: null, page: DOOR });
     expect(toStatRecord(q, 'query_page', DOOR)).toMatchObject({ query: 'sql exercises', page: DOOR });
+    // The live API sends -1 for a position it does not have.
+    expect(toStatRecord({ ...q, AvgClickPosition: -1, AvgImpressionPosition: 3 }, 'query')).toMatchObject({ avg_click_position: null, avg_impression_position: 3 });
     expect(toStatRecord({ ...q, Date: null }, 'query')).toBeNull();
     expect(toStatRecord({ ...q, Query: '' }, 'query')).toBeNull();
   });

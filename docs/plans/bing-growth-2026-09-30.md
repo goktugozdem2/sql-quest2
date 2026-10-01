@@ -104,18 +104,25 @@ What each lever above reads from it:
   `GetLinkCounts` only on demand, and Copilot citations (AI Performance)
   have no API at all — that panel stays a hand read.
 
-Three things the first live run must settle (the API reference is from 2019
-and silent on them); `scripts/bing/verify.mjs` prints what is needed:
+Settled by the first live run (2026-10-01 06:11 UTC, the `verify` job):
 
-1. the scale of `AvgImpressionPosition` — compare one query with the dashboard;
-2. whether query/page rows are daily or weekly buckets (the reference says
-   only "updated every week") — the report reads 28 days either way;
-3. whether `GetUrlInfo` wants its `url` parameter plain or JSON-quoted
-   (`QUOTE_STRING_PARAMS` in `scripts/bing/api.mjs`).
+1. positions are plain whole numbers (`/sql-exercises/` 6, "sql quest" 3);
+   `AvgClickPosition` is -1 on every row and is stored NULL;
+2. site and crawl rows are daily (156 days back to 04-26); query and page
+   rows are **weekly buckets** (22 of them, …, 09-18, 09-25) — the report
+   reads the four newest and never compares them day by day;
+3. `GetUrlInfo` and `GetPageQueryStats` take their URL plain; the
+   reference's JSON-quoted form answers 400.
 
-Founder's three steps, once: generate the key (Webmaster Tools → Settings →
-API access), `gh secret set BING_WMT_KEY`, and apply
-`supabase/migrations/20261001100000_bing_tables.sql`.
+First numbers through the API: in Bing's index **319** on 09-30 (the hand
+read was 269 on 09-29, before two 100-URL batches); 149 pages crawled that
+day, 0 crawl errors, 69 blocked by robots.txt (the `/app/?` rule); the
+week's bucket for `/sql-exercises/`: 215 clicks, 3,642 impressions,
+position 6; URL-submission quota 83 left today, 3,083 this month.
+
+Still the founder's: apply
+`supabase/migrations/20261001100000_bing_tables.sql` — until then the
+scheduled jobs fail on the missing tables and say so in an issue.
 
 ## Reads
 

@@ -58,6 +58,8 @@ export function toUrlStatus(url, info, now = new Date()) {
 /**
  * never — Bing has not fetched it;  error — the last fetch was not a 2xx;
  * stale — fetched before the sitemap's lastmod;  ok — fetched since.
+ * HttpStatus is 0 on a page Bing crawled the same morning (the homepage,
+ * 2026-10-01), so 0 is "nothing to report", not an error.
  */
 export function classify(rec, lastmod = null) {
   if (!rec || !rec.last_crawled) return 'never';
