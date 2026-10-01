@@ -790,8 +790,20 @@ URLs filled, brand icon is the bolt, brand colour #FFE34D.
   that check — **open a real session and read the page after any price
   change.** The restricted key `check` carries Checkout Sessions/
   Subscriptions Write + Prices/Promotion Codes/Invoices Read. `checkoutTrial`
-  stays off until the first session purchase is seen through the webhook.
+  stays off until the first session purchase is seen through the webhook —
+  **seen 2026-10-01 06:47 UTC** (India, US$9 monthly, Bing → `/sql-exercises/`);
+  the flip now waits only on the founder's Go.
   Release notes: docs/plans/checkout-sessions-release.md.
+- **A failed FIRST invoice is a checkout decline, not dunning (2026-10-01).**
+  That buyer failed 3D Secure three times first (Stripe shows it as
+  *Incomplete*, not Failed), and the webhook mailed him the renewal-failure
+  note each time. `invoice.payment_failed` with `billing_reason
+  subscription_create` now only logs `pro_payment_failed {at_checkout:
+  true}` — no email, no revoke; the per-invoice email dedupe reads
+  `email_events` (`meta->>invoice_id`), because `.like` on a jsonb column
+  never matched. A plan click is dropped while an earlier one is opening
+  (`checkoutInFlight`, 12 s): a double click + Back from Stripe had fired
+  the second request's stale timeout into the Payment Link.
 
 ### Testing
 - **Rule (founder, 2026-09-25): a new test is proven by at least one

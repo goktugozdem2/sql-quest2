@@ -65,3 +65,33 @@ accounts excluded.
 jeromezhao's monthly ends today (2026-10-01 22:05 UTC, cancelled at period
 end). From tomorrow: 2 active subscribers, both annual. Trailing-30-day
 payers on 10-01: 1 (09-19). The 10-09 checkpoint asks for 6.
+
+## Addendum, the same morning — the first purchase through a Checkout Session
+
+06:47 UTC: US$9 monthly, India, arrived from Bing on `/sql-exercises/`, intent
+job-ready, 10 solves (he had hit the six-solve ask at 05:38 and the quota wall
+at 06:27). `checkout.session.completed` → webhook → Pro to 10-31, one
+`pro_purchase_completed` with `reason='stripe_webhook'`. The condition
+written on `checkoutTrial` ("after the first session purchase is seen through
+the webhook") is met; the flip is still the founder's Go.
+
+What the 70 minutes before the payment showed:
+
+- **It was neither of the two explanations above alone.** Five sessions
+  opened, three failed attempts on the same card, then it went through.
+  Stripe's timeline for the failed ones: "Payment requires customer action …
+  3D Secure attempt failed — the customer failed 3D Secure authentication."
+  Not a refusal by the bank and not a missing card: the OTP step. Stripe
+  lists such a payment as **Incomplete**, not Failed — and the "no failed or
+  incomplete payment" line above was read before any of this existed, so it
+  stands for the eleven earlier clickers.
+- New measurement from this: `pro_payment_failed` with `at_checkout: true`
+  (a failed first invoice) is card friction at checkout, by person. Three
+  rows today, all one buyer.
+- Two bugs it exposed, fixed and deployed the same hour (commit 9d4b0029):
+  the webhook mailed him "Your Pro renewal charge didn't go through" three
+  times while he was typing (a failed first invoice is now recorded and not
+  mailed; the per-invoice dedupe now works), and a double click plus Back
+  from Stripe sent him to the Payment Link through a stale timeout (one
+  checkout per click now).
+- Trailing-30-day payers after it: 2 (09-19, 10-01).
