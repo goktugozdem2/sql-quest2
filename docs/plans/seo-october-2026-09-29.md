@@ -76,6 +76,10 @@ rewrite is a content mismatch, not a snippet problem.
 - The five rewritten snippets need a recrawl to show: request indexing for
   them on **10-01** (≥ 24 h after the 09-29 batch — the quota is a rolling
   window, memory `gsc-request-indexing-recipe`), never in the same batch.
+- **Done 10-01:** 6/6 queued (the five snippets + `/sql-exercises/`), no
+  quota refusal, every one "URL is on Google". Bing the same morning: the
+  last 16 question pages + `/sql-exercises/`, "17 URLs submitted", so every
+  sitemap URL (415) has been submitted to Bing at least once.
 - Google indexing requests 09-29: 7/7 queued. Check `gsc_index_status` after
   the 10-05 inspect run; anything still "discovered, not indexed" gets a
   second request 10-06 (24 h after the last request, never sooner).
