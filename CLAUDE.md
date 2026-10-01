@@ -494,6 +494,32 @@ so a landing view and a later solve are joinable for the first time.
   work (URL Inspection: "Excluded by 'noindex' tag"). Technical SEO facts are
   pinned in `tests/technical-seo.test.js`.
 
+### Bing Webmaster data pipeline (2026-10-01 — built, waits on the key)
+
+- `scripts/bing/`, the GSC pipeline's shape on the Bing Webmaster API
+  (`https://ssl.bing.com/webmaster/api.svc/json/<Method>`, answers wrapped
+  in `{"d": …}`, dates as `/Date(ms-0700)/` — read the day in that offset).
+  ONE key per Microsoft account, opening every site it verified: only the
+  `BING_WMT_KEY` env var / GitHub Secret; it rides in the query string, so
+  no script ever logs a request URL (`api.mjs` scrubs it from errors).
+- `verify.mjs` · `fetch.mjs` → `bing_site_daily`, `bing_stats` (three
+  slices like `gsc_daily`, never summed; the page slice's URL arrives in
+  the API's `Query` field), `bing_crawl_daily` (`in_index` = Bing's indexed
+  count) · `inspect.mjs` → `bing_url_status` (crawl facts per sitemap URL,
+  not "indexed") · `submit.mjs` (never-crawled / crawled-before-`lastmod`,
+  ≤ 100, inside the API quota, 14-day cooldown, refuses a URL status older
+  than 3 days) → `bing_submissions` · `report.mjs` (weekly mail).
+- Workflow `.github/workflows/bing.yml`: fetch daily 06:30 UTC; Mondays
+  inspect + submit 05:30, report 07:15. Without the secret a schedule
+  skips with a warning; a hand-started run fails. Failures → an issue
+  labelled `gsc-pipeline`. Migration `20261001100000_bing_tables.sql`
+  (rollback in `supabase/manual/`), dry-run in a rolled-back transaction
+  2026-10-01 — **the founder applies it**. Guards: `tests/bing-pipeline.test.js`.
+- **Not yet verified live** (no key on 10-01): position scale, daily vs
+  weekly buckets, plain vs JSON-quoted `url` param — `verify.mjs` prints
+  all three; see docs/plans/bing-growth-2026-09-30.md. Copilot citations
+  (AI Performance) have no API; that stays a hand read.
+
 ### SQL trap pages (2026-09-25)
 
 - `/sql-not-in-null/`, `/sql-join-fan-out/`, `/sql-between-timestamp/`,

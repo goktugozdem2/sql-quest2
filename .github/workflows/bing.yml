@@ -1,0 +1,154 @@
+# Bing Webmaster Tools → Supabase (scripts/bing/).
+#   daily   06:30 UTC  fetch    search + crawl statistics → bing_site_daily, bing_stats, bing_crawl_daily
+#   Mondays 05:30 UTC  inspect  GetUrlInfo for every sitemap URL → bing_url_status,
+#                      then submit: the never-crawled / crawled-before-the-change
+#                      URLs, inside the quota → SubmitUrlBatch, logged in bing_submissions
+#   Mondays 07:15 UTC  report   the weekly Bing report, mailed
+#
+# Secrets (repo → Settings → Secrets and variables → Actions):
+#   BING_WMT_KEY               Webmaster Tools → Settings → API access → API key
+#   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY   as for the GSC workflows
+#   RESEND_API_KEY, REPORT_TO  for the mail
+# The key opens every site its Microsoft account has verified. It is only
+# ever an environment variable: nothing writes it to disk or prints it.
+#
+# Until BING_WMT_KEY exists a scheduled run skips with a warning instead of
+# opening an issue every morning; a run started by hand fails, so "it ran"
+# is never mistaken for "it worked".
+name: Bing
+
+on:
+  schedule:
+    - cron: '30 6 * * *'
+    - cron: '30 5 * * 1'
+    - cron: '15 7 * * 1'
+  workflow_dispatch:
+    inputs:
+      job:
+        description: 'Which job'
+        type: choice
+        options: [verify, fetch, inspect, submit-dry-run, submit, report]
+        default: verify
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: bing-${{ github.event.schedule || inputs.job }}
+  cancel-in-progress: false
+
+env:
+  FAILURE_HINT: 'Scripts: scripts/bing/. Check the step log; "InvalidApiKey" is the BING_WMT_KEY secret, "NotAuthorized" is a key from an account that has not verified sqlquest.app.'
+
+jobs:
+  verify:
+    if: github.event_name == 'workflow_dispatch' && inputs.job == 'verify'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Does the key open the site?
+        env:
+          BING_WMT_KEY: ${{ secrets.BING_WMT_KEY }}
+        run: node scripts/bing/verify.mjs
+
+  fetch:
+    if: github.event_name == 'workflow_dispatch' && inputs.job == 'fetch' || github.event.schedule == '30 6 * * *'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Is the key configured?
+        id: cfg
+        env:
+          BING_WMT_KEY: ${{ secrets.BING_WMT_KEY }}
+          EVENT: ${{ github.event_name }}
+        run: bash scripts/bing/configured.sh
+      - name: Fetch search and crawl statistics
+        if: steps.cfg.outputs.on == 'true'
+        env:
+          BING_WMT_KEY: ${{ secrets.BING_WMT_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scripts/bing/fetch.mjs
+      - name: Report the failure as an issue
+        if: failure() || cancelled()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: bash scripts/gsc/notify-failure.sh "Bing fetch failed" "$RUN_URL" "$FAILURE_HINT"
+
+  inspect:
+    if: github.event_name == 'workflow_dispatch' && contains(fromJSON('["inspect","submit","submit-dry-run"]'), inputs.job) || github.event.schedule == '30 5 * * 1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Is the key configured?
+        id: cfg
+        env:
+          BING_WMT_KEY: ${{ secrets.BING_WMT_KEY }}
+          EVENT: ${{ github.event_name }}
+        run: bash scripts/bing/configured.sh
+      - name: Inspect sitemap URLs
+        if: steps.cfg.outputs.on == 'true'
+        env:
+          BING_WMT_KEY: ${{ secrets.BING_WMT_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scripts/bing/inspect.mjs
+      # Submission follows the inspection in the same job: it refuses to run
+      # on a URL status older than three days. A hand-started "inspect" stops here.
+      - name: Submit what Bing has not crawled
+        if: steps.cfg.outputs.on == 'true' && (github.event_name == 'schedule' || inputs.job != 'inspect')
+        env:
+          BING_WMT_KEY: ${{ secrets.BING_WMT_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scripts/bing/submit.mjs ${{ inputs.job == 'submit-dry-run' && '--dry-run' || '' }}
+      - name: Report the failure as an issue
+        if: failure() || cancelled()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: bash scripts/gsc/notify-failure.sh "Bing inspect / submit failed" "$RUN_URL" "$FAILURE_HINT"
+
+  report:
+    if: github.event_name == 'workflow_dispatch' && inputs.job == 'report' || github.event.schedule == '15 7 * * 1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Is the key configured?
+        id: cfg
+        env:
+          BING_WMT_KEY: ${{ secrets.BING_WMT_KEY }}
+          EVENT: ${{ github.event_name }}
+        run: bash scripts/bing/configured.sh
+      - name: Weekly report
+        if: steps.cfg.outputs.on == 'true'
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          REPORT_TO: ${{ secrets.REPORT_TO }}
+        run: node scripts/bing/report.mjs
+      - name: Report the failure as an issue
+        if: failure() || cancelled()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: bash scripts/gsc/notify-failure.sh "Bing weekly report failed" "$RUN_URL" "$FAILURE_HINT"

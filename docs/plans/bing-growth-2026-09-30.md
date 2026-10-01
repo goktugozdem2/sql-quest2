@@ -72,6 +72,51 @@ everything else:
    a Start button above the fold; measure no-referrer arrivals on those
    pages against citation volume (memory: genai-recommendation-channel).
 
+## The API pipeline (built 2026-10-01, waits on the key)
+
+Until now every Bing number was read by hand in the dashboard and every URL
+batch was pasted into a dialog. `scripts/bing/` is the same shape as the
+Search Console pipeline, on the Bing Webmaster API (one API key per Microsoft
+account, JSON over HTTPS), run by `.github/workflows/bing.yml`:
+
+| Script | When | Writes | Replaces |
+|---|---|---|---|
+| `fetch.mjs` | daily 06:30 UTC | `bing_site_daily`, `bing_stats` (query / page / query×page for the 30 most-seen pages), `bing_crawl_daily` | the Search Performance screen, read by hand |
+| `inspect.mjs` | Mondays 05:30 | `bing_url_status` — every sitemap URL: last crawl, HTTP status, discovery | the 12-URL URL-Inspection sample |
+| `submit.mjs` | Mondays, after inspect | `bing_submissions`; sends never-crawled and crawled-before-the-change URLs, ≤ 100, inside the API's quota, never twice in 14 days | the pasted batches of 09-23 → 10-01 |
+| `report.mjs` | Mondays 07:15 | the weekly Bing mail | the hand-written Bing half of the weekly SEO read |
+
+What each lever above reads from it:
+
+- **Lever 1 ("sql practice")** — the report's "door" section: `/sql-exercises/`'s
+  own queries with impressions, clicks and position, week over week. The
+  title and the solutions section shipped 09-30; this is where their effect
+  shows, query by query, instead of one page-level CTR.
+- **Lever 2 (titles)** — "in the top 10, no clicks": pages Bing already ranks
+  that nobody clicks. That list, not the 321-titles-over-70 count, says
+  which titles to rewrite first.
+- **Lever 3 (indexing)** — `bing_crawl_daily.in_index` is Bing's own count,
+  daily; `bing_url_status` names the URLs behind the gap. The submitter acts
+  on it without anyone opening a browser.
+- **Lever 4 (spread)** — the door's share of page clicks, in every report
+  (64% → under 50% by 11-15).
+- **Levers 5–6** are not in the API: backlinks are read with
+  `GetLinkCounts` only on demand, and Copilot citations (AI Performance)
+  have no API at all — that panel stays a hand read.
+
+Three things the first live run must settle (the API reference is from 2019
+and silent on them); `scripts/bing/verify.mjs` prints what is needed:
+
+1. the scale of `AvgImpressionPosition` — compare one query with the dashboard;
+2. whether query/page rows are daily or weekly buckets (the reference says
+   only "updated every week") — the report reads 28 days either way;
+3. whether `GetUrlInfo` wants its `url` parameter plain or JSON-quoted
+   (`QUOTE_STRING_PARAMS` in `scripts/bing/api.mjs`).
+
+Founder's three steps, once: generate the key (Webmaster Tools → Settings →
+API access), `gh secret set BING_WMT_KEY`, and apply
+`supabase/migrations/20261001100000_bing_tables.sql`.
+
 ## Reads
 
 - Weekly: Bing clicks/impressions (hand), `/sql-exercises/` share of Bing
