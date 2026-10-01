@@ -88,7 +88,8 @@ jobs:
   inspect:
     if: github.event_name == 'workflow_dispatch' && contains(fromJSON('["inspect","submit","submit-dry-run"]'), inputs.job) || github.event.schedule == '30 5 * * 1'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # GetUrlInfo allows ~10 calls a minute: 415 URLs are ~45 minutes.
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

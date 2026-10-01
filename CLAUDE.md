@@ -522,7 +522,9 @@ so a landing view and a later solve are joinable for the first time.
   `AvgClickPosition` is always -1 (stored NULL); dates arrive as midnight
   UTC with no offset; `url` / `page` parameters go PLAIN (the reference's
   JSON-quoted form answers 400); `HttpStatus` is 0 on a freshly crawled
-  page. `in_index` was 319 on 09-30. Copilot citations (AI Performance)
+  page. **`GetUrlInfo` allows ~10 calls a minute** and refuses with a 400
+  "ThrottleHost" (not a 429): the inspector runs one call every 6.5 s
+  (~45 min for the sitemap) and `bingCall` waits a throttle out. `in_index` was 319 on 09-30. Copilot citations (AI Performance)
   have no API; that stays a hand read.
 
 ### SQL trap pages (2026-09-25)

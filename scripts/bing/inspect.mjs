@@ -18,10 +18,13 @@ import { supabaseAuthHeaders } from '../gsc/auth.mjs';
 import { bingCall, parseBingDate, readKey, upsert, restAll, BING_SITE } from './api.mjs';
 
 export const SITEMAP_URL = 'https://sqlquest.app/sitemap.xml';
-// GetUrlInfo is throttled hard: three workers 200 ms apart were refused
-// ("ThrottleHost") inside 2.3 s on 2026-10-01. One call at a time.
+// GetUrlInfo allows about TEN CALLS A MINUTE. Measured 2026-10-01: three
+// workers 200 ms apart were refused ("ThrottleHost") inside 2.3 s; one call
+// a second got ten through, then a 20–60 s refusal, ten more, and so on —
+// 100 URLs in 9.6 minutes either way. So: one call at a time, 6.5 s apart,
+// which never meets the throttle; the 415-URL sitemap takes ~45 minutes.
 export const CONCURRENCY = 1;
-export const MIN_INTERVAL_MS = 1000;
+export const MIN_INTERVAL_MS = 6500;
 export const WRITE_EVERY = 10;
 
 /** <url><loc>…</loc><lastmod>…</lastmod></url> → [{ url, lastmod }] (lastmod may be null). */

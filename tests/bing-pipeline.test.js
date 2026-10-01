@@ -116,9 +116,13 @@ describe('the throttle', () => {
     expect(other.throttled).toBe(false);
   });
 
-  it('the inspector asks one URL at a time, a second apart', async () => {
+  it('the inspector stays under ten calls a minute, and its job has the time for the whole sitemap', async () => {
     const m = await import('../scripts/bing/inspect.mjs');
-    expect([m.CONCURRENCY, m.MIN_INTERVAL_MS]).toEqual([1, 1000]);
+    expect(m.CONCURRENCY).toBe(1);
+    expect(60000 / m.MIN_INTERVAL_MS).toBeLessThan(10);
+    const wf = read('../.github/workflows/bing.yml');
+    const minutes = Number(/inspect:[\s\S]*?timeout-minutes: (\d+)/.exec(wf)[1]);
+    expect(minutes * 60000).toBeGreaterThan(600 * m.MIN_INTERVAL_MS);   // room for a 600-URL sitemap
   });
 });
 
