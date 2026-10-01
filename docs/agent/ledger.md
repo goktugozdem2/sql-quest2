@@ -73,6 +73,13 @@ of the verifier and must never be rounded to `FLAT`.
   one-time 'trial over' message to the statement descriptor" were both
   OFF. Stripe describes them as the settings that meet the card networks'
   free-trial rules; the first trial's charge is 10-08 at the earliest.
+  **Both switched on 2026-10-01 17:5x UTC** (founder: "stripe'taki iki ayarı
+  aç"), read back after a reload. Left as found, and worth the founder's
+  look: the reminder email's link for a customer to update their payment
+  details is the legacy custom link `https://datrick.com/` ("Use a mix of
+  both"), not a Stripe-hosted page; and "Include a link for customers to
+  manage their subscriptions" is off, so the reminder carries no way to
+  cancel.
 - **Confounds** not randomised: everyone eligible sees it from 10-01. The
   quota wall (09-26), the P1 flags (09-30) and the hero CTA test (10-04)
   move who reaches the modal; read the funnel per click, not per visitor.
