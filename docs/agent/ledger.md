@@ -67,8 +67,12 @@ of the verifier and must never be rounded to `FLAT`.
   through the webhook (nobody here can type a card). The code path was read
   line by line; the first `pro_trial_started` is checked by hand — the user
   row must show Pro to the trial end — and the first conversion on day 7 the
-  same way. Stripe's own trial-reminder email is a dashboard setting and
-  the founder's.
+  same way. Stripe's own trial messaging is a dashboard setting and the
+  founder's: read at the flip (Settings → Billing → Subscriptions and
+  emails), "Send a reminder email 7 days before a trial ends" and "Add a
+  one-time 'trial over' message to the statement descriptor" were both
+  OFF. Stripe describes them as the settings that meet the card networks'
+  free-trial rules; the first trial's charge is 10-08 at the earliest.
 - **Confounds** not randomised: everyone eligible sees it from 10-01. The
   quota wall (09-26), the P1 flags (09-30) and the hero CTA test (10-04)
   move who reaches the modal; read the funnel per click, not per visitor.
