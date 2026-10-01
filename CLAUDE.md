@@ -532,8 +532,8 @@ so a landing view and a later solve are joinable for the first time.
   First full status, 10-01: 280 crawled, **135 never crawled, all of them
   `/questions/` pages**. The hand-pasted batches of 09-23 → 10-01 are in
   `bing_submissions` (`seed-submissions.mjs`, reason `by_hand`), so the
-  14-day cooldown covers them and the first automatic submission of those
-  URLs is not before 10-13. `in_index` was 319 on 09-30. Copilot citations (AI Performance)
+  14-day cooldown covers them: the dry run of 10-01 would send 0, and the
+  first Monday that can re-send any of them is 10-12. `in_index` was 319 on 09-30. Copilot citations (AI Performance)
   have no API; that stays a hand read.
 
 ### SQL trap pages (2026-09-25)
