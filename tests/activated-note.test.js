@@ -41,6 +41,41 @@ describe('activated-note: the second ask, in the founder voice', () => {
     expect(fn).toContain("const REPLY_TO = 'goktug@datrick.com'");
   });
 
+  // 2026-10-01: a dry run showed `weakest: null` for forty people out of
+  // forty. The canonical skill record is rebuilt in the browser, so a lapsed
+  // account still holds the old one; the Skillmap levels are the fallback.
+  it('names the lowest practised skill from the canonical record, else from the Skillmap', async () => {
+    // The sender is TypeScript for Deno; vite's transformer strips the types.
+    const { transformWithOxc } = await import('vite');
+    const at = fn.indexOf('const CANONICAL = [');
+    const end = fn.indexOf('const ordinal');
+    const js = (await transformWithOxc(fn.slice(at, end), 'weakest.ts')).code;
+    const weakestSkill = new Function(`${js}; return weakestSkill;`)();
+    // the canonical record, when it has numbers
+    expect(weakestSkill({ skillMastery: { Joins: { mastery: 40 }, 'Window Functions': { mastery: 12 }, 'Querying Basics': { mastery: 80 } } })).toBe('Window Functions');
+    // a lapsed account: the old fourteen-name record (no numeric mastery) + the Skillmap
+    const lapsed = {
+      skillMastery: { CTEs: { correct: 2 }, HAVING: { correct: 1 }, 'Window Functions': { correct: 0 } },
+      weaknessTracking: { skillLevels: { Joins: 47, 'NULL Handling': 38, 'String Functions': 15, 'Window Functions': 28, 'Date Functions': 0 } },
+    };
+    expect(weakestSkill(lapsed)).toBe('String Functions');
+    // a skill never practised (0) is not "the lowest line"; nothing under 70 is nothing to name
+    expect(weakestSkill({ weaknessTracking: { skillLevels: { Joins: 0, 'Window Functions': 0 } } })).toBeNull();
+    expect(weakestSkill({ weaknessTracking: { skillLevels: { Joins: 82, 'Querying Basics': 90 } } })).toBeNull();
+    expect(weakestSkill({})).toBeNull();
+    expect(weakestSkill({ skillMastery: 'x', weaknessTracking: { skillLevels: null } })).toBeNull();
+    // a retired skill name is never named
+    expect(weakestSkill({ weaknessTracking: { skillLevels: { 'JOIN Tables': 5, Joins: 60 } } })).toBe('Joins');
+  });
+
+  it('checks the once-ever mark again at the moment of sending', () => {
+    const loop = fn.slice(fn.indexOf('for (const c of batch) {'));
+    const recheck = loop.indexOf("select('marked:data->activatedNoteAt')");
+    expect(recheck).toBeGreaterThan(-1);
+    expect(loop.indexOf('if (fresh?.marked) { skipped++; continue }')).toBeGreaterThan(recheck);
+    expect(loop.indexOf('sendAndLog(')).toBeGreaterThan(loop.indexOf('if (fresh?.marked)'));
+  });
+
   it('never claims an unlimited tutor or a lifetime plan', () => {
     expect(fn).not.toMatch(/unlimited/i);
     expect(fn).not.toMatch(/\$199|lifetime/i);

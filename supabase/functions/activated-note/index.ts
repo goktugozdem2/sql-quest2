@@ -126,17 +126,34 @@ const CANONICAL = [
   'Querying Basics', 'Aggregation & Grouping', 'Joins', 'Subqueries & CTEs',
   'Conditional Logic', 'Window Functions', 'String Functions', 'Date Functions', 'NULL Handling',
 ]
+// The person's lowest practised skill, under 70 — or null.
+//
+// Two sources, in this order. `skillMastery` is the canonical user_skill
+// record, but it is rebuilt in the BROWSER (src/utils/user-skill.js, from
+// 2026-09-12): an account that has not opened the app since then still
+// carries the old fourteen-name record, whose rows have no numeric
+// `mastery`. That is most of this email's audience — lapsed non-payers —
+// and on 2026-10-01 a dry run showed `weakest: null` for all forty, people
+// with 105 and 114 solves among them. So the second source is the Skillmap
+// itself, `weaknessTracking.skillLevels`, which is canonical and numeric on
+// every one of those rows. A skill at 0 was never practised and is not "the
+// lowest line on your radar"; it is left out of both.
 function weakestSkill(userData: any): string | null {
-  const m = userData?.skillMastery
-  if (!m || typeof m !== 'object') return null
-  let best: { name: string; mastery: number } | null = null
-  for (const name of CANONICAL) {
-    const row = m[name]
-    const mastery = row && typeof row.mastery === 'number' ? row.mastery : null
-    if (mastery === null) continue
-    if (!best || mastery < best.mastery) best = { name, mastery }
+  const lowest = (read: (name: string) => unknown): string | null => {
+    let best: { name: string; value: number } | null = null
+    for (const name of CANONICAL) {
+      const v = read(name)
+      if (typeof v !== 'number' || !Number.isFinite(v) || v <= 0) continue
+      if (!best || v < best.value) best = { name, value: v }
+    }
+    return best && best.value < 70 ? best.name : null
   }
-  return best && best.mastery < 70 ? best.name : null
+  const m = userData?.skillMastery
+  const hasMastery = m && typeof m === 'object' && CANONICAL.some(n => typeof m[n]?.mastery === 'number')
+  if (hasMastery) return lowest(n => m[n]?.mastery)
+  const levels = userData?.weaknessTracking?.skillLevels
+  if (levels && typeof levels === 'object') return lowest(n => levels[n])
+  return null
 }
 
 const ordinal = (n: number) => {
@@ -303,6 +320,15 @@ Deno.serve(async (req) => {
 
     let sent = 0
     for (const c of batch) {
+      // Once ever, checked again at the moment of sending: the audience was
+      // read when this run began, and a second run started meanwhile (two
+      // tabs, a retry) would otherwise mail the same person twice.
+      const { data: fresh } = await supabase
+        .from('users')
+        .select('marked:data->activatedNoteAt')
+        .eq('username', c.username)
+        .maybeSingle()
+      if (fresh?.marked) { skipped++; continue }
       const unsubToken = await ensureUnsubToken(supabase, c.username, c.userData)
       const subject = SUBJECTS[pick(c.username, SUBJECTS.length)](c.solves)
       const html = renderBody({ ...c, cta: utm('/app/?src=activated_note&pro=1', TEMPLATE) })
