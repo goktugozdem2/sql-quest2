@@ -79,7 +79,11 @@ of the verifier and must never be rounded to `FLAT`.
   details is the legacy custom link `https://datrick.com/` ("Use a mix of
   both"), not a Stripe-hosted page; and "Include a link for customers to
   manage their subscriptions" is off, so the reminder carries no way to
-  cancel.
+  cancel. **The manage link was switched on the same evening** (Stripe
+  customer portal; founder: "ikisini de yap"). The payment-update link was
+  NOT changed: Stripe's dialog says the move from "a mix of both (Legacy)"
+  to a Stripe-hosted page "cannot be reversed", which the founder had not
+  been told — it waits for a yes that names that.
 - **Confounds** not randomised: everyone eligible sees it from 10-01. The
   quota wall (09-26), the P1 flags (09-30) and the hero CTA test (10-04)
   move who reaches the modal; read the funnel per click, not per visitor.
