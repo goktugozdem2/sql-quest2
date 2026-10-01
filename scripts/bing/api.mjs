@@ -48,13 +48,21 @@ export function parseBingDate(value) {
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 const scrub = (text, key) => String(text ?? '').split(key).join('[key]');
 
+// The API throttles with HTTP 400 {"Message": "ERROR!!! ThrottleHost"}, not
+// with a 429 — met 2026-10-01, 2.3 s into 415 GetUrlInfo calls at ~6 a
+// second. It is the one 400 worth waiting out.
+export const THROTTLE_WAITS_MS = [20000, 40000, 80000, 160000];
+const isThrottle = (text) => /Throttle/i.test(String(text || ''));
+
 /**
  * One API call; returns the unwrapped `d`. `params` go in the query string
- * (GET), `body` makes it a POST. 429 and 5xx back off and retry; a 400 is
- * the API saying no (bad key, not verified, quota) and fails at once with
- * its own message. The key never appears in what this throws or logs.
+ * (GET), `body` makes it a POST. 429 and 5xx back off and retry; a throttle
+ * waits THROTTLE_WAITS_MS and then throws with `err.throttled = true`; any
+ * other 400 is the API saying no (bad key, not verified, quota) and fails
+ * at once with its own message. The key never appears in what this throws
+ * or logs.
  */
-export async function bingCall(method, { params = {}, body = null, key, env = process.env, retries = 4, fetchImpl = fetch, log = () => {}, quote = QUOTE_STRING_PARAMS } = {}) {
+export async function bingCall(method, { params = {}, body = null, key, env = process.env, retries = 4, throttleWaits = THROTTLE_WAITS_MS, fetchImpl = fetch, log = () => {}, quote = QUOTE_STRING_PARAMS } = {}) {
   const apiKey = key || readKey(env);
   const qs = new URLSearchParams();
   for (const [k, v] of Object.entries(body ? {} : params)) {
@@ -62,6 +70,7 @@ export async function bingCall(method, { params = {}, body = null, key, env = pr
   }
   qs.set('apikey', apiKey);
   const url = `${BING_API}/${method}?${qs}`;
+  let throttled = 0;
   for (let attempt = 0; ; attempt++) {
     let res;
     try {
@@ -86,12 +95,20 @@ export async function bingCall(method, { params = {}, body = null, key, env = pr
       await sleep(wait);
       continue;
     }
+    if (res.status === 400 && isThrottle(text) && throttled < throttleWaits.length) {
+      const wait = throttleWaits[throttled++];
+      log(`Bing ${method}: throttled, waiting ${Math.round(wait / 1000)} s (${throttled}/${throttleWaits.length})`);
+      await sleep(wait);
+      attempt--;
+      continue;
+    }
     let message = scrub(text, apiKey).slice(0, 300);
     let code = null;
     try { const j = JSON.parse(text); if (j && j.Message) { message = scrub(j.Message, apiKey); code = j.ErrorCode ?? null; } } catch { /* not JSON */ }
     const err = new Error(`Bing ${method} → HTTP ${res.status}: ${message}`);
     err.status = res.status;
     err.code = code;
+    err.throttled = isThrottle(text);
     throw err;
   }
 }

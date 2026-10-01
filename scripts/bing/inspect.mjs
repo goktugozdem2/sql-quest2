@@ -18,9 +18,11 @@ import { supabaseAuthHeaders } from '../gsc/auth.mjs';
 import { bingCall, parseBingDate, readKey, upsert, restAll, BING_SITE } from './api.mjs';
 
 export const SITEMAP_URL = 'https://sqlquest.app/sitemap.xml';
-export const CONCURRENCY = 3;
-export const MIN_INTERVAL_MS = 200;
-export const WRITE_EVERY = 25;
+// GetUrlInfo is throttled hard: three workers 200 ms apart were refused
+// ("ThrottleHost") inside 2.3 s on 2026-10-01. One call at a time.
+export const CONCURRENCY = 1;
+export const MIN_INTERVAL_MS = 1000;
+export const WRITE_EVERY = 10;
 
 /** <url><loc>…</loc><lastmod>…</lastmod></url> → [{ url, lastmod }] (lastmod may be null). */
 export function parseSitemapEntries(xml) {

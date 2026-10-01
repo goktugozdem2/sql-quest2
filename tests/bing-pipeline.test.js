@@ -92,6 +92,36 @@ describe('the client', () => {
   });
 });
 
+describe('the throttle', () => {
+  const real = globalThis.setTimeout;
+  const fast = async (fn) => { globalThis.setTimeout = (f) => real(f, 0); try { return await fn(); } finally { globalThis.setTimeout = real; } };
+  const throttle = () => res(400, { ErrorCode: 16, Message: 'ERROR!!! ThrottleHost' });
+
+  it('Bing throttles with a 400, and that one 400 is waited out', async () => {
+    let calls = 0;
+    const waits = [];
+    const out = await fast(() => bingCall('GetUrlInfo', { key: KEY, log: (m) => waits.push(m), fetchImpl: async () => (++calls <= 2 ? throttle() : res(200, { d: { IsPage: true } })) }));
+    expect(out).toEqual({ IsPage: true });
+    expect(calls).toBe(3);
+    expect(waits).toEqual(['Bing GetUrlInfo: throttled, waiting 20 s (1/4)', 'Bing GetUrlInfo: throttled, waiting 40 s (2/4)']);
+  });
+
+  it('after the last wait it throws, marked as a throttle', async () => {
+    let calls = 0;
+    const err = await fast(() => bingCall('GetUrlInfo', { key: KEY, fetchImpl: async () => { calls++; return throttle(); } }).catch(e => e));
+    expect(calls).toBe(5);
+    expect(err.throttled).toBe(true);
+    expect(err.message).toBe('Bing GetUrlInfo → HTTP 400: ERROR!!! ThrottleHost');
+    const other = await bingCall('GetUrlInfo', { key: KEY, fetchImpl: async () => res(400, { ErrorCode: 3, Message: 'ERROR!!! InvalidApiKey' }) }).catch(e => e);
+    expect(other.throttled).toBe(false);
+  });
+
+  it('the inspector asks one URL at a time, a second apart', async () => {
+    const m = await import('../scripts/bing/inspect.mjs');
+    expect([m.CONCURRENCY, m.MIN_INTERVAL_MS]).toEqual([1, 1000]);
+  });
+});
+
 describe('fetch', () => {
   const q = { __type: 'QueryStats:#Microsoft.Bing.Webmaster.Api', AvgClickPosition: 18, AvgImpressionPosition: 17, Clicks: 15, Date: '/Date(1316156400000-0700)/', Impressions: 100, Query: 'sql exercises' };
 
