@@ -47,6 +47,29 @@ export const TRIAL_COPY = Object.freeze({
   after: `, cancel before day ${TRIAL_DAYS} and you pay nothing`,
 });
 
+// What the plan cards and the line under them say when the trial is offered
+// (2026-10-01). No price here either: the cards keep printing their own.
+// Every word is one Stripe's page repeats — "7 days free", a card, nothing
+// due today — so the modal promises nothing the next page does not show.
+export const TRIAL_CARD_COPY = Object.freeze({
+  monthly: `${TRIAL_DAYS} days free, then billed monthly`,
+  annual: `${TRIAL_DAYS} days free, then billed yearly`,
+});
+export const TRIAL_TERMS = `${TRIAL_DAYS}-day free trial: a card is required and nothing is charged today. Cancel before day ${TRIAL_DAYS} and you pay nothing.`;
+
+/**
+ * May the modal promise the trial to this person? Both flags on, and no
+ * trial on their record already — the same rule create-checkout-session
+ * applies (one trial per username), read from what the browser can see. The
+ * server has the last word: it answers `trial: false` and Stripe's page then
+ * shows the amount due today.
+ */
+export function trialOffered({ sessionsOn, trialOn, userData } = {}) {
+  if (sessionsOn !== true || trialOn !== true) return false;
+  const d = userData && typeof userData === 'object' ? userData : {};
+  return !(d.proTrial === true || !!d.proTrialEnd);
+}
+
 /**
  * The sentence a plan button carries when the trial is on, built around the
  * price text the modal already prints ("$29/month").

@@ -800,8 +800,16 @@ URLs filled, brand icon is the bolt, brand colour #FFE34D.
   change.** The restricted key `check` carries Checkout Sessions/
   Subscriptions Write + Prices/Promotion Codes/Invoices Read. `checkoutTrial`
   stays off until the first session purchase is seen through the webhook —
-  **seen 2026-10-01 06:47 UTC** (India, US$9 monthly, Bing → `/sql-exercises/`);
-  the flip now waits only on the founder's Go.
+  **seen 2026-10-01 06:47 UTC** (India, US$9 monthly, Bing → `/sql-exercises/`).
+  **`checkoutTrial` ON 2026-10-01 (founder's Go):** a person with no trial on
+  record sees "7 days free, then billed monthly/yearly" on the cards and the
+  terms line under them (`trialOffered`, `TRIAL_CARD_COPY`, `TRIAL_TERMS` in
+  src/utils/checkout-session.js); `pro_modal_shown.trialOffered` and
+  `pro_checkout_clicked.trial` carry it. A trial is `pro_trial_started`,
+  never a purchase; the money is `pro_purchase_completed {after_trial}` on
+  day 7. Not yet seen live: a trial start and its conversion — check the
+  first by hand. Ledger "a 7-day trial at checkout", metric `trial_funnel`;
+  a dispute from a trial conversion turns it off the same day.
   Release notes: docs/plans/checkout-sessions-release.md.
 - **A failed FIRST invoice is a checkout decline, not dunning (2026-10-01).**
   That buyer failed 3D Secure three times first (Stripe shows it as

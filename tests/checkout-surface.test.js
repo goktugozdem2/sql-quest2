@@ -107,6 +107,15 @@ describe('no popularity claim the data does not support', () => {
     expect(app).not.toContain('most people choose this</div>');
     expect(home).not.toContain('most people choose this');
   });
+  // 2026-10-01: the same claim had survived as a HEADLINE — "Two plans.
+  // Annual is the one most people choose." — on the pricing_link and
+  // cold_start_anyway modals. Of five real payers two chose annual, and all
+  // thirteen plan clicks of the last ten days were monthly. The guard above
+  // matched one exact string; this one matches the claim in any rendered string.
+  it('no string the modal renders says what most people choose', () => {
+    expect(app).not.toMatch(/'[^'\n]*most people (choose|pick|buy)[^'\n]*'/i);
+    expect(app).toContain("'Two plans. Annual is the lower price per month.'");
+  });
 });
 
 describe('the recovery button is not on the buying surface', () => {

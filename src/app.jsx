@@ -44,7 +44,7 @@ import { PLACEMENT_TIERS, placementResult, placementEventPayload, readFirstRunPl
 import { QUESTIONS as READINESS_QUESTIONS, READINESS_SKILLS, READINESS_RECORD_KEY, companySkillWeights, scoreReadiness, summarizeScores, weakestSkills, readinessRecordFrom, readReadinessRecord } from './data/readiness-questions.js';
 import { paidWallFor, isColdStart, practiceSolves } from './utils/paid-wall.js';
 import { priceRegionFor, planPrices, checkoutLinkFor } from './utils/regional-price.js';
-import { wantsTrial, buildCheckoutSessionBody, requestCheckoutSession, launchWithFallback, checkoutInFlight } from './utils/checkout-session.js';
+import { wantsTrial, buildCheckoutSessionBody, requestCheckoutSession, launchWithFallback, checkoutInFlight, trialOffered, TRIAL_CARD_COPY, TRIAL_TERMS } from './utils/checkout-session.js';
 import { companySetGate, companySetFreeIds, companySetProgress, quietAskDecision, deadlineOfferFor, deadlineEventMeta, withEarlyWall, pickProMockId, FREE_MOCK_ID, quotaGate, FREE_SOLVE_QUOTA } from './utils/free-tier-boundary.js';
 import { expandStageChallenges, placementStartIndex as roadmapPlacementStartIndex } from './utils/roadmap.js';
 import { shouldEmitLockEvent, lockEventKey } from './utils/lock-events.js';
@@ -7067,6 +7067,18 @@ function SQLQuest() {
   // ?payment=success redirect is built for a same-tab round trip; the
   // purchase-user stash survives navigation.
   const checkoutStartedAtRef = useRef(0);
+  // The 7-day trial (checkoutTrial, founder's Go 2026-10-01): offered when
+  // both checkout flags are on and this record has had no trial. The plan
+  // cards and the line under them read this; so does pro_modal_shown.
+  const trialOfferOn = useMemo(() => {
+    let d = null;
+    try { d = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || 'null'); } catch (_) { /* no record */ }
+    return trialOffered({
+      sessionsOn: window.FF?.feature?.('checkoutSessions') === true,
+      trialOn: window.FF?.feature?.('checkoutTrial') === true,
+      userData: d,
+    });
+  }, [currentUser, showProModal]);
   const launchCheckout = (plan, email, opts = {}) => {
     // One checkout at a time: a second click while the first is opening is
     // dropped, not counted and not sent (checkoutInFlight has the story). A
@@ -7723,6 +7735,8 @@ function SQLQuest() {
         patternSlug: proModalReason?.patternSlug || null,
         linkSrc: proModalReason?.linkSrc || null,
         priceRegion,
+        // Was the 7-day trial on the cards this person saw (2026-10-01).
+        trialOffered: trialOfferOn,
         // Free-tier boundary M3: did this ask lead with a date, and how far.
         ...deadlineEventMeta(proModalReason),
       });
@@ -31860,9 +31874,9 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                       : proModalReason.type === 'email_link'
                       ? 'The interview run, before the interview.'
                       : proModalReason.type === 'pricing_link'
-                      ? 'Two plans. Annual is the one most people choose.'
+                      ? 'Two plans. Annual is the lower price per month.'
                       : proModalReason.type === 'cold_start_anyway'
-                      ? 'Two plans. Annual is the one most people choose.'
+                      ? 'Two plans. Annual is the lower price per month.'
                       : ['learning', 'job_ready'].includes(getUserIntent())
                       ? 'Make SQL second nature.'
                       : 'Walk into the interview ready.'}
@@ -32168,7 +32182,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                   >
                     <div className="text-2xl font-bold" style={{ fontFamily: 'Geist Mono, monospace', fontVariantNumeric: 'tabular-nums', color: '#F2F0EA' }}>{shownPrices.monthly}</div>
                     <div className="text-sm font-medium" style={{ color: '#F2F0EA' }}>Monthly</div>
-                    <div className="text-xs mt-1" style={{ color: '#8A8E99' }}>Billed monthly</div>
+                    <div className="text-xs mt-1" style={{ color: '#8A8E99' }} data-testid="plan-terms-monthly">{trialOfferOn ? TRIAL_CARD_COPY.monthly : 'Billed monthly'}</div>
                     <div className="text-xs mt-2" style={{ color: '#8A8E99' }}>{shownPrices.monthlyPerMonth}</div>
                   </button>
 
@@ -32205,7 +32219,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                     </div>
                     <div className="text-2xl font-bold" style={{ fontFamily: 'Geist Mono, monospace', fontVariantNumeric: 'tabular-nums', color: '#F2F0EA' }}>{shownPrices.annual}</div>
                     <div className="text-sm font-medium" style={{ color: '#F2F0EA' }}>Annual</div>
-                    <div className="text-xs mt-1" style={{ color: '#8A8E99' }}>Billed yearly</div>
+                    <div className="text-xs mt-1" style={{ color: '#8A8E99' }} data-testid="plan-terms-annual">{trialOfferOn ? TRIAL_CARD_COPY.annual : 'Billed yearly'}</div>
                     {/* "· most people choose this" removed 2026-09-21: of the four
                         real subscriptions two are annual and two monthly. A claim on
                         the payment page the data does not support. SAVE 72% stays —
@@ -32215,6 +32229,11 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                 </div>
 
                 <div className="text-center mb-4">
+                  {trialOfferOn && (
+                    <p className="text-xs mb-1.5" style={{ color: '#F2F0EA' }} data-testid="trial-terms">
+                      {TRIAL_TERMS}
+                    </p>
+                  )}
                   <p className="text-xs" style={{ color: '#8A8E99' }}>
                     Secure payment via Stripe · Cancel anytime · Keep all your progress
                   </p>

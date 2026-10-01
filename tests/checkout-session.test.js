@@ -279,9 +279,35 @@ describe('launchCheckout wiring', () => {
     expect(body).toMatch(/addEventListener\('pageshow', \(\) => \{ checkoutStartedAtRef\.current = 0; \}/);
   });
 
-  it('sessions on, trial off', () => {
+  it('sessions on, trial on (founder\u2019s Go 2026-10-01)', () => {
     expect(flags).toMatch(/^\s+checkoutSessions: true,/m);
-    expect(flags).toMatch(/^\s+checkoutTrial: false,/m);
+    expect(flags).toMatch(/^\s+checkoutTrial: true,/m);
+  });
+
+  it('the trial is offered only with both flags on and no trial on the record', async () => {
+    const { trialOffered } = await import('../src/utils/checkout-session.js');
+    expect(trialOffered({ sessionsOn: true, trialOn: true, userData: null })).toBe(true);
+    expect(trialOffered({ sessionsOn: true, trialOn: true, userData: { proType: 'monthly' } })).toBe(true);
+    expect(trialOffered({ sessionsOn: false, trialOn: true })).toBe(false);   // a Payment Link carries no trial
+    expect(trialOffered({ sessionsOn: true, trialOn: false })).toBe(false);
+    expect(trialOffered({ sessionsOn: true, trialOn: true, userData: { proTrial: true } })).toBe(false);
+    expect(trialOffered({ sessionsOn: true, trialOn: true, userData: { proTrial: false, proTrialEnd: '2026-10-08T00:00:00Z' } })).toBe(false);
+    expect(trialOffered({ sessionsOn: 'yes', trialOn: 1 })).toBe(false);
+  });
+
+  it('the cards and the line under them say the trial only when it is offered, in words Stripe\u2019s page repeats', async () => {
+    const { TRIAL_CARD_COPY, TRIAL_TERMS, TRIAL_DAYS } = await import('../src/utils/checkout-session.js');
+    expect(TRIAL_CARD_COPY).toEqual({ monthly: '7 days free, then billed monthly', annual: '7 days free, then billed yearly' });
+    expect(TRIAL_TERMS).toBe('7-day free trial: a card is required and nothing is charged today. Cancel before day 7 and you pay nothing.');
+    expect(TRIAL_DAYS).toBe(7);
+    // no price in the trial copy: the cards print their own (PRICE_TABLE)
+    expect(`${TRIAL_CARD_COPY.monthly} ${TRIAL_CARD_COPY.annual} ${TRIAL_TERMS}`).not.toMatch(/\$\d/);
+    expect(app).toContain("{trialOfferOn ? TRIAL_CARD_COPY.monthly : 'Billed monthly'}");
+    expect(app).toContain("{trialOfferOn ? TRIAL_CARD_COPY.annual : 'Billed yearly'}");
+    expect(app).toMatch(/\{trialOfferOn && \(\s*<p[^>]*data-testid="trial-terms">\s*\{TRIAL_TERMS\}/);
+    // the offer reads both flags and the person's own record, and rides on the modal event
+    expect(app).toMatch(/trialOffered\(\{\s*sessionsOn: window\.FF\?\.feature\?\.\('checkoutSessions'\) === true,\s*trialOn: window\.FF\?\.feature\?\.\('checkoutTrial'\) === true,\s*userData: d,/);
+    expect(app).toContain('trialOffered: trialOfferOn,');
   });
   it('asks create-checkout-session with the server-read region, and falls back to the link', () => {
     expect(body).toMatch(/feature\?\.\('checkoutSessions'\) === true/);

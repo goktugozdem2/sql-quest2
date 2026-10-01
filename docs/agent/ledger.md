@@ -27,6 +27,55 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### a 7-day trial at checkout: "nothing is charged today" (checkoutTrial)
+
+- **Claimed** 2026-10-01, before the flip · **Flipped** 2026-10-01 (founder's
+  Go in chat: "go") · **Reads** 2026-10-09 (the first trials reach day 7)
+  and 2026-10-22 (three weeks).
+- **Change** with `checkoutSessions` and `checkoutTrial` both on, a person
+  with no trial on their record sees "7 days free, then billed
+  monthly/yearly" on the plan cards and one line under them: "7-day free
+  trial: a card is required and nothing is charged today. Cancel before day
+  7 and you pay nothing." The plan click creates a session with a 7-day
+  trial (one per username, decided by the server). Prices, plans, the modal's
+  triggers and the Payment Link fallback are unchanged. Stripe's page, read
+  before the flip on three live sessions: "7 days free — Then $29.00 per
+  month starting October 8, 2026", "$99.00 per year", India "$9.00 per
+  month"; USD; the button reads "Start trial".
+- **Why** docs/reads/checkout-clickers-2026-10-01.md: from 09-22 to 10-01
+  thirteen people clicked a plan and one paid, and until that one nobody had
+  typed a card. Where the card is not the obstacle (priceRegion `default`),
+  54 people saw the modal after the quota flip, 5 clicked, 0 paid. "Pay now
+  for something not yet seen from the inside" is the explanation a trial
+  tests; it does nothing for a card that fails 3D Secure.
+- **Metric** `trial_funnel` (metrics.md): of people with `pro_checkout_clicked
+  {trial: true}`, the share with `pro_trial_started`; and of trials at least
+  8 days old, the share with `pro_purchase_completed {after_trial: true}`.
+  Second line, `modal_click_rate` by `trialOffered` (new field on
+  `pro_modal_shown` from this flip). **Baseline** click → Pro without a
+  trial, 09-22 → 10-01: 1 of 13 (7.7%); `default` region 0 of 5. Modal →
+  click since the quota flip: `default` 5 of 54 (9.3%), `IN` 7 of 36 (19.4%).
+- **Target** by 10-22: click → trial started ≥ 25% on at least 15 clickers,
+  and trial → paid ≥ 40% on at least 5 trials old enough to have been charged.
+- **Falsification, stated in advance:** ≥ 15 clickers and fewer than 3 trials
+  → "pay now" was not the obstacle; the trial goes off and the next step is
+  the payment method, not the offer. Trials start but < 25% of ≥ 8 matured
+  ones pay → it attracts people who were never going to pay; off, unless the
+  money per modal viewer still beats pay-now. **Any dispute or chargeback
+  from a trial conversion → off the same day**, whatever the rates.
+- **Not verified live at the flip:** a real trial start and its day-7 charge
+  through the webhook (nobody here can type a card). The code path was read
+  line by line; the first `pro_trial_started` is checked by hand — the user
+  row must show Pro to the trial end — and the first conversion on day 7 the
+  same way. Stripe's own trial-reminder email is a dashboard setting and
+  the founder's.
+- **Confounds** not randomised: everyone eligible sees it from 10-01. The
+  quota wall (09-26), the P1 flags (09-30) and the hero CTA test (10-04)
+  move who reaches the modal; read the funnel per click, not per visitor.
+  India's 3D Secure failures sit between a click and a trial exactly as
+  they sat between a click and a payment.
+- **Verdict** _pending_
+
 ### "Explain your approach" in every live / talk-through mock
 
 - **Claimed** 2026-09-29 · **Live** on push (no flag) · **Read** 2026-10-20 (21 days).

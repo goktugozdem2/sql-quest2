@@ -3001,6 +3001,27 @@ clicks (annual ÷ all) since the modal sells two plans (2026-09-12). Read
 early asks (09-29) change who is shown. This is the founder's second watch
 line for the homepage and modal rewrite; a fall below 3.4% means revert.
 
+## `trial_funnel`
+
+The 7-day card-required trial (flag `checkoutTrial`, on 2026-10-01). People
+by `aid` / username, internal accounts excluded:
+
+1. `pro_modal_shown` with `trialOffered: true` → `pro_checkout_clicked` with
+   `trial: true` (the modal step; compare with `trialOffered: false` rows,
+   which are people who already had a trial or the Payment Link fallback);
+2. `pro_checkout_clicked {trial: true}` → `pro_trial_started`
+   (`reason='stripe_webhook'`): the trial was started on Stripe's page;
+3. of trials whose `trial_end` is at least one day past, the share with
+   `pro_purchase_completed {after_trial: true}` (the money), and the share
+   with `pro_trial_cancelled`.
+
+`pro_trial_started` is never a purchase and never counts toward payers;
+`pro_purchase_completed/stripe_webhook` stays the only money truth, and a
+trial's row arrives there on day 7. A failed first attempt is
+`pro_payment_failed {at_checkout: true}` (2026-10-01) — card friction at
+checkout, by person. Baseline before the trial, 09-22 → 10-01: 13 clickers,
+1 paid; `default` price region 0 of 5.
+
 ## `checkout_abandonment`
 
 Where a person who clicked a plan stops, people by `aid`, in order:

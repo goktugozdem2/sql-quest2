@@ -304,9 +304,18 @@ window.FEATURE_FLAGS = {
     // Verified live 2026-09-30 before the flip: US$29/mo, US$99/yr, India
     // US$39/yr, no currency switch; stripe-webhook v23 knows every price.
     checkoutSessions: true,
-    // Card-required 7-day free trial on the session path. Stays off until the
-    // first real session purchase has been seen through the webhook.
-    checkoutTrial: false,
+    // Card-required 7-day free trial on the session path (founder's Go
+    // 2026-10-01, after the first session purchase was seen through the
+    // webhook that morning). The plan cards say "7 days free, then billed
+    // monthly/yearly" and one line under them states the terms
+    // (TRIAL_CARD_COPY / TRIAL_TERMS, src/utils/checkout-session.js); one
+    // trial per username, decided by create-checkout-session. Stripe's page
+    // read before the flip: "7 days free — Then $29.00 per month starting
+    // October 8", $99.00 per year, India $9.00, USD, "Start trial".
+    // NOT YET SEEN LIVE: a trial start and its conversion through the
+    // webhook — check the first `pro_trial_started` by hand. Ledger: "a
+    // 7-day trial at checkout"; `false` restores pay-now.
+    checkoutTrial: true,
 
     // ── The account ask at the third solve (2026-09-14) ──────────────────
     // Founder: move the registration wall to the 3rd solve. Measured before
