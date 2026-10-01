@@ -17,7 +17,10 @@
 // Measured 2026-10-01: site and crawl rows are one per DAY; query and page
 // rows are one per WEEK, dated seven days apart (…, 09-18, 09-25) — so a
 // `date` in bing_stats is a week's bucket, never a day, and must not be
-// joined to a day in bing_site_daily. Positions are plain whole numbers.
+// joined to a day in bing_site_daily. A bucket is the seven days ENDING on
+// its date (Saturday → Friday): for 09-25 the pages' clicks were 258
+// against 280 site clicks in the week ending that day and 157 in the days
+// after it. Positions are plain whole numbers.
 
 import { pathToFileURL } from 'node:url';
 import { supabaseAuthHeaders } from '../gsc/auth.mjs';

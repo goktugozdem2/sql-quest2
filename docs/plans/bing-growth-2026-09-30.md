@@ -109,8 +109,10 @@ Settled by the first live run (2026-10-01 06:11 UTC, the `verify` job):
 1. positions are plain whole numbers (`/sql-exercises/` 6, "sql quest" 3);
    `AvgClickPosition` is -1 on every row and is stored NULL;
 2. site and crawl rows are daily (156 days back to 04-26); query and page
-   rows are **weekly buckets** (22 of them, …, 09-18, 09-25) — the report
-   reads the four newest and never compares them day by day;
+   rows are **weekly buckets** (22 of them, …, 09-18, 09-25), each the seven
+   days ending on its date (page clicks 258 against 280 site clicks in the
+   week ending 09-25) — the report reads the four newest and never compares
+   them day by day. Site clicks by those weeks: 130 → 207 → 280;
 3. `GetUrlInfo` and `GetPageQueryStats` take their URL plain; the
    reference's JSON-quoted form answers 400.
 

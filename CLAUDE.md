@@ -518,7 +518,7 @@ so a landing view and a later solve are joinable for the first time.
 - **Verified live 2026-10-01** (`verify` job, key added by the founder):
   the key sees sqlquest.app, claudequest.app and datrick.com; site and crawl
   rows are DAILY, query and page rows are WEEKLY buckets (a `bing_stats`
-  date is a week, never a day); positions are plain whole numbers and
+  date is the seven days ENDING on it, Saturday → Friday — never a day); positions are plain whole numbers and
   `AvgClickPosition` is always -1 (stored NULL); dates arrive as midnight
   UTC with no offset; `url` / `page` parameters go PLAIN (the reference's
   JSON-quoted form answers 400); `HttpStatus` is 0 on a freshly crawled
