@@ -509,9 +509,10 @@ so a landing view and a later solve are joinable for the first time.
   not "indexed") · `submit.mjs` (never-crawled / crawled-before-`lastmod`,
   ≤ 100, inside the API quota, 14-day cooldown, refuses a URL status older
   than 3 days) → `bing_submissions` · `report.mjs` (weekly mail).
-- Workflow `.github/workflows/bing.yml`: fetch daily 06:30 UTC; Mondays
-  inspect + submit 05:30, report 07:15. Without the secret a schedule
-  skips with a warning; a hand-started run fails. Failures → an issue
+- Workflow `.github/workflows/bing.yml`: fetch daily 06:30 UTC; inspect
+  daily 06:45 (the 150 URLs checked longest ago); Mondays report 07:15 and
+  submit 07:30. Without the secret a schedule skips with a warning; a
+  hand-started run fails. Failures → an issue
   labelled `gsc-pipeline`. Migration `20261001100000_bing_tables.sql`
   (rollback in `supabase/manual/`), dry-run in a rolled-back transaction
   2026-10-01 — **the founder applies it**. Guards: `tests/bing-pipeline.test.js`.
@@ -522,9 +523,17 @@ so a landing view and a later solve are joinable for the first time.
   `AvgClickPosition` is always -1 (stored NULL); dates arrive as midnight
   UTC with no offset; `url` / `page` parameters go PLAIN (the reference's
   JSON-quoted form answers 400); `HttpStatus` is 0 on a freshly crawled
-  page. **`GetUrlInfo` allows ~10 calls a minute** and refuses with a 400
-  "ThrottleHost" (not a 429): the inspector runs one call every 6.5 s
-  (~45 min for the sitemap) and `bingCall` waits a throttle out. `in_index` was 319 on 09-30. Copilot citations (AI Performance)
+  page. **`GetUrlInfo` has two limits**, both answered with a 400
+  "ThrottleHost" (not a 429): ~10 calls a minute, and a larger one met
+  ~350 calls into a paced run. So the inspector takes 150 URLs a day, one
+  every 6.5 s (the sitemap turns over in three days); `bingCall` waits a
+  short throttle out and a long one ends the inspection cleanly, never as
+  a failure. `HttpStatus` was 0 on all 415 URLs — it carries nothing.
+  First full status, 10-01: 280 crawled, **135 never crawled, all of them
+  `/questions/` pages**. The hand-pasted batches of 09-23 → 10-01 are in
+  `bing_submissions` (`seed-submissions.mjs`, reason `by_hand`), so the
+  14-day cooldown covers them and the first automatic submission of those
+  URLs is not before 10-13. `in_index` was 319 on 09-30. Copilot citations (AI Performance)
   have no API; that stays a hand read.
 
 ### SQL trap pages (2026-09-25)

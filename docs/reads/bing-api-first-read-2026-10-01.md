@@ -65,8 +65,22 @@ nameable query gets its snippet rewritten, with a claim, in one batch.
 - `blocked_by_robots` 0 → 69 since 09-25 is the `/app/?` rule of 09-23 doing
   what it was written for. `crawl_errors` 0.
 
+## Every sitemap URL, read the same morning
+
+`bing_url_status`, 415 of 415: **280 crawled, 135 never crawled and never
+"discovered" — every one of the 135 is a `/questions/` page** (of 305).
+Nothing else on the site is uncrawled. 140 URLs were crawled in the last
+seven days; 28 not for more than thirty. All 135 were handed to Bing by hand
+between 09-23 and 10-01, most of them in the last three days, so this is the
+state before those submissions have had time to act; the same count on 10-08
+is the read. If the question pages are still at ~135 uncrawled then,
+submission is not what they lack — links are (the internal-link plan of
+09-23), and that is where the work goes.
+
 ## Limits met on the first day
 
 `GetUrlInfo` allows about ten calls a minute and refuses with a 400
-"ThrottleHost"; the sitemap inspection is paced at one call every 6.5 s
-(~45 minutes). Copilot citations are not in the API.
+"ThrottleHost"; behind that is a larger limit, met ~350 calls into a run
+paced at one call every 6.5 s. The inspection now takes 150 URLs a day.
+`HttpStatus` is 0 on every URL, crawled or not. Copilot citations are not
+in the API.

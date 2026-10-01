@@ -82,8 +82,8 @@ account, JSON over HTTPS), run by `.github/workflows/bing.yml`:
 | Script | When | Writes | Replaces |
 |---|---|---|---|
 | `fetch.mjs` | daily 06:30 UTC | `bing_site_daily`, `bing_stats` (query / page / query×page for the 30 most-seen pages), `bing_crawl_daily` | the Search Performance screen, read by hand |
-| `inspect.mjs` | Mondays 05:30 | `bing_url_status` — every sitemap URL: last crawl, HTTP status, discovery | the 12-URL URL-Inspection sample |
-| `submit.mjs` | Mondays, after inspect | `bing_submissions`; sends never-crawled and crawled-before-the-change URLs, ≤ 100, inside the API's quota, never twice in 14 days | the pasted batches of 09-23 → 10-01 |
+| `inspect.mjs` | daily 06:45 | `bing_url_status` — 150 sitemap URLs a day, the ones checked longest ago: last crawl, discovery (the API refuses past ~350 calls, so the sitemap turns over every three days) | the 12-URL URL-Inspection sample |
+| `submit.mjs` | Mondays 07:30 | `bing_submissions`; sends never-crawled and crawled-before-the-change URLs, ≤ 100, inside the API's quota, never twice in 14 days, only on a status read in the last four days | the pasted batches of 09-23 → 10-01 (themselves recorded in the table, so the cooldown counts them) |
 | `report.mjs` | Mondays 07:15 | the weekly Bing mail | the hand-written Bing half of the weekly SEO read |
 
 What each lever above reads from it:

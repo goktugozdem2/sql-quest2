@@ -12,8 +12,10 @@
 //   - send a URL again within COOLDOWN_DAYS (a URL Bing still has not crawled
 //     after a submission is not helped by a second one the next week);
 //   - send more than MAX_PER_RUN, or more than the quota the API reports;
-//   - run on a bing_url_status older than FRESH_DAYS — it would re-send URLs
-//     Bing crawled since. Run scripts/bing/inspect.mjs first.
+//   - send a URL whose own status row is older than STATUS_MAX_AGE_DAYS — Bing
+//     may have crawled it since — or run at all on a table that does not
+//     cover the sitemap. The inspector turns the sitemap over every three
+//     days (150 URLs a day), so on a Monday every row is that fresh.
 // IndexNow (the push after every deploy) stays the signal for a page that
 // just changed; this is the sweep for what IndexNow did not get crawled.
 
@@ -24,7 +26,7 @@ import { SITEMAP_URL, parseSitemapEntries, classify } from './inspect.mjs';
 
 export const COOLDOWN_DAYS = 14;
 export const MAX_PER_RUN = 100;
-export const FRESH_DAYS = 3;
+export const STATUS_MAX_AGE_DAYS = 4;
 
 /** How many URLs this run may send: the smaller of the API's two quotas and our own cap. */
 export function allowance(quota, cap = MAX_PER_RUN) {
@@ -39,10 +41,13 @@ export function allowance(quota, cap = MAX_PER_RUN) {
  * each with its reason. `status` is { url → bing_url_status row },
  * `lastSubmitted` is { url → ISO time of the latest submission }.
  */
-export function pickSubmissions({ entries, status = {}, lastSubmitted = {}, now = new Date(), cooldownDays = COOLDOWN_DAYS, limit = MAX_PER_RUN } = {}) {
+export function pickSubmissions({ entries, status = {}, lastSubmitted = {}, now = new Date(), cooldownDays = COOLDOWN_DAYS, maxAgeDays = STATUS_MAX_AGE_DAYS, limit = MAX_PER_RUN } = {}) {
   const cutoff = now.getTime() - cooldownDays * 86400000;
+  const freshSince = now.getTime() - maxAgeDays * 86400000;
   const rank = { never: 0, stale: 1 };
   return entries
+    // Only a URL we looked at recently: "never crawled" read a week ago is not a fact today.
+    .filter(e => status[e.url] && Date.parse(status[e.url].checked_at) >= freshSince)
     .map(e => ({ url: e.url, reason: classify(status[e.url], e.lastmod) }))
     .filter(x => x.reason in rank)
     .filter(x => !(lastSubmitted[x.url] && Date.parse(lastSubmitted[x.url]) > cutoff))
@@ -62,10 +67,10 @@ export async function run({ argv = process.argv.slice(2), env = process.env, fet
 
   const rows = await restAll('bing_url_status?select=*', db);
   const status = Object.fromEntries(rows.map(r => [r.url, r]));
-  const known = entries.filter(e => status[e.url]);
-  const newest = known.reduce((t, e) => Math.max(t, Date.parse(status[e.url].checked_at) || 0), 0);
-  if (known.length < entries.length * 0.9 || newest < now.getTime() - FRESH_DAYS * 86400000) {
-    throw new Error(`bing_url_status covers ${known.length} of ${entries.length} sitemap URLs, newest check ${newest ? new Date(newest).toISOString().slice(0, 10) : 'never'} — run scripts/bing/inspect.mjs first`);
+  const freshSince = now.getTime() - STATUS_MAX_AGE_DAYS * 86400000;
+  const fresh = entries.filter(e => status[e.url] && Date.parse(status[e.url].checked_at) >= freshSince);
+  if (fresh.length < entries.length * 0.9) {
+    throw new Error(`bing_url_status has a check from the last ${STATUS_MAX_AGE_DAYS} days for ${fresh.length} of ${entries.length} sitemap URLs — run scripts/bing/inspect.mjs first`);
   }
 
   const lastSubmitted = {};

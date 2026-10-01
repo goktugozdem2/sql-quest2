@@ -5,8 +5,9 @@ import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import { bingCall, parseBingDate, readKey, BING_SITE, BING_API } from '../scripts/bing/api.mjs';
 import { toStatRecord, toSiteRecord, toCrawlRecord, dedupe, topPages, run as runFetch } from '../scripts/bing/fetch.mjs';
-import { parseSitemapEntries, pickBatch, toUrlStatus, classify, summarize, renderReport } from '../scripts/bing/inspect.mjs';
-import { allowance, pickSubmissions, run as runSubmit, COOLDOWN_DAYS, MAX_PER_RUN } from '../scripts/bing/submit.mjs';
+import { parseSitemapEntries, pickBatch, toUrlStatus, classify, summarize, renderReport, run as runInspect, DAILY_LIMIT, MIN_INTERVAL_MS, CONCURRENCY } from '../scripts/bing/inspect.mjs';
+import { allowance, pickSubmissions, run as runSubmit, COOLDOWN_DAYS, MAX_PER_RUN, STATUS_MAX_AGE_DAYS } from '../scripts/bing/submit.mjs';
+import { parseSubmissionLog } from '../scripts/bing/seed-submissions.mjs';
 import { weeks, aggregate, buildReport, renderMarkdown, DOOR } from '../scripts/bing/report.mjs';
 
 const KEY = 'abcdef0123456789abcdef0123456789';
@@ -92,10 +93,11 @@ describe('the client', () => {
   });
 });
 
+const realSetTimeout = globalThis.setTimeout;
+const fast = async (fn) => { globalThis.setTimeout = (f) => realSetTimeout(f, 0); try { return await fn(); } finally { globalThis.setTimeout = realSetTimeout; } };
+const throttle = () => res(400, { ErrorCode: 16, Message: 'ERROR!!! ThrottleHost' });
+
 describe('the throttle', () => {
-  const real = globalThis.setTimeout;
-  const fast = async (fn) => { globalThis.setTimeout = (f) => real(f, 0); try { return await fn(); } finally { globalThis.setTimeout = real; } };
-  const throttle = () => res(400, { ErrorCode: 16, Message: 'ERROR!!! ThrottleHost' });
 
   it('Bing throttles with a 400, and that one 400 is waited out', async () => {
     let calls = 0;
@@ -116,13 +118,51 @@ describe('the throttle', () => {
     expect(other.throttled).toBe(false);
   });
 
-  it('the inspector stays under ten calls a minute, and its job has the time for the whole sitemap', async () => {
-    const m = await import('../scripts/bing/inspect.mjs');
-    expect(m.CONCURRENCY).toBe(1);
-    expect(60000 / m.MIN_INTERVAL_MS).toBeLessThan(10);
+  it('the inspector stays under ten calls a minute and takes a daily slice that never nears the larger limit', () => {
+    expect(CONCURRENCY).toBe(1);
+    expect(60000 / MIN_INTERVAL_MS).toBeLessThan(10);
+    // ~350 calls in a run met the second limit on 2026-10-01; a slice stays well under it …
+    expect(DAILY_LIMIT).toBeLessThanOrEqual(200);
+    // … and still turns a 600-URL sitemap over inside the submitter's freshness window.
+    expect(Math.ceil(600 / DAILY_LIMIT)).toBeLessThanOrEqual(STATUS_MAX_AGE_DAYS);
     const wf = read('../.github/workflows/bing.yml');
-    const minutes = Number(/inspect:[\s\S]*?timeout-minutes: (\d+)/.exec(wf)[1]);
-    expect(minutes * 60000).toBeGreaterThan(600 * m.MIN_INTERVAL_MS);   // room for a 600-URL sitemap
+    const minutes = Number(/\n {2}inspect:[\s\S]*?timeout-minutes: (\d+)/.exec(wf)[1]);
+    expect(minutes * 60000).toBeGreaterThan(DAILY_LIMIT * MIN_INTERVAL_MS * 1.5);
+  });
+
+  it('a throttle that outlasts the waits ends the inspection cleanly: what was read is kept, the rest waits', async () => {
+    const urls = ['a', 'b', 'c', 'd', 'e'].map(x => `https://sqlquest.app/${x}/`);
+    const sitemap = `<urlset>${urls.map(u => `<url><loc>${u}</loc></url>`).join('')}</urlset>`;
+    const written = [];
+    let infoCalls = 0;
+    const fetchImpl = async (u, o = {}) => {
+      const url = new URL(u);
+      if (url.pathname === '/sitemap.xml') return res(200, sitemap);
+      if (url.hostname === 'ssl.bing.com') return (++infoCalls <= 3 ? res(200, { d: { LastCrawledDate: '/Date(1790553600000)/', HttpStatus: 0 } }) : throttle());
+      if (o.method === 'POST') { written.push(...JSON.parse(o.body)); return res(201, ''); }
+      return res(200, written);
+    };
+    const logs = [];
+    const out = await fast(() => runInspect({ argv: [], env: { BING_WMT_KEY: KEY, SUPABASE_URL: 'https://x.supabase.co', SUPABASE_SERVICE_ROLE_KEY: 'sb_secret_x' }, fetchImpl, log: (m) => logs.push(m), pace: 0 }));
+    expect(out).toMatchObject({ inspected: 3, throttled: true });
+    expect(written.map(r => r.url)).toEqual(urls.slice(0, 3));
+    expect(logs).toContain('stopped early: throttled after 3 of 5 — the rest go first in the next run');
+    // any other refusal is still an error
+    const bad = async (u) => (new URL(u).pathname === '/sitemap.xml' ? res(200, sitemap) : new URL(u).hostname === 'ssl.bing.com' ? res(400, { ErrorCode: 3, Message: 'ERROR!!! InvalidApiKey' }) : res(200, []));
+    await expect(runInspect({ argv: [], env: { BING_WMT_KEY: KEY, SUPABASE_URL: 'https://x.supabase.co', SUPABASE_SERVICE_ROLE_KEY: 'sb_secret_x' }, fetchImpl: bad, log: () => {}, pace: 0 })).rejects.toThrow(/InvalidApiKey/);
+  });
+
+  it('a run inspects the daily slice unless told otherwise', async () => {
+    const urls = Array.from({ length: DAILY_LIMIT + 30 }, (_, i) => `https://sqlquest.app/p${String(i).padStart(3, '0')}/`);
+    const sitemap = `<urlset>${urls.map(u => `<url><loc>${u}</loc></url>`).join('')}</urlset>`;
+    const mk = () => { let n = 0; return { count: () => n, fetchImpl: async (u) => (new URL(u).pathname === '/sitemap.xml' ? res(200, sitemap) : (n++, res(200, { d: null }))) }; };
+    const env = { BING_WMT_KEY: KEY };
+    const daily = mk(); await runInspect({ argv: ['--dry-run'], env, fetchImpl: daily.fetchImpl, log: () => {}, pace: 0 });
+    expect(daily.count()).toBe(DAILY_LIMIT);
+    const all = mk(); await runInspect({ argv: ['--dry-run', '--all'], env, fetchImpl: all.fetchImpl, log: () => {}, pace: 0 });
+    expect(all.count()).toBe(urls.length);
+    const few = mk(); await runInspect({ argv: ['--dry-run', '--limit', '7'], env, fetchImpl: few.fetchImpl, log: () => {}, pace: 0 });
+    expect(few.count()).toBe(7);
   });
 });
 
@@ -267,7 +307,16 @@ describe('submit', () => {
     ]);
     expect(COOLDOWN_DAYS).toBe(14);
     const later = new Date('2026-10-16T06:00:00Z');
-    expect(pickSubmissions({ entries, status, lastSubmitted, now: later }).map(p => p.url)).toContain('https://sqlquest.app/just-sent/');
+    const recheck = Object.fromEntries(Object.entries(status).map(([u, r]) => [u, { ...r, checked_at: later.toISOString() }]));
+    expect(pickSubmissions({ entries, status: recheck, lastSubmitted, now: later }).map(p => p.url)).toContain('https://sqlquest.app/just-sent/');
+  });
+
+  it('a URL whose own status row is old is not sent: "never crawled" read a week ago is not a fact today', () => {
+    const old = { ...status, 'https://sqlquest.app/never/': { last_crawled: null, checked_at: '2026-09-28T06:00:00Z' } };
+    expect(pickSubmissions({ entries, status: old, lastSubmitted, now }).map(p => p.url)).toEqual(['https://sqlquest.app/stale/']);
+    expect(STATUS_MAX_AGE_DAYS).toBe(4);
+    const missing = Object.fromEntries(Object.entries(status).filter(([u]) => u !== 'https://sqlquest.app/stale/'));
+    expect(pickSubmissions({ entries, status: missing, lastSubmitted, now }).map(p => p.url)).toEqual(['https://sqlquest.app/never/']);
   });
 
   it('the limit cuts the list from the bottom, and zero sends nothing', () => {
@@ -321,9 +370,9 @@ describe('submit', () => {
 
   it('refuses to run on a URL status that is old or does not cover the sitemap', async () => {
     const old = world({ statusRows: rows.map(r => ({ ...r, checked_at: '2026-09-20T00:00:00Z' })) });
-    await expect(runSubmit({ argv: [], env, fetchImpl: old.fetchImpl, log: () => {}, now })).rejects.toThrow(/run scripts\/bing\/inspect\.mjs first/);
+    await expect(runSubmit({ argv: [], env, fetchImpl: old.fetchImpl, log: () => {}, now })).rejects.toThrow(/from the last 4 days for 0 of 5 sitemap URLs — run scripts\/bing\/inspect\.mjs first/);
     const thin = world({ statusRows: rows.slice(0, 2) });
-    await expect(runSubmit({ argv: [], env, fetchImpl: thin.fetchImpl, log: () => {}, now })).rejects.toThrow(/covers 2 of 5/);
+    await expect(runSubmit({ argv: [], env, fetchImpl: thin.fetchImpl, log: () => {}, now })).rejects.toThrow(/for 2 of 5/);
     expect(old.seen.calls).toEqual([]);
   });
 });
@@ -376,17 +425,36 @@ describe('the workflow, the migration and the key', () => {
   const wf = read('../.github/workflows/bing.yml');
   const sql = read('../supabase/migrations/20261001100000_bing_tables.sql');
 
-  it('fetch daily, inspect + submit and the report on Mondays, every job runnable by hand', () => {
-    expect(wf).toContain("cron: '30 6 * * *'");
-    expect(wf).toContain("cron: '30 5 * * 1'");
-    expect(wf).toContain("cron: '15 7 * * 1'");
-    expect(wf).toContain('options: [verify, fetch, inspect, submit-dry-run, submit, report]');
-    for (const s of ['verify', 'fetch', 'inspect', 'submit', 'report']) expect(wf).toContain(`scripts/bing/${s}.mjs`);
+  const job = (name) => { const at = wf.indexOf(`\n  ${name}:\n`); const next = wf.slice(at + 1).search(/\n {2}[a-z-]+:\n/); return wf.slice(at, next === -1 ? wf.length : at + 1 + next); };
+
+  it('fetch and a slice of the inspection daily, the report and the submission on Mondays, every job runnable by hand', () => {
+    expect(job('fetch')).toContain("github.event.schedule == '30 6 * * *'");
+    expect(job('inspect')).toContain("github.event.schedule == '45 6 * * *'");
+    expect(job('report')).toContain("github.event.schedule == '15 7 * * 1'");
+    expect(job('submit')).toContain("github.event.schedule == '30 7 * * 1'");
+    for (const c of ['30 6 * * *', '45 6 * * *', '15 7 * * 1', '30 7 * * 1']) expect(wf).toContain(`- cron: '${c}'`);
+    expect(wf).toContain('options: [verify, fetch, inspect, submit-dry-run, submit, report, seed-submissions]');
+    for (const s of ['verify', 'fetch', 'inspect', 'submit', 'report', 'seed-submissions']) expect(job(s)).toContain(`scripts/bing/${s}.mjs`);
   });
 
-  it('submission runs after the inspection in the same job, and a hand-started dry run sends nothing', () => {
-    expect(wf.indexOf('scripts/bing/inspect.mjs')).toBeLessThan(wf.indexOf('scripts/bing/submit.mjs'));
-    expect(wf).toContain("inputs.job == 'submit-dry-run' && '--dry-run'");
+  it('submission is its own Monday job, and a hand-started dry run sends nothing', () => {
+    expect(job('inspect')).not.toContain('submit.mjs');
+    expect(job('submit')).toContain("node scripts/bing/submit.mjs ${{ inputs.job == 'submit-dry-run' && '--dry-run' || '' }}");
+    expect(job('seed-submissions')).toContain("inputs.job == 'seed-submissions'");
+    expect(job('seed-submissions')).not.toContain('schedule');
+    expect(job('seed-submissions')).not.toContain('BING_WMT_KEY');
+  });
+
+  it('the hand submissions are read from the log: one row per URL and day, dated, marked by_hand', () => {
+    const rows = parseSubmissionLog("# log\nhttps://sqlquest.app/before-any-date/\n## 2026-09-23 (2, 'Success')\nhttps://sqlquest.app/a/\nhttps://sqlquest.app/b/\nnot a url\n## 2026-10-01 (2)\nhttps://sqlquest.app/a/\nhttps://sqlquest.app/a/\nhttps://example.com/x/\n");
+    expect(rows).toEqual([
+      { url: 'https://sqlquest.app/a/', submitted_at: '2026-09-23T12:00:00.000Z', reason: 'by_hand' },
+      { url: 'https://sqlquest.app/b/', submitted_at: '2026-09-23T12:00:00.000Z', reason: 'by_hand' },
+      { url: 'https://sqlquest.app/a/', submitted_at: '2026-10-01T12:00:00.000Z', reason: 'by_hand' },
+    ]);
+    const real = parseSubmissionLog(read('../docs/reads/bing-url-submissions.txt'));
+    expect(real.length).toBeGreaterThanOrEqual(416);
+    expect(new Set(real.map(r => r.submitted_at.slice(0, 10)))).toEqual(new Set(['2026-09-23', '2026-09-24', '2026-09-29', '2026-09-30', '2026-10-01']));
   });
 
   it('the key stays in the environment: never echoed, never written to a file', () => {
@@ -411,7 +479,8 @@ describe('the workflow, the migration and the key', () => {
   });
 
   it('a failed run opens (or comments on) an issue with the Bing hint', () => {
-    expect((wf.match(/if: failure\(\) \|\| cancelled\(\)/g) || []).length).toBe(3);
+    expect((wf.match(/if: failure\(\) \|\| cancelled\(\)/g) || []).length).toBe(4);
+    for (const t of ['Bing fetch failed', 'Bing inspect failed', 'Bing submit failed', 'Bing weekly report failed']) expect(wf).toContain(`notify-failure.sh "${t}" "$RUN_URL" "$FAILURE_HINT"`);
     expect(wf).toMatch(/notify-failure\.sh "Bing fetch failed" "\$RUN_URL" "\$FAILURE_HINT"/);
     expect(read('../scripts/gsc/notify-failure.sh')).toContain('hint="${3:-');
   });

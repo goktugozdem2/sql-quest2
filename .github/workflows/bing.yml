@@ -1,9 +1,11 @@
 # Bing Webmaster Tools → Supabase (scripts/bing/).
 #   daily   06:30 UTC  fetch    search + crawl statistics → bing_site_daily, bing_stats, bing_crawl_daily
-#   Mondays 05:30 UTC  inspect  GetUrlInfo for every sitemap URL → bing_url_status,
-#                      then submit: the never-crawled / crawled-before-the-change
-#                      URLs, inside the quota → SubmitUrlBatch, logged in bing_submissions
+#   daily   06:45 UTC  inspect  GetUrlInfo for the 150 sitemap URLs checked longest ago
+#                      → bing_url_status (the API refuses past ~350 calls; the
+#                      sitemap turns over every three days)
 #   Mondays 07:15 UTC  report   the weekly Bing report, mailed
+#   Mondays 07:30 UTC  submit   the never-crawled / crawled-before-the-change URLs,
+#                      inside the quota → SubmitUrlBatch, logged in bing_submissions
 #
 # Secrets (repo → Settings → Secrets and variables → Actions):
 #   BING_WMT_KEY               Webmaster Tools → Settings → API access → API key
@@ -20,14 +22,15 @@ name: Bing
 on:
   schedule:
     - cron: '30 6 * * *'
-    - cron: '30 5 * * 1'
+    - cron: '45 6 * * *'
     - cron: '15 7 * * 1'
+    - cron: '30 7 * * 1'
   workflow_dispatch:
     inputs:
       job:
         description: 'Which job'
         type: choice
-        options: [verify, fetch, inspect, submit-dry-run, submit, report]
+        options: [verify, fetch, inspect, submit-dry-run, submit, report, seed-submissions]
         default: verify
 
 permissions:
@@ -86,10 +89,10 @@ jobs:
         run: bash scripts/gsc/notify-failure.sh "Bing fetch failed" "$RUN_URL" "$FAILURE_HINT"
 
   inspect:
-    if: github.event_name == 'workflow_dispatch' && contains(fromJSON('["inspect","submit","submit-dry-run"]'), inputs.job) || github.event.schedule == '30 5 * * 1'
+    if: github.event_name == 'workflow_dispatch' && inputs.job == 'inspect' || github.event.schedule == '45 6 * * *'
     runs-on: ubuntu-latest
-    # GetUrlInfo allows ~10 calls a minute: 415 URLs are ~45 minutes.
-    timeout-minutes: 90
+    # 150 URLs a day, one GetUrlInfo every 6.5 s: ~17 minutes.
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -101,17 +104,39 @@ jobs:
           BING_WMT_KEY: ${{ secrets.BING_WMT_KEY }}
           EVENT: ${{ github.event_name }}
         run: bash scripts/bing/configured.sh
-      - name: Inspect sitemap URLs
+      - name: Inspect the sitemap URLs checked longest ago
         if: steps.cfg.outputs.on == 'true'
         env:
           BING_WMT_KEY: ${{ secrets.BING_WMT_KEY }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: node scripts/bing/inspect.mjs
-      # Submission follows the inspection in the same job: it refuses to run
-      # on a URL status older than three days. A hand-started "inspect" stops here.
+      - name: Report the failure as an issue
+        if: failure() || cancelled()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: bash scripts/gsc/notify-failure.sh "Bing inspect failed" "$RUN_URL" "$FAILURE_HINT"
+
+  submit:
+    if: github.event_name == 'workflow_dispatch' && contains(fromJSON('["submit","submit-dry-run"]'), inputs.job) || github.event.schedule == '30 7 * * 1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Is the key configured?
+        id: cfg
+        env:
+          BING_WMT_KEY: ${{ secrets.BING_WMT_KEY }}
+          EVENT: ${{ github.event_name }}
+        run: bash scripts/bing/configured.sh
+      # Reads bing_url_status; it refuses to run unless the daily inspections
+      # have covered the sitemap within the last four days.
       - name: Submit what Bing has not crawled
-        if: steps.cfg.outputs.on == 'true' && (github.event_name == 'schedule' || inputs.job != 'inspect')
+        if: steps.cfg.outputs.on == 'true'
         env:
           BING_WMT_KEY: ${{ secrets.BING_WMT_KEY }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -122,7 +147,24 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        run: bash scripts/gsc/notify-failure.sh "Bing inspect / submit failed" "$RUN_URL" "$FAILURE_HINT"
+        run: bash scripts/gsc/notify-failure.sh "Bing submit failed" "$RUN_URL" "$FAILURE_HINT"
+
+  # One-off, by hand: the batches pasted into the URL Submission dialog before
+  # this pipeline existed, so the submitter's cooldown knows about them.
+  seed-submissions:
+    if: github.event_name == 'workflow_dispatch' && inputs.job == 'seed-submissions'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Record the hand submissions
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scripts/bing/seed-submissions.mjs
 
   report:
     if: github.event_name == 'workflow_dispatch' && inputs.job == 'report' || github.event.schedule == '15 7 * * 1'
