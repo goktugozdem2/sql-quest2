@@ -144,6 +144,15 @@ const ordinal = (n: number) => {
   return n + (s[(v - 20) % 10] || s[v] || s[0])
 }
 
+// The offer, in one sentence, with NO price in it (2026-10-01). The price a
+// reader meets is decided when the modal opens — India sees $9 / $39, the
+// rest $29 / $99 — and most of this list is in India, so a number here
+// would be wrong for most of the people reading it. What is the same for
+// everyone is the trial (flag `checkoutTrial`, on 2026-10-01).
+// tests/activated-note.test.js reads the flag: if the trial is switched
+// off, this sentence fails the build until it is rewritten.
+const OFFER_LINE = 'It starts with 7 days free: a card is required, nothing is charged today, and cancelling before day 7 costs nothing.'
+
 // Three subject lines, chosen by username so a batch never reads as one
 // mailing and the same person always gets the same one (idempotent dry runs).
 const SUBJECTS = [
@@ -181,7 +190,7 @@ function renderBody(args: { username: string; solves: number; weakest: string | 
       <p style="font-size: 15px; line-height: 1.8;">${radar} ${target}</p>
       <p style="font-size: 15px; line-height: 1.8;">
         Pro is the interview run before the interview: the Hard set, the timed mocks, and a tutor that stays with you through the session.
-        $99 a year, or $29 a month, with a 7-day refund if it does not move your prep.
+        ${OFFER_LINE}
       </p>
       <div style="text-align: center; margin: 28px 0;">
         <a href="${cta}" style="display: inline-block; padding: 12px 32px; background: linear-gradient(135deg, #7c3aed, #db2777); color: white; text-decoration: none; border-radius: 8px; font-weight: 700;">

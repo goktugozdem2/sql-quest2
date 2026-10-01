@@ -44,7 +44,22 @@ describe('activated-note: the second ask, in the founder voice', () => {
   it('never claims an unlimited tutor or a lifetime plan', () => {
     expect(fn).not.toMatch(/unlimited/i);
     expect(fn).not.toMatch(/\$199|lifetime/i);
-    expect(fn).toContain('$99 a year, or $29 a month');
+  });
+
+  // 2026-10-01: the body said "$99 a year, or $29 a month" to a list that is
+  // mostly in India, where the modal shows $9 / $39. No price in the email;
+  // the offer it states is the trial, and only while the trial is on.
+  it('states no price, and offers the trial exactly when the flag does', () => {
+    const body = fn.slice(fn.indexOf('const OFFER_LINE'));
+    expect(body).not.toMatch(/\$\s?\d/);
+    const flags = fs.readFileSync(join(ROOT, 'src/data/feature-flags.js'), 'utf8');
+    const trialOn = /^\s+checkoutTrial: true,/m.test(flags) && /^\s+checkoutSessions: true,/m.test(flags);
+    const saysTrial = /7 days free/.test(fn);
+    expect(saysTrial, 'the email offers the trial if and only if checkoutTrial is on').toBe(trialOn);
+    if (trialOn) {
+      expect(fn).toContain("const OFFER_LINE = 'It starts with 7 days free: a card is required, nothing is charged today, and cancelling before day 7 costs nothing.'");
+      expect(fn).toContain('${OFFER_LINE}');
+    }
   });
 
   it('the CTA opens the Pro modal in the app, and the app honours it once, never for Pro accounts', () => {
