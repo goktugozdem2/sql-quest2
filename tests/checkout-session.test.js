@@ -257,6 +257,28 @@ describe('launchCheckout wiring', () => {
   const fn = app.slice(app.indexOf('const launchCheckout = (plan, email, opts = {}) => {'));
   const body = fn.slice(0, fn.indexOf('\n  };\n'));
 
+  // 2026-10-01, the first paying session buyer: a double click, then Back
+  // from Stripe, and the second request's stale timeout sent him to the
+  // Payment Link.
+  it('one checkout at a time: a second click inside the window is dropped before anything is counted or sent', async () => {
+    const { checkoutInFlight, CHECKOUT_REENTRY_MS } = await import('../src/utils/checkout-session.js');
+    const t0 = 1_790_000_000_000;
+    expect(checkoutInFlight(0, t0)).toBe(false);
+    expect(checkoutInFlight(undefined, t0)).toBe(false);
+    expect(checkoutInFlight(t0, t0 + 1700)).toBe(true);            // the double click
+    expect(checkoutInFlight(t0, t0 + CHECKOUT_REENTRY_MS)).toBe(false);
+    expect(checkoutInFlight(t0 + 5000, t0)).toBe(false);           // a clock that went backwards never locks the button
+    expect(CHECKOUT_REENTRY_MS).toBeGreaterThan(8000);             // longer than the request's own timeout
+    const guard = body.indexOf('if (checkoutInFlight(checkoutStartedAtRef.current)) return;');
+    expect(guard, 'the re-entry guard').toBeGreaterThan(-1);
+    expect(guard).toBeLessThan(body.indexOf("trackActivationEvent('pro_checkout_clicked'"));
+    expect(guard).toBeLessThan(body.indexOf('launchWithFallback('));
+    // the Payment Link fallback re-enters and must not be stopped by it
+    expect(body.slice(0, guard)).toContain('if (!opts.linkFallback) {');
+    // a page restored from the back/forward cache starts clean
+    expect(body).toMatch(/addEventListener\('pageshow', \(\) => \{ checkoutStartedAtRef\.current = 0; \}/);
+  });
+
   it('sessions on, trial off', () => {
     expect(flags).toMatch(/^\s+checkoutSessions: true,/m);
     expect(flags).toMatch(/^\s+checkoutTrial: false,/m);

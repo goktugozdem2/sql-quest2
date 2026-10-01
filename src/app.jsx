@@ -44,7 +44,7 @@ import { PLACEMENT_TIERS, placementResult, placementEventPayload, readFirstRunPl
 import { QUESTIONS as READINESS_QUESTIONS, READINESS_SKILLS, READINESS_RECORD_KEY, companySkillWeights, scoreReadiness, summarizeScores, weakestSkills, readinessRecordFrom, readReadinessRecord } from './data/readiness-questions.js';
 import { paidWallFor, isColdStart, practiceSolves } from './utils/paid-wall.js';
 import { priceRegionFor, planPrices, checkoutLinkFor } from './utils/regional-price.js';
-import { wantsTrial, buildCheckoutSessionBody, requestCheckoutSession, launchWithFallback } from './utils/checkout-session.js';
+import { wantsTrial, buildCheckoutSessionBody, requestCheckoutSession, launchWithFallback, checkoutInFlight } from './utils/checkout-session.js';
 import { companySetGate, companySetFreeIds, companySetProgress, quietAskDecision, deadlineOfferFor, deadlineEventMeta, withEarlyWall, pickProMockId, FREE_MOCK_ID, quotaGate, FREE_SOLVE_QUOTA } from './utils/free-tier-boundary.js';
 import { expandStageChallenges, placementStartIndex as roadmapPlacementStartIndex } from './utils/roadmap.js';
 import { shouldEmitLockEvent, lockEventKey } from './utils/lock-events.js';
@@ -7066,7 +7066,16 @@ function SQLQuest() {
   // block window.open silently, killing checkout with no error. The
   // ?payment=success redirect is built for a same-tab round trip; the
   // purchase-user stash survives navigation.
+  const checkoutStartedAtRef = useRef(0);
   const launchCheckout = (plan, email, opts = {}) => {
+    // One checkout at a time: a second click while the first is opening is
+    // dropped, not counted and not sent (checkoutInFlight has the story). A
+    // page restored from the back/forward cache starts clean.
+    if (!opts.linkFallback) {
+      if (checkoutInFlight(checkoutStartedAtRef.current)) return;
+      checkoutStartedAtRef.current = Date.now();
+      try { window.addEventListener('pageshow', () => { checkoutStartedAtRef.current = 0; }, { once: true }); } catch (_) { /* ignore */ }
+    }
     // Stash the purchasing identity: the payment-link redirect lands in
     // the checkout tab as a FRESH app load, and guest sessions don't
     // survive reloads — without this the buyer returns as a different

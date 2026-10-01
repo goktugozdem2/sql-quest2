@@ -110,6 +110,33 @@ describe('stripe-webhook: access comes back off', () => {
     expect(at).toBeGreaterThan(guard);
   });
 
+  // 2026-10-01: the first buyer through a Checkout Session had his card
+  // refused three times before it went through, and this branch mailed him
+  // "Your Pro renewal charge didn't go through" three times while he typed.
+  it('a card declined at checkout is recorded and nothing else: no email, no revoke', () => {
+    const b = branch('invoice.payment_failed');
+    const gate = b.indexOf('if (invoice.billing_reason === "subscription_create")');
+    expect(gate, 'the first-invoice gate').toBeGreaterThan(-1);
+    const out = b.indexOf('return new Response("Checkout decline recorded"', gate);
+    expect(out).toBeGreaterThan(gate);
+    const inside = b.slice(gate, out);
+    expect(inside).toContain('logProEvent("pro_payment_failed"');
+    expect(inside).toContain('at_checkout: true');
+    expect(inside).toContain('metadata?.username');
+    expect(inside).not.toMatch(/api\.resend\.com|revokeProAccess|email_events/);
+    // everything that mails or revokes comes after the gate has returned
+    expect(b.indexOf('api.resend.com')).toBeGreaterThan(out);
+    expect(b.indexOf('revokeProAccess')).toBeGreaterThan(out);
+  });
+
+  it('one dunning email per invoice: the dedupe asks email_events, not a LIKE on jsonb', () => {
+    const b = branch('invoice.payment_failed');
+    expect(b).toMatch(/from\("email_events"\)[\s\S]{0,160}\.eq\("template", "payment_failed"\)[\s\S]{0,80}\.filter\("meta->>invoice_id", "eq", invoice\.id\)/);
+    expect(b).not.toContain('.like("metadata"');
+    expect(b.indexOf('alreadyEmailed')).toBeLessThan(b.indexOf('api.resend.com'));
+    expect(b).toContain('if (!alreadyEmailed && toEmail && RESEND_API_KEY)');
+  });
+
   it('an unpaid subscription revokes; past_due only records', () => {
     const b = branch('customer.subscription.updated');
     expect(b).toContain('statusChanged');

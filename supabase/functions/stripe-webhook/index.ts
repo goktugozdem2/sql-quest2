@@ -523,21 +523,54 @@ serve(async (req) => {
       const customerId = invoice.customer as string;
       const willRetry = !!invoice.next_payment_attempt;
 
-      const { data: users } = await supabase
-        .from("users")
-        .select("*")
-        .filter("data->>stripeCustomerId", "eq", customerId);
-      const userRecord = users && users.length > 0 ? users[0] : null;
+      // A failed FIRST invoice is a card declined on the checkout page, not
+      // dunning. The buyer is still looking at Stripe's own "your card was
+      // declined" and usually tries again within the minute. The first time
+      // this branch ever fired (2026-10-01) it was exactly that: a buyer in
+      // India whose card was refused three times before it went through, and
+      // who got THREE "Your Pro renewal charge didn't go through … Stripe has
+      // stopped retrying" emails while typing. So: record the decline — it is
+      // the one measurement of card friction at checkout — and do nothing
+      // else. No email, and above all no revoke: this invoice never paid for
+      // any access the person may already hold.
+      if (invoice.billing_reason === "subscription_create") {
+        // The customer is minutes old, so no user row carries its id yet;
+        // create-checkout-session wrote the username on the subscription.
+        const inv = invoice as unknown as {
+          subscription_details?: { metadata?: Record<string, string> };
+          lines?: { data?: Array<{ metadata?: Record<string, string> }> };
+        };
+        const checkoutUser = inv.subscription_details?.metadata?.username
+          || inv.lines?.data?.[0]?.metadata?.username
+          || (await findUserByCustomer(customerId))?.username
+          || null;
+        await logProEvent("pro_payment_failed", checkoutUser, "stripe_webhook", {
+          invoice_id: invoice.id,
+          attempt_count: invoice.attempt_count ?? null,
+          amount_due_cents: invoice.amount_due ?? null,
+          will_retry: willRetry,
+          next_attempt_unix: invoice.next_payment_attempt ?? null,
+          billing_reason: invoice.billing_reason,
+          at_checkout: true,
+        });
+        console.log(`\uD83D\uDCB3 card declined at checkout (invoice ${invoice.id}) — recorded, no email`);
+        return new Response("Checkout decline recorded", { status: 200 });
+      }
+
+      const userRecord = await findUserByCustomer(customerId);
 
       // One email per invoice, but a pro_events row per ATTEMPT. Stripe
       // fires this event on every retry (attempt 1, 2, 3…); the attempt
-      // trail is signal, a nag email per retry is not. Dedupe key: has any
-      // prior pro_payment_failed row carried this invoice id?
+      // trail is signal, a nag email per retry is not. Dedupe key: has a
+      // payment_failed email already been logged for this invoice id?
+      // (Until 2026-10-01 this asked pro_events with `.like` on a jsonb
+      // column, which PostgREST refuses — the answer was always "no", and
+      // one invoice was mailed twice 32 seconds apart.)
       const { data: prior } = await supabase
-        .from("pro_events")
+        .from("email_events")
         .select("id")
-        .eq("event", "pro_payment_failed")
-        .like("metadata", `%${invoice.id}%`)
+        .eq("template", "payment_failed")
+        .filter("meta->>invoice_id", "eq", invoice.id)
         .limit(1);
       const alreadyEmailed = !!(prior && prior.length > 0);
 

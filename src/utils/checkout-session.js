@@ -106,6 +106,21 @@ export function buildCheckoutSessionBody({ plan, username, email, trial, promo, 
   return body;
 }
 
+// A second plan click while the first is still opening checkout is ignored.
+// Found 2026-10-01 on the first paying session buyer: nothing visible happens
+// for the 2–5 s a cold function takes, he clicked twice, the first request
+// took him to Stripe, and the SECOND one's 8 s timer was still armed in the
+// page he left. When he pressed Back the browser restored that page, the
+// timer fired, and the "timeout" fallback threw him onto the Payment Link —
+// a second, different Stripe page he had not asked for.
+export const CHECKOUT_REENTRY_MS = 12000;
+
+/** True while a plan click made at `startedAt` (ms) is still opening checkout. */
+export function checkoutInFlight(startedAt, now = Date.now(), windowMs = CHECKOUT_REENTRY_MS) {
+  const t = Number(startedAt);
+  return Number.isFinite(t) && t > 0 && now - t >= 0 && now - t < windowMs;
+}
+
 /**
  * POST the body to the edge function and resolve to the Stripe URL.
  * Rejects — never resolves to something unusable — on a non-2xx, a body
