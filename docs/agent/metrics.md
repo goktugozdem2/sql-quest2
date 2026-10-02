@@ -2928,6 +2928,15 @@ value is new in the `content_lock_reached` series on the flip date; never
 add it to `preview_dialog` / `company_modal` / `company_set` when comparing
 lock reach across it.
 
+From 2026-10-02 the wall's modal offers a free road back under the plans:
+`quota_wall_free_path {to: 'daily' | 'coach', used, quota}`, with the modal
+closed as `modal_dismissed {via: 'free_path_daily' | 'free_path_coach'}`.
+Read it as: of people at the wall, the share who take it, and of those the
+share with any event the next day. Before 2026-10-02 a returning guest
+could pass the wall through a `/app/?challenge=` link (fixed in 00581d44);
+solves past the tenth by non-Pro people in 09-26 → 10-02 (3 people, 26
+solves) are that leak, not a hole in the definition.
+
 `wall` value table addendum:
 
 | `wall` | meaning |

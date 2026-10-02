@@ -535,6 +535,35 @@ of the verifier and must never be rounded to `FLAT`.
   (founder moved it from 10-06). It changes only `reason='milestone_solves'`
   for people with a date inside 45 days; this claim reads `wall='free_quota'`
   and `reason='free_quota'`, never the modal total.
+- **Flipped 2026-09-25 22:41 UTC** (founder's Go, with five other flags in
+  one commit — docs/agent/flag-queue.md), not 09-21 as planned above.
+- **Interim rule for 2026-10-09, written 2026-10-02 before that data**
+  (founder: "yap"). What the first week showed (Friday read,
+  docs/reads/weekly-funnel-2026-10-02.md): 56 people met the wall, 10 of
+  them clicked a plan (18%, past the 10% target), 1 paid; solves fell 1,675
+  → 693 a week and three quarters of the fall is the wall itself (solves
+  past the tenth: 798 → 29); of 46 people who met it two or more days
+  before, 7 came back. The leg after the click changed under it — Checkout
+  Sessions in USD from 09-30, the 7-day trial from 10-01, two checkout bugs
+  fixed 10-01 — so the purchase leg of this claim has had two days, not a
+  week. **The rule:** count people who met the wall between 2026-09-26 and
+  2026-10-09 and then started a trial (`pro_trial_started`) or paid
+  (`pro_purchase_completed`, `stripe_webhook`). **≥ 3 → the quota stays as
+  it is to the 10-12 read. < 3 → the quota moves to 20** (the founder's Go
+  is asked on 10-09 with the count in hand; it is a money flag). Nothing
+  else about the free tier changes before 10-09.
+- **The wall leaked until 2026-10-02** (commit 00581d44): a `?challenge=`
+  link opened the challenge before a returning guest's record had loaded,
+  so the quota read zero. Three non-Pro people solved 26 challenges past
+  their tenth between 09-26 and 10-02. The wall's numbers before the fix
+  are therefore slightly low on reach, and its cost slightly understated.
+- **Added 2026-10-02: the free road back.** The wall's modal now shows,
+  under the plans, "Or keep practising free today: Today's daily challenge ·
+  Lessons and your Coach plan" (`quota_wall_free_path {to}`). Read with the
+  10-09 rule: of people who meet the wall, the share who take it, and the
+  share who come back the next day — against the 7 of 46 before. It must
+  not lower clicks at the wall; if clicks per person at the wall fall below
+  10% with the road back on, the road back goes, not the wall.
 - **Verdict** _pending_
 
 ### the sixth-solve ask waits for the celebration (founder's item 1, live 2026-09-12)
