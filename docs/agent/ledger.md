@@ -572,6 +572,11 @@ of the verifier and must never be rounded to `FLAT`.
   reading the status back from Stripe** — a sentence in an email is not a
   cancellation. Not a payer, not a renewal: this row must not be counted in
   either when the refund lands (`pro_refunded`).
+  **Closed 2026-10-02 06:12 UTC:** the founder refunded the US$29 in full;
+  the webhook logged `pro_refunded {full, revoked, subscription_cancelled}`
+  and `pro_subscription_cancelled {ended}`, the user row reads Pro off, and
+  Stripe's subscription page — read back, not assumed — says Cancelled,
+  Ended, payment Refunded, no upcoming invoice.
 - **Measurement debt, owned here:** `customer.subscription.deleted` writes
   no `pro_events` row, and a scheduled cancel (`cancel_at_period_end`) is
   invisible to us until it takes effect. Next intentional deploy of
