@@ -83,7 +83,9 @@ of the verifier and must never be rounded to `FLAT`.
   customer portal; founder: "ikisini de yap"). The payment-update link was
   NOT changed: Stripe's dialog says the move from "a mix of both (Legacy)"
   to a Stripe-hosted page "cannot be reversed", which the founder had not
-  been told — it waits for a yes that names that.
+  been told — it waits for a yes that names that. **Confirmed by the founder and switched
+  on 2026-10-02** ("geri alınamaz olanı da onayla"): the legacy option is
+  gone, every customer email now links to Stripe's own page.
 - **Confounds** not randomised: everyone eligible sees it from 10-01. The
   quota wall (09-26), the P1 flags (09-30) and the hero CTA test (10-04)
   move who reaches the modal; read the funnel per click, not per visitor.
@@ -558,6 +560,18 @@ of the verifier and must never be rounded to `FLAT`.
   active and bills $29 on 10-01** for a subscription he most likely tried to
   cancel in his first days. Founder action before 10-01: a Gmail draft is
   ready, not sent.
+- **2026-10-02 — the charge happened.** On 09-15 jeromezhao was told in
+  writing "I've now cancelled it on Stripe myself. There will be no charge
+  on October 1 or after." No cancellation was ever placed: on 10-02 the
+  subscription read **Active, next invoice 2 Nov**, and at 23:06 UTC on
+  10-01 Stripe charged US$29 (`pro_renewal_completed`). He had not opened
+  the app since 09-16. Owed: a full refund (the founder's click — a full
+  refund makes the webhook revoke Pro and cancel the subscription), a check
+  on Stripe's own page that it reads Canceled, and the apology (drafted in
+  the thread). The rule this writes: **"cancelled" is said only after
+  reading the status back from Stripe** — a sentence in an email is not a
+  cancellation. Not a payer, not a renewal: this row must not be counted in
+  either when the refund lands (`pro_refunded`).
 - **Measurement debt, owned here:** `customer.subscription.deleted` writes
   no `pro_events` row, and a scheduled cancel (`cancel_at_period_end`) is
   invisible to us until it takes effect. Next intentional deploy of
