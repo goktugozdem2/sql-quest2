@@ -99,6 +99,41 @@ describe('stripe-webhook: access comes back off', () => {
     expect(b.indexOf('stripe.subscriptions.cancel')).toBeGreaterThan(guard);
   });
 
+  // 2026-10-02: a trial collects the card without a charge, so a 3D Secure
+  // failure there never reached invoice.payment_failed.
+  it('a card that fails setup (3D Secure on a trial) is recorded and nothing else, matched three ways, never thrown', () => {
+    const b = branch('setup_intent.setup_failed');
+    expect(b).toContain('logProEvent("pro_card_setup_failed"');
+    expect(b).toContain('three_d_secure: err.code === "setup_intent_authentication_failure"');
+    expect(b).toContain('return new Response("Card setup failure recorded", { status: 200 })');
+    // matched by the SetupIntent's metadata, then the customer id, then the customer's email
+    const meta = b.indexOf('.username || null');
+    const byCustomer = b.indexOf('findUserByCustomer(customerId)');
+    const byEmail = b.indexOf('stripe.customers.retrieve(customerId)');
+    expect(meta).toBeGreaterThan(-1);
+    expect(byCustomer).toBeGreaterThan(meta);
+    expect(byEmail).toBeGreaterThan(byCustomer);
+    expect(b).toMatch(/matched_by: matchedBy/);
+    // the Stripe read is guarded: a failure there still writes the row
+    expect(b.slice(b.indexOf('try {', byCustomer), b.indexOf('logProEvent("pro_card_setup_failed"'))).toMatch(/catch \(_\)/);
+    // nothing that mails, revokes or changes access
+    expect(b).not.toMatch(/api\.resend\.com|revokeProAccess|proStatus|proExpiry|\.update\(/);
+    // the header names the event the endpoint must subscribe to
+    expect(src.slice(0, src.indexOf('import '))).toContain('setup_intent.setup_failed');
+  });
+
+  it('an expired session says whether it offered the trial, from the session\u2019s own metadata', () => {
+    const b = branch('checkout.session.expired');
+    expect(b).toContain('const meta = (session.metadata || {}) as Record<string, string>;');
+    expect(b).toContain('source: meta.source || null,');
+    expect(b).toContain('trial: meta.source ? meta.trial === "true" : null,');
+    expect(b).toContain('region: meta.region || null,');
+    // the server writes exactly those keys on every session it creates
+    const create = fs.readFileSync(join(ROOT, 'supabase/functions/create-checkout-session/index.ts'), 'utf8');
+    const md = create.slice(create.indexOf('const metadata = {'), create.indexOf('};', create.indexOf('const metadata = {')));
+    for (const k of ['username,', 'region: chosen.region,', 'trial: trial ? "true" : "false",', 'source: "checkout_session",']) expect(md).toContain(k);
+  });
+
   it('a failed payment revokes only once Stripe has stopped retrying', () => {
     const b = branch('invoice.payment_failed');
     expect(b).toContain('if (!willRetry && userRecord)');

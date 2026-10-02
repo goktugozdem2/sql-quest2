@@ -3024,6 +3024,17 @@ by `aid` / username, internal accounts excluded:
    `pro_purchase_completed {after_trial: true}` (the money), and the share
    with `pro_trial_cancelled`.
 
+Where a trial click goes when it does not become a trial (from 2026-10-02):
+`pro_card_setup_failed` (`reason='stripe_webhook'`; `code`, `decline_code`,
+`three_d_secure`, `matched_by` metadata | customer | email | null — join an
+unmatched row to the `pro_checkout_clicked {trial: true}` before it by time)
+is a card Stripe could not set up, 3D Secure included; `pro_checkout_expired`
+now carries `trial` (true / false for a server-created session, null for a
+Payment Link) and `region`, so an abandoned trial is told apart from an
+abandoned purchase. Click → trial started + setup failed + expired should
+account for nearly every trial click after a day; the gap is people still
+inside the 24-hour session.
+
 `pro_trial_started` is never a purchase and never counts toward payers;
 `pro_purchase_completed/stripe_webhook` stays the only money truth, and a
 trial's row arrives there on day 7. A failed first attempt is

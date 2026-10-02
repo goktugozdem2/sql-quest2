@@ -2,8 +2,9 @@
 // Deploy: supabase functions deploy stripe-webhook --no-verify-jwt
 // Stripe endpoint events (dashboard → Developers → Webhooks): checkout.session.completed,
 // invoice.payment_succeeded, invoice.payment_failed, customer.subscription.deleted,
-// checkout.session.expired, customer.subscription.updated, and since
-// 2026-09-20 charge.refunded. An event the endpoint does not subscribe to is
+// checkout.session.expired, customer.subscription.updated, since
+// 2026-09-20 charge.refunded, and since 2026-10-02 setup_intent.setup_failed
+// (a card that failed 3D Secure on a trial). An event the endpoint does not subscribe to is
 // an event this file never sees — adding a branch here is half the change.
 //
 // Trials (2026-09-26, with create-checkout-session): a card-required 7-day
@@ -665,6 +666,54 @@ serve(async (req) => {
       return new Response("Payment failure recorded", { status: 200 });
     }
 
+    // A card that could not be set up — on a trial, the card is collected and
+    // authenticated without a charge, so a 3D Secure failure there never
+    // produces an invoice and never reached invoice.payment_failed. That is
+    // the gap this closes (2026-10-02): the one buyer we watched at checkout
+    // failed 3D Secure three times, and on a trial we would not have seen it.
+    //
+    // Recorded and nothing else: no email (the person is still on Stripe's
+    // page, which says what went wrong), no access change. The Stripe
+    // documentation does not say what a Checkout trial's SetupIntent carries,
+    // so every field is read defensively and the person is matched three
+    // ways — the SetupIntent's own metadata, the customer id on a user row,
+    // the customer's email — and the row is written even when none matches;
+    // the read joins it to the `pro_checkout_clicked {trial: true}` before it.
+    // The Stripe endpoint must subscribe to setup_intent.setup_failed.
+    if (event.type === "setup_intent.setup_failed") {
+      const si = event.data.object as Stripe.SetupIntent;
+      const err = (si.last_setup_error || {}) as { code?: string; decline_code?: string; type?: string };
+      const customerId = typeof si.customer === "string" ? si.customer : (si.customer as { id?: string } | null)?.id || null;
+      let username: string | null = ((si.metadata || {}) as Record<string, string>).username || null;
+      let matchedBy: string | null = username ? "metadata" : null;
+      if (!username && customerId) {
+        const byCustomer = await findUserByCustomer(customerId);
+        if (byCustomer) { username = byCustomer.username; matchedBy = "customer"; }
+      }
+      if (!username && customerId) {
+        try {
+          const customer = await stripe.customers.retrieve(customerId);
+          const email = (customer as { email?: string | null }).email?.toLowerCase() || null;
+          if (email) {
+            const { data: byEmail } = await supabase.from("users").select("username").eq("email", email).limit(1);
+            if (byEmail && byEmail.length > 0) { username = byEmail[0].username; matchedBy = "email"; }
+          }
+        } catch (_) { /* the row is still worth writing */ }
+      }
+      await logProEvent("pro_card_setup_failed", username, "stripe_webhook", {
+        setup_intent_id: si.id,
+        code: err.code || null,
+        decline_code: err.decline_code || null,
+        error_type: err.type || null,
+        three_d_secure: err.code === "setup_intent_authentication_failure",
+        stripe_customer_id: customerId,
+        matched_by: matchedBy,
+        created_at: si.created ? new Date(si.created * 1000).toISOString() : null,
+      });
+      console.log(`\uD83D\uDCB3 card setup failed (${err.code || "no code"}) for ${username || customerId || "unknown"} — recorded`);
+      return new Response("Card setup failure recorded", { status: 200 });
+    }
+
     // Handle an expired Checkout Session — the person opened checkout and
     // never paid; Stripe expires the session 24 hours after creation. Before
     // this handler the only trace was our own pro_checkout_returned, written
@@ -683,11 +732,20 @@ serve(async (req) => {
         planType = (PRICE_TO_PLAN[priceId] || PRODUCT_TO_PLAN[productId]
           || planFromInterval(lineItems.data[0]?.price))?.type || "unknown";
       } catch (_) { /* the row still says the session expired */ }
+      // A server-created session (create-checkout-session) carries its own
+      // metadata: whether it offered the 7-day trial, and the price region.
+      // A Payment Link session carries none, and says so (`source: null`).
+      // From 2026-10-02, so an abandoned TRIAL is told apart from an
+      // abandoned purchase (docs/agent/metrics.md, trial_funnel).
+      const meta = (session.metadata || {}) as Record<string, string>;
       await logProEvent("pro_checkout_expired", username, "stripe_webhook", {
         plan_type: planType,
         stripe_session_id: session.id,
         email_present: !!(session.customer_details?.email || session.customer_email),
         opened_at: session.created ? new Date(session.created * 1000).toISOString() : null,
+        source: meta.source || null,
+        trial: meta.source ? meta.trial === "true" : null,
+        region: meta.region || null,
       });
       console.log(`⏳ Checkout session expired for ${username || "unknown"} (${planType})`);
       return new Response("Checkout expiry recorded", { status: 200 });
