@@ -3240,3 +3240,50 @@ is `cta_pattern_mock`. "pricing_modal_open" = `pro_modal_shown`,
 `patternSlug`. Before 2026-09-25 `pro_plan_clicked` / `pro_checkout_clicked`
 carried neither `modalReason` nor `patternSlug`; read the funnel from that
 date.
+
+## `interview_cohort_funnel`
+
+The Friday table's first block (founder's frame, 2026-09-17: SQL Quest is
+interview preparation for people who are job-hunting). Added 2026-10-02 with
+the first Friday read that was written (docs/reads/weekly-funnel-2026-10-02.md).
+People by `aid`, internal accounts and the crawlers out, two windows (last 7
+days, the previous 7).
+
+**Cohort:** a person who, inside the window, has any of — `intent_captured` or
+`intake_answered` with intent `interview` / `job_ready`; an
+`intake_completed` with `hasDate=true`; a `prep_target_set`; an `app_opened`
+whose `arrivalSrc` starts `company:`.
+
+Nine rows, in order: (1) cohort people; (2) with a date (`intake_completed
+hasDate=true`, or `prep_target_set` with `daysOut`); (3) with a company named
+(`company` on any of the cohort events, or the `company:` arrival);
+(4) `interview_tab_viewed`; (5) saw the plan (`prep_readiness_shown` or
+`prep_plan_viewed`); (6) `prep_plan_item_opened`; (7) met a Pro item —
+`content_lock_reached` with `surface` interview / challenge_quota /
+challenge_set, or `pro_modal_shown` with reason milestone_solves / free_quota
+/ coach_path / coach_mock; (8) `pro_plan_clicked` or `pro_checkout_clicked`;
+(9) paid (`stripe_webhook`, joined by username). Three rates: cohort → with a
+date; with a date → opened a plan item; met a Pro item → clicked. The same
+nine rows for everyone NOT in the cohort as one comparison column.
+
+Traps (first read, 2026-10-02):
+
+- **Rows 2, 5 and 6 are 0 by construction while `onboardingIntake`,
+  `goalMeasure`, `interviewCountdown` and `interviewFirst` are off** — none of
+  `intake_*`, `prep_target_set`, `prep_readiness_shown`, `prep_plan_viewed`,
+  `prep_plan_item_opened` has ever written a row. The Interview tab's own list
+  writes `plan_item_started`, which is a different event and is not row 6.
+- **The cohort is window-bound, the person is not.** Intent is captured once;
+  a person whose `intent_captured` fell before the window sits in the
+  comparison column even though every later event of theirs carries
+  `intent: interview`. The 09-19 payer was counted outside the cohort for
+  exactly that reason.
+- The webhook's purchase row has no `aid`; a payer who used two browsers is
+  two people by `aid` and one by username. Count row 9 by username.
+- 09-30 16:48 → 20:22 UTC: ~1,340 "people" with tz `UTC`, viewport
+  `desktop:1280x720` and `landingSrc='search:google'` opened the app through
+  the topic and company pages' deep links and wrote `intent_captured
+  {source: link}`, `first_challenge_started` and `content_lock_reached`. The
+  `first_solve_10m` crawler filter requires an EMPTY `landingSrc` and does
+  not catch them; drop people whose every row is tz `UTC` and who never
+  solved (the rule docs/reads/regional-demand-2026-10-01.md used).
