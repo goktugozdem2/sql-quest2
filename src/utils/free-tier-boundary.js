@@ -253,6 +253,27 @@ export function quotaGate({ flagOn = false, isPro = false, solvedCount = 0, alre
 }
 
 /**
+ * The free road back from the quota wall (2026-10-02). The wall's own
+ * sentence already says the daily, the lessons and the Coach stay free, but
+ * the modal offered only the plans and "Maybe later": of 46 people who met
+ * it two or more days before the read, 7 ever came back. These are the two
+ * doors it now shows under the plans. The daily is left out once today's is
+ * done — a button to a finished screen is not a road back.
+ */
+export const QUOTA_FREE_PATH_COPY = Object.freeze({
+  lead: 'Or keep practising free today:',
+  daily: "Today's daily challenge",
+  coach: 'Lessons and your Coach plan',
+});
+
+export function quotaFreePaths({ dailyDone = false } = {}) {
+  const paths = [];
+  if (dailyDone !== true) paths.push({ to: 'daily', label: QUOTA_FREE_PATH_COPY.daily });
+  paths.push({ to: 'coach', label: QUOTA_FREE_PATH_COPY.coach });
+  return paths;
+}
+
+/**
  * The goal object the engine and the Coach card should read. Only the
  * interview-prep goal changes, only with the flag on; every other goal, and
  * a null, comes back untouched (same reference).

@@ -12,7 +12,7 @@ import {
   companySetOrder, companySetFreeIds, companySetGate, companySetProgress,
   quietAskDecision, deadlineOfferFor, deadlineEventMeta,
   pickProMockId, earlyWallCurriculum, withEarlyWall,
-  quotaGate, FREE_SOLVE_QUOTA,
+  quotaGate, FREE_SOLVE_QUOTA, quotaFreePaths, QUOTA_FREE_PATH_COPY,
 } from '../src/utils/free-tier-boundary.js';
 import { computeNextStep, isStepComplete, MOCK_OFFER_STEP_TYPE } from '../src/utils/coach.js';
 
@@ -246,6 +246,52 @@ describe('the free quota — ten solves, then Pro (founder, 2026-09-12, item 2)'
     const set = app.indexOf("trackLockReached('challenge_set'");
     expect(hard).toBeLessThan(set);
     expect(set).toBeLessThan(at);
+  });
+
+  // 2026-10-02: the wall says the daily, the lessons and the Coach stay
+  // free; now it also opens them. 7 of 46 people who met it came back.
+  it('the quota wall offers the free road back: the daily (until it is done) and the Coach, under the plans', () => {
+    expect(quotaFreePaths()).toEqual([
+      { to: 'daily', label: "Today's daily challenge" },
+      { to: 'coach', label: 'Lessons and your Coach plan' },
+    ]);
+    expect(quotaFreePaths({ dailyDone: true })).toEqual([{ to: 'coach', label: 'Lessons and your Coach plan' }]);
+    expect(QUOTA_FREE_PATH_COPY.lead).toBe('Or keep practising free today:');
+    // nothing on the road back mentions a price or calls a challenge free
+    expect(Object.values(QUOTA_FREE_PATH_COPY).join(' ')).not.toMatch(/\$|challenges? free|free challenges?/i);
+
+    const app = read('../src/app.jsx');
+    const at = app.indexOf('data-testid="quota-free-path"');
+    expect(at, 'the free road back is rendered').toBeGreaterThan(-1);
+    const block = app.slice(app.lastIndexOf('{proModalReason?.type', at), at + 1800);
+    expect(block).toMatch(/proModalReason\?\.type === 'free_quota' && \(/);
+    expect(block).toContain('quotaFreePaths({ dailyDone: isDailyCompleted })');
+    expect(block).toContain("trackActivationEvent('quota_wall_free_path', { to: path.to");
+    expect(block).toContain('dismissProModal(`free_path_${path.to}`)');
+    expect(block).toMatch(/if \(path\.to === 'daily'\) openDailyChallenge\(\);\s*else setActiveTab\('guide'\);/);
+    // under the plans, never above them, and never in the accent colour
+    expect(at).toBeGreaterThan(app.indexOf('data-pro-plans'));
+    expect(block.slice(0, block.indexOf('Maybe later'))).not.toContain('#FFE34D');
+  });
+
+  // 2026-10-02: a returning guest who had spent the ten free solves opened an
+  // unsolved challenge straight through any /app/?challenge= link — the
+  // resolver opened it before the guest's record had loaded. Verified in the
+  // browser before the fix (challenge 106 opened at 10/10) and after (wall).
+  it('a ?challenge= link waits for the guest record before opening, so the quota still applies', () => {
+    const app = read('../src/app.jsx');
+    const at = app.indexOf('const pendingChallengeRef = useRef(null);');
+    expect(at).toBeGreaterThan(-1);
+    const effect = app.slice(at, app.indexOf('}, [isSessionLoading, currentUser]);', at));
+    const cold = effect.indexOf('if (!currentUser) {');
+    expect(cold, 'the cold-visitor branch').toBeGreaterThan(-1);
+    const coldBranch = effect.slice(cold, effect.indexOf('return;', cold) + 7);
+    expect(coldBranch).toContain('startGuestMode();');
+    expect(coldBranch).toContain('challengeGuestStartedRef.current = true;');
+    expect(coldBranch).not.toContain('openChallenge(');
+    // the open happens only on a later run, after the cold branch has returned
+    expect(effect.indexOf('openChallenge(target)')).toBeGreaterThan(effect.indexOf('return;', cold));
+    expect(effect.indexOf('pendingChallengeRef.current = null')).toBeGreaterThan(effect.indexOf('openChallenge(target)'));
   });
 
   // 2026-09-26: with the quota spent, no surface may still call something

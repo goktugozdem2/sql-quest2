@@ -45,7 +45,7 @@ import { QUESTIONS as READINESS_QUESTIONS, READINESS_SKILLS, READINESS_RECORD_KE
 import { paidWallFor, isColdStart, practiceSolves } from './utils/paid-wall.js';
 import { priceRegionFor, planPrices, checkoutLinkFor } from './utils/regional-price.js';
 import { wantsTrial, buildCheckoutSessionBody, requestCheckoutSession, launchWithFallback, checkoutInFlight, trialOffered, TRIAL_CARD_COPY, TRIAL_TERMS } from './utils/checkout-session.js';
-import { companySetGate, companySetFreeIds, companySetProgress, quietAskDecision, deadlineOfferFor, deadlineEventMeta, withEarlyWall, pickProMockId, FREE_MOCK_ID, quotaGate, FREE_SOLVE_QUOTA } from './utils/free-tier-boundary.js';
+import { companySetGate, companySetFreeIds, companySetProgress, quietAskDecision, deadlineOfferFor, deadlineEventMeta, withEarlyWall, pickProMockId, FREE_MOCK_ID, quotaGate, FREE_SOLVE_QUOTA, quotaFreePaths, QUOTA_FREE_PATH_COPY } from './utils/free-tier-boundary.js';
 import { expandStageChallenges, placementStartIndex as roadmapPlacementStartIndex } from './utils/roadmap.js';
 import { shouldEmitLockEvent, lockEventKey } from './utils/lock-events.js';
 import { shouldAskForReview, enabledReviewPlatforms, REVIEW_ASK_REASONS } from './utils/review-ask.js';
@@ -25338,6 +25338,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
   // auth state resolves. Then the deep-link resolver effect below opens it,
   // auto-starting guest mode if the visitor has no session.
   const pendingChallengeRef = useRef(null);
+  const challengeGuestStartedRef = useRef(false);
   useEffect(() => {
     const target = pendingChallengeRef.current;
     if (!target) return;
@@ -25345,20 +25346,28 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
     // being restored is NOT a cold visitor (founder QA 2026-09-20, item 1).
     if (shouldWaitForSession({ isSessionLoading, currentUser, storage: typeof localStorage !== 'undefined' ? localStorage : null })) return;
 
-    if (currentUser) {
-      // Logged in — just navigate to the challenge.
-      setActiveTab('quests');
-      setPracticeSubTab('challenges');
-      setTimeout(() => openChallenge(target), 100);
-    } else {
-      // Cold visitor (no session). Start guest mode so they can solve
-      // immediately, then open the requested challenge instead of the
-      // first-run assessment.
-      startGuestMode();
-      setActiveTab('quests');
-      setPracticeSubTab('challenges');
-      setTimeout(() => openChallenge(target), 100);
+    if (!currentUser) {
+      // Cold visitor (no session). Start guest mode — which resumes this
+      // browser's guest if it has one — and RETURN, keeping the ref; the
+      // effect runs again when the guest's record has loaded.
+      //
+      // 2026-10-02: this used to open the challenge 100 ms after
+      // startGuestMode in the same tick, from this render's openChallenge —
+      // whose `solvedChallenges` was still the empty set of a session that
+      // had not loaded. So a returning guest who had spent the ten free
+      // solves, arriving again through any /app/?challenge= link (every
+      // question page, topic page and /sql-exercises/ card), walked past the
+      // quota wall onto an unsolved challenge. The ?interview= resolver below
+      // had the same race and was fixed the same way on 2026-09-14.
+      if (!challengeGuestStartedRef.current) {
+        challengeGuestStartedRef.current = true;
+        startGuestMode();
+      }
+      return;
     }
+    setActiveTab('quests');
+    setPracticeSubTab('challenges');
+    setTimeout(() => openChallenge(target), 100);
     pendingChallengeRef.current = null; // consume once
   }, [isSessionLoading, currentUser]);
   // ?interview=<id> deep-link resolver (parked by the mount effect, same
@@ -32256,6 +32265,41 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                   </p>
                 </div>
 
+
+                {/* The quota wall's free road back (2026-10-02). The modal
+                    already SAYS the daily, the lessons and the Coach stay
+                    free; nobody could reach them from here. Of 46 people
+                    who met this wall two or more days before, 7 came back
+                    (docs/reads/weekly-funnel-2026-10-02.md). Below the
+                    plans, never above them, and never in the accent. */}
+                {proModalReason?.type === 'free_quota' && (
+                  <div className="mb-3" data-testid="quota-free-path">
+                    <p className="text-xs text-center mb-2" style={{ color: '#8A8E99' }}>
+                      {QUOTA_FREE_PATH_COPY.lead}
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {quotaFreePaths({ dailyDone: isDailyCompleted }).map(path => (
+                        <button
+                          key={path.to}
+                          data-testid={`quota-free-path-${path.to}`}
+                          onClick={() => {
+                            trackActivationEvent('quota_wall_free_path', { to: path.to, used: proModalReason.used, quota: proModalReason.quota });
+                            dismissProModal(`free_path_${path.to}`);
+                            setCurrentChallenge(null);
+                            if (path.to === 'daily') openDailyChallenge();
+                            else setActiveTab('guide');
+                          }}
+                          className="text-sm py-2 px-3 transition-colors"
+                          style={{ background: '#1F222B', border: '1px solid #2A2E38', borderRadius: '6px', color: '#F2F0EA' }}
+                          onMouseEnter={e => { e.currentTarget.style.borderColor = '#8A8E99'; }}
+                          onMouseLeave={e => { e.currentTarget.style.borderColor = '#2A2E38'; }}
+                        >
+                          {path.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 <button
                   onClick={() => dismissProModal('button')}
