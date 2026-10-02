@@ -821,6 +821,29 @@ URLs filled, brand icon is the bolt, brand colour #FFE34D.
   never matched. A plan click is dropped while an earlier one is opening
   (`checkoutInFlight`, 12 s): a double click + Back from Stripe had fired
   the second request's stale timeout into the Payment Link.
+- **A trial's card failure is `setup_intent.setup_failed` (2026-10-02).** A
+  trial collects the card without a charge, so 3D Secure failing there never
+  reaches `invoice.payment_failed`; the webhook logs `pro_card_setup_failed
+  {code, three_d_secure, matched_by}` and nothing else, and
+  `pro_checkout_expired` carries `trial` / `region` from the session's own
+  metadata. The Stripe endpoint must subscribe to `setup_intent.setup_failed`
+  (dashboard, founder).
+
+### The free quota — the deep-link leak and the road back (2026-10-02)
+
+- A `/app/?challenge=` link used to open the challenge 100 ms after starting
+  guest mode, before a returning guest's record had loaded, so the quota read
+  zero and a guest at 10/10 walked onto an unsolved challenge (3 people, 26
+  solves, 09-26 → 10-02). The resolver now starts guest mode and returns, and
+  opens on the next run — the same fix the `?interview=` link got on 09-14.
+  Any new deep-link resolver must do the same; `tests/free-tier-boundary.test.js`
+  pins the challenge one.
+- The quota wall's modal shows, under the plans and never in the accent,
+  "Or keep practising free today" → today's daily (dropped once done) and
+  the Coach (`quotaFreePaths`, event `quota_wall_free_path`).
+- The pre-registered 10-09 rule (ledger, "the free quota"): fewer than 3
+  people who met the wall then started a trial or paid by 10-09 → the quota
+  moves to 20, with the founder's Go.
 
 ### Testing
 - **Rule (founder, 2026-09-25): a new test is proven by at least one
