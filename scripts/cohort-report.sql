@@ -20,7 +20,10 @@ with reg as (
       created_at) as signed_up
   from users
   where username not like 'guest_%'
-    and username !~* '^(test2|sqlquest|elena|fabletest|linktest|internalroutine)'
+    -- Every `test…` and `qa_…` account, not only test2: the 2026-10-02 Friday
+    -- read found test7 counted as a payer and two test accounts as signups
+    -- in the 09-14 week. Same list the weekly reads use.
+    and username !~* '^(test|qa_|sqlquest$|elena$|fabletest|linktest|internalroutine)'
 ), solves as (
   select username, count(distinct ((metadata #>> '{}')::jsonb)->>'challengeId') as n
   from pro_events where event='challenge_solved' group by username
