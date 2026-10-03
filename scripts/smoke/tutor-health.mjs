@@ -23,6 +23,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { writeResult, CLASSES } from './lib.mjs';
+import { NUDGE_HEADERS } from '../../src/utils/live-nudge.js';
 
 export const CHECK = 'tutor-health';
 export const MIN_TEXT = 20;
@@ -66,6 +67,16 @@ export function readPublicConfig({ root = process.cwd(), readFile = (p) => fs.re
   return { key: null, url: null, source: null };
 }
 
+// The browser's question, which a Node fetch never asks (2026-10-03): the
+// nudge sent `apikey`, the function's CORS list did not allow it, and the
+// browser dropped every nudge for months while this check passed. So before
+// the call, ask the preflight for exactly the headers the app sends.
+export function preflightMissing(allowHeader, requested = NUDGE_HEADERS) {
+  const allowed = String(allowHeader || '').split(',').map(h => h.trim().toLowerCase()).filter(Boolean);
+  if (allowed.includes('*')) return [];
+  return requested.filter(h => !allowed.includes(h.toLowerCase()));
+}
+
 // { ok, note?, why? } from the HTTP status and the parsed body.
 export function judge({ status, body }) {
   if (status === 429) return { ok: true, note: `HTTP 429 — the internal account's daily limit is used up (${body?.used ?? '?'}/${body?.limit ?? '?'}); the function answered, the model was not reached` };
@@ -81,6 +92,16 @@ export async function run({ env = process.env, fetchImpl = fetch, root = process
   if (!cfg.key) throw Object.assign(new Error(`no SUPABASE_ANON_KEY found in ${KEY_SOURCES.join(', ')}`), { infra: true });
   if (roleOf(cfg.key) !== 'anon') throw Object.assign(new Error(`the key in ${cfg.source} is not an anon key — refusing to send it`), { infra: true });
   if (!url) throw Object.assign(new Error('SUPABASE_URL not set and not found beside the key'), { infra: true });
+  try {
+    const pre = await fetchImpl(`${url}/functions/v1/ai-tutor`, {
+      method: 'OPTIONS',
+      headers: { origin: ORIGIN, 'access-control-request-method': 'POST', 'access-control-request-headers': NUDGE_HEADERS.join(',').toLowerCase() },
+    });
+    const missing = preflightMissing(pre.headers?.get ? pre.headers.get('access-control-allow-headers') : '');
+    if (missing.length > 0) return { ok: false, why: `CORS preflight does not allow ${missing.join(', ')} — every browser call is dropped`, status: pre.status, ms: 0, keySource: cfg.source };
+  } catch (e) {
+    return { ok: false, why: `no answer (CORS preflight): ${String(e.message || e)}`, status: 0, ms: 0, keySource: cfg.source };
+  }
   const started = Date.now();
   let res;
   try {

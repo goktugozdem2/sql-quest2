@@ -137,6 +137,39 @@ of the verifier and must never be rounded to `FLAT`.
   flip date in the read. The free mock will dominate rows — never sum.
 - **Verdict** _pending_
 
+### the live tutor nudge reaches the browser, speaks to the person, and Help's first answer stays on rung 1
+
+- **Claimed** 2026-10-03 · **Live** on push + `ai-tutor` deployed the same hour
+  · **Read** 2026-10-17 (14 days).
+- **Found** (founder asked: does the AI work, is it personal?) The nudge after
+  a wrong submit sent an `apikey` header the function's CORS list did not
+  allow: the browser dropped every one, 0 reached a person in 60 days, while
+  the smoke check (Node, no CORS) passed daily. Guests shared one rate bucket
+  per challenge (`guest_<id>`). The nudge carried no mastery or goal. And the
+  inline Help's first answer on challenge 107 wrote the aggregates and the
+  HAVING clause: its opener asked for "every fix it needs", which the model
+  read over the Socratic ladder's rung 1.
+- **Change** CORS list + client headers (`src/utils/live-nudge.js`, bound to
+  the function's list by test); the person's own id and a separate `#nudge`
+  bucket (12 a day) so a nudge never spends a guest's five hints; at most two
+  nudges per challenge open, the second only on a new diagnosis kind (~100
+  wrong submits a day against the $10 tutor budget); mastery + goal lines in
+  the nudge and a prompt that uses REPEAT / mastery / date; Help's opener and
+  fixes line on rung 1 are words only (`inlineOpenerMessage`,
+  `diagnosisFixesLine`). The smoke check now asks the CORS preflight for the
+  app's headers first. Walked in the browser: two nudges on 107, the third
+  refused by the cap, Help's first answer named every problem with no SQL and
+  opened on the REPEAT line.
+- **Metric** `tutor_nudge_reach` (new, baseline 0%); secondary `hint_to_solve`
+  (87.4%, week to 09-29 — confounded by the 09-30 P1 flags, read together).
+- **Target** ≥ 80% of people with a wrong submit see a nudge; `tutor_nudge_failed`
+  under 5% of attempts; tutor spend stays inside the $10 workspace.
+- **Falsification, stated in advance:** reach under 80% → read the
+  `tutor_nudge_failed` statuses before anything else. Spend over budget → cap
+  to one nudge per challenge. `hint_to_solve` down by more than 3 points →
+  the nudge is noise; turn it to the local (non-AI) nudge.
+- **Verdict** _pending_
+
 ### "Why not just ask ChatGPT?" — /vs-chatgpt/ and one homepage block
 
 - **Claimed** 2026-10-03 · **Live** on push · **Read** 2026-10-24 (21 days).

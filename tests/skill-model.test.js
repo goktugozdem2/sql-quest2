@@ -203,8 +203,9 @@ describe('source guards — the P1 wiring in app.jsx', () => {
     expect(app).toMatch(/STUDENT'S CURRENT QUERY \(exactly as written\)/);
     expect(app).toMatch(/MASTERY ON THIS CHALLENGE'S SKILLS/);
     expect(app).toMatch(/GOAL AND DEADLINE/);
-    // one context builder, both tutor doors (the hint chain and the inline panel)
-    expect((app.match(/buildChallengeTutorContext\(/g) || []).length).toBe(2);
+    // one context builder, three tutor doors: the hint chain, the inline panel,
+    // and (2026-10-03) the live nudge's mastery + goal lines
+    expect((app.match(/buildChallengeTutorContext\(/g) || []).length).toBe(3);
     expect(app).toMatch(/const buildChallengeTutorContext = \(message, priorMessages/);
     expect(app).toMatch(/const inlineCtx = buildChallengeTutorContext\(userMessage, inlineAiMessages\);/);
     expect(app).toMatch(/const tutorCtx = buildChallengeTutorContext\(followUpMessage, challengeAiMessages, \{ includeDiagnosis: false \}\);/);

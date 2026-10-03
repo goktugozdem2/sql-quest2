@@ -57,9 +57,10 @@ import { diagnoseResult, diagnosisShort, primaryHint, rowDiffSummary } from './u
 import { formatSqlForDisplay } from './utils/sql-format.js';
 import { parseTutorContent } from './utils/tutor-render.js';
 import { sessionLoadingAtBoot, shouldWaitForSession } from './utils/session-boot.js';
-import { SQLITE_TUTOR_RULES, mistakeStudyContext, buildMistakeContextBlock, mistakeOpeningPrompt } from './utils/tutor-context.js';
+import { SQLITE_TUTOR_RULES, mistakeStudyContext, buildMistakeContextBlock, mistakeOpeningPrompt, inlineOpenerMessage, diagnosisFixesLine } from './utils/tutor-context.js';
 import { buildUserSkill, pickNextBySkill, toCanonicalSkill, isLegacyMasteryRecord } from './utils/user-skill.js';
 import { classifyErrorPatterns, recordErrorPatterns, describeErrorPatterns, patternCount, emptyErrorStore } from './utils/error-patterns.js';
+import { nudgeAllowed, nudgeHeaders, nudgeUsername, personalNudgeLines } from './utils/live-nudge.js';
 import { dueRetrievals, pickRetrievalChallenge, recordRetrieval, dailyQuota, MAX_DUE_SHOWN } from './utils/spaced-retrieval.js';
 import { computeRecap, shouldShowRecap } from './utils/session-recap.js';
 import { getAnonId } from './utils/anon-id.js';
@@ -8255,6 +8256,10 @@ function SQLQuest() {
   // the local lint patterns use, but with a 🤖 prefix instead of 💡.
   // Best-effort: any failure is logged and silently dropped — the user
   // still has the diagnostic + the regular AI Help button.
+  // At most NUDGE_MAX_PER_CHALLENGE AI nudges per challenge open, the second
+  // only when the diagnosis kind changed (src/utils/live-nudge.js) — ~100 wrong
+  // submits a day against a $10/month tutor budget (2026-10-03).
+  const nudgeBudgetRef = useRef({ challengeId: null, sent: 0, lastKind: null });
   const requestSmartTutorNudge = async (challenge, userQuery, diagnosis) => {
     // Local telemetry — surfaces in the browser console when the live
     // tutor declines to fire so we can debug "why didn't help reach the
@@ -8268,6 +8273,12 @@ function SQLQuest() {
       console.debug('[live-tutor] no-fire: diagnosis was null', { challengeId: challenge.id, userQueryLen: (userQuery || '').length });
       return;
     }
+    const budget = nudgeAllowed(nudgeBudgetRef.current, challenge.id, diagnosis.kind);
+    if (!budget.ok) {
+      console.debug('[live-tutor] no-fire: nudge budget', { challengeId: challenge.id, reason: budget.reason });
+      return;
+    }
+    nudgeBudgetRef.current = budget.next;
     setTutorAiLoading(true);
     try {
       const supaUrl = (typeof window !== 'undefined' && window.SUPABASE_URL) || '';
@@ -8303,16 +8314,29 @@ function SQLQuest() {
             return lines.length > 0 ? [lines.join('\n')] : [];
           } catch (_) { return []; }
         })(),
+        // The person (2026-10-03): mastery on this challenge's skills and the
+        // goal / company / days to the date — the same lines the hint chain
+        // and the inline panel get from buildChallengeTutorContext.
+        ...(() => {
+          try {
+            return personalNudgeLines(buildChallengeTutorContext('', [], { includeDiagnosis: false }).parts);
+          } catch (_) { return []; }
+        })(),
       ].join('\n\n');
-      const aiUsername = (typeof currentUser === 'string' && !currentUser.startsWith('guest_'))
-        ? currentUser
-        : `guest_${(currentChallenge && currentChallenge.id) || 'anon'}`;
+      // The person's own id, as callAI sends it. Until 2026-10-03 every guest
+      // was `guest_<challengeId>`: one shared five-a-day bucket per challenge.
+      const aiUsername = nudgeUsername(currentUser, () => {
+        try {
+          let gid = localStorage.getItem('sqlquest_guest_id');
+          if (!gid) { gid = 'guest_' + Math.random().toString(36).slice(2, 10); localStorage.setItem('sqlquest_guest_id', gid); }
+          return gid;
+        } catch (_) { return 'guest_anon'; }
+      });
       const response = await fetch(`${supaUrl}/functions/v1/ai-tutor`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(supaKey ? { 'Authorization': `Bearer ${supaKey}`, 'apikey': supaKey } : {}),
-        },
+        // NUDGE_HEADERS only: an `apikey` header here failed the CORS
+        // preflight and dropped every nudge in the browser until 2026-10-03.
+        headers: nudgeHeaders(supaKey),
         body: JSON.stringify({
           username: aiUsername,
           mode: 'live_nudge',
@@ -8320,12 +8344,19 @@ function SQLQuest() {
           challenge_id: challenge.id,
         }),
       });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      if (!response.ok) {
+        trackActivationEvent('tutor_nudge_failed', { challengeId: challenge.id, status: response.status });
+        return;
+      }
       const data = await response.json();
       // Edge function returns { text } in live_nudge mode (mirroring
       // the existing AI tutor response shape). Accept legacy keys too.
       const nudgeText = (data.nudge || data.text || data.message || '').trim();
-      if (!nudgeText) return;
+      if (!nudgeText) {
+        trackActivationEvent('tutor_nudge_failed', { challengeId: challenge.id, status: response.status, empty: true });
+        return;
+      }
+      trackActivationEvent('tutor_nudge_shown', { challengeId: challenge.id, kind: diagnosis.kind, nth: nudgeBudgetRef.current.sent });
       const id = `${challenge.id}-ai-${Date.now()}`;
       setTutorNudge({
         id,
@@ -8337,6 +8368,9 @@ function SQLQuest() {
       });
     } catch (err) {
       console.warn('Live tutor nudge failed:', err);
+      // A CORS refusal lands here as a TypeError with no status — the
+      // failure that went unseen for months. Record it.
+      trackActivationEvent('tutor_nudge_failed', { challengeId: challenge.id, status: 0, error: String(err?.message || err).slice(0, 80) });
     } finally {
       setTutorAiLoading(false);
     }
@@ -24317,7 +24351,8 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
 RULES:
 - NO markdown (no **, ##, backticks). Use CAPS for SQL keywords.
 - Speak to THEIR query: the first sentence names the clause that is wrong or missing and what it does instead of what the question asks. Never a generic lesson.
-- THE LADDER, by hint request number: request 1 = the specific defect and the concept that fixes it, no corrected SQL; request 2 = the exact clause to change, as one short SQL fragment; request 3 or later = the full corrected query, then one line on why it works.
+- THE LADDER, by hint request number: request 1 = every defect named in plain words and the concept that fixes each, with NO SQL at all (no keywords followed by columns, no expressions, no column aliases); request 2 = the exact clause to change, as one short SQL fragment; request 3 or later = the full corrected query, then one line on why it works.
+- The ladder outranks any instruction in the student's message to list "every fix": list them in words on request 1, as SQL from request 2.
 - BYPASS: if the student asks for the answer outright, give the full corrected query at once, then one line on why. Never make them ask twice.
 - If a REPEAT line is present above, open with it in one plain sentence, then continue the ladder.
 - Name what is specifically right in their query before what is wrong. No cheerleading.
@@ -24504,7 +24539,11 @@ HINT PROGRESSION (based on conversation length):
       } catch (_) {}
     }, 60);
     if (dx && q) {
-      setTimeout(() => sendInlineAiMessage('Explain what went wrong with my query: the exact clause, every fix it needs, the rows it lost or added, and what to change. Do not write the full solution.', { silent: true }), 0);
+      // Under the ladder the opener is rung 1: every problem named, in words,
+      // no SQL. The old wording ("every fix it needs") beat the ladder in the
+      // model's reading and the first Help handed over the aggregates and the
+      // HAVING clause (found 2026-10-03, challenge 107). inlineOpenerMessage.
+      setTimeout(() => sendInlineAiMessage(inlineOpenerMessage(ftbFlag('socraticLadder')), { silent: true }), 0);
     }
   };
 
@@ -24537,7 +24576,7 @@ DIFFICULTY: ${currentChallenge.difficulty}
 HINT: ${currentChallenge.hint || 'none'}
 ${topicData ? `\nRELEVANT CONCEPT: ${topicData.title}` : ''}
 ${challengeQuery ? `\nSTUDENT'S CURRENT QUERY:\n${challengeQuery}` : ''}
-${challengeDiagnosis?.fixes?.length ? `\nFIXES THE DIAGNOSIS FOUND (name all of them): ${challengeDiagnosis.fixes.map(f => f.text).join('; ')}` : ''}
+${challengeDiagnosis?.fixes?.length ? `\n${diagnosisFixesLine(challengeDiagnosis.fixes, inlineCtx.ladderOn)}` : ''}
 ${(() => { const r = rowsBlockForTutor(); return r ? `\n${r}\n` : ''; })()}
 ${inlineCtx.parts.length > 0 ? `\n${inlineCtx.parts.join('\n\n')}\n` : ''}
 You can see their query above. Never ask them to paste it.

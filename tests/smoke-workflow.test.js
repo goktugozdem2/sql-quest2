@@ -19,6 +19,12 @@ const read = (rel) => fs.readFileSync(new URL(`../${rel}`, import.meta.url), 'ut
 const wf = read('.github/workflows/smoke.yml');
 const migration = read('supabase/migrations/20260929120000_ops_query_stats_daily.sql');
 const res = (status, body, text) => ({ ok: status >= 200 && status < 300, status, json: async () => body, text: async () => text ?? JSON.stringify(body), arrayBuffer: async () => Buffer.from(typeof body === 'string' ? body : ''), });
+// The tutor check asks the CORS preflight first (2026-10-03); a mock answers
+// OPTIONS with the live function's allow-list, everything else via `fn`.
+const ALLOW = 'Content-Type, Authorization, apikey, x-client-info, x-username';
+const withPreflight = (fn, allow = ALLOW) => async (u, o) => (o && o.method === 'OPTIONS'
+  ? { ok: true, status: 200, headers: { get: (k) => (k.toLowerCase() === 'access-control-allow-headers' ? allow : null) } }
+  : fn(u, o));
 
 describe('the workflow file', () => {
   it('runs daily at 07:00 UTC and by hand', () => {
@@ -379,7 +385,7 @@ describe('tutor-health: one real call to the production tutor', () => {
     const r = await tutor.run({
       env: { SUPABASE_URL: 'https://p.supabase.co/' },
       readFile: files(ANON),
-      fetchImpl: async (u, o) => { calls.push({ u, o }); return res(200, { text: 'AVG collapses the table into one group; which column splits it?', usage: { used: 1 } }); },
+      fetchImpl: withPreflight(async (u, o) => { calls.push({ u, o }); return res(200, { text: 'AVG collapses the table into one group; which column splits it?', usage: { used: 1 } }); }),
     });
     expect(calls).toHaveLength(1);
     expect(calls[0].u).toBe('https://p.supabase.co/functions/v1/ai-tutor');
@@ -398,7 +404,7 @@ describe('tutor-health: one real call to the production tutor', () => {
     expect(tutor.roleOf(tutor.anonKeyFrom(read('public/data.js')))).toBe('anon');
     expect(tutor.KEY_SOURCES[0]).toBe('public/data.js');
     let url;
-    await tutor.run({ env: {}, readFile: files(ANON), fetchImpl: async (u) => { url = u; return res(200, { text: 'x'.repeat(40) }); } });
+    await tutor.run({ env: {}, readFile: files(ANON), fetchImpl: withPreflight(async (u) => { url = u; return res(200, { text: 'x'.repeat(40) }); }) });
     expect(url).toBe('https://abc123.supabase.co/functions/v1/ai-tutor');
     let called = 0;
     const err = await tutor.run({ env: {}, readFile: files(SERVICE), fetchImpl: async () => { called++; return res(200, {}); } }).catch(e => e);
@@ -413,7 +419,7 @@ describe('tutor-health: one real call to the production tutor', () => {
   });
 
   it('an outage is a business failure — never frontend_dead, so never a rollback', async () => {
-    const down = await tutor.run({ env: {}, readFile: files(ANON), fetchImpl: async () => res(502, { error: 'AI service error', status: 400 }) });
+    const down = await tutor.run({ env: {}, readFile: files(ANON), fetchImpl: withPreflight(async () => res(502, { error: 'AI service error', status: 400 })) });
     expect(down).toMatchObject({ ok: false, status: 502 });
     const dead = await tutor.run({ env: {}, readFile: files(ANON), fetchImpl: async () => { throw new Error('fetch failed'); } });
     expect(dead).toMatchObject({ ok: false, status: 0 });
@@ -423,6 +429,15 @@ describe('tutor-health: one real call to the production tutor', () => {
     expect(src).not.toMatch(/FRONTEND_DEAD|frontend_dead'/);
     expect(classifyRun([{ check: tutor.CHECK, ok: false, class: CLASSES.BUSINESS }])).toEqual({ failed: ['tutor-health'], advisory: [], frontendDead: false, classes: ['business'] });
     expect(subjectFor(['tutor-health'])).toBe('[smoke] tutor-health failed on sqlquest.app');
+    // The browser's own refusal (2026-10-03): a preflight that does not allow
+    // a header the app sends fails the check before any model call.
+    let posted = 0;
+    const cors = await tutor.run({ env: {}, readFile: files(ANON), fetchImpl: withPreflight(async () => { posted++; return res(200, { text: 'x'.repeat(40) }); }, 'Content-Type, x-username') });
+    expect(cors).toMatchObject({ ok: false });
+    expect(cors.why).toMatch(/CORS preflight does not allow Authorization/);
+    expect(posted).toBe(0);
+    expect(tutor.preflightMissing('*')).toEqual([]);
+    expect(tutor.preflightMissing(ALLOW)).toEqual([]);
   });
 
   it('a 429 pass says so in the alert body', () => {

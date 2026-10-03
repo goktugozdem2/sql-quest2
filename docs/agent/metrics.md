@@ -940,6 +940,16 @@ from per group by arm;
 Baseline (no test, quiz for everyone), first opens 08-24 → 09-20:
 first_solve_10m 12.4%, opened a challenge within 10 minutes 54.7%.
 
+## `tutor_nudge_reach`
+
+The live tutor nudge (2026-10-03). Of people with a wrong submit
+(`challenge_error_pattern`), the share with a `tutor_nudge_shown` within 60 s
+of it; failures are `tutor_nudge_failed {status}` (0 = the browser refused or
+the network failed — the CORS class). People by aid, internal accounts out.
+Baseline: **0%** — from at least April to 2026-10-03 the browser dropped every
+nudge at the CORS preflight (`tutor_events` held one `live_nudge` row in 60
+days, the smoke check's). Server side: `ai_usage` rows ending `#nudge`.
+
 ## `bing_indexed`
 
 Bing's index coverage of the site (2026-09-23). Read by hand in Bing

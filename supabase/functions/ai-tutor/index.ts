@@ -27,6 +27,12 @@ const DAILY_LIMITS: Record<string, number> = {
   lifetime: 100,
 };
 
+// The live nudge has its own daily bucket (2026-10-03). It fires by itself
+// after a wrong submit, so it must never spend the hints a person asks for
+// (a guest has five). The client sends at most two per challenge open.
+export const NUDGE_DAILY_LIMIT = 12;
+const NUDGE_BUCKET_SUFFIX = "#nudge";
+
 // Phase-dependent max tokens — keep responses short and fast
 const PHASE_MAX_TOKENS: Record<string, number> = {
   intro: 200,
@@ -105,6 +111,7 @@ Hard rules:
 - Conversational, friendly, second-person ("Try…", "Notice that…", "You're missing…"). NOT robotic.
 - DON'T hand the answer. DON'T paste a corrected query. Point at the CONCEPT they're missing or the SPECIFIC line that's wrong.
 - If the diagnosis names a clear pattern (NULL handling, integer division, JOIN fan-out, missing GROUP BY), surface it explicitly.
+- Speak to THIS student. If a REPEAT line says they have made this mistake before, say so plainly ("third time this one has caught you"). If their mastery on the skill is low, keep the concept simple; if it is high, be brief and point at the slip. If they have an interview date or a target company, you may tie the habit to it in a few words, once — never a pep talk.
 - If their query is in Turkish (variable names, comments) or the description is Turkish, reply in Turkish. Otherwise English.
 - Plain text only. No markdown headers, no bullets, no emoji prefix (the UI adds 🤖).
 
@@ -118,7 +125,11 @@ function getCorsHeaders(reqOrigin: string | null): Record<string, string> {
     : "*";
   return {
     "Access-Control-Allow-Origin": allowedOrigin,
-    "Access-Control-Allow-Headers": "Content-Type, Authorization, x-username",
+    // `apikey` and `x-client-info` are what supabase-js and our own fetches
+    // send. Until 2026-10-03 this list lacked `apikey`, the live nudge sent
+    // it, and the browser dropped every nudge at the preflight — 0 reached a
+    // person in 60 days while the server-side smoke check (no CORS) passed.
+    "Access-Control-Allow-Headers": "Content-Type, Authorization, apikey, x-client-info, x-username",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
   };
 }
@@ -208,7 +219,10 @@ serve(async (req) => {
       }
     }
 
-    const dailyLimit = DAILY_LIMITS[planType] || DAILY_LIMITS.guest;
+    const isNudge = mode === "live_nudge";
+    const logUsername = rateLimitUsername;
+    if (isNudge) rateLimitUsername = `${rateLimitUsername}${NUDGE_BUCKET_SUFFIX}`;
+    const dailyLimit = isNudge ? NUDGE_DAILY_LIMIT : (DAILY_LIMITS[planType] || DAILY_LIMITS.guest);
 
     // --- 2. Atomic rate limit check-and-increment ---
     const today = new Date().toISOString().split("T")[0]; // "YYYY-MM-DD"
@@ -339,7 +353,7 @@ serve(async (req) => {
     supabase
       .from("tutor_events")
       .insert({
-        username: rateLimitUsername,
+        username: logUsername,
         challenge_id: challenge_id || null,
         phase: effectivePhase || null,
         question: questionText,

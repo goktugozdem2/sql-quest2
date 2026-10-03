@@ -89,3 +89,23 @@ export function mistakeOpeningPrompt(ctx) {
 **The fix** — my query with the smallest change, in a sql block.
 **The rule** — one sentence to remember.`;
 }
+
+// The inline Help panel's first, silent message after a wrong submit, and the
+// prompt line listing the diagnosis' fixes (2026-10-03). With the Socratic
+// ladder on, both stay on rung 1: every problem named in words, no SQL. The
+// old opener asked for "every fix it needs" and the fixes line said "name all
+// of them"; the model read that over the ladder and the first Help on
+// challenge 107 wrote the three aggregates and the HAVING clause.
+export function inlineOpenerMessage(ladderOn) {
+  return ladderOn
+    ? 'Explain what went wrong with my query: name every problem in it in plain words, the rows it lost or added, and the concept that fixes each. No SQL yet.'
+    : 'Explain what went wrong with my query: the exact clause, every fix it needs, the rows it lost or added, and what to change. Do not write the full solution.';
+}
+
+export function diagnosisFixesLine(fixes, ladderOn) {
+  const list = (Array.isArray(fixes) ? fixes : []).map(f => (f && f.text) || '').filter(Boolean).join('; ');
+  if (!list) return '';
+  return ladderOn
+    ? `PROBLEMS THE DIAGNOSIS FOUND (name every one in words on request 1; SQL for them only from request 2): ${list}`
+    : `FIXES THE DIAGNOSIS FOUND (name all of them): ${list}`;
+}
