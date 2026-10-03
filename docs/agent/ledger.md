@@ -137,6 +137,41 @@ of the verifier and must never be rounded to `FLAT`.
   flip date in the read. The free mock will dominate rows — never sum.
 - **Verdict** _pending_
 
+### "Why not just ask ChatGPT?" — /vs-chatgpt/ and one homepage block
+
+- **Claimed** 2026-10-03 · **Live** on push · **Read** 2026-10-24 (21 days).
+- **Change** `/vs-chatgpt/` (`scripts/build-vs-chatgpt.mjs`, rules in
+  `docs/reads/ai-chat-comparison-2026-10-03.md`): what a chat assistant does
+  better first (any dialect, your own work queries, already open), then a
+  seven-row side-by-side on the workflow the interview grades (a checked
+  answer, a result diff, a record of the weakest skill, the clock), the five
+  trap pages' "runs and returns the wrong number" queries, how to use both,
+  six FAQs. No claim about ChatGPT's features, limits, prices or error rate
+  (tested). On the homepage, one block under the comparison table with one
+  link (`data-track="home_vs_chatgpt"`), no button — still three Start free.
+  Linked from the footer, both alternatives pages, the comparison hub, the
+  ranked review, /sql-for-the-ai-era/ and llms.txt. Backlog plan
+  `landing-comparison-2026-09-21.md`, shipped the day before the hero CTA test
+  arms (2026-10-04) as that plan required.
+- **Why** the question an AI-referred visitor brings is "why not just ask
+  ChatGPT?", and nothing on the site answered it; search demand is small and
+  Bing-only ("sql query practice ai", 2 impressions, 1 click, 90 days).
+- **Metric** `seo_page_funnel` for `/vs-chatgpt/` (gsc_daily + bing_stats page
+  slices; `landing_view` on the page); guardrail `home_door`.
+- **Target** 21 days from publication: the page indexed on both engines, 100+
+  impressions across them, and 5+ people reaching the app from it
+  (`cta_vs_chatgpt_*` or arrival src `vs_chatgpt`). `home_door` stays at or
+  above 51.9%.
+- **Falsification, stated in advance:** not indexed on Bing by 10-24 → a link
+  problem, not a content problem (check in-links, submit by hand). Indexed with
+  under 100 impressions → the query is too small for a page; keep it for the
+  AI door, write no second AI-comparison page. `home_door` below 51.9% →
+  remove the homepage block first (the page stays).
+- **Confounds** the hero CTA test arms 2026-10-04 on the same homepage
+  (randomised by aid, so the split reads cleanly); the block lands the day
+  before.
+- **Verdict** _pending_
+
 ### five SQL trap pages, linked into the graph (the first pattern batch)
 
 - **Claimed** 2026-09-25 · **Live** on push · **Read** 2026-10-23 (28 days).

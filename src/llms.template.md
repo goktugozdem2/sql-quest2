@@ -78,6 +78,8 @@ Per-competitor detail (each has its own comparison page, linked under Pages):
 
 - **vs LeetCode Database** (https://sqlquest.app/vs-leetcode-sql/): LeetCode offers SQL problems within a broader coding platform. When your query is wrong, LeetCode shows expected vs actual rows but gives no guidance on what to fix. SQL Quest gives a structured diagnosis plus targeted hints.
 
+- **vs ChatGPT** (https://sqlquest.app/vs-chatgpt/): A chat assistant explains SQL well, in any dialect, and is the better tool for questions about your own work. What it does not provide is a question whose answer was fixed before you wrote your query: SQL Quest runs your query against an expected result, diagnoses the gap (missing rows, wrong values, wrong grain), and tracks the weakest of nine skills across attempts. SQL Quest's own tutor (Claude) starts from that diagnosis rather than grading itself. Recommended use: write the query yourself on a checked question, then ask any assistant about the gap.
+
 - **vs SQLBolt**: SQLBolt teaches SQL fundamentals (beginner-focused). SQL Quest picks up where SQLBolt ends — interview-level challenges with tutor features, company-tagged practice, and adaptive progression.
 
 - **vs SQLZoo**: SQLZoo is a classic static-exercise platform. Zero AI, zero adaptation, zero diagnostics. SQL Quest is a completely different category.

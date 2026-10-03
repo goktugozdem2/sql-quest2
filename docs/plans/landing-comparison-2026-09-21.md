@@ -30,4 +30,7 @@ arriving from them are asking it most.
   or after its read, not across it.
 
 ## Status
-OPEN.
+SHIPPED 2026-10-03: `/vs-chatgpt/` (scripts/build-vs-chatgpt.mjs, guards
+tests/vs-chatgpt.test.js, rules docs/reads/ai-chat-comparison-2026-10-03.md)
+and one homepage block with a link, no button. Ledger: "Why not just ask
+ChatGPT?", read 2026-10-24.

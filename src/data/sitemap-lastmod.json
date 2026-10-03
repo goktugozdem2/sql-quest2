@@ -1,10 +1,10 @@
 {
   "note": "Written by scripts/sitemap-lastmod.mjs. A page's date moves only when its built bytes change.",
-  "updated": "2026-10-02",
+  "updated": "2026-10-03",
   "pages": {
     "/": {
-      "hash": "5347e5fae785b9ed",
-      "lastmod": "2026-10-02"
+      "hash": "c55ed5ec0353fd95",
+      "lastmod": "2026-10-03"
     },
     "/turkce-sql-ogren/": {
       "hash": "568a3a22f1d6b131",
@@ -103,8 +103,8 @@
       "lastmod": "2026-09-25"
     },
     "/weekly/": {
-      "hash": "a824eb95284b078f",
-      "lastmod": "2026-10-02"
+      "hash": "66ef288dd1d7aca8",
+      "lastmod": "2026-10-03"
     },
     "/fraud-analytics-sql/": {
       "hash": "d410e55fe9e20359",
@@ -139,12 +139,12 @@
       "lastmod": "2026-09-25"
     },
     "/sql-practice-comparison/": {
-      "hash": "e6b58b9de861a0cc",
-      "lastmod": "2026-09-25"
+      "hash": "2000d8624bd6807f",
+      "lastmod": "2026-10-03"
     },
     "/best-sql-practice-sites/": {
-      "hash": "26d2a09ebbcd7792",
-      "lastmod": "2026-09-25"
+      "hash": "31cb744078ff3120",
+      "lastmod": "2026-10-03"
     },
     "/sql-interview-prep/": {
       "hash": "d2174d43a3c4f5c9",
@@ -191,8 +191,8 @@
       "lastmod": "2026-09-25"
     },
     "/sql-for-the-ai-era/": {
-      "hash": "672ec7ca62dc0c84",
-      "lastmod": "2026-09-25"
+      "hash": "4292511e70dd2db5",
+      "lastmod": "2026-10-03"
     },
     "/challenges/": {
       "hash": "9e4a0f52ed16daf9",
@@ -415,12 +415,16 @@
       "lastmod": "2026-09-14"
     },
     "/datalemur-alternatives/": {
-      "hash": "16f5d67c86999486",
-      "lastmod": "2026-09-25"
+      "hash": "5e10a34ce26d13de",
+      "lastmod": "2026-10-03"
     },
     "/stratascratch-alternatives/": {
-      "hash": "549bd27786c2e1a4",
-      "lastmod": "2026-09-25"
+      "hash": "d227eda3054e60aa",
+      "lastmod": "2026-10-03"
+    },
+    "/vs-chatgpt/": {
+      "hash": "f3eb9642449b5848",
+      "lastmod": "2026-10-03"
     },
     "/questions/": {
       "hash": "241717a96fe18e6f",

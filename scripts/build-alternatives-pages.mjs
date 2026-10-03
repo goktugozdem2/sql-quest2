@@ -166,7 +166,7 @@ const PAGES = {
   },
 };
 
-const CSS = `*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif;line-height:1.65}
+export const CSS = `*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif;line-height:1.65}
 a{color:#c084fc;text-decoration:none}a:hover{text-decoration:underline}.fd{font-family:'Space Grotesk',sans-serif}
 .nav{border-bottom:1px solid rgba(255,255,255,.06)}.ni{max-width:1100px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
 .wrap{max-width:960px;margin:0 auto;padding:36px 24px 64px}.crumb{font-size:13px;color:#8b98ab;margin-bottom:14px}.crumb a{color:#8b98ab}
@@ -280,6 +280,7 @@ ${faq.map(([q, a]) => `    <h3>${esc(q)}</h3>\n    <p>${esc(a)}</p>`).join('\n')
     <a href="/vs-${pg.subject}/">SQL Quest vs ${esc(subject.name)}</a>
     <a href="/${pg.subject === 'datalemur' ? 'stratascratch' : 'datalemur'}-alternatives/">${pg.subject === 'datalemur' ? 'StrataScratch' : 'DataLemur'} alternatives</a>
     <a href="/vs-leetcode-sql/">SQL Quest vs LeetCode SQL</a>
+    <a href="/vs-chatgpt/">SQL Quest vs ChatGPT</a>
     <a href="/best-sql-practice-sites/">Best SQL practice sites</a>
     <a href="/sql-tools/">Free SQL tools</a>
   </div>
