@@ -108,6 +108,14 @@ describe('the throttle', () => {
     expect(waits).toEqual(['Bing GetUrlInfo: throttled, waiting 20 s (1/4)', 'Bing GetUrlInfo: throttled, waiting 40 s (2/4)']);
   });
 
+  it("Bing's own passing fault (400 UnknownError) is waited out like a throttle", async () => {
+    let calls = 0;
+    const logs = [];
+    const out = await fast(() => bingCall('GetUrlInfo', { key: KEY, log: (m) => logs.push(m), fetchImpl: async () => (++calls === 1 ? res(400, { ErrorCode: 0, Message: 'ERROR!!! UnknownError' }) : res(200, { d: { IsPage: true } })) }));
+    expect(out).toEqual({ IsPage: true });
+    expect(logs).toEqual(['Bing GetUrlInfo: transient error, waiting 20 s (1/4)']);
+  });
+
   it('after the last wait it throws, marked as a throttle', async () => {
     let calls = 0;
     const err = await fast(() => bingCall('GetUrlInfo', { key: KEY, fetchImpl: async () => { calls++; return throttle(); } }).catch(e => e));

@@ -52,7 +52,10 @@ const scrub = (text, key) => String(text ?? '').split(key).join('[key]');
 // with a 429 — met 2026-10-01, 2.3 s into 415 GetUrlInfo calls at ~6 a
 // second. It is the one 400 worth waiting out.
 export const THROTTLE_WAITS_MS = [20000, 40000, 80000, 160000];
-const isThrottle = (text) => /Throttle/i.test(String(text || ''));
+// Bing also answers a passing fault on its side as a 400 — "ERROR!!!
+// UnknownError" ended the 2026-10-02 inspection after 20 seconds with nothing
+// saved. Both are waited out the same way; neither is a reason to fail a run.
+const isThrottle = (text) => /Throttle|UnknownError|InternalError/i.test(String(text || ''));
 
 /**
  * One API call; returns the unwrapped `d`. `params` go in the query string
@@ -97,7 +100,7 @@ export async function bingCall(method, { params = {}, body = null, key, env = pr
     }
     if (res.status === 400 && isThrottle(text) && throttled < throttleWaits.length) {
       const wait = throttleWaits[throttled++];
-      log(`Bing ${method}: throttled, waiting ${Math.round(wait / 1000)} s (${throttled}/${throttleWaits.length})`);
+      log(`Bing ${method}: ${/Throttle/i.test(text) ? 'throttled' : 'transient error'}, waiting ${Math.round(wait / 1000)} s (${throttled}/${throttleWaits.length})`);
       await sleep(wait);
       attempt--;
       continue;
