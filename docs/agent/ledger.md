@@ -137,6 +137,38 @@ of the verifier and must never be rounded to `FLAT`.
   flip date in the read. The free mock will dominate rows — never sum.
 - **Verdict** _pending_
 
+### First 90 Days: a hired status and five PM tickets, so Pro has a job after the interview
+
+- **Claimed** 2026-10-04 · **Live** on push, no flag (reachable only by a
+  person's own answer) · **Reads** 2026-11-04 (`ticket_completion`, 30 days)
+  and 60 days after the first payer sets the status (`post_hire_retention`).
+- **Change** `post-hire-track-2026-09-21.md` + `ticket-exercises-2026-09-21.md`,
+  first slice. Status: intent `hired` through `setUserIntent` — set by
+  "Did you get the offer?" after `?outcome=passed`, or by "Got the offer?" on
+  the Coach for interview people; "Back to interview prep" undoes it. A hired
+  person never gets the first-run quiz; the Coach opens on First 90 Days: five
+  tickets in a stakeholder's words on the neobank and card-fraud data (card
+  declines, UK spend, referral KYC, chargeback rate by risk tier — the join
+  fan-out trap — and money in dispute). Graded on the figures, not the shape
+  (`src/utils/ticket-grade.js`: tolerance, percent as fraction, ≤ 25 rows,
+  labels never values), on its own sql.js database. After a pass, a one-line
+  reply to the stakeholder, reviewed by the tutor. First ticket free, the rest
+  Pro (modal reason `post_hire`, "Pro keeps working after the offer.").
+- **Why** the 10-03 read: 19 of 21 plan choosers took monthly, and a monthly
+  payer whose interview is over cancels (sabar2001). Annual emphasis was the
+  other answer and was not built; this keeps the monthly payer instead.
+- **Metric** `ticket_completion`, `post_hire_retention` (both new, defined in
+  metrics.md); guardrail `interview_outcome` response rate.
+- **Target** ≥ 50% of unlocked ticket openers solve it; ≥ 1 locked-ticket
+  open leads to a plan click within 30 days; any hired payer still subscribed
+  60 days on.
+- **Falsification, stated in advance:** nobody sets the status in 30 days →
+  the door is wrong (the outcome note reaches too few); move the ask into the
+  Interview tab after a passed date before adding content. Openers who do not
+  solve (< 30%) → the tickets are too open; add the grain hint ("one row per
+  tier") before more tickets.
+- **Verdict** _pending_
+
 ### the live tutor nudge reaches the browser, speaks to the person, and Help's first answer stays on rung 1
 
 - **Claimed** 2026-10-03 · **Live** on push + `ai-tutor` deployed the same hour

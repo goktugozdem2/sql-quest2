@@ -34,3 +34,6 @@ nothing in the bank trains it.
 
 ## Status
 OPEN. First content of the post-hire track.
+
+## Status (2026-10-04)
+SHIPPED: five tickets in `src/data/tickets.js`, grader `src/utils/ticket-grade.js` (the tolerance rule written before the first ticket, as this plan asked), guards `tests/post-hire.test.js` (every figure recomputed from the data; the fan-out and kept-NULL answers fail).

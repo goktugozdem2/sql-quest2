@@ -47,4 +47,4 @@ flag. An empty track behind a status switch would be worse than none.
 - **Read:** 60 days after the flip.
 
 ## Status
-OPEN.
+SHIPPED 2026-10-04 (first slice, no flag — reachable only by the person's answer): status, the offer ask, the Coach card, five tickets. Ledger "First 90 Days…", metrics `ticket_completion`, `post_hire_retention`. Next: query review, refactor drills.

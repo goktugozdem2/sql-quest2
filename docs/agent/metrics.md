@@ -940,6 +940,23 @@ from per group by arm;
 Baseline (no test, quiz for everyone), first opens 08-24 → 09-20:
 first_solve_10m 12.4%, opened a challenge within 10 minutes 54.7%.
 
+## `post_hire_retention`
+
+First 90 Days (2026-10-04). Of PAYERS (stripe webhook) who set the status
+hired (`post_hire_status_set {status:'hired'}`), the share still subscribed
+60 days after setting it; compared with payers whose `prepTarget` date passed
+without the status. n is payers, so tiny: read the verbatims too.
+Baseline (2026-10-04): no payer has ever had a hired status; of the payers to
+date, one monthly payer cancelled after the interview (sabar2001, 09-23) —
+**unreadable as a rate**.
+
+## `ticket_completion`
+
+Of people who opened a ticket (`ticket_opened`, not locked), the share with
+`ticket_solved` for it; secondary: `ticket_reply_reviewed` per solve, and
+`ticket_submitted` attempts to solve. Locked opens (`locked: true`) are the
+Pro ask's own count. Baseline: none (born 2026-10-04).
+
 ## `tutor_nudge_reach`
 
 The live tutor nudge (2026-10-03). Of people with a wrong submit

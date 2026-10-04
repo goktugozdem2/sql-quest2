@@ -455,6 +455,19 @@ so a landing view and a later solve are joinable for the first time.
   read in `docs/reads/`; the test fails on a competitor price not in it.
   Re-fetch and write a new dated read before changing a price.
 
+### First 90 Days — the hired status and ticket exercises (2026-10-04)
+
+- Status `hired` is an intent goal (`src/utils/post-hire.js`), written only
+  by `setUserIntent` from the person's own answer (`?outcome=passed` offer
+  ask, the Coach's "Got the offer?"). A hired person is never a first-run
+  user; the Coach opens on the First 90 Days card.
+- Tickets (`src/data/tickets.js`) are NOT challenges: own sql.js Database per
+  dataset (`ticketDbFor`, never the shared `db`), own log
+  (`userData.ticketLog`), graded on figures (`src/utils/ticket-grade.js`).
+  Never render `reference`. Adding a ticket: write its reference query, let
+  `tests/post-hire.test.js` recompute the figures, and add a wrong answer
+  that must fail if the ticket has a trap.
+
 ### The live tutor nudge — CORS, budget, the person (2026-10-03)
 
 - Every browser call to `ai-tutor` sends only headers on the function's

@@ -33,3 +33,4 @@ smoke-battery.log
 # environment; a key file never belongs in the repo)
 sqlquest-prod-*.json
 *service-account*.json
+.tmp/

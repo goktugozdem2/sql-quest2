@@ -61,6 +61,9 @@ import { SQLITE_TUTOR_RULES, mistakeStudyContext, buildMistakeContextBlock, mist
 import { buildUserSkill, pickNextBySkill, toCanonicalSkill, isLegacyMasteryRecord } from './utils/user-skill.js';
 import { classifyErrorPatterns, recordErrorPatterns, describeErrorPatterns, patternCount, emptyErrorStore } from './utils/error-patterns.js';
 import { nudgeAllowed, nudgeHeaders, nudgeUsername, personalNudgeLines } from './utils/live-nudge.js';
+import { HIRED_INTENT, isHired, ticketLocked, shouldAskOffer } from './utils/post-hire.js';
+import { gradeTicket, ticketFeedback } from './utils/ticket-grade.js';
+import { TICKETS } from './data/tickets.js';
 import { dueRetrievals, pickRetrievalChallenge, recordRetrieval, dailyQuota, MAX_DUE_SHOWN } from './utils/spaced-retrieval.js';
 import { computeRecap, shouldShowRecap } from './utils/session-recap.js';
 import { getAnonId } from './utils/anon-id.js';
@@ -6206,6 +6209,11 @@ function SQLQuest() {
     try { const s = localStorage.getItem('sqlquest_retrieval_log'); return s ? JSON.parse(s) : {}; } catch (_) { return {}; }
   });
   const pendingRetrievalRef = useRef(null);
+  // First 90 Days (2026-10-04): { [ticketId]: { solvedAt, attempts, reply } }.
+  // Rides the autosave as userData.ticketLog, like retrievalLog.
+  const [ticketLog, setTicketLog] = useState(() => {
+    try { const s = localStorage.getItem('sqlquest_ticket_log'); return s ? JSON.parse(s) : {}; } catch (_) { return {}; }
+  });
   
   // Mock Interview state
   const [showInterviews, setShowInterviews] = useState(false);
@@ -7796,6 +7804,7 @@ function SQLQuest() {
   
   // Database state
   const [db, setDb] = useState(null);
+  const sqlCtorRef = useRef(null);
   const [dbReady, setDbReady] = useState(false);
   const [currentDataset, setCurrentDataset] = useState('titanic');
   const [customTables, setCustomTables] = useState({});
@@ -8659,7 +8668,9 @@ function SQLQuest() {
   // Keep the simplified first-run shell until the first successful solve.
   // A wrong first attempt should not "graduate" a new player into the full app
   // or trigger the legacy welcome modal.
-  const isFirstRunUser = !firstRunCompleted && solvedChallenges.size === 0;
+  // A person who said they got the job is never a first-run user: the
+  // placement quiz is interview-prep's door, not theirs (First 90 Days).
+  const isFirstRunUser = !firstRunCompleted && solvedChallenges.size === 0 && !isHired(intentRecord);
   const showFirstRunStart = isFirstRunUser && !currentChallenge && activeTab === 'guide';
   const showFirstRunSimpleShell = isFirstRunUser;
   const activeFoundationsLessonForShell = foundationsRoadmapLessonId
@@ -9409,6 +9420,7 @@ function SQLQuest() {
           lessonSkillStats: lessonSkillStats,
           errorPatterns: errorPatterns,
           retrievalLog: retrievalLog,
+          ticketLog: ticketLog,
           // (defeatedBosses + workoutStreak + lastWorkoutDate removed —
           // Boss Battle and Daily Workout systems were retired; their
           // persisted values were never read on rehydration after the
@@ -9437,7 +9449,7 @@ function SQLQuest() {
         saveUserData(currentUser, userData);
       })();
     }
-  }, [xp, solvedChallenges, unlockedAchievements, queryCount, aiLessonPhase, currentAiLesson, completedAiLessons, aiLessonCompletions, roadmapLessonCompletions, comprehensionCount, comprehensionCorrect, consecutiveCorrect, comprehensionConsecutive, completedExercises, challengeQueries, completedDailyChallenges, dailyStreak, challengeAttempts, dailyChallengeHistory, weeklyReports, weeklyReportLastSeen, weeklyDigestOptOut, earnedMilestones, coachState, userGoals, intakeRecord, goalProfile, companyAskRecord, prepTarget, goalsPromptDismissedAt, loginCalendar, speedRunHistory, explainHistory, userProStatus, proType, proExpiry, proAutoRenew, interviewHistory, challengeProgress, challengeStartDate, weaknessTracking, skillMastery, lessonSkillStats, errorPatterns, retrievalLog, dailyRewardClaimedDate]);
+  }, [xp, solvedChallenges, unlockedAchievements, queryCount, aiLessonPhase, currentAiLesson, completedAiLessons, aiLessonCompletions, roadmapLessonCompletions, comprehensionCount, comprehensionCorrect, consecutiveCorrect, comprehensionConsecutive, completedExercises, challengeQueries, completedDailyChallenges, dailyStreak, challengeAttempts, dailyChallengeHistory, weeklyReports, weeklyReportLastSeen, weeklyDigestOptOut, earnedMilestones, coachState, userGoals, intakeRecord, goalProfile, companyAskRecord, prepTarget, goalsPromptDismissedAt, loginCalendar, speedRunHistory, explainHistory, userProStatus, proType, proExpiry, proAutoRenew, interviewHistory, challengeProgress, challengeStartDate, weaknessTracking, skillMastery, lessonSkillStats, errorPatterns, retrievalLog, ticketLog, dailyRewardClaimedDate]);
 
 
   // True when the URL signals explicit content intent — user clicked a
@@ -17630,6 +17642,10 @@ CRITICAL RULES:
         setRetrievalLog(userData.retrievalLog);
         try { localStorage.setItem('sqlquest_retrieval_log', JSON.stringify(userData.retrievalLog)); } catch (_) {}
       }
+      if (userData.ticketLog && typeof userData.ticketLog === 'object') {
+        setTicketLog(userData.ticketLog);
+        try { localStorage.setItem('sqlquest_ticket_log', JSON.stringify(userData.ticketLog)); } catch (_) {}
+      }
       
       // (Boss Battle + Daily Workout hydration removed — their state hooks
       // and setters were deleted along with the retired feature code.)
@@ -21282,6 +21298,9 @@ Adapt based on this student's level — but ALWAYS stay direct and code-first:`;
   useEffect(() => {
     try { localStorage.setItem('sqlquest_retrieval_log', JSON.stringify(retrievalLog)); } catch (_) {}
   }, [retrievalLog]);
+  useEffect(() => {
+    try { localStorage.setItem('sqlquest_ticket_log', JSON.stringify(ticketLog)); } catch (_) {}
+  }, [ticketLog]);
   
   // Get skill level for a topic (for display)
   const getSkillLevel = (skillName) => {
@@ -22565,6 +22584,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     const initSQL = async () => {
       try {
         const SQL = await window.initSqlJs({ locateFile: f => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${f}` });
+        sqlCtorRef.current = SQL; // tickets get their own Database (First 90 Days)
         const database = new SQL.Database();
         setDb(database);
         loadDataset(database, 'titanic');
@@ -25894,6 +25914,242 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
         if (focusId) document.querySelector(`[data-testid="${focusId}"]`)?.focus();
       } catch (_) {}
     }, 120);
+  };
+
+  // ── First 90 Days (2026-10-04, docs/plans/post-hire-track-2026-09-21.md) ──
+  // A person who says they got the job (status 'hired', through setUserIntent)
+  // sees PM-style tickets instead of interview prep. Tickets run on their own
+  // sql.js Database per dataset — never the shared `db`, whose tables a
+  // challenge owns (neobank and fraud both have a `transactions` table).
+  // Pure halves: src/utils/post-hire.js, src/utils/ticket-grade.js,
+  // src/data/tickets.js. Guards: tests/post-hire.test.js.
+  const [activeTicketId, setActiveTicketId] = useState(null);
+  const [ticketQuery, setTicketQuery] = useState('');
+  const [ticketResult, setTicketResult] = useState(null);
+  const [ticketGrade, setTicketGrade] = useState(null);
+  const [ticketReply, setTicketReply] = useState('');
+  const [ticketReplyFeedback, setTicketReplyFeedback] = useState('');
+  const [ticketReplyLoading, setTicketReplyLoading] = useState(false);
+  const [offerAskOpen, setOfferAskOpen] = useState(false);
+  const ticketDbsRef = useRef({});
+  const hired = isHired(intentRecord);
+
+  const setHiredStatus = (source) => {
+    setUserIntent(HIRED_INTENT, source);
+    trackActivationEvent('post_hire_status_set', { status: 'hired', source });
+    setActiveTab('guide');
+  };
+  const leaveHiredStatus = () => {
+    setUserIntent('interview', 'post_hire_back');
+    trackActivationEvent('post_hire_status_set', { status: 'preparing', source: 'first90_back' });
+  };
+
+  const ticketDbFor = (dataset) => {
+    if (ticketDbsRef.current[dataset]) return ticketDbsRef.current[dataset];
+    const SQL = sqlCtorRef.current;
+    if (!SQL) return null;
+    const tdb = new SQL.Database();
+    loadDataset(tdb, dataset);
+    ticketDbsRef.current[dataset] = tdb;
+    return tdb;
+  };
+
+  const openTicket = (ticket, index) => {
+    const solved = !!ticketLog[ticket.id]?.solvedAt;
+    const locked = ticketLocked({ index, isPro, solved });
+    trackActivationEvent('ticket_opened', { ticketId: ticket.id, index, locked });
+    if (locked) {
+      setProModalReason({ type: 'post_hire', topic: ticket.title, solvedCount: solvedChallenges.size });
+      setShowProModal(true);
+      return;
+    }
+    setActiveTicketId(ticket.id);
+    setTicketQuery(ticketLog[ticket.id]?.query || '');
+    setTicketResult(null);
+    setTicketGrade(null);
+    setTicketReply(ticketLog[ticket.id]?.reply || '');
+    setTicketReplyFeedback('');
+  };
+
+  const runTicket = (submit) => {
+    const ticket = TICKETS.find(t => t.id === activeTicketId);
+    if (!ticket || !ticketQuery.trim()) return;
+    const tdb = ticketDbFor(ticket.dataset);
+    if (!tdb) { setTicketResult({ columns: [], rows: [], error: 'The database is still loading. Try again in a moment.' }); return; }
+    let res;
+    try {
+      const out = tdb.exec(ticketQuery);
+      res = out.length ? { columns: out[0].columns, rows: out[0].values, error: null } : { columns: [], rows: [], error: null };
+    } catch (err) {
+      res = { columns: [], rows: [], error: err.message };
+    }
+    setTicketResult(res);
+    if (!submit) { setTicketGrade(null); return; }
+    const g = res.error ? { passed: false, empty: true, tooManyRows: false, found: [], missing: [] } : gradeTicket(res.rows, ticket.expect);
+    setTicketGrade(res.error ? null : g);
+    const prev = ticketLog[ticket.id] || {};
+    const attempts = (prev.attempts || 0) + 1;
+    trackActivationEvent('ticket_submitted', { ticketId: ticket.id, passed: !!g.passed, found: g.found.length, missing: g.missing.length, rows: res.rows.length, error: !!res.error });
+    const next = { ...prev, attempts, query: ticketQuery.slice(0, 4000) };
+    if (g.passed && !prev.solvedAt) {
+      next.solvedAt = new Date().toISOString();
+      trackActivationEvent('ticket_solved', { ticketId: ticket.id, attempts });
+    }
+    setTicketLog(log => ({ ...log, [ticket.id]: next }));
+  };
+
+  const reviewTicketReply = async () => {
+    const ticket = TICKETS.find(t => t.id === activeTicketId);
+    const text = ticketReply.trim();
+    if (!ticket || !text || ticketReplyLoading) return;
+    setTicketReplyLoading(true);
+    setTicketLog(log => ({ ...log, [ticket.id]: { ...(log[ticket.id] || {}), reply: text.slice(0, 600) } }));
+    const rows = (ticketResult?.rows || []).slice(0, 8).map(r => r.join(' | ')).join('\n');
+    const systemPrompt = `You are a senior data analyst reviewing a junior analyst's one-line reply to a stakeholder. Be direct and kind.
+
+THE REQUEST (from ${ticket.from}): ${ticket.request}
+THE ANALYST'S RESULT (first rows, columns: ${(ticketResult?.columns || []).join(', ')}):
+${rows || '(no result yet)'}
+WHAT THEY STILL NEED TO ANSWER: ${ticket.reply}
+
+RULES:
+- 2 or 3 sentences, MAX 70 WORDS, no markdown, no headings.
+- Judge three things only: does the reply state the figure(s) correctly from the result; does it answer the question asked (a decision, not a data dump); is it plain enough for a non-analyst.
+- Then give ONE concrete rewrite of their sentence if it can be better. Never invent a figure that is not in the result.`;
+    const answer = await callAI([{ role: 'user', content: text }], systemPrompt, 'feedback');
+    setTicketReplyFeedback(answer || 'The reviewer did not answer. Try again in a moment.');
+    setTicketReplyLoading(false);
+    trackActivationEvent('ticket_reply_reviewed', { ticketId: ticket.id, words: text.split(/\s+/).length });
+  };
+
+  // `?outcome=passed` (the interview-outcome-note link) asks one question:
+  // did you get the offer? Once per browser.
+  useEffect(() => {
+    try {
+      const outcome = new URLSearchParams(window.location.search).get('outcome');
+      const alreadyAsked = localStorage.getItem('sqlquest_offer_asked') === '1';
+      if (shouldAskOffer({ outcome, intentRecord, alreadyAsked })) setOfferAskOpen(true);
+    } catch (_) {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const answerOfferAsk = (answer) => {
+    try { localStorage.setItem('sqlquest_offer_asked', '1'); } catch (_) {}
+    trackActivationEvent('offer_ask_answered', { answer });
+    setOfferAskOpen(false);
+    if (answer === 'yes') setHiredStatus('outcome_link');
+  };
+
+  const renderOfferAsk = () => !offerAskOpen ? null : (
+    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" data-testid="offer-ask">
+      <div className="w-full max-w-md p-6" style={{ background: '#16181F', border: '1px solid #2A2E38', borderRadius: '10px' }} role="dialog" aria-modal="true">
+        <p className="text-lg font-bold" style={{ color: '#F2F0EA' }}>Did you get the offer?</p>
+        <p className="text-sm mt-2" style={{ color: '#8A8E99' }}>If you did, SQL Quest switches from interview prep to your first 90 days in the job: real requests from a PM, on real data, where you decide the columns.</p>
+        <div className="flex gap-2 mt-5">
+          <button type="button" onClick={() => answerOfferAsk('yes')} className="px-4 py-2 rounded-lg text-sm font-bold" style={{ background: '#FFE34D', color: '#0E0F13' }}>Yes, I got the job</button>
+          <button type="button" onClick={() => answerOfferAsk('not_yet')} className="px-4 py-2 rounded-lg text-sm border border-gray-700 text-gray-300">Not yet</button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderFirst90Card = () => {
+    const solvedN = TICKETS.filter(t => ticketLog[t.id]?.solvedAt).length;
+    return (
+      <div className="bg-gray-900/60 rounded-xl border border-gray-700 p-4 mb-4" data-testid="first90-card">
+        <p className="text-[11px] uppercase tracking-wider text-gray-500 mb-1">First 90 Days</p>
+        <p className="text-base font-bold text-gray-100">Requests from the business, on real data</p>
+        <p className="text-xs text-gray-400 mt-1 mb-3">A ticket says what someone needs to know, not which columns to return. You pick the grain and the filters; the answer is checked on its figures. {solvedN} of {TICKETS.length} done.</p>
+        <div className="space-y-2">
+          {TICKETS.map((t, i) => {
+            const solved = !!ticketLog[t.id]?.solvedAt;
+            const locked = ticketLocked({ index: i, isPro, solved });
+            return (
+              <button key={t.id} type="button" onClick={() => openTicket(t, i)} data-testid={`ticket-row-${t.id}`}
+                className="w-full text-left flex items-center justify-between gap-3 rounded-lg border border-gray-700 px-3 py-2 hover:border-gray-500">
+                <span>
+                  <span className="block text-sm font-medium text-gray-100">{t.title}</span>
+                  <span className="block text-xs text-gray-500">{t.from} · {t.due}</span>
+                </span>
+                <span className="text-xs shrink-0" style={{ color: solved ? '#4ADE80' : '#8A8E99' }}>{solved ? 'Done' : locked ? 'Pro' : 'Open'}</span>
+              </button>
+            );
+          })}
+        </div>
+        <button type="button" onClick={leaveHiredStatus} className="mt-3 text-xs underline underline-offset-2 text-gray-500">Back to interview prep</button>
+      </div>
+    );
+  };
+
+  const renderGotTheJobLink = () => {
+    if (hired) return null;
+    const intent = getUserIntent();
+    if (!(intent === 'interview' || intent === 'job_ready' || prepTarget.date || prepTarget.company)) return null;
+    return (
+      <p className="text-xs text-gray-500 mb-4" data-testid="got-the-job">
+        Got the offer? <button type="button" onClick={() => setHiredStatus('coach_link')} className="underline underline-offset-2 text-gray-300">Switch to your first 90 days</button>
+      </p>
+    );
+  };
+
+  const renderTicketOverlay = () => {
+    const ticket = TICKETS.find(t => t.id === activeTicketId);
+    if (!ticket) return null;
+    const tables = Object.entries((publicDatasets[ticket.dataset] || {}).tables || {});
+    const res = ticketResult;
+    return (
+      <div className="fixed inset-0 bg-black/80 flex items-start justify-center z-50 p-4 overflow-y-auto" data-testid="ticket-overlay" onClick={() => setActiveTicketId(null)}>
+        <div className="w-full max-w-3xl p-5 my-6" style={{ background: '#16181F', border: '1px solid #2A2E38', borderRadius: '10px' }} onClick={e => e.stopPropagation()} role="dialog" aria-modal="true">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-[11px] uppercase tracking-wider text-gray-500">Ticket · {ticket.due}</p>
+              <p className="text-lg font-bold" style={{ color: '#F2F0EA' }}>{ticket.title}</p>
+            </div>
+            <button type="button" onClick={() => setActiveTicketId(null)} className="text-gray-500 text-sm" aria-label="Close">Close</button>
+          </div>
+          <div className="mt-3 rounded-lg border border-gray-700 p-3">
+            <p className="text-xs text-gray-500 mb-1">From {ticket.from}</p>
+            <p className="text-sm text-gray-200 leading-relaxed">{ticket.request}</p>
+          </div>
+          <details className="mt-3 text-xs text-gray-400">
+            <summary className="cursor-pointer text-gray-300">Tables</summary>
+            <ul className="mt-2 space-y-1 font-mono">
+              {tables.map(([name, t]) => <li key={name}><span className="text-gray-200">{name}</span>({t.columns.join(', ')})</li>)}
+            </ul>
+          </details>
+          <div className="mt-3">
+            <SQLEditor value={ticketQuery} onChange={setTicketQuery} placeholder="Write the query that answers the request" height="9rem" />
+          </div>
+          <div className="flex gap-2 mt-2">
+            <button type="button" onClick={() => runTicket(false)} className="px-4 py-2 rounded-lg text-sm border border-gray-700 text-gray-200">Run</button>
+            <button type="button" onClick={() => runTicket(true)} data-testid="ticket-submit" className="px-4 py-2 rounded-lg text-sm font-bold" style={{ background: '#FFE34D', color: '#0E0F13' }}>Check my answer</button>
+          </div>
+          {res && res.error && <p className="mt-3 text-sm" style={{ color: '#F87171' }}>{res.error}</p>}
+          {res && !res.error && (
+            <div className="mt-3 overflow-x-auto rounded-lg border border-gray-800">
+              <table className="text-xs w-full">
+                <thead><tr>{res.columns.map((c, i) => <th key={i} className="text-left px-2 py-1 text-gray-400 font-medium">{c}</th>)}</tr></thead>
+                <tbody>{res.rows.slice(0, 30).map((r, i) => <tr key={i} className="border-t border-gray-800">{r.map((v, j) => <td key={j} className="px-2 py-1 text-gray-200">{v === null ? 'NULL' : String(v)}</td>)}</tr>)}</tbody>
+              </table>
+              {res.rows.length > 30 && <p className="text-[11px] text-gray-500 px-2 py-1">{res.rows.length} rows; first 30 shown.</p>}
+            </div>
+          )}
+          {ticketGrade && (
+            <p className="mt-3 text-sm" data-testid="ticket-feedback" style={{ color: ticketGrade.passed ? '#4ADE80' : '#F2F0EA' }}>{ticketFeedback(ticketGrade)}</p>
+          )}
+          {ticketGrade && ticketGrade.passed && (
+            <div className="mt-4" data-testid="ticket-reply">
+              <p className="text-sm font-medium text-gray-200">{ticket.reply}</p>
+              <textarea value={ticketReply} onChange={e => setTicketReply(e.target.value)} rows={2} maxLength={600}
+                className="w-full mt-2 rounded-lg bg-transparent border border-gray-700 p-2 text-sm text-gray-100" placeholder="Write it the way you would in Slack" />
+              <button type="button" onClick={reviewTicketReply} disabled={ticketReplyLoading || !ticketReply.trim()} className="mt-2 px-4 py-2 rounded-lg text-sm border border-gray-700 text-gray-200 disabled:opacity-50">
+                {ticketReplyLoading ? 'Reading…' : 'Get feedback on my reply'}
+              </button>
+              {ticketReplyFeedback && <p className="mt-2 text-sm text-gray-300 leading-relaxed">{ticketReplyFeedback}</p>}
+            </div>
+          )}
+        </div>
+      </div>
+    );
   };
 
   if (showAuth) {
@@ -31867,6 +32123,8 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
         />
       )}
 
+      {renderTicketOverlay()}
+      {renderOfferAsk()}
       {showProModal && (
         <div
           className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
@@ -31925,6 +32183,8 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                       ? 'Two plans. Annual is the lower price per month.'
                       : proModalReason.type === 'cold_start_anyway'
                       ? 'Two plans. Annual is the lower price per month.'
+                      : proModalReason.type === 'post_hire'
+                      ? 'Pro keeps working after the offer.'
                       : ['learning', 'job_ready'].includes(getUserIntent())
                       ? 'Make SQL second nature.'
                       : 'Walk into the interview ready.'}
@@ -32016,6 +32276,17 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                       </p>
                       <p className="text-sm mt-2" style={{ color: '#8A8E99' }}>
                         Everything you've solved stays open, and the lessons, warm-ups, the daily and the Coach stay free. Pro opens the rest of the bank — all {bankCountLabel(challenges.length) || challenges.length} challenges, the Hard set and the mock interviews.
+                      </p>
+                    </div>
+                  ) : proModalReason.type === 'post_hire' ? (
+                    // First 90 Days (2026-10-04): the person said they got the
+                    // job; the first ticket was free, the rest are Pro.
+                    <div className="mt-3" data-testid="pro-modal-post-hire">
+                      <p className="font-medium" style={{ color: '#F2F0EA' }}>
+                        The work after the interview.
+                      </p>
+                      <p className="text-sm mt-2" style={{ color: '#8A8E99' }}>
+                        {proModalReason.topic ? `"${proModalReason.topic}" is` : 'This ticket is'} one of the First 90 Days requests: a stakeholder's question on real data, checked on its figures, with feedback on the reply you would send. Pro opens all of them, plus everything you used to prepare.
                       </p>
                     </div>
                   ) : proModalReason.type === 'pattern_mock' ? (
@@ -34737,7 +35008,9 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
                   is the product — the countdown card renders FIRST, above the
                   practice plan and the next-step card. One render function,
                   two mount points, never both. */}
+              {hired && renderFirst90Card()}
               {interviewFirstOn('coach_card_above') && renderInterviewPrepCard()}
+              {renderGotTheJobLink()}
               {/* Your plan (founder's list, 2026-09-14): how long you have, what
                   is weakest, what to solve today, how much a day that is. Free
                   questions only — it never names a locked one, which is what
