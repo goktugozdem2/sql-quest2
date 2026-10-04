@@ -44,4 +44,6 @@ track (`post-hire-track-2026-09-21.md`). Candidate changes, one at a time:
 
 ## Status
 Currency note SHIPPED 09-20. False subline REMOVED 09-21. Annual emphasis
-OPEN — after the 2026-10-03 `modal_click_rate` read.
+**NOT BUILT (2026-10-04)** — the 10-03 read: 19 monthly / 2 annual choosers;
+the objective counts payers. Revisit with the trial's plan mix on 10-22
+(docs/reads/home-price-story-2026-10-03.md).

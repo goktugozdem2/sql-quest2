@@ -735,7 +735,7 @@ of the verifier and must never be rounded to `FLAT`.
   the homepage on the difference, not the level. Assistant-recommended
   arrivals land here with no referrer, so a burst from Gemini or ChatGPT reads
   as homepage lift — split on `landingSrc` before crediting the copy.
-- **Verdict** _pending_
+- **Verdict** **FLAT** over 21 days to 10-03: 400 landed → opened 50.0% (51.9%) → solved one 24.3% (23.8%) → six 10.5% (10.3%), all inside ±3 → per the falsification, the homepage is not the constraint; stop rewriting it. Last week's dip is mix (Google brand landers 127 → 21). Item 15: no revert — the modal rose. Read: docs/reads/home-price-story-2026-10-03.md.
 - **Revised the same evening, on the founder's 16-item list.** Variant
   `interview_promise_v1` replaces `company_first_v1` (which lived a few
   hours): one promise in the hero ("Pass the SQL interview."), the "free
@@ -1081,7 +1081,7 @@ that needs its own path — the current rule is written down in the handler.
 - **Confounds** `freeQuota` flips 09-21 and adds `free_quota` asks — read
   `milestone_solves` only; `quietEarlyAsks` (09-29) lands inside the window's
   last four days — cut the read at 09-28 if it moves the milestone reason.
-- **Verdict** _pending_
+- **Verdict** **HIT** on clicks (milestone ask 178 shown → 14 clicked, **7.9%** vs 3.4% baseline, target 5%), **MISS** on the plan mix (19 monthly / 2 annual / 2 quarterly choosers vs "annual ≥ half"). Read 2026-10-04: docs/reads/home-price-story-2026-10-03.md. The annual-emphasis half of the backlog plan is not built.
 
 ### the second ask: one email to the activated non-payers (founder's week-2 item 8, built 2026-09-12)
 
