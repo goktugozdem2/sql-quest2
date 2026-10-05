@@ -102,6 +102,43 @@ map. Work plan: `docs/PLAN.md`. Ranked issues: `BACKLOG.md`.
 8. **Frozen pages** — `capital-one-sql-interview` until 2026-10-12 (a test
    pins its hash); no `/questions/` template change before 2026-10-27.
 
+### Cloud sessions (claude.ai/code) — what is and is not there
+A cloud session clones this repo from GitHub: it reads this file,
+`docs/PLAN.md` and `BACKLOG.md` **from `main`** (a file on an unmerged branch
+does not exist for it), and it can install, build, test, lint and open a PR.
+It does **not** have what lives on the founder's laptop:
+- **No production data.** No Supabase MCP, no linked `supabase` CLI, no
+  service-role key. Reads of `pro_events`, `users`, `gsc_daily`, `bing_*`
+  and any `supabase functions deploy` happen in a laptop session. A cloud
+  task that needs a number says so in its PR and leaves the read for the
+  laptop — never invents or estimates it.
+- **No browser.** No Chrome or preview pane: no GSC/Bing request-indexing, no
+  Stripe or Bing dashboards, no visual walk of a change. Say in the PR what
+  was not walked.
+- **No local memory, skills or hooks** (`~/.claude/…`: notes, gstack skills
+  like /ship and /review, the pre-push hook) and no laptop scheduled tasks.
+  The rules that matter are in this file; the two facts that lived only in
+  local memory are below.
+- **GitHub Actions run regardless** (CI, smoke, IndexNow, GSC/Bing
+  pipelines) — they use GitHub Secrets, not the session.
+- Follow `docs/PLAN.md`: one task, one branch, one PR, never merged without
+  the founder's go.
+
+**Two buyer facts that were only in local memory (2026-10-06):**
+- **Capital One is the sharpest buyer signal.** 2 of the first 3 payers were
+  preparing for Capital One's data-analyst screen (a ~70-minute
+  CodeSignal-style assessment on card/transaction data, as candidates report
+  it — never state it as Capital One's own). Analytics showed none of it; it
+  came from conversations. Everything Capital One (ids 275–284, the
+  `capital-one-codesignal` mock, the page, the blog guide) exists for that.
+- **AI assistants recommend us, mostly invisibly.** A payer wrote that
+  Gemini sent him "straight to" SQL Quest for analytics prep. AI chat apps
+  strip referrers, so this traffic lands on the homepage as
+  `arrivalSrc='home'`; `landingSrc` (`ai:chatgpt`, `ai:perplexity`, from
+  2026-09-06) catches some of it, Gemini never. Never read growth or decline
+  of the `home` door as brand or SEO alone. Comparison and "best SQL practice
+  sites" pages are what assistants cite.
+
 ---
 
 
