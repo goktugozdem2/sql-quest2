@@ -124,7 +124,7 @@ metrics:report`. Cohorts by signup week: `scripts/cohort-report.sql`
 ### Coach engine (source of truth: src/utils/coach.js)
 - Pure function `computeNextStep` imported into app.jsx (Coach inline mirror deleted).
 - **Step types**: lesson, challenge, drill, mastery_check, retrieval_check, placement_check.
-- **Goals** in src/data/goals.js: Fundamentals (27), Analyst Day-One (25), SQL Interview Prep (28). The goal picker just maps `window.coachGoals`, so a new goal needs no UI work.
+- **Goals** in src/data/goals.js: Fundamentals (27), Analyst Day-One (25), SQL Interview Prep (34, measured 2026-10-05). The goal picker just maps `window.coachGoals`, so a new goal needs no UI work.
 - **Authoring a goal — the two traps that already bit us:**
   1. Skill names must be the 9 canonical ones (see Skill radar above). `tests/goals-registry.test.js` enforces this against the live radar.
   2. Never put a `retrieval_check` on a lesson that only appears behind a
@@ -383,6 +383,15 @@ so a landing view and a later solve are joinable for the first time.
   on {Company}'s interview" on a general one (`practiceSentence`). Guards:
   `tests/company-sections.test.js`. Plan:
   `docs/plans/company-sourced-vs-topical-2026-09-21.md`.
+- **Cards say what a question measures, never how (founder review
+  2026-10-05).** `scripts/card-skill-blurbs.mjs` (in `npm run build`) writes
+  every company-page card's line as "Measures: <canonical skills>"; a blurb
+  naming a method (DENSE_RANK, LEFT JOIN … IS NULL, strftime) fails
+  `tests/founder-review-2026-10-05.test.js`. The topic block carries the
+  dialect sentence (`src/utils/dialect-notes.js`, also the app's "What
+  changes" table on every challenge); a `?interview=` button says Pro; the
+  homepage table has no "Free tier" row; /app's meta says interview practice.
+  Capital One gets all of it on 10-12 (plan section E).
 - **2026-10-12, first job: the Capital One page** — plan with the branches
   and the ready changes: `docs/plans/capital-one-2026-10-12.md` (competitor
   read `docs/reads/capital-one-serp-2026-09-25.md`). Nothing on the page or

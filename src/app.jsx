@@ -64,6 +64,7 @@ import { nudgeAllowed, nudgeHeaders, nudgeUsername, personalNudgeLines } from '.
 import { HIRED_INTENT, isHired, ticketLocked, shouldAskOffer } from './utils/post-hire.js';
 import { gradeTicket, ticketFeedback } from './utils/ticket-grade.js';
 import { TICKETS } from './data/tickets.js';
+import { DIALECTS, DIALECT_ROWS } from './utils/dialect-notes.js';
 import { dueRetrievals, pickRetrievalChallenge, recordRetrieval, dailyQuota, MAX_DUE_SHOWN } from './utils/spaced-retrieval.js';
 import { computeRecap, shouldShowRecap } from './utils/session-recap.js';
 import { getAnonId } from './utils/anon-id.js';
@@ -38676,6 +38677,27 @@ RULES:
                     <div className="prose prose-invert prose-sm max-w-none">
                       {renderChallengeText(displayChallenge.description)}
                     </div>
+                    {/* The engine on the day (founder review 2026-10-05): the
+                        handful of spellings that differ, one table, collapsed.
+                        Source: src/utils/dialect-notes.js (shared with the
+                        company pages). */}
+                    <details className="mt-3 text-xs text-gray-400" data-testid="dialect-notes"
+                      onToggle={e => { if (e.currentTarget.open) trackActivationEvent('dialect_notes_opened', { challengeId: displayChallenge.id }); }}>
+                      <summary className="cursor-pointer text-gray-400 hover:text-gray-200">Interview on PostgreSQL, MySQL or Snowflake? What changes</summary>
+                      <p className="mt-2 text-gray-400">Joins, GROUP BY, CTEs and window functions are written the same way everywhere. These are the spellings that differ:</p>
+                      <div className="mt-2 overflow-x-auto">
+                        <table className="text-[11px] w-full">
+                          <thead><tr><th className="text-left pr-3 py-1 text-gray-500 font-medium"></th>{DIALECTS.map(d => <th key={d} className="text-left pr-3 py-1 text-gray-500 font-medium whitespace-nowrap">{d}</th>)}</tr></thead>
+                          <tbody>{DIALECT_ROWS.map(r => (
+                            <tr key={r.what} className="border-t border-gray-800">
+                              <td className="pr-3 py-1 text-gray-300 whitespace-nowrap">{r.what}</td>
+                              {r.cells.map((c, i) => <td key={i} className="pr-3 py-1 font-mono text-gray-200 whitespace-nowrap">{c}</td>)}
+                            </tr>
+                          ))}</tbody>
+                        </table>
+                      </div>
+                      {DIALECT_ROWS.filter(r => r.note).map(r => <p key={r.what} className="mt-2 text-gray-500">{r.note}</p>)}
+                    </details>
                     
                     {/* Name + columns, not name alone. The schema sidebar below
                         is gated behind !showFirstRunSimpleShell, so a zero-solve

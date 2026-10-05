@@ -96,6 +96,25 @@ above the fold with the mock link (`/app/?interview=capital-one-codesignal&src=c
 with each other and with our sources); a year in the H1; a new page for
 "capital one codesignal" (the blog already owns it).
 
+**E. The founder's review of 2026-10-05 — applied on 10-12 whatever the
+branch** (done on every other page that day; this page was frozen):
+1. Cards: run `node scripts/card-skill-blurbs.mjs` after removing
+   `capital-one-sql-interview.html` from `FROZEN` in that script — the six
+   solution-shape blurbs ("strftime('%Y-%m', txn_at) as the month…",
+   "WITH recent AS…") become "Measures: <skills>". Also drop the intro's
+   "each blurb is the bank's own solution shape".
+2. One number. Today the page says 6 challenges, 25 tagged, 57 in the
+   Banking track (27 FDIC + 30 card ledger) and "the other nineteen". Say
+   "25 Capital One questions, 2 timed mocks" once in the hero; the track
+   numbers go.
+3. Both mock buttons say Pro: "Start the 70-minute screen mock · Pro →",
+   "Or the 60-minute live SQL round · Pro →".
+4. Re-run `node scripts/build-company-pages.mjs` (with the skip entry
+   removed) so the topic block carries the dialect sentence.
+Then delete the freeze block in tests/company-sections.test.js and the
+FROZEN entry; tests/founder-review-2026-10-05.test.js then checks this page
+like every other.
+
 ## How it is judged
 
 Ledger claim written on 10-12 with the branch taken. Metric: gsc_daily for

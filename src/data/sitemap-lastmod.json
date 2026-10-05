@@ -1,10 +1,10 @@
 {
   "note": "Written by scripts/sitemap-lastmod.mjs. A page's date moves only when its built bytes change.",
-  "updated": "2026-10-03",
+  "updated": "2026-10-05",
   "pages": {
     "/": {
-      "hash": "c55ed5ec0353fd95",
-      "lastmod": "2026-10-03"
+      "hash": "6435db1499fa0f6a",
+      "lastmod": "2026-10-05"
     },
     "/turkce-sql-ogren/": {
       "hash": "568a3a22f1d6b131",
@@ -23,76 +23,76 @@
       "lastmod": "2026-09-25"
     },
     "/meta-sql-interview/": {
-      "hash": "b1b4e888fcf03388",
-      "lastmod": "2026-09-29"
+      "hash": "bfec3c08f87cf8ec",
+      "lastmod": "2026-10-05"
     },
     "/google-sql-interview/": {
-      "hash": "318cc5bfe61d31a1",
-      "lastmod": "2026-09-29"
+      "hash": "e85bf5b80455861f",
+      "lastmod": "2026-10-05"
     },
     "/amazon-sql-interview/": {
-      "hash": "e4b446ad21710634",
-      "lastmod": "2026-09-29"
+      "hash": "c61112fef9074801",
+      "lastmod": "2026-10-05"
     },
     "/netflix-sql-interview/": {
-      "hash": "2e4449191ce1fa20",
-      "lastmod": "2026-09-29"
+      "hash": "bae520dd660e3105",
+      "lastmod": "2026-10-05"
     },
     "/stripe-sql-interview/": {
-      "hash": "bc7ffe8cc164ab51",
-      "lastmod": "2026-09-29"
+      "hash": "7bee1b491a0a2763",
+      "lastmod": "2026-10-05"
     },
     "/plaid-sql-interview/": {
-      "hash": "a9f0fce63a639394",
-      "lastmod": "2026-09-29"
+      "hash": "67fc604437844171",
+      "lastmod": "2026-10-05"
     },
     "/ramp-sql-interview/": {
-      "hash": "f6f87ebacf4624d8",
-      "lastmod": "2026-09-29"
+      "hash": "fe78d964e9aa6ffc",
+      "lastmod": "2026-10-05"
     },
     "/revolut-sql-interview/": {
-      "hash": "05b81fd6b7be25a6",
-      "lastmod": "2026-09-29"
+      "hash": "e17c6a65cb61a89f",
+      "lastmod": "2026-10-05"
     },
     "/capital-one-sql-interview/": {
       "hash": "51b3ad0230026d31",
       "lastmod": "2026-09-25"
     },
     "/wise-sql-interview/": {
-      "hash": "83329a1d2d5d18e8",
-      "lastmod": "2026-09-29"
+      "hash": "e4dcf7500ac5645c",
+      "lastmod": "2026-10-05"
     },
     "/apple-sql-interview/": {
-      "hash": "7abe101adfd7e779",
-      "lastmod": "2026-09-29"
+      "hash": "c0d190d5d437aa4c",
+      "lastmod": "2026-10-05"
     },
     "/uber-sql-interview/": {
-      "hash": "cc79b4e98cc4bf25",
-      "lastmod": "2026-09-29"
+      "hash": "d9e84b9938038181",
+      "lastmod": "2026-10-05"
     },
     "/airbnb-sql-interview/": {
-      "hash": "d544fd7a55b7932e",
-      "lastmod": "2026-09-29"
+      "hash": "29596d74d9bd6053",
+      "lastmod": "2026-10-05"
     },
     "/databricks-sql-interview/": {
-      "hash": "7e13a91eb58e3658",
-      "lastmod": "2026-09-29"
+      "hash": "a058b45a75fdfbc1",
+      "lastmod": "2026-10-05"
     },
     "/shopify-sql-interview/": {
-      "hash": "150e828e91db6286",
-      "lastmod": "2026-09-29"
+      "hash": "5e39b9dfabd02616",
+      "lastmod": "2026-10-05"
     },
     "/spotify-sql-interview/": {
-      "hash": "fa3da8044f1b8877",
-      "lastmod": "2026-09-29"
+      "hash": "60808d449b4d6bdc",
+      "lastmod": "2026-10-05"
     },
     "/jpmorgan-sql-interview/": {
-      "hash": "e764fba370322393",
-      "lastmod": "2026-09-29"
+      "hash": "faae45652270f5fe",
+      "lastmod": "2026-10-05"
     },
     "/snowflake-sql-interview/": {
-      "hash": "8e07dbb41ef56ca9",
-      "lastmod": "2026-09-29"
+      "hash": "2f2e0a7abfb39998",
+      "lastmod": "2026-10-05"
     },
     "/practice-sql-no-setup/": {
       "hash": "8cc250273a854dcb",
@@ -291,24 +291,24 @@
       "lastmod": "2026-09-14"
     },
     "/nvidia-sql-interview/": {
-      "hash": "78f322db5ccd5254",
-      "lastmod": "2026-09-29"
+      "hash": "d219ad760d100e16",
+      "lastmod": "2026-10-05"
     },
     "/openai-sql-interview/": {
-      "hash": "88155bab39833bd3",
-      "lastmod": "2026-09-29"
+      "hash": "f49dc6e9414ef172",
+      "lastmod": "2026-10-05"
     },
     "/anthropic-sql-interview/": {
-      "hash": "48ae27db7c28ab3d",
-      "lastmod": "2026-09-29"
+      "hash": "35100b6df38238fa",
+      "lastmod": "2026-10-05"
     },
     "/tesla-sql-interview/": {
-      "hash": "11dbbfbc16cd9c80",
-      "lastmod": "2026-09-29"
+      "hash": "01cdb1f9ba99c99a",
+      "lastmod": "2026-10-05"
     },
     "/morgan-stanley-sql-interview/": {
-      "hash": "edad8cd633a68de2",
-      "lastmod": "2026-09-29"
+      "hash": "01ac38c350415201",
+      "lastmod": "2026-10-05"
     },
     "/blog/sql-for-ai-company-interviews/": {
       "hash": "31e909ab3e7249cb",
@@ -367,32 +367,32 @@
       "lastmod": "2026-09-14"
     },
     "/doordash-sql-interview/": {
-      "hash": "6b605ef2fdda9a72",
-      "lastmod": "2026-09-29"
+      "hash": "14bf8b2afc25c89a",
+      "lastmod": "2026-10-05"
     },
     "/goldman-sachs-sql-interview/": {
-      "hash": "0eb9506185fe7da4",
-      "lastmod": "2026-09-29"
+      "hash": "13b01d34c0f45283",
+      "lastmod": "2026-10-05"
     },
     "/walmart-sql-interview/": {
-      "hash": "264b4a46d8206475",
-      "lastmod": "2026-09-29"
+      "hash": "15772328817814a1",
+      "lastmod": "2026-10-05"
     },
     "/tiktok-sql-interview/": {
-      "hash": "e0427d7ec7aee25c",
-      "lastmod": "2026-09-29"
+      "hash": "a45b9199a7e6c6f6",
+      "lastmod": "2026-10-05"
     },
     "/linkedin-sql-interview/": {
-      "hash": "55d3d4685b1ca06e",
-      "lastmod": "2026-09-29"
+      "hash": "1193147e6254ec59",
+      "lastmod": "2026-10-05"
     },
     "/microsoft-sql-interview/": {
-      "hash": "b7c02fcff6fee917",
-      "lastmod": "2026-09-29"
+      "hash": "e111806debab15f6",
+      "lastmod": "2026-10-05"
     },
     "/bloomberg-sql-interview/": {
-      "hash": "7e0b0aec9d8876f9",
-      "lastmod": "2026-09-29"
+      "hash": "010ba27078af05b2",
+      "lastmod": "2026-10-05"
     },
     "/sql-interview-readiness-test/": {
       "hash": "50697ac321b46e18",

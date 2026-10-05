@@ -34,6 +34,7 @@
  * Run:  node scripts/build-company-pages.mjs && node scripts/build-company-crosslinks.mjs && npm run build
  */
 
+import { DIALECT_SENTENCE } from '../src/utils/dialect-notes.js';
 import { questionSlugs, loadQuestionBank } from './question-slugs.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -242,6 +243,7 @@ export function topicPracticeBlock({ slug, name, dist, ordered = [], bank }) {
   <span class="sl">Topic practice</span>
   <h2 class="st fd">Every challenge in the ${esc(name)} set, by topic</h2>
   <p data-practice-kind="${archetypeForCompany(name) ? 'archetype' : SOURCED_SLUGS.has(slug) ? 'sourced' : 'general'}" style="font-size:15px;color:#94a3b8;margin:14px 0 22px;max-width:760px;line-height:1.75;">${esc(practiceSentence({ slug, name, bank }))}</p>
+  <p data-dialect="note" style="font-size:13px;color:#8b98ab;margin:0 0 16px;max-width:760px;line-height:1.7;">${esc(DIALECT_SENTENCE)}</p>
   <p data-crosslink="topics" style="margin:0 0 16px;max-width:760px;padding:16px 20px;border:1px solid rgba(124,58,237,.25);border-radius:12px;background:rgba(124,58,237,.06);font-size:14px;line-height:1.8;color:#94a3b8;">Drill the skills the ${esc(name)} set leans on, one at a time: ${links.join(' · ')} — or browse every <a href="/sql-exercises/" style="color:#c084fc;text-decoration:none;font-weight:600;">SQL practice question</a>.</p>${qs.length ? `
   <p data-crosslink="questions" style="margin:0;max-width:760px;padding:0 20px;font-size:13px;line-height:1.9;color:#8b98ab;">Every question in the ${esc(name)} set, one page each with the schema and a hint: ${qs.join(' · ')}.</p>` : ''}
 </div></section>
