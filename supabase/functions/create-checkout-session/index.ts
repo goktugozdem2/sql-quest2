@@ -130,6 +130,26 @@ async function trialAlreadyUsed(username: string): Promise<boolean> {
   }
 }
 
+// The step between the plan click and the Stripe page (docs/funnel.md,
+// 2026-10-06). The client records the click (`pro_checkout_clicked`); until
+// this row nothing recorded that a session was actually made, so "clicked but
+// never saw Stripe" and "saw Stripe and left" read the same. One row per
+// outcome, reason 'checkout_session', never blocking the answer: a logging
+// failure — or a slow write, past LOG_TIMEOUT_MS — still returns the session.
+const LOG_TIMEOUT_MS = 1500;
+async function logCheckoutEvent(event: "pro_checkout_started" | "pro_checkout_session_failed", username: string, metadata: Record<string, unknown>): Promise<void> {
+  const url = Deno.env.get("SUPABASE_URL");
+  const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!url || !key) return;
+  try {
+    const supabase = createClient(url, key);
+    const write = supabase.from("pro_events").insert({ event, username, reason: "checkout_session", metadata });
+    await Promise.race([write, new Promise((r) => setTimeout(r, LOG_TIMEOUT_MS))]);
+  } catch (_) {
+    // never let a log break a checkout
+  }
+}
+
 async function resolvePromotionCode(code: string): Promise<string | null> {
   try {
     const found = await stripe.promotionCodes.list({ code, active: true, limit: 1 });
@@ -194,6 +214,7 @@ serve(async (req) => {
   if (chosen.note) notes.push(chosen.note);
   if (!chosen.price) {
     console.error(`[create-checkout-session] no price configured for ${plan}/${chosen.region}`);
+    await logCheckoutEvent("pro_checkout_session_failed", username, { plan, region: chosen.region, trial: trialAsked, stage: "no_price" });
     return json({ error: "checkout_unavailable" }, 503, origin);
   }
 
@@ -253,9 +274,11 @@ serve(async (req) => {
     const session = await stripe.checkout.sessions.create(params as any);
     if (!session.url) {
       console.error("[create-checkout-session] session created without a url", session.id);
+      await logCheckoutEvent("pro_checkout_session_failed", username, { plan, region: chosen.region, trial, stage: "no_url" });
       return json({ error: "checkout_unavailable" }, 502, origin);
     }
     console.log(`checkout session ${session.id} for ${username}: ${plan}/${chosen.region}${trial ? " +trial" : ""}`);
+    await logCheckoutEvent("pro_checkout_started", username, { session_id: session.id, plan, region: chosen.region, trial, promo: !!params.discounts, notes });
     return json({ url: session.url, plan, region: chosen.region, trial, notes }, 200, origin);
   } catch (err) {
     // Logged for us, never returned: a Stripe error can name a price id, an
@@ -263,6 +286,7 @@ serve(async (req) => {
     const type = (err as { type?: string })?.type || "unknown";
     const code = (err as { code?: string })?.code || "";
     console.error(`[create-checkout-session] stripe error ${type} ${code}`);
+    await logCheckoutEvent("pro_checkout_session_failed", username, { plan, region: chosen.region, trial, stage: "stripe", error_type: type, error_code: code || null });
     return json({ error: "checkout_unavailable" }, 502, origin);
   }
 });
