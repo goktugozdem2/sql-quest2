@@ -109,6 +109,9 @@ export function chromeArgs(port, userDataDir) {
 // muted analytics line on console.debug, in the exact shape app.jsx emits
 // on localhost (`writeProEvent`), rebuilt from the intercepted POST body.
 export const HERMETIC_PREAMBLE = `(() => {
+  // The app drops events from automated browsers (src/utils/bot-signals.js,
+  // 2026-10-07); this run intercepts every write below, so it says who it is.
+  window.__SQLQUEST_SMOKE__ = true;
   const real = window.fetch.bind(window);
   window.fetch = async (input, init) => {
     const url = String(input && input.url ? input.url : input);
