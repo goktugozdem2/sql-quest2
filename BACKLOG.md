@@ -29,7 +29,9 @@ re-measure before acting on one.
    `pro_plan_clicked`, `pro_checkout_clicked`, `checkout_session_fallback`,
    `pro_checkout_expired`, `pro_trial_started`, `pro_purchase_completed`,
    `pro_payment_failed`, `pro_card_setup_failed`) but are spread across
-   `docs/agent/metrics.md` and the code. Write `docs/funnel.md`.
+   `docs/agent/metrics.md` and the code. **`docs/funnel.md` written
+   2026-10-06** (PLAN item 1), with a new server-side stage 4
+   (`pro_checkout_started`); the leak itself is PLAN item 2.
 5. **The AI tutor runs on a $10/month workspace.** The live nudge reaches
    browsers since 2026-10-03 (it never did before — CORS); ~100 wrong submits
    a day, capped at two nudges per challenge. A spend limit took the tutor
