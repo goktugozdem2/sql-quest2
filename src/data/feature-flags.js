@@ -322,9 +322,10 @@ window.FEATURE_FLAGS = {
     // cards, the trial line and the currency note right under the headline
     // and moves "What you get with Pro" below them; `control` is today's
     // modal. On a 1366x768 laptop the cards began at y=630 of 768; on a
-    // phone at y=1,203. Money surface: dark until the founder's go. Ledger
-    // "the plans above the fold", metric `modal_layout_split`.
-    modalPlansFirst: false,
+    // phone at y=1,203. Money surface: ON 2026-10-08 on the founder's go
+    // ("50 merge et ve bayrağı aç, go"). Ledger "the plans above the fold",
+    // metric `modal_layout_split`.
+    modalPlansFirst: true,
 
     // ── The account ask at the third solve (2026-09-14) ──────────────────
     // Founder: move the registration wall to the 3rd solve. Measured before

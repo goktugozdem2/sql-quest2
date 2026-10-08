@@ -51,8 +51,14 @@ describe('the arm', () => {
 });
 
 describe('app.jsx wiring', () => {
-  it('the flag ships dark', () => {
-    expect(read('src/data/feature-flags.js')).toMatch(/\n\s*modalPlansFirst: false,/);
+  it('the flag is on only with the flip on the record (founder\u2019s go, 2026-10-08)', () => {
+    const on = /\n\s*modalPlansFirst: true,/.test(read('src/data/feature-flags.js'));
+    if (on) {
+      expect(read('docs/agent/flag-queue.md')).toMatch(/\| 14 `modalPlansFirst` \| \*\*on 2026-10-08\*\*/);
+      expect(read('docs/agent/ledger.md')).toMatch(/\*\*Flipped\*\* 2026-10-08 \(founder's go/);
+    } else {
+      expect(read('src/data/feature-flags.js')).toMatch(/\n\s*modalPlansFirst: false,/);
+    }
   });
 
   it('one feature list, rendered above the plans for control and after the currency note for plans_first', () => {
