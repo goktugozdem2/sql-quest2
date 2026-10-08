@@ -957,6 +957,18 @@ Of people who opened a ticket (`ticket_opened`, not locked), the share with
 `ticket_submitted` attempts to solve. Locked opens (`locked: true`) are the
 Pro ask's own count. Baseline: none (born 2026-10-04).
 
+## `modal_layout_split`
+
+The Pro modal order test (2026-10-08, `modalPlansFirst`, test id
+`modal_layout_v1`). People by aid with `pro_modal_shown`, split by
+`metadata.modalLayout` (`plans_first` | `control`): share with a
+`pro_plan_clicked` in the same session (within 30 minutes of the modal),
+then `pro_checkout_started` (server, by username) and a webhook
+`pro_trial_started` / `pro_purchase_completed`. Bots out (`metadata.bot is
+null`, docs/funnel.md rules). Secondary: `modal_dismissed.msOpen` under 3 s
+by arm. Baseline (all modal viewers, 30 days to 10-06, one layout): 298
+shown → 22 picked a plan (7.4%); 41% of closes inside 3 s.
+
 ## `tutor_nudge_reach`
 
 The live tutor nudge (2026-10-03). Of people with a wrong submit

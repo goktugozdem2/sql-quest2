@@ -137,6 +137,31 @@ of the verifier and must never be rounded to `FLAT`.
   flip date in the read. The free mock will dominate rows — never sum.
 - **Verdict** _pending_
 
+### the plans above the fold: the Pro modal shows the price first (`modalPlansFirst`, A/B)
+
+- **Claimed** 2026-10-08 · **Flips** on the founder's go (money surface) ·
+  **Read** flip + 21 days, or at 150 modal viewers per arm, whichever is
+  later.
+- **Change** PLAN item 2. Half of browsers by aid (`modal_layout_v1`, murmur-
+  finalised hash, independent of the first-screen and company-ask tests) see
+  the headline, then the two plan cards, the trial line and the currency
+  note, then "What you get with Pro". The other half see today's modal. No
+  copy, price or plan order changes.
+- **Why** measured 2026-10-08: on a 1366x768 laptop the cards began at
+  y = 630 of 768 (the trial line and the buttons below the fold); on the
+  1272x588 and 1528x732 windows real visitors use they were off screen; on a
+  375-px phone at y = 1,203. Plans-first: 247 on the laptop, 378 on the
+  phone, both cards and the trial line in view. 95% of modal viewers are on
+  desktop. 30 days to 10-06: 298 saw the modal, 22 picked a plan; 41% of
+  closes came inside 3 s.
+- **Metric** `modal_layout_split` (metrics.md).
+- **Target** `plans_first` picks a plan at ≥ 1.5× control's rate.
+- **Falsification, stated in advance:** inside ±20% of control at the read →
+  the fold was not the friction; keep control, and the next suspect is the
+  Stripe page (20 of 21 checkout returns came back after ~32 s there).
+  `plans_first` lower than control → the list was doing the selling; revert.
+- **Verdict** _pending_
+
 ### First 90 Days: a hired status and five PM tickets, so Pro has a job after the interview
 
 - **Claimed** 2026-10-04 · **Live** on push, no flag (reachable only by a

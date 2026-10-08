@@ -317,6 +317,15 @@ window.FEATURE_FLAGS = {
     // 7-day trial at checkout"; `false` restores pay-now.
     checkoutTrial: true,
 
+    // ── The Pro modal: plans above the fold (2026-10-08, PLAN item 2) ────
+    // A/B by aid (src/utils/modal-layout.js): `plans_first` shows the plan
+    // cards, the trial line and the currency note right under the headline
+    // and moves "What you get with Pro" below them; `control` is today's
+    // modal. On a 1366x768 laptop the cards began at y=630 of 768; on a
+    // phone at y=1,203. Money surface: dark until the founder's go. Ledger
+    // "the plans above the fold", metric `modal_layout_split`.
+    modalPlansFirst: false,
+
     // ── The account ask at the third solve (2026-09-14) ──────────────────
     // Founder: move the registration wall to the 3rd solve. Measured before
     // agreeing, because the premise needed checking:
