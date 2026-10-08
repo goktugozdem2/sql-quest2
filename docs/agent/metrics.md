@@ -995,6 +995,14 @@ keep quoting the hand read; do not put the two in one series without saying
 which is which. GetUrlInfo reports crawl facts, not the dashboard's word
 "Indexed" — a crawled URL is not thereby an indexed one.
 
+**From 2026-10-07 the app marks its own bots.** `metadata.bot` holds the
+fingerprint id (`vp1919x992`, `la1920x1080`, `utc1280x720` —
+src/utils/bot-signals.js) and a browser that declares itself automated writes
+no app event at all. Every first-contact read from that date adds
+`and (metadata #>> '{}')::jsonb->>'bot' is null`; `app_opened` also carries
+`wd`, `uaBot`, `langs` for telling the next wave apart. Before 10-07, filter
+by hand (the 10-04 → 10-07 waves: docs/reads/p1-guardrail-bing-2026-10-07.md).
+
 **Trap: a rendering crawler counts as new people (found 2026-09-23).**
 From 2026-09-17 a crawler executing the app arrived through the topic pages'
 `/app/?challenge=…&src=challenges-…` links: first `app_opened` with tz

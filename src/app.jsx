@@ -65,6 +65,7 @@ import { HIRED_INTENT, isHired, ticketLocked, shouldAskOffer } from './utils/pos
 import { gradeTicket, ticketFeedback } from './utils/ticket-grade.js';
 import { TICKETS } from './data/tickets.js';
 import { DIALECTS, DIALECT_ROWS } from './utils/dialect-notes.js';
+import { botSignals, botDecision } from './utils/bot-signals.js';
 import { dueRetrievals, pickRetrievalChallenge, recordRetrieval, dailyQuota, MAX_DUE_SHOWN } from './utils/spaced-retrieval.js';
 import { computeRecap, shouldShowRecap } from './utils/session-recap.js';
 import { getAnonId } from './utils/anon-id.js';
@@ -6867,11 +6868,21 @@ function SQLQuest() {
   const WARMUP_FREE_LIMIT = 15;
   const THIRTY_DAY_FREE_LIMIT = 10;
 
+  const hardBotBrowser = () => {
+    // The smoke test's hermetic run drives headless Chrome (webdriver = true)
+    // and intercepts every write in the page, so nothing reaches production;
+    // it names itself so the checks that count emitted events still see them.
+    try { if (window.__SQLQUEST_SMOKE__ === true) return false; } catch (_) {}
+    try { return botSignals({ userAgent: navigator.userAgent, webdriver: navigator.webdriver }).hard; } catch (_) { return false; }
+  };
   const writeProEvent = (event, reason, metadata = {}) => {
     if (ANALYTICS_MUTED) {
       try { console.debug('[sqlquest] analytics muted on localhost:', event, reason, metadata); } catch (_) {}
       return;
     }
+    // A browser that says it is automated writes nothing (2026-10-07,
+    // src/utils/bot-signals.js) — the landing tracker's rule, now the app's.
+    if (hardBotBrowser()) return;
     try {
       supabaseFetch('pro_events', {
         method: 'POST',
@@ -7255,7 +7266,7 @@ function SQLQuest() {
         if (localStorage.getItem(key)) return;
         localStorage.setItem(key, '1');
       }
-      writeProEvent(event, 'activation_funnel', {
+      const payload = {
         ...metadata,
         arrivalSrc: localStorage.getItem('sqlquest_arrival_src') || null,
         // landingSrc (2026-09-06): who sent the browser to the landing page
@@ -7288,7 +7299,24 @@ function SQLQuest() {
         solvedCount: solvedChallenges.size,
         attemptCount: challengeAttempts.length,
         isGuest: !!isGuest,
-      });
+      };
+      // Bot signals (2026-10-07): a known crawler fingerprint is written and
+      // stamped `bot`, so reads can drop it and a false positive is never
+      // lost; app_opened carries the coarse browser signals for the next one.
+      const signals = (() => {
+        try {
+          return botSignals({
+            userAgent: navigator.userAgent, webdriver: navigator.webdriver, languages: navigator.languages,
+            viewport: payload.viewport, landingSrc: payload.landingSrc, tz: payload.tz,
+          });
+        } catch (_) { return null; }
+      })();
+      // The hard drop lives in writeProEvent (after the localhost mute, so
+      // the smoke test still reads its lines); here only the stamp.
+      const decision = botDecision(signals);
+      if (decision.stamp) payload.bot = decision.stamp;
+      if (event === 'app_opened' && signals) Object.assign(payload, { wd: signals.wd, uaBot: signals.uaBot, langs: signals.langs });
+      writeProEvent(event, 'activation_funnel', payload);
     } catch (_) {}
   };
 
