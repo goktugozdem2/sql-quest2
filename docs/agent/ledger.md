@@ -139,9 +139,9 @@ of the verifier and must never be rounded to `FLAT`.
 
 ### the plans above the fold: the Pro modal shows the price first (`modalPlansFirst`, A/B)
 
-- **Claimed** 2026-10-08 · **Flips** on the founder's go (money surface) ·
-  **Read** flip + 21 days, or at 150 modal viewers per arm, whichever is
-  later.
+- **Claimed** 2026-10-08 · **Flipped** 2026-10-08 (founder's go in chat:
+  "50 merge et ve bayrağı aç, go") · **Read** 2026-10-29 (flip + 21 days),
+  or at 150 modal viewers per arm, whichever is later.
 - **Change** PLAN item 2. Half of browsers by aid (`modal_layout_v1`, murmur-
   finalised hash, independent of the first-screen and company-ask tests) see
   the headline, then the two plan cards, the trial line and the currency
