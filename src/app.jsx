@@ -65,6 +65,7 @@ import { HIRED_INTENT, isHired, ticketLocked, shouldAskOffer } from './utils/pos
 import { gradeTicket, ticketFeedback } from './utils/ticket-grade.js';
 import { TICKETS } from './data/tickets.js';
 import { DIALECTS, DIALECT_ROWS } from './utils/dialect-notes.js';
+import { modalLayoutArm, plansFirst } from './utils/modal-layout.js';
 import { botSignals, botDecision } from './utils/bot-signals.js';
 import { dueRetrievals, pickRetrievalChallenge, recordRetrieval, dailyQuota, MAX_DUE_SHOWN } from './utils/spaced-retrieval.js';
 import { computeRecap, shouldShowRecap } from './utils/session-recap.js';
@@ -7100,6 +7101,13 @@ function SQLQuest() {
       userData: d,
     });
   }, [currentUser, showProModal]);
+  // The Pro modal's order (2026-10-08, PLAN item 2): plans first or today's
+  // order, half of browsers by aid when `modalPlansFirst` is on.
+  // src/utils/modal-layout.js; guards tests/modal-layout.test.js.
+  const modalLayout = useMemo(() => {
+    try { return modalLayoutArm({ flagOn: window.FF?.feature?.('modalPlansFirst') === true, aid: getAnonId() }); } catch (_) { return 'control'; }
+  }, []);
+  const modalPlansFirstNow = plansFirst(modalLayout);
   const launchCheckout = (plan, email, opts = {}) => {
     // One checkout at a time: a second click while the first is opening is
     // dropped, not counted and not sent (checkoutInFlight has the story). A
@@ -7230,6 +7238,7 @@ function SQLQuest() {
     // silently rewrite the history it is used to read.
     trackActivationEvent('pro_plan_clicked', {
       plan,
+      modalLayout,
       // Which ask this click answered, and the trap page behind it
       // (2026-09-25) — so a pattern page → checkout funnel joins by aid.
       modalReason: proModalReason?.type || null,
@@ -7775,6 +7784,8 @@ function SQLQuest() {
         priceRegion,
         // Was the 7-day trial on the cards this person saw (2026-10-01).
         trialOffered: trialOfferOn,
+        // Plans-first or today's order (2026-10-08, modal_layout_v1).
+        modalLayout,
         // Free-tier boundary M3: did this ask lead with a date, and how far.
         ...deadlineEventMeta(proModalReason),
       });
@@ -26068,6 +26079,42 @@ RULES:
     if (answer === 'yes') setHiredStatus('outcome_link');
   };
 
+  // The render of the feature list, placed by `modalLayout` (defined beside
+  // trialOfferOn): above the plans (control, today) or below them.
+  const renderProFeatureList = (className) => (
+                <div className={className} data-testid="pro-feature-list" style={{ background: '#1F222B', borderRadius: '6px' }}>
+                  <p className="text-xs mb-3 font-medium uppercase tracking-wider" style={{ color: '#8A8E99' }}>What you get with Pro:</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    {(ftbFlag('freeQuota') ? [`Keep solving past your ${FREE_SOLVE_QUOTA} free — all ${bankCountLabel(challenges.length) || challenges.length} challenges open`] : []).concat(['learning', 'job_ready'].includes(getUserIntent()) ? [
+                      'Get unstuck the moment it happens — the tutor reads your wrong query and stays with you; the daily cap lifted',
+                      'Build the 30-day habit — full streak path, no Pro paywall mid-week',
+                      '200+ warm-up questions — micro-drills for daily fluency',
+                      'Train on real sector data — banking (FDIC), real estate (NYC), manufacturing',
+                      'Protect the habit — 4 streak freezes a month (free plan: 2)',
+                      'Grow into the Hard set — the shape interview screens save for last, ready when you are',
+                      'Sit a timed mock before a real one — the full bank, Revolut and Capital One formats included',
+                      'Direct support — questions answered by the person who built it',
+                    ] : [
+                      'Solve the Hard question on the day — the full Hard set, the shape the screens save for last',
+                      'Sit the screen before you sit the screen — the timed mock bank, Revolut and Capital One formats included',
+                      'Never stall the night before — the tutor reads your wrong query and stays with you; the daily cap lifted',
+                      'Train on the tables the fintech screens use — card transactions, a neobank ledger, FDIC banking',
+                      'Beat the daily streak — all difficulties of Daily Challenge unlocked',
+                      'Build the 30-day habit — full streak path, no Pro paywall mid-week',
+                      '200+ warm-up questions — micro-drills for daily fluency',
+                      'Direct support — questions answered by the person who built it',
+                    ]).map(feat => (
+                      <div key={feat} className="flex items-start gap-2">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="flex-shrink-0 mt-0.5">
+                          <path d="M13.5 4.5L6 12L2.5 8.5" stroke="#8A8E99" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                        <span className="text-sm leading-snug" style={{ color: '#F2F0EA' }}>{feat}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+  );
+
   const renderOfferAsk = () => !offerAskOpen ? null : (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" data-testid="offer-ask">
       <div className="w-full max-w-md p-6" style={{ background: '#16181F', border: '1px solid #2A2E38', borderRadius: '10px' }} role="dialog" aria-modal="true">
@@ -32399,37 +32446,7 @@ RULES:
                     who said learning/job_ready get the same benefits led by
                     what they actually value — help when stuck, habit, drills.
                     Same price, same features; only relevance changes. */}
-                <div className="p-4 mb-6" style={{ background: '#1F222B', borderRadius: '6px' }}>
-                  <p className="text-xs mb-3 font-medium uppercase tracking-wider" style={{ color: '#8A8E99' }}>What you get with Pro:</p>
-                  <div className="grid grid-cols-2 gap-3">
-                    {(ftbFlag('freeQuota') ? [`Keep solving past your ${FREE_SOLVE_QUOTA} free — all ${bankCountLabel(challenges.length) || challenges.length} challenges open`] : []).concat(['learning', 'job_ready'].includes(getUserIntent()) ? [
-                      'Get unstuck the moment it happens — the tutor reads your wrong query and stays with you; the daily cap lifted',
-                      'Build the 30-day habit — full streak path, no Pro paywall mid-week',
-                      '200+ warm-up questions — micro-drills for daily fluency',
-                      'Train on real sector data — banking (FDIC), real estate (NYC), manufacturing',
-                      'Protect the habit — 4 streak freezes a month (free plan: 2)',
-                      'Grow into the Hard set — the shape interview screens save for last, ready when you are',
-                      'Sit a timed mock before a real one — the full bank, Revolut and Capital One formats included',
-                      'Direct support — questions answered by the person who built it',
-                    ] : [
-                      'Solve the Hard question on the day — the full Hard set, the shape the screens save for last',
-                      'Sit the screen before you sit the screen — the timed mock bank, Revolut and Capital One formats included',
-                      'Never stall the night before — the tutor reads your wrong query and stays with you; the daily cap lifted',
-                      'Train on the tables the fintech screens use — card transactions, a neobank ledger, FDIC banking',
-                      'Beat the daily streak — all difficulties of Daily Challenge unlocked',
-                      'Build the 30-day habit — full streak path, no Pro paywall mid-week',
-                      '200+ warm-up questions — micro-drills for daily fluency',
-                      'Direct support — questions answered by the person who built it',
-                    ]).map(feat => (
-                      <div key={feat} className="flex items-start gap-2">
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="flex-shrink-0 mt-0.5">
-                          <path d="M13.5 4.5L6 12L2.5 8.5" stroke="#8A8E99" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                        <span className="text-sm leading-snug" style={{ color: '#F2F0EA' }}>{feat}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                {!modalPlansFirstNow && renderProFeatureList('p-4 mb-6')}
 
                 {/* Promo code indicator — shown when ?promo= arrived from an invite link */}
                 {activePromoCode && (
@@ -32603,6 +32620,9 @@ RULES:
                     Billed in USD; your local currency may be shown at checkout.
                   </p>
                 </div>
+                {/* Plans first (PLAN item 2, `modalPlansFirst` arm): the list
+                    moves under the plans, unchanged. src/utils/modal-layout.js */}
+                {modalPlansFirstNow && renderProFeatureList('p-4 mb-6 mt-4')}
 
 
                 {/* The quota wall's free road back (2026-10-02). The modal

@@ -60,6 +60,7 @@ first solves in a hundred first visits (`first_solve_10m`, 12.4%, 08-24 →
 | 11 | `companySetGate` | **money** | founder's go | Signed archetype companies only. | M1 | needs Go |
 | 12 | `adaptivePlacement` | placement | founder's go | Changes who reaches challenge 1; read with the placement mix. **Not flipped on its old calendar date (10-01):** it changes the quiz arm of the first-screen A/B (row 2) while that test is still running — earliest after the 10-17 read. | placement entry | needs Go |
 | 13 | `intakeAfterFirstSolve` | activation — **A/B, ask after the first solve** | founder's go, after the founder walks it in production | The founder's plan of 2026-09-25 (P0 1–3): one company question after the first solve, again at the third, then silent; replaces the withdrawn door gate. Cannot move `first_solve_10m` (it comes after the first solve); its guardrail is the second solve in 24 h by arm. | "one question after the first solve" · `company_ask_split` · Read = flip + 7 days | needs Go |
+| 14 | `modalPlansFirst` | **money** — A/B, half of modal viewers | founder's go | PLAN item 2: the plan cards above the fold (laptop y 630 → 247, phone 1,203 → 378). Copy and prices unchanged. | "the plans above the fold" · `modal_layout_split` · Read = flip + 21 days | needs Go |
 
 The 42% of first visitors who never open a challenge: row 2 (added
 2026-09-23) is the first flag that reaches them.

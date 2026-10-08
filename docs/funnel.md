@@ -21,9 +21,9 @@ reading it. All rows land in `pro_events` (`event`, `username`, `reason`,
 
 | # | Stage | Event | Written by | Key properties |
 |---|---|---|---|---|
-| 1 | Modal opened | `pro_modal_shown` | client (`src/app.jsx`, the effect on `showProModal`), reason `activation_funnel` | `reason` (why it opened: `milestone_solves`, `free_quota`, `company_hard`, `pricing_link`, `pattern_mock`, `mock_link`, …), `priceRegion`, `trialOffered`, `deadline`/`daysOut`, `patternSlug`, `linkSrc` |
+| 1 | Modal opened | `pro_modal_shown` | client (`src/app.jsx`, the effect on `showProModal`), reason `activation_funnel` | `reason` (why it opened: `milestone_solves`, `free_quota`, `company_hard`, `pricing_link`, `pattern_mock`, `mock_link`, …), `priceRegion`, `trialOffered`, `modalLayout` (`plans_first`/`control`, from 10-08), `deadline`/`daysOut`, `patternSlug`, `linkSrc` |
 | 1b | Modal closed without a plan | `modal_dismissed` | client (`dismissProModal`), reason = the modal's reason | `via` (`backdrop`, `escape`, `free_path_<to>`, …), `msOpen`, `sawPlans` |
-| 2 | Plan selected | `pro_plan_clicked` | client (plan card click), reason `activation_funnel` | `plan` (`monthly`/`annual`), `modalReason`, `priceRegion`, `hadEmailOnFile` |
+| 2 | Plan selected | `pro_plan_clicked` | client (plan card click), reason `activation_funnel` | `plan` (`monthly`/`annual`), `modalLayout`, `modalReason`, `priceRegion`, `hadEmailOnFile` |
 | 2b | Email step (guests) | `checkout_email_step_shown` / `checkout_email_captured` / `checkout_email_skipped` / `checkout_email_step_bypassed` | client | — |
 | 3 | Checkout clicked | `pro_checkout_clicked` | client (`launchCheckout`), reason `activation_funnel` | `plan`, `email` (for the abandon mail), `modalReason`, `trial` |
 | 4 | **Checkout started** (a Stripe session exists) | `pro_checkout_started` — **new 2026-10-06** | server (`create-checkout-session`), reason `checkout_session` | `session_id`, `plan`, `region`, `trial`, `promo`, `notes` |
