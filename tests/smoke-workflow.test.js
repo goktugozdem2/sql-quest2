@@ -341,6 +341,15 @@ describe('pro-mock scenarios as checks', () => {
     expect(JUDGES.price_modal_copy({ modalOpen: false, prices: [] })).toMatch(/did not open/);
     expect(JUDGES.deeplink_session({ late: { savedUser: 'qa_pro', guestBanner: false, openedChallenge: 'editor open' } })).toBeNull();
     expect(JUDGES.deeplink_session({ late: { savedUser: null, guestBanner: true } })).toMatch(/lost the session/);
+    expect(JUDGES.deeplink_session({ late: { loading: true, loadError: 'Error: Uncaught ReferenceError: React is not defined', savedUser: 'qa_pro', guestBanner: false, openedChallenge: null } })).toMatch(/never left the loading screen \(Error: Uncaught ReferenceError/);
+  });
+
+  it('deeplink_session polls for the open challenge, never a fixed sleep (2026-10-10)', () => {
+    const src = read('scripts/qa/pro-mock.mjs');
+    const body = src.slice(src.indexOf('async deeplink_session()'), src.indexOf('async approach()'));
+    expect(body).toMatch(/while \(Date\.now\(\) - t0 < 20000\)/);
+    expect(body).not.toMatch(/await wait\(5000\)/);
+    expect(body).toContain('loadError');
     expect(JUDGES.free_interview_surface({ hasInterviewTab: true, tabsText: 'Learning Path Challenges Interview' })).toBeNull();
     expect(JUDGES.free_interview_surface({ hasInterviewTab: false, tabsText: 'NO TABS BLOCK' })).toMatch(/without the tabs/);
     expect(judge([{ name: 'price_modal_copy', code: 1, json: null, err: 'boom' }])).toEqual([{ scenario: 'price_modal_copy', why: 'scenario exited 1 without JSON', stderr: 'boom' }]);

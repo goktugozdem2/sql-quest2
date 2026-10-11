@@ -464,8 +464,21 @@ const SCENARIOS = {
     await cdp('Page.navigate', { url: `${URL}${path}` });
     await wait(1200);
     const early = await ev(`({ guestBanner: /Playing as Guest/.test(document.body.innerText), login: /Log in/.test(document.body.innerText) })`);
-    await wait(5000);
+    // Poll, never a fixed sleep: the app boots off three CDNs, and on
+    // 2026-10-10 production missed a fixed 5 s window with the app still on
+    // its loading screen (pro=false, openedChallenge=null, the session intact)
+    // and passed the next day. A lost session or challenge still fails, 20 s on.
+    const t0 = Date.now();
+    let bootMs = null;
+    while (Date.now() - t0 < 20000) {
+      await wait(500);
+      if (bootMs === null && await ev(`!document.querySelector('.loading-container')`)) bootMs = Date.now() - t0;
+      if (await ev(`!!(document.querySelector('.sql-cm-editor') && document.querySelector('[data-onboarding="submit"]'))`)) break;
+    }
+    await wait(500);
     const late = await ev(`({
+      loading: !!document.querySelector('.loading-container'),
+      loadError: (document.querySelector('.loading-container')?.innerText.match(/Error:.*$/m) || [null])[0],
       guestBanner: /Playing as Guest/.test(document.body.innerText),
       login: /Log in/.test(document.body.innerText),
       savedUser: localStorage.getItem('sqlquest_user'),
@@ -476,7 +489,7 @@ const SCENARIOS = {
       solves: (JSON.parse(localStorage.getItem('sqlquest_user_qa_pro') || '{}').solvedChallenges || []).length,
     })`);
     await shot('deeplink');
-    return { early, late };
+    return { early, late: { ...late, bootMs, waitedMs: Date.now() - t0 } };
   },
   // Live round: the explanation box, its button, and the saved note on the results screen.
   async approach() {

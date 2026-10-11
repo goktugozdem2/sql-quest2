@@ -21,7 +21,10 @@ export const SCENARIOS = ['price_modal_copy', 'deeplink_session', 'free_intervie
 // One judge per scenario, over the JSON the scenario prints.
 export const JUDGES = {
   price_modal_copy: (r) => r.modalOpen === true && (r.prices || []).some(p => /^\$(29|99)/.test(p)) ? null : `Pro modal did not open with the plans: ${JSON.stringify({ modalOpen: r.modalOpen, prices: r.prices })}`,
-  deeplink_session: (r) => r.late && r.late.savedUser === 'qa_pro' && r.late.guestBanner === false && r.late.openedChallenge ? null : `deep link lost the session or the challenge: ${JSON.stringify(r.late)}`,
+  // A page still on its loading screen after the scenario's 20 s poll is a
+  // boot failure, not a lost session; say which (2026-10-10 read as the latter).
+  deeplink_session: (r) => r.late && r.late.loading ? `app never left the loading screen (${r.late.loadError || 'no error shown'}): ${JSON.stringify(r.late)}`
+    : r.late && r.late.savedUser === 'qa_pro' && r.late.guestBanner === false && r.late.openedChallenge ? null : `deep link lost the session or the challenge: ${JSON.stringify(r.late)}`,
   free_interview_surface: (r) => r.hasInterviewTab === true && r.tabsText && r.tabsText !== 'NO TABS BLOCK' ? null : `app shell without the tabs or the Interview tab: ${JSON.stringify({ hasInterviewTab: r.hasInterviewTab, tabsText: r.tabsText })}`,
 };
 
