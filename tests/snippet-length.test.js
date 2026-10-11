@@ -39,6 +39,9 @@ export const SNIPPET_PAGES = [
   { src: 'src/blog/window-functions-tutorial.html', built: 'public/blog/window-functions-tutorial/index.html' },
   { src: 'src/blog/sql-running-total.html', built: 'public/blog/sql-running-total/index.html' },
   { src: 'src/challenges/aggregation.html', built: 'public/challenges/aggregation/index.html' },
+  // 2026-10-11: "datalemur" — 381 impressions at 5.2, zero clicks (GSC
+  // weekly 09-28 → 10-04); the title ran 81 characters and the description 300.
+  { src: 'src/vs-datalemur.html', built: 'public/vs-datalemur/index.html' },
 ];
 
 // "228 free", "300+ free", "(18 Free)", "first 10 solves", "10 free challenge

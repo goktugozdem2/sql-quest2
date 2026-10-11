@@ -1,6 +1,6 @@
 {
   "note": "Written by scripts/sitemap-lastmod.mjs. A page's date moves only when its built bytes change.",
-  "updated": "2026-10-05",
+  "updated": "2026-10-11",
   "pages": {
     "/": {
       "hash": "6435db1499fa0f6a",
@@ -111,8 +111,8 @@
       "lastmod": "2026-09-25"
     },
     "/vs-datalemur/": {
-      "hash": "2b58debea2230bef",
-      "lastmod": "2026-09-25"
+      "hash": "e6d4aeb80e68c6cf",
+      "lastmod": "2026-10-11"
     },
     "/datalemur-karsilastirma/": {
       "hash": "2c478b14d3f4e791",
