@@ -27,6 +27,34 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### the /vs-datalemur/ snippet fits the result (the "datalemur" zero-click query)
+
+- **Claimed** 2026-10-11 · **Shipped** on the founder's ask in chat ("datalemur
+  title ve meta'yı düzelt") · **Read** 2026-11-09 (ship + 28 days, GSC's own
+  lag included).
+- **Change** /vs-datalemur/'s title 72 → 65 characters ("DataLemur SQL
+  Practice: Is It Free? Pricing (2026)"), description 300 → 145 (DataLemur's
+  $15/mo · $60/yr from docs/reads/alternatives-facts-2026-09-13.md, said to
+  come from a competitor), og/twitter equal to both. Body untouched. Bound by
+  tests/snippet-length.test.js like the five pages of 09-29.
+- **Why** GSC weekly 09-28 → 10-04: "datalemur" 381 impressions at 5.2 and
+  "data lemur sql" 136 at 6.7, zero clicks on both; the page has 979
+  impressions at 5.7. The old title was cut at ~60 characters and the
+  description at ~160 of 300. Caveat written now: "datalemur" is a
+  navigational query, most of its searchers want datalemur.com, so a
+  ceiling of a few percent CTR is the honest expectation.
+- **Metric** `gsc_position` (metrics.md), read per query on the
+  [query, page] slice of `gsc_daily`: clicks and CTR of "datalemur" +
+  "data lemur sql" + "datalemur sql practice" to /vs-datalemur/, 28 days
+  after vs the 28 days before 2026-10-11.
+- **Target** ≥ 1% CTR on those three queries combined (from 0 on ~550
+  impressions a week), position no worse than 1.0 down.
+- **Falsification, stated in advance:** still zero clicks at ≥ 1,500
+  impressions → the snippet was not the cause; the query is navigational
+  and the page is not worth more title work. Position down > 2 → revert the
+  title (the old one carried "Free Tier" and "SQL Practice" both).
+- **Verdict** _pending_
+
 ### a 7-day trial at checkout: "nothing is charged today" (checkoutTrial)
 
 - **Claimed** 2026-10-01, before the flip · **Flipped** 2026-10-01 (founder's
