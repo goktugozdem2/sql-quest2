@@ -20355,10 +20355,24 @@ CRITICAL RULES:
       } else if (res.status === 'invalid') {
         setAuthError('Invalid username/email or password.');
         return;
+      } else if (res.httpStatus !== 404) {
+        // The function is deployed but did not answer (a network error, a
+        // 5xx, a cold start that failed). The old in-browser check below can
+        // only fail now — direct reads of `users` are refused (401) since
+        // the access cut — and it would tell a person with the right
+        // password that it is wrong (2026-10-16).
+        setAuthError('Sign-in is temporarily unavailable. Please try again in a moment.');
+        return;
       }
     }
 
-    if (!serverSignedIn) {
+    // The old in-browser check: login only, and only when account-login is
+    // not deployed (404). Until 2026-10-16 it also ran for every
+    // REGISTRATION, firing direct `users?` reads that the database refuses —
+    // 401s in the edge log and "permission denied for table users" in the
+    // postgres log on every sign-up — and an email typed in the username box
+    // was answered "No account found with this email address".
+    if (authMode === 'login' && !serverSignedIn) {
     // If logging in with email, find the username associated with that email
     if (isEmailLogin) {
       // Search for user by email in Supabase (check dedicated email column first, then data->email)

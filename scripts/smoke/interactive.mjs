@@ -46,6 +46,17 @@ const ACTIVE_EXPR = (which) => `(() => {
   return !!b && (${ACTIVE})(b);
 })()`;
 
+// Poll the shell until the primary tabs exist or the deadline passes.
+export async function waitForTabs({ evaluate, deadline, expr, last = null, now = () => Date.now(), sleep = (ms) => new Promise(r => setTimeout(r, ms)), intervalMs = 150 }) {
+  let shell = last;
+  while (now() < deadline) {
+    try { shell = await evaluate(expr); } catch (_) { /* navigating */ }
+    if (shell?.tabs) return shell;
+    await sleep(intervalMs);
+  }
+  return shell;
+}
+
 // Plain HTTP first: a dead front end is usually visible without a browser.
 export async function probeStatic(base, fetchImpl = fetch) {
   const page = await fetchImpl(`${base}/app/`, { redirect: 'follow' });
@@ -97,6 +108,8 @@ async function main() {
     await cdp('Runtime.enable');
     await cdp('Page.addScriptToEvaluateOnNewDocument', { source: HERMETIC_PREAMBLE });
     await cdp('Emulation.setDeviceMetricsOverride', { width: 1280, height: 800, deviceScaleFactor: 1, mobile: false });
+    // Reproduce a slow runner locally (2026-10-16): SMOKE_CPU_THROTTLE=6.
+    if (process.env.SMOKE_CPU_THROTTLE) await cdp('Emulation.setCPUThrottlingRate', { rate: Number(process.env.SMOKE_CPU_THROTTLE) || 1 });
 
     const navAt = Date.now();
     const deadline = navAt + BUDGET_MS;
@@ -113,11 +126,23 @@ async function main() {
     if (errors.length) return finish(false, CLASSES.FRONTEND_DEAD, { step: 'load', why: 'uncaught error on load', errors: errors.slice(0, 3), shellAtMs: shell?.shell ? sinceNav() : null });
     if (!shell?.shell) return finish(false, CLASSES.FRONTEND_DEAD, { step: 'shell', why: `no shell within ${BUDGET_MS} ms`, last: shell });
     const shellMs = sinceNav();
+    // The app boots with showAuth = true and swaps to the guest shell once the
+    // session check runs, so a slow runner's first look can land on that
+    // passing "Sign In / Sign up" frame. Until 2026-10-16 that frame ended the
+    // check as a pass with the click skipped (4 of the 9 passes 10-08 → 10-15).
+    // Keep looking for the tabs until the budget; only a surface that never
+    // grows them is the documented skip. authFlashMs is how long a person on
+    // a slow machine saw the sign-in frame before the app.
+    let authFlashMs = null;
     if (!shell.tabs) {
-      // Auth surface or first-run screen without the primary tabs: the
-      // shell is up but there is no Learning Path tab to click. That is a
-      // pass on "rendered", and a documented skip on the click.
-      return finish(true, null, { shellMs, clickMs: null, note: 'no primary tabs on this surface (auth/first-run); click skipped', shell });
+      const sawAuth = !!shell.hasAuth;
+      shell = await waitForTabs({ evaluate: (expr) => evaluate(cdp, expr), deadline, expr: SHELL_EXPR, last: shell });
+      if (sawAuth && shell.tabs) authFlashMs = sinceNav() - shellMs;
+    }
+    if (!shell.tabs) {
+      // Auth surface or first-run screen without the primary tabs for the
+      // whole budget: a pass on "rendered", a documented skip on the click.
+      return finish(true, null, { shellMs, clickMs: null, note: 'no primary tabs on this surface (auth/first-run) within the budget; click skipped', shell });
     }
 
     // 2. The click round-trip: Challenges, then Learning Path back.
@@ -136,7 +161,7 @@ async function main() {
     if (!(await waitActive('nav-guide'))) return finish(false, CLASSES.SLOW, { step: 'click', why: `Learning Path click did not respond within ${BUDGET_MS} ms of navigation`, shellMs });
     const clickMs = sinceNav();
     if (errors.length) return finish(false, CLASSES.FRONTEND_DEAD, { step: 'click', why: 'uncaught error', errors: errors.slice(0, 3), shellMs, clickMs });
-    return finish(true, null, { shellMs, clickMs, budgetMs: BUDGET_MS });
+    return finish(true, null, { shellMs, clickMs, budgetMs: BUDGET_MS, authFlashMs });
   } catch (e) {
     return finish(false, CLASSES.INFRA, { step: 'cdp', error: String(e.message || e) });
   } finally {

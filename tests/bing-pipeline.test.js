@@ -5,7 +5,7 @@ import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import { bingCall, parseBingDate, readKey, BING_SITE, BING_API } from '../scripts/bing/api.mjs';
 import { toStatRecord, toSiteRecord, toCrawlRecord, dedupe, topPages, run as runFetch } from '../scripts/bing/fetch.mjs';
-import { parseSitemapEntries, pickBatch, toUrlStatus, classify, summarize, renderReport, run as runInspect, DAILY_LIMIT, MIN_INTERVAL_MS, CONCURRENCY } from '../scripts/bing/inspect.mjs';
+import { parseSitemapEntries, pickBatch, toUrlStatus, classify, summarize, renderReport, run as runInspect, DAILY_LIMIT, MIN_INTERVAL_MS, CONCURRENCY, RUN_BUDGET_MS } from '../scripts/bing/inspect.mjs';
 import { allowance, pickSubmissions, run as runSubmit, COOLDOWN_DAYS, MAX_PER_RUN, STATUS_MAX_AGE_DAYS } from '../scripts/bing/submit.mjs';
 import { parseSubmissionLog } from '../scripts/bing/seed-submissions.mjs';
 import { weeks, aggregate, buildReport, renderMarkdown, DOOR } from '../scripts/bing/report.mjs';
@@ -158,6 +158,28 @@ describe('the throttle', () => {
     // any other refusal is still an error
     const bad = async (u) => (new URL(u).pathname === '/sitemap.xml' ? res(200, sitemap) : new URL(u).hostname === 'ssl.bing.com' ? res(400, { ErrorCode: 3, Message: 'ERROR!!! InvalidApiKey' }) : res(200, []));
     await expect(runInspect({ argv: [], env: { BING_WMT_KEY: KEY, SUPABASE_URL: 'https://x.supabase.co', SUPABASE_SERVICE_ROLE_KEY: 'sb_secret_x' }, fetchImpl: bad, log: () => {}, pace: 0 })).rejects.toThrow(/InvalidApiKey/);
+  });
+
+  it('a run stops itself inside the job timeout and keeps what it read (issue #44, 2026-10-04)', async () => {
+    const urls = ['a', 'b', 'c', 'd', 'e'].map(x => `https://sqlquest.app/${x}/`);
+    const sitemap = `<urlset>${urls.map(u => `<url><loc>${u}</loc></url>`).join('')}</urlset>`;
+    const written = [];
+    let t = 0;
+    const fetchImpl = async (u, o = {}) => {
+      const url = new URL(u);
+      if (url.pathname === '/sitemap.xml') return res(200, sitemap);
+      if (url.hostname === 'ssl.bing.com') { t += 12 * 60 * 1000; return res(200, { d: { LastCrawledDate: '/Date(1790553600000)/', HttpStatus: 0 } }); }
+      if (o.method === 'POST') { written.push(...JSON.parse(o.body)); return res(201, ''); }
+      return res(200, written);
+    };
+    const logs = [];
+    const out = await runInspect({ argv: [], env: { BING_WMT_KEY: KEY, SUPABASE_URL: 'https://x.supabase.co', SUPABASE_SERVICE_ROLE_KEY: 'sb_secret_x' }, fetchImpl, log: (m) => logs.push(m), pace: 0, clock: () => t });
+    expect(out).toMatchObject({ inspected: 3, outOfTime: true, throttled: false });
+    expect(written.map(r => r.url)).toEqual(urls.slice(0, 3));
+    expect(logs.some(l => /stopped early: the 30-minute budget ran out after 3 of 5/.test(l))).toBe(true);
+    const wf = read('../.github/workflows/bing.yml');
+    const minutes = Number(/\n {2}inspect:[\s\S]*?timeout-minutes: (\d+)/.exec(wf)[1]);
+    expect(RUN_BUDGET_MS).toBeLessThanOrEqual((minutes - 5) * 60000);
   });
 
   it('a run inspects the daily slice unless told otherwise', async () => {

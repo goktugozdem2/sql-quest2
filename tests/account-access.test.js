@@ -102,8 +102,10 @@ describe('client call sites', () => {
     const block = app.slice(at, at + 6000);
     const serverAt = block.indexOf("callAccountFunction('account-login'");
     expect(serverAt).toBeGreaterThan(0);
-    expect(block.indexOf('if (!serverSignedIn) {')).toBeGreaterThan(serverAt);
-    expect(block.slice(serverAt, block.indexOf('if (!serverSignedIn) {'))).toMatch(/res\.status === 'invalid'[\s\S]*return;/);
+    // 2026-10-16: the gate also says login only (tests/auth-legacy-path.test.js).
+    const gate = "if (authMode === 'login' && !serverSignedIn) {";
+    expect(block.indexOf(gate)).toBeGreaterThan(serverAt);
+    expect(block.slice(serverAt, block.indexOf(gate))).toMatch(/res\.status === 'invalid'[\s\S]*return;/);
   });
 
   it('change password and recovery reset go through the server', () => {
