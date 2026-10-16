@@ -157,18 +157,63 @@ export function getJSON(url) {
   });
 }
 
+// Wait for a debuggable PAGE target (2026-10-16). The first Chrome launch in
+// a smoke job is a cold start on the runner, and it sometimes took longer than
+// the old fixed 10 s (50 × 200 ms): `interactive` — always the job's first
+// launch — failed "Chrome started but exposed no page" at 10.35 / 10.45 /
+// 10.40 s on 10-06, 10-08 and 10-16 while every later launch passed. The old
+// loop also stopped at the first target of ANY type, so a browser that listed
+// only a service worker or the browser target was read as "no page".
+// Now: poll until a target of type 'page' exists, up to `deadlineMs`; once the
+// browser answers but has no page for `newPageAfterMs`, ask it to open one.
+export const CHROME_PAGE_DEADLINE_MS = 30_000;
+export async function waitForPageTarget({ listTargets, openPage, deadlineMs = CHROME_PAGE_DEADLINE_MS, newPageAfterMs = 3_000, intervalMs = 200, now = () => Date.now(), sleep = (ms) => new Promise(r => setTimeout(r, ms)) } = {}) {
+  const start = now();
+  let answeredAt = null;
+  let asked = false;
+  while (now() - start < deadlineMs) {
+    let targets = null;
+    try { targets = await listTargets(); } catch (_) { /* not up yet */ }
+    if (Array.isArray(targets)) {
+      const page = targets.find(t => t && t.type === 'page' && t.webSocketDebuggerUrl);
+      if (page) return { page, waitedMs: now() - start, openedPage: asked };
+      if (answeredAt === null) answeredAt = now();
+      if (!asked && openPage && now() - answeredAt >= newPageAfterMs) {
+        asked = true;
+        try { await openPage(); } catch (_) { /* keep polling */ }
+      }
+    }
+    await sleep(intervalMs);
+  }
+  return { page: null, waitedMs: now() - start, openedPage: asked, browserAnswered: answeredAt !== null };
+}
+
+function putJSON(url) {
+  return new Promise((resolve, reject) => {
+    const req = http.request(url, { method: 'PUT' }, (res) => {
+      let body = '';
+      res.on('data', (chunk) => body += chunk);
+      res.on('end', () => { try { resolve(JSON.parse(body)); } catch (e) { reject(e); } });
+    });
+    req.on('error', reject);
+    req.end();
+  });
+}
+
 // Start Chrome and attach to its first page over CDP. Returns
 // { cdp(method, params), on(listener), close() }.
 export async function launchChrome({ port = 9400 + (process.pid % 400), chrome = resolveChrome() } = {}) {
   const dir = fs.mkdtempSync(path.join(process.env.RUNNER_TEMP || process.env.TMPDIR || '/tmp', 'chrome-smoke-'));
   const proc = spawn(chrome, chromeArgs(port, dir), { stdio: 'ignore' });
-  let tabs = [];
-  for (let i = 0; i < 50; i++) {
-    try { tabs = await getJSON(`http://127.0.0.1:${port}/json`); if (tabs.length) break; } catch (_) { /* not up yet */ }
-    await new Promise(r => setTimeout(r, 200));
+  const waited = await waitForPageTarget({
+    listTargets: () => getJSON(`http://127.0.0.1:${port}/json`),
+    openPage: () => putJSON(`http://127.0.0.1:${port}/json/new?about:blank`),
+  });
+  const tab = waited.page;
+  if (!tab) {
+    proc.kill('SIGKILL');
+    throw new Error(`Chrome started but exposed no page in ${Math.round(waited.waitedMs / 1000)} s (${waited.browserAnswered ? 'the browser answered, no page target' : 'the debug port never answered'})`);
   }
-  const tab = tabs.find(t => t.type === 'page');
-  if (!tab) { proc.kill('SIGKILL'); throw new Error('Chrome started but exposed no page'); }
   const { WebSocket } = await import('ws');
   const ws = new WebSocket(tab.webSocketDebuggerUrl);
   await new Promise((res, rej) => { ws.on('open', res); ws.on('error', rej); });

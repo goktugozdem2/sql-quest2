@@ -17,7 +17,7 @@
 
 import { spawn } from 'child_process';
 import http from 'http';
-import { resolveChrome, HERMETIC_PREAMBLE, firstScreenArmPreamble } from './smoke/lib.mjs';
+import { resolveChrome, HERMETIC_PREAMBLE, firstScreenArmPreamble, waitForPageTarget } from './smoke/lib.mjs';
 
 const URL = process.argv[2] || 'http://127.0.0.1:4321';
 // CHROME env first (the GitHub runner), then the platform defaults.
@@ -112,18 +112,14 @@ async function main() {
     'about:blank',
   ], { stdio: 'ignore' });
 
-  // Wait for Chrome debug port
-  for (let i = 0; i < 30; i++) {
-    try {
-      const tabs = await getJSON(`http://127.0.0.1:${DEBUG_PORT}/json`);
-      if (tabs.length > 0) break;
-    } catch (_) {}
-    await new Promise(r => setTimeout(r, 200));
-  }
-
-  const tabs = await getJSON(`http://127.0.0.1:${DEBUG_PORT}/json`);
-  const tab = tabs.find(t => t.type === 'page');
-  if (!tab) throw new Error('no tab');
+  // Wait for a page target — the same cold-start-safe wait as the other
+  // smoke checks (scripts/smoke/lib.mjs, waitForPageTarget, 2026-10-16). This
+  // loop used to give Chrome 6 s and stop at the first target of any type.
+  const waited = await waitForPageTarget({
+    listTargets: () => getJSON(`http://127.0.0.1:${DEBUG_PORT}/json`),
+  });
+  const tab = waited.page;
+  if (!tab) throw new Error(`no tab after ${Math.round(waited.waitedMs / 1000)} s`);
 
   const WebSocket = (await import('ws')).WebSocket;
   ws = new WebSocket(tab.webSocketDebuggerUrl);

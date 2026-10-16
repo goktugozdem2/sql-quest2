@@ -34,6 +34,12 @@ export const WRITE_EVERY = 10;
 // checked longest ago first — the 415-URL sitemap turns over every three
 // days and no run comes near the limit.
 export const DAILY_LIMIT = 150;
+// The job's timeout is 40 minutes (.github/workflows/bing.yml). On 2026-10-04
+// Bing's transient 400s (waited out 20 / 40 / 80 s each) stretched 100 URLs to
+// 28 minutes and the runner cancelled the job at 40 — a failure and an issue
+// (#44) for a run that had saved what it inspected. The run now stops itself
+// at RUN_BUDGET_MS, cleanly, and the URLs not reached are the stalest tomorrow.
+export const RUN_BUDGET_MS = 30 * 60 * 1000;
 
 /** <url><loc>…</loc><lastmod>…</lastmod></url> → [{ url, lastmod }] (lastmod may be null). */
 export function parseSitemapEntries(xml) {
@@ -114,7 +120,7 @@ export function renderReport(sum, { date = new Date().toISOString().slice(0, 10)
 
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
-export async function run({ argv = process.argv.slice(2), env = process.env, fetchImpl = fetch, log = console.log, now = new Date(), pace = MIN_INTERVAL_MS, concurrency = CONCURRENCY } = {}) {
+export async function run({ argv = process.argv.slice(2), env = process.env, fetchImpl = fetch, log = console.log, now = new Date(), pace = MIN_INTERVAL_MS, concurrency = CONCURRENCY, budgetMs = RUN_BUDGET_MS, clock = () => Date.now() } = {}) {
   const dryRun = argv.includes('--dry-run');
   const li = argv.indexOf('--limit');
   const limit = argv.includes('--all') ? Infinity : li >= 0 ? Math.max(1, Number(argv[li + 1]) || 1) : DAILY_LIMIT;
@@ -139,8 +145,11 @@ export async function run({ argv = process.argv.slice(2), env = process.env, fet
   };
   let next = 0;
   let throttledAt = null;
+  let outOfTimeAt = null;
+  const startedAt = clock();
   const worker = async () => {
-    while (next < batch.length && throttledAt === null) {
+    while (next < batch.length && throttledAt === null && outOfTimeAt === null) {
+      if (clock() - startedAt >= budgetMs) { outOfTimeAt = records.length; break; }
       const u = batch[next++];
       let info;
       try {
@@ -164,6 +173,7 @@ export async function run({ argv = process.argv.slice(2), env = process.env, fet
   await Promise.all(Array.from({ length: Math.min(concurrency, batch.length) }, worker));
   await flush();
   if (throttledAt !== null) log(`stopped early: throttled after ${throttledAt} of ${batch.length} — the rest go first in the next run`);
+  if (outOfTimeAt !== null) log(`stopped early: the ${Math.round(budgetMs / 60000)}-minute budget ran out after ${outOfTimeAt} of ${batch.length} — the rest go first in the next run`);
 
   // The report covers the whole table, restricted to what the sitemap lists today.
   const inSitemap = new Set(entries.map(e => e.url));
@@ -174,7 +184,7 @@ export async function run({ argv = process.argv.slice(2), env = process.env, fet
     const { appendFileSync } = await import('node:fs');
     appendFileSync(env.GITHUB_STEP_SUMMARY, report + '\n');
   }
-  return { inspected: records.length, throttled: throttledAt !== null, report };
+  return { inspected: records.length, throttled: throttledAt !== null, outOfTime: outOfTimeAt !== null, report };
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] || '').href) {
