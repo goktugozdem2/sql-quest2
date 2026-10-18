@@ -327,6 +327,17 @@ window.FEATURE_FLAGS = {
     // metric `modal_layout_split`.
     modalPlansFirst: true,
 
+    // ── Paywall moments (2026-10-17, PLAN item 3) ─────────────────────────
+    // Every point where a free person meets Pro offers the way in
+    // (src/utils/paywall-moments.js): the three soft-gate toasts carry "See
+    // what Pro opens", the 30-day path's Pro tiles and a locked mock card
+    // open the modal instead of doing nothing, the tutor's two "Upgrade"
+    // links open the plans instead of the Profile tab, the three reasonless
+    // openers name their reason, and the reasons without copy get their own.
+    // Free stays free. Money surface: dark until the founder's go. Ledger
+    // "paywall moments", metric `paywall_moment_reach`.
+    paywallMoments: false,
+
     // ── The account ask at the third solve (2026-09-14) ──────────────────
     // Founder: move the registration wall to the 3rd solve. Measured before
     // agreeing, because the premise needed checking:
