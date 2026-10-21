@@ -1254,7 +1254,8 @@ window.challengeCompanies = {
   ],
   "171": [
     "NVIDIA",
-    "Tesla"
+    "Tesla",
+    "Amazon"
   ],
   "169": [
     "Anthropic"
@@ -1502,5 +1503,19 @@ window.challengeCompanies = {
   ],
   "179": [
     "Microsoft"
+  ],
+  // 2026-10-21: the department-average shape (131) and the three cards written
+  // from a candidate's Amazon BIE report (docs/reads/amazon-bie-candidate-report-2026-10-21.md).
+  "131": [
+    "Amazon"
+  ],
+  "317": [
+    "Amazon"
+  ],
+  "318": [
+    "Amazon"
+  ],
+  "319": [
+    "Amazon"
   ]
 };
