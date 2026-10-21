@@ -288,10 +288,14 @@ export const SOURCED_FORMATS = {
       ['Environment', 'The same report describes SQL written on a "CoderPad-style" editor where you often cannot execute the query, so correctness has to be reasoned rather than run.', ['blind-amzn']],
       ['What the SQL round covers', 'Joins, window functions and ranking, with follow-ups on edge cases; the guide says to expect at least five questions across SQL, Python, visualisation and business analytics in the technical screen, without splitting out how many are SQL.', ['blind-amzn', 'exponent-amzn']],
       ['Alongside the SQL', 'Leadership Principles come up throughout, including inside technical rounds — not only in the behavioural ones.', ['exponent-amzn', 'blind-amzn']],
+      // 2026-10-21: one round reported to us by email (docs/reads/amazon-bie-candidate-report-2026-10-21.md).
+      ['A round reported to us', 'A Business Intelligence Engineer candidate described a 60-minute technical and behavioural round in October 2026: three SQL problems, each followed by questions about the query and changes to it — why a self-join, what a JOIN with no type performs, COUNT(*) against COUNT(column), ROW_NUMBER against RANK and DENSE_RANK, and how duplicate rows change a streak. The shapes: employees paid above their department\'s average; reviewers who rated the same title exactly twice with the second rating higher; users with three or more consecutive login days, with the streak\'s start and length.', ['reported-amzn']],
     ],
     sources: {
       'blind-amzn': ['Blind — "Amazon Business Intelligence Engineer (BIE L5) Interview 2025" (candidate report, replies to 15 Oct 2025)', 'https://www.teamblind.com/post/amazon-business-intelligence-engineer-bie-l5-interview-2025-jdr2idmd', '14 Sep 2025'],
       'exponent-amzn': ['Exponent — Amazon Business Intelligence Engineer interview guide', 'https://www.tryexponent.com/guides/amazon-bie-interview', 'shown as "updated 2 months ago" on 14 Sep 2026'],
+      // `direct`: told to us, not published — the page says so and names no one.
+      'reported-amzn': ['A Business Intelligence Engineer candidate, by email to SQL Quest (name withheld at their request)', null, '21 Oct 2026', 'direct'],
     },
   },
   meta: {

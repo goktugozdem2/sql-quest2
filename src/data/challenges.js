@@ -3794,5 +3794,68 @@ ORDER BY total_orders DESC;`,
     hint_tr: "Bir CTE içinde her yolcu için üç şey hesapla: temizlenmiş liman (boş değeri NULLIF ile NULL'a çevir, sonra COALESCE ile 'Unknown' yap), ham yaş ve doldurulmuş yaş — yaşın ve pclass ile sex'e göre bölümlenmiş bir pencere AVG'sinin COALESCE'i. Sonra CTE'yi limana göre grupla: ages_missing, COUNT(*) eksi ham yaşın COUNT'u; iki ortalama da ham ve doldurulmuş yaşın AVG'si.",
     example_tr: { input: "891 yolcu, 177 eksik yaş, bir boş liman", output: "4 satır — S, C, Q ve tek yolcudan oluşan bir Unknown" },
     dataset: "titanic"
+  },
+  // 317-319 (2026-10-21): the shapes of a Business Intelligence Engineer
+  // technical round a candidate described to us by email (docs/reads/
+  // amazon-bie-candidate-report-2026-10-21.md, name withheld). Not the
+  // interview's questions: our own wording on our own synthetic tables
+  // (ecommerce.logins / ecommerce.reviews), each with the trap the round's
+  // follow-ups were about planted in the data. tests/challenges-317-319.test.js.
+  {
+    id: 317,
+    slug: "reviewed-twice-scored-higher",
+    title: "Reviewed Twice, Scored Higher the Second Time",
+    difficulty: "Medium",
+    category: "Window Functions",
+    skills: ["SELECT", "Window Functions", "ROW_NUMBER", "PARTITION BY", "CTE", "Self-Join", "JOIN"],
+    xpReward: 60,
+    description: "The product team wants to know who changed their mind upwards. In **reviews**, find every customer who reviewed the **same product exactly twice**, where the **second review (by `review_date`)** gave **more stars** than the first.\n\nShow **exactly these 2 columns**: `name` (from **customers**) and `product`. Order by `name`, then `product`.\n\nTwo things decide the answer: a customer who reviewed a product **three** times does not count, even if their second score went up; and \"second\" means second **by date**, not by `review_id` \u2014 one customer's rows were entered out of order. An equal score is not higher.",
+    tables: ["reviews", "customers"],
+    example: { input: "18 reviews by 8 customers", output: "3 rows — one Office Chair, two Laptop Pro" },
+    hint: "Number each customer's reviews of one product by date with ROW_NUMBER, and count them with COUNT(*) as a window over the same partition. Then put review 1 and review 2 of the same customer and product side by side (a self-join, or LAG on the second row), keep the pairs whose partition count is exactly 2, and compare the stars.",
+    solution: "WITH r AS (SELECT customer_id, product, stars, ROW_NUMBER() OVER (PARTITION BY customer_id, product ORDER BY review_date) AS rn, COUNT(*) OVER (PARTITION BY customer_id, product) AS n FROM reviews) SELECT c.name, r1.product FROM r r1 JOIN r r2 ON r2.customer_id = r1.customer_id AND r2.product = r1.product AND r2.rn = 2 JOIN customers c ON c.customer_id = r1.customer_id WHERE r1.rn = 1 AND r1.n = 2 AND r2.stars > r1.stars ORDER BY c.name, r1.product",
+    title_tr: "İki Kez Yorumladı, İkincisinde Daha Yüksek Puan Verdi",
+    description_tr: "\u00dcr\u00fcn ekibi fikrini yukar\u0131 y\u00f6nde de\u011fi\u015ftirenleri g\u00f6rmek istiyor. **reviews** tablosunda **ayn\u0131 \u00fcr\u00fcn\u00fc tam olarak iki kez** yorumlayan ve **ikinci yorumunda (`review_date`'e g\u00f6re)** birincisinden **daha fazla y\u0131ld\u0131z** veren her m\u00fc\u015fteriyi bul.\n\n**Tam olarak \u015fu 2 kolonu** g\u00f6ster: `name` (**customers** tablosundan) ve `product`. `name`, sonra `product`'a g\u00f6re s\u0131rala.\n\nCevab\u0131 iki \u015fey belirler: bir \u00fcr\u00fcn\u00fc **\u00fc\u00e7** kez yorumlayan m\u00fc\u015fteri, ikinci puan\u0131 artm\u0131\u015f olsa bile say\u0131lmaz; ve \"ikinci\", `review_id`'ye g\u00f6re de\u011fil **tarihe g\u00f6re** ikinci demektir \u2014 bir m\u00fc\u015fterinin sat\u0131rlar\u0131 s\u0131ras\u0131z girilmi\u015f. E\u015fit puan daha y\u00fcksek say\u0131lmaz.",
+    hint_tr: "Bir m\u00fc\u015fterinin bir \u00fcr\u00fcne yapt\u0131\u011f\u0131 yorumlar\u0131 ROW_NUMBER ile tarihe g\u00f6re numaraland\u0131r ve ayn\u0131 b\u00f6l\u00fcm \u00fczerinde pencere olarak COUNT(*) ile say. Sonra ayn\u0131 m\u00fc\u015fteri ve \u00fcr\u00fcn\u00fcn 1. ve 2. yorumunu yan yana getir (self-join ya da ikinci sat\u0131rda LAG), b\u00f6l\u00fcm say\u0131s\u0131 tam 2 olan \u00e7iftleri tut ve y\u0131ld\u0131zlar\u0131 kar\u015f\u0131la\u015ft\u0131r.",
+    example_tr: { input: "8 müşteriden 18 yorum", output: "3 satır — bir Office Chair, iki Laptop Pro" },
+    dataset: "ecommerce"
+  },
+  {
+    id: 318,
+    slug: "three-day-login-streaks",
+    title: "Three-Day Login Streaks",
+    difficulty: "Hard",
+    category: "Gaps and Islands",
+    skills: ["SELECT", "CTE", "Window Functions", "ROW_NUMBER", "Date Functions", "DISTINCT", "GROUP BY", "HAVING", "JOIN"],
+    xpReward: 90,
+    description: "Retention wants every **streak** of logins on **3 or more consecutive calendar days**. **logins** has one row per login, with a timestamp in `login_at` \u2014 and some customers log in more than once a day.\n\nShow **exactly these 3 columns**: `name` (from **customers**), `streak_start` (the streak's first day, `YYYY-MM-DD`) and `streak_length` (its number of days). A customer with two separate streaks appears twice. Order by `streak_length` descending, then `name`, then `streak_start`.\n\nThe trap is the second login on the same day: counted as its own row, it breaks a real streak in two. A streak may cross the end of a month.",
+    tables: ["logins", "customers"],
+    example: { input: "37 logins by 9 customers in March 2024", output: "5 streaks — two of 5 days, one of 4, two of 3" },
+    hint: "Reduce the logins to one row per customer per calendar day first (DATE of the timestamp, DISTINCT). On those days, the day minus its ROW_NUMBER within the customer is the same for every day of one unbroken run \u2014 JULIANDAY makes the subtraction work in SQLite. Group by customer and that key, keep groups of 3 or more, and take MIN of the day and COUNT.",
+    solution: "WITH days AS (SELECT DISTINCT customer_id, DATE(login_at) AS login_day FROM logins), keyed AS (SELECT customer_id, login_day, JULIANDAY(login_day) - ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY login_day) AS grp FROM days), streaks AS (SELECT customer_id, MIN(login_day) AS streak_start, COUNT(*) AS streak_length FROM keyed GROUP BY customer_id, grp HAVING COUNT(*) >= 3) SELECT c.name, s.streak_start, s.streak_length FROM streaks s JOIN customers c ON c.customer_id = s.customer_id ORDER BY s.streak_length DESC, c.name, s.streak_start",
+    title_tr: "Üç Günlük Giriş Serileri",
+    description_tr: "Elde tutma ekibi **3 veya daha fazla ard\u0131\u015f\u0131k takvim g\u00fcn\u00fc** s\u00fcren her giri\u015f **serisini** istiyor. **logins** tablosunda her giri\u015f i\u00e7in bir sat\u0131r var, zaman damgas\u0131 `login_at` kolonunda \u2014 ve baz\u0131 m\u00fc\u015fteriler g\u00fcnde birden fazla kez giri\u015f yap\u0131yor.\n\n**Tam olarak \u015fu 3 kolonu** g\u00f6ster: `name` (**customers** tablosundan), `streak_start` (serinin ilk g\u00fcn\u00fc, `YYYY-MM-DD`) ve `streak_length` (g\u00fcn say\u0131s\u0131). \u0130ki ayr\u0131 serisi olan m\u00fc\u015fteri iki kez g\u00f6r\u00fcn\u00fcr. `streak_length`'e g\u00f6re azalan, sonra `name`, sonra `streak_start`'a g\u00f6re s\u0131rala.\n\nTuzak, ayn\u0131 g\u00fcndeki ikinci giri\u015f: ayr\u0131 bir sat\u0131r olarak say\u0131l\u0131rsa ger\u00e7ek bir seriyi ikiye b\u00f6ler. Bir seri ay sonunu ge\u00e7ebilir.",
+    hint_tr: "\u00d6nce giri\u015fleri m\u00fc\u015fteri ba\u015f\u0131na takvim g\u00fcn\u00fc ba\u015f\u0131na bir sat\u0131ra indir (zaman damgas\u0131n\u0131n DATE'i, DISTINCT). Bu g\u00fcnlerde, g\u00fcn eksi m\u00fc\u015fteri i\u00e7indeki ROW_NUMBER, kesintisiz bir serinin her g\u00fcn\u00fc i\u00e7in ayn\u0131d\u0131r \u2014 SQLite'ta \u00e7\u0131karmay\u0131 JULIANDAY yapar. M\u00fc\u015fteriye ve bu anahtara g\u00f6re grupla, 3 veya daha fazla g\u00fcnl\u00fck gruplar\u0131 tut, g\u00fcn\u00fcn MIN'ini ve COUNT'u al.",
+    example_tr: { input: "Mart 2024'te 9 müşteriden 37 giriş", output: "5 seri — ikisi 5 gün, biri 4, ikisi 3" },
+    dataset: "ecommerce"
+  },
+  {
+    id: 319,
+    slug: "three-login-days-in-any-week",
+    title: "Three Login Days in Any 7-Day Window",
+    difficulty: "Hard",
+    category: "Window Functions",
+    skills: ["SELECT", "CTE", "Window Functions", "LAG", "Date Functions", "DISTINCT", "GROUP BY", "JOIN"],
+    xpReward: 90,
+    description: "The streak rule is too strict for the habit metric: a customer counts as **active** once they have logged in on **at least 3 different days within any 7-day window** \u2014 the days do not need to be consecutive. **logins** has one row per login (`login_at` is a timestamp).\n\nShow **exactly these 2 columns**: `name` (from **customers**) and `first_hit` \u2014 the earliest day (`YYYY-MM-DD`) on which the customer completed 3 login days inside 7 days. Order by `first_hit`, then `name`.\n\nA 7-day window means the first and the third login day are **at most 6 days apart**. Three logins on the **same** day are one login day, not three.",
+    tables: ["logins", "customers"],
+    example: { input: "37 logins by 9 customers in March 2024", output: "7 customers, the first on 2024-03-03" },
+    hint: "Reduce the logins to distinct (customer, day) pairs first. On those days, LAG(day, 2) over the customer's days in date order is the login day two back; when today minus that is 6 days or less, three login days fit in one 7-day window. Keep those rows and take the MIN day per customer. (A COUNT window with a RANGE frame of 6 days also works.)",
+    solution: "WITH days AS (SELECT DISTINCT customer_id, DATE(login_at) AS login_day FROM logins), lagged AS (SELECT customer_id, login_day, LAG(login_day, 2) OVER (PARTITION BY customer_id ORDER BY login_day) AS two_back FROM days) SELECT c.name, MIN(l.login_day) AS first_hit FROM lagged l JOIN customers c ON c.customer_id = l.customer_id WHERE JULIANDAY(l.login_day) - JULIANDAY(l.two_back) <= 6 GROUP BY c.name ORDER BY first_hit, c.name",
+    title_tr: "Herhangi Bir 7 Günde Üç Giriş Günü",
+    description_tr: "Seri kural\u0131 al\u0131\u015fkanl\u0131k metri\u011fi i\u00e7in fazla kat\u0131: bir m\u00fc\u015fteri, **herhangi bir 7 g\u00fcnl\u00fck pencerede en az 3 farkl\u0131 g\u00fcnde** giri\u015f yapt\u0131\u011f\u0131nda **aktif** say\u0131l\u0131r \u2014 g\u00fcnlerin ard\u0131\u015f\u0131k olmas\u0131 gerekmez. **logins** tablosunda her giri\u015f i\u00e7in bir sat\u0131r var (`login_at` bir zaman damgas\u0131).\n\n**Tam olarak \u015fu 2 kolonu** g\u00f6ster: `name` (**customers** tablosundan) ve `first_hit` \u2014 m\u00fc\u015fterinin 7 g\u00fcn i\u00e7inde 3 giri\u015f g\u00fcn\u00fcn\u00fc ilk tamamlad\u0131\u011f\u0131 g\u00fcn (`YYYY-MM-DD`). `first_hit`, sonra `name`'e g\u00f6re s\u0131rala.\n\n7 g\u00fcnl\u00fck pencere, birinci ve \u00fc\u00e7\u00fcnc\u00fc giri\u015f g\u00fcn\u00fcn\u00fcn **en fazla 6 g\u00fcn arayla** olmas\u0131 demektir. **Ayn\u0131** g\u00fcndeki \u00fc\u00e7 giri\u015f \u00fc\u00e7 de\u011fil, bir giri\u015f g\u00fcn\u00fcd\u00fcr.",
+    hint_tr: "\u00d6nce giri\u015fleri tekil (m\u00fc\u015fteri, g\u00fcn) \u00e7iftlerine indir. Bu g\u00fcnlerde, m\u00fc\u015fterinin g\u00fcnleri \u00fczerinde tarih s\u0131ras\u0131yla LAG(g\u00fcn, 2) iki \u00f6nceki giri\u015f g\u00fcn\u00fcd\u00fcr; bug\u00fcn eksi o g\u00fcn 6 g\u00fcn veya daha azsa, \u00fc\u00e7 giri\u015f g\u00fcn\u00fc tek bir 7 g\u00fcnl\u00fck pencereye s\u0131\u011far. Bu sat\u0131rlar\u0131 tut ve m\u00fc\u015fteri ba\u015f\u0131na en k\u00fc\u00e7\u00fck g\u00fcn\u00fc al. (6 g\u00fcnl\u00fck RANGE \u00e7er\u00e7eveli bir COUNT penceresi de i\u015fe yarar.)",
+    example_tr: { input: "Mart 2024'te 9 müşteriden 37 giriş", output: "7 müşteri, ilki 2024-03-03'te" },
+    dataset: "ecommerce"
   }
 ];
