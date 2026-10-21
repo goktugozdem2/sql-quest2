@@ -27,6 +27,10 @@ export const SOFT_FINGERPRINTS = [
   { id: 'vp1919x992', since: '2026-10-06', match: ({ viewport, landingSrc }) => viewport === 'desktop:1919x992' && !landingSrc },
   { id: 'la1920x1080', since: '2026-09-17', match: ({ viewport, landingSrc, tz }) => viewport === 'desktop:1920x1080' && tz === 'America/Los_Angeles' && !landingSrc },
   { id: 'utc1280x720', since: '2026-09-30', match: ({ viewport, tz }) => viewport === 'desktop:1280x720' && tz === 'UTC' },
+  // 2026-10-18: 308 guests since 2026-08-12, 281 of them from 10-14 (57 on
+  // 10-18 alone); every one with no landing source, none ever ran a query,
+  // six opened the Pro modal. Walks the topic pages' /app/ links.
+  { id: 'la800x600', since: '2026-10-14', match: ({ viewport, landingSrc, tz }) => viewport === 'tablet:800x600' && tz === 'America/Los_Angeles' && !landingSrc },
 ];
 
 export function botSignals({ userAgent = '', webdriver = false, languages = null, viewport = null, landingSrc = null, tz = null } = {}) {

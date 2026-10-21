@@ -33,6 +33,10 @@ describe('bot signals', () => {
     expect(botSignals({ userAgent: CHROME, viewport: 'desktop:1920x1080', tz: 'America/Los_Angeles', landingSrc: '' }).soft).toBe('la1920x1080');
     expect(botSignals({ userAgent: CHROME, viewport: 'desktop:1920x1080', tz: 'Europe/Istanbul', landingSrc: '' }).soft).toBe(null);
     expect(botSignals({ userAgent: CHROME, viewport: 'desktop:1280x720', tz: 'UTC' }).soft).toBe('utc1280x720');
+    // 2026-10-18: 308 guests, none with a landing source, none ever ran a query.
+    expect(botSignals({ userAgent: CHROME, viewport: 'tablet:800x600', tz: 'America/Los_Angeles', landingSrc: '' }).soft).toBe('la800x600');
+    expect(botSignals({ userAgent: CHROME, viewport: 'tablet:800x600', tz: 'America/Los_Angeles', landingSrc: 'search:bing' }).soft).toBe(null);
+    expect(botSignals({ userAgent: CHROME, viewport: 'tablet:800x600', tz: 'Europe/Istanbul', landingSrc: '' }).soft).toBe(null);
     expect(botDecision(botSignals({ userAgent: CHROME, viewport: 'desktop:1919x992' }))).toEqual({ write: true, stamp: 'vp1919x992' });
     expect(botDecision(botSignals({ userAgent: CHROME, viewport: 'desktop:1440x900', landingSrc: 'search:bing' }))).toEqual({ write: true, stamp: null });
     for (const f of SOFT_FINGERPRINTS) expect(f.since, f.id).toMatch(/^2026-\d\d-\d\d$/);

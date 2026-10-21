@@ -10,8 +10,11 @@
 -- Windows: W1 = [to-7d, to), W0 = [to-14d, to-7d), both UTC.
 -- People by coalesce(metadata.aid, username). Out: internal accounts
 -- (the leagues.js pattern), stamped bots (metadata.bot, from 2026-10-07),
--- and the two known crawler shapes on the first app_opened (metrics.md,
--- first_solve_10m trap: empty landingSrc + LA/1920x1080 or UTC/1280x720).
+-- and the known crawler shapes on the first app_opened (metrics.md,
+-- first_solve_10m trap): empty landingSrc + LA/1920x1080, UTC/1280x720,
+-- desktop:1919x992 (unstamped before 2026-10-07) or LA/tablet:800x600
+-- (unstamped before its fingerprint shipped, 2026-10-21; 308 guests since
+-- 2026-08-12, none ever ran a query).
 --
 -- Definitions are the registered ones (docs/agent/metrics.md):
 --   activation  = first_solve_10m (and its secondaries)
@@ -70,7 +73,9 @@ humans as (
   select * from first_open
   where not (coalesce(m->>'landingSrc', '') = ''
              and ((m->>'tz' = 'America/Los_Angeles' and m->>'viewport' = 'desktop:1920x1080')
-               or (m->>'tz' = 'UTC' and m->>'viewport' = 'desktop:1280x720')))
+               or (m->>'tz' = 'UTC' and m->>'viewport' = 'desktop:1280x720')
+               or m->>'viewport' = 'desktop:1919x992'
+               or (m->>'tz' = 'America/Los_Angeles' and m->>'viewport' = 'tablet:800x600')))
 ),
 
 -- ── Acquisition ─────────────────────────────────────────────────────────

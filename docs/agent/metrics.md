@@ -1008,12 +1008,22 @@ which is which. GetUrlInfo reports crawl facts, not the dashboard's word
 "Indexed" — a crawled URL is not thereby an indexed one.
 
 **From 2026-10-07 the app marks its own bots.** `metadata.bot` holds the
-fingerprint id (`vp1919x992`, `la1920x1080`, `utc1280x720` —
-src/utils/bot-signals.js) and a browser that declares itself automated writes
+fingerprint id (`vp1919x992`, `la1920x1080`, `utc1280x720`, and from
+2026-10-21 `la800x600` — src/utils/bot-signals.js) and a browser that declares itself automated writes
 no app event at all. Every first-contact read from that date adds
 `and (metadata #>> '{}')::jsonb->>'bot' is null`; `app_opened` also carries
 `wd`, `uaBot`, `langs` for telling the next wave apart. Before 10-07, filter
 by hand (the 10-04 → 10-07 waves: docs/reads/p1-guardrail-bing-2026-10-07.md).
+
+**Trap: the 800x600 tablet crawler (found 2026-10-18).** First `app_opened`
+with viewport `tablet:800x600`, tz `America/Los_Angeles`, no `landingSrc`:
+308 guests from 2026-08-12, 281 of them from 10-14 (57 on 10-18 alone);
+none ever ran a query, six opened the Pro modal (`pattern_mock`). It made
+the week to 10-17 read as 222 extra "new people" and inflated modal reach.
+Stamped `la800x600` once the 2026-10-21 fingerprint is deployed; before
+that, exclude it by hand (scripts/aar-weekly.sql does). Count new people who
+ran or solved (`challenge_first_run` / `challenge_solved`) when a crawler
+wave is suspected — it is the number no crawler has moved yet.
 
 **Trap: a rendering crawler counts as new people (found 2026-09-23).**
 From 2026-09-17 a crawler executing the app arrived through the topic pages'
