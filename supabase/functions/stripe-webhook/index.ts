@@ -19,6 +19,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Stripe from "https://esm.sh/stripe@12.0.0?target=deno";
+import { pickCustomerRow } from "./customer-row.ts";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
   apiVersion: "2023-10-16",
@@ -49,13 +50,18 @@ async function logProEvent(event: string, username: string | null, reason: strin
 // customer" and three need "take Pro away now"; before 2026-09-20 each one
 // carried its own copy and they had drifted (one forgot proAutoRenew, which
 // is the flag `lapsed-pro` segments on).
-async function findUserByCustomer(customerId: string | null) {
+//
+// Several rows can hold one customer id (a guest who trialled, then
+// registered — both rows carry it). `users[0]` of an unordered result picked
+// either; pickCustomerRow (./customer-row.ts) prefers the registered account,
+// then the row the subscription's metadata names, then the newest.
+async function findUserByCustomer(customerId: string | null, hintUsername: string | null = null) {
   if (!customerId) return null;
   const { data: users } = await supabase
     .from("users")
     .select("*")
     .filter("data->>stripeCustomerId", "eq", customerId);
-  return users && users.length > 0 ? users[0] : null;
+  return pickCustomerRow(users, hintUsername);
 }
 
 // proType is deliberately KEPT: pro-access.js needs it to tell a lapsed
@@ -422,14 +428,12 @@ serve(async (req) => {
         return new Response("Activation handled by checkout", { status: 200 });
       }
 
-      // Find user by Stripe customer ID
-      const { data: users } = await supabase
-        .from("users")
-        .select("*")
-        .filter("data->>stripeCustomerId", "eq", customerId);
+      // Find user by Stripe customer ID — the registered account when a
+      // guest row shares it (findUserByCustomer / pickCustomerRow).
+      const userRecord = await findUserByCustomer(customerId,
+        (invoice as { subscription_details?: { metadata?: { username?: string } } }).subscription_details?.metadata?.username || null);
 
-      if (users && users.length > 0) {
-        const userRecord = users[0];
+      if (userRecord) {
         const userData = userRecord.data;
 
         // The first charge after a trial. Stripe's own record decides it:
@@ -859,10 +863,7 @@ serve(async (req) => {
       const subscription = event.data.object as Stripe.Subscription;
       const customerId = subscription.customer as string;
       
-      const { data: users } = await supabase
-        .from("users")
-        .select("*")
-        .filter("data->>stripeCustomerId", "eq", customerId);
+      const userRecord = await findUserByCustomer(customerId, subscription.metadata?.username || null);
 
       // WHY a subscription ended decides whether the person keeps the period
       // (2026-09-14, founder: "ödeme fail olursa pro free'ye dönmeli").
@@ -892,8 +893,7 @@ serve(async (req) => {
       const endedAt = subscription.ended_at || subscription.canceled_at || null;
       const endedInsideTrial = !!subscription.trial_end && !!endedAt && endedAt <= subscription.trial_end + 3600;
 
-      if (users && users.length > 0) {
-        const userRecord = users[0];
+      if (userRecord) {
         const userData = userRecord.data;
         const trialNeverPaid = endedInsideTrial || userData.proTrial === true;
 
