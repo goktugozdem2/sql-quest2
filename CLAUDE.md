@@ -232,8 +232,9 @@ Key routing rules:
 `docs/agent/objectives.md` holds the current objective, its measured starting
 point, its checkpoints and what we would conclude at each. The ledger holds
 claims; objectives hold what the claims are *for*. Read it at the start of a
-session, before the ledger. Current: **50 paying customers per month by
-2026-12-08**, from 2 on 2026-09-09.
+session, before the ledger. Current: **O2, 10 paying customers per 30 days by
+2027-02-08** (set 2026-11-10; O1's 50 by 2026-12-08 was reset — its
+checkpoint reads after 10-02 were never written).
 
 ## Scorecard — the five numbers (2026-09-23)
 `docs/agent/scorecard.md` is the founder's metric frame with measured
