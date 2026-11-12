@@ -6,7 +6,7 @@
 import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
-import { BOT_UA_RE, SOFT_FINGERPRINTS, botSignals, botDecision } from '../src/utils/bot-signals.js';
+import { BOT_UA_RE, SOFT_FINGERPRINTS, SPAM_REFERRERS, isSpamReferrer, botSignals, botDecision } from '../src/utils/bot-signals.js';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const read = p => fs.readFileSync(path.join(ROOT, p), 'utf8');
@@ -27,19 +27,47 @@ describe('bot signals', () => {
     expect(botDecision(botSignals({ userAgent: CHROME, webdriver: false })).write).toBe(true);
   });
 
-  it('the crawler fingerprints are soft: written and stamped, never with a landing source', () => {
+  it('the crawler fingerprints are soft: written and stamped; an ordinary window with a source is not', () => {
     expect(botSignals({ userAgent: CHROME, viewport: 'desktop:1919x992', landingSrc: null }).soft).toBe('vp1919x992');
-    expect(botSignals({ userAgent: CHROME, viewport: 'desktop:1919x992', landingSrc: 'search:google' }).soft).toBe(null);
+    // Reversed 2026-11-12: this was pinned null on 10-07 (a known source
+    // protected the person). 49 people then arrived exactly so, search:google
+    // from New York, and none of the 916 at this size has ever run a query.
+    expect(botSignals({ userAgent: CHROME, viewport: 'desktop:1919x992', landingSrc: 'search:google' }).soft).toBe('vp1919x992');
     expect(botSignals({ userAgent: CHROME, viewport: 'desktop:1920x1080', tz: 'America/Los_Angeles', landingSrc: '' }).soft).toBe('la1920x1080');
     expect(botSignals({ userAgent: CHROME, viewport: 'desktop:1920x1080', tz: 'Europe/Istanbul', landingSrc: '' }).soft).toBe(null);
     expect(botSignals({ userAgent: CHROME, viewport: 'desktop:1280x720', tz: 'UTC' }).soft).toBe('utc1280x720');
-    // 2026-10-18: 308 guests, none with a landing source, none ever ran a query.
-    expect(botSignals({ userAgent: CHROME, viewport: 'tablet:800x600', tz: 'America/Los_Angeles', landingSrc: '' }).soft).toBe('la800x600');
-    expect(botSignals({ userAgent: CHROME, viewport: 'tablet:800x600', tz: 'America/Los_Angeles', landingSrc: 'search:bing' }).soft).toBe(null);
-    expect(botSignals({ userAgent: CHROME, viewport: 'tablet:800x600', tz: 'Europe/Istanbul', landingSrc: '' }).soft).toBe(null);
+    // 800x600 tablet: 943 people over all time (2026-11-12), three time zones,
+    // with and without a landing source, none ever ran a query. The window
+    // size alone — the 11-05 wave walked around a tz + no-source rule.
+    expect(botSignals({ userAgent: CHROME, viewport: 'tablet:800x600', tz: 'America/Los_Angeles', landingSrc: '' }).soft).toBe('tab800x600');
+    expect(botSignals({ userAgent: CHROME, viewport: 'tablet:800x600', tz: 'Asia/Shanghai', landingSrc: 'ref:aocr.org' }).soft).toBe('tab800x600');
+    expect(botSignals({ userAgent: CHROME, viewport: 'tablet:800x600', tz: 'Europe/Istanbul', landingSrc: 'search:bing' }).soft).toBe('tab800x600');
+    expect(botSignals({ userAgent: CHROME, viewport: 'tablet:820x1180', tz: 'America/Los_Angeles', landingSrc: '' }).soft).toBe(null);
+    // 2026-11-12: 1919x992 came back carrying search:google (49, New York);
+    // 1280x1200 is a Shanghai crawler nobody else has ever matched (511).
+    expect(botSignals({ userAgent: CHROME, viewport: 'desktop:1919x992', tz: 'America/New_York', landingSrc: 'search:google' }).soft).toBe('vp1919x992');
+    expect(botSignals({ userAgent: CHROME, viewport: 'desktop:1280x1200', tz: 'Asia/Shanghai', landingSrc: '' }).soft).toBe('vp1280x1200');
+    expect(botSignals({ userAgent: CHROME, viewport: 'desktop:1280x1024', tz: 'Asia/Shanghai', landingSrc: '' }).soft).toBe(null);
     expect(botDecision(botSignals({ userAgent: CHROME, viewport: 'desktop:1919x992' }))).toEqual({ write: true, stamp: 'vp1919x992' });
     expect(botDecision(botSignals({ userAgent: CHROME, viewport: 'desktop:1440x900', landingSrc: 'search:bing' }))).toEqual({ write: true, stamp: null });
     for (const f of SOFT_FINGERPRINTS) expect(f.since, f.id).toMatch(/^2026-\d\d-\d\d$/);
+  });
+
+  it('referrer spam is soft at any window size, and matches the host, not a substring', () => {
+    expect(botSignals({ userAgent: CHROME, viewport: 'desktop:1440x900', landingSrc: 'ref:aocr.org' }).soft).toBe('refspam');
+    expect(isSpamReferrer('ref:aocr.org')).toBe(true);
+    expect(isSpamReferrer('ref:news.aocr.org')).toBe(true);
+    expect(isSpamReferrer('ref:notaocr.org')).toBe(false);
+    expect(isSpamReferrer('ref:aocr.org.example.com')).toBe(false);
+    expect(isSpamReferrer('utm:aocr.org')).toBe(false); // a utm we were handed is a person's link
+    expect(isSpamReferrer(null)).toBe(false);
+    expect(botDecision(botSignals({ userAgent: CHROME, viewport: 'desktop:1440x900', landingSrc: 'ref:aocr.org' }))).toEqual({ write: true, stamp: 'refspam' });
+  });
+
+  it('the spam list is the landing tracker’s, entry for entry', () => {
+    const m = /var SPAM_REFERRERS = (\[[^\]]*\]);/.exec(read('src/track.js'));
+    expect(m, 'SPAM_REFERRERS in src/track.js').toBeTruthy();
+    expect(JSON.parse(m[1].replace(/'/g, '"'))).toEqual(SPAM_REFERRERS);
   });
 
   it('keeps only coarse signals, never the UA string', () => {

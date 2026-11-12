@@ -11,10 +11,14 @@
 -- People by coalesce(metadata.aid, username). Out: internal accounts
 -- (the leagues.js pattern), stamped bots (metadata.bot, from 2026-10-07),
 -- and the known crawler shapes on the first app_opened (metrics.md,
--- first_solve_10m trap): empty landingSrc + LA/1920x1080, UTC/1280x720,
--- desktop:1919x992 (unstamped before 2026-10-07) or LA/tablet:800x600
--- (unstamped before its fingerprint shipped, 2026-10-21; 308 guests since
--- 2026-08-12, none ever ran a query).
+-- first_solve_10m trap): empty landingSrc + LA/1920x1080 or UTC/1280x720;
+-- by window size alone, in any time zone and with or without a landing
+-- source, desktop:1919x992 (916 people, unstamped before 2026-10-07 and with
+-- a source until the 11-12 fingerprint ships), tablet:800x600 (943 people
+-- 2026-08-12 → 11-11) and desktop:1280x1200 (511 from 2026-10-15) — none of
+-- them ever ran a query; and
+-- referrer spam, landingSrc ref:aocr.org, on landing rows as well as app
+-- rows (816 landing people from 2026-10-28; unstamped before refspam ships).
 --
 -- Definitions are the registered ones (docs/agent/metrics.md):
 --   activation  = first_solve_10m (and its secondaries)
@@ -50,6 +54,7 @@ ev as (
   ) x
   where coalesce(username, '') !~* '^(test|qa_|fabletest|linktest|internalroutine|sqlquest$)'
     and m->>'bot' is null
+    and coalesce(m->>'landingSrc', '') !~* '^ref:(.+\.)?aocr\.org$'
 ),
 -- First app_opened per person, over all time (not just the 28 days), so a
 -- returning person is never counted as new.
@@ -71,11 +76,11 @@ first_open as (
 ),
 humans as (
   select * from first_open
-  where not (coalesce(m->>'landingSrc', '') = ''
-             and ((m->>'tz' = 'America/Los_Angeles' and m->>'viewport' = 'desktop:1920x1080')
-               or (m->>'tz' = 'UTC' and m->>'viewport' = 'desktop:1280x720')
-               or m->>'viewport' = 'desktop:1919x992'
-               or (m->>'tz' = 'America/Los_Angeles' and m->>'viewport' = 'tablet:800x600')))
+  where not ((coalesce(m->>'landingSrc', '') = ''
+               and ((m->>'tz' = 'America/Los_Angeles' and m->>'viewport' = 'desktop:1920x1080')
+                 or (m->>'tz' = 'UTC' and m->>'viewport' = 'desktop:1280x720')))
+             or m->>'viewport' in ('desktop:1919x992', 'tablet:800x600', 'desktop:1280x1200')
+             or coalesce(m->>'landingSrc', '') ~* '^ref:(.+\.)?aocr\.org$')
 ),
 
 -- ── Acquisition ─────────────────────────────────────────────────────────
