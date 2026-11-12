@@ -81,7 +81,7 @@ import { resultsMatch, solutionRequiresOrder, sortRowsCanonical } from './utils/
 import { normalizeAiMessages } from './utils/ai-tutor-client.js';
 import { t as i18n_t, getCurrentLang, setLang as i18n_setLang, subscribeLang, SUPPORTED_LANGS, localizeChallenge, localizeInterview, localizeQuestion } from './utils/i18n.js';
 import { buildWeeklyReport, detectMilestones } from './utils/weekly-report.js';
-import { isMcqQuestion, scoreMcqAnswer, applyHintPenalty, nextOptionId, findOption, mockMistakeDiagnosis, weakConceptsFromHistory } from './utils/mock-interview.js';
+import { isMcqQuestion, scoreMcqAnswer, applyHintPenalty, nextOptionId, findOption, buildInterviewProgress, mockMistakeDiagnosis, weakConceptsFromHistory } from './utils/mock-interview.js';
 import { explainsApproach, approachSubmittedEvent } from './utils/mock-approach.js';
 
 // 2026-09-12 (founder's cleanup item 12): the sector deep-link parameter is
@@ -10868,10 +10868,8 @@ function SQLQuest() {
   // Auto-save interview progress
   const saveInterviewProgress = () => {
     if (!currentUser || !activeInterview || interviewCompleted) return;
-    
-    const progress = {
-      interviewId: activeInterview.id,
-      interviewTitle: activeInterview.title,
+
+    const progress = buildInterviewProgress(activeInterview, {
       questionIndex: interviewQuestion,
       currentQuery: interviewQuery,
       selectedOption: interviewSelectedOption,
@@ -10879,20 +10877,37 @@ function SQLQuest() {
       totalTimer: interviewTotalTimer,
       answers: interviewAnswers,
       hintsUsed: interviewHintsUsed,
-      savedAt: new Date().toISOString()
-    };
-    
+    });
+    if (!progress) return;
+
     localStorage.setItem(`sqlquest_interview_progress_${currentUser}`, JSON.stringify(progress));
     setSavedInterviewProgress(progress);
   };
-  
-  // Save progress when interview state changes
+
+  // The interval below outlives every re-render, so it must NOT close over the
+  // render it was created in. This ref is re-pointed at the fresh closure on
+  // each render; the interval calls through it and therefore always writes
+  // current state.
+  const saveInterviewProgressRef = useRef(saveInterviewProgress);
+  saveInterviewProgressRef.current = saveInterviewProgress;
+
+  // Save progress every 5s while an interview is in flight.
+  //
+  // 2026-09-07: this dependency array used to list `interviewTimer` and
+  // `interviewTotalTimer`, which tick once per second. React tore the effect
+  // down and re-created it every second, so a 5000ms interval was always
+  // cleared at ~1000ms and the callback NEVER ran — verified live on
+  // capital-one-codesignal, 70+ seconds on question 1 with a stale entry still
+  // in localStorage. The only write that ever landed was the explicit call in
+  // closeInterview(), i.e. progress survived "Quit" and nothing else.
+  //
+  // Depend ONLY on the values that decide whether the interval should exist.
+  // Guarded by tests/mock-interview.test.js (source guard).
   useEffect(() => {
-    if (activeInterview && !interviewCompleted && interviewTimerActive) {
-      const saveInterval = setInterval(saveInterviewProgress, 5000); // Save every 5 seconds
-      return () => clearInterval(saveInterval);
-    }
-  }, [activeInterview, interviewQuestion, interviewQuery, interviewSelectedOption, interviewTimer, interviewTotalTimer, interviewAnswers, interviewCompleted]);
+    if (!activeInterview || interviewCompleted || !interviewTimerActive) return undefined;
+    const saveInterval = setInterval(() => saveInterviewProgressRef.current(), 5000);
+    return () => clearInterval(saveInterval);
+  }, [activeInterview, interviewCompleted, interviewTimerActive]);
 
   const runInterviewQuery = () => {
     if (!db || !interviewQuery.trim() || !activeInterview) return;

@@ -28,6 +28,9 @@
 // matches what the data returns.
 
 import { describe, it, expect, beforeAll } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
 import {
   QUESTION_TYPE_SQL,
   QUESTION_TYPE_MCQ,
@@ -40,6 +43,7 @@ import {
   tallyInterviewResult,
   validateMcqQuestion,
   nextOptionId,
+  buildInterviewProgress,
 } from '../src/utils/mock-interview.js';
 import { localizeQuestion } from '../src/utils/i18n.js';
 
@@ -481,5 +485,164 @@ describe('question bodies are complete and readable', () => {
     expect(app).toMatch(/const questionHtml = \(text\) =>/);
     expect(app).toContain('__html: questionHtml(currentQ.description)');
     expect(app).toMatch(/replace\(\/`\(\[\^`\\n\]\+\)`\/g/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Auto-save of in-flight interview progress
+//
+// THE BUG (found live 2026-09-07, in the browser, on capital-one-codesignal)
+//
+// The effect that owns the 5-second auto-save listed `interviewTimer` and
+// `interviewTotalTimer` in its dependency array. Both tick once per second, so
+// React tore the effect down and re-created it every second — and a 5000ms
+// interval that is cleared at 1000ms never fires. Not once, in the whole life
+// of the feature.
+//
+// The observable cost: the ONLY write that ever landed was the explicit
+// saveInterviewProgress() inside closeInterview(), i.e. progress survived
+// clicking "Quit" and nothing else. A tab crash, an OS reload or a navigation
+// away lost the sitting. Sat on question 1 of the Capital One mock for 70+
+// seconds and localStorage still held a STALE entry from a previous, quit
+// interview.
+//
+// Two tests, because there are two separable halves:
+//   1. the SNAPSHOT — buildInterviewProgress, the pure part, asserted against
+//      the exact fields the resume path in app.jsx reads back;
+//   2. the INTERVAL LIFETIME — a source-shape guard, in the style of the
+//      recommendation-order guard in tests/challenge-order.test.js. There is
+//      no way to assert "this interval survives a re-render" without mounting
+//      the 24k-line monolith, but there IS a way to assert the dependency
+//      array that caused it can never come back.
+// ---------------------------------------------------------------------------
+
+describe('buildInterviewProgress', () => {
+  const interview = { id: 'capital-one-codesignal', title: 'Capital One — CodeSignal SQL' };
+  const state = {
+    questionIndex: 3,
+    currentQuery: 'SELECT 1',
+    selectedOption: 'b',
+    questionTimer: 42,
+    totalTimer: 900,
+    answers: [{ correct: true, score: 10, maxScore: 10 }],
+    hintsUsed: ['q1'],
+  };
+
+  it('carries every field the resume path reads back', () => {
+    const p = buildInterviewProgress(interview, state);
+    // These key names are load-bearing: startInterview() reads them one by one
+    // (app.jsx ~8797) and the resume card renders interviewTitle / totalTimer.
+    expect(p).toMatchObject({
+      interviewId: 'capital-one-codesignal',
+      interviewTitle: 'Capital One — CodeSignal SQL',
+      questionIndex: 3,
+      currentQuery: 'SELECT 1',
+      selectedOption: 'b',
+      questionTimer: 42,
+      totalTimer: 900,
+      answers: state.answers,
+      hintsUsed: ['q1'],
+    });
+    expect(typeof p.savedAt).toBe('string');
+    expect(Number.isNaN(Date.parse(p.savedAt))).toBe(false);
+  });
+
+  it('survives a JSON round-trip through localStorage unchanged', () => {
+    const p = buildInterviewProgress(interview, state);
+    expect(JSON.parse(JSON.stringify(p))).toEqual(p);
+  });
+
+  it('returns null without an interview — there is nothing to save', () => {
+    expect(buildInterviewProgress(null, state)).toBeNull();
+    expect(buildInterviewProgress(undefined, {})).toBeNull();
+  });
+
+  it('keeps question 0 as 0, never collapsed to a falsy default', () => {
+    // The bug this guards: `questionIndex: index || 0` reads fine and is fine,
+    // but any `|| 1`-style normalisation here would resume the user onto the
+    // wrong question. Question 0 is the common case for a fresh sitting.
+    const p = buildInterviewProgress(interview, { questionIndex: 0 });
+    expect(p.questionIndex).toBe(0);
+  });
+
+  it('defaults the collections and timers rather than emitting undefined', () => {
+    const p = buildInterviewProgress(interview, {});
+    expect(p.questionIndex).toBe(0);
+    expect(p.currentQuery).toBe('');
+    expect(p.selectedOption).toBeNull();
+    expect(p.questionTimer).toBe(0);
+    expect(p.totalTimer).toBe(0);
+    expect(p.answers).toEqual([]);
+    expect(p.hintsUsed).toEqual([]);
+  });
+
+  it('preserves a null MCQ selection instead of dropping the key', () => {
+    // JSON.stringify drops undefined keys; the resume path uses `?? null`, so
+    // either would work — but a present null is what the shipped shape has and
+    // what the results screen counts as "skipped".
+    const p = buildInterviewProgress(interview, { selectedOption: null });
+    expect(Object.prototype.hasOwnProperty.call(p, 'selectedOption')).toBe(true);
+    expect(p.selectedOption).toBeNull();
+  });
+});
+
+describe('source guard: the interview auto-save interval outlives a timer tick', () => {
+  const APP_JSX = join(dirname(fileURLToPath(import.meta.url)), '..', 'src', 'app.jsx');
+  const appSource = readFileSync(APP_JSX, 'utf8');
+
+  // The autosave effect is the one useEffect that both sets an interval and
+  // names saveInterviewProgress. Found structurally rather than by line number
+  // so it stays bound to the LIVE source as app.jsx moves.
+  function autosaveEffect() {
+    const open = /useEffect\(\(\) => \{/g;
+    let m;
+    while ((m = open.exec(appSource)) !== null) {
+      const close = /\n\s*\},\s*\[([^\]]*)\]\s*\);/g;
+      close.lastIndex = m.index;
+      const end = close.exec(appSource);
+      if (!end) continue;
+      const body = appSource.slice(m.index, end.index);
+      if (/setInterval/.test(body) && /saveInterviewProgress/.test(body)) {
+        return {
+          body,
+          deps: end[1].split(',').map(s => s.trim()).filter(Boolean),
+          line: appSource.slice(0, m.index).split('\n').length,
+        };
+      }
+    }
+    throw new Error('interview auto-save effect not found in app.jsx');
+  }
+
+  it('finds the effect at all', () => {
+    expect(autosaveEffect().body).toContain('5000');
+  });
+
+  it('does not depend on any per-second value', () => {
+    // interviewTimer / interviewTotalTimer increment once per second in the
+    // timer effect (app.jsx ~8691). Either one in this dependency array means
+    // the 5000ms interval is destroyed at 1000ms and NEVER fires.
+    const { deps, line } = autosaveEffect();
+    const perTick = deps.filter(d => d === 'interviewTimer' || d === 'interviewTotalTimer');
+    expect(
+      perTick,
+      `app.jsx:${line} — the auto-save effect depends on [${perTick.join(', ')}], ` +
+      `which tick(s) once per second. The 5s interval is torn down before it can fire. ` +
+      `Read the current state through a ref instead of re-creating the interval.`
+    ).toEqual([]);
+  });
+
+  it('reads current state through a ref, so the surviving interval is not stale', () => {
+    // Trimming the deps alone is not enough: saveInterviewProgress closes over
+    // state, so a long-lived interval would keep writing the state as it was
+    // when the interview started.
+    const { body } = autosaveEffect();
+    expect(body).toMatch(/saveInterviewProgressRef\.current/);
+  });
+
+  it('still only runs while an interview is actually in flight', () => {
+    const { deps } = autosaveEffect();
+    expect(deps).toContain('activeInterview');
+    expect(deps).toContain('interviewCompleted');
+    expect(deps).toContain('interviewTimerActive');
   });
 });
