@@ -248,6 +248,21 @@
     try { return localStorage.getItem(LANDING_SRC_KEY) || null; } catch (_) { return null; }
   }
 
+  // Referrer spam (2026-11-12): hosts whose referrals are only ever crawlers.
+  // Rows are stamped `bot: 'refspam'`, never dropped, so a read excludes them
+  // and a mistake is recoverable. Kept identical to SPAM_REFERRERS in
+  // src/utils/bot-signals.js (tests/bot-signals.test.js).
+  var SPAM_REFERRERS = ['aocr.org'];
+  function isSpamReferrer(src) {
+    var m = /^ref:(.+)$/.exec(String(src || ''));
+    if (!m) return false;
+    var host = m[1].toLowerCase();
+    for (var i = 0; i < SPAM_REFERRERS.length; i++) {
+      if (hostMatches(host, SPAM_REFERRERS[i])) return true;
+    }
+    return false;
+  }
+
   // First touch wins — the same rule arrivalSrc uses in app.jsx. Explicit
   // param beats referrer: utm_source, else ref, else src (an assistant or a
   // share link can carry any of the three onto a landing page). Runs before
@@ -337,6 +352,7 @@
       // Both on every row, so a cta_* click is attributable without a join.
       try { meta.utm = utmSource(); } catch (_) { meta.utm = null; }
       meta.landingSrc = landingSrc();
+      if (isSpamReferrer(meta.landingSrc)) meta.bot = 'refspam';
       if (ctaArm) { meta.ctaArm = ctaArm; meta.ctaTest = CTA_TEST_ID; }
       try { meta.tz = Intl.DateTimeFormat().resolvedOptions().timeZone || null; } catch (_) {}
 
