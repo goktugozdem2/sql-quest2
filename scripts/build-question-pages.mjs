@@ -170,6 +170,68 @@ const foot = `<script defer src="/track.js"></script>
 </html>
 `;
 
+// The search snippet of a question page (2026-11-13).
+//
+// The 10-27 read pre-registered in docs/plans/seo-october-2026-09-29.md §3:
+// "if CTR stays under 1.5% at position <= 10, the lever is the generator's
+// title/description template". It did: 28 days to 11-10, 4,490 impressions at
+// position 7.6, 29 clicks, 0.65%. The old template ran 70–95 characters of
+// title (Google cut the difficulty and the brand) and opened the description
+// with the first 138 characters of the problem — often scene-setting ("The
+// maritime inquiry board needs…") cut mid-sentence by "…", so the promise
+// after it never reached the visible window.
+//
+// Now: the title is the challenge's name + "SQL Interview Question" when it
+// fits in 70 characters with the brand, a shorter tail when it does not; the
+// description leads with the task sentence (the first imperative one), then
+// the difficulty and topic in words a searcher uses, then what happens on the
+// page. Never the solution, never the hint, never a free count
+// (tests/question-pages.test.js, "snippet").
+export const QUESTION_TITLE_MAX = 70;
+export const QUESTION_DESC_MIN = 120;
+export const QUESTION_DESC_MAX = 170;
+const SNIPPET_TOPIC = {
+  'Querying Basics': 'SELECT', 'Aggregation & Grouping': 'GROUP BY', 'Joins': 'JOIN',
+  'Subqueries & CTEs': 'CTE and subquery', 'Conditional Logic': 'CASE WHEN', 'Window Functions': 'window function',
+  'String Functions': 'string function', 'Date Functions': 'date function', 'NULL Handling': 'NULL handling',
+};
+const TASK_VERB = /^(Find|Write|Build|Calculate|Compute|Categorize|Classify|Show|List|Return|Count|Rank|Identify|Join|Select|Produce|Get|Display|Determine|Combine|Compare|Flag|Label|Group|Sum|Create|Retrieve|Pull|Report|Split|Extract|Bucket|Measure|Track|Detect|Segment|Total|Pivot|Add|Insert|Update|Delete|Replace|Convert|Format|Clean|Match|Filter|Sort|Order|Break|Tag|Assign|Mark|Estimate|Model|Summarize|Summarise|Turn)\b/;
+const BRAND = ' | SQLQuest.app';
+const cutWords = (s, max) => (s.length <= max ? s : `${s.slice(0, max - 1).replace(/[\s,;:—-]+\S*$/, '')}…`);
+
+// A column list ("Show emp_a, emp_b, department…"), an ordering rule ("Sort by
+// avg_rating descending."), an operator aside ("The < trick…") or a lead-in
+// ending in a colon tells a searcher nothing about the question, so it is
+// never the task sentence. Only the opening three sentences are candidates —
+// later ones are the spec. With none left, a sentence from the title.
+const SNAKE = /\b[a-z]+_[a-z0-9_]+\b/g;
+const HAS_SNAKE = /\b[a-z]+_[a-z0-9_]+\b/;
+const INSTRUCTION = /^(Show|Sort|Filter|Return|Order|Use|Using|Produce|Join|JOIN|Limit|Round|Include|Exclude|Output|Select|Keep|Name|Alias|Display)\b/;
+export const isSpecSentence = x => x.length < 30 || /:$/.test(x) || /[<>=]/.test(x)
+  || (x.match(SNAKE) || []).length >= 2
+  || (INSTRUCTION.test(x) && (HAS_SNAKE.test(x) || /,/.test(x) || x.length < 60));
+
+export function questionTasks(c) {
+  const opening = plain(c.description).split(/(?<=[.!?])\s+/).filter(Boolean).slice(0, 3);
+  const ok = opening.filter(x => !isSpecSentence(x));
+  const strong = ok.filter(x => TASK_VERB.test(x) || /\?$/.test(x));
+  return [...new Set([...strong, ...ok, `Practice ${c.title.replace(/[.!?]$/, '')} on real sample data.`])];
+}
+export const questionTask = c => questionTasks(c)[0];
+
+export function questionSnippet(c) {
+  const tails = [' — SQL Interview Question', ' — SQL Question', ''];
+  const title = tails.map(t => `${c.title}${t}${BRAND}`).find(t => t.length <= QUESTION_TITLE_MAX) || `${c.title}${BRAND}`;
+  const diff = c.difficulty.toLowerCase();
+  const tail = `${diff === 'easy' ? 'An' : 'A'} ${diff} ${SNIPPET_TOPIC[primarySkill(c)] || 'SQL'} question: write the query in the browser, graded on the result.`;
+  const room = QUESTION_DESC_MAX - tail.length - 1;
+  const tasks = questionTasks(c);
+  const task = tasks.find(x => x.length <= room) || cutWords(tasks[0], room);
+  let description = `${task} ${tail}`;
+  if (description.length < QUESTION_DESC_MIN) description += ' No setup, no signup.';
+  return { title, description };
+}
+
 export function renderQuestion(c, ctx) {
   const { slugs, datasets, companies, bank, taggedBy } = ctx;
   const slug = slugs.get(c.id);
@@ -178,8 +240,7 @@ export function renderQuestion(c, ctx) {
   const primary = skills.find(s => s !== 'Querying Basics') || skills[0] || 'Querying Basics';
   const free = playableFree(c);
   const cos = (taggedBy[c.id] || []).map(n => companies[n.toLowerCase()]).filter(Boolean);
-  const title = `${c.title} — SQL Interview Question (${c.difficulty}) | SQLQuest.app`;
-  const description = `${plain(c.description).slice(0, 138).replace(/\s+\S*$/, '')}… A ${c.difficulty.toLowerCase()} SQL practice question on ${primary.toLowerCase()}, with the schema, a hint and an in-browser editor.`;
+  const { title, description } = questionSnippet(c);
   const concepts = [...new Set([...(c.skills || []), c.category].filter(Boolean))];
   const topicLinks = skills.filter(s => SKILL_PAGE[s]).map(s => `<a href="${SKILL_PAGE[s][0]}">${esc(SKILL_PAGE[s][1])}</a>`);
   if (RANKING.test(c.solution || '')) topicLinks.push('<a href="/challenges/ranking-functions/">Ranking function practice</a>');
@@ -245,7 +306,7 @@ export function renderHub(bank, slugs) {
   const order = CANONICAL_SKILLS.filter(s => groups[s]);
   // 2026-09-24: the bank size in words is floored to 50 (bankCountLabel);
   // numberOfItems below stays exact — it is a schema count of the list, not a sentence.
-  const title = `SQL Interview Questions — ${bankCountLabel(bank.length)} Practice Problems by Topic | SQLQuest.app`;
+  const title = `SQL Interview Questions: ${bankCountLabel(bank.length)} Practice Problems | SQLQuest.app`;
   const description = `Every SQL Quest practice question as its own page: joins, window functions, aggregation, CTEs, CASE, dates, NULLs and strings. Easy to Hard, runnable in the browser.`;
   const ld = [{ '@context': 'https://schema.org', '@type': 'CollectionPage', name: 'SQL Interview Questions', url, description,
     mainEntity: { '@type': 'ItemList', numberOfItems: bank.length, itemListElement: bank.slice(0, 50).map((c, i) => ({ '@type': 'ListItem', position: i + 1, url: `${SITE}/questions/${slugs.get(c.id)}/`, name: c.title })) } }];
