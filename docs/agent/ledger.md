@@ -27,6 +27,47 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### the question pages' snippet fits the window (the 10-27 rule)
+
+- **Claimed** 2026-11-13 · **Shipped** in PR `seo/question-snippets`, under the
+  rule pre-registered in docs/plans/seo-october-2026-09-29.md §3 ("if CTR
+  stays under 1.5% at position ≤ 10, the lever is the generator's
+  title/description template — one change for 300 pages, made after the
+  read") · **Read** 2026-12-15.
+- **Change** `questionSnippet` in scripts/build-question-pages.mjs, applied to
+  all 304 question pages:
+  - **Title:** `<name> — SQL Interview Question | SQLQuest.app` when it
+    fits in 70 characters. Otherwise `— SQL Question`, otherwise the name
+    alone. It was `<name> — SQL Interview Question (<Difficulty>) |
+    SQLQuest.app`, 70–95 characters.
+  - **Description:** 120–170 characters. It leads with the problem's task
+    sentence (never a column list or an ordering rule), then "A medium JOIN
+    question: write the query in the browser, graded on the result." It was
+    the first 138 characters of the problem cut by "…" plus a tail Google
+    never showed.
+  - **Hub title:** 72 → 61 characters.
+  - The body is unchanged. The page still publishes no solution and no Pro
+    hint.
+- **Why** 28 days to 11-10: 4,490 impressions at position 7.6, 29 clicks
+  (0.65%). Without the one off-intent page (`recursive-team-size-rollup`
+  for "rollup interview questions", 588 impressions), CTR is 0.74%.
+- **Metric** `gsc_position` (metrics.md) on the page slice of `gsc_daily`
+  for `/questions/<slug>/`, comparing the 28 days to 12-13 with the 28 days
+  to 11-10.
+- **Target** CTR ≥ 1.5% at a position no more than 1.0 worse.
+- **Falsification, stated in advance:**
+  - CTR below 1.0% at the same position → the snippet was not the cause.
+    The searchers want a solution, which these pages will not publish, so
+    no more template work goes here.
+  - Position down more than 2 → revert the template. The old title
+    carried the difficulty, the new one does not.
+- **Confounds**
+  - Brand demand halved over October (homepage queries), but the question
+    pages do not rank for brand queries.
+  - Google takes 2–4 weeks to show a new title. The read date allows for
+    that.
+- **Verdict** _pending_
+
 ### the /vs-datalemur/ snippet fits the result (the "datalemur" zero-click query)
 
 - **Claimed** 2026-10-11 · **Shipped** on the founder's ask in chat ("datalemur
@@ -53,7 +94,13 @@ of the verifier and must never be rounded to `FLAT`.
   impressions → the snippet was not the cause; the query is navigational
   and the page is not worth more title work. Position down > 2 → revert the
   title (the old one carried "Free Tier" and "SQL Practice" both).
-- **Verdict** _pending_
+- **Verdict** **MISS** (read 2026-11-13, four days late; docs/reads/seo-2026-11-13.md
+  §3). The three queries: before (09-13 → 10-10) 1,853 impressions, 0 clicks,
+  position 6.1; after (10-12 → 11-08) 1,821 impressions, 3 clicks (0.16%),
+  position 6.8. Under the 1% target. The falsification's "zero clicks" line
+  is not met (3 > 0), but the spirit holds: the query is navigational, as
+  the claim warned. Position fell 0.7, which is inside the 2-place revert
+  line, so the title stays. No more title work on this page.
 
 ### a 7-day trial at checkout: "nothing is charged today" (checkoutTrial)
 

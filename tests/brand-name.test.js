@@ -68,7 +68,8 @@ describe('every page carries the brand', () => {
     for (const { file } of pages) {
       const html = fs.readFileSync(path.join(PUB, file), 'utf8').slice(0, 8000);
       for (const m of html.matchAll(/(?:property|name)="(og:title|twitter:title|og:site_name)"\s+content="([^"]*)"/g)) {
-        if (/SQL Quest/.test(m[2])) bad.push(`${file} ${m[1]}: ${m[2]}`);
+        // \b: "— SQL Question" (the question pages' title tail, 2026-11-13) is not the brand.
+        if (/SQL Quest\b/.test(m[2])) bad.push(`${file} ${m[1]}: ${m[2]}`);
       }
     }
     expect(bad, `social metadata still on the shared spelling:\n${bad.slice(0, 15).join('\n')}`).toEqual([]);
