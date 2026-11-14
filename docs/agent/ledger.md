@@ -27,6 +27,33 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### paywall moments: every Pro surface a free person meets offers the way in (`paywallMoments`)
+
+- **Claimed** 2026-11-14 · **Flipped** _pending the founder's go_ · **Read**
+  flip + 28 days.
+- **Change** PLAN item 3 (src/utils/paywall-moments.js). The three soft
+  gates (30-day path day 11+, Medium/Hard daily, the Coach's Hard rows) keep
+  their toast and add a "See what Pro opens" button, the person's own click;
+  the 30-day Pro tiles stop being `disabled` (the gate never ran); a locked
+  mock card's body opens the plans; the tutor's two "Upgrade" links open the
+  plans instead of the Profile tab; the Profile plan button, the Interview
+  tab button and the Coach strip name their reason; `thirty_day`,
+  `daily_difficulty`, `interview_locked` / `interview_tab` and `hard_challenge`
+  get modal copy of their own. Nothing free becomes Pro; no price changes.
+- **Why** an audit of every Pro surface (2026-10-17) found surfaces that
+  named Pro and offered nothing, or did nothing on a click.
+- **Metric** `paywall_moment_reach` (metrics.md). Baseline there: reach is
+  small (60 d: thirty_day 0, daily_difficulty 1, interview 76 people).
+- **Target** on `interview` (the only surface with n): modal → plan click
+  at ≥ 2× the baseline's 2 of 53; on the others, every person who meets the
+  gate and clicks the button sees the modal (a wiring check, not a rate).
+- **Falsification, stated in advance:** fewer than 20 people on a surface at
+  the read → `UNREADABLE` for that surface, expected for all but `interview`;
+  `interview` modal → plan inside ±1 person of baseline → `FLAT`. This change
+  is hygiene; it is not expected to move `visitor_to_payer`, and a read that
+  claims it did should be treated as noise.
+- **Verdict** _pending_
+
 ### the /vs-datalemur/ snippet fits the result (the "datalemur" zero-click query)
 
 - **Claimed** 2026-10-11 · **Shipped** on the founder's ask in chat ("datalemur

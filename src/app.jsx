@@ -32106,7 +32106,7 @@ RULES:
                     setProModalReason(reason);
                     setShowProModal(true);
                   }}
-                  className="mt-2 px-3 py-1.5 bg-yellow-400 hover:bg-yellow-300 rounded-lg text-sm font-bold text-[#0E0F13]"
+                  className="mt-2 px-3 py-1.5 bg-[#FFE34D] hover:brightness-95 rounded-lg text-sm font-bold text-[#0E0F13]"
                 >
                   {milestonePopup.action.label} →
                 </button>

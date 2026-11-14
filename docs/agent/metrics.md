@@ -969,6 +969,26 @@ null`, docs/funnel.md rules). Secondary: `modal_dismissed.msOpen` under 3 s
 by arm. Baseline (all modal viewers, 30 days to 10-06, one layout): 298
 shown → 22 picked a plan (7.4%); 41% of closes inside 3 s.
 
+## `paywall_moment_reach`
+
+Paywall moments (2026-11-14, `paywallMoments`, PLAN item 3). People by
+username, bots out (`metadata.bot` empty), internal accounts out, who met a
+Pro surface this change touches: `content_lock_reached` with `surface` in
+(`thirty_day`, `daily_difficulty`, `interview`), or a `pro_modal_shown` whose
+`metadata.gate` is set (the Coach's Hard row writes no lock row; its gate
+does) or whose `reason` is `profile_plan` / `interview_tab` / `coach_strip`
+/ `rate_limit`. Per surface: share with a `pro_modal_shown` within 30
+minutes, then `pro_plan_clicked` within 30 minutes of the modal, then a
+webhook `pro_trial_started` / `pro_purchase_completed`. Read per surface,
+never summed into one rate: the surfaces differ by orders of magnitude.
+Baseline (60 days to 2026-11-14, flag off): `thirty_day` 0 people (the Pro
+tiles were `disabled`, so the gate never ran); `daily_difficulty` 1 → 1
+modal → 0 plans; `interview` 76 → 53 modal → 2 plans; Coach Hard row
+uncounted (no event). Discontinuity: from the flip, `pro_modal_shown.reason`
+for the Profile plan button, the Interview tab button and the Coach strip
+stops inheriting the last reason the modal held — the `generic` series
+shrinks on that date for that reason alone.
+
 ## `tutor_nudge_reach`
 
 The live tutor nudge (2026-10-03). Of people with a wrong submit
