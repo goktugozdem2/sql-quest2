@@ -25,6 +25,7 @@
 import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
+import { QUESTION_SNIPPETS } from '../scripts/build-question-pages.mjs';
 
 const ROOT = new URL('../', import.meta.url).pathname;
 
@@ -42,6 +43,13 @@ export const SNIPPET_PAGES = [
   // 2026-10-11: "datalemur" — 381 impressions at 5.2, zero clicks (GSC
   // weekly 09-28 → 10-04); the title ran 81 characters and the description 300.
   { src: 'src/vs-datalemur.html', built: 'public/vs-datalemur/index.html' },
+  // 2026-11-19, striking distance (GSC, 28 days to 2026-11-14): "sql join
+  // examples" 506 impressions at 27.7; "how to govern ai-generated sql before
+  // it reaches production" 158 at 3.4, zero clicks; "sqlbolt" 283 at 14.6 and
+  // "how many lessons does sqlbolt have" 57 at 6.1. Pinned further below.
+  { src: 'src/blog/sql-joins-explained.html', built: 'public/blog/sql-joins-explained/index.html' },
+  { src: 'src/blog/validate-ai-generated-sql.html', built: 'public/blog/validate-ai-generated-sql/index.html' },
+  { src: 'src/vs-sqlbolt.html', built: 'public/vs-sqlbolt/index.html' },
 ];
 
 // "228 free", "300+ free", "(18 Free)", "first 10 solves", "10 free challenge
@@ -160,5 +168,70 @@ describe('/sql-exercises/ title fits Bing', () => {
     expect(src.length).toBeLessThanOrEqual(70);
     expect(src).toMatch(/^SQL Practice Questions — /);
     expect(titleOf('public/sql-exercises/index.html')).toBe(src);
+  });
+});
+
+// 2026-11-19: the four striking-distance snippets say what the searcher typed,
+// and say it honestly. Each assertion is the reason the snippet was rewritten,
+// so a later edit that drifts back fails here by name.
+describe('the 2026-11-19 striking-distance snippets answer their query', () => {
+  const fieldsOf = p => snippetFields(fs.readFileSync(path.join(ROOT, p), 'utf8'));
+
+  it('/blog/sql-joins-explained/ leads with "SQL JOIN Examples" and names the anti-join and self join', () => {
+    const f = fieldsOf('src/blog/sql-joins-explained.html');
+    expect(f.title).toMatch(/^SQL JOIN Examples: /);
+    expect(f.title).toMatch(/Anti-Join/);
+    expect(f.title).toMatch(/Self Join/);
+    expect(f.description).toMatch(/^SQL JOIN examples /);
+    expect(f.description).toMatch(/LEFT JOIN … IS NULL/);
+    // the body carries the example every snippet word promises
+    const html = fs.readFileSync(path.join(ROOT, 'src/blog/sql-joins-explained.html'), 'utf8');
+    for (const id of ['inner', 'left', 'anti-join', 'self']) expect(html).toContain(`<h2 id="${id}">`);
+  });
+
+  it('/blog/validate-ai-generated-sql/ answers "govern AI-generated SQL before production"', () => {
+    const f = fieldsOf('src/blog/validate-ai-generated-sql.html');
+    expect(f.title).toMatch(/^Govern AI-Generated SQL Before Production/);
+    expect(f.description).toMatch(/AI-generated SQL before production/);
+    expect(f.description).toMatch(/seven checks/);
+  });
+
+  it('/vs-sqlbolt/ states the lesson count, only as the dated read has it, and answers it in the FAQ', () => {
+    const f = fieldsOf('src/vs-sqlbolt.html');
+    const read = fs.readFileSync(path.join(ROOT, 'docs/reads/sqlbolt-2026-11-19.md'), 'utf8');
+    const lessons = Number((/\*\*(\d+) lessons\*\*/.exec(read) || [])[1]);
+    const tasks = Number((/\*\*(\d+) exercise tasks\*\*/.exec(read) || [])[1]);
+    expect(lessons).toBeGreaterThan(0);
+    expect(tasks).toBeGreaterThan(0);
+    expect(f.title).toMatch(new RegExp(`^SQLBolt: ${lessons} Lessons, ${tasks} Exercises`));
+    expect(f.description).toContain(`${lessons} lessons and ${tasks} exercise tasks`);
+    expect(f.description).toMatch(/SQL Bolt/);
+    const html = fs.readFileSync(path.join(ROOT, 'src/vs-sqlbolt.html'), 'utf8');
+    // in the FAQPage JSON-LD and in the visible list, which mirrors it
+    expect(html.match(/How many lessons does SQLBolt have\?/g)).toHaveLength(2);
+  });
+
+  it('/questions/recursive-team-size-rollup/ says it is a recursive CTE, not GROUP BY ROLLUP', () => {
+    const o = QUESTION_SNIPPETS['recursive-team-size-rollup'];
+    expect(o).toBeTruthy();
+    expect(o.title).toMatch(/Recursive CTE/);
+    expect(o.title).not.toMatch(/rollup/i);
+    expect(o.description).toMatch(/not GROUP BY ROLLUP/);
+    const built = path.join(ROOT, 'public/questions/recursive-team-size-rollup/index.html');
+    if (!fs.existsSync(built)) return; // not built in this checkout
+    const html = fs.readFileSync(built, 'utf8');
+    expect(snippetProblems(html)).toEqual([]);
+    const f = snippetFields(html);
+    expect(f.title).toBe(o.title);
+    expect(f.description).toBe(o.description);
+  });
+
+  it('an override touches only its own page — a neighbour keeps the template snippet', () => {
+    const dir = path.join(ROOT, 'public/questions');
+    if (!fs.existsSync(dir)) return;
+    const others = fs.readdirSync(dir).filter(d => d !== 'recursive-team-size-rollup' && fs.existsSync(path.join(dir, d, 'index.html')));
+    expect(others.length).toBeGreaterThan(100);
+    const bad = others.filter(d => !/ — SQL Interview Question \((Easy|Medium|Hard)\) \| SQLQuest\.app$/.test(snippetFields(fs.readFileSync(path.join(dir, d, 'index.html'), 'utf8')).title));
+    expect(bad).toEqual([]);
   });
 });

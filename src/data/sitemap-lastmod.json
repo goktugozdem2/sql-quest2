@@ -1,6 +1,6 @@
 {
   "note": "Written by scripts/sitemap-lastmod.mjs. A page's date moves only when its built bytes change.",
-  "updated": "2026-10-11",
+  "updated": "2026-11-19",
   "pages": {
     "/": {
       "hash": "6435db1499fa0f6a",
@@ -119,8 +119,8 @@
       "lastmod": "2026-09-25"
     },
     "/vs-sqlbolt/": {
-      "hash": "ba912a1c4188424d",
-      "lastmod": "2026-09-25"
+      "hash": "96519fd503ccffc3",
+      "lastmod": "2026-11-19"
     },
     "/vs-sqlzoo/": {
       "hash": "d3dc80a41671b57c",
@@ -251,8 +251,8 @@
       "lastmod": "2026-09-24"
     },
     "/blog/sql-joins-explained/": {
-      "hash": "cf1dedeeca8efe9c",
-      "lastmod": "2026-09-25"
+      "hash": "48536a3faa18b0e9",
+      "lastmod": "2026-11-19"
     },
     "/blog/window-functions-tutorial/": {
       "hash": "3d16231303654cfb",
@@ -363,8 +363,8 @@
       "lastmod": "2026-09-25"
     },
     "/blog/validate-ai-generated-sql/": {
-      "hash": "0364f00e59e44dde",
-      "lastmod": "2026-09-14"
+      "hash": "6a796c98c80768c3",
+      "lastmod": "2026-11-19"
     },
     "/doordash-sql-interview/": {
       "hash": "14bf8b2afc25c89a",
@@ -603,8 +603,8 @@
       "lastmod": "2026-09-25"
     },
     "/questions/recursive-team-size-rollup/": {
-      "hash": "a6015d9d58836dd3",
-      "lastmod": "2026-09-25"
+      "hash": "ff7e964d4282649a",
+      "lastmod": "2026-11-19"
     },
     "/questions/employee-tenure-bands/": {
       "hash": "a37e5ab9d73ac149",
