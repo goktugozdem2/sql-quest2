@@ -170,6 +170,23 @@ const foot = `<script defer src="/track.js"></script>
 </html>
 `;
 
+// Per-page snippet overrides, keyed by slug (2026-11-19). The template's
+// title/description stays the rule for every other page; an entry here is for
+// a page whose generated snippet attracts the wrong searcher. Each entry needs
+// a dated reason and a pin in tests/snippet-length.test.js (QUESTION_SNIPPETS).
+//
+// recursive-team-size-rollup: GSC, 28 days to 2026-11-14 — "rollup interview
+// questions" 624 impressions at 8.9, zero clicks. Those searchers want
+// GROUP BY ROLLUP subtotals; this is a recursive CTE over an org chart, and
+// the bank has no ROLLUP question (SQLite has no ROLLUP). The snippet now says
+// what the page is. The challenge title (and so the URL) is unchanged.
+export const QUESTION_SNIPPETS = {
+  'recursive-team-size-rollup': {
+    title: 'Recursive CTE Question: Org Chart Team Size (Hard) | SQLQuest.app',
+    description: 'A recursive roll-up, not GROUP BY ROLLUP: walk an org chart with a recursive CTE and count each manager’s direct and indirect reports. Hard, with schema and editor.',
+  },
+};
+
 export function renderQuestion(c, ctx) {
   const { slugs, datasets, companies, bank, taggedBy } = ctx;
   const slug = slugs.get(c.id);
@@ -178,8 +195,9 @@ export function renderQuestion(c, ctx) {
   const primary = skills.find(s => s !== 'Querying Basics') || skills[0] || 'Querying Basics';
   const free = playableFree(c);
   const cos = (taggedBy[c.id] || []).map(n => companies[n.toLowerCase()]).filter(Boolean);
-  const title = `${c.title} — SQL Interview Question (${c.difficulty}) | SQLQuest.app`;
-  const description = `${plain(c.description).slice(0, 138).replace(/\s+\S*$/, '')}… A ${c.difficulty.toLowerCase()} SQL practice question on ${primary.toLowerCase()}, with the schema, a hint and an in-browser editor.`;
+  const override = QUESTION_SNIPPETS[slug] || {};
+  const title = override.title || `${c.title} — SQL Interview Question (${c.difficulty}) | SQLQuest.app`;
+  const description = override.description || `${plain(c.description).slice(0, 138).replace(/\s+\S*$/, '')}… A ${c.difficulty.toLowerCase()} SQL practice question on ${primary.toLowerCase()}, with the schema, a hint and an in-browser editor.`;
   const concepts = [...new Set([...(c.skills || []), c.category].filter(Boolean))];
   const topicLinks = skills.filter(s => SKILL_PAGE[s]).map(s => `<a href="${SKILL_PAGE[s][0]}">${esc(SKILL_PAGE[s][1])}</a>`);
   if (RANKING.test(c.solution || '')) topicLinks.push('<a href="/challenges/ranking-functions/">Ranking function practice</a>');
