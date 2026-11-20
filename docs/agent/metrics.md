@@ -1008,12 +1008,44 @@ which is which. GetUrlInfo reports crawl facts, not the dashboard's word
 "Indexed" — a crawled URL is not thereby an indexed one.
 
 **From 2026-10-07 the app marks its own bots.** `metadata.bot` holds the
-fingerprint id (`vp1919x992`, `la1920x1080`, `utc1280x720` —
+fingerprint id (`vp1919x992`, `la1920x1080`, `utc1280x720`, and once the
+2026-11-12 change is deployed `tab800x600`, `vp1280x1200`, `refspam` —
 src/utils/bot-signals.js) and a browser that declares itself automated writes
 no app event at all. Every first-contact read from that date adds
 `and (metadata #>> '{}')::jsonb->>'bot' is null`; `app_opened` also carries
 `wd`, `uaBot`, `langs` for telling the next wave apart. Before 10-07, filter
 by hand (the 10-04 → 10-07 waves: docs/reads/p1-guardrail-bing-2026-10-07.md).
+
+**Trap: the crawlers change time zone and borrow a landing source
+(2026-10-18, widened 2026-11-12).** Three window sizes have never, over all
+time, produced a query, a solve or a signup:
+- `tablet:800x600` — 943 people from 2026-08-12. First as LA with no
+  `landingSrc` (308 by 10-18); from 2026-11-05 as Asia/Shanghai carrying
+  `ref:aocr.org` (378 in four days), which walked straight around the
+  LA + no-source rule written on 10-18.
+- `desktop:1280x1200` — 511 from 2026-10-15, all Asia/Shanghai, no source,
+  still arriving.
+- `desktop:1919x992` — 916; the 10-07 rule needed no source, and 49 came
+  from 2026-10-05 as New York with `search:google`.
+And one referrer is only ever a crawler: `ref:aocr.org`, 816 landing_view
+people from 2026-10-28 (all Asia/Shanghai), then the 378 app openers above.
+So the fingerprints are now the window size alone (`tab800x600`,
+`vp1280x1200`, `vp1919x992`) plus a spam-referrer list (`refspam`, kept
+identical in src/track.js, which stamps landing rows with it). Soft: the
+rows are written and stamped, never dropped. Until that deploy, exclude by
+hand (scripts/aar-weekly.sql does).
+Size of the error, week to 2026-11-12 vs the week before: the #58 rules
+read new app people as 562 vs 361 (+56%) and first_solve_10m as 5.0% vs
+9.7%; with these rules it is 156 vs 238 (−34%) and 17.9% vs 14.7%. Growth
+and activation both flipped sign. Landing people: 1,458 → 831.
+**Still open:** landing_view carries no window size, so the 1280x1200
+crawler's landing views cannot be told apart — 214 (W1) and 295 (W0)
+landing people are Asia/Shanghai with no source. Read landing people with
+that in mind, or split it out; never exclude a whole time zone.
+When a wave is suspected, count new people who ran or solved
+(`challenge_first_run` / `challenge_solved`): no crawler has moved it yet.
+A rule that names a time zone or requires no landing source is the part the
+next wave walks around — fingerprint on what has never run a query.
 
 **Trap: a rendering crawler counts as new people (found 2026-09-23).**
 From 2026-09-17 a crawler executing the app arrived through the topic pages'

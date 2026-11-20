@@ -68,6 +68,37 @@ of the verifier and must never be rounded to `FLAT`.
     that.
 - **Verdict** _pending_
 
+### /sql-exercises/ title names both nouns and "With Solutions"
+
+- **Claimed** 2026-11-14 · **Shipped** on the founder's ask in chat
+  ("sql-exercises başlık PR'ını aç") · **Read** 2026-12-12 (ship + 28 days;
+  Bing's query rows are weekly buckets).
+- **Change** title "SQL Practice Questions — 300+ Exercises With Solutions"
+  → "SQL Practice Questions & Exercises With Solutions" (68 chars raw);
+  description says "questions and exercises with solutions"; og/twitter
+  title and description equal to them (og:description also lost
+  "skill-radar"). H1 and body untouched.
+- **Why** Bing, the page slice of `bing_stats`: 227 clicks / 3,686
+  impressions in the week ending 10-02, 46 / 1,119 in the week ending
+  11-06, position 6 → 7. Most of the fall is impressions (−70%), which no
+  title fixes; CTR fell too (6.2% → 4.1%). Per query, Sept vs 10-17 on:
+  "sql practice exercises" 43 → 7 clicks at position ~3 (CTR 14% → 7%),
+  "sql exercises" 23 → 5, "sql practice questions" 43 → 19 (CTR held best).
+  Google's best-clicked query for the page is "sql practice exercises with
+  solutions" (15 clicks, position 7.1, last 56 days).
+- **Metric** `bing_page_ctr` (metrics.md) on /sql-exercises/, plus the
+  [query] slice of `bing_stats` for "sql practice exercises", "sql
+  exercises", "sql practice questions"; Google's [query, page] slice for
+  "sql practice exercises with solutions". 28 days after vs 28 days before.
+- **Target** page CTR on Bing back to ≥ 5% (from 4.1%); "sql practice
+  questions" CTR not below 4%.
+- **Falsification, stated in advance:** CTR flat or down at a comparable
+  position → the title was not the cause, and the decline is demand
+  (impressions) — work on new pages, not this snippet. "sql practice
+  questions" position down > 2 or CTR < 3% → revert to the old title. A
+  confound: impressions are still falling; read CTR, never clicks.
+- **Verdict** _pending_
+
 ### the /vs-datalemur/ snippet fits the result (the "datalemur" zero-click query)
 
 - **Claimed** 2026-10-11 · **Shipped** on the founder's ask in chat ("datalemur
