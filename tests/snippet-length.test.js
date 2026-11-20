@@ -158,7 +158,18 @@ describe('/sql-exercises/ title fits Bing', () => {
   it('is at most 70 characters, leads with the searched phrase, in src and in the served copy', () => {
     const src = titleOf('src/sql-exercises.html');
     expect(src.length).toBeLessThanOrEqual(70);
-    expect(src).toMatch(/^SQL Practice Questions — /);
+    expect(src).toMatch(/^SQL Practice Questions /);
     expect(titleOf('public/sql-exercises/index.html')).toBe(src);
+  });
+
+  // 2026-11-14: Bing clicks on this page fell 227 -> 46 a week (10-02 -> 11-06)
+  // at about the same position; "sql practice exercises" lost CTR hardest
+  // (14% -> 7% at position ~3), and Google's best-clicked query for the page
+  // is "sql practice exercises with solutions". The title names both nouns and
+  // the "with solutions" phrase; the H1 keeps "SQL Practice Questions".
+  it('names questions AND exercises, and says "With Solutions"', () => {
+    const src = titleOf('src/sql-exercises.html');
+    expect(src).toMatch(/Questions/);
+    expect(src).toMatch(/Exercises With Solutions/);
   });
 });
