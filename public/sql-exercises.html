@@ -50,7 +50,7 @@
     "@context": "https://schema.org",
     "@type": "Course",
     "name": "300+ SQL Exercises With Solutions (10 Free Solves)",
-    "description": "SQL exercise bank of 300+ hands-on problems — 195 core exercises plus 109 on three industry tracks; 94 Easy, 128 Medium, 82 Hard; 10 free challenge solves with no signup. Every exercise has sample data, expected output, AI-explained hints (powered by Claude), and a full solution shown once solved. Categorized by topic (SELECT, JOIN, GROUP BY, window functions, CTE, NULL handling), by difficulty (Easy/Medium/Hard), by company tag (Amazon, Google, Meta, Apple, Netflix, Stripe, Uber, Airbnb, Databricks, Shopify, Spotify, JPMorgan, Snowflake and more), and by industry (banking via FDIC data, real estate via NYC OpenData, manufacturing via UCI AI4I 2020).",
+    "description": "SQL exercise bank of 300+ hands-on problems — 198 core exercises plus 109 on three industry tracks; 94 Easy, 129 Medium, 84 Hard; 10 free challenge solves with no signup. Every exercise has sample data, expected output, AI-explained hints (powered by Claude), and a full solution shown once solved. Categorized by topic (SELECT, JOIN, GROUP BY, window functions, CTE, NULL handling), by difficulty (Easy/Medium/Hard), by company tag (Amazon, Google, Meta, Apple, Netflix, Stripe, Uber, Airbnb, Databricks, Shopify, Spotify, JPMorgan, Snowflake and more), and by industry (banking via FDIC data, real estate via NYC OpenData, manufacturing via UCI AI4I 2020).",
     "provider": { "@type": "Organization", "name": "SQL Quest", "sameAs": "https://sqlquest.app/" },
     "url": "https://sqlquest.app/sql-exercises/",
     "courseMode": "online",
@@ -185,7 +185,7 @@
       {
         "@type": "Question",
         "name": "What's the difficulty distribution?",
-        "acceptedAnswer": { "@type": "Answer", "text": "300+ exercises as of September 2026: 94 Easy, 128 Medium, 82 Hard. The 195 core exercises split 55 Easy / 83 Medium / 57 Hard; the 109 sector-track exercises (banking, real estate, manufacturing) split 39 Easy / 45 Medium / 25 Hard. Easy covers SELECT/WHERE/GROUP BY; Medium adds JOINs, subqueries, CTEs, basic window functions; Hard covers nested window functions, recursive CTEs, complex business math, and FAANG-style interview patterns. Hard is Pro except 6 previews, which a free solve can open, and the Coach gates Hard until you've mastered Medium." }
+        "acceptedAnswer": { "@type": "Answer", "text": "300+ exercises as of September 2026: 94 Easy, 129 Medium, 84 Hard. The 198 core exercises split 55 Easy / 84 Medium / 59 Hard; the 109 sector-track exercises (banking, real estate, manufacturing) split 39 Easy / 45 Medium / 25 Hard. Easy covers SELECT/WHERE/GROUP BY; Medium adds JOINs, subqueries, CTEs, basic window functions; Hard covers nested window functions, recursive CTEs, complex business math, and FAANG-style interview patterns. Hard is Pro except 6 previews, which a free solve can open, and the Coach gates Hard until you've mastered Medium." }
       },
       {
         "@type": "Question",
@@ -454,7 +454,7 @@
     <a class="slice" href="/app/?src=sql-exercises">
       <span class="slice-icon">📈</span>
       <p class="slice-title">By difficulty</p>
-      <p class="slice-desc">94 Easy, 128 Medium, 82 Hard. Your first 10 challenge solves are free — any Easy or Medium, or one of the 6 Hard previews; Pro opens all 300+, and the Coach gates Hard until you've shown mastery on Medium.</p>
+      <p class="slice-desc">94 Easy, 129 Medium, 84 Hard. Your first 10 challenge solves are free — any Easy or Medium, or one of the 6 Hard previews; Pro opens all 300+, and the Coach gates Hard until you've shown mastery on Medium.</p>
       <div class="slice-tags">
         <span class="slice-tag">Easy 80</span>
         <span class="slice-tag">Medium 109</span>
@@ -560,7 +560,7 @@
     </a>
 
     <a class="slice" href="/app/?src=sql-exercises">
-      <p class="slice-title">Intermediate (Medium) — 128 exercises</p>
+      <p class="slice-title">Intermediate (Medium) — 129 exercises</p>
       <p class="slice-desc">JOINs, subqueries, CTEs, CASE WHEN, HAVING, first window functions. The largest tier, and where most analyst-round patterns live.</p>
       <div class="slice-tags">
         <span class="slice-tag">Core 83</span>
@@ -570,7 +570,7 @@
     </a>
 
     <a class="slice" href="/app/?src=sql-exercises">
-      <p class="slice-title">Hard — 82 exercises, 6 previews</p>
+      <p class="slice-title">Hard — 84 exercises, 6 previews</p>
       <p class="slice-desc">Nested window functions, recursive CTEs, business math, FAANG-style patterns. Pro ($29/month · $99/year) unlocks the other 76.</p>
       <div class="slice-tags">
         <span class="slice-tag">Core 57</span>
@@ -725,7 +725,7 @@ const FAQS=[
   ['Do these exercises have solutions?','Yes. Every exercise has a worked solution that you can reveal after attempting (or whenever you want). The default flow is: read problem → write your query → run → if wrong, get a specific diagnosis → ask the AI Coach for a hint → reveal solution if needed. Solutions are written to teach, not just satisfy the grader — they explain the why.'],
   ['How do I know which SQL exercise to do next?','The Coach picks the next exercise based on your Skillmap. Browse mode lets you filter by topic (window functions, JOINs, GROUP BY, etc.), by difficulty, by company tag, or by industry. If you don\'t want to choose, click \'Coach picks one\' and the system selects an exercise that targets your weakest skill.'],
   ['Can I practice SQL exercises on real-world data instead of generic ecommerce?','Yes. SQL Quest ships three industry exercise tracks built on real public datasets — 97 exercises in total, and any Easy or Medium one can be among your 10 free challenge solves. Banking & Finance: 57 exercises — 27 on FDIC BankFind data (200 US banks: JPMorgan, BoA, Citi) plus 30 on a synthetic card-transactions ledger. Real Estate: 20 exercises on NYC OpenData (PLUTO building footprints, ACRIS deeds, DOB permits). Manufacturing: 20 exercises on UCI AI4I 2020 predictive maintenance — the industry-standard ML benchmark used by Siemens, GE, Honeywell.'],
-  ['What\'s the difficulty distribution?','300+ exercises as of September 2026: 94 Easy, 128 Medium, 82 Hard. The 195 core exercises split 55 Easy / 83 Medium / 57 Hard; the 109 sector-track exercises (banking, real estate, manufacturing) split 39 Easy / 45 Medium / 25 Hard. Easy covers SELECT/WHERE/GROUP BY; Medium adds JOINs, subqueries, CTEs, basic window functions; Hard covers nested window functions, recursive CTEs, complex business math, and FAANG-style interview patterns. Hard is Pro except 6 previews, which a free solve can open, and the Coach gates Hard until you\'ve mastered Medium.'],
+  ['What\'s the difficulty distribution?','300+ exercises as of September 2026: 94 Easy, 129 Medium, 84 Hard. The 198 core exercises split 55 Easy / 84 Medium / 59 Hard; the 109 sector-track exercises (banking, real estate, manufacturing) split 39 Easy / 45 Medium / 25 Hard. Easy covers SELECT/WHERE/GROUP BY; Medium adds JOINs, subqueries, CTEs, basic window functions; Hard covers nested window functions, recursive CTEs, complex business math, and FAANG-style interview patterns. Hard is Pro except 6 previews, which a free solve can open, and the Coach gates Hard until you\'ve mastered Medium.'],
   ['How are SQL exercises scored?','Each exercise is scored on three dimensions: difficulty (Easy/Medium/Hard), the SQL skill it exercises (one of 9 canonical skills), and your speed plus hint usage. A clean cold solve adds more to your Skillmap than a solve with multiple hints. Mastery checks require a fresh solve on an unseen exercise — recognition isn\'t enough.']
 ];
 const faqc=document.getElementById('faqc');
