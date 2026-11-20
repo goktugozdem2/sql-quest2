@@ -27,6 +27,32 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### a company arrival gets a first question to press
+
+- **Claimed** 2026-11-20 · **Shipped** on merge (no flag; founder's Go on the funnel plan, item 5) · **Read** 2026-12-18.
+- **Change** the company banner in the Challenges view (`?company=X`, the
+  CTA of every company page) gets one primary button: "Start with question
+  1: <title>" (then "Next <Company> question: …"), opening the set's first
+  open, unsolved challenge in curriculum order behind the list rows' locks.
+  `challenge_opened.openedFrom = 'company_banner'`.
+- **Why** 35 days to 2026-11-20: 149 people arrived in the app from a company
+  page via search (`app_opened`, arrivalSrc `company:*` or `*-sql-interview`,
+  landingSrc `search:*`, no bot stamp). **63 opened no challenge at all**;
+  57 of them were intent-routed and then did nothing. The set's list starts
+  ~1,000px down under the generic learning-path cards; the banner said "pick
+  any one to start" with nothing to press. Of those who opened an Easy, 34 of
+  67 solved.
+- **Metric** on that same population: share who fire `challenge_opened`
+  within 30 minutes of the first `app_opened` (baseline **86 / 149 = 58%**),
+  and who fire `challenge_solved` (baseline **42 / 149 = 28%**). Not yet a
+  named metric in `docs/agent/metrics.md` — register it before the read.
+- **Target** opened ≥ 75% and solved ≥ 35%, with `company_banner` the
+  `openedFrom` on most first opens.
+- **Falsification, stated in advance:** opened under 62% → MISS (the button
+  is not what was missing); fewer than 40 arrivals in the window →
+  UNREADABLE, extend. Guardrail: company arrivals' `pro_plan_clicked` must not
+  fall (it was 4 people in the baseline window — read the counts).
+
 ### Bing: the question pages leave Bing's index (bingbot noindex, follow)
 
 - **Claimed** 2026-11-20 · **Shipped** on merge (generator change, no flag;
