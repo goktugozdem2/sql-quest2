@@ -239,6 +239,107 @@ export const COMPANY_INTERVIEWS = {
       'datalemur-q-bb': ['DataLemur — stock min/max question (Bloomberg-tagged)', 'https://datalemur.com/questions/sql-bloomberg-stock-min-max-1', 'undated'],
     },
   },
+  // 2026-11-20 — research notes: docs/reads/company-research-2026-11-20.md.
+  paypal: {
+    name: 'PayPal',
+    sector: 'fintech',
+    crosslinkDesc: 'Payments and fraud, conditional sums, WHERE vs ON',
+    accent: '#003087',
+    title: 'PayPal SQL Interview Questions — Payments, Fraud & Conditional Sums',
+    description: 'PayPal SQL interview questions: analyst and data scientist rounds as candidates report them, the SQL they test, and practice on payment data. Sourced and dated.',
+    hero: 'Candidate reports from 2023 to 2025 put SQL in every PayPal data loop they describe — a HackerRank assessment for an analyst intern, a one-hour phone round, an onsite round of three SQL questions — next to rounds on fraud and risk. Practise that shape here, on payment data.',
+    dataShape: 'payments between users (payer, recipient, amount), account transactions (deposits and withdrawals), and card transactions with merchants and risk flags',
+    format: [
+      ['Roles where SQL is tested', 'Data Science, Data Engineering and Data Analytics.', ['datalemur-pp']],
+      ['Data scientist process', 'A prep guide describes four to five rounds over three to four weeks, including a live SQL and Python round of 45–60 minutes on a shared screen. The guide does not say where its round descriptions come from.', ['prachub-guide-pp']],
+      ['Phone rounds', 'One data scientist report (interview December 2025) describes a 15-minute recruiter call, then two one-hour phone rounds: SQL and Python with a short case, then statistics and causal inference. Its one SQL question carried many filter conditions, and where each sat — WHERE or the join\'s ON — mattered.', ['prachub-phone-pp']],
+      ['Onsite', 'Another data scientist report (interview July 2025) describes three back-to-back onsite rounds: two on fraud and risk decisions, one of three SQL questions in which the interviewer asked for conditional aggregation with CASE WHEN rather than a plain sum.', ['prachub-onsite-pp']],
+      ['Data analyst intern', 'A 2023 report describes a one-hour HackerRank assessment (ten multiple-choice questions across ML, SQL, probability and statistics, plus one Python question), then a technical round with one SQL query in a HackerRank editor, and a hiring-manager round with SQL the candidate called medium to tough.', ['gfg-pp']],
+      ['What is not settled', 'The reports span 2023 to 2025, intern to experienced, and different teams; no source states one format for every PayPal data role. Only the intern report says the code was run (against test cases).', []],
+    ],
+    reportedTopics: ['Conditional aggregation (CASE WHEN inside SUM or COUNT)', 'Aggregates in HAVING', 'Joins, and filters in WHERE vs ON', 'Ranking with ties (average transaction per user)', 'Funnels and conversion rates', 'Transaction-flow and segmentation analysis', 'Anomaly and data-quality checks on transactions'],
+    difficulty: 'Reported as medium in a July 2025 onsite and hard, by the candidate\'s own account, in a December 2025 phone round; the 2023 intern report calls the hiring-manager SQL medium to tough.',
+    shapes: [
+      ['Deposits and withdrawals per account: each account\'s closing balance.', 'datalemur-q-pp'],
+      ['Payments from one user to another: how many pairs of users have sent money in both directions.', 'datalemur-pp'],
+      ['Users with sign-up dates and their transactions: total and average spend per user, only for users with at least two transactions.', 'datalemur-pp'],
+    ],
+    sources: {
+      'datalemur-pp': ['DataLemur — PayPal SQL interview questions', 'https://datalemur.com/blog/paypal-sql-interview-questions', '7 Jan 2025'],
+      'datalemur-q-pp': ['DataLemur — final account balance question (PayPal-tagged)', 'https://datalemur.com/questions/final-account-balance', 'undated'],
+      'gfg-pp': ['GeeksforGeeks — PayPal Data Analyst Intern interview experience (off-campus, 2023)', 'https://www.geeksforgeeks.org/?p=980248', '16 Mar 2023'],
+      'prachub-onsite-pp': ['PracHub — PayPal Data Scientist onsite, three back-to-back rounds (candidate report, interview Jul 2025)', 'https://prachub.com/interview-experiences/paypal-data-scientist-interview-experience-three-back-to-back-onsite-rounds-and-a-sql-standoff', '24 Aug 2026'],
+      'prachub-phone-pp': ['PracHub — PayPal Data Scientist, two phone rounds (candidate report, interview Dec 2025)', 'https://prachub.com/interview-experiences/paypal-data-scientist-interview-experience-two-brutal-phone-rounds-on-sql-python-and-airport-causal-inference', '25 Aug 2026'],
+      'prachub-guide-pp': ['PracHub — PayPal Data Scientist interview guide', 'https://prachub.com/interview-guide/paypal-data-scientist-interview-guide', 'updated 3 Nov 2026'],
+    },
+  },
+
+  coinbase: {
+    name: 'Coinbase',
+    sector: 'fintech',
+    crosslinkDesc: 'Crypto trades, 30-day activity, 7-day retention, cohorts',
+    accent: '#0052FF',
+    title: 'Coinbase SQL Interview Questions — Trades, Retention & Cohorts',
+    description: 'Coinbase SQL interview questions: the data science loop as candidates report it, the SQL it tests (30-day activity, retention) and practice. Sourced and dated.',
+    hero: 'Two data scientist reports from 2025 each describe two SQL questions on users and their trades — who is active in the last 30 days, 7-day retention, time from adoption to first transaction — with the interviewer pressing on how each metric is defined.',
+    dataShape: 'crypto trades (user, asset, volume, time), sign-ups and first trades, and user transactions with an adoption time and a region',
+    format: [
+      ['Roles where SQL is tested', 'Data Science, Analytics and Data Engineering.', ['datalemur-cb']],
+      ['Overall process', 'A prep guide describes a 30-minute recruiter screen, a 30-minute online assessment for all candidates, a final round of four 60-minute interviews over Google Meet, then a work trial — a case on a dataset, presented to a panel.', ['aced-cb']],
+      ['The SQL round', 'One senior data scientist report (interview March 2025) calls the SQL and data analysis round the most important: two questions written in CoderPad, on trades and sign-ups, with follow-ups on how retention should be defined.', ['prachub-sr-cb']],
+      ['Onsite', 'Another data scientist report (interview October 2025) describes an onsite with a case study, two SQL questions — the second in three parts — and a live Python round of exploratory analysis and modelling on a dataset.', ['prachub-ds-cb']],
+      ['Where sources differ', 'The guide describes the data science round as a conversation plus a whiteboard part; the March 2025 report names CoderPad. Neither report says whether the SQL was run. A second guide lists more rounds, including an AI-led behavioural screen for some 2025–2026 candidates.', ['aced-cb', 'prachub-sr-cb', 'prachub-guide-cb']],
+    ],
+    reportedTopics: ['Time-window filters (the last 30 days)', 'COUNT DISTINCT and choosing the denominator', 'Retention and cohort timing (7-day retention)', 'Rates (adoption, transaction rate)', 'Time between events (adoption to first transaction)', 'First event per user, compared with later rows', 'Running and cumulative sums', 'Layered CTEs and window functions'],
+    difficulty: 'Reported as medium by one candidate and hard by another; the medium report says the SQL itself was not especially hard and the interviewer weighed the reasoning.',
+    shapes: [
+      ['Trades by user, time, volume and asset: the share of users with three or more trades in the last 30 days.', 'prachub-sr-cb'],
+      ['Users with a sign-up date and their trades: 7-day retention — and whether day zero is the sign-up or the first trade.', 'prachub-sr-cb'],
+      ['User transactions with an adoption time and regions: adoption and transaction rates, the time from adoption to first transaction, and transactions made outside the region of the user\'s first one.', 'prachub-ds-cb'],
+      ['Trades by currency and day: daily volume per currency and the change from the day before.', 'datalemur-cb'],
+    ],
+    sources: {
+      'aced-cb': ['Aced (formerly Exponent) — Coinbase interview process', 'https://www.aced.io/blog/coinbase-interview-process', 'shown as "last updated 2 months ago" on 20 Nov 2026'],
+      'prachub-sr-cb': ['PracHub — Coinbase Senior Data Scientist interview experience (candidate report, interview Mar 2025)', 'https://prachub.com/interview-experiences/coinbase-senior-data-scientist-interview-experience-sql-a-b-test-design-and-a-btc-volatility-case', '25 Aug 2026'],
+      'prachub-ds-cb': ['PracHub — Coinbase Data Scientist onsite (candidate report, interview Oct 2025)', 'https://prachub.com/interview-experiences/coinbase-data-scientist-interview-experience-case-study-sql-and-a-live-python-eda-round', '25 Aug 2026'],
+      'prachub-guide-cb': ['PracHub — Coinbase Data Scientist interview guide', 'https://prachub.com/interview-guide/coinbase-data-scientist-interview-guide', 'updated 3 Nov 2026'],
+      'datalemur-cb': ['DataLemur — Coinbase SQL interview questions', 'https://datalemur.com/blog/coinbase-sql-interview-questions', '20 Feb 2025'],
+    },
+  },
+
+  monzo: {
+    name: 'Monzo',
+    sector: 'fintech',
+    crosslinkDesc: 'Take-home SQL or Python on a business question, then a review of your logic',
+    accent: '#FF4F40',
+    title: 'Monzo SQL Interview Questions — The Take-Home and the Review',
+    description: 'Monzo SQL interview: the data take-home as Monzo itself describes it, the review that follows, and practice on neobank ledger data. Sourced and dated.',
+    hero: 'Monzo\'s own hiring posts describe the SQL as a take-home, not a live test: a business question answered in SQL or Python in your own time, then an interview that walks through your logic, trade-offs and testing. Practise that shape here, on data that looks like a bank account\'s ledger.',
+    dataShape: 'accounts (signup date, plan, country), card transactions (merchant, category, amount, status, timestamps), transfers in and out between customers, and money moved into and out of savings pots',
+    format: [
+      ['Roles where SQL is tested', 'Data Science (the take-home is written in SQL or Python) and Analytics Engineering (Monzo names its stack as dbt, BigQuery, Looker, SQL and some Python).', ['monzo-ds-2026', 'monzo-ae-2026']],
+      ['Stages (Data Science, 2026)', 'A 15-minute recruiter call, a 45-minute initial call with a senior or lead data scientist, a technical screen, then final interviews of 2–3 hours: an open-ended case study and a behavioural interview. Senior and lead roles may add a leadership interview.', ['monzo-ds-2026']],
+      ['Where the SQL is', 'In the technical screen, as a take-home coding task: clear, sensible SQL or Python that answers business questions with data, done in your own time rather than live in front of a panel. Monzo lists the technical screen as one hour; the post does not say how that hour divides between the task and the interview.', ['monzo-ds-2026']],
+      ['The review', 'A technical interview with a data science manager or lead goes through the submission — its logic, trade-offs and testing — then an analytical discussion (experimentation, success metrics) and a communication part (explaining results, spotting misleading charts). Monzo says it is less about trivia than about reasoning.', ['monzo-ds-2026']],
+      ['Time limit', 'The 2026 post sets none; the 2022 post says the take-home had no time limit and usually ended in a slide deck. The Analytics Engineering post gives its take-home one week.', ['monzo-ds-2026', 'monzo-data-2022', 'monzo-ae-2026']],
+      ['How it has changed', 'The 2022 post describes a ~30-minute recruiter call and a take-home presented as slides; the 2026 Data Science post a 15-minute call and a technical interview on the code. A data scientist who joined in 2022 describes his take-home as metric formulation with extensive SQL and data visualisation.', ['monzo-data-2022', 'monzo-ds-2026', 'monzo-joiner-2022']],
+      ['Environment', 'Monzo\'s analytics run on BigQuery, dbt and Looker. None of the sources we could read says which tool the take-home itself is done in.', ['monzo-ae-2026', 'monzo-joiner-2022']],
+    ],
+    reportedTopics: ['Turning a stakeholder\'s question into a metric, then into SQL', 'Metrics over a period: counts, rates and ratios with GROUP BY', 'Readable, testable SQL you can defend line by line', 'Experiment and success-metric reasoning on top of the query', 'Data modelling into clean tables (Analytics Engineering)', 'Explaining a result to a non-technical reader'],
+    difficulty: 'No source we could read grades it; Monzo describes the bar as clear, sensible code and sound reasoning rather than trivia, and the 2022 post set no time limit on the take-home.',
+    shapes: [
+      ['A data request arrives in plain business language: decide what to measure, write the SQL (or Python) that answers it, and present the finding so a non-technical reader can act on it.', 'monzo-ds-2026'],
+      ['Formulate a metric for an area of the product, compute it with SQL, and show it as a chart.', 'monzo-joiner-2022'],
+      ['In the follow-up, defend your own submission: why this join or filter, what you assumed about the data, how you checked the numbers.', 'monzo-ds-2026'],
+      ['Analytics Engineering: model raw data into tables others will query, pragmatic rather than over-engineered, and explain the modelling trade-offs.', 'monzo-ae-2026'],
+    ],
+    sources: {
+      'monzo-ds-2026': ['Monzo blog — Interviewing for Data Science at Monzo (Monzo\'s recruiting team)', 'https://monzo.com/blog/interviewing-for-data-science-at-monzo', '27 Apr 2026'],
+      'monzo-ae-2026': ['Monzo blog — Interviewing for Analytics Engineering at Monzo (Monzo\'s recruiting team)', 'https://monzo.com/blog/interviewing-for-analytics-engineering-at-monzo', '25 May 2026'],
+      'monzo-data-2022': ['Monzo blog — Data hiring at Monzo: the interview process', 'https://monzo.com/blog/2022/03/21/data-hiring-at-monzo', '21 Mar 2022'],
+      'monzo-joiner-2022': ['Monzo blog — Joining Monzo as a data scientist (first-person account)', 'https://monzo.com/blog/2022/05/18/joining-monzo-as-a-data-scientist', '17 May 2022'],
+    },
+  },
 };
 
 // The SQL Quest challenges tagged to each new company, chosen against the
@@ -254,6 +355,16 @@ export const NEW_COMPANY_TAGS = {
   LinkedIn: [174, 175, 158, 188, 170, 106, 107, 159, 114, 149, 121, 161, 77, 17, 23, 74],
   Microsoft: [105, 138, 128, 179, 113, 14, 121, 157, 66, 111, 112, 77, 82, 61, 23, 31],
   Bloomberg: [275, 288, 289, 202, 211, 282, 292, 294, 281, 160, 163, 217, 283, 299, 216, 89],
+  // 2026-11-20. PayPal: payments and fraud — conditional sums, a LEFT JOIN
+  // whose filter placement changes the answer (280), ties in a rank (292),
+  // HAVING, anomaly and velocity rules, a funnel. Coinbase: activity windows,
+  // retention cohorts, first-to-next event timing, running sums — on the
+  // e-commerce and card ledgers (we have no trades table). Monzo: a bank
+  // ledger — period metrics, dormancy, shares, rolling and cumulative spend.
+  // The Revolut set (300-311) stays Revolut-only.
+  PayPal: [286, 287, 276, 285, 175, 280, 281, 290, 291, 292, 157, 270, 271, 297, 298, 82],
+  Coinbase: [138, 147, 277, 275, 289, 121, 126, 172, 173, 162, 88, 60, 284, 11, 68, 84],
+  Monzo: [275, 289, 288, 285, 176, 295, 278, 282, 293, 294, 157, 283, 299, 296, 88, 86],
 };
 
 // ---------------------------------------------------------------------------

@@ -8159,7 +8159,9 @@ function SQLQuest() {
                      'Snowflake','Plaid','Ramp','Tesla','NVIDIA','Revolut','OpenAI',
                      'Morgan Stanley','Anthropic','Capital One','Wise',
                      // 2026-09-13: the seven template pages (scripts/build-company-pages.mjs).
-                     'DoorDash','Goldman Sachs','Walmart','TikTok','LinkedIn','Microsoft','Bloomberg'];
+                     'DoorDash','Goldman Sachs','Walmart','TikTok','LinkedIn','Microsoft','Bloomberg',
+                     // 2026-11-20: three more template pages.
+                     'PayPal','Coinbase','Monzo'];
       const wanted = raw.toLowerCase().replace(/[-_]+/g, ' ').trim();
       const match = VALID.find(v => v.toLowerCase() === wanted);
       return match || null;
