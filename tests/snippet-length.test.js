@@ -242,7 +242,13 @@ describe('the 2026-11-19 striking-distance snippets answer their query', () => {
     if (!fs.existsSync(dir)) return;
     const others = fs.readdirSync(dir).filter(d => d !== 'recursive-team-size-rollup' && fs.existsSync(path.join(dir, d, 'index.html')));
     expect(others.length).toBeGreaterThan(100);
-    const bad = others.filter(d => !/ — SQL Interview Question \((Easy|Medium|Hard)\) \| SQLQuest\.app$/.test(snippetFields(fs.readFileSync(path.join(dir, d, 'index.html'), 'utf8')).title));
+    // The template itself is pinned in tests/question-pages.test.js ("is what the
+    // template produces"); here only: no neighbour carries the override's words.
+    const o = QUESTION_SNIPPETS['recursive-team-size-rollup'];
+    const bad = others.filter(d => {
+      const f = snippetFields(fs.readFileSync(path.join(dir, d, 'index.html'), 'utf8'));
+      return f.title === o.title || f.description === o.description || !/ \| SQLQuest\.app$/.test(f.title);
+    });
     expect(bad).toEqual([]);
   });
 });
