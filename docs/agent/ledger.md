@@ -140,40 +140,6 @@ of the verifier and must never be rounded to `FLAT`.
   confound: impressions are still falling; read CTR, never clicks.
 - **Verdict** _pending_
 
-### the /vs-datalemur/ snippet fits the result (the "datalemur" zero-click query)
-
-- **Claimed** 2026-10-11 · **Shipped** on the founder's ask in chat ("datalemur
-  title ve meta'yı düzelt") · **Read** 2026-11-09 (ship + 28 days, GSC's own
-  lag included).
-- **Change** /vs-datalemur/'s title 72 → 65 characters ("DataLemur SQL
-  Practice: Is It Free? Pricing (2026)"), description 300 → 145 (DataLemur's
-  $15/mo · $60/yr from docs/reads/alternatives-facts-2026-09-13.md, said to
-  come from a competitor), og/twitter equal to both. Body untouched. Bound by
-  tests/snippet-length.test.js like the five pages of 09-29.
-- **Why** GSC weekly 09-28 → 10-04: "datalemur" 381 impressions at 5.2 and
-  "data lemur sql" 136 at 6.7, zero clicks on both; the page has 979
-  impressions at 5.7. The old title was cut at ~60 characters and the
-  description at ~160 of 300. Caveat written now: "datalemur" is a
-  navigational query, most of its searchers want datalemur.com, so a
-  ceiling of a few percent CTR is the honest expectation.
-- **Metric** `gsc_position` (metrics.md), read per query on the
-  [query, page] slice of `gsc_daily`: clicks and CTR of "datalemur" +
-  "data lemur sql" + "datalemur sql practice" to /vs-datalemur/, 28 days
-  after vs the 28 days before 2026-10-11.
-- **Target** ≥ 1% CTR on those three queries combined (from 0 on ~550
-  impressions a week), position no worse than 1.0 down.
-- **Falsification, stated in advance:** still zero clicks at ≥ 1,500
-  impressions → the snippet was not the cause; the query is navigational
-  and the page is not worth more title work. Position down > 2 → revert the
-  title (the old one carried "Free Tier" and "SQL Practice" both).
-- **Verdict** **MISS** (read 2026-11-13, four days late; docs/reads/seo-2026-11-13.md
-  §3). The three queries: before (09-13 → 10-10) 1,853 impressions, 0 clicks,
-  position 6.1; after (10-12 → 11-08) 1,821 impressions, 3 clicks (0.16%),
-  position 6.8. Under the 1% target. The falsification's "zero clicks" line
-  is not met (3 > 0), but the spirit holds: the query is navigational, as
-  the claim warned. Position fell 0.7, which is inside the 2-place revert
-  line, so the title stays. No more title work on this page.
-
 ### a 7-day trial at checkout: "nothing is charged today" (checkoutTrial)
 
 - **Claimed** 2026-10-01, before the flip · **Flipped** 2026-10-01 (founder's
@@ -3506,6 +3472,10 @@ that needs its own path — the current rule is written down in the handler.
   caused. **Conclusion, as the falsification said:** the query is
   navigational; no more title work on /vs-datalemur/. The title stays (no
   revert: position held inside the line).
+  An earlier read of the same claim (2026-11-13, docs/reads/seo-2026-11-13.md
+  §3, same numbers to within a day's window) labelled it MISS. Same
+  conclusion; FLAT is the label the verdict table gives three clicks on
+  ~1,800 impressions (inside noise, not a move the wrong way). One entry kept.
 
 ### hand-written founder check-ins replace the automated engagement email — **UNREADABLE**
 - **Claimed** 2026-08-21 (design: `cgozdemm-main-design-20260818-013802.md`)
