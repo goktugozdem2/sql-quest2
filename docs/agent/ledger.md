@@ -52,6 +52,117 @@ of the verifier and must never be rounded to `FLAT`.
   `interview` modal → plan inside ±1 person of baseline → `FLAT`. This change
   is hygiene; it is not expected to move `visitor_to_payer`, and a read that
   claims it did should be treated as noise.
+### the question pages' snippet fits the window (the 10-27 rule)
+
+- **Claimed** 2026-11-13 · **Shipped** in PR `seo/question-snippets`, under the
+  rule pre-registered in docs/plans/seo-october-2026-09-29.md §3 ("if CTR
+  stays under 1.5% at position ≤ 10, the lever is the generator's
+  title/description template — one change for 300 pages, made after the
+  read") · **Read** 2026-12-15.
+- **Change** `questionSnippet` in scripts/build-question-pages.mjs, applied to
+  all 304 question pages:
+  - **Title:** `<name> — SQL Interview Question | SQLQuest.app` when it
+    fits in 70 characters. Otherwise `— SQL Question`, otherwise the name
+    alone. It was `<name> — SQL Interview Question (<Difficulty>) |
+    SQLQuest.app`, 70–95 characters.
+  - **Description:** 120–170 characters. It leads with the problem's task
+    sentence (never a column list or an ordering rule), then "A medium JOIN
+    question: write the query in the browser, graded on the result." It was
+    the first 138 characters of the problem cut by "…" plus a tail Google
+    never showed.
+  - **Hub title:** 72 → 61 characters.
+  - The body is unchanged. The page still publishes no solution and no Pro
+    hint.
+- **Why** 28 days to 11-10: 4,490 impressions at position 7.6, 29 clicks
+  (0.65%). Without the one off-intent page (`recursive-team-size-rollup`
+  for "rollup interview questions", 588 impressions), CTR is 0.74%.
+- **Metric** `gsc_position` (metrics.md) on the page slice of `gsc_daily`
+  for `/questions/<slug>/`, comparing the 28 days to 12-13 with the 28 days
+  to 11-10.
+- **Target** CTR ≥ 1.5% at a position no more than 1.0 worse.
+- **Falsification, stated in advance:**
+  - CTR below 1.0% at the same position → the snippet was not the cause.
+    The searchers want a solution, which these pages will not publish, so
+    no more template work goes here.
+  - Position down more than 2 → revert the template. The old title
+    carried the difficulty, the new one does not.
+- **Confounds**
+  - Brand demand halved over October (homepage queries), but the question
+    pages do not rank for brand queries.
+  - Google takes 2–4 weeks to show a new title. The read date allows for
+    that.
+### four striking-distance snippets say what the searcher typed (rollup, JOIN examples, govern AI SQL, SQLBolt)
+
+- **Claimed** 2026-11-19 (PR `seo/striking-distance-2026-11`, not merged
+  without the founder's go) · **Read** ship + 28 days, GSC's own lag
+  included — 2026-12-17 if it ships 2026-11-19; move the date with the merge.
+- **Change** title + description (og/twitter equal to both) of four pages,
+  bodies untouched except one FAQ entry and one methodology sentence on
+  /vs-sqlbolt/ and the H1 of the JOINs post:
+  /questions/recursive-team-size-rollup/ → "Recursive CTE Question: Org Chart
+  Team Size (Hard)", description opens "A recursive roll-up, not GROUP BY
+  ROLLUP" (one per-slug override in scripts/build-question-pages.mjs, the
+  template unchanged for every other page, URL unchanged);
+  /blog/sql-joins-explained/ → "SQL JOIN Examples: INNER, LEFT, Anti-Join,
+  Self Join"; /blog/validate-ai-generated-sql/ → "Govern AI-Generated SQL
+  Before Production: 7 Checks"; /vs-sqlbolt/ → "SQLBolt: 18 Lessons, 53
+  Exercises, and What Comes Next" plus the FAQ "How many lessons does SQLBolt
+  have?" (both counts from docs/reads/sqlbolt-2026-11-19.md, re-counted that
+  day). Bound by tests/snippet-length.test.js.
+- **Why** GSC, 28 days to 2026-11-14 ([query, page] slice of `gsc_daily`):
+  "rollup interview questions" 624 impressions at 8.9, 0 clicks (wrong
+  intent — those searchers want GROUP BY ROLLUP); "sql join examples" 506 at
+  27.7 (Bing 469, 1 click); "how to govern ai-generated sql before it
+  reaches production" 158 at 3.4, 0 clicks; "sqlbolt" 283 at 14.6, "sql bolt"
+  58 at 9.6, "how many lessons does sqlbolt have" 57 at 6.1.
+- **Metric** `gsc_position` (metrics.md), per query on the [query, page]
+  slice: impressions, clicks, CTR and average position of each query above
+  to its page, 28 days after vs the 28 days before the ship date.
+- **Target, stated in advance:**
+  - "rollup interview questions" → /questions/recursive-team-size-rollup/:
+    success is honesty, not clicks — impressions fall by half or more, or
+    CTR > 0. Impressions flat with 0 clicks = the snippet change did nothing.
+  - "sql join examples" → /blog/sql-joins-explained/: position up ≥ 5
+    (27.7 → ≤ 22.7) and ≥ 1 click.
+  - the "govern AI-generated SQL" query → /blog/validate-ai-generated-sql/:
+    ≥ 3% CTR at position ≤ 5 (from 0 on 158 impressions).
+  - "sqlbolt" + "sql bolt" + "how many lessons does sqlbolt have" →
+    /vs-sqlbolt/: ≥ 1% CTR combined (from 0 on ~400 impressions), position
+    no worse than 1.0 down on any of the three.
+- **Falsification, stated in advance:** zero clicks on all four groups at
+  ≥ 1,000 combined impressions → the snippets were not what held clicks
+  back. Any page's position down > 2 on its query → revert that page's
+  title. Confound to check before reading: any other change to these four
+  pages, or a Google core update, inside either window.
+### /sql-exercises/ title names both nouns and "With Solutions"
+
+- **Claimed** 2026-11-14 · **Shipped** on the founder's ask in chat
+  ("sql-exercises başlık PR'ını aç") · **Read** 2026-12-12 (ship + 28 days;
+  Bing's query rows are weekly buckets).
+- **Change** title "SQL Practice Questions — 300+ Exercises With Solutions"
+  → "SQL Practice Questions & Exercises With Solutions" (68 chars raw);
+  description says "questions and exercises with solutions"; og/twitter
+  title and description equal to them (og:description also lost
+  "skill-radar"). H1 and body untouched.
+- **Why** Bing, the page slice of `bing_stats`: 227 clicks / 3,686
+  impressions in the week ending 10-02, 46 / 1,119 in the week ending
+  11-06, position 6 → 7. Most of the fall is impressions (−70%), which no
+  title fixes; CTR fell too (6.2% → 4.1%). Per query, Sept vs 10-17 on:
+  "sql practice exercises" 43 → 7 clicks at position ~3 (CTR 14% → 7%),
+  "sql exercises" 23 → 5, "sql practice questions" 43 → 19 (CTR held best).
+  Google's best-clicked query for the page is "sql practice exercises with
+  solutions" (15 clicks, position 7.1, last 56 days).
+- **Metric** `bing_page_ctr` (metrics.md) on /sql-exercises/, plus the
+  [query] slice of `bing_stats` for "sql practice exercises", "sql
+  exercises", "sql practice questions"; Google's [query, page] slice for
+  "sql practice exercises with solutions". 28 days after vs 28 days before.
+- **Target** page CTR on Bing back to ≥ 5% (from 4.1%); "sql practice
+  questions" CTR not below 4%.
+- **Falsification, stated in advance:** CTR flat or down at a comparable
+  position → the title was not the cause, and the decline is demand
+  (impressions) — work on new pages, not this snippet. "sql practice
+  questions" position down > 2 or CTR < 3% → revert to the old title. A
+  confound: impressions are still falling; read CTR, never clicks.
 - **Verdict** _pending_
 
 ### the /vs-datalemur/ snippet fits the result (the "datalemur" zero-click query)
@@ -80,7 +191,13 @@ of the verifier and must never be rounded to `FLAT`.
   impressions → the snippet was not the cause; the query is navigational
   and the page is not worth more title work. Position down > 2 → revert the
   title (the old one carried "Free Tier" and "SQL Practice" both).
-- **Verdict** _pending_
+- **Verdict** **MISS** (read 2026-11-13, four days late; docs/reads/seo-2026-11-13.md
+  §3). The three queries: before (09-13 → 10-10) 1,853 impressions, 0 clicks,
+  position 6.1; after (10-12 → 11-08) 1,821 impressions, 3 clicks (0.16%),
+  position 6.8. Under the 1% target. The falsification's "zero clicks" line
+  is not met (3 > 0), but the spirit holds: the query is navigational, as
+  the claim warned. Position fell 0.7, which is inside the 2-place revert
+  line, so the title stays. No more title work on this page.
 
 ### a 7-day trial at checkout: "nothing is charged today" (checkoutTrial)
 
@@ -3377,6 +3494,43 @@ that needs its own path — the current rule is written down in the handler.
 ---
 
 ## Closed
+
+### the /vs-datalemur/ snippet fits the result (the "datalemur" zero-click query) — **FLAT**
+
+- **Claimed** 2026-10-11 · **Shipped** on the founder's ask in chat ("datalemur
+  title ve meta'yı düzelt") · **Read** 2026-11-09 (ship + 28 days, GSC's own
+  lag included).
+- **Change** /vs-datalemur/'s title 72 → 65 characters ("DataLemur SQL
+  Practice: Is It Free? Pricing (2026)"), description 300 → 145 (DataLemur's
+  $15/mo · $60/yr from docs/reads/alternatives-facts-2026-09-13.md, said to
+  come from a competitor), og/twitter equal to both. Body untouched. Bound by
+  tests/snippet-length.test.js like the five pages of 09-29.
+- **Why** GSC weekly 09-28 → 10-04: "datalemur" 381 impressions at 5.2 and
+  "data lemur sql" 136 at 6.7, zero clicks on both; the page has 979
+  impressions at 5.7. The old title was cut at ~60 characters and the
+  description at ~160 of 300. Caveat written now: "datalemur" is a
+  navigational query, most of its searchers want datalemur.com, so a
+  ceiling of a few percent CTR is the honest expectation.
+- **Metric** `gsc_position` (metrics.md), read per query on the
+  [query, page] slice of `gsc_daily`: clicks and CTR of "datalemur" +
+  "data lemur sql" + "datalemur sql practice" to /vs-datalemur/, 28 days
+  after vs the 28 days before 2026-10-11.
+- **Target** ≥ 1% CTR on those three queries combined (from 0 on ~550
+  impressions a week), position no worse than 1.0 down.
+- **Falsification, stated in advance:** still zero clicks at ≥ 1,500
+  impressions → the snippet was not the cause; the query is navigational
+  and the page is not worth more title work. Position down > 2 → revert the
+  title (the old one carried "Free Tier" and "SQL Practice" both).
+- **Verdict** **FLAT**, read 2026-11-19 on `gsc_daily` [query, page],
+  28 days each side of 10-11 (09-13 → 10-10 vs 10-11 → 11-08). The three
+  claimed queries: 1,853 → 1,836 impressions, 0 → 3 clicks (CTR 0% →
+  0.16%; target was ≥ 1%). "datalemur" position 5.6 → 6.8 (down 1.2, inside
+  the 2-place revert line). Three clicks on ~1,800 impressions is inside
+  noise, not a move. Outside the claim, "datalemur sql" went 5 → 0 clicks
+  (1,456 → 1,029 impressions), which this change may or may not have
+  caused. **Conclusion, as the falsification said:** the query is
+  navigational; no more title work on /vs-datalemur/. The title stays (no
+  revert: position held inside the line).
 
 ### hand-written founder check-ins replace the automated engagement email — **UNREADABLE**
 - **Claimed** 2026-08-21 (design: `cgozdemm-main-design-20260818-013802.md`)

@@ -344,7 +344,9 @@ export function withProvenance(html, { slug, name }) {
  * a page cannot end up with a second, differently-worded version of the same
  * claim family.
  *
- * @param d     {name, format: [[label, text, [srcKeys]]], sources: {key: [label, url|null, date]}}
+ * @param d     {name, format: [[label, text, [srcKeys]]], sources: {key: [label, url|null, date, 'direct'?]}}
+ *              A fourth element `'direct'` marks a source told to us rather
+ *              than published (a candidate's email); the intro then says so.
  * @param opts  {accessed, role} — `role` narrows the heading when the sources
  *              only cover one job family.
  */
@@ -360,12 +362,13 @@ export function formatSection(d, { accessed, role = null } = {}) {
     return `<li id="src-${k}" style="margin:4px 0;">[${i + 1}] ${href ? `<a href="${href}" rel="nofollow noopener" target="_blank" style="color:#94a3b8;">${text}</a>` : text}</li>`;
   }).join('');
   const sentence = `Sources: ${srcKeys.map(k => `${d.sources[k][0]} (${d.sources[k][2]})`).join('; ')}.`;
+  const direct = srcKeys.some(k => d.sources[k][3] === 'direct');
   // "(sourced)" in the heading itself: this section exists only on a page in
   // SOURCED_SLUGS, and the label says why (docs/plans/company-sourced-vs-topical-2026-09-21.md).
   return `<section id="format" data-section="format-sourced" style="border-top:1px solid rgba(255,255,255,.04);"><div class="sec">
   <span class="sl">How the interview runs (sourced)</span>
   <h2 class="st fd">The ${esc(d.name)} SQL interview, as candidates report it</h2>
-  <p style="font-size:15px;color:#94a3b8;margin:14px 0 22px;max-width:760px;line-height:1.75;">${esc(d.name)} does not publish the format. Each row is what candidates and prep guides have described publicly, with its source; where sources disagree, the row says so. Formats change — treat every specific as reported, not official.${role ? ` The sources below describe ${esc(role)}; other teams at ${esc(d.name)} may run a different loop.` : ''}</p>
+  <p style="font-size:15px;color:#94a3b8;margin:14px 0 22px;max-width:760px;line-height:1.75;">${esc(d.name)} does not publish the format. Each row is what candidates and prep guides have described ${direct ? '— publicly, or to us directly —' : 'publicly,'} with its source; where sources disagree, the row says so.${direct ? ' A source marked as told to us is one candidate&#39;s account, by email; their name is withheld at their request.' : ''} Formats change — treat every specific as reported, not official.${role ? ` The sources below describe ${esc(role)}; other teams at ${esc(d.name)} may run a different loop.` : ''}</p>
   <div class="tbl"><table>
     <tbody>
 ${rows}
