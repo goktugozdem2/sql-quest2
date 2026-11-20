@@ -66,6 +66,78 @@ of the verifier and must never be rounded to `FLAT`.
     pages do not rank for brand queries.
   - Google takes 2–4 weeks to show a new title. The read date allows for
     that.
+### four striking-distance snippets say what the searcher typed (rollup, JOIN examples, govern AI SQL, SQLBolt)
+
+- **Claimed** 2026-11-19 (PR `seo/striking-distance-2026-11`, not merged
+  without the founder's go) · **Read** ship + 28 days, GSC's own lag
+  included — 2026-12-17 if it ships 2026-11-19; move the date with the merge.
+- **Change** title + description (og/twitter equal to both) of four pages,
+  bodies untouched except one FAQ entry and one methodology sentence on
+  /vs-sqlbolt/ and the H1 of the JOINs post:
+  /questions/recursive-team-size-rollup/ → "Recursive CTE Question: Org Chart
+  Team Size (Hard)", description opens "A recursive roll-up, not GROUP BY
+  ROLLUP" (one per-slug override in scripts/build-question-pages.mjs, the
+  template unchanged for every other page, URL unchanged);
+  /blog/sql-joins-explained/ → "SQL JOIN Examples: INNER, LEFT, Anti-Join,
+  Self Join"; /blog/validate-ai-generated-sql/ → "Govern AI-Generated SQL
+  Before Production: 7 Checks"; /vs-sqlbolt/ → "SQLBolt: 18 Lessons, 53
+  Exercises, and What Comes Next" plus the FAQ "How many lessons does SQLBolt
+  have?" (both counts from docs/reads/sqlbolt-2026-11-19.md, re-counted that
+  day). Bound by tests/snippet-length.test.js.
+- **Why** GSC, 28 days to 2026-11-14 ([query, page] slice of `gsc_daily`):
+  "rollup interview questions" 624 impressions at 8.9, 0 clicks (wrong
+  intent — those searchers want GROUP BY ROLLUP); "sql join examples" 506 at
+  27.7 (Bing 469, 1 click); "how to govern ai-generated sql before it
+  reaches production" 158 at 3.4, 0 clicks; "sqlbolt" 283 at 14.6, "sql bolt"
+  58 at 9.6, "how many lessons does sqlbolt have" 57 at 6.1.
+- **Metric** `gsc_position` (metrics.md), per query on the [query, page]
+  slice: impressions, clicks, CTR and average position of each query above
+  to its page, 28 days after vs the 28 days before the ship date.
+- **Target, stated in advance:**
+  - "rollup interview questions" → /questions/recursive-team-size-rollup/:
+    success is honesty, not clicks — impressions fall by half or more, or
+    CTR > 0. Impressions flat with 0 clicks = the snippet change did nothing.
+  - "sql join examples" → /blog/sql-joins-explained/: position up ≥ 5
+    (27.7 → ≤ 22.7) and ≥ 1 click.
+  - the "govern AI-generated SQL" query → /blog/validate-ai-generated-sql/:
+    ≥ 3% CTR at position ≤ 5 (from 0 on 158 impressions).
+  - "sqlbolt" + "sql bolt" + "how many lessons does sqlbolt have" →
+    /vs-sqlbolt/: ≥ 1% CTR combined (from 0 on ~400 impressions), position
+    no worse than 1.0 down on any of the three.
+- **Falsification, stated in advance:** zero clicks on all four groups at
+  ≥ 1,000 combined impressions → the snippets were not what held clicks
+  back. Any page's position down > 2 on its query → revert that page's
+  title. Confound to check before reading: any other change to these four
+  pages, or a Google core update, inside either window.
+### /sql-exercises/ title names both nouns and "With Solutions"
+
+- **Claimed** 2026-11-14 · **Shipped** on the founder's ask in chat
+  ("sql-exercises başlık PR'ını aç") · **Read** 2026-12-12 (ship + 28 days;
+  Bing's query rows are weekly buckets).
+- **Change** title "SQL Practice Questions — 300+ Exercises With Solutions"
+  → "SQL Practice Questions & Exercises With Solutions" (68 chars raw);
+  description says "questions and exercises with solutions"; og/twitter
+  title and description equal to them (og:description also lost
+  "skill-radar"). H1 and body untouched.
+- **Why** Bing, the page slice of `bing_stats`: 227 clicks / 3,686
+  impressions in the week ending 10-02, 46 / 1,119 in the week ending
+  11-06, position 6 → 7. Most of the fall is impressions (−70%), which no
+  title fixes; CTR fell too (6.2% → 4.1%). Per query, Sept vs 10-17 on:
+  "sql practice exercises" 43 → 7 clicks at position ~3 (CTR 14% → 7%),
+  "sql exercises" 23 → 5, "sql practice questions" 43 → 19 (CTR held best).
+  Google's best-clicked query for the page is "sql practice exercises with
+  solutions" (15 clicks, position 7.1, last 56 days).
+- **Metric** `bing_page_ctr` (metrics.md) on /sql-exercises/, plus the
+  [query] slice of `bing_stats` for "sql practice exercises", "sql
+  exercises", "sql practice questions"; Google's [query, page] slice for
+  "sql practice exercises with solutions". 28 days after vs 28 days before.
+- **Target** page CTR on Bing back to ≥ 5% (from 4.1%); "sql practice
+  questions" CTR not below 4%.
+- **Falsification, stated in advance:** CTR flat or down at a comparable
+  position → the title was not the cause, and the decline is demand
+  (impressions) — work on new pages, not this snippet. "sql practice
+  questions" position down > 2 or CTR < 3% → revert to the old title. A
+  confound: impressions are still falling; read CTR, never clicks.
 - **Verdict** _pending_
 
 ### the /vs-datalemur/ snippet fits the result (the "datalemur" zero-click query)

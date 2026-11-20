@@ -13,7 +13,7 @@ import { loadQuestionBank, questionSlugs, slugify } from '../scripts/question-sl
 import { renderTopic, EXTRA_TOPIC_SPECS } from '../scripts/build-topic-extra.mjs';
 import { isFreePreview } from '../src/utils/challenge-order.js';
 import { readPrune } from '../scripts/apply-seo-prune.mjs';
-import { questionSnippet, questionTask, isSpecSentence, QUESTION_TITLE_MAX, QUESTION_DESC_MIN, QUESTION_DESC_MAX } from '../scripts/build-question-pages.mjs';
+import { questionSnippet, questionTask, isSpecSentence, QUESTION_TITLE_MAX, QUESTION_DESC_MIN, QUESTION_DESC_MAX, QUESTION_SNIPPETS } from '../scripts/build-question-pages.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const QDIR = path.join(ROOT, 'public/questions');
@@ -134,7 +134,8 @@ describe('question page snippet', () => {
   it('is what the template produces, and never states a free count or quotes the hint or solution', () => {
     const bad = [];
     for (const c of bank) {
-      const { title, description } = questionSnippet(c);
+      // a per-page override (QUESTION_SNIPPETS, pinned in snippet-length) wins over the template
+      const { title, description } = { ...questionSnippet(c), ...(QUESTION_SNIPPETS[slugs.get(c.id)] || {}) };
       const h = head(pageOf(c));
       if (h.title !== title || h.description !== description) bad.push(`#${c.id} built page is stale`);
       if (/\d+\+?\s+free\b|\bfree\b/i.test(`${title} ${description}`)) bad.push(`#${c.id} says free: ${description}`);

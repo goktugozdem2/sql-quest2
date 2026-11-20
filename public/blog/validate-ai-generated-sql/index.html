@@ -24,15 +24,21 @@
        protect claims copied outside the product. -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>How to Validate AI-Generated SQL: 7 Production Checks | SQLQuest.app</title>
-  <meta name="description" content="A seven-check workflow for AI-generated SQL, worked on a real card ledger where the plausible query returns 200 rows and the correct one returns 24.">
-  <meta name="keywords" content="validate AI generated SQL, check AI SQL query, AI generated SQL accuracy, test SQL query, SQL validation checklist, AI SQL mistakes">
+  <!-- 2026-11-19: "how to govern ai-generated sql before it reaches production"
+       — 158 Google impressions at position 3.4, zero clicks (28 days to
+       2026-11-14). The snippet now answers that query in its own words: a gate
+       before production, and what the seven checks are. og:title follows the
+       title (it was a different question). The H1 and the body are unchanged.
+       Pinned by tests/snippet-length.test.js. -->
+  <title>Govern AI-Generated SQL Before Production: 7 Checks | SQLQuest.app</title>
+  <meta name="description" content="Gate AI-generated SQL before production with seven checks: a written result contract, real schema, NULLs, join fan-out, grain, rows checked by hand, then cost.">
+  <meta name="keywords" content="govern AI generated SQL, validate AI generated SQL, check AI SQL query, AI generated SQL accuracy, test SQL query, SQL validation checklist, AI SQL mistakes">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://sqlquest.app/blog/validate-ai-generated-sql/">
   <meta property="og:type" content="article">
   <meta property="og:url" content="https://sqlquest.app/blog/validate-ai-generated-sql/">
-  <meta property="og:title" content="Can You Tell When AI-Generated SQL Is Wrong?">
-  <meta property="og:description" content="The query runs, returns 200 plausible rows, and is wrong about every one of them. Seven checks, worked on real data.">
+  <meta property="og:title" content="Govern AI-Generated SQL Before Production: 7 Checks">
+  <meta property="og:description" content="Gate AI-generated SQL before production with seven checks: a written result contract, real schema, NULLs, join fan-out, grain, rows checked by hand, then cost.">
   <meta property="og:image" content="https://sqlquest.app/og-image.png">
   <meta name="twitter:card" content="summary_large_image">
   <script type="application/ld+json">
