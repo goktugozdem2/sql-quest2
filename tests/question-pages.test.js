@@ -176,3 +176,31 @@ describe('generated topic pages', () => {
     }
   });
 });
+
+// 2026-11-20 (founder's Go): question pages leave BING's index only. Google
+// must keep indexing them, the hub stays indexed for both, and every page
+// stays in the sitemap so Bing recrawls it and reads the tag.
+describe('Bing-only noindex on the question pages', () => {
+  const BING = '<meta name="bingbot" content="noindex, follow">';
+  const dirs = fs.readdirSync(QDIR, { withFileTypes: true }).filter(d => d.isDirectory()).map(d => d.name);
+  const sitemap = fs.readFileSync(path.join(ROOT, 'public/sitemap.xml'), 'utf8');
+
+  it('every question page tells bingbot noindex, follow — and tells every other robot index, follow', () => {
+    expect(dirs.length).toBeGreaterThan(300);
+    for (const d of dirs) {
+      const html = fs.readFileSync(path.join(QDIR, d, 'index.html'), 'utf8');
+      expect(html, d).toContain(BING);
+      expect(html, d).toContain('<meta name="robots" content="index, follow">');
+      expect(html, d).not.toMatch(/<meta name="(robots|googlebot)" content="[^"]*noindex/);
+    }
+  });
+
+  it('the /questions/ hub stays indexed on Bing too', () => {
+    const hub = fs.readFileSync(path.join(QDIR, 'index.html'), 'utf8');
+    expect(hub).not.toContain('bingbot');
+  });
+
+  it('every question page stays in the sitemap, so Bing recrawls it and reads the tag', () => {
+    for (const d of dirs) expect(sitemap, d).toContain(`/questions/${d}/</loc>`);
+  });
+});

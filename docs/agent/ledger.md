@@ -27,6 +27,40 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### Bing: the question pages leave Bing's index (bingbot noindex, follow)
+
+- **Claimed** 2026-11-20 · **Shipped** on merge (generator change, no flag;
+  founder's Go in chat, "ne önerirsen o olsun") · **Read** 2027-01-08.
+- **Change** every `/questions/<slug>/` page (307) carries
+  `<meta name="bingbot" content="noindex, follow">`. `robots` stays
+  `index, follow`, so Google is untouched; the `/questions/` hub stays
+  indexed on both; every page stays in the sitemap so Bing recrawls it and
+  reads the tag. Generator: `scripts/build-question-pages.mjs`
+  (`BINGBOT_QUESTION_META`); guard: `tests/question-pages.test.js`.
+- **Why** Bing weekly clicks (`bing_stats` page slice, Sat→Fri buckets) fell
+  258 / 270 (weeks to 09-25 / 10-02) → 180 → 163 → 90 → 73 → 69 → **33**
+  (week to 11-13) while Google stayed flat. 305 of 416 sitemap URLs were
+  question pages; Bing crawled 261 of them and they drew **1 impression** in
+  four weeks. Hypothesis: hundreds of thin pages with no Bing demand weigh on
+  how Bing rates the whole site, and the pages that do earn Bing clicks
+  (`/sql-exercises/` first) lose with them.
+- **Metric** `bing_indexed` (`bing_crawl_daily.in_index`, baseline **825** on
+  2026-11-18) as the mechanism check, and weekly Bing clicks on the page slice
+  of `bing_stats` (baseline **33**, week to 2026-11-13; the four weeks before:
+  163, 90, 73, 69). Weekly clicks are not yet a named metric in
+  `docs/agent/metrics.md` — register them there before the read or the click
+  half reads UNDEFINED.
+- **Guardrail** Google clicks to `/questions/` pages (`gsc_daily` page slice)
+  do not fall over the same window — Google must not have read the tag.
+- **Target** `in_index` down by ≥ 250 (Bing processed the tag) AND weekly
+  Bing clicks back at ≥ 70 (the late-October level) for two consecutive weeks
+  inside the window.
+- **Falsification, stated in advance:** `in_index` drops ≥ 250 and weekly
+  clicks stay ≤ 40 for the four weeks after the drop → MISS; take the tag
+  off (delete the line in `head()`, rebuild). `in_index` has not dropped by
+  ≥ 150 at the read → UNREADABLE (Bing has not processed it), extend four
+  weeks. December seasonality confounds any rise; say so in the verdict.
+
 ### the wait between a plan click and Stripe says what is happening, and never drops a slow session
 
 - **Claimed** 2026-11-20 · **Shipped** client on merge (no flag: the fix to a
