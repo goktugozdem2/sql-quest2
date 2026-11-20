@@ -279,7 +279,8 @@ describe('launchCheckout wiring', () => {
     expect(checkoutInFlight(t0, t0 + 1700)).toBe(true);            // the double click
     expect(checkoutInFlight(t0, t0 + CHECKOUT_REENTRY_MS)).toBe(false);
     expect(checkoutInFlight(t0 + 5000, t0)).toBe(false);           // a clock that went backwards never locks the button
-    expect(CHECKOUT_REENTRY_MS).toBeGreaterThan(8000);             // longer than the request's own timeout
+    const { CHECKOUT_REQUEST_TIMEOUT_MS } = await import('../src/utils/checkout-session.js');
+    expect(CHECKOUT_REENTRY_MS).toBeGreaterThan(CHECKOUT_REQUEST_TIMEOUT_MS); // longer than the request's own timeout
     const guard = body.indexOf('if (checkoutInFlight(checkoutStartedAtRef.current)) return;');
     expect(guard, 'the re-entry guard').toBeGreaterThan(-1);
     expect(guard).toBeLessThan(body.indexOf("trackActivationEvent('pro_checkout_clicked'"));
@@ -287,7 +288,7 @@ describe('launchCheckout wiring', () => {
     // the Payment Link fallback re-enters and must not be stopped by it
     expect(body.slice(0, guard)).toContain('if (!opts.linkFallback) {');
     // a page restored from the back/forward cache starts clean
-    expect(body).toMatch(/addEventListener\('pageshow', \(\) => \{ checkoutStartedAtRef\.current = 0; \}/);
+    expect(body).toMatch(/addEventListener\('pageshow', \(\) => \{ checkoutStartedAtRef\.current = 0; setCheckoutOpening\(null\); \}/);
   });
 
   it('sessions on, trial on (founder\u2019s Go 2026-10-01)', () => {
@@ -334,5 +335,66 @@ describe('launchCheckout wiring', () => {
   });
   it('a returning trialist is not counted as a purchase', () => {
     expect(app).toMatch(/fresh\.proTrial === true \? 'pro_trial_started' : 'pro_purchase_completed'/);
+  });
+});
+
+// 2026-11-20: every session in the week to 11-20 took 7–9 s from click to
+// Stripe against an 8 s client timeout. Nothing on screen moved, so buyers
+// clicked the card 5–25 times, and one was thrown onto the Payment Link (local
+// currency, no trial) a second before his session was ready.
+describe('the wait between the plan click and Stripe', () => {
+  const app = read('src/app.jsx');
+  const fn = read('supabase/functions/create-checkout-session/index.ts');
+
+  it('the client waits well past the slowest session seen (9 s) before falling back', async () => {
+    const { CHECKOUT_REQUEST_TIMEOUT_MS, requestCheckoutSession } = await import('../src/utils/checkout-session.js');
+    expect(CHECKOUT_REQUEST_TIMEOUT_MS).toBeGreaterThanOrEqual(15000);
+    // the default is the constant, not a literal that can drift from it
+    vi.useFakeTimers();
+    try {
+      const hang = () => new Promise(() => {});
+      const p = requestCheckoutSession({ fetchImpl: hang, endpoint: 'https://x/fn', anonKey: 'k', body: { plan: 'monthly' } });
+      let settled = false; p.catch(() => { settled = true; });
+      await vi.advanceTimersByTimeAsync(9500);
+      expect(settled, 'still waiting at 9.5 s').toBe(false);
+      await vi.advanceTimersByTimeAsync(CHECKOUT_REQUEST_TIMEOUT_MS);
+      expect(settled).toBe(true);
+    } finally { vi.useRealTimers(); }
+  });
+
+  it('the plan cards say checkout is opening and take no second click', () => {
+    expect(app).toContain('const [checkoutOpening, setCheckoutOpening] = useState(null);');
+    expect(app.indexOf('const [checkoutOpening, setCheckoutOpening]')).toBeLessThan(app.indexOf('  if (showAuth) {'));
+    const launch = app.slice(app.indexOf('const launchCheckout = '), app.indexOf('const beginCheckout = '));
+    expect(launch).toContain('setCheckoutOpening(plan);');
+    for (const plan of ['monthly', 'annual']) {
+      expect(app).toContain(`onClick={() => { if (checkoutOpening) return; trackProEvent('click_${plan}'); beginCheckout('${plan}'); }}`);
+      expect(app).toContain(`{checkoutOpening === '${plan}' && <CheckoutOpeningLine />}`);
+    }
+    expect((app.match(/disabled=\{!!checkoutOpening\}/g) || []).length).toBeGreaterThanOrEqual(2);
+    expect(app).toContain('data-testid="checkout-opening"');
+  });
+
+  it('the modal wakes the function with a warm-up that makes no session', async () => {
+    const { warmCheckoutSession } = await import('../src/utils/checkout-session.js');
+    const calls = [];
+    const ok = warmCheckoutSession({ fetchImpl: (u, o) => { calls.push([u, o]); return Promise.reject(new Error('offline')); }, endpoint: 'https://x/fn', anonKey: 'k' });
+    expect(ok).toBe(true);
+    expect(calls).toHaveLength(1);
+    expect(calls[0][1].method).toBe('POST');
+    expect(JSON.parse(calls[0][1].body)).toEqual({ warm: true });
+    expect(warmCheckoutSession({ fetchImpl: () => { throw new Error('x'); }, endpoint: 'e', anonKey: 'k' })).toBe(false);
+    expect(warmCheckoutSession({})).toBe(false);
+    // fired from the modal-shown effect, behind the sessions flag
+    const effect = app.slice(app.indexOf("trackProEvent('modal_shown');"), app.indexOf("trackActivationEvent('pro_modal_shown', {"));
+    expect(effect).toContain('warmCheckoutSession(');
+    expect(effect).toContain("window.FF?.feature?.('checkoutSessions') === true");
+    // the function answers it before validation, with no session and no row
+    const warm = fn.indexOf('if (input.warm === true) {');
+    expect(warm).toBeGreaterThan(-1);
+    expect(warm).toBeLessThan(fn.indexOf('const plan = input.plan;'));
+    const warmBlock = fn.slice(warm, fn.indexOf('return new Response(null, { status: 204', warm));
+    expect(warmBlock).not.toContain('checkout.sessions.create');
+    expect(warmBlock).not.toContain('logCheckoutEvent');
   });
 });

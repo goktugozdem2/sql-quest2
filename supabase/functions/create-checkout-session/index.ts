@@ -187,6 +187,18 @@ serve(async (req) => {
     return json({ error: "invalid_body" }, 400, origin);
   }
 
+  // Warm-up (2026-11-20): the app sends { warm: true } when the Pro modal
+  // opens, so the connection to Stripe is open before the plan click. No
+  // session, no row, nothing returned but 204. Every session in the week to
+  // 11-20 took 7–9 s and the client waited at most 8.
+  if (input.warm === true) {
+    const t0 = Date.now();
+    const price = Deno.env.get("STRIPE_PRICE_MONTHLY");
+    try { if (price) await stripe.prices.retrieve(price); } catch (_) { /* a warm-up never fails loudly */ }
+    console.log(`warm ${Date.now() - t0}ms`);
+    return new Response(null, { status: 204, headers: corsFor(origin) });
+  }
+
   // ── strict validation: allowlists and shapes, nothing passed through ──
   const plan = input.plan;
   const regionAsked = input.region ?? "default";
@@ -224,6 +236,7 @@ serve(async (req) => {
     return json({ error: "checkout_unavailable" }, 503, origin);
   }
 
+  const tStart = Date.now();
   let trial = trialAsked;
   if (trial && await trialAlreadyUsed(username)) {
     trial = false;
@@ -277,7 +290,11 @@ serve(async (req) => {
 
   try {
     // deno-lint-ignore no-explicit-any
+    const tStripe = Date.now();
     const session = await stripe.checkout.sessions.create(params as any);
+    // Where the click's wait goes (2026-11-20): before Stripe (trial lookup,
+    // promo) and the Stripe call itself.
+    console.log(`timing pre=${tStripe - tStart}ms stripe=${Date.now() - tStripe}ms`);
     if (!session.url) {
       console.error("[create-checkout-session] session created without a url", session.id);
       await logCheckoutEvent("pro_checkout_session_failed", username, { plan, region: chosen.region, trial, stage: "no_url" });

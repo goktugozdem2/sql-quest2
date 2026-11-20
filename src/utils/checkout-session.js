@@ -136,7 +136,15 @@ export function buildCheckoutSessionBody({ plan, username, email, trial, promo, 
 // page he left. When he pressed Back the browser restored that page, the
 // timer fired, and the "timeout" fallback threw him onto the Payment Link —
 // a second, different Stripe page he had not asked for.
-export const CHECKOUT_REENTRY_MS = 12000;
+//
+// 2026-11-20: every session in the week to 11-20 took 7–9 s from click to
+// Stripe (the Stripe call itself, measured in the function's log; boot was
+// 45 ms), against an 8 s timeout. One of eight buyers was thrown onto the
+// Payment Link mid-wait — local currency, no trial — and did not buy. The
+// timeout is now well past the slowest session seen; the re-entry window
+// stays longer than it, and the button says what is happening meanwhile.
+export const CHECKOUT_REQUEST_TIMEOUT_MS = 20000;
+export const CHECKOUT_REENTRY_MS = 25000;
 
 /** True while a plan click made at `startedAt` (ms) is still opening checkout. */
 export function checkoutInFlight(startedAt, now = Date.now(), windowMs = CHECKOUT_REENTRY_MS) {
@@ -151,7 +159,7 @@ export function checkoutInFlight(startedAt, now = Date.now(), windowMs = CHECKOU
  *
  * @returns {Promise<{ url: string, trial: boolean, region: string }>}
  */
-export async function requestCheckoutSession({ fetchImpl, endpoint, anonKey, body, timeoutMs = 8000 } = {}) {
+export async function requestCheckoutSession({ fetchImpl, endpoint, anonKey, body, timeoutMs = CHECKOUT_REQUEST_TIMEOUT_MS } = {}) {
   if (typeof fetchImpl !== 'function') throw new Error('no_fetch');
   if (!endpoint || !anonKey) throw new Error('not_configured');
   if (!body) throw new Error('invalid_body');
@@ -217,4 +225,26 @@ export async function launchWithFallback({ sessionsOn, request, navigate, fallba
     return { via: 'link', reason: 'navigate_failed' };
   }
   return { via: 'session', reason: null };
+}
+
+/**
+ * Wake the checkout function while the person is still reading the plans
+ * (2026-11-20): a `{ warm: true }` POST that makes no session — the function
+ * opens its connection to Stripe and answers 204. Fire-and-forget; a failure
+ * changes nothing. Returns whether a request was sent.
+ */
+export function warmCheckoutSession({ fetchImpl, endpoint, anonKey } = {}) {
+  if (typeof fetchImpl !== 'function' || !endpoint || !anonKey) return false;
+  try {
+    const p = fetchImpl(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', apikey: anonKey, Authorization: `Bearer ${anonKey}` },
+      body: JSON.stringify({ warm: true }),
+      keepalive: true,
+    });
+    if (p && typeof p.catch === 'function') p.catch(() => {});
+    return true;
+  } catch (_) {
+    return false;
+  }
 }

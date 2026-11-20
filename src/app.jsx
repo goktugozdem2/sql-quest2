@@ -44,7 +44,7 @@ import { PLACEMENT_TIERS, placementResult, placementEventPayload, readFirstRunPl
 import { QUESTIONS as READINESS_QUESTIONS, READINESS_SKILLS, READINESS_RECORD_KEY, companySkillWeights, scoreReadiness, summarizeScores, weakestSkills, readinessRecordFrom, readReadinessRecord } from './data/readiness-questions.js';
 import { paidWallFor, isColdStart, practiceSolves } from './utils/paid-wall.js';
 import { priceRegionFor, planPrices, checkoutLinkFor } from './utils/regional-price.js';
-import { wantsTrial, buildCheckoutSessionBody, requestCheckoutSession, launchWithFallback, checkoutInFlight, trialOffered, TRIAL_CARD_COPY, TRIAL_TERMS } from './utils/checkout-session.js';
+import { wantsTrial, buildCheckoutSessionBody, requestCheckoutSession, launchWithFallback, checkoutInFlight, warmCheckoutSession, CHECKOUT_REENTRY_MS, trialOffered, TRIAL_CARD_COPY, TRIAL_TERMS } from './utils/checkout-session.js';
 import { companySetGate, companySetFreeIds, companySetProgress, quietAskDecision, deadlineOfferFor, deadlineEventMeta, withEarlyWall, pickProMockId, FREE_MOCK_ID, quotaGate, FREE_SOLVE_QUOTA, quotaFreePaths, QUOTA_FREE_PATH_COPY } from './utils/free-tier-boundary.js';
 import { expandStageChallenges, placementStartIndex as roadmapPlacementStartIndex } from './utils/roadmap.js';
 import { shouldEmitLockEvent, lockEventKey } from './utils/lock-events.js';
@@ -404,6 +404,15 @@ const highlightSQL = (code) => {
 };
 
 // Component to display highlighted SQL (read-only)
+// Shown inside the plan card that was clicked while Stripe prepares the
+// session (2026-11-20). Grey, never the accent: it is status, not an action.
+const CheckoutOpeningLine = () => (
+  <div className="flex items-center justify-center gap-2 text-xs mt-2" style={{ color: '#F2F0EA' }}>
+    <span className="inline-block w-3 h-3 rounded-full animate-spin" style={{ border: '2px solid #8A8E99', borderTopColor: 'transparent' }} aria-hidden="true" />
+    Opening checkout…
+  </div>
+);
+
 const SQLHighlight = ({ code, className = '' }) => {
   if (!code) return null;
   return (
@@ -6081,6 +6090,10 @@ function SQLQuest() {
   // could cost the sale). The email feeds Stripe prefill, the abandon
   // email, and the lead-nurture drip.
   const [checkoutPendingPlan, setCheckoutPendingPlan] = useState(null);
+  // The plan whose Stripe page is being prepared (2026-11-20). The session
+  // takes 7–9 s to make; until this, nothing on screen moved and every buyer
+  // clicked the card 5–25 times. While set, the cards are disabled and say so.
+  const [checkoutOpening, setCheckoutOpening] = useState(null);
   const [checkoutEmailInput, setCheckoutEmailInput] = useState('');
 
   // Streak day marker (streak P0 fix). The streak used to advance ONLY via
@@ -7116,7 +7129,9 @@ function SQLQuest() {
     if (!opts.linkFallback) {
       if (checkoutInFlight(checkoutStartedAtRef.current)) return;
       checkoutStartedAtRef.current = Date.now();
-      try { window.addEventListener('pageshow', () => { checkoutStartedAtRef.current = 0; }, { once: true }); } catch (_) { /* ignore */ }
+      setCheckoutOpening(plan);
+      try { window.addEventListener('pageshow', () => { checkoutStartedAtRef.current = 0; setCheckoutOpening(null); }, { once: true }); } catch (_) { /* ignore */ }
+      try { setTimeout(() => setCheckoutOpening(null), CHECKOUT_REENTRY_MS); } catch (_) { /* ignore */ }
     }
     // Stash the purchasing identity: the payment-link redirect lands in
     // the checkout tab as a FRESH app load, and guest sessions don't
@@ -7773,6 +7788,11 @@ function SQLQuest() {
       // already, so the review card waits a week. Don't stack asks.
       try { localStorage.setItem(LAST_ASK_KEY, String(Date.now())); } catch (_) {}
       trackProEvent('modal_shown');
+      // Wake the checkout function while the plans are being read, so the
+      // click does not pay for opening the connection to Stripe (2026-11-20).
+      if (window.FF?.feature?.('checkoutSessions') === true) {
+        warmCheckoutSession({ fetchImpl: window.fetch.bind(window), endpoint: `${window.SUPABASE_URL}/functions/v1/create-checkout-session`, anonKey: window.SUPABASE_ANON_KEY });
+      }
       trackActivationEvent('pro_modal_shown', {
         reason: proModalReason?.type || 'unknown',
         // True when the prompt only fired because the offer gate stopped
@@ -32614,8 +32634,11 @@ RULES:
                 <div data-pro-plans className={checkoutPendingPlan ? 'hidden' : `grid grid-cols-1 ${ftbFlag('quarterlyPlan') ? 'sm:grid-cols-3' : 'sm:grid-cols-2'} gap-3 mb-6`}>
                   {/* Monthly */}
                   <button
-                    onClick={() => { trackProEvent('click_monthly'); beginCheckout('monthly'); }}
-                    className="p-4 text-center transition-all block w-full"
+                    onClick={() => { if (checkoutOpening) return; trackProEvent('click_monthly'); beginCheckout('monthly'); }}
+                    disabled={!!checkoutOpening}
+                    aria-busy={checkoutOpening === 'monthly'}
+                    data-testid="plan-monthly"
+                    className={`p-4 text-center transition-all block w-full ${checkoutOpening && checkoutOpening !== 'monthly' ? 'opacity-50' : ''}`}
                     style={{ background: '#1F222B', borderRadius: '6px', border: '1px solid #2A2E38' }}
                     onMouseEnter={e => { e.currentTarget.style.borderColor = '#8A8E99'; }}
                     onMouseLeave={e => { e.currentTarget.style.borderColor = '#2A2E38'; }}
@@ -32624,6 +32647,7 @@ RULES:
                     <div className="text-sm font-medium" style={{ color: '#F2F0EA' }}>Monthly</div>
                     <div className="text-xs mt-1" style={{ color: '#8A8E99' }} data-testid="plan-terms-monthly">{trialOfferOn ? TRIAL_CARD_COPY.monthly : 'Billed monthly'}</div>
                     <div className="text-xs mt-2" style={{ color: '#8A8E99' }}>{shownPrices.monthlyPerMonth}</div>
+                    {checkoutOpening === 'monthly' && <CheckoutOpeningLine />}
                   </button>
 
                   {/* Quarterly — the founder's third package (2026-09-14):
@@ -32647,8 +32671,11 @@ RULES:
                   {/* Annual stays the highlighted offer — the founder's
                       2026-09-12 decision, unchanged by adding a third tier. */}
                   <button
-                    onClick={() => { trackProEvent('click_annual'); beginCheckout('annual'); }}
-                    className="p-4 text-center relative transition-all block w-full"
+                    onClick={() => { if (checkoutOpening) return; trackProEvent('click_annual'); beginCheckout('annual'); }}
+                    disabled={!!checkoutOpening}
+                    aria-busy={checkoutOpening === 'annual'}
+                    data-testid="plan-annual"
+                    className={`p-4 text-center relative transition-all block w-full ${checkoutOpening && checkoutOpening !== 'annual' ? 'opacity-50' : ''}`}
                     style={{ background: '#1F222B', borderRadius: '6px', border: '2px solid #FFE34D' }}
                   >
                     <div
@@ -32665,8 +32692,14 @@ RULES:
                         the payment page the data does not support. SAVE 72% stays —
                         that one is arithmetic, bound in checkout-surface.test.js. */}
                     <div className="text-xs mt-2" style={{ color: '#4ADE80' }}>{shownPrices.annualPerMonth}</div>
+                    {checkoutOpening === 'annual' && <CheckoutOpeningLine />}
                   </button>
                 </div>
+                {checkoutOpening && (
+                  <p role="status" aria-live="polite" className="text-xs text-center -mt-3 mb-4" style={{ color: '#F2F0EA' }} data-testid="checkout-opening">
+                    Preparing your secure Stripe checkout. This takes a few seconds, please don't close the page.
+                  </p>
+                )}
 
                 <div className="text-center mb-4">
                   {trialOfferOn && (
