@@ -27,6 +27,33 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### the wait between a plan click and Stripe says what is happening, and never drops a slow session
+
+- **Claimed** 2026-11-20 · **Shipped** client on merge (no flag: the fix to a
+  measured defect, founder's "acilen çöz") · server half (warm-up + timing
+  log) on `supabase functions deploy create-checkout-session` · **Read**
+  2026-12-18.
+- **Change** the clicked plan card shows "Opening checkout…" and every card
+  is disabled until Stripe opens; the client timeout goes 8 s → 20 s (re-entry
+  window 12 s → 25 s); the Pro modal sends a `{ warm: true }` request so the
+  function opens its connection to Stripe before the click; the function logs
+  `timing pre=… stripe=…` per session.
+- **Why** 2026-11-13 → 11-20: all 8 session clicks took 7–9 s from
+  `pro_checkout_clicked` to the function's `pro_checkout_started` (boot was
+  45 ms; the time is inside the Stripe call), against an 8 s timeout. Every
+  buyer clicked the card 5–25 more times; one (11-13) was thrown onto the
+  Payment Link 1 s before his session was ready and did not buy.
+- **Metric** `trial_funnel` step 2 and `checkout_session_fallback` rows.
+  Baseline: 1 fallback in 8 session clicks; `pro_plan_clicked` rows per
+  `pro_checkout_clicked` 57 : 8 (rage clicks).
+- **Target** zero `checkout_session_fallback {reason: 'timeout'}`;
+  `pro_plan_clicked` per `pro_checkout_clicked` under 1.5; the logged
+  `stripe=` time under 3 s on a warmed session.
+- **Falsification, stated in advance:** any timeout fallback with a session
+  logged inside 20 s → MISS (the window is still too short); fewer than 5
+  session clicks by the read → UNREADABLE. Not expected to move
+  `visitor_to_payer` on its own.
+
 ### paywall moments: every Pro surface a free person meets offers the way in (`paywallMoments`)
 
 - **Claimed** 2026-11-14 · **Flipped** _pending the founder's go_ · **Read**
