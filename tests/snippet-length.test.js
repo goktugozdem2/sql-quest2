@@ -35,6 +35,12 @@ export const DESC_MAX = 170;
 export const BRAND_SUFFIX = ' | SQLQuest.app';
 
 export const SNIPPET_PAGES = [
+  // 2026-11-20 batch (ledger "four more snippets that fit the window"):
+  // ranked 6.6–8.3 with titles of 78–87 characters and CTR 0.1–1.6%.
+  { src: 'src/best-sql-practice-sites.html', built: 'public/best-sql-practice-sites/index.html' },
+  { src: 'src/sql-practice-comparison.html', built: 'public/sql-practice-comparison/index.html' },
+  { src: 'src/blog/row-number-vs-rank-vs-dense-rank.html', built: 'public/blog/row-number-vs-rank-vs-dense-rank/index.html' },
+  { src: 'src/blog/null-handling-mistakes.html', built: 'public/blog/null-handling-mistakes/index.html' },
   { src: 'src/practice-sql-no-setup.html', built: 'public/practice-sql-no-setup/index.html' },
   { src: 'src/blog/recursive-cte-explained.html', built: 'public/blog/recursive-cte-explained/index.html' },
   { src: 'src/blog/window-functions-tutorial.html', built: 'public/blog/window-functions-tutorial/index.html' },
