@@ -398,3 +398,27 @@ describe('the wait between the plan click and Stripe', () => {
     expect(warmBlock).not.toContain('logCheckoutEvent');
   });
 });
+
+// 2026-11-20: the function's own log read `timing pre=8449ms stripe=447ms`.
+// The ~8 s before Stripe was trialAlreadyUsed scanning all of pro_events
+// (no index on username). The partial index only serves the query while the
+// query keeps `reason = 'stripe_webhook'` and `username` as filters.
+describe('the trial check is served by an index', () => {
+  const migDir = 'supabase/migrations';
+  const migs = fs.readdirSync(join(ROOT, migDir))
+    .map(f => read(`${migDir}/${f}`).replace(/--.*$/gm, ''));
+  const idx = migs.find(s => /create index[^;]*on public\.pro_events\s*\(username\)\s*where reason = 'stripe_webhook'/i.test(s));
+
+  it('a migration creates the partial index on pro_events(username) for webhook rows', () => {
+    expect(idx, 'no migration creates the pro_events(username) WHERE reason=stripe_webhook index').toBeTruthy();
+    expect(idx).toMatch(/concurrently/i);
+  });
+
+  it('the trial lookup filters on exactly what the index covers', () => {
+    const start = code.indexOf('async function trialAlreadyUsed');
+    const body = code.slice(start, code.indexOf('\n}', start));
+    expect(body).toContain('.from("pro_events")');
+    expect(body).toContain('.eq("reason", "stripe_webhook")');
+    expect(body).toContain('.eq("username", username)');
+  });
+});

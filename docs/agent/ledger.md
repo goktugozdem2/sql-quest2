@@ -53,6 +53,15 @@ of the verifier and must never be rounded to `FLAT`.
   logged inside 20 s → MISS (the window is still too short); fewer than 5
   session clicks by the read → UNREADABLE. Not expected to move
   `visitor_to_payer` on its own.
+- **Correction 2026-11-20 (after the server deploy).** The "Why" above was
+  wrong about where the time goes. The first logged session read `timing
+  pre=8449ms stripe=447ms` (warm-up 261 ms, 204): Stripe takes under half a
+  second; the ~8 s is `trialAlreadyUsed` scanning all of `pro_events`
+  (141,944 rows, no index on `username`; EXPLAIN ANALYZE 2.0 s from cache).
+  The warm-up stays (harmless, one request per modal) but cannot help. Fix:
+  partial index `idx_pro_events_webhook_username` (migration
+  20261120150000, the founder applies it). Target added: logged `pre=` under
+  500 ms after the index.
 
 ### paywall moments: every Pro surface a free person meets offers the way in (`paywallMoments`)
 
