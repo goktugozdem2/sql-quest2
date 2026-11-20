@@ -21,6 +21,10 @@ describe('Datrick footer link', () => {
     let pages = 0;
     for (const rel of htmlFiles(PUB)) {
       if (rel === 'app.html' || rel.startsWith('app/')) continue;
+      // The weekly pages are date-stamped and never committed (CLAUDE.md), so
+      // the committed copy is whatever an older build left; the build adds the
+      // line to them like every other page.
+      if (rel === 'weekly.html') continue;
       const html = fs.readFileSync(path.join(PUB, rel), 'utf8');
       if (!html.includes('</footer>')) continue;
       pages++;
