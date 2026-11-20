@@ -108,8 +108,14 @@ function countryHeader(req: Request): string | null {
   return null;
 }
 
-// One trial per account. Best-effort: if the read fails the trial is allowed,
-// because the modal already promised it and a trial costs a week, not money.
+// One trial per account, and none for an account that has already PAID.
+// 2026-11-17: a payer whose renewal failed and whose subscription ended came
+// back the next day and was handed a fresh 7-day trial, because the only
+// check was for an earlier trial and they had bought without one. A purchase
+// recorded by the webhook (the only money truth) now counts as "used".
+// Best-effort: if the read fails the trial is allowed, because the modal
+// already promised it and a trial costs a week, not money.
+const TRIAL_USED_EVENTS = ["pro_trial_started", "pro_purchase_completed"];
 async function trialAlreadyUsed(username: string): Promise<boolean> {
   const url = Deno.env.get("SUPABASE_URL");
   const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -119,7 +125,7 @@ async function trialAlreadyUsed(username: string): Promise<boolean> {
     const { data, error } = await supabase
       .from("pro_events")
       .select("id")
-      .eq("event", "pro_trial_started")
+      .in("event", TRIAL_USED_EVENTS)
       .eq("reason", "stripe_webhook")
       .eq("username", username)
       .limit(1);
