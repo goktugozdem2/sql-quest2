@@ -5,7 +5,118 @@ claims; this holds what the claims are *for*. One objective at a time.
 
 ---
 
-## O1 — 50 paying customers per month by 2026-12-08
+## O2 — 10 paying customers per 30 days by 2027-02-08
+
+**Set by the founder 2026-11-10**, when O1 was reset (below). Ninety days
+from that date. Status: **current**.
+
+### Why 10
+
+It is what the last measured trajectory supports with real work behind it,
+not what a spreadsheet wants. O1 asked for ~2.9× a month and got roughly
+flat: 2 payers / 30 d on 2026-09-09, 2 on 2026-10-02, never more than 3
+active subscribers. Ten is **5× in 90 days, ~1.7× a month** — still a
+stretch, and it is the same number O1's own 2026-10-31 interim line asked
+for, so it is a target the funnel was already being judged against.
+
+### Where we start
+
+**The baseline is not measured yet, and this section says so rather than
+guessing.** The last numbers in the repository are from
+docs/reads/weekly-funnel-2026-10-02.md:
+
+| | 2026-10-02 (last measured) |
+|---|---|
+| Payers / 30 d (`pro_purchase_completed`, `reason='stripe_webhook'`, by username) | **2** |
+| Active subscribers (`users.data`) | **3** (2 annual, 1 monthly) |
+| People reaching six distinct solves, per week | 53 (previous week 80) |
+| Accounts created, per week | 33 (previous week 63) |
+| Free-quota wall → plan clicked | 19.3% (11 of 57) |
+| Modal → sent to Stripe (09-23, 30 d) | 2.3% |
+
+**First job, 2026-11-10, laptop session with production access:** read the
+30 days to 2026-11-10 on the same definitions (`npm run metrics:report`,
+`scripts/aar-weekly.sql`, Stripe → Subscriptions for subscribers) and write
+the measured row here. If the measured payers / 30 d is **5 or more**, the
+target becomes 2.5× that number (rounded up) and the checkpoints scale with
+it; below 5, 10 stands. That rule is written before the read so the read
+cannot negotiate it.
+
+### What 10 decomposes into
+
+The one mechanism we have watched sell is a person reaching their sixth
+solve in a first session and being asked (objectives O1, "Correction,
+2026-09-09"). On that mechanism:
+
+- **payers = six-solvers / month × six-solver → payer rate.**
+- Last measured: ~53–80 six-solvers a week (two weeks to 10-02) and a
+  rung-to-pay rate of 1.4% (O1, 09-12).
+- Ten a month needs, for example, **~460 six-solvers a month (≈2× the
+  last two weeks' pace) × ~2.2%**, or today's six-solver volume at ~4%.
+  Neither factor alone gets there at a plausible move; both half-moves do.
+
+### Checkpoints
+
+| Date | Payers / 30 d | Also read |
+|---|---|---|
+| 2026-11-10 (day 0) | measure | six-solvers / 30 d, active subscribers |
+| **2026-12-10** (day 30) | **4** | six-solvers / 30 d, quota wall → paid |
+| **2027-01-09** (day 60) | **6** | same, plus first-month churn |
+| **2027-02-08** (day 90) | **10** | same |
+
+Each read names which factor is short — six-solvers or the rate after
+them — and by how much. A month that hits the payer number while every
+monthly payer cancels inside the first month has not hit it (O1's churn
+rule carries over).
+
+### Falsification, stated in advance
+
+- **Day 30 below 3 payers AND six-solvers / 30 d below 200** → neither
+  factor moves; reset again at day 30 to what the trajectory supports, and
+  question whether paid conversion is the right objective at all before
+  traffic exists.
+- **Six-solvers up, payers flat** → the constraint is the ask after
+  activation: the quota wall, the modal, Stripe. Nothing goes to traffic.
+- **Payers converting, six-solvers flat** → the constraint is traffic and
+  first-session activation; that is when traffic spend opens (founder's
+  item 12, gated on the modal line moving).
+
+### The process rule this reset adds
+
+O1's day-30 (10-09), interim (10-31) and day-60 (11-08) reads were **never
+written**. The objective failed silently for five weeks, not on a reading.
+From O2: a checkpoint date with no row in this file is itself a finding,
+and the first session after the date writes the row or writes "not read,
+because …". No objective is carried past a checkpoint without one.
+
+---
+
+## O1 — 50 paying customers per month by 2026-12-08 — **RESET 2026-11-10**
+
+### Reset, 2026-11-10 (founder's decision)
+
+**Verdict: MISS, reset by the founder 28 days before the deadline.** The
+last measured value was 2 payers / 30 d (2026-10-02) against a day-30 line
+of 6, an interim line of 10 (10-31) and a day-60 line of 17 (11-08). None of
+the three checkpoints after 10-02 was read into this file; the decision is
+taken on the 10-02 numbers and on the absence of any read since, and that
+absence is the second finding (see O2, "The process rule").
+
+What the 90 days established, for whoever reads this next:
+
+- **Activation moved; money did not.** `first_solve_10m` went 12.4% →
+  25.6% (7 d to 10-02), `second_session_7d` 16.2% → 23.8%,
+  `hint_to_solve` held ~87%. Payers / 30 d stayed at 2.
+- **The free-quota wall (09-25) raised clicks and cut volume.** Plan clicks
+  at the wall 19.3%, but weekly solves fell 1,675 → 693 and accounts
+  63 → 33 in its first week. The 10-09 rule (≥ 3 trial-or-paid from the
+  wall, else quota to 20) has no recorded read.
+- **The day-30 falsification was written to fire and nothing fired it.**
+  At day 30 the payer half of "below 4 payers AND signups below 250" was
+  already true on the last data; the signup half was never read.
+
+The original text follows unchanged.
+
 
 **Set by the founder 2026-09-09.** Ninety days from that date.
 
