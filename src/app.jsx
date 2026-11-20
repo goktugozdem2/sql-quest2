@@ -66,6 +66,7 @@ import { gradeTicket, ticketFeedback } from './utils/ticket-grade.js';
 import { TICKETS } from './data/tickets.js';
 import { DIALECTS, DIALECT_ROWS } from './utils/dialect-notes.js';
 import { modalLayoutArm, plansFirst } from './utils/modal-layout.js';
+import { softGateReason, paywallMomentCopy, SOFT_GATE_ACTION_LABEL, SOFT_GATE_TOAST_MS } from './utils/paywall-moments.js';
 import { botSignals, botDecision } from './utils/bot-signals.js';
 import { dueRetrievals, pickRetrievalChallenge, recordRetrieval, dailyQuota, MAX_DUE_SHOWN } from './utils/spaced-retrieval.js';
 import { computeRecap, shouldShowRecap } from './utils/session-recap.js';
@@ -7781,6 +7782,8 @@ function SQLQuest() {
         // The trap page behind a pattern_mock ask (2026-09-25).
         patternSlug: proModalReason?.patternSlug || null,
         linkSrc: proModalReason?.linkSrc || null,
+        // The soft gate behind the ask (paywall moments, 2026-10-17).
+        gate: proModalReason?.gate || null,
         priceRegion,
         // Was the 7-day trial on the cards this person saw (2026-10-01).
         trialOffered: trialOfferOn,
@@ -11989,6 +11992,16 @@ CRITICAL RULES:
   // that is absent reads OFF here. src/utils/free-tier-boundary.js decides
   // what each one means; this file only decides when.
   const ftbFlag = (name) => window.FF?.feature?.(name) === true;
+  // Paywall moments (PLAN item 3): the Pro modal's own copy for the reasons
+  // that had none (the 30-day path, the daily, a locked mock, the Interview
+  // tab) and an honest Hard line. null = the modal's existing chain decides.
+  const paywallMomentCopyNow = ftbFlag('paywallMoments')
+    ? paywallMomentCopy(proModalReason?.type, {
+        freeDays: THIRTY_DAY_FREE_LIMIT,
+        bank: bankCountLabel(challenges.length) || '300+',
+        hardCount: challenges.filter(c => c.difficulty === 'Hard').length,
+      })
+    : null;
 
   // The goal the engine and the Coach card read. Under `goalWallEarly` the
   // interview-prep curriculum meets the wall at step 4 (and, under `mockDoor`,
@@ -18680,7 +18693,8 @@ CRITICAL RULES:
       if (openColdStartInstead()) return;
       showSoftProGate(
         'Later days are Pro',
-        `Finish the first ${THIRTY_DAY_FREE_LIMIT} free days first. Pro unlocks the rest of the 30-day path when you are ready.`
+        `Finish the first ${THIRTY_DAY_FREE_LIMIT} free days first. Pro unlocks the rest of the 30-day path when you are ready.`,
+        'thirty_day'
       );
       return;
     }
@@ -23491,14 +23505,19 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
 
   // Show milestone popup with auto-dismiss
   const milestoneTimerRef = useRef(null);
-  const showMilestone = (emoji, title, message) => {
+  const showMilestone = (emoji, title, message, action = null) => {
     if (milestoneTimerRef.current) clearTimeout(milestoneTimerRef.current);
-    setMilestonePopup({ emoji, title, message });
-    milestoneTimerRef.current = setTimeout(() => setMilestonePopup(null), 4000);
+    setMilestonePopup({ emoji, title, message, action });
+    milestoneTimerRef.current = setTimeout(() => setMilestonePopup(null), action ? SOFT_GATE_TOAST_MS : 4000);
   };
 
-  const showSoftProGate = (title, message) => {
-    showMilestone('🔒', title, message);
+  // A soft gate names Pro without asking. Under `paywallMoments` (PLAN item
+  // 3, src/utils/paywall-moments.js) its toast also carries "See what Pro
+  // opens" — the person's own click, never an automatic modal — which opens
+  // the plans with the gate's reason. Flag off: the plain toast, as before.
+  const showSoftProGate = (title, message, gate = null) => {
+    const reason = ftbFlag('paywallMoments') && gate ? softGateReason(gate, solvedChallenges.size) : null;
+    showMilestone('🔒', title, message, reason ? { label: SOFT_GATE_ACTION_LABEL, reason } : null);
   };
 
   // Cold-start diversion (2026-09-08). Call it immediately AFTER the
@@ -27853,7 +27872,9 @@ RULES:
                     <button
                       key={day.day}
                       onClick={() => openDayChallenge(day.day)}
-                      disabled={!isUnlocked}
+                      // A Pro tile was `disabled`, so the Pro gate in
+                      // openDayChallenge never ran (paywall moments).
+                      disabled={!isUnlocked && !(isProLocked && ftbFlag('paywallMoments'))}
                       className={`relative aspect-square rounded-lg flex flex-col items-center justify-center text-sm font-bold transition-all ${
                         isCompleted 
                           ? 'bg-green-500/30 border-2 border-green-500 text-green-400 hover:bg-green-500/40' 
@@ -27861,7 +27882,9 @@ RULES:
                             ? `bg-gradient-to-br ${weekColor} border-2 border-yellow-400 shadow-lg shadow-yellow-500/30 animate-pulse`
                             : isUnlocked
                               ? 'bg-gray-700 hover:bg-gray-600 border border-gray-600 hover:border-purple-500'
-                              : 'bg-gray-800/50 text-gray-600 cursor-not-allowed opacity-50'
+                              : isProLocked && ftbFlag('paywallMoments')
+                                ? 'bg-gray-800/50 text-gray-500 opacity-70 hover:opacity-100 border border-purple-500/30 cursor-pointer'
+                                : 'bg-gray-800/50 text-gray-600 cursor-not-allowed opacity-50'
                       }`}
                       title={isUnlocked ? `Day ${day.day}: ${day.title}${isCompleted ? ' ✓ Completed' : isNextToDo ? ' ⭐ Do this next!' : ''}` : lockReason}
                     >
@@ -28957,7 +28980,8 @@ RULES:
                             if (openColdStartInstead()) return;
                             showSoftProGate(
                               `${diffLabel} Daily is Pro`,
-                              'Build the habit on Easy first. Pro unlocks Medium and Hard daily practice when you are ready for more pressure.'
+                              'Build the habit on Easy first. Pro unlocks Medium and Hard daily practice when you are ready for more pressure.',
+                              'daily_difficulty'
                             );
                             return;
                           }
@@ -32081,12 +32105,27 @@ RULES:
 
       {/* Milestone Popup */}
       {milestonePopup && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 animate-bounce">
+        <div className={`fixed top-20 left-1/2 -translate-x-1/2 z-50 ${milestonePopup.action ? '' : 'animate-bounce'}`}>
           <div className="bg-gradient-to-r from-yellow-900/90 to-orange-900/90 rounded-xl border-2 border-yellow-500/50 px-6 py-4 shadow-2xl flex items-center gap-4">
             <span className="text-4xl">{milestonePopup.emoji}</span>
             <div>
               <p className="font-bold text-yellow-400">{milestonePopup.title}</p>
               <p className="text-sm text-gray-300">{milestonePopup.message}</p>
+              {milestonePopup.action && (
+                <button
+                  type="button"
+                  data-testid="soft-gate-action"
+                  onClick={() => {
+                    const reason = milestonePopup.action.reason;
+                    setMilestonePopup(null);
+                    setProModalReason(reason);
+                    setShowProModal(true);
+                  }}
+                  className="mt-2 px-3 py-1.5 bg-[#FFE34D] hover:brightness-95 rounded-lg text-sm font-bold text-[#0E0F13]"
+                >
+                  {milestonePopup.action.label} →
+                </button>
+              )}
             </div>
             <button onClick={() => setMilestonePopup(null)} className="text-gray-500 hover:text-[#F2F0EA] ml-2">✕</button>
           </div>
@@ -32252,7 +32291,9 @@ RULES:
                     className="text-4xl font-extrabold italic"
                     style={{ fontFamily: 'Fraunces, serif', color: '#F2F0EA' }}
                   >
-                    {proModalReason.type === 'milestone_solves' && proModalReason.deadline
+                    {paywallMomentCopyNow
+                      ? paywallMomentCopyNow.headline
+                      : proModalReason.type === 'milestone_solves' && proModalReason.deadline
                       ? (proModalReason.deadline.daysOut === 0
                           ? 'Your interview is today.'
                           : proModalReason.deadline.daysOut === 1
@@ -32294,7 +32335,12 @@ RULES:
                       ? 'Make SQL second nature.'
                       : 'Walk into the interview ready.'}
                   </h2>
-                  {proModalReason.type === 'milestone_solves' && proModalReason.deadline ? (
+                  {paywallMomentCopyNow ? (
+                    <div className="mt-3" data-testid="paywall-moment-copy">
+                      <p className="font-medium" style={{ color: '#F2F0EA' }}>{paywallMomentCopyNow.lead}</p>
+                      <p className="text-sm mt-1" style={{ color: '#8A8E99' }}>{paywallMomentCopyNow.body}</p>
+                    </div>
+                  ) : proModalReason.type === 'milestone_solves' && proModalReason.deadline ? (
                     // Free-tier boundary M3 (`deadlineOffer`): the ask leads
                     // with the date the person gave us and names what stands
                     // between them and it. No feature list; that is below.
@@ -33869,7 +33915,11 @@ RULES:
                       )}
                     </div>
                     <button
-                      onClick={() => setShowProModal(true)}
+                      onClick={() => {
+                        // Paywall moments: name the reason; it used to inherit the last one.
+                        if (ftbFlag('paywallMoments') && !userProStatus) setProModalReason({ type: 'profile_plan', topic: null, solvedCount: solvedChallenges.size });
+                        setShowProModal(true);
+                      }}
                       className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
                         userProStatus
                           ? 'bg-gray-700 hover:bg-gray-600 text-gray-300'
@@ -34043,7 +34093,12 @@ RULES:
             
             {aiDailyUsage.plan === 'free' && (
               <button
-                onClick={() => { setShowApiKeyModal(false); setActiveTab('hero'); }}
+                onClick={() => {
+                  setShowApiKeyModal(false);
+                  // Paywall moments: the plans, not the Profile tab.
+                  if (ftbFlag('paywallMoments')) { setProModalReason({ type: 'rate_limit', topic: null, solvedCount: solvedChallenges.size }); setShowProModal(true); }
+                  else setActiveTab('hero');
+                }}
                 className="w-full py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-lg font-medium"
               >
                 💎 Upgrade for More AI Calls
@@ -35338,7 +35393,8 @@ RULES:
                                         'Hard challenge — Pro only',
                                         freeQuotaSpent()
                                           ? `Your ${FREE_SOLVE_QUOTA} free challenge solves are used. Pro opens the rest of the bank, the Hard set included.`
-                                          : 'Keep solving Easy + Medium first. Pro unlocks the full Hard bank when you are ready for interview-level practice.'
+                                          : 'Keep solving Easy + Medium first. Pro unlocks the full Hard bank when you are ready for interview-level practice.',
+                                        'coach_track'
                                       );
                                     } else {
                                       setActiveTab('quests');
@@ -36061,7 +36117,7 @@ RULES:
                 <div className="flex items-center justify-between gap-3 rounded-lg border border-[#2A2E38] bg-[#16181F] px-4 py-2.5 mb-4">
                   <p className="text-xs text-gray-400 truncate">{i18n_t('pro', ftbFlag('freeQuota') ? 'coachStripLineQuota' : 'coachStripLine', { quota: FREE_SOLVE_QUOTA })}</p>
                   <button
-                    onClick={() => { setProModalReason({ type: 'generic', topic: null, solvedCount: 0 }); setShowProModal(true); }}
+                    onClick={() => { setProModalReason({ type: ftbFlag('paywallMoments') ? 'coach_strip' : 'generic', topic: null, solvedCount: ftbFlag('paywallMoments') ? solvedChallenges.size : 0 }); setShowProModal(true); }}
                     className="text-xs font-bold text-[#FFE34D] hover:underline whitespace-nowrap"
                   >
                     {i18n_t('pro', 'coachStripCTA')}
@@ -36092,7 +36148,11 @@ RULES:
                     />
                   </div>
                   {aiDailyUsage.plan === 'free' && aiDailyUsage.used >= 5 && (
-                    <p className="text-xs text-purple-400 mt-1 cursor-pointer hover:underline" onClick={() => setActiveTab('hero')}>
+                    <p className="text-xs text-purple-400 mt-1 cursor-pointer hover:underline" onClick={() => {
+                      // Paywall moments: the plans, not the Profile tab.
+                      if (ftbFlag('paywallMoments')) { setProModalReason({ type: 'rate_limit', topic: null, solvedCount: solvedChallenges.size }); setShowProModal(true); }
+                      else setActiveTab('hero');
+                    }}>
                       {i18n_t('aiTutor', 'upgradeForMore')}
                     </p>
                   )}
@@ -40042,7 +40102,11 @@ RULES:
                     </button>
                   ) : (
                     <button
-                      onClick={() => setShowProModal(true)}
+                      onClick={() => {
+                        // Paywall moments: name the reason; it used to inherit the last one.
+                        if (ftbFlag('paywallMoments')) setProModalReason({ type: 'interview_tab', topic: null, solvedCount: solvedChallenges.size });
+                        setShowProModal(true);
+                      }}
                       className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 rounded-lg font-bold flex items-center gap-2"
                     >
                       <Zap size={18} /> Upgrade to Pro
@@ -40378,9 +40442,11 @@ RULES:
                     className={`bg-gray-800/50 rounded-xl border p-5 transition-all ${
                       canAccess 
                         ? 'border-gray-700 hover:border-purple-500/50 cursor-pointer hover:bg-gray-800/70' 
-                        : 'border-gray-800 opacity-70'
+                        : `border-gray-800 opacity-70${ftbFlag('paywallMoments') ? ' cursor-pointer' : ''}`
                     }`}
-                    onClick={() => canAccess && startInterview(interview)}
+                    // A locked card's body click did nothing; under
+                    // paywall moments it is the card's own Unlock Pro.
+                    onClick={() => canAccess ? startInterview(interview) : (ftbFlag('paywallMoments') && openProForLockedMock(interview))}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
