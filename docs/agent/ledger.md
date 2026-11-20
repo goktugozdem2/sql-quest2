@@ -3470,6 +3470,43 @@ that needs its own path — the current rule is written down in the handler.
 
 ## Closed
 
+### the /vs-datalemur/ snippet fits the result (the "datalemur" zero-click query) — **FLAT**
+
+- **Claimed** 2026-10-11 · **Shipped** on the founder's ask in chat ("datalemur
+  title ve meta'yı düzelt") · **Read** 2026-11-09 (ship + 28 days, GSC's own
+  lag included).
+- **Change** /vs-datalemur/'s title 72 → 65 characters ("DataLemur SQL
+  Practice: Is It Free? Pricing (2026)"), description 300 → 145 (DataLemur's
+  $15/mo · $60/yr from docs/reads/alternatives-facts-2026-09-13.md, said to
+  come from a competitor), og/twitter equal to both. Body untouched. Bound by
+  tests/snippet-length.test.js like the five pages of 09-29.
+- **Why** GSC weekly 09-28 → 10-04: "datalemur" 381 impressions at 5.2 and
+  "data lemur sql" 136 at 6.7, zero clicks on both; the page has 979
+  impressions at 5.7. The old title was cut at ~60 characters and the
+  description at ~160 of 300. Caveat written now: "datalemur" is a
+  navigational query, most of its searchers want datalemur.com, so a
+  ceiling of a few percent CTR is the honest expectation.
+- **Metric** `gsc_position` (metrics.md), read per query on the
+  [query, page] slice of `gsc_daily`: clicks and CTR of "datalemur" +
+  "data lemur sql" + "datalemur sql practice" to /vs-datalemur/, 28 days
+  after vs the 28 days before 2026-10-11.
+- **Target** ≥ 1% CTR on those three queries combined (from 0 on ~550
+  impressions a week), position no worse than 1.0 down.
+- **Falsification, stated in advance:** still zero clicks at ≥ 1,500
+  impressions → the snippet was not the cause; the query is navigational
+  and the page is not worth more title work. Position down > 2 → revert the
+  title (the old one carried "Free Tier" and "SQL Practice" both).
+- **Verdict** **FLAT**, read 2026-11-19 on `gsc_daily` [query, page],
+  28 days each side of 10-11 (09-13 → 10-10 vs 10-11 → 11-08). The three
+  claimed queries: 1,853 → 1,836 impressions, 0 → 3 clicks (CTR 0% →
+  0.16%; target was ≥ 1%). "datalemur" position 5.6 → 6.8 (down 1.2, inside
+  the 2-place revert line). Three clicks on ~1,800 impressions is inside
+  noise, not a move. Outside the claim, "datalemur sql" went 5 → 0 clicks
+  (1,456 → 1,029 impressions), which this change may or may not have
+  caused. **Conclusion, as the falsification said:** the query is
+  navigational; no more title work on /vs-datalemur/. The title stays (no
+  revert: position held inside the line).
+
 ### hand-written founder check-ins replace the automated engagement email — **UNREADABLE**
 - **Claimed** 2026-08-21 (design: `cgozdemm-main-design-20260818-013802.md`)
 - **Metric** `outreach_replies` — baseline **0** (never sent before today)
