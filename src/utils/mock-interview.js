@@ -261,3 +261,31 @@ export function weakConceptsFromHistory(history, limit = 3) {
     .slice(0, limit)
     .map(([c]) => c);
 }
+/**
+ * The snapshot written to `sqlquest_interview_progress_<user>` while an
+ * interview is in flight, and read back by startInterview() to resume it.
+ *
+ * Pure so the shape is testable without a React tree. The field names are
+ * load-bearing — startInterview() reads them one by one and the resume card
+ * renders `interviewTitle` / `totalTimer` — so add fields, never rename them.
+ *
+ * Returns null when there is no interview: nothing to save, and the caller
+ * should not write a key at all.
+ */
+export function buildInterviewProgress(interview, state = {}, savedAt = new Date()) {
+  if (!interview) return null;
+  const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
+  const arr = (v) => (Array.isArray(v) ? v : []);
+  return {
+    interviewId: interview.id,
+    interviewTitle: interview.title,
+    questionIndex: num(state.questionIndex),
+    currentQuery: typeof state.currentQuery === 'string' ? state.currentQuery : '',
+    selectedOption: state.selectedOption ?? null,
+    questionTimer: num(state.questionTimer),
+    totalTimer: num(state.totalTimer),
+    answers: arr(state.answers),
+    hintsUsed: arr(state.hintsUsed),
+    savedAt: savedAt instanceof Date ? savedAt.toISOString() : String(savedAt),
+  };
+}

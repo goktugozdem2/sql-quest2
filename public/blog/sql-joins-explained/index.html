@@ -3,19 +3,24 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SQL JOINs Explained — Every Type, With Real Examples (2026) | SQLQuest.app</title>
-  <meta name="description" content="The complete guide to SQL JOINs in 2026. INNER vs LEFT vs RIGHT vs FULL vs CROSS vs SELF, the WHERE-vs-ON LEFT JOIN bug that defeats most analysts, anti-join patterns, and runnable examples on real Titanic data.">
-  <meta name="keywords" content="sql joins, sql join tutorial, sql joins explained, inner join, left join, right join, full outer join, cross join, self join, sql join types, where vs on, anti join sql">
+  <!-- 2026-11-19: "sql join examples" — 506 Google impressions at position 27.7
+       (28 days to 2026-11-14) and 469 on Bing with 1 click. The title leads with
+       the searched words and names the four examples the body already has
+       (#inner, #left, #anti-join, #self); the old title and description ran
+       80 and 208 characters. Pinned by tests/snippet-length.test.js. -->
+  <title>SQL JOIN Examples: INNER, LEFT, Anti-Join, Self Join | SQLQuest.app</title>
+  <meta name="description" content="SQL JOIN examples you can run: INNER, LEFT, RIGHT, FULL, CROSS and self joins, the anti-join (LEFT JOIN … IS NULL) and the WHERE-vs-ON bug that drops rows.">
+  <meta name="keywords" content="sql join examples, sql joins, sql join tutorial, sql joins explained, inner join, left join, right join, full outer join, cross join, self join, sql join types, where vs on, anti join sql">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://sqlquest.app/blog/sql-joins-explained/">
   <meta property="og:type" content="article">
   <meta property="og:url" content="https://sqlquest.app/blog/sql-joins-explained/">
-  <meta property="og:title" content="SQL JOINs Explained — Every Type, With Real Examples (2026)">
-  <meta property="og:description" content="INNER vs LEFT vs RIGHT vs FULL vs CROSS vs SELF, the WHERE-vs-ON bug, anti-join patterns. Runnable examples, real Titanic data, no install.">
+  <meta property="og:title" content="SQL JOIN Examples: INNER, LEFT, Anti-Join, Self Join">
+  <meta property="og:description" content="SQL JOIN examples you can run: INNER, LEFT, RIGHT, FULL, CROSS and self joins, the anti-join (LEFT JOIN … IS NULL) and the WHERE-vs-ON bug that drops rows.">
   <meta property="og:image" content="https://sqlquest.app/og-image.png">
   <meta name="twitter:card" content="summary_large_image">
   <script type="application/ld+json">
-  {"@context":"https://schema.org","@type":"Article","headline":"SQL JOINs Explained — Every Type, With Real Examples (2026)","description":"The complete guide to SQL JOINs. INNER, LEFT, RIGHT, FULL, CROSS, SELF, the WHERE-vs-ON bug, and anti-join patterns. Runnable examples included.","url":"https://sqlquest.app/blog/sql-joins-explained/","datePublished":"2026-05-02","dateModified":"2026-05-02","author":{"@type":"Organization","name":"SQL Quest","url":"https://sqlquest.app/"},"publisher":{"@type":"Organization","name":"SQL Quest","logo":{"@type":"ImageObject","url":"https://sqlquest.app/og-image.png"}},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"Blog","item":"https://sqlquest.app/blog/"},{"@type":"ListItem","position":3,"name":"SQL JOINs Explained","item":"https://sqlquest.app/blog/sql-joins-explained/"}]}}
+  {"@context":"https://schema.org","@type":"Article","headline":"SQL JOIN Examples — Every Join Type, Explained","description":"SQL JOIN examples you can run: INNER, LEFT, RIGHT, FULL, CROSS and self joins, the anti-join (LEFT JOIN … IS NULL) and the WHERE-vs-ON bug that drops rows.","url":"https://sqlquest.app/blog/sql-joins-explained/","datePublished":"2026-05-02","dateModified":"2026-05-02","author":{"@type":"Organization","name":"SQL Quest","url":"https://sqlquest.app/"},"publisher":{"@type":"Organization","name":"SQL Quest","logo":{"@type":"ImageObject","url":"https://sqlquest.app/og-image.png"}},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"Blog","item":"https://sqlquest.app/blog/"},{"@type":"ListItem","position":3,"name":"SQL JOINs Explained","item":"https://sqlquest.app/blog/sql-joins-explained/"}]}}
   </script>
   <script type="application/ld+json">
   {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
@@ -92,7 +97,7 @@
 
 <article class="article">
   <p class="breadcrumb"><a href="/">Home</a> › <a href="/blog/">Blog</a> › SQL JOINs Explained</p>
-  <h1 class="fd">SQL JOINs Explained — Every Type, With Real Examples (2026)</h1>
+  <h1 class="fd">SQL JOIN Examples — Every Join Type, Explained</h1>
   <div class="article-meta">
     <span>Published May 2026</span>
     <span>·</span>
