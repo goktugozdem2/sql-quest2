@@ -429,7 +429,8 @@ window.challengeCompanies = {
     "Revolut",
     "Snowflake",
     "Spotify",
-    "Stripe"
+    "Stripe",
+    "Coinbase"
   ],
   "12": [
     "Airbnb",
@@ -753,7 +754,8 @@ window.challengeCompanies = {
     "Snowflake",
     "Uber",
     "DoorDash",
-    "TikTok"
+    "TikTok",
+    "Coinbase"
   ],
   "61": [
     "Amazon",
@@ -811,7 +813,8 @@ window.challengeCompanies = {
     "Ramp",
     "Revolut",
     "Snowflake",
-    "Uber"
+    "Uber",
+    "Coinbase"
   ],
   "69": [
     "Plaid",
@@ -916,7 +919,8 @@ window.challengeCompanies = {
     "Snowflake",
     "Stripe",
     "TikTok",
-    "Microsoft"
+    "Microsoft",
+    "PayPal"
   ],
   "83": [
     "Airbnb",
@@ -937,7 +941,8 @@ window.challengeCompanies = {
     "Uber",
     "Wise",
     "DoorDash",
-    "TikTok"
+    "TikTok",
+    "Coinbase"
   ],
   "85": [
     "Airbnb",
@@ -954,7 +959,8 @@ window.challengeCompanies = {
     "Shopify",
     "Snowflake",
     "Stripe",
-    "Walmart"
+    "Walmart",
+    "Monzo"
   ],
   "87": [
     "Amazon",
@@ -976,7 +982,9 @@ window.challengeCompanies = {
     "Shopify",
     "Stripe",
     "DoorDash",
-    "TikTok"
+    "TikTok",
+    "Coinbase",
+    "Monzo"
   ],
   "89": [
     "Amazon",
@@ -1082,7 +1090,8 @@ window.challengeCompanies = {
     "Wise",
     "Walmart",
     "Microsoft",
-    "LinkedIn"
+    "LinkedIn",
+    "Coinbase"
   ],
   "122": [
     "Netflix",
@@ -1115,7 +1124,8 @@ window.challengeCompanies = {
     "Uber",
     "Wise",
     "DoorDash",
-    "TikTok"
+    "TikTok",
+    "Coinbase"
   ],
   "128": [
     "Plaid",
@@ -1137,7 +1147,8 @@ window.challengeCompanies = {
     "Ramp",
     "DoorDash",
     "Microsoft",
-    "TikTok"
+    "TikTok",
+    "Coinbase"
   ],
   "139": [
     "Plaid",
@@ -1153,7 +1164,8 @@ window.challengeCompanies = {
   ],
   "147": [
     "Ramp",
-    "DoorDash"
+    "DoorDash",
+    "Coinbase"
   ],
   "148": [
     "Plaid"
@@ -1179,7 +1191,9 @@ window.challengeCompanies = {
     "Ramp",
     "Revolut",
     "Walmart",
-    "Microsoft"
+    "Microsoft",
+    "PayPal",
+    "Monzo"
   ],
   "158": [
     "Plaid",
@@ -1203,7 +1217,8 @@ window.challengeCompanies = {
     "DoorDash",
     "Goldman Sachs",
     "Walmart",
-    "TikTok"
+    "TikTok",
+    "Coinbase"
   ],
   "172": [
     "Anthropic",
@@ -1211,14 +1226,16 @@ window.challengeCompanies = {
     "Stripe",
     "Tesla",
     "DoorDash",
-    "TikTok"
+    "TikTok",
+    "Coinbase"
   ],
   "173": [
     "NVIDIA",
     "OpenAI",
     "Stripe",
     "Tesla",
-    "DoorDash"
+    "DoorDash",
+    "Coinbase"
   ],
   "174": [
     "Stripe",
@@ -1229,12 +1246,14 @@ window.challengeCompanies = {
     "Stripe",
     "DoorDash",
     "TikTok",
-    "LinkedIn"
+    "LinkedIn",
+    "PayPal"
   ],
   "176": [
     "Stripe",
     "Walmart",
-    "TikTok"
+    "TikTok",
+    "Monzo"
   ],
   "161": [
     "NVIDIA",
@@ -1365,19 +1384,24 @@ window.challengeCompanies = {
     "Revolut",
     "Wise",
     "Goldman Sachs",
-    "Bloomberg"
+    "Bloomberg",
+    "Coinbase",
+    "Monzo"
   ],
   "276": [
     "Capital One",
-    "Plaid"
+    "Plaid",
+    "PayPal"
   ],
   "277": [
     "Capital One",
-    "Revolut"
+    "Revolut",
+    "Coinbase"
   ],
   "278": [
     "Capital One",
-    "Plaid"
+    "Plaid",
+    "Monzo"
   ],
   "279": [
     "Capital One",
@@ -1385,95 +1409,117 @@ window.challengeCompanies = {
   ],
   "280": [
     "Capital One",
-    "Stripe"
+    "Stripe",
+    "PayPal"
   ],
   "281": [
     "Capital One",
     "Ramp",
-    "Bloomberg"
+    "Bloomberg",
+    "PayPal"
   ],
   "282": [
     "Capital One",
     "Ramp",
     "Wise",
-    "Bloomberg"
+    "Bloomberg",
+    "Monzo"
   ],
   "283": [
     "Capital One",
     "Revolut",
-    "Bloomberg"
+    "Bloomberg",
+    "Monzo"
   ],
   "284": [
     "Capital One",
-    "Revolut"
+    "Revolut",
+    "Coinbase"
   ],
   "285": [
     "Capital One",
-    "Wise"
+    "Wise",
+    "PayPal",
+    "Monzo"
   ],
   "286": [
     "Capital One",
-    "Stripe"
+    "Stripe",
+    "PayPal"
   ],
   "287": [
     "Capital One",
-    "Plaid"
+    "Plaid",
+    "PayPal"
   ],
   "288": [
     "Capital One",
     "Ramp",
-    "Bloomberg"
+    "Bloomberg",
+    "Monzo"
   ],
   "289": [
     "Capital One",
     "Plaid",
     "Wise",
-    "Bloomberg"
+    "Bloomberg",
+    "Coinbase",
+    "Monzo"
   ],
   "290": [
     "Capital One",
-    "Revolut"
+    "Revolut",
+    "PayPal"
   ],
   "291": [
     "Capital One",
-    "Plaid"
+    "Plaid",
+    "PayPal"
   ],
   "292": [
     "Capital One",
     "Stripe",
-    "Bloomberg"
+    "Bloomberg",
+    "PayPal"
   ],
   "293": [
     "Capital One",
     "Stripe",
-    "Goldman Sachs"
+    "Goldman Sachs",
+    "Monzo"
   ],
   "294": [
     "Capital One",
     "Stripe",
     "Goldman Sachs",
-    "Bloomberg"
+    "Bloomberg",
+    "Monzo"
   ],
   "295": [
     "Capital One",
-    "Wise"
+    "Wise",
+    "Monzo"
   ],
   "296": [
     "Capital One",
-    "Wise"
+    "Wise",
+    "Monzo"
   ],
   "297": [
     "Capital One",
-    "Plaid"
+    "Plaid",
+    "PayPal"
   ],
   "298": [
     "Capital One",
-    "Stripe"
+    "Stripe",
+    "PayPal"
   ],
   "299": [
     "Capital One",
     "Ramp",
-    "Bloomberg"
+    "Bloomberg",
+    "Monzo"
   ],
   "153": [
     "DoorDash"
@@ -1517,5 +1563,11 @@ window.challengeCompanies = {
   ],
   "319": [
     "Amazon"
+  ],
+  "270": [
+    "PayPal"
+  ],
+  "271": [
+    "PayPal"
   ]
 };

@@ -61,6 +61,10 @@ const COMPANIES = {
   microsoft:       { name: 'Microsoft',     sector: 'bigtech',  desc: 'Data scientist SQL, conditional aggregation' },
   'goldman-sachs': { name: 'Goldman Sachs', sector: 'fintech',  desc: 'Deduplication, latest record, running totals' },
   bloomberg:       { name: 'Bloomberg',     sector: 'fintech',  desc: 'Prices and trades by time bucket, ranking' },
+  // 2026-11-20: three more fintech template pages (docs/reads/company-research-2026-11-20.md).
+  paypal:          { name: 'PayPal',        sector: 'fintech',  desc: 'Payments and fraud, conditional sums, WHERE vs ON' },
+  coinbase:        { name: 'Coinbase',      sector: 'fintech',  desc: 'Crypto trades, 30-day activity, 7-day retention, cohorts' },
+  monzo:           { name: 'Monzo',         sector: 'fintech',  desc: 'Take-home SQL on a business question, then the review' },
 };
 
 // Who reads as "adjacent" to whom, in the order we'd recommend them.
