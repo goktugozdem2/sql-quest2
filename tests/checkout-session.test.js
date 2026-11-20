@@ -205,6 +205,17 @@ describe('create-checkout-session: the edge function', () => {
     expect(code).toContain('export const TRIAL_DAYS = 7');
   });
 
+  // 2026-11-17: a lapsed payer was given a fresh trial. A webhook-recorded
+  // purchase must count as a used trial, read from the webhook's own rows.
+  it('gives no trial to an account that already had one OR already paid', () => {
+    expect(code).toContain('const TRIAL_USED_EVENTS = ["pro_trial_started", "pro_purchase_completed"]');
+    const fnAt = code.indexOf('async function trialAlreadyUsed');
+    const body = code.slice(fnAt, code.indexOf('\n}\n', fnAt));
+    expect(body).toContain('.in("event", TRIAL_USED_EVENTS)');
+    expect(body).toContain('.eq("reason", "stripe_webhook")');
+    expect(code).toMatch(/if \(trial && await trialAlreadyUsed\(username\)\)/);
+  });
+
   it('comes back to the same ?payment=success the app already handles', () => {
     expect(code).toContain('success_url: `${base}/app/?payment=success`');
     expect(read('src/app.jsx')).toContain("get('payment') === 'success'");

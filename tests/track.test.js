@@ -135,6 +135,16 @@ describe('src/track.js — first-touch landing source', () => {
 });
 
 describe('src/track.js — landing_view row', () => {
+  it('stamps a referrer-spam row `bot: refspam` and still sends it (2026-11-12, aocr.org)', () => {
+    const spam = metaOf(landingViewOf(runTracker({ referrer: 'https://www.aocr.org/', pathname: '/blog/sql-cte-tutorial/' }).calls));
+    expect(spam.landingSrc).toBe('ref:aocr.org');
+    expect(spam.bot).toBe('refspam');
+    expect(metaOf(landingViewOf(runTracker({ referrer: 'https://news.aocr.org/x' }).calls)).bot).toBe('refspam');
+    const person = metaOf(landingViewOf(runTracker({ referrer: 'https://www.some-sql-blog.dev/post' }).calls));
+    expect(person.landingSrc).toBe('ref:some-sql-blog.dev');
+    expect(person).not.toHaveProperty('bot');
+  });
+
   it('carries utm and landingSrc alongside the existing ref', () => {
     const { calls } = runTracker({ search: '?utm_source=chatgpt.com', referrer: 'https://chatgpt.com/' });
     const view = landingViewOf(calls);

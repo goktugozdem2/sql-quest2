@@ -216,7 +216,7 @@
   </url>
   <url>
     <loc>https://sqlquest.app/vs-sqlbolt/</loc>
-    <lastmod>2026-11-19</lastmod>
+    <lastmod>2026-11-20</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
@@ -315,7 +315,7 @@
   </url>
   <url>
     <loc>https://sqlquest.app/sql-exercises/</loc>
-    <lastmod>2026-09-30</lastmod>
+    <lastmod>2026-11-14</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
@@ -433,7 +433,7 @@
   </url>
   <url>
     <loc>https://sqlquest.app/blog/sql-joins-explained/</loc>
-    <lastmod>2026-11-19</lastmod>
+    <lastmod>2026-11-20</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.85</priority>
   </url>
@@ -607,7 +607,7 @@
   </url>
   <url>
     <loc>https://sqlquest.app/blog/validate-ai-generated-sql/</loc>
-    <lastmod>2026-11-19</lastmod>
+    <lastmod>2026-11-20</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -970,7 +970,7 @@
   </url>
   <url>
     <loc>https://sqlquest.app/questions/recursive-team-size-rollup/</loc>
-    <lastmod>2026-11-19</lastmod>
+    <lastmod>2026-11-20</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
