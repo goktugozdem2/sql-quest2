@@ -16,10 +16,9 @@
 //     <Company>'s interview". The first two are read from src/utils/i18n.js so
 //     page and app cannot drift.
 //
-// Capital One is frozen: nothing on /capital-one-sql-interview/ or its blog
-// post changes before the 2026-10-12 read (docs/plans/capital-one-2026-10-12.md).
-// The generator skips it (SKIP_UNTIL_READ) and the last block here pins the
-// four files to git HEAD and to a content hash until that date.
+// Capital One was frozen until its read (docs/plans/capital-one-2026-10-12.md);
+// the freeze lifted 2026-11-22 and the page now carries both sections like
+// every other signed archetype. SKIP_UNTIL_READ stays, empty, for the next one.
 //
 // Proven by deliberate breaks on 2026-09-29 (see the commit): a renamed
 // eyebrow, a format heading on a general page, the archetype sentence on an
@@ -29,8 +28,6 @@
 import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
-import { createHash } from 'node:crypto';
-import { execFileSync } from 'node:child_process';
 import { SOURCED_SLUGS, SKIP_UNTIL_READ, practiceSentence, withTopicPractice, loadBank, facts } from '../scripts/build-company-pages.mjs';
 import { readCompanyPages } from '../scripts/build-llms-txt.js';
 import { archetypeForCompany } from '../src/data/interview-archetypes.js';
@@ -57,12 +54,10 @@ const FORMAT_HEADING = /How the interview runs/g;
 const ARCHETYPE_SENTENCE = /written for their reported screen/g;
 
 describe('the page set this file binds', () => {
-  it('is all 30 company pages, with Capital One the only one skipped until its read', () => {
+  it('is every company page, none skipped since the Capital One read (2026-11-22)', () => {
     expect(PAGES.length).toBeGreaterThanOrEqual(30);
-    expect([...SKIP_UNTIL_READ]).toEqual(['capital-one']);
-    expect(SKIPPED.map(p => p.key)).toEqual(['capital-one']);
-    // The skip is dated in the generator, not just present.
-    expect(read('scripts/build-company-pages.mjs')).toMatch(/'capital-one',\s*\/\/ untouched until the 2026-10-12 read \(docs\/plans\/capital-one-2026-10-12\.md\)/);
+    expect([...SKIP_UNTIL_READ]).toEqual([]);
+    expect(SKIPPED).toEqual([]);
   });
 
   it('the signed archetypes are Capital One and Revolut, and nobody else', () => {
@@ -125,7 +120,7 @@ describe('the one honest sentence under "Topic practice"', () => {
         expect(n, `${p.file}: only a signed archetype may say the set was written for the company`).toBe(0);
       }
     }
-    expect(LIVE.filter(p => archetypeForCompany(p.name)).map(p => p.key)).toEqual(['revolut']);
+    expect(LIVE.filter(p => archetypeForCompany(p.name)).map(p => p.key).sort()).toEqual(['capital-one', 'revolut']);
   });
 
   it('every page carries the sentence the generator would write, and it matches the app\'s copy', () => {
@@ -170,41 +165,6 @@ describe('"How the interview runs (sourced)" — only where sources exist', () =
   it('is not vacuous — both kinds of page exist', () => {
     expect(LIVE.filter(p => SOURCED_SLUGS.has(p.key)).length).toBeGreaterThanOrEqual(10);
     expect(LIVE.filter(p => !SOURCED_SLUGS.has(p.key)).length).toBeGreaterThanOrEqual(19);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// Capital One is frozen until the 2026-10-12 read.
-//
-// Two of the first three payers prepped for this screen; the page and its
-// blog post are mid-read (docs/plans/capital-one-2026-10-12.md) and a change
-// now would confound it. The generator skips the page; this pins the source,
-// the built page and the blog post (source and built) to what git HEAD holds
-// AND to the content hash taken on 2026-09-29, so neither an uncommitted run
-// nor a committed edit can pass. On 2026-10-12 the block skips itself; delete
-// it with the first intentional change.
-// ---------------------------------------------------------------------------
-const FROZEN_UNTIL = Date.UTC(2026, 9, 12); // 2026-10-12
-const FROZEN = {
-  'src/capital-one-sql-interview.html': 'd15e4a2f933691e0543cd84d5f82369b35ae11f53b5c0f3a0826a56a5d55241c',
-  'public/capital-one-sql-interview/index.html': '51b3ad0230026d31f717e23376c4defa061514ce6fc3907d31646e4d64d84452',
-  'src/blog/capital-one-codesignal-data-analyst-assessment.html': '7b9c8bd94a7172299b16c3117d3277bc33f5d4b70110d4926265d471000003ab',
-  'public/blog/capital-one-codesignal-data-analyst-assessment/index.html': '49daa90101d20d7b1e7905a258a09a88e35f46c9fa04ec804437297bf92224b9',
-};
-const sha256 = s => createHash('sha256').update(s).digest('hex');
-const atHead = f => execFileSync('git', ['show', `HEAD:${f}`], { cwd: ROOT, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
-
-describe.skipIf(Date.now() >= FROZEN_UNTIL)('Capital One is untouched until the 2026-10-12 read', () => {
-  it('the page, its built HTML and its blog post equal git HEAD', () => {
-    for (const f of Object.keys(FROZEN)) {
-      expect(read(f), `${f} differs from HEAD — nothing on Capital One changes before 2026-10-12`).toBe(atHead(f));
-    }
-  });
-
-  it('…and the content taken on 2026-09-29', () => {
-    for (const [f, hash] of Object.entries(FROZEN)) {
-      expect(sha256(read(f)), `${f} changed since 2026-09-29 — nothing on Capital One changes before 2026-10-12`).toBe(hash);
-    }
   });
 });
 

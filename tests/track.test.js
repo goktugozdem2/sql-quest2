@@ -32,6 +32,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath, URLSearchParams } from 'node:url';
 import path from 'node:path';
 import vm from 'node:vm';
+import { botSignals, SOFT_FINGERPRINTS } from '../src/utils/bot-signals.js';
 import {
   LANDING_SRC_KEY,
   LANDING_SRC_TABLE,
@@ -55,6 +56,9 @@ function runTracker({
   referrer = '',
   store = new Map(),
   userAgent = REAL_UA,
+  innerWidth = 1440,
+  innerHeight = 900,
+  tz = 'Europe/London',
 } = {}) {
   const calls = [];
   const listeners = {};
@@ -72,6 +76,9 @@ function runTracker({
       removeEventListener(type, fn) { listeners[type] = (listeners[type] || []).filter(f => f !== fn); },
     },
     navigator: { userAgent, webdriver: false },
+    innerWidth,
+    innerHeight,
+    Intl: { DateTimeFormat: () => ({ resolvedOptions: () => ({ timeZone: tz }) }) },
     fetch: (url, opts) => {
       calls.push({ url, body: JSON.parse(opts.body), headers: opts.headers });
       return Promise.resolve({ ok: true });
@@ -482,5 +489,44 @@ describe('src/track.js — hero CTA copy test (P3.18)', () => {
   it('the homepage hero is the one marked element', () => {
     const home = readFileSync(path.resolve(__dirname, '../src/index.html'), 'utf8');
     expect((home.match(/data-cta-test="hero"/g) || []).length).toBe(1);
+  });
+});
+
+// 2026-11-22: a landing_view carries the app's viewport label and the app's
+// window-size fingerprints, so the crawlers the app stamps since 10-07 stop
+// counting as readers. Same table, same answer, checked on a grid of inputs.
+describe('src/track.js — crawler fingerprints by window size', () => {
+  it('a landing_view carries the viewport in the app\'s band:WxH form', () => {
+    expect(metaOf(landingViewOf(runTracker({ innerWidth: 375, innerHeight: 812 }).calls)).viewport).toBe('mobile:375x812');
+    expect(metaOf(landingViewOf(runTracker({ innerWidth: 800, innerHeight: 600 }).calls)).viewport).toBe('tablet:800x600');
+    expect(metaOf(landingViewOf(runTracker({}).calls)).viewport).toBe('desktop:1440x900');
+  });
+
+  it('stamps the 800x600 crawler and leaves a person alone — and still sends both', () => {
+    const bot = landingViewOf(runTracker({ innerWidth: 800, innerHeight: 600, tz: 'Asia/Shanghai' }).calls);
+    expect(bot, 'stamped, never dropped').toBeTruthy();
+    expect(metaOf(bot).bot).toBe('tab800x600');
+    expect(metaOf(landingViewOf(runTracker({ innerWidth: 1440, innerHeight: 900, tz: 'Asia/Shanghai' }).calls))).not.toHaveProperty('bot');
+  });
+
+  it('the ES5 table and src/utils/bot-signals.js give the same stamp on every input', () => {
+    const sizes = [[1919, 992], [1920, 1080], [1280, 720], [800, 600], [1280, 1200], [1440, 900], [375, 812]];
+    const zones = ['America/Los_Angeles', 'UTC', 'Asia/Shanghai', 'Europe/London'];
+    const refs = ['', 'https://www.aocr.org/', 'https://www.google.com/'];
+    let n = 0;
+    for (const [w, h] of sizes) for (const tz of zones) for (const referrer of refs) {
+      const meta = metaOf(landingViewOf(runTracker({ innerWidth: w, innerHeight: h, tz, referrer }).calls));
+      const want = botSignals({ userAgent: REAL_UA, viewport: meta.viewport, landingSrc: meta.landingSrc, tz }).soft;
+      expect(meta.bot ?? null, `${meta.viewport} ${tz} ${meta.landingSrc}`).toBe(want);
+      n++;
+    }
+    expect(n).toBe(84);
+  });
+
+  it('the table has one row per module fingerprint (refspam is the referrer rule)', () => {
+    const m = /SOFT_FINGERPRINTS:begin\s*var SOFT_FINGERPRINTS = (\[[\s\S]*?\]);\s*\/\/ SOFT_FINGERPRINTS:end/.exec(trackSource);
+    expect(m, 'track.js must carry the table between the markers').toBeTruthy();
+    const ids = JSON.parse(m[1].replace(/'/g, '"')).map(r => r[0]);
+    expect(ids.sort()).toEqual(SOFT_FINGERPRINTS.map(f => f.id).filter(id => id !== 'refspam').sort());
   });
 });

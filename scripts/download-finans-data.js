@@ -298,7 +298,7 @@ function buildShim(tables) {
 // Source: FDIC BankFind Suite API (https://banks.data.fdic.gov/api/)
 // License: U.S. Government public domain (17 U.S.C. §105) — commercially
 // redistributable with no restriction. We add an attribution note in
-// SECTOR_MVP_SETUP.md and the in-app dataset description below.
+// docs/archive/SECTOR_MVP_SETUP.md and the in-app dataset description below.
 
 window.publicDatasetsData = window.publicDatasetsData || {};
 window.publicDatasetsData.finans_banking = {

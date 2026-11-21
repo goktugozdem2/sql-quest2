@@ -224,10 +224,13 @@ describe('source guards — the P1 wiring in app.jsx', () => {
   });
 
   // Flipped 2026-09-30 (flag queue, after the 09-29 cold-start read).
-  it('the three visible changes are flagged and ON since 2026-09-30; the skill filter is live', () => {
-    for (const f of ['weakSkillNext', 'diagnosisHints', 'socraticLadder']) {
+  it('the three visible changes are flagged; two ON since 2026-09-30, weakSkillNext OFF since 2026-11-22 (falsified); the skill filter is live', () => {
+    for (const f of ['diagnosisHints', 'socraticLadder']) {
       expect(flags, f).toMatch(new RegExp(`^\\s+${f}: true,`, 'm'));
     }
+    // The ledger read of 2026-11-22: take rate under 70% of the curriculum
+    // arm → revert. Turning it back on needs a new claim, not a flip.
+    expect(flags).toMatch(/^\s+weakSkillNext: false,/m);
     expect(app).toMatch(/const weakPick = ftbFlag\('weakSkillNext'\)/);
     expect(app).toMatch(/ftbFlag\('diagnosisHints'\) && challengeDiagnosis \? diagnosisShort\(challengeDiagnosis\) : i18n_t\('practice', 'wrongDesc'\)/);
     expect(app).toMatch(/const ladderOn = ftbFlag\('socraticLadder'\);/);

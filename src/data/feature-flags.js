@@ -434,7 +434,12 @@ window.FEATURE_FLAGS = {
     // difficulty above what the person has solved on it (src/utils/
     // user-skill.js pickNextBySkill), instead of curriculum-next at the same
     // difficulty. Strip carries the why; `next_rec_started` carries source.
-    weakSkillNext: true,
+    // OFF 2026-11-22 — its pre-registered falsification fired (ledger "the
+    // next quest is the weakest skill"): take rate 40.8% → 17.3%, 29.3% →
+    // 15.7% under 10 solves (clear of the quota) — below 70% of the
+    // curriculum arm. The written action: revert, keep the picker for the
+    // Coach's drill only.
+    weakSkillNext: false,
     // The wrong-answer panel says WHAT is wrong (the diagnosis headline) in
     // place of "Try again!", and shows ONE hint chosen for the diagnosis
     // and the query (diagnose.js primaryHint) instead of the fixed three.

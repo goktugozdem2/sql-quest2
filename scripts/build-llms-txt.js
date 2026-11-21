@@ -380,10 +380,31 @@ export function gitCommitDate(rootDir = ROOT) {
   return new Date().toISOString().slice(0, 10);
 }
 
+// The newest page date the sitemap manifest holds (2026-11-22). The commit
+// date was close but not stable: the file is built BEFORE its commit, so the
+// first rebuild on the next day rewrote it — a dirty tree after every build
+// (BACKLOG item 23). The manifest is source and moves only when a page's
+// content does; the build runs this after sitemap-lastmod for that reason.
+export function contentDate(rootDir = ROOT) {
+  try {
+    const m = JSON.parse(fs.readFileSync(path.join(rootDir, 'src', 'data', 'sitemap-lastmod.json'), 'utf8'));
+    const dates = [];
+    (function walk(o) {
+      if (!o || typeof o !== 'object') return;
+      if (typeof o.lastmod === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(o.lastmod)) dates.push(o.lastmod);
+      for (const v of Object.values(o)) walk(v);
+    })(m);
+    if (dates.length) return dates.sort().pop();
+  } catch {
+    // no manifest — fall through
+  }
+  return gitCommitDate(rootDir);
+}
+
 export function buildLlmsTxt({
   rootDir = ROOT,
   outPath = path.join(ROOT, 'public', 'llms.txt'),
-  generatedOn = gitCommitDate(rootDir),
+  generatedOn = contentDate(rootDir),
 } = {}) {
   const template = fs.readFileSync(path.join(rootDir, 'src', 'llms.template.md'), 'utf8');
   const facts = collectBankFacts(rootDir);
