@@ -27,6 +27,16 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### the header's Pro button — a door a free person can press (M-04)
+
+- **Claimed** 2026-11-22 · **Shipped** on merge, flag `headerProButton` **on** · **Read** 2026-12-20.
+- **Change** a non-Pro person with 3+ solves (outside the first-run and lesson shells) sees "Try Pro free" (when the trial is offered; "Pro" otherwise; "Try Pro" under 400 px) beside the identity chip; it opens the Pro modal under the new reason `header` (the `pricing_link` headline). Events `header_pro_shown` (once per person), `header_pro_clicked {solves, trialOffered}`. Pure half `headerProCta` in src/utils/paywall-moments.js; guards tests/header-pro.test.js.
+- **Why** (docs/plans/monetization-ideas-2026-11-22.md, 1d, 60 days): a person-opened modal clicks a plan at 26.7% (`pricing_link`) / 31.8% (`generic`) vs 3.2% (`milestone_solves`) and 13.2% (`free_quota`); a free person had no Pro entry in the header since 2026-09-14.
+- **Metric** `header_pro` (metrics.md): shown → pressed → plan click → trial or paid within 7 days.
+- **Baseline** none (new surface); comparison `pricing_link` 26.7% modal → plan click.
+- **Target** ≥ 10 presses in 30 days; ≥ 20% press → plan click; `quota_wall` click rate not below 10%.
+- **Falsification, stated in advance:** < 5 presses in 30 days → nobody looks for it; turn the flag off. Quota-wall clicks fall below 10% while header clicks rise → it moved clicks rather than adding them; turn the flag off.
+
 ### no tenth-solve ask in front of the quota wall
 
 - **Claimed** 2026-11-22 · **Shipped** on merge (no flag; follows `freeQuota`) · **Read** 2026-12-20.

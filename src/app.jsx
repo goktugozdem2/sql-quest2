@@ -66,7 +66,7 @@ import { gradeTicket, ticketFeedback } from './utils/ticket-grade.js';
 import { TICKETS } from './data/tickets.js';
 import { DIALECTS, DIALECT_ROWS } from './utils/dialect-notes.js';
 import { modalLayoutArm, plansFirst } from './utils/modal-layout.js';
-import { softGateReason, paywallMomentCopy, SOFT_GATE_ACTION_LABEL, SOFT_GATE_TOAST_MS } from './utils/paywall-moments.js';
+import { softGateReason, paywallMomentCopy, SOFT_GATE_ACTION_LABEL, SOFT_GATE_TOAST_MS, headerProCta } from './utils/paywall-moments.js';
 import { botSignals, botDecision } from './utils/bot-signals.js';
 import { bootTiming } from './utils/boot-timing.js';
 import { starterHintFor, starterSqlFromHint } from './utils/starter-query.js';
@@ -25589,6 +25589,22 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
     proType, proExpiry, proAutoRenew,
   }, Date.now());
 
+  // The header's Pro button (M-04, 2026-11-22): a door a free person can
+  // press themselves once they have practised (≥ 3 solves). Pure half in
+  // src/utils/paywall-moments.js; guards tests/header-pro.test.js. Computed
+  // here, above the early returns, like every value the header reads.
+  const headerPro = headerProCta({
+    flagOn: window.FF?.feature?.('headerProButton') === true,
+    isPro: !!userProStatus,
+    solves: practiceSolveCount,
+    trialOn: trialOfferOn,
+    firstRunShell: showSimpleLearningShell,
+  });
+  useEffect(() => {
+    if (!headerPro || isSessionLoading) return;
+    trackActivationEvent('header_pro_shown', { solves: practiceSolveCount, trialOffered: trialOfferOn }, { onceKey: 'header_pro_shown' });
+  }, [!!headerPro, isSessionLoading, currentUser]);
+
   const pendingInterviewRef = useRef(null);
   const pendingInterviewPatternRef = useRef(null);   // the trap page a ?interview= link came from
   const pendingInterviewSrcRef = useRef(null);       // the ?src= of any ?interview= link (a company page, a trap page)
@@ -32365,7 +32381,7 @@ RULES:
                       ? 'Finish the path.'
                       : proModalReason.type === 'email_link'
                       ? 'The interview run, before the interview.'
-                      : proModalReason.type === 'pricing_link'
+                      : proModalReason.type === 'pricing_link' || proModalReason.type === 'header'
                       ? 'Two plans. Annual is the lower price per month.'
                       : proModalReason.type === 'cold_start_anyway'
                       ? 'Two plans. Annual is the lower price per month.'
@@ -34373,6 +34389,27 @@ RULES:
               the plan now render in every shell.
               The name is also no longer `hidden sm:inline`: it is the answer
               to the question, so it survives the narrow breakpoint. */}
+          {/* The header's Pro button (M-04, 2026-11-22). A person who opens
+              the modal themselves clicks a plan 2-10x as often as one the
+              product interrupts, and a free person had no way to. Accent
+              because it is a primary CTA (DESIGN.md); never for Pro, never
+              under three solves, never in the first-run or lesson shells. */}
+          {headerPro && (
+            <button
+              type="button"
+              data-testid="header-pro"
+              onClick={() => {
+                trackActivationEvent('header_pro_clicked', { solves: practiceSolveCount, trialOffered: trialOfferOn });
+                setProModalReason({ type: headerPro.reason, topic: null, solvedCount: practiceSolveCount });
+                setShowProModal(true);
+              }}
+              className="flex-shrink-0 px-2.5 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all hover:brightness-95"
+              style={{ background: '#FFE34D', color: '#0E0F13' }}
+            >
+              <span className="hidden min-[400px]:inline">{headerPro.label}</span>
+              <span className="min-[400px]:hidden">{headerPro.shortLabel}</span>
+            </button>
+          )}
           <button
             onClick={() => setShowProfile(true)}
             data-testid="header-identity"
