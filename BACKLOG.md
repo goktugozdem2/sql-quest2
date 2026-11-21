@@ -36,6 +36,7 @@ carries its own **DONE** / **Status** line.
 | 17 | Quiz JSON-LD on question pages | — | closed, not doing (no rich result for SQL) |
 | 15 | quota wall checked in a real browser (smoke) | #92 | open |
 | — | `guest_resumed.solvedCount` was 0 on all 755 rows | #93 | open |
+| — | syntax errors get the line that fixes them | #94 | open |
 | 8 | Google brand searches | #84 | read: demand, not ranking |
 | — | P1 reads: diff panel FLAT, tutor HIT/MISS, picker MISS | #84 | written |
 | — | `weakSkillNext` off (its falsification fired) | #90 | open |
@@ -45,6 +46,33 @@ carries its own **DONE** / **Status** line.
 Founder decisions surfaced, not taken: the free quota's 10-09 rule fired
 (2 < 3 → quota to 20) and was never asked; the session-token cut (item 1);
 the Stripe endpoint's `setup_intent.setup_failed` subscription (item 2).
+
+## Decisions taken 2026-11-22 (founder: "kararlar sana ait olsun")
+
+| Decision | Data | Next read |
+|---|---|---|
+| **Free quota stays at 10.** The 10-09 rule (2 < 3 → move to 20) is retired, not executed. | Since 09-26: 141 met the wall, 18 clicked (12.8%), 5 trials + 1 sale within 7 days — the wall is the surface that sells. Moving it to 20 would halve how many reach it. | quota_wall, 2026-12-20 |
+| **`weakSkillNext` off** (#90). | Its own falsification: take rate 40.8% → 17.3% (29.3% → 15.7% under 10 solves). | — |
+| **`diagnosisHints` stays on.** The written revert is not taken. | FLAT (84.9% vs 84.9%): no cost, no gain; the list it would restore says less. The rule's useful half — "read which kinds stall" — is done: `syntax_error` (75.1%) and `column_set` (69.7%) stall; #94 answers the first. | syntax claim, 12-20 |
+| **Activation flag queue paused** (rows 3, 6, 7). | Row 3 reaches ~1.5 goal starters a week (12 in 8 weeks); rows 6–7 add questions before the first solve while `first_solve_10m` sits at its long-run ~13%. Work goes to the surfaces people actually reach: the challenge list, the quota wall, company pages. | revisit 12-20 |
+| **No second AI-comparison page, no next trap batch, no blog exit.** | /vs-chatgpt/ 10 impressions; trap pages 352 / 500; blog 7 practice clicks — all pre-registered falsifications. | — |
+
+Merging: the agent's merge call is refused by the session's permission classifier; PRs wait for the founder's merge (or a permission rule).
+
+## Ideas — proposed 2026-11-22, each from a number read today
+
+Ranked by expected effect on payers (O1: 50 a month by 12-08). Each would get a ledger claim when built.
+
+1. **Trial-first at the quota wall.** The wall sells (12.8% click) and the trial is how people buy (9 trials, most sales after a trial). Make "Start 7 days free" the wall modal's primary button, the plans second. Metric `quota_wall` trial starts per person; target 2× in 28 days.
+2. **A free first question of the Capital One mock.** 0 Pro modals from the Capital One / trap-page mock links in 28 days, 3 clicks on the page's mock buttons — the mock is a locked door with no window. Let question 1 of the 70-minute mock run free, then the modal (`mock_link`). Capital One is 2 of the first 3 payers.
+3. **`column_set` gets its own line** (69.7% recovery, the weakest kind): name the extra / missing column against the expected header (`SELECT *` → list them). Same pattern as #94.
+4. **Count AI-grounded impressions.** GSC query slices for trap and company pages are chat turns ("давай", "rispondi", pasted exam questions). A weekly count of chat-shaped queries per page (`ai_grounded_impressions`) tells which pages assistants retrieve — the channel two payers came through — and where an answer-first summary would be quoted.
+5. **Company-set guardrail split.** Reach-6 fell to 5.8% (12.4% before). Split by "met the set wall" before touching the gate; if the wall is the cost, open 5 of the Capital One set instead of 3 (that set's arrivals are the most valuable).
+6. **Tutor ladder: bypass at 52%.** Half of Help opens skip to the answer. A/B rung 2 (the clause) as the opener for people who bypassed before — keep the 72% open→solve.
+7. **Password hashing to PBKDF2 on next sign-in** (item 29): dual-scheme, account-login re-hashes after a successful check. Defence in depth; no user-visible change.
+8. **Split data.js** only if `app_boot` (#85) shows `dataJsMs` ≥ 40% of boot at p75 in a band (read ~12-06).
+9. **Brand demand** fell with mail volume (sends ~350 → 84–245 a week). A monthly "new questions for your company" note to engaged non-payers is the test — outward email, so it needs the founder's words.
+10. **The `guest_resumed` fix (#93) unlocks a real continuity read:** how many solves people bring back on day 2+, and whether a "save your progress" ask at 3 solves (88% never sign up) moves sign-ups.
 
 ## P0 — security and money
 
