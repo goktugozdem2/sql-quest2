@@ -82,6 +82,13 @@ re-measure before acting on one.
     **`resend-webhook`**, or **`account-password`**. The `ai-tutor` function's
     rate limiting and buckets are pinned only by source greps
     (`tests/live-nudge.test.js`), not run.
+    **Status 2026-11-22:** `resend-webhook` — DONE (branch
+    `test/resend-webhook-signature`): its Svix check is lifted out of the
+    real file and executed in Node (valid, rotated, tampered, malformed),
+    and the compare is now constant-time. `create-checkout-session` has
+    `tests/checkout-session.test.js` (source guards + the client half).
+    Open: `account-password` (read 2026-11-22: lockout, timing-safe
+    compare and session rotation look right) and the tutor's buckets.
 14. **`src/app.jsx` is not linted** (`npm run lint` covers `src/utils/` and
     `tests/`). 41,000 lines, the file most edited. Lint it with a separate,
     looser config first; 41 known warnings in the linted part.
