@@ -59,6 +59,10 @@ re-measure before acting on one.
    daily, so one table would mix grains. Recommend a read-only view
    (`search_daily` with `engine`) over both instead of a migration; decide
    before session 6.
+   **DONE 2026-11-22** (branch `feat/search-weekly-view`, #86): the view,
+   at the grain both honour — `public.search_weekly` (engine, Friday
+   `week_end`, slice, days), security_invoker, metrics_reader only.
+   Migration + rollback + rolled-back probe; **the founder applies it.**
 
 ## P2 — performance
 
@@ -82,11 +86,12 @@ re-measure before acting on one.
     **`resend-webhook`**, or **`account-password`**. The `ai-tutor` function's
     rate limiting and buckets are pinned only by source greps
     (`tests/live-nudge.test.js`), not run.
-    **Status 2026-11-22:** `account-password` — DONE (branch
-    `test/account-password-executed`): the server's hash helpers and the
-    browser's `hashPassword` are lifted out of their real files and run on
-    the same inputs — a format drift would lock out the next sign-in.
-    Remaining: the tutor's rate-limit buckets.
+    **Status 2026-11-22:** `resend-webhook` — DONE (#88): its Svix check is
+    lifted out of the real file and executed in Node, and the compare is now
+    constant-time. `account-password` — DONE (#91): its hash helpers and
+    the browser's `hashPassword` run on the same inputs, so a format drift
+    would fail CI before it locks out a sign-in. `create-checkout-session`
+    has `tests/checkout-session.test.js`. Remaining: the tutor's buckets.
 14. **`src/app.jsx` is not linted** (`npm run lint` covers `src/utils/` and
     `tests/`). 41,000 lines, the file most edited. Lint it with a separate,
     looser config first; 41 known warnings in the linted part.
@@ -114,20 +119,37 @@ re-measure before acting on one.
     and `dist/`. A grep for a function name finds the wrong file first.
     Delete after confirming nothing imports them (nothing in `scripts/`,
     `tests/` or `vite.config.js` does today).
+    **DONE 2026-11-22** (branch `chore/remove-stale-root-copies`): all
+    seven removed after a `git grep` found no reference outside comments;
+    Vercel serves `public/` only. They stay in git history.
 20. **Inline mirrors in app.jsx** — the weekly report (~190 lines) and the
     skill-drill helpers duplicate `src/utils/weekly-report.js` and
     `skill-drill.js`; orphan Skill Forge helpers remain.
 21. **`lapsed-pro` sender exists with copy that is false for part of its
     audience** ("your trial ended" to people whose access we withdrew). It is
     unscheduled; rewrite or delete before anyone runs it.
+    **Held 2026-11-22** (branch `fix/lapsed-pro-hold`): a real send now
+    returns 423 before reading users or calling Resend; `?dry=1` still
+    previews. Takes effect on the founder's next `supabase functions deploy
+    lapsed-pro`. The copy rewrite is the founder's (outward email).
 22. **Twenty analysis/setup `.md` files at the root** (AI_TUTOR_ANALYSIS,
     SOUND-FIXES, UX-SIMPLIFICATION-GUIDE, …) predate the current product and
     contradict it in places. Move to `docs/archive/` with a dated note.
+    **DONE 2026-11-22** (branch `chore/archive-root-docs`): 17 moved with a
+    dated `docs/archive/README.md`; `ARCHITECTURE.md` and `TODOS.md` stay
+    (linked from README and the ledger); `plan.md` goes with item 19.
 23. **`public/weekly/` changes on every build** (date-stamped), so the tree
     is never clean after a build and a careless `git add` ships it.
 24. **`CLAUDE.md` is 1,400 lines** of operating history with stale lines
     (fixed four on 2026-10-06). Keep the repo map at the top current; prune
     sections whose features were removed.
+    **Status 2026-11-22** (branch `docs/claude-md-prune`): five historical
+    sections moved verbatim to `docs/archive/claude-md-history-2026-11-22.md`
+    with one-line pointers (shipped skill-calc fixes, the Public Profile
+    deploy notes, the goal gate that was off the same night, the April
+    notifications changelog, the done inline mirrors); the free-tier
+    section's "all dark" corrected. −3.6 KB. The rest is still operating
+    knowledge; prune further only with the founder.
 
 ## P6 — data quality traps (for anyone reading numbers)
 

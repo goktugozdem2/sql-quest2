@@ -256,7 +256,7 @@ metrics:report`. Cohorts by signup week: `scripts/cohort-report.sql`
 (read `users.data.createdAt`, never `users.created_at` for rows saved before
 2026-09-12 — the client overwrote that column on every save).
 
-## Current state of play (April 2026)
+## Current state of play — feature notes, each dated (started April 2026)
 
 ### Build system
 - **Vite** (NOT Babel CLI). `npm run build` → `vite build` → `public/app.js` (IIFE, React external, window.SQLQuest set at bottom of src/app.jsx).
@@ -329,12 +329,8 @@ Re-measure before quoting; this table went stale twice within a day.
 Handling 1 Medium + 1 Hard (full bank now: String 7 / 7 / 3, NULL 6 / 13 / 4);
 their solutions are run and pinned by `tests/challenges-312-316.test.js`.
 
-### Recent skill-calc fixes (all shipped)
-1. **Provenance policy** — require attempt corroboration for credit when user has ANY attempt history. Legacy pre-tracking users (zero attempts) still get full credit. Fixes "user has N solves in the Set but never really attempted them."
-2. **Canonical dedupe** — pre-scan (SOURCE 1 totals) and solve-credit loop both dedupe canonical keys. Fixes double-counting when a challenge has ["SELECT", "DISTINCT"] both mapping to SELECT Basics.
-3. **Foundational floor** — after all skills compute, SELECT Basics floors at MAX of advanced skills, Filter & Sort at 85% of that. Fixes "I can do Windows at 70 but the radar says my SELECT is 40."
-4. **Attempts buffer** bumped 100 → 500 in auto-save.
-5. **Elena's case** was a double bug: stale solvedChallenges without attempts + dedupe bug. Final Windows score: 78 → 27.
+### Recent skill-calc fixes
+Shipped and history now (provenance policy, canonical dedupe, foundational floor, 500-attempt buffer): `docs/archive/claude-md-history-2026-11-22.md`.
 
 ### Challenge recommendation ordering — the raw-array trap (fixed 2026-08-05)
 
@@ -774,47 +770,8 @@ so a landing view and a later solve are joinable for the first time.
   `scripts/apply-seo-prune.mjs` (last build step) does the rest. No pruning
   before 2026-11-09; never a hand-written page without the founder.
 
-### Public Profile (USER MUST DEPLOY for cross-device reads)
-Phase 4b + 4c shipped client-side; Supabase needs migration + deploy.
-
-Schema migration (paste into Supabase SQL editor):
-```sql
-create table if not exists public.public_profiles (
-  handle           text primary key,
-  display_name     text,
-  skills           jsonb not null default '{}'::jsonb,
-  total_solves     int    not null default 0,
-  streak           int    not null default 0,
-  xp               int    not null default 0,
-  archetype_name   text,
-  archetype_emoji  text,
-  ownership_hash   text not null,
-  updated_at       timestamptz not null default now(),
-  created_at       timestamptz not null default now()
-);
-create index if not exists public_profiles_updated_at_idx
-  on public.public_profiles (updated_at desc);
-alter table public.public_profiles enable row level security;
-create policy "Public read of profiles"
-  on public.public_profiles for select
-  to anon using (true);
-```
-
-Deploy the functions:
-```
-supabase functions deploy publish-profile og-profile
-```
-
-After deploy, the /u/:handle URL works cross-device (reads via Supabase
-REST anon). /functions/v1/og-profile?handle=foo returns a 1200×630 SVG
-card suitable for og:image. Client auto-publishes 15s after any skill
-change (debounced). Handle ownership is bound to a password-hash-derived
-fingerprint; squatters can't overwrite a claimed handle.
-
-Known limitation: Twitter/LinkedIn/etc scrape server-rendered HTML, so
-the client-side og meta injection won't unfurl in tweets. Full OG support
-needs a Vercel Edge Function rewriting /u/:handle HTML with proper meta
-tags — deferred to Phase 4d if/when viral loop warrants it.
+### Public Profile (/u/:handle)
+Schema, deploy commands and the OG limitation moved to `docs/archive/claude-md-history-2026-11-22.md` (2026-11-22). Functions: `publish-profile`, `og-profile`.
 
 ### Inbound: how users reach us (fixed 2026-07-25)
 
@@ -1153,31 +1110,8 @@ URLs filled, brand icon is the bolt, brand colour #FFE34D.
   session) and 5 (Skillmap proof after the third solve); item 6 (a required
   page after payment) is separate — it touches the payment flow.
 
-### The goal gate — nobody uses the app without a goal (2026-09-25) — OFF
-
-**Off the same night (founder): the ask moved after the first solve, inline
-and skippable — `intakeAfterFirstSolve`. `goalGate: false`; the component is
-kept for the one required screen, after payment. What follows describes it
-as built.**
-
-- Founder's directive: every person, guest or registered, states **goal,
-  deadline, target level, industry** (company optional for an interview).
-  Required — no close, no skip, no Escape; shown at every session start and
-  re-checked every ten minutes until complete; asked again, prefilled, when
-  the deadline passes; never over a running timed mock. Flag `goalGate`.
-  Pure half `src/utils/goal-gate.js`, guards `tests/goal-gate.test.js`
-  (incl. "no close button" source guards and both languages' labels).
-- Answers go through `completeIntake(…, goalSource 'gate')` (intent, Coach
-  goal only when none is active, `prepTarget`, intake record) plus
-  `userGoals.targetLevel/industry/sector` and `userData.goalProfile` (rides
-  the autosave; the newer of account and browser wins on sign-in). Events
-  `goal_gate_shown` / `goal_gate_completed` (daysOut, never the date);
-  metric `goal_gate_funnel`; ledger "every person states a goal…". "Edit
-  goal" on the Coach reopens it (`data-testid="coach-edit-goal"`).
-- z-order: the gate is 10000 (above the first-run tour's 9999); the feedback
-  box is 10001 so a person can still write to us from behind it.
-- It supersedes the intake card and the returning ask for goal capture;
-  those stay dark. Its cost is read on `first_solve_10m` (baseline 12.4%).
+### The goal gate — OFF since 2026-09-25 (same night)
+Replaced by `intakeAfterFirstSolve`; `goalGate: false`, the component kept for the one required screen after payment. The as-built notes: `docs/archive/claude-md-history-2026-11-22.md`.
 
 ### Onboarding intake — three optional questions before the quiz (2026-09-12)
 
@@ -1217,7 +1151,10 @@ as built.**
 - Do not swap the `working` opener a third time from here, and do not let a
   4/4 reach `advanced` without round 2 — `tests/placement.test.js` pins both.
 
-### The free-tier boundary — five flags, all dark (2026-09-12)
+### The free-tier boundary — five flags (2026-09-12)
+
+**State 2026-11-22:** `freeQuota`, `deadlineOffer`, `goalWallEarly`, `mockDoor` and `companySetGate` are ON (one commit, 2026-09-26, founder's Go); `quietEarlyAsks` is off. Reads: docs/agent/ledger.md (quota MOVED, company set MOVED with a guardrail breach, M2/M5 UNREADABLE — 2026-11-22).
+
 
 - **The finding, not the founder's premise:** the free tier is not too big,
   it is in front of the paid good. Locked Hard is opened by 9% of people who
@@ -1403,12 +1340,10 @@ as built.**
   (behind `diagnosisHints`).
 
 ### Notifications
-Major overhaul this session: persist `dismissedNotifs`, `_subtabEnabled()` gates routes by feature flag, threshold-aligned with Quick Drill (<65), dedup by `target` string, clock-tick recompute, NOTIF_PRI constants (streak=0). Reviews Due block commented-out until Coach surfaces retrieval checks outside goals.
+The 2026-04 overhaul notes (dismissed persistence, `_subtabEnabled`, NOTIF_PRI) are in `docs/archive/claude-md-history-2026-11-22.md`.
 
-### Outstanding inline mirrors (Phase 2.2 pending)
-- **Weekly Report** (~190 lines, around line 6710 in app.jsx) — not yet imported from src/utils/weekly-report.js
-- **Skill-drill helpers** (~50 lines, around line 1498) — top-level scope, easy swap
-- **Canonical skill mapper** (line ~7216) — regex-based; intentionally different from SKILL_TO_RADAR, leave as-is
+### Inline mirrors — done
+The weekly report and skill-drill mirrors are gone (app.jsx imports `src/utils/weekly-report.js` / `skill-drill.js`, checked 2026-11-22). The regex canonical mapper near the skill code is intentionally different from SKILL_TO_RADAR — leave it.
 
 ### Key files
 - `src/app.jsx` (~41,000 lines on 2026-10-06) — the monolith. Most session work lives here.
@@ -1469,7 +1404,6 @@ shown /anthropic-sql-interview/ crawled-but-not-indexed as the cost.
 
 ### Known deferred items (no urgency)
 - Coach Phase 3 item 3: AI daily intro + step summary (rate-capped)
-- Weekly-report + skill-drill inline mirror deletion
 - Dead-code prune for orphan Skill Forge helpers (detectWeaknesses, etc)
 - Browser push notifications via the existing `notificationsEnabled` state
 - OG image V2 showing the Coach mock (current is hero-only)
