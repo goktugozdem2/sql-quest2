@@ -100,6 +100,34 @@ a dead Run/Submit on the empty editor, and an Easy starter offered to
 people who linked in for a Hard. Next to read (12-20): `open_to_first_run`
 and `first_solve_10m` after these three; the guest sign-up rate after #98.
 
+## The money read of 2026-11-22 — where paying stops
+
+30 days to 11-22: 120 people saw the Pro modal → 17 clicked a plan (14%)
+→ ~20 Stripe sessions → **17 expired unpaid** → 5 trials + 3 purchases.
+**15 of the 17 expired sessions were trial sessions** (12 default region,
+3 India): the trial asks for a card ("nothing is charged today"), and most
+stop at the card. The modal-to-click step (14%) and the card step are the
+two leaks; the abandon mails run (7 `checkout_abandon`, 53
+`modal_abandon` in 45 days; click tracking reads 0, so judge by returns).
+
+**Proposal — a card-free trial (founder's call: money + deploy).** Stripe
+can start a trial without a card (`payment_method_collection:
+'if_required'`, `trial_settings.end_behavior.missing_payment_method:
+'cancel'` is already set). It only pays if the person can add a card before
+day 7, and today nothing lets them: no billing portal, and the trial
+reminder links a Payment Link (a second subscription). Three pieces, one
+flag (`cardlessTrial`, off):
+1. `create-checkout-session`: `if_required` when the flag is on and the
+   session is a trial.
+2. A `billing-portal` edge function (Stripe Customer Portal session for
+   the person's customer) and an "Add a card to keep Pro" line in the app
+   from day 5 of a card-free trial.
+3. `trial-reminder-cron` links the portal, not a Payment Link, for those.
+Read: trial starts per Stripe session (today ~25%) and day-7 conversion
+(today: every trial has a card). Falsification: day-7 conversion of
+card-free trials under 20% → card-free trials only move the start number;
+off. Not built autonomously: it needs two deploys and a money decision.
+
 ## P0 — security and money
 
 1. **Any account's data can still be overwritten with the public anon key.**
