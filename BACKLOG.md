@@ -86,13 +86,12 @@ re-measure before acting on one.
     **`resend-webhook`**, or **`account-password`**. The `ai-tutor` function's
     rate limiting and buckets are pinned only by source greps
     (`tests/live-nudge.test.js`), not run.
-    **Status 2026-11-22:** `resend-webhook` — DONE (branch
-    `test/resend-webhook-signature`): its Svix check is lifted out of the
-    real file and executed in Node (valid, rotated, tampered, malformed),
-    and the compare is now constant-time. `create-checkout-session` has
-    `tests/checkout-session.test.js` (source guards + the client half).
-    Open: `account-password` (read 2026-11-22: lockout, timing-safe
-    compare and session rotation look right) and the tutor's buckets.
+    **Status 2026-11-22:** `resend-webhook` — DONE (#88): its Svix check is
+    lifted out of the real file and executed in Node, and the compare is now
+    constant-time. `account-password` — DONE (#91): its hash helpers and
+    the browser's `hashPassword` run on the same inputs, so a format drift
+    would fail CI before it locks out a sign-in. `create-checkout-session`
+    has `tests/checkout-session.test.js`. Remaining: the tutor's buckets.
 14. **`src/app.jsx` is not linted** (`npm run lint` covers `src/utils/` and
     `tests/`). 41,000 lines, the file most edited. Lint it with a separate,
     looser config first; 41 known warnings in the linted part.
@@ -160,3 +159,11 @@ re-measure before acting on one.
     `users.data.createdAt` for cohorts.
 27. Email `opened` events are structurally zero (open tracking off at send);
     judge campaigns by return within 48 h.
+29. **Passwords are stored as one SHA-256 of salt + password** (found
+    2026-11-22 while testing account-password). Fast hash: if `users` ever
+    leaked, the hashes are cheap to brute-force. Anon can no longer read
+    them (sq_load_account strips them, 09-22), so this is defence in depth,
+    not an open hole. Fix shape: account-login re-hashes with PBKDF2 (Web
+    Crypto, ≥ 100k iterations) on the next successful sign-in and marks the
+    row's scheme; account-password writes the new scheme. Founder's call —
+    it touches every sign-in.
