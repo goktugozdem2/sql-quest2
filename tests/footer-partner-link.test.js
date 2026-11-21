@@ -57,6 +57,10 @@ describe('Datrick footer link', () => {
     const at = build.indexOf('footer-partner-link');
     expect(at).toBeGreaterThan(build.indexOf('build-question-pages'));
     expect(at).toBeGreaterThan(build.indexOf('build-static-pages'));
-    expect(at).toBeGreaterThan(build.indexOf('build-weekly'));
+    // /weekly/ is built on demand (2026-11-22): its own script runs the
+    // footer after it, so a refreshed archive carries the link too.
+    const weekly = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8')).scripts['build:weekly'];
+    expect(weekly.indexOf('footer-partner-link')).toBeGreaterThan(weekly.indexOf('build-weekly'));
+    expect(build, 'the date-stamped weekly pages stay out of the everyday build').not.toMatch(/build-weekly/);
   });
 });

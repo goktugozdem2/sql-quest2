@@ -46,8 +46,10 @@ map. Work plan: `docs/PLAN.md`. Ranked issues: `BACKLOG.md`.
 - `npm install`
 - `npm run build` — the full pipeline (CSS, Vite, data bundle, every page
   generator, sitemap lastmod). Deterministic: a rebuild of unchanged source
-  leaves the tree clean (except `public/weekly/`, which is date-stamped —
-  never commit it).
+  leaves the tree clean, on any day (2026-11-22: llms.txt is dated by the
+  lastmod manifest; the date-stamped `/weekly/` archive left the build).
+- `npm run build:weekly` — refreshes `public/weekly/` to the current week;
+  run it on purpose and commit its output with the sitemap manifest.
 - `npm run dev` → `npx serve public` on :4321 (what the preview and the smoke
   test use; it talks to the PRODUCTION Supabase, so local AI-tutor calls are
   real and billed). `npm run dev:vite` → HMR on :5173.
@@ -74,8 +76,9 @@ map. Work plan: `docs/PLAN.md`. Ranked issues: `BACKLOG.md`.
   Never in the repo, a log or a chat.
 
 ### Conventions
-- `git add` explicit paths only (never `-A`); never stage `public/weekly/`;
-  stage `src/data/sitemap-lastmod.json` with any changed page.
+- `git add` explicit paths only (never `-A`); stage `public/weekly/` only
+  after a deliberate `npm run build:weekly`; stage
+  `src/data/sitemap-lastmod.json` with any changed page.
 - Commit messages say what changed, why, and which break proved the test.
 - Every product change gets a ledger claim (metric from
   `docs/agent/metrics.md`, baseline, target, read date, falsification).
