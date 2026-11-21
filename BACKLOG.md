@@ -59,6 +59,10 @@ re-measure before acting on one.
    daily, so one table would mix grains. Recommend a read-only view
    (`search_daily` with `engine`) over both instead of a migration; decide
    before session 6.
+   **DONE 2026-11-22** (branch `feat/search-weekly-view`, #86): the view,
+   at the grain both honour — `public.search_weekly` (engine, Friday
+   `week_end`, slice, days), security_invoker, metrics_reader only.
+   Migration + rollback + rolled-back probe; **the founder applies it.**
 
 ## P2 — performance
 
