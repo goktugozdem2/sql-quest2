@@ -442,7 +442,7 @@ of the verifier and must never be rounded to `FLAT`.
   the fold was not the friction; keep control, and the next suspect is the
   Stripe page (20 of 21 checkout returns came back after ~32 s there).
   `plans_first` lower than control → the list was doing the selling; revert.
-- **Verdict** _pending_
+- **Verdict** _pending_ — **interim 2026-11-22, not the read:** first modal per aid from the 10-08 flip, bots out: control 100 people → 13 picked a plan (13.0%), `plans_first` 110 → 13 (11.8%), **0.91× control** against a 1.5× target; webhook trial/purchase 4 vs 2. The pre-registered read waits for 150 viewers per arm (~mid-December at this rate). On this trend the 1.5× target is out of reach and the result sits inside the ±20% band whose rule is "keep control; the next suspect is the Stripe page".
 
 ### First 90 Days: a hired status and five PM tickets, so Pro has a job after the interview
 
@@ -726,7 +726,7 @@ of the verifier and must never be rounded to `FLAT`.
   `checkout-abandon` (it read the click event's email).
 - **Noise:** one live Stripe session opened from the localhost preview on
   2026-09-23 (guest, monthly, abandoned) — exclude its `pro_checkout_expired`.
-- **Verdict** _pending_
+- **Verdict** **HIT** (read 2026-11-22 over the claim's window, 09-23 → 10-23): 10 people clicked a plan with `hadEmailOnFile=false`, **9 reached checkout** (`pro_checkout_clicked` / `checkout_email_step_bypassed` / `pro_checkout_started`) — 90% against ≥ 75%. Before the flag, 0 of 4.
 
 ### Bing crawls what the link graph and a recrawl signal hand it
 
@@ -971,7 +971,7 @@ of the verifier and must never be rounded to `FLAT`.
   share who come back the next day — against the 7 of 46 before. It must
   not lower clicks at the wall; if clicks per person at the wall fall below
   10% with the road back on, the road back goes, not the wall.
-- **Verdict** _pending_
+- **Verdict** **MOVED** (read 2026-11-22, 09-26 → 11-21, bots out): **141 people met the wall, 18 clicked a plan at it (12.8%, target ≥ 10% — HIT)**; within 7 days of meeting it, 5 started a trial or paid; 1 purchase ever followed (target ≥ 2 purchases — short). Guardrails not re-read here (returned-next-day among 10+ solvers, weekly_engaged) — they need the solve-level query in metrics.md before this becomes final. **The 10-09 interim rule fired and was never acted on:** people who met the wall 09-26 → 10-09 and then trialled or paid = **2 (< 3) → "the quota moves to 20, the founder's Go is asked on 10-09".** The Go was never asked; `FREE_SOLVE_QUOTA` is still 10. A money flag — the founder's decision, asked 2026-11-22 with the count above.
 
 ### the sixth-solve ask waits for the celebration (founder's item 1, live 2026-09-12)
 
@@ -1784,7 +1784,7 @@ that needs its own path — the current rule is written down in the handler.
   2026-09-12: no failed or incomplete payment since 09-01 — the three
   non-payers left Checkout without submitting a card (abandonment, not a
   decline).
-- **Verdict** _pending_
+- **Verdict** **MOVED, guardrail breached** (read 2026-11-22, 09-26 → 11-21, bots out): 293 company arrivals, **40 reached the set wall (13.7%, target ≥ 10%)**, **6 of them clicked (15%, target ≥ 8%)**, 3 company arrivals trialled or paid (target ≥ 1). **Guardrail: company-arrival reach-6 = 17 / 293 = 5.8%**, below the 8% line and the 12.4% baseline (whose denominator still held unstamped crawlers, so the true fall is larger). Not the falsification (that needs no purchase as well), but the cost is real and confounded with the 10-solve quota that flipped the same night. Next: split reach-6 by whether the person ever met the set wall, before touching either gate.
 
 ### the interview-prep goal meets the wall at step 4 (free-tier boundary M2)
 
@@ -2822,7 +2822,7 @@ that needs its own path — the current rule is written down in the handler.
   `title_tr`, so a Turkish user reads Turkish chrome around English challenge
   titles; that is pre-existing content debt, but it lands inside this card for
   the first time.
-- **Verdict** _pending_
+- **Verdict** **MISS — the pre-registered falsification fired** (read 2026-11-22, 30 days to 11-21). `cta_practice_*` clicks: **7, from 6 browsers** (rung 1 asked ≥ 40 from ≥ 30; the falsification line was < 15). Real readers ≈ 248: 687 blog `landing_view` people, 439 of them Asia/Shanghai with no source (the 800x600 / 1280x1200 crawler, unstamped on landing rows until `fix/landing-bot-fingerprint`). App arrivals with `arrivalSrc` blog*: 143, ~113 the same crawler; ~20 real, 14 opened a challenge, 2 solved. As written in advance: the exit was never the problem — readers take the answer and leave. Blog readers are not treated as a practice funnel; no third exit (a "solve this now" card was proposed 11-21 and not built).
 - **2026-09-08, before the flag ever flipped: the plan had holes in it.** The
   card set grew from 10 challenges to 25 the same day, and that exposed a
   slicing bug `planToDate` had carried since it was written. It divided the

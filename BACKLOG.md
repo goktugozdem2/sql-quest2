@@ -6,6 +6,30 @@ work order is `docs/PLAN.md`; the founder's open feature list is
 `docs/plans/backlog-2026-09-21.md`. Numbers were measured on the date above —
 re-measure before acting on one.
 
+## Progress — the autonomous run from 2026-11-22
+
+The founder's instruction (2026-11-22): keep developing without asking,
+close the open items one by one, keep this file current. One item, one
+branch, one PR; nothing merges without the founder's go. Each item below
+carries its own **DONE** / **Status** line.
+
+| # | item | PR | state |
+|---|---|---|---|
+| 6 | Capital One read + page | #77 | open |
+| 11 | CDN pins + SRI | #78 | open |
+| 28 | landing rows: crawler fingerprints | #79 | open |
+| 19 | stale root copies | #80 | open |
+| 22 | root notes → docs/archive | #81 | open |
+| 14 | lint app.jsx (2 live ReferenceErrors) | #82 | open |
+| 23 | build leaves the tree clean | #83 | open |
+| — | overdue ledger reads (5) + this table | this PR | open |
+| 16 | faq_open / scroll_depth | — | already fixed |
+| 7 | Bing question pages | — | superseded by #72 |
+
+Founder decisions surfaced, not taken: the free quota's 10-09 rule fired
+(2 < 3 → quota to 20) and was never asked; the session-token cut (item 1);
+the Stripe endpoint's `setup_intent.setup_failed` subscription (item 2).
+
 ## P0 — security and money
 
 1. **Any account's data can still be overwritten with the public anon key.**
@@ -22,6 +46,8 @@ re-measure before acting on one.
    plan click). The first trial and its day-7 charge must be checked by hand
    (earliest 2026-10-08). If a trial conversion is disputed, `checkoutTrial`
    goes off the same day (ledger rule).
+   **Status 2026-11-22:** 9 trials started through the webhook; checked by
+   hand per trial in the payer reads. Open only as a watch item.
 4. **The modal → checkout step is still the leak.** Milestone ask: 178
    shown → 14 clicked (7.9%, up from 3.4%), but 2 paid in 30 days. The plan
    mix is 19 monthly / 2 annual choosers. There is no single document of the
@@ -32,6 +58,9 @@ re-measure before acting on one.
    `docs/agent/metrics.md` and the code. **`docs/funnel.md` written
    2026-10-06** (PLAN item 1), with a new server-side stage 4
    (`pro_checkout_started`); the leak itself is PLAN item 2.
+   **Status 2026-11-22:** the `modalPlansFirst` A/B reads 0.91× control at
+   100 / 110 viewers (ledger interim) — the fold is not the friction; the
+   Stripe-step fix of 11-20 (#70) is the next thing to read.
 5. **The AI tutor runs on a $10/month workspace.** The live nudge reaches
    browsers since 2026-10-03 (it never did before — CORS); ~100 wrong submits
    a day, capped at two nudges per challenge. A spend limit took the tutor
@@ -49,6 +78,8 @@ re-measure before acting on one.
    the never-crawled sitemap URLs, `bing_url_status`, 2026-10-01). Bing sends
    about as much traffic as Google. The automatic submitter can re-send them
    from Monday 2026-10-12 (14-day cooldown). Recount on 10-08.
+   **Superseded 2026-11-20** (#72): the 307 question pages carry `bingbot`
+   noindex, follow — they leave Bing's index on purpose. Closed.
 8. **Google brand searches fell from 2026-09-27** (homepage landers from
    Google 127 → 21 week on week). Not explained yet; read `gsc_daily` by query
    before changing any page.
@@ -95,6 +126,9 @@ re-measure before acting on one.
 16. **`faq_open` and `scroll_depth` are still discarded** — they go to
     Vercel custom events, which the Hobby plan drops. Move them to
     `[data-track]` / `track.js`.
+    **DONE before 2026-11-22** (found already fixed): both go through
+    `window.sqTrack` (`FIRST_PARTY_ONLY` on the four landing pages) — 22
+    `faq_open` and 103 `scroll_depth` rows in the 60 days to 11-18.
 17. **Question pages carry `LearningResource` + `BreadcrumbList` but no
     per-question `Quiz`/`Question` structured data**, and the template is
     frozen until 2026-10-27 (template change rule). Plan it for that date.
