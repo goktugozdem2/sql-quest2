@@ -37,6 +37,13 @@ function bytesToB64(bytes: ArrayBuffer): string {
   return btoa(bin)
 }
 
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false
+  let diff = 0
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i)
+  return diff === 0
+}
+
 // Svix signature scheme (used by Resend): HMAC-SHA256 over "<id>.<ts>.<body>"
 // with the base64-decoded secret; header carries space-separated "v1,<b64sig>".
 async function verifySvix(secret: string, id: string, ts: string, body: string, sigHeader: string): Promise<boolean> {
@@ -47,9 +54,11 @@ async function verifySvix(secret: string, id: string, ts: string, body: string, 
     )
     const signed = await crypto.subtle.sign('HMAC', key, enc.encode(`${id}.${ts}.${body}`))
     const expected = bytesToB64(signed)
+    // Constant-time per candidate (2026-11-22): a plain === leaks how many
+    // leading characters matched.
     return sigHeader.split(' ').some(part => {
       const [, sig] = part.split(',')
-      return sig === expected
+      return typeof sig === 'string' && timingSafeEqual(sig, expected)
     })
   } catch (_) {
     return false
