@@ -34,6 +34,8 @@ carries its own **DONE** / **Status** line.
 | 13 | account-password, executed | #91 | open |
 | 29 | (new) one SHA-256 for passwords | #91 | written up — founder's call |
 | 17 | Quiz JSON-LD on question pages | — | closed, not doing (no rich result for SQL) |
+| 15 | quota wall checked in a real browser (smoke) | #92 | open |
+| — | `guest_resumed.solvedCount` was 0 on all 755 rows | #93 | open |
 | 8 | Google brand searches | #84 | read: demand, not ranking |
 | — | P1 reads: diff panel FLAT, tutor HIT/MISS, picker MISS | #84 | written |
 | — | `weakSkillNext` off (its falsification fired) | #90 | open |
