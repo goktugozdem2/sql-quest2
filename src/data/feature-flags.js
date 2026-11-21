@@ -494,6 +494,17 @@ window.FEATURE_FLAGS = {
     // this wall for anyone past ten solves. Ledger: "the free quota: ten
     // solves, then Pro".
     freeQuota: true,
+
+    // ── The header's Pro button (M-04, 2026-11-22) ────────────────────────
+    // "Try Pro free" (or "Pro" when no trial is offered) beside the identity
+    // chip, for a non-Pro person with 3+ solves, outside the first-run and
+    // lesson shells; opens the modal under reason `header`. Person-opened
+    // modals click a plan at 26.7-31.8% vs 3.2-13.2% for automatic asks
+    // (docs/plans/monetization-ideas-2026-11-22.md, 1d). UX, no price:
+    // ships ON. Turn off if the 12-20 read falls (ledger "the header's Pro
+    // button"): < 5 presses in 30 days, or the quota wall's click rate
+    // under 10% while this one rises.
+    headerProButton: true,
   },
 };
 

@@ -3135,6 +3135,27 @@ clicks (annual ÷ all) since the modal sells two plans (2026-09-12). Read
 early asks (09-29) change who is shown. This is the founder's second watch
 line for the homepage and modal rewrite; a fall below 3.4% means revert.
 
+## `header_pro`
+
+The header's Pro button (M-04, flag `headerProButton`, on from 2026-11-22):
+"Try Pro free" (or "Pro" with no trial on offer) beside the identity chip for
+a non-Pro person with 3+ solves, outside the first-run and lesson shells.
+People by `coalesce(aid, username)`, bots and internal accounts out (the
+filter in docs/plans/monetization-ideas-2026-11-22.md):
+
+1. `header_pro_shown` (once per browser per person, `onceKey`) — shown;
+2. `header_pro_clicked {solves, trialOffered}` — pressed;
+3. `pro_plan_clicked` / `pro_checkout_clicked` with `modalReason='header'`
+   (or a `pro_modal_shown {reason: 'header'}` followed by a plan click in the
+   same session) — plan click;
+4. `pro_trial_started` / `pro_purchase_completed` (`reason='stripe_webhook'`,
+   joined by username) within 7 days of the press — trial or paid.
+
+Guardrail: `quota_wall` click rate (people shown `free_quota` → plan click)
+must not fall below 10% while this rises — the button must add clicks, not
+move them. Comparison, not baseline (a new surface): `pricing_link` 26.7%
+modal → plan click, `generic` 31.8% (60 days to 2026-11-22).
+
 ## `trial_funnel`
 
 The 7-day card-required trial (flag `checkoutTrial`, on 2026-10-01). People

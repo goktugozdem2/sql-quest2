@@ -81,3 +81,23 @@ export function paywallMomentCopy(type, { freeDays = 10, bank = '300+', hardCoun
       return null;
   }
 }
+
+// ── The header's Pro button (M-04, docs/plans/monetization-ideas-2026-11-22.md)
+// When a person opens the modal themselves it converts at 26.7–31.8%
+// (`pricing_link`, `generic`, 60 days to 2026-11-22) against 3.2–13.2% for
+// the automatic asks — and a free person has had no Pro entry in the header
+// since the plan chip left it on 2026-09-14. This is that entry, for the
+// people who have practised enough to know what they would be buying:
+// non-Pro, at least HEADER_PRO_MIN_SOLVES solves, outside the first-run and
+// lesson shells. The modal opens under its own reason, `header`, so the
+// door reads apart from every other. Behind `headerProButton` (on).
+export const HEADER_PRO_MIN_SOLVES = 3;
+export const HEADER_PRO_REASON = 'header';
+
+export function headerProCta({ flagOn = false, isPro = false, solves = 0, trialOn = false, firstRunShell = false } = {}) {
+  if (!flagOn || isPro || firstRunShell) return null;
+  if (!(Number(solves) >= HEADER_PRO_MIN_SOLVES)) return null;
+  return trialOn
+    ? { label: 'Try Pro free', shortLabel: 'Try Pro', reason: HEADER_PRO_REASON }
+    : { label: 'Pro', shortLabel: 'Pro', reason: HEADER_PRO_REASON };
+}
