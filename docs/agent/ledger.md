@@ -27,6 +27,16 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### the account ask at the third solve (`signupAskAtThree`)
+
+- **Claimed** 2026-11-22 · **Flipped** on merge (decided under the founder's delegation, "kararlar sana ait olsun") · **Read** 2026-12-20.
+- **Change** the guest ladder's account prompt (username + email + password, dismissible — never a wall) moves from the 10th solve to the 3rd; the soft email capture it replaced at 3 is skipped once the account rung has fired. Built 2026-09-14 (feature-flags.js has the reasoning); dark until now.
+- **Why** (30 days to 2026-11-22, bots out): 132 guests reached 3 solves and **31 signed up on their own (23.5%)**; the account prompt at the tenth solve reached **20** people. An account is what the lifecycle mail, the cross-device save and the checkout email all need; the brand read (BACKLOG item 8) ties fewer sends to fewer people coming back.
+- **Metric** guests reaching 3 solves → `signup_completed` within 7 days (by aid); guardrail: people reaching 3 solves who reach 6 (`challenge_solved`, distinct ids).
+- **Baseline** 23.5% (31 / 132); guardrail 43.5% (64 / 147) reach 6 from 3.
+- **Target** ≥ 35% sign up; 3 → 6 not below 38.5%.
+- **Falsification, stated in advance:** 3 → 6 below 38.5% at n ≥ 100 → the ask costs the second session's solves; flag off the same day. Sign-up under 27% → the ask is not the reason guests stay guests; flag off, keep the email capture at 3.
+
 ### a column mismatch gets the one line that fixes it
 
 - **Claimed** 2026-11-22 · **Shipped** on merge (no flag; first line of the column diagnoses, which primaryHint shows) · **Read** 2026-12-20.

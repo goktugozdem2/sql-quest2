@@ -365,7 +365,12 @@ window.FEATURE_FLAGS = {
     // The LADDER BUG it rides with is fixed live, not behind this flag: the
     // rungs counted a session-only useState(0), so "the tenth solve" meant
     // ten in one unbroken sitting. That is why the prompt reached 28 people.
-    signupAskAtThree: false,
+    //
+    // ON 2026-11-22 (decided under the founder's delegation; ledger "the
+    // account ask at the third solve"). 30 days to 11-22: 132 guests reached
+    // 3 solves, 31 signed up on their own (23.5%); the account prompt at the
+    // tenth solve reached 20 people. Guardrail: 3 → 6 solves (43.5%).
+    signupAskAtThree: true,
 
     // ── The free-tier boundary (2026-09-12) ──────────────────────────────
     // Five moves from docs/plans/free-tier-boundary-2026-09-12.md. The
