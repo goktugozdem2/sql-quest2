@@ -115,6 +115,10 @@ re-measure before acting on one.
 21. **`lapsed-pro` sender exists with copy that is false for part of its
     audience** ("your trial ended" to people whose access we withdrew). It is
     unscheduled; rewrite or delete before anyone runs it.
+    **Held 2026-11-22** (branch `fix/lapsed-pro-hold`): a real send now
+    returns 423 before reading users or calling Resend; `?dry=1` still
+    previews. Takes effect on the founder's next `supabase functions deploy
+    lapsed-pro`. The copy rewrite is the founder's (outward email).
 22. **Twenty analysis/setup `.md` files at the root** (AI_TUTOR_ANALYSIS,
     SOUND-FIXES, UX-SIMPLIFICATION-GUIDE, …) predate the current product and
     contradict it in places. Move to `docs/archive/` with a dated note.
