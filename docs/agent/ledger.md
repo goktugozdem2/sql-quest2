@@ -27,6 +27,15 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### the quota wall's headline says the trial ("Try Pro free for 7 days")
+
+- **Claimed** 2026-11-22 · **Shipped** on merge (no flag; only where the trial is already offered) · **Read** 2026-12-20, extend to 2027-01-17 if n is short.
+- **Change** reason `free_quota`: the headline "10 free solves done. Pro opens the rest." becomes "10 free solves done. Try Pro free for 7 days." whenever `trialOfferOn` (the same value the plan cards' "7 days free, then billed …" reads). Price, plans, terms and gate unchanged.
+- **Why** (read 2026-11-22): the wall is the surface that sells — 141 people met it 09-26 → 11-21, 18 clicked a plan, 6 trialled or paid within 7 days — and 97 of the 98 people shown its modal since 10-02 were offered the trial, but only in grey under each price. Most purchases since 10-01 started as trials.
+- **Metric** `quota_wall` (metrics.md): people meeting the wall → `pro_trial_started` / `pro_purchase_completed` (stripe_webhook) within 7 days; clicks per person at the wall as the guardrail.
+- **Baseline** 10-02 → 11-21: 97 people shown the free_quota modal; 6 of the 141 wall people trialled or paid within 7 days (4.3%); 12.8% clicked a plan.
+- **Target** ≥ 8% of wall people start a trial or pay within 7 days, clicks at the wall not below 10%.
+- **Falsification, stated in advance:** clicks below 10% → the headline costs the click; revert. Trial-or-pay share at or under 4.3% at n ≥ 50 → the headline is not the lever; leave it (it is true) and look at the Stripe step. n < 50 by 12-20 → extend to 01-17.
 ### a syntax error gets the line that fixes it (`near "X"` read against the query)
 
 - **Claimed** 2026-11-22 · **Shipped** on merge (no flag; shows wherever the diagnosis panel does — `diagnosisHints` is on) · **Read** 2026-12-20.
