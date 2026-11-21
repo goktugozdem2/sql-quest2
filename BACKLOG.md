@@ -32,6 +32,8 @@ carries its own **DONE** / **Status** line.
 | 13 | resend-webhook signature, executed | #88 | open — founder deploys |
 | 24 | CLAUDE.md: five sections to the archive | #89 | open |
 | 8 | Google brand searches | #84 | read: demand, not ranking |
+| — | P1 reads: diff panel FLAT, tutor HIT/MISS, picker MISS | #84 | written |
+| — | `weakSkillNext` off (its falsification fired) | #90 | open |
 | 16 | faq_open / scroll_depth | — | already fixed |
 | 7 | Bing question pages | — | superseded by #72 |
 
