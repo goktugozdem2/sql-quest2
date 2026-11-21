@@ -1431,6 +1431,8 @@ find out why.
 the streak but no XP handout) vs everyone else; if only one side moves, the
 card is not the reason.
 
+- **Verdict** **the headline falsification fired, and the split clears the card** (read 2026-11-22, registered solvers as defined in metrics.md; guests by `guest_*` username, bots and crawler window sizes out). `practice_next_day` **30.7%** (238 solver-days, 09-21 → 10-18) against the 38% line, 26.0% after (77). Split by solves on the day (the interview-person split was not computable from events): registered **10+ solves 54.0% → 48.8% → 48.1%**; registered **under 10 solves 35.0% → 17.8% → 14.0%**. Guests lost the same modal on the same day and did not move: under 10, **5.9% → 8.8% → 6.5%** (355 / 400 / 248 solver-days). The fall is in who registers, not in what the card pays: registered solver-days fell from 367 in the base four weeks to 230, since guest progress persists (09-12) and the account ask moved; the early registrants who are left are a different, colder group. **The modal does not come back** (decided under the founder's delegation). Read the next-day habit on guests + registered together from here; the registered-only series no longer measures a stable population.
+
 ### access comes back off (founder QA 2026-09-20, P0 items 1-4)
 
 **Claim.** The money path could grant access and could not withdraw it, so
@@ -1462,6 +1464,8 @@ newly deployed function.
 `pro_access_revoked` row for someone whose payment had in fact succeeded,
 means this is revoking the wrong people. Read 2026-10-21 with the rest of the
 billing series; metric `pro_revoked`.
+
+- **Verdict** **HIT** (read 2026-11-22, 09-20 → 11-21): three rows. `pro_refunded` 1, `matched_user: true`, followed by `pro_subscription_cancelled`. `pro_access_revoked` 2 (`subscription_incomplete_expired` 10-02, `payment_failed_final` 11-01); neither account had a succeeded payment within 3 days of the revoke, and neither has one since (the second started a new trial later). No `matched_user: false` row, no wrong revoke.
 
 **Still open, deliberately.** A full refund cancels the subscription
 outright. If the founder ever wants "here is this month back, please stay",
