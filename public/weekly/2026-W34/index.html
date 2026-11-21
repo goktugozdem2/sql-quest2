@@ -7,8 +7,8 @@
   <!-- 2026-09-07: stale count → bank figure (200+ → 287 challenges / 219 free; "all free tier" → the Hard gate stated) -->
 
   <!-- ── Primary SEO ─────────────────────────────────────────── -->
-  <title>SQLQuest.app Weekly Challenge — Week 2026-W34: Pattern Matching with LIKE</title>
-  <meta name="description" content="Week 2026-W34's SQL challenge: Pattern Matching with LIKE (Easy). Solve it in your browser, share your time, build a weekly SQL habit. Free to start, no signup, fresh challenge every Monday.">
+  <title>SQLQuest.app Weekly Challenge — Week 2026-W34: Genre-Spanning Directors (HAVING)</title>
+  <meta name="description" content="Week 2026-W34's SQL challenge: Genre-Spanning Directors (HAVING) (Medium). Solve it in your browser, share your time, build a weekly SQL habit. Free to start, no signup, fresh challenge every Monday.">
   <meta name="keywords" content="weekly sql challenge, sql challenge of the week, sql practice weekly, sql habit, daily sql challenge, weekly sql problem, sql leaderboard, free sql challenge">
   <meta name="robots" content="noindex, follow">
   <link rel="canonical" href="https://sqlquest.app/weekly/2026-W34/">
@@ -19,15 +19,15 @@
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://sqlquest.app/weekly/">
   <meta property="og:site_name" content="SQLQuest.app">
-  <meta property="og:title" content="Week 2026-W34 SQL Challenge: Pattern Matching with LIKE">
-  <meta property="og:description" content="Find all passengers whose name contains &#39;Mrs.&#39; — these are married women. Show name, age, pclass, and survived. Sort by age descending. Limit to 15 rows. The % wildcard matches any number of characters.">
+  <meta property="og:title" content="Week 2026-W34 SQL Challenge: Genre-Spanning Directors (HAVING)">
+  <meta property="og:description" content="A film studies report wants directors who have worked in more than one genre — a signal of stylistic range. Show director and genre_count (COUNT(DISTINCT genre)). Filter with HAVING COUNT(DISTINCT genre) &gt; 1. Order by genre_count descendin…">
   <meta property="og:image" content="https://sqlquest.app/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:locale" content="en_US">
 
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Week 2026-W34 SQL Challenge: Pattern Matching with LIKE">
+  <meta name="twitter:title" content="Week 2026-W34 SQL Challenge: Genre-Spanning Directors (HAVING)">
   <meta name="twitter:description" content="Solve this week's SQL challenge in your browser. Free to start, no signup. Beat the community's time.">
   <meta name="twitter:image" content="https://sqlquest.app/og-image.png">
 
@@ -41,9 +41,9 @@
   {
     "@context": "https://schema.org",
     "@type": "Event",
-    "name": "Week 2026-W34 SQL Challenge — Pattern Matching with LIKE",
-    "description": "Find all passengers whose name contains &#39;Mrs.&#39; — these are married women. Show name, age, pclass, and survived. Sort by age descending. Limit to 15 rows. The % wildcard matches any number of characters.",
-    "startDate": "2026-09-25",
+    "name": "Week 2026-W34 SQL Challenge — Genre-Spanning Directors (HAVING)",
+    "description": "A film studies report wants directors who have worked in more than one genre — a signal of stylistic range. Show director and genre_count (COUNT(DISTINCT genre)). Filter with HAVING COUNT(DISTINCT genre) &gt; 1. Order by genre_count descendin…",
+    "startDate": "2026-11-21",
     "eventAttendanceMode": "https://schema.org/OnlineEventAttendanceMode",
     "eventStatus": "https://schema.org/EventScheduled",
     "location": { "@type": "VirtualLocation", "url": "https://sqlquest.app/weekly/" },
@@ -170,7 +170,7 @@
       The SQL Challenge<br><span class="gt">that drops every Monday.</span>
     </h1>
     <p style="font-size:17px;line-height:1.8;color:#94a3b8;margin-bottom:0;max-width:600px;margin-left:auto;margin-right:auto;animation:fadeUp .5s .3s both;">
-      Solve it in your browser. Share your time. Come back next week. 138 challenges in rotation, picked deterministically each week — same challenge for everyone, no leaderboard gaming.
+      Solve it in your browser. Share your time. Come back next week. 139 challenges in rotation, picked deterministically each week — same challenge for everyone, no leaderboard gaming.
     </p>
   </div>
 </section>
@@ -179,11 +179,11 @@
 <section><div class="sec" style="padding-top:0;padding-bottom:40px;">
   <div style="max-width:760px;margin:0 auto 20px;padding:14px 18px;background:rgba(245,158,11,.08);border:1px dashed rgba(245,158,11,.3);border-radius:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap"><span style="font-size:13px;color:#fcd34d">📅 You're viewing the archive for <strong>Week 2026-W34</strong>. Each week's challenge is locked deterministically — every visitor that week saw this same problem.</span><a href="/weekly/" style="font-size:12px;color:#FFE34D;font-weight:700;white-space:nowrap;text-decoration:none">→ Current week</a></div>
   <div class="challenge-card" style="animation:fadeUp .5s .4s both;">
-    <span class="difficulty-pill diff-Easy">Easy</span>
-    <h2>Pattern Matching with LIKE</h2>
-    <p>Find all passengers whose name contains &#39;Mrs.&#39; — these are married women. Show name, age, pclass, and survived. Sort by age descending. Limit to 15 rows. The % wildcard matches any number of characters.</p>
+    <span class="difficulty-pill diff-Medium">Medium</span>
+    <h2>Genre-Spanning Directors (HAVING)</h2>
+    <p>A film studies report wants directors who have worked in more than one genre — a signal of stylistic range. Show director and genre_count (COUNT(DISTINCT genre)). Filter with HAVING COUNT(DISTINCT genre) &gt; 1. Order by genre_count descendin…</p>
     <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
-      <a href="/app/?challenge=102&amp;ref=weekly_2026-W34" class="btn bp blg">
+      <a href="/app/?challenge=159&amp;ref=weekly_2026-W34" class="btn bp blg">
         ▶ Start Challenge
       </a>
       <span style="font-size:13px;color:#8b98ab;">No signup. Browser-based SQL editor. AI Coach if you get stuck.</span>
@@ -205,10 +205,7 @@
   <div class="archive">
     <h3>📚 Recent Weeks</h3>
     <ul>
-        <li><a href="/weekly/2026-W33/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W33</strong> · DISTINCT Values <span style="color:#8b98ab">(Easy)</span></a></li>
-        <li><a href="/weekly/2026-W32/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W32</strong> · GROUP BY Basics <span style="color:#8b98ab">(Easy)</span></a></li>
-        <li><a href="/weekly/2026-W31/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W31</strong> · SUM, AVG, MIN, MAX <span style="color:#8b98ab">(Easy)</span></a></li>
-        <li><a href="/weekly/2026-W30/" style="color:#cbd5e1;text-decoration:none;display:block"><strong style="color:#FFE34D;font-family:'JetBrains Mono';font-size:13px">2026-W30</strong> · Counting Rows <span style="color:#8b98ab">(Easy)</span></a></li>
+
     </ul>
     <p style="font-size:12px;color:#8b98ab;margin-top:12px;line-height:1.6;">Past challenges are still solvable in the app. Each week's pick is deterministic, so anyone visiting that week sees the same challenge — fair time comparisons.</p>
   </div>
@@ -247,14 +244,14 @@
     <a href="/privacy/">Privacy</a>
     <a href="/terms/">Terms</a>
   </div>
-</footer>
+<p data-partner="datrick" style="margin:18px auto 0;max-width:1000px;padding:0 24px;font-size:12px;opacity:.55;text-align:center;">SQL Quest is built by Datrick, Inc. · <a href="https://datrick.com/sql-server-to-postgresql-migration" style="color:inherit;text-decoration:underline;">SQL Server to PostgreSQL migration</a></p></footer>
 
 <script>
 (function () {
   const weekLabel = '2026-W34';
   const weekNum = '34';
-  const title = 'Pattern Matching with LIKE';
-  const diff = 'Easy';
+  const title = 'Genre-Spanning Directors (HAVING)';
+  const diff = 'Medium';
   const url = 'https://sqlquest.app/weekly/';
 
   // Build share text (mirrors src/utils/weekly-challenge.js → buildShareText)

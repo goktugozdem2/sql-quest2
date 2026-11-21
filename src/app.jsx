@@ -22658,6 +22658,9 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     
     const script = document.createElement('script');
     script.src = 'https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js';
+    // SRI, like every CDN tag in app.html (tests/cdn-pins.test.js).
+    script.integrity = 'sha384-KsfptB549CXfbfsdxZmPo2PlmgCyJ+RNqHTQE1Gj45t3p4DaA1QbZYVyqlni4pOO';
+    script.crossOrigin = 'anonymous';
     script.onload = () => {
       initSQL();
     };

@@ -1,5 +1,10 @@
 # Capital One — the first job on 2026-10-12
 
+> **Done 2026-11-22.** The read came out as branch 3 (blog 641 impressions /
+> 39 clicks / position 7.4; company page 109 / 9 / 6.2, no `capital one sql`
+> query). Applied: A, B, C (mock link only — the blog title is earning 6.1%
+> CTR and stays), E. Ledger: "Capital One: the 10-12 read, branch 3".
+
 Written 2026-09-25 (founder: "12 Ekim'de ilk iş bu"). Two of the first three
 payers prepped for Capital One's CodeSignal data-analyst screen; this is the
 revenue page. **Nothing on `/capital-one-sql-interview/` or the Capital One

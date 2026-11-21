@@ -154,6 +154,7 @@ export function renderPattern(p, { slugs, bank, year = new Date().getFullYear(),
 
   <h2 class="fd">Where this trap is tested</h2>
   <p class="lead">This trap is ${mockLine(p.mock)}${p.alsoIn ? `, and again in ${mockLine(p.alsoIn)}` : ''} — a timed practice screen on the same kind of data. The mock asks it in a different form, so this page does not give its answer away.</p>
+  ${p.mock.id.startsWith('capital-one') ? `<p style="font-size:15px;color:#94a3b8;margin-top:10px;">Preparing for the Capital One screen? <a href="/capital-one-sql-interview/" data-track="cta_pattern_company">The Capital One SQL practice set →</a></p>` : ''}
 
   <h2 class="fd">Practise it</h2>
   <div class="rel">${p.challenges.map(id => byId.get(id)).filter(Boolean).map(c => `<a href="/questions/${slugs.get(c.id)}/">${esc(c.title)}<span>${esc(c.difficulty)} · SQL practice question</span></a>`).join('')}</div>
