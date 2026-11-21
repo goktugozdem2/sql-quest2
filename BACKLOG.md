@@ -120,6 +120,11 @@ re-measure before acting on one.
     contradict it in places. Move to `docs/archive/` with a dated note.
 23. **`public/weekly/` changes on every build** (date-stamped), so the tree
     is never clean after a build and a careless `git add` ships it.
+    **DONE 2026-11-22** (branch `fix/weekly-deterministic`): `/weekly/`
+    builds only through `npm run build:weekly` (0 people and 1 Google click
+    in 90 days — not worth a daily diff), refreshed once to W47 with the
+    footer it never got; llms.txt dated by the lastmod manifest and built
+    last. Two consecutive builds now leave the same tree.
 24. **`CLAUDE.md` is 1,400 lines** of operating history with stale lines
     (fixed four on 2026-10-06). Keep the repo map at the top current; prune
     sections whose features were removed.
