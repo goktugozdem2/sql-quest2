@@ -27,6 +27,16 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### a deep link to a locked Hard opens a free Hard of the same kind
+
+- **Claimed** 2026-11-22 · **Shipped** on merge (no flag; only deep links, only at cold start, only Hard) · **Read** 2026-12-20.
+- **Change** a visitor who has solved nothing and arrives through `/app/?challenge=<id>` on a locked Hard (topic pages, /challenges/advanced/, question pages, shares) is put into the unsolved free Hard preview sharing the most tags with it (`previewSwapFor`, src/utils/paid-wall.js), with one line above the editor naming the Pro question. In-app clicks still get the cold-start dialog; nothing is sold to a zero-solve person either way. Event `deeplink_preview_swap {from, to}`; the lock row is still written first.
+- **Why** (30 days to 2026-11-22, bots and crawler window sizes out): ~75 people arrived from topic pages on a locked Hard with zero solves and met the cold-start dialog — which offers an EASY starter to someone who asked for Hard; 3 opened anything afterwards, 1 solved. /challenges/advanced/ alone: ~14 real people a month, 0 opened.
+- **Metric** people with `content_lock_reached {wall: cold_start}` or `deeplink_preview_swap` whose `arrivalSrc` is a page: share who run a query (`challenge_first_run`) and who solve within 60 minutes.
+- **Baseline** opened-anything-after 4% (3 / ~75), solved 1.3%.
+- **Target** ≥ 40% run a query, ≥ 10% solve, in the 28 days after merge.
+- **Falsification, stated in advance:** run-rate under 15% at n ≥ 30 → a Hard preview is too far for a cold arrival too; send them to the topic's Easy instead. n < 30 by 12-20 → extend.
+
 ### the account ask at the third solve (`signupAskAtThree`)
 
 - **Claimed** 2026-11-22 · **Flipped** on merge (decided under the founder's delegation, "kararlar sana ait olsun") · **Read** 2026-12-20.
