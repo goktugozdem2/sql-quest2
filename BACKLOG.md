@@ -93,6 +93,14 @@ the Stripe endpoint's `setup_intent.setup_failed` subscription (item 2).
 8. **Google brand searches fell from 2026-09-27** (homepage landers from
    Google 127 → 21 week on week). Not explained yet; read `gsc_daily` by query
    before changing any page.
+   **Read 2026-11-22** (`gsc_daily` query slice, Friday weeks): not a ranking
+   loss — brand (`sql ?quest`) position went 7.9 (Sep 1–26) → 2.6 after.
+   Fewer people search the name: brand impressions 99–177 a week in
+   September → 22–63 in October–November, brand clicks 47–56 → 5–28.
+   Non-brand visible clicks held (11–25 a week). Same weeks, mail sent fell
+   ~350 → 84–245 a week (lifetime caps and cooldowns, by design). Not
+   proven as the cause; nothing on a page explains it. Watch item, no page
+   change.
 9. **PLAN item 6 conflicts with what was built.** Bing data lives in its own
    tables (`bing_site_daily`, `bing_stats`, `bing_crawl_daily`,
    `bing_url_status`, `bing_submissions`), not in `gsc_daily` with an
