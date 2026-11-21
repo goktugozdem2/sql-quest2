@@ -2040,6 +2040,11 @@ async function main() {
       (() => {
         localStorage.clear();
         localStorage.setItem('sqlquest_guest_user', ${JSON.stringify(quotaGuest)});
+        // A real ten-solver met the 6- and 10-solve asks when they happened;
+        // without these keys the resume replays the 10-solve ask on top of
+        // the wall and the screen shows "You're cooking" instead.
+        localStorage.setItem('sqlquest_promo_6solves_guest', '1');
+        localStorage.setItem('sqlquest_promo_10solves_guest', '1');
         localStorage.setItem('sqlquest_user_' + ${JSON.stringify(quotaGuest)}, JSON.stringify({
           username: ${JSON.stringify(quotaGuest)},
           solvedChallenges: ${JSON.stringify(quotaSolved)},
@@ -2057,6 +2062,7 @@ async function main() {
         planMonthly: !!document.querySelector('[data-testid="plan-monthly"]'),
         planAnnual: !!document.querySelector('[data-testid="plan-annual"]'),
         counter: (document.querySelector('[data-testid="free-quota-counter"]')?.textContent || '').trim().slice(0, 80),
+        wallBody: !!document.querySelector('[data-testid="pro-modal-free-quota"]'),
         solved: (JSON.parse(localStorage.getItem('sqlquest_user_' + ${JSON.stringify(quotaGuest)}) || '{}').solvedChallenges || []).length,
       }))()`);
     const quotaLocks = [];
@@ -2079,6 +2085,7 @@ async function main() {
       && quotaModals.some(d => d.metadata?.reason === 'free_quota')
       && quotaDom.planMonthly && quotaDom.planAnnual
       && /10 of 10/.test(quotaDom.counter)
+      && quotaDom.wallBody
     ) {
       pass('a guest at 10 solves opening an unsolved challenge meets the quota wall: challenge_quota lock, Pro modal reason=free_quota, both plans, counter 10 of 10');
     } else {
