@@ -20,7 +20,7 @@ const stripTypes = code => code
   .replace(/\s+as\s+ArrayBuffer\b/g, '');
 
 function load() {
-  const ctx = { crypto: webcrypto, atob, btoa, TextEncoder, Uint8Array, String, Math };
+  const ctx = { crypto: webcrypto, atob: globalThis.atob, btoa: globalThis.btoa, TextEncoder, Uint8Array, String, Math };
   vm.createContext(ctx);
   vm.runInContext(stripTypes(block) + '\nthis.verifySvix = verifySvix; this.timingSafeEqual = timingSafeEqual;', ctx);
   return ctx;
