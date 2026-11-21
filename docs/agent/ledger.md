@@ -542,7 +542,7 @@ of the verifier and must never be rounded to `FLAT`.
 - **Confounds** the hero CTA test arms 2026-10-04 on the same homepage
   (randomised by aid, so the split reads cleanly); the block lands the day
   before.
-- **Verdict** _pending_
+- **Verdict** **MISS — the falsification fired** (read 2026-11-22): `gsc_daily` 10 impressions in the 21 days (12 in the last 28), 0 clicks; 2 non-crawler readers since 10-03, 0 `cta_vs_chatgpt_*` people (target 100+ impressions, 5+ people to the app). As written: the query is too small for a page — keep it for the AI door, write no second AI-comparison page.
 
 ### five SQL trap pages, linked into the graph (the first pattern batch)
 
@@ -574,7 +574,7 @@ of the verifier and must never be rounded to `FLAT`.
   vs COUNT(*), WHERE vs HAVING, top N per group, LAG without PARTITION BY.
 - **Confounds** Shopify retitle and Tesla re-indexing the same day (other
   pages); none of the five URLs existed before.
-- **Verdict** _pending_
+- **Verdict** **MISS on reach — the falsification fired** (read 2026-11-22, `gsc_daily` page slice, 28 days from publication 09-25 → 10-22): all five rank inside the top 20 (positions 5.9–7.1 — that bar HIT), but **352 impressions** in total against 500 (left-join-where 163, between-timestamp 78, join-fan-out 51, not-in-null 44, average-of-averages 16), 4 clicks. The last 28 days: 461 impressions, 2 clicks, positions 5.0–6.8. As written: below either bar → the format does not work here; the next five trap pages are not written. Note for whoever reads next: these rank on page one and are not clicked — a snippet problem, not a ranking one.
 
 ### the Shopify page's title and description say what the page is
 
@@ -603,7 +603,7 @@ of the verifier and must never be rounded to `FLAT`.
   → the impressions are intent the page cannot serve (like the competitor
   brand queries); stop spending titles on it. Position worse by > 3 →
   revert the title.
-- **Verdict** _pending_
+- **Verdict** **MISS in its window, then clicks** (read 2026-11-22): 28 days from 09-25: 54 impressions, 0 clicks, position 9.2 (target ≥ 3 clicks, CTR ≥ 1% within ±2 of 6.8; the 0-click falsification needed ≥ 150 impressions — not reached). The last 28 days: 65 impressions, **7 clicks (10.8%)** at position 18.2. The title earns the click when shown; the ranking slipped. Not reverted.
 
 ### one question after the first solve: which company (the company ask)
 
