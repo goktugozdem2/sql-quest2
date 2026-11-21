@@ -109,6 +109,9 @@ re-measure before acting on one.
     and `dist/`. A grep for a function name finds the wrong file first.
     Delete after confirming nothing imports them (nothing in `scripts/`,
     `tests/` or `vite.config.js` does today).
+    **DONE 2026-11-22** (branch `chore/remove-stale-root-copies`): all
+    seven removed after a `git grep` found no reference outside comments;
+    Vercel serves `public/` only. They stay in git history.
 20. **Inline mirrors in app.jsx** — the weekly report (~190 lines) and the
     skill-drill helpers duplicate `src/utils/weekly-report.js` and
     `skill-drill.js`; orphan Skill Forge helpers remain.
