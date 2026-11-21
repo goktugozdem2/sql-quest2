@@ -27,6 +27,29 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### four more snippets that fit the window
+
+- **Claimed** 2026-11-20 · **Shipped** on merge (founder's Go: "senin önerilerin iyi onları yap") · **Read** 2026-12-18.
+- **Change** titles cut to ≤ 70 characters and descriptions to 120–170 on four
+  pages that rank on Google's first page but are rarely clicked; og/twitter
+  tags and the Article headline follow. Same rule and guard as the 09-29
+  batch (`tests/snippet-length.test.js`, `SNIPPET_PAGES`).
+- **Baseline** (`gsc_daily` page slice, 28 days to 2026-11-19):
+  | page | impressions | clicks | CTR | position |
+  |---|---|---|---|---|
+  | `/best-sql-practice-sites/` | 1,774 | 26 | 1.5% | 8.3 |
+  | `/sql-practice-comparison/` | 438 | 7 | 1.6% | 6.9 |
+  | `/blog/row-number-vs-rank-vs-dense-rank/` | 294 | 1 | 0.3% | 8.0 |
+  | `/blog/null-handling-mistakes/` | 730 | 4 | 0.5% | 6.6 |
+  Old titles were 78–87 characters (Google cut them mid-promise).
+- **Metric** `gsc_daily` page slice: CTR per page at an unchanged position.
+- **Target** the four together from 38 clicks / 3,236 impressions (1.2%) to
+  ≥ 2.5%; per page HIT when CTR at least doubles with position within ±2.
+- **Falsification, stated in advance:** a page whose position moved more than
+  2 places → UNREADABLE for that page (the snippet is not what changed); a
+  page whose CTR fell at the same position → MISS, restore its old title.
+  The 09-29 batch read 2 HIT / 3 rank losses — expect the same mix.
+
 ### Bing: the question pages leave Bing's index (bingbot noindex, follow)
 
 - **Claimed** 2026-11-20 · **Shipped** on merge (generator change, no flag;
