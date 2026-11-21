@@ -82,6 +82,11 @@ re-measure before acting on one.
     **`resend-webhook`**, or **`account-password`**. The `ai-tutor` function's
     rate limiting and buckets are pinned only by source greps
     (`tests/live-nudge.test.js`), not run.
+    **Status 2026-11-22:** `account-password` — DONE (branch
+    `test/account-password-executed`): the server's hash helpers and the
+    browser's `hashPassword` are lifted out of their real files and run on
+    the same inputs — a format drift would lock out the next sign-in.
+    Remaining: the tutor's rate-limit buckets.
 14. **`src/app.jsx` is not linted** (`npm run lint` covers `src/utils/` and
     `tests/`). 41,000 lines, the file most edited. Lint it with a separate,
     looser config first; 41 known warnings in the linted part.
@@ -132,3 +137,11 @@ re-measure before acting on one.
     `users.data.createdAt` for cohorts.
 27. Email `opened` events are structurally zero (open tracking off at send);
     judge campaigns by return within 48 h.
+29. **Passwords are stored as one SHA-256 of salt + password** (found
+    2026-11-22 while testing account-password). Fast hash: if `users` ever
+    leaked, the hashes are cheap to brute-force. Anon can no longer read
+    them (sq_load_account strips them, 09-22), so this is defence in depth,
+    not an open hole. Fix shape: account-login re-hashes with PBKDF2 (Web
+    Crypto, ≥ 100k iterations) on the next successful sign-in and marks the
+    row's scheme; account-password writes the new scheme. Founder's call —
+    it touches every sign-in.
