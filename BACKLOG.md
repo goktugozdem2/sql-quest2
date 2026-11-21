@@ -25,6 +25,9 @@ carries its own **DONE** / **Status** line.
 | — | overdue ledger reads (5) + this table | #84 | open |
 | 10 | measure /app boot before splitting data.js | #85 | open |
 | 12 | users_public readers | #84 | audited, no action |
+| 9 | Google + Bing view (`search_weekly`) | #86 | open — founder applies the migration |
+| 5 | tutor spend | #84 | volume read; dollars in the console (founder) |
+| 20 | inline mirrors | — | already removed |
 | 16 | faq_open / scroll_depth | — | already fixed |
 | 7 | Bing question pages | — | superseded by #72 |
 
@@ -68,6 +71,11 @@ the Stripe endpoint's `setup_intent.setup_failed` subscription (item 2).
    a day, capped at two nudges per challenge. A spend limit took the tutor
    down for three days on 2026-09-27. Check spend weekly until a month of
    data exists.
+   **Status 2026-11-22:** `ai_usage` holds steady at ~200 calls a week for
+   six weeks (178–283; ~65% are `#nudge` calls), 45–55 people a week, on
+   `claude-sonnet-5-5`. The dollars are only in the Anthropic console: the
+   founder checks the month's spend against the $10 cap there — at this
+   volume on this model the cap may be close.
 
 ## P1 — the pages that bring buyers
 
@@ -154,6 +162,11 @@ the Stripe endpoint's `setup_intent.setup_failed` subscription (item 2).
 20. **Inline mirrors in app.jsx** — the weekly report (~190 lines) and the
     skill-drill helpers duplicate `src/utils/weekly-report.js` and
     `skill-drill.js`; orphan Skill Forge helpers remain.
+    **Mostly done before 2026-11-22** (found): both mirrors are gone —
+    app.jsx imports `buildWeeklyReport` / `buildDrillQueue` from the
+    utils. What remains is a few unused imports (`DRILL_SIZE`,
+    `prioritizeBySector`, …), which the app.jsx lint (#82) can catch once
+    `no-unused-vars` is turned on for it.
 21. **`lapsed-pro` sender exists with copy that is false for part of its
     audience** ("your trial ended" to people whose access we withdrew). It is
     unscheduled; rewrite or delete before anyone runs it.
