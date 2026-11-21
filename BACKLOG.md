@@ -31,6 +31,9 @@ carries its own **DONE** / **Status** line.
 | 21 | lapsed-pro held until its copy is rewritten | #87 | open — founder deploys |
 | 13 | resend-webhook signature, executed | #88 | open — founder deploys |
 | 24 | CLAUDE.md: five sections to the archive | #89 | open |
+| 13 | account-password, executed | #91 | open |
+| 29 | (new) one SHA-256 for passwords | #91 | written up — founder's call |
+| 17 | Quiz JSON-LD on question pages | — | closed, not doing (no rich result for SQL) |
 | 8 | Google brand searches | #84 | read: demand, not ranking |
 | — | P1 reads: diff panel FLAT, tutor HIT/MISS, picker MISS | #84 | written |
 | — | `weakSkillNext` off (its falsification fired) | #90 | open |
@@ -162,6 +165,13 @@ the Stripe endpoint's `setup_intent.setup_failed` subscription (item 2).
 17. **Question pages carry `LearningResource` + `BreadcrumbList` but no
     per-question `Quiz`/`Question` structured data**, and the template is
     frozen until 2026-10-27 (template change rule). Plan it for that date.
+    **Closed, not doing (2026-11-22):** Google's Education Q&A (Quiz)
+    markup feeds a carousel keyed to established curriculum frameworks
+    (Common Core, UK National Curriculum —
+    developers.google.com/search/docs/appearance/structured-data/education-qa);
+    nothing supports SQL interview questions as a subject, so the markup
+    would buy no result type. The question pages' snippet was already
+    rewritten under the 10-27 rule (#63).
 18. **DMARC aggregate reports bounce** (`rua` points at an address with no
     routing rule). Harmless at `p=none`; needed before tightening the policy.
 
