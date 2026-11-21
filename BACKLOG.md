@@ -10,44 +10,54 @@ re-measure before acting on one.
 
 The founder's instruction (2026-11-22): keep developing without asking,
 close the open items one by one, keep this file current. One item, one
-branch, one PR; nothing merges without the founder's go. Each item below
+branch, one PR. All of #77–#96 merged 2026-11-22 on the founder's "merge et hepsini";
+main rebuilt clean, 2,709 tests, lint 0 errors. Each item below
 carries its own **DONE** / **Status** line.
 
 | # | item | PR | state |
 |---|---|---|---|
-| 6 | Capital One read + page | #77 | open |
-| 11 | CDN pins + SRI | #78 | open |
-| 28 | landing rows: crawler fingerprints | #79 | open |
-| 19 | stale root copies | #80 | open |
-| 22 | root notes → docs/archive | #81 | open |
-| 14 | lint app.jsx (2 live ReferenceErrors) | #82 | open |
-| 23 | build leaves the tree clean | #83 | open |
-| — | overdue ledger reads (5) + this table | #84 | open |
-| 10 | measure /app boot before splitting data.js | #85 | open |
+| 6 | Capital One read + page | #77 | merged 11-22 |
+| 11 | CDN pins + SRI | #78 | merged 11-22 |
+| 28 | landing rows: crawler fingerprints | #79 | merged 11-22 |
+| 19 | stale root copies | #80 | merged 11-22 |
+| 22 | root notes → docs/archive | #81 | merged 11-22 |
+| 14 | lint app.jsx (2 live ReferenceErrors) | #82 | merged 11-22 |
+| 23 | build leaves the tree clean | #83 | merged 11-22 |
+| — | overdue ledger reads (5) + this table | #84 | merged 11-22 |
+| 10 | measure /app boot before splitting data.js | #85 | merged 11-22 |
 | 12 | users_public readers | #84 | audited, no action |
-| 9 | Google + Bing view (`search_weekly`) | #86 | open — founder applies the migration |
+| 9 | Google + Bing view (`search_weekly`) | #86 | merged 11-22 — founder applies the migration |
 | 5 | tutor spend | #84 | volume read; dollars in the console (founder) |
 | 20 | inline mirrors | — | already removed |
-| 21 | lapsed-pro held until its copy is rewritten | #87 | open — founder deploys |
-| 13 | resend-webhook signature, executed | #88 | open — founder deploys |
-| 24 | CLAUDE.md: five sections to the archive | #89 | open |
-| 13 | account-password, executed | #91 | open |
+| 21 | lapsed-pro held until its copy is rewritten | #87 | merged 11-22 — founder deploys |
+| 13 | resend-webhook signature, executed | #88 | merged 11-22 — founder deploys |
+| 24 | CLAUDE.md: five sections to the archive | #89 | merged 11-22 |
+| 13 | account-password, executed | #91 | merged 11-22 |
 | 29 | (new) one SHA-256 for passwords | #91 | written up — founder's call |
 | 17 | Quiz JSON-LD on question pages | — | closed, not doing (no rich result for SQL) |
-| 15 | quota wall checked in a real browser (smoke) | #92 | open |
-| — | `guest_resumed.solvedCount` was 0 on all 755 rows | #93 | open |
-| — | syntax errors get the line that fixes them | #94 | open |
-| idea 1 | quota wall headline says the trial | #95 | open |
-| idea 3 | column mismatch gets one fix line | #96 | open |
+| 15 | quota wall checked in a real browser (smoke) | #92 | merged 11-22 |
+| — | `guest_resumed.solvedCount` was 0 on all 755 rows | #93 | merged 11-22 |
+| — | syntax errors get the line that fixes them | #94 | merged 11-22 |
+| idea 1 | quota wall headline says the trial | #95 | merged 11-22 |
+| idea 3 | column mismatch gets one fix line | #96 | merged 11-22 |
 | 8 | Google brand searches | #84 | read: demand, not ranking |
 | — | P1 reads: diff panel FLAT, tutor HIT/MISS, picker MISS | #84 | written |
-| — | `weakSkillNext` off (its falsification fired) | #90 | open |
+| — | `weakSkillNext` off (its falsification fired) | #90 | merged 11-22 |
 | 16 | faq_open / scroll_depth | — | already fixed |
 | 7 | Bing question pages | — | superseded by #72 |
 
 Founder decisions surfaced, not taken: the free quota's 10-09 rule fired
 (2 < 3 → quota to 20) and was never asked; the session-token cut (item 1);
 the Stripe endpoint's `setup_intent.setup_failed` subscription (item 2).
+
+**Waiting on the founder (the session's permission classifier refuses
+these to the agent):**
+- `supabase functions deploy lapsed-pro resend-webhook` — the lapsed-pro
+  hold (#87) and the constant-time Svix compare (#88) are merged but not
+  live until deployed.
+- `supabase db query --linked -f supabase/migrations/20261122100000_search_weekly_view.sql`,
+  then the probe in `supabase/manual/20261122_search_weekly_view_probe.sql` (#86).
+- The Anthropic console: this month's tutor spend against the $10 cap (item 5).
 
 ## Decisions taken 2026-11-22 (founder: "kararlar sana ait olsun")
 
