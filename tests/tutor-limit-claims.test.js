@@ -21,6 +21,12 @@ const SURFACES = [
 const stripComments = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 
 describe('AI tutor limit claims', () => {
+  it("the app's TUTOR_FREE_DAILY_LIMIT is the server's free cap", () => {
+    const m = read('src/app.jsx').match(/^const TUTOR_FREE_DAILY_LIMIT = (\d+);/m);
+    expect(m, 'src/app.jsx declares TUTOR_FREE_DAILY_LIMIT at top level').toBeTruthy();
+    expect(Number(m[1])).toBe(freeLimit);
+  });
+
   it('Pro is never called unlimited next to the tutor or the AI limit', () => {
     for (const p of SURFACES) {
       const body = stripComments(read(p));
