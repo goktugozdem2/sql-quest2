@@ -27,6 +27,16 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### the modal stops warning of a currency switch that will not happen (M-06, part 1)
+
+- **Claimed** 2026-11-22 · **Shipped** on merge; the line follows the existing `checkoutSessions` flag (off → the warning returns) · **Read** 2026-12-20.
+- **Change** "Billed in USD; your local currency may be shown at checkout." renders only when checkout goes through a Payment Link (`currencyLine`, src/utils/checkout-session.js). With `checkoutSessions` on (since 2026-09-30) the session is created with `adaptive_pricing: { enabled: false }` (create-checkout-session/index.ts) and charges USD, so the warning was untrue there. The session request still falls back to a Payment Link on failure — 4 of 61 checkout clicks in 60 days to 11-22 — and those buyers go without the warning, as every link buyer did before 09-20. **Not changed:** the card-statement line ("Billed by Datrick, Inc."), which waits for the founder to confirm the descriptor from a real receipt (part 2).
+- **Why** (docs/plans/monetization-ideas-2026-11-22.md, M-06): a line at the payment moment that warns of a switch that will not happen is friction; a line that does not match the statement is a dispute.
+- **Metric** `checkout_disputes` (metrics.md); guardrail `trial_funnel` step 1.
+- **Baseline** 0 disputes, 1 refund ever; `trial_funnel` step 1 as read 2026-11-22.
+- **Target** no dispute from a trial conversion through 2027-01-31; modal → trial checkout click not lower than the 30 days before.
+- **Falsification, stated in advance:** a buyer on the session path reports or disputes a non-USD charge → the premise (session = USD) is wrong; restore the line unconditionally the same day. Modal → checkout click falls by a third at n ≥ 60 viewers → not this line (it was below the plans), but read it before part 2 ships.
+
 ### company pages name question 1 in the hero (M-02)
 
 - **Claimed** 2026-11-22 · **Shipped** on merge (static pages; revert by setting `HERO_NAMES_FIRST_QUESTION = false` in scripts/build-company-pages.mjs and rebuilding, or reverting the commit) · **Read** 2026-12-20.

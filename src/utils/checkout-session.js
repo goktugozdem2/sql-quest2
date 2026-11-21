@@ -87,6 +87,24 @@ export function trialOffered({ sessionsOn, trialOn, userData } = {}) {
  * The sentence a plan button carries when the trial is on, built around the
  * price text the modal already prints ("$29/month").
  */
+// The currency line under the plans (M-06, docs/plans/monetization-ideas-
+// 2026-11-22.md). It was written on 2026-09-20 for Payment Links, where
+// Stripe's Adaptive Pricing is "Always on" and a buyer in Turkey who clicked
+// $99 met TRY 5,021.88. A server-created session (`checkoutSessions`, on
+// since 2026-09-30) is made with `adaptive_pricing: { enabled: false }`
+// (supabase/functions/create-checkout-session/index.ts) and charges USD, so
+// on that path the warning promises a switch that will not happen — friction
+// at the moment of paying. The line now shows only where it is true: when
+// checkout goes through the Payment Link. (A session request that fails
+// still falls back to the link — 4 of 61 checkout clicks in 60 days to
+// 2026-11-22 — and that rare path goes without the warning, as every link
+// buyer did before 09-20.) The card-statement line next to it is the
+// founder's to confirm from a receipt; this does not touch it.
+export const LOCAL_CURRENCY_LINE = 'Billed in USD; your local currency may be shown at checkout.';
+export function currencyLine({ sessionsOn = false } = {}) {
+  return sessionsOn === true ? null : LOCAL_CURRENCY_LINE;
+}
+
 export function trialLine(priceText) {
   const p = String(priceText || '').trim();
   if (!p) return '';

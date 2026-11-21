@@ -3156,6 +3156,18 @@ must not fall below 10% while this rises — the button must add clicks, not
 move them. Comparison, not baseline (a new surface): `pricing_link` 26.7%
 modal → plan click, `generic` 31.8% (60 days to 2026-11-22).
 
+## `checkout_disputes`
+
+What the paying surface costs us after the money (M-06, 2026-11-22): Stripe
+disputes (dashboard → Payments → Disputes; no webhook event is subscribed,
+so this is the founder's hand read until one is) and `pro_refunded`
+(`reason='stripe_webhook'`) rows, each tagged by whether the charge was a
+trial's day-7 conversion (`pro_purchase_completed {after_trial: true}` on the
+same customer) and by the reason the buyer gives. Baseline to 2026-11-22:
+**0 disputes, 1 refund ever.** The ledger rule from 2026-10-01 stands: a
+dispute from a trial conversion turns `checkoutTrial` off the same day.
+Guardrail beside it: `trial_funnel` step 1 (modal → trial checkout click).
+
 ## `trial_funnel`
 
 The 7-day card-required trial (flag `checkoutTrial`, on 2026-10-01). People

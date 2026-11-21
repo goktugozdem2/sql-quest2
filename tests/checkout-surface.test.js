@@ -23,6 +23,7 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const app = readFileSync(resolve(root, 'src/app.jsx'), 'utf8');
 
 import { PRICE_TABLE, planPrices, priceRegionFor, checkoutLinkFor } from '../src/utils/regional-price.js';
+import { currencyLine, LOCAL_CURRENCY_LINE } from '../src/utils/checkout-session.js';
 
 // The modal renders every price from src/utils/regional-price.js (2026-09-26,
 // when India got its own price). These bind the table to the prices the
@@ -85,11 +86,23 @@ describe('the price the buyer reads', () => {
     }
   });
 
-  it('warns that checkout may show a local currency', () => {
+  it('warns of a local currency only on the Payment Link path (M-06)', () => {
     // Adaptive Pricing is "Always on" for Payment Links, so a TRY buyer
-    // clicking $99 lands on TRY 5,021.88. The modal says so first.
-    expect(app).toMatch(/data-testid="billed-currency"/);
-    expect(app).toMatch(/Billed in USD; your local currency may be shown at checkout/);
+    // clicking $99 lands on TRY 5,021.88 — the modal says so first. A
+    // Checkout Session is created with Adaptive Pricing off and charges USD,
+    // so with `checkoutSessions` on the warning would be untrue.
+    expect(currencyLine({ sessionsOn: false })).toBe('Billed in USD; your local currency may be shown at checkout.');
+    expect(LOCAL_CURRENCY_LINE).toBe(currencyLine({ sessionsOn: false }));
+    expect(currencyLine({ sessionsOn: true })).toBeNull();
+    expect(currencyLine()).toBe(LOCAL_CURRENCY_LINE);
+    const at = app.indexOf('data-testid="billed-currency"');
+    expect(at).toBeGreaterThan(-1);
+    const around = app.slice(at - 300, at + 300);
+    expect(around).toContain("currencyLine({ sessionsOn: window.FF?.feature?.('checkoutSessions') === true }) && (");
+    expect(app, 'the literal warning is back in the modal, unconditional').not.toMatch(/>\s*Billed in USD; your local currency may be shown at checkout\.\s*</);
+    // The premise, read from the server: the session path really is USD.
+    const fn = readFileSync(resolve(root, 'supabase/functions/create-checkout-session/index.ts'), 'utf8');
+    expect(fn).toContain('adaptive_pricing: { enabled: false }');
   });
 
   it('names the entity on the card statement', () => {
