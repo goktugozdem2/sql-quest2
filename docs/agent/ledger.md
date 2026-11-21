@@ -27,6 +27,16 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### no tenth-solve ask in front of the quota wall
+
+- **Claimed** 2026-11-22 · **Shipped** on merge (no flag; follows `freeQuota`) · **Read** 2026-12-20.
+- **Change** the milestone ask's tier 10 is skipped while the free quota is on (`milestoneTier`, src/utils/free-tier-boundary.js); the next unsolved open meets the quota wall, which names the reason and leads with the trial (#95). Tiers 6, 25, 50 unchanged.
+- **Why** (45 days to 2026-11-22, bots out): tier 10 shown to 65 people, **47 closed it in under 3 s (72%)**, 5 clicked a plan; tier 6: 123 people, 28 under 3 s (23%), 5 clicked. Two asks one open apart, and people swat the first.
+- **Metric** people reaching 10 solves (non-Pro): plan click within 7 days of the 10th solve (any modal reason); guardrail: trials + purchases from the same people.
+- **Baseline** 45 days: tier-10 ask 5 / 65 clicked; the quota wall's clicks counted separately (#84, #95).
+- **Target** plan clicks among 10-solvers not below the baseline sum of tier-10 + wall clicks; trials/purchases from them not lower.
+- **Falsification, stated in advance:** clicks among 10-solvers fall by more than a third at n ≥ 40 → the tier-10 ask was selling on its own; restore it.
+
 ### the first click on an empty editor runs the starter
 
 - **Claimed** 2026-11-22 · **Shipped** on merge (no flag) · **Read** 2026-12-20.

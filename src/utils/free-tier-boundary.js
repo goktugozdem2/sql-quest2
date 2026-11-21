@@ -282,3 +282,18 @@ export function withEarlyWall(goal, { flagOn = false, mockDoor = false, proMockI
   if (!flagOn || !goal || goal.id !== EARLY_WALL_GOAL_ID || !Array.isArray(goal.curriculum)) return goal;
   return { ...goal, curriculum: earlyWallCurriculum(goal.curriculum, { mockDoor, proMockId }) };
 }
+
+// ── Which solve-count ask fires (2026-11-22) ────────────────────────────────
+// The milestone ask fires once per tier: 6, 10, 25, 50 solves. With the free
+// quota on, the tenth solve is ALSO the quota's edge: the next unsolved open
+// meets the wall, whose modal names the reason and (since 11-22) leads with
+// the trial. 45 days to 11-22: the tier-10 ask was closed in under 3 s by
+// 47 of 65 people (72%; tier 6: 23%) and clicked by 5 — two asks a click
+// apart, and people swat the first. With the quota on, tier 10 is skipped
+// and the wall is the ask; tier 6 stays (the first-session decision window).
+export function milestoneTier(solvedCount, { quotaOn = false } = {}) {
+  const n = Number(solvedCount) || 0;
+  const tier = n >= 50 ? 50 : n >= 25 ? 25 : n >= 10 ? 10 : n >= 6 ? 6 : 0;
+  if (tier === 10 && quotaOn) return 0;
+  return tier;
+}

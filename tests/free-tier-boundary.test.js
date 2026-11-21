@@ -386,7 +386,11 @@ describe('source guards — the five flags are wired, and off', () => {
   });
 
   it('nothing here touches the Easy/Medium bank or the six-solve rung', () => {
-    expect(app).toMatch(/const tier = n >= 50 \? 50 : n >= 25 \? 25 : n >= 10 \? 10 : n >= 6 \? 6 : 0;/);
+    // The ladder moved into milestoneTier (2026-11-22); the six-solve rung is
+    // untouched there — only tier 10 steps aside, and only with the quota on.
+    const ftbSrc = readFileSync(new URL('../src/utils/free-tier-boundary.js', import.meta.url), 'utf8');
+    expect(ftbSrc).toMatch(/const tier = n >= 50 \? 50 : n >= 25 \? 25 : n >= 10 \? 10 : n >= 6 \? 6 : 0;/);
+    expect(app).toMatch(/const tier = milestoneTier\(n, \{ quotaOn: ftbFlag\('freeQuota'\) \}\);/);
     expect(app).toMatch(/case 'challenge': return item\?\.difficulty === 'Hard' && !item\?\.freePreview;/);
   });
 });
@@ -447,5 +451,20 @@ describe('the cold-start gate has a door for a buyer', () => {
     for (const k of ['coldStartAnyway', 'coldStartAnywayNote']) {
       expect((i18n.match(new RegExp(`${k}:`, 'g')) || []).length, k).toBe(2);
     }
+  });
+});
+
+// 2026-11-22: with the quota on, the tenth-solve ask steps aside for the wall.
+import { milestoneTier } from '../src/utils/free-tier-boundary.js';
+describe('milestoneTier — no tenth-solve ask in front of the quota wall', () => {
+  it('quota off: 6 / 10 / 25 / 50 as before', () => {
+    expect([5, 6, 9, 10, 24, 25, 49, 50, 80].map(n => milestoneTier(n))).toEqual([0, 6, 6, 10, 10, 25, 25, 50, 50]);
+  });
+  it('quota on: tier 10 is skipped, the others stay', () => {
+    expect([6, 9, 10, 11, 24, 25, 50].map(n => milestoneTier(n, { quotaOn: true }))).toEqual([6, 6, 0, 0, 0, 25, 50]);
+  });
+  it('the app asks through it, with the live quota flag', () => {
+    const app = readFileSync(new URL('../src/app.jsx', import.meta.url), 'utf8');
+    expect(app).toMatch(/const tier = milestoneTier\(n, \{ quotaOn: ftbFlag\('freeQuota'\) \}\);/);
   });
 });

@@ -45,7 +45,7 @@ import { QUESTIONS as READINESS_QUESTIONS, READINESS_SKILLS, READINESS_RECORD_KE
 import { paidWallFor, isColdStart, practiceSolves, previewSwapFor } from './utils/paid-wall.js';
 import { priceRegionFor, planPrices, checkoutLinkFor } from './utils/regional-price.js';
 import { wantsTrial, buildCheckoutSessionBody, requestCheckoutSession, launchWithFallback, checkoutInFlight, warmCheckoutSession, CHECKOUT_REENTRY_MS, trialOffered, TRIAL_CARD_COPY, TRIAL_TERMS, quotaWallHeadline } from './utils/checkout-session.js';
-import { companySetGate, companySetFreeIds, companySetProgress, quietAskDecision, deadlineOfferFor, deadlineEventMeta, withEarlyWall, pickProMockId, FREE_MOCK_ID, quotaGate, FREE_SOLVE_QUOTA, quotaFreePaths, QUOTA_FREE_PATH_COPY } from './utils/free-tier-boundary.js';
+import { companySetGate, companySetFreeIds, companySetProgress, quietAskDecision, deadlineOfferFor, deadlineEventMeta, withEarlyWall, pickProMockId, FREE_MOCK_ID, quotaGate, FREE_SOLVE_QUOTA, quotaFreePaths, QUOTA_FREE_PATH_COPY, milestoneTier } from './utils/free-tier-boundary.js';
 import { expandStageChallenges, placementStartIndex as roadmapPlacementStartIndex } from './utils/roadmap.js';
 import { shouldEmitLockEvent, lockEventKey } from './utils/lock-events.js';
 import { shouldAskForReview, enabledReviewPlatforms, REVIEW_ASK_REASONS } from './utils/review-ask.js';
@@ -23572,7 +23572,9 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     // Stripe round trip. Excluding them was leaving money on the table for
     // a reason that hasn't been true since H11.
     const n = solvedChallenges.size;
-    const tier = n >= 50 ? 50 : n >= 25 ? 25 : n >= 10 ? 10 : n >= 6 ? 6 : 0;
+    // Tier 10 steps aside while the free quota is on — the wall one open
+    // later is the ask (src/utils/free-tier-boundary.js milestoneTier).
+    const tier = milestoneTier(n, { quotaOn: ftbFlag('freeQuota') });
     if (!tier) return;
     // Guests get a fresh guest_<timestamp> identity on every load, so a
     // user-scoped key never dedupes for them — they'd meet the modal every
