@@ -90,6 +90,21 @@ Ranked by expected effect on payers (O1: 50 a month by 12-08). Each would get a 
 9. **Brand demand** fell with mail volume (sends ~350 → 84–245 a week). A monthly "new questions for your company" note to engaged non-payers is the test — outward email, so it needs the founder's words.
 10. **The `guest_resumed` fix (#93) unlocks a real continuity read:** how many solves people bring back on day 2+, and whether a "save your progress" ask at 3 solves (88% never sign up) moves sign-ups.
 
+**Monetization ideas M-01…M-12 (2026-11-22)** — full write-ups with data, metric, falsification and test plan in `docs/plans/monetization-ideas-2026-11-22.md`; competitor read in `docs/reads/monetization-competitors-2026-11-22.md`. AGENT-NOW = ships without the founder; FOUNDER = price, Stripe setting, deploy, migration or outward email.
+
+11. **M-01 [FOUNDER] The day-7 charge gets a self-serve fix** — 2 of 4 trials that reached day 7 failed the first charge (1 lost, $99); the failure email says "reply to me". Invoice link in the email + a past_due line in the app + Stripe Smart Retries. Also: check one possible double subscription by hand.
+12. **M-02 [AGENT-NOW] Company pages hand off to the app** — the best money door (2.3% trial-or-paid per arrival) loses 81% of landing people before the app; hero CTA names question 1.
+13. **M-03 [FOUNDER] India pays once, not by subscription** — a third of modal viewers; trial sessions start 1 of 8; the RBI e-mandate fails off-session charges. A $39 one-payment 12-month pass for IN only.
+14. **M-04 [AGENT-NOW] A "Try Pro free" header button for free users at 3+ solves** — person-opened modals click 27–32% vs 3–13% for automatic asks; free users have no Pro button in the header.
+15. **M-05 [FOUNDER] Cancellation reasons + one save offer in the Stripe portal** — 4 of 8 matured trials cancelled, reasons unknown. Dashboard only.
+16. **M-06 [AGENT-NOW] Two untrue lines on the paying surface** — "Datrick, Inc." vs the SQLQUEST.APP descriptor; a local-currency warning the session path no longer needs. Founder confirms the descriptor from a receipt.
+17. **M-07 [AGENT-NOW, A/B] The quota wall asks once a day, then waits inline** — 53% of wall people saw the modal 3+ times.
+18. **M-08 [FOUNDER] The trial button defaults to annual (A/B)** — annual trial sessions start trials at 50% vs 25% monthly; clicks are 78% monthly.
+19. **M-09 [FOUNDER] Card-free trial** — the 11-22 money-read proposal; build after M-01 (same add-a-card link).
+20. **M-10 [AGENT-NOW] Trial ending line from 48 h before the charge** — date, price, what Pro still holds; fewer surprise charges and disputes.
+21. **M-11 [FOUNDER] Expired Stripe sessions get their recovery link** — 23 expired / 30 d, 7 abandon mails; Stripe `after_expiration.recovery`.
+22. **M-12 [AGENT-NOW] The wall's sub-line names the person's company** — small population (≤ 20 of 142 wall people); cheap.
+
 ## The activation read of 2026-11-22 (what the four PRs above answer)
 
 New people 11-08 → 11-21, bots and crawler window sizes out: 394 → 271
