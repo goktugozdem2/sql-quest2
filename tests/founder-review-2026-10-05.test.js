@@ -5,8 +5,8 @@
 //   4. /app spoke of play and boss battles; the demo goal was "Fundamentals"
 //   5. Capital One's numbers (frozen page — on 2026-10-12)
 //   6. a Pro mock button that did not say Pro
-// Capital One is frozen until its 10-12 read; its items are in
-// docs/plans/capital-one-2026-10-12.md and FROZEN below lists it.
+// Capital One was frozen until its read; the freeze lifted 2026-11-22 and
+// the page is checked here like every other (FROZEN is empty).
 import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -23,7 +23,7 @@ const cardsOf = html => [...html.matchAll(/<a href="\/app\/\?[^"]*challenge=(\d+
   .map(m => ({ id: Number(m[1]), blurb: ([...m[2].matchAll(/<p[^>]*>([\s\S]*?)<\/p>/g)].map(x => x[1].replace(/<[^>]+>/g, ''))[1] || '') }));
 
 describe('1 — a card says what a question measures, never how to solve it', () => {
-  it('no card blurb on a company page names a solution method (Capital One frozen until 10-12)', () => {
+  it('no card blurb on a company page names a solution method', () => {
     const bad = [];
     for (const f of companyPages()) {
       if (FROZEN.has(f)) continue;
@@ -45,9 +45,18 @@ describe('1 — a card says what a question measures, never how to solve it', ()
     expect(n).toBeGreaterThanOrEqual(60);
   });
 
-  it('only Capital One is frozen, and its 10-12 plan carries the change', () => {
-    expect([...FROZEN]).toEqual(['capital-one-sql-interview.html']);
-    expect(read('docs/plans/capital-one-2026-10-12.md')).toMatch(/node scripts\/card-skill-blurbs\.mjs/);
+  it('no page is frozen — Capital One is checked like the rest since 2026-11-22', () => {
+    expect([...FROZEN]).toEqual([]);
+  });
+
+  it('Capital One: one number in the hero, both mock buttons say Pro', () => {
+    const html = read('src/capital-one-sql-interview.html');
+    expect(html).toContain('25 Capital One questions, 2 timed mocks');
+    expect(html).toMatch(/Start the 70-minute screen mock · Pro →/);
+    expect(html).toMatch(/Or the 60-minute live SQL round · Pro →/);
+    const body = html.replace(/<!--[\s\S]*?-->/g, '');
+    expect(body, 'the Banking-track numbers are gone').not.toMatch(/57 challenges|27 on FDIC|other nineteen|See the 6 Challenges|6 card-data challenges/);
+    expect(body, "the cards' solution-shape intro is gone").not.toMatch(/each blurb is the bank's own solution shape/);
   });
 });
 
@@ -59,7 +68,7 @@ describe('2 — the dialect is said', () => {
     expect(DIALECT_ROWS.map(r => r.cells[0]).join(' ')).toMatch(/julianday/);
   });
 
-  it('the app renders it on every challenge, and every company page but the frozen one says it', () => {
+  it('the app renders it on every challenge, and every company page says it', () => {
     const app = read('src/app.jsx');
     expect(app).toContain('data-testid="dialect-notes"');
     expect(app).toContain('{DIALECT_ROWS.map(r => (');
@@ -103,7 +112,7 @@ describe('4 — one story: interview practice', () => {
 });
 
 describe('6 — a Pro button says Pro', () => {
-  it('every mock link on a company page (but the frozen one) is labelled Pro', () => {
+  it('every mock link on a company page is labelled Pro', () => {
     const bad = [];
     for (const f of companyPages()) {
       if (FROZEN.has(f)) continue;

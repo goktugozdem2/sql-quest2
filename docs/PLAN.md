@@ -32,5 +32,9 @@ traffic comes mostly from company and trap pages.
 ## Phase 3: Infrastructure
 6. Bing Webmaster pipeline. Ingest into the GSC table with an `engine` column
    ('google' or 'bing'). Backfill existing rows. Tests and dry-run mode.
+   **Done differently (2026-11-22):** Bing has its own tables since 10-01 and
+   its query/page rows are weekly, Google's daily — one table would mix
+   grains. `public.search_weekly` joins them at the week instead
+   (migration 20261122100000, BACKLOG item 9, #86).
 7. Test coverage. Auth, payment webhooks, challenge evaluation, AI tutor calls.
    Tests only, no behavior changes.

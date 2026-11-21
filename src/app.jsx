@@ -68,6 +68,7 @@ import { DIALECTS, DIALECT_ROWS } from './utils/dialect-notes.js';
 import { modalLayoutArm, plansFirst } from './utils/modal-layout.js';
 import { softGateReason, paywallMomentCopy, SOFT_GATE_ACTION_LABEL, SOFT_GATE_TOAST_MS } from './utils/paywall-moments.js';
 import { botSignals, botDecision } from './utils/bot-signals.js';
+import { bootTiming } from './utils/boot-timing.js';
 import { dueRetrievals, pickRetrievalChallenge, recordRetrieval, dailyQuota, MAX_DUE_SHOWN } from './utils/spaced-retrieval.js';
 import { computeRecap, shouldShowRecap } from './utils/session-recap.js';
 import { getAnonId } from './utils/anon-id.js';
@@ -93,6 +94,13 @@ import { explainsApproach, approachSubmittedEvent } from './utils/mock-approach.
 // parameter goes through canonicalSectorId, so the old spellings still
 // resolve here, and vercel.json 301s the three legacy links to the English
 // ones. tests/sector-param.test.js pins both halves.
+// The AI tutor's free-plan daily cap, as the server sets it
+// (supabase/functions/ai-tutor DAILY_LIMITS.free; tests/tutor-limit-claims.test.js
+// binds the two). Before 2026-11-22 the guest limit message read a
+// `DAILY_LIMITS` that exists only on the server: a ReferenceError at the
+// moment a guest met the cap.
+const TUTOR_FREE_DAILY_LIMIT = 20;
+
 const SECTOR_PARAM_ALIASES = {
   finance: 'finans', 'real-estate': 'gayrimenkul', realestate: 'gayrimenkul',
   manufacturing: 'uretim', ecommerce: 'e-ticaret', 'e-commerce': 'e-ticaret',
@@ -7321,7 +7329,12 @@ function SQLQuest() {
             return `${band}:${w}x${window.innerHeight}`;
           } catch (_) { return null; }
         })(),
-        solvedCount: solvedChallenges.size,
+        // An event that passes its own solvedCount keeps it (2026-11-22).
+        // This shared field is read from the render's closure, which is stale
+        // whenever the event fires before React applies a load: every one of
+        // 755 guest_resumed rows in 60 days said 0, though a guest is only
+        // resumed when its blob holds progress.
+        solvedCount: Number.isFinite(metadata.solvedCount) ? metadata.solvedCount : solvedChallenges.size,
         attemptCount: challengeAttempts.length,
         isGuest: !!isGuest,
       };
@@ -7827,6 +7840,8 @@ function SQLQuest() {
       localStorage.setItem('sqlquest_app_opened_day', today);
       trackActivationEvent('app_opened', {
         returning: !!localStorage.getItem('sqlquest_user'),
+        // Real-user boot timing (src/utils/boot-timing.js, metric app_boot).
+        ...bootTiming({ perf: window.performance, nav: navigator, win: window }),
       });
     } catch (_) {}
   }, [isSessionLoading]);
@@ -11381,7 +11396,7 @@ function SQLQuest() {
   // penalty), and the hint leads with what is wrong with THEIR current query
   // when they have one — the same diagnosis the challenge page uses — before
   // the authored line.
-  const useInterviewHint = () => {
+  const takeInterviewHint = () => {
     setInterviewHintConfirm(false);
     setInterviewHintsUsed([...interviewHintsUsed, interviewQuestion]);
     setShowInterviewHint(true);
@@ -17800,74 +17815,16 @@ CRITICAL RULES:
       if (rc >= 3) unlockAchievement('referral_3');
       if (rc >= 10) unlockAchievement('referral_10');
       
-      // Check if there's a pending referral to process. Two paths:
-      //
-      //   1. Same-device fast path — referrer's account exists in this
-      //      browser's localStorage. We can grant XP locally + sync.
-      //      (This is the only path the legacy implementation supported.)
-      //
-      //   2. Cross-device path — referrer doesn't exist in localStorage
-      //      because they signed up on a different device. We fire a
-      //      'signup' event to the track-referral Edge Function which
-      //      looks up personal_ref_code in public.users (cross-device
-      //      truth) and credits the referrer server-side. The new user
-      //      still gets their XP locally for immediate feedback.
-      const pendingReferrer = localStorage.getItem('sqlquest_referrer');
-      if (pendingReferrer && pendingReferrer !== code) {
-        const processReferral = async () => {
-          try {
-            // 1. Same-device fast path
-            // Always false since the same-device path was removed below; the
-            // server still receives it, so `matched_locally` in the signup
-            // event stays a readable series across the change.
-            const foundLocally = false;
-            // The same-device fast path is GONE (2026-09-08). It matched an
-            // inbound code by re-deriving every locally-saved username's code
-            // with generatePersonalRefCode — which the database no longer
-            // agrees with, since codes are assigned rather than derived. Left
-            // in place it would simply never match, silently, which is worse
-            // than not being there.
-            //
-            // It also awarded 250 XP to both sides from the client and wrote
-            // it back with saveUserData. That is the same shape as the
-            // auto-renew Pro grant removed on 2026-09-07: the client deciding
-            // someone had earned something. The cross-device path below is
-            // authoritative — it fires the signup event and the server
-            // credits the referrer — so nothing is lost but the local mirror.
-            // 2. Cross-device path — always fire the signup event so the
-            //    server has authoritative attribution. If we already
-            //    matched locally, the server insert is the same data;
-            //    duplicate inserts are deduped by the Edge Function's
-            //    per-IP/per-ref window. If we didn't match locally,
-            //    this is the only place the referrer learns about the
-            //    signup at all.
-            try {
-              const SUPABASE_URL = 'https://abmgtjafghpupaqsjnwe.supabase.co';
-              const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFibWd0amFmZ2hwdXBhcXNqbndlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg5MzIzMjMsImV4cCI6MjA4NDUwODMyM30.8KS-UKN1r8YANggQ9HqsQmSHY95ghRL1Oq_d5LO19y4';
-              await fetch(`${SUPABASE_URL}/functions/v1/track-referral`, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  apikey: SUPABASE_ANON_KEY,
-                  Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-                },
-                body: JSON.stringify({
-                  ref_code: pendingReferrer,
-                  event_type: 'signup',
-                  username,
-                  metadata: {
-                    matched_locally: foundLocally,
-                    source: 'app_signup',
-                  },
-                }),
-                keepalive: true,
-              });
-            } catch(_) { /* tracking failure must never block the signup flow */ }
-          } catch(e) { console.error('Referral processing error:', e); }
-          localStorage.removeItem('sqlquest_referrer');
-        };
-        processReferral();
-      }
+      // The pending-referral block that sat here is gone (2026-11-22). Its
+      // `pendingReferrer !== code` named a variable the 2026-09-08 referral
+      // change deleted, so from that day every registered account's session
+      // load in a browser holding `sqlquest_referrer` (any ?ref= click)
+      // threw a ReferenceError here, at its last statement: the state had
+      // loaded, but the sign-in form was never cleared and a save recovery
+      // logged save_recovery_failed after it had succeeded. Found by the
+      // first lint over app.jsx (no-undef). Signup attribution lives in
+      // the saveUserData hook (track-referral 'signup' within 60 s of
+      // createdAt, 30-day freshness), which kept working throughout.
     }
   };
 
@@ -21507,7 +21464,7 @@ Do NOT force the sector if the user asks a generic question (e.g. "what does GRO
           // Guest hit limit — prompt sign-up for more calls
           setSignupPromptReason('ai_limit');
           setShowSignupPrompt(true);
-          return `**AI Limit Reached**\n\nCreate a free account to get ${DAILY_LIMITS?.free || 20} AI tutor calls per day!`;
+          return `**AI Limit Reached**\n\nCreate a free account to get ${TUTOR_FREE_DAILY_LIMIT} AI tutor calls per day!`;
         }
         if (data.plan === 'free') {
           // Open Pro Modal with rate_limit context
@@ -22709,6 +22666,9 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     
     const script = document.createElement('script');
     script.src = 'https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js';
+    // SRI, like every CDN tag in app.html (tests/cdn-pins.test.js).
+    script.integrity = 'sha384-KsfptB549CXfbfsdxZmPo2PlmgCyJ+RNqHTQE1Gj45t3p4DaA1QbZYVyqlni4pOO';
+    script.crossOrigin = 'anonymous';
     script.onload = () => {
       initSQL();
     };
@@ -30843,7 +30803,7 @@ RULES:
                         {interviewHintConfirm && !practiceMode ? (
                           <span className="flex items-center gap-2 text-sm" data-testid="interview-hint-confirm">
                             <span className="text-yellow-300">{i18n_t('practice', 'hintConfirmQ', { n: Math.floor((currentQ.points || 0) * 0.15) })}</span>
-                            <button onClick={useInterviewHint} className="px-3 py-1.5 bg-yellow-500/30 hover:bg-yellow-500/40 border border-yellow-500/50 rounded-lg text-yellow-200 text-sm font-medium">
+                            <button onClick={takeInterviewHint} className="px-3 py-1.5 bg-yellow-500/30 hover:bg-yellow-500/40 border border-yellow-500/50 rounded-lg text-yellow-200 text-sm font-medium">
                               {i18n_t('practice', 'hintConfirmYes')}
                             </button>
                             <button onClick={() => setInterviewHintConfirm(false)} className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg text-gray-300 text-sm">
@@ -30852,7 +30812,7 @@ RULES:
                           </span>
                         ) : (
                         <button
-                          onClick={() => (practiceMode ? useInterviewHint() : setInterviewHintConfirm(true))}
+                          onClick={() => (practiceMode ? takeInterviewHint() : setInterviewHintConfirm(true))}
                           disabled={hintsTakenHere >= questionHints.length}
                           data-testid="interview-hint"
                           className="px-3 py-1.5 bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/30 rounded-lg text-yellow-400 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
