@@ -246,13 +246,13 @@
   </url>
   <url>
     <loc>https://sqlquest.app/sql-practice-comparison/</loc>
-    <lastmod>2026-10-03</lastmod>
+    <lastmod>2026-11-20</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.95</priority>
   </url>
   <url>
     <loc>https://sqlquest.app/best-sql-practice-sites/</loc>
-    <lastmod>2026-10-03</lastmod>
+    <lastmod>2026-11-20</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.95</priority>
   </url>
@@ -445,7 +445,7 @@
   </url>
   <url>
     <loc>https://sqlquest.app/blog/null-handling-mistakes/</loc>
-    <lastmod>2026-09-25</lastmod>
+    <lastmod>2026-11-20</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -559,7 +559,7 @@
   </url>
   <url>
     <loc>https://sqlquest.app/blog/row-number-vs-rank-vs-dense-rank/</loc>
-    <lastmod>2026-09-21</lastmod>
+    <lastmod>2026-11-20</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>

@@ -3,19 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ROW_NUMBER vs RANK vs DENSE_RANK — The Interview Question in 3 Queries | SQLQuest.app</title>
-  <meta name="description" content="The three ranking functions agree until two rows tie. Real output shown: RANK gives 5,5,7; DENSE_RANK gives 5,5,6; ROW_NUMBER forces 5,6,7 arbitrarily. Which to use for top-N, and the trap in each.">
+  <title>ROW_NUMBER vs RANK vs DENSE_RANK: Ties Explained | SQLQuest.app</title>
+  <meta name="description" content="ROW_NUMBER vs RANK vs DENSE_RANK on the same tie: RANK gives 5,5,7, DENSE_RANK 5,5,6, ROW_NUMBER 5,6,7. Which to use for top-N, and the trap in each.">
   <meta name="keywords" content="row_number vs rank, rank vs dense_rank, row_number vs rank vs dense_rank, sql ranking functions, dense_rank sql, sql rank ties, top n per group sql">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://sqlquest.app/blog/row-number-vs-rank-vs-dense-rank/">
   <meta property="og:type" content="article">
   <meta property="og:url" content="https://sqlquest.app/blog/row-number-vs-rank-vs-dense-rank/">
-  <meta property="og:title" content="ROW_NUMBER vs RANK vs DENSE_RANK — The Interview Question in 3 Queries">
-  <meta property="og:description" content="The three ranking functions agree until two rows tie. Real output shown: RANK gives 5,5,7; DENSE_RANK gives 5,5,6; ROW_NUMBER forces 5,6,7 arbitrarily">
+  <meta property="og:title" content="ROW_NUMBER vs RANK vs DENSE_RANK: Ties Explained">
+  <meta property="og:description" content="ROW_NUMBER vs RANK vs DENSE_RANK on the same tie: RANK gives 5,5,7, DENSE_RANK 5,5,6, ROW_NUMBER 5,6,7. Which to use for top-N, and the trap in each.">
   <meta property="og:image" content="https://sqlquest.app/og-image.png">
   <meta name="twitter:card" content="summary_large_image">
   <script type="application/ld+json">
-  {"@context":"https://schema.org","@type":"Article","headline":"ROW_NUMBER vs RANK vs DENSE_RANK — The Interview Question in 3 Queries","description":"The three ranking functions agree until two rows tie. Real output shown: RANK gives 5,5,7; DENSE_RANK gives 5,5,6; ROW_NUMBER forces 5,6,7 arbitrarily. Which to use for top-N, and the trap in each.","url":"https://sqlquest.app/blog/row-number-vs-rank-vs-dense-rank/","datePublished":"2026-08-02","dateModified":"2026-08-02","author":{"@type":"Organization","name":"SQL Quest","url":"https://sqlquest.app/"},"publisher":{"@type":"Organization","name":"SQL Quest","logo":{"@type":"ImageObject","url":"https://sqlquest.app/og-image.png"}},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"Blog","item":"https://sqlquest.app/blog/"},{"@type":"ListItem","position":3,"name":"ROW_NUMBER vs RANK vs DENSE_RANK","item":"https://sqlquest.app/blog/row-number-vs-rank-vs-dense-rank/"}]}}
+  {"@context":"https://schema.org","@type":"Article","headline":"ROW_NUMBER vs RANK vs DENSE_RANK: Ties Explained","description":"The three ranking functions agree until two rows tie. Real output shown: RANK gives 5,5,7; DENSE_RANK gives 5,5,6; ROW_NUMBER forces 5,6,7 arbitrarily. Which to use for top-N, and the trap in each.","url":"https://sqlquest.app/blog/row-number-vs-rank-vs-dense-rank/","datePublished":"2026-08-02","dateModified":"2026-08-02","author":{"@type":"Organization","name":"SQL Quest","url":"https://sqlquest.app/"},"publisher":{"@type":"Organization","name":"SQL Quest","logo":{"@type":"ImageObject","url":"https://sqlquest.app/og-image.png"}},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"Blog","item":"https://sqlquest.app/blog/"},{"@type":"ListItem","position":3,"name":"ROW_NUMBER vs RANK vs DENSE_RANK","item":"https://sqlquest.app/blog/row-number-vs-rank-vs-dense-rank/"}]}}
   </script>
   <script type="application/ld+json">
   {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
