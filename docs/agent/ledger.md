@@ -27,6 +27,16 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### a syntax error gets the line that fixes it (`near "X"` read against the query)
+
+- **Claimed** 2026-11-22 · **Shipped** on merge (no flag; shows wherever the diagnosis panel does — `diagnosisHints` is on) · **Read** 2026-12-20.
+- **Change** `syntaxNearHint` in src/utils/diagnose.js puts one specific line first for a SQL syntax error, checked against the query: no TOP in SQLite → LIMIT n; a comma before FROM / WHERE / …; two commas; an unclosed '(' or quote; a query that stops mid-condition; IN without parentheses; FROM with no table; ORDER / GROUP without BY; DESC after LIMIT; a clause out of order (WHERE → GROUP BY → HAVING → ORDER BY → LIMIT, outer query only); two names in a row in SELECT; the Turkish İ / ı in a keyword (`no such column: LİMİT` was in production). No match → the old generic lines.
+- **Why** (read 2026-11-22, 09-30 → 11-21, bots out): `syntax_error` is the most common wrong-submit kind — 341 person-challenges — and the slowest to recover: **75.1%** solved within the hour, against 83–95% for every result-shape kind (only `column_set`, 69.7%, is lower). Top SQLite tokens: near WHERE 44, ORDER 43, FROM 27, "(" 23, a number 25.
+- **Metric** `hint_to_solve` restricted to `challenge_error_pattern.primary = 'syntax_error'`: person-challenges solved within 60 minutes.
+- **Baseline** 75.1% (n = 341, 09-30 → 11-21).
+- **Target** ≥ 82% at n ≥ 150 in the 28 days after merge.
+- **Falsification, stated in advance:** under 77% at n ≥ 150 → the line is not what stalls them; read which tokens still stall before adding rules. n < 150 by 12-20 → extend 28 days.
+
 ### four more snippets that fit the window
 
 - **Claimed** 2026-11-20 · **Shipped** on merge (founder's Go: "senin önerilerin iyi onları yap") · **Read** 2026-12-18.
