@@ -8,11 +8,14 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const app = fs.readFileSync(path.join(import.meta.dirname, '..', 'src/app.jsx'), 'utf8');
-const body = name => { const i = app.indexOf(`const ${name} = () => {`); return app.slice(i, i + 400); };
+const body = name => { const i = app.indexOf(`const ${name} = () => {`); return app.slice(i, i + 1400); };
 
 describe('activation events', () => {
   it('Run and Submit both mark the first run', () => {
-    expect(body('runChallengeQuery')).toContain("markChallengeFirstRun('run')");
+    // Since 2026-11-22 Run marks 'run' or, on an empty editor, 'starter'.
+    expect(body('runChallengeQuery')).toContain("let via = 'run';");
+    expect(body('runChallengeQuery')).toContain("via = 'starter';");
+    expect(body('runChallengeQuery')).toContain('markChallengeFirstRun(via)');
     expect(body('submitChallenge')).toContain("markChallengeFirstRun('submit')");
   });
   it('the first run is sent once per challenge', () => {

@@ -27,6 +27,16 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### the first click on an empty editor runs the starter
+
+- **Claimed** 2026-11-22 · **Shipped** on merge (no flag) · **Read** 2026-12-20.
+- **Change** a first-time opener (no solves) sees an empty editor whose placeholder reads "Start here: SELECT * FROM <table> LIMIT 5;". Run and Submit on that empty editor did **nothing** — silent no-ops on the product's two main buttons. Now Run writes the starter into the editor and runs it (`challenge_first_run {via: 'starter'}`); Submit does the same and is not graded. src/utils/starter-query.js builds the hint and parses it back, so they cannot drift.
+- **Why** (new people 11-08 → 11-21, bots out): 394 new people, 271 opened a challenge, **119 ran a query (44% of openers)**, 98 solved — the run is where the funnel leaks; once people run, 82% solve. Challenge 91, the one opener that is pre-filled, runs far more (the shipped first-screen arm: 51% ran).
+- **Metric** `open_to_first_run` (metrics.md): people who open a challenge → `challenge_first_run` (any `via`) — split `via = 'starter'` from the rest.
+- **Baseline** 44% of openers ran (119 / 271).
+- **Target** ≥ 55% of openers run; solve-after-run not below 70% (82% now — starter runs must not dilute it into nothing).
+- **Falsification, stated in advance:** openers-who-run unchanged (± 3 points) at n ≥ 200 → the dead button was not why they left; look at time-to-leave. Solve-after-run below 70% → the starter run is a dead end; keep it but add the next-step line.
+
 ### a deep link to a locked Hard opens a free Hard of the same kind
 
 - **Claimed** 2026-11-22 · **Shipped** on merge (no flag; only deep links, only at cold start, only Hard) · **Read** 2026-12-20.

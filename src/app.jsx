@@ -69,6 +69,7 @@ import { modalLayoutArm, plansFirst } from './utils/modal-layout.js';
 import { softGateReason, paywallMomentCopy, SOFT_GATE_ACTION_LABEL, SOFT_GATE_TOAST_MS } from './utils/paywall-moments.js';
 import { botSignals, botDecision } from './utils/bot-signals.js';
 import { bootTiming } from './utils/boot-timing.js';
+import { starterHintFor, starterSqlFromHint } from './utils/starter-query.js';
 import { dueRetrievals, pickRetrievalChallenge, recordRetrieval, dailyQuota, MAX_DUE_SHOWN } from './utils/spaced-retrieval.js';
 import { computeRecap, shouldShowRecap } from './utils/session-recap.js';
 import { getAnonId } from './utils/anon-id.js';
@@ -23876,7 +23877,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
       // comment it sat beside the person's own query and was submitted with
       // it (founder QA 2026-09-19, item 21). It disappears on the first key.
       const mainTable = challenge.tables?.[0] || 'table_name';
-      setChallengeStarterHint(`Start here: SELECT * FROM ${mainTable} LIMIT 5;`);
+      setChallengeStarterHint(starterHintFor(mainTable));
       setChallengeQuery('');
     } else {
       setChallengeQuery(savedQuery);
@@ -24757,15 +24758,30 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
   };
 
   const runChallengeQuery = () => {
-    if (!db || !challengeQuery.trim()) return;
-    markChallengeFirstRun('run');
+    if (!db) return;
+    // An empty editor with a starter shown (a first-time opener sees "Start
+    // here: SELECT * FROM t LIMIT 5;" as the placeholder) used to make Run do
+    // nothing at all — the first click on the product's main button was dead.
+    // 2026-11-22: 56% of people who opened a challenge in the two weeks to
+    // 11-21 never ran a query. Run now writes the starter into the editor and
+    // runs it, so the first click shows the table.
+    let sql = challengeQuery;
+    let via = 'run';
+    if (!sql.trim()) {
+      const starter = starterSqlFromHint(challengeStarterHint);
+      if (!starter) return;
+      sql = starter;
+      via = 'starter';
+      setChallengeQuery(starter);
+    }
+    markChallengeFirstRun(via);
     // Track execution time so user gets "Ran in Xms" confirmation.
     // Before this, re-running a query with identical output showed no visual
     // change, leaving users confused whether the Run button actually fired.
     // Real user feedback from a 1:1 SQL teaching session.
     const startTime = performance.now();
     try {
-      const result = db.exec(challengeQuery);
+      const result = db.exec(sql);
       const duration = Math.round(performance.now() - startTime);
       if (result.length > 0) {
         setChallengeResult({ columns: result[0].columns, rows: result[0].values, error: null });
@@ -24775,17 +24791,21 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
       setChallengeRunAt(Date.now());
       setChallengeRunMs(duration);
       setChallengeStatus(null);
-      addToHistory(challengeQuery, true, 'challenge');
+      addToHistory(sql, true, 'challenge');
     } catch (err) {
       setChallengeResult({ columns: [], rows: [], error: err.message });
       setChallengeRunAt(Date.now());
       setChallengeRunMs(Math.round(performance.now() - startTime));
       setChallengeStatus(null);
-      addToHistory(challengeQuery, false, 'challenge');
+      addToHistory(sql, false, 'challenge');
     }
   };
 
   const submitChallenge = () => {
+    // Submit on the empty editor of a first-time opener runs the starter the
+    // way Run does — shown, not graded (a SELECT * would be marked wrong
+    // before the person has written a line). 2026-11-22.
+    if (db && currentChallenge && !challengeQuery.trim() && starterSqlFromHint(challengeStarterHint)) { runChallengeQuery(); return; }
     if (!db || !challengeQuery.trim() || !currentChallenge) return;
     markChallengeFirstRun('submit');
     setChallengeSubmitAt(Date.now());
