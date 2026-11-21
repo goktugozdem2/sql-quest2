@@ -6,6 +6,76 @@ work order is `docs/PLAN.md`; the founder's open feature list is
 `docs/plans/backlog-2026-09-21.md`. Numbers were measured on the date above —
 re-measure before acting on one.
 
+## Progress — the autonomous run from 2026-11-22
+
+The founder's instruction (2026-11-22): keep developing without asking,
+close the open items one by one, keep this file current. One item, one
+branch, one PR; nothing merges without the founder's go. Each item below
+carries its own **DONE** / **Status** line.
+
+| # | item | PR | state |
+|---|---|---|---|
+| 6 | Capital One read + page | #77 | open |
+| 11 | CDN pins + SRI | #78 | open |
+| 28 | landing rows: crawler fingerprints | #79 | open |
+| 19 | stale root copies | #80 | open |
+| 22 | root notes → docs/archive | #81 | open |
+| 14 | lint app.jsx (2 live ReferenceErrors) | #82 | open |
+| 23 | build leaves the tree clean | #83 | open |
+| — | overdue ledger reads (5) + this table | #84 | open |
+| 10 | measure /app boot before splitting data.js | #85 | open |
+| 12 | users_public readers | #84 | audited, no action |
+| 9 | Google + Bing view (`search_weekly`) | #86 | open — founder applies the migration |
+| 5 | tutor spend | #84 | volume read; dollars in the console (founder) |
+| 20 | inline mirrors | — | already removed |
+| 21 | lapsed-pro held until its copy is rewritten | #87 | open — founder deploys |
+| 13 | resend-webhook signature, executed | #88 | open — founder deploys |
+| 24 | CLAUDE.md: five sections to the archive | #89 | open |
+| 13 | account-password, executed | #91 | open |
+| 29 | (new) one SHA-256 for passwords | #91 | written up — founder's call |
+| 17 | Quiz JSON-LD on question pages | — | closed, not doing (no rich result for SQL) |
+| 15 | quota wall checked in a real browser (smoke) | #92 | open |
+| — | `guest_resumed.solvedCount` was 0 on all 755 rows | #93 | open |
+| — | syntax errors get the line that fixes them | #94 | open |
+| idea 1 | quota wall headline says the trial | #95 | open |
+| idea 3 | column mismatch gets one fix line | #96 | open |
+| 8 | Google brand searches | #84 | read: demand, not ranking |
+| — | P1 reads: diff panel FLAT, tutor HIT/MISS, picker MISS | #84 | written |
+| — | `weakSkillNext` off (its falsification fired) | #90 | open |
+| 16 | faq_open / scroll_depth | — | already fixed |
+| 7 | Bing question pages | — | superseded by #72 |
+
+Founder decisions surfaced, not taken: the free quota's 10-09 rule fired
+(2 < 3 → quota to 20) and was never asked; the session-token cut (item 1);
+the Stripe endpoint's `setup_intent.setup_failed` subscription (item 2).
+
+## Decisions taken 2026-11-22 (founder: "kararlar sana ait olsun")
+
+| Decision | Data | Next read |
+|---|---|---|
+| **Free quota stays at 10.** The 10-09 rule (2 < 3 → move to 20) is retired, not executed. | Since 09-26: 141 met the wall, 18 clicked (12.8%), 5 trials + 1 sale within 7 days — the wall is the surface that sells. Moving it to 20 would halve how many reach it. | quota_wall, 2026-12-20 |
+| **`weakSkillNext` off** (#90). | Its own falsification: take rate 40.8% → 17.3% (29.3% → 15.7% under 10 solves). | — |
+| **`diagnosisHints` stays on.** The written revert is not taken. | FLAT (84.9% vs 84.9%): no cost, no gain; the list it would restore says less. The rule's useful half — "read which kinds stall" — is done: `syntax_error` (75.1%) and `column_set` (69.7%) stall; #94 answers the first. | syntax claim, 12-20 |
+| **Activation flag queue paused** (rows 3, 6, 7). | Row 3 reaches ~1.5 goal starters a week (12 in 8 weeks); rows 6–7 add questions before the first solve while `first_solve_10m` sits at its long-run ~13%. Work goes to the surfaces people actually reach: the challenge list, the quota wall, company pages. | revisit 12-20 |
+| **No second AI-comparison page, no next trap batch, no blog exit.** | /vs-chatgpt/ 10 impressions; trap pages 352 / 500; blog 7 practice clicks — all pre-registered falsifications. | — |
+
+Merging: the agent's merge call is refused by the session's permission classifier; PRs wait for the founder's merge (or a permission rule).
+
+## Ideas — proposed 2026-11-22, each from a number read today
+
+Ranked by expected effect on payers (O1: 50 a month by 12-08). Each would get a ledger claim when built.
+
+1. **[BUILT — #95] Trial-first at the quota wall.** The wall sells (12.8% click) and the trial is how people buy (9 trials, most sales after a trial). Make "Start 7 days free" the wall modal's primary button, the plans second. Metric `quota_wall` trial starts per person; target 2× in 28 days.
+2. **[PARKED 11-22 — the door is too small] A free first question of the Capital One mock.** Measured: ~3 clicks a month on the page's mock buttons, so even a 10× lift is a handful of people; the mock engine change is not worth its risk yet. Revisit if the Capital One page's clicks (#77) grow. 0 Pro modals from the Capital One / trap-page mock links in 28 days, 3 clicks on the page's mock buttons — the mock is a locked door with no window. Let question 1 of the 70-minute mock run free, then the modal (`mock_link`). Capital One is 2 of the first 3 payers.
+3. **[BUILT — #96] `column_set` gets its own line** (69.7% recovery, the weakest kind): name the extra / missing column against the expected header (`SELECT *` → list them). Same pattern as #94.
+4. **[PARKED 11-22 — measured small] Count AI-grounded impressions.** Measured: chat-shaped queries are ≤ 38 impressions per page in 28 days (the query explainer, the trap pages, two blog posts) and a crude classifier mixes in real Turkish searches; not worth a metric yet. Original idea: GSC query slices for trap and company pages are chat turns ("давай", "rispondi", pasted exam questions). A weekly count of chat-shaped queries per page (`ai_grounded_impressions`) tells which pages assistants retrieve — the channel two payers came through — and where an answer-first summary would be quoted.
+5. **[READ 11-22 — hold, re-read 12-20] Company-set guardrail split.** Split done: Capital One / Revolut arrivals (gated) 45 people → 13 solved one, **1 reached six (2.3%)**, 10 met the set wall, 1 clicked, 1 trial-or-paid; every other company 216 → 42 → **16 (7.4%)**. The gated group reaches six less, but 1 / 44 against 7.4% is inside noise (Fisher p ≈ 0.25) and the gate has sold once. No money change on that n. Original idea: Reach-6 fell to 5.8% (12.4% before). Split by "met the set wall" before touching the gate; if the wall is the cost, open 5 of the Capital One set instead of 3 (that set's arrivals are the most valuable).
+6. **Tutor ladder: bypass at 52%.** Half of Help opens skip to the answer. A/B rung 2 (the clause) as the opener for people who bypassed before — keep the 72% open→solve.
+7. **Password hashing to PBKDF2 on next sign-in** (item 29): dual-scheme, account-login re-hashes after a successful check. Defence in depth; no user-visible change.
+8. **Split data.js** only if `app_boot` (#85) shows `dataJsMs` ≥ 40% of boot at p75 in a band (read ~12-06).
+9. **Brand demand** fell with mail volume (sends ~350 → 84–245 a week). A monthly "new questions for your company" note to engaged non-payers is the test — outward email, so it needs the founder's words.
+10. **The `guest_resumed` fix (#93) unlocks a real continuity read:** how many solves people bring back on day 2+, and whether a "save your progress" ask at 3 solves (88% never sign up) moves sign-ups.
+
 ## P0 — security and money
 
 1. **Any account's data can still be overwritten with the public anon key.**
@@ -22,6 +92,8 @@ re-measure before acting on one.
    plan click). The first trial and its day-7 charge must be checked by hand
    (earliest 2026-10-08). If a trial conversion is disputed, `checkoutTrial`
    goes off the same day (ledger rule).
+   **Status 2026-11-22:** 9 trials started through the webhook; checked by
+   hand per trial in the payer reads. Open only as a watch item.
 4. **The modal → checkout step is still the leak.** Milestone ask: 178
    shown → 14 clicked (7.9%, up from 3.4%), but 2 paid in 30 days. The plan
    mix is 19 monthly / 2 annual choosers. There is no single document of the
@@ -32,11 +104,19 @@ re-measure before acting on one.
    `docs/agent/metrics.md` and the code. **`docs/funnel.md` written
    2026-10-06** (PLAN item 1), with a new server-side stage 4
    (`pro_checkout_started`); the leak itself is PLAN item 2.
+   **Status 2026-11-22:** the `modalPlansFirst` A/B reads 0.91× control at
+   100 / 110 viewers (ledger interim) — the fold is not the friction; the
+   Stripe-step fix of 11-20 (#70) is the next thing to read.
 5. **The AI tutor runs on a $10/month workspace.** The live nudge reaches
    browsers since 2026-10-03 (it never did before — CORS); ~100 wrong submits
    a day, capped at two nudges per challenge. A spend limit took the tutor
    down for three days on 2026-09-27. Check spend weekly until a month of
    data exists.
+   **Status 2026-11-22:** `ai_usage` holds steady at ~200 calls a week for
+   six weeks (178–283; ~65% are `#nudge` calls), 45–55 people a week, on
+   `claude-sonnet-5-5`. The dollars are only in the Anthropic console: the
+   founder checks the month's spend against the $10 cap there — at this
+   volume on this model the cap may be close.
 
 ## P1 — the pages that bring buyers
 
@@ -49,9 +129,19 @@ re-measure before acting on one.
    the never-crawled sitemap URLs, `bing_url_status`, 2026-10-01). Bing sends
    about as much traffic as Google. The automatic submitter can re-send them
    from Monday 2026-10-12 (14-day cooldown). Recount on 10-08.
+   **Superseded 2026-11-20** (#72): the 307 question pages carry `bingbot`
+   noindex, follow — they leave Bing's index on purpose. Closed.
 8. **Google brand searches fell from 2026-09-27** (homepage landers from
    Google 127 → 21 week on week). Not explained yet; read `gsc_daily` by query
    before changing any page.
+   **Read 2026-11-22** (`gsc_daily` query slice, Friday weeks): not a ranking
+   loss — brand (`sql ?quest`) position went 7.9 (Sep 1–26) → 2.6 after.
+   Fewer people search the name: brand impressions 99–177 a week in
+   September → 22–63 in October–November, brand clicks 47–56 → 5–28.
+   Non-brand visible clicks held (11–25 a week). Same weeks, mail sent fell
+   ~350 → 84–245 a week (lifetime caps and cooldowns, by design). Not
+   proven as the cause; nothing on a page explains it. Watch item, no page
+   change.
 9. **PLAN item 6 conflicts with what was built.** Bing data lives in its own
    tables (`bing_site_daily`, `bing_stats`, `bing_crawl_daily`,
    `bing_url_status`, `bing_submissions`), not in `gsc_daily` with an
@@ -78,6 +168,12 @@ re-measure before acting on one.
     filtered read through it rebuilds the table (the leaderboard cost ~39 h of
     DB time in nine days). The fix pattern exists (`leaderboard_public`);
     audit the remaining readers.
+    **Status 2026-11-22:** audited on `ops.query_stats_daily` (24 h to
+    11-21): no `users_public` sort in the top eight any more; the client
+    reads one row through `rpc/sq_load_account`. The heaviest statement now
+    is the email senders' scan of `users` (username, email, data) — 40 calls,
+    94 s a day, ~2.4 s each. Not urgent; the fix is a narrow view or a
+    column filter in the senders (edge-function deploy, founder).
 
 ## P3 — missing tests
 
@@ -112,9 +208,19 @@ re-measure before acting on one.
 16. **`faq_open` and `scroll_depth` are still discarded** — they go to
     Vercel custom events, which the Hobby plan drops. Move them to
     `[data-track]` / `track.js`.
+    **DONE before 2026-11-22** (found already fixed): both go through
+    `window.sqTrack` (`FIRST_PARTY_ONLY` on the four landing pages) — 22
+    `faq_open` and 103 `scroll_depth` rows in the 60 days to 11-18.
 17. **Question pages carry `LearningResource` + `BreadcrumbList` but no
     per-question `Quiz`/`Question` structured data**, and the template is
     frozen until 2026-10-27 (template change rule). Plan it for that date.
+    **Closed, not doing (2026-11-22):** Google's Education Q&A (Quiz)
+    markup feeds a carousel keyed to established curriculum frameworks
+    (Common Core, UK National Curriculum —
+    developers.google.com/search/docs/appearance/structured-data/education-qa);
+    nothing supports SQL interview questions as a subject, so the markup
+    would buy no result type. The question pages' snippet was already
+    rewritten under the 10-27 rule (#63).
 18. **DMARC aggregate reports bounce** (`rua` points at an address with no
     routing rule). Harmless at `p=none`; needed before tightening the policy.
 
@@ -132,6 +238,11 @@ re-measure before acting on one.
 20. **Inline mirrors in app.jsx** — the weekly report (~190 lines) and the
     skill-drill helpers duplicate `src/utils/weekly-report.js` and
     `skill-drill.js`; orphan Skill Forge helpers remain.
+    **Mostly done before 2026-11-22** (found): both mirrors are gone —
+    app.jsx imports `buildWeeklyReport` / `buildDrillQueue` from the
+    utils. What remains is a few unused imports (`DRILL_SIZE`,
+    `prioritizeBySector`, …), which the app.jsx lint (#82) can catch once
+    `no-unused-vars` is turned on for it.
 21. **`lapsed-pro` sender exists with copy that is false for part of its
     audience** ("your trial ended" to people whose access we withdrew). It is
     unscheduled; rewrite or delete before anyone runs it.
