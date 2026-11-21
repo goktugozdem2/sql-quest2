@@ -519,7 +519,7 @@ of the verifier and must never be rounded to `FLAT`.
 - **Confounds** the `mockDoor` / `goalWallEarly` flips (10-12) change who
   reaches a mock; read the share per mock and per arrival week, and note the
   flip date in the read. The free mock will dominate rows — never sum.
-- **Verdict** _pending_
+- **Verdict** **MISS — the falsification fired** (read 2026-11-22, 09-29 → 11-21, internal accounts out): `mock_approach_submitted` 1,574 written answers; the free mock (`sql-fundamentals-free`) carries almost all — 1,544 from 46 people, **8 with a note (0.5%)**; the two others 30 answers, 0 notes. As written: nobody writes in an optional box under a timer. The written next step — keep the box only where a live round grades the reasoning (`capital-one-live-sql`), take it off the timed screens — is queued as a product change.
 
 ### the plans above the fold: the Pro modal shows the price first (`modalPlansFirst`, A/B)
 
@@ -609,7 +609,7 @@ of the verifier and must never be rounded to `FLAT`.
   `tutor_nudge_failed` statuses before anything else. Spend over budget → cap
   to one nudge per challenge. `hint_to_solve` down by more than 3 points →
   the nudge is noise; turn it to the local (non-AI) nudge.
-- **Verdict** _pending_
+- **Verdict** **HIT** (read 2026-11-22, 30 days, bots out): 166 of 184 people with a wrong submit saw a nudge (**90.2%**, target ≥ 80%); `tutor_nudge_failed` 2 of ~508 attempts (0.4%: one status 0, one 429; target < 5%). `hint_to_solve` 84.9% after the 09-30 flags vs 87.4% the week before — 2.5 points down, inside the 3-point line. Spend: only the Anthropic console has it (founder; ~200 tutor calls a week, ~65% nudges).
 
 ### "Why not just ask ChatGPT?" — /vs-chatgpt/ and one homepage block
 
@@ -2390,7 +2390,7 @@ that needs its own path — the current rule is written down in the handler.
   `intentRouting` flip lands the next day on the same returning population;
   `guest_resumed` is not conditioned on intent, so the two are separable by
   `intent_captured`.
-- **Verdict** _pending_
+- **Verdict** **HIT on continuity, MISS on multi-day guest solvers — confounded** (read 2026-11-22, 30 days): 95 people resumed (target ≥ 30 in 14 days), 2 merges + 14 sign-ups carrying solves (target ≥ 5 together). Guests solving on 2+ distinct days: **17 / 30 days** (baseline 30, target 45) — but since 09-26 the free quota stops a guest at ten solves and from 11-22 the account ask moves to the third (#98), both pulling multi-day solvers out of the guest pool; the number now measures the quota, not continuity. (`guest_resumed.solvedCount` was 0 on every row until #93.)
 
 ### users writes restored: the referral trigger blocked every registered save for four days — **HIT** (7-day read; day-30 line pending)
 
