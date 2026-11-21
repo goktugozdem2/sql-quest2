@@ -290,8 +290,8 @@ describe('the free quota — ten solves, then Pro (founder, 2026-09-12, item 2)'
     expect(coldBranch).toContain('challengeGuestStartedRef.current = true;');
     expect(coldBranch).not.toContain('openChallenge(');
     // the open happens only on a later run, after the cold branch has returned
-    expect(effect.indexOf('openChallenge(target)')).toBeGreaterThan(effect.indexOf('return;', cold));
-    expect(effect.indexOf('pendingChallengeRef.current = null')).toBeGreaterThan(effect.indexOf('openChallenge(target)'));
+    expect(effect.indexOf('openChallenge(target')).toBeGreaterThan(effect.indexOf('return;', cold));
+    expect(effect.indexOf('pendingChallengeRef.current = null')).toBeGreaterThan(effect.indexOf('openChallenge(target'));
   });
 
   // 2026-09-26: with the quota spent, no surface may still call something

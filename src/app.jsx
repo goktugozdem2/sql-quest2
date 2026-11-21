@@ -42,7 +42,7 @@ import { COMPANY_ASK_KEY, COMPANY_ASK_TEST_ID, COMPANY_ASK_UNDECIDED, companyAsk
 import { GOAL_PROFILE_KEY, GOAL_GATE_RECHECK_MS, GOAL_GATE_GOALS, TARGET_LEVELS, INDUSTRIES, DEADLINE_PRESETS, industryFor, isoDateInDays, isValidDeadline, missingFields, buildGoalProfile, goalProfileStatus, shouldShowGoalGate, prefillDraft, goalGateEventPayload, readGoalProfile, GOAL_GATE_MAX_DAYS_OUT } from './utils/goal-gate.js';
 import { PLACEMENT_TIERS, placementResult, placementEventPayload, readFirstRunPlacement, seedFloorsFor, seedFloorsFromReadiness, levelForReadiness, placementFromReadiness } from './utils/placement.js';
 import { QUESTIONS as READINESS_QUESTIONS, READINESS_SKILLS, READINESS_RECORD_KEY, companySkillWeights, scoreReadiness, summarizeScores, weakestSkills, readinessRecordFrom, readReadinessRecord } from './data/readiness-questions.js';
-import { paidWallFor, isColdStart, practiceSolves } from './utils/paid-wall.js';
+import { paidWallFor, isColdStart, practiceSolves, previewSwapFor } from './utils/paid-wall.js';
 import { priceRegionFor, planPrices, checkoutLinkFor } from './utils/regional-price.js';
 import { wantsTrial, buildCheckoutSessionBody, requestCheckoutSession, launchWithFallback, checkoutInFlight, warmCheckoutSession, CHECKOUT_REENTRY_MS, trialOffered, TRIAL_CARD_COPY, TRIAL_TERMS, quotaWallHeadline } from './utils/checkout-session.js';
 import { companySetGate, companySetFreeIds, companySetProgress, quietAskDecision, deadlineOfferFor, deadlineEventMeta, withEarlyWall, pickProMockId, FREE_MOCK_ID, quotaGate, FREE_SOLVE_QUOTA, quotaFreePaths, QUOTA_FREE_PATH_COPY } from './utils/free-tier-boundary.js';
@@ -8081,6 +8081,9 @@ function SQLQuest() {
   const [challengeExpected, setChallengeExpected] = useState({ columns: [], rows: [] });
   const [challengeStatus, setChallengeStatus] = useState(null);
   const [challengeStarterHint, setChallengeStarterHint] = useState(null);
+  // A deep link to a locked Hard swapped for a free Hard preview (2026-11-22,
+  // src/utils/paid-wall.js previewSwapFor): the note above the editor.
+  const [deepLinkSwapNote, setDeepLinkSwapNote] = useState(null);
   // After Run or Submit, bring the result into view if it landed below the
   // fold — the verdict now sits right under the editor, but on a short
   // laptop screen the editor itself can reach the bottom edge (founder QA
@@ -23703,6 +23706,18 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
       // the 34h after the 09-06 deploy had zero solves; one of them got the
       // buyable company modal off /snowflake-sql-interview/. A person who has
       // not run a query yet is handed somewhere to start instead.
+      // A link asked for this Hard (topic page, question page, a share) and
+      // the visitor has solved nothing: open a free Hard preview of the same
+      // kind instead of the cold-start dialog's Easy starter (2026-11-22).
+      if (opts && opts.fromDeepLink && challenge.difficulty === 'Hard' && isColdStart(practiceSolveCount)) {
+        const swap = previewSwapFor(challenge, challenges, solvedChallenges);
+        if (swap && !isContentLocked('challenge', swap)) {
+          trackActivationEvent('deeplink_preview_swap', { from: challenge.id, to: swap.id });
+          openChallenge(swap, { openedFrom: 'deeplink_swap' });
+          setDeepLinkSwapNote({ fromTitle: challenge.title, toId: swap.id });
+          return;
+        }
+      }
       if (openColdStartInstead(challenge.id)) return;
       // Company-page arrivals get a buyable wall, not the soft toast.
       // A "Databricks SQL interview" visitor clicking a Hard challenge is
@@ -23853,6 +23868,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     // For new users with no saved query, show a starter hint
     const savedQuery = challengeQueries[challenge.id] || '';
     setChallengeStarterHint(null);
+    if (!(opts && opts.openedFrom === 'deeplink_swap')) setDeepLinkSwapNote(null);
     if (!savedQuery && solvedChallenges.size === 0 && challenge.id === 91) {
       setChallengeQuery(`${ZERO_SQL_FIRST_QUERY};`);
     } else if (!savedQuery && solvedChallenges.size === 0) {
@@ -25516,7 +25532,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
     }
     setActiveTab('quests');
     setPracticeSubTab('challenges');
-    setTimeout(() => openChallenge(target), 100);
+    setTimeout(() => openChallenge(target, { fromDeepLink: true }), 100);
     pendingChallengeRef.current = null; // consume once
   }, [isSessionLoading, currentUser]);
   // ?interview=<id> deep-link resolver (parked by the mount effect, same
@@ -39009,6 +39025,12 @@ RULES:
                     {showChallengeHint && (
                       <div className="mb-3 p-2 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
                         <p className="text-sm text-yellow-300">{displayChallenge.hint}</p>
+                      </div>
+                    )}
+
+                    {deepLinkSwapNote && currentChallenge && currentChallenge.id === deepLinkSwapNote.toId && (
+                      <div className="mb-3 p-2 rounded-lg" style={{ background: 'rgba(124,58,237,.08)', border: '1px solid rgba(124,58,237,.3)' }} data-testid="deeplink-swap-note">
+                        <p className="text-sm" style={{ color: '#E2E8F0' }}>“{deepLinkSwapNote.fromTitle}” is part of Pro. This is a free Hard question of the same kind — a good first one.</p>
                       </div>
                     )}
 

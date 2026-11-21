@@ -130,3 +130,30 @@ export function paidWallFor({ isPro = false, solved = null, companyFilter = null
   if (companyFilter) return 'company_modal';
   return 'preview_dialog';
 }
+
+// ── A deep link to a locked Hard, from someone who has solved nothing ──────
+// (2026-11-22). Topic pages link every Hard in the bank; /challenges/advanced/
+// is nothing but Hard. A zero-solve visitor who clicks a locked one met the
+// cold-start dialog, which offers an EASY starter — the opposite of what the
+// link asked for. 30 days to 11-22: ~75 such arrivals from the topic pages,
+// 3 opened anything afterwards, 1 solved. When the open came from a link, the
+// visitor gets a free Hard preview of the same kind instead, in the editor —
+// free, so nothing is sold to someone who has solved nothing.
+//
+// Pick: unsolved free Hard previews, most shared skills/category with the
+// target first, then the bank's own order. null when none is left.
+export function previewSwapFor(target, challenges, solvedIds) {
+  if (!target || !Array.isArray(challenges)) return null;
+  const solved = solvedIds instanceof Set ? solvedIds : new Set(solvedIds || []);
+  const tags = c => new Set([...(c.skills || []), c.category].filter(Boolean).map(t => String(t).toLowerCase()));
+  const want = tags(target);
+  const pool = challenges.filter(c => c && c.freePreview && c.difficulty === 'Hard' && c.id !== target.id && !solved.has(c.id));
+  if (!pool.length) return null;
+  let best = null, bestScore = -1;
+  for (const c of pool) {
+    let score = 0;
+    for (const t of tags(c)) if (want.has(t)) score++;
+    if (score > bestScore) { best = c; bestScore = score; }
+  }
+  return best;
+}
