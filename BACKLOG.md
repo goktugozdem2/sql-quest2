@@ -45,6 +45,10 @@ carries its own **DONE** / **Status** line.
 | — | `weakSkillNext` off (its falsification fired) | #90 | merged 11-22 |
 | 16 | faq_open / scroll_depth | — | already fixed |
 | 7 | Bing question pages | — | superseded by #72 |
+| — | account ask at the 3rd solve (`signupAskAtThree`), ladder never asks twice | #98 | merged 11-22 |
+| — | **first screen A/B over: challenge arm ships** (fs10 37.2% vs 15.5%, n 527/536) | #99 | merged 11-22 |
+| — | deep link to a locked Hard → free Hard of the same kind (cold start) | #100 | merged 11-22 |
+| — | Run / Submit on an empty editor run the starter (the first click was dead) | #101 | merged 11-22 |
 
 Founder decisions surfaced, not taken: the free quota's 10-09 rule fired
 (2 < 3 → quota to 20) and was never asked; the session-token cut (item 1);
@@ -85,6 +89,16 @@ Ranked by expected effect on payers (O1: 50 a month by 12-08). Each would get a 
 8. **Split data.js** only if `app_boot` (#85) shows `dataJsMs` ≥ 40% of boot at p75 in a band (read ~12-06).
 9. **Brand demand** fell with mail volume (sends ~350 → 84–245 a week). A monthly "new questions for your company" note to engaged non-payers is the test — outward email, so it needs the founder's words.
 10. **The `guest_resumed` fix (#93) unlocks a real continuity read:** how many solves people bring back on day 2+, and whether a "save your progress" ask at 3 solves (88% never sign up) moves sign-ups.
+
+## The activation read of 2026-11-22 (what the four PRs above answer)
+
+New people 11-08 → 11-21, bots and crawler window sizes out: 394 → 271
+opened a challenge (69%) → **119 ran a query (44% of openers)** → 98
+solved (82% of runners). The leak is the first run. Three causes found
+and fixed: the quiz-first screen (the A/B said so, 2.4× on first_solve_10m),
+a dead Run/Submit on the empty editor, and an Easy starter offered to
+people who linked in for a Hard. Next to read (12-20): `open_to_first_run`
+and `first_solve_10m` after these three; the guest sign-up rate after #98.
 
 ## P0 — security and money
 
