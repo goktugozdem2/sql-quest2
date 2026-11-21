@@ -28,6 +28,10 @@ carries its own **DONE** / **Status** line.
 | 9 | Google + Bing view (`search_weekly`) | #86 | open — founder applies the migration |
 | 5 | tutor spend | #84 | volume read; dollars in the console (founder) |
 | 20 | inline mirrors | — | already removed |
+| 21 | lapsed-pro held until its copy is rewritten | #87 | open — founder deploys |
+| 13 | resend-webhook signature, executed | #88 | open — founder deploys |
+| 24 | CLAUDE.md: five sections to the archive | #89 | open |
+| 8 | Google brand searches | #84 | read: demand, not ranking |
 | 16 | faq_open / scroll_depth | — | already fixed |
 | 7 | Bing question pages | — | superseded by #72 |
 
