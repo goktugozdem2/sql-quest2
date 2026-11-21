@@ -857,7 +857,7 @@ of the verifier and must never be rounded to `FLAT`.
     interview-first batch, not of the tab alone — amended in that entry.
   - `interviewCountdown` and this flip together by design: the card this
     moves does not exist without it. `prep_*` events date from the flip.
-- **Verdict** _pending_
+- **Verdict** **NOT FLIPPED — nothing to read** (checked 2026-11-22): `interviewFirst` is still `false` on main; the flag queue (docs/agent/flag-queue.md, row 7) holds it as `queued`. The read date above is void; a new one is set on the day it flips.
 
 ### the outcome is asked after the date: one question, three clicks (2026-09-19)
 
@@ -1585,7 +1585,7 @@ that needs its own path — the current rule is written down in the handler.
 - **Confounds** the interview-prep wall (M2) flips the same day on the same
   tab; split on goal. The quota chip is display only and is read by
   `intake_funnel` (dates) rather than its own metric.
-- **Verdict** _pending_
+- **Verdict** **NOT FLIPPED — nothing to read** (checked 2026-11-22): `spacedRetrievalCard` / `dailyQuota` is still `false` on main; the flag queue (docs/agent/flag-queue.md, row — (not in the queue)) holds it as `off since built`. The read date above is void; a new one is set on the day it flips.
 
 ### the weekly digest says what moved and one thing to do (P2, live)
 
@@ -1824,7 +1824,7 @@ that needs its own path — the current rule is written down in the handler.
 - **Confounds** the intake flip (09-16) hands this goal to intake-goal
   holders (`coachState.source='intake'`); split on source. M5 ships with it
   — same surface, same read; the mock steps are read as their own line.
-- **Verdict** _pending_
+- **Verdict** **UNREADABLE — n too small, and will stay so** (read 2026-11-22, 09-26 → 11-21, bots out): **12** people started the interview-prep goal in eight weeks (the rule: fewer than 40 by 11-02 → extend to 11-23; at 1.5 a week, 40 is out of reach by any date). Of the 12, 2 opened a Hard or a mock within 24 h (17%), 0 used the skip. All goal picks in the window: fundamentals 18, analyst-day-one 12, interview-prep 12. The finding is the denominator: the goal path is not where people are; reads of the wall belong on the challenge list (the quota and the company set), where 141 and 40 people met it.
 
 ### the six-solve ask speaks to the deadline (free-tier boundary M3)
 
@@ -1905,7 +1905,7 @@ that needs its own path — the current rule is written down in the handler.
 - **Confounds** M1 (10-14) changes the company wall; this reads to 10-13.
   Fewer shows raise every "per shown" ratio mechanically — the guardrail is
   absolute clicks, never a rate.
-- **Verdict** _pending_
+- **Verdict** **NOT FLIPPED — nothing to read** (checked 2026-11-22): `quietEarlyAsks` is still `false` on main; the flag queue (docs/agent/flag-queue.md, row 9) holds it as `needs Go`. The read date above is void; a new one is set on the day it flips.
 
 ### the mocks get a door (free-tier boundary M5)
 
@@ -1936,7 +1936,7 @@ that needs its own path — the current rule is written down in the handler.
   test. Intent routing (09-13) opens the Interview tab to hiring-intent
   people — a second door in the same window; split mock starts by
   `coach_step_started type=mock_interview` vs the tab.
-- **Verdict** _pending_
+- **Verdict** **UNREADABLE** with M2 (read 2026-11-22): 1 of the 12 interview-prep goal starters sat the free mock within 7 days. Same denominator problem as M2.
 
 ### the Coach stops asking twice: a first-run placement is a placement
 
@@ -2005,7 +2005,7 @@ that needs its own path — the current rule is written down in the handler.
   screen, not here. Adaptive placement (10-01) changes which tier the quiz
   assigns to a 4/4 — the floors follow the tier, so from 10-01 the
   Interview-ready floors appear; note it in the read.
-- **Verdict** _pending_
+- **Verdict** **NOT FLIPPED — nothing to read** (checked 2026-11-22): `coachTrustQuizPlacement` is still `false` on main; the flag queue (docs/agent/flag-queue.md, row 3) holds it as `queued`. The read date above is void; a new one is set on the day it flips.
 
 ### adaptive placement: interview-ready is earned on a second round, not declared
 
@@ -2074,7 +2074,7 @@ that needs its own path — the current rule is written down in the handler.
   mix reason after its claim has closed; say so if anyone re-reads it. The
   Coach's own five-challenge placement (`COACH_PLACEMENT_CHALLENGE_IDS`) is
   a different instrument and is untouched.
-- **Verdict** _pending_
+- **Verdict** **NOT FLIPPED — nothing to read** (checked 2026-11-22): `adaptivePlacement` is still `false` on main; the flag queue (docs/agent/flag-queue.md, row 12) holds it as `needs Go`. The read date above is void; a new one is set on the day it flips.
 
 ### onboarding intake: three optional questions before the quiz
 
@@ -2171,7 +2171,7 @@ that needs its own path — the current rule is written down in the handler.
   entry ("the goal is asked, measured and planned before the first solve"),
   which makes the required goal skippable again if `first_run_reach` falls
   more than 15 points.
-- **Verdict** _pending_
+- **Verdict** **NOT FLIPPED — nothing to read** (checked 2026-11-22): `onboardingIntake` is still `false` on main; the flag queue (docs/agent/flag-queue.md, row 6) holds it as `queued`. The read date above is void; a new one is set on the day it flips.
 
 ### the Coach page shows the goal, the step, the challenge and the radar
 
