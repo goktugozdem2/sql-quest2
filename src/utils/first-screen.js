@@ -24,6 +24,8 @@
 export const FIRST_SCREEN_TEST_ID = 'first_screen_v1';
 export const FIRST_SCREEN_ARMS = ['quiz', 'challenge'];
 export const FIRST_SCREEN_STORAGE_KEY = 'sqlquest_first_screen_v1';
+// The winning arm, given to every new assignment since 2026-11-22.
+export const FIRST_SCREEN_SHIPPED_ARM = 'challenge';
 
 // Same FNV-style hash as the homepage CTA test in src/track.js, salted with
 // this test's id so the two tests' arms are independent.
@@ -57,6 +59,11 @@ export function firstScreenDecision({
     return { assign: false, arm: stored.arm, act: stored.arm === 'challenge' };
   }
   if (!aid) return { assign: false, arm: null, act: false };
-  const arm = firstScreenArm(aid);
+  // SHIPPED 2026-11-22: the challenge arm won (ledger "the first screen is a
+  // challenge, not a quiz", HIT — first_solve_10m 37.2% vs 15.5% at 527 /
+  // 536 people, ever-solved 42.7% vs 26.3%, mobile 30.6% vs 2.2%). Every new
+  // visitor now gets it; a browser already holding the quiz arm keeps it
+  // (above), so nobody's screen changes under them mid-visit.
+  const arm = FIRST_SCREEN_SHIPPED_ARM;
   return { assign: true, arm, act: arm === 'challenge' };
 }

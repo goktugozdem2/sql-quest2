@@ -855,7 +855,7 @@ of the verifier and must never be rounded to `FLAT`.
 - **Confounds** `diagnosisHints` (row 1) is live by then for both arms alike —
   randomised, so it shifts both; the cold-start dialog stays as it is.
   Localhost preview rows (2026-09-23) carry arms too: exclude localhost aids.
-- **Verdict** _pending_
+- **Verdict** **HIT — shipped 2026-11-22** (read 2026-11-22; people assigned within 2 minutes of their first `app_opened`, 09-26 → 11-21, bots and crawler window sizes out): `first_solve_10m` **37.2% (challenge, n 527) vs 15.5% (quiz, n 536)** — +21.7 points against a +5 target; ever solved 42.7% vs 26.3% (the falsification needed it to fall; it rose); mobile 30.6% (n 36) vs 2.2% (n 46). Every new assignment is the challenge arm from the merge of `feat/first-screen-challenge-shipped`; browsers already holding the quiz arm keep it. `first_screen_assigned` keeps firing (arm `challenge` only), so the series has a denominator but no comparison after that date.
 
 ### interview-first: the plan is the product for people with a date
 

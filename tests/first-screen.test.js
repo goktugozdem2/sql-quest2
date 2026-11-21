@@ -63,3 +63,20 @@ describe('wiring (source guards)', () => {
     expect(app).toMatch(/startFirstRunPath\('zero', 'brand-new', \{ skipLesson: true, source: 'first_screen_test' \}\)/);
   });
 });
+
+// Shipped 2026-11-22 (ledger HIT): every new assignment is the challenge arm;
+// a browser already holding the quiz arm keeps it.
+import { FIRST_SCREEN_SHIPPED_ARM } from '../src/utils/first-screen.js';
+describe('the first screen test is over — the challenge arm ships', () => {
+  const base = { flagOn: true, onStartScreen: true };
+  it('every new visitor is assigned the challenge arm and sent into it', () => {
+    expect(FIRST_SCREEN_SHIPPED_ARM).toBe('challenge');
+    for (let i = 0; i < 200; i++) {
+      const d = firstScreenDecision({ ...base, aid: `aid-${i}-${i * 7919}` });
+      expect(d).toEqual({ assign: true, arm: 'challenge', act: true });
+    }
+  });
+  it('a browser that already holds the quiz arm keeps it (nothing changes under a returning visitor)', () => {
+    expect(firstScreenDecision({ ...base, aid: 'x', stored: { arm: 'quiz' } })).toEqual({ assign: false, arm: 'quiz', act: false });
+  });
+});
