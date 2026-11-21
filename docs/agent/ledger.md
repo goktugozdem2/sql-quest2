@@ -27,6 +27,16 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### a column mismatch gets the one line that fixes it
+
+- **Claimed** 2026-11-22 · **Shipped** on merge (no flag; first line of the column diagnoses, which primaryHint shows) · **Read** 2026-12-20.
+- **Change** `columnFixLine` in src/utils/diagnose.js names the difference instead of printing both header lists: the expression to name (`COUNT(*) AS txn_count`), the column to rename, add or drop, names that differ only by case (the grader matches exactly), or the order to use; "SELECT * brings every column" when three or more extras arrive. The two lists stay as hints 2–3.
+- **Why** (read 2026-11-22, 09-30 → 11-21, bots out): `column_set` is the slowest wrong-submit kind to recover — **69.7%** of 132 person-challenges solved within the hour, against 83–95% for the result-shape kinds.
+- **Metric** `hint_to_solve` restricted to `challenge_error_pattern.primary = 'column_set'`.
+- **Baseline** 69.7% (n = 132).
+- **Target** ≥ 78% at n ≥ 80 in the 28 days after merge.
+- **Falsification, stated in advance:** under 72% at n ≥ 80 → naming the difference is not the block; look at which challenges carry the column_set misses before writing more. n < 80 by 12-20 → extend 28 days.
+
 ### four more snippets that fit the window
 
 - **Claimed** 2026-11-20 · **Shipped** on merge (founder's Go: "senin önerilerin iyi onları yap") · **Read** 2026-12-18.

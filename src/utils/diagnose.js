@@ -79,6 +79,7 @@ export function diagnoseResult(user, expected, userError = null, ctx = {}) {
       headline: `Wrong number of columns — expected ${expected.columns.length}, got ${user.columns.length}`,
       details: `The grader compares column-by-column. Your SELECT returned ${user.columns.length} column${user.columns.length === 1 ? '' : 's'} but the expected output has ${expected.columns.length}. Re-read the challenge description — it usually lists every column you need.`,
       hints: [
+        columnFixLine(user.columns, expected.columns),
         `Expected columns (in order): ${expected.columns.join(', ')}`,
         `Your columns: ${user.columns.join(', ')}`,
         user.columns.length < expected.columns.length
@@ -102,6 +103,7 @@ export function diagnoseResult(user, expected, userError = null, ctx = {}) {
       headline: 'Column names or order don\'t match',
       details: `You have the right number of columns, but the names or positions are different. The grader matches exactly — alias with AS to rename, or reorder your SELECT to match.`,
       hints: [
+        columnFixLine(user.columns, expected.columns),
         `Expected order: ${expected.columns.join(', ')}`,
         `Your order: ${user.columns.join(', ')}`,
         diffs.length <= 3
@@ -506,6 +508,43 @@ function computePositionDiffs(userRows, expectedRows) {
     }
   }
   return out;
+}
+
+/**
+ * One line that fixes a column mismatch (2026-11-22). `column_set` was the
+ * slowest wrong-submit kind to recover — 69.7% solved within the hour
+ * (132 person-challenges, 09-30 → 11-21) — and the student was shown both
+ * full header lists to diff by eye. This names the difference: the column to
+ * add, the one to drop, the expression to name with AS, the case that does
+ * not match, or the order to use. The grader compares names exactly.
+ */
+const looksLikeExpression = c => /[()*+\-/|<>=]|\s/.test(c);
+export function columnFixLine(userCols, expectedCols) {
+  const user = (userCols || []).map(String);
+  const exp = (expectedCols || []).map(String);
+  if (!exp.length) return null;
+  const has = (list, c) => list.includes(c);
+  const missing = exp.filter(c => !has(user, c));
+  const extra = user.filter(c => !has(exp, c));
+  if (!missing.length && !extra.length) {
+    return user.join(',') === exp.join(',') ? null : `Right columns, wrong order — SELECT them as: ${exp.join(', ')}.`;
+  }
+  // One for one: the same column under another name, or an unnamed expression.
+  if (missing.length === 1 && extra.length === 1) {
+    const [want] = missing, [got] = extra;
+    const moved = user.indexOf(got) !== exp.indexOf(want) ? ` — and keep the order: ${exp.join(', ')}` : '';
+    if (got.toLowerCase() === want.toLowerCase()) return `Names are matched exactly: rename ${got} to ${want} (… AS ${want})${moved}.`;
+    if (looksLikeExpression(got)) return `Name the expression: ${got} AS ${want}${moved}.`;
+    return `Rename ${got} to ${want}: ${got} AS ${want}${moved}.`;
+  }
+  const caseOnly = missing.length === extra.length && missing.every(m => extra.some(e => e.toLowerCase() === m.toLowerCase()));
+  if (caseOnly) return `Names are matched exactly, case included: use ${missing.join(', ')}.`;
+  const parts = [];
+  if (missing.length) parts.push(`add ${missing.join(', ')}`);
+  if (extra.length) parts.push(`${missing.length ? 'drop' : 'remove'} ${extra.join(', ')}`);
+  const line = parts.join('; ');
+  const tail = extra.length > 2 && !missing.length ? ' — SELECT * brings every column; list only the ones asked for.' : '.';
+  return line.charAt(0).toUpperCase() + line.slice(1) + tail;
 }
 
 /**
