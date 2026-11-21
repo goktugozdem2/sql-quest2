@@ -76,6 +76,31 @@ of the verifier and must never be rounded to `FLAT`.
   UNREADABLE, extend. Guardrail: company arrivals' `pro_plan_clicked` must not
   fall (it was 4 people in the baseline window — read the counts).
 
+### three more fintech company pages: PayPal, Coinbase, Monzo
+
+- **Claimed** 2026-11-20 · **Shipped** on merge (founder's Go on the funnel plan, item 1) · **Read** 2027-01-15 (Google needs 3–6 weeks to index and settle a new page).
+- **Change** `/paypal-sql-interview/`, `/coinbase-sql-interview/`,
+  `/monzo-sql-interview/` from the company template, each with a sourced
+  format section (fetched, dated sources; research
+  `docs/reads/company-research-2026-11-20.md`), a 16-challenge tagged set
+  (Easy → Hard; the Revolut set stays Revolut-only), the fintech cross-link
+  ring, the interview hub, the app's `?company=` list and the intake list.
+  Robinhood, Klarna and Adyen were researched and deferred (reasons in the
+  read). Company-page count 30 → 33 on every page that states it.
+- **Why** company pages are the best door we have: 222 search/AI visitors in
+  28 days, 55% to the app (topic pages 75%, blog 12%); Wise (CTR 27%, position
+  3.6) and Revolut (18.8%, 4.4) are the model, and 2 of the first 3 payers came
+  through a company door.
+- **Metric** `gsc_daily` page slice clicks for the three pages, and
+  `app_opened` with `arrivalSrc` `company:PayPal|Coinbase|Monzo` or the
+  three slugs.
+- **Target** together ≥ 40 Google clicks in the 28 days to the read and ≥ 20
+  people into the app from them.
+- **Falsification, stated in advance:** under 10 clicks in total with the
+  pages indexed → MISS, and the next company batch waits; a page not indexed
+  by the read → UNREADABLE for that page (request indexing by hand first).
+  Brand accents were set from memory, not fetched — fix by eye if one is off.
+
 ### Bing: the question pages leave Bing's index (bingbot noindex, follow)
 
 - **Claimed** 2026-11-20 · **Shipped** on merge (generator change, no flag;
