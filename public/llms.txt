@@ -534,7 +534,7 @@ SQL Quest's strongest positioning: "the only SQL practice site that feels like a
 - Plaid SQL Interview Questions — Practice Bank-Data SQL | SQLQuest.app — https://sqlquest.app/plaid-sql-interview/
 - Ramp SQL Interview Questions — Practice Spend-Analytics SQL | SQLQuest.app — https://sqlquest.app/ramp-sql-interview/
 - Revolut SQL Interview Questions — Practice Neobank SQL | SQLQuest.app — https://sqlquest.app/revolut-sql-interview/
-- Capital One SQL Interview Questions — CodeSignal Data Analyst Screen | SQLQuest.app — https://sqlquest.app/capital-one-sql-interview/
+- Capital One SQL Interview (2026): 25 Questions + Mock | SQLQuest.app — https://sqlquest.app/capital-one-sql-interview/
 - Wise SQL Interview Questions — Practice Cross-Border SQL | SQLQuest.app — https://sqlquest.app/wise-sql-interview/
 - Apple SQL Interview Questions — Practice Services & Product Analytics | SQLQuest.app — https://sqlquest.app/apple-sql-interview/
 - Uber SQL Interview Questions — Practice Marketplace Metrics | SQLQuest.app — https://sqlquest.app/uber-sql-interview/

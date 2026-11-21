@@ -27,6 +27,41 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### Capital One: the 10-12 read, branch 3 — the blog is the door, the page is the product
+
+- **Claimed** 2026-11-22 · **Shipped** on merge (the founder's 09-25 plan, "12 Ekim'de ilk iş bu"; 41 days late) · **Read** 2026-12-20.
+- **The read** (`gsc_daily`, 28 days to 2026-11-20): the blog post
+  `/blog/capital-one-codesignal-data-analyst-assessment/` 641 impressions,
+  39 clicks (6.1%), position 7.4, every visible `capital one …` query; the
+  company page 109 impressions, 9 clicks, position 6.2, and no
+  `capital one sql interview*` query at all. That is branch 3 of
+  docs/plans/capital-one-2026-10-12.md.
+- **Change** company page title/meta transactional ("Capital One SQL
+  Interview (2026): 25 Questions + Mock", the 25 bound to the tag count by
+  `tests/snippet-length.test.js`); section E of the plan (cards say
+  "Measures:", one number in the hero, both mock buttons say Pro, the
+  sourced section headed "How the interview runs (sourced)", the shared
+  topic block with the dialect sentence); the five trap pages link to the
+  page (step B); the blog's skip-ahead box gains the timed mock link
+  (`src=capital-one-blog`, step C). The freeze is lifted in the generator,
+  the blurb script and the tests. **Not done on purpose:** the blog title —
+  it is the page earning 6.1% CTR; changing a working title would confound
+  the read.
+- **Baseline** (28 days to 2026-11-22): 110 real readers of the two pages
+  (`landing_view`, bots and Asia/Shanghai out), 3 clicks on the page's mock
+  buttons, 0 Pro modals from a Capital One or trap-page mock link, 0
+  checkout clicks from them.
+- **Metric** `gsc_daily` for both pages (clicks, CTR, any `capital one sql*`
+  query on the company page); money side `pattern_to_checkout` and
+  `pro_modal_shown` with `modalReason` `mock_link` / `pattern_mock` and
+  `linkSrc` `capital-one-*` / `pattern-*`.
+- **Target** the company page ≥ 20 clicks in 28 days (from 9) with the blog
+  holding ≥ 30; ≥ 5 Pro modals from these mock links.
+- **Falsification, stated in advance:** blog clicks fall below 25 → the
+  blog's box change cost it, revert the box; company page CTR falls at the
+  same position → restore the old title. No modal from the mock links in 28
+  days → the mock is not what Capital One readers want; stop pointing at it.
+
 ### four more snippets that fit the window
 
 - **Claimed** 2026-11-20 · **Shipped** on merge (founder's Go: "senin önerilerin iyi onları yap") · **Read** 2026-12-18.
