@@ -1644,7 +1644,7 @@ that needs its own path — the current rule is written down in the handler.
   day on different surfaces; a wrong submit that opens the tutor is read
   under the ladder claim, not here (split on `inline_help_opened` /
   `tutor_bypass_clicked`).
-- **Verdict** _pending_
+- **Verdict** **FLAT — the falsification fired** (read 2026-11-22; the flag flipped for everyone 09-30, so pre/post, bots out): wrong submit → the same challenge solved within 60 min, 84.9% (958 / 1,129 person-challenges, 301 people, 09-12 → 09-29) vs **84.9%** (864 / 1,018, 391 people, 09-30 → 11-20). As written: the sentence was not the constraint. The written action — revert the panel to the list, keep `row_set`, read which kinds stall — is a flag change for the founder; not taken here. Confound: the quota (09-26) sits in the pre window's last 3 days.
 
 ### the tutor speaks to the query, climbs a ladder, and remembers the habit (P1 tutor)
 
@@ -1695,7 +1695,7 @@ that needs its own path — the current rule is written down in the handler.
 - **Confounds** the free AI cap (20/day) — a person who hits it mid-ladder
   is read as unresolved; exclude `rate_limit` shows. The live nudge
   (`live_nudge` mode) also carries the REPEAT line from 09-12.
-- **Verdict** _pending_
+- **Verdict** **HIT on the solve, MISS on bypass** (read 2026-11-22, pre/post 09-30, bots out): inline Help open → that challenge solved within 60 min **72.3%** (284 / 393) vs 70.0% before (205 / 293) — target ≥ 55%, and not below the no-ladder level. Bypass: **204 of 395 opens (52%)** were followed by `tutor_bypass_clicked` — target ≤ 40%, under the 60% line that would make rung 2 the opener. Keep the ladder; the bypass is the next thing to look at.
 
 ### the next quest is the weakest skill, one step up (P1 picker)
 
@@ -1723,7 +1723,7 @@ that needs its own path — the current rule is written down in the handler.
   skill after a win; revert and keep the picker for the Coach's drill only.
 - **Confounds** the intent-routing read (10-13) reads reach-6 over the same
   weeks; this moves what the second solve is. Noted on that entry.
-- **Verdict** _pending_
+- **Verdict** **MISS — the falsification fired** (read 2026-11-22, pre/post 09-30, bots out): take rate on the post-solve strip **40.8% → 17.3%** (curriculum 1,223 / 2,999 → weak_skill 410 / 2,374); among solves by people under 10 solves (clear of the quota wall) **29.3% → 15.7%** — 54% of the curriculum arm, below the 70% line. Recommended challenge solved in-session: 80.7% → 51.8% (target ≥ 60%; not under the 45% cliff line). As written: people do not want the weakest skill after a win — **revert, keep the picker for the Coach's drill only**: `weakSkillNext` off in branch `flags/weak-skill-next-off` (founder merges).
 
 ### company sets: three free, then Pro (free-tier boundary M1)
 
