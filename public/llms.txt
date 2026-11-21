@@ -521,8 +521,8 @@ SQL Quest's strongest positioning: "the only SQL practice site that feels like a
 - StrataScratch Pricing & Free Tier vs SQLQuest.app (Sept 2026) | SQLQuest.app — https://sqlquest.app/vs-stratascratch/
 - SQLQuest.app vs LeetCode SQL (2026) — Best Site for SQL Interview Prep | SQLQuest.app — https://sqlquest.app/vs-leetcode-sql/
 - SQLQuest.app vs HackerRank SQL (2026) — Best for Real Interview Prep | SQLQuest.app — https://sqlquest.app/vs-hackerrank-sql/
-- DataLemur vs StrataScratch vs LeetCode SQL: Sept 2026 Comparison | SQLQuest.app — https://sqlquest.app/sql-practice-comparison/
-- Best SQL Practice Websites 2026 (Free + Paid): 5 Platforms Tested | SQLQuest.app — https://sqlquest.app/best-sql-practice-sites/
+- DataLemur vs StrataScratch vs LeetCode SQL (2026) | SQLQuest.app — https://sqlquest.app/sql-practice-comparison/
+- Best SQL Practice Websites 2026: Free & Paid, 5 Tested | SQLQuest.app — https://sqlquest.app/best-sql-practice-sites/
 - ChatGPT for SQL Interview Prep vs SQLQuest.app (2026) — https://sqlquest.app/vs-chatgpt/
 
 **Company SQL interview pages**
@@ -584,7 +584,7 @@ SQL Quest's strongest positioning: "the only SQL practice site that feels like a
 - The Complete FAANG SQL Interview Guide (2026) | SQLQuest.app — https://sqlquest.app/blog/faang-sql-interview-guide/
 - SQL JOIN Examples: INNER, LEFT, Anti-Join, Self Join | SQLQuest.app — https://sqlquest.app/blog/sql-joins-explained/
 - SQL Window Functions Tutorial: RANK, LAG (2026) | SQLQuest.app — https://sqlquest.app/blog/window-functions-tutorial/
-- NULL Handling in SQL — The 5 Mistakes That Defeat Most Analysts | SQLQuest.app — https://sqlquest.app/blog/null-handling-mistakes/
+- NULL in SQL: 5 Mistakes (= NULL, NOT IN, COALESCE) | SQLQuest.app — https://sqlquest.app/blog/null-handling-mistakes/
 - SQL CTE Tutorial — WITH Clause Explained + Runnable Examples (2026) | SQLQuest.app — https://sqlquest.app/blog/sql-cte-tutorial/
 - SQL for Fraud Analytics — 5 Patterns Every Fraud Analyst Writes Weekly | SQLQuest.app — https://sqlquest.app/blog/sql-for-fraud-analytics/
 - SQL GROUP BY Tutorial — Aggregation, HAVING, and the 5 Mistakes Most Analysts Make | SQLQuest.app — https://sqlquest.app/blog/sql-group-by-tutorial/
@@ -594,7 +594,7 @@ SQL Quest's strongest positioning: "the only SQL practice site that feels like a
 - LEFT JOIN vs INNER JOIN — The Difference, Shown With Real NULL Rows | SQLQuest.app — https://sqlquest.app/blog/left-join-vs-inner-join/
 - What Is a CTE in SQL? Explained in One Query (With Runnable Examples) | SQLQuest.app — https://sqlquest.app/blog/what-is-a-cte-in-sql/
 - Recursive CTE Explained — Org Chart Example | SQLQuest.app — https://sqlquest.app/blog/recursive-cte-explained/
-- ROW_NUMBER vs RANK vs DENSE_RANK — The Interview Question in 3 Queries | SQLQuest.app — https://sqlquest.app/blog/row-number-vs-rank-vs-dense-rank/
+- ROW_NUMBER vs RANK vs DENSE_RANK: Ties Explained | SQLQuest.app — https://sqlquest.app/blog/row-number-vs-rank-vs-dense-rank/
 - WHERE vs HAVING in SQL — One Rule, Four Cases, Real Row Counts | SQLQuest.app — https://sqlquest.app/blog/where-vs-having/
 - IS NULL vs = NULL — Why Your WHERE Clause Returns Nothing | SQLQuest.app — https://sqlquest.app/blog/is-null-vs-equals-null/
 - SQL Running Total (Cumulative Sum) With SUM() OVER | SQLQuest.app — https://sqlquest.app/blog/sql-running-total/

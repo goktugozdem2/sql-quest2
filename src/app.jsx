@@ -23463,6 +23463,21 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     companyFilter ? challenges.filter(c => (c.companies || []).includes(companyFilter)) : []
   );
 
+  // The company banner's one button (2026-11-20, funnel plan item 5): the
+  // set's first open, unsolved challenge in curriculum order, behind the
+  // same three locks the list rows wear (Hard, company set gate, free quota).
+  // null when nothing in the set opens — the banner then shows no button.
+  const companyBannerNext = () => {
+    if (!companyFilter) return null;
+    if (quotaGate({ flagOn: ftbFlag('freeQuota'), isPro, solvedCount: solvedChallenges.size, alreadySolved: false }).gated) return null;
+    const scoped = companyScopedChallenges();
+    return pickNextChallenge(scoped, c =>
+      !solvedChallenges.has(c.id)
+      && !isContentLocked('challenge', c)
+      && !companySetGate({ flagOn: ftbFlag('companySetGate'), isPro, companyFilter, challenge: c, scoped, solved: solvedChallenges }).gated
+    );
+  };
+
   // The free three of a company's set under `companySetGate`, else null —
   // callers fall back to "everything not Hard-locked", today's meaning.
   //
@@ -37935,6 +37950,33 @@ RULES:
                               return `Free set: ${freeSolved} of ${free.length} solved. ${proCount} more in Pro when you're ready for interview depth.`;
                             })()}
                           </p>
+                          {(() => {
+                            // 2026-11-20 (funnel plan item 5, founder's Go): of 149
+                            // search arrivals from a company page in 35 days, 63
+                            // opened no challenge at all. The set's list starts
+                            // ~1,000px down, under the generic learning-path cards,
+                            // and this banner said "pick any one" with nothing to
+                            // press. One button opens the set's first open,
+                            // unsolved challenge in CURRICULUM order — never raw
+                            // order (src/utils/challenge-order.js) — with the same
+                            // locks the list rows use. challenge_opened carries
+                            // openedFrom 'company_banner'. Ledger: "a company
+                            // arrival gets a first question to press".
+                            const next = companyBannerNext();
+                            if (!next) return null;
+                            const anySolved = companyScopedChallenges().some(c => solvedChallenges.has(c.id));
+                            return (
+                              <button
+                                type="button"
+                                data-testid="company-banner-start"
+                                onClick={() => openChallenge(next, { openedFrom: 'company_banner' })}
+                                className="mt-4 inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-bold transition-all hover:brightness-110"
+                                style={{ background: '#FFE34D', color: '#0E0F13' }}
+                              >
+                                {anySolved ? `Next ${companyFilter} question: ${next.title}` : `Start with question 1: ${next.title}`} →
+                              </button>
+                            );
+                          })()}
                         </div>
                       </div>
                     </div>
