@@ -2022,6 +2022,69 @@ async function main() {
     } else {
       fail('catcher Pro CTA closes the catcher then opens the Pro modal — never two dialogs (reason=hard_challenge)', JSON.stringify(proCtaSummary));
     }
+    // ── The free-quota wall, rendered (2026-11-22, BACKLOG item 15) ──────
+    // The quota wall is where 141 people met Pro in eight weeks and 18 of them
+    // clicked a plan (ledger "the free quota", read 11-22) — and no render
+    // check covered it. A guest who has solved ten resumes from the local
+    // blob (startGuestMode, since 2026-09-12 — the "no way to seed a warm
+    // guest" note above predates it), opens an unsolved Easy by deep link,
+    // and must meet exactly the wall: content_lock_reached
+    // {surface: challenge_quota} for that id, the Pro modal under reason
+    // free_quota with both plan cards, and the counter at 10 of 10.
+    const quotaGuest = 'guest_1795300000000';
+    const quotaSolved = [91, 92, 93, 94, 95, 96, 97, 98, 99, 100];
+    const quotaTarget = 101;
+    consoleCapture.length = 0;
+    await cdp(tab, 'Runtime.discardConsoleEntries', {});
+    await evalInPage(tab, `
+      (() => {
+        localStorage.clear();
+        localStorage.setItem('sqlquest_guest_user', ${JSON.stringify(quotaGuest)});
+        localStorage.setItem('sqlquest_user_' + ${JSON.stringify(quotaGuest)}, JSON.stringify({
+          username: ${JSON.stringify(quotaGuest)},
+          solvedChallenges: ${JSON.stringify(quotaSolved)},
+          challengeAttempts: ${JSON.stringify(quotaSolved)}.map(id => ({ challengeId: id, correct: true, timestamp: Date.now() - 60000 })),
+          createdAt: Date.now() - 86400000,
+          lastActive: Date.now() - 3600000,
+        }));
+        location.href = ${JSON.stringify(URL + '/app/?challenge=' + quotaTarget)};
+        return true;
+      })()`);
+    await new Promise(r => setTimeout(r, 7000));
+    const quotaDom = await evalInPage(tab, `
+      (() => ({
+        flagOn: !!(window.FF && window.FF.feature && window.FF.feature('freeQuota') === true),
+        planMonthly: !!document.querySelector('[data-testid="plan-monthly"]'),
+        planAnnual: !!document.querySelector('[data-testid="plan-annual"]'),
+        counter: (document.querySelector('[data-testid="free-quota-counter"]')?.textContent || '').trim().slice(0, 80),
+        solved: (JSON.parse(localStorage.getItem('sqlquest_user_' + ${JSON.stringify(quotaGuest)}) || '{}').solvedChallenges || []).length,
+      }))()`);
+    const quotaLocks = [];
+    const quotaModals = [];
+    for (const params of consoleCapture) {
+      const decoded = await decodeMutedAnalytics(tab, params);
+      if (decoded && decoded.event === 'content_lock_reached') quotaLocks.push(decoded);
+      if (decoded && decoded.event === 'pro_modal_shown') quotaModals.push(decoded);
+    }
+    const quotaSummary = {
+      ...quotaDom,
+      locks: quotaLocks.map(d => [d.metadata?.surface, d.metadata?.challengeId]),
+      modalReasons: quotaModals.map(d => d.metadata?.reason),
+    };
+    if (!quotaDom.flagOn) {
+      pass('(free quota off — the quota-wall render check skipped)');
+    } else if (
+      quotaDom.solved === quotaSolved.length
+      && quotaLocks.some(d => d.metadata?.surface === 'challenge_quota' && Number(d.metadata?.challengeId) === quotaTarget)
+      && quotaModals.some(d => d.metadata?.reason === 'free_quota')
+      && quotaDom.planMonthly && quotaDom.planAnnual
+      && /10 of 10/.test(quotaDom.counter)
+    ) {
+      pass('a guest at 10 solves opening an unsolved challenge meets the quota wall: challenge_quota lock, Pro modal reason=free_quota, both plans, counter 10 of 10');
+    } else {
+      fail('a guest at 10 solves opening an unsolved challenge meets the quota wall: challenge_quota lock, Pro modal reason=free_quota, both plans, counter 10 of 10', JSON.stringify(quotaSummary));
+    }
+
     eventListeners.delete(onConsole);
 
   } finally {

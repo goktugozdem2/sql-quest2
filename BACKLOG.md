@@ -89,6 +89,13 @@ re-measure before acting on one.
     app.jsx), not by rendering. They catch removals, not regressions in
     logic. The smoke test (28 checks) is the only render-level coverage;
     paywall moments (PLAN item 3) have none.
+    **Status 2026-11-22** (branch `test/smoke-quota-wall`): the quota wall —
+    the paywall that sells most (141 met it, 18 clicked) — now has a render
+    check in the smoke: a guest resumed at 10 solves deep-links to an
+    unsolved Easy and must get the `challenge_quota` lock, the Pro modal
+    under `free_quota` with both plans, and the 10-of-10 counter. 30/30
+    locally. Paywall moments (`paywallMoments`, dark) get theirs when the
+    flag flips.
 
 ## P4 — SEO gaps
 
