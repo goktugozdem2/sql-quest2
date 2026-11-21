@@ -505,6 +505,15 @@ window.FEATURE_FLAGS = {
     // button"): < 5 presses in 30 days, or the quota wall's click rate
     // under 10% while this one rises.
     headerProButton: true,
+
+    // ── The last 48 hours of a Stripe trial (M-10, 2026-11-22) ────────────
+    // On the Coach and the challenge list, a person in a Stripe trial
+    // (`proTrial` + `proTrialEnd` from the webhook) sees the date the free
+    // week ends, the price that follows (planPrices), what Pro still holds
+    // and "Manage plan" (the Stripe portal). Honest disclosure, no price
+    // change: ships ON. Off if cancellations reach 6 of the next 8 matured
+    // trials (ledger "the last 48 hours of a trial say the date").
+    trialEndingLine: true,
   },
 };
 

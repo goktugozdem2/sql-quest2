@@ -27,6 +27,16 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### the last 48 hours of a trial say the date, the price and what is left (M-10)
+
+- **Claimed** 2026-11-22 · **Shipped** on merge, flag `trialEndingLine` **on** · **Read** 2026-12-20 (the verdict needs 8 matured trials; at ~5 trials a month expect UNREADABLE on 12-20 and a re-read by 2027-01-31).
+- **Change** a person in a Stripe trial (`proTrial` + `proTrialEnd`, written by stripe-webhook) sees, from 48 h before the end, one line on the Coach and the challenge list: "Your free week ends on <day>. Then <price>/<month|year>." (price from `planPrices(priceRegion)`), "Still ahead in Pro: <n> Hard challenges you haven't solved, <the company mock | every timed mock>." and "Manage plan" (the Stripe portal). Events `trial_day5_shown {plan, hoursLeft, surface, priceRegion}` (once a day), `trial_day5_manage_clicked`. Pure half src/utils/trial-ending.js; guards tests/trial-ending.test.js.
+- **Why** (docs/plans/monetization-ideas-2026-11-22.md, 1c): of 8 trials that reached day 7 since 10-01, 3 paid, 4 cancelled, 1 day-7 charge failed and never recovered; 2 of the 4 that reached the charge failed it first. In the app nothing said the date or the amount.
+- **Metric** `trial_funnel` step 3 (trial → paid) and the failed first charges (`pro_payment_failed {billing_reason: subscription_cycle}` after a trial).
+- **Baseline** 3 of 8 matured trials paid; 2 of 4 first charges failed.
+- **Target** over the next 8 matured trials: ≥ 3 paid and ≤ 1 failed first charge.
+- **Falsification, stated in advance:** cancellations reach ≥ 6 of the next 8 matured trials → the line pushes people out; reword to the "still ahead" half only (drop the date/price sentence) — the trial reminder email still carries the date.
+
 ### the modal stops warning of a currency switch that will not happen (M-06, part 1)
 
 - **Claimed** 2026-11-22 · **Shipped** on merge; the line follows the existing `checkoutSessions` flag (off → the warning returns) · **Read** 2026-12-20.

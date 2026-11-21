@@ -44,6 +44,7 @@ import { PLACEMENT_TIERS, placementResult, placementEventPayload, readFirstRunPl
 import { QUESTIONS as READINESS_QUESTIONS, READINESS_SKILLS, READINESS_RECORD_KEY, companySkillWeights, scoreReadiness, summarizeScores, weakestSkills, readinessRecordFrom, readReadinessRecord } from './data/readiness-questions.js';
 import { paidWallFor, isColdStart, practiceSolves, previewSwapFor } from './utils/paid-wall.js';
 import { priceRegionFor, planPrices, checkoutLinkFor } from './utils/regional-price.js';
+import { trialEndingLine } from './utils/trial-ending.js';
 import { wantsTrial, buildCheckoutSessionBody, requestCheckoutSession, launchWithFallback, checkoutInFlight, warmCheckoutSession, CHECKOUT_REENTRY_MS, trialOffered, TRIAL_CARD_COPY, TRIAL_TERMS, quotaWallHeadline, currencyLine } from './utils/checkout-session.js';
 import { companySetGate, companySetFreeIds, companySetProgress, quietAskDecision, deadlineOfferFor, deadlineEventMeta, withEarlyWall, pickProMockId, FREE_MOCK_ID, quotaGate, FREE_SOLVE_QUOTA, quotaFreePaths, QUOTA_FREE_PATH_COPY, milestoneTier } from './utils/free-tier-boundary.js';
 import { expandStageChallenges, placementStartIndex as roadmapPlacementStartIndex } from './utils/roadmap.js';
@@ -6438,6 +6439,11 @@ function SQLQuest() {
   const [proType, setProType] = useState(null); // 'monthly' or 'lifetime' or null
   const [proExpiry, setProExpiry] = useState(null);
   const [proAutoRenew, setProAutoRenew] = useState(true);
+  // A Stripe trial's end, as the webhook wrote it (`proTrial` + `proTrialEnd`
+  // on the record). Set by loadUserSession and the payment-return poll; null
+  // for everyone not in a Stripe trial. Read only by the trial-ending line
+  // (M-10, src/utils/trial-ending.js).
+  const [stripeTrialEnd, setStripeTrialEnd] = useState(null);
   const [showProModal, setShowProModal] = useState(false);
   // Collision catcher (2026-09-06, paywall-surfaces T2 / plan D-2). Replaces
   // the locked-Hard soft toast: null = closed, { challengeId } = open for the
@@ -17604,11 +17610,13 @@ CRITICAL RULES:
         // autoRenew is display-only now; Stripe's Customer Portal owns the
         // real setting (STRIPE_CUSTOMER_PORTAL_URL). Never a grant input.
         setProAutoRenew(access.reason === 'active' && userData.proAutoRenew !== false);
+        setStripeTrialEnd(userData.proTrial === true && userData.proTrialEnd ? userData.proTrialEnd : null);
       } else {
         setUserProStatus(false);
         setProType(null);
         setProExpiry(null);
         setProAutoRenew(false);
+        setStripeTrialEnd(null);
         
         // Check for pending subscriptions (user paid before/during signup)
         if (isSupabaseConfigured() && userData.email) {
@@ -25605,6 +25613,27 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
     trackActivationEvent('header_pro_shown', { solves: practiceSolveCount, trialOffered: trialOfferOn }, { onceKey: 'header_pro_shown' });
   }, [!!headerPro, isSessionLoading, currentUser]);
 
+  // The last 48 hours of a Stripe trial (M-10, 2026-11-22): the date, the
+  // price that follows (planPrices — never a literal) and what Pro still
+  // holds, on the Coach and the challenge list, with "Manage plan". Pure
+  // half src/utils/trial-ending.js; guards tests/trial-ending.test.js.
+  const trialEnding = (window.FF?.feature?.('trialEndingLine') === true && userProStatus && stripeTrialEnd)
+    ? trialEndingLine({
+        proTrial: true,
+        proTrialEnd: stripeTrialEnd,
+        plan: proType,
+        prices: planPrices(priceRegion),
+        hardLeft: challenges.filter(c => c.difficulty === 'Hard' && !solvedChallenges.has(c.id)).length,
+        mockTitle: companyMockTitle(prepTarget?.company || null),
+      })
+    : null;
+  const trialEndingOnSurface = !!trialEnding && (activeTab === 'guide' || (activeTab === 'quests' && !currentChallenge));
+  useEffect(() => {
+    if (!trialEndingOnSurface) return;
+    const day = new Date().toISOString().slice(0, 10);
+    trackActivationEvent('trial_day5_shown', { plan: proType || null, hoursLeft: trialEnding.hoursLeft, surface: activeTab, priceRegion }, { onceKey: `trial_day5_shown_${day}` });
+  }, [trialEndingOnSurface]);
+
   const pendingInterviewRef = useRef(null);
   const pendingInterviewPatternRef = useRef(null);   // the trap page a ?interview= link came from
   const pendingInterviewSrcRef = useRef(null);       // the ?src= of any ?interview= link (a company page, a trap page)
@@ -25775,6 +25804,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
           setProType(fresh.proType);
           setProExpiry(fresh.proExpiry);
           setProAutoRenew(!!fresh.proAutoRenew);
+          setStripeTrialEnd(fresh.proTrial === true && fresh.proTrialEnd ? fresh.proTrialEnd : null);
           setShowProModal(false);
           setPaymentSuccessState('activated');
           try { playSound('levelup'); setShowConfetti(true); } catch (_) { /* ignore */ }
@@ -34448,6 +34478,29 @@ RULES:
             tests/header-identity.test.js pins the header's one gate. */}
         {interviewStatusOn && interviewStatus && (
           <InterviewStatusStrip model={interviewStatus} onCell={onInterviewStatusCell} />
+        )}
+
+        {/* The last 48 hours of a Stripe trial (M-10, 2026-11-22). Two of four
+            trials that reached day 7 failed the charge and half cancelled
+            without being told what was left; this says the date, the price
+            and what Pro still holds, and where to manage it. No accent: it is
+            information, not an ask. */}
+        {trialEndingOnSurface && (
+          <div data-testid="trial-ending-line" className="mb-3 rounded-lg px-4 py-3 text-sm flex flex-wrap items-center gap-x-3 gap-y-1" style={{ background: '#16181F', border: '1px solid #2A2E38', color: '#F2F0EA' }}>
+            <span className="font-medium">{trialEnding.lead}</span>
+            <span style={{ color: '#8A8E99' }}>{trialEnding.ahead}</span>
+            <a
+              href={getManageSubscriptionHref(currentUser, proType)}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-testid="trial-ending-manage"
+              onClick={() => trackActivationEvent('trial_day5_manage_clicked', { plan: proType || null, hoursLeft: trialEnding.hoursLeft })}
+              className="ml-auto text-xs font-bold underline"
+              style={{ color: '#C4B5FD' }}
+            >
+              Manage plan
+            </a>
+          </div>
         )}
 
         {/* Resume Where You Left Off Banner */}
