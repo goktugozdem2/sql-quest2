@@ -55,8 +55,11 @@ describe('the ladder counts solves, not this session', () => {
 });
 
 describe('moving the account rung is a flag, and a prompt — not a wall', () => {
-  it('ships dark', () => {
-    expect(flags).toMatch(/signupAskAtThree:\s*false/);
+  // Shipped dark 2026-09-14; ON 2026-11-22 with a ledger claim and a
+  // guardrail (3 → 6 solves must not fall more than 5 points).
+  it('is on, with its claim in the ledger', () => {
+    expect(flags).toMatch(/signupAskAtThree:\s*true/);
+    expect(fs.readFileSync(new URL('../docs/agent/ledger.md', import.meta.url), 'utf8')).toMatch(/### the account ask at the third solve/);
   });
 
   it('only changes WHICH solve asks, 10 or 3', () => {
@@ -79,3 +82,14 @@ describe('moving the account rung is a flag, and a prompt — not a wall', () =>
     expect(ladder).toContain("'first_challenge'");
   });
 });
+
+// 2026-11-22: with the account rung at 3, the ladder must not ask twice.
+describe('the ladder asks once at 3, and re-asks only from 10', () => {
+  it('the email-only ask is skipped once the account was asked', () => {
+    expect(ladder).toMatch(/solvedTotal >= 3 && !softEmailCaptured && !asked\.email && !asked\.account/);
+  });
+  it('re-asks start at the tenth solve whatever the rung', () => {
+    expect(ladder).toMatch(/solvedTotal >= 10 && solvedTotal > accountRung && asked\.account && solvedTotal % 5 === 0/);
+  });
+});
+

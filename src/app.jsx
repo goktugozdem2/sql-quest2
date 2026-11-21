@@ -25136,12 +25136,17 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
             if (solvedTotal >= accountRung && !asked.account) {
               markGuestAsk('account');
               setTimeout(() => triggerSignupPrompt(accountRung === 3 ? 'third_solve' : 'first_challenge'), 1500);
-            } else if (solvedTotal >= 3 && !softEmailCaptured && !asked.email) {
+            } else if (solvedTotal >= 3 && !softEmailCaptured && !asked.email && !asked.account) {
+              // (2026-11-22) Once the account has been asked for — at 3 with
+              // signupAskAtThree — the email-only ask is the same question
+              // again, one solve later; it is skipped.
               markGuestAsk('email');
               setTimeout(() => {
                 if (!softEmailCaptured) setShowSoftEmailCapture(true);
               }, 1500);
-            } else if (solvedTotal > accountRung && asked.account && solvedTotal % 5 === 0) {
+            } else if (solvedTotal >= 10 && solvedTotal > accountRung && asked.account && solvedTotal % 5 === 0) {
+              // Re-asks start at 10 whichever rung asked first, so moving the
+              // rung to 3 does not add a nudge at 5 (2026-11-22).
               setTimeout(() => triggerSignupPrompt('progress'), 1500);
             }
           }
