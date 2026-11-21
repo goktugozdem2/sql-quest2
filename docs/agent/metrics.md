@@ -2545,7 +2545,7 @@ Three signals, all born 2026-09-12 (the deploy is the birth; never
 
 | event | when it fires |
 |---|---|
-| `guest_resumed` | a browser that already held a `guest_*` identity with progress came back and the app resumed it instead of minting a new one; carries `solvedCount` |
+| `guest_resumed` | a browser that already held a `guest_*` identity with progress came back and the app resumed it instead of minting a new one; carries `solvedCount` — **0 on every row until the merge of `fix/guest-resumed-solvedcount` (2026-11-22)**: the shared payload's stale `solvedChallenges.size` overwrote it (755 of 755 rows in the 60 days before). Count resumes from the event; read the solves from `challenge_solved`, never this field, before that date |
 | `guest_progress_merged` | a login folded this browser's guest blob into the account; carries `newSolves`, `newAttempts`, `xpAdded`, `guestSolves`, `account` |
 | `signup_completed` with `carriedSolves` | the auth-modal register path now carries the guest blob; `carriedSolves` is how many solves came along (the post-solve prompt path, `source='guest_conversion'`, always carried them) |
 
