@@ -58,6 +58,19 @@ export const TRIAL_CARD_COPY = Object.freeze({
 export const TRIAL_TERMS = `${TRIAL_DAYS}-day free trial: a card is required and nothing is charged today. Cancel before day ${TRIAL_DAYS} and you pay nothing.`;
 
 /**
+ * The quota wall's headline (2026-11-22). The wall is the surface that sells
+ * (141 met it 09-26 → 11-21, 18 clicked, 6 trialled or paid), and 97 of the
+ * 98 people who saw it were offered the trial — in grey under each price,
+ * while the headline said "Pro opens the rest". When the trial is on offer
+ * the headline says so; otherwise it is the line it always was.
+ */
+export function quotaWallHeadline(quota, trialOn) {
+  return trialOn
+    ? `${quota} free solves done. Try Pro free for ${TRIAL_DAYS} days.`
+    : `${quota} free solves done. Pro opens the rest.`;
+}
+
+/**
  * May the modal promise the trial to this person? Both flags on, and no
  * trial on their record already — the same rule create-checkout-session
  * applies (one trial per username), read from what the browser can see. The
