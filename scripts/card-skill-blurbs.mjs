@@ -11,9 +11,9 @@
  * the bank's own tags through SKILL_TO_RADAR. The title stays: it is the
  * question.
  *
- * Capital One is frozen until its 2026-10-12 read (SKIP_UNTIL_READ in
- * build-company-pages.mjs, the content hash in company-sections.test.js);
- * it is listed in FROZEN and rewritten the same day the freeze lifts.
+ * FROZEN names a page mid-read (with SKIP_UNTIL_READ in
+ * build-company-pages.mjs). Empty since 2026-11-22, when Capital One's
+ * freeze lifted and its cards were rewritten like every other page's.
  *
  * Run: node scripts/card-skill-blurbs.mjs   (idempotent; part of npm run build)
  * Guard: tests/card-skill-blurbs.test.js
@@ -24,7 +24,7 @@ import { loadQuestionBank } from './question-slugs.mjs';
 import { SKILL_TO_RADAR, CANONICAL_SKILLS } from '../src/utils/skill-calc.js';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
-export const FROZEN = new Set(['capital-one-sql-interview.html']);
+export const FROZEN = new Set([]);
 export const BLURB_PREFIX = 'Measures: ';
 
 export function canonicalSkillsFor(challenge) {
@@ -47,7 +47,10 @@ export function blurbFor(challenge) {
   return `${BLURB_PREFIX}${skills.length ? skills.join(' · ') : 'Querying Basics'}`;
 }
 
-const CARD = /(<a href="\/app\/\?[^"]*challenge=(\d+)"[^>]*>[\s\S]*?<p style="font-size:15px;font-weight:700;color:#e2e8f0;">[\s\S]*?<\/p>)(<p style="font-size:13px;color:#94a3b8;margin-top:3px;">)([\s\S]*?)(<\/p>)/g;
+// The head may not cross a closing </a>: an inline link to a challenge in a
+// paragraph (Capital One's "challenge 282") would otherwise swallow the next
+// card and give it the inline link's blurb (caught 2026-11-22, card 279).
+const CARD = /(<a href="\/app\/\?[^"]*challenge=(\d+)"[^>]*>(?:(?!<\/a>)[\s\S])*?<p style="font-size:15px;font-weight:700;color:#e2e8f0;">[\s\S]*?<\/p>)(<p style="font-size:13px;color:#94a3b8;margin-top:3px;">)([\s\S]*?)(<\/p>)/g;
 
 export function rewritePage(html, bankById) {
   let n = 0;

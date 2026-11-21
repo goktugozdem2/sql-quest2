@@ -45,6 +45,10 @@ re-measure before acting on one.
    both mock buttons are Pro without saying so. Frozen until the 2026-10-12
    read; the exact changes are written in
    `docs/plans/capital-one-2026-10-12.md` (section E).
+   **DONE 2026-11-22** (branch `feat/capital-one-1012`): read taken —
+   branch 3, the blog owns the queries (641 imp, 39 clicks) — section E plus
+   steps A–C applied, freeze lifted; ledger "Capital One: the 10-12 read",
+   read 2026-12-20.
 7. **135 `/questions/` pages have never been crawled by Bing** (all 135 of
    the never-crawled sitemap URLs, `bing_url_status`, 2026-10-01). Bing sends
    about as much traffic as Google. The automatic submitter can re-send them

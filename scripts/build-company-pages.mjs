@@ -57,9 +57,10 @@ setLang('en');
 // `injectModules` skips them whole — no readiness, topics, format or
 // provenance re-injection — so a run cannot change them by accident.
 // tests/company-sections.test.js pins the built HTML to git HEAD meanwhile.
-export const SKIP_UNTIL_READ = new Set([
-  'capital-one', // untouched until the 2026-10-12 read (docs/plans/capital-one-2026-10-12.md)
-]);
+// Empty since 2026-11-22: the Capital One freeze lifted with its read
+// (branch 3 of docs/plans/capital-one-2026-10-12.md). Keep the set — a page
+// mid-read goes here, with the date of the read that frees it.
+export const SKIP_UNTIL_READ = new Set([]);
 
 // ── 1. tags ────────────────────────────────────────────────────────────────
 const TAGS_FILE = path.join(ROOT, 'src/data/challenge-companies.js');
