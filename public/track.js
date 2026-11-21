@@ -263,6 +263,45 @@
     return false;
   }
 
+  // Crawler fingerprints by window size (2026-11-22). Until today a
+  // landing_view carried no viewport at all, so the crawlers the app stamps
+  // since 2026-10-07 (src/utils/bot-signals.js) walked the landing pages as
+  // people: in the 30 days to 2026-11-22, 941 "readers" in Asia/Shanghai with
+  // no source and 855 in America/Los_Angeles with none, against ~250 real
+  // blog readers. Same bands and the same table as the app, in ES5 rows:
+  // [id, viewport, tz or null, only when there is no landing source].
+  // Stamped, never dropped — a read excludes them, a mistake is recoverable.
+  // tests/track.test.js runs this and botSignals() over the same inputs.
+  // SOFT_FINGERPRINTS:begin
+  var SOFT_FINGERPRINTS = [
+    ['vp1919x992', 'desktop:1919x992', null, false],
+    ['la1920x1080', 'desktop:1920x1080', 'America/Los_Angeles', true],
+    ['utc1280x720', 'desktop:1280x720', 'UTC', false],
+    ['tab800x600', 'tablet:800x600', null, false],
+    ['vp1280x1200', 'desktop:1280x1200', null, false]
+  ];
+  // SOFT_FINGERPRINTS:end
+
+  function viewportLabel() {
+    try {
+      var w = window.innerWidth;
+      if (!w) return null;
+      var band = w < 768 ? 'mobile' : w < 1024 ? 'tablet' : 'desktop';
+      return band + ':' + w + 'x' + window.innerHeight;
+    } catch (_) { return null; }
+  }
+
+  function softFingerprint(viewport, tz, src) {
+    for (var i = 0; i < SOFT_FINGERPRINTS.length; i++) {
+      var f = SOFT_FINGERPRINTS[i];
+      if (viewport !== f[1]) continue;
+      if (f[2] && tz !== f[2]) continue;
+      if (f[3] && src) continue;
+      return f[0];
+    }
+    return isSpamReferrer(src) ? 'refspam' : null;
+  }
+
   // First touch wins — the same rule arrivalSrc uses in app.jsx. Explicit
   // param beats referrer: utm_source, else ref, else src (an assistant or a
   // share link can carry any of the three onto a landing page). Runs before
@@ -352,9 +391,11 @@
       // Both on every row, so a cta_* click is attributable without a join.
       try { meta.utm = utmSource(); } catch (_) { meta.utm = null; }
       meta.landingSrc = landingSrc();
-      if (isSpamReferrer(meta.landingSrc)) meta.bot = 'refspam';
       if (ctaArm) { meta.ctaArm = ctaArm; meta.ctaTest = CTA_TEST_ID; }
       try { meta.tz = Intl.DateTimeFormat().resolvedOptions().timeZone || null; } catch (_) {}
+      meta.viewport = viewportLabel();
+      var fp = softFingerprint(meta.viewport, meta.tz, meta.landingSrc);
+      if (fp) meta.bot = fp;
 
       var user = null;
       try { user = localStorage.getItem('sqlquest_user') || null; } catch (_) {}

@@ -110,7 +110,10 @@ describe('the pages', () => {
   it('name a company only as "tested in our … mock" — never a claim about its interview', () => {
     const COMPANIES = /\b(Capital One|Revolut|Google|Meta|Amazon|Stripe|Wise|JPMorgan|Snowflake|Apple|Netflix|Uber|Airbnb)\b/;
     for (const [p, html] of pages()) {
-      const t = text(html).replace(/question \d+ of our Capital One [\w\s-]+? mock/g, '');
+      // The one other allowed mention (2026-11-22, Capital One plan step B):
+      // a link to our own practice page — a pointer, not a claim about the interview.
+      const t = text(html).replace(/question \d+ of our Capital One [\w\s-]+? mock/g, '')
+        .replace('Preparing for the Capital One screen? The Capital One SQL practice set →', '');
       expect(t, p.slug).not.toMatch(COMPANIES);
     }
   });
