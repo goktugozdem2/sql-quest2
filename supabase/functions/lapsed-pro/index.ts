@@ -152,6 +152,23 @@ Deno.serve(async (req) => {
 
   try {
     const dry = new URL(req.url).searchParams.get('dry') === '1'
+
+    // HELD (2026-11-22, BACKLOG item 21). The copy tells every recipient
+    // "Your SQL Quest Pro trial ended {N} days ago". For part of this
+    // audience that is false: their access did not lapse, the client's
+    // auto-renew branch kept extending it until we removed that on
+    // 2026-09-07 (src/utils/pro-access.js). Until the founder rewrites the
+    // copy (the honest version says we were still giving them Pro and
+    // stopped, and why) a real send is refused here; the dry run still
+    // resolves the audience. Remove this block in the same commit as the
+    // new copy.
+    if (!dry) {
+      return new Response(JSON.stringify({
+        error: 'held',
+        reason: 'copy under review — see BACKLOG.md item 21; ?dry=1 still previews the audience',
+      }), { status: 423, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
