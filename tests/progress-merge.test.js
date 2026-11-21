@@ -140,6 +140,13 @@ describe('source guards — app.jsx keeps the guest, resumes it, and merges it',
     expect(app).toMatch(/trackActivationEvent\('guest_progress_merged'/);
     expect(app).toMatch(/trackActivationEvent\('guest_resumed'/);
   });
+
+  // 2026-11-22: the shared payload's solvedCount (the render's stale
+  // closure) overwrote guest_resumed's own — 755 of 755 rows in 60 days
+  // said 0. An event's own number now wins.
+  it("an event's own solvedCount survives the shared payload (guest_resumed was always 0)", () => {
+    expect(app).toMatch(/solvedCount: Number\.isFinite\(metadata\.solvedCount\) \? metadata\.solvedCount : solvedChallenges\.size,/);
+  });
 });
 
 describe('source guard — restoring a session never celebrates a level-up', () => {

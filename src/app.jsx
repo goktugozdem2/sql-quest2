@@ -7321,7 +7321,12 @@ function SQLQuest() {
             return `${band}:${w}x${window.innerHeight}`;
           } catch (_) { return null; }
         })(),
-        solvedCount: solvedChallenges.size,
+        // An event that passes its own solvedCount keeps it (2026-11-22).
+        // This shared field is read from the render's closure, which is stale
+        // whenever the event fires before React applies a load: every one of
+        // 755 guest_resumed rows in 60 days said 0, though a guest is only
+        // resumed when its blob holds progress.
+        solvedCount: Number.isFinite(metadata.solvedCount) ? metadata.solvedCount : solvedChallenges.size,
         attemptCount: challengeAttempts.length,
         isGuest: !!isGuest,
       };
