@@ -282,6 +282,13 @@ Ranked by expected effect on payers (O1: 50 a month by 12-08). Each would get a 
     `users.data.createdAt` for cohorts.
 27. Email `opened` events are structurally zero (open tracking off at send);
     judge campaigns by return within 48 h.
+28. **Landing reads counted crawlers as readers** (found 2026-11-22): a
+    `landing_view` carried no viewport, so the window-size fingerprints the
+    app has stamped since 10-07 could not apply — 941 Shanghai + 855 LA
+    no-source "readers" in 30 days against ~250 real blog readers.
+    **DONE 2026-11-22** (branch `fix/landing-bot-fingerprint`): track.js
+    writes `viewport` and stamps the app's fingerprints; metrics.md says how
+    to read across the date.
 29. **Passwords are stored as one SHA-256 of salt + password** (found
     2026-11-22 while testing account-password). Fast hash: if `users` ever
     leaked, the hashes are cheap to brute-force. Anon can no longer read
