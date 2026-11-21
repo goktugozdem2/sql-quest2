@@ -27,13 +27,15 @@ const mocks = globalThis.window.mockInterviewsData || [];
 const byId = (id) => mocks.find(m => m.id === id);
 
 // The decision, written down: live / talk-through practice gets the box.
-const ENABLED = [
+// 2026-11-22 (ledger "Explain your approach" — MISS, 8 notes in 1,544
+// answers): the box stays only where a live round grades the reasoning.
+const ENABLED = ['capital-one-live-sql'];
+// Timed online screens, sourced as such: no talking, no box.
+const OFF = [
+  'capital-one-codesignal', 'revolut-analytics-screen',
   'sql-fundamentals-free', 'data-analyst-mid', 'backend-engineer-sql', 'faang-sql-interview',
   'business-analyst-sql', 'senior-data-engineer', 'top-10-most-asked',
-  'capital-one-live-sql',
 ];
-// Timed online screens, sourced as such: no talking, no box.
-const OFF = ['capital-one-codesignal', 'revolut-analytics-screen'];
 
 describe('the box is a per-question flag', () => {
   it('a written question with the flag explains; without it, or as MCQ, it does not', () => {
