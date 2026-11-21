@@ -556,9 +556,6 @@ SQL Quest's strongest positioning: "the only SQL practice site that feels like a
 - LinkedIn SQL Interview Questions — Joins, HAVING & Signup Funnels | SQLQuest.app — https://sqlquest.app/linkedin-sql-interview/
 - Microsoft SQL Interview Questions for Data Scientists & Analysts | SQLQuest.app — https://sqlquest.app/microsoft-sql-interview/
 - Bloomberg SQL Interview Questions — Prices, Trades & Time Buckets | SQLQuest.app — https://sqlquest.app/bloomberg-sql-interview/
-- PayPal SQL Interview Questions — Payments, Fraud & Conditional Sums | SQLQuest.app — https://sqlquest.app/paypal-sql-interview/
-- Coinbase SQL Interview Questions — Trades, Retention & Cohorts | SQLQuest.app — https://sqlquest.app/coinbase-sql-interview/
-- Monzo SQL Interview Questions — The Take-Home and the Review | SQLQuest.app — https://sqlquest.app/monzo-sql-interview/
 
 **Industry tracks and Turkish**
 - Türkçe SQL Öğren — AI Tutor ile Ücretsiz Pratik | SQLQuest.app — https://sqlquest.app/turkce-sql-ogren/
