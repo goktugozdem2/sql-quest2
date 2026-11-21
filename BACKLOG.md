@@ -70,6 +70,11 @@ re-measure before acting on one.
 11. **React and ReactDOM load from unpkg.com** (`src/app.html`), a
     third-party CDN in the critical path, without integrity attributes.
     Self-host the two UMD files or add SRI.
+    **DONE 2026-11-22** (branch `fix/cdn-pins-sri`): SRI on all 16 CDN
+    tags + the dynamic sql.js loader, and two moving versions found and
+    pinned — `lucide@latest` → 1.77.0, `supabase-js@2` → 2.119.2.
+    `tests/cdn-pins.test.js`. Self-hosting is still open (one fewer
+    origin), not needed for integrity.
 12. **`users_public` computes its JSON for every row** — any sorted or
     filtered read through it rebuilds the table (the leaderboard cost ~39 h of
     DB time in nine days). The fix pattern exists (`leaderboard_public`);
