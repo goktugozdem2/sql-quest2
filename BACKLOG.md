@@ -123,6 +123,13 @@ re-measure before acting on one.
 24. **`CLAUDE.md` is 1,400 lines** of operating history with stale lines
     (fixed four on 2026-10-06). Keep the repo map at the top current; prune
     sections whose features were removed.
+    **Status 2026-11-22** (branch `docs/claude-md-prune`): five historical
+    sections moved verbatim to `docs/archive/claude-md-history-2026-11-22.md`
+    with one-line pointers (shipped skill-calc fixes, the Public Profile
+    deploy notes, the goal gate that was off the same night, the April
+    notifications changelog, the done inline mirrors); the free-tier
+    section's "all dark" corrected. −3.6 KB. The rest is still operating
+    knowledge; prune further only with the founder.
 
 ## P6 — data quality traps (for anyone reading numbers)
 
