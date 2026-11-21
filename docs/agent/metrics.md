@@ -957,6 +957,20 @@ Of people who opened a ticket (`ticket_opened`, not locked), the share with
 `ticket_submitted` attempts to solve. Locked opens (`locked: true`) are the
 Pro ask's own count. Baseline: none (born 2026-10-04).
 
+## `app_boot`
+
+How long /app takes for the people who open it (2026-11-22, BACKLOG item
+10). From `app_opened` (one per browser per day, fired when the session has
+settled), bots out (`metadata.bot is null`): the median and p75 of
+`bootMs` (navigation start → session settled), `lcpMs`, `appJsMs`,
+`dataJsMs`, split by the `viewport` band and by `net` (effectiveType). Read
+per band, never one blended number: 95% of modal viewers are on desktop,
+the India price region is mostly not. **Decision rule, written before the
+data:** if `dataJsMs` p75 is ≥ 40% of `bootMs` p75 for any band with
+n ≥ 50, split data.js by dataset (item 10); if not, the bundle is not what
+people wait on — look at the session load (`bootMs − renderMs`) instead.
+First rows: the day the change merges; read after 14 days.
+
 ## `modal_layout_split`
 
 The Pro modal order test (2026-10-08, `modalPlansFirst`, test id
@@ -1058,6 +1072,18 @@ Size of the error, week to 2026-11-12 vs the week before: the #58 rules
 read new app people as 562 vs 361 (+56%) and first_solve_10m as 5.0% vs
 9.7%; with these rules it is 156 vs 238 (−34%) and 17.9% vs 14.7%. Growth
 and activation both flipped sign. Landing people: 1,458 → 831.
+
+**Landing rows carry the window size from 2026-11-22** (merge of
+`fix/landing-bot-fingerprint`). Before that a `landing_view` had no
+`viewport`, so only `refspam` could be stamped there and every other
+crawler counted as a reader: in the 30 days to 2026-11-22, 941 landing
+people in Asia/Shanghai with no source and 855 in America/Los_Angeles with
+none, against ~250 real blog readers (blog_practice_exit read). `src/track.js`
+now writes `viewport` in the app's `band:WxH` form and stamps the same
+fingerprints as `botSignals()` (one table, test-bound). From that date a
+landing read filters `->>'bot' is null` like an app read; before it, drop
+`tz = 'Asia/Shanghai'` with no landing source and say the LA no-source rows
+are unreadable (they hold both the crawler and real people).
 **Still open:** landing_view carries no window size, so the 1280x1200
 crawler's landing views cannot be told apart — 214 (W1) and 295 (W0)
 landing people are Asia/Shanghai with no source. Read landing people with

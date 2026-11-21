@@ -338,3 +338,21 @@ describe('template source guards', () => {
     expect(text).toContain('Queries run in the browser.');
   });
 });
+
+// 2026-11-22 (BACKLOG item 23): the build leaves the tree clean. llms.txt is
+// dated by its newest page in the lastmod manifest and built after that
+// manifest settles; the date-stamped /weekly/ archive has its own script.
+describe('the build is stable across days', () => {
+  it('llms.txt is dated by the newest lastmod in the manifest', async () => {
+    const { contentDate } = await import('../scripts/build-llms-txt.js');
+    const m = JSON.parse(fs.readFileSync(join(ROOT, 'src/data/sitemap-lastmod.json'), 'utf8'));
+    const all = JSON.stringify(m).match(/"lastmod":"(\d{4}-\d{2}-\d{2})"/g).map(x => x.slice(11, 21)).sort();
+    expect(contentDate(ROOT)).toBe(all[all.length - 1]);
+  });
+
+  it('build-llms-txt runs after sitemap-lastmod, and /weekly/ is not in the everyday build', () => {
+    const { build } = JSON.parse(fs.readFileSync(join(ROOT, 'package.json'), 'utf8')).scripts;
+    expect(build.indexOf('build-llms-txt')).toBeGreaterThan(build.indexOf('sitemap-lastmod'));
+    expect(build).not.toMatch(/build-weekly/);
+  });
+});
