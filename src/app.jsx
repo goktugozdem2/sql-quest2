@@ -44,7 +44,7 @@ import { PLACEMENT_TIERS, placementResult, placementEventPayload, readFirstRunPl
 import { QUESTIONS as READINESS_QUESTIONS, READINESS_SKILLS, READINESS_RECORD_KEY, companySkillWeights, scoreReadiness, summarizeScores, weakestSkills, readinessRecordFrom, readReadinessRecord } from './data/readiness-questions.js';
 import { paidWallFor, isColdStart, practiceSolves, previewSwapFor } from './utils/paid-wall.js';
 import { priceRegionFor, planPrices, checkoutLinkFor } from './utils/regional-price.js';
-import { wantsTrial, buildCheckoutSessionBody, requestCheckoutSession, launchWithFallback, checkoutInFlight, warmCheckoutSession, CHECKOUT_REENTRY_MS, trialOffered, TRIAL_CARD_COPY, TRIAL_TERMS, quotaWallHeadline } from './utils/checkout-session.js';
+import { wantsTrial, buildCheckoutSessionBody, requestCheckoutSession, launchWithFallback, checkoutInFlight, warmCheckoutSession, CHECKOUT_REENTRY_MS, trialOffered, TRIAL_CARD_COPY, TRIAL_TERMS, quotaWallHeadline, currencyLine } from './utils/checkout-session.js';
 import { companySetGate, companySetFreeIds, companySetProgress, quietAskDecision, deadlineOfferFor, deadlineEventMeta, withEarlyWall, pickProMockId, FREE_MOCK_ID, quotaGate, FREE_SOLVE_QUOTA, quotaFreePaths, QUOTA_FREE_PATH_COPY, milestoneTier } from './utils/free-tier-boundary.js';
 import { expandStageChallenges, placementStartIndex as roadmapPlacementStartIndex } from './utils/roadmap.js';
 import { shouldEmitLockEvent, lockEventKey } from './utils/lock-events.js';
@@ -32752,17 +32752,20 @@ RULES:
                   <p className="text-xs mt-1.5" style={{ color: '#8A8E99' }} data-testid="billed-by">
                     Billed by Datrick, Inc. — that is the name on your card statement.
                   </p>
-                  {/* Stripe converts to the buyer's local currency on the
-                      checkout page and there is no way to stop it: Adaptive
-                      Pricing is "Always on" for Payment Links (verified in
-                      the dashboard 2026-09-20 — the toggles there cover
-                      Checkout Sessions, which we do not use). So a buyer in
-                      Turkey clicks $99 and is met with TRY 5,021.88. The
-                      number is right at the day's rate; the surprise is what
-                      loses them. Say it here instead. */}
-                  <p className="text-xs mt-1.5" style={{ color: '#8A8E99' }} data-testid="billed-currency">
-                    Billed in USD; your local currency may be shown at checkout.
-                  </p>
+                  {/* Stripe converts to the buyer's local currency on a
+                      Payment Link and there is no way to stop it: Adaptive
+                      Pricing is "Always on" there (verified in the dashboard
+                      2026-09-20), so a buyer in Turkey clicks $99 and is met
+                      with TRY 5,021.88. A Checkout Session (`checkoutSessions`,
+                      on since 2026-09-30) is created with Adaptive Pricing
+                      off and charges USD — on that path the warning was
+                      untrue (M-06, 2026-11-22). It shows only when checkout
+                      goes through the link. src/utils/checkout-session.js. */}
+                  {currencyLine({ sessionsOn: window.FF?.feature?.('checkoutSessions') === true }) && (
+                    <p className="text-xs mt-1.5" style={{ color: '#8A8E99' }} data-testid="billed-currency">
+                      {currencyLine({ sessionsOn: window.FF?.feature?.('checkoutSessions') === true })}
+                    </p>
+                  )}
                 </div>
                 {/* Plans first (PLAN item 2, `modalPlansFirst` arm): the list
                     moves under the plans, unchanged. src/utils/modal-layout.js */}
