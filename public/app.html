@@ -90,6 +90,12 @@
   
   <script>
     window.perfStart = performance.now();
+    // Largest contentful paint, for app_opened's lcpMs (src/utils/boot-timing.js).
+    try {
+      new PerformanceObserver(function (list) {
+        var e = list.getEntries(); if (e.length) window.sqLcpMs = e[e.length - 1].startTime;
+      }).observe({ type: 'largest-contentful-paint', buffered: true });
+    } catch (_) {}
     window.updateStatus = function(msg) {
       var s = document.getElementById('status');
       if (s) s.textContent = msg;
@@ -156,7 +162,7 @@
   
   <!-- Pre-compiled app (NO Babel needed!) -->
   <script>updateStatus('Starting app...');</script>
-  <script src="/app.js?v=5ccd4bc1"></script>
+  <script src="/app.js?v=5e04774f"></script>
   
   <script>
     (function() {
@@ -167,6 +173,7 @@
           try {
             var root = ReactDOM.createRoot(document.getElementById('root'));
             root.render(React.createElement(SQLQuest));
+            window.sqRenderMs = performance.now();
             console.log('[' + Math.round(performance.now() - window.perfStart) + 'ms] App rendered');
           } catch(e) {
             console.error('Render error:', e);

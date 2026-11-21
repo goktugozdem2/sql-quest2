@@ -957,6 +957,20 @@ Of people who opened a ticket (`ticket_opened`, not locked), the share with
 `ticket_submitted` attempts to solve. Locked opens (`locked: true`) are the
 Pro ask's own count. Baseline: none (born 2026-10-04).
 
+## `app_boot`
+
+How long /app takes for the people who open it (2026-11-22, BACKLOG item
+10). From `app_opened` (one per browser per day, fired when the session has
+settled), bots out (`metadata.bot is null`): the median and p75 of
+`bootMs` (navigation start → session settled), `lcpMs`, `appJsMs`,
+`dataJsMs`, split by the `viewport` band and by `net` (effectiveType). Read
+per band, never one blended number: 95% of modal viewers are on desktop,
+the India price region is mostly not. **Decision rule, written before the
+data:** if `dataJsMs` p75 is ≥ 40% of `bootMs` p75 for any band with
+n ≥ 50, split data.js by dataset (item 10); if not, the bundle is not what
+people wait on — look at the session load (`bootMs − renderMs`) instead.
+First rows: the day the change merges; read after 14 days.
+
 ## `modal_layout_split`
 
 The Pro modal order test (2026-10-08, `modalPlansFirst`, test id

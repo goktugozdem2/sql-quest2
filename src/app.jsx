@@ -68,6 +68,7 @@ import { DIALECTS, DIALECT_ROWS } from './utils/dialect-notes.js';
 import { modalLayoutArm, plansFirst } from './utils/modal-layout.js';
 import { softGateReason, paywallMomentCopy, SOFT_GATE_ACTION_LABEL, SOFT_GATE_TOAST_MS } from './utils/paywall-moments.js';
 import { botSignals, botDecision } from './utils/bot-signals.js';
+import { bootTiming } from './utils/boot-timing.js';
 import { dueRetrievals, pickRetrievalChallenge, recordRetrieval, dailyQuota, MAX_DUE_SHOWN } from './utils/spaced-retrieval.js';
 import { computeRecap, shouldShowRecap } from './utils/session-recap.js';
 import { getAnonId } from './utils/anon-id.js';
@@ -7827,6 +7828,8 @@ function SQLQuest() {
       localStorage.setItem('sqlquest_app_opened_day', today);
       trackActivationEvent('app_opened', {
         returning: !!localStorage.getItem('sqlquest_user'),
+        // Real-user boot timing (src/utils/boot-timing.js, metric app_boot).
+        ...bootTiming({ perf: window.performance, nav: navigator, win: window }),
       });
     } catch (_) {}
   }, [isSessionLoading]);
