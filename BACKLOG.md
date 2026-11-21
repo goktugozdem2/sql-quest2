@@ -22,7 +22,9 @@ carries its own **DONE** / **Status** line.
 | 22 | root notes → docs/archive | #81 | open |
 | 14 | lint app.jsx (2 live ReferenceErrors) | #82 | open |
 | 23 | build leaves the tree clean | #83 | open |
-| — | overdue ledger reads (5) + this table | this PR | open |
+| — | overdue ledger reads (5) + this table | #84 | open |
+| 10 | measure /app boot before splitting data.js | #85 | open |
+| 12 | users_public readers | #84 | audited, no action |
 | 16 | faq_open / scroll_depth | — | already fixed |
 | 7 | Bing question pages | — | superseded by #72 |
 
@@ -105,6 +107,12 @@ the Stripe endpoint's `setup_intent.setup_failed` subscription (item 2).
     filtered read through it rebuilds the table (the leaderboard cost ~39 h of
     DB time in nine days). The fix pattern exists (`leaderboard_public`);
     audit the remaining readers.
+    **Status 2026-11-22:** audited on `ops.query_stats_daily` (24 h to
+    11-21): no `users_public` sort in the top eight any more; the client
+    reads one row through `rpc/sq_load_account`. The heaviest statement now
+    is the email senders' scan of `users` (username, email, data) — 40 calls,
+    94 s a day, ~2.4 s each. Not urgent; the fix is a narrow view or a
+    column filter in the senders (edge-function deploy, founder).
 
 ## P3 — missing tests
 
