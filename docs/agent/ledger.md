@@ -27,6 +27,16 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### company pages name question 1 in the hero (M-02)
+
+- **Claimed** 2026-11-22 · **Shipped** on merge (static pages; revert by setting `HERO_NAMES_FIRST_QUESTION = false` in scripts/build-company-pages.mjs and rebuilding, or reverting the commit) · **Read** 2026-12-20.
+- **Change** the hero's primary button on 32 company pages (all but Capital One, whose hero already opens challenge 275) reads "Solve <Company> question 1 now: <title> — free, no sign-up". The title is the question the app's company banner opens for a cold visitor (`companyFirstQuestion`, src/utils/company-first-question.js: curriculum order, Hard locks, the company set gate). The link is unchanged; the 23 older pages' hero button gains `data-track="cta_hero_primary"`. Guards tests/company-hero-cta.test.js.
+- **Why** (docs/plans/monetization-ideas-2026-11-22.md, 1f): company arrivals are the best money door (2.3% trial-or-paid per arrival vs 0.5% for /sql-exercises/), but 81% of company-page landing people never open the app.
+- **Metric** `company_page_door`, page → app step (metrics.md): landing people on `*-sql-interview` pages → `app_opened` (same aid) within 1 h.
+- **Baseline** 19.1% (247 / 1,290, 2026-10-08 → 11-22).
+- **Target** ≥ 25% at ≥ 600 landing people; guardrail: company arrivals' first-solve rate not below 27%.
+- **Falsification, stated in advance:** under 21% at ≥ 600 landing people → the button's words are not what keeps people on the page; revert the copy and look at scroll depth before the hero instead. Confound to state at the read: the 11-20 banner claim (read 12-18) sits on the same arrivals, downstream of this step.
+
 ### the header's Pro button — a door a free person can press (M-04)
 
 - **Claimed** 2026-11-22 · **Shipped** on merge, flag `headerProButton` **on** · **Read** 2026-12-20.

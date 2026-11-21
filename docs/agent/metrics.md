@@ -3298,6 +3298,14 @@ goldman-sachs, walmart, tiktok, linkedin, microsoft, bloomberg — shipped
 2026-09-13) apart from the 23 older ones, and both against `/sql-exercises/`.
 Search Console impressions per page sit beside it (the SEO dashboard).
 
+**Page → app step (M-02, from 2026-11-22).** Landing people (`landing_view`,
+`page` ending `-sql-interview`, by `aid`, bots out) → `app_opened` with the
+same `aid` within 1 hour. Baseline **19.1%** (247 / 1,290, 2026-10-08 →
+11-22). From 11-22 every company page but Capital One's carries one
+`cta_hero_primary` (the 23 older pages gained the tracking that day), whose
+words name question 1 — read the click rate per page from that date only.
+Guardrail: company arrivals' first-solve rate (27% baseline).
+
 ## `goal_gate_funnel`
 
 The goal gate (2026-09-25, ledger "every person states a goal before using

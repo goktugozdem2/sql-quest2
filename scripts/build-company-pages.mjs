@@ -45,6 +45,8 @@ import { isFreePreview } from '../src/utils/challenge-order.js';
 import { bankCountLabel, FREE_SOLVE_QUOTA, COMPANY_SET_FREE_COUNT } from '../src/utils/display-count.js';
 import { archetypeForCompany } from '../src/data/interview-archetypes.js';
 import { t as i18nT, setLang } from '../src/utils/i18n.js';
+import { companyFirstQuestion, companyHeroCtaText } from '../src/utils/company-first-question.js';
+import { SQL_ROADMAP_CHALLENGE_ORDER } from '../src/data/roadmap-stages.js';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const SITE = 'https://sqlquest.app';
@@ -61,6 +63,19 @@ setLang('en');
 // (branch 3 of docs/plans/capital-one-2026-10-12.md). Keep the set — a page
 // mid-read goes here, with the date of the read that frees it.
 export const SKIP_UNTIL_READ = new Set([]);
+
+// M-02 (docs/plans/monetization-ideas-2026-11-22.md): the hero's primary
+// button names the question the app's company banner opens for a cold
+// visitor — "Solve <Company> question 1 now: <title> — free, no sign-up" —
+// on the generated pages and on the older ones (withHeroCta). The link is
+// unchanged. Set false and rebuild to put the old words back (the revert the
+// ledger claim "company pages name question 1" pre-registers).
+export const HERO_NAMES_FIRST_QUESTION = true;
+// The app's company set gate decides which questions a company view opens;
+// the pick must agree with the app, so it reads the same flag.
+export const COMPANY_SET_GATE_ON = /\n\s*companySetGate:\s*true,/.test(
+  fs.readFileSync(path.join(path.resolve(import.meta.dirname, '..'), 'src/data/feature-flags.js'), 'utf8'),
+);
 
 // ── 1. tags ────────────────────────────────────────────────────────────────
 const TAGS_FILE = path.join(ROOT, 'src/data/challenge-companies.js');
@@ -158,6 +173,7 @@ export function facts(bank, name) {
     previews: tagged.filter(c => c.difficulty === 'Hard' && isFreePreview(c)).length,
     bank: bankCountLabel(bank.byId.size),
     easy: by('Easy'), medium: by('Medium'), hard: by('Hard'), dist, ordered,
+    first: companyFirstQuestion({ order: SQL_ROADMAP_CHALLENGE_ORDER, scoped: tagged, setGateOn: COMPANY_SET_GATE_ON }),
   };
 }
 
@@ -505,7 +521,7 @@ ${ld}
   <h1 class="fd" style="font-size:clamp(36px,5vw,58px);font-weight:800;line-height:1.08;margin-bottom:18px;">${esc(d.name)} SQL Interview <span style="color:#FFE34D;">Questions</span></h1>
   <p style="font-size:18px;line-height:1.75;color:#94a3b8;max-width:720px;margin-bottom:28px;">${esc(d.hero)}</p>
   <div style="display:flex;gap:12px;flex-wrap:wrap;">
-    <a href="/app/?company=${encodeURIComponent(d.name)}&amp;src=${slug}&amp;goal=interview" class="btn bp" data-track="cta_hero_primary">Start the ${esc(d.name)} set — free</a>
+    <a href="/app/?company=${encodeURIComponent(d.name)}&amp;src=${slug}&amp;goal=interview" class="btn bp" data-track="cta_hero_primary">${heroCtaLabel(d.name, f.first)}</a>
     <a href="/sql-interview-readiness-test/?company=${key}" class="btn bo" data-track="cta_hero_readiness">Check my readiness</a>
   </div>
   <p style="font-size:13px;color:#8b98ab;margin-top:18px;">${f.n} practice challenges · ${f.easy} Easy / ${f.medium} Medium / ${f.hard} Hard · your first ${FREE_SOLVE_QUOTA} solves free · runs in the browser</p>
@@ -585,6 +601,31 @@ FAQS.forEach(f=>{const d=document.createElement('div');d.className='fi';d.innerH
 `;
 }
 
+// The hero button's words (M-02). Escaped here, once, for every caller.
+export function heroCtaLabel(name, first) {
+  if (HERO_NAMES_FIRST_QUESTION && first) return esc(companyHeroCtaText(name, first));
+  return `Start the ${esc(name)} set — free`;
+}
+
+// The older pages' hero button: the first `btn bp` link into the app inside
+// <section class="hero">. Its href is kept as it is (the page's arrival
+// source must not move under the 12-18 banner read); it gains the template's
+// `cta_hero_primary` tracking and the words that name question 1. Pages whose
+// hero button is not a plain company link (Capital One's opens challenge 275
+// directly) are left alone. Idempotent.
+const HERO_CTA_RE = /<a href="(\/app\/\?company=[^"]*)" class="btn bp"(?: data-track="cta_hero_primary")?>([^<]*)<\/a>/;
+export function withHeroCta(html, { name, first, original = null }) {
+  const at = html.indexOf('<section class="hero"');
+  if (at < 0) return html;
+  const end = html.indexOf('</section>', at);
+  const hero = html.slice(at, end);
+  const m = hero.match(HERO_CTA_RE);
+  if (!m) return html;
+  const words = HERO_NAMES_FIRST_QUESTION && first ? heroCtaLabel(name, first) : (original ?? m[2]);
+  const next = hero.replace(HERO_CTA_RE, `<a href="${m[1]}" class="btn bp" data-track="cta_hero_primary">${words}</a>`);
+  return html.slice(0, at) + next + html.slice(end);
+}
+
 // ── 5. shared modules for the pages that predate the template ─────────────
 // The 23 older company pages keep their copy (several rank and convert); they
 // get the template's readiness/Skillmap block after their question cards and
@@ -607,6 +648,7 @@ export function injectModules(bank) {
     html = withTopicPractice(html, { slug: key, name, dist: fx.dist, ordered: fx.ordered, bank: fx.bank });
     html = withSourcedFormat(html, key);
     html = withProvenance(html, { slug: key, name });
+    html = withHeroCta(html, { name, first: fx.first });
     fs.writeFileSync(file, html);
     done.push(key);
   }
