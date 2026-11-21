@@ -56,6 +56,10 @@ export const SNIPPET_PAGES = [
   { src: 'src/blog/sql-joins-explained.html', built: 'public/blog/sql-joins-explained/index.html' },
   { src: 'src/blog/validate-ai-generated-sql.html', built: 'public/blog/validate-ai-generated-sql/index.html' },
   { src: 'src/vs-sqlbolt.html', built: 'public/vs-sqlbolt/index.html' },
+  // 2026-11-22, the Capital One read (docs/plans/capital-one-2026-10-12.md,
+  // branch 3): the blog owns the query family (641 impressions, 39 clicks in
+  // 28 days); the company page goes transactional — year + count + the mock.
+  { src: 'src/capital-one-sql-interview.html', built: 'public/capital-one-sql-interview/index.html' },
 ];
 
 // "228 free", "300+ free", "(18 Free)", "first 10 solves", "10 free challenge
@@ -256,5 +260,20 @@ describe('the 2026-11-19 striking-distance snippets answer their query', () => {
       return f.title === o.title || f.description === o.description || !/ \| SQLQuest\.app$/.test(f.title);
     });
     expect(bad).toEqual([]);
+  });
+});
+
+// The count in the Capital One title is the set's, not a typed number.
+describe('the Capital One title states the tagged set it opens', () => {
+  it('N in "N Questions" equals the challenges tagged Capital One', async () => {
+    const vm = await import('node:vm');
+    const ctx = { window: {} };
+    vm.createContext(ctx);
+    vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/data/challenge-companies.js'), 'utf8'), ctx);
+    const tagged = Object.values(ctx.window.challengeCompanies).filter(v => Array.isArray(v) && v.includes('Capital One')).length;
+    const { title, description } = snippetFields(fs.readFileSync(path.join(ROOT, 'src/capital-one-sql-interview.html'), 'utf8'));
+    expect(title).toMatch(/\(\d{4}\)/);
+    expect(Number(title.match(/(\d+) Questions/)[1])).toBe(tagged);
+    expect(Number(description.match(/(\d+) runnable questions/)[1])).toBe(tagged);
   });
 });

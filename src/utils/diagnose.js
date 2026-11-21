@@ -39,7 +39,7 @@ export function diagnoseResult(user, expected, userError = null, ctx = {}) {
       kind: 'runtime_error',
       headline: 'Your query threw a SQL error',
       details: `The database couldn't run your query. Error: ${String(userError).slice(0, 200)}`,
-      hints: sqlErrorHints(userError),
+      hints: sqlErrorHints(userError, ctx && ctx.query),
     };
   }
 
@@ -548,13 +548,91 @@ export function columnFixLine(userCols, expectedCols) {
 }
 
 /**
+ * The one specific line for a syntax error (2026-11-22). Syntax errors are
+ * the most common wrong submit (341 person-challenges from 09-30 to 11-21)
+ * and the slowest to recover (75% solved within the hour, against 83–95% for
+ * every result-shape kind), and every one got the same two generic lines.
+ * SQLite only says `near "X": syntax error`; the query says why. Rules, each
+ * checked against the query, most specific first; null when none applies,
+ * and the generic lines stand. tests/diagnose-syntax.test.js runs every rule
+ * on the error real SQLite gives for it.
+ */
+const CLAUSES = ['where', 'group by', 'having', 'order by', 'limit'];
+function clausePos(q, clause) {
+  const m = new RegExp(`\\b${clause.replace(' ', '\\s+')}\\b`).exec(q);
+  return m ? m.index : -1;
+}
+export function syntaxNearHint(error, query) {
+  const msg = String(error || '');
+  const raw = String(query || '');
+  const lower = msg.toLowerCase();
+  const isSyntax = /syntax error|incomplete input|unrecognized token/.test(lower);
+  // The Turkish keyboard: LIMIT typed with İ, distinct with ı. SQLite reads
+  // LİMİT as a column name. Seen in production as `no such column: LİMİT`.
+  if (/[İı]/.test(raw) && (isSyntax || /no such column|no such table/.test(lower))) {
+    return 'Your keyboard typed the Turkish İ or ı — SQL keywords need the plain I: LIMIT, WHERE, DISTINCT.';
+  }
+  if (!isSyntax) return null;
+  // An unclosed string: SQLite reports the rest of the line as one token.
+  if (/unrecognized token: "'/.test(lower)) return "A string's closing quote is missing — strings go in single quotes: 'text'.";
+  const q = raw.replace(/--.*$/gm, ' ').replace(/'(?:[^']|'')*'/g, "''").replace(/\s+/g, ' ').trim().toLowerCase();
+  const near = (/near "([^"]*)"/i.exec(msg) || [])[1];
+  const tok = near ? near.toLowerCase() : null;
+
+  const top = /\bselect\s+(distinct\s+)?top\s+(\d+)/.exec(q);
+  if (top) return `SQLite has no TOP — remove it and end the query with LIMIT ${top[2]}.`;
+  const comma = /,\s*(from|where|group by|order by|having|limit)\b/.exec(q);
+  if (comma) return `Remove the comma right before ${comma[1].toUpperCase()} — the last item in a list takes no comma.`;
+  if (/,\s*,/.test(q)) return 'Two commas in a row — delete one.';
+  const opens = (q.match(/\(/g) || []).length, closes = (q.match(/\)/g) || []).length;
+  if (opens > closes) return "A '(' is never closed — add the matching ')'.";
+  if (closes > opens) return "There is a ')' with no '(' before it.";
+  if (/incomplete input/.test(lower)) {
+    if (((raw.match(/'/g) || []).length % 2) === 1) return "A string's closing quote is missing.";
+    return 'The query stops in the middle — finish the last condition (for example WHERE price > 10).';
+  }
+  if (/\bin\s+select\b/.test(q)) return 'A subquery needs parentheses: IN (SELECT …).';
+  const bareFrom = /\bfrom\s+(where|group|order|having|limit)\b/.exec(q);
+  if (bareFrom) return `FROM needs a table name before ${bareFrom[1].toUpperCase()}.`;
+  if (/\border\s+(?!by\b)\w/.test(q)) return 'ORDER needs BY: ORDER BY column.';
+  if (/\bgroup\s+(?!by\b)\w/.test(q)) return 'GROUP needs BY: GROUP BY column.';
+  if (/\blimit\s+(\d+\s+)?(desc|asc)\b/.test(q)) return 'DESC / ASC belong to ORDER BY: ORDER BY column DESC LIMIT n.';
+  // Clause order: WHERE → GROUP BY → HAVING → ORDER BY → LIMIT, read on the
+  // outer query only — a subquery's own ORDER BY is not out of place.
+  let outer = q;
+  for (let k = 0; k < 10 && /\([^()]*\)/.test(outer); k++) outer = outer.replace(/\([^()]*\)/g, ' ');
+  const pos = CLAUSES.map(c => clausePos(outer, c));
+  for (let i = 0; i < CLAUSES.length; i++) {
+    for (let j = i + 1; j < CLAUSES.length; j++) {
+      if (pos[i] >= 0 && pos[j] >= 0 && pos[i] > pos[j]) {
+        const a = CLAUSES[i].toUpperCase(), b = CLAUSES[j].toUpperCase();
+        if (a === 'WHERE' && b === 'GROUP BY') return 'WHERE goes before GROUP BY — to filter groups, use HAVING after GROUP BY.';
+        return `${a} goes before ${b} — the order is WHERE, GROUP BY, HAVING, ORDER BY, LIMIT.`;
+      }
+    }
+  }
+  // `select a b c from t`: an item of the SELECT list with three bare names
+  // and no AS — a missing comma. Read on the outer SELECT list only.
+  const selList = (/^select\s+(?:distinct\s+)?(.*?)\s+from\b/.exec(outer) || [])[1];
+  if (tok && selList && selList.split(',').some(item => {
+    const words = item.trim().split(/\s+/);
+    return words.length >= 3 && !words.includes('as') && words.every(w => /^[a-z_][\w.]*$/.test(w)) && words.includes(tok);
+  })) {
+    return 'Two names in a row in SELECT — put a comma between columns (and AS before an alias).';
+  }
+  return null;
+}
+
+/**
  * Produce targeted hints for common SQL error messages. SQLite's error
  * text is obscure — translating to plain English saves students 10-30
  * minutes of Googling per error.
  */
-function sqlErrorHints(error) {
+function sqlErrorHints(error, query = '') {
   const msg = String(error).toLowerCase();
   const hints = [];
+  const specific = syntaxNearHint(error, query);
+  if (specific) hints.push(specific);
 
   if (msg.includes('no such column')) {
     hints.push('A column name in your query doesn\'t exist. Check spelling and table aliases.');

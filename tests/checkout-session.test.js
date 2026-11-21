@@ -422,3 +422,19 @@ describe('the trial check is served by an index', () => {
     expect(body).toContain('.eq("username", username)');
   });
 });
+
+// The quota wall's headline says the trial when the trial is on offer
+// (2026-11-22, ledger "the quota wall's headline says the trial").
+import { quotaWallHeadline } from '../src/utils/checkout-session.js';
+describe('the quota wall headline', () => {
+  it('leads with the trial when it is offered, and is the old line when it is not', () => {
+    expect(quotaWallHeadline(10, true)).toBe(`10 free solves done. Try Pro free for ${TRIAL_DAYS} days.`);
+    expect(quotaWallHeadline(10, false)).toBe('10 free solves done. Pro opens the rest.');
+  });
+
+  it("the modal's free_quota headline is this helper, fed the same trialOfferOn the plan cards read", () => {
+    const app = read('src/app.jsx');
+    expect(app).toMatch(/proModalReason\.type === 'free_quota'\s*\?\s*quotaWallHeadline\(proModalReason\.quota, trialOfferOn\)/);
+    expect(app).toMatch(/\{trialOfferOn \? TRIAL_CARD_COPY\.monthly : 'Billed monthly'\}/);
+  });
+});

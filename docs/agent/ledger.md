@@ -36,6 +36,58 @@ of the verifier and must never be rounded to `FLAT`.
 - **Baseline** 69.7% (n = 132).
 - **Target** ≥ 78% at n ≥ 80 in the 28 days after merge.
 - **Falsification, stated in advance:** under 72% at n ≥ 80 → naming the difference is not the block; look at which challenges carry the column_set misses before writing more. n < 80 by 12-20 → extend 28 days.
+### the quota wall's headline says the trial ("Try Pro free for 7 days")
+
+- **Claimed** 2026-11-22 · **Shipped** on merge (no flag; only where the trial is already offered) · **Read** 2026-12-20, extend to 2027-01-17 if n is short.
+- **Change** reason `free_quota`: the headline "10 free solves done. Pro opens the rest." becomes "10 free solves done. Try Pro free for 7 days." whenever `trialOfferOn` (the same value the plan cards' "7 days free, then billed …" reads). Price, plans, terms and gate unchanged.
+- **Why** (read 2026-11-22): the wall is the surface that sells — 141 people met it 09-26 → 11-21, 18 clicked a plan, 6 trialled or paid within 7 days — and 97 of the 98 people shown its modal since 10-02 were offered the trial, but only in grey under each price. Most purchases since 10-01 started as trials.
+- **Metric** `quota_wall` (metrics.md): people meeting the wall → `pro_trial_started` / `pro_purchase_completed` (stripe_webhook) within 7 days; clicks per person at the wall as the guardrail.
+- **Baseline** 10-02 → 11-21: 97 people shown the free_quota modal; 6 of the 141 wall people trialled or paid within 7 days (4.3%); 12.8% clicked a plan.
+- **Target** ≥ 8% of wall people start a trial or pay within 7 days, clicks at the wall not below 10%.
+- **Falsification, stated in advance:** clicks below 10% → the headline costs the click; revert. Trial-or-pay share at or under 4.3% at n ≥ 50 → the headline is not the lever; leave it (it is true) and look at the Stripe step. n < 50 by 12-20 → extend to 01-17.
+### a syntax error gets the line that fixes it (`near "X"` read against the query)
+
+- **Claimed** 2026-11-22 · **Shipped** on merge (no flag; shows wherever the diagnosis panel does — `diagnosisHints` is on) · **Read** 2026-12-20.
+- **Change** `syntaxNearHint` in src/utils/diagnose.js puts one specific line first for a SQL syntax error, checked against the query: no TOP in SQLite → LIMIT n; a comma before FROM / WHERE / …; two commas; an unclosed '(' or quote; a query that stops mid-condition; IN without parentheses; FROM with no table; ORDER / GROUP without BY; DESC after LIMIT; a clause out of order (WHERE → GROUP BY → HAVING → ORDER BY → LIMIT, outer query only); two names in a row in SELECT; the Turkish İ / ı in a keyword (`no such column: LİMİT` was in production). No match → the old generic lines.
+- **Why** (read 2026-11-22, 09-30 → 11-21, bots out): `syntax_error` is the most common wrong-submit kind — 341 person-challenges — and the slowest to recover: **75.1%** solved within the hour, against 83–95% for every result-shape kind (only `column_set`, 69.7%, is lower). Top SQLite tokens: near WHERE 44, ORDER 43, FROM 27, "(" 23, a number 25.
+- **Metric** `hint_to_solve` restricted to `challenge_error_pattern.primary = 'syntax_error'`: person-challenges solved within 60 minutes.
+- **Baseline** 75.1% (n = 341, 09-30 → 11-21).
+- **Target** ≥ 82% at n ≥ 150 in the 28 days after merge.
+- **Falsification, stated in advance:** under 77% at n ≥ 150 → the line is not what stalls them; read which tokens still stall before adding rules. n < 150 by 12-20 → extend 28 days.
+### Capital One: the 10-12 read, branch 3 — the blog is the door, the page is the product
+
+- **Claimed** 2026-11-22 · **Shipped** on merge (the founder's 09-25 plan, "12 Ekim'de ilk iş bu"; 41 days late) · **Read** 2026-12-20.
+- **The read** (`gsc_daily`, 28 days to 2026-11-20): the blog post
+  `/blog/capital-one-codesignal-data-analyst-assessment/` 641 impressions,
+  39 clicks (6.1%), position 7.4, every visible `capital one …` query; the
+  company page 109 impressions, 9 clicks, position 6.2, and no
+  `capital one sql interview*` query at all. That is branch 3 of
+  docs/plans/capital-one-2026-10-12.md.
+- **Change** company page title/meta transactional ("Capital One SQL
+  Interview (2026): 25 Questions + Mock", the 25 bound to the tag count by
+  `tests/snippet-length.test.js`); section E of the plan (cards say
+  "Measures:", one number in the hero, both mock buttons say Pro, the
+  sourced section headed "How the interview runs (sourced)", the shared
+  topic block with the dialect sentence); the five trap pages link to the
+  page (step B); the blog's skip-ahead box gains the timed mock link
+  (`src=capital-one-blog`, step C). The freeze is lifted in the generator,
+  the blurb script and the tests. **Not done on purpose:** the blog title —
+  it is the page earning 6.1% CTR; changing a working title would confound
+  the read.
+- **Baseline** (28 days to 2026-11-22): 110 real readers of the two pages
+  (`landing_view`, bots and Asia/Shanghai out), 3 clicks on the page's mock
+  buttons, 0 Pro modals from a Capital One or trap-page mock link, 0
+  checkout clicks from them.
+- **Metric** `gsc_daily` for both pages (clicks, CTR, any `capital one sql*`
+  query on the company page); money side `pattern_to_checkout` and
+  `pro_modal_shown` with `modalReason` `mock_link` / `pattern_mock` and
+  `linkSrc` `capital-one-*` / `pattern-*`.
+- **Target** the company page ≥ 20 clicks in 28 days (from 9) with the blog
+  holding ≥ 30; ≥ 5 Pro modals from these mock links.
+- **Falsification, stated in advance:** blog clicks fall below 25 → the
+  blog's box change cost it, revert the box; company page CTR falls at the
+  same position → restore the old title. No modal from the mock links in 28
+  days → the mock is not what Capital One readers want; stop pointing at it.
 
 ### four more snippets that fit the window
 
@@ -452,7 +504,7 @@ of the verifier and must never be rounded to `FLAT`.
   the fold was not the friction; keep control, and the next suspect is the
   Stripe page (20 of 21 checkout returns came back after ~32 s there).
   `plans_first` lower than control → the list was doing the selling; revert.
-- **Verdict** _pending_
+- **Verdict** _pending_ — **interim 2026-11-22, not the read:** first modal per aid from the 10-08 flip, bots out: control 100 people → 13 picked a plan (13.0%), `plans_first` 110 → 13 (11.8%), **0.91× control** against a 1.5× target; webhook trial/purchase 4 vs 2. The pre-registered read waits for 150 viewers per arm (~mid-December at this rate). On this trend the 1.5× target is out of reach and the result sits inside the ±20% band whose rule is "keep control; the next suspect is the Stripe page".
 
 ### First 90 Days: a hired status and five PM tickets, so Pro has a job after the interview
 
@@ -552,7 +604,7 @@ of the verifier and must never be rounded to `FLAT`.
 - **Confounds** the hero CTA test arms 2026-10-04 on the same homepage
   (randomised by aid, so the split reads cleanly); the block lands the day
   before.
-- **Verdict** _pending_
+- **Verdict** **MISS — the falsification fired** (read 2026-11-22): `gsc_daily` 10 impressions in the 21 days (12 in the last 28), 0 clicks; 2 non-crawler readers since 10-03, 0 `cta_vs_chatgpt_*` people (target 100+ impressions, 5+ people to the app). As written: the query is too small for a page — keep it for the AI door, write no second AI-comparison page.
 
 ### five SQL trap pages, linked into the graph (the first pattern batch)
 
@@ -584,7 +636,7 @@ of the verifier and must never be rounded to `FLAT`.
   vs COUNT(*), WHERE vs HAVING, top N per group, LAG without PARTITION BY.
 - **Confounds** Shopify retitle and Tesla re-indexing the same day (other
   pages); none of the five URLs existed before.
-- **Verdict** _pending_
+- **Verdict** **MISS on reach — the falsification fired** (read 2026-11-22, `gsc_daily` page slice, 28 days from publication 09-25 → 10-22): all five rank inside the top 20 (positions 5.9–7.1 — that bar HIT), but **352 impressions** in total against 500 (left-join-where 163, between-timestamp 78, join-fan-out 51, not-in-null 44, average-of-averages 16), 4 clicks. The last 28 days: 461 impressions, 2 clicks, positions 5.0–6.8. As written: below either bar → the format does not work here; the next five trap pages are not written. Why they are not clicked: the query slice (56 days) is mostly not searches but assistant follow-ups grounded through Google — "давай", "rispondi", "so yes or no?", "ответь на мой вопрос", pasted multiple-choice exam questions. These pages are retrieved by AI answers (the GenAI door in CLAUDE.md), which answer in place; a snippet rewrite would not change that. Read them as AI-citation pages, not as search pages.
 
 ### the Shopify page's title and description say what the page is
 
@@ -613,7 +665,7 @@ of the verifier and must never be rounded to `FLAT`.
   → the impressions are intent the page cannot serve (like the competitor
   brand queries); stop spending titles on it. Position worse by > 3 →
   revert the title.
-- **Verdict** _pending_
+- **Verdict** **MISS in its window, then clicks** (read 2026-11-22): 28 days from 09-25: 54 impressions, 0 clicks, position 9.2 (target ≥ 3 clicks, CTR ≥ 1% within ±2 of 6.8; the 0-click falsification needed ≥ 150 impressions — not reached). The last 28 days: 65 impressions, **7 clicks (10.8%)** at position 18.2. The title earns the click when shown; the ranking slipped. Not reverted.
 
 ### one question after the first solve: which company (the company ask)
 
@@ -736,7 +788,7 @@ of the verifier and must never be rounded to `FLAT`.
   `checkout-abandon` (it read the click event's email).
 - **Noise:** one live Stripe session opened from the localhost preview on
   2026-09-23 (guest, monthly, abandoned) — exclude its `pro_checkout_expired`.
-- **Verdict** _pending_
+- **Verdict** **HIT** (read 2026-11-22 over the claim's window, 09-23 → 10-23): 10 people clicked a plan with `hadEmailOnFile=false`, **9 reached checkout** (`pro_checkout_clicked` / `checkout_email_step_bypassed` / `pro_checkout_started`) — 90% against ≥ 75%. Before the flag, 0 of 4.
 
 ### Bing crawls what the link graph and a recrawl signal hand it
 
@@ -867,7 +919,7 @@ of the verifier and must never be rounded to `FLAT`.
     interview-first batch, not of the tab alone — amended in that entry.
   - `interviewCountdown` and this flip together by design: the card this
     moves does not exist without it. `prep_*` events date from the flip.
-- **Verdict** _pending_
+- **Verdict** **NOT FLIPPED — nothing to read** (checked 2026-11-22): `interviewFirst` is still `false` on main; the flag queue (docs/agent/flag-queue.md, row 7) holds it as `queued`. The read date above is void; a new one is set on the day it flips.
 
 ### the outcome is asked after the date: one question, three clicks (2026-09-19)
 
@@ -981,7 +1033,7 @@ of the verifier and must never be rounded to `FLAT`.
   share who come back the next day — against the 7 of 46 before. It must
   not lower clicks at the wall; if clicks per person at the wall fall below
   10% with the road back on, the road back goes, not the wall.
-- **Verdict** _pending_
+- **Verdict** **MOVED** (read 2026-11-22, 09-26 → 11-21, bots out): **141 people met the wall, 18 clicked a plan at it (12.8%, target ≥ 10% — HIT)**; within 7 days of meeting it, 5 started a trial or paid; 1 purchase ever followed (target ≥ 2 purchases — short). Guardrails not re-read here (returned-next-day among 10+ solvers, weekly_engaged) — they need the solve-level query in metrics.md before this becomes final. **The 10-09 interim rule fired and was never acted on:** people who met the wall 09-26 → 10-09 and then trialled or paid = **2 (< 3) → "the quota moves to 20, the founder's Go is asked on 10-09".** The Go was never asked; `FREE_SOLVE_QUOTA` is still 10. **Decided 2026-11-22 under the founder's delegation ("kararlar sana ait olsun"): the quota stays at 10** — the rule's premise (the wall does not sell) is contradicted by everything since: 18 of 141 clicked, 6 trialled or paid. The 10-09 rule is retired, not executed.
 
 ### the sixth-solve ask waits for the celebration (founder's item 1, live 2026-09-12)
 
@@ -1595,7 +1647,7 @@ that needs its own path — the current rule is written down in the handler.
 - **Confounds** the interview-prep wall (M2) flips the same day on the same
   tab; split on goal. The quota chip is display only and is read by
   `intake_funnel` (dates) rather than its own metric.
-- **Verdict** _pending_
+- **Verdict** **NOT FLIPPED — nothing to read** (checked 2026-11-22): `spacedRetrievalCard` / `dailyQuota` is still `false` on main; the flag queue (docs/agent/flag-queue.md, row — (not in the queue)) holds it as `off since built`. The read date above is void; a new one is set on the day it flips.
 
 ### the weekly digest says what moved and one thing to do (P2, live)
 
@@ -1654,7 +1706,7 @@ that needs its own path — the current rule is written down in the handler.
   day on different surfaces; a wrong submit that opens the tutor is read
   under the ladder claim, not here (split on `inline_help_opened` /
   `tutor_bypass_clicked`).
-- **Verdict** _pending_
+- **Verdict** **FLAT — the falsification fired** (read 2026-11-22; the flag flipped for everyone 09-30, so pre/post, bots out): wrong submit → the same challenge solved within 60 min, 84.9% (958 / 1,129 person-challenges, 301 people, 09-12 → 09-29) vs **84.9%** (864 / 1,018, 391 people, 09-30 → 11-20). As written: the sentence was not the constraint. The written action — revert the panel to the list, keep `row_set`, read which kinds stall — is a flag change for the founder; not taken here. Confound: the quota (09-26) sits in the pre window's last 3 days.
 
 ### the tutor speaks to the query, climbs a ladder, and remembers the habit (P1 tutor)
 
@@ -1705,7 +1757,7 @@ that needs its own path — the current rule is written down in the handler.
 - **Confounds** the free AI cap (20/day) — a person who hits it mid-ladder
   is read as unresolved; exclude `rate_limit` shows. The live nudge
   (`live_nudge` mode) also carries the REPEAT line from 09-12.
-- **Verdict** _pending_
+- **Verdict** **HIT on the solve, MISS on bypass** (read 2026-11-22, pre/post 09-30, bots out): inline Help open → that challenge solved within 60 min **72.3%** (284 / 393) vs 70.0% before (205 / 293) — target ≥ 55%, and not below the no-ladder level. Bypass: **204 of 395 opens (52%)** were followed by `tutor_bypass_clicked` — target ≤ 40%, under the 60% line that would make rung 2 the opener. Keep the ladder; the bypass is the next thing to look at.
 
 ### the next quest is the weakest skill, one step up (P1 picker)
 
@@ -1733,7 +1785,7 @@ that needs its own path — the current rule is written down in the handler.
   skill after a win; revert and keep the picker for the Coach's drill only.
 - **Confounds** the intent-routing read (10-13) reads reach-6 over the same
   weeks; this moves what the second solve is. Noted on that entry.
-- **Verdict** _pending_
+- **Verdict** **MISS — the falsification fired** (read 2026-11-22, pre/post 09-30, bots out): take rate on the post-solve strip **40.8% → 17.3%** (curriculum 1,223 / 2,999 → weak_skill 410 / 2,374); among solves by people under 10 solves (clear of the quota wall) **29.3% → 15.7%** — 54% of the curriculum arm, below the 70% line. Recommended challenge solved in-session: 80.7% → 51.8% (target ≥ 60%; not under the 45% cliff line). As written: people do not want the weakest skill after a win — **revert, keep the picker for the Coach's drill only**: `weakSkillNext` off in branch `flags/weak-skill-next-off` (founder merges).
 
 ### company sets: three free, then Pro (free-tier boundary M1)
 
@@ -1794,7 +1846,7 @@ that needs its own path — the current rule is written down in the handler.
   2026-09-12: no failed or incomplete payment since 09-01 — the three
   non-payers left Checkout without submitting a card (abandonment, not a
   decline).
-- **Verdict** _pending_
+- **Verdict** **MOVED, guardrail breached** (read 2026-11-22, 09-26 → 11-21, bots out): 293 company arrivals, **40 reached the set wall (13.7%, target ≥ 10%)**, **6 of them clicked (15%, target ≥ 8%)**, 3 company arrivals trialled or paid (target ≥ 1). **Guardrail: company-arrival reach-6 = 17 / 293 = 5.8%**, below the 8% line and the 12.4% baseline (whose denominator still held unstamped crawlers, so the true fall is larger). Not the falsification (that needs no purchase as well), but the cost is real and confounded with the 10-solve quota that flipped the same night. Next: split reach-6 by whether the person ever met the set wall, before touching either gate.
 
 ### the interview-prep goal meets the wall at step 4 (free-tier boundary M2)
 
@@ -1834,7 +1886,7 @@ that needs its own path — the current rule is written down in the handler.
 - **Confounds** the intake flip (09-16) hands this goal to intake-goal
   holders (`coachState.source='intake'`); split on source. M5 ships with it
   — same surface, same read; the mock steps are read as their own line.
-- **Verdict** _pending_
+- **Verdict** **UNREADABLE — n too small, and will stay so** (read 2026-11-22, 09-26 → 11-21, bots out): **12** people started the interview-prep goal in eight weeks (the rule: fewer than 40 by 11-02 → extend to 11-23; at 1.5 a week, 40 is out of reach by any date). Of the 12, 2 opened a Hard or a mock within 24 h (17%), 0 used the skip. All goal picks in the window: fundamentals 18, analyst-day-one 12, interview-prep 12. The finding is the denominator: the goal path is not where people are; reads of the wall belong on the challenge list (the quota and the company set), where 141 and 40 people met it.
 
 ### the six-solve ask speaks to the deadline (free-tier boundary M3)
 
@@ -1915,7 +1967,7 @@ that needs its own path — the current rule is written down in the handler.
 - **Confounds** M1 (10-14) changes the company wall; this reads to 10-13.
   Fewer shows raise every "per shown" ratio mechanically — the guardrail is
   absolute clicks, never a rate.
-- **Verdict** _pending_
+- **Verdict** **NOT FLIPPED — nothing to read** (checked 2026-11-22): `quietEarlyAsks` is still `false` on main; the flag queue (docs/agent/flag-queue.md, row 9) holds it as `needs Go`. The read date above is void; a new one is set on the day it flips.
 
 ### the mocks get a door (free-tier boundary M5)
 
@@ -1946,7 +1998,7 @@ that needs its own path — the current rule is written down in the handler.
   test. Intent routing (09-13) opens the Interview tab to hiring-intent
   people — a second door in the same window; split mock starts by
   `coach_step_started type=mock_interview` vs the tab.
-- **Verdict** _pending_
+- **Verdict** **UNREADABLE** with M2 (read 2026-11-22): 1 of the 12 interview-prep goal starters sat the free mock within 7 days. Same denominator problem as M2.
 
 ### the Coach stops asking twice: a first-run placement is a placement
 
@@ -2015,7 +2067,7 @@ that needs its own path — the current rule is written down in the handler.
   screen, not here. Adaptive placement (10-01) changes which tier the quiz
   assigns to a 4/4 — the floors follow the tier, so from 10-01 the
   Interview-ready floors appear; note it in the read.
-- **Verdict** _pending_
+- **Verdict** **NOT FLIPPED — nothing to read** (checked 2026-11-22): `coachTrustQuizPlacement` is still `false` on main; the flag queue (docs/agent/flag-queue.md, row 3) holds it as `queued`. The read date above is void; a new one is set on the day it flips.
 
 ### adaptive placement: interview-ready is earned on a second round, not declared
 
@@ -2084,7 +2136,7 @@ that needs its own path — the current rule is written down in the handler.
   mix reason after its claim has closed; say so if anyone re-reads it. The
   Coach's own five-challenge placement (`COACH_PLACEMENT_CHALLENGE_IDS`) is
   a different instrument and is untouched.
-- **Verdict** _pending_
+- **Verdict** **NOT FLIPPED — nothing to read** (checked 2026-11-22): `adaptivePlacement` is still `false` on main; the flag queue (docs/agent/flag-queue.md, row 12) holds it as `needs Go`. The read date above is void; a new one is set on the day it flips.
 
 ### onboarding intake: three optional questions before the quiz
 
@@ -2181,7 +2233,7 @@ that needs its own path — the current rule is written down in the handler.
   entry ("the goal is asked, measured and planned before the first solve"),
   which makes the required goal skippable again if `first_run_reach` falls
   more than 15 points.
-- **Verdict** _pending_
+- **Verdict** **NOT FLIPPED — nothing to read** (checked 2026-11-22): `onboardingIntake` is still `false` on main; the flag queue (docs/agent/flag-queue.md, row 6) holds it as `queued`. The read date above is void; a new one is set on the day it flips.
 
 ### the Coach page shows the goal, the step, the challenge and the radar
 
@@ -2832,7 +2884,7 @@ that needs its own path — the current rule is written down in the handler.
   `title_tr`, so a Turkish user reads Turkish chrome around English challenge
   titles; that is pre-existing content debt, but it lands inside this card for
   the first time.
-- **Verdict** _pending_
+- **Verdict** **MISS — the pre-registered falsification fired** (read 2026-11-22, 30 days to 11-21). `cta_practice_*` clicks: **7, from 6 browsers** (rung 1 asked ≥ 40 from ≥ 30; the falsification line was < 15). Real readers ≈ 248: 687 blog `landing_view` people, 439 of them Asia/Shanghai with no source (the 800x600 / 1280x1200 crawler, unstamped on landing rows until `fix/landing-bot-fingerprint`). App arrivals with `arrivalSrc` blog*: 143, ~113 the same crawler; ~20 real, 14 opened a challenge, 2 solved. As written in advance: the exit was never the problem — readers take the answer and leave. Blog readers are not treated as a practice funnel; no third exit (a "solve this now" card was proposed 11-21 and not built).
 - **2026-09-08, before the flag ever flipped: the plan had holes in it.** The
   card set grew from 10 challenges to 25 the same day, and that exposed a
   slicing bug `planToDate` had carried since it was written. It divided the
