@@ -118,6 +118,9 @@ re-measure before acting on one.
 22. **Twenty analysis/setup `.md` files at the root** (AI_TUTOR_ANALYSIS,
     SOUND-FIXES, UX-SIMPLIFICATION-GUIDE, …) predate the current product and
     contradict it in places. Move to `docs/archive/` with a dated note.
+    **DONE 2026-11-22** (branch `chore/archive-root-docs`): 17 moved with a
+    dated `docs/archive/README.md`; `ARCHITECTURE.md` and `TODOS.md` stay
+    (linked from README and the ledger); `plan.md` goes with item 19.
 23. **`public/weekly/` changes on every build** (date-stamped), so the tree
     is never clean after a build and a careless `git add` ships it.
 24. **`CLAUDE.md` is 1,400 lines** of operating history with stale lines
