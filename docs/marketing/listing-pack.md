@@ -28,7 +28,7 @@ after the Aug-29 read).
   (joins, window functions, CTEs, aggregation…), and an adaptive Coach picks
   your next challenge, lesson, or drill from it — including spaced retrieval
   checks so what you learned stays learned. 300+ challenges from first SELECT
-  to interview-grade Hard problems (10 free challenge solves to start), 30 company interview
+  to interview-grade Hard problems (10 free challenge solves to start), 33 company interview
   pages, timed company-style mock interviews, a 30-day path, and an AI tutor
   that explains why your query failed. Queries run
   locally in the browser (SQLite/WASM) — no signup needed to start solving.

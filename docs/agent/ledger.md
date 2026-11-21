@@ -27,6 +27,80 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### four more snippets that fit the window
+
+- **Claimed** 2026-11-20 · **Shipped** on merge (founder's Go: "senin önerilerin iyi onları yap") · **Read** 2026-12-18.
+- **Change** titles cut to ≤ 70 characters and descriptions to 120–170 on four
+  pages that rank on Google's first page but are rarely clicked; og/twitter
+  tags and the Article headline follow. Same rule and guard as the 09-29
+  batch (`tests/snippet-length.test.js`, `SNIPPET_PAGES`).
+- **Baseline** (`gsc_daily` page slice, 28 days to 2026-11-19):
+  | page | impressions | clicks | CTR | position |
+  |---|---|---|---|---|
+  | `/best-sql-practice-sites/` | 1,774 | 26 | 1.5% | 8.3 |
+  | `/sql-practice-comparison/` | 438 | 7 | 1.6% | 6.9 |
+  | `/blog/row-number-vs-rank-vs-dense-rank/` | 294 | 1 | 0.3% | 8.0 |
+  | `/blog/null-handling-mistakes/` | 730 | 4 | 0.5% | 6.6 |
+  Old titles were 78–87 characters (Google cut them mid-promise).
+- **Metric** `gsc_daily` page slice: CTR per page at an unchanged position.
+- **Target** the four together from 38 clicks / 3,236 impressions (1.2%) to
+  ≥ 2.5%; per page HIT when CTR at least doubles with position within ±2.
+- **Falsification, stated in advance:** a page whose position moved more than
+  2 places → UNREADABLE for that page (the snippet is not what changed); a
+  page whose CTR fell at the same position → MISS, restore its old title.
+  The 09-29 batch read 2 HIT / 3 rank losses — expect the same mix.
+
+### a company arrival gets a first question to press
+
+- **Claimed** 2026-11-20 · **Shipped** on merge (no flag; founder's Go on the funnel plan, item 5) · **Read** 2026-12-18.
+- **Change** the company banner in the Challenges view (`?company=X`, the
+  CTA of every company page) gets one primary button: "Start with question
+  1: <title>" (then "Next <Company> question: …"), opening the set's first
+  open, unsolved challenge in curriculum order behind the list rows' locks.
+  `challenge_opened.openedFrom = 'company_banner'`.
+- **Why** 35 days to 2026-11-20: 149 people arrived in the app from a company
+  page via search (`app_opened`, arrivalSrc `company:*` or `*-sql-interview`,
+  landingSrc `search:*`, no bot stamp). **63 opened no challenge at all**;
+  57 of them were intent-routed and then did nothing. The set's list starts
+  ~1,000px down under the generic learning-path cards; the banner said "pick
+  any one to start" with nothing to press. Of those who opened an Easy, 34 of
+  67 solved.
+- **Metric** on that same population: share who fire `challenge_opened`
+  within 30 minutes of the first `app_opened` (baseline **86 / 149 = 58%**),
+  and who fire `challenge_solved` (baseline **42 / 149 = 28%**). Not yet a
+  named metric in `docs/agent/metrics.md` — register it before the read.
+- **Target** opened ≥ 75% and solved ≥ 35%, with `company_banner` the
+  `openedFrom` on most first opens.
+- **Falsification, stated in advance:** opened under 62% → MISS (the button
+  is not what was missing); fewer than 40 arrivals in the window →
+  UNREADABLE, extend. Guardrail: company arrivals' `pro_plan_clicked` must not
+  fall (it was 4 people in the baseline window — read the counts).
+
+### three more fintech company pages: PayPal, Coinbase, Monzo
+
+- **Claimed** 2026-11-20 · **Shipped** on merge (founder's Go on the funnel plan, item 1) · **Read** 2027-01-15 (Google needs 3–6 weeks to index and settle a new page).
+- **Change** `/paypal-sql-interview/`, `/coinbase-sql-interview/`,
+  `/monzo-sql-interview/` from the company template, each with a sourced
+  format section (fetched, dated sources; research
+  `docs/reads/company-research-2026-11-20.md`), a 16-challenge tagged set
+  (Easy → Hard; the Revolut set stays Revolut-only), the fintech cross-link
+  ring, the interview hub, the app's `?company=` list and the intake list.
+  Robinhood, Klarna and Adyen were researched and deferred (reasons in the
+  read). Company-page count 30 → 33 on every page that states it.
+- **Why** company pages are the best door we have: 222 search/AI visitors in
+  28 days, 55% to the app (topic pages 75%, blog 12%); Wise (CTR 27%, position
+  3.6) and Revolut (18.8%, 4.4) are the model, and 2 of the first 3 payers came
+  through a company door.
+- **Metric** `gsc_daily` page slice clicks for the three pages, and
+  `app_opened` with `arrivalSrc` `company:PayPal|Coinbase|Monzo` or the
+  three slugs.
+- **Target** together ≥ 40 Google clicks in the 28 days to the read and ≥ 20
+  people into the app from them.
+- **Falsification, stated in advance:** under 10 clicks in total with the
+  pages indexed → MISS, and the next company batch waits; a page not indexed
+  by the read → UNREADABLE for that page (request indexing by hand first).
+  Brand accents were set from memory, not fetched — fix by eye if one is off.
+
 ### Bing: the question pages leave Bing's index (bingbot noindex, follow)
 
 - **Claimed** 2026-11-20 · **Shipped** on merge (generator change, no flag;

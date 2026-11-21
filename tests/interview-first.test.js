@@ -351,8 +351,9 @@ describe('findPlanTarget — a plan for every company, a number for the signed o
     // A signed member is never ALSO offered as a tagged target.
     const signedNames = new Set(signed.map(t => t.company));
     expect(tagged.some(t => signedNames.has(t.company))).toBe(false);
-    // Measured 2026-09-17: all 30 tagged companies clear the bar.
-    expect(list.length).toBe(30);
+    // Measured 2026-09-17: all 30 tagged companies clear the bar; 33 from
+    // 2026-11-20 (PayPal, Coinbase, Monzo).
+    expect(list.length).toBe(33);
   });
 
   it('unknown, empty and malformed names give null', () => {

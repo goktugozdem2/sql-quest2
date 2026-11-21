@@ -86,6 +86,11 @@ export const SOURCED_PAGES = {
   // Research notes: docs/reads/company-research-2026-09-14.md.
   'amazon-sql-interview': 'Blind BIE L5 candidate report (14 Sep 2025, replies to 15 Oct 2025) + Exponent BIE guide (read 14 Sep 2026)',
   'meta-sql-interview': 'two Blind Data Engineer candidate reports (5 Apr 2025, 17 Mar 2025) that agree on the screen',
+  // 2026-11-20: three more template pages. Research notes:
+  // docs/reads/company-research-2026-11-20.md.
+  'paypal-sql-interview': 'PracHub DS reports (interviews Jul + Dec 2025), GeeksforGeeks DA intern report (Mar 2023), PracHub guide (Nov 2026), DataLemur (Jan 2025); the reports disagree and the page says so',
+  'coinbase-sql-interview': 'PracHub DS reports (interviews Mar + Oct 2025), Aced process guide, PracHub guide (Nov 2026), DataLemur (Feb 2025); the tool is disputed and the page says so',
+  'monzo-sql-interview': "Monzo's own hiring posts: Data Science (27 Apr 2026), Analytics Engineering (25 May 2026), data hiring (21 Mar 2022), a 2022 joiner's account",
 };
 
 // ---------------------------------------------------------------------------
