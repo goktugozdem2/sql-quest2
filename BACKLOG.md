@@ -37,6 +37,8 @@ carries its own **DONE** / **Status** line.
 | 15 | quota wall checked in a real browser (smoke) | #92 | open |
 | — | `guest_resumed.solvedCount` was 0 on all 755 rows | #93 | open |
 | — | syntax errors get the line that fixes them | #94 | open |
+| idea 1 | quota wall headline says the trial | #95 | open |
+| idea 3 | column mismatch gets one fix line | #96 | open |
 | 8 | Google brand searches | #84 | read: demand, not ranking |
 | — | P1 reads: diff panel FLAT, tutor HIT/MISS, picker MISS | #84 | written |
 | — | `weakSkillNext` off (its falsification fired) | #90 | open |
@@ -63,10 +65,10 @@ Merging: the agent's merge call is refused by the session's permission classifie
 
 Ranked by expected effect on payers (O1: 50 a month by 12-08). Each would get a ledger claim when built.
 
-1. **Trial-first at the quota wall.** The wall sells (12.8% click) and the trial is how people buy (9 trials, most sales after a trial). Make "Start 7 days free" the wall modal's primary button, the plans second. Metric `quota_wall` trial starts per person; target 2× in 28 days.
-2. **A free first question of the Capital One mock.** 0 Pro modals from the Capital One / trap-page mock links in 28 days, 3 clicks on the page's mock buttons — the mock is a locked door with no window. Let question 1 of the 70-minute mock run free, then the modal (`mock_link`). Capital One is 2 of the first 3 payers.
-3. **`column_set` gets its own line** (69.7% recovery, the weakest kind): name the extra / missing column against the expected header (`SELECT *` → list them). Same pattern as #94.
-4. **Count AI-grounded impressions.** GSC query slices for trap and company pages are chat turns ("давай", "rispondi", pasted exam questions). A weekly count of chat-shaped queries per page (`ai_grounded_impressions`) tells which pages assistants retrieve — the channel two payers came through — and where an answer-first summary would be quoted.
+1. **[BUILT — #95] Trial-first at the quota wall.** The wall sells (12.8% click) and the trial is how people buy (9 trials, most sales after a trial). Make "Start 7 days free" the wall modal's primary button, the plans second. Metric `quota_wall` trial starts per person; target 2× in 28 days.
+2. **[PARKED 11-22 — the door is too small] A free first question of the Capital One mock.** Measured: ~3 clicks a month on the page's mock buttons, so even a 10× lift is a handful of people; the mock engine change is not worth its risk yet. Revisit if the Capital One page's clicks (#77) grow. 0 Pro modals from the Capital One / trap-page mock links in 28 days, 3 clicks on the page's mock buttons — the mock is a locked door with no window. Let question 1 of the 70-minute mock run free, then the modal (`mock_link`). Capital One is 2 of the first 3 payers.
+3. **[BUILT — #96] `column_set` gets its own line** (69.7% recovery, the weakest kind): name the extra / missing column against the expected header (`SELECT *` → list them). Same pattern as #94.
+4. **[PARKED 11-22 — measured small] Count AI-grounded impressions.** Measured: chat-shaped queries are ≤ 38 impressions per page in 28 days (the query explainer, the trap pages, two blog posts) and a crude classifier mixes in real Turkish searches; not worth a metric yet. Original idea: GSC query slices for trap and company pages are chat turns ("давай", "rispondi", pasted exam questions). A weekly count of chat-shaped queries per page (`ai_grounded_impressions`) tells which pages assistants retrieve — the channel two payers came through — and where an answer-first summary would be quoted.
 5. **Company-set guardrail split.** Reach-6 fell to 5.8% (12.4% before). Split by "met the set wall" before touching the gate; if the wall is the cost, open 5 of the Capital One set instead of 3 (that set's arrivals are the most valuable).
 6. **Tutor ladder: bypass at 52%.** Half of Help opens skip to the answer. A/B rung 2 (the clause) as the opener for people who bypassed before — keep the 72% open→solve.
 7. **Password hashing to PBKDF2 on next sign-in** (item 29): dual-scheme, account-login re-hashes after a successful check. Defence in depth; no user-visible change.
