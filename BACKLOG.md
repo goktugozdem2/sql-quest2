@@ -200,6 +200,11 @@ Ranked by expected effect on payers (O1: 50 a month by 12-08). Each would get a 
 14. **`src/app.jsx` is not linted** (`npm run lint` covers `src/utils/` and
     `tests/`). 41,000 lines, the file most edited. Lint it with a separate,
     looser config first; 41 known warnings in the linted part.
+    **DONE 2026-11-22** (branch `chore/lint-app-jsx`): `npm run lint` now
+    covers app.jsx with a crash-only block (no-undef, rules-of-hooks, dupe
+    keys…), 0 errors. The first run found two live ReferenceErrors (a
+    referral check dead since 09-08, the guest AI-limit message) and one
+    handler named like a hook; all fixed. Tighten one rule at a time.
 15. **Most app behaviour is pinned by source guards** (regexes over
     app.jsx), not by rendering. They catch removals, not regressions in
     logic. The smoke test (28 checks) is the only render-level coverage;

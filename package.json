@@ -21,7 +21,7 @@
     "e2e": "node scripts/e2e-verify.mjs",
     "ph:gallery": "node scripts/ph-gallery/capture.mjs && node scripts/ph-gallery/compose.mjs",
     "smoke": "node scripts/smoke-test.js",
-    "lint": "eslint src/utils/ tests/",
+    "lint": "eslint src/utils/ tests/ src/app.jsx",
     "indexnow": "node scripts/indexnow.mjs",
     "metrics:report": "node scripts/sqlquest-metrics-report.mjs",
     "metrics:kpis": "node scripts/sqlquest-metrics-report.mjs --out public/kpis.json"
@@ -34,6 +34,8 @@
     "@vitejs/plugin-react": "^6.0.1",
     "better-sqlite3": "^12.9.0",
     "eslint": "^10.0.3",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "globals": "17.14.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "tailwindcss": "^3.4.0",
