@@ -165,6 +165,10 @@ Ranked by expected effect on payers (O1: 50 a month by 12-08). Each would get a 
     (646 KB gz, every dataset and the whole bank, needed or not). Split
     `data.js` by dataset and load a dataset when its first challenge opens;
     measure LCP/INP on `/app` first (the homepage is measured, `/app` is not).
+    **Status 2026-11-22** (branch `feat/app-boot-timing`): the measuring
+    half — `app_opened` carries `bootMs`, `renderMs`, `lcpMs`, `appJsMs`,
+    `dataJsMs`, `net`; metric `app_boot` with the split rule written before
+    the data. The split waits for 14 days of rows.
 11. **React and ReactDOM load from unpkg.com** (`src/app.html`), a
     third-party CDN in the critical path, without integrity attributes.
     Self-host the two UMD files or add SRI.
