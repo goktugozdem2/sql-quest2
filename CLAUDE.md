@@ -83,7 +83,11 @@ map. Work plan: `docs/PLAN.md`. Ranked issues: `BACKLOG.md`.
 - Every product change gets a ledger claim (metric from
   `docs/agent/metrics.md`, baseline, target, read date, falsification).
 - Money flags, the session-token cut and outward emails need the founder's
-  explicit go. Agent PRs are never merged without it.
+  explicit go. **The merge go on agent PRs is delegated (founder, 2026-11-22):
+  A0, the gate agent (`docs/agent/fleet/A0-gate.md`), decides it after A1's
+  MERGE verdict, and nobody waits for the founder.** A0 still holds anything
+  that sets a price or Stripe setting, flips a money flag, sends or posts
+  outward, writes production, cuts session tokens or removes a guard.
 - Counts on pages come from helpers (`bankCountLabel`, `freeSolvesLabel`);
   competitor facts only from a dated `docs/reads/` file.
 
@@ -207,8 +211,12 @@ and present an approval brief, not the raw diff:
   REJECT is expected behaviour, not failure — a reviewer that always says
   merge is not a gate.
 
-Never merge without the founder's explicit go in chat. Never treat silence as
-approval. If the fleet and the reviewer are the same model family, say so in
+Since 2026-11-22 the go is A0's (`docs/agent/fleet/A0-gate.md`), by the
+founder's delegation: "Benden go bekleme asla … o benim yerime karar versin."
+A0 merges on A1's MERGE, green CI and its own risk call, logs every decision in
+`docs/agent/fleet/decisions.md`, and reverts its own merge if smoke fails. The
+held kinds in A0's brief stay with the founder. Silence is still never
+approval for those. If the fleet and the reviewer are the same model family, say so in
 the brief when the change is subtle enough that correlated blind spots matter.
 
 ## Skill routing

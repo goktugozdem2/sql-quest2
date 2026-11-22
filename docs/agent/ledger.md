@@ -56,6 +56,35 @@ of the verifier and must never be rounded to `FLAT`.
   page: a MISS on clicks with impressions above target is FLAT, not MISS.
   The P4 prune rule applies at eight weeks (no impressions → noindex).
 
+### five Easy on-ramps: Window, Date and NULL (challenges 320-324)
+
+- **Claimed** 2026-11-22 · **Shipped** on merge · **Read** 2026-12-20.
+- **Change** Five Easy cards appended to the core bank, on shipped datasets:
+  320 "Every Employee Next to Their Department's Top Salary" and 321 "Number
+  Each Customer's Orders" (Window Functions), 322 "Hires per Year" and 323
+  "Weekend Logins" (Date Functions), 324 "Ages on Record by Class" (NULL
+  Handling). Measured that morning through `challengeMatchesSkill` over the
+  198 core cards: Window 3 Easy / 35 Hard, Date 2 Easy, NULL 3 Easy. After:
+  Window 5, Date 4, NULL 4 Easy. Prompts name the outcome, never the method;
+  every solution is run and pinned, and one common wrong answer per card fails
+  through the app's own grader (`tests/challenges-320-324.test.js`), also
+  walked headless in the built app on sql.js.
+- **Metric** `challenge_solve_through` (docs/agent/metrics.md), per card, read
+  within the Easy band.
+- **Baseline** Not readable from the cloud session (no production data). The
+  read takes it in the same window: the median solve-through of every Easy
+  card with 10+ openers, 2026-11-23 → 2026-12-20, same shared filters.
+- **Target** Each new card with 10+ openers at or above that Easy median; the
+  five together (pooled openers) within 5 points of it or above.
+- **Falsification** Pooled solve-through more than 10 points under the Easy
+  median, or any one card with 10+ openers under 50%: that card's prompt or
+  data is the problem, rewrite it before writing more. Fewer than 10 openers
+  on a card is `UNREADABLE` for that card, not `FLAT`; under 30 pooled
+  openers the whole claim is `UNREADABLE`.
+- **Confound** 322 and 324 also join the aggregation topic page's GROUP BY
+  section and 321 the ranking pages, so their openers arrive from more doors
+  than the other three. Read the door (`linkSrc` / `src`) beside the rate.
+
 ### Bing reads the app shell's noindex (bingbot may fetch /app/?…)
 
 - **Claimed** 2026-11-22 · **Shipped** on merge (robots.txt, no flag) ·
@@ -282,6 +311,7 @@ of the verifier and must never be rounded to `FLAT`.
 - **Baseline** none (new surface); comparison `pricing_link` 26.7% modal → plan click.
 - **Target** ≥ 10 presses in 30 days; ≥ 20% press → plan click; `quota_wall` click rate not below 10%.
 - **Falsification, stated in advance:** < 5 presses in 30 days → nobody looks for it; turn the flag off. Quota-wall clicks fall below 10% while header clicks rise → it moved clicks rather than adding them; turn the flag off.
+- **Amended 2026-11-22 (A2 live QA, PR `qa/mobile-header-overflow`):** on phones the button shipped half off-screen — at 375 px the header row ran 62 px past the screen ("Try Pro" cut in half, the Guest chip off-screen); at 390/414 px the row overflowed even before the button. Fixed on merge: below `sm` the wordmark, level bar, XP coin and separators wait for `sm`. At the 12-20 read, split `header_pro_shown` / `header_pro_clicked` by the event's viewport (mobile vs desktop) and count mobile only from the merge date; a mobile press before it was a press on half a button.
 
 ### no tenth-solve ask in front of the quota wall
 
