@@ -16,9 +16,9 @@ An agent reads `CLAUDE.md`, this file and its own brief, in that order.
    `git -c credential.helper= -c credential.helper='!gh auth git-credential' fetch -q https://github.com/goktugozdem2/sql-quest2.git main:refs/remotes/origin/main`.
    Then work in your own worktree under the session scratchpad, branched from
    `origin/main`:
-   `git -C /Users/cgozdemm/sql-quest2 worktree add <scratchpad>/w-<agent>-<date> -b <lane>/<slug> origin/main`.
+   `git -C <main checkout> worktree add <scratchpad>/w-<agent>-<date> -b <lane>/<slug> origin/main`.
    Symlink `node_modules` from `<scratchpad>/w-fastcheckout/node_modules`.
-   Never edit `/Users/cgozdemm/sql-quest2` itself.
+   Never edit `<main checkout>` itself.
 2. **Data.** Supabase through MCP is read-only. Read metadata as
    `(metadata #>> '{}')::jsonb`, and count a person as
    `coalesce(aid, username)`. Exclude bots (`metadata.bot`, viewports
