@@ -207,7 +207,7 @@ describe('source guards — the P1 wiring in app.jsx', () => {
     // and (2026-10-03) the live nudge's mastery + goal lines
     expect((app.match(/buildChallengeTutorContext\(/g) || []).length).toBe(3);
     expect(app).toMatch(/const buildChallengeTutorContext = \(message, priorMessages/);
-    expect(app).toMatch(/const inlineCtx = buildChallengeTutorContext\(userMessage, inlineAiMessages\);/);
+    expect(app).toMatch(/const inlineCtx = buildChallengeTutorContext\(userMessage, inlineAiMessages, \{ silentAnswered: inlineSilentAnsweredRef\.current \}\);/);
     expect(app).toMatch(/const tutorCtx = buildChallengeTutorContext\(followUpMessage, challengeAiMessages, \{ includeDiagnosis: false \}\);/);
   });
 
