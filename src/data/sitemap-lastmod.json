@@ -179,8 +179,8 @@
       "lastmod": "2026-11-21"
     },
     "/sql-exercises/": {
-      "hash": "3fd05027273f30e5",
-      "lastmod": "2026-11-21"
+      "hash": "4b4ec8090fef44f6",
+      "lastmod": "2026-11-22"
     },
     "/after-the-sql-course/": {
       "hash": "c1637e9aef6b4840",
@@ -199,16 +199,16 @@
       "lastmod": "2026-11-21"
     },
     "/challenges/aggregation/": {
-      "hash": "13c811e34a42465d",
-      "lastmod": "2026-11-21"
+      "hash": "b355a1845596e18d",
+      "lastmod": "2026-11-22"
     },
     "/challenges/case-when/": {
       "hash": "ab3645e3d5bd235e",
       "lastmod": "2026-11-21"
     },
     "/challenges/cte/": {
-      "hash": "dc3562a8f670d4e2",
-      "lastmod": "2026-11-21"
+      "hash": "8865d702233aacf5",
+      "lastmod": "2026-11-22"
     },
     "/challenges/date-functions/": {
       "hash": "fb542073094f09eb",
@@ -548,7 +548,7 @@
     },
     "/questions/union-all-dedup-cross-dataset-search/": {
       "hash": "7173690f8540f227",
-      "lastmod": "2026-11-21"
+      "lastmod": "2026-11-22"
     },
     "/questions/highest-fare-per-port/": {
       "hash": "c78611d54e1c592f",
@@ -607,16 +607,16 @@
       "lastmod": "2026-11-21"
     },
     "/questions/management-hierarchy-overview/": {
-      "hash": "266113d2775df8ee",
-      "lastmod": "2026-11-21"
+      "hash": "bbdf956a882f74ab",
+      "lastmod": "2026-11-22"
     },
     "/questions/count-direct-reports/": {
       "hash": "489bb3a5adcecae1",
       "lastmod": "2026-11-21"
     },
     "/questions/recursive-team-size-rollup/": {
-      "hash": "6922f38c293457db",
-      "lastmod": "2026-11-21"
+      "hash": "0eaa13e4de708d84",
+      "lastmod": "2026-11-22"
     },
     "/questions/employee-tenure-bands/": {
       "hash": "fc7dfde8e3ad31bb",
@@ -763,8 +763,8 @@
       "lastmod": "2026-11-21"
     },
     "/questions/recursive-org-chart-traversal/": {
-      "hash": "30dcf5e24860de6f",
-      "lastmod": "2026-11-21"
+      "hash": "68c05ff93e55a759",
+      "lastmod": "2026-11-22"
     },
     "/questions/order-funnel-conversion/": {
       "hash": "ed19100dcefcba0a",
@@ -1115,8 +1115,8 @@
       "lastmod": "2026-11-21"
     },
     "/questions/each-salarys-share-of-payroll/": {
-      "hash": "93d97fbe8e485ef4",
-      "lastmod": "2026-11-21"
+      "hash": "c82af23d1b19e1ea",
+      "lastmod": "2026-11-22"
     },
     "/questions/rank-everyone-by-salary/": {
       "hash": "dd46010ce90d7685",
@@ -1495,8 +1495,8 @@
       "lastmod": "2026-11-21"
     },
     "/questions/transaction-share-by-merchant-category/": {
-      "hash": "1636fa422a54dd96",
-      "lastmod": "2026-11-21"
+      "hash": "883e7caed150ddc5",
+      "lastmod": "2026-11-22"
     },
     "/questions/signup-month-cohort-spend/": {
       "hash": "40784a5aeb601584",
@@ -1689,6 +1689,10 @@
     "/sql-left-join-where-filter/": {
       "hash": "dce5dd8aefe743a9",
       "lastmod": "2026-11-21"
+    },
+    "/sql-rollup-interview-questions/": {
+      "hash": "b95fc21436cb3bc5",
+      "lastmod": "2026-11-22"
     }
   }
 }
