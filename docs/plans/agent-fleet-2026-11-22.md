@@ -101,6 +101,12 @@ First pass 2026-11-22:
 |---|---|---|---|---|
 | C5 | **Revenue content** | content that brings people who pay: improves the money pages that have landings, writes sourced company guides and pages in the converting archetype, fills company sets with B3. Judged on trials/purchases per 1,000 landings, never clicks. Brief: `docs/agent/fleet/C5-revenue-content.md` | daily, one asset | one PR a run; a kill rule read monthly with B4 |
 
+### H. Topics (added 2026-11-22, founder)
+
+| # | Agent | Lane | Cadence | Output |
+|---|---|---|---|---|
+| C6 | **Topics** | SQL topics we don't cover (DDL/DML first: 0 challenges on CREATE TABLE, indexes, views, UPSERT, transactions, JSON), daily research → questions → guide → hub → links; builds the state-graded challenge type DDL/DML needs. Brief: `docs/agent/fleet/C6-topics.md` | daily, one funnel step | one PR a run |
+
 ### D. Orchestration
 
 | # | Agent | Lane | Cadence |
@@ -137,6 +143,7 @@ Each agent has one number it is answerable for, read in D2:
 | B5 | `open_to_first_run`, `first_solve_10m`, day-2 return |
 | E2 | reasons captured per month (`feedback_capture`); reasons → BACKLOG within 7 days |
 | C5 | trials + purchases per 1,000 landing people on the pages it made or changed (28 / 56 d) |
+| C6 | topic-page arrivals who solve one of its questions (`topic_funnel`); solve-through on new questions |
 | B1 | paid conversions per 1,000 arrivals |
 | B2 | claims past their read date without a verdict (should be 0) |
 | B3 | solve-through on new questions |
