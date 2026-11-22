@@ -335,6 +335,15 @@ export function stateDiagnosis({ refused, user, expected }, challenge, lang = 'e
       hints: [],
     };
   }
+  const missing = expected.accepted.filter(l => !user.accepted.includes(l));
+  if (missing.length) {
+    return {
+      kind: 'state_rejected_valid',
+      headline: tr ? 'Tablon geçerli bir satırı reddetti' : 'Your table rejected a valid row',
+      details: tr ? `Kabul edilmesi gereken satır reddedildi: ${missing[0]}.` : `This row should have been accepted: ${missing[0]}.`,
+      hints: [],
+    };
+  }
   const n = user.check.rows.length;
   const m = expected.check.rows.length;
   if (n !== m) {

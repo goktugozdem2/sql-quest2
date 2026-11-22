@@ -49,7 +49,7 @@ h1{font-size:clamp(28px,4vw,42px);font-weight:800;line-height:1.15;margin-bottom
 
   <h2 class="fd">Schema</h2>
   <div class="tbl"><p class="fm tname">logins</p><table><thead><tr><th>login_id</th><th>customer_id</th><th>login_at</th></tr></thead><tbody><tr><td>1</td><td>1</td><td>2024-03-01 08:12:00</td></tr><tr><td>2</td><td>1</td><td>2024-03-02 09:40:00</td></tr><tr><td>3</td><td>4</td><td>2024-03-01 18:05:00</td></tr></tbody></table></div>
-  <p style="font-size:14px;color:#94a3b8;"><strong style="color:#e2e8f0;">Expected output:</strong> logins holds 40 rows: ids 1-37 and three later logins</p>
+  <p style="font-size:14px;color:#94a3b8;"><strong style="color:#e2e8f0;">Expected output:</strong> logins holds 41 rows: ids 1-37 and four later logins</p>
 
   <h2 class="fd">Hint</h2>
   <div class="box" style="font-size:15px;color:#cbd5e1;">Decide which rows SURVIVE first: one per customer + timestamp, the smallest id. Every row whose id is not in that set goes. Removing every row that has a twin would also remove the originals.</div>

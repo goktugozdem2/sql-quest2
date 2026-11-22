@@ -204,9 +204,9 @@ describe('the five challenges', () => {
   const PINNED = {
     325: { rows: 6, first: [1, 'John Smith', 'john.smith@email.com'] },
     326: { rows: 50, changed: 8, by: 3000, dept: 'HR' },
-    327: { rows: 40, ids: [...Array.from({ length: 37 }, (_, i) => i + 1), 141, 142, 143] },
+    327: { rows: 41, ids: [...Array.from({ length: 37 }, (_, i) => i + 1), 141, 142, 143, 144] },
     328: { rows: [['Australia', 5], ['Canada', 8], ['France', 5], ['Germany', 4], ['Japan', 2], ['UK', 3], ['USA', 17]] },
-    329: { rows: [[1, 37, 29.99, 'Order cancelled']] },
+    329: { rows: [[1, 37, 29.99, 'Order cancelled'], [5, 5, 10, 'valid']] },
   };
 
   it.each(IDS)('#%i: the reference passes and its state is pinned', id => {
@@ -226,7 +226,7 @@ describe('the five challenges', () => {
     }
     if (id === 327) expect(rows.map(r => r[0])).toEqual(p.ids);
     if (id === 328 || id === 329) expect(rows).toEqual(p.rows);
-    expect(g.expected.accepted).toEqual([]);
+    expect(g.expected.accepted).toEqual(id === 329 ? ['a valid refund of 10.00 for order 5'] : []);
   });
 
   it.each(IDS)('#%i: the common wrong answer fails with a state diagnosis', id => {
@@ -243,10 +243,25 @@ describe('the five challenges', () => {
     [326, 'biggest headcount', "UPDATE employees SET salary = salary + 3000 WHERE department = (SELECT department FROM employees GROUP BY department ORDER BY COUNT(*) DESC LIMIT 1)"],
     [327, 'deleting by id range', 'DELETE FROM logins WHERE login_id > 100'],
     [329, 'amount >= 0', "CREATE TABLE refunds (refund_id INTEGER PRIMARY KEY, order_id INTEGER NOT NULL REFERENCES orders(order_id), amount REAL CHECK (amount >= 0), reason TEXT); INSERT INTO refunds VALUES (1, 37, 29.99, 'Order cancelled')"],
+    [327, 'dedupe on login_at alone', 'DELETE FROM logins WHERE login_id NOT IN (SELECT MIN(login_id) FROM logins GROUP BY login_at)'],
+    [329, 'an extra required column', "CREATE TABLE refunds (refund_id INTEGER PRIMARY KEY, order_id INTEGER NOT NULL REFERENCES orders(order_id), amount REAL CHECK (amount > 0), reason TEXT, approved_by TEXT NOT NULL); INSERT INTO refunds VALUES (1, 37, 29.99, 'Order cancelled', 'finance')"],
+    [329, 'CHECK (refund_id = 1)', "CREATE TABLE refunds (refund_id INTEGER PRIMARY KEY CHECK (refund_id = 1), order_id INTEGER, amount REAL, reason TEXT); INSERT INTO refunds VALUES (1, 37, 29.99, 'Order cancelled')"],
   ])('#%i: %s fails', (id, _label, sql) => {
     const g = grade(id, sql);
     expect(g.passed).toBe(false);
     expect(g.diagnosis.kind).toMatch(/^state_/);
+  });
+
+  it('#329: a table that refuses the valid row says so', () => {
+    const g = grade(329, "CREATE TABLE refunds (refund_id INTEGER PRIMARY KEY CHECK (refund_id = 1), order_id INTEGER, amount REAL, reason TEXT); INSERT INTO refunds VALUES (1, 37, 29.99, 'Order cancelled')");
+    expect(g.diagnosis.kind).toBe('state_rejected_valid');
+    expect(g.diagnosis.details).toMatch(/refund of 10.00 for order 5/);
+  });
+
+  it('#327 and #329: alternative correct answers still pass', () => {
+    expect(grade(327, 'DELETE FROM logins WHERE EXISTS (SELECT 1 FROM logins o WHERE o.customer_id = logins.customer_id AND o.login_at = logins.login_at AND o.login_id < logins.login_id)').passed).toBe(true);
+    expect(grade(327, 'DELETE FROM logins WHERE login_id IN (SELECT login_id FROM (SELECT login_id, ROW_NUMBER() OVER (PARTITION BY customer_id, login_at ORDER BY login_id) AS rn FROM logins) WHERE rn > 1)').passed).toBe(true);
+    expect(grade(329, "CREATE TABLE refunds (refund_id INTEGER, order_id INTEGER NOT NULL, amount NUMERIC, reason TEXT, PRIMARY KEY (refund_id), FOREIGN KEY (order_id) REFERENCES orders(order_id), CHECK (amount > 0)); INSERT INTO refunds (refund_id, order_id, amount, reason) VALUES (1, 37, 29.99, 'Order cancelled')").passed).toBe(true);
   });
 
   it('the row-count sentence speaks about the table', () => {

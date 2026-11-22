@@ -4026,20 +4026,22 @@ ORDER BY total_orders DESC;`,
     xpReward: 45,
     grade: "state",
     // The copies sit at login_id + 100; three genuine late logins sit above
-    // them too, so deleting by id range removes real rows and fails.
-    setup: "INSERT INTO logins (login_id, customer_id, login_at) SELECT login_id + 100, customer_id, login_at FROM logins WHERE login_id % 4 = 0;\nINSERT INTO logins (login_id, customer_id, login_at) VALUES (141, 2, '2024-03-05 10:00:00'), (142, 7, '2024-03-05 11:30:00'), (143, 9, '2024-03-06 09:15:00');",
+    // them too, so deleting by id range removes real rows and fails. 144
+    // shares 141's timestamp under another customer, so a dedupe on
+    // login_at alone removes a real login and fails.
+    setup: "INSERT INTO logins (login_id, customer_id, login_at) SELECT login_id + 100, customer_id, login_at FROM logins WHERE login_id % 4 = 0;\nINSERT INTO logins (login_id, customer_id, login_at) VALUES (141, 2, '2024-03-05 10:00:00'), (142, 7, '2024-03-05 11:30:00'), (143, 9, '2024-03-06 09:15:00'), (144, 3, '2024-03-05 10:00:00');",
     allow: ["DELETE"],
     checkTable: "logins",
     check: "SELECT login_id, customer_id, login_at FROM logins ORDER BY login_id",
     description: "Last night's sync job re-sent part of the `logins` table. Each re-sent row has the **same `customer_id` and `login_at`** as an existing row, under a new, higher `login_id`.\n\n**Remove the copies.** For every customer + timestamp that appears more than once, keep only the row with the **lowest `login_id`**. A login that appears once must stay.\n\nGraded on the `logins` table after your statements run, on a fresh copy each attempt.",
     tables: ["logins"],
-    example: { input: "49 rows, 9 of them copies", output: "logins holds 40 rows: ids 1-37 and three later logins" },
+    example: { input: "50 rows, 9 of them copies", output: "logins holds 41 rows: ids 1-37 and four later logins" },
     hint: "Decide which rows SURVIVE first: one per customer + timestamp, the smallest id. Every row whose id is not in that set goes. Removing every row that has a twin would also remove the originals.",
     solution: "DELETE FROM logins\nWHERE login_id NOT IN (\n  SELECT MIN(login_id) FROM logins GROUP BY customer_id, login_at\n);",
     title_tr: "Senkronizasyon İki Kez Çalıştı",
     description_tr: "Dün geceki senkronizasyon işi `logins` tablosunun bir kısmını yeniden gönderdi. Yeniden gönderilen her satır, mevcut bir satırla **aynı `customer_id` ve `login_at`** değerine sahip, ama yeni ve daha büyük bir `login_id` ile.\n\n**Kopyaları kaldır.** Birden fazla görünen her müşteri + zaman damgası için yalnızca **en küçük `login_id`**'li satırı tut. Bir kez görünen giriş kalmalı.\n\nİfadelerin çalıştıktan sonra `logins` tablosuna göre değerlendirilir; her deneme temiz bir kopyada.",
     hint_tr: "Önce hangi satırların KALACAĞINA karar ver: her müşteri + zaman damgası için bir tane, en küçük id. Id'si o kümede olmayan her satır gider. İkizi olan her satırı silmek orijinalleri de siler.",
-    example_tr: { input: "49 satır, 9'u kopya", output: "logins 40 satır tutar: id 1-37 ve üç sonraki giriş" },
+    example_tr: { input: "50 satır, 9'u kopya", output: "logins 41 satır tutar: id 1-37 ve dört sonraki giriş" },
     dataset: "ecommerce"
   },
   {
@@ -4085,16 +4087,19 @@ ORDER BY total_orders DESC;`,
       { label: "a refund for order 9999, which does not exist", sql: "INSERT INTO refunds (refund_id, order_id, amount, reason) VALUES (2, 9999, 10.00, 'no such order')" },
       { label: "a refund of -20.00", sql: "INSERT INTO refunds (refund_id, order_id, amount, reason) VALUES (3, 5, -20.00, 'negative amount')" },
       { label: "a refund of 0.00", sql: "INSERT INTO refunds (refund_id, order_id, amount, reason) VALUES (4, 5, 0.00, 'zero amount')" },
+      // The one good row: a correct schema accepts it, so a table that turns
+      // everything away (an extra required column, CHECK (refund_id = 1)) fails.
+      { label: "a valid refund of 10.00 for order 5", sql: "INSERT INTO refunds (refund_id, order_id, amount, reason) VALUES (5, 5, 10.00, 'valid')" },
     ],
-    description: "Finance wants a `refunds` table that refuses bad data on its own, instead of trusting every script that writes to it. **Create `refunds`** with four columns:\n\n- `refund_id`: a whole number, and no two refunds may share one;\n- `order_id`: must be the `order_id` of an order that exists in `orders`;\n- `amount`: must be greater than zero;\n- `reason`: text.\n\nThen **record one refund**: `refund_id` 1, for order 37 (the cancelled one), `amount` 29.99, `reason` 'Order cancelled'.\n\nAfter your statements, the grader tries to write four bad rows (a repeated id, an order that does not exist, a negative amount, an amount of zero). Your table must turn all four away and hold only your one row.",
+    description: "Finance wants a `refunds` table that refuses bad data on its own, instead of trusting every script that writes to it. **Create `refunds`** with four columns:\n\n- `refund_id`: a whole number, and no two refunds may share one;\n- `order_id`: must be the `order_id` of an order that exists in `orders`;\n- `amount`: must be greater than zero;\n- `reason`: text.\n\nThen **record one refund**: `refund_id` 1, for order 37 (the cancelled one), `amount` 29.99, `reason` 'Order cancelled'.\n\nAfter your statements, the grader tries to write four bad rows (a repeated id, an order that does not exist, a negative amount, an amount of zero) and one good one (refund 5: 10.00 for order 5). Your table must turn the four away and accept the good one.",
     tables: ["orders"],
-    example: { input: "An empty database for refunds; orders 1-40", output: "refunds holds 1 row; the four bad rows were rejected" },
+    example: { input: "An empty database for refunds; orders 1-40", output: "refunds holds 2 rows: yours and the good one; the four bad rows were rejected" },
     hint: "Each rule in the list belongs in the table's definition, on its column: one keeps ids unique, one ties order_id to orders.order_id, one tests that amount is above zero. Then insert the one good row.",
     solution: "CREATE TABLE refunds (\n  refund_id INTEGER PRIMARY KEY,\n  order_id INTEGER NOT NULL REFERENCES orders(order_id),\n  amount REAL NOT NULL CHECK (amount > 0),\n  reason TEXT\n);\nINSERT INTO refunds (refund_id, order_id, amount, reason) VALUES (1, 37, 29.99, 'Order cancelled');",
     title_tr: "Hayır Diyebilen Bir İade Tablosu",
-    description_tr: "Finans, kendisine yazan her betiğe güvenmek yerine kötü veriyi kendisi reddeden bir `refunds` tablosu istiyor. Dört kolonlu **`refunds` tablosunu oluştur**:\n\n- `refund_id`: tam sayı; iki iade aynı id'yi paylaşamaz;\n- `order_id`: `orders`'ta var olan bir siparişin `order_id` değeri olmalı;\n- `amount`: sıfırdan büyük olmalı;\n- `reason`: metin.\n\nSonra **bir iade kaydet**: `refund_id` 1, sipariş 37 (iptal edilen) için, `amount` 29.99, `reason` 'Order cancelled'.\n\nİfadelerinden sonra değerlendirici dört kötü satır yazmayı dener (tekrarlanan bir id, var olmayan bir sipariş, negatif bir tutar, sıfır tutar). Tablon dördünü de geri çevirmeli ve yalnızca senin satırını tutmalı.",
+    description_tr: "Finans, kendisine yazan her betiğe güvenmek yerine kötü veriyi kendisi reddeden bir `refunds` tablosu istiyor. Dört kolonlu **`refunds` tablosunu oluştur**:\n\n- `refund_id`: tam sayı; iki iade aynı id'yi paylaşamaz;\n- `order_id`: `orders`'ta var olan bir siparişin `order_id` değeri olmalı;\n- `amount`: sıfırdan büyük olmalı;\n- `reason`: metin.\n\nSonra **bir iade kaydet**: `refund_id` 1, sipariş 37 (iptal edilen) için, `amount` 29.99, `reason` 'Order cancelled'.\n\nİfadelerinden sonra değerlendirici dört kötü satır (tekrarlanan bir id, var olmayan bir sipariş, negatif bir tutar, sıfır tutar) ve bir iyi satır (iade 5: sipariş 5 için 10.00) yazmayı dener. Tablon dört kötü satırı geri çevirmeli, iyi satırı kabul etmeli.",
     hint_tr: "Listedeki her kural tablonun tanımında, kendi kolonunda yer alır: biri id'leri benzersiz tutar, biri order_id'yi orders.order_id'ye bağlar, biri tutarın sıfırdan büyük olduğunu sınar. Sonra tek iyi satırı ekle.",
-    example_tr: { input: "İadeler için boş bir veritabanı; 1-40 arası siparişler", output: "refunds 1 satır tutar; dört kötü satır reddedildi" },
+    example_tr: { input: "İadeler için boş bir veritabanı; 1-40 arası siparişler", output: "refunds 2 satır tutar: seninki ve iyi satır; dört kötü satır reddedildi" },
     dataset: "ecommerce"
   }
 ];
