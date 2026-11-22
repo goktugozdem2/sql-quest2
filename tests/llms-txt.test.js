@@ -24,9 +24,9 @@ import os from 'node:os';
 import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { buildLlmsTxt } from '../scripts/build-llms-txt.js';
+import { buildLlmsTxt, ENTRY_POINTS, FEATURED_COMPANIES } from '../scripts/build-llms-txt.js';
 import { CANONICAL_SKILLS } from '../src/utils/skill-calc.js';
-import { bankCountLabel } from '../src/utils/display-count.js';
+import { bankCountLabel, freeTierSentence } from '../src/utils/display-count.js';
 import { FREE_SOLVE_QUOTA, COMPANY_SET_FREE_COUNT } from '../src/utils/free-tier-boundary.js';
 import { freeTierFlags } from './free-tier-state.js';
 
@@ -356,3 +356,41 @@ describe('the build is stable across days', () => {
     expect(build).not.toMatch(/build-weekly/);
   });
 });
+
+// C2, 2026-11-22: the entry points, the fintech list, the free-tier sentence,
+// and no claim about another product that no dated read supports.
+describe('AI-visibility block (C2, 2026-11-22)', () => {
+  it('lists every entry point once, with a one-line description, under Start here', () => {
+    const start = text.slice(text.indexOf('## Start here'), text.indexOf('## Facts an assistant'));
+    for (const [p] of ENTRY_POINTS) {
+      const lines = start.split('\n').filter(l => l.startsWith(`- https://sqlquest.app${p} — `));
+      expect(lines, p).toHaveLength(1);
+      expect(lines[0].length, p).toBeGreaterThan(`- https://sqlquest.app${p} — `.length + 20);
+    }
+  });
+
+  it('lists the fintech company pages that exist, with their tagged counts', () => {
+    const block = text.slice(text.indexOf('## Fintech and banking'), text.indexOf('## Company-tagged'));
+    for (const name of FEATURED_COMPANIES) {
+      const c = facts.companies.find(x => x.name === name);
+      if (!c) { expect(name).toBe('Chime'); continue; }   // the only optional one
+      expect(block).toContain(`- ${name} — `);
+      expect(block).toContain(c.url);
+      if (c.taggedChallenges) expect(block).toContain(`- ${name} — ${c.taggedChallenges} tagged challenges`);
+    }
+  });
+
+  it('says the free tier exactly the way freeTierSentence does', () => {
+    expect(text).toContain(freeTierSentence(facts.challengeCount));
+  });
+
+  it('makes no blanket claim about other products', () => {
+    const template = read('src', 'llms.template.md');
+    for (const re of [/\bunlike every other\b/i, /\bevery other SQL practice site\b/i, /\bthe only SQL practice site\b/i,
+      /\bmost competitors\b/i, /\bcompetitors don't have\b/i, /\bconvert at high rates\b/i, /#1 reason/i,
+      /\bdo not exist on any other\b/i, /\|\s*No\s*\|\s*No\s*\|/, /\bmost common reason\b/i, /\bmost often\b/i]) {
+      expect(template, String(re)).not.toMatch(re);
+    }
+  });
+});
+
