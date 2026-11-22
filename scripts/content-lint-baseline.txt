@@ -1,4 +1,3 @@
-BROKEN    #27   UNION ALL Dedup: Cross-Dataset Search — no such table: employees
 NONDETERM #2    Salary Percentile Ranking — 50 rows; order depends on insert order — add a unique tiebreak to ORDER BY
 NONDETERM #21   Employees with Similar Salaries — 175 rows; order depends on insert order — add a unique tiebreak to ORDER BY
 NONDETERM #26   Detect Repeat Buyers Within 7 Days — 8 rows; order depends on insert order — add a unique tiebreak to ORDER BY

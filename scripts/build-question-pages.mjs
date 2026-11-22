@@ -29,6 +29,7 @@ import { questionSlugs, loadQuestionBank } from './question-slugs.mjs';
 import { SKILL_PAGE } from './build-company-pages.mjs';
 import { SKILL_TO_RADAR, mapTopicToSkill, CANONICAL_SKILLS } from '../src/utils/skill-calc.js';
 import { isFreePreview } from '../src/utils/challenge-order.js';
+import { challengeTableData } from '../src/utils/challenge-datasets.js';
 import { bankCountLabel, FREE_SOLVE_QUOTA } from '../src/utils/display-count.js';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
@@ -116,9 +117,11 @@ function companyPages() {
 function schemaHtml(c, datasets) {
   const ds = datasets[c.dataset];
   if (!ds || !ds.tables) return '';
-  const tables = (c.tables && c.tables.length ? c.tables : Object.keys(ds.tables)).filter(t => ds.tables[t]);
+  // A listed table the challenge's own dataset lacks is shown from the
+  // dataset the app borrows it from (challenge 27's employees).
+  const tables = (c.tables && c.tables.length ? c.tables : Object.keys(ds.tables)).filter(t => challengeTableData(c, t, datasets));
   return tables.map(t => {
-    const tb = ds.tables[t];
+    const tb = challengeTableData(c, t, datasets);
     const cols = tb.columns || [];
     const rows = (tb.data || []).slice(0, 3);
     return `<div class="tbl"><p class="fm tname">${esc(t)}</p><table><thead><tr>${cols.map(col => `<th>${esc(col)}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${r.map(v => `<td>${v === null ? '<span class="nul">NULL</span>' : esc(v)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
