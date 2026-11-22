@@ -28,10 +28,10 @@ Impressions / clicks: gsc_daily page slice, 28 days to 2026-11-21.
 | Coinbase | fintech | none | — | 0 / 0 | read 2026-11-20 |
 | Monzo | fintech | none | — | 0 / 0 | read 2026-11-20 |
 | Chime | fintech | none | — | 0 / 0 | read 2026-11-22 |
-| Plaid | fintech | none | — | 14 / 1 | no read |
-| Ramp | fintech | none | — | 31 / 3 | no read |
+| Plaid | fintech | **2026-11-22** | low (nothing page-ready) | 14 / 1 | No candidate report opened (IQ 429, 1point3acres 403). First-party: every data posting names SQL (dbt, Redshift; fraud/credit DS). PracHub template shapes only. |
+| Ramp | fintech | **2026-11-22** | medium (live SQL round in DA/AE loops) | 31 / 3 | Two dated candidate sources: IQ DA reports Q4 2025 (take-home case + panel, SQL date wrangling) / Q1 2026; DataDriven AE thread Aug 2026 (live CodeSignal, 8 SQL Qs). One more source → sourceable. |
 | Goldman Sachs | fintech | none | — | 5 / 0 | read 2026-09-13 (stale) |
-| Morgan Stanley | fintech | none | — | 49 / 2 | no read |
+| Morgan Stanley | fintech | **2026-11-22** | low (nothing page-ready) | 49 / 2 | Only opened SQL-test report: GfG DE 2021 (2 h HackerRank with an SQL section). First-party: video interviews in screening, interview types generic. DA reports are Glassdoor/IQ, unreadable. |
 | Bloomberg | fintech | none | — | 1 / 0 | read 2026-09-13 (stale) |
 | Amazon | bigtech | none | — | 123 / 5 | read 2026-09-14 + one emailed report 2026-10-21 (stale) |
 | Google | bigtech | none | — | 75 / 2 | no read |
@@ -54,7 +54,7 @@ Impressions / clicks: gsc_daily page slice, 28 days to 2026-11-21.
 | Anthropic | ailab | none | — | 26 / 2 | no read |
 | Tesla | industrial | none | — | 74 / 3 | no read |
 
-Coverage on 2026-11-22: **5 of 34** with a dossier younger than 60 days.
+Coverage on 2026-11-22: **8 of 34** with a dossier younger than 60 days (second batch: Plaid, Ramp, Morgan Stanley).
 
 ## Companies with search demand and no page
 
@@ -72,8 +72,23 @@ re-check monthly.
 
 ## Queue (next runs, 2–3 companies each)
 
-1. **Plaid, Ramp, Morgan Stanley** — buyer-signal fintechs with a page and no read.
-2. **Goldman Sachs, Amazon, Snowflake** — stale reads (Sept) or no read; Amazon and Snowflake carry the most impressions after the five done.
-3. **Meta, Google, Databricks** — demand 75–90 impressions, Meta's read is stale.
-4. **PayPal, Coinbase, Monzo, Chime** — convert the 11-20 / 11-22 reads into dossiers before they turn 60 days old (by 2027-01-19).
-5. Then Shopify, Tesla, TikTok, Apple, and the rest by impressions.
+1. **Goldman Sachs, Amazon, Snowflake** — stale reads (Sept) or no read; Amazon and Snowflake carry the most impressions after the eight done. (Goldman was the optional fourth of batch 2 and was not started; goldmansachs.com/careers/students/prepare answered 403 to WebFetch.)
+2. **Meta, Google, Databricks** — demand 75–90 impressions, Meta's read is stale.
+3. **PayPal, Coinbase, Monzo, Chime** — convert the 11-20 / 11-22 reads into dossiers before they turn 60 days old (by 2027-01-19).
+4. Then Shopify, Tesla, TikTok, Apple, and the rest by impressions.
+5. **Re-tries for batch 2** (when Interview Query stops answering 429): IQ Plaid DS/DA, IQ Morgan Stanley DA, Taro's Plaid DE report — each could lift a "low" dossier.
+
+## Run notes
+
+- **2026-11-22, batch 2 (Plaid, Ramp, Morgan Stanley).**
+  - Interview Query answered 429 to WebFetch on every page. Two Ramp guides
+    were read through the Apify fetcher. After that, the session's
+    permission classifier refused Apify for any page that had answered 403
+    or 429, so the fallback is closed: do not plan on it.
+  - LeetCode Discuss, Medium and 1point3acres answered 403; Dataford and
+    Taro answered 429; Glassdoor and Blind are unusable as before.
+  - Job boards (the Ashby public API) and GeeksforGeeks worked.
+    morganstanley.com timed out in WebFetch and was read with a plain curl
+    GET.
+  - Expect B2B fintech and bank dossiers to stay "low" until a readable
+    candidate source appears.

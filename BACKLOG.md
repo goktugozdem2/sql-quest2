@@ -126,7 +126,8 @@ G1 builds none of these. Each one names the lane that owns it. Baseline:
 
 R1 builds none of these; each names the lane that owns it. Dossiers:
 `capital-one.md`, `revolut.md`, `stripe.md`, `wise.md`, `jpmorgan.md`;
-coverage and queue in `INDEX.md`.
+batch 2: `plaid.md`, `ramp.md`, `morgan-stanley.md`; coverage and queue in
+`INDEX.md`.
 
 - **C1 — Capital One page + blog: cite the vendor, tighten the count.**
   CodeSignal's own help page (support.codesignal.com article 4407377178647)
@@ -209,6 +210,65 @@ coverage and queue in `INDEX.md`.
   employers were checked in gsc_daily and bing_stats over 90 days; no
   interview-intent query turned up. GSC cannot see queries for pages we lack,
   so take C7's clusters instead and re-check monthly (`INDEX.md`).
+
+### R1 batch 2, 2026-11-22: Plaid, Ramp, Morgan Stanley
+
+- **C1 — Ramp page: wait for one more source, then make it sourced.** Two
+  dated candidate sources from two publishers put a **live SQL round** in
+  Ramp's loops (medium):
+  - Interview Query, Data Analyst, interviewed Q4 2025 (offer): SQL with
+    date wrangling and edge cases, after a take-home case presented to a
+    panel.
+  - DataDriven thread, analytics engineer, 2026-08-27: a live CodeSignal
+    session, 8 SQL questions + 3 follow-ups.
+
+  Do not state yet: the platform (one AE thread, possibly a Blind repost),
+  the take-home or the "AI interview + one-hour assessment" (one report
+  each). If C1 wants a line now, it can say that candidates for analyst and
+  analytics-engineering roles report a live SQL round, citing both, and
+  nothing more. Otherwise keep "no dated public source" until a third source
+  is found. The postings' "SQL (preferably Redshift, Snowflake, BigQuery)"
+  is a first-party fact about the job, usable in the topic sentence.
+- **C1 — Plaid page: no change.** No candidate report was opened. The only
+  facts are first-party job text: every data posting names SQL, with dbt
+  for analytics engineering and DBT/Airflow/Redshift for data engineering.
+  The page's "no dated public source" stays true.
+- **C1 — Morgan Stanley page: no change.** The one opened SQL-test report
+  (GfG, data engineer, 2021: a 2-hour HackerRank test with an SQL section)
+  is too old and too single to state. The first-party video-interview line
+  names no vendor. The data-analyst reports are on Glassdoor and Interview
+  Query, both unreadable this run.
+- **B3 — a calendar spine (fill the missing days) on a fintech dataset.**
+  Ramp's DA report (Q4 2025, low) names date wrangling with edge cases as
+  the hard part. The bank has date math, rolling windows (50, 319) and
+  streaks, but no challenge builds a day-by-day series with zero-activity
+  days (a recursive date CTE LEFT JOINed to activity). Only 44, 81 and 274
+  use a recursive CTE, and none for dates. Fit: daily card spend per
+  account on `finans_neobank` with gaps, then a trailing 7-day sum that
+  counts the empty days.
+- **B3 — rolling distinct active users (trailing 7 days, per day).** A
+  Dataford snippet (not opened) names it for Ramp DA. PracHub's Ramp and
+  Plaid templates (low) name trailing-window rates. Challenge 60 counts
+  daily distinct actives and 50 smooths revenue, but none counts *distinct*
+  users over a trailing window, which cannot be a window COUNT(DISTINCT) in
+  SQLite. Low; build only if B3 has a slot.
+- **B3 — success rate per counterparty over a trailing window.** Plaid
+  (PracHub template, low): API-call success per institution over 7 days.
+  The fintech datasets have no request/attempt log. The nearest is the
+  decline rate (305). If built, put it on `finans_neobank` card
+  authorisations (approve/decline per merchant, trailing 7 days).
+- **B3 — "how many rows does this join return?" as a mock MCQ.** Morgan
+  Stanley DE (GfG 2021, low): predict each join type's row count when the
+  key repeats on both sides. Challenges 291/298 and `/sql-join-fan-out/`
+  teach the fan-out by writing a query; no MCQ asks for the count. That is a
+  mock-question edit, not a new challenge.
+- Covered already, no B3 needed:
+  - nth-highest and top-N per department (29, 48, 89, 163);
+  - median without PERCENTILE (72; none on fintech data, a minor gap);
+  - cohort retention (88, 303);
+  - period-over-period (84, 126).
+- Plaid's settlement reconciliation by currency (PracHub, low) joins the
+  existing **"reconcile two sources"** B3 line above as a third report.
 
 ## Funnel findings — B1, 2026-11-22 (docs/reads/funnel-2026-11-22.md)
 
