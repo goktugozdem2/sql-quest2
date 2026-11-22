@@ -212,6 +212,7 @@ of the verifier and must never be rounded to `FLAT`.
 - **Baseline** none (new surface); comparison `pricing_link` 26.7% modal → plan click.
 - **Target** ≥ 10 presses in 30 days; ≥ 20% press → plan click; `quota_wall` click rate not below 10%.
 - **Falsification, stated in advance:** < 5 presses in 30 days → nobody looks for it; turn the flag off. Quota-wall clicks fall below 10% while header clicks rise → it moved clicks rather than adding them; turn the flag off.
+- **Amended 2026-11-22 (A2 live QA, PR `qa/mobile-header-overflow`):** on phones the button shipped half off-screen — at 375 px the header row ran 62 px past the screen ("Try Pro" cut in half, the Guest chip off-screen); at 390/414 px the row overflowed even before the button. Fixed on merge: below `sm` the wordmark, level bar, XP coin and separators wait for `sm`. At the 12-20 read, split `header_pro_shown` / `header_pro_clicked` by the event's viewport (mobile vs desktop) and count mobile only from the merge date; a mobile press before it was a press on half a button.
 
 ### no tenth-solve ask in front of the quota wall
 

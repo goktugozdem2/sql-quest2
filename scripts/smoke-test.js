@@ -2096,6 +2096,59 @@ async function main() {
       fail('a guest at 10 solves opening an unsolved challenge meets the quota wall: challenge_quota lock, Pro modal reason=free_quota, both plans, counter 10 of 10', JSON.stringify(quotaSummary));
     }
 
+    // ── The phone header holds the Pro button (2026-11-22, A2 live QA) ───
+    // The header's "Try Pro" button (#107) shows from three solves. At
+    // 375 px it pushed the row 62 px past the screen: "Try Pro" was cut in
+    // half and the Guest chip sat off-screen; at 390/414 the row already
+    // overflowed before the button (the wordmark turned on at 380 px). A
+    // guest at three solves, at two phone widths: the button and the
+    // identity chip are both fully on screen and the page does not scroll
+    // sideways.
+    const headerGuest = 'guest_1795300000003';
+    const headerSolved = [91, 92, 93];
+    const headerResults = [];
+    for (const width of [375, 390]) {
+      await cdp(tab, 'Emulation.setDeviceMetricsOverride', { width, height: 812, deviceScaleFactor: 1, mobile: true });
+      await evalInPage(tab, `
+        (() => {
+          localStorage.clear();
+          localStorage.setItem('sqlquest_guest_user', ${JSON.stringify(headerGuest)});
+          localStorage.setItem('sqlquest_user_' + ${JSON.stringify(headerGuest)}, JSON.stringify({
+            username: ${JSON.stringify(headerGuest)},
+            solvedChallenges: ${JSON.stringify(headerSolved)},
+            challengeAttempts: ${JSON.stringify(headerSolved)}.map(id => ({ challengeId: id, correct: true, timestamp: Date.now() - 60000 })),
+            createdAt: Date.now() - 86400000,
+            lastActive: Date.now() - 3600000,
+          }));
+          location.href = ${JSON.stringify(URL + '/app/')};
+          return true;
+        })()`);
+      await new Promise(r => setTimeout(r, 6000));
+      // Compare against the width set, not innerWidth: with mobile emulation
+      // the layout viewport stretches to the content, so innerWidth grows
+      // with the overflow it should expose.
+      headerResults.push(await evalInPage(tab, `
+        (() => {
+          const vw = ${width};
+          const box = (sel) => { const el = document.querySelector(sel); if (!el) return null; const r = el.getBoundingClientRect(); return { left: Math.round(r.left), right: Math.round(r.right), width: Math.round(r.width) }; };
+          const pro = box('[data-testid="header-pro"]');
+          const who = box('[data-testid="header-identity"]');
+          const name = document.querySelector('[data-testid="header-identity"] span.truncate');
+          return {
+            width: vw,
+            documentWidth: document.documentElement.scrollWidth,
+            pro, who,
+            nameWhole: !!name && name.scrollWidth <= name.clientWidth,
+          };
+        })()`));
+    }
+    await cdp(tab, 'Emulation.setDeviceMetricsOverride', { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
+    const headerFits = headerResults.every(h => h.pro && h.who
+      && h.pro.right <= h.width && h.who.right <= h.width && h.who.left >= h.pro.right
+      && h.documentWidth <= h.width && h.nameWhole);
+    if (headerFits) pass('a guest at 3 solves on a phone (375, 390): "Try Pro" and the Guest chip both fit on screen, no sideways scroll');
+    else fail('a guest at 3 solves on a phone (375, 390): "Try Pro" and the Guest chip both fit on screen, no sideways scroll', JSON.stringify(headerResults));
+
     eventListeners.delete(onConsole);
 
   } finally {

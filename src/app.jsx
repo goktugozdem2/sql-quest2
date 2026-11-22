@@ -34342,7 +34342,7 @@ RULES:
           this person HAD one. */}
       <header className="bg-black/30 border-b border-purple-500/30">
         {/* Row 1: Identity + Stats + Profile */}
-        <div className="max-w-7xl mx-auto px-4 py-2 flex items-center gap-3">
+        <div data-testid="header-row" className="max-w-7xl mx-auto px-4 py-2 flex items-center gap-2 sm:gap-3">
           {/* Logo — the one brand mark (2026-09-14): solid #7c3aed square with
               the line lightning bolt, the same on the homepage, every static
               page, the sign-in card and favicon.svg. Inline SVG because the
@@ -34353,7 +34353,7 @@ RULES:
                 <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/>
               </svg>
             </div>
-            <span className="font-bold text-sm text-[#F2F0EA] hidden min-[380px]:block">SQL Quest</span>
+            <span className="font-bold text-sm text-[#F2F0EA] hidden sm:block">SQL Quest</span>
           </div>
           {showSimpleLearningShell && (
             <div className="ml-auto flex items-center gap-2">
@@ -34374,7 +34374,7 @@ RULES:
               currencies. The bar carries the progress; the number is there
               when you ask for it. */}
           <div
-            className={`${showSimpleLearningShell ? 'hidden' : 'flex-1 max-w-[220px] mx-auto'}`}
+            className={`${showSimpleLearningShell ? 'hidden' : 'hidden sm:block flex-1 max-w-[220px] mx-auto'}`}
             title={`${xp.toLocaleString()} / ${nextLevel.minXP.toLocaleString()} XP to ${nextLevel.name}`}
           >
             <div className="flex items-center justify-between mb-0.5">
@@ -34386,7 +34386,7 @@ RULES:
           </div>
           
           {/* Compact stats */}
-          <div className={`${showSimpleLearningShell ? 'hidden' : 'flex'} items-center gap-1.5 text-xs`}>
+          <div data-testid="header-stats" className={`${showSimpleLearningShell ? 'hidden' : 'flex'} ml-auto sm:ml-0 items-center gap-1.5 text-xs`}>
             {/* At-risk state (Snapchat's hourglass): streak alive but today
                 not yet earned → ⏳ instead of the flame. Practicing flips it
                 back the moment recordDailyActivity fires. */}
@@ -34434,10 +34434,10 @@ RULES:
                 stays — it is the one game element that is also a plan. */}
             {!interviewFirstOn('header_game_cluster') && (
               <>
-                <span className="text-gray-700">|</span>
+                <span className="text-gray-700 hidden sm:inline">|</span>
                 <span title="Lives" className="flex gap-0.5">{[1,2,3].map(i => <PixelHeart key={i} filled={i <= lives} size={12} />)}</span>
-                <span className="text-gray-700">|</span>
-                <span title="XP" className="flex items-center gap-0.5 text-yellow-400"><PixelCoin size={12} /><span className="font-bold">{xp.toLocaleString()}</span></span>
+                <span className="text-gray-700 hidden sm:inline">|</span>
+                <span title="XP" className="hidden sm:flex items-center gap-0.5 text-yellow-400"><PixelCoin size={12} /><span className="font-bold">{xp.toLocaleString()}</span></span>
               </>
             )}
             {/* 2026-09-14 declutter (founder): sound, replay-tour and the language
