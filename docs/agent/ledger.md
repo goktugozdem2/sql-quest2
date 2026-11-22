@@ -27,6 +27,26 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### a company arrival opens question 1 (`companyDirectOpen`, A/B)
+
+- **Claimed** 2026-11-22 · **Shipped** dark (flag `companyDirectOpen: false`); A0 may flip it no earlier than **2026-12-19** (flag-queue row 16) · **Read** 2027-01-30, or at the minimum n if that comes later (hard stop 2027-02-27).
+- **Change** an A/B by aid (`company_direct_v1`, murmur-finalised hash, independent of the first-screen, company-ask, quota-wall-inline and modal-layout arms). A person with **zero solves** who arrives through `/app/?company=X` with no `?challenge=` or `?interview=` (the hero of 33 of 34 company pages) gets one of two arms. `direct`: they land in the question the company banner's button would open (`companyBannerNext()`: same locks, same `openChallenge`, `openedFrom: 'company_direct'`). `list`: today's list and banner, unchanged. The arm is assigned once (`company_direct_assigned {testId, arm, company, nextId}`). Nothing is asked, gated or priced. src/utils/company-direct.js; tests/company-direct.test.js.
+- **Why** (docs/reads/onboarding-walk-2026-11-22.md): of five doors walked at 375 and 1366, the general company door is the only one with two presses before the editor. The hero promises "Solve <Company> question 1 now: <title>". The app shows a list and asks for the same promise a second time, at the fold on a phone, under ~16 lines of text. Company arrivals are the best money door (2.3% trial-or-paid per arrival). 63 of 149 company search arrivals opened nothing (35 days to 11-20).
+- **Metric** `company_direct_split` (metrics.md): `first_solve_10m` measured from assignment, by arm. Secondary: first run within 10 minutes. `open_to_first_run` is **not** the read here: the direct arm opens the challenge for everyone, so its denominator moves with the arm.
+- **Baseline** the `list` arm, run alongside (concurrent control). The pre-flip company-door `first_solve_10m` is a laptop read, to be filled in at the flip. This cloud session has no production data and states no number for it.
+- **Target** `direct` ≥ `list` + 8 points on first_solve_10m, at ≥ 120 assigned people per arm (bots and crawler window sizes out).
+- **Guardrails** (both arms):
+  - 3 solves within 24 h of assignment: `direct` must not trail `list` by more than 5 points.
+  - plan clicks and trial-or-paid within 14 days: read the counts. A `direct` arm with 0 against ≥ 4 for `list` holds the ship.
+- **Stop rule, written before the data:**
+  - **Early harm check at 60 per arm:** `direct` trails `list` by ≥ 10 points on first_solve_10m → flag off the same day; MISS.
+  - **At 120 per arm:**
+    - `direct` ≥ `list` + 8 → HIT. Ship `direct` as the default and remove the `list` branch.
+    - within ± 8 → FLAT. Flag off and delete the branch (the banner claim stands).
+    - `direct` < `list` − 3 → MISS. Flag off.
+  - Fewer than 120 per arm by 2027-02-27 → UNREADABLE. Flag off; do not extend a second time.
+- **Confounds** the banner claim ("a company arrival gets a first question to press", read 12-18) sits on the same arrivals, which is why the flip waits until 12-19. M-02's hero copy (read 12-20) is upstream of assignment and lands in both arms equally. `quotaWallInline` and `modalLayout` are independent arms. #99's first screen never shows on a `?company=` arrival.
+
 ### AI-visibility pass: answer-first summaries, honest competitor facts, llms.txt entry points (C2)
 
 - **Claimed** 2026-11-22 · **Shipped** on merge (static pages + llms.txt,
