@@ -99,6 +99,9 @@
     .related ul{margin-bottom:0;padding-left:20px}.related li{font-size:14px;line-height:1.8}
     .sources{font-size:13px;color:#8b98ab;line-height:1.8}.sources li{font-size:13px;color:#8b98ab;margin-bottom:4px}
     .faq details{border-bottom:1px solid rgba(255,255,255,.06);padding:14px 0}.faq summary{font-size:16px;font-weight:700;color:#e2e8f0;cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center}.faq summary::after{content:'+';color:#3b82f6;font-size:22px;flex-shrink:0;margin-left:16px}.faq details[open] summary::after{content:'−'}.faq details p{margin:12px 0 0;font-size:14px}
+  
+    /* Phone fit (A4 UI/UX audit, 2026-11-22): a table wider than the screen scrolls inside itself instead of widening the page. */
+    @media(max-width:600px){table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}}
   </style>
   <!-- Microsoft Clarity behavioral analytics. Project wovalt3jwh.
        Password/email inputs auto-masked. Privacy policy: /privacy.html -->
@@ -109,7 +112,7 @@
       y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
     })(window, document, "clarity", "script", "wovalt3jwh");
   </script>
-</head>
+<style data-phone-fit>.btn.bo{min-height:44px}@media(max-width:600px){.ni a,.ni .bp,.nl .btn{min-height:44px}}</style></head>
 <body>
 <nav class="nav"><div class="ni">
   <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;">
