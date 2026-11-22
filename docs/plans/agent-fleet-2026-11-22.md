@@ -115,6 +115,12 @@ First pass 2026-11-22:
 
 Pipeline for content: **author → Q1 → A1 → A0 → post-deploy check**.
 
+### J. Question mining (added 2026-11-22, founder)
+
+| # | Agent | Lane | Cadence | Output |
+|---|---|---|---|---|
+| C7 | **Question mining** | Reddit / Stack Overflow / Quora / HN as read-only research: what people ask about SQL, clustered and mapped to our coverage; answers added to existing pages (FAQ, sections, worked examples), missing topics to C6, company questions to C5. Posts nothing anywhere. Brief: `docs/agent/fleet/C7-questions.md` | daily, before C6 | `docs/reads/questions-<date>.md` + one PR of answers on existing pages |
+
 ### D. Orchestration
 
 | # | Agent | Lane | Cadence |
@@ -153,6 +159,7 @@ Each agent has one number it is answerable for, read in D2:
 | C5 | trials + purchases per 1,000 landing people on the pages it made or changed (28 / 56 d) |
 | C6 | topic-page arrivals who solve one of its questions (`topic_funnel`); solve-through on new questions |
 | Q1 | content defects people find after merge (0); solve-through of new questions vs the bank median |
+| C7 | share of mined question clusters (≥ 3 asks / 30 d) with a good answer on the site; impressions on their queries |
 | B1 | paid conversions per 1,000 arrivals |
 | B2 | claims past their read date without a verdict (should be 0) |
 | B3 | solve-through on new questions |
