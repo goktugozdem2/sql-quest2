@@ -46,6 +46,8 @@ An agent reads `CLAUDE.md`, this file and its own brief, in that order.
 6. **Merge rule.**
    - A **docs-only** PR (only `docs/**` and/or `BACKLOG.md`) may be merged
      by its author with `<scratchpad>/mergeone.sh <PR#>`.
+   - **A content PR goes to Q1 (content QA) first**, which posts QA PASS / QA FAIL
+     (`Q1-content-qa.md`). A FAIL goes back to the author.
    - **Any other PR is left open for A1 (reviewer)**, which posts MERGE /
      REVISE / REJECT. **A0 (gate) then decides the go** and merges, in the
      founder's place (delegated 2026-11-22, `A0-gate.md`). Never merge your
