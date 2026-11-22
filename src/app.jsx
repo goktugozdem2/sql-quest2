@@ -25017,6 +25017,11 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
     if (fbPrompt?.kind === 'stuck' && fbPrompt.challengeId !== id) setFbPrompt(null);
     if (id == null || !fbFlag('stuck')) return;
     const t = setTimeout(() => {
+      // Only while the challenge is on screen: currentChallenge outlives a
+      // switch to another tab of the app, and a hidden browser tab still runs
+      // the timer. A card nobody sees would spend the session's one ask and
+      // count as shown (A1, 2026-11-22).
+      if (document.visibilityState !== 'visible' || !document.querySelector('[data-testid="challenge-result-anchor"]')) return;
       const at = challengeOpenedAtRef.current.id === id ? challengeOpenedAtRef.current.at : Date.now();
       const trig = stuckTrigger({ msOpen: Date.now() - at, hasRun: firstRunSentRef.current.has(id), wrongSubmits: 0 });
       if (trig) fbTryStuck(trig);

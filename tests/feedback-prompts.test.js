@@ -212,6 +212,16 @@ describe('the app wiring (source guards)', () => {
     expect(hooks).toContain('wrongSubmits: wrongAttemptCount');
   });
 
+  it('the no-run timer asks only while the challenge is on screen', () => {
+    // currentChallenge survives a switch to another tab of the app, and a
+    // hidden browser tab still fires timers: an unseen card would spend the
+    // session's one ask and inflate feedback_prompt_shown (A1, 2026-11-22).
+    const timer = hooks.slice(hooks.indexOf('const t = setTimeout(() => {'), hooks.indexOf('STUCK_NO_RUN_MS + 500'));
+    expect(timer).toContain("document.visibilityState !== 'visible'");
+    expect(timer).toContain('!document.querySelector(\'[data-testid="challenge-result-anchor"]\')');
+    expect(timer.indexOf('return;')).toBeLessThan(timer.indexOf('fbTryStuck('));
+  });
+
   it('timed mock is read from the interview state', () => {
     expect(hooks).toContain('const fbInTimedMock = () => !!activeInterview && !interviewCompleted;');
   });
