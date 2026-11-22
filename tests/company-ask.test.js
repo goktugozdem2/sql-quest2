@@ -77,8 +77,8 @@ describe('when it asks', () => {
 });
 
 describe('the search box', () => {
-  it('offers all thirty-three companies, prefix matches first', () => {
-    expect(INTAKE_COMPANIES).toHaveLength(33);
+  it('offers all thirty-four companies, prefix matches first', () => {
+    expect(INTAKE_COMPANIES).toHaveLength(34);
     expect(matchCompanies('')).toHaveLength(6);
     expect(matchCompanies('cap')[0]).toBe('Capital One');
     expect(matchCompanies('one')).toContain('Capital One');
