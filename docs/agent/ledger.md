@@ -2456,7 +2456,7 @@ that needs its own path — the current rule is written down in the handler.
   `intent_captured`.
 - **Verdict** **HIT on continuity, MISS on multi-day guest solvers — confounded** (read 2026-11-22, 30 days): 95 people resumed (target ≥ 30 in 14 days), 2 merges + 14 sign-ups carrying solves (target ≥ 5 together). Guests solving on 2+ distinct days: **17 / 30 days** (baseline 30, target 45) — but since 09-26 the free quota stops a guest at ten solves and from 11-22 the account ask moves to the third (#98), both pulling multi-day solvers out of the guest pool; the number now measures the quota, not continuity. (`guest_resumed.solvedCount` was 0 on every row until #93.)
 
-### users writes restored: the referral trigger blocked every registered save for four days — **HIT** (7-day read; day-30 line pending)
+### users writes restored: the referral trigger blocked every registered save for four days — **HIT** (7-day read; day-30 line HIT 2026-11-22)
 
 - **Claimed** 2026-09-12 · **Read** 2026-09-19 (seven days of restored
   writes), and again inside the O1 day-30 read on 2026-10-09.
@@ -2540,6 +2540,8 @@ that needs its own path — the current rule is written down in the handler.
     day-30 signups column (2026-10-09), as the entry says.
   - Postgres error log: no `permission denied for function gen_ref_code`
     since 2026-09-12 10:58:12Z.
+
+- **Day-30 line** **HIT** (read 2026-11-22, late against the 10-09 date): registered rows written every week since, never a zero week — 26 / 31 / 21 / 18 / 29 in the five weeks from 10-19 (guest rows 241–585 a week); `postgres_logs` over the last 24 hours holds no ERROR and no `permission denied` row. The outage did not come back.
 
 ### validate AI-generated SQL: a non-brand answer door with a practice handoff
 
