@@ -41,7 +41,7 @@ import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { CANONICAL_SKILLS } from '../src/utils/skill-calc.js';
 import { isFreePreview } from '../src/utils/challenge-order.js';
-import { bankCountLabel, FREE_SOLVE_QUOTA, COMPANY_SET_FREE_COUNT } from '../src/utils/display-count.js';
+import { bankCountLabel, freeTierSentence, FREE_SOLVE_QUOTA, COMPANY_SET_FREE_COUNT } from '../src/utils/display-count.js';
 import { archetypeMemberCompanies } from '../src/data/interview-archetypes.js';
 import SKELETONS from '../src/utils/skeletons.js';
 
@@ -305,6 +305,50 @@ export function collectBankFacts(rootDir = ROOT) {
   };
 }
 
+// The doors an assistant should send someone through, one line each (C2,
+// 2026-11-22). Every path except /app/ must be on the sitemap, or the build
+// fails: a stale entry point in llms.txt is a dead link an assistant quotes.
+export const ENTRY_POINTS = [
+  ['/app/', 'The practice app. No signup: the first challenge runs in the browser, and the Coach picks the next one from your Skillmap.'],
+  ['/sql-interview-readiness-test/', 'Ten questions, no signup: a Skillmap across the nine skills and the one to fix first, optionally weighted for a named company.'],
+  ['/sql-interview-prep/', 'The interview hub: every company interview page, grouped by sector.'],
+  ['/sql-exercises/', 'SQL exercises by topic, with five worked solutions and the trap on each topic.'],
+  ['/questions/', 'Every challenge in the bank as its own page: the prompt, the tables and the skills it measures.'],
+  ['/sql-practice-comparison/', 'How SQL Quest compares with DataLemur, StrataScratch, LeetCode and HackerRank, with each competitor fact dated.'],
+  ['/best-sql-practice-sites/', 'Five SQL practice sites reviewed side by side, including where each beats SQL Quest.'],
+  ['/vs-chatgpt/', 'Why practise on questions with a fixed expected result instead of asking a chat assistant to grade you.'],
+  ['/sql-tools/', 'Free in-browser SQL tools: a checker, an explainer and an optimizer.'],
+];
+
+// Fintech and banking pages listed by name (C2, 2026-11-22). Chime is listed
+// once its page exists (PR #134), so this needs no edit when it merges.
+export const FEATURED_COMPANIES = ['Capital One', 'Revolut', 'Wise', 'Stripe', 'PayPal', 'Monzo', 'Chime'];
+const FEATURED_OPTIONAL = new Set(['Chime']);
+
+export function entryPointList(pages) {
+  const onSitemap = new Set(pages.map(p => p.path));
+  return ENTRY_POINTS.map(([p, line]) => {
+    if (p !== '/app/' && !onSitemap.has(p)) throw new Error(`llms.txt entry point ${p} is not on the sitemap`);
+    return `- ${SITE}${p} — ${line}`;
+  }).join('\n');
+}
+
+export function featuredCompanyList(companies, mockCompanies = archetypeMemberCompanies()) {
+  const byName = new Map(companies.map(c => [c.name, c]));
+  const lines = [];
+  for (const name of FEATURED_COMPANIES) {
+    const c = byName.get(name);
+    if (!c) {
+      if (FEATURED_OPTIONAL.has(name)) continue;
+      throw new Error(`llms.txt featured company ${name} has no src/*-sql-interview.html page`);
+    }
+    const parts = [c.taggedChallenges > 0 ? `${c.taggedChallenges} tagged challenges` : 'practice mapped onto the sector track'];
+    if (mockCompanies.includes(name)) parts.push(`a set authored for it (the first ${COMPANY_SET_FREE_COUNT} free to try) and a timed mock screen (Pro)`);
+    lines.push(`- ${c.name} — ${parts.join(', ')} — ${c.url}`);
+  }
+  return lines.join('\n');
+}
+
 export function templateValues(facts, generatedOn) {
   return {
     generatedOn,
@@ -323,6 +367,10 @@ export function templateValues(facts, generatedOn) {
     // such count once the quota is on. facts.freeChallengeCount stays in the
     // facts (what a free solve can be spent on) for the tests.
     freeSolveQuota: FREE_SOLVE_QUOTA,
+    // The one sentence every page uses for the free tier (display-count.js).
+    freeTierSentence: freeTierSentence(facts.challengeCount),
+    entryPoints: entryPointList(facts.pages),
+    featuredCompanyList: featuredCompanyList(facts.companies),
     companySetFreeCount: COMPANY_SET_FREE_COUNT,
     signedCompanySets: archetypeMemberCompanies().join(' and '),
     companyPageCount: facts.companies.length,
