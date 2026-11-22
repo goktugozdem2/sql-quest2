@@ -192,7 +192,7 @@ beforeAll(async () => {
   mod = new Function(`${code}
     return { createdAtMs, signupWindowSkip, sendWindow, companyFromArrival, SUBJECTS_NEW, subjectForNew,
       renderNewBody, renderBody, variantFor, MAX_PER_RUN, MAX_PER_RUN_NEW, NEW_MIN_AGE_HOURS, NEW_MAX_AGE_HOURS,
-      NEW_MIN_HOURS_AFTER_SIGNUP, FALLBACK_UTC_HOUR, SEND_LOCAL_HOURS };`)();
+      NEW_MIN_HOURS_AFTER_SIGNUP, FALLBACK_UTC_HOUR, SEND_LOCAL_HOURS, fetchAllRows };`)();
 });
 
 const H = 3600000;
@@ -273,7 +273,7 @@ describe('goal-note mode=new: new registrants, once, at their morning', () => {
 
   it('is once per person ever across both modes', () => {
     // One template for both modes, and the lifetime read never filters by mode.
-    const lifetimeQuery = between(fn, "const { data: already }", 'const lifetime');
+    const lifetimeQuery = between(fn, "const already = await fetchAllRows(", 'const lifetime');
     expect(lifetimeQuery).toContain(".eq('template', TEMPLATE)");
     expect(lifetimeQuery).not.toMatch(/mode/);
     expect(fn).not.toMatch(/TEMPLATE\s*=\s*mode|template:\s*mode|`goal_note_\$\{mode/);
@@ -304,6 +304,37 @@ describe('goal-note mode=new: new registrants, once, at their morning', () => {
     expect(fn).toContain(".in('username', audience.map(c => c.username))");
     expect(fn).toContain("due = audience.filter(c => c.due)");
     expect(fn).toContain('const batch = due.slice(0, cap)');
+  });
+
+  it('reads every row past the PostgREST cap: users, past sends, the quiet window, the zones (A1, 2026-11-22)', async () => {
+    // A fake server that holds `total` rows and answers at most `cap` per call,
+    // whatever range is asked, as PostgREST's max-rows does.
+    const server = (total, cap) => {
+      const calls = [];
+      const page = async (from, to) => {
+        calls.push([from, to]);
+        const end = Math.min(to + 1, from + cap, total);
+        return { data: Array.from({ length: Math.max(0, end - from) }, (_, i) => ({ n: from + i })), error: null };
+      };
+      return { page, calls };
+    };
+    for (const [total, cap] of [[2345, 1000], [2345, 500], [999, 1000], [1000, 1000], [0, 1000]]) {
+      const { page } = server(total, cap);
+      const rows = await mod.fetchAllRows(page);
+      expect(rows.length, `${total}/${cap}`).toBe(total);
+      expect(new Set(rows.map(r => r.n)).size).toBe(total);   // no row twice
+    }
+    // An error stops the run: a sender that cannot see past sends must not send.
+    await expect(mod.fetchAllRows(async () => ({ data: null, error: new Error('boom') }))).rejects.toThrow('boom');
+    // Every list read goes through it, in a stable order; no single capped read is left.
+    expect(fn).toMatch(/const rows = await fetchAllRows\(\(from, to\) => supabase\s*\.from\('users'\)[\s\S]*?\.order\('username', \{ ascending: true \}\)\s*\.range\(from, to\)\)/);
+    // Each read checked inside its own statement, so one read's order cannot vouch for another's.
+    const stmt = (start) => between(fn, start, '.range(from, to))') + '.range(from, to))';
+    expect(stmt('const already = await fetchAllRows(')).toContain(".order('id', { ascending: true })");
+    expect(stmt('const recent = await fetchAllRows(')).toContain(".order('id', { ascending: true })");
+    expect(stmt('const evRows = await fetchAllRows(')).toContain(".order('created_at', { ascending: false })");
+    expect(fn).not.toMatch(/\.range\(0, \d+\)|\.limit\(\d+\)/);
+    expect(fn).not.toMatch(/const \{ data: (rows|already|recent|evRows)/);
   });
 
   it('caps the new mode at 20 a run and keeps 60 for the backlog; ?limit= only lowers', () => {
@@ -344,6 +375,8 @@ describe('goal-note mode=new: new registrants, once, at their morning', () => {
         for (const solves of [0, 1, 6]) {
           const html = mod.renderNewBody({ username: 'alice', solves, company, variant: v });
           expect(html, `${v}/${company}/${solves}`).not.toMatch(HAND);
+          // 24 to 72 hours can cross a Monday: "this week" would be false (A1, 2026-11-22).
+          expect(html, `${v}/${company}/${solves}`).not.toMatch(/this week/i);
         }
       }
     }

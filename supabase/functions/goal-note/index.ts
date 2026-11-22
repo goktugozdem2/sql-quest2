@@ -339,14 +339,14 @@ function renderNewBody(args: { username: string; solves: number; company: string
   const body = variant === 'A'
     ? `
       <p style="${P}">Hi ${username},</p>
-      <p style="${P}">I build SQL Quest. You joined this week, and I set this up so I can ask every new person one question.${fact}</p>
+      <p style="${P}">I build SQL Quest. You joined in the last few days, and I set this up so I can ask every new person one question.${fact}</p>
       <p style="${P}"><strong>One question: what are you preparing for?</strong></p>
       <p style="${P}">${links}</p>
       <p style="${P}">One click, nothing to fill in. The answer sets the order the Coach puts things in front of you.</p>
       <p style="${P}">Your reply comes to my own inbox. ${REPLY_LINE} I won't send another one of these.</p>`
     : `
       <p style="${P}">Hi ${username},</p>
-      <p style="${P}">You joined SQL Quest this week. I build it, and I wanted every new person to get one question from me.${fact}</p>
+      <p style="${P}">You joined SQL Quest in the last couple of days. I build it, and I wanted every new person to get one question from me.${fact}</p>
       <p style="${P}"><strong>What are you preparing for?</strong></p>
       <p style="${P}">${links}</p>
       <p style="${P}">That click is the whole answer. It changes what the Coach shows you from your next session on.</p>
@@ -355,6 +355,28 @@ function renderNewBody(args: { username: string; solves: number; company: string
     <div style="font-family: -apple-system, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px; color: #1f2937;">${body}
       <p style="${P}">Göktuğ<br><span style="color:#6b7280;">Founder, SQL Quest</span></p>
     </div>`
+}
+// PostgREST answers at most the project's max-rows (1,000 by default)
+// whatever range is asked, and says nothing when it cuts. A single read would
+// drop rows silently: the newest sign-ups from the users read, or past sends
+// from the once-ever read (a second letter to the same person). So every
+// list read pages, in a stable order, until a page comes back empty; the
+// step is whatever the server returned, so any cap works. An error throws:
+// a run that cannot see who was already mailed must not mail anyone.
+async function fetchAllRows(
+  page: (from: number, to: number) => PromiseLike<{ data: any[] | null; error: any }>,
+  pageSize = 1000, maxRows = 100000,
+): Promise<any[]> {
+  const out: any[] = []
+  for (let from = 0; from < maxRows;) {
+    const { data, error } = await page(from, from + pageSize - 1)
+    if (error) throw error
+    const rows = data || []
+    if (rows.length === 0) break
+    out.push(...rows)
+    from += rows.length
+  }
+  return out
 }
 // ── end mode=new pure block ──
 
@@ -398,21 +420,23 @@ Deno.serve(async (req) => {
     }
 
     // Registered accounts with an address. Guests have no row and no channel.
-    const { data: rows, error } = await supabase
+    const rows = await fetchAllRows((from, to) => supabase
       .from('users')
       .select('username, email, data')
       .not('username', 'like', 'guest_%')
       .not('email', 'is', null)
-      .range(0, 4999)
-    if (error) throw error
+      .order('username', { ascending: true })
+      .range(from, to))
 
     // Once per user EVER: anyone with a sent row for this template is done,
     // whatever the row's own stamp says.
-    const { data: already } = await supabase
+    const already = await fetchAllRows((from, to) => supabase
       .from('email_events')
       .select('username')
       .eq('template', TEMPLATE)
       .eq('event', 'sent')
+      .order('id', { ascending: true })
+      .range(from, to))
     const lifetime = new Map<string, number>()
     for (const r of (already || [])) {
       if (!r.username) continue
@@ -421,11 +445,13 @@ Deno.serve(async (req) => {
 
     // Anyone mailed by any campaign in the last QUIET_HOURS waits.
     const quietSince = new Date(Date.now() - QUIET_HOURS * 3600000).toISOString()
-    const { data: recent } = await supabase
+    const recent = await fetchAllRows((from, to) => supabase
       .from('email_events')
       .select('username')
       .eq('event', 'sent')
       .gte('created_at', quietSince)
+      .order('id', { ascending: true })
+      .range(from, to))
     const recentlyMailed = new Set((recent || []).map((r: any) => r.username).filter(Boolean))
 
     const nowMs = Date.now()
@@ -470,13 +496,13 @@ Deno.serve(async (req) => {
       const tzByUser = new Map<string, string>()
       const companyByUser = new Map<string, string>()
       try {
-        const { data: evRows } = await supabase
+        const evRows = await fetchAllRows((from, to) => supabase
           .from('pro_events')
           .select('username, metadata')
           .eq('reason', 'activation_funnel')
           .in('username', audience.map(c => c.username))
           .order('created_at', { ascending: false })
-          .limit(5000)
+          .range(from, to))
         for (const row of (evRows || [])) {
           if (!row.username) continue
           let meta: any = row.metadata
