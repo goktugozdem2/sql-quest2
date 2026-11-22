@@ -261,6 +261,14 @@ describe('goal-note mode=new: new registrants, once, at their morning', () => {
     expect(after).toContain("(lifetime.get(username) || 0) >= MAX_LIFETIME_SENDS) { skip('already_sent')");
     expect(after).toContain("if (userData.goalNoteAt) { skip('already_sent')");
     expect(after).toContain("if (recentlyMailed.has(username)) { skip('quiet_window')");
+    // Each shared check is the whole condition, not one a mode test can
+    // narrow (A1, 2026-11-22: `if (mode !== 'new' && …)` in front of the
+    // internal or the lifetime check passed every guard above).
+    expect(loop).toContain("if (isInternalAccount(username, email)) { skip('internal'); continue }");
+    expect(after).toContain("if ((lifetime.get(username) || 0) >= MAX_LIFETIME_SENDS) { skip('already_sent'); continue }");
+    expect(after).toContain("if (userData.goalNoteAt) { skip('already_sent'); continue }");
+    // The loop reads `mode` exactly once: the sign-up window branch.
+    expect((loop.match(/\bmode\b/g) || []).length).toBe(1);
   });
 
   it('is once per person ever across both modes', () => {
