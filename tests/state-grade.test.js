@@ -117,6 +117,33 @@ describe('the gate refuses before anything runs', () => {
     expect(grade(325, SMUGGLE).refused.kind).toBe('DELETE');
   });
 
+  // Orchestrator's list on #172: the classic quote and comment shapes. Each
+  // goes through the text gate AND the real grading path (run gate included).
+  const c325 = () => byId(325);
+  const gate325 = sql => checkStatements(sql, c325(), loadedTablesFor(c325()));
+  it.each([
+    ["a closed string, then DROP: INSERT … ('x'); DROP TABLE vip_list; --')", "INSERT INTO vip_list VALUES (99, 'x', 'y'); DROP TABLE vip_list; --')", 'DROP'],
+    ["the bare injection string '; DROP TABLE x; --", "'; DROP TABLE x; --", 'OTHER'],
+    ['a statement after a block comment', 'INSERT INTO vip_list VALUES (99, \'x\', \'y\'); /* harmless */ DELETE FROM vip_list', 'DELETE'],
+    ['a statement on the line after a line comment', 'INSERT INTO vip_list VALUES (99, \'x\', \'y\'); -- trailing note\nDELETE FROM vip_list', 'DELETE'],
+  ])('refused: %s', (_name, sql, kind) => {
+    const g = gate325(sql);
+    expect(g.ok).toBe(false);
+    expect(g.kind).toBe(kind);
+    expect(grade(325, sql).passed).toBe(false);
+    expect(grade(325, sql).refused).toBeTruthy();
+  });
+
+  it.each([
+    ['a double-quoted identifier named DROP', 'INSERT INTO vip_list (customer_id, name, email) SELECT customer_id AS "DROP", name, email FROM customers WHERE membership IN (\'Gold\', \'Platinum\')'],
+    ['a semicolon inside a string', "INSERT INTO vip_list (customer_id, name, email) SELECT customer_id, name, email FROM customers WHERE membership IN ('Gold', 'Platinum') AND name <> 'a;b DROP TABLE x'"],
+    ['a statement hidden in a comment', "-- DELETE FROM vip_list;\nINSERT INTO vip_list (customer_id, name, email) SELECT customer_id, name, email FROM customers WHERE membership IN ('Gold', 'Platinum') /* ; DROP TABLE vip_list */"],
+  ])('allowed and graded right: %s', (_name, sql) => {
+    expect(splitStatements(sql)).toHaveLength(1);
+    expect(gate325(sql).ok).toBe(true);
+    expect(grade(325, sql).passed).toBe(true);
+  });
+
   it('the run gate sees every statement SQLite executes, whatever the text parser thought', () => {
     const db = makeDbFor(byId(325))();
     db.exec(byId(325).setup);
