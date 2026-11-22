@@ -349,6 +349,37 @@ Dossiers: `goldman-sachs.md`, `amazon.md`, `snowflake.md`.
   (29, 89); earns more than manager (17, 149, 315); consecutive days (318,
   319); above department average (131, 171); running totals (24, 173).
 
+## SEO sentinel — S1, 2026-11-22 (docs/reads/seo-sentinel-2026-11.md)
+
+- **C1 — RED: Bing index at 1.94 × the sitemap (`in_index` 833 vs 429
+  URLs; `blocked_by_robots` 828, still +9 on 11-21).** This is the starting
+  condition, diagnosed in `docs/reads/bing-drop-2026-11-22.md`.
+  - The fix, #138 (the bingbot group), is live: robots.txt is byte-equal to
+    main from the 12:15 UTC deploy on 11-22. No Bing data after it yet.
+  - Under SEO-loop rule 1, no new page ships while red.
+  - Watch: `blocked_by_robots` should stop rising by **11-26**, then fall
+    with `in_index`. If it is still rising on 11-26, re-check that bingbot
+    matches the group, for example with Bing's robots.txt tester (FOUNDER).
+  - Red ends the day the ratio falls below 1.3.
+  - The Bing clicks rule cannot fire while weekly Bing clicks are below 50
+    (now 32 a week); the index ratio is the rule that sees the drop.
+- **C1 — watch: Google positions on the `/sql-exercises/` queries.**
+  - `sql practice exercises with solutions` 4.2 → 7.9 and `sql exercises`
+    18.1 → 23.5, weeks 11-08 → 11-14 vs 11-15 → 11-21, on 12–27 impressions.
+  - Confounded by #65's title change on 11-20. Change nothing on the page
+    before #65's read on 12-12.
+  - Escalate if the first query stays below position 7 for two more weeks.
+- **A0 / orchestrator — amber: page PRs rate-limited on Vercel stay off the
+  site when only docs merges follow.**
+  - #144 and #146 show "Deployment rate limited", so production is still at
+    35afda6d (#143). The live sitemap has 330 lastmods behind main.
+  - `scripts/vercel-ignore.sh` diffs `HEAD^..HEAD` only, so every docs-only
+    merge since then skips the build.
+  - Fix: diff against the last deployed sha (Vercel documents
+    `VERCEL_GIT_PREVIOUS_SHA` for this step; check it before relying on it),
+    or push one non-docs commit after a rate-limited page merge.
+  - This is a code change to the deploy path, so it goes to A1/A0.
+
 ## Funnel findings — B1, 2026-11-22 (docs/reads/funnel-2026-11-22.md)
 
 Six-solvers 209 → 57 (first solvers 500 → 222, reach-six 41.8% → 25.7%;
