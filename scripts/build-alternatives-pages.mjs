@@ -3,9 +3,12 @@
  * Neutral "alternatives" pages — /datalemur-alternatives/ and
  * /stratascratch-alternatives/ (founder's SEO plan 2026-09-13, P2.14).
  *
- * Every competitor fact comes from docs/reads/alternatives-facts-2026-09-13.md,
- * where each was read off the vendor's own page on 2026-09-13 with the URL
- * beside it. Nothing here is from memory. Prices carry the date on the page;
+ * Every competitor fact comes from a dated read under docs/reads/, where it
+ * was read off the vendor's own page with the URL beside it: the tool's
+ * `checked` date names the read (READS below), 2026-09-13 unless re-read.
+ * 2026-11-22: DataLemur and StrataScratch re-read
+ * (monetization-competitors-2026-11-22.md); StrataScratch's monthly went
+ * $19 → $24 and the yearly promotion ended ($139). Nothing here is from memory. Prices carry the date on the page;
  * promotions are called promotions. Counts WE made from a vendor's data are not
  * quoted as their claims. SQL Quest's own numbers are computed from the bank at
  * build time, and the page says what SQL Quest is worse at.
@@ -23,6 +26,12 @@ import { bankCountLabel, FREE_SOLVE_QUOTA } from '../src/utils/display-count.js'
 const ROOT = path.resolve(import.meta.dirname, '..');
 const SITE = 'https://sqlquest.app';
 const CHECKED = '2026-09-13';
+// Which read holds the facts for a given check date. tests/alternatives-pages
+// .test.js reads the file named here for every competitor's dollar figures.
+export const READS = {
+  '2026-09-13': 'docs/reads/alternatives-facts-2026-09-13.md',
+  '2026-11-22': 'docs/reads/monetization-competitors-2026-11-22.md',
+};
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 export function sqlQuestFacts() {
@@ -40,6 +49,7 @@ export function tools(sq) {
   return {
     datalemur: {
       name: 'DataLemur', url: 'https://datalemur.com/', src: 'https://datalemur.com/pricing',
+      checked: '2026-11-22',
       free: 'Free questions and a free SQL tutorial; the number of free questions is not stated',
       paid: '$15/month, $60/year, or $300 one-time (coaching call, signed book, lifetime access)',
       bank: '"100+ SQL Interview questions" on the monthly and yearly plans; "250+ interview questions" with lifetime access',
@@ -50,13 +60,14 @@ export function tools(sq) {
     },
     stratascratch: {
       name: 'StrataScratch', url: 'https://www.stratascratch.com/', src: 'https://platform.stratascratch.com/pricing',
-      free: 'Free plan with "75+" coding questions (all languages), free SQL and Python learning paths, "No credit card required"',
-      paid: '$19/month; $97.30/year or $202.30 lifetime on a 30%-off promotion running on the day (list $139 and $289); 5-day money-back guarantee',
+      checked: '2026-11-22',
+      free: 'Free plan, no card required, with 50 AI credits a month; on 2026-09-13 it listed "75+" coding questions (all languages) and free SQL and Python learning paths',
+      paid: '$24/month; $139/year (shown as $11.58/mo); $289 lifetime, with a 30%-off lifetime code advertised on the day; up to 20% off for students; 5-day money-back guarantee',
       bank: '"1000+ coding questions (SQL, Python, R)"; "500+ ML, stats, system design questions"',
       dialects: 'Postgres, MySQL, MSSQL, Oracle (plus Pandas, Polars, PySpark, R)',
       best: 'Data science, ML and AI engineering candidates who want SQL and Python alongside concept questions, take-home projects and AI mock interviews.',
       favour: ['The largest coding bank of the SQL-first tools here', 'The widest dialect choice: four SQL engines plus Pandas, Polars, PySpark and R', 'User solutions and community discussion', 'A lifetime option and a 5-day refund'],
-      instead: 'you only need SQL and want most of the practice free — the free plan is "75+" questions across every language.',
+      instead: 'you only need SQL and want most of the practice free — on 2026-09-13 the free plan listed "75+" questions across every language.',
     },
     leetcode: {
       name: 'LeetCode (SQL 50 and Database set)', url: 'https://leetcode.com/studyplan/top-sql-50/', src: 'https://leetcode.com/subscribe/',
@@ -138,7 +149,12 @@ const PAGES = {
     subject: 'datalemur',
     title: 'DataLemur Alternatives (2026): SQL Interview Practice Sites Compared | SQLQuest.app',
     h1: 'DataLemur alternatives',
-    description: 'A neutral comparison of DataLemur alternatives for SQL interview practice — StrataScratch, LeetCode SQL 50, HackerRank, SQLPad, Analyst Builder, Interview Query, SQL Quest — with prices and free tiers read off each site on 2026-09-13.',
+    description: 'A neutral comparison of DataLemur alternatives for SQL interview practice — StrataScratch, LeetCode SQL 50, HackerRank, SQLPad, Analyst Builder, Interview Query, SQL Quest — with prices and free tiers read off each site (2026-09-13; DataLemur and StrataScratch re-read 2026-11-22).',
+    // Answer-first summary (C2, 2026-11-22): the two sentences an assistant
+    // can lift for "what are good alternatives to DataLemur?" — the prompt our
+    // vs-datalemur page was cited for (ai-visibility-2026-09-06.md). Facts
+    // only from the tools' own entries, so a re-read moves this too.
+    answer: T => `The main DataLemur alternatives for SQL interview practice are StrataScratch, the largest coding bank here with Python and R as well as SQL; LeetCode's SQL 50, a structured 50-question plan that was free when checked on ${CHECKED}; and SQL Quest, which gives ${esc(FREE_SOLVE_QUOTA)} free challenge solves in the browser, maps every attempt onto a nine-skill Skillmap and points you at the weakest skill first. DataLemur itself was ${esc(T.datalemur.paid.split(', or ')[0].replace(', ', ' or '))} when checked on ${esc(T.datalemur.checked)}.`,
     why: 'DataLemur is a good product at a low price. People look for alternatives for one of four reasons: they want more questions, a bigger free tier, Python or ML practice alongside SQL, or feedback on why a query is wrong. The table says which alternative answers which.',
     order: ['stratascratch', 'leetcode', 'sqlquest', 'hackerrank', 'analystbuilder', 'sqlpad', 'interviewquery', 'beginners'],
     pick: [
@@ -153,7 +169,7 @@ const PAGES = {
     subject: 'stratascratch',
     title: 'StrataScratch Alternatives (2026): SQL Interview Practice Sites Compared | SQLQuest.app',
     h1: 'StrataScratch alternatives',
-    description: 'A neutral comparison of StrataScratch alternatives for SQL interview practice — DataLemur, LeetCode SQL 50, HackerRank, SQLPad, Analyst Builder, Interview Query, SQL Quest — with prices and free tiers read off each site on 2026-09-13.',
+    description: 'A neutral comparison of StrataScratch alternatives for SQL interview practice — DataLemur, LeetCode SQL 50, HackerRank, SQLPad, Analyst Builder, Interview Query, SQL Quest — with prices and free tiers read off each site (2026-09-13; DataLemur and StrataScratch re-read 2026-11-22).',
     why: 'StrataScratch has the biggest coding bank of the SQL-first sites and the widest choice of dialects. People look for alternatives when they want a lower price, a bigger free tier for SQL alone, a narrower SQL focus, or practice that tells them which skill to fix first. The table says which alternative answers which.',
     order: ['datalemur', 'leetcode', 'sqlquest', 'hackerrank', 'analystbuilder', 'sqlpad', 'interviewquery', 'beginners'],
     pick: [
@@ -194,11 +210,11 @@ export function renderAlternatives(slug) {
   const faq = [
     [`What is the best free alternative to ${subject.name}?`, `For a structured free plan, LeetCode's SQL 50 (it needs an account to run code). To start without an account, SQL Quest: ${FREE_SOLVE_QUOTA} free challenge solves in the browser, plus a free readiness test and free query tools. For learning from zero, SQLBolt or SQLZoo.`],
     [`Is there an alternative to ${subject.name} with Python questions?`, pg.subject === 'stratascratch' ? 'DataLemur, SQLPad, Analyst Builder and Interview Query all cover Python as well as SQL, according to their own pages. SQL Quest and HackerRank\'s SQL track are SQL only.' : 'StrataScratch has the largest Python bank alongside SQL. SQLPad, Analyst Builder and Interview Query also cover Python, according to their own pages. SQL Quest is SQL only.'],
-    ['How were these prices checked?', `Each price and free tier was read off the vendor's own pricing page on ${CHECKED}, and the page is linked under each tool. Prices change and some sites localise them, so check the vendor's page before you pay. Promotions running on the day are labelled as promotions.`],
+    ['How were these prices checked?', `Each price and free tier was read off the vendor's own pricing page and the page is linked under each tool with the date it was checked (${CHECKED}; DataLemur and StrataScratch re-checked 2026-11-22). Prices change and some sites localise them, so check the vendor's page before you pay. Promotions running on the day are labelled as promotions.`],
     ['Who wrote this comparison?', 'The team that builds SQL Quest, which is one of the alternatives listed. That is why the SQL Quest section lists what it is worse at, and why no competitor fact on this page is from memory.'],
   ];
   const ld = [
-    { '@context': 'https://schema.org', '@type': 'Article', headline: pg.title, description: pg.description, url, datePublished: CHECKED, dateModified: CHECKED, author: { '@type': 'Organization', name: 'SQL Quest', url: `${SITE}/` } },
+    { '@context': 'https://schema.org', '@type': 'Article', headline: pg.title, description: pg.description, url, datePublished: CHECKED, dateModified: Object.values(T).map(t => t.checked || CHECKED).sort().pop(), author: { '@type': 'Organization', name: 'SQL Quest', url: `${SITE}/` } },
     { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [
       { '@type': 'ListItem', position: 1, name: 'SQL Quest', item: `${SITE}/` },
       { '@type': 'ListItem', position: 2, name: 'Comparisons', item: `${SITE}/sql-practice-comparison/` },
@@ -214,12 +230,12 @@ export function renderAlternatives(slug) {
     <ul>${t.favour.map(f => `<li>${esc(f)}</li>`).join('')}</ul>
     ${t.against ? `<p style="margin-top:10px;"><strong style="color:#e2e8f0;">Where it is weaker:</strong></p><ul>${t.against.map(f => `<li>${esc(f)}</li>`).join('')}</ul>` : ''}
     <p style="margin-top:10px;"><strong style="color:#e2e8f0;">Look elsewhere if</strong> ${esc(t.instead)}</p>
-    <p class="src">${t.ours ? `Our figures are counted from the question bank when this page is built.` : `Source: <a href="${t.src}" rel="nofollow noopener">${esc(t.src.replace(/^https?:\/\//, ''))}</a>, checked ${CHECKED}.`}</p>
+    <p class="src">${t.ours ? `Our figures are counted from the question bank when this page is built.` : `Source: <a href="${t.src}" rel="nofollow noopener">${esc(t.src.replace(/^https?:\/\//, ''))}</a>, checked ${t.checked || CHECKED}.`}</p>
   </section>`;
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- GENERATED by scripts/build-alternatives-pages.mjs from docs/reads/alternatives-facts-2026-09-13.md — do not edit. -->
+  <!-- GENERATED by scripts/build-alternatives-pages.mjs from the dated reads in docs/reads/ (READS in the script) — do not edit. -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${esc(pg.title)}</title>
@@ -244,11 +260,12 @@ ${ld.map(o => `  <script type="application/ld+json">${JSON.stringify(o)}</script
 <main class="wrap">
   <p class="crumb"><a href="/">SQL Quest</a> › <a href="/sql-practice-comparison/">Comparisons</a> › ${esc(pg.h1)}</p>
   <h1 class="fd">${esc(pg.h1)}: SQL interview practice sites compared</h1>
+  ${pg.answer ? `<p class="answer" data-testid="answer-first" style="margin:14px 0 6px;padding:14px 18px;border-left:3px solid #7c3aed;background:rgba(124,58,237,.08);border-radius:0 12px 12px 0;font-size:17px;color:#e2e8f0;max-width:760px;">${pg.answer(T)} <a href="/app/?src=${slug}" data-track="cta_answer_first_${pg.subject}" style="font-weight:700;white-space:nowrap;">Practise a SQL interview question free</a></p>` : ''}
   <p class="lede">${esc(pg.why)}</p>
-  <p class="disc"><strong>Who wrote this:</strong> the team that builds SQL Quest, which is one of the alternatives below. Every price, free tier and question count for another site was read off that site's own page on ${CHECKED} and is linked beside it. Where a site did not state something, this page says so rather than guessing.</p>
+  <p class="disc"><strong>Who wrote this:</strong> the team that builds SQL Quest, which is one of the alternatives below. Every price, free tier and question count for another site was read off that site's own page and is linked beside it with the date it was checked. Where a site did not state something, this page says so rather than guessing.</p>
 
   <h2 class="fd">${esc(subject.name)} in one paragraph</h2>
-  <p>${esc(subject.best)} Pricing on ${CHECKED}: ${esc(subject.paid)}. Free: ${esc(subject.free)}. Engines: ${esc(subject.dialects)}. <a href="${subject.src}" rel="nofollow noopener">Source</a>.</p>
+  <p>${esc(subject.best)} Pricing on ${subject.checked || CHECKED}: ${esc(subject.paid)}. Free: ${esc(subject.free)}. Engines: ${esc(subject.dialects)}. <a href="${subject.src}" rel="nofollow noopener">Source</a>.</p>
   <p style="margin-top:8px;">What it does well: ${esc(subject.favour.join('; '))}.</p>
 
   <h2 class="fd">Pick by what you need</h2>
@@ -256,7 +273,7 @@ ${ld.map(o => `  <script type="application/ld+json">${JSON.stringify(o)}</script
 
   <h2 class="fd">The alternatives side by side</h2>
   <div class="tw"><table>
-    <thead><tr><th>Site</th><th>Free tier</th><th>Paid (checked ${CHECKED})</th><th>Question bank, in the site's words</th><th>SQL engines</th></tr></thead>
+    <thead><tr><th>Site</th><th>Free tier</th><th>Paid (checked on the date under each tool)</th><th>Question bank, in the site's words</th><th>SQL engines</th></tr></thead>
     <tbody>${row(pg.subject, subject)}${list.map(([k, t]) => row(k, t)).join('')}</tbody>
   </table></div>
   <p style="font-size:13px;margin-top:8px;">Prices were seen from a connection outside the US; LeetCode states its prices are in USD, the others show $ without naming a currency. Promotions running on the day are labelled.</p>
