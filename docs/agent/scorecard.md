@@ -103,3 +103,33 @@ Read in the Friday table (`weekly-funnel-friday`), same windows each week:
 5. Active subscribers (Stripe)
 
 Everything else is diagnosis, read when one of the five moves.
+
+## The Friday table
+
+One row per read, same definitions as the sections above unless the row
+says otherwise; bots out (`metadata.bot`, viewports `tablet:800x600`,
+`desktop:1280x1200`, `desktop:1919x992`, `ref:aocr.org`), internal accounts
+out. The O2 columns are defined in `docs/agent/objectives.md`.
+
+| Read | `first_solve_10m` | `visitor_to_payer` | `hint_to_solve` | `second_session_7d` | Active subscribers | O2: payers / 30 d | O2: six-solvers / 30 d |
+|---|---|---|---|---|---|---|---|
+| 2026-09-23 (the frame) | 15.5% (first opens 30 d) | 0.05% (2 ÷ 3,864) | 88.7% (pairs, any later solve) | 16.2% (first opens 08-17 → 09-16) | 3 (Stripe) | 2 | — |
+| **2026-11-22 — Sunday extra read (B2), not a Friday** | **14.8%** (first opens 11-08 → 11-21, n 379; 11.6% the two weeks before, n 558) | **0.05%** (2 ÷ 3,970, 10-24 → 11-22; a floor — landing views still hold unfingerprinted crawlers) | **80.3%** (367 / 457 wrong submits → that challenge solved within 60 min, 10-24 → 11-22 — the 60-minute form the 11-22 P1 verdicts use, 84.9% for 09-30 → 11-20) | **6.9%** (first opens 11-01 → 11-14, n 390; 7.9% the two weeks before, n 559) | **5** (3 annual, 2 monthly; `users.data` + webhook rows, not Stripe) | **3** at 09:29Z (2 from 16:37Z) | **64** (day 0, 11-10: 72) |
+
+Notes on the 11-22 row:
+
+- **`second_session_7d` is the number that moved:** 6.9–7.9% against the
+  16.2% baseline, on the same query. It is read over every first
+  `app_opened`, so it includes guests who never solved; the first-screen
+  claim's people (assigned within 2 minutes) are a different population.
+  Diagnose before acting: `app_opened` rows per first-open person halved
+  (2.13 for the 08-17 → 09-16 cohort, 1.13 for 11-01 → 11-14) while the
+  share who ever solved fell less (35.1% → 26.3%). An `app_opened` that
+  stopped firing on a return visit — the 10-08 bot-stamping change (#49) is
+  the one commit since September that touches the event — would read
+  exactly like this. BACKLOG line, owner B1.
+- `first_solve_10m` here is all first opens; the first-screen verdict's
+  37.2% is the challenge arm among people assigned within two minutes of
+  their first open. Both stand on their own definitions.
+- The O2 day-0 row, the factor that is short (six-solvers, 4–5×) and the
+  12-10 gap are in `docs/agent/objectives.md`.

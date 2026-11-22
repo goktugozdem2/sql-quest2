@@ -79,6 +79,32 @@ these to the agent):**
 - Stripe by hand: one mid-October trial may be paying two subscriptions (refund / dispute risk).
 - Vercel Hobby build limit was hit on 11-22 ("retry in 24 hours"); merges #107–#115 deploy when it clears — check `/app.js` for `headerProButton` afterwards.
 
+## Verdict follow-ups — B2, 2026-11-22 (each from a ledger verdict written today)
+
+B2 builds none of these; each names the lane that owns it.
+
+- **C1 — question pages: CTA above the description, schema below the fold.**
+  Pre-written action of "question pages…" (falsification fired: 1.5%
+  solved-one, 11 of 744 landers, vs 27.8% on `/sql-exercises/`). Read the
+  Bing noindex claim (reads 2027-01-08) before shipping, so the two do not
+  land in one window.
+- **C1 — company pages: test the readiness block below the FAQ.** The
+  company-template verdict's letter fired (9.6% < 25%), but its baseline was
+  on another definition (same query before: 12.3%) — a test, not a settled
+  fix.
+- **B3 — tiebreakers in reference solutions, prompts that state the order.**
+  The grader verdict (FLAT, falsification fired): tie rejections were rare;
+  the next lever is content.
+- **A2 — does the First 90 Days card render for a hired person?** One status
+  set (10-19), zero `ticket_opened` rows ever.
+- **B1 — `app_opened` per person halved (2.13 → 1.13) and
+  `second_session_7d` fell to 6.9%.** Check whether #49 (10-08) changed what
+  fires on a return visit before anyone reads retention (scorecard, 11-22).
+- **B1 — three events that never fire:** `pro_modal_shown {reason:
+  'email_link'}` (0 rows ever, though 80 activated notes went out),
+  `cta_practice_validate_ai_sql_*` and `editorial_claudequest_click` (0 rows,
+  14 app opens from that page).
+
 ## Decisions taken 2026-11-22 (founder: "kararlar sana ait olsun")
 
 | Decision | Data | Next read |
