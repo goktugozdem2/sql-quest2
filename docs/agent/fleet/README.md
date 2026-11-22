@@ -77,7 +77,8 @@ An agent reads `CLAUDE.md`, this file and its own brief, in that order.
   production data, Gmail or sqlquest.app.
 - **Laptop** (the main session plus `sqlquest-autodev-loop`): the lanes that
   need read-only Supabase, the GSC/Bing tables, Gmail drafts or the live site
-  (B1, B2, A3, E1, C1/C2 reads, production QA after a deploy). The laptop
+  (B1, B2, A3, E1, C1/C2 reads, C8 traffic sources daily, production QA
+  after a deploy). The laptop
   **does not review or merge cloud PRs**; it opens its own PRs and leaves
   them for A1 → A0, except docs-only PRs, which it may self-merge.
 - **Build output from the laptop.** The laptop's pre-push redaction hook
