@@ -88,6 +88,13 @@ First pass 2026-11-22:
 - One last-minute abandoner with an address was skipped; `checkout-abandon` had already mailed them.
 - Five guest exits had no address.
 
+### F. Customer voice and onboarding (added 2026-11-22, founder)
+
+| # | Agent | Lane | Cadence | Output |
+|---|---|---|---|---|
+| E2 | **Voice of the customer** | five capture points into `feedback` (widget, exit reason at the paywall close, stuck on a challenge, day 2, outcome/cancel), daily tagging and routing, weekly synthesis, loop closure through E1. Brief: `docs/agent/fleet/E2-voice.md` | daily read, weekly synthesis | BACKLOG lines by owner lane; `docs/reads/customer-voice-<date>.md` |
+| B5 | **Onboarding** | arrival → first run → first solve → 3 solves → account → day-2 return; one experiment at a time; owns the order of the first session. Brief: `docs/agent/fleet/B5-onboarding.md` | weekly (Thursday) | `docs/reads/onboarding-<date>.md`; one experiment PR |
+
 ### D. Orchestration
 
 | # | Agent | Lane | Cadence |
@@ -121,6 +128,8 @@ Each agent has one number it is answerable for, read in D2:
 | A2 | production bugs found by people before QA (should fall) |
 | A3 | `feedback_failed` and unhandled error kinds (should stay 0) |
 | A4 | critical + major UI/UX findings per audit run (`uiux_findings`, should reach 0 critical) |
+| B5 | `open_to_first_run`, `first_solve_10m`, day-2 return |
+| E2 | reasons captured per month (`feedback_capture`); reasons → BACKLOG within 7 days |
 | B1 | paid conversions per 1,000 arrivals |
 | B2 | claims past their read date without a verdict (should be 0) |
 | B3 | solve-through on new questions |
