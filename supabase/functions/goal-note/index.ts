@@ -45,6 +45,31 @@
 // Nothing about the paid plan, no price, no follow-up: "I won't send another
 // one of these" is a promise the once-ever guard keeps.
 //
+// ── mode=new (2026-11-22): the same question to people who just signed up ──
+// GET /functions/v1/goal-note?mode=new[&dry=1][&limit=N]
+// The backlog run above drains the people who never gave a goal; this mode
+// asks each NEW registrant once, while they still remember why they came.
+// Same template (goal_note), so "once per person ever" spans both modes.
+// Audience (each a skip reason in the dry run):
+//   - registered 24 to 72 hours ago, read from users.data.createdAt (epoch-ms
+//     or ISO). Never users.created_at: the client overwrote that column on
+//     every save before 2026-09-12. And never sooner than 12 hours after
+//     sign-up, a separate guard that survives a change to the window.
+//   - has an email, not internal, not opted out, no goal on record, not in
+//     FOUNDER_MAILED_BY_HAND, never sent goal_note in either mode, no other
+//     campaign in QUIET_HOURS. The same checks as the backlog run.
+// Timing: meant to run hourly. A person is mailed only while their local
+// clock reads 09:xx or 10:xx, from the tz stamped on their activation events
+// (streak-reminder's method). No tz on record: the 14:xx UTC run.
+// Content: the email voice rule. The founder in the subject (three phrasings
+// by hash), written by hand to a short list, one specific fact (the company
+// page they came in through, from arrivalSrc `company:X`, else their solve
+// count; a challenge title is not available server-side, the bank ships to
+// the browser), one question, three one-click answers carrying `m=new`, the
+// reply line for an interview, no price, no sequence. Two body wordings.
+// Cap 20 a run (MAX_PER_RUN_NEW); ?limit= only lowers it.
+// NOT scheduled either. The founder deploys it and adds the cron line.
+//
 // Env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, RESEND_API_KEY.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -55,6 +80,7 @@ const corsHeaders = {
 }
 
 const MAX_PER_RUN = 60
+const MAX_PER_RUN_NEW = 20
 const MAX_LIFETIME_SENDS = 1
 const QUIET_HOURS = 48
 const ACTIVE_DAYS = 60
@@ -181,10 +207,14 @@ const VARIANTS = ['A', 'B'] as const
 type Variant = typeof VARIANTS[number]
 const variantFor = (username: string): Variant => VARIANTS[hash(`${username}:body`) % VARIANTS.length]
 
-const goalLink = (goal: string, label: string) =>
-  `<a href="${utm(`/app/?src=goal_note&goal=${goal}`, TEMPLATE)}" style="color: #7c3aed; font-weight: 600; text-decoration: none;">${label}</a>`
+// `m=new` marks an answer from the new-signup mode, so the arrival event
+// (`intent_captured {src, m}`) splits the two modes without a second template.
+type Mode = 'backlog' | 'new'
+const goalLink = (goal: string, label: string, mode: Mode) =>
+  `<a href="${utm(`/app/?src=goal_note&goal=${goal}${mode === 'new' ? '&m=new' : ''}`, TEMPLATE)}" style="color: #7c3aed; font-weight: 600; text-decoration: none;">${label}</a>`
 
-const LINKS = `${goalLink('interview', 'An interview')} &nbsp;·&nbsp; ${goalLink('job_ready', 'Getting job-ready')} &nbsp;·&nbsp; ${goalLink('learning', 'SQL in general')}`
+const linksFor = (mode: Mode) => `${goalLink('interview', 'An interview', mode)} &nbsp;·&nbsp; ${goalLink('job_ready', 'Getting job-ready', mode)} &nbsp;·&nbsp; ${goalLink('learning', 'SQL in general', mode)}`
+const LINKS = linksFor('backlog')
 
 const P = 'font-size: 15px; line-height: 1.8;'
 
@@ -221,6 +251,110 @@ function renderBody(args: { username: string; solves: number; variant: Variant }
 
 const FOUNDER_MAILED_BY_HAND = new Set(['alexis_montesdeoca', 'harinivr02', 'rereremin'])
 
+// ── mode=new: pure block (tests/goal-note.test.js runs it) ──────────────────
+const NEW_MIN_AGE_HOURS = 24
+const NEW_MAX_AGE_HOURS = 72
+const NEW_MIN_HOURS_AFTER_SIGNUP = 12
+const SEND_LOCAL_HOURS = [9, 10]
+const FALLBACK_UTC_HOUR = 14
+
+// users.data.createdAt is epoch-ms on rows the auth path wrote and an ISO
+// string on the rest (and, defensively, a numeric string). 0 when unreadable.
+function createdAtMs(d: any): number {
+  const v = d?.createdAt
+  if (typeof v === 'number') return Number.isFinite(v) ? v : 0
+  if (typeof v !== 'string' || !v) return 0
+  const t = /^\d+$/.test(v) ? Number(v) : Date.parse(v)
+  return Number.isFinite(t) ? t : 0
+}
+
+// Null when the sign-up time is inside the window, else the skip reason. The
+// 12-hour floor is its own check: lowering the window's floor never mails
+// anyone in their first 12 hours.
+function signupWindowSkip(
+  createdMs: number, nowMs: number,
+  w: { minAge: number; maxAge: number; floor: number } = { minAge: NEW_MIN_AGE_HOURS, maxAge: NEW_MAX_AGE_HOURS, floor: NEW_MIN_HOURS_AFTER_SIGNUP },
+): string | null {
+  if (!createdMs) return 'no_created_at'
+  const hours = (nowMs - createdMs) / 3600000
+  if (hours < w.floor) return 'too_new'
+  if (hours < w.minAge) return 'too_new'
+  if (hours > w.maxAge) return 'too_old'
+  return null
+}
+
+// The person's local hour, from the IANA zone their events carry. A known
+// zone sends at 09:xx or 10:xx local; no zone (or one Intl rejects) sends on
+// the 14:xx UTC run.
+function sendWindow(tz: string | null, now: Date): { tz: string | null; hour: number; due: boolean } {
+  let hour: number | null = null
+  if (tz) {
+    try {
+      hour = parseInt(new Intl.DateTimeFormat('en-GB', { timeZone: tz, hour: '2-digit', hour12: false }).format(now), 10) % 24
+      if (!Number.isFinite(hour)) hour = null
+    } catch (_) { hour = null }
+  }
+  if (hour === null) {
+    const utcHour = now.getUTCHours()
+    return { tz: null, hour: utcHour, due: utcHour === FALLBACK_UTC_HOUR }
+  }
+  return { tz, hour, due: SEND_LOCAL_HOURS.includes(hour) }
+}
+
+// arrivalSrc `company:<Name>` comes from a URL parameter, so it is the
+// visitor's text, not ours: only a plain company name goes into an email.
+function companyFromArrival(src: unknown): string | null {
+  if (typeof src !== 'string' || !src.startsWith('company:')) return null
+  const name = src.slice('company:'.length).trim()
+  return /^[A-Za-z0-9][A-Za-z0-9 .&'-]{0,39}$/.test(name) ? name : null
+}
+
+// The founder in every subject (CLAUDE.md, email voice), three phrasings so a
+// batch does not read as a mailing.
+const SUBJECTS_NEW = [
+  'I build SQL Quest. One question for you',
+  "From SQL Quest's founder: what are you practising for?",
+  'A question from the person who builds SQL Quest, after your first days',
+]
+const subjectForNew = (username: string) => SUBJECTS_NEW[hash(`${username}:new`) % SUBJECTS_NEW.length]
+
+// One specific fact: the company page they came in through, else their solve
+// count, else nothing (the sentence is omitted, never padded).
+function factLine(args: { company: string | null; solves: number }): string {
+  const { company, solves } = args
+  if (company) return ` You came in through our ${company} page, so I could guess. I would rather ask.`
+  if (solves > 0) return ` You have solved ${solves} ${solves === 1 ? 'challenge' : 'challenges'} since you joined, and I would rather ask than guess from that.`
+  return ''
+}
+
+const REPLY_LINE = "If it's an interview, reply with the company and the date. I read every reply."
+
+function renderNewBody(args: { username: string; solves: number; company: string | null; variant: Variant }): string {
+  const { username, variant } = args
+  const fact = factLine(args)
+  const links = linksFor('new')
+  const body = variant === 'A'
+    ? `
+      <p style="${P}">Hi ${username},</p>
+      <p style="${P}">I build SQL Quest. You joined this week, and I am writing this myself to the short list of people who signed up in the last few days.${fact}</p>
+      <p style="${P}"><strong>One question: what are you preparing for?</strong></p>
+      <p style="${P}">${links}</p>
+      <p style="${P}">One click, nothing to fill in. The answer sets the order the Coach puts things in front of you.</p>
+      <p style="${P}">${REPLY_LINE} I won't send another one of these.</p>`
+    : `
+      <p style="${P}">Hi ${username},</p>
+      <p style="${P}">Only a handful of people joined SQL Quest this week, and I am writing to each of you one at a time.${fact}</p>
+      <p style="${P}"><strong>What are you preparing for?</strong></p>
+      <p style="${P}">${links}</p>
+      <p style="${P}">That click is the whole answer. It changes what the Coach shows you from your next session on.</p>
+      <p style="${P}">That is the only ask, and I won't send another one of these. ${REPLY_LINE}</p>`
+  return `
+    <div style="font-family: -apple-system, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px; color: #1f2937;">${body}
+      <p style="${P}">Göktuğ<br><span style="color:#6b7280;">Founder, SQL Quest</span></p>
+    </div>`
+}
+// ── end mode=new pure block ──
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
@@ -246,9 +380,13 @@ Deno.serve(async (req) => {
     )
     const url = new URL(req.url)
     const dry = url.searchParams.get('dry') === '1'
+    // Two modes, one template: the backlog run (default) and the new-signup
+    // run (`?mode=new`, header above).
+    const mode: Mode = url.searchParams.get('mode') === 'new' ? 'new' : 'backlog'
+    const runMax = mode === 'new' ? MAX_PER_RUN_NEW : MAX_PER_RUN
     const limitParam = Number(url.searchParams.get('limit'))
     // ?limit= only ever lowers the cap.
-    const cap = Number.isFinite(limitParam) && limitParam > 0 ? Math.min(MAX_PER_RUN, Math.floor(limitParam)) : MAX_PER_RUN
+    const cap = Number.isFinite(limitParam) && limitParam > 0 ? Math.min(runMax, Math.floor(limitParam)) : runMax
     const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
     if (!RESEND_API_KEY && !dry) {
       return new Response(JSON.stringify({ error: 'RESEND_API_KEY not set' }), {
@@ -287,9 +425,13 @@ Deno.serve(async (req) => {
       .gte('created_at', quietSince)
     const recentlyMailed = new Set((recent || []).map((r: any) => r.username).filter(Boolean))
 
-    const activeSince = Date.now() - ACTIVE_DAYS * 86400000
+    const nowMs = Date.now()
+    const activeSince = nowMs - ACTIVE_DAYS * 86400000
 
-    type Candidate = { username: string; email: string; userData: any; solves: number; variant: Variant; lastActive: number }
+    type Candidate = {
+      username: string; email: string; userData: any; solves: number; variant: Variant; lastActive: number;
+      createdMs: number; company: string | null; tz: string | null; localHour: number | null; due: boolean;
+    }
     const audience: Candidate[] = []
     const skips: Record<string, number> = {}
     const skip = (why: string) => { skips[why] = (skips[why] || 0) + 1 }
@@ -306,34 +448,88 @@ Deno.serve(async (req) => {
       if (userData.emailOptOut === true) { skip('opted_out'); continue }
       if (goalOnRecord(userData)) { skip('goal_on_record'); continue }
       const lastActive = activeAt(userData)
-      if (lastActive < activeSince) { skip('inactive'); continue }
+      const createdMs = createdAtMs(userData)
+      if (mode === 'new') {
+        const why = signupWindowSkip(createdMs, nowMs)   // 24-72 h ago, never under 12 h
+        if (why) { skip(why); continue }
+      } else if (lastActive < activeSince) { skip('inactive'); continue }
       if ((lifetime.get(username) || 0) >= MAX_LIFETIME_SENDS) { skip('already_sent'); continue }   // once ever
       if (userData.goalNoteAt) { skip('already_sent'); continue }                                     // once ever, row stamp
       if (recentlyMailed.has(username)) { skip('quiet_window'); continue }                            // no stacking
       const solves = Array.isArray(userData.solvedChallenges) ? userData.solvedChallenges.length : 0
-      audience.push({ username, email, userData, solves, variant: variantFor(username), lastActive })
+      audience.push({ username, email, userData, solves, variant: variantFor(username), lastActive, createdMs, company: null, tz: null, localHour: null, due: true })
     }
-    // Most recently active first: the people most likely to still be inside.
-    audience.sort((a, b) => b.lastActive - a.lastActive)
-    const batch = audience.slice(0, cap)
+
+    let due = audience
+    if (mode === 'new' && audience.length > 0) {
+      // Zone and arrival door per candidate, from their own activation events
+      // (newest first; metadata is jsonb, or a JSON string on older rows).
+      const tzByUser = new Map<string, string>()
+      const companyByUser = new Map<string, string>()
+      try {
+        const { data: evRows } = await supabase
+          .from('pro_events')
+          .select('username, metadata')
+          .eq('reason', 'activation_funnel')
+          .in('username', audience.map(c => c.username))
+          .order('created_at', { ascending: false })
+          .limit(5000)
+        for (const row of (evRows || [])) {
+          if (!row.username) continue
+          let meta: any = row.metadata
+          if (typeof meta === 'string') { try { meta = JSON.parse(meta) } catch (_) { meta = null } }
+          if (!meta || typeof meta !== 'object') continue
+          if (!tzByUser.has(row.username) && typeof meta.tz === 'string' && meta.tz.includes('/')) tzByUser.set(row.username, meta.tz)
+          const company = companyFromArrival(meta.arrivalSrc)
+          if (!companyByUser.has(row.username) && company) companyByUser.set(row.username, company)
+        }
+      } catch (_) { /* best-effort: no zone means the 14:xx UTC run, no company means the solve count */ }
+      const now = new Date(nowMs)
+      for (const c of audience) {
+        const w = sendWindow(tzByUser.get(c.username) || null, now)
+        c.tz = w.tz
+        c.localHour = w.hour
+        c.due = w.due
+        c.company = companyByUser.get(c.username) || null
+      }
+      due = audience.filter(c => c.due)
+      const notDue = audience.length - due.length
+      if (notDue > 0) skips.not_send_hour = notDue
+      // Closest to the 72-hour edge first: they have the fewest runs left.
+      due.sort((a, b) => a.createdMs - b.createdMs)
+    } else {
+      // Most recently active first: the people most likely to still be inside.
+      audience.sort((a, b) => b.lastActive - a.lastActive)
+    }
+    const batch = due.slice(0, cap)
+    const subjectOf = (c: Candidate) => mode === 'new' ? subjectForNew(c.username) : subjectFor(c.username)
+    const bodyOf = (c: Candidate, variant: Variant) => mode === 'new'
+      ? renderNewBody({ username: c.username, solves: c.solves, company: c.company, variant })
+      : renderBody({ username: c.username, solves: c.solves, variant })
 
     if (dry) {
-      const first = batch[0]
+      // The first candidate of the whole audience, due now or not, so a dry
+      // run outside the send hour still previews the wording.
+      const first = batch[0] || audience[0]
       return new Response(JSON.stringify({
-        dry: true, candidates: audience.length, batch: batch.length, cap, skipped: skips,
-        preview: batch.map(c => ({
-          username: c.username, solves: c.solves, variant: c.variant,
-          subject: subjectFor(c.username), lastActive: new Date(c.lastActive).toISOString(),
+        dry: true, mode, candidates: audience.length, due: due.length, batch: batch.length, cap, skipped: skips,
+        // Every candidate, with when they would be mailed (new mode) or how
+        // recently they were active (backlog).
+        preview: audience.map(c => ({
+          username: c.username, solves: c.solves, variant: c.variant, subject: subjectOf(c),
+          ...(mode === 'new'
+            ? { createdAt: new Date(c.createdMs).toISOString(), tz: c.tz, localHour: c.localHour, dueNow: c.due, company: c.company }
+            : { lastActive: new Date(c.lastActive).toISOString() }),
         })),
         sample: first ? {
-          subject: subjectFor(first.username),
+          subject: subjectOf(first),
           variant: first.variant,
-          html: renderBody({ username: first.username, solves: first.solves, variant: first.variant }),
+          html: bodyOf(first, first.variant),
         } : null,
         // Both wordings on the same person, for the founder's read.
         variants: first ? {
-          A: renderBody({ username: first.username, solves: first.solves, variant: 'A' }),
-          B: renderBody({ username: first.username, solves: first.solves, variant: 'B' }),
+          A: bodyOf(first, 'A'),
+          B: bodyOf(first, 'B'),
         } : null,
       }, null, 2), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
@@ -341,12 +537,12 @@ Deno.serve(async (req) => {
     let sent = 0, failed = 0
     for (const c of batch) {
       const unsubToken = await ensureUnsubToken(supabase, c.username, c.userData)
-      const subject = subjectFor(c.username)
-      const html = renderBody({ username: c.username, solves: c.solves, variant: c.variant })
+      const subject = subjectOf(c)
+      const html = bodyOf(c, c.variant)
       const ok = await sendAndLog(supabase, RESEND_API_KEY!, {
         to: c.email, username: c.username, template: TEMPLATE, subject, html,
         unsub: unsubLink(unsubToken), replyTo: REPLY_TO,
-        meta: { solves: c.solves, variant: c.variant },
+        meta: { mode, variant: c.variant, solves: c.solves },
       })
       if (!ok) { failed++; continue }
       sent++
@@ -360,14 +556,14 @@ Deno.serve(async (req) => {
         event: 'goal_note_sent',
         username: c.username,
         reason: 'email',
-        metadata: { solves: c.solves, variant: c.variant },
+        metadata: { mode, solves: c.solves, variant: c.variant },
       })
       if (evErr) console.error('goal_note_sent insert failed', c.username, evErr.message)
     }
 
     return new Response(JSON.stringify({
-      sent, failed, skipped: skips, candidates: audience.length,
-      remaining: Math.max(0, audience.length - batch.length),
+      mode, sent, failed, skipped: skips, candidates: audience.length,
+      remaining: Math.max(0, due.length - batch.length),
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
   } catch (err) {
     return new Response(JSON.stringify({ error: (err as Error).message }), {
