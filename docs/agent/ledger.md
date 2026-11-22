@@ -58,6 +58,46 @@ of the verifier and must never be rounded to `FLAT`.
   before fixing it. (b) critical > 0 on main at the read → **MISS**. (c) a
   run without the six PRs merged → **UNREADABLE**.
 
+### UI/UX across engines: Chrome and Safari, desktop, iPhone, Android, daily (A4)
+
+- **Claimed** 2026-11-22 · **Shipped** on merge (a harness extension and a
+  daily Actions workflow; no product change, no flag) · **Read** 2026-12-20.
+- **Change** The audit runs on eight browser × device rows (desktop Chrome
+  1366/1920, desktop Safari 1440, iPhone SE and 15 Pro on WebKit, Pixel 7
+  and Galaxy S9+ on Chromium, iPad Mini on WebKit), every day at 05:40 UTC
+  against production, hermetic. Six mobile-browser checks join U1–U12:
+  U13 100vh under the toolbar, U14 sticky in an overflow-hidden ancestor,
+  U15 inputs under 16 px, U16 safe-area insets, U17 date inputs, U18 smooth
+  scroll. Findings go to one `uiux-audit` issue, A4's daily fix queue.
+- **Why** The founder's order (2026-11-22): Android, iPhone and desktop, in
+  Chrome and Safari, checked daily and fixed. The first audit ran Chromium
+  at six widths only, the narrowest 375. Its first local run at 320 px
+  (Galaxy S9+) found 222 critical findings that 375 never showed. Among
+  them, the Interview tab is 412 px wide and its Start Interview button
+  sits off screen.
+- **Metric** `uiux_findings` split by engine (metrics.md, "Per-engine
+  split"): critical + major on the Chromium rows and on the WebKit rows,
+  read as two series.
+- **Baseline** Chromium rows, main 9b46fd7 without the #143–#149 fixes:
+  critical **228**, major **13,654** → **13,882** (1,072 runs). WebKit:
+  none yet; the first daily Actions run is its baseline. It is written
+  into this claim on that day, before any WebKit fix merges.
+- **Target** by 12-20, on main, from the daily run:
+  - `uiux_findings[chromium]` critical **0**;
+  - `uiux_findings[webkit]` critical **0**;
+  - each engine's major count ≤ **70 %** of its own baseline.
+- **Falsification, stated in advance:**
+  - (a) Critical > 0 on either engine in the 12-20 run → **MISS**.
+  - (b) A person reports a layout bug in Safari or on a phone, on a covered
+    surface, that the audit did not flag → **MISS** for coverage, whatever
+    the counts say. Add the case to the harness before fixing it.
+  - (c) Fewer than 20 of the 28 daily runs to 12-20 completed with both
+    engines → **UNREADABLE**: the loop did not run. A skipped engine never
+    counts as zero.
+  - (d) This claim was written by the same model family that will fix and
+    review the findings. Correlated blind spots are possible, so (b) is the
+    honest test, not the count.
+
 ### AI-visibility pass: answer-first summaries, honest competitor facts, llms.txt entry points (C2)
 
 - **Claimed** 2026-11-22 · **Shipped** on merge (static pages + llms.txt,

@@ -13,6 +13,9 @@ export const SEVERITY = Object.freeze({
   U1: 'critical', U2: 'critical', U3: 'major', U4: 'major', U5: 'major',
   U6: 'major', U7: 'critical', U8: 'critical', U9: 'minor', U10: 'major',
   U11: 'minor', U12: 'major',
+  // Mobile-browser checks (2026-11-22, the cross-browser matrix). They matter
+  // most on iPhone Safari; each says below which rows it is judged on.
+  U13: 'major', U14: 'major', U15: 'major', U16: 'major', U17: 'minor', U18: 'minor',
 });
 
 export const CHECK_NAMES = Object.freeze({
@@ -28,6 +31,12 @@ export const CHECK_NAMES = Object.freeze({
   U10: 'keyboard: primary unreachable or no focus ring',
   U11: 'DESIGN.md: blacklisted font or misplaced accent',
   U12: 'console error or failed request',
+  U13: '100vh box: a control under the mobile toolbar',
+  U14: 'sticky inside an overflow ancestor that does not scroll',
+  U15: 'input under 16 px (iOS zooms on focus)',
+  U16: 'fixed bar ignores env(safe-area-inset-*)',
+  U17: 'date input that iOS renders badly',
+  U18: 'programmatic smooth scroll (a no-op in some webviews)',
 });
 
 export const VIEWPORTS = Object.freeze([
@@ -40,6 +49,36 @@ export const VIEWPORTS = Object.freeze([
 ]);
 
 export const THEMES = Object.freeze(['dark', 'light']);
+
+// The browser × device matrix (--matrix devices; the daily run). Each row is
+// a Playwright project: an engine plus one of Playwright's own device
+// descriptors (`device`), with the viewport overridden only on the desktop
+// rows. Width and height here are the descriptor's CSS viewport, written out
+// so the pure checks need no Playwright; tests/uiux-audit.test.js binds them
+// to the installed descriptors where Playwright is present.
+//
+// These are ENGINE EMULATIONS, not devices: WebKit is Safari's engine and
+// Chromium is Chrome's, driven with a phone's viewport, scale, user agent
+// and touch. Not modelled: iOS Safari's collapsing toolbar and on-screen
+// keyboard, real fonts and GPU, Android Chrome's own UI. See
+// docs/agent/fleet/A4-uiux.md, "The honest limit".
+//
+// Flags: `phone` (U3 tap targets, U4 phone body size, U7 cover probes),
+// `short` (U8: the short screen a modal must fit), `touch` (U13 mobile
+// toolbar, U18 smooth scroll), `ios` (U15 input zoom, U16 safe area, U17 date
+// input: rules of iOS Safari, judged on the WebKit touch rows only).
+export const DEVICE_MATRIX = Object.freeze([
+  { name: 'chrome-1366', engine: 'chromium', browser: 'Chrome', device: 'Desktop Chrome', width: 1366, height: 800, phone: false, override: true },
+  { name: 'chrome-1920', engine: 'chromium', browser: 'Chrome', device: 'Desktop Chrome', width: 1920, height: 1080, phone: false, override: true },
+  { name: 'safari-1440', engine: 'webkit', browser: 'Safari', device: 'Desktop Safari', width: 1440, height: 900, phone: false, override: true },
+  { name: 'iphone-se', engine: 'webkit', browser: 'Safari', device: 'iPhone SE (3rd gen)', width: 375, height: 667, phone: true, short: true, touch: true, ios: true },
+  { name: 'iphone-15', engine: 'webkit', browser: 'Safari', device: 'iPhone 15 Pro', width: 393, height: 659, phone: true, touch: true, ios: true },
+  { name: 'pixel-7', engine: 'chromium', browser: 'Chrome', device: 'Pixel 7', width: 412, height: 839, phone: true, touch: true },
+  { name: 'galaxy-s9', engine: 'chromium', browser: 'Chrome', device: 'Galaxy S9+', width: 320, height: 658, phone: true, touch: true },
+  { name: 'ipad-mini', engine: 'webkit', browser: 'Safari', device: 'iPad Mini', width: 768, height: 1024, phone: false, touch: true, ios: true },
+].map(Object.freeze));
+
+export const ENGINES = Object.freeze(['chromium', 'webkit']);
 
 // One pixel of slack everywhere a box meets an edge: sub-pixel layout
 // rounds, and a 0.5 px overhang is not something a person can see.
@@ -244,8 +283,8 @@ export function checkU7(probes, { phone }) {
 // `modals`: each open dialog with its primary button, after the runner
 // tried to scroll that button into view. A finding when the button stays
 // outside the viewport or under something else.
-export function checkU8(modals, { name }) {
-  if (name !== 'phone-s') return [];
+export function checkU8(modals, { name, short }) {
+  if (name !== 'phone-s' && !short) return [];
   const out = [];
   for (const m of modals || []) {
     if (!m.primarySelector) continue;
@@ -329,6 +368,113 @@ export function checkU12({ consoleErrors = [], failedRequests = [], origin = '' 
   return out;
 }
 
+// ── U13 100vh under the mobile toolbar ──────────────────────────────────
+// On iOS Safari and Android Chrome, 100vh is the LARGE viewport: with the
+// toolbar showing, the bottom ~80 px of a 100vh box sit under it. A control
+// in that strip is hidden unless the page can scroll it up. `boxes`: elements
+// whose height/min-height comes from a vh value, with the nearest control to
+// their bottom edge. dvh/svh are the fix and never reach this list.
+export const TOOLBAR_PX = 80;
+export const U13_MAX_SCREENS = 1.15;
+export function checkU13(boxes, { touch }) {
+  if (!touch) return [];
+  const out = [];
+  for (const b of boxes || []) {
+    if (!b.visible || !b.control) continue;
+    if (/\d(dvh|svh)/.test(b.value || '')) continue;
+    // About one screen tall: the vh value, not the content, sets the box. A
+    // box its content stretched past that ends where the page ends, and a
+    // person scrolls its last control clear (2026-11-22 local run: the
+    // challenge list's min-h-screen shell, 16 false hits).
+    if (b.heightRatio < 0.9 || b.heightRatio > U13_MAX_SCREENS) continue;
+    if (b.controlGap >= TOOLBAR_PX) continue;
+    if (!b.fixed && b.roomBelow >= TOOLBAR_PX) continue; // the page scrolls it clear
+    out.push(finding('U13', b.selector, `${b.control} ${Math.round(b.controlGap)}px from the bottom of a ${b.value} box (toolbar ~${TOOLBAR_PX}px; use dvh/svh)`));
+  }
+  return out;
+}
+
+// ── U14 sticky inside an overflow ancestor ──────────────────────────────
+// position: sticky sticks to its nearest scrolling ancestor. An ancestor with
+// overflow: hidden becomes that ancestor although a person can never scroll
+// it, so the element scrolls away with the page — the classic
+// `overflow-x: hidden` wrapper (overflow: clip does not capture, and is the
+// fix). An auto/scroll ancestor is a deliberate scroller (a max-height
+// result table) and is trusted, scrolling yet or not. Judged where the
+// sticky element has room to move: its containing block is taller than it.
+export function checkU14(stickies) {
+  const out = [];
+  for (const s of stickies || []) {
+    if (!s.visible || !s.ancestor) continue;
+    if (!/hidden/.test(s.overflow || '')) continue;
+    if ((s.room || 0) <= 20) continue;
+    out.push(finding('U14', s.selector, `sticky inside ${s.ancestor} (overflow hidden) — it scrolls away with the page; use overflow: clip`));
+  }
+  return out;
+}
+
+// ── U15 inputs under 16 px ──────────────────────────────────────────────
+// iOS Safari zooms the page when a text field under 16 px takes focus, and
+// does not zoom back. Judged on the iOS rows. A viewport locked with
+// maximum-scale=1 suppresses it (and pinch zoom with it, which is its own
+// accessibility cost) and is reported as exempt, not fixed.
+export const IOS_INPUT_MIN = 16;
+export function checkU15(inputs, { ios }) {
+  if (!ios) return [];
+  const out = [];
+  for (const i of inputs || []) {
+    if (!i.visible || i.disabled || i.readOnly || i.viewportLocked) continue;
+    if (i.fontSize < IOS_INPUT_MIN - 0.01) out.push(finding('U15', i.selector, `${i.type} at ${i.fontSize}px — iOS zooms on focus`));
+  }
+  return out;
+}
+
+// ── U16 safe area on fixed bars ─────────────────────────────────────────
+// Only with viewport-fit=cover does the page draw under the notch and the
+// home indicator; a fixed bar at the top or bottom edge that holds a control
+// must then pad by env(safe-area-inset-*). Without cover, Safari keeps the
+// page inside the safe area itself. Judged on the iOS rows.
+export function checkU16(bars, { ios }) {
+  if (!ios) return [];
+  const out = [];
+  for (const b of bars || []) {
+    if (!b.visible || !b.cover || !b.hasControl || b.usesSafeArea) continue;
+    out.push(finding('U16', b.selector, `fixed ${b.edge} bar with viewport-fit=cover and no env(safe-area-inset-${b.edge})`));
+  }
+  return out;
+}
+
+// ── U17 date inputs on iOS ──────────────────────────────────────────────
+// iOS Safari draws <input type=date> as a native pill: it never shows a
+// placeholder, and an empty one collapses unless it has a min-height.
+export function checkU17(dates, { ios }) {
+  if (!ios) return [];
+  const out = [];
+  for (const d of dates || []) {
+    if (!d.visible) continue;
+    if (d.placeholder && !d.labelled) out.push(finding('U17', d.selector, 'placeholder with no label — iOS shows no placeholder on a date input'));
+    else if (d.empty && !(d.minHeight > 0)) out.push(finding('U17', d.selector, 'empty date input with no min-height — collapses in iOS Safari'));
+  }
+  return out;
+}
+
+// ── U18 programmatic smooth scroll ──────────────────────────────────────
+// scrollTo/scrollIntoView({behavior:'smooth'}) silently does nothing in some
+// in-app webviews (CLAUDE.md: the result panel, 2026-09-19); the app scrolls
+// with an instant scrollTo. `calls`: smooth calls recorded during the run.
+export function checkU18(calls, { touch }) {
+  if (!touch) return [];
+  const out = [];
+  const seen = new Set();
+  for (const c of calls || []) {
+    const key = c.api + ' ' + c.target;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(finding('U18', c.target || 'window', `${c.api}({behavior:'smooth'}) — a no-op in some webviews; scroll instantly`));
+  }
+  return out;
+}
+
 // ── All checks over one collected snapshot ──────────────────────────────
 export function runChecks(snap, viewport) {
   const vw = viewport.width;
@@ -345,6 +491,12 @@ export function runChecks(snap, viewport) {
     ...checkU10(snap.primaries),
     ...checkU11(snap.styled),
     ...checkU12({ consoleErrors: snap.consoleErrors, failedRequests: snap.failedRequests, origin: snap.origin }),
+    ...checkU13(snap.vhBoxes, viewport),
+    ...checkU14(snap.stickies),
+    ...checkU15(snap.inputs, viewport),
+    ...checkU16(snap.fixedBars, viewport),
+    ...checkU17(snap.dateInputs, viewport),
+    ...checkU18(snap.smoothScrolls, viewport),
   ];
 }
 
@@ -371,4 +523,20 @@ export function severityTotals(findings) {
   const t = { critical: 0, major: 0, minor: 0 };
   for (const f of findings) t[f.severity]++;
   return t;
+}
+
+/** Severity totals per engine (chromium / webkit): the ledger's per-engine split. */
+export function engineTotals(findings) {
+  const out = {};
+  for (const f of findings) {
+    const e = f.engine || 'chromium';
+    if (!out[e]) out[e] = { critical: 0, major: 0, minor: 0 };
+    out[e][f.severity]++;
+  }
+  return out;
+}
+
+/** The identity of a finding across runs: what "new since the last run" compares. */
+export function fingerprint(f) {
+  return [f.check, f.page, f.viewport, f.theme, f.selector].join('|');
 }
