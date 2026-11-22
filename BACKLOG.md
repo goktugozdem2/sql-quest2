@@ -122,6 +122,94 @@ G1 builds none of these. Each one names the lane that owns it. Baseline:
   - The only list that names us is thequerylab.com, so it needs no note.
 - **C3 — alternativeto.net lists DataLemur's alternatives (cited for #4) and does not list SQL Quest.** It is a user-submitted directory. C3 drafts the listing text; the founder submits it.
 
+## Company research — R1, 2026-11-22 (docs/reads/companies/)
+
+R1 builds none of these; each names the lane that owns it. Dossiers:
+`capital-one.md`, `revolut.md`, `stripe.md`, `wise.md`, `jpmorgan.md`;
+coverage and queue in `INDEX.md`.
+
+- **C1 — Capital One page + blog: cite the vendor, tighten the count.**
+  CodeSignal's own help page (support.codesignal.com article 4407377178647)
+  describes the Data Analytics Assessment as 70 minutes, **14 quiz + 1
+  coding**, CSV data in any tool. That is the shape candidates report for
+  Capital One. The page's "around 14 to 15 questions … plus one or a few
+  written SQL" can become "15 items: 14 multiple choice + 1 coding". Add the
+  vendor as a source row, and say that it does not name Capital One. New and
+  page-ready: the 200–600 score scale, no published cut-off, and two retakes
+  in 180 days (article 4407377197847). This also answers the Bing query
+  "does capital one codesignal allow sql?": any tool for the CSV questions;
+  the coding question is done in the platform.
+- **C1 — Capital One page: say which role it is for.** Data scientists get a
+  different CodeSignal: 4 Python/pandas tasks in 90 minutes (PracHub, interview
+  Aug 2026, plus one aced.io report; medium). Capital One's own business
+  analyst page describes cases, not a test (first-party). One line on the
+  page stops DS and BA searchers from preparing for the wrong screen.
+- **B3 — Capital One mock: 12 + 2 against the vendor's 14 + 1.**
+  `capital-one-codesignal` runs 12 multiple choice + 2 written SQL. The
+  vendor's assessment is 14 multiple choice + 1 coding. The 12 + 2 split was
+  the founder's QA call on 2026-09-19, so changing it needs the founder's go.
+  The page and the mock should at least not contradict the cited source.
+- **C1 — Revolut page: second source, and two caveats.** Add PracHub's Data
+  Analyst report (interview Feb 2026, published 2026-08-25): a four-question
+  SQL technical screen after the HR call. With Interview Query, the round is
+  now medium confidence. Also add Revolut's careers page (stage order:
+  intro → coding challenges → technical → culture fit → team fit). Update
+  "27 candidate reports" to Interview Query's current 30. Say that the live
+  round's length disagrees inside one publisher (45 vs 60 min). Mark "top
+  10%" and "MAU" as single-family; no second source confirms them.
+- **C1 — Stripe page: from general to sourced.** Three dated candidate
+  reports, Oct 2025 – Q4 2026, put live SQL in the Data Scientist and Data
+  Analyst loops (high). The first round is a hiring-manager conversation with
+  no coding (high). The DS loop has a one-week take-home: SQL or Python, a deck
+  plus code (high that it exists; details from one report). These go in
+  `SOURCED_FORMATS` or a template entry. The DA round's platform (HackerRank)
+  and length (45 min) come from one report and must be worded as one
+  candidate's account. Do not cite the "Stripe Candidate Recruiting Resource"
+  Google Doc: it is engineering-only and its origin is unverified.
+- **C1 — Wise page: one first-party row.** wise.jobs/analytics-case-study:
+  the analyst take-home is returned within 7 days, about 2 hours suggested,
+  no more than 3 hours. It is scored on analysis, problem solving and
+  presentation, and names no SQL or tool. Other first-party lines: interviews
+  default to Zoom, and AI use is allowed on the take-home if disclosed. **Do
+  not state a "30-minute SQL interview"** (a Bing query asks for one). No
+  source describes one; the 30-minute round on record is the recruiter/phone
+  screen.
+- **C1 — JPMorgan page: no change.** Nothing page-ready. Next step: a hand
+  read in a browser of JPMorganChase's application PDF
+  (`/content/dam/jpmorganchase/documents/careers/jpmc-ec-application-reflection.pdf`,
+  over 10 MB, too large for the fetcher). Its search snippet names HireVue
+  and HackerRank.
+- **B3 — "define the metric, then query it" (no challenge has this form).**
+  It is reported for Revolut (PracHub Feb 2026: success of a subscription
+  launch; Interview Query: a new plan with no defined metric) and Stripe
+  (S3: an abnormal metric; S8: choosing the metric was the hard part). That
+  is 4 sources from 3 publishers. Every challenge in the bank states its
+  metric. A two-step challenge on `finans_neobank` would fit: choose the
+  metric that answers "did the premium tier launch work?", then compute it.
+- **B3 — click-through rate from an event log.** Revolut, PracHub Feb 2026
+  (low, one report): views and clicks per product, a ratio guarded against
+  zero views, top 1. The bank has no event-log (view/click) table in any
+  fintech dataset, and no CTR challenge.
+- **B3 — combine fraud rules into one review list.** Revolut, PracHub
+  Feb 2026 (low): write several rules, such as login country ≠ registration
+  country or an amount or burst threshold, then flag the transactions with
+  the rule that fired. Challenges 270–273 each teach one rule alone; none
+  combines them.
+- **B3 — reconcile two sources.** Find the rows missing on either side, and
+  the matching keys whose amounts differ. Stripe data engineer (S10,
+  synthesis) and JPMorgan analyst (J5, reconcile figures across reports):
+  low–medium. No challenge does both-direction anti-join or full-outer
+  reconciliation.
+- Covered already, no B3 needed: completed spend within N days of sign-up
+  (303, 311), chargeback rate per merchant (280), decline rate (305),
+  top 10% by volume (302), MAU (301). The Stripe variants add a trailing
+  30-day window and a per-day split; those are content edits to 280 and 305,
+  not new shapes.
+- **C1 — companies with demand and no page: none found.** About 60 large
+  employers were checked in gsc_daily and bing_stats over 90 days; no
+  interview-intent query turned up. GSC cannot see queries for pages we lack,
+  so take C7's clusters instead and re-check monthly (`INDEX.md`).
+
 ## Funnel findings — B1, 2026-11-22 (docs/reads/funnel-2026-11-22.md)
 
 Six-solvers 209 → 57 (first solvers 500 → 222, reach-six 41.8% → 25.7%;
