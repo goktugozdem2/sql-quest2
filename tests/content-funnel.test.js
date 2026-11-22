@@ -223,6 +223,19 @@ describe('the workflow', () => {
     }
   });
 
+  // The first push of this file failed to parse on GitHub: a plain `run:`
+  // value held "Script: …", and ": " inside a plain scalar is a YAML error.
+  // No YAML parser is in the dependencies, so check the rule that bit us.
+  it('every plain scalar value parses: no ": " or " #" inside an unquoted value', () => {
+    for (const line of wf.split('\n')) {
+      const m = line.match(/^\s*(?:- )?[A-Za-z_][\w-]*:\s+(.+)$/);
+      if (!m) continue;
+      const v = m[1];
+      if (/^['"|>]/.test(v)) continue;
+      expect(v, line).not.toMatch(/: | #/);
+    }
+  });
+
   it('echoes no secret and prints nothing it reads', () => {
     expect(wf).not.toMatch(/\becho\b|\bprintf\b|\bcat\b/);
     expect(wf).not.toMatch(/GITHUB_STEP_SUMMARY|set-output|GITHUB_OUTPUT/);
@@ -234,8 +247,11 @@ describe('the workflow', () => {
     expect(wf).not.toMatch(/contents:\s*write|git (commit|push)|create-pull-request|upload-artifact/);
     expect(runLines).toEqual([
       'run: node scripts/content-funnel-report.mjs',
-      expect.stringMatching(/^run: bash scripts\/gsc\/notify-failure\.sh "Content funnel report failed" "\$RUN_URL" "[^"$`]*"$/),
+      'run: bash scripts/gsc/notify-failure.sh "Content funnel report failed" "$RUN_URL" "$HINT"',
     ]);
+    const hint = wf.match(/^ {10}HINT: '([^']*)'$/m);
+    expect(hint, 'HINT is a single-quoted literal').not.toBe(null);
+    expect(hint[1]).not.toMatch(/\$|`/);
     expect(wf).not.toMatch(/gh issue|gh api|steps\.[a-z_-]+\.outputs/);
   });
 });

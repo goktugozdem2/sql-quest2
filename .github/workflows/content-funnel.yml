@@ -37,4 +37,5 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        run: bash scripts/gsc/notify-failure.sh "Content funnel report failed" "$RUN_URL" "Script: scripts/content-funnel-report.mjs, view public.content_funnel. The log carries no numbers by design. A 404 on content_funnel means migration 20261122160000_content_funnel_view.sql is not applied yet."
+          HINT: 'Script scripts/content-funnel-report.mjs, view public.content_funnel. The log carries no numbers by design. A 404 on content_funnel means migration 20261122160000_content_funnel_view.sql is not applied yet.'
+        run: bash scripts/gsc/notify-failure.sh "Content funnel report failed" "$RUN_URL" "$HINT"
