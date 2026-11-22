@@ -122,8 +122,12 @@ lever that read names as short.** On 2026-11-22 that is six-solvers:
      - never a task on the surface of an open PR.
 
    Also respect each lane's brief in this folder, and the held kinds that
-   stay with the founder (prices, Stripe settings, money flags, outward
-   email, production writes, session tokens).
+   stay with the founder. The list is A0's (`A0-gate.md`, "What A0 never
+   decides"): prices, Stripe settings, money flags, outward sends, production
+   writes and deploys, the session-token cut, and removing a guard.
+   A product choice that is not a held kind is not put to the founder
+   ("Benden karar isteme"): the orchestrator decides it and logs it in
+   `orchestrator-decisions.md`, and G1 plans on that decision.
 7. **Dispatch.** In the cloud, if the `create_session` tool is available,
    start the plan's **cloud** rows that need no merge first, up to 2 code
    sessions.
