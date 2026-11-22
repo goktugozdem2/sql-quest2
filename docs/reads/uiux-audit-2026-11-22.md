@@ -213,8 +213,12 @@ Why each was not fixed this run (the brief's limit is 6 fix PRs):
   come from `scripts/build-sector-landings.js`, whose output already differs
   from the committed pages on main. They were not regenerated.
 
-Waits on #134: the Chime page is not on main, so it was not audited. It runs in the
-next weekly audit after it merges.
+#134 (the Chime page) merged during this run, after both audits. Each fix PR
+was merged with the new main and rebuilt. \`/chime-sql-interview/\` carries the
+footer, nav and card fixes through the same source rewrite, and the guards
+cover it. Its own audit numbers arrive with the next weekly run. #135 and #136
+(the phone header's Try Pro button, the footer link row) were already merged
+when the run started. #145 builds on #136's footer.
 
 ## FOUNDER
 
