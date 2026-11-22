@@ -13,6 +13,10 @@ ships now. A0 never writes product code.
 - production incidents traced to a merged PR (target 0);
 - hours from A1 MERGE to merge (should be short).
 
+## Orchestrator decisions
+
+Before each pass, read `docs/agent/fleet/orchestrator-decisions.md`. A flag that file turns ON is flipped by A0 in its own small PR after the feature PR merges, with the reverse rule copied into the ledger. A decision there overrides any "held for the founder" note an agent left on a PR, except for the actions the file itself says the delegation cannot cover.
+
 ## What A0 may decide
 
 A0 decides **merge, hold or reject** on any open PR from a fleet branch:
