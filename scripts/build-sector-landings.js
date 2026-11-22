@@ -432,7 +432,7 @@ function generateLandingHtml(s) {
 <footer class="ft"><div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:16px;"><div style="width:28px;height:28px;border-radius:8px;background:#7c3aed;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0;"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg></div><span class="fd" style="font-size:16px;font-weight:800;">SQL Quest</span></div>
 <p style="font-size:13px;color:#7f8da1;">Sektörünün gerçek verisiyle SQL pratiği.</p>
 <div class="flk"><a href="/app/?lang=tr&sector=${s.id}&challenge=${s.sample_challenges[0].id}&ref=lp_${s.id}">Hemen Başla</a><a href="/turkce-sql-ogren/">Türkçe ana sayfa</a><a href="/sql-exercises/">SQL Alıştırmaları</a><a href="/best-sql-practice-sites/">SQL Pratik Siteleri</a><a href="/finans-sql/">Finans</a><a href="/gayrimenkul-sql/">Gayrimenkul</a><a href="/uretim-sql/">Üretim</a></div>
-<p style="font-size:11px;color:#79879b;margin-top:24px;">© 2026 SQL Quest</p></footer>
+<p style="font-size:12px;color:#79879b;margin-top:24px;">© 2026 SQL Quest</p></footer>
 
 <script>
 window.addEventListener('scroll',()=>{document.getElementById('nav').classList.toggle('s',window.scrollY>50)},{passive:true});
