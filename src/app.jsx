@@ -59,7 +59,7 @@ import { diagnoseResult, diagnosisShort, primaryHint, rowDiffSummary } from './u
 import { formatSqlForDisplay } from './utils/sql-format.js';
 import { parseTutorContent } from './utils/tutor-render.js';
 import { sessionLoadingAtBoot, shouldWaitForSession } from './utils/session-boot.js';
-import { SQLITE_TUTOR_RULES, mistakeStudyContext, buildMistakeContextBlock, mistakeOpeningPrompt, inlineOpenerMessage, diagnosisFixesLine } from './utils/tutor-context.js';
+import { SQLITE_TUTOR_RULES, mistakeStudyContext, buildMistakeContextBlock, mistakeOpeningPrompt, inlineOpenerMessage, diagnosisFixesLine, ladderRequestNumber } from './utils/tutor-context.js';
 import { buildUserSkill, pickNextBySkill, toCanonicalSkill, isLegacyMasteryRecord } from './utils/user-skill.js';
 import { classifyErrorPatterns, recordErrorPatterns, describeErrorPatterns, patternCount, emptyErrorStore } from './utils/error-patterns.js';
 import { nudgeAllowed, nudgeHeaders, nudgeUsername, personalNudgeLines } from './utils/live-nudge.js';
@@ -7993,6 +7993,9 @@ function SQLQuest() {
   const [inlineAiMessages, setInlineAiMessages] = useState([]);
   const [inlineAiInput, setInlineAiInput] = useState('');
   const [inlineAiLoading, setInlineAiLoading] = useState(false);
+  // Silent requests (the automatic first read) the tutor has answered in this
+  // panel — they count toward the ladder's request number (ladderRequestNumber).
+  const inlineSilentAnsweredRef = useRef(0);
   const [lives, setLives] = useState(3);
   const [queryCount, setQueryCount] = useState(0);
   const [datasetsUsed, setDatasetsUsed] = useState(new Set(['titanic']));
@@ -23989,6 +23992,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     setChallengeDiagnosis(null);
     setShowInlineAiHelp(false);
     setInlineAiMessages([]);
+    inlineSilentAnsweredRef.current = 0;
     setInlineAiInput('');
     setInlineAiLoading(false);
     setChallengeAiMessages([]);
@@ -24503,7 +24507,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
   // the date they gave us. Absent pieces are simply absent. Used by BOTH
   // tutor doors on the challenge page — the "Get a hint" chain and the inline
   // help panel — so the two never disagree about the student.
-  const buildChallengeTutorContext = (message, priorMessages, { includeDiagnosis = true } = {}) => {
+  const buildChallengeTutorContext = (message, priorMessages, { includeDiagnosis = true, silentAnswered = 0 } = {}) => {
     const parts = [];
     if (!currentChallenge) return { parts, hintRequestNumber: 1, ladderOn: false, bypassAsked: false };
     if (includeDiagnosis && challengeDiagnosis) {
@@ -24537,7 +24541,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
       ].filter(Boolean);
       if (goalBits.length > 0) parts.push(`GOAL AND DEADLINE: ${goalBits.join(' · ')}`);
     } catch (_) {}
-    const hintRequestNumber = (priorMessages || []).filter(m => m && m.role === 'user').length + 1;
+    const hintRequestNumber = ladderRequestNumber(priorMessages, silentAnswered);
     const ladderOn = ftbFlag('socraticLadder');
     const bypassAsked = /\b(show|give|tell)\s+(me\s+)?(the\s+)?(full\s+|whole\s+|complete\s+)?(answer|solution|query)\b|\bjust tell me\b|cevab[ıi]|çözümü göster|çözümü ver/i.test(message || '');
     return { parts, hintRequestNumber, ladderOn, bypassAsked };
@@ -24727,6 +24731,7 @@ HINT PROGRESSION (based on conversation length):
         ? `I can see your query for "${challenge.title}". Submit it and I'll read what it returns — or ask me about any part of it.`
         : `Working on "${challenge.title}". Write a first attempt and Submit; I'll read exactly what it returns. Or ask me where to start.`;
     setInlineAiMessages([{ role: 'assistant', content: opener }]);
+    inlineSilentAnsweredRef.current = 0;
     setInlineAiInput('');
     setInlineAiLoading(false);
     setShowInlineAiHelp(true);
@@ -24763,7 +24768,7 @@ HINT PROGRESSION (based on conversation length):
     const topicData = topicKey ? TOPIC_EXPLANATIONS[topicKey] : null;
     // P1 (2026-09-12): diagnosis, query, mastery, error patterns, deadline — the
     // same context the hint chain carries — and the ladder under its flag.
-    const inlineCtx = buildChallengeTutorContext(userMessage, inlineAiMessages);
+    const inlineCtx = buildChallengeTutorContext(userMessage, inlineAiMessages, { silentAnswered: inlineSilentAnsweredRef.current });
 
     const systemPrompt = `You are a sharp SQL tutor helping with a specific challenge. Direct, code-first, no filler.
 
@@ -24807,6 +24812,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
 
     const response = await callAI(cleanHistory, systemPrompt, 'feedback');
     if (response) {
+      if (opts.silent) inlineSilentAnsweredRef.current += 1;
       setInlineAiMessages(prev => [...prev, { role: 'assistant', content: response }]);
     } else {
       setInlineAiMessages(prev => [...prev, { role: 'assistant', content: 'Could not connect to AI tutor. Check your internet connection and try again.' }]);

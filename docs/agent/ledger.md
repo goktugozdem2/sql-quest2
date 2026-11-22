@@ -27,6 +27,16 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### the inline Help ladder counts its own first read
+
+- **Claimed** 2026-11-22 · **Shipped** 2026-11-22 · **Read** 2026-12-20.
+- **Change** The inline panel's automatic first read (`inlineOpenerMessage`, sent `silent`) is answered as rung 1 but never entered the message list as a user turn, so `hintRequestNumber` counted only typed turns and the person's first typed question went out as rung 1 AGAIN; the clause (rung 2) came only on their second question. `ladderRequestNumber(priorMessages, silentAnswered)` (src/utils/tutor-context.js) counts silent requests the tutor answered (`inlineSilentAnsweredRef`, reset when the panel opens and when the challenge changes). No prompt change, no extra tutor calls. Guards `tests/tutor-ladder-count.test.js` (breaks caught: dropping the silent term from the count — 2 tests; dropping the increment on a silent answer — 1 test).
+- **Why** docs/reads/tutor-ladder-2026-11-22.md: 112 of 209 Help opens (54%) were followed by "Show me the answer" within 60 min, half of them within 30 s; after a diagnosis opener the median wait before the bypass was 61 s — the first typed question got a second round of words where it should have got the clause.
+- **Metric** `tutor_ladder` (metrics.md): `tutor_bypass_clicked` ÷ `inline_help_opened`, restricted to opens with `opener = diagnosis`; guardrail `hint_to_solve`.
+- **Baseline** 54% bypass over all opens (112 / 209, 30 days to 11-22); the diagnosis-opener subset is read at the verdict from the same query.
+- **Target** the diagnosis-opener bypass rate falls ≥ 8 points from its 30-day baseline; `hint_to_solve` does not fall more than 3 points.
+- **Falsification, stated in advance:** bypass rate within ±3 points of baseline → people bypass for the answer itself, not because the ladder repeated itself; no further ladder work. `hint_to_solve` down > 3 points → revert.
+
 ### an expired Stripe session gets its recovery link (M-11)
 
 - **Claimed** 2026-11-22 · **Shipped** NOT YET — the code is on branch `feat/mon-session-recovery`; it goes live only when the founder deploys `create-checkout-session`, `stripe-webhook` and `checkout-abandon`. **The clock starts at the founder's deploy**: no session expired before that date counts toward the verdict. · **Read** 2026-12-20 (expect UNREADABLE at that date — ~1 recovery-link mail a week; the verdict needs ≥ 20 recovery-link mails, re-read then).

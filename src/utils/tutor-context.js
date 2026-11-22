@@ -109,3 +109,15 @@ export function diagnosisFixesLine(fixes, ladderOn) {
     ? `PROBLEMS THE DIAGNOSIS FOUND (name every one in words on request 1; SQL for them only from request 2): ${list}`
     : `FIXES THE DIAGNOSIS FOUND (name all of them): ${list}`;
 }
+
+// The ladder's request number (found 2026-11-22, docs/reads/tutor-ladder-2026-11-22.md).
+// The inline panel's automatic first read is sent silently: the tutor answers
+// it (rung 1), but it never enters the message list as a user turn. Counting
+// only user turns made the person's first typed question rung 1 AGAIN, so the
+// clause (rung 2) arrived only on their second question. Silent requests the
+// tutor answered count as requests.
+export function ladderRequestNumber(priorMessages, silentAnswered = 0) {
+  const typed = (priorMessages || []).filter(m => m && m.role === 'user').length;
+  const silent = Number.isFinite(silentAnswered) && silentAnswered > 0 ? Math.floor(silentAnswered) : 0;
+  return typed + silent + 1;
+}
