@@ -6,9 +6,9 @@ by handing it its brief. The orchestrator is the main loop: the laptop
 session, with the scheduled task `sqlquest-autodev-loop` as its fallback.
 An agent reads `CLAUDE.md`, this file and its own brief, in that order.
 
-## G1 sets the day's work (2026-11-22)
+## G0 sets the day's work (2026-11-22)
 
-G1, the goal owner (`G1-goal.md`), runs first every day. A scheduled cloud
+G0, the goal owner (`G0-goal.md`), runs first every day. A scheduled cloud
 task fires it at 06:47 Europe/Istanbul, and the laptop orchestrator runs it
 when no plan for the day exists. It does three things:
 - reads the current objective (`objectives.md`) against the newest numbers;

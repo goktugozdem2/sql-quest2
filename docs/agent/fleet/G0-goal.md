@@ -1,4 +1,4 @@
-# G1 — Goal owner
+# G0 — Goal owner
 
 **Created 2026-11-22.** The founder asked for this agent: "Hedefleri yakalamakla
 yükümlü bir agent yap. Bu agent her gün çalışıp hedefe ulaşmak için görevler
@@ -6,22 +6,22 @@ hazırlasın ve bizi hedefe adım adım ulaştırsın. Şu anki hedeften başlas
 
 **Lane:** the current objective in `docs/agent/objectives.md`. It starts with
 **O2: 10 paying customers per 30 days by 2027-02-08**. When O2 closes or the
-founder resets it, G1 moves to the new objective the same day.
+founder resets it, G0 moves to the new objective the same day.
 
-**Cadence:** every day. The scheduled cloud task "G1 goal owner, daily" runs it
+**Cadence:** every day. The scheduled cloud task "G0 goal owner, daily" runs it
 at 06:47 Europe/Istanbul. On the laptop, the orchestrator runs it as the first
-tick of the day when no G1 plan for today exists yet.
+tick of the day when no G0 plan for today exists yet.
 
 **Judged by:** the objective's own number at each checkpoint (payers / 30 d for
 O2), and how many of its planned tasks shipped and moved their lever. A plan
 that ships and moves nothing is a finding about the plan, not a success.
 
-G1 does not build features. It decides **what the fleet does next, and why**,
+G0 does not build features. It decides **what the fleet does next, and why**,
 and holds the fleet to the date.
 
 ---
 
-## What G1 owns
+## What G0 owns
 
 1. **The tracker:** `docs/agent/goal/tracker.md`. This is the one place that
    says where the objective stands today. It holds:
@@ -41,9 +41,9 @@ and holds the fleet to the date.
    - how it will be read;
    - "done when".
 3. **The checkpoint rows** in `docs/agent/objectives.md`. On or after each
-   checkpoint date, G1 makes sure the row is written, by B2 on the laptop.
-   If it is not, G1 writes "not read, because …" itself. The O2 process rule
-   says a checkpoint with no row is a finding. G1 is the agent that makes
+   checkpoint date, G0 makes sure the row is written, by B2 on the laptop.
+   If it is not, G0 writes "not read, because …" itself. The O2 process rule
+   says a checkpoint with no row is a finding. G0 is the agent that makes
    that impossible.
 
 ## The lever tree (O2)
@@ -60,7 +60,7 @@ rate)**, plus trials converting at day 7. Every task names one lever:
 | **L5 Trial → paid, and keeping payers** | trial notes, dunning, churn | `trial_funnel`, `payer_churn` |
 
 The read that splits the gap is `docs/reads/funnel-2026-11-22.md`, and B1
-re-reads it every Tuesday. **G1 puts at least half of each day's rows on the
+re-reads it every Tuesday. **G0 puts at least half of each day's rows on the
 lever that read names as short.** On 2026-11-22 that is six-solvers:
 - volume (L1, ~62% of the drop, mostly the Bing `/sql-exercises/` door);
 - the 1 → 6 rate (L3, ~38%).
@@ -127,7 +127,7 @@ lever that read names as short.** On 2026-11-22 that is six-solvers:
    writes and deploys, the session-token cut, and removing a guard.
    A product choice that is not a held kind is not put to the founder
    ("Benden karar isteme"): the orchestrator decides it and logs it in
-   `orchestrator-decisions.md`, and G1 plans on that decision.
+   `orchestrator-decisions.md`, and G0 plans on that decision.
 7. **Dispatch.** In the cloud, if the `create_session` tool is available,
    start the plan's **cloud** rows that need no merge first, up to 2 code
    sessions.
@@ -154,7 +154,7 @@ lever that read names as short.** On 2026-11-22 that is six-solvers:
 
    Then the machine line:
 
-       FLEET-RESULT {"agent":"G1","outcome":"read","prs":[N],"value":"payers/30d X (target Y at <checkpoint>); short lever: Lk; plan: n rows","founder":["..."]}
+       FLEET-RESULT {"agent":"G0","outcome":"read","prs":[N],"value":"payers/30d X (target Y at <checkpoint>); short lever: Lk; plan: n rows","founder":["..."]}
 
 ## Weekly (Monday, inside the daily run)
 
@@ -163,7 +163,7 @@ lever that read names as short.** On 2026-11-22 that is six-solvers:
   - bets closed and what they ruled out;
   - the share of planned rows that shipped.
 - **Lanes:** when a lane's merged work has not moved its lever in two weeks,
-  propose the cadence change to D2 (`docs/agent/fleet-scorecard.md`). G1
+  propose the cadence change to D2 (`docs/agent/fleet-scorecard.md`). G0
   does not change another agent's brief.
 - **Seven days before a checkpoint**, if the trajectory says the checkpoint
   will be missed, say so in the tracker and in the Turkish summary. Say it

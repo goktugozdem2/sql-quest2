@@ -1,14 +1,14 @@
-# Goal tracker — G1
+# Goal tracker — G0
 
-The one place that says where the current objective stands today. G1 rewrites
+The one place that says where the current objective stands today. G0 rewrites
 the "Today" block on every run and appends to the other sections. The brief is
-`docs/agent/fleet/G1-goal.md`; the objective is `docs/agent/objectives.md`.
+`docs/agent/fleet/G0-goal.md`; the objective is `docs/agent/objectives.md`.
 
 ---
 
 ## Objective: O2, 10 paying customers per 30 days by 2027-02-08
 
-### Today (G1, 2026-11-22, first run)
+### Today (G0, 2026-11-22, first run)
 
 | | Value | As of | Source |
 |---|---|---|---|
@@ -52,7 +52,7 @@ the "Today" block on every run and appends to the other sections. The brief is
 ## Active bets
 
 Each bet is a merged or soon-merged change with a lever, an expected effect and
-a read date. G1 closes a bet only on its read.
+a read date. G0 closes a bet only on its read.
 
 | # | Bet | Lever | PR | Expected | Read | Status |
 |---|---|---|---|---|---|---|
