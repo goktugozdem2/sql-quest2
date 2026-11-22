@@ -147,6 +147,33 @@ describe('the run classification (lib)', () => {
     expect(HERMETIC_PREAMBLE).toContain('navigator.sendBeacon = () => true');
   });
 
+  // 2026-11-22 (A2): the save stub answered `new Response('', { status: 204 })`.
+  // 204 is a null-body status, so the constructor THROWS: every hermetic save
+  // was a failed fetch (the app's failure branch, not the success production
+  // gives), and the beforeunload keepalive save surfaced as an uncaught
+  // "Response with null body status cannot have body" on every walk.
+  it('the hermetic save stub answers 204 for real — the fetch resolves, it does not throw', async () => {
+    const { runInNewContext } = await import('node:vm');
+    const logged = [];
+    const win = { fetch: async () => new globalThis.Response("real network", { status: 200 }) };
+    const ctx = { window: win, navigator: {}, console: { debug: (...a) => logged.push(a) }, Response: globalThis.Response, JSON, String };
+    runInNewContext(HERMETIC_PREAMBLE, ctx);
+    const save = await win.fetch('https://x.supabase.co/rest/v1/rpc/sq_save_user', { method: 'POST', body: '{}' });
+    expect(save.status).toBe(204);
+    expect(save.ok).toBe(true);
+    const ev = await win.fetch('https://x.supabase.co/rest/v1/pro_events', { method: 'POST', body: JSON.stringify({ event: 'e', reason: 'r', metadata: '{}' }) });
+    expect(ev.status).toBe(201);
+    expect(logged[0][1]).toBe('e');
+  });
+
+  it('no browser stub anywhere builds a 204/205/304 Response with a string body (the constructor throws)', () => {
+    const files = ['scripts/smoke/lib.mjs', 'scripts/smoke-test.js', 'scripts/e2e-verify.mjs', 'scripts/ph-gallery/capture.mjs', 'scripts/qa/pro-mock.mjs'];
+    for (const f of files) {
+      const src = fs.readFileSync(f, 'utf8');
+      expect(src, f).not.toMatch(/new Response\(\s*(['"`])\1\s*,\s*\{\s*status:\s*(204|205|304)\b/);
+    }
+  });
+
   it('a clean profile: fresh user-data-dir, extensions off, headless', () => {
     const args = chromeArgs(9999, '/tmp/x');
     expect(args).toContain('--disable-extensions');

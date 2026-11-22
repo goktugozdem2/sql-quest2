@@ -69,7 +69,7 @@ const preamble = seed => `
     const url = String(input && input.url ? input.url : input);
     if (/supabase|functions\\/v1|vercel-insights|va\\.vercel|\\/api\\//i.test(url)) {
       const J = { 'Content-Type': 'application/json' };
-      if (/rpc\\/sq_save_user/.test(url)) return new Response('', { status: 204, headers: J });
+      if (/rpc\\/sq_save_user/.test(url)) return new Response(null, { status: 204, headers: J });
       if (/users_public\\?/.test(url) && window.__row) return new Response(JSON.stringify([window.__row]), { status: 200, headers: J });
       return new Response('[]', { status: 200, headers: J });
     }

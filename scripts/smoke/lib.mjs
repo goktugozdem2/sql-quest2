@@ -126,7 +126,7 @@ export const HERMETIC_PREAMBLE = `(() => {
         } catch (_) {}
         return new Response('', { status: 201, headers: J });
       }
-      if (/rpc\\/sq_save_user/.test(url)) return new Response('', { status: 204, headers: J });
+      if (/rpc\\/sq_save_user/.test(url)) return new Response(null, { status: 204, headers: J });
       return new Response('[]', { status: 200, headers: J });
     }
     return real(input, init);
