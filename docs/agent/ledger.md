@@ -27,6 +27,39 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### AI-visibility pass: answer-first summaries, honest competitor facts, llms.txt entry points (C2)
+
+- **Claimed** 2026-11-22 · **Shipped** on merge (static pages + llms.txt,
+  no flag) · **Read** 2026-12-20.
+- **Change** (1) `/llms.txt`: a "Start here" list of nine entry points, one
+  line each; the free tier in `freeTierSentence`'s words; the fintech
+  company pages (Capital One, Revolut, Wise, Stripe, PayPal, Monzo; Chime
+  joins automatically when its page exists); the competitor grid that
+  marked every rival "No" on AI and hints removed (the 2026-09-13 read
+  contradicts it). (2) StrataScratch's prices moved to the 2026-11-22 read
+  ($24 / $139 / $289) on five pages; "verified provenance" removed
+  everywhere. (3) An answer-first summary with a practise link at the top
+  of `/vs-datalemur/`, `/best-sql-practice-sites/`,
+  `/datalemur-alternatives/`. Guards: `tests/competitor-facts.test.js`,
+  `tests/llms-txt.test.js`, `tests/alternatives-pages.test.js`.
+- **Metric** `ai_landings_month` (metrics.md, defined in this PR), with the
+  door split for the three pages; Copilot citations (Bing Webmaster Tools,
+  AI Performance) read by hand beside it.
+- **Baseline** not read: the cloud session has no production data. The
+  laptop reads the 30 days to 2026-11-22 before the merge and writes it
+  here.
+- **Target** `ai_landings_month` for the 30 days to 2026-12-20 at or above
+  the baseline + 25%, and at least one `ai:*` person landing on one of the
+  three pages' doors.
+- **Falsification** (written before the data) at or below the baseline,
+  with no `ai:*` arrival on the three doors → the answer-first blocks did
+  nothing measurable; keep the fact fixes (they are correctness, not a
+  bet) and stop adding summaries to more pages until a panel read
+  (`ai_mention_share`) shows a citation of one of them.
+- **Confounds** Gemini is invisible to the metric; a single month of single
+  digits reads `UNREADABLE`, not `FLAT`; PR #134 (Chime) changes llms.txt
+  the same month.
+
 ### Bing reads the app shell's noindex (bingbot may fetch /app/?…)
 
 - **Claimed** 2026-11-22 · **Shipped** on merge (robots.txt, no flag) ·
