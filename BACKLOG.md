@@ -105,6 +105,30 @@ B2 builds none of these; each names the lane that owns it.
   `cta_practice_validate_ai_sql_*` and `editorial_claudequest_click` (0 rows,
   14 app opens from that page).
 
+## Content QA findings — Q1, 2026-11-22 (docs/reads/content-qa-2026-11-22.md)
+
+D1 (challenge 323's example range) is fixed in #167. These are the author
+lanes' calls:
+
+- **A0/founder — Easy cards that need a window function (D2).** Q1's check 5
+  says "an Easy that needs a window function is FAIL". B3 wrote 320 (MAX
+  per department) and 321 (number each customer's orders) as Easy on-ramps
+  for the Window cell, which had 3 Easy cards. Either relabel them Medium (and
+  re-measure the Easy cell), or amend check 5 to allow a single-window
+  on-ramp card. Decide once; the next B3 batch inherits it.
+- **B3 — on-ramp cards hand over the method and the query (D3).** Spot-checking
+  the Chime set: the hints of 172, 174, 289 and 291 contain the query or most
+  of it, and the prompts of 172 (LAG), 275 (strftime), 289 and 291 (CTE /
+  LEFT JOIN / COALESCE) name the method. This is the 168–179 on-ramp and
+  275–299 card-analytics style, and it conflicts with check 6 and with the
+  company-page card rule. Start by counting the cards whose hint parses as
+  SQL. Then decide, per set, whether the method text moves behind
+  `practiceNote` the way the Capital One prompts did on 2026-09-19.
+- **C1 — the rollup page's engine table has no dated read (D4).** PostgreSQL,
+  SQL Server, Oracle, Snowflake, MySQL WITH ROLLUP and SQLite have no
+  `docs/reads/` file. Fetch the vendor docs from the laptop, write the read,
+  and cite it in `src/data/sql-rollup.js`.
+
 ## Funnel findings — B1, 2026-11-22 (docs/reads/funnel-2026-11-22.md)
 
 Six-solvers 209 → 57 (first solvers 500 → 222, reach-six 41.8% → 25.7%;
