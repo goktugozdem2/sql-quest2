@@ -89,7 +89,7 @@ import { normalizeAiMessages } from './utils/ai-tutor-client.js';
 import { t as i18n_t, getCurrentLang, setLang as i18n_setLang, subscribeLang, SUPPORTED_LANGS, localizeChallenge, localizeInterview, localizeQuestion } from './utils/i18n.js';
 import { buildWeeklyReport, detectMilestones } from './utils/weekly-report.js';
 import { isMcqQuestion, scoreMcqAnswer, applyHintPenalty, nextOptionId, findOption, buildInterviewProgress, mockMistakeDiagnosis, weakConceptsFromHistory } from './utils/mock-interview.js';
-import { canStartMock, mockRunFor, previewEndReason, freePreviewCount } from './utils/case-round.js';
+import { canStartMock, mockRunFor, previewEndReason, freePreviewCount, canResumeProgress } from './utils/case-round.js';
 import { explainsApproach, approachSubmittedEvent } from './utils/mock-approach.js';
 
 // 2026-09-12 (founder's cleanup item 12): the sector deep-link parameter is
@@ -10842,7 +10842,7 @@ function SQLQuest() {
     interview = mockRunFor(interview, userProStatus).interview;
     
     // Check for saved progress (unless forcing new)
-    if (!forceNew && savedInterviewProgress && savedInterviewProgress.interviewId === interview.id) {
+    if (!forceNew && canResumeProgress(savedInterviewProgress, interview)) {
       // Resume from saved progress
       trackActivationEvent('interview_started', {
         interviewId: interview.id, company: interview.company || null,

@@ -15,7 +15,7 @@ import vm from 'node:vm';
 import Database from 'better-sqlite3';
 import { isMcqQuestion, validateMcqQuestion } from '../src/utils/mock-interview.js';
 import { resultsMatch } from '../src/utils/grade.js';
-import { CASE_ROUND_MOCK_ID, freePreviewCount, canStartMock, mockRunFor, previewEndReason } from '../src/utils/case-round.js';
+import { CASE_ROUND_MOCK_ID, freePreviewCount, canStartMock, mockRunFor, previewEndReason, canResumeProgress } from '../src/utils/case-round.js';
 import { COMPANY_INTERVIEWS } from '../src/data/company-interviews.js';
 import { caseRoundLine, CASE_ROUND_LINE } from '../scripts/build-company-pages.mjs';
 
@@ -293,6 +293,24 @@ describe('the free preview (src/utils/case-round.js)', () => {
   });
   it('only this mock carries a preview (no other mock was opened by accident)', () => {
     expect(win.mockInterviewsData.filter(m => freePreviewCount(m) > 0).map(m => m.id)).toEqual([CASE_ROUND_MOCK_ID]);
+  });
+});
+
+describe('saved progress never resumes past the run it opens into', () => {
+  it('a Pro save at question 7 does not resume into the free 3; one inside them does', () => {
+    const run = mockRunFor(mock, false).interview;
+    expect(canResumeProgress({ interviewId: mock.id, questionIndex: 7, answers: new Array(7) }, run)).toBe(false);
+    expect(canResumeProgress({ interviewId: mock.id, questionIndex: 2, answers: [1, 2] }, run)).toBe(true);
+    expect(canResumeProgress({ interviewId: mock.id, questionIndex: 7, answers: new Array(7) }, mock)).toBe(true);
+    expect(canResumeProgress({ interviewId: 'other', questionIndex: 0, answers: [] }, run)).toBe(false);
+    expect(canResumeProgress(null, run)).toBe(false);
+  });
+  it('startInterview resumes through canResumeProgress, after the run is cut', () => {
+    const app = read('../src/app.jsx');
+    const cut = app.indexOf('interview = mockRunFor(interview, userProStatus).interview;');
+    const resume = app.indexOf('if (!forceNew && canResumeProgress(savedInterviewProgress, interview))');
+    expect(cut).toBeGreaterThan(0);
+    expect(resume).toBeGreaterThan(cut);
   });
 });
 
