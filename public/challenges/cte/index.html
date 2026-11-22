@@ -202,7 +202,7 @@
   </section>
   <section class="sec" id="recursive">
     <h2 class="fd">Recursive CTEs: 3 challenges (all Pro)</h2>
-    <p>A CTE that references itself — <code>WITH RECURSIVE t AS (anchor UNION ALL step FROM t)</code> — walks a hierarchy one level per iteration: an org chart from the CEO down, a team's size rolled up through every report, a chain of chargebacks traced back to the first transaction. All three are Hard, which is Pro. For the mechanism — anchor member, recursive member, termination — read <a href="/blog/recursive-cte-explained/">recursive CTEs explained</a>.</p>
+    <p>A CTE that references itself — <code>WITH RECURSIVE t AS (anchor UNION ALL step FROM t)</code> — walks a hierarchy one level per iteration: an org chart from the CEO down, a team's size rolled up through every report, a chain of chargebacks traced back to the first transaction. All three are Hard, which is Pro. For the mechanism — anchor member, recursive member, termination — read <a href="/blog/recursive-cte-explained/">recursive CTEs explained</a>; for totals rolled up a tree next to <code>GROUP BY ROLLUP</code> subtotals, see <a href="/sql-rollup-interview-questions/">SQL rollup interview questions</a>.</p>
     <p class="stamp">Counted from the challenge bank, September 2026.</p>
     <div class="q-grid">
       <div class="q-card">
@@ -229,6 +229,7 @@
     <!-- 2026-09-07: the hub linked neither CTE post; both are the pages that rank for the CTE queries. -->
     <a href="/blog/sql-cte-tutorial/">CTE Tutorial →</a>
     <a href="/blog/recursive-cte-explained/">Recursive CTEs →</a>
+    <a href="/sql-rollup-interview-questions/">ROLLUP &amp; Tree Rollups →</a>
     <a href="/challenges/window-functions/">Window Functions →</a>
     <a href="/challenges/joins/">JOIN Challenges →</a>
     <a href="/challenges/subqueries/">Subquery Challenges →</a>

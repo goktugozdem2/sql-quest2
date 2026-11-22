@@ -47,7 +47,7 @@ function resultHtml(q) {
   return `<p class="res">Returns: <strong>${esc(fmt(q.rowCount))} rows</strong></p>`;
 }
 
-const CSS = `*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif;line-height:1.65}
+export const CSS = `*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif;line-height:1.65}
 a{color:#c084fc;text-decoration:none}a:hover{text-decoration:underline}.fd{font-family:'Space Grotesk',sans-serif}
 code,pre{font-family:'JetBrains Mono',monospace;font-variant-ligatures:none;font-feature-settings:"liga" 0,"calt" 0}code{font-size:.9em;color:#c084fc}pre code{font-size:inherit;color:#F2F0EA}
 .nav{border-bottom:1px solid rgba(255,255,255,.06)}.ni{max-width:1000px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}

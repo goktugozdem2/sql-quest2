@@ -60,6 +60,9 @@ export const SNIPPET_PAGES = [
   // branch 3): the blog owns the query family (641 impressions, 39 clicks in
   // 28 days); the company page goes transactional — year + count + the mock.
   { src: 'src/capital-one-sql-interview.html', built: 'public/capital-one-sql-interview/index.html' },
+  // 2026-11-22: "rollup interview questions" — 657 impressions at 8.9, zero
+  // clicks, on a question page that does not answer it. The new page that does.
+  { src: 'src/sql-rollup-interview-questions.html', built: 'public/sql-rollup-interview-questions/index.html' },
 ];
 
 // "228 free", "300+ free", "(18 Free)", "first 10 solves", "10 free challenge
