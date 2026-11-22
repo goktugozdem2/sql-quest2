@@ -45,8 +45,10 @@ An agent reads `CLAUDE.md`, this file and its own brief, in that order.
 6. **Merge rule.**
    - A **docs-only** PR (only `docs/**` and/or `BACKLOG.md`) may be merged
      by its author with `<scratchpad>/mergeone.sh <PR#>`.
-   - **Any other PR is left open for A1 (reviewer)**, which merges it or
-     sends it back. Never merge your own code PR.
+   - **Any other PR is left open for A1 (reviewer)**, which posts MERGE /
+     REVISE / REJECT. **A0 (gate) then decides the go** and merges, in the
+     founder's place (delegated 2026-11-22, `A0-gate.md`). Never merge your
+     own code PR.
    - A failing "Vercel" check that says "Deployment rate limited" is the
      Hobby build limit, not a code fault.
 7. **Never:**
