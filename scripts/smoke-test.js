@@ -1609,6 +1609,9 @@ async function main() {
           guest: /^guest_/.test(cu || ''),
           solved: rec.solvedChallenges || [],
           firstRunCompleted: localStorage.getItem('sqlquest_first_run_completed_v1'),
+          // The 6-step tour must not open on the challenge just solved
+          // (A2, 2026-11-22: it started "Read the problem" over the intent ask).
+          tourAfterSolve: buttons().some(b => /Skip tour/i.test(b.textContent || '')),
         };
       })()`);
     await pinFirstScreenArm('quiz');
@@ -1622,6 +1625,7 @@ async function main() {
       && Array.isArray(challengeArmState.solved)
       && challengeArmState.solved.length === 1
       && Number(challengeArmState.solved[0]) === 91
+      && challengeArmState.tourAfterSolve === false
     ) {
       pass('first-screen challenge arm: a new visitor lands in challenge 91, not the quiz, and the solve is kept');
     } else {
