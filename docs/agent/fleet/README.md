@@ -8,6 +8,10 @@ An agent reads `CLAUDE.md`, this file and its own brief, in that order.
 
 ## The common protocol (every agent)
 
+0. **Check before you start (2026-11-22, from `docs/reads/autonomous-dev-sources-2026-11-22.md`).**
+   - **PAUSE switch.** If `docs/agent/fleet/PAUSE` exists on origin/main, stop and report `blocked: paused`. The founder or the orchestrator creates the file to halt the whole fleet at once, and deletes it to resume.
+   - **Claim before you work.** Add a line to `docs/agent/fleet/claims.md`: `<agent> | <task or PR> | <UTC start> | <expires UTC, at most 4 h>`. Skip a task that already has a live claim (not expired) by another agent. Remove your line when you finish. An expired claim is free to take. This stops two runtimes doing the same work.
+   - **Run caps.** One run is at most about 45 minutes and about 150 tool calls, and opens at most 2 PRs. If you hit a cap, stop, report what's left, and let the next run continue. Never loop on a failing step more than 3 times.
 1. **Workspace.** Fetch `origin/main`:
    `git -c credential.helper= -c credential.helper='!gh auth git-credential' fetch -q https://github.com/goktugozdem2/sql-quest2.git main:refs/remotes/origin/main`.
    Then work in your own worktree under the session scratchpad, branched from
@@ -54,6 +58,9 @@ An agent reads `CLAUDE.md`, this file and its own brief, in that order.
      own code PR.
    - A failing "Vercel" check that says "Deployment rate limited" is the
      Hobby build limit, not a code fault.
+6b. **Never grade yourself.** No PR may change both what an agent's own number measures (the metric query, the test, the scorer) and the thing being measured. A metric definition or scoring change ships in its own PR, and the reviewer checks it against the claim written before.
+6c. **New lanes start supervised.** A lane's first 5 runs open PRs as drafts only. A1 reviews them, but A0 does not merge them until the founder or the orchestrator marks the lane trusted in `orchestrator-decisions.md`.
+6d. **The same model cannot audit itself.** A1, A0 and the authors are one model family and share blind spots (Project Vend's same-model "CEO" problem). Any PR touching money, auth, permissions, the session token or `supabase/` is held for a second look outside the family: the founder, or a different-model reviewer when one is set up. The weekly D2 retro samples 3 merged PRs at random and lists them for the founder to skim.
 7. **Never:**
    - send email or post anywhere (Gmail drafts only, and only E1 / C3 / C4 / P1
      write them);
