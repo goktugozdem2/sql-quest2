@@ -3068,6 +3068,21 @@ solves) are that leak, not a hole in the definition.
 |---|---|
 | `free_quota` | from the `freeQuota` flip: an unsolved challenge opened at or past the free quota (10 solves) — the founder's week-1 decision |
 
+**Per arm (M-07, `quota_wall_inline_v1`, from 2026-11-22).** Flag
+`quotaWallInline` splits browsers by `aid` (murmur-finalised hash):
+`inline` shows the modal on the first wall hit of the app's day and a
+non-blocking card on later hits that day; `control` shows the modal on every
+hit. `content_lock_reached {surface: 'challenge_quota'}` carries `modal`
+(true | false) and `quotaWallArm` on every hit; `pro_modal_shown` carries
+`quotaWallArm` and `via` (`'inline'` when opened from the card);
+`quota_wall_inline_shown`, `quota_wall_inline_clicked {to: 'pro'}`,
+`quota_wall_inline_dismissed`, and `quota_wall_free_path {via: 'inline'}`
+are the card's own. Per arm, wall people (by `aid`): plan click
+(`modalReason='free_quota'`) per person; trial-or-paid within 7 days
+(`stripe_webhook`, by username); returned on a later day (any `app_opened`
+on a later date). Baseline (09-26 → 11-21, before the split): **12.8%**
+click, **4.3%** trial-or-paid within 7 d, **33%** later-day return.
+
 **Split by company (M-12, from 2026-11-22).** `pro_modal_shown {reason:
 'free_quota'}` carries `wallCompany` (the person's `prepTarget.company` when
 it has a plan target, else null) and `wallCompanyKind` (`archetype` |

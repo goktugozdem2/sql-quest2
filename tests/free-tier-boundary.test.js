@@ -236,7 +236,10 @@ describe('the free quota — ten solves, then Pro (founder, 2026-09-12, item 2)'
     expect(at).toBeGreaterThan(-1);
     const block = app.slice(at, at + 900);
     expect(block).toMatch(/wall: 'free_quota'/);
-    expect(block.indexOf('openColdStartInstead(challenge.id)')).toBeLessThan(block.indexOf('setShowProModal(true)'));
+    // M-07 (2026-11-22): the ask is presentQuotaWall — the modal on the
+    // first hit of the day, the inline card after it in the inline arm.
+    expect(block.indexOf('presentQuotaWall(')).toBeGreaterThan(-1);
+    expect(block.indexOf('openColdStartInstead(challenge.id)')).toBeLessThan(block.indexOf('presentQuotaWall('));
     expect(block).toMatch(/type: 'free_quota'/);
     expect(app).toMatch(/const isQuotaLocked = quotaGate\(\{ flagOn: ftbFlag\('freeQuota'\)/);
     expect(app).toMatch(/data-testid="free-quota-counter"/);
