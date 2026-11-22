@@ -3649,3 +3649,47 @@ where query is not null and page = 'https://sqlquest.app/<slug>/'
   still grow. Read with a window ending at least three days before the read.
 - Position is impression-weighted (the query above), never a plain average of
   daily positions.
+
+## `bing_crawled_share` / `linked_page_impressions`
+
+Whether pages given internal links get crawled and shown (2026-11-22, C1).
+Defined for the related-links pass (`scripts/build-related-links.mjs`, read
+`docs/reads/internal-links-2026-11-22.md`), and reusable for any later
+linking pass: fix the page set in the claim, never after.
+
+**`bing_crawled_share`**: of a fixed set of URLs, the share whose
+`bing_url_status.last_crawled` is on or after the deploy date. The inspector
+walks the sitemap stalest-first, 150 URLs a day, so read it no earlier than
+four days after the deploy and use the row's `checked_at` to confirm it was
+checked after the deploy. A URL with no row or a `checked_at` before the
+deploy is **unknown**, not uncrawled: report it apart.
+
+```sql
+-- :set = the claim's URL list; :deploy = the merge's deploy date
+select count(*) filter (where s.last_crawled >= :deploy)               as crawled_since,
+       count(*) filter (where s.checked_at >= :deploy)                 as checked_since,
+       count(*)                                                        as in_set,
+       avg(s.anchor_count) filter (where s.checked_at >= :deploy)      as bing_anchor_count
+from unnest(:set::text[]) u(url)
+left join bing_url_status s on s.url = u.url;
+```
+
+`anchor_count` is Bing's own count of links it knows to the URL. Compare it
+with the baseline row's value, never with our built-site count (Bing counts
+external links too).
+
+**`linked_page_impressions`**: Google impressions for the same set, from
+`gsc_daily`'s **page slice only** (`query is null and page is not null`;
+never summed with another slice), 28 days after the deploy against the 28
+days before. Pages with zero impressions in both windows are counted, not
+dropped: going from 0 to anything is the point.
+
+Traps:
+- `/weekly/` is re-rendered by `npm run build:weekly`, which changes its
+  lastmod; a crawl after a weekly refresh is not evidence for the link.
+- `/datalemur-karsilastirma/` is Turkish. Read Google's impressions for it
+  without a country filter, and do not compare its clicks with the English
+  pages'.
+- Baselines are read on the laptop (the cloud session has no production
+  data). A claim made from a cloud session states "baseline: laptop read"
+  and the laptop writes it before the read date.
