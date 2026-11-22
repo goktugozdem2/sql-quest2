@@ -367,7 +367,7 @@ export function withProvenance(html, { slug, name }) {
  * @param opts  {accessed, role} — `role` narrows the heading when the sources
  *              only cover one job family.
  */
-export function formatSection(d, { accessed, role = null } = {}) {
+export function formatSection(d, { accessed, role = null, slug = null } = {}) {
   const srcKeys = Object.keys(d.sources);
   const cite = keys => keys.length
     ? keys.map(k => `<a href="#src-${k}" style="color:#8b98ab;text-decoration:none;font-size:11px;vertical-align:super;">[${srcKeys.indexOf(k) + 1}]</a>`).join('')
@@ -392,8 +392,30 @@ ${rows}
     </tbody>
   </table></div>
   <ol style="list-style:none;margin-top:18px;font-size:12px;color:#8b98ab;line-height:1.6;">${list}</ol>
-  <p style="font-size:12px;color:#5b6577;margin-top:10px;">${esc(sentence)} Accessed ${esc(accessed)}.</p>
+  <p style="font-size:12px;color:#5b6577;margin-top:10px;">${esc(sentence)} Accessed ${esc(accessed)}.</p>${slug && d.caseRound ? `\n${caseRoundLine(d, slug)}` : ''}
 </div></section>`;
+}
+
+/**
+ * One line under the sourced format rows, only where the page's own dated
+ * sources report a metrics or case round (2026-11-22, the Metrics & Case
+ * Round mock, lanes C5/B3). `d.caseRound = { note, sources }`: `note` says
+ * what the sources describe, `sources` are keys of `d.sources` and must be
+ * cited. A page without `caseRound` gets nothing: never invent a round.
+ * The link names Pro (tests/founder-review-2026-10-05.test.js, item 6).
+ */
+export const CASE_ROUND_LINE = 'Their loop reportedly includes a metrics/case round';
+export function caseRoundLine(d, slug) {
+  if (!d || !d.caseRound) return '';
+  const srcKeys = Object.keys(d.sources);
+  const keys = d.caseRound.sources || [];
+  if (!keys.length || keys.some(k => !srcKeys.includes(k))) {
+    throw new Error(`[company-pages] ${d.name}: caseRound must cite the page's own sources`);
+  }
+  const cite = keys.map(k => `<a href="#src-${k}" style="color:#8b98ab;text-decoration:none;font-size:11px;vertical-align:super;">[${srcKeys.indexOf(k) + 1}]</a>`).join('');
+  return `<!-- case-round:start -->
+  <p data-section="case-round" style="font-size:14px;color:#94a3b8;margin-top:18px;max-width:760px;line-height:1.75;padding:14px 18px;border:1px solid rgba(124,58,237,.22);border-left:3px solid #7c3aed;border-radius:10px;background:rgba(124,58,237,.05);">${esc(d.caseRound.note)}${cite} ${CASE_ROUND_LINE} &mdash; <a href="/app/?interview=metrics-case-round&amp;src=${slug}" data-track="cta_case_round" style="color:#c084fc;">practise it here (the first 3 questions are free, the rest is Pro)</a>.</p>
+<!-- case-round:end -->`;
 }
 
 export function breadcrumbLd(slug, name) {
@@ -527,7 +549,7 @@ ${ld}
   <p style="font-size:13px;color:#8b98ab;margin-top:18px;">${f.n} practice challenges · ${f.easy} Easy / ${f.medium} Medium / ${f.hard} Hard · your first ${FREE_SOLVE_QUOTA} solves free · runs in the browser</p>
 </div></section>
 
-${formatSection(d, { accessed: d.accessed || '13 Sep 2026' })}
+${formatSection(d, { accessed: d.accessed || '13 Sep 2026', slug })}
 
 <section id="topics" style="border-top:1px solid rgba(255,255,255,.04);"><div class="sec">
   <span class="sl">The SQL that comes up</span>

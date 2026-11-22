@@ -89,6 +89,7 @@ import { normalizeAiMessages } from './utils/ai-tutor-client.js';
 import { t as i18n_t, getCurrentLang, setLang as i18n_setLang, subscribeLang, SUPPORTED_LANGS, localizeChallenge, localizeInterview, localizeQuestion } from './utils/i18n.js';
 import { buildWeeklyReport, detectMilestones } from './utils/weekly-report.js';
 import { isMcqQuestion, scoreMcqAnswer, applyHintPenalty, nextOptionId, findOption, buildInterviewProgress, mockMistakeDiagnosis, weakConceptsFromHistory } from './utils/mock-interview.js';
+import { canStartMock, mockRunFor, previewEndReason, freePreviewCount } from './utils/case-round.js';
 import { explainsApproach, approachSubmittedEvent } from './utils/mock-approach.js';
 
 // 2026-09-12 (founder's cleanup item 12): the sector deep-link parameter is
@@ -10789,7 +10790,10 @@ function SQLQuest() {
 
   const startInterview = (interview, forceNew = false, opts = {}) => {
     saveLastActivity('interview', `Interview: ${interview.title || interview.company}`, 'trials', null);
-    if (!interview.isFree && !userProStatus) {
+    // A mock with free leading questions (the Metrics & Case Round,
+    // src/utils/case-round.js) starts for everyone; a free person gets the
+    // free questions as their own run, which ends on the Pro modal.
+    if (!canStartMock(interview, userProStatus)) {
       trackLockReached('interview', {
         interviewId: interview.id || null,
         company: interview.company || null,
@@ -10835,6 +10839,7 @@ function SQLQuest() {
       setShowProModal(true);
       return;
     }
+    interview = mockRunFor(interview, userProStatus).interview;
     
     // Check for saved progress (unless forcing new)
     if (!forceNew && savedInterviewProgress && savedInterviewProgress.interviewId === interview.id) {
@@ -10842,6 +10847,7 @@ function SQLQuest() {
       trackActivationEvent('interview_started', {
         interviewId: interview.id, company: interview.company || null,
         difficulty: interview.difficulty || null, isFree: !!interview.isFree, resumed: true,
+        preview: !!interview.previewOf,
       });
       setActiveInterview(interview);
       setInterviewQuestion(savedInterviewProgress.questionIndex);
@@ -10870,6 +10876,7 @@ function SQLQuest() {
     trackActivationEvent('interview_started', {
       interviewId: interview.id, company: interview.company || null,
       difficulty: interview.difficulty || null, isFree: !!interview.isFree, resumed: false,
+      preview: !!interview.previewOf,
     });
     setActiveInterview(interview);
     setInterviewQuestion(0);
@@ -10903,7 +10910,7 @@ function SQLQuest() {
   
   // Start Practice Mode - no timer, unlimited hints, can see solutions
   const startPracticeMode = (interview) => {
-    if (!interview.isFree && !userProStatus) {
+    if (!canStartMock(interview, userProStatus)) {
       trackLockReached('interview', {
         interviewId: interview.id || null,
         company: interview.company || null,
@@ -10916,6 +10923,7 @@ function SQLQuest() {
       setShowProModal(true);
       return;
     }
+    interview = mockRunFor(interview, userProStatus).interview;
     
     setActiveInterview(interview);
     setInterviewQuestion(0);
@@ -11178,6 +11186,9 @@ function SQLQuest() {
       diagnosis: mockMistakeDiagnosis(answer, { diagnose: diagnoseResult, hint: primaryHint, rows: rowDiffSummary }),
       isPracticeMode: practiceMode,
       patternSlug: isCorrect ? null : (PATTERN_FOR_MOCK_QUESTION[currentQ.id] || null),
+      // A written question that carries its reference and grading notes
+      // (the Metrics & Case Round) shows them right after the verdict.
+      gradingNotes: localizeQuestion(currentQ, lang).gradingNotes || currentQ.gradingNotes || null,
       pendingAnswers: newAnswers, // captured here so completeInterview gets the
                                    // right list when the user clicks Finish
     });
@@ -11208,6 +11219,29 @@ function SQLQuest() {
       }
     } else {
       completeInterview(finalAnswers);
+      // The free part of a previewed mock is done: the rest is Pro. The
+      // results stay on screen under the modal, so the score is not lost.
+      const endReason = previewEndReason(activeInterview, { solvedCount: solvedChallenges.size });
+      if (endReason) {
+        trackLockReached('interview', {
+          interviewId: activeInterview.id || null,
+          company: activeInterview.company || null,
+          difficulty: activeInterview.difficulty || null,
+          wall: 'case_round',
+          freeCount: endReason.freeCount,
+          total: endReason.total,
+        });
+        // Never sell before the first solve (tests/paid-wall.test.js): a
+        // person who got all of the free questions wrong meets the
+        // cold-start route instead. A correct answer in THIS run counts —
+        // the history that feeds practiceSolveCount has not re-rendered yet
+        // (the test7 trap: 4/4 on a mock, told "you haven't solved anything").
+        const solvedInRun = finalAnswers.some(a => a && a.correct);
+        if (solvedInRun || !openColdStartInstead()) {
+          setProModalReason(endReason);
+          setShowProModal(true);
+        }
+      }
     }
   };
 
@@ -11224,7 +11258,9 @@ function SQLQuest() {
     
     const totalScore = finalAnswers.reduce((sum, a) => sum + a.score, 0);
     const maxScore = activeInterview.questions.reduce((sum, q) => sum + q.points, 0);
-    const passed = (totalScore / maxScore * 100) >= activeInterview.passingScore;
+    // A preview (the free questions of a mock, src/utils/case-round.js) is
+    // never a pass: the mock was not sat.
+    const passed = !activeInterview.previewOf && (totalScore / maxScore * 100) >= activeInterview.passingScore;
     trackActivationEvent('interview_completed', {
       interviewId: activeInterview.id, company: activeInterview.company || null,
       passed, percentage: maxScore ? Math.round(totalScore / maxScore * 100) : 0,
@@ -11280,7 +11316,8 @@ function SQLQuest() {
       questionsTotal: finalAnswers.length,
       questionResults: finalAnswers,
       mistakes, // Store mistakes for study
-      studiedMistakes: [] // Track which mistakes user has studied
+      studiedMistakes: [], // Track which mistakes user has studied
+      preview: activeInterview.previewOf ? { ...activeInterview.previewOf } : undefined,
     };
     
     setInterviewResults(results);
@@ -11478,9 +11515,7 @@ Reply in 2–3 sentences, plain text, no headings: first whether the approach wo
     try { trackActivationEvent('interview_approach_feedback', { interviewId: activeInterview.id, questionId: q.id, chars: text.length, ok: !!reply }); } catch (_) {}
   };
 
-  const canAccessInterview = (interview) => {
-    return interview.isFree || userProStatus;
-  };
+  const canAccessInterview = (interview) => canStartMock(interview, userProStatus);
   
   // Study a mistake with AI Tutor
   const studyMistakeWithAI = (mistake, resultId) => {
@@ -31411,6 +31446,11 @@ RULES:
                 <p className="text-sm text-gray-300 leading-relaxed">{interviewFeedback.explanation}</p>
               </div>
             )}
+            {interviewFeedback.gradingNotes && (
+              <div className="text-left bg-gray-800/60 border border-gray-700 rounded-lg p-3 mb-4" data-testid="interview-grading-notes">
+                <p className="text-sm text-gray-300 leading-relaxed">{interviewFeedback.gradingNotes}</p>
+              </div>
+            )}
             {/* The SQL trap page for this question's trap (2026-09-25). New
                 tab: a timed mock must not be lost to a click. */}
             {!interviewFeedback.correct && interviewFeedback.patternSlug && (
@@ -31441,7 +31481,9 @@ RULES:
                 {interviewResults.passed ? '🎉' : '💪'}
               </div>
               <h2 className={`text-3xl font-bold ${interviewResults.passed ? 'text-green-400' : 'text-yellow-400'}`}>
-                {interviewResults.passed ? 'Interview Passed!' : 'Keep Practicing!'}
+                {interviewResults.preview
+                  ? `The free ${interviewResults.preview.free} are done`
+                  : interviewResults.passed ? 'Interview Passed!' : 'Keep Practicing!'}
               </h2>
               <p className="text-gray-400 mt-2">{activeInterview?.title}</p>
             </div>
@@ -32513,6 +32555,8 @@ RULES:
                       ? 'You\'re cooking.'
                       : proModalReason.type === 'company_set'
                       ? `${proModalReason.topic}'s set: three free, the rest is Pro.`
+                      : proModalReason.type === 'case_round'
+                      ? `${proModalReason.freeCount} free, ${Math.max(0, (proModalReason.total || 0) - (proModalReason.freeCount || 0))} to go.`
                       : proModalReason.type === 'free_quota'
                       ? quotaWallHeadline(proModalReason.quota, trialOfferOn)
                       : proModalReason.type === 'coach_mock'
@@ -32626,6 +32670,17 @@ RULES:
                         The first {proModalReason.freeCount} are free to try. The other {Math.max(0, (proModalReason.setSize || 0) - (proModalReason.freeCount || 0))}
                         {proModalReason.mockTitle ? ` — and the ${proModalReason.mockTitle} — ` : ' '}
                         open with Pro: the set, ranked the way {proModalReason.topic} asks it. Everything you have solved stays yours.
+                      </p>
+                    </div>
+                  ) : proModalReason.type === 'case_round' ? (
+                    // The Metrics & Case Round (2026-11-22): the free
+                    // questions are sat, the rest of the round is Pro.
+                    <div className="mt-3" data-testid="pro-modal-case-round">
+                      <p className="font-medium" style={{ color: '#F2F0EA' }}>
+                        You sat the first {proModalReason.freeCount} of the {proModalReason.topic || 'case round'}.
+                      </p>
+                      <p className="text-sm mt-2" style={{ color: '#8A8E99' }}>
+                        The other {Math.max(0, (proModalReason.total || 0) - (proModalReason.freeCount || 0))} open with Pro: LTV, CAC and CPA, a fraud rate while chargebacks are still arriving, saying a result to someone who does not write SQL, then the SQL for the metrics you defined. Your score on the first {proModalReason.freeCount} stays yours.
                       </p>
                     </div>
                   ) : proModalReason.type === 'free_quota' ? (
@@ -40806,7 +40861,13 @@ RULES:
                     return true;
                 }
               });
-              const orderedMocks = [...shownMocks.filter(i => i.sourced), ...shownMocks.filter(i => !i.sourced)];
+              // A mock with free leading questions (the Metrics & Case Round)
+              // opens the general section: it is the one a free person can start.
+              const orderedMocks = [
+                ...shownMocks.filter(i => i.sourced),
+                ...shownMocks.filter(i => !i.sourced && freePreviewCount(i) > 0),
+                ...shownMocks.filter(i => !i.sourced && freePreviewCount(i) === 0),
+              ];
               return orderedMocks.map((interview, mockIdx) => {
                 const canAccess = canAccessInterview(interview);
                 const completedCount = interviewHistory.filter(h => h.interviewId === interview.id).length;
@@ -40852,6 +40913,11 @@ RULES:
                           {interview.isFree && (
                             <span className="px-2 py-0.5 bg-green-500/20 text-green-400 rounded text-xs font-medium">
                               {i18n_t('interviewList', 'badgeFree')}
+                            </span>
+                          )}
+                          {!interview.isFree && !userProStatus && freePreviewCount(interview) > 0 && (
+                            <span className="px-2 py-0.5 bg-green-500/20 text-green-400 rounded text-xs font-medium" data-testid="mock-badge-first-free">
+                              {i18n_t('interviewList', 'badgeFirstFree', { n: freePreviewCount(interview) })}
                             </span>
                           )}
                           {!interview.isFree && !canAccess && (
