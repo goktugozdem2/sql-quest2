@@ -112,8 +112,8 @@ G1 builds none of these. Each one names the lane that owns it. Baseline:
 - 0 of 15 prompts in the search proxy's top 10.
 
 - **C2 — a page for "SQL practice with an AI tutor that explains my mistakes" (panel #8).** No page answers it, and neither console shows a matching query. The search proxy gives the slot to DataCamp's blog and academic papers. On the 2026-09-06 panel this was the family we won (4/4). The page shows the diagnosis on a real wrong query; `/vs-chatgpt/` already holds the rules for claims about AI.
-- **C2 — a general "timed SQL mock interview" page (panel #11).** The mocks sit inside the Capital One and Revolut pages. dbSyntax, DataDriven and Exponent each have a dedicated page in the top 10. Say "Pro" and the free general mock, as the homepage FAQ does.
-- **C2 — a general 2-week SQL interview plan (panel #13).** Only the Amazon page has one. The top 10 is Exponent, Coursera, datadriven.io and LearnSQL.
+- **BUILT 2026-11-22 (C2, branch `seo/prep-plan-and-mock-pages`): /sql-mock-interview/.** ~~**C2 — a general "timed SQL mock interview" page (panel #11).**~~ The mocks sit inside the Capital One and Revolut pages. dbSyntax, DataDriven and Exponent each have a dedicated page in the top 10. Say "Pro" and the free general mock, as the homepage FAQ does.
+- **BUILT 2026-11-22 (C2, branch `seo/prep-plan-and-mock-pages`): /sql-interview-prep-plan/.** ~~**C2 — a general 2-week SQL interview plan (panel #13).**~~ Only the Amazon page has one. The top 10 is Exponent, Coursera, datadriven.io and LearnSQL.
 - **C2 — a Turkish interview-prep page (panel #15).** `/turkce-sql-ogren/` is a learn-SQL page. The Turkish top 10 is DataCamp TR, Guru99 TR and Techcareer.
 - **C2 — `/meta-sql-interview/` ranks 20.1 on "meta sql interview questions" (GSC, 14 imp, 28 d; panel #10).** Fix the page's answer-first summary before building anything new.
 - **C3 — third-party lists cited for panel prompts that do not name us.** Each was checked on 2026-11-22.

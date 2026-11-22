@@ -255,6 +255,65 @@ of the verifier and must never be rounded to `FLAT`.
   never credit one click twice: a click on the question page belongs to that
   claim, a click on the new page to this one.
 
+### two buyer-question pages: a 2-week prep plan and a timed mock (C2)
+
+- **Claimed** 2026-11-22 · **Shipped** on merge, no flag · **Read** 2026-12-27.
+- **Change** Two new generated pages, each with an answer-first summary, a
+  FAQ whose JSON-LD equals the visible text, and one tracked CTA:
+  - /sql-interview-prep-plan/ (`scripts/build-prep-plan-page.mjs` from
+    `src/data/prep-plan.js`): day 0 the readiness test; days 1-9 one canonical
+    skill each, in the order the learning path teaches them, with an Easy, a
+    Medium and a Hard picked from the live bank in CURRICULUM order (home
+    roadmap stage first, never raw bank order; challenge 1 is never on it)
+    and linked to their /questions/ pages; days 10-14 the five trap pages, the
+    Coach on the two weakest skills, a timed mock, its review, the retest.
+    Free tier said by `freeTierSentence`. CTA `cta_plan_start` →
+    `/app/?challenge=91&src=prep-plan`.
+  - /sql-mock-interview/ (`scripts/build-mock-interview-page.mjs` from
+    `src/data/sql-mock-interview.js`): what the clock changes in our mocks
+    (per-question limit, whole-sitting clock, rows checked, pass mark), every
+    mock's questions, minutes, pass mark and Free/Pro read from
+    `src/data/mock-interviews.js`, the company mocks linked to their company
+    pages (sources there; nothing said about any company's screen), how to
+    rehearse, no question or answer of any mock. CTA `cta_mockpage_free` →
+    `/app/?interview=sql-fundamentals-free&src=sql-mock-interview` (verified
+    headless: the free mock opens with its clock running).
+  - Linked in the same commit from /sql-exercises/ and /sql-interview-prep/,
+    from each other, and from llms.txt's entry points; both in the sitemap.
+    Guards `tests/prep-plan.test.js`, `tests/sql-mock-interview.test.js`,
+    `tests/snippet-length.test.js`.
+- **Why** docs/reads/geo-2026-11-22.md (G1): panel prompts #13 "2-week SQL
+  interview prep plan" and #11 "timed SQL mock interview online" had no page
+  that answered them; the search proxy's top 10 went to Exponent, Coursera,
+  datadriven.io, LearnSQL, dbSyntax and DataDriven, each with a dedicated
+  page. Neither console had a matching query for #13; #11's nearest was Bing
+  "ai sql mock interview" → `/` pos 5 (1 impression).
+- **Founder action:** request indexing in GSC for
+  `https://sqlquest.app/sql-interview-prep-plan/` and
+  `https://sqlquest.app/sql-mock-interview/` after the deploy, and note the
+  date here; the window below starts from it.
+- **Metric** `gsc_page_clicks` on each of the two pages (page slice), plus
+  `ai_landings_month` restricted to people whose door is one of the two pages
+  (`door in ('sql-interview-prep-plan', 'sql-mock-interview')`).
+- **Baseline** 0 and 0: neither page exists; no `ai:*` landing on either door.
+- **Target** by 2026-12-27, together: ≥ 10 Google clicks on the two pages in
+  the 28 days after Google first shows them, OR ≥ 3 people with an `ai:*`
+  landing on either door; and G1's panel names or cites one of the two pages
+  for prompt #11 or #13 on at least one engine.
+- **Falsification, stated in advance:** (a) both pages shown by Google for 28
+  days with < 3 clicks between them AND 0 `ai:*` landings → a general guide
+  page does not win these intents on our authority; build no more buyer-
+  question pages (#8 AI tutor, #15 Turkish) from the panel alone until one
+  of these two earns a click. (b) Google has not shown either page by
+  2026-12-13 → **UNREADABLE** on 12-27 (indexing, not content), and the
+  founder re-requests indexing. (c) The pages get clicks but the plan page's
+  `cta_plan_start` and the mock page's `cta_mockpage_free` show 0 clicks in
+  `pro_events` (reason `landing`) → the pages answer the question and send
+  nobody to the product; rewrite the CTA before writing more pages.
+- **Confounds** #187 (G1, open) adds the 15 buyer questions to llms.txt and
+  points #11 and #13 at other pages; whichever merges second makes those two
+  rows name these pages. Read the pages' own `ai:*` doors, not the home door.
+
 ### the inline Help ladder counts its own first read
 
 - **Claimed** 2026-11-22 · **Shipped** 2026-11-22 · **Read** 2026-12-20.

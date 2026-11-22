@@ -147,7 +147,7 @@
       "lastmod": "2026-11-22"
     },
     "/sql-interview-prep/": {
-      "hash": "3521a25dfdbc46c4",
+      "hash": "5b5e9b3a98fa8dc7",
       "lastmod": "2026-11-22"
     },
     "/learn-sql/": {
@@ -179,7 +179,7 @@
       "lastmod": "2026-11-22"
     },
     "/sql-exercises/": {
-      "hash": "dd46d25927518f11",
+      "hash": "122bb0c5d73fa189",
       "lastmod": "2026-11-22"
     },
     "/after-the-sql-course/": {
@@ -1716,6 +1716,14 @@
     },
     "/sql-rollup-interview-questions/": {
       "hash": "70b71ef5647df323",
+      "lastmod": "2026-11-22"
+    },
+    "/sql-interview-prep-plan/": {
+      "hash": "24af20b69e93b001",
+      "lastmod": "2026-11-22"
+    },
+    "/sql-mock-interview/": {
+      "hash": "00942f10b33b8b36",
       "lastmod": "2026-11-22"
     }
   }

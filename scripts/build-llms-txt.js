@@ -312,6 +312,8 @@ export const ENTRY_POINTS = [
   ['/app/', 'The practice app. No signup: the first challenge runs in the browser, and the Coach picks the next one from your Skillmap.'],
   ['/sql-interview-readiness-test/', 'Ten questions, no signup: a Skillmap across the nine skills and the one to fix first, optionally weighted for a named company.'],
   ['/sql-interview-prep/', 'The interview hub: every company interview page, grouped by sector.'],
+  ['/sql-interview-prep-plan/', 'A 2-week SQL interview prep plan: one of the nine skills a day, Easy to Hard questions linked for each, the readiness test first and a timed mock near the end.'],
+  ['/sql-mock-interview/', 'Timed SQL mock interviews in the browser: what each mock is (questions, minutes, pass mark), which one is free and which are Pro, and how to rehearse a timed screen.'],
   ['/sql-exercises/', 'SQL exercises by topic, with five worked solutions and the trap on each topic.'],
   ['/questions/', 'Every challenge in the bank as its own page: the prompt, the tables and the skills it measures.'],
   ['/sql-practice-comparison/', 'How SQL Quest compares with DataLemur, StrataScratch, LeetCode and HackerRank, with each competitor fact dated.'],
