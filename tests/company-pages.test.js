@@ -91,6 +91,8 @@ export const SOURCED_PAGES = {
   'paypal-sql-interview': 'PracHub DS reports (interviews Jul + Dec 2025), GeeksforGeeks DA intern report (Mar 2023), PracHub guide (Nov 2026), DataLemur (Jan 2025); the reports disagree and the page says so',
   'coinbase-sql-interview': 'PracHub DS reports (interviews Mar + Oct 2025), Aced process guide, PracHub guide (Nov 2026), DataLemur (Feb 2025); the tool is disputed and the page says so',
   'monzo-sql-interview': "Monzo's own hiring posts: Data Science (27 Apr 2026), Analytics Engineering (25 May 2026), data hiring (21 Mar 2022), a 2022 joiner's account",
+  // 2026-11-22: docs/reads/company-research-2026-11-22.md.
+  'chime-sql-interview': 'PracHub candidate reports: DS technical screen (interview Oct 2025), DS hiring-manager screen (Nov 2025), SWE (Oct 2025); no tool or analyst loop sourced and the page says so',
 };
 
 // ---------------------------------------------------------------------------

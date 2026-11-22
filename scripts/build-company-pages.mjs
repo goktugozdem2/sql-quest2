@@ -527,7 +527,7 @@ ${ld}
   <p style="font-size:13px;color:#8b98ab;margin-top:18px;">${f.n} practice challenges · ${f.easy} Easy / ${f.medium} Medium / ${f.hard} Hard · your first ${FREE_SOLVE_QUOTA} solves free · runs in the browser</p>
 </div></section>
 
-${formatSection(d, { accessed: '13 Sep 2026' })}
+${formatSection(d, { accessed: d.accessed || '13 Sep 2026' })}
 
 <section id="topics" style="border-top:1px solid rgba(255,255,255,.04);"><div class="sec">
   <span class="sl">The SQL that comes up</span>
