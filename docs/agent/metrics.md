@@ -3461,6 +3461,24 @@ same `aid` within 1 hour. Baseline **19.1%** (247 / 1,290, 2026-10-08 →
 words name question 1 — read the click rate per page from that date only.
 Guardrail: company arrivals' first-solve rate (27% baseline).
 
+## `landing_to_trial`
+
+Per page, from 2026-11-22 (C5). The number C5 is judged by: trials and
+purchases per 1,000 landing people on one page.
+
+- **Landing people:** distinct `coalesce(aid, username)` whose FIRST
+  `landing_view` carries the page's `page` path. Bots out (README
+  fingerprints: `metadata.bot`, the four viewports, `ref:aocr.org`),
+  internal usernames out, Asia/Shanghai out.
+- **Opened:** the same person's `app_opened` within 1 hour.
+- **Trial or paid:** the same person's `pro_trial_started` or
+  `pro_purchase_completed` within 28 days of the landing, from
+  `stripe-webhook` rows only (the money truth). A person counts once.
+- **Rate:** trial-or-paid ÷ landing people × 1,000. Report n beside it; below
+  300 landing people, report the counts and call the rate UNREADABLE.
+- A blog guide is read together with the company page it feeds: also count
+  guide landers whose next `landing_view` is that company page.
+
 ## `goal_gate_funnel`
 
 The goal gate (2026-09-25, ledger "every person states a goal before using

@@ -606,6 +606,12 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://sqlquest.app/blog/revolut-data-analyst-sql-screen/</loc>
+    <lastmod>2026-11-22</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://sqlquest.app/blog/validate-ai-generated-sql/</loc>
     <lastmod>2026-11-22</lastmod>
     <changefreq>monthly</changefreq>
