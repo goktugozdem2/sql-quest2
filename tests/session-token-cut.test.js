@@ -24,7 +24,10 @@ const ROOT = path.resolve(import.meta.dirname, '..');
 const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
 const app = read('src/app.jsx');
 const tok = read('supabase/migrations/20260923100000_account_session_tokens.sql');
-const prep = read('supabase/migrations/20260925100000_session_token_cut_prep.sql');
+// The cut and its rollback are built on the latest sq_save_user migration:
+// 20261122130000 (the 20260925100000 prep body + billingIssue among the
+// server keys, M-01; tests/account-access.test.js pins that relation).
+const billing = read('supabase/migrations/20261122130000_billing_issue_server_owned.sql');
 const cut = read('supabase/manual/20260925b_session_token_cut.sql');
 const cutRollback = read('supabase/manual/20260925b_session_token_cut_rollback.sql');
 const replica = read('supabase/manual/account-session-tokens-replica-test.sql');
@@ -64,8 +67,8 @@ describe('the cut file (supabase/manual/20260925b_session_token_cut.sql)', () =>
     expect(cut).toMatch(/founder's explicit go/);
   });
 
-  it('sq_save_user is the prep migration\'s body with exactly three marked changes', () => {
-    const before = fnOf(prep);
+  it('sq_save_user is the latest migration\'s body (prep + billingIssue) with exactly three marked changes', () => {
+    const before = fnOf(billing);
     let after = fnOf(cut);
     expect(after).toMatch(CUT_SAVE);
     after = after.replace(CUT_SAVE, STEP1);
@@ -122,9 +125,9 @@ describe('the cut file (supabase/manual/20260925b_session_token_cut.sql)', () =>
     expect(cut.trim().endsWith("notify pgrst, 'reload schema';")).toBe(true);
   });
 
-  it('the rollback puts back step 1 exactly: 20260923100000\'s load, the prep\'s save, no helper', () => {
+  it('the rollback puts back step 1 exactly: 20260923100000\'s load, the latest migration\'s save, no helper', () => {
     expect(fnOf(cutRollback, 'sq_load_account')).toBe(fnOf(tok, 'sq_load_account'));
-    expect(fnOf(cutRollback)).toBe(fnOf(prep));
+    expect(fnOf(cutRollback)).toBe(fnOf(billing));
     expect(cutRollback).toContain('drop function if exists public.sq_session_trusted_caller();');
     expect(cutRollback).not.toMatch(/raise exception 'session token required'/);
   });

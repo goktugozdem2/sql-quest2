@@ -2,7 +2,8 @@
 --
 -- Puts back the step-1 behaviour: sq_load_account as 20260923100000 wrote it
 -- (records a missing or wrong token, refuses nothing) and sq_save_user as
--- 20260925100000 wrote it (the same, plus the password-less-row rule), and
+-- 20260925100000 wrote it (the same, plus the password-less-row rule) with
+-- billingIssue among the server-owned keys (20261122130000, M-01), and
 -- drops sq_session_trusted_caller. Sessions, secrets and misses are kept.
 -- Anyone signed out by the cut stays signed out until they sign in (their
 -- local progress is kept by the client and merged on sign-in); nobody else
@@ -67,7 +68,8 @@ declare
     'unsubToken', 'stripeCustomerId', 'stripeSessionId',
     'proStatus', 'proType', 'proExpiry', 'proAutoRenew', 'proGrantReason',
     'emailOptOut', 'trialReminder_2days_sent_at', 'trialReminder_1day_sent_at',
-    'checkoutAbandonEmailAt', 'lastSkillDecayEmail', 'lastWelcomeBackEmail'
+    'checkoutAbandonEmailAt', 'lastSkillDecayEmail', 'lastWelcomeBackEmail',
+    'billingIssue' -- M-01 (2026-11-22): written by stripe-webhook only
   ];
   plan_keys constant text[] := array[
     'proStatus', 'proType', 'proExpiry', 'proAutoRenew', 'proGrantReason',

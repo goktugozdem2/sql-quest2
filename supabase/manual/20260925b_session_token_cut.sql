@@ -30,8 +30,9 @@
 --     carries one (as today) — a save without one is refused;
 --   * the service role (JWT role service_role) and a direct database session
 --     are never refused (sq_session_trusted_caller);
---   * the regression guard, the server-owned fields, the 20260925 password
---     rule, a username with no row (read answers empty, as before).
+--   * the regression guard, the server-owned fields (billingIssue among them
+--     since 20261122130000, M-01), the 20260925 password rule, a username
+--     with no row (read answers empty, as before).
 --
 -- Errcode 28000 (PostgREST answers 403); the client matches the MESSAGE text
 -- "session token required" (src/utils/session-token.js isSessionTokenRequired),
@@ -138,7 +139,8 @@ declare
     'unsubToken', 'stripeCustomerId', 'stripeSessionId',
     'proStatus', 'proType', 'proExpiry', 'proAutoRenew', 'proGrantReason',
     'emailOptOut', 'trialReminder_2days_sent_at', 'trialReminder_1day_sent_at',
-    'checkoutAbandonEmailAt', 'lastSkillDecayEmail', 'lastWelcomeBackEmail'
+    'checkoutAbandonEmailAt', 'lastSkillDecayEmail', 'lastWelcomeBackEmail',
+    'billingIssue' -- M-01 (2026-11-22): written by stripe-webhook only
   ];
   plan_keys constant text[] := array[
     'proStatus', 'proType', 'proExpiry', 'proAutoRenew', 'proGrantReason',

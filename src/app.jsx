@@ -45,6 +45,7 @@ import { QUESTIONS as READINESS_QUESTIONS, READINESS_SKILLS, READINESS_RECORD_KE
 import { paidWallFor, isColdStart, practiceSolves, previewSwapFor } from './utils/paid-wall.js';
 import { priceRegionFor, planPrices, checkoutLinkFor } from './utils/regional-price.js';
 import { trialEndingLine } from './utils/trial-ending.js';
+import { billingIssueLine, billingIssueDays } from './utils/billing-issue.js';
 import { wantsTrial, buildCheckoutSessionBody, requestCheckoutSession, launchWithFallback, checkoutInFlight, warmCheckoutSession, CHECKOUT_REENTRY_MS, trialOffered, TRIAL_CARD_COPY, TRIAL_TERMS, quotaWallHeadline, currencyLine, quotaWallCompanyLine } from './utils/checkout-session.js';
 import { companySetGate, companySetFreeIds, companySetProgress, quietAskDecision, deadlineOfferFor, deadlineEventMeta, withEarlyWall, pickProMockId, FREE_MOCK_ID, quotaGate, FREE_SOLVE_QUOTA, quotaFreePaths, QUOTA_FREE_PATH_COPY, milestoneTier } from './utils/free-tier-boundary.js';
 import { expandStageChallenges, placementStartIndex as roadmapPlacementStartIndex } from './utils/roadmap.js';
@@ -6445,6 +6446,10 @@ function SQLQuest() {
   // for everyone not in a Stripe trial. Read only by the trial-ending line
   // (M-10, src/utils/trial-ending.js).
   const [stripeTrialEnd, setStripeTrialEnd] = useState(null);
+  // A failed Stripe charge still open (M-01): `billingIssue` on the record,
+  // written and cleared by stripe-webhook only (server-owned). Set by
+  // loadUserSession; read only by the billing line (src/utils/billing-issue.js).
+  const [billingIssueRecord, setBillingIssueRecord] = useState(null);
   const [showProModal, setShowProModal] = useState(false);
   // Collision catcher (2026-09-06, paywall-surfaces T2 / plan D-2). Replaces
   // the locked-Hard soft toast: null = closed, { challengeId } = open for the
@@ -17620,6 +17625,9 @@ CRITICAL RULES:
       // `monthly` and was saved back to the cloud, on every single login. See
       // src/utils/pro-access.js for the incident and the numbers. The client
       // now only READS what Stripe's webhook wrote; resolveProAccess is pure.
+      // M-01: whatever the plan says — a failed first charge after a trial
+      // can leave proStatus false while the invoice is still payable.
+      setBillingIssueRecord(userData.billingIssue && typeof userData.billingIssue === 'object' ? userData.billingIssue : null);
       if (userData.proStatus === true) {
         const access = resolveProAccess(userData);
         setUserProStatus(access.isPro);
@@ -20007,6 +20015,7 @@ CRITICAL RULES:
     setProType(null);
     setProExpiry(null);
     setProAutoRenew(false);
+    setBillingIssueRecord(null);
     setShowAuth(false);
     suppressSoundsRef.current = false;
     if (preserveFoundationResume && resumeLessonId) {
@@ -20804,6 +20813,7 @@ CRITICAL RULES:
     setProType(null);
     setProExpiry(null);
     setProAutoRenew(false);
+    setBillingIssueRecord(null);
     // Reset performance tracking
     setChallengeAttempts([]);
     setDailyChallengeHistory([]);
@@ -25690,6 +25700,26 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
     const day = new Date().toISOString().slice(0, 10);
     trackActivationEvent('trial_day5_shown', { plan: proType || null, hoursLeft: trialEnding.hoursLeft, surface: activeTab, priceRegion }, { onceKey: `trial_day5_shown_${day}` });
   }, [trialEndingOnSurface]);
+
+  // A failed Stripe charge, still open (M-01, 2026-11-22): one line under
+  // the header, on every tab, "Your card didn't go through — fix it in
+  // Stripe", opening the invoice's own Stripe page. Nothing without the
+  // field or with a link that is not https://invoice.stripe.com. Pure half
+  // src/utils/billing-issue.js; guards tests/billing-issue.test.js. Above
+  // the early returns, like every hook.
+  const billingIssue = window.FF?.feature?.('billingIssueLine') === true
+    ? billingIssueLine({ billingIssue: billingIssueRecord })
+    : null;
+  // Once per page session per person (a ref, not onceKey — onceKey is
+  // once per browser forever, and a card can fail again next month).
+  const billingIssueShownRef = useRef(null);
+  useEffect(() => {
+    if (!billingIssue || isSessionLoading) return;
+    const who = currentUser || 'guest';
+    if (billingIssueShownRef.current === who) return;
+    billingIssueShownRef.current = who;
+    trackActivationEvent('billing_issue_shown', { days: billingIssueDays({ billingIssue: billingIssueRecord }), isPro: !!userProStatus, plan: proType || null });
+  }, [!!billingIssue, isSessionLoading, currentUser]);
 
   // M-07: the inline card belongs to the moment of the wall; opening a
   // challenge (a solved one, the daily) puts it away.
@@ -34540,6 +34570,27 @@ RULES:
 
       <div className="max-w-7xl mx-auto px-4 py-3">
         {/* Compact Progress Row - Daily, Weekly Report, 30-Day */}
+
+        {/* A failed Stripe charge, still open (M-01, 2026-11-22). Two of the
+            four trials that reached the day-7 charge failed it; one never
+            recovered, and the app said nothing. One line, every tab, first
+            thing under the header. A status, not an ask: no accent — the
+            warning hue marks it, the link opens Stripe's invoice page. */}
+        {billingIssue && (
+          <div data-testid="billing-issue-line" role="status" className="mb-3 rounded-md px-4 py-2 text-sm flex flex-wrap items-center gap-x-3 gap-y-1" style={{ background: '#16181F', border: '1px solid #2A2E38', borderLeft: '3px solid #FFB020', color: '#F2F0EA' }}>
+            <a
+              href={billingIssue.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-testid="billing-issue-link"
+              onClick={() => trackActivationEvent('billing_issue_clicked', { days: billingIssueDays({ billingIssue: billingIssueRecord }), isPro: !!userProStatus, plan: proType || null })}
+              className="font-medium underline underline-offset-2"
+              style={{ color: '#F2F0EA' }}
+            >
+              {billingIssue.text}
+            </a>
+          </div>
+        )}
 
         {/* Interview-first status strip (2026-09-18): WHO · WHEN · WHERE I AM ·
             HOW FAR. Under the header, above the tab strip, on every tab — the
