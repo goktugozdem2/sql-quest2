@@ -3,1695 +3,1719 @@
   "updated": "2026-11-22",
   "pages": {
     "/": {
-      "hash": "8088799f0afedaae",
-      "lastmod": "2026-11-22"
+      "hash": "76582fa984d3bf65",
+      "lastmod": "2026-11-21"
     },
     "/turkce-sql-ogren/": {
-      "hash": "02e7c2f30c1cc67e",
-      "lastmod": "2026-11-22"
+      "hash": "e8cdfc555f86efbf",
+      "lastmod": "2026-11-21"
     },
     "/finans-sql/": {
-      "hash": "d07237f9606aa559",
-      "lastmod": "2026-11-22"
+      "hash": "5964bb930c6d8b9d",
+      "lastmod": "2026-11-21"
     },
     "/gayrimenkul-sql/": {
-      "hash": "8842f61895355820",
-      "lastmod": "2026-11-22"
+      "hash": "32cfc87709306e47",
+      "lastmod": "2026-11-21"
     },
     "/uretim-sql/": {
-      "hash": "dad6f00d2cec1d44",
-      "lastmod": "2026-11-22"
+      "hash": "ba7ec44cfb171dbf",
+      "lastmod": "2026-11-21"
     },
     "/meta-sql-interview/": {
-      "hash": "6180e0febfb32c31",
+      "hash": "8c344ecfb5ad424f",
       "lastmod": "2026-11-22"
     },
     "/google-sql-interview/": {
-      "hash": "0f56e1bef327dc5e",
+      "hash": "3edf61c114a36d2e",
       "lastmod": "2026-11-22"
     },
     "/amazon-sql-interview/": {
-      "hash": "cc8f563c2023dc53",
+      "hash": "10579948ab5e246e",
       "lastmod": "2026-11-22"
     },
     "/netflix-sql-interview/": {
-      "hash": "2b9a0e104c095963",
+      "hash": "8a912697d9e31600",
       "lastmod": "2026-11-22"
     },
     "/stripe-sql-interview/": {
-      "hash": "552d7bb1af211f76",
+      "hash": "e87def3c2d5aa3e6",
       "lastmod": "2026-11-22"
     },
     "/plaid-sql-interview/": {
-      "hash": "dee49a01e331111e",
+      "hash": "6cde0b5e59e4cfd9",
       "lastmod": "2026-11-22"
     },
     "/ramp-sql-interview/": {
-      "hash": "276f4a159ff4cb11",
+      "hash": "992163d690dba349",
       "lastmod": "2026-11-22"
     },
     "/revolut-sql-interview/": {
-      "hash": "6cf5d6e00ace0cb5",
+      "hash": "d7fab7ee7f131c85",
       "lastmod": "2026-11-22"
     },
     "/capital-one-sql-interview/": {
-      "hash": "abd2095a014fa3b4",
+      "hash": "771737d12121c309",
       "lastmod": "2026-11-22"
     },
     "/wise-sql-interview/": {
-      "hash": "6f3ba2efbf04f866",
+      "hash": "a8c7aee32773362b",
       "lastmod": "2026-11-22"
     },
     "/apple-sql-interview/": {
-      "hash": "a4fb1db1f0ec6511",
+      "hash": "54b92ef593b6a756",
       "lastmod": "2026-11-22"
     },
     "/uber-sql-interview/": {
-      "hash": "ea1ae04c1bdcf70c",
+      "hash": "eafd75d8bfae1f48",
       "lastmod": "2026-11-22"
     },
     "/airbnb-sql-interview/": {
-      "hash": "bda24011b772ded3",
+      "hash": "f98968ee6410d27a",
       "lastmod": "2026-11-22"
     },
     "/databricks-sql-interview/": {
-      "hash": "24281eb74e27a02e",
+      "hash": "4c0828ac0a80dca5",
       "lastmod": "2026-11-22"
     },
     "/shopify-sql-interview/": {
-      "hash": "578d39ab75c14728",
+      "hash": "36dad2f10bf347f8",
       "lastmod": "2026-11-22"
     },
     "/spotify-sql-interview/": {
-      "hash": "a09a697768aade56",
+      "hash": "2c4cba69a6df29c7",
       "lastmod": "2026-11-22"
     },
     "/jpmorgan-sql-interview/": {
-      "hash": "5c23e90cad055971",
+      "hash": "1a3b4c8435b899b8",
       "lastmod": "2026-11-22"
     },
     "/snowflake-sql-interview/": {
-      "hash": "4b1a854c019b523e",
+      "hash": "1cc5f2345c1df9a3",
       "lastmod": "2026-11-22"
     },
     "/practice-sql-no-setup/": {
-      "hash": "8ca84d40213873f7",
+      "hash": "94d8f9acd4bc89a4",
       "lastmod": "2026-11-22"
     },
     "/sql-quiz/": {
-      "hash": "a0a28ec78bab2f56",
-      "lastmod": "2026-11-22"
+      "hash": "135a1e613abdb445",
+      "lastmod": "2026-11-21"
     },
     "/weekly/": {
       "hash": "be53fde091b16ce7",
       "lastmod": "2026-11-21"
     },
     "/fraud-analytics-sql/": {
-      "hash": "635266485a8a8472",
-      "lastmod": "2026-11-22"
+      "hash": "1f4fe95f4c779af0",
+      "lastmod": "2026-11-21"
     },
     "/vs-datalemur/": {
-      "hash": "385d68ee27dd7ab6",
+      "hash": "86d89d012c031bbb",
       "lastmod": "2026-11-22"
     },
     "/datalemur-karsilastirma/": {
-      "hash": "308ca797446a023b",
-      "lastmod": "2026-11-22"
+      "hash": "c71441564785005e",
+      "lastmod": "2026-11-21"
     },
     "/vs-sqlbolt/": {
-      "hash": "197e6ba039403eb4",
+      "hash": "798fa6809595810f",
       "lastmod": "2026-11-22"
     },
     "/vs-sqlzoo/": {
-      "hash": "5a02a21c2b934976",
+      "hash": "342910d10edb0e4c",
       "lastmod": "2026-11-22"
     },
     "/vs-stratascratch/": {
-      "hash": "7dd827000f7edae5",
+      "hash": "972eb477add9fc6d",
       "lastmod": "2026-11-22"
     },
     "/vs-leetcode-sql/": {
-      "hash": "5e5e38f7e26b9cae",
+      "hash": "3169cca1d75d03cc",
       "lastmod": "2026-11-22"
     },
     "/vs-hackerrank-sql/": {
-      "hash": "51ad10a596af08f7",
+      "hash": "2e7faca92d48d7c4",
       "lastmod": "2026-11-22"
     },
     "/sql-practice-comparison/": {
-      "hash": "0993c90c91a09769",
+      "hash": "7bb1f4b5ab48b01c",
       "lastmod": "2026-11-22"
     },
     "/best-sql-practice-sites/": {
-      "hash": "3c3abef82218d9a5",
+      "hash": "012ace1b2a93ed82",
       "lastmod": "2026-11-22"
     },
     "/sql-interview-prep/": {
-      "hash": "1d07c7b0d7d19198",
+      "hash": "2d91d7382f6b6081",
       "lastmod": "2026-11-22"
     },
     "/learn-sql/": {
-      "hash": "5a2bc2c5385311ed",
+      "hash": "29ac419fc574507d",
       "lastmod": "2026-11-22"
     },
     "/sql-cheat-sheet/": {
-      "hash": "37f239ffcd8c1911",
-      "lastmod": "2026-11-22"
+      "hash": "0aed255d8d77e02a",
+      "lastmod": "2026-11-21"
     },
     "/sql-tutorial/": {
-      "hash": "eb7609c8c846987c",
+      "hash": "93ac804b2a68e003",
       "lastmod": "2026-11-22"
     },
     "/learn-sql-for-beginners/": {
-      "hash": "2be89d3b6f2e0c3c",
-      "lastmod": "2026-11-22"
+      "hash": "30a6fa9bc7eab98e",
+      "lastmod": "2026-11-21"
     },
     "/sql-find-duplicates/": {
-      "hash": "16705051d2dc83b0",
-      "lastmod": "2026-11-22"
+      "hash": "929717e529e047b6",
+      "lastmod": "2026-11-21"
     },
     "/sql-cte-vs-subquery/": {
-      "hash": "4e29518a210ffb68",
-      "lastmod": "2026-11-22"
+      "hash": "9e6d90b30c4eadd4",
+      "lastmod": "2026-11-21"
     },
     "/sql-interview-questions-data-analyst/": {
-      "hash": "769e2e82330ef9fd",
-      "lastmod": "2026-11-22"
+      "hash": "004b0113d3b9a539",
+      "lastmod": "2026-11-21"
     },
     "/sql-exercises/": {
-      "hash": "9e896147e85a79fd",
+      "hash": "a4f6df9c31c35037",
       "lastmod": "2026-11-22"
     },
     "/after-the-sql-course/": {
-      "hash": "f9ee54f27d64359b",
-      "lastmod": "2026-11-22"
+      "hash": "c1637e9aef6b4840",
+      "lastmod": "2026-11-21"
     },
     "/after-bootcamp/": {
-      "hash": "fe28ffe6ea25ad07",
+      "hash": "a24ba08820a5fafe",
       "lastmod": "2026-11-22"
     },
     "/sql-for-the-ai-era/": {
-      "hash": "25637de75bd73375",
-      "lastmod": "2026-11-22"
+      "hash": "c3125ee2c5d41326",
+      "lastmod": "2026-11-21"
     },
     "/challenges/": {
-      "hash": "80c8a1e7b314200a",
+      "hash": "9afaadf8101295db",
       "lastmod": "2026-11-22"
     },
     "/challenges/aggregation/": {
-      "hash": "b822487f2d525209",
+      "hash": "bb334d5bea436c6a",
       "lastmod": "2026-11-22"
     },
     "/challenges/case-when/": {
-      "hash": "f64731633eb89bdc",
-      "lastmod": "2026-11-22"
+      "hash": "ab3645e3d5bd235e",
+      "lastmod": "2026-11-21"
     },
     "/challenges/cte/": {
-      "hash": "7b3e6ff06b79cca9",
+      "hash": "8865d702233aacf5",
       "lastmod": "2026-11-22"
     },
     "/challenges/date-functions/": {
-      "hash": "af2255b3c59bedde",
+      "hash": "6a27d3b555d2686c",
       "lastmod": "2026-11-22"
     },
     "/challenges/null-handling/": {
-      "hash": "1edcc2324e9e4813",
+      "hash": "9e976da36ca705d5",
       "lastmod": "2026-11-22"
     },
     "/challenges/string-functions/": {
-      "hash": "da826579cc5e8f79",
-      "lastmod": "2026-11-22"
+      "hash": "21353c70b63850eb",
+      "lastmod": "2026-11-21"
     },
     "/challenges/joins/": {
-      "hash": "2ddebed35dc21ff3",
-      "lastmod": "2026-11-22"
+      "hash": "b90e4cd15a7242e5",
+      "lastmod": "2026-11-21"
     },
     "/challenges/subqueries/": {
-      "hash": "34735ba93194d674",
-      "lastmod": "2026-11-22"
+      "hash": "035c63d2419f07fd",
+      "lastmod": "2026-11-21"
     },
     "/challenges/window-functions/": {
-      "hash": "82b0a23c66d503b7",
+      "hash": "8f6075fc1803810f",
       "lastmod": "2026-11-22"
     },
     "/challenges/ranking-functions/": {
-      "hash": "3f8dc47cd5a7a895",
+      "hash": "cdd1788be504cdf9",
       "lastmod": "2026-11-22"
     },
     "/challenges/advanced/": {
-      "hash": "7468c13a8a62ae36",
-      "lastmod": "2026-11-22"
+      "hash": "f59e10c4792b71b1",
+      "lastmod": "2026-11-21"
     },
     "/blog/": {
-      "hash": "9d3c8987421ff85c",
-      "lastmod": "2026-11-22"
+      "hash": "8b08a6672e952c85",
+      "lastmod": "2026-11-21"
     },
     "/blog/faang-sql-interview-guide/": {
-      "hash": "cf31d21ee5c99d8c",
-      "lastmod": "2026-11-22"
+      "hash": "b9c176aa8aa44eff",
+      "lastmod": "2026-11-21"
     },
     "/blog/sql-joins-explained/": {
-      "hash": "4c2b2263410bc369",
-      "lastmod": "2026-11-22"
+      "hash": "010908b4493d162b",
+      "lastmod": "2026-11-21"
     },
     "/blog/window-functions-tutorial/": {
-      "hash": "7424ac2dbeeccac4",
-      "lastmod": "2026-11-22"
+      "hash": "95099f665c7f0e2a",
+      "lastmod": "2026-11-21"
     },
     "/blog/null-handling-mistakes/": {
-      "hash": "0b8f1ff4c38f505e",
-      "lastmod": "2026-11-22"
+      "hash": "20158004d27b2093",
+      "lastmod": "2026-11-21"
     },
     "/blog/sql-cte-tutorial/": {
-      "hash": "ec617f088ab6b62a",
-      "lastmod": "2026-11-22"
+      "hash": "2fd837f3a1228346",
+      "lastmod": "2026-11-21"
     },
     "/blog/sql-for-fraud-analytics/": {
-      "hash": "27332abcda6c721a",
-      "lastmod": "2026-11-22"
+      "hash": "e1f63fc8f1b1d374",
+      "lastmod": "2026-11-21"
     },
     "/blog/sql-group-by-tutorial/": {
-      "hash": "41534dac1f3cf297",
-      "lastmod": "2026-11-22"
+      "hash": "51d525c48228e8a5",
+      "lastmod": "2026-11-21"
     },
     "/blog/sql-case-when-tutorial/": {
-      "hash": "0c2cb35eca3dc366",
-      "lastmod": "2026-11-22"
+      "hash": "c273f30aaff488ca",
+      "lastmod": "2026-11-21"
     },
     "/privacy/": {
-      "hash": "835f62e47dacb046",
-      "lastmod": "2026-11-22"
+      "hash": "b2ac2d31c67d871c",
+      "lastmod": "2026-09-14"
     },
     "/terms/": {
-      "hash": "75ff938b54e7132a",
-      "lastmod": "2026-11-22"
+      "hash": "2d6698c56573fe49",
+      "lastmod": "2026-09-14"
     },
     "/refund/": {
-      "hash": "c36464e9b178d109",
-      "lastmod": "2026-11-22"
+      "hash": "94f022122dd923d7",
+      "lastmod": "2026-09-14"
     },
     "/nvidia-sql-interview/": {
-      "hash": "f8338a36c335af25",
+      "hash": "99c8de87a3243ab3",
       "lastmod": "2026-11-22"
     },
     "/openai-sql-interview/": {
-      "hash": "e187bf13cea8e9c9",
+      "hash": "d040710f5b6fd9d8",
       "lastmod": "2026-11-22"
     },
     "/anthropic-sql-interview/": {
-      "hash": "d826f540af76edbd",
+      "hash": "0951664122ef2379",
       "lastmod": "2026-11-22"
     },
     "/tesla-sql-interview/": {
-      "hash": "41a18eab9db822a7",
+      "hash": "c8fa0b3ee3839b6a",
       "lastmod": "2026-11-22"
     },
     "/morgan-stanley-sql-interview/": {
-      "hash": "fb1f12e8251ab4f3",
+      "hash": "5def85c02f33db28",
       "lastmod": "2026-11-22"
     },
     "/blog/sql-for-ai-company-interviews/": {
-      "hash": "72028b099de9eb38",
-      "lastmod": "2026-11-22"
+      "hash": "e5327dbddfe3c064",
+      "lastmod": "2026-11-21"
     },
     "/blog/time-series-sql-hardware-interviews/": {
-      "hash": "5722150538d4f0b9",
-      "lastmod": "2026-11-22"
+      "hash": "4eec78e6687eb759",
+      "lastmod": "2026-11-21"
     },
     "/blog/left-join-vs-inner-join/": {
-      "hash": "358d4f69e4971bf2",
-      "lastmod": "2026-11-22"
+      "hash": "fefe5e54c117c5b1",
+      "lastmod": "2026-11-21"
     },
     "/blog/what-is-a-cte-in-sql/": {
-      "hash": "90b388620e25b184",
-      "lastmod": "2026-11-22"
+      "hash": "fd2c6cce49624f26",
+      "lastmod": "2026-11-21"
     },
     "/blog/recursive-cte-explained/": {
-      "hash": "0b87ebc249c5ed7b",
-      "lastmod": "2026-11-22"
+      "hash": "21f1275f198f3e1d",
+      "lastmod": "2026-11-21"
     },
     "/blog/row-number-vs-rank-vs-dense-rank/": {
-      "hash": "94bec3e5459910df",
-      "lastmod": "2026-11-22"
+      "hash": "8b197b7606abe20a",
+      "lastmod": "2026-11-21"
     },
     "/blog/where-vs-having/": {
-      "hash": "81dbdd0e098b00e1",
+      "hash": "97c37f10a6c42a32",
       "lastmod": "2026-11-22"
     },
     "/blog/is-null-vs-equals-null/": {
-      "hash": "0ab401fb8abcfcc0",
-      "lastmod": "2026-11-22"
+      "hash": "ed0e56815c532335",
+      "lastmod": "2026-11-21"
     },
     "/blog/sql-running-total/": {
-      "hash": "8f6c530666a01751",
-      "lastmod": "2026-11-22"
+      "hash": "35b29c8ed821e243",
+      "lastmod": "2026-11-21"
     },
     "/blog/sql-anti-join/": {
-      "hash": "f14498fb39a69b00",
-      "lastmod": "2026-11-22"
+      "hash": "28f1ee516c483418",
+      "lastmod": "2026-11-21"
     },
     "/blog/sql-join-nedir/": {
-      "hash": "d5a6f815df80427b",
-      "lastmod": "2026-11-22"
+      "hash": "548b410a2e1ea70e",
+      "lastmod": "2026-11-21"
     },
     "/blog/sql-cte-nedir/": {
-      "hash": "e077b8a43e73d876",
-      "lastmod": "2026-11-22"
+      "hash": "490992077540a5ee",
+      "lastmod": "2026-11-21"
     },
     "/blog/capital-one-codesignal-data-analyst-assessment/": {
-      "hash": "53951abbeaf6be7f",
-      "lastmod": "2026-11-22"
+      "hash": "5d5ed3590fc65f70",
+      "lastmod": "2026-11-21"
     },
     "/blog/validate-ai-generated-sql/": {
-      "hash": "ce2559f9935a333e",
-      "lastmod": "2026-11-22"
+      "hash": "70f6ffd8e1c16cb3",
+      "lastmod": "2026-11-21"
     },
     "/doordash-sql-interview/": {
-      "hash": "19a611b00544bfc8",
-      "lastmod": "2026-11-22"
+      "hash": "d00425b6b650ae1f",
+      "lastmod": "2026-11-21"
     },
     "/goldman-sachs-sql-interview/": {
-      "hash": "956b01a31816c86e",
-      "lastmod": "2026-11-22"
+      "hash": "bb56147bece8fc96",
+      "lastmod": "2026-11-21"
     },
     "/walmart-sql-interview/": {
-      "hash": "6802be43163f3fe5",
-      "lastmod": "2026-11-22"
+      "hash": "f27377bd7e5bb5f5",
+      "lastmod": "2026-11-21"
     },
     "/tiktok-sql-interview/": {
-      "hash": "05eb8bb888927d61",
-      "lastmod": "2026-11-22"
+      "hash": "17b1356b16c2eda0",
+      "lastmod": "2026-11-21"
     },
     "/linkedin-sql-interview/": {
-      "hash": "fd8ec42798d60fab",
-      "lastmod": "2026-11-22"
+      "hash": "6153d586414cb0f3",
+      "lastmod": "2026-11-21"
     },
     "/microsoft-sql-interview/": {
-      "hash": "15cf66a45f8340a7",
-      "lastmod": "2026-11-22"
+      "hash": "360f31e87f65391b",
+      "lastmod": "2026-11-21"
     },
     "/bloomberg-sql-interview/": {
-      "hash": "cf5eaa8a81085b4c",
+      "hash": "6930c62963a6655b",
       "lastmod": "2026-11-22"
     },
     "/paypal-sql-interview/": {
-      "hash": "82f7e50e4e1d73e8",
+      "hash": "2dbd3d6947d67072",
       "lastmod": "2026-11-22"
     },
     "/coinbase-sql-interview/": {
-      "hash": "d12e3470ae631fb8",
+      "hash": "91d323240ce0c52f",
       "lastmod": "2026-11-22"
     },
     "/monzo-sql-interview/": {
-      "hash": "37f18a9a72eeee8e",
+      "hash": "19e7fa483b49e657",
+      "lastmod": "2026-11-22"
+    },
+    "/chime-sql-interview/": {
+      "hash": "6829aeb804790b01",
       "lastmod": "2026-11-22"
     },
     "/sql-interview-readiness-test/": {
-      "hash": "42b43199dd355835",
+      "hash": "1711b11608a21a2f",
       "lastmod": "2026-11-22"
     },
     "/sql-tools/": {
-      "hash": "8a998f92da06b1d4",
-      "lastmod": "2026-11-22"
+      "hash": "a19217605c7bae40",
+      "lastmod": "2026-11-21"
     },
     "/sql-query-checker/": {
-      "hash": "4ae005770b45df68",
-      "lastmod": "2026-11-22"
+      "hash": "0b9b29b052ad0f1b",
+      "lastmod": "2026-11-21"
     },
     "/sql-query-explainer/": {
-      "hash": "6c3f92cd492e6224",
-      "lastmod": "2026-11-22"
+      "hash": "dfddb73637535f1c",
+      "lastmod": "2026-11-21"
     },
     "/sql-query-optimizer/": {
-      "hash": "73dfee372d5cc134",
-      "lastmod": "2026-11-22"
+      "hash": "2a8e2ae238f2838f",
+      "lastmod": "2026-11-21"
     },
     "/datalemur-alternatives/": {
-      "hash": "d880a855ce101d29",
+      "hash": "1ab9174e015926d3",
       "lastmod": "2026-11-22"
     },
     "/stratascratch-alternatives/": {
-      "hash": "eff2c0d73ea84caf",
+      "hash": "811c5d3bbbf985ff",
       "lastmod": "2026-11-22"
     },
     "/vs-chatgpt/": {
-      "hash": "b9eb117a65c232f1",
-      "lastmod": "2026-11-22"
+      "hash": "84e2a477935b7f92",
+      "lastmod": "2026-11-21"
     },
     "/questions/": {
-      "hash": "411f4f06c8baec39",
+      "hash": "f9c8c29ec10a808f",
       "lastmod": "2026-11-22"
     },
     "/questions/class-survival-breakdown/": {
-      "hash": "97f82b6408a8d467",
-      "lastmod": "2026-11-22"
+      "hash": "6ddfec453157e8a3",
+      "lastmod": "2026-11-21"
     },
     "/questions/salary-percentile-ranking/": {
-      "hash": "bbbf6cc992de4591",
-      "lastmod": "2026-11-22"
+      "hash": "6f8fd7b13bcf6bb4",
+      "lastmod": "2026-11-21"
     },
     "/questions/wealthy-survivor-profile/": {
-      "hash": "fa797a65e6cbeb5c",
-      "lastmod": "2026-11-22"
+      "hash": "3b320e9c5b3aa983",
+      "lastmod": "2026-11-21"
     },
     "/questions/department-roster-with-group-concat/": {
-      "hash": "ca22747105695edc",
-      "lastmod": "2026-11-22"
+      "hash": "75591137780a13a0",
+      "lastmod": "2026-11-21"
     },
     "/questions/movie-rating-tier-breakdown/": {
-      "hash": "83206bdd4153c50a",
-      "lastmod": "2026-11-22"
+      "hash": "47d91e7191c767ca",
+      "lastmod": "2026-11-21"
     },
     "/questions/full-survival-dashboard-by-class/": {
-      "hash": "4311c5f885b45a24",
-      "lastmod": "2026-11-22"
+      "hash": "279c134fb9484b7c",
+      "lastmod": "2026-11-21"
     },
     "/questions/genre-financial-report/": {
-      "hash": "ed4e54b0dc12134b",
-      "lastmod": "2026-11-22"
+      "hash": "6e6d06e84d30a237",
+      "lastmod": "2026-11-21"
     },
     "/questions/department-compensation-report/": {
-      "hash": "65e6525d258b6292",
-      "lastmod": "2026-11-22"
+      "hash": "fd1ad793011bead6",
+      "lastmod": "2026-11-21"
     },
     "/questions/order-sessionization-by-customer/": {
-      "hash": "a0000dff465fb6b3",
-      "lastmod": "2026-11-22"
+      "hash": "3ebacf1b63c75811",
+      "lastmod": "2026-11-21"
     },
     "/questions/consistent-director-analysis/": {
-      "hash": "1beb49aaea774f59",
-      "lastmod": "2026-11-22"
+      "hash": "88c70965b634a244",
+      "lastmod": "2026-11-21"
     },
     "/questions/cumulative-distinct-customers-over-time/": {
-      "hash": "328beb8b7021dcb3",
-      "lastmod": "2026-11-22"
+      "hash": "bf87c9648d463e2f",
+      "lastmod": "2026-11-21"
     },
     "/questions/first-and-last-order-per-customer/": {
-      "hash": "b7a85e487e10bd2f",
-      "lastmod": "2026-11-22"
+      "hash": "6531b959d16d6852",
+      "lastmod": "2026-11-21"
     },
     "/questions/cumulative-revenue-share-pareto/": {
-      "hash": "34986a817c030d44",
-      "lastmod": "2026-11-22"
+      "hash": "6dd207eb23c9ba97",
+      "lastmod": "2026-11-21"
     },
     "/questions/pivot-order-status-by-country/": {
-      "hash": "a12e5135843a0c00",
-      "lastmod": "2026-11-22"
+      "hash": "b54d1537605e2d9e",
+      "lastmod": "2026-11-21"
     },
     "/questions/genre-box-office-report/": {
-      "hash": "200fe7bf14605e5e",
-      "lastmod": "2026-11-22"
+      "hash": "51fe2b8a488ebd19",
+      "lastmod": "2026-11-21"
     },
     "/questions/below-department-average/": {
-      "hash": "e8401286ac78df62",
-      "lastmod": "2026-11-22"
+      "hash": "a84485124e3854d9",
+      "lastmod": "2026-11-21"
     },
     "/questions/employees-earning-more-than-manager/": {
-      "hash": "4a22035e2d595c90",
-      "lastmod": "2026-11-22"
+      "hash": "370162e1fe39deb4",
+      "lastmod": "2026-11-21"
     },
     "/questions/highest-total-salary-budget-department/": {
-      "hash": "ed7a1bb6d035b673",
-      "lastmod": "2026-11-22"
+      "hash": "442398214e0a54b8",
+      "lastmod": "2026-11-21"
     },
     "/questions/customers-who-never-ordered/": {
-      "hash": "e1ccea38f7e8a633",
-      "lastmod": "2026-11-22"
+      "hash": "b8ed1a264cdc3747",
+      "lastmod": "2026-11-21"
     },
     "/questions/top-spender-per-country/": {
-      "hash": "74308a55f7efd1f8",
-      "lastmod": "2026-11-22"
+      "hash": "700494c33d539958",
+      "lastmod": "2026-11-21"
     },
     "/questions/employees-with-similar-salaries/": {
-      "hash": "bcfb09bea0e7637a",
-      "lastmod": "2026-11-22"
+      "hash": "f60ea620e3b8f659",
+      "lastmod": "2026-11-21"
     },
     "/questions/moving-average-with-dynamic-window/": {
-      "hash": "837d3beaae44aadc",
-      "lastmod": "2026-11-22"
+      "hash": "0546af4c70ff66a2",
+      "lastmod": "2026-11-21"
     },
     "/questions/salary-rank-within-department/": {
-      "hash": "7b2a9bbb1ecc053b",
-      "lastmod": "2026-11-22"
+      "hash": "2a048ea9e4f4800b",
+      "lastmod": "2026-11-21"
     },
     "/questions/running-total-revenue/": {
-      "hash": "59a5e8805b65713c",
-      "lastmod": "2026-11-22"
+      "hash": "affa140354f0d34e",
+      "lastmod": "2026-11-21"
     },
     "/questions/fare-imputation-analysis/": {
-      "hash": "5db9d17c6cd417a0",
+      "hash": "39079b327d8a4db9",
       "lastmod": "2026-11-22"
     },
     "/questions/detect-repeat-buyers-within-7-days/": {
-      "hash": "60251dc2e879445f",
-      "lastmod": "2026-11-22"
+      "hash": "c381970cbd8519f0",
+      "lastmod": "2026-11-21"
     },
     "/questions/union-all-dedup-cross-dataset-search/": {
-      "hash": "3bcbedefec64ca73",
+      "hash": "12cb9a04e22da19c",
       "lastmod": "2026-11-22"
     },
     "/questions/highest-fare-per-port/": {
-      "hash": "aa1c277835bc5715",
-      "lastmod": "2026-11-22"
+      "hash": "c78611d54e1c592f",
+      "lastmod": "2026-11-21"
     },
     "/questions/nth-highest-salary-per-department/": {
-      "hash": "b86adb6b7f3cee3a",
-      "lastmod": "2026-11-22"
+      "hash": "5d9b59eb824151cc",
+      "lastmod": "2026-11-21"
     },
     "/questions/year-over-year-growth/": {
-      "hash": "760049e5bb7435c5",
-      "lastmod": "2026-11-22"
+      "hash": "e6098ed4ab75fa65",
+      "lastmod": "2026-11-21"
     },
     "/questions/correlated-subquery-employees-above-department-median/": {
-      "hash": "6bcec983a3eacb36",
-      "lastmod": "2026-11-22"
+      "hash": "3c47f3a34182f587",
+      "lastmod": "2026-11-21"
     },
     "/questions/title-social-survival-analysis/": {
-      "hash": "578366832a7975f6",
-      "lastmod": "2026-11-22"
+      "hash": "d9468be95b700e17",
+      "lastmod": "2026-11-21"
     },
     "/questions/above-average-departments-derived-table/": {
-      "hash": "438c5828838b3968",
-      "lastmod": "2026-11-22"
+      "hash": "eb5156bd4dba2a5e",
+      "lastmod": "2026-11-21"
     },
     "/questions/left-join-null-semantics-inactive-customers/": {
-      "hash": "e1cda27dccb0bb18",
-      "lastmod": "2026-11-22"
+      "hash": "a308eefa5be4fb90",
+      "lastmod": "2026-11-21"
     },
     "/questions/exists-vs-in-departments-with-top-performers/": {
-      "hash": "0c83742cad1e0c40",
-      "lastmod": "2026-11-22"
+      "hash": "d1798201e4ff6888",
+      "lastmod": "2026-11-21"
     },
     "/questions/genres-without-blockbusters/": {
-      "hash": "0a327784551fc72e",
-      "lastmod": "2026-11-22"
+      "hash": "42064202c89a1384",
+      "lastmod": "2026-11-21"
     },
     "/questions/category-revenue-with-relabeling/": {
-      "hash": "9d36d012dd260619",
-      "lastmod": "2026-11-22"
+      "hash": "bcbf2620792dcf90",
+      "lastmod": "2026-11-21"
     },
     "/questions/passenger-family-survival-analysis/": {
-      "hash": "91b28cc9fc3ee368",
-      "lastmod": "2026-11-22"
+      "hash": "f9eb3cedfc56857a",
+      "lastmod": "2026-11-21"
     },
     "/questions/email-provider-customer-analysis/": {
-      "hash": "74779dd423c9747e",
-      "lastmod": "2026-11-22"
+      "hash": "fc883cb825c6a96f",
+      "lastmod": "2026-11-21"
     },
     "/questions/rank-movies-by-rating/": {
-      "hash": "fcc4bd68cd043b75",
-      "lastmod": "2026-11-22"
+      "hash": "7b031a00622b09c5",
+      "lastmod": "2026-11-21"
     },
     "/questions/find-duplicate-emails/": {
-      "hash": "72ca045f9f019a42",
-      "lastmod": "2026-11-22"
+      "hash": "97fd435027d181f3",
+      "lastmod": "2026-11-21"
     },
     "/questions/management-hierarchy-overview/": {
-      "hash": "037b02af6c51fb5b",
+      "hash": "bbdf956a882f74ab",
       "lastmod": "2026-11-22"
     },
     "/questions/count-direct-reports/": {
-      "hash": "2248cd14f6e00d7f",
-      "lastmod": "2026-11-22"
+      "hash": "489bb3a5adcecae1",
+      "lastmod": "2026-11-21"
     },
     "/questions/recursive-team-size-rollup/": {
-      "hash": "b3f111d6f58062ff",
+      "hash": "0eaa13e4de708d84",
       "lastmod": "2026-11-22"
     },
     "/questions/employee-tenure-bands/": {
-      "hash": "fb3fce47ffa0b8a3",
+      "hash": "9e906f8d776d2e7d",
       "lastmod": "2026-11-22"
     },
     "/questions/quarterly-hiring-cohort-report/": {
-      "hash": "82c48d6865517c3e",
+      "hash": "9829c914fbe2a852",
       "lastmod": "2026-11-22"
     },
     "/questions/salary-lead-lag-gap-within-department/": {
-      "hash": "78430b235a15c9cf",
-      "lastmod": "2026-11-22"
+      "hash": "b5ec204d060d5ec8",
+      "lastmod": "2026-11-21"
     },
     "/questions/top-earner-per-department/": {
-      "hash": "8bb2c19b0a9f4025",
-      "lastmod": "2026-11-22"
+      "hash": "4aa5e0c8c2f05250",
+      "lastmod": "2026-11-21"
     },
     "/questions/genres-in-common-intersect/": {
-      "hash": "182da7e99a0aabcd",
-      "lastmod": "2026-11-22"
+      "hash": "d481a43b700f7064",
+      "lastmod": "2026-11-21"
     },
     "/questions/7-day-rolling-revenue-average/": {
-      "hash": "8c03c052706896b0",
+      "hash": "c3aa6bfb446834f6",
       "lastmod": "2026-11-22"
     },
     "/questions/department-performance-rate/": {
-      "hash": "b38b45074cc62895",
-      "lastmod": "2026-11-22"
+      "hash": "8b4b12260180699e",
+      "lastmod": "2026-11-21"
     },
     "/questions/survival-cross-tab-class-sex/": {
-      "hash": "e38aef4601d7c960",
-      "lastmod": "2026-11-22"
+      "hash": "14767ed682ef35fd",
+      "lastmod": "2026-11-21"
     },
     "/questions/departments-with-high-earners/": {
-      "hash": "c4c948f4677b67af",
-      "lastmod": "2026-11-22"
+      "hash": "2a727c113ac72d06",
+      "lastmod": "2026-11-21"
     },
     "/questions/consecutive-ids/": {
-      "hash": "7b6eca597f77a3d4",
-      "lastmod": "2026-11-22"
+      "hash": "108673b8c3a73816",
+      "lastmod": "2026-11-21"
     },
     "/questions/3-movie-rolling-average-revenue/": {
-      "hash": "1157f4bda01894c8",
-      "lastmod": "2026-11-22"
+      "hash": "4f6218db1f0258fb",
+      "lastmod": "2026-11-21"
     },
     "/questions/customer-recency-analysis/": {
-      "hash": "be4e5927ef66aa90",
-      "lastmod": "2026-11-22"
+      "hash": "5a416d8681f1eee9",
+      "lastmod": "2026-11-21"
     },
     "/questions/handle-null-ages/": {
-      "hash": "7b96425f3fce1e61",
+      "hash": "8aa449aafe0dfe7b",
       "lastmod": "2026-11-22"
     },
     "/questions/customer-lifetime-value/": {
-      "hash": "27ddfe7321bdfd2d",
-      "lastmod": "2026-11-22"
+      "hash": "b6226966befe58a8",
+      "lastmod": "2026-11-21"
     },
     "/questions/fare-percentile-ranking/": {
-      "hash": "4434dcd40aad8a19",
-      "lastmod": "2026-11-22"
+      "hash": "c4e73bcb86656517",
+      "lastmod": "2026-11-21"
     },
     "/questions/daily-active-customers/": {
-      "hash": "3c7b0d6a114b7fa8",
-      "lastmod": "2026-11-22"
+      "hash": "fa55f904cfa27ebb",
+      "lastmod": "2026-11-21"
     },
     "/questions/revenue-share-by-category-window/": {
-      "hash": "ded36b4faaf2b537",
-      "lastmod": "2026-11-22"
+      "hash": "67fd34fc1a87f649",
+      "lastmod": "2026-11-21"
     },
     "/questions/age-group-survival-analysis/": {
-      "hash": "d44a027e2c159246",
-      "lastmod": "2026-11-22"
+      "hash": "e0cba9f0c4e21bfc",
+      "lastmod": "2026-11-21"
     },
     "/questions/performance-vs-salary-analysis/": {
-      "hash": "929f65ef9527846e",
-      "lastmod": "2026-11-22"
+      "hash": "5a3310f3b5dff1c9",
+      "lastmod": "2026-11-21"
     },
     "/questions/order-status-dashboard/": {
-      "hash": "7b4515066a28fad9",
-      "lastmod": "2026-11-22"
+      "hash": "6e2100ab725d1d66",
+      "lastmod": "2026-11-21"
     },
     "/questions/highest-rated-by-genre/": {
-      "hash": "1450ade766479d07",
-      "lastmod": "2026-11-22"
+      "hash": "a789f643bbaf1457",
+      "lastmod": "2026-11-21"
     },
     "/questions/membership-tier-revenue-analysis/": {
-      "hash": "0584ddcb3acb899d",
-      "lastmod": "2026-11-22"
+      "hash": "9246ca64ddb26900",
+      "lastmod": "2026-11-21"
     },
     "/questions/rank-vs-dense-rank-rating-gaps/": {
-      "hash": "59039605d3de1a7e",
-      "lastmod": "2026-11-22"
+      "hash": "ca518389ce803842",
+      "lastmod": "2026-11-21"
     },
     "/questions/engagement-streaks-3-orders-7-day-gaps/": {
-      "hash": "4d05bf0064089d26",
-      "lastmod": "2026-11-22"
+      "hash": "7be9409a710d8101",
+      "lastmod": "2026-11-21"
     },
     "/questions/self-join-manager-salary-comparison/": {
-      "hash": "af1c3138b2fdcb1f",
-      "lastmod": "2026-11-22"
+      "hash": "5b4af7c1ce00dafe",
+      "lastmod": "2026-11-21"
     },
     "/questions/director-consistency-report/": {
-      "hash": "bef863e3093374b6",
-      "lastmod": "2026-11-22"
+      "hash": "adea102aa5514898",
+      "lastmod": "2026-11-21"
     },
     "/questions/top-n-products-per-category/": {
-      "hash": "fdd6df689317ca9c",
-      "lastmod": "2026-11-22"
+      "hash": "321a36320f5ee00c",
+      "lastmod": "2026-11-21"
     },
     "/questions/median-salary-without-percentile/": {
-      "hash": "e8502e417117602e",
-      "lastmod": "2026-11-22"
+      "hash": "2b91591c56f0cee5",
+      "lastmod": "2026-11-21"
     },
     "/questions/deduplicate-orders-with-row-number/": {
-      "hash": "87298fde4f9cb29e",
-      "lastmod": "2026-11-22"
+      "hash": "31f14b356c508f97",
+      "lastmod": "2026-11-21"
     },
     "/questions/anti-join-pipeline-unmatched-records/": {
-      "hash": "9daa7d57fbe234a5",
-      "lastmod": "2026-11-22"
+      "hash": "1e83c02933d90707",
+      "lastmod": "2026-11-21"
     },
     "/questions/monthly-order-trends/": {
-      "hash": "5d59dc4a247b11eb",
+      "hash": "11ebd6189586820c",
       "lastmod": "2026-11-22"
     },
     "/questions/department-budget-analysis/": {
-      "hash": "8a0df4b2ba4d7be1",
-      "lastmod": "2026-11-22"
+      "hash": "52be21682e95b93e",
+      "lastmod": "2026-11-21"
     },
     "/questions/customers-with-orders-in-all-categories/": {
-      "hash": "c0843c771fab37d7",
-      "lastmod": "2026-11-22"
+      "hash": "cb48639e93a3bca9",
+      "lastmod": "2026-11-21"
     },
     "/questions/sliding-window-max-revenue/": {
-      "hash": "fc6b5e32e2d342be",
-      "lastmod": "2026-11-22"
+      "hash": "af1e67fb48d30545",
+      "lastmod": "2026-11-21"
     },
     "/questions/customer-lifetime-value-pipeline/": {
-      "hash": "e0f4290583274ce4",
-      "lastmod": "2026-11-22"
+      "hash": "a630cb4d8424655b",
+      "lastmod": "2026-11-21"
     },
     "/questions/top-spender-per-membership-tier/": {
-      "hash": "42e96b1d495b1cf8",
-      "lastmod": "2026-11-22"
+      "hash": "6a43c0798491bfa7",
+      "lastmod": "2026-11-21"
     },
     "/questions/recursive-org-chart-traversal/": {
-      "hash": "9c72962bcdc4881d",
+      "hash": "68c05ff93e55a759",
       "lastmod": "2026-11-22"
     },
     "/questions/order-funnel-conversion/": {
-      "hash": "9fff70c2079d7d9d",
-      "lastmod": "2026-11-22"
+      "hash": "ed19100dcefcba0a",
+      "lastmod": "2026-11-21"
     },
     "/questions/self-join-repeat-orders-within-a-week/": {
-      "hash": "724f0f2d78e0d03a",
-      "lastmod": "2026-11-22"
+      "hash": "1209c9eb3f637ea8",
+      "lastmod": "2026-11-21"
     },
     "/questions/month-over-month-revenue-growth/": {
-      "hash": "0d2d0e6fda8423c9",
-      "lastmod": "2026-11-22"
+      "hash": "3dd9c939b7c85a32",
+      "lastmod": "2026-11-21"
     },
     "/questions/island-length-classification/": {
-      "hash": "e3ba4e66949a1205",
-      "lastmod": "2026-11-22"
+      "hash": "18e73837b1ba04fb",
+      "lastmod": "2026-11-21"
     },
     "/questions/multi-cte-revenue-pipeline/": {
-      "hash": "7eb14e3b7e1c901b",
-      "lastmod": "2026-11-22"
+      "hash": "a3f649ca5c6729be",
+      "lastmod": "2026-11-21"
     },
     "/questions/department-salary-percentile-buckets/": {
-      "hash": "cdf91a3079697230",
-      "lastmod": "2026-11-22"
+      "hash": "9539aa7121b13a01",
+      "lastmod": "2026-11-21"
     },
     "/questions/customer-retention-cohort/": {
-      "hash": "de98a3f9f393e07e",
+      "hash": "048f4c3e9beed005",
       "lastmod": "2026-11-22"
     },
     "/questions/second-highest-salary-per-department/": {
-      "hash": "356bf9f719f13092",
-      "lastmod": "2026-11-22"
+      "hash": "02639c6fcbdbb4f1",
+      "lastmod": "2026-11-21"
     },
     "/questions/year-over-year-movie-rating-trends/": {
-      "hash": "22e675745e5f9ae7",
-      "lastmod": "2026-11-22"
+      "hash": "651e9c95ec62e152",
+      "lastmod": "2026-11-21"
     },
     "/questions/your-first-query/": {
-      "hash": "ac8f1bda45add55d",
-      "lastmod": "2026-11-22"
+      "hash": "323d2d63ae1e568e",
+      "lastmod": "2026-11-21"
     },
     "/questions/pick-your-columns/": {
-      "hash": "1e75a8c3c4b10533",
-      "lastmod": "2026-11-22"
+      "hash": "e8402bea909d71b4",
+      "lastmod": "2026-11-21"
     },
     "/questions/filter-with-where/": {
-      "hash": "2383778a2eba8dbb",
-      "lastmod": "2026-11-22"
+      "hash": "37b51f71408da9f5",
+      "lastmod": "2026-11-21"
     },
     "/questions/comparison-operators/": {
-      "hash": "44f884315000759c",
-      "lastmod": "2026-11-22"
+      "hash": "a36c2036d3b627b5",
+      "lastmod": "2026-11-21"
     },
     "/questions/multiple-conditions-and-or/": {
-      "hash": "bd5e4a6087573fd4",
-      "lastmod": "2026-11-22"
+      "hash": "dc641532ab785799",
+      "lastmod": "2026-11-21"
     },
     "/questions/the-in-operator/": {
-      "hash": "4307173e565de4f5",
-      "lastmod": "2026-11-22"
+      "hash": "dd19c13df7b41e72",
+      "lastmod": "2026-11-21"
     },
     "/questions/sorting-and-limiting/": {
-      "hash": "46b67a94aa4df4f9",
-      "lastmod": "2026-11-22"
+      "hash": "aa82186c88ca6a88",
+      "lastmod": "2026-11-21"
     },
     "/questions/counting-rows/": {
-      "hash": "d620d9318e6e7753",
-      "lastmod": "2026-11-22"
+      "hash": "266b9ad8f547e023",
+      "lastmod": "2026-11-21"
     },
     "/questions/sum-avg-min-max/": {
-      "hash": "bda9d5be96c3b309",
-      "lastmod": "2026-11-22"
+      "hash": "da83d805ddc4751c",
+      "lastmod": "2026-11-21"
     },
     "/questions/group-by-basics/": {
-      "hash": "caa8c55692646b56",
-      "lastmod": "2026-11-22"
+      "hash": "444e96c2d46c4f6b",
+      "lastmod": "2026-11-21"
     },
     "/questions/distinct-values/": {
-      "hash": "7dec479a5b56d876",
-      "lastmod": "2026-11-22"
+      "hash": "677fd75ae887fa05",
+      "lastmod": "2026-11-21"
     },
     "/questions/pattern-matching-with-like/": {
-      "hash": "31f41582c63fc4cc",
-      "lastmod": "2026-11-22"
+      "hash": "60470e030c260e39",
+      "lastmod": "2026-11-21"
     },
     "/questions/handling-null-values/": {
-      "hash": "5e1cc9599e9cece4",
-      "lastmod": "2026-11-22"
+      "hash": "43b153f8879654d6",
+      "lastmod": "2026-11-21"
     },
     "/questions/calculated-columns/": {
-      "hash": "8602cf4d3280aed4",
-      "lastmod": "2026-11-22"
+      "hash": "eba734399e425bb6",
+      "lastmod": "2026-11-21"
     },
     "/questions/your-first-join/": {
-      "hash": "b499ea62807b2164",
-      "lastmod": "2026-11-22"
+      "hash": "fc81510a804d15d6",
+      "lastmod": "2026-11-21"
     },
     "/questions/left-join-keep-everyone/": {
-      "hash": "fa6df3676213636b",
-      "lastmod": "2026-11-22"
+      "hash": "67711e649b893ed6",
+      "lastmod": "2026-11-21"
     },
     "/questions/group-by-having/": {
-      "hash": "a060e8d853f8e26c",
-      "lastmod": "2026-11-22"
+      "hash": "d011c938679a4522",
+      "lastmod": "2026-11-21"
     },
     "/questions/simple-subquery-above-average/": {
-      "hash": "ce24f66dfbd371d4",
-      "lastmod": "2026-11-22"
+      "hash": "648670fea77dd011",
+      "lastmod": "2026-11-21"
     },
     "/questions/introduction-to-case-when/": {
-      "hash": "faa040e20dad17f6",
-      "lastmod": "2026-11-22"
+      "hash": "56048710f280af8d",
+      "lastmod": "2026-11-21"
     },
     "/questions/date-functions-how-long-ago/": {
-      "hash": "2b8a947bcabc96bd",
-      "lastmod": "2026-11-22"
+      "hash": "3e17687e3d29a0ce",
+      "lastmod": "2026-11-21"
     },
     "/questions/your-first-cte-with-clause/": {
-      "hash": "1d53777654e48ec0",
-      "lastmod": "2026-11-22"
+      "hash": "c481984839bf8584",
+      "lastmod": "2026-11-21"
     },
     "/questions/window-functions-row-number/": {
-      "hash": "fdca0d7dbbb4ee1c",
+      "hash": "577c442918de375e",
       "lastmod": "2026-11-22"
     },
     "/questions/conditional-counting-with-case/": {
-      "hash": "89fdac406d9c54f0",
-      "lastmod": "2026-11-22"
+      "hash": "e5800d698b4cdcf5",
+      "lastmod": "2026-11-21"
     },
     "/questions/self-join-employee-and-manager/": {
-      "hash": "ae33a24cd5383ef0",
-      "lastmod": "2026-11-22"
+      "hash": "24745b7540217a75",
+      "lastmod": "2026-11-21"
     },
     "/questions/subquery-in-from-derived-table/": {
-      "hash": "ca1331e6e92c5be4",
-      "lastmod": "2026-11-22"
+      "hash": "38b7fc75c532a400",
+      "lastmod": "2026-11-21"
     },
     "/questions/senior-passengers-by-port/": {
-      "hash": "bf35ae119ca0e1c0",
-      "lastmod": "2026-11-22"
+      "hash": "59dda53c8b3807e9",
+      "lastmod": "2026-11-21"
     },
     "/questions/recent-hit-movies-2010s/": {
-      "hash": "9084f65d7713d3e5",
-      "lastmod": "2026-11-22"
+      "hash": "f2bddb971e1277ed",
+      "lastmod": "2026-11-21"
     },
     "/questions/monthly-order-volume-in-2024/": {
-      "hash": "7a680f046dba91a9",
-      "lastmod": "2026-11-22"
+      "hash": "566b4e179b160775",
+      "lastmod": "2026-11-21"
     },
     "/questions/long-named-passengers/": {
-      "hash": "a1e1ae8fbc7a2648",
-      "lastmod": "2026-11-22"
+      "hash": "fba0f51fc6958566",
+      "lastmod": "2026-11-21"
     },
     "/questions/earliest-movie-per-genre/": {
-      "hash": "82e4c4eb6c94f21c",
-      "lastmod": "2026-11-22"
+      "hash": "8e45091e43ed797f",
+      "lastmod": "2026-11-21"
     },
     "/questions/multi-month-active-customers/": {
-      "hash": "b8b65e4f55660198",
+      "hash": "835334fcdbf350ee",
       "lastmod": "2026-11-22"
     },
     "/questions/director-rating-volatility/": {
-      "hash": "6949db0fca072f5c",
-      "lastmod": "2026-11-22"
+      "hash": "fccf7705e8537f3f",
+      "lastmod": "2026-11-21"
     },
     "/questions/family-size-survival-buckets/": {
-      "hash": "9de8491d8090a972",
-      "lastmod": "2026-11-22"
+      "hash": "90758f7ff7db298a",
+      "lastmod": "2026-11-21"
     },
     "/questions/inactive-customers-by-tier/": {
-      "hash": "5c9f541879cb34fd",
-      "lastmod": "2026-11-22"
+      "hash": "70b4b48a4260a2d9",
+      "lastmod": "2026-11-21"
     },
     "/questions/department-tenure-span/": {
-      "hash": "4c2ccc93f5ba32e6",
-      "lastmod": "2026-11-22"
+      "hash": "7668ce38c9d94cac",
+      "lastmod": "2026-11-21"
     },
     "/questions/month-over-month-customer-growth/": {
-      "hash": "ab8e9b8445632474",
-      "lastmod": "2026-11-22"
+      "hash": "429143df29fe39d0",
+      "lastmod": "2026-11-21"
     },
     "/questions/comp-tier-labels/": {
-      "hash": "8dfd34f55b7bb1ef",
-      "lastmod": "2026-11-22"
+      "hash": "4e8ef09d401167a9",
+      "lastmod": "2026-11-21"
     },
     "/questions/membership-display-labels/": {
-      "hash": "5eb7ef104e6f14e3",
-      "lastmod": "2026-11-22"
+      "hash": "13f1c068d9cbdd5c",
+      "lastmod": "2026-11-21"
     },
     "/questions/bonus-tier-with-cross-conditions/": {
-      "hash": "688805067e047697",
-      "lastmod": "2026-11-22"
+      "hash": "41ba653b4d816038",
+      "lastmod": "2026-11-21"
     },
     "/questions/promotion-eligibility-matrix/": {
-      "hash": "a760f29caf3d6344",
-      "lastmod": "2026-11-22"
+      "hash": "f7b578d193e8c36c",
+      "lastmod": "2026-11-21"
     },
     "/questions/above-department-average-earners/": {
-      "hash": "04cef9d9c0b7df98",
-      "lastmod": "2026-11-22"
+      "hash": "8206e485f0a29aeb",
+      "lastmod": "2026-11-21"
     },
     "/questions/customers-without-orders/": {
-      "hash": "87e84bd1cb1ba4c8",
-      "lastmod": "2026-11-22"
+      "hash": "5296e700cd21d72f",
+      "lastmod": "2026-11-21"
     },
     "/questions/working-age-passengers-between/": {
-      "hash": "406e38c8572e58e0",
-      "lastmod": "2026-11-22"
+      "hash": "0e846c49410b4ec1",
+      "lastmod": "2026-11-21"
     },
     "/questions/non-sales-roster-not-in/": {
-      "hash": "a9fbc4050070cf88",
-      "lastmod": "2026-11-22"
+      "hash": "804a3cca079bc1f7",
+      "lastmod": "2026-11-21"
     },
     "/questions/employee-display-cards-concat/": {
-      "hash": "6d71fdd20581a82b",
-      "lastmod": "2026-11-22"
+      "hash": "6f31492281cfc3fa",
+      "lastmod": "2026-11-21"
     },
     "/questions/country-codes-in-uppercase/": {
-      "hash": "692adc14a649d327",
-      "lastmod": "2026-11-22"
+      "hash": "9984b639566abb79",
+      "lastmod": "2026-11-21"
     },
     "/questions/default-age-for-missing-records-coalesce/": {
-      "hash": "11902ee8df7e5c1f",
+      "hash": "7de9dd5541ade6e9",
       "lastmod": "2026-11-22"
     },
     "/questions/monthly-order-count/": {
-      "hash": "ee02dfc129fd5178",
-      "lastmod": "2026-11-22"
+      "hash": "95f36d1ab3b99283",
+      "lastmod": "2026-11-21"
     },
     "/questions/how-many-genres-do-we-cover-distinct/": {
-      "hash": "559025ebe2aa14e9",
-      "lastmod": "2026-11-22"
+      "hash": "376dcdc1f32b3b06",
+      "lastmod": "2026-11-21"
     },
     "/questions/department-leaderboard-multi-key-sort/": {
-      "hash": "e47e44ed3ea5ccf5",
-      "lastmod": "2026-11-22"
+      "hash": "984b2af59f426209",
+      "lastmod": "2026-11-21"
     },
     "/questions/passengers-without-mr-or-mrs-not-like/": {
-      "hash": "22fb5dc3dec7a718",
-      "lastmod": "2026-11-22"
+      "hash": "1de47f6cf6239653",
+      "lastmod": "2026-11-21"
     },
     "/questions/rounded-revenue-top-10-from-2015/": {
-      "hash": "b7c9ecf826f44f36",
-      "lastmod": "2026-11-22"
+      "hash": "507e57315d8c10f6",
+      "lastmod": "2026-11-21"
     },
     "/questions/female-survivor-count/": {
-      "hash": "c300f95d6865d8ff",
-      "lastmod": "2026-11-22"
+      "hash": "a7e9f26c49ab0dd8",
+      "lastmod": "2026-11-21"
     },
     "/questions/average-salary-by-department/": {
-      "hash": "260e71d013b1a840",
-      "lastmod": "2026-11-22"
+      "hash": "4feef9ddb86e2138",
+      "lastmod": "2026-11-21"
     },
     "/questions/top-5-earners/": {
-      "hash": "520363e074749e01",
-      "lastmod": "2026-11-22"
+      "hash": "c1d6e358f126dfbd",
+      "lastmod": "2026-11-21"
     },
     "/questions/extract-family-names-substr-instr/": {
-      "hash": "0d28ef597d062b8c",
-      "lastmod": "2026-11-22"
+      "hash": "7b7d24e1099d1a95",
+      "lastmod": "2026-11-21"
     },
     "/questions/january-2024-orders/": {
-      "hash": "7b164a050ad98421",
+      "hash": "c0049e3abf7f99ec",
       "lastmod": "2026-11-22"
     },
     "/questions/employee-manager-pairs-self-join/": {
-      "hash": "05514c845528d310",
-      "lastmod": "2026-11-22"
+      "hash": "f5d8db42cec17684",
+      "lastmod": "2026-11-21"
     },
     "/questions/earning-more-than-the-boss-self-join/": {
-      "hash": "5aab9d12fa60ef32",
-      "lastmod": "2026-11-22"
+      "hash": "1852a6a5b62d1c0c",
+      "lastmod": "2026-11-21"
     },
     "/questions/same-year-hires-in-same-department-self-join/": {
-      "hash": "b4fbacca677a5a5d",
-      "lastmod": "2026-11-22"
+      "hash": "f245eea1db7d3bda",
+      "lastmod": "2026-11-21"
     },
     "/questions/tenure-in-months-date-math/": {
-      "hash": "aae725484e4a3485",
-      "lastmod": "2026-11-22"
+      "hash": "9a6b61368c711097",
+      "lastmod": "2026-11-21"
     },
     "/questions/customer-signup-quarter-date-case/": {
-      "hash": "a9f4bf8df8c091cf",
-      "lastmod": "2026-11-22"
+      "hash": "4bed0c39f5c96732",
+      "lastmod": "2026-11-21"
     },
     "/questions/day-of-week-order-pattern-strftime/": {
-      "hash": "cd561b57bad10fcf",
-      "lastmod": "2026-11-22"
+      "hash": "0423e262c1a88582",
+      "lastmod": "2026-11-21"
     },
     "/questions/country-category-coverage-matrix-cross-join/": {
-      "hash": "746799b0b322992d",
-      "lastmod": "2026-11-22"
+      "hash": "400e668c03cc0fec",
+      "lastmod": "2026-11-21"
     },
     "/questions/bonus-what-if-matrix-cross-join-values/": {
-      "hash": "bbde014554079a70",
-      "lastmod": "2026-11-22"
+      "hash": "aed8c1f2db1e8e4a",
+      "lastmod": "2026-11-21"
     },
     "/questions/membership-country-activity-cross-join/": {
-      "hash": "6c728837c4061788",
-      "lastmod": "2026-11-22"
+      "hash": "bb851dae1a0cf2a5",
+      "lastmod": "2026-11-21"
     },
     "/questions/active-spender-cohort-having/": {
-      "hash": "50a3af33a34fd208",
-      "lastmod": "2026-11-22"
+      "hash": "2da3e2c321efb7b5",
+      "lastmod": "2026-11-21"
     },
     "/questions/high-volume-categories-having/": {
-      "hash": "a96446191691d8c6",
-      "lastmod": "2026-11-22"
+      "hash": "a74c9a5af31bb06f",
+      "lastmod": "2026-11-21"
     },
     "/questions/genre-spanning-directors-having/": {
-      "hash": "9d7d99b7bbb951a5",
-      "lastmod": "2026-11-22"
+      "hash": "f96ffb8ee4c752c8",
+      "lastmod": "2026-11-21"
     },
     "/questions/rank-vs-dense-rank-side-by-side/": {
-      "hash": "ac70a64b103f8933",
+      "hash": "484d4cb986469386",
       "lastmod": "2026-11-22"
     },
     "/questions/top-3-salary-tiers-dense-rank/": {
-      "hash": "aa675ecc8070f628",
+      "hash": "1e959b8ea763d95a",
       "lastmod": "2026-11-22"
     },
     "/questions/most-recent-order-per-customer-row-number/": {
-      "hash": "159698385d6ac898",
-      "lastmod": "2026-11-22"
+      "hash": "811aaae240c2f398",
+      "lastmod": "2026-11-21"
     },
     "/questions/second-highest-earner-per-department-row-number/": {
-      "hash": "ace4718623fcaf7a",
-      "lastmod": "2026-11-22"
+      "hash": "c1ebb775e61f8e45",
+      "lastmod": "2026-11-21"
     },
     "/questions/year-code-from-order-date-substr/": {
-      "hash": "eb27b70e65fc6462",
-      "lastmod": "2026-11-22"
+      "hash": "e33d6ea0ef8bb302",
+      "lastmod": "2026-11-21"
     },
     "/questions/movie-title-initial-letter-histogram-substr/": {
-      "hash": "57e8e20e56fd192d",
-      "lastmod": "2026-11-22"
+      "hash": "6ea4752307cbc5f1",
+      "lastmod": "2026-11-21"
     },
     "/questions/position-of-in-email-instr/": {
-      "hash": "5ae6ea82adbbd7bf",
-      "lastmod": "2026-11-22"
+      "hash": "5e61fe03ebc15052",
+      "lastmod": "2026-11-21"
     },
     "/questions/email-username-extract-substr-instr/": {
-      "hash": "566fb881122d07a7",
-      "lastmod": "2026-11-22"
+      "hash": "c0e063d29f488905",
+      "lastmod": "2026-11-21"
     },
     "/questions/your-first-window-function/": {
-      "hash": "62e57d4ae249a736",
+      "hash": "5e32af8ac2f143d3",
       "lastmod": "2026-11-22"
     },
     "/questions/each-salarys-share-of-payroll/": {
-      "hash": "a7bc4fb51d414a9c",
+      "hash": "fa17693ac79e9673",
       "lastmod": "2026-11-22"
     },
     "/questions/rank-everyone-by-salary/": {
-      "hash": "9c1b69ea30445ae6",
+      "hash": "6c867a10d737a1c5",
       "lastmod": "2026-11-22"
     },
     "/questions/salary-vs-department-average-partition-by/": {
-      "hash": "0f5c8e266c2ce30f",
-      "lastmod": "2026-11-22"
+      "hash": "6dec34e2e634004d",
+      "lastmod": "2026-11-21"
     },
     "/questions/the-previous-orders-total-lag/": {
-      "hash": "6caaba328adad696",
+      "hash": "7cef1cac1ff45ea2",
       "lastmod": "2026-11-22"
     },
     "/questions/running-total-of-orders/": {
-      "hash": "33169c13ccbc0f93",
-      "lastmod": "2026-11-22"
+      "hash": "bbc158a05195705a",
+      "lastmod": "2026-11-21"
     },
     "/questions/join-with-a-filter/": {
-      "hash": "229d3a3a40b5d988",
+      "hash": "bbc98f11da28ccb4",
       "lastmod": "2026-11-22"
     },
     "/questions/left-join-watch-the-nulls-appear/": {
-      "hash": "a1eb334e1c0865fd",
+      "hash": "42597ee1b0ddb18c",
       "lastmod": "2026-11-22"
     },
     "/questions/counting-across-a-join/": {
-      "hash": "89be380a0be87873",
-      "lastmod": "2026-11-22"
+      "hash": "62d18922edb4cd7d",
+      "lastmod": "2026-11-21"
     },
     "/questions/a-subquery-that-returns-one-value/": {
-      "hash": "9e741aa53a56c9dd",
-      "lastmod": "2026-11-22"
+      "hash": "6c18e54bc0d1814f",
+      "lastmod": "2026-11-21"
     },
     "/questions/a-subquery-that-returns-a-set-in/": {
-      "hash": "f51af3817e112667",
-      "lastmod": "2026-11-22"
+      "hash": "591cfd586ce90b4d",
+      "lastmod": "2026-11-21"
     },
     "/questions/give-a-query-a-name-with/": {
-      "hash": "95decaba49bbacbd",
-      "lastmod": "2026-11-22"
+      "hash": "876d0044bc64c5a9",
+      "lastmod": "2026-11-21"
     },
     "/questions/insert-a-new-customer/": {
-      "hash": "5e66dedd6ac17210",
-      "lastmod": "2026-11-22"
+      "hash": "b620ef850fe839e3",
+      "lastmod": "2026-11-21"
     },
     "/questions/promote-your-best-customers/": {
-      "hash": "4b82404707fad317",
-      "lastmod": "2026-11-22"
+      "hash": "85f15ad1ecadae56",
+      "lastmod": "2026-11-21"
     },
     "/questions/delete-the-empty-accounts/": {
-      "hash": "9a387aa7bdf4bf3b",
-      "lastmod": "2026-11-22"
+      "hash": "3805e5f6eb95bfe2",
+      "lastmod": "2026-11-21"
     },
     "/questions/delete-duplicate-records-keep-the-original/": {
-      "hash": "a2b086bd986f7c76",
-      "lastmod": "2026-11-22"
+      "hash": "783a6c7d5c732bc9",
+      "lastmod": "2026-11-21"
     },
     "/questions/give-the-top-performers-a-raise/": {
-      "hash": "02a6ce7aae0ebf8c",
-      "lastmod": "2026-11-22"
+      "hash": "0ed8565c19ae5927",
+      "lastmod": "2026-11-21"
     },
     "/questions/recompute-a-stale-counter/": {
-      "hash": "7400f26f3212957a",
-      "lastmod": "2026-11-22"
+      "hash": "c8bdaadf831d8f42",
+      "lastmod": "2026-11-21"
     },
     "/questions/movies-rated-above-the-average/": {
-      "hash": "7d176faf3df1790d",
-      "lastmod": "2026-11-22"
+      "hash": "71739538db997e08",
+      "lastmod": "2026-11-21"
     },
     "/questions/every-film-by-a-director-who-once-hit-8-5/": {
-      "hash": "7015c0c81f76d44f",
-      "lastmod": "2026-11-22"
+      "hash": "bba6043b9dd8bd99",
+      "lastmod": "2026-11-21"
     },
     "/questions/filter-on-an-average-you-just-computed/": {
-      "hash": "85c907e694260954",
-      "lastmod": "2026-11-22"
+      "hash": "695efa4718caf037",
+      "lastmod": "2026-11-21"
     },
     "/questions/better-than-its-own-genre/": {
-      "hash": "6be63a54e59d7b54",
-      "lastmod": "2026-11-22"
+      "hash": "78bbeb8276c8dc87",
+      "lastmod": "2026-11-21"
     },
     "/questions/who-manages-nobody/": {
-      "hash": "452a04d8c5238e3c",
-      "lastmod": "2026-11-22"
+      "hash": "f82b6f3febc52a4d",
+      "lastmod": "2026-11-21"
     },
     "/questions/top-10-banks-by-assets/": {
-      "hash": "db3156a311b02ed8",
-      "lastmod": "2026-11-22"
+      "hash": "d81ba494faaf244d",
+      "lastmod": "2026-11-21"
     },
     "/questions/texas-banks-above-5b/": {
-      "hash": "3215a4834462cf2e",
-      "lastmod": "2026-11-22"
+      "hash": "d66f7acc8875d891",
+      "lastmod": "2026-11-21"
     },
     "/questions/national-total-deposits/": {
-      "hash": "33c9d48bd117dfd6",
-      "lastmod": "2026-11-22"
+      "hash": "c45c9017a703b86e",
+      "lastmod": "2026-11-21"
     },
     "/questions/bank-count-per-state/": {
-      "hash": "71bc67645a159e90",
-      "lastmod": "2026-11-22"
+      "hash": "15d37dbaa395f9bc",
+      "lastmod": "2026-11-21"
     },
     "/questions/distinct-charter-classes/": {
-      "hash": "ef55c89600ec0f7f",
-      "lastmod": "2026-11-22"
+      "hash": "9129c06bd45a2268",
+      "lastmod": "2026-11-21"
     },
     "/questions/national-association-banks/": {
-      "hash": "1ed4cd4c48ba8d60",
-      "lastmod": "2026-11-22"
+      "hash": "5d76ea7b072c1b05",
+      "lastmod": "2026-11-21"
     },
     "/questions/failures-with-no-loss-estimate/": {
-      "hash": "d00483eaddabd785",
+      "hash": "bab0ff90d224bf85",
       "lastmod": "2026-11-22"
     },
     "/questions/states-with-5-or-more-banks/": {
-      "hash": "fe342b2bdbaa2282",
-      "lastmod": "2026-11-22"
+      "hash": "cfaf1bf5d3bec845",
+      "lastmod": "2026-11-21"
     },
     "/questions/asset-tier-classification/": {
-      "hash": "d4a5da3a652572c2",
-      "lastmod": "2026-11-22"
+      "hash": "32a33bfd2a1ea0f7",
+      "lastmod": "2026-11-21"
     },
     "/questions/pre-1900-banks/": {
-      "hash": "fb0a9bfa4113041c",
+      "hash": "a18d34a9ddd35c41",
       "lastmod": "2026-11-22"
     },
     "/questions/bank-with-most-recent-net-income/": {
-      "hash": "8cfc2828c2effb98",
-      "lastmod": "2026-11-22"
+      "hash": "26f01f030107a44d",
+      "lastmod": "2026-11-21"
     },
     "/questions/average-tier-1-ratio-per-state/": {
-      "hash": "0d82102ed1a017ad",
-      "lastmod": "2026-11-22"
+      "hash": "e0782310f5d58ecd",
+      "lastmod": "2026-11-21"
     },
     "/questions/banks-above-national-average-assets/": {
-      "hash": "b9a60815de5024fe",
-      "lastmod": "2026-11-22"
+      "hash": "67545e05d5e43155",
+      "lastmod": "2026-11-21"
     },
     "/questions/above-median-npl-banks/": {
-      "hash": "31787092dbf3eaa7",
-      "lastmod": "2026-11-22"
+      "hash": "0e2be8872a3329b1",
+      "lastmod": "2026-11-21"
     },
     "/questions/trust-and-savings-banks/": {
-      "hash": "740a2908de20312b",
-      "lastmod": "2026-11-22"
+      "hash": "77cf3e370ae4df90",
+      "lastmod": "2026-11-21"
     },
     "/questions/bank-with-branch-count-and-income/": {
-      "hash": "adf163523471f4a5",
-      "lastmod": "2026-11-22"
+      "hash": "e18ea48c5fe386b8",
+      "lastmod": "2026-11-21"
     },
     "/questions/top-3-banks-per-state-by-assets/": {
-      "hash": "70327815b9934bf9",
-      "lastmod": "2026-11-22"
+      "hash": "2cbcdb7dab54adb6",
+      "lastmod": "2026-11-21"
     },
     "/questions/qoq-asset-growth-top-banks/": {
-      "hash": "3d55f37cd945f2f0",
-      "lastmod": "2026-11-22"
+      "hash": "30aca2d8cf921c0b",
+      "lastmod": "2026-11-21"
     },
     "/questions/failed-banks-recent-decade/": {
-      "hash": "3f0adf2ef60bb2db",
-      "lastmod": "2026-11-22"
+      "hash": "265d7a6ab7c83be4",
+      "lastmod": "2026-11-21"
     },
     "/questions/active-and-recently-failed/": {
-      "hash": "c3269293b9312101",
-      "lastmod": "2026-11-22"
+      "hash": "2fbbdce83fb35866",
+      "lastmod": "2026-11-21"
     },
     "/questions/top-10-manhattan-properties-by-assessed-value/": {
-      "hash": "75d65133a6710332",
-      "lastmod": "2026-11-22"
+      "hash": "37f9d220ddc66d4f",
+      "lastmod": "2026-11-21"
     },
     "/questions/pre-1920-nyc-buildings/": {
-      "hash": "ddfa63e187bcf8aa",
-      "lastmod": "2026-11-22"
+      "hash": "43449bf8c5139f9b",
+      "lastmod": "2026-11-21"
     },
     "/questions/properties-per-borough/": {
-      "hash": "14ae96aa23ff7338",
-      "lastmod": "2026-11-22"
+      "hash": "19df46885d332a6c",
+      "lastmod": "2026-11-21"
     },
     "/questions/total-assessed-value/": {
-      "hash": "d10c08a95f13da11",
-      "lastmod": "2026-11-22"
+      "hash": "642ec1e73185f4b3",
+      "lastmod": "2026-11-21"
     },
     "/questions/common-building-classes/": {
-      "hash": "c7e8678b4fdd0996",
-      "lastmod": "2026-11-22"
+      "hash": "14eed7ed6d6d533e",
+      "lastmod": "2026-11-21"
     },
     "/questions/distinct-acris-property-types/": {
-      "hash": "a99b6935fe701f56",
-      "lastmod": "2026-11-22"
+      "hash": "e1488de6509c4a77",
+      "lastmod": "2026-11-21"
     },
     "/questions/properties-without-listed-owner/": {
-      "hash": "6a3541fb9fb326ab",
+      "hash": "8a71bc63528f788c",
       "lastmod": "2026-11-22"
     },
     "/questions/building-age-tier/": {
-      "hash": "d66bfcf8443ac177",
-      "lastmod": "2026-11-22"
+      "hash": "f6d2a2e746350e88",
+      "lastmod": "2026-11-21"
     },
     "/questions/llc-and-realty-owners/": {
-      "hash": "43cb5db7d37c43c3",
-      "lastmod": "2026-11-22"
+      "hash": "f10e2819a1592788",
+      "lastmod": "2026-11-21"
     },
     "/questions/2025-sales/": {
-      "hash": "415914dcb5022340",
+      "hash": "9ee9d4b19926ccde",
       "lastmod": "2026-11-22"
     },
     "/questions/big-ticket-sales-with-properties/": {
-      "hash": "21543aae9365535d",
-      "lastmod": "2026-11-22"
+      "hash": "b0b48b0bb029ff9a",
+      "lastmod": "2026-11-21"
     },
     "/questions/avg-deed-amount-per-borough/": {
-      "hash": "3d4a007c436358e0",
-      "lastmod": "2026-11-22"
+      "hash": "6f2a77f677dbc15c",
+      "lastmod": "2026-11-21"
     },
     "/questions/above-average-assess-properties/": {
-      "hash": "88055e5cff3e03dc",
-      "lastmod": "2026-11-22"
+      "hash": "540b04e7db4f177e",
+      "lastmod": "2026-11-21"
     },
     "/questions/top-buyers-by-volume/": {
-      "hash": "23676157ca6cfc1c",
-      "lastmod": "2026-11-22"
+      "hash": "7a62a87e9e3f0b8a",
+      "lastmod": "2026-11-21"
     },
     "/questions/llc-vs-individual-buyers/": {
-      "hash": "86248e573fb2d0f5",
-      "lastmod": "2026-11-22"
+      "hash": "ca128e9a1b492181",
+      "lastmod": "2026-11-21"
     },
     "/questions/property-sale-buyer/": {
-      "hash": "d5921f1951f470ef",
-      "lastmod": "2026-11-22"
+      "hash": "15e2086c63c2aa66",
+      "lastmod": "2026-11-21"
     },
     "/questions/top-3-sales-per-borough/": {
-      "hash": "ba2fb2fac2a75f6b",
-      "lastmod": "2026-11-22"
+      "hash": "f8b8b6a12b42b884",
+      "lastmod": "2026-11-21"
     },
     "/questions/yoy-sales-volume-per-borough/": {
-      "hash": "791ae55e0f1bb043",
-      "lastmod": "2026-11-22"
+      "hash": "1b5a809df976fe9c",
+      "lastmod": "2026-11-21"
     },
     "/questions/active-properties-with-permits/": {
-      "hash": "405cbf6580099eb2",
-      "lastmod": "2026-11-22"
+      "hash": "be00b06ebe49ac4e",
+      "lastmod": "2026-11-21"
     },
     "/questions/combined-sales-and-permits-activity/": {
-      "hash": "2b9f3761a539a30a",
-      "lastmod": "2026-11-22"
+      "hash": "28691fc51db77a80",
+      "lastmod": "2026-11-21"
     },
     "/questions/top-10-by-tool-wear/": {
-      "hash": "beff6469e13390cb",
-      "lastmod": "2026-11-22"
+      "hash": "53d33bc3c040ebdd",
+      "lastmod": "2026-11-21"
     },
     "/questions/high-quality-products-only/": {
-      "hash": "dbc4f01181bc85ac",
-      "lastmod": "2026-11-22"
+      "hash": "d2e06108d8599088",
+      "lastmod": "2026-11-21"
     },
     "/questions/quality-grade-distribution/": {
-      "hash": "fcc4a8cfbe551bbb",
-      "lastmod": "2026-11-22"
+      "hash": "aa15e9626d406cc0",
+      "lastmod": "2026-11-21"
     },
     "/questions/average-sensor-readings/": {
-      "hash": "e8ce3eb570cdbefd",
-      "lastmod": "2026-11-22"
+      "hash": "343489e55b11e9c2",
+      "lastmod": "2026-11-21"
     },
     "/questions/quality-grades-with-100-products/": {
-      "hash": "e10ed641c605d0eb",
-      "lastmod": "2026-11-22"
+      "hash": "dd679a7d9dea6d03",
+      "lastmod": "2026-11-21"
     },
     "/questions/distinct-fmea-categories/": {
-      "hash": "f9c60c5763dec217",
-      "lastmod": "2026-11-22"
+      "hash": "2f9c8185f59522a0",
+      "lastmod": "2026-11-21"
     },
     "/questions/all-failure-mode-reference/": {
-      "hash": "1611905857856fdb",
-      "lastmod": "2026-11-22"
+      "hash": "c0ab8e6549b969e0",
+      "lastmod": "2026-11-21"
     },
     "/questions/tool-wear-stress-tier/": {
-      "hash": "de6dc60578baa5cb",
-      "lastmod": "2026-11-22"
+      "hash": "185483ab66805495",
+      "lastmod": "2026-11-21"
     },
     "/questions/medium-quality-products/": {
-      "hash": "a9967e2b2fe887ac",
-      "lastmod": "2026-11-22"
+      "hash": "278aa2263c048018",
+      "lastmod": "2026-11-21"
     },
     "/questions/failure-count-by-mode/": {
-      "hash": "7fb297935e23fce8",
-      "lastmod": "2026-11-22"
+      "hash": "a491ed930c726760",
+      "lastmod": "2026-11-21"
     },
     "/questions/sensor-readings-of-failed-units/": {
-      "hash": "36cb4c7b5bf59d9e",
-      "lastmod": "2026-11-22"
+      "hash": "f2d3c0d3fef5f82b",
+      "lastmod": "2026-11-21"
     },
     "/questions/failure-rate-per-quality-type/": {
-      "hash": "d37c4da23d1662e7",
-      "lastmod": "2026-11-22"
+      "hash": "df0c30da40276d84",
+      "lastmod": "2026-11-21"
     },
     "/questions/above-average-tool-wear/": {
-      "hash": "e5e364198c5e4115",
-      "lastmod": "2026-11-22"
+      "hash": "babe4ca42c074eb0",
+      "lastmod": "2026-11-21"
     },
     "/questions/top-failure-mode-by-quality/": {
-      "hash": "e36acfc7b544b3eb",
-      "lastmod": "2026-11-22"
+      "hash": "8705104532c464c5",
+      "lastmod": "2026-11-21"
     },
     "/questions/power-envelope-check/": {
-      "hash": "393b187d3772eee4",
-      "lastmod": "2026-11-22"
+      "hash": "581f1627afe2ea26",
+      "lastmod": "2026-11-21"
     },
     "/questions/full-failure-profile/": {
-      "hash": "31aa8cc2698e40f7",
-      "lastmod": "2026-11-22"
+      "hash": "b4d48d275e2ef1ca",
+      "lastmod": "2026-11-21"
     },
     "/questions/top-5-torque-per-quality/": {
-      "hash": "fbe7a39a8eb2544f",
-      "lastmod": "2026-11-22"
+      "hash": "7ffbc8d7be4ddc9f",
+      "lastmod": "2026-11-21"
     },
     "/questions/rolling-tool-wear-trend/": {
-      "hash": "5d518689a6fa1daf",
-      "lastmod": "2026-11-22"
+      "hash": "c33a91da086ecfa2",
+      "lastmod": "2026-11-21"
     },
     "/questions/failure-rate-by-torque-bucket/": {
-      "hash": "62c2965b8aba4423",
-      "lastmod": "2026-11-22"
+      "hash": "876b6e7b9942cf6a",
+      "lastmod": "2026-11-21"
     },
     "/questions/failure-mode-catalog-join/": {
-      "hash": "8f708dfda36e78f0",
-      "lastmod": "2026-11-22"
+      "hash": "bc5d0b25ee0e9515",
+      "lastmod": "2026-11-21"
     },
     "/questions/banks-with-npl-above-2-sigma/": {
-      "hash": "7234e642c6d232e9",
-      "lastmod": "2026-11-22"
+      "hash": "9392bb6ad4d0e677",
+      "lastmod": "2026-11-21"
     },
     "/questions/npl-quarter-over-quarter-acceleration/": {
-      "hash": "2698d84ab88d38cf",
-      "lastmod": "2026-11-22"
+      "hash": "55216fa80602e061",
+      "lastmod": "2026-11-21"
     },
     "/questions/tier-1-capital-below-well-capitalized-threshold/": {
-      "hash": "2bf45a8a1845c2b8",
-      "lastmod": "2026-11-22"
+      "hash": "4877958217826a07",
+      "lastmod": "2026-11-21"
     },
     "/questions/failure-clustering-state-year/": {
-      "hash": "30121ffb7725c1b6",
-      "lastmod": "2026-11-22"
+      "hash": "bfc6fcaf7b31ed47",
+      "lastmod": "2026-11-21"
     },
     "/questions/roa-outliers-top-5-by-return/": {
-      "hash": "beb2fe6c84b3ca2c",
-      "lastmod": "2026-11-22"
+      "hash": "b12b215025e71c42",
+      "lastmod": "2026-11-21"
     },
     "/questions/geographic-concentration-single-state-banks/": {
-      "hash": "56435c0182830652",
-      "lastmod": "2026-11-22"
+      "hash": "e504f7dc01f61f3f",
+      "lastmod": "2026-11-21"
     },
     "/questions/trust-banks-vs-others-npl-profile-comparison/": {
-      "hash": "b2e57c6b73934755",
-      "lastmod": "2026-11-22"
+      "hash": "2a3bb374517b29b4",
+      "lastmod": "2026-11-21"
     },
     "/questions/3-sigma-anomaly-transaction-amount-outliers/": {
-      "hash": "53719a7e9c3eec29",
-      "lastmod": "2026-11-22"
+      "hash": "31a6cae08cdc96da",
+      "lastmod": "2026-11-21"
     },
     "/questions/velocity-rule-5-transactions-in-5-minutes/": {
-      "hash": "701eab32fecec639",
-      "lastmod": "2026-11-22"
+      "hash": "f56e6ec114f338d6",
+      "lastmod": "2026-11-21"
     },
     "/questions/geographic-mismatch-impossible-travel/": {
-      "hash": "f29040b902b62ab0",
-      "lastmod": "2026-11-22"
+      "hash": "cdc1656c229b4d65",
+      "lastmod": "2026-11-21"
     },
     "/questions/cross-account-collusion-shared-device-fingerprint/": {
-      "hash": "486c972dba2d7126",
-      "lastmod": "2026-11-22"
+      "hash": "80d3bb9b10348d88",
+      "lastmod": "2026-11-21"
     },
     "/questions/recursive-cte-chargeback-chain-investigation/": {
-      "hash": "8c705587c5ae84ed",
-      "lastmod": "2026-11-22"
+      "hash": "ff4ab2bb7da07e28",
+      "lastmod": "2026-11-21"
     },
     "/questions/monthly-spend-per-account/": {
-      "hash": "45d7a225cc3defb7",
+      "hash": "1e215ab16e202882",
       "lastmod": "2026-11-22"
     },
     "/questions/transaction-share-by-merchant-category/": {
-      "hash": "e7edd40b50cfcf82",
+      "hash": "883e7caed150ddc5",
       "lastmod": "2026-11-22"
     },
     "/questions/signup-month-cohort-spend/": {
-      "hash": "276ed1dff0ed3a86",
+      "hash": "4595a312155b92a8",
       "lastmod": "2026-11-22"
     },
     "/questions/dormant-cards-no-transactions-in-the-last-14-days/": {
-      "hash": "66231cc344d40748",
+      "hash": "5c4dddbcf88e60ea",
       "lastmod": "2026-11-22"
     },
     "/questions/top-3-merchants-per-category-by-spend/": {
-      "hash": "fe813a8a32902336",
-      "lastmod": "2026-11-22"
+      "hash": "a64c5ca731e589ea",
+      "lastmod": "2026-11-21"
     },
     "/questions/chargeback-rate-per-merchant/": {
-      "hash": "adc1500850046a23",
-      "lastmod": "2026-11-22"
+      "hash": "d8d6e19c33a82fc1",
+      "lastmod": "2026-11-21"
     },
     "/questions/ticket-size-mix-by-category/": {
-      "hash": "5737a2a1f7d29abb",
-      "lastmod": "2026-11-22"
+      "hash": "087676bcb1d06896",
+      "lastmod": "2026-11-21"
     },
     "/questions/month-over-month-spend-growth-by-category/": {
-      "hash": "71d1205f07bec432",
-      "lastmod": "2026-11-22"
+      "hash": "5e327a7a24840449",
+      "lastmod": "2026-11-21"
     },
     "/questions/peak-rolling-30-day-spend-per-account/": {
-      "hash": "b3dee91558478402",
+      "hash": "bdbef62e9bdae339",
       "lastmod": "2026-11-22"
     },
     "/questions/first-to-second-transaction-latency/": {
-      "hash": "b068710a6a502b46",
+      "hash": "2eeb179ebf50a1fe",
       "lastmod": "2026-11-22"
     },
     "/questions/card-spend-by-country/": {
-      "hash": "bdd1754d65fcf188",
-      "lastmod": "2026-11-22"
+      "hash": "3c5c8c4d26ed19bc",
+      "lastmod": "2026-11-21"
     },
     "/questions/transactions-at-high-risk-merchants/": {
-      "hash": "b22495b265803eb6",
-      "lastmod": "2026-11-22"
+      "hash": "1b057b1c6179ae51",
+      "lastmod": "2026-11-21"
     },
     "/questions/chargeback-reason-codes-resolved-and-still-open/": {
-      "hash": "ba2ced74e4b501e8",
-      "lastmod": "2026-11-22"
+      "hash": "f4cf36591be3e5e5",
+      "lastmod": "2026-11-21"
     },
     "/questions/spend-by-day-of-week/": {
-      "hash": "bc79f23a96d6bad5",
-      "lastmod": "2026-11-22"
+      "hash": "05ca7f876892b2e0",
+      "lastmod": "2026-11-21"
     },
     "/questions/the-ledgers-first-week-day-by-day/": {
-      "hash": "5380e9c8e3ca34d2",
+      "hash": "f554e90d59cf52a4",
       "lastmod": "2026-11-22"
     },
     "/questions/cardholders-who-have-never-disputed-a-charge/": {
-      "hash": "8705a2dfa2bfdc77",
-      "lastmod": "2026-11-22"
+      "hash": "7a15cc0dd2b0ee1f",
+      "lastmod": "2026-11-21"
     },
     "/questions/spend-and-disputes-per-cardholder-without-the-fan-out/": {
-      "hash": "aa4d6334bf5b4e91",
+      "hash": "c69b3191c485f583",
       "lastmod": "2026-11-22"
     },
     "/questions/busiest-merchants-and-what-a-tie-does-to-the-rank/": {
-      "hash": "5707f7f8db7110fd",
+      "hash": "3d609f5709658614",
       "lastmod": "2026-11-22"
     },
     "/questions/each-merchants-share-of-its-category/": {
-      "hash": "6cfffc9282bd1714",
-      "lastmod": "2026-11-22"
+      "hash": "c1a67192c2dfe0a4",
+      "lastmod": "2026-11-21"
     },
     "/questions/running-total-of-daily-card-spend/": {
-      "hash": "e4a0601820616fee",
+      "hash": "c5f59ccf874414d9",
       "lastmod": "2026-11-22"
     },
     "/questions/how-long-has-each-card-been-active/": {
-      "hash": "3c1d99d026d877fe",
-      "lastmod": "2026-11-22"
+      "hash": "db49f0d909033912",
+      "lastmod": "2026-11-21"
     },
     "/questions/cards-that-never-spend-at-home/": {
-      "hash": "f38065a001f541f3",
-      "lastmod": "2026-11-22"
+      "hash": "bd3ec66d4df0e004",
+      "lastmod": "2026-11-21"
     },
     "/questions/two-swipes-at-the-same-merchant-inside-a-day/": {
-      "hash": "1c9e28b6e9e8c876",
-      "lastmod": "2026-11-22"
+      "hash": "e90c787b7f2e64e2",
+      "lastmod": "2026-11-21"
     },
     "/questions/disputed-spend-by-risk-tier-and-category/": {
-      "hash": "6a744fa5d7b446f5",
-      "lastmod": "2026-11-22"
+      "hash": "f635e63b87d49775",
+      "lastmod": "2026-11-21"
     },
     "/questions/how-concentrated-is-the-spend/": {
-      "hash": "5a26da78c8efc989",
-      "lastmod": "2026-11-22"
+      "hash": "1a48c2467f380651",
+      "lastmod": "2026-11-21"
     },
     "/questions/card-spend-by-category-august-2026/": {
-      "hash": "3b80df206eff8104",
-      "lastmod": "2026-11-22"
+      "hash": "483ba7993b08fe1e",
+      "lastmod": "2026-11-21"
     },
     "/questions/monthly-active-users/": {
-      "hash": "fa684d0e4f147aab",
-      "lastmod": "2026-11-22"
+      "hash": "d70169f01210d202",
+      "lastmod": "2026-11-21"
     },
     "/questions/top-10-users-by-transaction-volume/": {
-      "hash": "c6d596316646138b",
-      "lastmod": "2026-11-22"
+      "hash": "4bb8dca2a74212e7",
+      "lastmod": "2026-11-21"
     },
     "/questions/signup-cohort-activation-within-30-days/": {
-      "hash": "f8b4d8200912aaa4",
-      "lastmod": "2026-11-22"
+      "hash": "2390483acffd7483",
+      "lastmod": "2026-11-21"
     },
     "/questions/top-up-methods-by-plan/": {
-      "hash": "e356a219f1e44177",
-      "lastmod": "2026-11-22"
+      "hash": "9cbd815059fc289a",
+      "lastmod": "2026-11-21"
     },
     "/questions/card-decline-rate-by-plan/": {
-      "hash": "aeab0f5e7de5a8eb",
-      "lastmod": "2026-11-22"
+      "hash": "08b21ea4d36c1f06",
+      "lastmod": "2026-11-21"
     },
     "/questions/users-who-never-sent-money/": {
-      "hash": "55e64ced4150bc14",
-      "lastmod": "2026-11-22"
+      "hash": "a42edfc93021a169",
+      "lastmod": "2026-11-21"
     },
     "/questions/fx-fee-take-rate-by-currency/": {
-      "hash": "a6300a7d8156ae2d",
-      "lastmod": "2026-11-22"
+      "hash": "b498e4dd07f17c23",
+      "lastmod": "2026-11-21"
     },
     "/questions/month-over-month-volume-growth/": {
-      "hash": "3d8b50e3d53599e2",
-      "lastmod": "2026-11-22"
+      "hash": "6333292541ab42e7",
+      "lastmod": "2026-11-21"
     },
     "/questions/days-to-kyc-verification-by-country/": {
-      "hash": "d048cf1747d3cc96",
-      "lastmod": "2026-11-22"
+      "hash": "14d778a6fe37e4b3",
+      "lastmod": "2026-11-21"
     },
     "/questions/top-3-spending-categories-per-country/": {
-      "hash": "b4e77ffbcd3f6301",
-      "lastmod": "2026-11-22"
+      "hash": "109be8f4fe3c849b",
+      "lastmod": "2026-11-21"
     },
     "/questions/referred-vs-organic-first-month-spend/": {
-      "hash": "e5a2e6210e6417ca",
-      "lastmod": "2026-11-22"
+      "hash": "f728d0de33238b33",
+      "lastmod": "2026-11-21"
     },
     "/questions/names-that-dont-match-their-email/": {
-      "hash": "8b43baeee543d908",
-      "lastmod": "2026-11-22"
+      "hash": "0339861db9ca4bd2",
+      "lastmod": "2026-11-21"
     },
     "/questions/her-own-first-name/": {
-      "hash": "0d10326b262c8bcf",
-      "lastmod": "2026-11-22"
+      "hash": "fa2ce0338f416744",
+      "lastmod": "2026-11-21"
     },
     "/questions/shelve-the-films-library-style/": {
-      "hash": "6f50140cb25cf79d",
-      "lastmod": "2026-11-22"
+      "hash": "93bf6315e719dd8e",
+      "lastmod": "2026-11-21"
     },
     "/questions/out-earning-the-boss-what-count-counts/": {
-      "hash": "fd09427075bd00b5",
+      "hash": "c403e70c9278b7fd",
       "lastmod": "2026-11-22"
     },
     "/questions/blank-is-not-null-a-port-data-quality-report/": {
-      "hash": "7be129afcd49fe62",
-      "lastmod": "2026-11-22"
+      "hash": "ed99db7b9b344208",
+      "lastmod": "2026-11-21"
     },
     "/questions/reviewed-twice-scored-higher-the-second-time/": {
-      "hash": "edfe52e43a58a3fe",
-      "lastmod": "2026-11-22"
+      "hash": "aa295dfdbe80c04e",
+      "lastmod": "2026-11-21"
     },
     "/questions/three-day-login-streaks/": {
-      "hash": "9413a40bcd170201",
-      "lastmod": "2026-11-22"
+      "hash": "0536a7784ebbb19a",
+      "lastmod": "2026-11-21"
     },
     "/questions/three-login-days-in-any-7-day-window/": {
-      "hash": "24600b9c1ac5488e",
+      "hash": "246509b86d5895bd",
+      "lastmod": "2026-11-21"
+    },
+    "/questions/every-employee-next-to-their-departments-top-salary/": {
+      "hash": "4b434d35b3f02431",
+      "lastmod": "2026-11-22"
+    },
+    "/questions/number-each-customers-orders/": {
+      "hash": "4b536d54c2b41fc1",
+      "lastmod": "2026-11-22"
+    },
+    "/questions/hires-per-year/": {
+      "hash": "63d7c64f4e87cb2c",
+      "lastmod": "2026-11-22"
+    },
+    "/questions/weekend-logins/": {
+      "hash": "02e0d1470a096ea2",
+      "lastmod": "2026-11-22"
+    },
+    "/questions/ages-on-record-by-class/": {
+      "hash": "849a0ba79bd094f4",
       "lastmod": "2026-11-22"
     },
     "/sql-not-in-null/": {
-      "hash": "877888d6907a52f2",
-      "lastmod": "2026-11-22"
+      "hash": "e26268284112e147",
+      "lastmod": "2026-11-21"
     },
     "/sql-join-fan-out/": {
-      "hash": "19a2bd785cf04565",
-      "lastmod": "2026-11-22"
+      "hash": "3faf1507cfb570e7",
+      "lastmod": "2026-11-21"
     },
     "/sql-between-timestamp/": {
-      "hash": "75959acb4c6c1b07",
-      "lastmod": "2026-11-22"
+      "hash": "7d06539822812959",
+      "lastmod": "2026-11-21"
     },
     "/sql-average-of-averages/": {
-      "hash": "9742fbd853c77ed9",
-      "lastmod": "2026-11-22"
+      "hash": "887cf18a184206c6",
+      "lastmod": "2026-11-21"
     },
     "/sql-left-join-where-filter/": {
-      "hash": "25bb02aa38d05666",
-      "lastmod": "2026-11-22"
+      "hash": "dce5dd8aefe743a9",
+      "lastmod": "2026-11-21"
     },
     "/sql-rollup-interview-questions/": {
-      "hash": "70b71ef5647df323",
+      "hash": "b95fc21436cb3bc5",
       "lastmod": "2026-11-22"
     }
   }

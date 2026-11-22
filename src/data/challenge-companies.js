@@ -689,7 +689,8 @@ window.challengeCompanies = {
     "Spotify",
     "Stripe",
     "Tesla",
-    "DoorDash"
+    "DoorDash",
+    "Chime"
   ],
   "51": [
     "Snowflake"
@@ -984,7 +985,8 @@ window.challengeCompanies = {
     "DoorDash",
     "TikTok",
     "Coinbase",
-    "Monzo"
+    "Monzo",
+    "Chime"
   ],
   "89": [
     "Amazon",
@@ -1091,7 +1093,8 @@ window.challengeCompanies = {
     "Walmart",
     "Microsoft",
     "LinkedIn",
-    "Coinbase"
+    "Coinbase",
+    "Chime"
   ],
   "122": [
     "Netflix",
@@ -1205,7 +1208,8 @@ window.challengeCompanies = {
     "Ramp",
     "Tesla",
     "TikTok",
-    "Bloomberg"
+    "Bloomberg",
+    "Chime"
   ],
   "166": [
     "Plaid"
@@ -1227,7 +1231,8 @@ window.challengeCompanies = {
     "Tesla",
     "DoorDash",
     "TikTok",
-    "Coinbase"
+    "Coinbase",
+    "Chime"
   ],
   "173": [
     "NVIDIA",
@@ -1240,14 +1245,16 @@ window.challengeCompanies = {
   "174": [
     "Stripe",
     "DoorDash",
-    "LinkedIn"
+    "LinkedIn",
+    "Chime"
   ],
   "175": [
     "Stripe",
     "DoorDash",
     "TikTok",
     "LinkedIn",
-    "PayPal"
+    "PayPal",
+    "Chime"
   ],
   "176": [
     "Stripe",
@@ -1386,7 +1393,8 @@ window.challengeCompanies = {
     "Goldman Sachs",
     "Bloomberg",
     "Coinbase",
-    "Monzo"
+    "Monzo",
+    "Chime"
   ],
   "276": [
     "Capital One",
@@ -1396,12 +1404,14 @@ window.challengeCompanies = {
   "277": [
     "Capital One",
     "Revolut",
-    "Coinbase"
+    "Coinbase",
+    "Chime"
   ],
   "278": [
     "Capital One",
     "Plaid",
-    "Monzo"
+    "Monzo",
+    "Chime"
   ],
   "279": [
     "Capital One",
@@ -1429,12 +1439,14 @@ window.challengeCompanies = {
     "Capital One",
     "Revolut",
     "Bloomberg",
-    "Monzo"
+    "Monzo",
+    "Chime"
   ],
   "284": [
     "Capital One",
     "Revolut",
-    "Coinbase"
+    "Coinbase",
+    "Chime"
   ],
   "285": [
     "Capital One",
@@ -1464,7 +1476,8 @@ window.challengeCompanies = {
     "Wise",
     "Bloomberg",
     "Coinbase",
-    "Monzo"
+    "Monzo",
+    "Chime"
   ],
   "290": [
     "Capital One",
@@ -1474,13 +1487,15 @@ window.challengeCompanies = {
   "291": [
     "Capital One",
     "Plaid",
-    "PayPal"
+    "PayPal",
+    "Chime"
   ],
   "292": [
     "Capital One",
     "Stripe",
     "Bloomberg",
-    "PayPal"
+    "PayPal",
+    "Chime"
   ],
   "293": [
     "Capital One",
@@ -1493,7 +1508,8 @@ window.challengeCompanies = {
     "Stripe",
     "Goldman Sachs",
     "Bloomberg",
-    "Monzo"
+    "Monzo",
+    "Chime"
   ],
   "295": [
     "Capital One",
