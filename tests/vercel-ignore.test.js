@@ -78,6 +78,10 @@ describe('vercel-ignore.sh compares against the last successful deployment', () 
     commitTouching(['tests/c.test.js']);
     expect(run('main', lastDeployed)).toBe(SKIP);
   });
+  it('builds when the last deployment sha is not in the clone', () => {
+    commitTouching(['docs/e.md']);
+    expect(run('main', 'deadbeef'.repeat(5))).toBe(BUILD);
+  });
   it('builds when the last deployment is unknown', () => {
     commitTouching(['docs/d.md']);
     expect(run('main', '')).toBe(BUILD);

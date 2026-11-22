@@ -10,7 +10,8 @@
 #   - previews (any branch but main) never build;
 #   - on main, a commit that only touches files that cannot change the
 #     served site skips the build.
-# Everything else builds. Anything unexpected (no parent, empty diff) builds.
+# Everything else builds. Anything unexpected (no previous deployment sha, a sha
+# not in the clone, an empty diff) builds.
 set -u
 ref="${VERCEL_GIT_COMMIT_REF:-}"
 if [ "$ref" != "main" ]; then
@@ -30,7 +31,7 @@ if [ -z "$base" ]; then
   exit 1
 fi
 if ! git cat-file -e "$base^{commit}" 2>/dev/null; then
-  git fetch --quiet --depth=200 origin "$base" 2>/dev/null || true
+  GIT_TERMINAL_PROMPT=0 git fetch --quiet --depth=200 origin "$base" 2>/dev/null || true
 fi
 changed="$(git diff --name-only "$base" HEAD 2>/dev/null)" || { echo "build: cannot diff against the last deployment ($base)"; exit 1; }
 if [ -z "$changed" ]; then
