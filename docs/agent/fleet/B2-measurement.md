@@ -9,3 +9,18 @@
 3. If a verdict's pre-written action is a code change (revert, keep, widen), add a BACKLOG line naming the owner lane; B2 doesn't build it.
 4. Update `docs/agent/scorecard.md`'s Friday table.
 5. One docs PR, self-merged.
+
+## The content funnel (2026-11-22)
+
+- The view `public.content_funnel` (`scripts/content-funnel.sql`) is mailed
+  Mondays and Thursdays 07:50 UTC (`.github/workflows/content-funnel.yml`).
+  B2 owns it: a failure issue labelled `gsc-pipeline` titled "Content funnel
+  report failed" is B2's to clear.
+- On Fridays, read the newest mail's kill-rule candidates and new pages, and
+  write verdicts for any C5 / C6 / C7 claim on `content_funnel` that is due.
+  The verdict cites the metric and the read date; per-page numbers stay out
+  of the repo unless the claim's own read needs them, and then only the
+  page's own row.
+- The SQL changes in a new migration with the same body; the test pins the
+  two together.
+

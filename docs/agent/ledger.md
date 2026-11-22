@@ -27,6 +27,34 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### Content funnel: every content link carries a door, and the funnel is mailed per page (B2)
+
+- **Claimed** 2026-11-22 · **Shipped** on merge (build step + view + mail;
+  the view needs the founder to apply migration
+  `20261122160000_content_funnel_view.sql`) · **Read** 2026-12-10.
+- **Change** (1) `scripts/stamp-app-src.mjs`, a build step: every `/app/`
+  link on a built page without a door gets `src=<the page's door>`; 72
+  links on 23 pages on the day (topic hubs' nav button, Turkish pages,
+  `/fraud-analytics-sql/`, three blog posts, `/kpis/`, the interview hub's
+  mentor link). `?company=` / `?sector=` links keep their derived door.
+  (2) `public.content_funnel` + a twice-weekly mail of it. Guards:
+  `tests/app-link-src.test.js`, `tests/content-funnel.test.js`.
+- **Metric** `content_funnel` (metrics.md, defined in this PR) and, for the
+  door half, `door_solve_rate`'s `(none)` share of `app_opened` arrivals.
+- **Baseline** not read: no production data in a cloud session. The laptop
+  reads `(none)` share for the 14 days to the merge.
+- **Target** by the read: the mail has arrived at least twice with no
+  failure issue, and `app_opened` rows carry the newly stamped doors
+  (`challenges-*` from the nav button, `fraud-analytics-sql`,
+  `turkce-sql-ogren`, `blog-faang-sql-interview-guide`).
+- **Falsification** (written before the data) zero `app_opened` rows with
+  any of those doors in the 14 days after the deploy → the stamp is not
+  reaching production or the links are not clicked; check the built pages
+  first. A failure issue still open at the read → the view is not applied
+  or the mail is broken; the metric is UNREADABLE until fixed.
+- **Confounds** the doors are born on the deploy day: a `(none)` share that
+  falls across it is the stamp, not traffic.
+
 ### AI-visibility pass: answer-first summaries, honest competitor facts, llms.txt entry points (C2)
 
 - **Claimed** 2026-11-22 · **Shipped** on merge (static pages + llms.txt,
