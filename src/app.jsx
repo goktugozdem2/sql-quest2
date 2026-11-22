@@ -30793,16 +30793,19 @@ RULES:
           <div className="bg-gray-900 rounded-2xl border border-purple-500/30 w-full max-w-6xl h-[95vh] overflow-hidden flex flex-col" data-testid="interview-window">
             {/* Interview Header */}
             <div className={`bg-gray-800/50 p-4 border-b border-gray-700 ${!practiceMode && timerWarning === 'red' ? 'animate-pulse bg-red-900/30' : ''} ${practiceMode ? 'bg-gradient-to-r from-cyan-900/30 to-blue-900/30' : ''}`}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <h2 className="text-xl font-bold">
+              {/* Wraps on a phone (A4 UI/UX audit, 2026-11-22): one
+                  unwrapped row put "Quit" 27 px past the window's clipped
+                  edge at 375 px — the only way out of a timed mock. */}
+              <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2" data-testid="interview-header">
+                <div className="flex items-center gap-4 min-w-0">
+                  <h2 className="text-lg sm:text-xl font-bold">
                     {activeInterview.title} 
                     {retryMode && <span className="text-yellow-400 text-sm ml-2">{i18n_t('practice', 'retryMode')}</span>}
                     {practiceMode && <span className="text-cyan-400 text-sm ml-2">{i18n_t('practice', 'practiceModeTag')}</span>}
                   </h2>
                   <span className="text-gray-400">Q{interviewQuestion + 1}/{activeInterview.questions.length}</span>
                 </div>
-                <div className="flex items-center gap-4">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-4 ml-auto">
                   {practiceMode ? (
                     /* Practice Mode - No timer pressure */
                     <div className="px-3 py-1 rounded-lg bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
@@ -30834,6 +30837,7 @@ RULES:
                       }
                     }}
                     className="text-gray-400 hover:text-red-400"
+                    data-testid="interview-quit"
                   >
                     {i18n_t('practice', 'quitInterview')}
                   </button>
@@ -40837,9 +40841,13 @@ RULES:
                     // paywall moments it is the card's own Unlock Pro.
                     onClick={() => canAccess ? startInterview(interview) : (ftbFlag('paywallMoments') && openProForLockedMock(interview))}
                   >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
+                    {/* Stacks on a phone (A4 UI/UX audit, 2026-11-22): the row
+                        did not wrap, so at 375 px the card ran 37 px past the
+                        screen and every Start / Unlock Pro button sat on its
+                        edge. */}
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between" data-testid="mock-card-row">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-2">
                           <h3 className="text-lg font-bold">{i18nInterview.title}</h3>
                           {interview.isFree && (
                             <span className="px-2 py-0.5 bg-green-500/20 text-green-400 rounded text-xs font-medium">
@@ -40868,7 +40876,7 @@ RULES:
                         
                         <p className="text-gray-400 text-sm mb-3">{i18nInterview.description}</p>
                         
-                        <div className="flex items-center gap-4 text-sm">
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
                           <span className="text-gray-500 flex items-center gap-1">
                             <Clock size={14} /> {i18n_t('interviewList', 'minutesLabel', { n: Math.floor(interview.totalTime / 60) })}
                           </span>
@@ -40892,7 +40900,7 @@ RULES:
                         </div>
                       </div>
 
-                      <div className="text-right ml-4">
+                      <div className="sm:text-right sm:ml-4">
                         {completedCount > 0 ? (
                           <div>
                             <div className="text-sm text-gray-400">{i18n_t('interviewList', 'bestScore')}</div>
@@ -40923,7 +40931,7 @@ RULES:
                             </div>
                           </div>
                         ) : (
-                          <div className="flex flex-col gap-2">
+                          <div className="flex flex-wrap gap-2 sm:flex-col">
                             <button
                               className={`px-4 py-2 rounded-lg font-medium ${
                                 canAccess

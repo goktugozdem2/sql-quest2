@@ -2156,6 +2156,16 @@ async function main() {
     chrome.kill();
   }
 
+  // ── UI/UX critical checks — ADVISORY, only with SMOKE_UIUX=1 ──────
+  // U1 U2 U7 U8 on the homepage, a company page and the challenge page at
+  // 375 and 1366 (scripts/smoke/uiux-smoke.mjs). Printed, never counted:
+  // it goes to no pass()/fail(), so it cannot fail the run.
+  if (process.env.SMOKE_UIUX === '1') {
+    const { runUiuxAdvisory } = await import('./smoke/uiux-smoke.mjs');
+    const uiux = await runUiuxAdvisory(URL);
+    console.log('\n  ' + uiux.line);
+  }
+
   // ── Report ────────────────────────────────────────────────────
   console.log('');
   let failed = 0;

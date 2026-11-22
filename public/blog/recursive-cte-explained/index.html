@@ -70,6 +70,9 @@
     .related{background:rgba(15,15,30,.5);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:24px 28px;margin:40px 0}
     .related h4{font-size:13px;font-weight:700;color:#8b98ab;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px}
     .related ul{margin-bottom:0;padding-left:20px}.related li{font-size:14px;line-height:1.8}
+  
+    /* Phone fit (A4 UI/UX audit, 2026-11-22): a table wider than the screen scrolls inside itself instead of widening the page. */
+    @media(max-width:600px){table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}}
   </style>
   <script defer src="/_vercel/insights/script.js"></script>
   <script defer src="/track.js"></script>
