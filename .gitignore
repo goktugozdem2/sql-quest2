@@ -27,6 +27,7 @@ scripts/ph-gallery/.frames/
 scripts/qa/out/
 # smoke bot results (scripts/smoke/, .github/workflows/smoke.yml)
 smoke-out/
+uiux-out/
 smoke-battery.log
 
 # Google service-account keys (the GSC pipeline reads GSC_SA_KEY from the
