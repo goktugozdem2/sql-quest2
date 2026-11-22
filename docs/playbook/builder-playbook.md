@@ -179,3 +179,69 @@ the hard way, and where it helps the SQL Quest incident is named.
 10. The fleet README (lanes, runtimes, merge rule, budgets) copied from
     `docs/agent/fleet/README.md`, with this playbook linked from its first
     line.
+
+## 6. Choosing the next app
+
+Added 2026-11-22, at the founder's request ("burda uyguladığımız yöntemleri
+yine benzer ne gibi uygulamalarda kullanabiliriz").
+
+### The shape that transfers
+
+SQL Quest works because of one shape, not because of SQL. Look for all four:
+
+1. **A dated, high-stakes test.** The person has an interview or exam on a
+   known day. Every SQL Quest purchase came before a date, never from
+   general interest.
+2. **Answers that are checked automatically.** The answer runs in the browser
+   and is graded against an expected output, table or figure. Free-text
+   answers graded by AI are possible, but trust in the grade is lower.
+3. **A skill map with a known syllabus.** A fixed set of skills that a
+   diagnostic can place someone on, which is what the Coach and the
+   Skillmap stand on.
+4. **Searches that name the test.** People search by company or exam name,
+   so company pages, mocks and SEO with dated sources work again.
+
+Weak without these: general skill practice with no date (bash, git, regex).
+People use it, but nobody pays for it in a hurry.
+
+### Candidates (scored 2026-11-22)
+
+| App | Fit | Difficulty |
+|---|---|---|
+| **Python/pandas interview prep** | Same buyers. Code runs in the browser (Pyodide instead of sql.js). Grading compares output tables, as now. Company pages, the Skillmap and the Coach carry over. | Low. **First choice.** |
+| Excel / financial-modelling tests (banking, PE, FP&A) | Dated tests, high willingness to pay. A browser formula engine (HyperFormula) exists, and answers are graded on figures (`ticket-grade`). | Medium |
+| Power BI (DAX) / Tableau certifications | Fixed syllabus, a dated exam, search by certificate name. | Medium. DAX is hard to run in the browser, so mostly scenario questions. |
+| Product-analytics / A/B-test case interviews | Same buyers; could be a module of the existing app. | AI grading of free text, so trust is lower. |
+| Data-engineering "first 90 days" tasks (dbt, ETL) | An extension of the post-hire tickets. | Medium; lower willingness to pay than an interview. |
+| Turkish dated exams (e.g. ALES quantitative) | Dated and gradable; home market. | Different pricing and ability to pay; verify first. |
+
+### What carries over unchanged
+
+Sections 0–5 of this file. In short:
+
+- **Measurement:** the ledger, first-party events and the bot filter.
+- **Money and accounts:** the webhook as the money truth, Checkout Sessions,
+  server-owned plan fields.
+- **Email:** gated, logged senders.
+- **Hosting:** agent-branch deploys off.
+- **Search:** the SEO loop and the GEO panel.
+- **Free tier and paywall:** the quota after value, and the self-opened
+  paywall.
+- **The agent fleet**, with its README.
+
+### What every new app must build from scratch
+
+- **The content:** the question bank, the company research and the mocks.
+- **The buyer signal.** For SQL Quest it was Capital One, and it came from
+  talking to payers, not from analytics.
+
+### How to test demand before building
+
+Do not start a second product to find out. Put a small version inside the
+product that already has the buyers, and write the kill number first:
+
+- For pandas: 10 questions inside SQL Quest, plus a waitlist.
+- Proposed rule: fewer than 50 waitlist sign-ups in 30 days means we don't
+  build it.
+- The founder sets the final number before the test starts, and it goes into
+  the ledger like any other claim.
