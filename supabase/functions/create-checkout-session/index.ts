@@ -32,6 +32,10 @@
 // `{ error: 'checkout_unavailable' }` and the client falls back to the
 // Payment Link (src/utils/checkout-session.js, launchWithFallback).
 //
+// Recovery (M-11, 2026-11-22): every session asks for
+// `after_expiration.recovery` (../_shared/checkout-recovery.ts), so an
+// expired one carries a 30-day link back to a copy of itself.
+//
 // What the webhook does with the result: checkout.session.completed on a
 // trialing subscription grants Pro to the trial end and logs
 // `pro_trial_started` — NOT a purchase. The first real charge after the trial
@@ -41,6 +45,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Stripe from "https://esm.sh/stripe@12.0.0?target=deno";
+import { recoveryParams } from "../_shared/checkout-recovery.ts";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
   apiVersion: "2023-10-16",
@@ -287,6 +292,14 @@ serve(async (req) => {
     else notes.push("promo_not_found");
   }
   if (!params.discounts) params.allow_promotion_codes = true;
+
+  // M-11 (2026-11-22): on expiry Stripe attaches a recovery URL that opens a
+  // copy of this session; stripe-webhook stores it and checkout-abandon puts
+  // it on the mail's button. The copy's promo field follows the rule above —
+  // none when this session already carries a discount, so the copy never
+  // holds both. consent_collection stays OFF: Stripe-sent promotional mail is
+  // the founder's consent decision, not this function's.
+  params.after_expiration = recoveryParams(!!params.discounts);
 
   try {
     // deno-lint-ignore no-explicit-any
