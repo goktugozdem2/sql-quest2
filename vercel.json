@@ -38,7 +38,10 @@
       "a4/**": false,
       "e1/**": false,
       "d2/**": false,
-      "q1/**": false
+      "q1/**": false,
+      "s1/**": false,
+      "r1/**": false,
+      "*/**": false
     }
   },
   "outputDirectory": "public",
