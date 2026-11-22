@@ -5,6 +5,7 @@
 // the read is built from keeps reporting.
 import { describe, it, expect } from 'vitest';
 import { execFileSync } from 'node:child_process';
+import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { topicsOf, splitStatements, statementKind, measureCoverage } from '../scripts/topic-coverage.mjs';
 
