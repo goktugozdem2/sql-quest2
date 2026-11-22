@@ -95,6 +95,12 @@ First pass 2026-11-22:
 | E2 | **Voice of the customer** | five capture points into `feedback` (widget, exit reason at the paywall close, stuck on a challenge, day 2, outcome/cancel), daily tagging and routing, weekly synthesis, loop closure through E1. Brief: `docs/agent/fleet/E2-voice.md` | daily read, weekly synthesis | BACKLOG lines by owner lane; `docs/reads/customer-voice-<date>.md` |
 | B5 | **Onboarding** | arrival → first run → first solve → 3 solves → account → day-2 return; one experiment at a time; owns the order of the first session. Brief: `docs/agent/fleet/B5-onboarding.md` | weekly (Thursday) | `docs/reads/onboarding-<date>.md`; one experiment PR |
 
+### G. Revenue content (added 2026-11-22, founder)
+
+| # | Agent | Lane | Cadence | Output |
+|---|---|---|---|---|
+| C5 | **Revenue content** | content that brings people who pay: improves the money pages that have landings, writes sourced company guides and pages in the converting archetype, fills company sets with B3. Judged on trials/purchases per 1,000 landings, never clicks. Brief: `docs/agent/fleet/C5-revenue-content.md` | daily, one asset | one PR a run; a kill rule read monthly with B4 |
+
 ### D. Orchestration
 
 | # | Agent | Lane | Cadence |
@@ -130,6 +136,7 @@ Each agent has one number it is answerable for, read in D2:
 | A4 | critical + major UI/UX findings per audit run (`uiux_findings`, should reach 0 critical) |
 | B5 | `open_to_first_run`, `first_solve_10m`, day-2 return |
 | E2 | reasons captured per month (`feedback_capture`); reasons → BACKLOG within 7 days |
+| C5 | trials + purchases per 1,000 landing people on the pages it made or changed (28 / 56 d) |
 | B1 | paid conversions per 1,000 arrivals |
 | B2 | claims past their read date without a verdict (should be 0) |
 | B3 | solve-through on new questions |
