@@ -242,6 +242,8 @@ export const COMPANY_INTERVIEWS = {
   // 2026-11-20 — research notes: docs/reads/company-research-2026-11-20.md.
   paypal: {
     name: 'PayPal',
+    // The day the sources were fetched (the page's "Accessed" line).
+    accessed: '20 Nov 2026',
     sector: 'fintech',
     crosslinkDesc: 'Payments and fraud, conditional sums, WHERE vs ON',
     accent: '#003087',
@@ -276,6 +278,8 @@ export const COMPANY_INTERVIEWS = {
 
   coinbase: {
     name: 'Coinbase',
+    // The day the sources were fetched (the page's "Accessed" line).
+    accessed: '20 Nov 2026',
     sector: 'fintech',
     crosslinkDesc: 'Crypto trades, 30-day activity, 7-day retention, cohorts',
     accent: '#0052FF',
@@ -309,6 +313,8 @@ export const COMPANY_INTERVIEWS = {
 
   monzo: {
     name: 'Monzo',
+    // The day the sources were fetched (the page's "Accessed" line).
+    accessed: '20 Nov 2026',
     sector: 'fintech',
     crosslinkDesc: 'Take-home SQL or Python on a business question, then a review of your logic',
     accent: '#FF4F40',
@@ -340,6 +346,41 @@ export const COMPANY_INTERVIEWS = {
       'monzo-joiner-2022': ['Monzo blog — Joining Monzo as a data scientist (first-person account)', 'https://monzo.com/blog/2022/05/18/joining-monzo-as-a-data-scientist', '17 May 2022'],
     },
   },
+
+  // 2026-11-22 — research notes: docs/reads/company-research-2026-11-22.md
+  // (Nubank and N26 researched the same day and deferred, with reasons).
+  chime: {
+    name: 'Chime',
+    // The day the sources were fetched (the page's "Accessed" line).
+    accessed: '22 Nov 2026',
+    sector: 'fintech',
+    crosslinkDesc: 'Users and transactions: timestamps, rolling sums, a retention signal',
+    accent: '#1EC677',
+    title: 'Chime SQL Interview Questions — Users, Transactions & Retention',
+    description: 'Chime SQL interview questions: data scientist screens as candidates report them, the SQL they test (timestamps, windows, retention) and practice. Sourced and dated.',
+    hero: 'Two data scientist reports from late 2025 describe Chime\'s SQL on two tables, users and transactions: timestamps to truncate, CTEs, then ranking, the row before and a rolling sum — and, in one hiring-manager screen, a retention question with no schema given. Practise that shape here, on a card-transaction ledger.',
+    dataShape: 'users and their transactions, with the transaction time stored as a full timestamp',
+    format: [
+      ['Roles where SQL is tested', 'Two of the reports are for Data Scientist; a third, for a software engineering role leaning toward data engineering, also had SQL.', ['prachub-ts-ch', 'prachub-hm-ch', 'prachub-swe-ch']],
+      ['Technical screen', 'One data scientist report (interview October 2025) describes a technical screen of one hour of SQL and one hour of a business case on a spreadsheet of metrics. The candidate wrote that a fast candidate gets through five or six SQL questions in the hour.', ['prachub-ts-ch']],
+      ['Hiring-manager screen', 'Another data scientist report (interview November 2025) describes a recruiter screen, then a one-hour hiring-manager screen split in two: 30 minutes on background, 30 minutes writing SQL. The candidate was told Chime no longer gives a take-home and the next step was the virtual onsite.', ['prachub-hm-ch']],
+      ['The data', 'Both data scientist reports describe two tables, users and transactions. In the hiring-manager screen no schema was given: the candidate queried the rows first to learn the columns, then had to define a retention metric before writing it.', ['prachub-ts-ch', 'prachub-hm-ch']],
+      ['Software engineering role', 'A report for a software role leaning toward data engineering (October 2025) calls the SQL very basic and says it did not include window functions.', ['prachub-swe-ch']],
+      ['What is not settled', 'All three are single candidate reports from late 2025. None names the coding tool, and none describes a data analyst loop; no source we could read states one format for every Chime data role.', []],
+    ],
+    reportedTopics: ['Timestamps truncated to a day or month before grouping', 'Layered CTEs', 'Ranking with ties kept', 'Comparing a row with the one before it', 'Rolling sums over a window', 'Defining a retention metric from users and transactions', 'Basic joins and aggregation (the software engineering report)'],
+    difficulty: 'Reported as medium in the October 2025 technical screen and easy in the November 2025 hiring-manager screen, which ended in a rejection; the software engineering report calls its SQL easy.',
+    shapes: [
+      ['Users and their transactions, the transaction time a full timestamp: metrics per day or month, which means truncating the timestamp first.', 'prachub-ts-ch'],
+      ['The same two tables: rank with ties kept, compare each row with the one before it, and a rolling sum over a window.', 'prachub-ts-ch'],
+      ['Users and transactions with no schema given: what early behaviour signals that a user will be retained — define the metric, then write the SQL.', 'prachub-hm-ch'],
+    ],
+    sources: {
+      'prachub-ts-ch': ['PracHub — Chime Data Scientist technical screen, SQL and a business case (candidate report, interview Oct 2025)', 'https://prachub.com/interview-experiences/chime-data-scientist-interview-experience-sql-and-a-business-case-in-one-technical-screen', '25 Aug 2026'],
+      'prachub-hm-ch': ['PracHub — Chime Data Scientist hiring-manager screen, a retention question with no schema (candidate report, interview Nov 2025)', 'https://prachub.com/interview-experiences/chime-data-scientist-interview-experience-a-schema-less-sql-retention-question-in-the-hm-screen', '25 Aug 2026'],
+      'prachub-swe-ch': ['PracHub — Chime Software Engineer, basic SQL without window functions (candidate report, Oct 2025)', 'https://prachub.com/interview-experiences/chime-software-engineer-interview-basic-sql-without-window-functions-e4b3c47621', '17 Sep 2026'],
+    },
+  },
 };
 
 // The SQL Quest challenges tagged to each new company, chosen against the
@@ -365,6 +406,36 @@ export const NEW_COMPANY_TAGS = {
   PayPal: [286, 287, 276, 285, 175, 280, 281, 290, 291, 292, 157, 270, 271, 297, 298, 82],
   Coinbase: [138, 147, 277, 275, 289, 121, 126, 172, 173, 162, 88, 60, 284, 11, 68, 84],
   Monzo: [275, 289, 288, 285, 176, 295, 278, 282, 293, 294, 157, 283, 299, 296, 88, 86],
+  // 2026-11-22. Chime: users and transactions — timestamps truncated, CTEs,
+  // ties, the row before, rolling sums, a retention signal. One line per id
+  // in NEW_COMPANY_TAG_REASONS below.
+  Chime: [289, 275, 277, 174, 175, 291, 292, 160, 172, 294, 278, 121, 283, 284, 88, 50],
+};
+
+// One line of reasoning per tagged challenge, for sets from 2026-11-22 on:
+// why this challenge practises what the company's sources report. A set
+// without a line for every id, or one that copies another company's set
+// (Jaccard ≥ 0.5), fails tests/company-set-distinct.test.js — that is how a
+// name-swapped doorway would look.
+export const NEW_COMPANY_TAG_REASONS = {
+  Chime: {
+    289: 'transaction timestamps bucketed to a day — the truncate-then-group step both DS reports start with',
+    275: 'a month-level metric per account from a timestamp',
+    277: 'users joined to their transactions and grouped by sign-up month',
+    174: 'the users-to-transactions join with a filter, the basic opener',
+    175: 'users with no transactions survive a LEFT JOIN — the denominator of any retention rate',
+    291: 'per-user totals across two child tables without the join fan-out',
+    292: 'ranking on transaction counts when ties are kept',
+    160: 'RANK against DENSE_RANK side by side — the tie rule the October 2025 report names',
+    172: 'each transaction compared with the one before it',
+    294: 'a running sum over daily spend',
+    278: 'no transactions in the last 14 days — the churn side of retention',
+    121: 'users active in more than one month — a simple retention signal',
+    283: 'a rolling 30-day sum per account',
+    284: 'time from first to second transaction — an early-retention signal',
+    88: 'retention by sign-up cohort',
+    50: 'a 7-day rolling average over a timestamped series',
+  },
 };
 
 // ---------------------------------------------------------------------------

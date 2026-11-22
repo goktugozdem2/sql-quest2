@@ -58,6 +58,97 @@ of the verifier and must never be rounded to `FLAT`.
   before fixing it. (b) critical > 0 on main at the read → **MISS**. (c) a
   run without the six PRs merged → **UNREADABLE**.
 
+### AI-visibility pass: answer-first summaries, honest competitor facts, llms.txt entry points (C2)
+
+- **Claimed** 2026-11-22 · **Shipped** on merge (static pages + llms.txt,
+  no flag) · **Read** 2026-12-20.
+- **Change** (1) `/llms.txt`: a "Start here" list of nine entry points, one
+  line each; the free tier in `freeTierSentence`'s words; the fintech
+  company pages (Capital One, Revolut, Wise, Stripe, PayPal, Monzo; Chime
+  joins automatically when its page exists); the competitor grid that
+  marked every rival "No" on AI and hints removed (the 2026-09-13 read
+  contradicts it). (2) StrataScratch's prices moved to the 2026-11-22 read
+  ($24 / $139 / $289) on five pages; "verified provenance" removed
+  everywhere. (3) An answer-first summary with a practise link at the top
+  of `/vs-datalemur/`, `/best-sql-practice-sites/`,
+  `/datalemur-alternatives/`. Guards: `tests/competitor-facts.test.js`,
+  `tests/llms-txt.test.js`, `tests/alternatives-pages.test.js`.
+- **Metric** `ai_landings_month` (metrics.md, defined in this PR), with the
+  door split for the three pages; Copilot citations (Bing Webmaster Tools,
+  AI Performance) read by hand beside it.
+- **Baseline** not read: the cloud session has no production data. The
+  laptop reads the 30 days to 2026-11-22 before the merge and writes it
+  here.
+- **Target** `ai_landings_month` for the 30 days to 2026-12-20 at or above
+  the baseline + 25%, and at least one `ai:*` person landing on one of the
+  three pages' doors.
+- **Falsification** (written before the data) at or below the baseline,
+  with no `ai:*` arrival on the three doors → the answer-first blocks did
+  nothing measurable; keep the fact fixes (they are correctness, not a
+  bet) and stop adding summaries to more pages until a panel read
+  (`ai_mention_share`) shows a citation of one of them.
+- **Confounds** Gemini is invisible to the metric; a single month of single
+  digits reads `UNREADABLE`, not `FLAT`; PR #134 (Chime) changes llms.txt
+  the same month.
+
+### the Chime company page (Nubank and N26 deferred)
+
+- **Claimed** 2026-11-22 · **Shipped** on merge (agent C1, founder's order of 2026-11-22: "find the SEO pages that bring customers, and build them") · **Read** 2026-12-20.
+- **Change** `/chime-sql-interview/` from the company template: a sourced
+  format section (three PracHub candidate reports, interviews Oct–Nov 2025,
+  fetched 2026-11-22; research `docs/reads/company-research-2026-11-22.md`),
+  a 16-challenge set (5 Easy / 7 Medium / 4 Hard) with one line of reasoning
+  per challenge, the fintech ring, the hub, the app's `?company=` list and
+  the intake list. Company-page count 33 → 34. Nubank and N26 were researched
+  and deferred (reasons in the read). Same commit: the "Accessed" line on the
+  PayPal, Coinbase and Monzo pages now shows 20 Nov 2026 (was a hard-coded
+  13 Sep 2026).
+- **Why** company pages are the best money door (2.3% trial-or-paid per
+  arrival vs 0.5% for `/sql-exercises/`, monetization-ideas §1f); Chime is
+  consumer fintech with a large US candidate pool and no DataLemur or
+  StrataScratch page (both 404 on 2026-11-22).
+- **Metric** `company_page_door` for `page` = `chime-sql-interview` (people
+  by `aid`, bots out: landing → app within 1 hour, first solve), plus
+  `gsc_daily` page-slice clicks and impressions for `/chime-sql-interview/`.
+- **Baseline** 0 (the page does not exist).
+- **Target** by 2026-12-20: indexed, ≥ 150 Google impressions and ≥ 5 clicks
+  in the 28 days to the read, and ≥ 3 people into the app from the page.
+- **Falsification, stated in advance:** indexed and under 50 impressions →
+  MISS, and Chime-shaped (no-incumbent, consumer fintech) pages stop being
+  the next batch's default; not indexed by the read → UNREADABLE (request
+  indexing by hand first, re-read 2027-01-17). 4 weeks is short for a new
+  page: a MISS on clicks with impressions above target is FLAT, not MISS.
+  The P4 prune rule applies at eight weeks (no impressions → noindex).
+
+### five Easy on-ramps: Window, Date and NULL (challenges 320-324)
+
+- **Claimed** 2026-11-22 · **Shipped** on merge · **Read** 2026-12-20.
+- **Change** Five Easy cards appended to the core bank, on shipped datasets:
+  320 "Every Employee Next to Their Department's Top Salary" and 321 "Number
+  Each Customer's Orders" (Window Functions), 322 "Hires per Year" and 323
+  "Weekend Logins" (Date Functions), 324 "Ages on Record by Class" (NULL
+  Handling). Measured that morning through `challengeMatchesSkill` over the
+  198 core cards: Window 3 Easy / 35 Hard, Date 2 Easy, NULL 3 Easy. After:
+  Window 5, Date 4, NULL 4 Easy. Prompts name the outcome, never the method;
+  every solution is run and pinned, and one common wrong answer per card fails
+  through the app's own grader (`tests/challenges-320-324.test.js`), also
+  walked headless in the built app on sql.js.
+- **Metric** `challenge_solve_through` (docs/agent/metrics.md), per card, read
+  within the Easy band.
+- **Baseline** Not readable from the cloud session (no production data). The
+  read takes it in the same window: the median solve-through of every Easy
+  card with 10+ openers, 2026-11-23 → 2026-12-20, same shared filters.
+- **Target** Each new card with 10+ openers at or above that Easy median; the
+  five together (pooled openers) within 5 points of it or above.
+- **Falsification** Pooled solve-through more than 10 points under the Easy
+  median, or any one card with 10+ openers under 50%: that card's prompt or
+  data is the problem, rewrite it before writing more. Fewer than 10 openers
+  on a card is `UNREADABLE` for that card, not `FLAT`; under 30 pooled
+  openers the whole claim is `UNREADABLE`.
+- **Confound** 322 and 324 also join the aggregation topic page's GROUP BY
+  section and 321 the ranking pages, so their openers arrive from more doors
+  than the other three. Read the door (`linkSrc` / `src`) beside the rate.
+
 ### Bing reads the app shell's noindex (bingbot may fetch /app/?…)
 
 - **Claimed** 2026-11-22 · **Shipped** on merge (robots.txt, no flag) ·

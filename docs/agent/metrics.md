@@ -1764,6 +1764,41 @@ Three more traps that belong to cohort B only:
   moves materially against the 247 baseline, check the query mix before
   crediting anything — `UNREADABLE`, same rule as the blog's seasonality.
 
+## `ai_landings_month`
+
+People per 30 days whose first `app_opened` carries a `landingSrc` in the
+`ai` family (`ai:chatgpt`, `ai:perplexity`, `ai:copilot`, `ai:claude`,
+`ai:gemini`), across **every** door — not only `home`. Defined 2026-11-22
+for agent C2 (AI visibility), whose brief is judged by it. It is the
+all-doors count that `landing_src_split` (a share inside the `home` door)
+does not give: an assistant that cites `/vs-datalemur/` lands people on that
+page, and their door is `vs-datalemur`, not `home`.
+
+Same people rule, internal filter and contaminated aids as
+`landing_src_split`; never a window that starts before the field's birth
+(2026-09-06). Run the `landing_src_split` query with the `WHERE door =
+'home'` line removed and this outer select:
+
+```sql
+SELECT door, landing, count(*) AS people
+FROM arrived
+WHERE split_part(landing, ':', 1) = 'ai'
+GROUP BY ROLLUP (door, landing)
+ORDER BY people DESC;
+```
+
+The `ROLLUP` total row is the metric; the `door` split says which page the
+assistant sent them to.
+
+- **A floor, not the channel.** Gemini sends no referrer and no utm, so the
+  assistant that sent a payer never appears here; Copilot citations are
+  read by hand from Bing Webmaster Tools (AI Performance) and reported
+  beside this number, never added to it.
+- **Counts, not rates, under ~12 people a month.** Expect single digits per
+  door for months.
+- **Bots.** Filter the known rendering-crawler fingerprints (shared traps)
+  before counting; an `ai:*` referrer does not make a visit human.
+
 ## `ai_mention_share`
 
 Of the prompts in the panel, what share of an answer engine's answers name
