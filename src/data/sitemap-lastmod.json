@@ -31,7 +31,7 @@
       "lastmod": "2026-11-22"
     },
     "/amazon-sql-interview/": {
-      "hash": "10579948ab5e246e",
+      "hash": "fbb08e863ed36d17",
       "lastmod": "2026-11-22"
     },
     "/netflix-sql-interview/": {
@@ -99,8 +99,8 @@
       "lastmod": "2026-11-22"
     },
     "/sql-quiz/": {
-      "hash": "135a1e613abdb445",
-      "lastmod": "2026-11-21"
+      "hash": "1c9b1fa1a97fe810",
+      "lastmod": "2026-11-22"
     },
     "/weekly/": {
       "hash": "be53fde091b16ce7",
@@ -247,36 +247,36 @@
       "lastmod": "2026-11-21"
     },
     "/blog/faang-sql-interview-guide/": {
-      "hash": "b9c176aa8aa44eff",
-      "lastmod": "2026-11-21"
+      "hash": "f41717ffdbb19cb8",
+      "lastmod": "2026-11-22"
     },
     "/blog/sql-joins-explained/": {
-      "hash": "010908b4493d162b",
-      "lastmod": "2026-11-21"
+      "hash": "708e2f2f0fdf22b0",
+      "lastmod": "2026-11-22"
     },
     "/blog/window-functions-tutorial/": {
-      "hash": "95099f665c7f0e2a",
-      "lastmod": "2026-11-21"
+      "hash": "9241ce0242dbc85a",
+      "lastmod": "2026-11-22"
     },
     "/blog/null-handling-mistakes/": {
       "hash": "20158004d27b2093",
       "lastmod": "2026-11-21"
     },
     "/blog/sql-cte-tutorial/": {
-      "hash": "2fd837f3a1228346",
-      "lastmod": "2026-11-21"
+      "hash": "a450cb293781e897",
+      "lastmod": "2026-11-22"
     },
     "/blog/sql-for-fraud-analytics/": {
-      "hash": "e1f63fc8f1b1d374",
-      "lastmod": "2026-11-21"
+      "hash": "af54fccb86e7e377",
+      "lastmod": "2026-11-22"
     },
     "/blog/sql-group-by-tutorial/": {
-      "hash": "51d525c48228e8a5",
-      "lastmod": "2026-11-21"
+      "hash": "568f2d8c50934b11",
+      "lastmod": "2026-11-22"
     },
     "/blog/sql-case-when-tutorial/": {
-      "hash": "c273f30aaff488ca",
-      "lastmod": "2026-11-21"
+      "hash": "d640f02c35f794c0",
+      "lastmod": "2026-11-22"
     },
     "/privacy/": {
       "hash": "b2ac2d31c67d871c",
@@ -315,24 +315,24 @@
       "lastmod": "2026-11-21"
     },
     "/blog/time-series-sql-hardware-interviews/": {
-      "hash": "4eec78e6687eb759",
-      "lastmod": "2026-11-21"
+      "hash": "c4cec58ff67903ec",
+      "lastmod": "2026-11-22"
     },
     "/blog/left-join-vs-inner-join/": {
-      "hash": "fefe5e54c117c5b1",
-      "lastmod": "2026-11-21"
+      "hash": "6ef1435a5b7ede2b",
+      "lastmod": "2026-11-22"
     },
     "/blog/what-is-a-cte-in-sql/": {
       "hash": "fd2c6cce49624f26",
       "lastmod": "2026-11-21"
     },
     "/blog/recursive-cte-explained/": {
-      "hash": "21f1275f198f3e1d",
-      "lastmod": "2026-11-21"
+      "hash": "d861512cb88666f2",
+      "lastmod": "2026-11-22"
     },
     "/blog/row-number-vs-rank-vs-dense-rank/": {
-      "hash": "8b197b7606abe20a",
-      "lastmod": "2026-11-21"
+      "hash": "55e6708d1373ca09",
+      "lastmod": "2026-11-22"
     },
     "/blog/where-vs-having/": {
       "hash": "9a0ec16a058134f5",
@@ -343,24 +343,24 @@
       "lastmod": "2026-11-21"
     },
     "/blog/sql-running-total/": {
-      "hash": "35b29c8ed821e243",
-      "lastmod": "2026-11-21"
+      "hash": "68057c06432f0578",
+      "lastmod": "2026-11-22"
     },
     "/blog/sql-anti-join/": {
       "hash": "28f1ee516c483418",
       "lastmod": "2026-11-21"
     },
     "/blog/sql-join-nedir/": {
-      "hash": "548b410a2e1ea70e",
-      "lastmod": "2026-11-21"
+      "hash": "f7510e71369dd18a",
+      "lastmod": "2026-11-22"
     },
     "/blog/sql-cte-nedir/": {
       "hash": "490992077540a5ee",
       "lastmod": "2026-11-21"
     },
     "/blog/capital-one-codesignal-data-analyst-assessment/": {
-      "hash": "5d5ed3590fc65f70",
-      "lastmod": "2026-11-21"
+      "hash": "1a91386ce9e95bcf",
+      "lastmod": "2026-11-22"
     },
     "/blog/validate-ai-generated-sql/": {
       "hash": "70f6ffd8e1c16cb3",
