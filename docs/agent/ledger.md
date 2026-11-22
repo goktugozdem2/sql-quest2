@@ -27,6 +27,36 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### a founder-led live mock — would people pay for it? (asked by hand)
+
+- **Claimed** 2026-11-22 · **Shipped** as 3 Gmail drafts, written by E1 at
+  the founder's request ("premium mock taslaklarını ekle"). They count only
+  once the founder sends them; **the clock starts at the send**. · **Read**
+  14 days after the send.
+- **Change** No product change and no price. One question, by hand, to three
+  engaged interview-intent people:
+  - an annual payer with six mock sittings;
+  - a free user who has sat the Fundamentals mock twice;
+  - a free user targeting Wise who reached the quota.
+
+  The question: would a 45-minute live mock with the founder (the company's
+  format, interviewer follow-ups, written notes) be worth paying for, and
+  roughly what would feel fair? The recipients and draft ids are in the
+  laptop's E1 log, not in the repo.
+- **Why** `docs/reads/demand-2026-11-22.md`: the market pays $99–279 for a
+  human mock session; SQL Quest has nothing above $99 a year. It is the
+  only new offer that could add revenue inside the O2 window, and it needs no
+  build.
+- **Metric** a hand count from the founder's inbox: replies, "yes" answers,
+  and the price each "yes" names. It is not in `metrics.md`, because it is
+  read once, by hand, at n = 3.
+- **Baseline** 0 asked.
+- **Target** ≥ 2 replies, and ≥ 1 "yes" at a named price of $49 or more.
+- **Falsification, stated in advance:** 0 "yes" answers from the people who
+  reply, or only "yes" with no price or a price under $30, means a
+  premium session is not worth building into the product yet. Stop. Any
+  price is the founder's decision either way.
+
 ### AI-visibility pass: answer-first summaries, honest competitor facts, llms.txt entry points (C2)
 
 - **Claimed** 2026-11-22 · **Shipped** on merge (static pages + llms.txt,
