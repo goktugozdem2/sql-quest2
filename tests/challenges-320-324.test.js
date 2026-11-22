@@ -79,9 +79,11 @@ describe('the five cards', () => {
   });
 
   it('were appended after the old top id, never re-numbering', () => {
-    const before = bank.filter(c => !IDS.includes(c.id));
+    // ids after 324 are later batches (325-329, the state-graded set, 2026-11-22)
+    const before = bank.filter(c => !IDS.includes(c.id) && c.id < IDS[0]);
     expect(Math.max(...before.map(c => c.id))).toBe(319);
-    expect(bank.slice(-5).map(c => c.id)).toEqual(IDS);
+    const at = bank.findIndex(c => c.id === IDS[0]);
+    expect(bank.slice(at, at + 5).map(c => c.id)).toEqual(IDS);
   });
 
   it('aim at the measured cells: 2 Window Functions, 2 Date Functions, 1 NULL Handling', () => {

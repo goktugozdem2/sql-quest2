@@ -27,6 +27,44 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### State-graded DML/DDL: the first five (challenges 325-329, C6)
+
+- **Claimed** 2026-11-22 · **Shipped** on merge (no flag) · **Read** 2026-12-20.
+- **Change** A new challenge type, `grade: 'state'` (`src/utils/state-grade.js`):
+  the person's statements run on a fresh in-memory copy of the dataset, never
+  the shared `db`, behind a statement allow-list (DROP, ATTACH, PRAGMA and
+  foreign tables always refused), and are graded on what the table holds
+  afterwards through the app's comparator. First set, all on `ecommerce` /
+  `employees`: 325 "Build the VIP Mailing List" (Easy, INSERT from a query),
+  326 "A Raise for the Best-Rated Department" (Medium, UPDATE from a
+  subquery), 327 "The Sync Ran Twice" (Medium, delete copies, keep the
+  lowest id), 328 "Roll February's Units into the Totals" (Medium, upsert),
+  329 "A Refunds Table That Says No" (Medium, CREATE TABLE with PK, FK and
+  CHECK; three bad rows must be rejected). Tag `DDL/DML`, unmapped in
+  SKILL_TO_RADAR: they count as solves and move no Skillmap axis.
+- **Metric** `challenge_solve_through` (docs/agent/metrics.md) per card, read
+  within its band (Easy for 325, Medium for 326-329). `topic_funnel` is
+  defined the same day for C6's topic doors; this set has no topic door yet
+  (no guide or hub), so it is not read here.
+- **Baseline** Not readable from the cloud session (no production data). The
+  read takes it in the same window: the median solve-through of every Easy
+  and every Medium card with 10+ openers, 2026-11-23 → 2026-12-20, same
+  shared filters.
+- **Target** 325 at or above the Easy median; 326-329 pooled within 5 points
+  of the Medium median or above.
+- **Falsification** Pooled 326-329 more than 10 points under the Medium
+  median, or any card with 10+ openers under 40%: read that card's
+  `challenge_errored` messages first (a refusal message or a syntax error is
+  a tooling problem, not a content one). Fewer than 10 openers on a card is
+  `UNREADABLE` for that card; under 30 pooled openers the claim is
+  `UNREADABLE`.
+- **Guardrail** `challenge_errored` on 325-329: a refusal is logged there
+  with the gate's message. More than a third of submits refused means the
+  gate is too tight (e.g. a table function or schema-qualified name a person
+  can fairly use), and the allow-list is the fix.
+- **Confound** 326 and 327 also join the subqueries topic page's scalar/IN
+  section, so they get that page's openers too. Read the door beside the rate.
+
 ### AI-visibility pass: answer-first summaries, honest competitor facts, llms.txt entry points (C2)
 
 - **Claimed** 2026-11-22 · **Shipped** on merge (static pages + llms.txt,

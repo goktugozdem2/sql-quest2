@@ -179,7 +179,7 @@
       "lastmod": "2026-11-22"
     },
     "/sql-exercises/": {
-      "hash": "dd46d25927518f11",
+      "hash": "56f4a81317f094c0",
       "lastmod": "2026-11-22"
     },
     "/after-the-sql-course/": {
@@ -187,7 +187,7 @@
       "lastmod": "2026-11-22"
     },
     "/after-bootcamp/": {
-      "hash": "de401fb7c138dc9d",
+      "hash": "a291a41400ff68ae",
       "lastmod": "2026-11-22"
     },
     "/sql-for-the-ai-era/": {
@@ -195,7 +195,7 @@
       "lastmod": "2026-11-22"
     },
     "/challenges/": {
-      "hash": "37fb0745defd39de",
+      "hash": "d2c00e0c4a17f8b7",
       "lastmod": "2026-11-22"
     },
     "/challenges/aggregation/": {
@@ -227,11 +227,11 @@
       "lastmod": "2026-11-22"
     },
     "/challenges/subqueries/": {
-      "hash": "34735ba93194d674",
+      "hash": "8408ef2246ac2f13",
       "lastmod": "2026-11-22"
     },
     "/challenges/window-functions/": {
-      "hash": "26f160a81a4ae65f",
+      "hash": "2451b51986db8109",
       "lastmod": "2026-11-22"
     },
     "/challenges/ranking-functions/": {
@@ -247,7 +247,7 @@
       "lastmod": "2026-11-22"
     },
     "/blog/faang-sql-interview-guide/": {
-      "hash": "75651218e20ffb4a",
+      "hash": "ad6021c93986ce95",
       "lastmod": "2026-11-22"
     },
     "/blog/sql-joins-explained/": {
@@ -443,7 +443,7 @@
       "lastmod": "2026-11-22"
     },
     "/questions/": {
-      "hash": "8efacc15942b4c64",
+      "hash": "d0d64e49894c1fa9",
       "lastmod": "2026-11-22"
     },
     "/questions/class-survival-breakdown/": {
@@ -807,15 +807,15 @@
       "lastmod": "2026-11-22"
     },
     "/questions/your-first-query/": {
-      "hash": "ac8f1bda45add55d",
+      "hash": "5b3b5c17a5d6ae3e",
       "lastmod": "2026-11-22"
     },
     "/questions/pick-your-columns/": {
-      "hash": "1e75a8c3c4b10533",
+      "hash": "73a5816f9e02d17d",
       "lastmod": "2026-11-22"
     },
     "/questions/filter-with-where/": {
-      "hash": "2383778a2eba8dbb",
+      "hash": "081a90f34ce94f1d",
       "lastmod": "2026-11-22"
     },
     "/questions/comparison-operators/": {
@@ -1179,7 +1179,7 @@
       "lastmod": "2026-11-22"
     },
     "/questions/give-the-top-performers-a-raise/": {
-      "hash": "02a6ce7aae0ebf8c",
+      "hash": "acbe6d43a8fd9f2d",
       "lastmod": "2026-11-22"
     },
     "/questions/recompute-a-stale-counter/": {
@@ -1387,11 +1387,11 @@
       "lastmod": "2026-11-22"
     },
     "/questions/distinct-fmea-categories/": {
-      "hash": "f9c60c5763dec217",
+      "hash": "ba100089443827bf",
       "lastmod": "2026-11-22"
     },
     "/questions/all-failure-mode-reference/": {
-      "hash": "1611905857856fdb",
+      "hash": "104d3659ccc3902f",
       "lastmod": "2026-11-22"
     },
     "/questions/tool-wear-stress-tier/": {
@@ -1399,7 +1399,7 @@
       "lastmod": "2026-11-22"
     },
     "/questions/medium-quality-products/": {
-      "hash": "a9967e2b2fe887ac",
+      "hash": "89bef9cc34a510ce",
       "lastmod": "2026-11-22"
     },
     "/questions/failure-count-by-mode/": {
@@ -1692,6 +1692,26 @@
     },
     "/questions/ages-on-record-by-class/": {
       "hash": "a07b1419b06afbfa",
+      "lastmod": "2026-11-22"
+    },
+    "/questions/build-the-vip-mailing-list/": {
+      "hash": "c09142d96b123c0a",
+      "lastmod": "2026-11-22"
+    },
+    "/questions/a-raise-for-the-best-rated-department/": {
+      "hash": "68dffae3c7704977",
+      "lastmod": "2026-11-22"
+    },
+    "/questions/the-sync-ran-twice/": {
+      "hash": "47ce5e95e1d68ca2",
+      "lastmod": "2026-11-22"
+    },
+    "/questions/roll-februarys-units-into-the-totals/": {
+      "hash": "b76c89d123bb5f02",
+      "lastmod": "2026-11-22"
+    },
+    "/questions/a-refunds-table-that-says-no/": {
+      "hash": "0cd39f6c11f163e3",
       "lastmod": "2026-11-22"
     },
     "/sql-not-in-null/": {
