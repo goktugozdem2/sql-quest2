@@ -71,6 +71,28 @@ export function quotaWallHeadline(quota, trialOn) {
 }
 
 /**
+ * The quota wall's line under the headline for a person who named a company
+ * (M-12, docs/plans/monetization-ideas-2026-11-22.md). Company-set clickers
+ * converted 2 of 2 since 10-01 and company arrivals are the best door, yet a
+ * person preparing for Revolut met the same generic words as everyone else.
+ * `target` is findPlanTarget's answer for `prepTarget.company`
+ * (src/utils/interview-prep.js): a signed archetype (`kind: 'archetype'`)
+ * has a mock authored for it, which is named; a tagged-only company gets "the
+ * <Company> set" and nothing else — never a mock it does not have, never a
+ * readiness number (interview-prep.js: no readiness over a tag filter). No
+ * target → null, and the wall says exactly what it said before. The headline
+ * is not touched (#95's headline read is open).
+ */
+export function quotaWallCompanyLine(target, mockTitle = null) {
+  if (!target || typeof target.company !== 'string' || !target.company.trim()) return null;
+  const company = target.company.trim();
+  if (target.kind === 'archetype' && typeof mockTitle === 'string' && mockTitle.trim()) {
+    return `The rest of the ${company} set and the ${mockTitle.trim()} are in Pro.`;
+  }
+  return `The rest of the ${company} set is in Pro.`;
+}
+
+/**
  * May the modal promise the trial to this person? Both flags on, and no
  * trial on their record already — the same rule create-checkout-session
  * applies (one trial per username), read from what the browser can see. The

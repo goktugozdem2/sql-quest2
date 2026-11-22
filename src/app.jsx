@@ -45,7 +45,7 @@ import { QUESTIONS as READINESS_QUESTIONS, READINESS_SKILLS, READINESS_RECORD_KE
 import { paidWallFor, isColdStart, practiceSolves, previewSwapFor } from './utils/paid-wall.js';
 import { priceRegionFor, planPrices, checkoutLinkFor } from './utils/regional-price.js';
 import { trialEndingLine } from './utils/trial-ending.js';
-import { wantsTrial, buildCheckoutSessionBody, requestCheckoutSession, launchWithFallback, checkoutInFlight, warmCheckoutSession, CHECKOUT_REENTRY_MS, trialOffered, TRIAL_CARD_COPY, TRIAL_TERMS, quotaWallHeadline, currencyLine } from './utils/checkout-session.js';
+import { wantsTrial, buildCheckoutSessionBody, requestCheckoutSession, launchWithFallback, checkoutInFlight, warmCheckoutSession, CHECKOUT_REENTRY_MS, trialOffered, TRIAL_CARD_COPY, TRIAL_TERMS, quotaWallHeadline, currencyLine, quotaWallCompanyLine } from './utils/checkout-session.js';
 import { companySetGate, companySetFreeIds, companySetProgress, quietAskDecision, deadlineOfferFor, deadlineEventMeta, withEarlyWall, pickProMockId, FREE_MOCK_ID, quotaGate, FREE_SOLVE_QUOTA, quotaFreePaths, QUOTA_FREE_PATH_COPY, milestoneTier } from './utils/free-tier-boundary.js';
 import { expandStageChallenges, placementStartIndex as roadmapPlacementStartIndex } from './utils/roadmap.js';
 import { shouldEmitLockEvent, lockEventKey } from './utils/lock-events.js';
@@ -7824,6 +7824,10 @@ function SQLQuest() {
         linkSrc: proModalReason?.linkSrc || null,
         // The soft gate behind the ask (paywall moments, 2026-10-17).
         gate: proModalReason?.gate || null,
+        // The quota wall's company line (M-12): which company, signed or
+        // tagged — the 12-20 read splits the wall by its presence.
+        wallCompany: proModalReason?.wallCompany?.company || null,
+        wallCompanyKind: proModalReason?.wallCompany?.kind || null,
         priceRegion,
         // Was the 7-day trial on the cards this person saw (2026-10-01).
         trialOffered: trialOfferOn,
@@ -23496,6 +23500,21 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     } catch (_) { return null; }
   };
 
+  // The quota wall speaks to the person's company (M-12, 2026-11-22): the
+  // company they named (`prepTarget.company`), when it has a plan target —
+  // a signed archetype (its mock named) or a tagged set. Stamped on the
+  // free_quota reason so the modal and pro_modal_shown read the same thing.
+  const quotaWallCompany = () => {
+    if (window.FF?.feature?.('quotaWallCompany') !== true) return null;
+    try {
+      const target = prepTarget?.company ? findPlanTarget(prepTarget.company, challenges, window.challengeCompanies || {}, mockInterviews) : null;
+      if (!target) return null;
+      const mockTitle = target.kind === TARGET_KIND.ARCHETYPE ? companyMockTitle(target.company) : null;
+      const line = quotaWallCompanyLine(target, mockTitle);
+      return line ? { company: target.company, kind: target.kind, line } : null;
+    } catch (_) { return null; }
+  };
+
   const isContentLocked = (type, item) => {
     if (isPro) return false;
     switch (type) {
@@ -23778,7 +23797,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
       // previews as "free", and the quota wall would refuse them. Say the
       // true thing instead — the lock row above is already written.
       if (freeQuotaSpent()) {
-        setProModalReason({ type: 'free_quota', used: solvedChallenges.size, quota: FREE_SOLVE_QUOTA, solvedCount: solvedChallenges.size, topic: null });
+        setProModalReason({ type: 'free_quota', used: solvedChallenges.size, quota: FREE_SOLVE_QUOTA, solvedCount: solvedChallenges.size, topic: null, wallCompany: quotaWallCompany() });
         setShowProModal(true);
         return;
       }
@@ -23846,7 +23865,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
         quota: quota.quota,
       });
       if (openColdStartInstead(challenge.id)) return;
-      setProModalReason({ type: 'free_quota', used: quota.used, quota: quota.quota, solvedCount: solvedChallenges.size, topic: null });
+      setProModalReason({ type: 'free_quota', used: quota.used, quota: quota.quota, solvedCount: solvedChallenges.size, topic: null, wallCompany: quotaWallCompany() });
       setShowProModal(true);
       return;
     }
@@ -32508,9 +32527,17 @@ RULES:
                     // The founder's free quota (week of 2026-09-12, item 2): ten
                     // free solves, then the bank is Pro. Says what stays free.
                     <div className="mt-3" data-testid="pro-modal-free-quota">
-                      <p className="font-medium" style={{ color: '#F2F0EA' }}>
-                        You've solved {proModalReason.used} — the free quota is {proModalReason.quota}.
-                      </p>
+                      {proModalReason.wallCompany?.line ? (
+                        // M-12: the person named a company — say what of
+                        // THEIR set is behind the wall. Headline untouched.
+                        <p className="font-medium" style={{ color: '#F2F0EA' }} data-testid="quota-wall-company">
+                          {proModalReason.wallCompany.line}
+                        </p>
+                      ) : (
+                        <p className="font-medium" style={{ color: '#F2F0EA' }}>
+                          You've solved {proModalReason.used} — the free quota is {proModalReason.quota}.
+                        </p>
+                      )}
                       <p className="text-sm mt-2" style={{ color: '#8A8E99' }}>
                         Everything you've solved stays open, and the lessons, warm-ups, the daily and the Coach stay free. Pro opens the rest of the bank — all {bankCountLabel(challenges.length) || challenges.length} challenges, the Hard set and the mock interviews.
                       </p>

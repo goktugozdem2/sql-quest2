@@ -438,3 +438,60 @@ describe('the quota wall headline', () => {
     expect(app).toMatch(/\{trialOfferOn \? TRIAL_CARD_COPY\.monthly : 'Billed monthly'\}/);
   });
 });
+
+// The quota wall speaks to the person's company (M-12,
+// docs/plans/monetization-ideas-2026-11-22.md). Pins: no company → the wall
+// is exactly what it was; a signed archetype names its mock; a tagged-only
+// company gets "the <Company> set", no mock, no number; the headline is not
+// touched; the line is fed by findPlanTarget on prepTarget.company and logged.
+import { quotaWallCompanyLine } from '../src/utils/checkout-session.js';
+import { findPlanTarget, TARGET_KIND } from '../src/utils/interview-prep.js';
+import { loadQuestionBank } from '../scripts/question-slugs.mjs';
+import vm from 'node:vm';
+describe('the quota wall names the person\'s company', () => {
+  const ctx = { window: {} }; vm.createContext(ctx);
+  vm.runInContext(read('src/data/mock-interviews.js'), ctx);
+  const mocks = ctx.window.mockInterviewsData || [];
+  const { bank, tags } = loadQuestionBank();
+
+  it('no company, or a company with no plan target → null (the old words stay)', () => {
+    expect(quotaWallCompanyLine(null)).toBeNull();
+    expect(quotaWallCompanyLine({})).toBeNull();
+    expect(quotaWallCompanyLine({ company: '  ' })).toBeNull();
+    expect(findPlanTarget('Nowhere Inc', bank, tags, mocks)).toBeNull();
+    expect(quotaWallHeadline(10, true)).toBe(`10 free solves done. Try Pro free for ${TRIAL_DAYS} days.`);
+  });
+
+  it('Capital One and Revolut (signed archetypes) name their mock', () => {
+    for (const company of ['Capital One', 'Revolut']) {
+      const t = findPlanTarget(company, bank, tags, mocks);
+      expect(t.kind, company).toBe(TARGET_KIND.ARCHETYPE);
+      const title = mocks.find(m => m.id === t.mockId).title;
+      expect(quotaWallCompanyLine(t, title)).toBe(`The rest of the ${company} set and the ${title} are in Pro.`);
+    }
+  });
+
+  it('a tagged-only company gets its set — no mock, no number, no readiness', () => {
+    const t = findPlanTarget('Wise', bank, tags, mocks);
+    expect(t.kind).toBe(TARGET_KIND.TAGGED);
+    const line = quotaWallCompanyLine(t, 'Ten Classic SQL Interview Patterns');
+    expect(line).toBe('The rest of the Wise set is in Pro.');
+    expect(line).not.toMatch(/\d|%|mock|ready|readiness/i);
+  });
+
+  it('app.jsx: fed by findPlanTarget on prepTarget.company, behind the flag, stamped on both free_quota reasons, logged', () => {
+    const app = read('src/app.jsx');
+    const flags = read('src/data/feature-flags.js');
+    expect(flags).toMatch(/\n\s*quotaWallCompany: true,/);
+    const at = app.indexOf('const quotaWallCompany = () => {');
+    const fn = app.slice(at, app.indexOf('\n  };', at));
+    expect(fn).toContain("window.FF?.feature?.('quotaWallCompany') !== true");
+    expect(fn).toContain('findPlanTarget(prepTarget.company');
+    expect(fn).toContain('target.kind === TARGET_KIND.ARCHETYPE ? companyMockTitle(target.company) : null');
+    expect((app.match(/setProModalReason\(\{ type: 'free_quota'[^}]*wallCompany: quotaWallCompany\(\) \}\)/g) || []).length).toBe(2);
+    expect((app.match(/setProModalReason\(\{ type: 'free_quota'/g) || []).length).toBe(2);
+    expect(app).toContain('data-testid="quota-wall-company"');
+    expect(app).toContain('wallCompany: proModalReason?.wallCompany?.company || null,');
+    expect(app, 'the headline is #95\'s and stays').toMatch(/proModalReason\.type === 'free_quota'\s*\?\s*quotaWallHeadline\(proModalReason\.quota, trialOfferOn\)/);
+  });
+});

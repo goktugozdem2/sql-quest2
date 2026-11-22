@@ -3068,6 +3068,17 @@ solves) are that leak, not a hole in the definition.
 |---|---|
 | `free_quota` | from the `freeQuota` flip: an unsolved challenge opened at or past the free quota (10 solves) — the founder's week-1 decision |
 
+**Split by company (M-12, from 2026-11-22).** `pro_modal_shown {reason:
+'free_quota'}` carries `wallCompany` (the person's `prepTarget.company` when
+it has a plan target, else null) and `wallCompanyKind` (`archetype` |
+`tagged`); with a company the wall's first line names the rest of that
+company's set (and its mock, for a signed archetype). Read people shown →
+plan click (`modalReason='free_quota'`) for `wallCompany` present vs absent.
+Before 11-22 there is no such field: the baseline proxy counts a person as
+company-present when any of their rows carries `company` or an `arrivalSrc`
+starting `company:` — 09-26 → 11-21: **5 / 26 = 19.2%** clicked with a
+company vs **14 / 118 = 11.9%** without (bots and internal accounts out).
+
 ## `payer_churn`
 
 Denominator: people (by username) with `pro_purchase_completed`,
