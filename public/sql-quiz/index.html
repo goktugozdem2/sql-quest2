@@ -169,6 +169,8 @@
     .start-stat-dot{width:6px;height:6px;border-radius:3px;background:#22c55e}
 
     .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center}.ft p{font-size:13px;color:#7f8da1}.ft a{color:#8b98ab;font-size:13px}.ft a:hover{color:#c084fc}.flk{margin-top:18px;display:flex;justify-content:center;gap:24px;flex-wrap:wrap}
+    /* Phone fit (A4 UI/UX audit, 2026-11-22): on a phone the nav keeps its CTA and drops the text links, as the company pages do. */
+    @media(max-width:600px){.nl a:not(.btn){display:none}.ni{padding:12px 16px}}
   </style>
   <!-- Microsoft Clarity behavioral analytics. Project wovalt3jwh.
        Password/email inputs auto-masked. Privacy policy: /privacy.html -->

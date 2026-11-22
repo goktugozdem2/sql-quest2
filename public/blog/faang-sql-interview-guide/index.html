@@ -58,6 +58,9 @@
     .cta-box h3{font-size:24px;margin-bottom:12px;color:#f1f5f9;font-family:'Space Grotesk',sans-serif}.cta-box p{max-width:480px;margin:0 auto 28px}
     .cta-main{padding:14px 36px;font-size:16px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:12px;font-weight:700;display:inline-flex;align-items:center;transition:all .3s;text-decoration:none}.cta-main:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(124,58,237,.35);text-decoration:none}
     .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center}.ft p{font-size:13px;color:#7f8da1}.ft a{color:#8b98ab}.ft a:hover{color:#c084fc}
+  
+    /* Phone fit (A4 UI/UX audit, 2026-11-22): a table wider than the screen scrolls inside itself instead of widening the page. */
+    @media(max-width:600px){table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}}
   </style>
 <style data-phone-fit>.btn.bo{min-height:44px}@media(max-width:600px){.ni a,.ni .bp,.nl .btn{min-height:44px}}</style></head>
 <body>
