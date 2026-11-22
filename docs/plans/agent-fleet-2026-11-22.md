@@ -107,6 +107,14 @@ First pass 2026-11-22:
 |---|---|---|---|---|
 | C6 | **Topics** | SQL topics we don't cover (DDL/DML first: 0 challenges on CREATE TABLE, indexes, views, UPSERT, transactions, JSON), daily research → questions → guide → hub → links; builds the state-graded challenge type DDL/DML needs. Brief: `docs/agent/fleet/C6-topics.md` | daily, one funnel step | one PR a run |
 
+### I. Quality step for content (added 2026-11-22, founder)
+
+| # | Agent | Lane | Cadence | Output |
+|---|---|---|---|---|
+| Q1 | **Content QA** | the separate quality step before A1 for anything a person reads or solves. It blind-solves every new challenge, tries valid alternatives and common wrong answers, checks determinism, honest difficulty and prompt rules, runs every query on a page, re-fetches sources, reads the page cold, runs A4's layout checks, and does a post-deploy check. Brief: `docs/agent/fleet/Q1-content-qa.md` | every content PR + weekly re-check | QA PASS / QA FAIL comment; A0 needs PASS |
+
+Pipeline for content: **author → Q1 → A1 → A0 → post-deploy check**.
+
 ### D. Orchestration
 
 | # | Agent | Lane | Cadence |
@@ -144,6 +152,7 @@ Each agent has one number it is answerable for, read in D2:
 | E2 | reasons captured per month (`feedback_capture`); reasons → BACKLOG within 7 days |
 | C5 | trials + purchases per 1,000 landing people on the pages it made or changed (28 / 56 d) |
 | C6 | topic-page arrivals who solve one of its questions (`topic_funnel`); solve-through on new questions |
+| Q1 | content defects people find after merge (0); solve-through of new questions vs the bank median |
 | B1 | paid conversions per 1,000 arrivals |
 | B2 | claims past their read date without a verdict (should be 0) |
 | B3 | solve-through on new questions |

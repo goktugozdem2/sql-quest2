@@ -38,6 +38,7 @@ Turning it on is the held part.
 
 ## The decision, per PR, in this order
 
+0. **Content PRs** (challenges, guides, blog posts, hubs, company, comparison and AI-visibility pages) need **QA PASS from Q1** (`Q1-content-qa.md`) on the current head. Without it, A0 holds the PR and says so.
 1. **A1's verdict** on the current head is MERGE.
    - If a commit landed after the verdict, A1 must re-review first.
    - REVISE or REJECT means hold, and A0 says so.
