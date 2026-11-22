@@ -14,6 +14,20 @@ Disallow: /app/?
 Disallow: /app?
 Disallow: /app.html
 
+# 2026-11-22 (C1, docs/reads/bing-drop-2026-11-22.md): Bing is the exception.
+# Blocked, the parameterised app URLs did not stay out of Bing's index — they
+# went in as bare URLs it may not fetch: blocked_by_robots 0 → 819 and
+# in_index 163 → 830 from 09-24 to 11-20, against a 422-URL sitemap and ~420
+# pages Bing has fetched with a 200. Bing can only drop them once it reads the
+# shell's noindex, so bingbot may fetch /app/?… again. A named group replaces
+# `*` for Bing, so it carries the rest of the default list.
+User-agent: bingbot
+Allow: /
+Disallow: /api/
+Disallow: /app.js
+Disallow: /app.js.map
+Disallow: /data.js
+
 # AI training crawlers — welcome
 User-agent: GPTBot
 Allow: /

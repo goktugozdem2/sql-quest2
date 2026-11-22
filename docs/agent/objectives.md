@@ -42,6 +42,64 @@ target becomes 2.5× that number (rounded up) and the checkpoints scale with
 it; below 5, 10 stands. That rule is written before the read so the read
 cannot negotiate it.
 
+### Day 0, measured twelve days late (B2, read 2026-11-22)
+
+The 11-10 session never wrote this row; by the process rule below, that gap
+is itself a finding. Read on 2026-11-22 from production, same definitions
+(metrics.md): payers = distinct usernames with `pro_purchase_completed`,
+`reason='stripe_webhook'` (a trial start is not a payer; renewals are not
+counted); six-solvers = `reach_6_rate`'s `solved_6` (people by
+`coalesce(aid, username)` with six distinct `challenge_solved` ids inside the
+window); bots out (`metadata.bot`, the four crawler viewports, `ref:aocr.org`),
+internal usernames out, the founder's 11-20 checkout test out (it bought
+nothing). Active subscribers come from `users.data` (proStatus, proType,
+proExpiry) cross-checked against the webhook rows — the agent cannot open
+Stripe → Subscriptions, so this column is not the Stripe read the metric asks
+for.
+
+| | **2026-11-10 (day 0)** | **2026-11-22 (day 12)** | 2026-10-02 (last O1 read) |
+|---|---|---|---|
+| Payers / 30 d | **2** (10-23 monthly $29, 11-02 monthly $29 after a trial) | **3** at 09:29Z (+ 11-21 annual $99 after a trial); **2** from 16:37Z today, when the 10-23 payment leaves the window | 2 |
+| Gross in the window | US$58 | US$157 | — |
+| Six-solvers / 30 d | **72** (of 279 who solved one) | **64** (of 229) | 223 (of 524), 30 d to 10-02 |
+| Payers ÷ six-solvers | 2.8% | 4.7% (3.1% on 2 payers) | 0.9% |
+| Active paying subscribers | **4** (2 annual, 2 monthly) | **5** (3 annual, 2 monthly; one monthly renews 11-23) | 3 |
+| Trials in flight | 0 (one annual trial past day 7, its charge failing since 11-06 — never paid) | 1 live (monthly, ends 11-24) + 1 cancelled ending today | — |
+
+Not counted as paying: a lifetime row with no Stripe customer (a grant), the
+annual trial whose day-7 charge has failed four times since 11-06, and a
+monthly payer whose renewal failed on 11-01 (revoked; he started a new trial
+on 11-17).
+
+**The scaling rule, applied as written:** day-0 payers / 30 d = **2**, below
+5 → **the target stays 10**, checkpoints unchanged.
+
+**Which factor is short — six-solvers, by 4–5×.** The rate after them is at
+or above the line the decomposition asked for (2.8–4.7% against the
+example's ~2.2%); the volume is not. Ten payers a month at today's ~3–4%
+needs ~250–330 six-solvers a month; there were 64–72. Six-solvers fell from
+223 (30 d to 10-02) to 72 (to 11-10) to 64, with people who solved anything
+falling 524 → 279 → 229. Both halves moved: fewer people solved anything
+(the top shrank by ~55%), and fewer of those who did reached six (43% →
+26% → 28%; read that step against the 09-26 ten-solve quota and the
+first-screen change before blaming either). Where the arrivals went is C1's
+read (`bing_stats`, `gsc_daily`), not this one.
+
+**The 12-10 checkpoint (target 4), what it needs.** Of today's 3 payers,
+only the 11-21 annual is still inside the 12-10 window (11-10 → 12-10).
+Reaching 4 needs **three more first purchases (or after-trial conversions)
+between now and 12-10**; the one live trial ends 11-24. On today's
+trajectory the day-30 falsification ("below 3 payers AND six-solvers below
+200") has its six-solver half already true (64) and its payer half
+borderline — read it as written on 12-10, do not pre-empt it.
+
+**A closed door, written here because its falsification says so.** The
+activated-note email (ledger, "the second ask") went to 80 of the activated
+non-payers in two batches (09-12, 10-01): 2 came back within 48 h, 1 clicked
+a plan, 0 trialled or paid. Its rule fired: **this segment is not mailed
+again** — the ~56 not yet reached included (sending is the founder's call;
+this records the evidence).
+
 ### What 10 decomposes into
 
 The one mechanism we have watched sell is a person reaching their sixth
@@ -59,7 +117,8 @@ solve in a first session and being asked (objectives O1, "Correction,
 
 | Date | Payers / 30 d | Also read |
 |---|---|---|
-| 2026-11-10 (day 0) | measure | six-solvers / 30 d, active subscribers |
+| 2026-11-10 (day 0) | measure → **2** (read 11-22, above) | six-solvers / 30 d **72**, active subscribers **4** |
+| 2026-11-22 (day 12, extra) | **3** (2 from 16:37Z) | six-solvers **64**, active subscribers **5** |
 | **2026-12-10** (day 30) | **4** | six-solvers / 30 d, quota wall → paid |
 | **2027-01-09** (day 60) | **6** | same, plus first-month churn |
 | **2027-02-08** (day 90) | **10** | same |

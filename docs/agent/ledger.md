@@ -56,6 +56,47 @@ of the verifier and must never be rounded to `FLAT`.
   page: a MISS on clicks with impressions above target is FLAT, not MISS.
   The P4 prune rule applies at eight weeks (no impressions → noindex).
 
+### Bing reads the app shell's noindex (bingbot may fetch /app/?…)
+
+- **Claimed** 2026-11-22 · **Shipped** on merge (robots.txt, no flag) ·
+  **Read** 2026-12-20.
+- **Change** `public/robots.txt` gets a `User-agent: bingbot` group: the
+  default list without `/app/?`, `/app?`, `/app.html`. Every other crawler
+  keeps the 09-23 rule. The shell stays `noindex, follow`. Guard:
+  `tests/robots.test.js`.
+- **Why** `docs/reads/bing-drop-2026-11-22.md`. From the 09-23 robots rule,
+  Bing's `blocked_by_robots` went 0 → 819 and `in_index` 163 → 830 in step,
+  against a 422-URL sitemap and 416 URLs fetched with a 200: ≥ 408 indexed
+  URLs are outside the sitemap, and the blocked app URLs (1,173 distinct
+  query strings linked from the site) are the only population that size.
+  Bing clicks peaked the week the rule shipped (280, from 09-19) and fell
+  every week after, to 37 (from 11-07); every practice query lost position
+  together, and untouched pages fell with them. Hypothesis: hundreds of bare,
+  contentless URLs in the index weigh on how Bing rates the site.
+- **Metric** `bing_blocked_urls` (mechanism) and `bing_weekly_clicks`
+  (outcome), both in metrics.md as of this claim.
+- **Baseline** `blocked_by_robots` **819**, `in_index` **830** (11-20);
+  weekly Bing clicks **37** (week from 11-07), 25 in the 6 days from 11-14.
+- **Target** by 12-20: `blocked_by_robots` ≤ 400 (Bing re-read the URLs),
+  and weekly Bing clicks ≥ 60 for two consecutive weeks.
+- **Guardrail** sitemap URLs crawled in the last 28 days (`bing_url_status`,
+  `last_crawled >= checked_at - 28 days`) not below **131 of 419** — the app
+  URLs must not starve the real pages of crawls.
+- **Falsification, stated in advance:** (a) `blocked_by_robots` ≤ 400 and
+  clicks still ≤ 40 a week for the three weeks after it got there → the
+  stubs were not the cause; **MISS**, and put the `/app/?` lines back in the
+  bingbot group (crawl budget was the rule's reason). (b) the guardrail falls
+  below 100 → revert at once, whatever clicks do. (c) `blocked_by_robots`
+  has not fallen by ≥ 200 at the read → **UNREADABLE** (Bing has not
+  re-read them), extend four weeks.
+- **Confounds** #72 (bingbot noindex on the 307 question pages, 11-20) works
+  on the same mechanism in the same weeks: a click recovery cannot be split
+  between the two, and #72's own `in_index` check (down ≥ 250) will now be
+  met by the app URLs leaving — #72 should read its own URLs in
+  `bing_url_status` / URL Inspection instead. #65 (the `/sql-exercises/`
+  title, 11-20, read 12-12) moves that page's CTR in the same window. December
+  seasonality. Read the three as one Bing window and say so.
+
 ### challenge 27 loads the table it borrows (employees on ecommerce)
 
 - **Claimed** 2026-11-22 · **Shipped** on merge · **Read** 2026-12-20.
@@ -690,7 +731,7 @@ of the verifier and must never be rounded to `FLAT`.
   move who reaches the modal; read the funnel per click, not per visitor.
   India's 3D Secure failures sit between a click and a trial exactly as
   they sat between a click and a payment.
-- **Verdict** _pending_
+- **Verdict** **HIT** (B2, read 2026-11-22 over 10-01 → 11-21; bots, internal accounts and the founder's 11-20 checkout test out): click → trial **9 of 29** people with `pro_checkout_clicked {trial: true}` (31%, target ≥ 25% on ≥ 15 clickers; inside the claim's own window to 10-22 it was 4 of 14, 29%, one clicker short of n). Trial → paid on the **7 trials at least 8 days old: 3 paid (43%, target ≥ 40%)** — two `after_trial` conversions (11-02 monthly, 11-21 annual) and one whose day-7 charge failed and who paid through a new checkout on 10-23; 3 cancelled inside the week; 1 annual has failed its charge four times since 11-06. Strictly `after_trial` rows only: 2 of 7 (29%). Disputes: no webhook event exists for them; `checkout_disputes` reads 0 by the founder's hand to 11-22. Every payer since 10-01 except the India sale of that morning came through a trial. **Keep `checkoutTrial` on.** Confounds as written (quota wall, P1 flags, company-set wall move who clicks; read per click). The failed day-7 charges (2 of 7 matured trials) are M-01's claim, not this one.
 
 ### "Explain your approach" in every live / talk-through mock
 
@@ -760,6 +801,7 @@ of the verifier and must never be rounded to `FLAT`.
   Stripe page (20 of 21 checkout returns came back after ~32 s there).
   `plans_first` lower than control → the list was doing the selling; revert.
 - **Verdict** _pending_ — **interim 2026-11-22, not the read:** first modal per aid from the 10-08 flip, bots out: control 100 people → 13 picked a plan (13.0%), `plans_first` 110 → 13 (11.8%), **0.91× control** against a 1.5× target; webhook trial/purchase 4 vs 2. The pre-registered read waits for 150 viewers per arm (~mid-December at this rate). On this trend the 1.5× target is out of reach and the result sits inside the ±20% band whose rule is "keep control; the next suspect is the Stripe page".
+- **Verdict (B2, 2026-11-22)** **UNREADABLE — n too small, re-read 2026-12-20.** The read was pre-registered as "flip + 21 days or 150 modal viewers per arm, whichever is later"; at 100 (control) and 110 (`plans_first`) first-modal people neither arm has 150. The interim line above is the current number (0.91× control); if it holds at 150 per arm, the ±20% rule keeps control and the next suspect is the Stripe page.
 
 ### First 90 Days: a hired status and five PM tickets, so Pro has a job after the interview
 
@@ -791,7 +833,7 @@ of the verifier and must never be rounded to `FLAT`.
   Interview tab after a passed date before adding content. Openers who do not
   solve (< 30%) → the tickets are too open; add the grain hint ("one row per
   tier") before more tickets.
-- **Verdict** _pending_
+- **Verdict** **UNREADABLE — n too small** (B2, read 2026-11-22 over 10-04 → 11-21): **one** person set the hired status (10-19, from the Coach; `interview_outcome` wrote no row in the window, so the outcome note's door produced nobody), and `ticket_opened` has **no row ever**, locked or not — `ticket_completion` has no denominator and no locked open led to a plan click. The literal falsification ("nobody sets the status") missed by one person; its reading — the door is what is short, not the content — is what the numbers say. No payer has the status, so `post_hire_retention` has not started. One status and zero opens also needs a check that the First 90 Days card actually renders for a hired person (BACKLOG, owner A2). Re-read 2027-01-04.
 
 ### the live tutor nudge reaches the browser, speaks to the person, and Help's first answer stays on rung 1
 
@@ -1066,7 +1108,7 @@ of the verifier and must never be rounded to `FLAT`.
   and submissions are not Bing's constraint; read the 93 "SEO/GEO issues"
   warnings before building or submitting anything more. 250–299 → extend
   to 10-21, keep submitting, change nothing else.
-- **Verdict** _pending_
+- **Verdict** **HIT** (B2, read 2026-11-22 from `bing_crawl_daily` — the API series, not the Site Explorer bar the baseline came from; the two were never compared on one day): `in_index` **512 on 10-07** (163 on 09-23, 319 on 09-30) against ≥ 300; 830 on 11-20. The fixed sample through `bing_url_status`: 11 of 12 crawled by 11-21 (`/questions/top-failure-mode-by-quality/` never), 5 of them on 09-28/29, inside the window. Crawled is not "indexed", so the 6-of-12 half is read as crawl, not index. Confound: the IndexNow automation (09-30) landed inside the window. An index this size says nothing about clicks; read `bing_stats` for those.
 
 ### the first screen is a challenge, not a quiz
 
@@ -1478,7 +1520,7 @@ of the verifier and must never be rounded to `FLAT`.
 - **Confounds** `freeQuota` (09-21) and `quietEarlyAsks` (09-29) change what
   happens after the click for every arm equally; the per-arm comparison holds,
   the absolute levels do not compare with September.
-- **Verdict** _pending_
+- **Verdict** **UNREADABLE — n too small, re-read 2026-12-20** (B2, read 2026-11-22; armed 10-04 → 11-21, first armed homepage landing per aid, bots out, `challenge_solved` within 7 days): no arm has 150 people — control 120, start 107, plan 102, readiness 113, skills 127. Solved-one: control **13.3%**, start 14.0%, plan 12.7%, readiness 9.7%, skills 8.7% — no arm ahead of control by 3 points. **"Test My SQL Skills" is already a MISS for its arm** by the rule written in advance: the most clicks (31 of 127) and the lowest solved-one. At ~17 people per arm a week, 150 lands around 12-20; if nothing beats control by 3 points then, keep "Start free" and end the test (FLAT). Parts 2–3 never went live (`onboardingIntake` off: 0 `intake_*`, 0 `company_set_match_*` rows) — nothing to read. Part 4 shipped as correctness.
 
 ### free SQL tools, alternatives pages, and the outreach kit (founder's SEO plan P2.13–P2.17, 2026-09-13)
 
@@ -1559,7 +1601,7 @@ of the verifier and must never be rounded to `FLAT`.
   they link into moved 47.1 → 14.3 in position and blog 31.4 → 16.2. The
   index and impression targets are met early; the conversion target
   (`question_page_door`) is still the read on 10-27.
-- **Verdict** _pending_
+- **Verdict** **HIT on index and impressions, MISS on the door — the falsification fired** (B2, read 2026-11-22; door = first `landing_view` on `/questions/<slug>/`, 09-13 → 10-27, bots and the LA no-referrer crawler out, a solve within 7 days): the index and impression targets were met by 09-25 (interim above). **Solved-one 1.5% (11 of 744 people)**; 47 (6.3%) clicked "Solve it"; the hub 0 of 49; control `/sql-exercises/` **27.8%** (303 of 1,091) in the same window. Below 20% at n ≥ 50 → the page answers the question and nobody opens the editor. Pre-written action: **move the schema below the fold and the CTA above the description** — BACKLOG, owner C1. Confound: the 744 may hold crawler rows no fingerprint catches; at half the denominator the rate is still under 5%.
 
 ### the company template, seven new company pages, and the readiness funnel (founder's SEO plan P0.4–P0.6, 2026-09-13)
 
@@ -1603,7 +1645,7 @@ of the verifier and must never be rounded to `FLAT`.
   list.
 - **Confounds** `onboardingIntake` (09-16) and `freeQuota` (09-21) move every
   first-run door; read company pages against `/sql-exercises/` as control.
-- **Verdict** _pending_
+- **Verdict** **HIT on indexing, MISS on the doors** (B2, read 2026-11-22; 09-13 → 10-13, door = first `landing_view`, bots out, a solve within 7 days): **7 of 7** new pages earned impressions by 10-13 (5–51 each, 197 together, 4 clicks). Company-page solved-one **9.6%** on the older pages (408 people) and 3.6% on the seven new ones (55) — under 25% at n ≥ 200, so the falsification's letter fires (move the readiness block below the FAQ). **But the 29.4% baseline was not this registry's definition:** the same query over 08-14 → 09-11 reads **12.3%** (357), so the real move is −2.7 points while `/sql-exercises/` held (28.8% → 28.4%) — small, and confounded with the 09-25 quota. Readiness: 23 started → 5 completed (**22%**, target 40% — MISS) → 5 plan clicks (100%, target 35%) → 5 arrived; the 15% plan-click rule does not fire. Blog door **1.7%** (350 people) against 15% (1.8% before). The readiness-below-FAQ move goes to BACKLOG as a test for C1, not as a settled fix, because the line it failed was drawn on another definition.
 
 ### the streak card: reward a solved question, not a visit (founder QA 2026-09-21)
 
@@ -1782,7 +1824,7 @@ that needs its own path — the current rule is written down in the handler.
   (Resend webhook), 0 failed; the function was on version 2 (the opener fix)
   when it ran. 37 remain reachable now; 70 more enter as their 7-day quiet
   window passes. Read of batch 1: 2026-09-26.
-- **Verdict** _pending_
+- **Verdict** **MISS — the falsification fired** (B2, read 2026-11-22; last batch 10-01, read due 10-15): **80 sent** (09-12 40, 10-01 40), 79 delivered, 1 bounce (1.3%). Back within 48 h: **2 of 80**. A plan click within 14 days: 1. Trials or purchases within 14 days: **0** (0 since, either). `pro_modal_shown {reason: 'email_link'}` has **no row at all**, so modal → click cannot be read and the 3.4% half is unchecked — an instrumentation gap of its own. 0–1 purchases → as written: the activated non-payer does not buy on a second ask; **this segment is not mailed again**, the ~56 never reached included (recorded in objectives.md; sending is the founder's call).
 
 ### three hand-written founder emails to the checkout abandoners of 09-04 / 09-06 — **HIT**
 
@@ -1930,7 +1972,7 @@ that needs its own path — the current rule is written down in the handler.
   weekly-digest`; verified on the project as version 6 with the new source —
   a first attempt earlier the same day had not landed, the keychain prompt
   had stopped it). First send with the new lines: Monday 2026-09-14 09:00Z.
-- **Verdict** _pending_
+- **Verdict** **UNREADABLE — n too small, and will stay so** (B2, read 2026-11-22): the falsification needs n ≥ 100 sends; the digest reaches 1–10 people a week (24 sends 09-14 → 11-16). Back within 48 h: the three sends before the deploy (08-24 → 09-07) 12 of 15 (80%), the three after (09-14 → 09-28) 14 of 17 (82%), everything after 18 of 24 (75%) — recipients are already active, so the rate sits at 75–80% either way. No `weekly_digest_one_thing` utm has ever reached `pro_events`, so the recommendation line's clicks are unmeasured. At this volume 100 sends is a year away; not re-read, the digest stays as it is.
 
 ### the wrong-answer panel says what is wrong, and one hint (P1 diff engine)
 
@@ -2551,7 +2593,7 @@ that needs its own path — the current rule is written down in the handler.
   flips 09-27, the day after this read closes, and changes what the first
   step is for quiz-placed people; nothing about it is live during this
   window.
-- **Verdict** _pending_
+- **Verdict** **MISS — the falsification fired** (B2, read 2026-11-22 over 09-12 20:00Z → 09-26): **34** people viewed the full Coach with a goal; **7 started the card's step the same day (20.6%)** against ≥ 60% and the 40% line (the 64% baseline was a proxy — any challenge or lesson that day — not the card's own event). As written: naming the step was not what was missing; the next move is the first-run shell, not more of this card — which is where the work went (the first screen is a challenge for everyone from 11-22). Picker conversion not re-read.
 
 ### anonymous progress survives the reload and follows the login
 
@@ -2751,6 +2793,7 @@ that needs its own path — the current rule is written down in the handler.
   no product or paywall behavior changes.
 - Full publication decisions and checks:
   `docs/reads/validate-ai-sql-publish-decisions-2026-09-09.md`.
+- **Verdict** **HIT on search, UNREADABLE on the handoff** (B2, read 2026-11-22): GSC page slice to 10-07 (day 28): **128 impressions, 7 clicks (5.5%), position 6.0** — the ≥ 30 band; the page keeps its place on search grounds. Last 28 days: 469 impressions, 4 clicks, position 3.6. Handoff: 14 people opened the app with this page as source over its whole life — under the 30-open floor, so no solve rate is read, as the claim expected. `cta_practice_validate_ai_sql_*` and `editorial_claudequest_click` have **no row ever** although app opens from the page exist: the CTA events are not firing. Query match not read here (C1 / C2).
 
 ### blog posts get a real exit: one named challenge, at the moment the idea lands
 
@@ -3273,7 +3316,7 @@ that needs its own path — the current rule is written down in the handler.
   produce; the Trustpilot count is context, and a review from one of those
   four must not be credited to this change. Check the four names against the
   invitation list before reading the public page.
-- **Verdict** _pending_
+- **Verdict** **NOT FLIPPED — nothing to read** (B2, checked 2026-11-22): `reviewAsk` is still `false` on main and no `review_ask_*` row exists. The read date above is void; a new one is set on the day it flips.
 
 ### paywall surfaces: lead people to the free Hard previews
 - **Claimed** 2026-09-06 — commit `2bab2b2`, deployed 2026-09-06 14:17Z
@@ -3320,7 +3363,7 @@ that needs its own path — the current rule is written down in the handler.
   touch other surfaces (first contacts; grading across the whole bank) —
   neither can produce a stamped open, so the primary is the read; the
   secondary and the guardrail are not isolated from them.
-- **Verdict** _pending_
+- **Verdict** **HIT** (B2, read 2026-11-22 over the claim's window 09-06 14:17Z → 09-20 14:17Z, internal accounts out): **44 people** opened a free Hard preview from a stamped surface (`preview_list` / `preview_dialog` / `preview_coach`) and **24 solved that challenge (54.5%)** — target ≥ 15 people and ≥ 40%. Since 09-25 the ten-solve quota folds the previews into the ten free solves, so this verdict covers the 14 days it was written for. Lock-time secondary not re-read.
 - **Mid-window check, 2026-09-07** (day 1 of 14, not a verdict). The
   instrumentation is sound and the surfaces are being reached; nobody has
   taken them yet:
@@ -3462,6 +3505,7 @@ that needs its own path — the current rule is written down in the handler.
   wrong-answer panel every cold-start solver meets — read the 10-13 window
   split at the flip. Re-read 2026-10-13 on the 09-08 → 10-12 cohort, crawler
   excluded.
+- **Verdict, re-read (due 2026-10-13), B2 2026-11-22: HIT.** Cohort 09-08 → 10-12, people who met `wall='cold_start'`, crawlers out — the 09-17 → 09-23 renderer, the four crawler viewports, `desktop:1280x720` UTC, and a randomized-viewport wave 10-01 → 10-12 (width 1,075–1,400 × height 900–1,850, Hong Kong / Singapore / Shanghai / Mexico City / LA / UTC; 177 people, of 194 non-fingerprinted in that fortnight only 14 ever opened a challenge): **52 people, 14 solved a challenge after the dialog (26.9%)** against 25%. Split at the 09-30 `diagnosisHints` flip: 9 / 35 (25.7%) before, 5 / 17 (29.4%) after. Guardrail: 2 purchases in the window (09-19, 10-01) — not below 2. Keep the gate. Caveat: n = 52 behind a hand-made crawler filter; two people either way moves it across 25%.
 ### paywall: ask fewer people, at most twice, and never the ones who came to learn
 - **Claimed** 2026-09-08 — **NOT YET SHIPPED.** Ships after the cold-start read
   on **2026-09-29** (read: inconclusive, extended to 2026-10-13 — this waits
@@ -3578,7 +3622,7 @@ that needs its own path — the current rule is written down in the handler.
   same push. 105 touches first contacts only (beginner band); the
   unordered fix touches the 10 solutions without ORDER BY — negligible in
   the hard and bridge+ bands, which are the read.
-- **Verdict** _pending_
+- **Verdict** **FLAT — the falsification fired** (B2, read 2026-11-22; person-challenge pairs by username, shared filters, crawler viewports out; 28 days before the 09-06 13:42Z deploy vs after it, the after-window cut at the 09-25 22:41Z quota flip because the quota locks unsolved opens): hard 1–90 **66.4% → 67.1%** (773 → 799 pairs), bridge+ 106–185 **75.6% → 72.3%** (1,080 → 1,200), beginner 91–105 74.9% → 77.4% (control, inside ±3). Neither read band rose 3 points (bridge moved 3.3 the wrong way). The full 28 days to 10-04 read 64.3% / 69.7% / 74.5%, lower again because the quota locks opens. As written: tie rejections were rare; keep the fix (correctness), stop spending on grading; the next lever is content — tiebreakers in reference solutions and prompts that state the order (BACKLOG, owner B3).
 
 ### intent routing: a handle on the interview door
 
@@ -3710,7 +3754,7 @@ that needs its own path — the current rule is written down in the handler.
     10-16 read of this entry is therefore the read of the interview-first
     batch, not of the tab alone (docs/plans/interview-first-2026-09-17.md);
     split the window at the 09-21 flip time and never sum across it.
-- **Verdict** _pending_
+- **Verdict** **HIT** (B2, read 2026-11-22 over 09-15 22:18Z → 10-15 22:18Z, bots out): **221 people reached the Interview tab** (196 from the nav) against ≥ 60 — 133 by `reason='open'` (the 09-20 amendment's population), the rest by the original reasons (intent 88, history 11, goal 3); **61 started a mock** (≥ 25), 33 finished. `intent_routed`: 215 people from the ask, 225 from links, 1 from the intake. Guardrails, reach-6 among people with a solve: routed arm **47.0%** (119 / 253) vs 49.4% — inside the 3-point line; control (learning) **39.4%** (41 / 104) vs 43.1% — 3.7 down, just outside ±3, in the window the ten-solve quota flipped (09-25), which caps every arm. No split at 09-21: `interviewFirst` never flipped (its entry above).
 
 ### the recommended path stops hand-listing 38 of 287 challenges
 - **Claimed** 2026-09-09, **shipped behind `features.roadmapV2 = false`**.
@@ -3770,7 +3814,7 @@ that needs its own path — the current rule is written down in the handler.
 - **Amended 2026-09-16 — not flipped.** The founder chose intentRouting on
   09-12 as the one change on this stretch of funnel. The read date is void
   until the flag flips; recompute as flip plus 30 days.
-- **Verdict** _pending_
+- **Verdict** **NOT FLIPPED — nothing to read** (B2, checked 2026-11-22): `roadmapV2` is still `false` on main (the 09-16 amendment). The read date is void; a new one is set on the day it flips.
 
 ### subscription management hands off to Stripe — no more client-side "cancel"
 - **Claimed** 2026-09-03 — correctness + measurement, no target on purpose
@@ -3793,7 +3837,7 @@ that needs its own path — the current rule is written down in the handler.
 - **Falsification** none that would revert this: a client-side "cancel"
   that lies is not an option to go back to. The read only ranks the portal
   link against other work.
-- **Verdict** _pending_
+- **Verdict** **READ, no target — the door works** (B2, read 2026-11-22): 0 `manage_subscription_clicked` rows in the window to 10-03; since then **4 people** (5 rows), all `intent='cancel'` with `portal=true` (10-06 → 11-17), and the webhook wrote 4 `pro_trial_cancelled {scheduled}` in the same weeks — each press reached Stripe. The portal link earned its setup.
 
 ### working-track opener: 105 replaces 99 as the first contact
 - **Claimed** 2026-09-02
@@ -3923,6 +3967,7 @@ that needs its own path — the current rule is written down in the handler.
     opener); the homepage (`personalized_v1`, 09-13) shifts the mix, which is
     what the control is for. `onboardingIntake` does NOT flip while this read
     is open — its task waits on this entry.
+- **Verdict, extended read (due 2026-09-20), B2 2026-11-22: UNREADABLE-mix by its own rule — closed.** Cumulative 09-06 13:42Z → 09-20 13:42Z: 105 as opener **61.7% (113 of 183)**, the second week alone 62.9% (56 of 89) — above 60% at n ≥ 60. But the control rule was fixed in advance: 91 read **88.9% (16 of 18) in the second week**, +17.9 against its 71% baseline (cumulative 82.8%, 24 / 29), so it is a mix week. Not extended again: from 09-25 the first-screen test sent half of new people straight into challenge 91, and from 11-22 all of them, so the 'working' opener seat no longer gets the first contacts this claim measured. 105 stays in front; nothing argues for a third swap.
 
 ---
 
