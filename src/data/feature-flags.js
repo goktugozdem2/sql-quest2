@@ -514,6 +514,15 @@ window.FEATURE_FLAGS = {
     // change: ships ON. Off if cancellations reach 6 of the next 8 matured
     // trials (ledger "the last 48 hours of a trial say the date").
     trialEndingLine: true,
+
+    // ── The quota wall speaks to the person's company (M-12, 2026-11-22) ──
+    // A person whose prepTarget.company has a plan target meets the wall
+    // with "The rest of the <Company> set and the <mock> are in Pro." (signed
+    // archetype) or "The rest of the <Company> set is in Pro." (tagged)
+    // under the unchanged headline. Copy, no price: ships ON. Off if the
+    // company-present click rate falls below its own baseline at 25+ people
+    // (ledger "the quota wall names the person's company").
+    quotaWallCompany: true,
   },
 };
 

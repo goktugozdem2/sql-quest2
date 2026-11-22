@@ -27,6 +27,16 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### the quota wall names the person's company (M-12)
+
+- **Claimed** 2026-11-22 · **Shipped** on merge, flag `quotaWallCompany` **on** · **Read** 2026-12-20 (interim; the population is ~10 a month — the verdict needs ≥ 25 company-present wall people, expected no earlier than 2027-01-17).
+- **Change** a person whose `prepTarget.company` has a plan target (`findPlanTarget`) meets the quota wall with "The rest of the <Company> set and the <mock title> are in Pro." (signed archetype: Capital One, Revolut) or "The rest of the <Company> set is in Pro." (tagged only — no mock, no number) as the first line under the headline, in place of "You've solved N — the free quota is N." The headline (#95) is unchanged. `pro_modal_shown` carries `wallCompany` / `wallCompanyKind`. Pure half `quotaWallCompanyLine` (src/utils/checkout-session.js); guards tests/checkout-session.test.js.
+- **Why** (docs/plans/monetization-ideas-2026-11-22.md, M-12): company-set clickers converted 2 of 2 since 10-01; the wall spoke to everyone in the same generic words.
+- **Metric** `quota_wall`, split by company (metrics.md).
+- **Baseline** company-present (proxy, 09-26 → 11-21) 5 / 26 = 19.2% clicked; company-absent 14 / 118 = 11.9%.
+- **Target** company-present clicks ≥ 1.3× their own baseline (≥ 25%) at ≥ 25 people; company-absent unchanged (it sees the same words as before).
+- **Falsification, stated in advance:** below their baseline (19.2%) at ≥ 25 people → the company is not the lever at the wall; turn the flag off. Fewer than 25 by 2027-01-17 → UNREADABLE; keep it (it is true) and stop reading it. Confound: #95's headline read sits on the same wall — split it by `wallCompany`.
+
 ### the last 48 hours of a trial say the date, the price and what is left (M-10)
 
 - **Claimed** 2026-11-22 · **Shipped** on merge, flag `trialEndingLine` **on** · **Read** 2026-12-20 (the verdict needs 8 matured trials; at ~5 trials a month expect UNREADABLE on 12-20 and a re-read by 2027-01-31).
