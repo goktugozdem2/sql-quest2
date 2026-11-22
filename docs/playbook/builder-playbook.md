@@ -245,3 +245,15 @@ product that already has the buyers, and write the kill number first:
   build it.
 - The founder sets the final number before the test starts, and it goes into
   the ledger like any other claim.
+
+**Measured on 2026-11-22** (`docs/reads/demand-2026-11-22.md`): the market
+ranks Python next after SQL and Excel, but **our own audience has not asked
+for it**. No feedback and no tutor question named another tool. The
+adjacent demand inside our data is still SQL, in other dialects (Snowflake,
+BigQuery, dbt). So the order for SQL Quest is:
+
+1. a higher price tier on the same product (a founder-led mock);
+2. SQL dialects;
+3. the pandas demand test.
+
+A new app comes after that.
