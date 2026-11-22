@@ -27,6 +27,16 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### the quota wall asks once a day, then waits inline — an A/B (M-07)
+
+- **Claimed** 2026-11-22 · **Shipped** on merge, flag `quotaWallInline` **on**, test `quota_wall_inline_v1` (half of browsers by `aid`, murmur-finalised hash, independent of first-screen / company-ask / modal-layout by test) · **Read** 2026-12-20.
+- **Change** inline arm: the first quota-wall hit of the app's day opens the Pro modal as before; a later hit the same day shows a non-blocking card — "10 free solves used." (or the M-12 company line), "Try Pro free for 7 days" (opens the same modal by the person's click, `via: 'inline'`) and the modal's two free roads back (today's daily, the Coach). Control: the modal on every hit. `content_lock_reached` fires on every hit with `modal` and `quotaWallArm`. Pure half src/utils/quota-wall-inline.js; guards tests/quota-wall-inline.test.js.
+- **Why** (docs/plans/monetization-ideas-2026-11-22.md, 1e): 142 wall people since 09-26, median 3 lock hits; 53% saw the modal 3+ times; `modal_dismissed` rows outnumber people 3 : 1 — a person asked a third time learns to swat (the tier-10 ask: 72% closed in under 3 s).
+- **Metric** `quota_wall`, per arm (metrics.md).
+- **Baseline** 12.8% plan click, 4.3% trial-or-paid within 7 d, 33% later-day return (09-26 → 11-21).
+- **Target** inline arm: clicks ≥ control − 2 points, later-day return ≥ control + 8 points, at ≥ 60 wall people per arm (likely not before the 12-20 read — say UNREADABLE then and re-read at 60 per arm).
+- **Falsification, stated in advance:** inline-arm clicks < 0.7× control at ≥ 60 per arm → the repeats were selling; turn `quotaWallInline` off (the modal on every hit). Confounds to state: #95's headline and M-12's company line sit on the same wall in both arms (equal across arms, so the split is clean; the pooled rate is not).
+
 ### the quota wall names the person's company (M-12)
 
 - **Claimed** 2026-11-22 · **Shipped** on merge, flag `quotaWallCompany` **on** · **Read** 2026-12-20 (interim; the population is ~10 a month — the verdict needs ≥ 25 company-present wall people, expected no earlier than 2027-01-17).

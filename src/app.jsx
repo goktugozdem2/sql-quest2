@@ -74,6 +74,7 @@ import { starterHintFor, starterSqlFromHint } from './utils/starter-query.js';
 import { dueRetrievals, pickRetrievalChallenge, recordRetrieval, dailyQuota, MAX_DUE_SHOWN } from './utils/spaced-retrieval.js';
 import { computeRecap, shouldShowRecap } from './utils/session-recap.js';
 import { getAnonId } from './utils/anon-id.js';
+import { quotaWallArm, quotaWallShowsModal, quotaInlineCopy, QUOTA_WALL_DAY_KEY } from './utils/quota-wall-inline.js';
 import { classifyLandingSrc, LANDING_SRC_KEY } from './utils/landing-src.js';
 import { classifyQueryError } from './utils/query-error.js';
 import { computeSkillTrajectory, topActiveSkills } from './utils/skill-trajectory.js';
@@ -7137,6 +7138,15 @@ function SQLQuest() {
     try { return modalLayoutArm({ flagOn: window.FF?.feature?.('modalPlansFirst') === true, aid: getAnonId() }); } catch (_) { return 'control'; }
   }, []);
   const modalPlansFirstNow = plansFirst(modalLayout);
+  // The quota wall asks once a day, then waits inline (M-07, 2026-11-22):
+  // half of browsers by aid when `quotaWallInline` is on. Sticky (the hash is
+  // the record). src/utils/quota-wall-inline.js; guards
+  // tests/quota-wall-inline.test.js.
+  const quotaWallArmNow = useMemo(() => {
+    try { return quotaWallArm({ flagOn: window.FF?.feature?.('quotaWallInline') === true, aid: getAnonId() }); } catch (_) { return 'control'; }
+  }, []);
+  // The inline card's state: the free_quota reason it stands for, or null.
+  const [quotaInline, setQuotaInline] = useState(null);
   const launchCheckout = (plan, email, opts = {}) => {
     // One checkout at a time: a second click while the first is opening is
     // dropped, not counted and not sent (checkoutInFlight has the story). A
@@ -7827,6 +7837,10 @@ function SQLQuest() {
         // The quota wall's company line (M-12): which company, signed or
         // tagged — the 12-20 read splits the wall by its presence.
         wallCompany: proModalReason?.wallCompany?.company || null,
+        // M-07: the quota wall's arm, and whether the person opened this
+        // modal from the inline card (`via: 'inline'`).
+        quotaWallArm: proModalReason?.quotaWallArm || null,
+        via: proModalReason?.via || null,
         wallCompanyKind: proModalReason?.wallCompany?.kind || null,
         priceRegion,
         // Was the 7-day trial on the cards this person saw (2026-10-01).
@@ -23515,6 +23529,28 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     } catch (_) { return null; }
   };
 
+  // M-07: one place decides how a quota-wall hit is shown. The modal on the
+  // first hit of the person's day (both arms; every hit in control), the
+  // inline card on a later hit the same day (inline arm). The day stamp is
+  // per browser and person; the app's day (getTodayString).
+  const quotaWallDayKey = () => `${QUOTA_WALL_DAY_KEY}_${currentUser || 'guest'}`;
+  const quotaWallModalNow = () => {
+    let last = null;
+    try { last = localStorage.getItem(quotaWallDayKey()); } catch (_) { /* no storage: modal */ }
+    return quotaWallShowsModal({ arm: quotaWallArmNow, lastModalDay: last, today: getTodayString() });
+  };
+  const presentQuotaWall = (reason, showModal = quotaWallModalNow()) => {
+    if (showModal) {
+      try { localStorage.setItem(quotaWallDayKey(), getTodayString()); } catch (_) { /* best effort */ }
+      setQuotaInline(null);
+      setProModalReason({ ...reason, quotaWallArm: quotaWallArmNow });
+      setShowProModal(true);
+      return;
+    }
+    setQuotaInline({ ...reason, quotaWallArm: quotaWallArmNow });
+    trackActivationEvent('quota_wall_inline_shown', { used: reason.used, quota: reason.quota, quotaWallArm: quotaWallArmNow, wallCompany: reason.wallCompany?.company || null });
+  };
+
   const isContentLocked = (type, item) => {
     if (isPro) return false;
     switch (type) {
@@ -23797,8 +23833,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
       // previews as "free", and the quota wall would refuse them. Say the
       // true thing instead — the lock row above is already written.
       if (freeQuotaSpent()) {
-        setProModalReason({ type: 'free_quota', used: solvedChallenges.size, quota: FREE_SOLVE_QUOTA, solvedCount: solvedChallenges.size, topic: null, wallCompany: quotaWallCompany() });
-        setShowProModal(true);
+        presentQuotaWall({ type: 'free_quota', used: solvedChallenges.size, quota: FREE_SOLVE_QUOTA, solvedCount: solvedChallenges.size, topic: null, wallCompany: quotaWallCompany() });
         return;
       }
       setPreviewCatcher({ challengeId: challenge.id, at: Date.now() });
@@ -23856,6 +23891,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     // value in the series (metrics.md, quota_wall).
     const quota = quotaGate({ flagOn: ftbFlag('freeQuota'), isPro, solvedCount: solvedChallenges.size, alreadySolved: solvedChallenges.has(challenge.id) });
     if (quota.gated) {
+      const quotaModal = quotaWallModalNow();
       trackLockReached('challenge_quota', {
         challengeId: challenge.id,
         difficulty: challenge.difficulty,
@@ -23863,10 +23899,12 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
         wall: 'free_quota',
         used: quota.used,
         quota: quota.quota,
+        // M-07: every hit still writes this row; it says how it was shown.
+        modal: quotaModal,
+        quotaWallArm: quotaWallArmNow,
       });
       if (openColdStartInstead(challenge.id)) return;
-      setProModalReason({ type: 'free_quota', used: quota.used, quota: quota.quota, solvedCount: solvedChallenges.size, topic: null, wallCompany: quotaWallCompany() });
-      setShowProModal(true);
+      presentQuotaWall({ type: 'free_quota', used: quota.used, quota: quota.quota, solvedCount: solvedChallenges.size, topic: null, wallCompany: quotaWallCompany() }, quotaModal);
       return;
     }
     if (foundationPractice?.lessonId) {
@@ -25652,6 +25690,10 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
     const day = new Date().toISOString().slice(0, 10);
     trackActivationEvent('trial_day5_shown', { plan: proType || null, hoursLeft: trialEnding.hoursLeft, surface: activeTab, priceRegion }, { onceKey: `trial_day5_shown_${day}` });
   }, [trialEndingOnSurface]);
+
+  // M-07: the inline card belongs to the moment of the wall; opening a
+  // challenge (a solved one, the daily) puts it away.
+  useEffect(() => { if (currentChallenge) setQuotaInline(null); }, [currentChallenge]);
 
   const pendingInterviewRef = useRef(null);
   const pendingInterviewPatternRef = useRef(null);   // the trap page a ?interview= link came from
@@ -34506,6 +34548,69 @@ RULES:
         {interviewStatusOn && interviewStatus && (
           <InterviewStatusStrip model={interviewStatus} onCell={onInterviewStatusCell} />
         )}
+
+        {/* The quota wall, inline (M-07, 2026-11-22; inline arm, a later hit
+            the same day). Not a dialog: no overlay, nothing to swat. The
+            primary button opens the same modal by the person's own click;
+            the free roads back are the modal's own (quotaFreePaths). */}
+        {quotaInline && !showProModal && (() => {
+          const copy = quotaInlineCopy({ quota: quotaInline.quota, trialOn: trialOfferOn });
+          return (
+            <div data-testid="quota-wall-inline" className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 w-[calc(100%-32px)] max-w-xl rounded-lg px-4 py-3 shadow-xl" style={{ background: '#16181F', border: '1px solid #2A2E38', color: '#F2F0EA' }}>
+              <div className="flex items-start gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium">{quotaInline.wallCompany?.line || copy.lead}</p>
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      data-testid="quota-wall-inline-pro"
+                      onClick={() => {
+                        trackActivationEvent('quota_wall_inline_clicked', { to: 'pro', used: quotaInline.used, quota: quotaInline.quota });
+                        const { at: _at, ...reason } = quotaInline;
+                        setProModalReason({ ...reason, via: 'inline' });
+                        setQuotaInline(null);
+                        setShowProModal(true);
+                      }}
+                      className="px-3 py-1.5 rounded-lg text-xs font-bold"
+                      style={{ background: '#FFE34D', color: '#0E0F13' }}
+                    >
+                      {copy.cta}
+                    </button>
+                    <span className="text-xs" style={{ color: '#8A8E99' }}>{QUOTA_FREE_PATH_COPY.lead}</span>
+                    {quotaFreePaths({ dailyDone: isDailyCompleted }).map(path => (
+                      <button
+                        key={path.to}
+                        type="button"
+                        data-testid={`quota-wall-inline-${path.to}`}
+                        onClick={() => {
+                          trackActivationEvent('quota_wall_free_path', { to: path.to, used: quotaInline.used, quota: quotaInline.quota, via: 'inline' });
+                          setQuotaInline(null);
+                          setCurrentChallenge(null);
+                          if (path.to === 'daily') openDailyChallenge();
+                          else setActiveTab('guide');
+                        }}
+                        className="text-xs py-1 px-2"
+                        style={{ background: '#1F222B', border: '1px solid #2A2E38', borderRadius: '6px', color: '#F2F0EA' }}
+                      >
+                        {path.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  aria-label="Close"
+                  data-testid="quota-wall-inline-close"
+                  onClick={() => { trackActivationEvent('quota_wall_inline_dismissed', { used: quotaInline.used, quota: quotaInline.quota }); setQuotaInline(null); }}
+                  className="text-xs"
+                  style={{ color: '#8A8E99' }}
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* The last 48 hours of a Stripe trial (M-10, 2026-11-22). Two of four
             trials that reached day 7 failed the charge and half cancelled

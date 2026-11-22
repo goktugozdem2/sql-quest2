@@ -523,6 +523,17 @@ window.FEATURE_FLAGS = {
     // company-present click rate falls below its own baseline at 25+ people
     // (ledger "the quota wall names the person's company").
     quotaWallCompany: true,
+
+    // ── The quota wall asks once a day, then waits inline (M-07) ──────────
+    // An A/B by aid (quota_wall_inline_v1, murmur-finalised hash): in the
+    // `inline` arm the first wall hit of the person's day opens the Pro
+    // modal as today; later hits that day show a small non-blocking card
+    // (the trial button opens the same modal by the person's click, plus
+    // the modal's two free roads back). `control`: the modal on every hit.
+    // No price, no plan: ON from 2026-11-22. Off if the inline arm's clicks
+    // fall below 0.7x control at 60+ wall people per arm (ledger "the quota
+    // wall asks once a day").
+    quotaWallInline: true,
   },
 };
 
