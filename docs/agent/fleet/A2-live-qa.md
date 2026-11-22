@@ -13,7 +13,7 @@
    - `/sql-exercises/`, `/challenges/window-functions/`, one `/questions/` page, `/sql-interview-readiness-test/`.
 3. On each page, check:
    - console errors and failed network requests (ignore the analytics endpoint in hermetic runs);
-   - horizontal scroll at 375 px;
+   - horizontal scroll at 375 px — **measure against the viewport width you SET, never `window.innerWidth` or `documentElement.clientWidth`**: mobile emulation stretches those to the overflow, so a page that scrolls sideways reads as fitting (11-22: the laptop A2 passed a header that ran 62 px off a 375 px phone; the cloud A2 caught it, #135). Check every element's `getBoundingClientRect().right` ≤ the set width;
    - overlapping elements, unreadable contrast, text cut off;
    - dead buttons (click every primary button once);
    - copy that contradicts CLAUDE.md (bank count, free-tier wording).
