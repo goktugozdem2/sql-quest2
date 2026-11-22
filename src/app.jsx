@@ -24400,6 +24400,13 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     if (showGoalsMentor) return;
     if (showFirstRunSimpleShell) return;
     if (!currentChallenge) return;
+    // Never on a challenge the person has already solved. Since the first
+    // screen became challenge 91 (#99), the first solve is what ends the
+    // first-run shell — so without this the tour opened "Read the problem"
+    // on the challenge just solved, 600 ms after the win, stacked over the
+    // intent ask and the archetype card (A2, 2026-11-22). It waits for the
+    // next unsolved challenge instead.
+    if (solvedChallenges.has(currentChallenge.id)) return;
     if (showOnboardingTour) return;
     if (hasContentDeepLink) return;
     try {
@@ -24408,7 +24415,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     } catch (_) { return; }
     const timer = setTimeout(() => setShowOnboardingTour(true), 600);
     return () => clearTimeout(timer);
-  }, [showOnboarding, showGoalsMentor, showFirstRunSimpleShell, currentChallenge, hasContentDeepLink]);
+  }, [showOnboarding, showGoalsMentor, showFirstRunSimpleShell, currentChallenge, hasContentDeepLink, solvedChallenges]);
 
   // Show the "Take a tour" pulsing badge after the first successful solve.
   // Opt-in by design — we want to reward the user with a quick win first,

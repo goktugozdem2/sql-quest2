@@ -27,6 +27,16 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### the challenge tour no longer opens on the challenge just solved (A2)
+
+- **Claimed** 2026-11-22 · **Shipped** on merge, no flag (a correctness fix) · **Read** 2026-12-20.
+- **Change** the 6-step challenge tour's auto-start returns early when the open challenge is already solved. Since #99 the first screen is challenge 91, and the first solve is what ends the first-run shell the tour was waiting on — so the tour opened "Read the problem" on the solved challenge 600 ms after the win, on top of the intent ask (3 s later) and the archetype card; at 375 px its card covered the ask's "Just exploring". Now it waits for the next unsolved challenge (verified: "Next Question" → #92 opens it). Guards: tests/onboarding-tour-gate.test.js and the smoke step "first-screen challenge arm" (`tourAfterSolve`).
+- **Why** A2 live QA walk of 2026-11-22: reproduced on production at 1366×800 and 375×812 with real mouse input, fresh storage, every time.
+- **Metric** `second_session_7d`, restricted to people whose first solve was challenge 91.
+- **Baseline** first opens 2026-11-01 → 11-14: 7 / 45 = 15.6%. Side read: the intent ask was answered by 33 / 40 people whose first solve was 91 (82.5%, 14 days to 11-22) against 41 / 54 for other first solves — the collision did not visibly cost answers.
+- **Target** no harm: ≥ 15% at ≥ 45 people (first opens 11-23 → 12-12). This is a fix for what a person sees, not a growth bet.
+- **Falsification, stated in advance:** below 10% at ≥ 45 people → read whether the tour on the next challenge (now the first one a person meets it on) is what changed; the fix itself stays unless the tour's move is the cause. Fewer than 45 → UNREADABLE.
+
 ### a page for rollup interview questions
 
 - **Claimed** 2026-11-22 · **Shipped** on merge · **Read** 2026-12-27.
