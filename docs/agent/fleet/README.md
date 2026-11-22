@@ -39,7 +39,8 @@ An agent reads `CLAUDE.md`, this file and its own brief, in that order.
      Stage `src/data/sitemap-lastmod.json` together with any page you change.
    - End the commit message with the session's `Co-Authored-By` line.
    - Push:
-     `GSTACK_REDACT_PREPUSH=skip git -c credential.helper= -c credential.helper='!gh auth git-credential' push https://github.com/goktugozdem2/sql-quest2.git <branch>`.
+     `git -c credential.helper= -c credential.helper='!gh auth git-credential' push https://github.com/goktugozdem2/sql-quest2.git <branch>`
+     (never with the redaction hook skipped; see "Two runtimes" for the bundles).
    - Open the PR with `gh pr create`. Its body ends with the session's
      PR attribution line.
 6. **Merge rule.**
@@ -64,6 +65,25 @@ An agent reads `CLAUDE.md`, this file and its own brief, in that order.
    machine line the orchestrator logs:
 
        FLEET-RESULT {"agent":"A2","outcome":"pr|merged|read|drafts|noop|blocked","prs":[123],"value":"one line: what changed for a person or what we learned","founder":["..."]}
+
+## Two runtimes — who does what (2026-11-22)
+
+- **Cloud** (claude.ai/code): A0 gate, A1 reviewer and every lane that needs
+  only the repo (content, local QA, page and SEO work from data already in the
+  repo). The cloud's A1 and A0 review and merge **all** agent PRs, laptop ones
+  included, and log each decision in `decisions.md`. The cloud cannot reach
+  production data, Gmail or sqlquest.app.
+- **Laptop** (the main session plus `sqlquest-autodev-loop`): the lanes that
+  need read-only Supabase, the GSC/Bing tables, Gmail drafts or the live site
+  (B1, B2, A3, E1, C1/C2 reads, production QA after a deploy). The laptop
+  **does not review or merge cloud PRs**; it opens its own PRs and leaves
+  them for A1 → A0, except docs-only PRs, which it may self-merge.
+- **Build output from the laptop.** The laptop's pre-push redaction hook
+  cannot scan `public/app.js`, `public/app.js.map` or `public/data.js`
+  (> 1 MB), and agents may not bypass it. A laptop code PR therefore commits
+  **source only** and leaves those three bundles out. It says so in the PR
+  body, and A0 merges `origin/main` in, rebuilds and pushes the bundles from
+  the cloud before merging. Never push with `GSTACK_REDACT_PREPUSH=skip`.
 
 ## Budgets
 
