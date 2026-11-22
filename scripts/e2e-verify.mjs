@@ -98,7 +98,7 @@ const preamble = (seed, cloudRow = null) => `
       // Mirror what PRODUCTION answers, so a client that falls back to a path
       // that is closed in production fails here too.
       if (/functions\\/v1\\/account-login/.test(url)) return new Response(JSON.stringify({ error: 'invalid_credentials' }), { status: 401, headers: J });
-      if (/rpc\\/sq_save_user/.test(url)) return new Response('', { status: 204, headers: J });
+      if (/rpc\\/sq_save_user/.test(url)) return new Response(null, { status: 204, headers: J });
       if (/\\/rest\\/v1\\/users\\?/.test(url)) return new Response(JSON.stringify({ message: 'permission denied for table users' }), { status: 401, headers: J });
       if (/users_public\\?|rpc\\/sq_load_account/.test(url) && window.__cloudRow) return new Response(JSON.stringify([window.__cloudRow]), { status: 200, headers: J });
       return new Response('[]', { status: 200, headers: J });

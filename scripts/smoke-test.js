@@ -498,7 +498,7 @@ async function main() {
           const url = String(args[0] || '');
           if (url.includes('/foundation-analytics-test')) {
             window.__foundationFetchCalls.push({ url, body: args[1]?.body || '' });
-            return Promise.resolve(new Response('', { status: 204 }));
+            return Promise.resolve(new Response(null, { status: 204 }));
           }
           return originalFetch(...args);
         };
