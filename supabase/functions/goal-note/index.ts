@@ -61,8 +61,11 @@
 // Timing: meant to run hourly. A person is mailed only while their local
 // clock reads 09:xx or 10:xx, from the tz stamped on their activation events
 // (streak-reminder's method). No tz on record: the 14:xx UTC run.
-// Content: the email voice rule. The founder in the subject (three phrasings
-// by hash), written by hand to a short list, one specific fact (the company
+// Content: the email voice rule, kept true for an automated send. The founder
+// in the subject (three phrasings by hash). The body never claims to be typed
+// by hand: a cron sends it. It says what is true instead: the founder set it
+// up to ask every new person one question, replies go to the founder's own
+// inbox (REPLY_TO), and the founder reads them. One specific fact (the company
 // page they came in through, from arrivalSrc `company:X`, else their solve
 // count; a challenge title is not available server-side, the bank ships to
 // the browser), one question, three one-click answers carrying `m=new`, the
@@ -336,18 +339,18 @@ function renderNewBody(args: { username: string; solves: number; company: string
   const body = variant === 'A'
     ? `
       <p style="${P}">Hi ${username},</p>
-      <p style="${P}">I build SQL Quest. You joined this week, and I am writing this myself to the short list of people who signed up in the last few days.${fact}</p>
+      <p style="${P}">I build SQL Quest. You joined this week, and I set this up so I can ask every new person one question.${fact}</p>
       <p style="${P}"><strong>One question: what are you preparing for?</strong></p>
       <p style="${P}">${links}</p>
       <p style="${P}">One click, nothing to fill in. The answer sets the order the Coach puts things in front of you.</p>
-      <p style="${P}">${REPLY_LINE} I won't send another one of these.</p>`
+      <p style="${P}">Your reply comes to my own inbox. ${REPLY_LINE} I won't send another one of these.</p>`
     : `
       <p style="${P}">Hi ${username},</p>
-      <p style="${P}">Only a handful of people joined SQL Quest this week, and I am writing to each of you one at a time.${fact}</p>
+      <p style="${P}">You joined SQL Quest this week. I build it, and I wanted every new person to get one question from me.${fact}</p>
       <p style="${P}"><strong>What are you preparing for?</strong></p>
       <p style="${P}">${links}</p>
       <p style="${P}">That click is the whole answer. It changes what the Coach shows you from your next session on.</p>
-      <p style="${P}">That is the only ask, and I won't send another one of these. ${REPLY_LINE}</p>`
+      <p style="${P}">That is the only ask, and I won't send another one of these. Replies land in my own inbox, not a support queue. ${REPLY_LINE}</p>`
   return `
     <div style="font-family: -apple-system, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px; color: #1f2937;">${body}
       <p style="${P}">Göktuğ<br><span style="color:#6b7280;">Founder, SQL Quest</span></p>

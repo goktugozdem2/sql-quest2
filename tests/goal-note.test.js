@@ -329,10 +329,27 @@ describe('goal-note mode=new: new registrants, once, at their morning', () => {
     expect(new Set(batch).size).toBe(batch.length);
   });
 
-  it('keeps the voice: written by hand to a short list, one question, the reply line, no sequence, signed', () => {
+  it('never claims to be typed by hand: a cron sends it (orchestrator rule, 2026-11-22)', () => {
+    const HAND = /writing this myself|by hand|one at a time|writing to each of you|I(?:'m| am) writing (?:this|to you)/i;
+    for (const v of ['A', 'B']) {
+      for (const company of [null, 'Stripe']) {
+        for (const solves of [0, 1, 6]) {
+          const html = mod.renderNewBody({ username: 'alice', solves, company, variant: v });
+          expect(html, `${v}/${company}/${solves}`).not.toMatch(HAND);
+        }
+      }
+    }
+    for (const s of mod.SUBJECTS_NEW) expect(s).not.toMatch(HAND);
+    // The true claims it makes instead: replies reach the founder's own inbox.
+    expect(fn).toContain("const REPLY_TO = 'goktug@datrick.com'");
+    expect(fn).toContain('replyTo: REPLY_TO');
+  });
+
+  it('keeps the voice: the founder set it up, replies reach the founder inbox, one question, the reply line, no sequence, signed', () => {
     for (const v of ['A', 'B']) {
       const html = mod.renderNewBody({ username: 'alice', solves: 2, company: null, variant: v });
-      expect(html).toMatch(/writing this myself to the short list|writing to each of you one at a time/);
+      expect(html).toMatch(/I set this up so I can ask every new person one question|I wanted every new person to get one question from me/);
+      expect(html).toMatch(/comes to my own inbox|land in my own inbox/);
       expect((html.match(/\?<\/strong>/g) || []).length).toBe(1);   // one question
       expect(html).toContain("If it's an interview, reply with the company and the date. I read every reply.");
       expect(html).toContain("I won't send another one of these.");
