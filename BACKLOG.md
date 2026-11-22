@@ -105,6 +105,23 @@ B2 builds none of these; each names the lane that owns it.
   `cta_practice_validate_ai_sql_*` and `editorial_claudequest_click` (0 rows,
   14 app opens from that page).
 
+## GEO gaps — G1, 2026-11-22 (docs/reads/geo-2026-11-22.md)
+
+G1 builds none of these. Each one names the lane that owns it. Baseline:
+- Perplexity named or cited us in 3 of the 5 prompts it answered; it named us in 1 (a sign-in wall stopped it after 5 of 15).
+- 0 of 15 prompts in the search proxy's top 10.
+
+- **C2 — a page for "SQL practice with an AI tutor that explains my mistakes" (panel #8).** No page answers it, and neither console shows a matching query. The search proxy gives the slot to DataCamp's blog and academic papers. On the 2026-09-06 panel this was the family we won (4/4). The page shows the diagnosis on a real wrong query; `/vs-chatgpt/` already holds the rules for claims about AI.
+- **C2 — a general "timed SQL mock interview" page (panel #11).** The mocks sit inside the Capital One and Revolut pages. dbSyntax, DataDriven and Exponent each have a dedicated page in the top 10. Say "Pro" and the free general mock, as the homepage FAQ does.
+- **C2 — a general 2-week SQL interview plan (panel #13).** Only the Amazon page has one. The top 10 is Exponent, Coursera, datadriven.io and LearnSQL.
+- **C2 — a Turkish interview-prep page (panel #15).** `/turkce-sql-ogren/` is a learn-SQL page. The Turkish top 10 is DataCamp TR, Guru99 TR and Techcareer.
+- **C2 — `/meta-sql-interview/` ranks 20.1 on "meta sql interview questions" (GSC, 14 imp, 28 d; panel #10).** Fix the page's answer-first summary before building anything new.
+- **C3 — third-party lists cited for panel prompts that do not name us.** Each was checked on 2026-11-22.
+  - The lists: boot.dev best-sql-practice-sites (#1, #2), prepshotz best-sites and datalemur-alternatives (#1, #2), unchaindata best-sql-practice-sites (#1, #2), onjob.io sql-practice-sites (#1), tensortonic datalemur- and stratascratch-alternatives (#4, #5), analyticsinsight's 2026 top 10 (#2).
+  - What C3 does: drafts only, behind the founder. A correction or suggestion note to each list's author, with facts from llms.txt.
+  - The only list that names us is thequerylab.com, so it needs no note.
+- **C3 — alternativeto.net lists DataLemur's alternatives (cited for #4) and does not list SQL Quest.** It is a user-submitted directory. C3 drafts the listing text; the founder submits it.
+
 ## Funnel findings — B1, 2026-11-22 (docs/reads/funnel-2026-11-22.md)
 
 Six-solvers 209 → 57 (first solvers 500 → 222, reach-six 41.8% → 25.7%;
