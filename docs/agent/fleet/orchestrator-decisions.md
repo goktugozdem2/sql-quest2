@@ -1,0 +1,38 @@
+# Orchestrator decisions — delegated by the founder (append only)
+
+**Founder, 2026-11-22:** "Benden karar isteme, top sende."
+
+From that date, product decisions that agents would otherwise put to the founder are made by the orchestrator: the main loop, or the cloud session coordinating the fleet. Each decision is written down here with its reason and a rule for reversing it. A0 applies them in the daily pass.
+
+**What the delegation cannot cover.** Some actions are not decisions at all: they need the founder's own credentials or his own hand. The laptop loop does them where its permissions allow, and they are never asked of the founder in chat. They are:
+- deploying edge functions;
+- applying migrations or writing to the production DB;
+- changing settings in the Stripe, GSC or Bing dashboards;
+- sending an email *as written by the founder*. A personal plan that says "I wrote this for you" must really be sent by him, or the sentence is false.
+
+Prices are not changed by an agent.
+
+| date | decision | reason | reverse if |
+|---|---|---|---|
+| 2026-11-22 | **`exitReasonAsk` ON** after #155 merges. It shows only after the Pro modal or the quota wall is closed with no plan click, at most once a day. | 17 of ~20 Stripe sessions expired unpaid in 30 days, and we know the reason for none of them. The ask comes after the close, so it cannot block a purchase. | Plan clicks per modal shown fall by more than 20% relative over 14 days against the 14 days before. Then turn it OFF the same day. |
+| 2026-11-22 | **`day2Ask` ON** after #155 merges. | Returns fell from 23% to 4–7% (funnel read 11-22). We need the reason from the people who do come back. It shows once ever, on the second session. | `second_session_7d` or day-3 return drops more than 3 points over 14 days. |
+| 2026-11-22 | **`stuckAsk` waits until 2026-12-20.** | It fires on a challenge with no run, so it would move `open_to_first_run`. That is B5's `companyDirectOpen` metric, and #99/#101 are also being read on it until 12-20. Turning it on now would confound both reads. | — |
+| 2026-11-22 | **`companyDirectOpen` ON at 50/50** after #156 merges. The arms are murmur-hashed, and the stop rule and minimum n are in the PR. | Company pages are the best money door (2.3% trial-or-paid per arrival), and 81% of their landers never open the app. | The PR's own stop rule. |
+| 2026-11-22 | **No 10th Skillmap axis for DDL/DML for now.** The challenges are tagged `DDL/DML` and left unmapped on the radar. | The nine axes are the interview-skill brand across the homepage, the Coach mock, goals and the readiness test. DDL/DML is tested less in analyst screens, and an axis changes every one of those surfaces. | Revisit when DDL/DML has ≥ 15 challenges and 28 days of solve data. |
+| 2026-11-22 | **No holdout on the personal prep plan.** Everyone with an interview goal gets it. | At 15–30 people a week a 20% holdout has no statistical power, and every withheld person is a possible payer. The read uses reply rate, the reasons people give, and a before/after cohort comparison, and it says it is confounded. | After 8 weeks, if trial-or-paid among drafted people is no better than the pre-programme cohort, the founder's time goes elsewhere. |
+| 2026-11-22 | **The 320 px width counts as a full row** in the UI/UX matrix (the Galaxy S9+ descriptor, 320×658). Critical findings there block, the same as at 375. | Small Androids and zoomed iPhones render at 320. Several of our buyers came from India, where small Android phones are common. | — |
+
+## Laptop orchestrator decisions (moved into the repo 2026-11-22)
+
+These used to live only in the laptop's `~/.claude/sqlquest-fleet/state.json`, which the cloud cannot read. Two coordination errors on 11-22 came from that: two agents both named G1, and P1 asking for a price the founder had already picked. From now on the laptop loop appends its decisions here. Run logs stay local, because they mention customers.
+
+| date | decision | reason | reverse if |
+|---|---|---|---|
+| 2026-11-22 | **Laptop lanes:** A3, E1, C8, C3, P1 and R1 run daily; A2 runs against production after each deploy; C1 runs Mondays, B1 Tuesdays, G1 (GEO) Wednesdays, B2 Fridays, and C2 every other Wednesday. Cloud A1 and A0 review and merge every PR. | Each lane needs production data, Gmail drafts or the live site; the cloud has the repo only (README "Two runtimes"). | — |
+| 2026-11-22 | **The ID `G1` belongs to GEO** (`G1-geo.md`, #182). The cloud's goal-owner agent (#176) takes another ID. | The FLEET-RESULT lines, the ledger claim `ai_mention_share` and the D2 scorecard key on agent IDs. | — |
+| 2026-11-22 | **The GEO panel rotates 5 prompts a week on Perplexity.** Share of voice is read per rotation, with a dated note on the panel. | Perplexity shows a sign-in wall after 5 anonymous queries. | Perplexity lifts the wall, or a signed-in run becomes possible. |
+| 2026-11-22 | **Drop the bare "SQLQuest" from the JSON-LD `alternateName`; keep "SQLQuest.app".** | "SQLQuest" is another product's exact name (a SQL game at sql-quest.app), so assistants could confuse the two. | — |
+| 2026-11-22 | **P1 may quote the seat price the founder picked on 2026-09-26:** Option B, $39 a seat for a 3-month cohort pass, 10-seat minimum, weekly summary (commit 41171763). | The founder's own choice is on record. The earlier brief wrongly said no price had been picked. | The founder changes the price. |
+| 2026-11-22 | **Publish `/for-teams/`** (founder's go in chat, #188). It is linked from `/after-bootcamp/` and `/after-the-sql-course/`, not the homepage, whose footer is at its 32-link cap. | The plan's row-6 test can only start once the page is reachable. | Fewer than 3 `team_interest` rows by 2026-12-22: drop the page (the plan's kill rule). |
+| 2026-11-22 | **R1 treats a 403/429 as final for the run** (#193). | Fetching the same page through a scraper service after a refusal routes around the site's decision. | — |
+| 2026-11-22 | **C3 backlinks goes daily** at 2–3 targets a day. It stops adding targets after 7 days with no founder sends. | Founder's request. The bottleneck is sends, not targets. | — |

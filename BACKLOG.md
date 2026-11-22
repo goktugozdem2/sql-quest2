@@ -105,6 +105,171 @@ B2 builds none of these; each names the lane that owns it.
   `cta_practice_validate_ai_sql_*` and `editorial_claudequest_click` (0 rows,
   14 app opens from that page).
 
+## GEO gaps — G1, 2026-11-22 (docs/reads/geo-2026-11-22.md)
+
+G1 builds none of these. Each one names the lane that owns it. Baseline:
+- Perplexity named or cited us in 3 of the 5 prompts it answered; it named us in 1 (a sign-in wall stopped it after 5 of 15).
+- 0 of 15 prompts in the search proxy's top 10.
+
+- **C2 — a page for "SQL practice with an AI tutor that explains my mistakes" (panel #8).** No page answers it, and neither console shows a matching query. The search proxy gives the slot to DataCamp's blog and academic papers. On the 2026-09-06 panel this was the family we won (4/4). The page shows the diagnosis on a real wrong query; `/vs-chatgpt/` already holds the rules for claims about AI.
+- **C2 — a general "timed SQL mock interview" page (panel #11).** The mocks sit inside the Capital One and Revolut pages. dbSyntax, DataDriven and Exponent each have a dedicated page in the top 10. Say "Pro" and the free general mock, as the homepage FAQ does.
+- **C2 — a general 2-week SQL interview plan (panel #13).** Only the Amazon page has one. The top 10 is Exponent, Coursera, datadriven.io and LearnSQL.
+- **C2 — a Turkish interview-prep page (panel #15).** `/turkce-sql-ogren/` is a learn-SQL page. The Turkish top 10 is DataCamp TR, Guru99 TR and Techcareer.
+- **C2 — `/meta-sql-interview/` ranks 20.1 on "meta sql interview questions" (GSC, 14 imp, 28 d; panel #10).** Fix the page's answer-first summary before building anything new.
+- **C3 — third-party lists cited for panel prompts that do not name us.** Each was checked on 2026-11-22.
+  - The lists: boot.dev best-sql-practice-sites (#1, #2), prepshotz best-sites and datalemur-alternatives (#1, #2), unchaindata best-sql-practice-sites (#1, #2), onjob.io sql-practice-sites (#1), tensortonic datalemur- and stratascratch-alternatives (#4, #5), analyticsinsight's 2026 top 10 (#2).
+  - What C3 does: drafts only, behind the founder. A correction or suggestion note to each list's author, with facts from llms.txt.
+  - The only list that names us is thequerylab.com, so it needs no note.
+- **C3 — alternativeto.net lists DataLemur's alternatives (cited for #4) and does not list SQL Quest.** It is a user-submitted directory. C3 drafts the listing text; the founder submits it.
+
+## Company research — R1, 2026-11-22 (docs/reads/companies/)
+
+R1 builds none of these; each names the lane that owns it. Dossiers:
+`capital-one.md`, `revolut.md`, `stripe.md`, `wise.md`, `jpmorgan.md`;
+batch 2: `plaid.md`, `ramp.md`, `morgan-stanley.md`; coverage and queue in
+`INDEX.md`.
+
+- **C1 — Capital One page + blog: cite the vendor, tighten the count.**
+  CodeSignal's own help page (support.codesignal.com article 4407377178647)
+  describes the Data Analytics Assessment as 70 minutes, **14 quiz + 1
+  coding**, CSV data in any tool. That is the shape candidates report for
+  Capital One. The page's "around 14 to 15 questions … plus one or a few
+  written SQL" can become "15 items: 14 multiple choice + 1 coding". Add the
+  vendor as a source row, and say that it does not name Capital One. New and
+  page-ready: the 200–600 score scale, no published cut-off, and two retakes
+  in 180 days (article 4407377197847). This also answers the Bing query
+  "does capital one codesignal allow sql?": any tool for the CSV questions;
+  the coding question is done in the platform.
+- **C1 — Capital One page: say which role it is for.** Data scientists get a
+  different CodeSignal: 4 Python/pandas tasks in 90 minutes (PracHub, interview
+  Aug 2026, plus one aced.io report; medium). Capital One's own business
+  analyst page describes cases, not a test (first-party). One line on the
+  page stops DS and BA searchers from preparing for the wrong screen.
+- **B3 — Capital One mock: 12 + 2 against the vendor's 14 + 1.**
+  `capital-one-codesignal` runs 12 multiple choice + 2 written SQL. The
+  vendor's assessment is 14 multiple choice + 1 coding. The 12 + 2 split was
+  the founder's QA call on 2026-09-19, so changing it needs the founder's go.
+  The page and the mock should at least not contradict the cited source.
+- **C1 — Revolut page: second source, and two caveats.** Add PracHub's Data
+  Analyst report (interview Feb 2026, published 2026-08-25): a four-question
+  SQL technical screen after the HR call. With Interview Query, the round is
+  now medium confidence. Also add Revolut's careers page (stage order:
+  intro → coding challenges → technical → culture fit → team fit). Update
+  "27 candidate reports" to Interview Query's current 30. Say that the live
+  round's length disagrees inside one publisher (45 vs 60 min). Mark "top
+  10%" and "MAU" as single-family; no second source confirms them.
+- **C1 — Stripe page: from general to sourced.** Three dated candidate
+  reports, Oct 2025 – Q4 2026, put live SQL in the Data Scientist and Data
+  Analyst loops (high). The first round is a hiring-manager conversation with
+  no coding (high). The DS loop has a one-week take-home: SQL or Python, a deck
+  plus code (high that it exists; details from one report). These go in
+  `SOURCED_FORMATS` or a template entry. The DA round's platform (HackerRank)
+  and length (45 min) come from one report and must be worded as one
+  candidate's account. Do not cite the "Stripe Candidate Recruiting Resource"
+  Google Doc: it is engineering-only and its origin is unverified.
+- **C1 — Wise page: one first-party row.** wise.jobs/analytics-case-study:
+  the analyst take-home is returned within 7 days, about 2 hours suggested,
+  no more than 3 hours. It is scored on analysis, problem solving and
+  presentation, and names no SQL or tool. Other first-party lines: interviews
+  default to Zoom, and AI use is allowed on the take-home if disclosed. **Do
+  not state a "30-minute SQL interview"** (a Bing query asks for one). No
+  source describes one; the 30-minute round on record is the recruiter/phone
+  screen.
+- **C1 — JPMorgan page: no change.** Nothing page-ready. Next step: a hand
+  read in a browser of JPMorganChase's application PDF
+  (`/content/dam/jpmorganchase/documents/careers/jpmc-ec-application-reflection.pdf`,
+  over 10 MB, too large for the fetcher). Its search snippet names HireVue
+  and HackerRank.
+- **B3 — "define the metric, then query it" (no challenge has this form).**
+  It is reported for Revolut (PracHub Feb 2026: success of a subscription
+  launch; Interview Query: a new plan with no defined metric) and Stripe
+  (S3: an abnormal metric; S8: choosing the metric was the hard part). That
+  is 4 sources from 3 publishers. Every challenge in the bank states its
+  metric. A two-step challenge on `finans_neobank` would fit: choose the
+  metric that answers "did the premium tier launch work?", then compute it.
+- **B3 — click-through rate from an event log.** Revolut, PracHub Feb 2026
+  (low, one report): views and clicks per product, a ratio guarded against
+  zero views, top 1. The bank has no event-log (view/click) table in any
+  fintech dataset, and no CTR challenge.
+- **B3 — combine fraud rules into one review list.** Revolut, PracHub
+  Feb 2026 (low): write several rules, such as login country ≠ registration
+  country or an amount or burst threshold, then flag the transactions with
+  the rule that fired. Challenges 270–273 each teach one rule alone; none
+  combines them.
+- **B3 — reconcile two sources.** Find the rows missing on either side, and
+  the matching keys whose amounts differ. Stripe data engineer (S10,
+  synthesis) and JPMorgan analyst (J5, reconcile figures across reports):
+  low–medium. No challenge does both-direction anti-join or full-outer
+  reconciliation.
+- Covered already, no B3 needed: completed spend within N days of sign-up
+  (303, 311), chargeback rate per merchant (280), decline rate (305),
+  top 10% by volume (302), MAU (301). The Stripe variants add a trailing
+  30-day window and a per-day split; those are content edits to 280 and 305,
+  not new shapes.
+- **C1 — companies with demand and no page: none found.** About 60 large
+  employers were checked in gsc_daily and bing_stats over 90 days; no
+  interview-intent query turned up. GSC cannot see queries for pages we lack,
+  so take C7's clusters instead and re-check monthly (`INDEX.md`).
+
+### R1 batch 2, 2026-11-22: Plaid, Ramp, Morgan Stanley
+
+- **C1 — Ramp page: wait for one more source, then make it sourced.** Two
+  dated candidate sources from two publishers put a **live SQL round** in
+  Ramp's loops (medium):
+  - Interview Query, Data Analyst, interviewed Q4 2025 (offer): SQL with
+    date wrangling and edge cases, after a take-home case presented to a
+    panel.
+  - DataDriven thread, analytics engineer, 2026-08-27: a live CodeSignal
+    session, 8 SQL questions + 3 follow-ups.
+
+  Do not state yet: the platform (one AE thread, possibly a Blind repost),
+  the take-home or the "AI interview + one-hour assessment" (one report
+  each). If C1 wants a line now, it can say that candidates for analyst and
+  analytics-engineering roles report a live SQL round, citing both, and
+  nothing more. Otherwise keep "no dated public source" until a third source
+  is found. The postings' "SQL (preferably Redshift, Snowflake, BigQuery)"
+  is a first-party fact about the job, usable in the topic sentence.
+- **C1 — Plaid page: no change.** No candidate report was opened. The only
+  facts are first-party job text: every data posting names SQL, with dbt
+  for analytics engineering and DBT/Airflow/Redshift for data engineering.
+  The page's "no dated public source" stays true.
+- **C1 — Morgan Stanley page: no change.** The one opened SQL-test report
+  (GfG, data engineer, 2021: a 2-hour HackerRank test with an SQL section)
+  is too old and too single to state. The first-party video-interview line
+  names no vendor. The data-analyst reports are on Glassdoor and Interview
+  Query, both unreadable this run.
+- **B3 — a calendar spine (fill the missing days) on a fintech dataset.**
+  Ramp's DA report (Q4 2025, low) names date wrangling with edge cases as
+  the hard part. The bank has date math, rolling windows (50, 319) and
+  streaks, but no challenge builds a day-by-day series with zero-activity
+  days (a recursive date CTE LEFT JOINed to activity). Only 44, 81 and 274
+  use a recursive CTE, and none for dates. Fit: daily card spend per
+  account on `finans_neobank` with gaps, then a trailing 7-day sum that
+  counts the empty days.
+- **B3 — rolling distinct active users (trailing 7 days, per day).** A
+  Dataford snippet (not opened) names it for Ramp DA. PracHub's Ramp and
+  Plaid templates (low) name trailing-window rates. Challenge 60 counts
+  daily distinct actives and 50 smooths revenue, but none counts *distinct*
+  users over a trailing window, which cannot be a window COUNT(DISTINCT) in
+  SQLite. Low; build only if B3 has a slot.
+- **B3 — success rate per counterparty over a trailing window.** Plaid
+  (PracHub template, low): API-call success per institution over 7 days.
+  The fintech datasets have no request/attempt log. The nearest is the
+  decline rate (305). If built, put it on `finans_neobank` card
+  authorisations (approve/decline per merchant, trailing 7 days).
+- **B3 — "how many rows does this join return?" as a mock MCQ.** Morgan
+  Stanley DE (GfG 2021, low): predict each join type's row count when the
+  key repeats on both sides. Challenges 291/298 and `/sql-join-fan-out/`
+  teach the fan-out by writing a query; no MCQ asks for the count. That is a
+  mock-question edit, not a new challenge.
+- Covered already, no B3 needed:
+  - nth-highest and top-N per department (29, 48, 89, 163);
+  - median without PERCENTILE (72; none on fintech data, a minor gap);
+  - cohort retention (88, 303);
+  - period-over-period (84, 126).
+- Plaid's settlement reconciliation by currency (PracHub, low) joins the
+  existing **"reconcile two sources"** B3 line above as a third report.
+
 ## Funnel findings — B1, 2026-11-22 (docs/reads/funnel-2026-11-22.md)
 
 Six-solvers 209 → 57 (first solvers 500 → 222, reach-six 41.8% → 25.7%;

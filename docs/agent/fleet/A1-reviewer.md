@@ -15,8 +15,8 @@ For each open PR (`gh pr list --state open`; skip founder branches and PRs with 
    - the test: does it fail without the change? Re-run the break it claims and confirm.
    - the ledger claim: does the metric exist? Is there a falsification?
 3. Verdict, posted as a PR comment and starting with the word:
-   - **MERGE**: merge with `<scratchpad>/mergeone.sh <PR#>`; on a conflict run `update.sh`, re-test, then merge.
-   - **REVISE**: list the exact fixes, with file and line. If they are small and inside the PR's intent, make them yourself on the branch (commit, push, re-run everything), then merge. Otherwise leave it for the author's next run.
+   - **MERGE**: post the verdict. **A1 does not merge.** A0 (gate) decides the go and merges (README rule 6, `A0-gate.md`). Reviewer and gate stay separate.
+   - **REVISE**: list the exact fixes, with file and line. If they are small and inside the PR's intent, make them yourself on the branch (commit, push, re-run everything) and post MERGE. A0 still merges. Otherwise leave it for the author's next run.
    - **REJECT**: say why in one paragraph, close the PR, and add a BACKLOG line.
 4. If the change is subtle money or auth, say in the comment that the reviewer and the author are the same model family, and list it under FOUNDER.
 5. After a merge, wait for the deploy (`curl https://sqlquest.app/app.js` for a new identifier, or the page) and run `SMOKE_HERMETIC=1 node scripts/smoke-test.js https://sqlquest.app`. If it fails, revert the merge commit with a PR, merge it, and report.
