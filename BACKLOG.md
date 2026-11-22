@@ -49,6 +49,19 @@ carries its own **DONE** / **Status** line.
 | — | **first screen A/B over: challenge arm ships** (fs10 37.2% vs 15.5%, n 527/536) | #99 | merged 11-22 |
 | — | deep link to a locked Hard → free Hard of the same kind (cold start) | #100 | merged 11-22 |
 | — | Run / Submit on an empty editor run the starter (the first click was dead) | #101 | merged 11-22 |
+| — | syntax / column errors get the one line that fixes them (`near "X"`, the missing column) | #94, #96 | merged 11-22 |
+| — | quota wall headline says the trial ("Try Pro free for 7 days") | #95 | merged 11-22 |
+| — | no tenth-solve ask in front of the quota wall (72% closed it in < 3 s) | #104 | merged 11-22 |
+| — | ledger: tutor nudge HIT, guest continuity HIT/confounded, explain-approach MISS | #105 | merged 11-22 |
+| — | "Explain your approach" box only on the live round | #106 | merged 11-22 |
+| — | **monetization plan: 12 ranked ideas** (`docs/plans/monetization-ideas-2026-11-22.md`) | #107 | merged 11-22 |
+| M-04 | "Try Pro free" in the header for free people with 3+ solves (`headerProButton`) | #108 | merged 11-22 |
+| M-02 | company page hero names question 1 (32 pages) | #110 | merged 11-22 |
+| M-06 | currency warning only on the Payment Link path (part 1; descriptor line waits on a receipt) | #111 | merged 11-22 |
+| M-10 | last 48 h of a Stripe trial: date, price, what is left, Manage plan (`trialEndingLine`) | #112 | merged 11-22 |
+| M-12 | quota wall names the person's company (`quotaWallCompany`) | #113 | merged 11-22 |
+| M-07 | quota wall once a day, then inline — A/B by aid (`quotaWallInline`) | #114 | merged 11-22 |
+| — | ledger: streak card (headline fired, split clears the card), access revoke HIT, users writes day-30 HIT | #109, #115 | merged 11-22 |
 
 Founder decisions surfaced, not taken: the free quota's 10-09 rule fired
 (2 < 3 → quota to 20) and was never asked; the session-token cut (item 1);
@@ -62,6 +75,9 @@ these to the agent):**
 - `supabase db query --linked -f supabase/migrations/20261122100000_search_weekly_view.sql`,
   then the probe in `supabase/manual/20261122_search_weekly_view_probe.sql` (#86).
 - The Anthropic console: this month's tutor spend against the $10 cap (item 5).
+- Monetization items that need money, Stripe or deploys (plan doc, M-01/03/05/06 part 2/08/09/11): the day-7 charge fix (`stripe-webhook` deploy + `billingIssue` server-owned field + Smart Retries), the India one-time pass, the portal's cancellation reasons, the statement descriptor check from one receipt, annual-default trial, card-free trial, the expired-session recovery link.
+- Stripe by hand: one mid-October trial may be paying two subscriptions (refund / dispute risk).
+- Vercel Hobby build limit was hit on 11-22 ("retry in 24 hours"); merges #107–#115 deploy when it clears — check `/app.js` for `headerProButton` afterwards.
 
 ## Decisions taken 2026-11-22 (founder: "kararlar sana ait olsun")
 
