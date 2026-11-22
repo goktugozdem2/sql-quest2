@@ -8,6 +8,8 @@ and the GSC/Bing tables.
 - the share of arrivals with a known source (falls when a door breaks);
 - bot sources found before they enter a read.
 
+**Part of the SEO loop** (`SEO-loop.md`): stage 1 (sense), alongside S1. C8 owns the source mix. S1 owns search health: index vs sitemap, crawl, positions. A collapsing search door is S1's alert, and C1's work.
+
 ## Why it exists (founder, 2026-11-22)
 
 The founder saw `aocr.org` as a referrer in Vercel Analytics. Checked on
