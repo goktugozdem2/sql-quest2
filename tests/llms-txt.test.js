@@ -24,7 +24,7 @@ import os from 'node:os';
 import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { buildLlmsTxt, ENTRY_POINTS, FEATURED_COMPANIES } from '../scripts/build-llms-txt.js';
+import { buildLlmsTxt, ENTRY_POINTS, FEATURED_COMPANIES, BUYER_QUESTIONS } from '../scripts/build-llms-txt.js';
 import { CANONICAL_SKILLS } from '../src/utils/skill-calc.js';
 import { bankCountLabel, freeTierSentence } from '../src/utils/display-count.js';
 import { FREE_SOLVE_QUOTA, COMPANY_SET_FREE_COUNT } from '../src/utils/free-tier-boundary.js';
@@ -394,3 +394,38 @@ describe('AI-visibility block (C2, 2026-11-22)', () => {
   });
 });
 
+
+// G1, 2026-11-22: the fixed prompt panel in docs/agent/fleet/G1-geo.md is the
+// set of buyer questions an assistant is asked. llms.txt answers each one with
+// a page that exists, in the person's words. A panel prompt with no line here
+// is a question llms.txt is silent on.
+describe('buyer questions (G1, 2026-11-22)', () => {
+  const PANEL_SIZE = 15;
+
+  it('answers every panel prompt, once, in panel order', () => {
+    expect(BUYER_QUESTIONS.map(b => b.panel)).toEqual(Array.from({ length: PANEL_SIZE }, (_, i) => i + 1));
+  });
+
+  it('the panel in the brief is the panel here', () => {
+    const brief = read('docs', 'agent', 'fleet', 'G1-geo.md');
+    const panel = brief.slice(brief.indexOf('## The prompt panel'), brief.indexOf('## Each Wednesday run'));
+    const prompts = [...panel.matchAll(/^\d+\. (?:\(TR\) )?(.+)$/gm)].map(m => m[1].trim());
+    expect(prompts).toHaveLength(PANEL_SIZE);
+  });
+
+  it('prints each question with its live links and a one-line answer, under its own heading', () => {
+    const block = text.slice(text.indexOf('## Questions people ask'), text.indexOf('## Facts an assistant'));
+    expect(block.length).toBeGreaterThan(0);
+    const onSitemap = new Set(facts.pages.map(p => p.path));
+    for (const { q, paths, a } of BUYER_QUESTIONS) {
+      const lines = block.split('\n').filter(l => l.startsWith(`- **${q}** `));
+      expect(lines, q).toHaveLength(1);
+      for (const p of paths) {
+        expect(onSitemap.has(p), p).toBe(true);
+        expect(lines[0], q).toContain(`https://sqlquest.app${p}`);
+      }
+      expect(lines[0], q).toContain(` — ${a}`);
+      expect(a.length, q).toBeGreaterThan(20);
+    }
+  });
+});

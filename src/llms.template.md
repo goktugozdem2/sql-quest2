@@ -8,6 +8,10 @@ _Generated {{generatedOn}} from the live content bank by `scripts/build-llms-txt
 
 {{entryPoints}}
 
+## Questions people ask, and the page that answers
+
+{{buyerQuestions}}
+
 ## Facts an assistant can rely on
 
 - **No signup to start.** Open https://sqlquest.app/app/ and the first challenge is runnable immediately; an account is only needed to sync progress across devices.
