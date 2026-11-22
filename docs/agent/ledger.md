@@ -27,6 +27,16 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### /for-teams/ is published — the seat door's 30-day test starts
+
+- **Claimed** 2026-11-22 · **Shipped** on merge (founder's go in chat: "evet, /for-teams/ yayına al") · **Read** 2026-12-22.
+- **Change** `/for-teams/` goes from noindex to `index, follow`, enters the sitemap, and is linked from the footers of `/after-bootcamp/` and `/after-the-sql-course/` (the instructor-facing doors; the homepage footer stays at its 32-link cap). The page is unchanged otherwise: one button writing `team_interest {seats, email?}`, no price, no checkout. Guards `tests/for-teams.test.js` (breaks caught: restoring noindex; dropping the after-bootcamp link). P1 (partnerships) points pilots and replies at it.
+- **Why** `docs/plans/monetization-2026-09-24.md` row 6 — seats for instructors and bootcamps, tested as a door with a counter before anything is built. 0 `team_interest` rows while it was hidden; P1's 11-22 read found a school (SPTech, Moodle) already sending students unasked.
+- **Metric** `team_interest` rows (people by aid, bots out) and the seats they state; P1 pipeline stage moves.
+- **Baseline** 0 rows (page hidden 09-26 → 11-22).
+- **Target** ≥ 3 `team_interest` rows by 2026-12-22.
+- **Falsification, stated in advance (the plan's own kill rule):** fewer than 3 rows in the 30 days → drop the page and write it down; seats are then sold only through P1's direct conversations.
+
 ### AI-visibility pass: answer-first summaries, honest competitor facts, llms.txt entry points (C2)
 
 - **Claimed** 2026-11-22 · **Shipped** on merge (static pages + llms.txt,

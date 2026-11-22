@@ -276,6 +276,13 @@
     <xhtml:link rel="alternate" hreflang="x-default" href="https://sqlquest.app/learn-sql/" xmlns:xhtml="http://www.w3.org/1999/xhtml"/>
   </url>
 
+  <!-- /for-teams/ published 2026-11-22 (founder) -->
+  <url>
+    <loc>https://sqlquest.app/for-teams/</loc>
+    <lastmod>2026-11-22</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
   <!-- Phase 2 query-cluster landings (top-of-funnel SEO expansion) -->
   <url>
     <loc>https://sqlquest.app/sql-cheat-sheet/</loc>
