@@ -79,6 +79,77 @@ these to the agent):**
 - Stripe by hand: one mid-October trial may be paying two subscriptions (refund / dispute risk).
 - Vercel Hobby build limit was hit on 11-22 ("retry in 24 hours"); merges #107–#115 deploy when it clears — check `/app.js` for `headerProButton` afterwards.
 
+## Verdict follow-ups — B2, 2026-11-22 (each from a ledger verdict written today)
+
+B2 builds none of these; each names the lane that owns it.
+
+- **C1 — question pages: CTA above the description, schema below the fold.**
+  Pre-written action of "question pages…" (falsification fired: 1.5%
+  solved-one, 11 of 744 landers, vs 27.8% on `/sql-exercises/`). Read the
+  Bing noindex claim (reads 2027-01-08) before shipping, so the two do not
+  land in one window.
+- **C1 — company pages: test the readiness block below the FAQ.** The
+  company-template verdict's letter fired (9.6% < 25%), but its baseline was
+  on another definition (same query before: 12.3%) — a test, not a settled
+  fix.
+- **B3 — tiebreakers in reference solutions, prompts that state the order.**
+  The grader verdict (FLAT, falsification fired): tie rejections were rare;
+  the next lever is content.
+- **A2 — does the First 90 Days card render for a hired person?** One status
+  set (10-19), zero `ticket_opened` rows ever.
+- **B1 — `app_opened` per person halved (2.13 → 1.13) and
+  `second_session_7d` fell to 6.9%.** Check whether #49 (10-08) changed what
+  fires on a return visit before anyone reads retention (scorecard, 11-22).
+- **B1 — three events that never fire:** `pro_modal_shown {reason:
+  'email_link'}` (0 rows ever, though 80 activated notes went out),
+  `cta_practice_validate_ai_sql_*` and `editorial_claudequest_click` (0 rows,
+  14 app opens from that page).
+
+## Funnel findings — B1, 2026-11-22 (docs/reads/funnel-2026-11-22.md)
+
+Six-solvers 209 → 57 (first solvers 500 → 222, reach-six 41.8% → 25.7%;
+windows 09-02 → 10-02 vs 10-23 → 11-22). ~62% of the drop is fewer people
+solving anything; the `/sql-exercises/` Bing door alone is ~half of it.
+Measurement ruled out (#49 changes nothing for real people). B1 builds
+nothing for traffic; these lines are for the owning lanes.
+
+- **C1 — Bing `/sql-exercises/` collapsed on impressions, not CTR.** Bing
+  page slice, 4 weeks to 10-02 vs to 11-21: clicks 674 → 114, impressions
+  11,296 → 3,290, position 6.0 → 7.3; site clicks 292/wk (09-21) → 21/wk
+  (11-16). Every query fell together: `sql practice questions` 821 → 390
+  impr (pos 5.0 → 6.3), `sql practice exercises` 279 → 132 (2.3 → 4.0),
+  `sql practice` 2,545 → 609 (8 → 10), `sql exercises` 209 → 94 (3.0 →
+  6.5), brand `sql quest` 360 → 177 (3.5 → 4.0). Site-level, not one
+  query. Bing `in_index` rose 195 → 830 over the same weeks (the
+  `/questions/` pages) — check whether the fall tracks the index bloat
+  (#72's bingbot noindex, 11-20, is the live test; its read is 2027-01-08 —
+  pull a 4-week interim on Bing impressions by 12-20). Also: Bing reports the
+  homepage as `https://www.sqlquest.app/` (88 → 22 clicks), not the bare
+  host — check which host Bing treats as canonical. This door made
+  117 of 209 six-solvers in September; nothing in the app can replace it.
+  **C1 read 11-22** (`docs/reads/bing-drop-2026-11-22.md`): the index growth
+  is mostly not the question pages — `in_index` 830 vs a 422-URL sitemap;
+  the robots-blocked `/app/?` URLs (0 → 819 from the 09-23 rule) fill the
+  gap, and clicks peaked the week the rule shipped. Host, canonical, crawl
+  status and the page's own edits ruled out. Code PR: bingbot may fetch the
+  app URLs to read their noindex (A1). #72's `in_index` check is now
+  confounded — read its own URLs.
+- **C1 — the homepage lost half its views** (`landing_view` on `/`
+  157–197/wk mid-September → 71–95/wk) while Google clicks stayed flat
+  (~150/wk): find which Google/Bing queries used to land on `/`.
+- **B1 (own, next run 11-24 / 12-01) — read the 11-23+ cohorts** on 1 → 3,
+  3 → 6 and #94 → #95, split by `signupAskAtThree` exposure. #90
+  (`weakSkillNext` off) and #98 (account ask at 3) landed the same day on
+  the same step. Rules written in the read (§4): ≥ 36% 1 → 6 → the gap is
+  traffic only; < 30% with #94 → #95 under 75% → B1's experiment is the
+  post-solve handoff; 3 → 6 down only among people shown the ask → the ask
+  goes back to the 10th solve.
+- **B4 / FOUNDER — the quota halved returns.** Return within 7 days among
+  people with 6+ first-day solves 56.3% → 26.9%, all groups down, step at
+  the 09-28 cohort (first week under the 10-solve quota). It costs few
+  six-solvers (most reach six in the first session) but it is the quota's
+  retention cost; read it with the quota's 10-09 rule, not as activation.
+
 ## Decisions taken 2026-11-22 (founder: "kararlar sana ait olsun")
 
 | Decision | Data | Next read |

@@ -2307,6 +2307,31 @@ Traps:
   the metric has told you the cause is not scoped to first-run; that is a valid
   read, not a failure.
 
+## `bing_weekly_clicks` / `bing_blocked_urls`
+
+Registered 2026-11-22 (C1, `docs/reads/bing-drop-2026-11-22.md`) so the
+Bing claims of 11-20 (#72) and 11-22 do not read UNDEFINED.
+
+- **`bing_weekly_clicks`** — `sum(clicks)` and `sum(impressions)` from
+  `bing_site_daily` over Bing's own weeks, **Saturday → Friday**
+  (`date - ((extract(dow from date)::int + 1) % 7)` is the Saturday). The
+  site series is daily and complete; the `bing_stats` page slice is a
+  weekly bucket of the top pages only and runs a little lower (258 vs 280,
+  week to 09-25) — quote one or the other, never both in one series.
+  Baseline (weeks from): 09-19 **280** / 5,243 · 10-17 91 / 2,535 · 11-07
+  **37** / 1,321 · 11-14 25 / 924 (6 days). Google's flat 125–211/wk is
+  the control.
+- **`bing_blocked_urls`** — `bing_crawl_daily.blocked_by_robots`, a level
+  (URLs Bing knows and may not fetch), not a daily count. 0 until 09-24
+  (the `/app/?` robots rule shipped 09-23), **819** on 11-20.
+  `all_other_codes` ≈ 100 + this number.
+- **Trap: `in_index` is not "our pages in Bing".** On 11-20 it is 830
+  against a 422-URL sitemap and 416 URLs fetched with a 200 (`code_2xx`);
+  ≥ 408 of it are URLs outside the sitemap — on the 11-22 read, the
+  robots-blocked app URLs. Any claim that reads `in_index` as a mechanism
+  check (the question pages' #72) must subtract or wait for this population,
+  or read `bing_url_status` for its own URLs instead.
+
 ## `bing_page_ctr` / `bing_citations`
 
 Bing's own numbers for a page: impressions, clicks, CTR and average position;
