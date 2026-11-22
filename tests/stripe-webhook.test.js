@@ -338,3 +338,85 @@ describe('trial-reminder-cron: not the Stripe trial reminder', () => {
     expect(cron).toContain('data->>proType=eq.trial');
   });
 });
+
+// ── M-01 (2026-11-22): the day-7 charge gets a self-serve fix ──────────────
+// docs/plans/monetization-ideas-2026-11-22.md. The wording and the links are
+// run in tests/stripe-webhook-payment-failed.test.js; these pin how the
+// branches feed them and where billingIssue is written and cleared.
+describe('stripe-webhook: a failed charge carries its own fix (M-01)', () => {
+  it('the failed-payment email is built from the invoice\'s hosted_invoice_url, through stripeInvoiceUrl', () => {
+    const b = branch('invoice.payment_failed');
+    expect(b).toContain('const mail = paymentFailedEmail({');
+    expect(b).toContain('invoiceUrl: stripeInvoiceUrl(invoice.hosted_invoice_url),');
+    expect(b).toContain('portalUrl: Deno.env.get("STRIPE_CUSTOMER_PORTAL_URL") || PORTAL_URL_DEFAULT,');
+    expect(b).toContain('subject: mail.subject,');
+    expect(b).toContain('html: mail.html,');
+    // the old body is gone from the branch: no hand-written copy left
+    expect(b).not.toMatch(/send you\s+a secure Stripe link/);
+    expect(src).toContain('from "./payment-failed-email.ts";');
+  });
+
+  it('"the free week ended" is decided only for a subscription_cycle invoice, from the subscription\'s trial end', () => {
+    const b = branch('invoice.payment_failed');
+    const gate = b.indexOf('if (invoice.billing_reason === "subscription_cycle") {');
+    expect(gate, 'the cycle gate').toBeGreaterThan(-1);
+    const decided = b.indexOf('afterTrial = startsAtTrialEnd(periodStart, sub.trial_end);');
+    expect(decided).toBeGreaterThan(gate);
+    expect(b.slice(0, gate)).not.toMatch(/\n\s+afterTrial = /);
+    expect(b).toContain('billingReason: invoice.billing_reason ?? null,');
+    expect(b).toContain('afterTrial,');
+    // a failed read changes only the wording: it never throws
+    expect(b.slice(gate, b.indexOf('await logProEvent("pro_payment_failed", userRecord'))).not.toMatch(/throw/);
+    // the pro_events row carries it for failed_charge_recovery
+    expect(b).toContain('after_trial: afterTrial,');
+    // payment_succeeded uses the same rule
+    expect(branch('invoice.payment_succeeded')).toContain('afterTrial = startsAtTrialEnd(periodStart, sub.trial_end);');
+  });
+
+  it('the checkout decline still mails nothing; the email still sits behind the per-invoice dedupe', () => {
+    const b = branch('invoice.payment_failed');
+    const out = b.indexOf('return new Response("Checkout decline recorded"');
+    expect(out).toBeGreaterThan(-1);
+    const call = b.indexOf('paymentFailedEmail(');
+    expect(call).toBeGreaterThan(out);
+    expect((b.match(/paymentFailedEmail\(/g) || []).length).toBe(1);
+    // inside the dedupe's own block, and nowhere else
+    const guard = b.indexOf('if (!alreadyEmailed && toEmail && RESEND_API_KEY) {');
+    expect(guard, 'the dedupe guard').toBeGreaterThan(-1);
+    expect(call).toBeGreaterThan(guard);
+    expect(call).toBeLessThan(b.indexOf('} else {', guard));
+  });
+
+  it('billingIssue is written on past_due with the latest invoice\'s link, and removed on active', () => {
+    const b = branch('customer.subscription.updated');
+    const past = b.indexOf('if (subscription.status === "past_due") {');
+    expect(past).toBeGreaterThan(-1);
+    const write = b.indexOf('ud.billingIssue = {', past);
+    expect(write).toBeGreaterThan(past);
+    const w = b.slice(past, b.indexOf('};', write));
+    expect(w).toContain('subscription.latest_invoice');
+    expect(w).toContain('stripe.invoices.retrieve(latest)');
+    expect(w).toContain('invoiceUrl = stripeInvoiceUrl(');
+    expect(w).toMatch(/since: \(sameSub && held\?\.since\) \|\| new Date\(\)\.toISOString\(\),\n\s+invoiceUrl,\n\s+subscriptionId: subscription\.id,/);
+    const active = b.indexOf('} else if (subscription.status === "active" && held && sameSub) {');
+    expect(active).toBeGreaterThan(write);
+    expect(b.slice(active, active + 120)).toContain('delete ud.billingIssue;');
+    // only the subscription that set it clears it
+    expect(b).toContain('const sameSub = !!held && (!held.subscriptionId || held.subscriptionId === subscription.id);');
+    // written through the service-role client, before the status branch returns
+    expect(b.indexOf('if (wrote) {')).toBeGreaterThan(active);
+    expect(b.indexOf('if (wrote) {')).toBeLessThan(b.indexOf('if (!flipped) return new Response("Subscription status recorded"'));
+    // never touches access
+    expect(b.slice(past, b.indexOf('if (wrote) {'))).not.toMatch(/proStatus|proExpiry/);
+  });
+
+  it('billingIssue is removed when the subscription is deleted, before the record is written', () => {
+    const d = branch('customer.subscription.deleted');
+    const del = d.indexOf('delete userData.billingIssue;');
+    expect(del).toBeGreaterThan(-1);
+    expect(d.slice(d.lastIndexOf('if (', del), del)).toContain('heldIssue.subscriptionId === subscription.id');
+    expect(del).toBeLessThan(d.indexOf('.from("users")'));
+    // before the trial path returns, so a trial that ends unpaid clears it too
+    expect(del).toBeLessThan(d.indexOf('return new Response("Trial cancelled"'));
+  });
+});

@@ -3194,6 +3194,43 @@ same customer) and by the reason the buyer gives. Baseline to 2026-11-22:
 dispute from a trial conversion turns `checkoutTrial` off the same day.
 Guardrail beside it: `trial_funnel` step 1 (modal → trial checkout click).
 
+## `failed_charge_recovery`
+
+Whether a failed charge on a live subscription turns into money (M-01,
+2026-11-22: the failure email carries the invoice's own Stripe page and the
+portal; the app shows "Your card didn't go through — fix it in Stripe" from
+`users.data.billingIssue`). Counts only from the founder's deploy of
+`stripe-webhook` and the `billingIssue` migration — before that the email had
+no link and the field was never written.
+
+- **Denominator — a failure:** one invoice (`invoice_id`) with at least one
+  `pro_payment_failed` row (`reason='stripe_webhook'`) whose
+  `billing_reason = 'subscription_cycle'`, `at_checkout` not true. Count the
+  invoice once (Stripe writes a row per attempt). `after_trial: true` (from
+  the deploy) marks a trial's first charge; earlier rows are told apart by a
+  `pro_trial_started` for the same username in the 8 days before.
+- **Numerator — recovered:** within 14 days of the invoice's FIRST failure,
+  for the same username, a `pro_purchase_completed {after_trial: true}` (a
+  trial's first charge), a `pro_renewal_completed`, or a
+  `pro_subscription_status {status: 'active', from_status: 'past_due'}`.
+  Report the days to recovery (first failure → first of those rows); the
+  target is read at 7 days, the falsification at 14.
+- **Beside it (not the verdict):** `email_events` `template='payment_failed'`
+  `meta.kind` (`trial_first_charge` | `renewal`) and `meta.invoice_link`
+  (false = the email went without the button — investigate any); app events
+  `billing_issue_shown {days, isPro, plan}` (once per page session) and
+  `billing_issue_clicked` — did the person see and press the in-app link
+  before the recovery? Split the recovered by whether a click came first.
+- **Never counted:** checkout declines (`billing_reason
+  'subscription_create'`, `at_checkout: true`) — that is `trial_funnel` card
+  friction, not dunning. Internal accounts and the bot filter as everywhere.
+
+Baseline (2026-10-01 → 11-22, docs/plans/monetization-ideas-2026-11-22.md 1c):
+**1 of 3 recovered, median 16 days** — two trial first charges (one recovered
+after 16 days, one $99 annual still `past_due`) and one India renewal that
+failed with `will_retry: false` (RBI e-mandate). n is tiny; read the
+invoices one by one.
+
 ## `trial_funnel`
 
 The 7-day card-required trial (flag `checkoutTrial`, on 2026-10-01). People

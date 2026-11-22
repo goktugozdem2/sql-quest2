@@ -15,11 +15,21 @@
 // end, and THAT logs the one `pro_purchase_completed` (after_trial: true).
 // A trial cancelled before paying logs `pro_trial_cancelled` and ends Pro at
 // the trial end. No new endpoint events are needed for any of it.
+//
+// A failed charge after that (M-01, 2026-11-22): invoice.payment_failed mails
+// the invoice's own Stripe page (hosted_invoice_url) and the Customer Portal,
+// worded as the first charge after the free week or as a renewal; and
+// customer.subscription.updated writes users.data.billingIssue = { since,
+// invoiceUrl, subscriptionId } on past_due (the app's one-line fix link,
+// src/utils/billing-issue.js), cleared on active and on
+// customer.subscription.deleted. Server-owned: sq_save_user keeps it
+// (migration 20261122130000). No new endpoint events.
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Stripe from "https://esm.sh/stripe@12.0.0?target=deno";
 import { pickCustomerRow } from "./customer-row.ts";
+import { paymentFailedEmail, stripeInvoiceUrl, startsAtTrialEnd, PORTAL_URL_DEFAULT } from "./payment-failed-email.ts";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
   apiVersion: "2023-10-16",
@@ -448,7 +458,7 @@ serve(async (req) => {
           try {
             const sub = await stripe.subscriptions.retrieve(subscriptionId);
             const periodStart = invoice.lines?.data?.[0]?.period?.start ?? invoice.created;
-            afterTrial = !!sub.trial_end && Math.abs(periodStart - sub.trial_end) <= 6 * 3600;
+            afterTrial = startsAtTrialEnd(periodStart, sub.trial_end);
           } catch (err) {
             if (userData.proTrial === true) throw err;
             console.warn("[stripe-webhook] subscription read failed; treating as a renewal:", err);
@@ -579,6 +589,28 @@ serve(async (req) => {
         .limit(1);
       const alreadyEmailed = !!(prior && prior.length > 0);
 
+      // M-01 (2026-11-22): was this the first charge after a trial? The
+      // email's wording and the pro_payment_failed row both carry it
+      // (metric failed_charge_recovery). Read from Stripe the way
+      // invoice.payment_succeeded reads it (startsAtTrialEnd), only for a
+      // subscription_cycle invoice. A failed read changes only the wording,
+      // so it never throws: it falls back to the record's proTrial flag,
+      // which stays true until the first charge lands.
+      let afterTrial = false;
+      const failedSubId = (invoice.subscription as string) || null;
+      if (invoice.billing_reason === "subscription_cycle") {
+        afterTrial = (userRecord?.data as Record<string, unknown> | undefined)?.proTrial === true;
+        if (failedSubId) {
+          try {
+            const sub = await stripe.subscriptions.retrieve(failedSubId);
+            const periodStart = invoice.lines?.data?.[0]?.period?.start ?? invoice.created;
+            afterTrial = startsAtTrialEnd(periodStart, sub.trial_end);
+          } catch (err) {
+            console.warn("[stripe-webhook] payment_failed: subscription read failed; wording from proTrial:", err);
+          }
+        }
+      }
+
       await logProEvent("pro_payment_failed", userRecord?.username || null, "stripe_webhook", {
         invoice_id: invoice.id,
         attempt_count: invoice.attempt_count ?? null,
@@ -586,6 +618,7 @@ serve(async (req) => {
         will_retry: willRetry,
         next_attempt_unix: invoice.next_payment_attempt ?? null,
         billing_reason: invoice.billing_reason ?? null,
+        after_trial: afterTrial,
       });
 
       // Stripe has stopped retrying: this person is not going to pay for the
@@ -614,10 +647,22 @@ serve(async (req) => {
       // is actively being charged, so it does not check emailOptOut and
       // carries no unsubscribe footer.
       if (!alreadyEmailed && toEmail && RESEND_API_KEY) {
-        const username = userRecord?.username || "there";
-        const retryLine = willRetry
-          ? "Stripe will retry the charge automatically over the next few days — if the card just needs a top-up, you don't have to do anything."
-          : "Stripe has stopped retrying, so the subscription will lapse unless the card is updated.";
+        // M-01 (2026-11-22): the email carries the fix itself. The old copy
+        // said "reply and I'll send you a link" and called a trial's first
+        // charge a renewal. Now: the invoice's own Stripe page as the button
+        // (stripeInvoiceUrl — https://invoice.stripe.com only, or no button),
+        // the Customer Portal as the second line, the reply line last
+        // (./payment-failed-email.ts; tests/stripe-webhook-payment-failed.test.js).
+        const mail = paymentFailedEmail({
+          username: userRecord?.username || null,
+          amountCents: invoice.amount_due ?? 0,
+          currency: invoice.currency || "usd",
+          billingReason: invoice.billing_reason ?? null,
+          afterTrial,
+          willRetry,
+          invoiceUrl: stripeInvoiceUrl(invoice.hosted_invoice_url),
+          portalUrl: Deno.env.get("STRIPE_CUSTOMER_PORTAL_URL") || PORTAL_URL_DEFAULT,
+        });
         try {
           const res = await fetch("https://api.resend.com/emails", {
             method: "POST",
@@ -626,22 +671,8 @@ serve(async (req) => {
               from: "Göktuğ at SQL Quest <noreply@sqlquest.app>",
               to: toEmail,
               reply_to: "goktug@datrick.com",
-              subject: "Your SQL Quest payment didn't go through",
-              html: `
-        <div style="font-family: -apple-system, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px; color: #1f2937;">
-          <p style="font-size: 15px; line-height: 1.8;">Hi ${username},</p>
-          <p style="font-size: 15px; line-height: 1.8;">
-            I'm Göktuğ — I built SQL Quest. Your Pro renewal charge
-            (${((invoice.amount_due ?? 0) / 100).toFixed(2)} USD) didn't go through just now.
-            This is almost always a card that expired or a bank being cautious, not something you did.
-          </p>
-          <p style="font-size: 15px; line-height: 1.8;">${retryLine}</p>
-          <p style="font-size: 15px; line-height: 1.8;">
-            If the card needs replacing, <strong>just reply to this email</strong> and I'll send you
-            a secure Stripe link to update it. Your Pro stays active through the retry window either way.
-          </p>
-          <p style="font-size: 15px; line-height: 1.8;">— Göktuğ</p>
-        </div>`,
+              subject: mail.subject,
+              html: mail.html,
             }),
           });
           try {
@@ -656,7 +687,7 @@ serve(async (req) => {
               template: "payment_failed",
               event: res.ok ? "sent" : "send_failed",
               resend_id: rid,
-              meta: { invoice_id: invoice.id, will_retry: willRetry },
+              meta: { invoice_id: invoice.id, will_retry: willRetry, kind: mail.kind, invoice_link: !!mail.invoiceUrl },
             });
           } catch (_) { /* measurement is best-effort */ }
           console.log(`💳 payment_failed email ${res.ok ? "sent" : "FAILED"} to ${toEmail} (invoice ${invoice.id})`);
@@ -809,6 +840,52 @@ serve(async (req) => {
           });
         }
         console.log(`\u2139\uFE0F Subscription ${from} \u2192 ${subscription.status} for ${userRecord?.username || customerId}`);
+
+        // ── billingIssue (M-01, 2026-11-22) ──
+        // past_due: the charge failed and Stripe is retrying. The person's
+        // record gets { since, invoiceUrl, subscriptionId } and the app shows
+        // one line, "Your card didn't go through — fix it in Stripe", opening
+        // the open invoice's own page (src/utils/billing-issue.js). active:
+        // paid again — cleared, but only for the subscription that set it (a
+        // second subscription going active must not hide the first one's
+        // unpaid invoice; 1c found one customer holding two). The URL is
+        // stripeInvoiceUrl's or null: the app shows nothing without a valid
+        // one. Server-owned: sq_save_user keeps the row's value
+        // (migration 20261122130000), so a client save can neither set nor
+        // clear it. subscription.deleted clears it too (below).
+        if (userRecord && userData) {
+          const ud = userData as Record<string, unknown>;
+          const held = (ud.billingIssue && typeof ud.billingIssue === "object")
+            ? ud.billingIssue as { since?: string; subscriptionId?: string | null } : null;
+          const sameSub = !!held && (!held.subscriptionId || held.subscriptionId === subscription.id);
+          let wrote = false;
+          if (subscription.status === "past_due") {
+            let invoiceUrl: string | null = null;
+            const latest = subscription.latest_invoice;
+            try {
+              const inv = typeof latest === "string" ? await stripe.invoices.retrieve(latest) : latest;
+              invoiceUrl = stripeInvoiceUrl((inv as { hosted_invoice_url?: string | null } | null)?.hosted_invoice_url);
+            } catch (err) {
+              console.warn("[stripe-webhook] past_due: latest invoice read failed; billingIssue without a link:", err);
+            }
+            ud.billingIssue = {
+              since: (sameSub && held?.since) || new Date().toISOString(),
+              invoiceUrl,
+              subscriptionId: subscription.id,
+            };
+            wrote = true;
+          } else if (subscription.status === "active" && held && sameSub) {
+            delete ud.billingIssue;
+            wrote = true;
+          }
+          if (wrote) {
+            await supabase
+              .from("users")
+              .update({ data: userData, updated_at: new Date().toISOString() })
+              .eq("username", userRecord.username);
+          }
+        }
+
         if (!flipped) return new Response("Subscription status recorded", { status: 200 });
       }
       const daysSincePurchase = subscription.created
@@ -898,6 +975,13 @@ serve(async (req) => {
         const trialNeverPaid = endedInsideTrial || userData.proTrial === true;
 
         userData.proAutoRenew = false;
+        // M-01: an ended subscription has no invoice left to fix — the app's
+        // billing line must not outlive it. Only the subscription that set
+        // the field clears it.
+        const heldIssue = userData.billingIssue as { subscriptionId?: string | null } | undefined;
+        if (heldIssue && (!heldIssue.subscriptionId || heldIssue.subscriptionId === subscription.id)) {
+          delete userData.billingIssue;
+        }
         if (endedForNonPayment) {
           // Access ends now, not at a date they never paid to reach.
           // proType is deliberately KEPT: pro-access.js needs it to tell a

@@ -534,6 +534,17 @@ window.FEATURE_FLAGS = {
     // fall below 0.7x control at 60+ wall people per arm (ledger "the quota
     // wall asks once a day").
     quotaWallInline: true,
+
+    // ── A failed charge gets its fix link in the app (M-01, 2026-11-22) ───
+    // A person whose record carries `billingIssue` (written by stripe-webhook
+    // when the subscription goes past_due, cleared on active / deleted;
+    // server-owned) sees one line under the header on every tab: "Your card
+    // didn't go through — fix it in Stripe" → the open invoice's own page
+    // (https://invoice.stripe.com only). Without the field it renders
+    // nothing, so it is ON before the webhook deploy. Events
+    // billing_issue_shown / billing_issue_clicked; ledger "the day-7 charge
+    // gets a self-serve fix", metric failed_charge_recovery.
+    billingIssueLine: true,
   },
 };
 

@@ -483,3 +483,68 @@ describe('session-token cut prep (2026-09-25)', () => {
     for (const k of ['prep1:', 'prep2:', 'prep rollback:']) expect(replica, k).toContain(k);
   });
 });
+
+// ── billingIssue is server-owned (M-01, 2026-11-22) ──
+// stripe-webhook writes users.data.billingIssue on past_due and clears it on
+// active / deleted; the app shows the fix link from it. A client save must
+// neither set it (a forged link) nor clear it (a stale tab). The migration is
+// the cut-prep body plus one marked array element, behind a precondition that
+// refuses to run over the cut or before the prep.
+describe('billingIssue is server-owned (2026-11-22, M-01)', () => {
+  const prep = fs.readFileSync(path.join(ROOT, 'supabase/migrations/20260925100000_session_token_cut_prep.sql'), 'utf8');
+  const bill = fs.readFileSync(path.join(ROOT, 'supabase/migrations/20261122130000_billing_issue_server_owned.sql'), 'utf8');
+  const rollback = fs.readFileSync(path.join(ROOT, 'supabase/manual/20261122_billing_issue_server_owned_rollback.sql'), 'utf8');
+  const probe = fs.readFileSync(path.join(ROOT, 'supabase/manual/20261122_billing_issue_server_owned_probe.sql'), 'utf8');
+  const fnOf = (src, name = 'sq_save_user') => {
+    const at = src.indexOf(`create or replace function public.${name}(`);
+    expect(at, name).toBeGreaterThan(-1);
+    const quote = src.slice(at).match(/\nas (\$\w*\$)/)[1];
+    return src.slice(at, src.indexOf(quote + ';', at));
+  };
+  const MARK = ",\n    'billingIssue' -- M-01 (2026-11-22): written by stripe-webhook only\n  ];";
+  const arr = (fn, name) => fn.slice(fn.indexOf(`${name} constant text[] := array[`), fn.indexOf('];', fn.indexOf(`${name} constant text[] := array[`)));
+
+  it('sq_save_user is the 20260925100000 body, byte for byte, plus the one marked element', () => {
+    const after = fnOf(bill);
+    expect(after).toContain(MARK);
+    expect(after.replace(MARK, '\n  ];')).toBe(fnOf(prep));
+    expect(after).not.toBe(fnOf(prep));
+  });
+
+  it('billingIssue is in the server-owned list and not a plan key (a client save cannot set or clear it)', () => {
+    const fn = fnOf(bill);
+    expect(arr(fn, 'server_keys')).toContain("'billingIssue'");
+    expect(arr(fn, 'plan_keys')).not.toContain('billingIssue');
+    // the existing-row path keeps the row's value; the new-row path strips it
+    expect(fn).toMatch(/foreach k in array server_keys loop\n\s+v_data := v_data - k;\n\s+v_keep := case when jsonb_typeof\(o\.data\) = 'object' then o\.data->k end;/);
+    expect(fn).toMatch(/foreach k in array server_keys loop\n\s+v_data := v_data - k;\n\s+end loop;/);
+  });
+
+  it('refuses to run over the cut or before the prep; same signature, one transaction, schema reloaded', () => {
+    const guard = bill.slice(bill.indexOf('do $$'), bill.indexOf('end $$;'));
+    expect(guard).toContain("if def like '%session token required%' then");
+    expect(guard).toContain("if def not like '%password never lands on a password-less named row%' then");
+    expect(guard).toContain('if def is null then');
+    expect(bill.indexOf('end $$;')).toBeLessThan(bill.indexOf('create or replace function public.sq_save_user('));
+    expect(bill).not.toMatch(/drop function/);
+    expect(bill).toMatch(/grant execute on function public\.sq_save_user\(text, jsonb, text, text, text, text, text, text\) to anon, authenticated, service_role;/);
+    expect(bill).toMatch(/^begin;$/m);
+    expect(bill).toMatch(/^commit;$/m);
+    expect(bill.trim().endsWith("notify pgrst, 'reload schema';")).toBe(true);
+  });
+
+  it('the rollback restores the 20260925100000 body; the probe is rolled back and checks keep, forge, absent and new', () => {
+    expect(fnOf(rollback)).toBe(fnOf(prep));
+    expect(probe).toMatch(/^begin;$/m);
+    expect(probe.trim().endsWith('rollback;')).toBe(true);
+    expect(probe).not.toMatch(/^commit;$/m);
+    expect((probe.match(/set local role anon;/g) || []).length).toBe(3);
+    for (const k of ['check 1 FAILED', 'check 2 FAILED', 'check 3 FAILED', 'check 4 FAILED']) expect(probe, k).toContain(k);
+  });
+
+  it('the session-token cut and its rollback keep billingIssue too', () => {
+    for (const f of ['supabase/manual/20260925b_session_token_cut.sql', 'supabase/manual/20260925b_session_token_cut_rollback.sql']) {
+      expect(arr(fnOf(fs.readFileSync(path.join(ROOT, f), 'utf8')), 'server_keys'), f).toContain("'billingIssue'");
+    }
+  });
+});
