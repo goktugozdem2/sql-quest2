@@ -79,3 +79,29 @@ describe('app.jsx wiring', () => {
     expect(app).toContain("proModalReason.type === 'pricing_link' || proModalReason.type === 'header'");
   });
 });
+
+// A2 live QA, 2026-11-22: at 375 px the button pushed the header row 62 px
+// off screen ("Try Pro" cut in half, the Guest chip off-screen); at 390/414
+// the row overflowed even before it. Below `sm` the row keeps logo · streak ·
+// lives · Log in · Pro · identity: the wordmark, the level bar and the XP coin
+// wait for `sm`, and the gap tightens. The rendered check is the smoke step
+// "a guest at 3 solves on a phone".
+describe('the header fits a phone with the Pro button in it', () => {
+  it('the wordmark waits for sm, never a narrower breakpoint', () => {
+    expect(header).toContain('hidden sm:block">SQL Quest</span>');
+    expect(header).not.toMatch(/min-\[3\d\dpx\]:block">SQL Quest/);
+  });
+  it('the level bar is hidden below sm', () => {
+    expect(header).toContain("'hidden sm:block flex-1 max-w-[220px] mx-auto'");
+  });
+  it('the separator before the lives is hidden below sm', () => {
+    expect(header).toMatch(/<span className="text-gray-700 hidden sm:inline">\|<\/span>\s*<span title="Lives"/);
+  });
+  it('the XP coin and its separator are hidden below sm', () => {
+    expect(header).toMatch(/<span className="text-gray-700 hidden sm:inline">\|<\/span>\s*<span title="XP" className="hidden sm:flex/);
+  });
+  it('the row gap tightens below sm and the stats cluster takes the free space', () => {
+    expect(header).toContain('data-testid="header-row" className="max-w-7xl mx-auto px-4 py-2 flex items-center gap-2 sm:gap-3"');
+    expect(header).toMatch(/data-testid="header-stats" className=\{`\$\{showSimpleLearningShell \? 'hidden' : 'flex'\} ml-auto sm:ml-0/);
+  });
+});
