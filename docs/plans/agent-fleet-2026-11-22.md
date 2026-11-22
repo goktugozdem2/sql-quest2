@@ -60,6 +60,32 @@ C3 never buys links, never mass-mails, never posts on its own, and never
 fakes reviews or accounts. Search engines punish all of these, and they
 would cost the domain more than they bring.
 
+### E. Customers — talks to the people who pay or almost pay (added 2026-11-22, founder)
+
+| # | Agent | Lane | Cadence | Output |
+|---|---|---|---|---|
+| E1 | **Customer satisfaction** | Reads the money events (`stripe_webhook` rows) and writes one hand-shaped note per person as a **Gmail draft**, never a send. **Bought or started a trial** → thank-you plus one question (what are you preparing for). **Mid-trial (day 4–5), active** → the charge date said plainly, plus what is missing. **Cancelled a trial** → why. **Abandoned at the last minute**: plan clicked, Stripe session expired, an email held, no trial or purchase after → what stopped you, only when `checkout-abandon` has not already mailed them (it mails once ever). Reads the in-app `feedback` table and email replies weekly, and turns the reasons into BACKLOG lines. | daily | Gmail drafts; a weekly "what customers said" read with reasons only, no names, in `docs/reads/` |
+
+E1 rules:
+- CLAUDE.md's Email voice:
+  - the founder is in the subject;
+  - the sign-off is "Göktuğ / Founder, SQL Quest";
+  - the note says it was written by hand to a short list;
+  - one question, no pitch, no sequence;
+  - no two bodies are the same.
+- Before drafting, search Gmail (sent and drafts) for the address, and skip anyone the founder already wrote to.
+- Skip anyone who opted out (`emailOptOut`), internal accounts, and anyone without an address. A guest's last-minute exit has no address and gets nothing.
+- Customer names and addresses never go into the repo. The dedupe log lives outside it (`~/.claude/sqlquest-cs-log.json`).
+- Judged by: replies per draft sent, and reasons captured per month.
+
+First pass 2026-11-22:
+- Four drafts:
+  - an annual purchase: thank-you + what are you preparing for;
+  - an active monthly trial: charge date + what's missing;
+  - two cancelled trials: why.
+- One last-minute abandoner with an address was skipped; `checkout-abandon` had already mailed them.
+- Five guest exits had no address.
+
 ### D. Orchestration
 
 | # | Agent | Lane | Cadence |
@@ -77,6 +103,7 @@ would cost the domain more than they bring.
    as a queue the founder works through. If the founder has no time to send,
    C3 stays paused; it is not automated.
 4. **Phase 4, supply:** B3 Content, C4 Build in public, B4 Money, D2 Retro.
+   E1 Customer satisfaction runs from 2026-11-22 (founder's request), first by hand in the main loop, then as its own daily agent.
 5. **Move:** the fleet goes to the 64 GB VPS (checklist in local memory:
    repo, gh auth, Supabase link + read-only MCP, headless Chrome, lock file,
    `~/.claude` notes and skills).
@@ -97,6 +124,7 @@ Each agent has one number it is answerable for, read in D2:
 | C2 | Copilot citations, and `ai:*` landings |
 | C3 | links earned (live, followed or not) per month |
 | C4 | posts sent and arrivals with a LinkedIn referrer |
+| E1 | replies per draft the founder sent; reasons captured per month |
 
 The objective all of them serve is O2: 10 paying customers per 30 days by
 2027-02-08 (`docs/agent/objectives.md`).
