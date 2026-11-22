@@ -7,6 +7,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { execFileSync, spawnSync } from 'node:child_process';
+// Minimatch semantics for branch globs without brace/extglob: '**' spans '/', '*' does not.
+const minimatch = (str, pat) => new RegExp('^' + pat.split('**').map(part => part.split('*').map(x => x.replace(/[.+?^${}()|[\]\\]/g, '\\$&')).join('[^/]*')).join('.*') + '$').test(str);
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const SCRIPT = path.join(ROOT, 'scripts/vercel-ignore.sh');
@@ -58,6 +60,35 @@ describe('vercel-ignore.sh', () => {
   it('vercel.json runs it', () => {
     const v = JSON.parse(fs.readFileSync(path.join(ROOT, 'vercel.json'), 'utf8'));
     expect(v.ignoreCommand).toBe('bash scripts/vercel-ignore.sh');
+  });
+});
+
+// 2026-11-22 (later): the ignored-build step does not save the Hobby budget —
+// Vercel CREATES the deployment, then cancels it, and the creation counts
+// ("more than 100, code: api-deployments-free-per-day"). Branch pushes must not
+// create deployments at all: git.deploymentEnabled turns them off by prefix.
+describe('vercel.json git.deploymentEnabled', () => {
+  it('a catch-all turns off any branch with a slash (new lanes included)', () => {
+    const v = JSON.parse(fs.readFileSync(path.join(ROOT, 'vercel.json'), 'utf8'));
+    const pats = Object.keys(v.git.deploymentEnabled);
+    expect(pats).toContain('*/**');
+    for (const b of ['s1/sentinel-2026-11-22', 'newlane/x', 'r1/batch-4']) {
+      expect(pats.some(p => minimatch(b, p)), b).toBe(true);
+    }
+  });
+  const v = JSON.parse(fs.readFileSync(path.join(ROOT, 'vercel.json'), 'utf8'));
+  const de = (v.git && v.git.deploymentEnabled) || {};
+  it('never disables main', () => {
+    for (const [pattern, on] of Object.entries(de)) {
+      expect(minimatch('main', pattern), `pattern ${pattern} matches main`).toBe(false);
+      expect(pattern === 'main' || pattern === '*' || pattern === '**', `pattern ${pattern}`).toBe(false);
+      expect(on).toBe(false);
+    }
+  });
+  it('turns off every fleet branch prefix', () => {
+    for (const p of ['docs', 'feat', 'fix', 'qa', 'claude', 'content', 'chore', 'ci', 'seo', 's1', 'r1']) {
+      expect(de[`${p}/**`], p).toBe(false);
+    }
   });
 });
 
