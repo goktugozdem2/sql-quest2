@@ -59,7 +59,7 @@ export const INTAKE_ROLES = ['analyst', 'data_scientist', 'engineer', 'product',
 // prepTarget.company (the countdown card and the readiness hook's own store);
 // the level to userGoals.level, a fixed key like role.
 export const INTAKE_COMPANIES = [
-  'Airbnb', 'Amazon', 'Anthropic', 'Apple', 'Bloomberg', 'Capital One', 'Coinbase', 'Databricks', 'DoorDash',
+  'Airbnb', 'Amazon', 'Anthropic', 'Apple', 'Bloomberg', 'Capital One', 'Chime', 'Coinbase', 'Databricks', 'DoorDash',
   'Goldman Sachs', 'Google', 'JPMorgan', 'LinkedIn', 'Meta', 'Microsoft', 'Monzo', 'Morgan Stanley', 'Netflix',
   'NVIDIA', 'OpenAI', 'PayPal', 'Plaid', 'Ramp', 'Revolut', 'Shopify', 'Snowflake', 'Spotify', 'Stripe', 'Tesla',
   'TikTok', 'Uber', 'Walmart', 'Wise',

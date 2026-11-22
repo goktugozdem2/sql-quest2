@@ -27,6 +27,35 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### the Chime company page (Nubank and N26 deferred)
+
+- **Claimed** 2026-11-22 · **Shipped** on merge (agent C1, founder's order of 2026-11-22: "find the SEO pages that bring customers, and build them") · **Read** 2026-12-20.
+- **Change** `/chime-sql-interview/` from the company template: a sourced
+  format section (three PracHub candidate reports, interviews Oct–Nov 2025,
+  fetched 2026-11-22; research `docs/reads/company-research-2026-11-22.md`),
+  a 16-challenge set (5 Easy / 7 Medium / 4 Hard) with one line of reasoning
+  per challenge, the fintech ring, the hub, the app's `?company=` list and
+  the intake list. Company-page count 33 → 34. Nubank and N26 were researched
+  and deferred (reasons in the read). Same commit: the "Accessed" line on the
+  PayPal, Coinbase and Monzo pages now shows 20 Nov 2026 (was a hard-coded
+  13 Sep 2026).
+- **Why** company pages are the best money door (2.3% trial-or-paid per
+  arrival vs 0.5% for `/sql-exercises/`, monetization-ideas §1f); Chime is
+  consumer fintech with a large US candidate pool and no DataLemur or
+  StrataScratch page (both 404 on 2026-11-22).
+- **Metric** `company_page_door` for `page` = `chime-sql-interview` (people
+  by `aid`, bots out: landing → app within 1 hour, first solve), plus
+  `gsc_daily` page-slice clicks and impressions for `/chime-sql-interview/`.
+- **Baseline** 0 (the page does not exist).
+- **Target** by 2026-12-20: indexed, ≥ 150 Google impressions and ≥ 5 clicks
+  in the 28 days to the read, and ≥ 3 people into the app from the page.
+- **Falsification, stated in advance:** indexed and under 50 impressions →
+  MISS, and Chime-shaped (no-incumbent, consumer fintech) pages stop being
+  the next batch's default; not indexed by the read → UNREADABLE (request
+  indexing by hand first, re-read 2027-01-17). 4 weeks is short for a new
+  page: a MISS on clicks with impressions above target is FLAT, not MISS.
+  The P4 prune rule applies at eight weeks (no impressions → noindex).
+
 ### five Easy on-ramps: Window, Date and NULL (challenges 320-324)
 
 - **Claimed** 2026-11-22 · **Shipped** on merge · **Read** 2026-12-20.
