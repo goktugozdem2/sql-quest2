@@ -121,6 +121,12 @@ Pipeline for content: **author → Q1 → A1 → A0 → post-deploy check**.
 |---|---|---|---|---|
 | C7 | **Question mining** | Reddit / Stack Overflow / Quora / HN as read-only research: what people ask about SQL, clustered and mapped to our coverage; answers added to existing pages (FAQ, sections, worked examples), missing topics to C6, company questions to C5. Posts nothing anywhere. Brief: `docs/agent/fleet/C7-questions.md` | daily, before C6 | `docs/reads/questions-<date>.md` + one PR of answers on existing pages |
 
+### K. Market watch (added 2026-11-22, founder)
+
+| # | Agent | Lane | Cadence | Output |
+|---|---|---|---|---|
+| B6 | **Competitor & market watch** | what similar services ship, where they rank, what their users praise and complain about — each finding routed to the lane that turns it into customers (C5/C6/C7/C2/C3/B4). Dated, public, never copied, never faked. Brief: `docs/agent/fleet/B6-competitors.md` | daily, 2–3 competitors; pricing monthly with B4 | `docs/reads/competitors-<date>.md` + BACKLOG lines |
+
 ### D. Orchestration
 
 | # | Agent | Lane | Cadence |
@@ -160,6 +166,7 @@ Each agent has one number it is answerable for, read in D2:
 | C6 | topic-page arrivals who solve one of its questions (`topic_funnel`); solve-through on new questions |
 | Q1 | content defects people find after merge (0); solve-through of new questions vs the bank median |
 | C7 | share of mined question clusters (≥ 3 asks / 30 d) with a good answer on the site; impressions on their queries |
+| B6 | findings shipped within 28 days; trial-or-paid on the pages those changes touched |
 | B1 | paid conversions per 1,000 arrivals |
 | B2 | claims past their read date without a verdict (should be 0) |
 | B3 | solve-through on new questions |
