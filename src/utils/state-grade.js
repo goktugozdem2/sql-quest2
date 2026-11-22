@@ -40,6 +40,17 @@ export function stripSql(sql) {
     if (ch === '-' && s[i + 1] === '-') { while (i < s.length && s[i] !== '\n') i++; out += '\n'; continue; }
     if (ch === '/' && s[i + 1] === '*') { i += 2; while (i < s.length && !(s[i] === '*' && s[i + 1] === '/')) i++; i++; out += ' '; continue; }
     if (ch === "'") { i++; while (i < s.length) { if (s[i] === "'" && s[i + 1] === "'") { i += 2; continue; } if (s[i] === "'") break; i++; } out += "''"; continue; }
+    // Quoted identifiers ("…" with "" escapes, `…`, […]) are copied through
+    // whole, so a quote character inside one can never open a fake string
+    // that hides the statements after it (A1's bypass on #172).
+    if (ch === '"' || ch === '`' || ch === '[') {
+      const close = ch === '[' ? ']' : ch;
+      let j = i + 1;
+      while (j < s.length) { if (s[j] === close && close !== ']' && s[j + 1] === close) { j += 2; continue; } if (s[j] === close) break; j++; }
+      out += s.slice(i, j + 1);
+      i = j;
+      continue;
+    }
     out += ch;
   }
   return out;
@@ -49,8 +60,11 @@ export function stripSql(sql) {
 export function splitStatements(sql) {
   const s = stripSql(sql);
   const parts = [];
-  let depth = 0, cur = '';
+  let depth = 0, cur = '', q = null;
   for (const ch of s) {
+    if (q) { cur += ch; if (ch === q) q = null; continue; }
+    if (ch === '"' || ch === '`') { q = ch; cur += ch; continue; }
+    if (ch === '[') { q = ']'; cur += ch; continue; }
     if (ch === '(') depth++;
     if (ch === ')') depth = Math.max(0, depth - 1);
     if (ch === ';' && depth === 0) { if (cur.trim()) parts.push(cur.trim()); cur = ''; continue; }
@@ -200,17 +214,47 @@ export function checkStatements(sql, challenge, loadedTables = []) {
   return { ok: true, kinds };
 }
 
+/** The per-statement gate the run applies: null to let a statement run, the refusal otherwise. */
+function gateFor(challenge, loadedTables) {
+  return text => { const g = checkStatements(text, challenge, loadedTables); return g.ok ? null : g; };
+}
+
 export const isStateGraded = c => !!c && c.grade === 'state' && typeof c.check === 'string';
 
 const shape = r => (r && r.length ? { columns: r[r.length - 1].columns, rows: r[r.length - 1].values } : { columns: [], rows: [] });
 
-function runSide(makeDb, challenge, sql) {
+// Run `sql` statement by statement as SQLite itself splits it (sql.js
+// iterateStatements), gating each statement's own text before it runs. The
+// text gate in checkStatements is a fast, friendly refusal; this is the
+// guarantee: no statement executes that the gate did not see on its own, so
+// a parser gap can never smuggle one through. Engines without the iterator
+// fall back to exec after the text gate.
+export function execGated(db, sql, gateOne) {
+  if (!gateOne || typeof db.iterateStatements !== 'function') return shape(db.exec(sql));
+  let last = { columns: [], rows: [] };
+  for (const stmt of db.iterateStatements(sql)) {
+    try {
+      const refused = gateOne(stmt.getSQL());
+      if (refused) { const e = new Error(refused.message); e.refused = refused; throw e; }
+      const rows = [];
+      while (stmt.step()) rows.push(stmt.get());
+      if (rows.length) last = { columns: stmt.getColumnNames(), rows };
+    } finally {
+      stmt.free();
+    }
+  }
+  return last;
+}
+
+function runSide(makeDb, challenge, sql, gateOne = null) {
   const db = makeDb();
   try {
     if (challenge.setup) db.exec(challenge.setup);
     let last = { columns: [], rows: [] };
     let error = null;
-    try { last = shape(db.exec(sql)); } catch (e) { error = String(e && e.message || e); }
+    let refused = null;
+    try { last = execGated(db, sql, gateOne); } catch (e) { if (e && e.refused) refused = e.refused; else error = String(e && e.message || e); }
+    if (refused) return { refused, last, error: null, accepted: [], check: { columns: [], rows: [] }, checkError: null };
     const accepted = [];
     if (!error) {
       for (const p of challenge.probe || []) {
@@ -230,7 +274,7 @@ function runSide(makeDb, challenge, sql) {
 export function runStateAttempt({ makeDb, challenge, sql, loadedTables = [] }) {
   const gate = checkStatements(sql, challenge, loadedTables);
   if (!gate.ok) return { refused: gate };
-  return runSide(makeDb, challenge, sql);
+  return runSide(makeDb, challenge, sql, gateFor(challenge, loadedTables));
 }
 
 export function checkTableOf(challenge) {
@@ -249,7 +293,8 @@ export function gradeStateChallenge({ makeDb, challenge, sql, compare, loadedTab
   }
   const expected = runSide(makeDb, challenge, challenge.solution);
   if (expected.error || expected.checkError) throw new Error(`state challenge #${challenge.id}: reference failed: ${expected.error || expected.checkError}`);
-  const user = runSide(makeDb, challenge, sql);
+  const user = runSide(makeDb, challenge, sql, gateFor(challenge, loadedTables));
+  if (user.refused) return { passed: false, refused: user.refused, error: user.refused.message, user, expected, diagnosis: stateDiagnosis({ refused: user.refused }, challenge) };
   if (user.error) return { passed: false, error: user.error, user, expected, diagnosis: null };
   const passed = !user.checkError
     && user.accepted.length === expected.accepted.length

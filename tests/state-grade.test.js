@@ -17,7 +17,7 @@ import vm from 'node:vm';
 import initSqlJs from 'sql.js';
 import {
   splitStatements, statementKind, referencedTables, checkStatements,
-  gradeStateChallenge, runStateAttempt, isStateGraded,
+  gradeStateChallenge, runStateAttempt, isStateGraded, execGated,
 } from '../src/utils/state-grade.js';
 import { resultsMatch } from '../src/utils/grade.js';
 import { challengeTablePlan } from '../src/utils/challenge-datasets.js';
@@ -106,6 +106,30 @@ describe('the gate refuses before anything runs', () => {
     expect(g.reason).toBe(reason);
   });
 
+  // A1 on #172: a quote inside a double-quoted identifier opened a fake
+  // string in stripSql and hid the DELETE after it from the gate.
+  const SMUGGLE = `INSERT INTO vip_list SELECT customer_id, name, email FROM customers WHERE membership IN ('Gold', 'Platinum'); SELECT 1 AS "a'"; DELETE FROM vip_list WHERE customer_id = 1; SELECT '"'`;
+  it('a quote inside a quoted identifier cannot hide a statement from the text gate', () => {
+    expect(splitStatements(SMUGGLE)).toHaveLength(4);
+    const g = checkStatements(SMUGGLE, byId(325), loadedTablesFor(byId(325)));
+    expect(g.ok).toBe(false);
+    expect(g.kind).toBe('DELETE');
+    expect(grade(325, SMUGGLE).refused.kind).toBe('DELETE');
+  });
+
+  it('the run gate sees every statement SQLite executes, whatever the text parser thought', () => {
+    const db = makeDbFor(byId(325))();
+    db.exec(byId(325).setup);
+    const seen = [];
+    const gate = text => { seen.push(text.trim().split(/\s+/)[0].toUpperCase()); return /^\s*DELETE/i.test(text) ? { reason: 'not_allowed', kind: 'DELETE', message: 'DELETE is not allowed' } : null; };
+    let refused = null;
+    try { execGated(db, SMUGGLE, gate); } catch (e) { refused = e.refused; }
+    expect(seen).toEqual(['INSERT', 'SELECT', 'DELETE']);
+    expect(refused && refused.kind).toBe('DELETE');
+    expect(db.exec('SELECT COUNT(*) FROM vip_list')[0].values[0][0]).toBe(6); // the DELETE never ran
+    db.close();
+  });
+
   it('a refused attempt is graded wrong with a refusal diagnosis, and runs nothing', () => {
     const c329 = byId(329);
     let opened = 0;
@@ -152,8 +176,8 @@ describe('the five challenges', () => {
 
   const PINNED = {
     325: { rows: 6, first: [1, 'John Smith', 'john.smith@email.com'] },
-    326: { rows: 50, changed: 18, by: 3000 },
-    327: { rows: 37, ids: Array.from({ length: 37 }, (_, i) => i + 1) },
+    326: { rows: 50, changed: 8, by: 3000, dept: 'HR' },
+    327: { rows: 40, ids: [...Array.from({ length: 37 }, (_, i) => i + 1), 141, 142, 143] },
     328: { rows: [['Australia', 5], ['Canada', 8], ['France', 5], ['Germany', 4], ['Japan', 2], ['UK', 3], ['USA', 17]] },
     329: { rows: [[1, 37, 29.99, 'Order cancelled']] },
   };
@@ -169,6 +193,8 @@ describe('the five challenges', () => {
       const before = Object.fromEntries(datasets.employees.tables.employees.data.map(r => [r[0], r[4]]));
       const diffs = rows.filter(([emp, sal]) => sal !== before[emp]);
       expect(diffs).toHaveLength(p.changed);
+      const deptOf = Object.fromEntries(datasets.employees.tables.employees.data.map(r => [r[0], r[2]]));
+      for (const [emp] of diffs) expect(deptOf[emp]).toBe(p.dept);
       for (const [emp, sal] of diffs) expect(sal - before[emp]).toBe(p.by);
     }
     if (id === 327) expect(rows.map(r => r[0])).toEqual(p.ids);
@@ -181,6 +207,19 @@ describe('the five challenges', () => {
     const g = grade(id, sql);
     expect(g.passed).toBe(false);
     expect(g.diagnosis.kind).toBe(kind);
+  });
+
+  // Q1 / A1 on #172: three wrong answers used to pass. Each must fail now.
+  it.each([
+    [326, 'best single employee', "UPDATE employees SET salary = salary + 3000 WHERE department = (SELECT department FROM employees ORDER BY performance_rating DESC LIMIT 1)"],
+    [326, 'SUM instead of AVG', "UPDATE employees SET salary = salary + 3000 WHERE department = (SELECT department FROM employees GROUP BY department ORDER BY SUM(performance_rating) DESC LIMIT 1)"],
+    [326, 'biggest headcount', "UPDATE employees SET salary = salary + 3000 WHERE department = (SELECT department FROM employees GROUP BY department ORDER BY COUNT(*) DESC LIMIT 1)"],
+    [327, 'deleting by id range', 'DELETE FROM logins WHERE login_id > 100'],
+    [329, 'amount >= 0', "CREATE TABLE refunds (refund_id INTEGER PRIMARY KEY, order_id INTEGER NOT NULL REFERENCES orders(order_id), amount REAL CHECK (amount >= 0), reason TEXT); INSERT INTO refunds VALUES (1, 37, 29.99, 'Order cancelled')"],
+  ])('#%i: %s fails', (id, _label, sql) => {
+    const g = grade(id, sql);
+    expect(g.passed).toBe(false);
+    expect(g.diagnosis.kind).toMatch(/^state_/);
   });
 
   it('the row-count sentence speaks about the table', () => {
