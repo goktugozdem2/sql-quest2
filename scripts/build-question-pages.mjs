@@ -21,6 +21,7 @@
  */
 
 import { SQL_PATTERNS, PATTERNS_FOR_CHALLENGE } from '../src/data/sql-patterns.js';
+import { ROLLUP_PRACTICE, ROLLUP_SLUG } from '../src/data/sql-rollup.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
@@ -254,11 +255,20 @@ export function questionSnippet(c) {
 // GROUP BY ROLLUP subtotals; this is a recursive CTE over an org chart, and
 // the bank has no ROLLUP question (SQLite has no ROLLUP). The snippet now says
 // what the page is. The challenge title (and so the URL) is unchanged.
+// 2026-11-22: those searchers now have a page of their own,
+// /sql-rollup-interview-questions/ (scripts/build-rollup-page.mjs), and this
+// page points them there above the fold (QUESTION_NOTES).
 export const QUESTION_SNIPPETS = {
   'recursive-team-size-rollup': {
     title: 'Recursive CTE Question: Org Chart Team Size (Hard) | SQLQuest.app',
     description: 'A recursive roll-up, not GROUP BY ROLLUP: walk an org chart with a recursive CTE and count each manager’s direct and indirect reports. Hard, with schema and editor.',
   },
+};
+
+// A line under the H1 for a page that Google shows for a query it does not
+// answer, pointing at the page that does. Keyed by slug, like QUESTION_SNIPPETS.
+export const QUESTION_NOTES = {
+  'recursive-team-size-rollup': { text: 'Looking for GROUP BY ROLLUP, subtotals and grand totals?', href: `/${ROLLUP_SLUG}/`, link: 'SQL rollup interview questions, worked', track: 'cta_question_rollup' },
 };
 
 export function renderQuestion(c, ctx) {
@@ -290,7 +300,8 @@ export function renderQuestion(c, ctx) {
 <main class="wrap">
   <p class="crumb"><a href="/">SQL Quest</a> › <a href="/questions/">SQL Interview Questions</a> › ${SKILL_PAGE[primary] ? `<a href="${SKILL_PAGE[primary][0]}">${esc(primary)}</a>` : esc(primary)}</p>
   <h1 class="fd">${esc(c.title)}</h1>
-  <div class="meta"><span class="tag ${c.difficulty.toLowerCase()}">${c.difficulty}</span><span class="tag">${free ? 'Free' : 'Pro'}</span>${skills.map(s => `<span class="tag">${esc(s)}</span>`).join('')}</div>
+  <div class="meta"><span class="tag ${c.difficulty.toLowerCase()}">${c.difficulty}</span><span class="tag">${free ? 'Free' : 'Pro'}</span>${skills.map(s => `<span class="tag">${esc(s)}</span>`).join('')}</div>${QUESTION_NOTES[slug] ? `
+  <p style="font-size:15px;color:#94a3b8;margin:4px 0 12px;" data-question-note="true">${esc(QUESTION_NOTES[slug].text)} <a href="${QUESTION_NOTES[slug].href}" data-track="${QUESTION_NOTES[slug].track}">${esc(QUESTION_NOTES[slug].link)} →</a></p>` : ''}
   <div class="prob">${paras(c.description)}</div>
   <p style="margin-top:22px;"><a class="btn bp" href="${appUrl}" data-track="cta_question_solve">Solve it in the browser editor →</a></p>
   <p style="font-size:13px;color:#8b98ab;margin-top:10px;">Runs on SQLite in your browser, graded against the expected result, no signup. A wrong answer gets a diagnosis, not just "incorrect".${free ? ` Free accounts get ${FREE_SOLVE_QUOTA} free challenge solves, and this can be one of them.` : ''}</p>
@@ -306,7 +317,8 @@ export function renderQuestion(c, ctx) {
   <p style="font-size:15px;color:#94a3b8;">${concepts.map(t => `<code>${esc(t)}</code>`).join(' ')}</p>
   ${topicLinks.length ? `<p style="font-size:15px;color:#94a3b8;margin-top:8px;">Practise the topic: ${topicLinks.join(' · ')}</p>` : ''}
   <p style="font-size:15px;color:#94a3b8;margin-top:8px;">Read the concept: <a href="${guideFor(c)[0]}">${esc(guideFor(c)[1])}</a></p>${(PATTERNS_FOR_CHALLENGE[c.id] || []).length ? `
-  <p style="font-size:15px;color:#94a3b8;margin-top:8px;">The trap to watch for: ${PATTERNS_FOR_CHALLENGE[c.id].map(s => SQL_PATTERNS.find(p => p.slug === s)).map(p => `<a href="/${p.slug}/">${esc(p.short)}</a>`).join(' · ')}</p>` : ''}
+  <p style="font-size:15px;color:#94a3b8;margin-top:8px;">The trap to watch for: ${PATTERNS_FOR_CHALLENGE[c.id].map(s => SQL_PATTERNS.find(p => p.slug === s)).map(p => `<a href="/${p.slug}/">${esc(p.short)}</a>`).join(' · ')}</p>` : ''}${ROLLUP_PRACTICE.includes(c.id) ? `
+  <p style="font-size:15px;color:#94a3b8;margin-top:8px;">Subtotals, grand totals and tree rollups: <a href="/${ROLLUP_SLUG}/">SQL rollup interview questions, worked</a></p>` : ''}
 
   ${cos.length ? `<h2 class="fd">In these company practice sets</h2>
   <p style="font-size:15px;color:#94a3b8;">${cos.map(x => `<a href="${x.url}">${esc(x.name)}</a>`).join(' · ')}</p>

@@ -242,7 +242,7 @@
   </section>
   <section class="sec" id="multi-level">
     <h2 class="fd">Grouping by two or more keys: 36 challenges</h2>
-    <p>Add a key and the grain of the answer changes: <code>GROUP BY country, category</code> gives one row per pair, not one per country. This is where cross-tabs, cohort tables and per-group top-N live, and where a fanned-out join quietly doubles your <code>SUM</code>. Start with <strong>Counting Across a JOIN</strong>, then <strong>Survival Cross-Tab: Class × Sex</strong>; the Hard ones carry the pairs through CTEs and window functions.</p>
+    <p>Add a key and the grain of the answer changes: <code>GROUP BY country, category</code> gives one row per pair, not one per country. This is where cross-tabs, cohort tables and per-group top-N live, and where a fanned-out join quietly doubles your <code>SUM</code>. Start with <strong>Counting Across a JOIN</strong>, then <strong>Survival Cross-Tab: Class × Sex</strong>; the Hard ones carry the pairs through CTEs and window functions. For a subtotal per group and a grand total in the same result, <code>GROUP BY ROLLUP</code> and <code>CUBE</code>, see <a href="/sql-rollup-interview-questions/">SQL rollup interview questions</a>.</p>
     <p class="stamp">Counted from the challenge bank, September 2026. Easy first, then Medium, then Hard.</p>
     <div class="q-grid">
       <div class="q-card">
@@ -751,6 +751,7 @@
   <div class="related">
     <a href="/blog/sql-group-by-tutorial/">GROUP BY Tutorial →</a>
     <a href="/blog/where-vs-having/">WHERE vs HAVING →</a>
+    <a href="/sql-rollup-interview-questions/">ROLLUP &amp; Subtotals →</a>
     <a href="/sql-cheat-sheet/#agg">Cheat Sheet: Aggregates →</a>
     <a href="/challenges/">All Practice Topics →</a>
     <a href="/challenges/date-functions/">Date Function Challenges →</a>

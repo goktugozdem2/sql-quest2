@@ -3556,3 +3556,36 @@ Traps (first read, 2026-10-02):
   `first_solve_10m` crawler filter requires an EMPTY `landingSrc` and does
   not catch them; drop people whose every row is tz `UTC` and who never
   solved (the rule docs/reads/regional-demand-2026-10-01.md used).
+
+## `gsc_page_clicks`
+
+Google clicks, impressions and average position for ONE page, read from
+`gsc_daily` (the Search Console pipeline, `scripts/gsc/fetch.mjs`). Registered
+2026-11-22 for /sql-rollup-interview-questions/; the snippet claims before it
+read the same slice without a named metric.
+
+```sql
+-- the page as a whole: the [date, page] slice (query IS NULL)
+select sum(clicks) clicks, sum(impressions) impressions,
+       round(sum(position * impressions) / nullif(sum(impressions), 0), 1) position
+from gsc_daily
+where query is null and page = 'https://sqlquest.app/<slug>/'
+  and date between :start and :start + 27;
+-- per query on the page: the [date, query, page] slice
+select query, sum(clicks), sum(impressions) from gsc_daily
+where query is not null and page = 'https://sqlquest.app/<slug>/'
+  and date between :start and :start + 27 group by 1 order by 3 desc;
+```
+
+- **The window starts when Google starts showing the page**, not on the ship
+  date: `:start` is the first date the page slice has an impression (or the
+  date URL Inspection reports it indexed, if the founder recorded one). Ship
+  date + 28 days on a page Google found two weeks late reads two weeks of data.
+- **Never add the slices together.** The page slice, the query slice and the
+  query×page slice each count the same clicks once (CLAUDE.md, Search Console
+  data pipeline). The query×page slice also omits anonymised queries, so its
+  sum is BELOW the page slice — read the page slice for the total.
+- Search Console lags about two days; the last two dates in the table can
+  still grow. Read with a window ending at least three days before the read.
+- Position is impression-weighted (the query above), never a plain average of
+  daily positions.

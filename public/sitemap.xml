@@ -315,7 +315,7 @@
   </url>
   <url>
     <loc>https://sqlquest.app/sql-exercises/</loc>
-    <lastmod>2026-11-21</lastmod>
+    <lastmod>2026-11-22</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
@@ -353,7 +353,7 @@
   </url>
   <url>
     <loc>https://sqlquest.app/challenges/aggregation/</loc>
-    <lastmod>2026-11-21</lastmod>
+    <lastmod>2026-11-22</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -365,7 +365,7 @@
   </url>
   <url>
     <loc>https://sqlquest.app/challenges/cte/</loc>
-    <lastmod>2026-11-21</lastmod>
+    <lastmod>2026-11-22</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -886,7 +886,7 @@
   </url>
   <url>
     <loc>https://sqlquest.app/questions/union-all-dedup-cross-dataset-search/</loc>
-    <lastmod>2026-11-21</lastmod>
+    <lastmod>2026-11-22</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -976,7 +976,7 @@
   </url>
   <url>
     <loc>https://sqlquest.app/questions/management-hierarchy-overview/</loc>
-    <lastmod>2026-11-21</lastmod>
+    <lastmod>2026-11-22</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -988,7 +988,7 @@
   </url>
   <url>
     <loc>https://sqlquest.app/questions/recursive-team-size-rollup/</loc>
-    <lastmod>2026-11-21</lastmod>
+    <lastmod>2026-11-22</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -1210,7 +1210,7 @@
   </url>
   <url>
     <loc>https://sqlquest.app/questions/recursive-org-chart-traversal/</loc>
-    <lastmod>2026-11-21</lastmod>
+    <lastmod>2026-11-22</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -1738,7 +1738,7 @@
   </url>
   <url>
     <loc>https://sqlquest.app/questions/each-salarys-share-of-payroll/</loc>
-    <lastmod>2026-11-21</lastmod>
+    <lastmod>2026-11-22</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -2308,7 +2308,7 @@
   </url>
   <url>
     <loc>https://sqlquest.app/questions/transaction-share-by-merchant-category/</loc>
-    <lastmod>2026-11-21</lastmod>
+    <lastmod>2026-11-22</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -2604,4 +2604,13 @@
     <priority>0.7</priority>
   </url>
   <!-- patterns:end -->
+
+  <!-- rollup:start -->
+  <url>
+    <loc>https://sqlquest.app/sql-rollup-interview-questions/</loc>
+    <lastmod>2026-11-22</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <!-- rollup:end -->
 </urlset>
