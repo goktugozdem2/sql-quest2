@@ -57,6 +57,17 @@ describe('competitor facts on the comparison pages', () => {
     const re = /verified[ -](?:company )?(?:provenance|sourcing|real|interview|question)|high confidence|with confidence/i;
     for (const slug of COMPARISON_PAGES) expect(page(slug), slug).not.toMatch(re);
   });
+
+  // A1 review, 2026-11-22: a bare "✓ Verified" table cell said the same thing
+  // as "verified provenance" and slipped past the phrase check above.
+  it('has no bare "Verified" table cell', () => {
+    for (const slug of COMPARISON_PAGES) expect(page(slug), slug).not.toMatch(/>\s*✓?\s*Verified\s*</);
+  });
+
+  // CLAUDE.md: "Unlimited" is never claimed anywhere; Pro has a daily AI cap.
+  it('never calls Pro unlimited', () => {
+    for (const slug of COMPARISON_PAGES) expect(page(slug), slug).not.toMatch(/\bunlimited\b/i);
+  });
 });
 
 // The three pages an assistant is most likely to lift an answer from:
