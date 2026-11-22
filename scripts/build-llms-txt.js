@@ -361,7 +361,8 @@ export function templateValues(facts, generatedOn) {
     easyCount: facts.easyCount,
     mediumCount: facts.mediumCount,
     hardCount: facts.hardCount,
-    freePreviewCount: facts.freePreviewCount,
+    // 2026-11-22: freePreviewCount stays in the facts but leaves the template:
+    // the quota sentence says "or a Hard preview" and counts none.
     // 2026-09-26 (freeQuota + companySetGate): the free tier is said as the
     // quota the gate reads, never as a count of free challenges — there is no
     // such count once the quota is on. facts.freeChallengeCount stays in the
