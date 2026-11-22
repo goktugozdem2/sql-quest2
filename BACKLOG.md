@@ -424,6 +424,17 @@ nothing for traffic; these lines are for the owning lanes.
   the 09-28 cohort (first week under the 10-solve quota). It costs few
   six-solvers (most reach six in the first session) but it is the quota's
   retention cost; read it with the quota's 10-09 rule, not as activation.
+- **FOUNDER (Stripe dashboard, ~15 min) — India checkout dies on Stripe's
+  page before any card attempt** (`docs/reads/india-checkout-2026-11-22.md`).
+  India-priced clickers: 17 in 90 days → 1 trial-or-paid (the same returning
+  payer); rest 9 of 29. Since 10-08: 8 new India session starters, 0 trials,
+  0 declines, 0 `pro_card_setup_failed` (0 rows ever, any region); median
+  click → return 11 s (n = 7) vs ~76 s elsewhere. Open those 8 sessions and
+  record: any payment/setup attempt, which methods were shown, RuPay under
+  Cards, `setup_intent.setup_failed` on the endpoint. ≥ 3 of 8 with a
+  declined attempt → issuer/3DS block (fix 3, on-session India pay); ≤ 2 →
+  B1 builds the India card line + the return-reason tap (fix 2). Also read
+  the one India trial's day-7 charge (due ~11-24 18:00 UTC) on 11-25.
 
 ## Decisions taken 2026-11-22 (founder: "kararlar sana ait olsun")
 
