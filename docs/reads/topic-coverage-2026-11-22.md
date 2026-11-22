@@ -73,7 +73,7 @@ below), search interest, our gap (the table), and distance to the money door.
 
 | Rank | Topic | Gap | Why here |
 |---|---|---|---|
-| 1 | **DML**: INSERT … SELECT, UPDATE from a subquery, delete duplicates keeping one, UPSERT | INSERT … SELECT 0, UPSERT 0; UPDATE/DELETE exist but are not state-graded | Data-engineer lists test it by name; the "delete duplicates" and "update from another table" questions are among the most-viewed SQL questions on Stack Overflow (lifetime views below). Engine ships in the companion PR. |
+| 1 | **DML**: INSERT … SELECT, UPDATE from a subquery, delete duplicates keeping one, UPSERT | INSERT … SELECT 0, UPSERT 0; UPDATE/DELETE exist but are not state-graded | Data-engineer lists test it by name; the "delete duplicates" and "update from another table" questions have 1.5-2.8 million lifetime views each on Stack Overflow (figures below). Engine ships in the companion PR. |
 | 2 | **DDL and constraints**: CREATE TABLE, PK / FK / UNIQUE / CHECK / NOT NULL, ALTER TABLE, schema design | 0 | Schema-design question lists name all five constraints. Same engine, graded on rejected rows. |
 | 3 | **Set operations**: EXCEPT / INTERSECT / UNION vs UNION ALL | EXCEPT 0, INTERSECT 1 | Cheapest to ship: SELECT-graded, no engine work. Analyst-shaped, unlike 4 and 5. |
 | 4 | **Indexes and query plans**: CREATE INDEX, `EXPLAIN QUERY PLAN` | 0 | Interview-relevant and searched, but hard to grade honestly in a 40-row dataset (a plan is graded, not speed). Needs a grading design first. Links to `/sql-query-optimizer/`. |
