@@ -34,6 +34,7 @@ it one task at a time. The fleet moves to the 64 GB VPS as the final step.
 
 | # | Agent | Lane | Cadence | Output |
 |---|---|---|---|---|
+| A0 | **Gate** (added 2026-11-22, founder's delegation) | Decides the merge go in the founder's place: A1 MERGE + green CI + not a held kind (price, Stripe, money flag on, outward send, production write, token cut, guard removal) + its own risk sentence; logs `docs/agent/fleet/decisions.md`; reverts its own merge on a smoke failure. Brief: `docs/agent/fleet/A0-gate.md` | after every A1 verdict + every 3 h | merges, holds, the decision log |
 | A1 | **Reviewer** | Reads every agent PR: correctness, CLAUDE.md fragile areas, DESIGN.md, money path, copy rules | every PR | MERGE / REVISE / REJECT comment; blocks merge on REJECT |
 | A2 | **Live QA** | Walks sqlquest.app as a person: first challenge, quota wall, Pro modal, trial line, company pages, mobile + dark | daily | fix PR, or BACKLOG line with a screenshot |
 | A3 | **Errors & feedback** | `postgres_logs` errors, edge-function logs, `challenge_errored`, `feedback` table, `tutor_nudge_failed`, `checkout_session_fallback` | daily | fix PR, or a founder note when it needs a deploy |
@@ -115,6 +116,7 @@ Each agent has one number it is answerable for, read in D2:
 
 | Agent | Number |
 |---|---|
+| A0 | reverts of PRs it merged and incidents traced to them (should be 0); hours from A1 MERGE to merge |
 | A1 | reverts of merged agent PRs (should be 0) |
 | A2 | production bugs found by people before QA (should fall) |
 | A3 | `feedback_failed` and unhandled error kinds (should stay 0) |
