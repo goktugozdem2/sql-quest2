@@ -1,4 +1,5 @@
 import { roundDownCount, bankCountLabel, companySetCount } from './utils/display-count.js';
+import { challengeTablePlan, challengeTableData } from './utils/challenge-datasets.js';
 import { SOURCED_COMPANY_NAMES } from './data/company-interviews.js';
 import { withLocalAccountKeys as withLocalAccountKeysPure, isMissingServerSide, accountFunctionStatus } from './utils/account-access.js';
 import { tokenForUsername, writeSessionToken, clearSessionToken, ensureGuestSecret, clearGuestSecret, withToken, withCarry, endSessionBody, isGuestUsername, rpcBodyFallbacks, isSessionTokenRequired, sessionRefusalAction, RELOGIN_MESSAGE, markReloginPending, isReloginPending, clearReloginPending } from './utils/session-token.js';
@@ -10719,14 +10720,14 @@ function SQLQuest() {
     if (!currentQ || !currentQ.dataset || !currentQ.solution || isMcqQuestion(currentQ)) {
       setInterviewExpectedOutput({ columns: [], rows: [] });
       if (db && currentQ?.dataset) {
-        try { loadDataset(db, currentQ.dataset); } catch (e) {}
+        try { loadChallengeDatasets(db, currentQ); } catch (e) {}
       }
       return;
     }
 
     try {
       // Load the dataset for the current question
-      loadDataset(db, currentQ.dataset);
+      loadChallengeDatasets(db, currentQ);
       
       // Small delay to ensure dataset is loaded
       setTimeout(() => {
@@ -10858,7 +10859,7 @@ function SQLQuest() {
       // Load the current question's dataset
       const currentQ = interview.questions[savedInterviewProgress.questionIndex];
       if (db && currentQ?.dataset) {
-        loadDataset(db, currentQ.dataset);
+        loadChallengeDatasets(db, currentQ);
       }
       return;
     }
@@ -10894,7 +10895,7 @@ function SQLQuest() {
     
     // Load the first question's dataset
     if (db && interview.questions[0]?.dataset) {
-      loadDataset(db, interview.questions[0].dataset);
+      loadChallengeDatasets(db, interview.questions[0]);
     }
   };
   
@@ -10936,7 +10937,7 @@ function SQLQuest() {
     
     // Load the first question's dataset
     if (db && interview.questions[0]?.dataset) {
-      loadDataset(db, interview.questions[0].dataset);
+      loadChallengeDatasets(db, interview.questions[0]);
     }
   };
   
@@ -11201,7 +11202,7 @@ function SQLQuest() {
       setShowInterviewHint(false);
       setShowSolution(false);
       if (db && nextQ && nextQ.dataset) {
-        loadDataset(db, nextQ.dataset);
+        loadChallengeDatasets(db, nextQ);
       }
     } else {
       completeInterview(finalAnswers);
@@ -17201,7 +17202,7 @@ CRITICAL RULES:
     
     // Load the first question's dataset
     if (db && retryInterview.questions[0]?.dataset) {
-      loadDataset(db, retryInterview.questions[0].dataset);
+      loadChallengeDatasets(db, retryInterview.questions[0]);
     }
   };
   
@@ -22762,9 +22763,12 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     checkData();
   }, []);
 
-  const loadDataset = (database, key) => {
+  // onlyTables: load just these tables of the dataset (an extra dataset a
+  // challenge borrows a table from — never the whole of it).
+  const loadDataset = (database, key, onlyTables = null) => {
     if (!database || !publicDatasets[key]) return;
     Object.entries(publicDatasets[key].tables).forEach(([tableName, tableData]) => {
+      if (onlyTables && !onlyTables.includes(tableName)) return;
       try {
         database.run(`DROP TABLE IF EXISTS ${tableName}`);
         const colTypes = tableData.columns.map((_, i) => {
@@ -22776,6 +22780,16 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
         tableData.data.forEach(row => database.run(`INSERT INTO ${tableName} VALUES (${ph})`, row));
       } catch (err) { console.error(`Table ${tableName} error:`, err); }
     });
+  };
+
+  // Every challenge-load site goes through this, never a bare load of the
+  // challenge's own dataset alone: a challenge may list a table its own
+  // dataset lacks (challenge 27: employees + customers on ecommerce), and a
+  // single dataset left it erroring "no such table" on a fresh session.
+  // Own dataset first, then only the missing tables (src/utils/challenge-datasets.js).
+  const loadChallengeDatasets = (database, challenge) => {
+    if (!database || !challenge) return;
+    challengeTablePlan(challenge, publicDatasets).forEach(step => loadDataset(database, step.dataset, step.tables));
   };
 
   const selectDataset = (key) => {
@@ -23167,7 +23181,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
       // then [] on an immediate re-run. Opt-in per challenge so the free
       // sandbox keeps its build-up-state behaviour.
       if (currentChallenge?.mutates && currentChallenge?.dataset) {
-        loadDataset(db, currentChallenge.dataset);
+        loadChallengeDatasets(db, currentChallenge);
       }
       const result = db.exec(q);
       setResults(result.length ? { columns: result[0].columns, rows: result[0].values, error: null, smartError: null } : { columns: [], rows: [], error: null, smartError: null });
@@ -23345,7 +23359,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     
     // Load the appropriate dataset
     if (challenge.core && challenge.core.dataset) {
-      loadDataset(db, challenge.core.dataset);
+      loadChallengeDatasets(db, challenge.core);
     }
   };
   
@@ -24001,7 +24015,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
 
     // Load the appropriate dataset
     if (db && challenge.dataset) {
-      loadDataset(db, challenge.dataset);
+      loadChallengeDatasets(db, challenge);
       
       // Calculate expected result
       try {
@@ -24377,7 +24391,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     if (!db || !currentChallenge?.dataset || !currentChallenge?.solution) return;
     if (challengeExpected.rows.length > 0) return; // already computed
     try {
-      loadDataset(db, currentChallenge.dataset);
+      loadChallengeDatasets(db, currentChallenge);
       const result = db.exec(currentChallenge.solution);
       if (result.length > 0) {
         setChallengeExpected({ columns: result[0].columns, rows: result[0].values });
@@ -24908,11 +24922,11 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
       // the time. Each side gets a freshly loaded dataset instead, so both are
       // measured from the same starting state.
       const mutates = !!currentChallenge.mutates && !!currentChallenge.dataset;
-      if (mutates) loadDataset(db, currentChallenge.dataset);
+      if (mutates) loadChallengeDatasets(db, currentChallenge);
       const userResult = db.exec(challengeQuery);
       const userValues = userResult.length ? userResult[0].values : [];
 
-      if (mutates) loadDataset(db, currentChallenge.dataset);
+      if (mutates) loadChallengeDatasets(db, currentChallenge);
       const expectedResultData = db.exec(currentChallenge.solution);
       const expectedValues = expectedResultData.length ? expectedResultData[0].values : [];
 
@@ -29194,7 +29208,7 @@ RULES:
                           // Load new dataset
                           const newChallenge = getTodaysChallenge(diff);
                           if (newChallenge?.core?.dataset && db) {
-                            loadDataset(db, newChallenge.core.dataset);
+                            loadChallengeDatasets(db, newChallenge.core);
                           }
                         }}
                         className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all relative ${
@@ -29261,7 +29275,7 @@ RULES:
                           // Load new dataset
                           const newChallenge = getTodaysChallenge('Easy');
                           if (newChallenge?.core?.dataset && db) {
-                            loadDataset(db, newChallenge.core.dataset);
+                            loadChallengeDatasets(db, newChallenge.core);
                           }
                         }}
                         className="px-3 py-1.5 bg-green-600 hover:bg-green-700 rounded-lg text-sm font-medium"
@@ -39220,7 +39234,7 @@ RULES:
                       <p className="text-xs text-gray-400 mb-1">{i18n_t('practice', 'tablesUsed')}</p>
                       <div className="space-y-2">
                         {currentChallenge.tables.map(t => {
-                          const tableColumns = publicDatasets[currentChallenge.dataset]?.tables?.[t]?.columns;
+                          const tableColumns = challengeTableData(currentChallenge, t, publicDatasets)?.columns;
                           return (
                             <div key={t}>
                               <span className="text-sm font-mono text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded">{t}</span>
@@ -40227,8 +40241,7 @@ RULES:
                   <div className="bg-black/30 rounded-xl border border-blue-500/30 p-4" data-onboarding="schema">
                     <h3 className="font-bold mb-3 text-blue-300">📋 {i18n_t('practice', 'tableSchema')}</h3>
                     {currentChallenge.tables.map(tableName => {
-                      const ds = publicDatasets[currentChallenge.dataset];
-                      const table = ds?.tables[tableName];
+                      const table = challengeTableData(currentChallenge, tableName, publicDatasets);
                       if (!table) return null;
                       return (
                         <div key={tableName} className="mb-4">
@@ -40247,8 +40260,7 @@ RULES:
                   <div className="bg-black/30 rounded-xl border border-gray-700 p-4">
                     <h3 className="font-bold mb-3 text-gray-300">📝 {i18n_t('practice', 'sampleData')}</h3>
                     {currentChallenge.tables.map(tableName => {
-                      const ds = publicDatasets[currentChallenge.dataset];
-                      const table = ds?.tables[tableName];
+                      const table = challengeTableData(currentChallenge, tableName, publicDatasets);
                       if (!table) return null;
                       return (
                         <div key={tableName} className="mb-4">

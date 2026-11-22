@@ -27,6 +27,43 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### challenge 27 loads the table it borrows (employees on ecommerce)
+
+- **Claimed** 2026-11-22 · **Shipped** on merge · **Read** 2026-12-20.
+- **Change** Challenge 27 "UNION ALL Dedup: Cross-Dataset Search" lists
+  `employees` + `customers` on `dataset: "ecommerce"`; ecommerce has no
+  `employees` table, and the app loaded one dataset per challenge. On a fresh
+  session the Expected Output never rendered (console: "Error backfilling
+  expected output … no such table: employees") and Run/Submit answered "no
+  such table: employees" to the reference solution itself — reproduced
+  headless on the origin/main build. Now every challenge-load site (14:
+  challenge open, the expected-output backfill, the mutating-challenge
+  reloads, daily, mock questions) goes through `loadChallengeDatasets`:
+  the challenge's own dataset whole, then only the listed tables it lacks,
+  from the one dataset that has them (`src/utils/challenge-datasets.js`).
+  The schema / sample panels and the question page show the borrowed table
+  too. A full audit of the bank (307 incl. sector), the 30 daily cores and
+  the 65 mock questions found #27 the only mismatch; `scripts/lint-content.mjs`
+  had carried it as baselined BROKEN since July — removed from the baseline.
+- **Why** C1, 60 days to 2026-11-22: 24 people opened #27, 3 ran it, 3 solved
+  it. A run could only succeed when an earlier screen (speed run, an
+  employees-dataset challenge) had already loaded the employees table.
+- **Metric** `open_to_first_run` and `challenge_solve_through` (metrics.md),
+  both for challenge 27, people as `coalesce(aid, username)`, shared filters.
+- **Baseline** 24 opened → 3 first run (12.5%) → 3 solved (12.5%), 60 days.
+- **Target** from the deploy to 2026-12-20: open → first run ≥ 40% and
+  solve-through ≥ 30%, and **zero** `challenge_errored`
+  rows for challengeId 27 whose message says "no such table".
+- **Falsification, stated in advance:** (a) any post-deploy "no such table"
+  error on #27 → the fix did not reach a load path; **MISS**, find the path.
+  (b) ≥ 8 openers and open → first run still < 25% → the run gap was not the
+  table; the drop-off is in the card (description, difficulty), and the next
+  change is content, not loading. (c) fewer than 8 openers in the window
+  (24 per 60 days ≈ 11 per 28) → **UNREADABLE**, extend to 2027-01-17.
+- **Confounds** none known on #27; the fix also touches the daily and mock
+  load paths, which no other challenge needed (the audit), so nothing else
+  should move.
+
 ### the challenge tour no longer opens on the challenge just solved (A2)
 
 - **Claimed** 2026-11-22 · **Shipped** on merge, no flag (a correctness fix) · **Read** 2026-12-20.

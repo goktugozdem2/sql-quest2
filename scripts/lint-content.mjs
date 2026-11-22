@@ -12,6 +12,7 @@
 // Run: node scripts/lint-content.mjs   (exits 1 if any finding)
 import fs from 'fs';
 import { DatabaseSync } from 'node:sqlite';
+import { challengeTablePlan } from '../src/utils/challenge-datasets.js';
 
 const ROOT = new URL('..', import.meta.url).pathname;
 
@@ -49,6 +50,9 @@ try {
     datasets[name] = ds.tables || ds;
   }
 } catch (_) { /* resolved below if named differently */ }
+
+// The registry shape the plan helper reads: { key: { tables } }.
+const registry = Object.fromEntries(Object.entries(datasets).map(([k, tables]) => [k, { tables }]));
 
 function buildDb(tables, reverse) {
   const db = new DatabaseSync(':memory:');
@@ -109,8 +113,16 @@ let checked = 0, skipped = 0;
 
 for (const c of all) {
   if (!c.solution) { skipped++; continue; }
-  const tables = datasets[c.dataset];
-  if (!tables) { skipped++; continue; }
+  if (!datasets[c.dataset]) { skipped++; continue; }
+  // The tables the app loads for it: its own dataset plus any listed table
+  // borrowed from another (src/utils/challenge-datasets.js — #27 was
+  // baselined BROKEN here for months because this read one dataset).
+  const tables = {};
+  for (const step of challengeTablePlan(c, registry)) {
+    for (const [tn, t] of Object.entries(datasets[step.dataset])) {
+      if (!step.tables || step.tables.includes(tn)) tables[tn] = t;
+    }
+  }
 
   const fwd = runSolution(tables, c.solution, false);
   if (fwd.error) {
