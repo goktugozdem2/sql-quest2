@@ -46,6 +46,8 @@ An agent reads `CLAUDE.md`, this file and its own brief, in that order.
 6. **Merge rule.**
    - A **docs-only** PR (only `docs/**` and/or `BACKLOG.md`) may be merged
      by its author with `<scratchpad>/mergeone.sh <PR#>`.
+   - **A content PR goes to Q1 (content QA) first**, which posts QA PASS / QA FAIL
+     (`Q1-content-qa.md`). A FAIL goes back to the author.
    - **Any other PR is left open for A1 (reviewer)**, which posts MERGE /
      REVISE / REJECT. **A0 (gate) then decides the go** and merges, in the
      founder's place (delegated 2026-11-22, `A0-gate.md`). Never merge your
@@ -53,7 +55,7 @@ An agent reads `CLAUDE.md`, this file and its own brief, in that order.
    - A failing "Vercel" check that says "Deployment rate limited" is the
      Hobby build limit, not a code fault.
 7. **Never:**
-   - send email or post anywhere (Gmail drafts only, and only E1 / C3 / C4
+   - send email or post anywhere (Gmail drafts only, and only E1 / C3 / C4 / P1
      write them);
    - write to the production DB or run `supabase functions deploy`;
    - change prices, Stripe settings or money flags (the founder decides);
@@ -75,7 +77,9 @@ An agent reads `CLAUDE.md`, this file and its own brief, in that order.
   production data, Gmail or sqlquest.app.
 - **Laptop** (the main session plus `sqlquest-autodev-loop`): the lanes that
   need read-only Supabase, the GSC/Bing tables, Gmail drafts or the live site
-  (B1, B2, A3, E1, C1/C2 reads, production QA after a deploy). The laptop
+  (B1, B2, A3, E1, C1/C2 reads, C8 traffic sources daily, G1 GEO weekly, C3 backlinks daily, P1
+  partnerships daily, production QA
+  after a deploy). The laptop
   **does not review or merge cloud PRs**; it opens its own PRs and leaves
   them for A1 → A0, except docs-only PRs, which it may self-merge.
 - **Build output from the laptop.** The laptop's pre-push redaction hook

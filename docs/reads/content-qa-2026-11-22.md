@@ -70,7 +70,7 @@ Blind solve, 2 alternatives and 3–4 wrong answers per card, all through
     correlated subquery or a join to a grouped subquery, which is no easier.
   - The brief's check 5 calls that a FAIL. B3 wrote them on purpose as the
     Easy on-ramp for the 3-Easy Window cell.
-  - A0 or the founder settles which rule stands; BACKLOG line below.
+  - The orchestrator settles which rule stands (logged in `orchestrator-decisions.md`); BACKLOG line below.
 - **6. Prompt rules ✓.**
   - No method is named in either language; `tests/challenges-320-324.test.js`
     checks this.
@@ -166,7 +166,7 @@ Blind solve, 2 alternatives and 3–4 wrong answers per card, all through
 | id | where | defect | action |
 |---|---|---|---|
 | D1 | #132, challenge 323 | example states 2024-03-01..03-31; data ends 2024-04-01 | **fixed, #167** |
-| D2 | #132, challenges 320, 321 | Easy needs a window function (check 5) vs B3's on-ramp intent | BACKLOG: rule call for A0/founder |
+| D2 | #132, challenges 320, 321 | Easy needs a window function (check 5) vs B3's on-ramp intent | BACKLOG: rule call for the orchestrator |
 | D3 | #134 set (pre-existing cards) | hints hold the query; prompts name the method (172, 174, 275, 289, 291, 50) | BACKLOG: B3 lane |
 | D4 | #127 | engine-support facts without a dated read | BACKLOG + laptop fetch |
 | D5 | #142 (pre-existing) | LeetCode/HackerRank/SQLZoo/IQ facts on a 70-day read | laptop fetch (already in #142's audit) |
