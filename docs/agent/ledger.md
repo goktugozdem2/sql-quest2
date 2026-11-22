@@ -27,6 +27,47 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### Bing reads the app shell's noindex (bingbot may fetch /app/?…)
+
+- **Claimed** 2026-11-22 · **Shipped** on merge (robots.txt, no flag) ·
+  **Read** 2026-12-20.
+- **Change** `public/robots.txt` gets a `User-agent: bingbot` group: the
+  default list without `/app/?`, `/app?`, `/app.html`. Every other crawler
+  keeps the 09-23 rule. The shell stays `noindex, follow`. Guard:
+  `tests/robots.test.js`.
+- **Why** `docs/reads/bing-drop-2026-11-22.md`. From the 09-23 robots rule,
+  Bing's `blocked_by_robots` went 0 → 819 and `in_index` 163 → 830 in step,
+  against a 422-URL sitemap and 416 URLs fetched with a 200: ≥ 408 indexed
+  URLs are outside the sitemap, and the blocked app URLs (1,173 distinct
+  query strings linked from the site) are the only population that size.
+  Bing clicks peaked the week the rule shipped (280, from 09-19) and fell
+  every week after, to 37 (from 11-07); every practice query lost position
+  together, and untouched pages fell with them. Hypothesis: hundreds of bare,
+  contentless URLs in the index weigh on how Bing rates the site.
+- **Metric** `bing_blocked_urls` (mechanism) and `bing_weekly_clicks`
+  (outcome), both in metrics.md as of this claim.
+- **Baseline** `blocked_by_robots` **819**, `in_index` **830** (11-20);
+  weekly Bing clicks **37** (week from 11-07), 25 in the 6 days from 11-14.
+- **Target** by 12-20: `blocked_by_robots` ≤ 400 (Bing re-read the URLs),
+  and weekly Bing clicks ≥ 60 for two consecutive weeks.
+- **Guardrail** sitemap URLs crawled in the last 28 days (`bing_url_status`,
+  `last_crawled >= checked_at - 28 days`) not below **131 of 419** — the app
+  URLs must not starve the real pages of crawls.
+- **Falsification, stated in advance:** (a) `blocked_by_robots` ≤ 400 and
+  clicks still ≤ 40 a week for the three weeks after it got there → the
+  stubs were not the cause; **MISS**, and put the `/app/?` lines back in the
+  bingbot group (crawl budget was the rule's reason). (b) the guardrail falls
+  below 100 → revert at once, whatever clicks do. (c) `blocked_by_robots`
+  has not fallen by ≥ 200 at the read → **UNREADABLE** (Bing has not
+  re-read them), extend four weeks.
+- **Confounds** #72 (bingbot noindex on the 307 question pages, 11-20) works
+  on the same mechanism in the same weeks: a click recovery cannot be split
+  between the two, and #72's own `in_index` check (down ≥ 250) will now be
+  met by the app URLs leaving — #72 should read its own URLs in
+  `bing_url_status` / URL Inspection instead. #65 (the `/sql-exercises/`
+  title, 11-20, read 12-12) moves that page's CTR in the same window. December
+  seasonality. Read the three as one Bing window and say so.
+
 ### challenge 27 loads the table it borrows (employees on ecommerce)
 
 - **Claimed** 2026-11-22 · **Shipped** on merge · **Read** 2026-12-20.
