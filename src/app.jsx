@@ -8213,7 +8213,9 @@ function SQLQuest() {
                      // 2026-09-13: the seven template pages (scripts/build-company-pages.mjs).
                      'DoorDash','Goldman Sachs','Walmart','TikTok','LinkedIn','Microsoft','Bloomberg',
                      // 2026-11-20: three more template pages.
-                     'PayPal','Coinbase','Monzo'];
+                     'PayPal','Coinbase','Monzo',
+                     // 2026-11-22: Chime (docs/reads/company-research-2026-11-22.md).
+                     'Chime'];
       const wanted = raw.toLowerCase().replace(/[-_]+/g, ' ').trim();
       const match = VALID.find(v => v.toLowerCase() === wanted);
       return match || null;

@@ -65,6 +65,8 @@ const COMPANIES = {
   paypal:          { name: 'PayPal',        sector: 'fintech',  desc: 'Payments and fraud, conditional sums, WHERE vs ON' },
   coinbase:        { name: 'Coinbase',      sector: 'fintech',  desc: 'Crypto trades, 30-day activity, 7-day retention, cohorts' },
   monzo:           { name: 'Monzo',         sector: 'fintech',  desc: 'Take-home SQL on a business question, then the review' },
+  // 2026-11-22 (docs/reads/company-research-2026-11-22.md).
+  chime:           { name: 'Chime',         sector: 'fintech',  desc: 'Users and transactions: timestamps, rolling sums, a retention signal' },
 };
 
 // Who reads as "adjacent" to whom, in the order we'd recommend them.
