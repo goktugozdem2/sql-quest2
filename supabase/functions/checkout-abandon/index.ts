@@ -36,9 +36,25 @@
 // Sent from the founder with reply-to, because the email's real job is to
 // start a conversation about what stopped them.
 //
-// Env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, RESEND_API_KEY.
+// M-11 (2026-11-22, docs/plans/monetization-ideas-2026-11-22.md): when the
+// person's latest expired Stripe session from that click carries a live
+// recovery link (stored by stripe-webhook on `pro_checkout_expired`, then read
+// back from Stripe here), segment 1's button opens it — the same plan, the
+// same trial offer, one click back to the card form. Otherwise the button is
+// today's app link. `email_events` rows carry `meta.recovery_link`. ?dry=1
+// lists every segment-1 candidate with `path`, `recovery` and `why` (never an
+// address, never the link). Mailing an address we only got from Stripe is
+// OFF (MAIL_STRIPE_ONLY_ADDRESSES in ../_shared/checkout-recovery.ts).
+//
+// Env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, RESEND_API_KEY, and (M-11,
+// read-only, a project secret already set for the Stripe functions)
+// STRIPE_SECRET_KEY — without it every mail keeps today's link.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import {
+  CLICK_SLACK_MS, MAIL_STRIPE_ONLY_ADDRESSES, SESSION_ID_RE,
+  latestExpiredForClick, recoveryDecision, stripeRecoveryUrl,
+} from '../_shared/checkout-recovery.ts'
 
 // Segment 2 knobs. The modal fires at the sixth-solve milestone, so the floor
 // is there on purpose: it excludes anyone who met a `generic` or lock-driven
@@ -106,6 +122,7 @@ const footer = (unsub: string) => `
 async function sendAndLog(supabase: any, apiKey: string, args: {
   to: string; username: string; template: string; subject: string;
   html: string; unsub: string; replyTo?: string;
+  meta?: Record<string, unknown>;
 }): Promise<boolean> {
   let ok = false, resendId: string | null = null, status = 0
   try {
@@ -129,7 +146,7 @@ async function sendAndLog(supabase: any, apiKey: string, args: {
     await supabase.from('email_events').insert({
       username: args.username, email: args.to, template: args.template,
       event: ok ? 'sent' : 'send_failed', resend_id: resendId,
-      meta: ok ? {} : { status },
+      meta: ok ? { ...(args.meta || {}) } : { ...(args.meta || {}), status },
     })
   } catch (_) { /* email_events may not exist yet — measurement is best-effort */ }
   return ok
@@ -189,7 +206,10 @@ Deno.serve(async (req) => {
     // the checkout email step, H11) — they have no users-table row, so the
     // event metadata is the only way to reach them. 3 of the first 5
     // clickers ever were guests; before this they were unrecoverable.
+    // A guest with no email has no channel we hold; from M-11 they are kept
+    // aside as `stripeOnly` (an address typed at Stripe — OFF, see below).
     const latestByUser = new Map<string, { plan: string; at: string; email: string | null }>()
+    const noAddress = new Map<string, { username: string; plan: string; at: string }>()
     for (const row of (clicks || [])) {
       const u = row.username
       if (!u || latestByUser.has(u)) continue
@@ -200,51 +220,97 @@ Deno.serve(async (req) => {
         email = typeof md.email === 'string' && md.email.includes('@') ? md.email : null
       } catch (_) { /* keep defaults */ }
       const isGuest = u === 'guest' || u.startsWith('guest_')
-      if (isGuest && !email) continue // unreachable — no channel
+      if (isGuest && !email) { // unreachable by us — no channel
+        if (!noAddress.has(u)) noAddress.set(u, { username: u, plan, at: row.created_at })
+        continue
+      }
       latestByUser.set(u, { plan, at: row.created_at, email })
     }
+    // A guest with an address on ANY click in the window is reachable; only
+    // the rest are kept aside for the (OFF) Stripe-address path below.
+    const stripeOnly = [...noAddress.values()].filter(c => !latestByUser.has(c.username))
 
-    let sent = 0, skipped = 0
-    for (const [username, click] of latestByUser) {
-      if (isInternalAccount(username, click.email)) { skipped++; continue }
-      const isGuest = username === 'guest' || username.startsWith('guest_')
+    // ── M-11: the recovery link (../_shared/checkout-recovery.ts) ──
+    // The person's latest expired session from THIS click, as stored by
+    // stripe-webhook, then read back from Stripe: pro_events takes anon
+    // inserts, so the URL on the button is always Stripe's own copy, never the
+    // stored row alone. Any miss — no row, no URL, a trial or purchase on
+    // record, a failed read, a link past its 30 days — keeps today's link.
+    const readStripeSession = async (id: unknown): Promise<any | null> => {
+      const key = Deno.env.get('STRIPE_SECRET_KEY') ?? ''
+      if (!key || typeof id !== 'string' || !SESSION_ID_RE.test(id)) return null
+      try {
+        const res = await fetch(`https://api.stripe.com/v1/checkout/sessions/${id}`, {
+          headers: { Authorization: `Bearer ${key}`, 'Stripe-Version': '2023-10-16' },
+        })
+        return res.ok ? await res.json() : null
+      } catch (_) { return null }
+    }
+    const recoveryFor = async (username: string, clickAt: string) => {
+      const from = new Date(Date.parse(clickAt) - CLICK_SLACK_MS).toISOString()
+      const { data: expired } = await supabase
+        .from('pro_events')
+        .select('created_at, metadata')
+        .eq('event', 'pro_checkout_expired').eq('reason', 'stripe_webhook')
+        .eq('username', username).gte('created_at', from)
+        .order('created_at', { ascending: false }).limit(10)
+      const row = latestExpiredForClick(expired || [], clickAt)
+      const { data: used } = await supabase
+        .from('pro_events')
+        .select('id').eq('reason', 'stripe_webhook').eq('username', username)
+        .in('event', ['pro_trial_started', 'pro_purchase_completed']).limit(1)
+      const trialOrPaidBefore = !!(used && used.length > 0)
+      const worthReading = row && !trialOrPaidBefore && stripeRecoveryUrl(row.recovery_url)
+      const session = worthReading ? await readStripeSession(row!.stripe_session_id) : null
+      const decision = recoveryDecision({ username, row, session, now, trialOrPaidBefore })
+      return {
+        ...decision,
+        stripeEmailPresent: row?.stripe_email_present === true,
+        // Only ever read when MAIL_STRIPE_ONLY_ADDRESSES is on; never logged,
+        // never returned by the dry run.
+        stripeEmail: decision.use && typeof session?.customer_details?.email === 'string'
+          ? String(session.customer_details.email).toLowerCase() : null,
+      }
+    }
 
-      if (isGuest) {
-        // Guest path — email came from the click event (H11 capture).
-        const email = click.email!
-        // Dedup: once per email address ever, tracked via email_events
-        // (guests have no users.data to stamp).
-        const { data: prior } = await supabase
-          .from('email_events')
-          .select('id').eq('email', email)
-          .eq('template', 'checkout_abandon').eq('event', 'sent').limit(1)
-        if (prior && prior.length > 0) { skipped++; continue }
-        // Respect the captures unsubscribe flag; reuse (or create) the
-        // email_captures row so the unsub link has a token to point at.
-        let { data: cap } = await supabase
-          .from('email_captures')
-          .select('unsubscribe_token, unsubscribed')
-          .eq('email', email).maybeSingle()
-        if (cap?.unsubscribed) { skipped++; continue }
-        if (!cap?.unsubscribe_token) {
-          const token = crypto.randomUUID()
-          await supabase.from('email_captures')
-            .insert({ email, source: 'checkout', unsubscribe_token: token })
-          cap = { unsubscribe_token: token, unsubscribed: false }
-        }
-        // Skip if this email already paid (pending_subscriptions claimed or not).
-        const { data: paid } = await supabase
-          .from('pending_subscriptions')
-          .select('id').eq('email', email.toLowerCase()).limit(1)
-        if (paid && paid.length > 0) { skipped++; continue }
+    // One entry per candidate, dry run and live alike: which path, whether the
+    // button opens the recovery link, and why not when it does not. Never an
+    // address, never the link itself.
+    const audience1: { username: string; path: string; recovery: boolean; why: string; mailed: boolean }[] = []
 
-        const planLabel = click.plan === 'annual' ? 'the annual plan'
-          : click.plan === 'lifetime' ? 'the lifetime plan' : 'the monthly plan'
-        const cta = utm('/app.html', 'checkout_abandon')
-        const ok = await sendAndLog(supabase, RESEND_API_KEY, {
-          to: email, username, template: 'checkout_abandon',
-          subject: 'You were one step from Pro — what stopped you?',
-          html: `
+    // The address-only checks the guest path has always made (once per
+    // address ever, the captures unsubscribe flag, already paid). Read-only.
+    const addressBlocked = async (email: string) => {
+      const { data: prior } = await supabase
+        .from('email_events')
+        .select('id').eq('email', email)
+        .eq('template', 'checkout_abandon').eq('event', 'sent').limit(1)
+      if (prior && prior.length > 0) return true
+      const { data: cap } = await supabase
+        .from('email_captures')
+        .select('unsubscribe_token, unsubscribed')
+        .eq('email', email).maybeSingle()
+      if (cap?.unsubscribed) return true
+      const { data: paid } = await supabase
+        .from('pending_subscriptions')
+        .select('id').eq('email', email.toLowerCase()).limit(1)
+      return !!(paid && paid.length > 0)
+    }
+    // Reuse (or create) the email_captures row so the unsub link has a token
+    // to point at. Writes — never called on a dry run.
+    const captureToken = async (email: string) => {
+      const { data: cap } = await supabase
+        .from('email_captures')
+        .select('unsubscribe_token').eq('email', email).maybeSingle()
+      if (cap?.unsubscribe_token) return cap.unsubscribe_token as string
+      const token = crypto.randomUUID()
+      await supabase.from('email_captures')
+        .insert({ email, source: 'checkout', unsubscribe_token: token })
+      return token
+    }
+    const planLabelFor = (plan: string) => plan === 'annual' ? 'the annual plan'
+      : plan === 'lifetime' ? 'the lifetime plan' : 'the monthly plan'
+    const addressHtml = (planLabel: string, cta: string) => `
         <div style="font-family: -apple-system, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px; color: #1f2937;">
           <p style="font-size: 15px; line-height: 1.8;">Hi,</p>
           <p style="font-size: 15px; line-height: 1.8;">
@@ -267,9 +333,34 @@ Deno.serve(async (req) => {
             </a>
           </div>
           <p style="font-size: 15px; line-height: 1.8;">— Göktuğ</p>
-        </div>`,
-          unsub: `${Deno.env.get('SUPABASE_URL')}/functions/v1/email-unsubscribe?t=${cap.unsubscribe_token}`,
+        </div>`
+
+    let sent = 0, skipped = 0
+    for (const [username, click] of latestByUser) {
+      if (isInternalAccount(username, click.email)) { skipped++; continue }
+      const isGuest = username === 'guest' || username.startsWith('guest_')
+
+      if (isGuest) {
+        // Guest path — email came from the click event (H11 capture).
+        // Dedup: once per email address ever, tracked via email_events
+        // (guests have no users.data to stamp); the captures unsubscribe
+        // flag; skip if this email already paid (pending_subscriptions).
+        const email = click.email!
+        if (await addressBlocked(email)) { skipped++; continue }
+
+        const rec = await recoveryFor(username, click.at)
+        audience1.push({ username, path: 'guest', recovery: rec.use, why: rec.why, mailed: !dry })
+        if (dry) { sent++; continue }
+
+        const token = await captureToken(email)
+        const cta = rec.use && rec.url ? rec.url : utm('/app.html', 'checkout_abandon')
+        const ok = await sendAndLog(supabase, RESEND_API_KEY, {
+          to: email, username, template: 'checkout_abandon',
+          subject: 'You were one step from Pro — what stopped you?',
+          html: addressHtml(planLabelFor(click.plan), cta),
+          unsub: `${Deno.env.get('SUPABASE_URL')}/functions/v1/email-unsubscribe?t=${token}`,
           replyTo: REPLY_TO,
+          meta: { recovery_link: rec.use },
         })
         if (ok) sent++; else skipped++
         continue
@@ -281,18 +372,28 @@ Deno.serve(async (req) => {
         .eq('username', username)
         .maybeSingle()
 
-      if (!userRow?.email) { skipped++; continue }
+      if (!userRow?.email) {
+        // A registered account with no address: an address typed at Stripe
+        // is its only possible channel (OFF, below).
+        stripeOnly.push({ username, plan: click.plan, at: click.at })
+        continue
+      }
       const userData = userRow.data || {}
       if (userData.emailOptOut === true) { skipped++; continue }
       if (userData.proStatus === true) { skipped++; continue }          // they bought
       if (userData.checkoutAbandonEmailAt) { skipped++; continue }      // once ever
 
       const solved = (userData.solvedChallenges || []).length
-      const planLabel = click.plan === 'annual' ? 'the annual plan'
-        : click.plan === 'lifetime' ? 'the lifetime plan' : 'the monthly plan'
+      const planLabel = planLabelFor(click.plan)
+
+      const rec = await recoveryFor(username, click.at)
+      audience1.push({ username, path: 'registered', recovery: rec.use, why: rec.why, mailed: !dry })
+      // ?dry=1 sends nothing and writes nothing. Before M-11 this segment
+      // ignored the flag and mailed (and stamped) on a dry run.
+      if (dry) { sent++; continue }
 
       const unsubToken = await ensureUnsubToken(supabase, username, userData)
-      const cta = utm('/app.html', 'checkout_abandon')
+      const cta = rec.use && rec.url ? rec.url : utm('/app.html', 'checkout_abandon')
       const subject = 'You were one step from Pro — what stopped you?'
       const html = `
         <div style="font-family: -apple-system, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px; color: #1f2937;">
@@ -324,6 +425,7 @@ Deno.serve(async (req) => {
       const ok = await sendAndLog(supabase, RESEND_API_KEY, {
         to: userRow.email, username, template: 'checkout_abandon',
         subject, html, unsub: unsubLink(unsubToken), replyTo: REPLY_TO,
+        meta: { recovery_link: rec.use },
       })
       if (ok) {
         await supabase
@@ -332,6 +434,42 @@ Deno.serve(async (req) => {
           .eq('username', username)
         sent++
       }
+    }
+
+    // ── M-11: an address we only got from Stripe — OFF ──
+    // A clicker we hold no address for may have typed one on Stripe's page.
+    // Mailing it is the founder's consent decision (MAIL_STRIPE_ONLY_ADDRESSES
+    // in ../_shared/checkout-recovery.ts, false). While it is off these people
+    // are only listed — no Stripe read, no address, no send. When it is on,
+    // the address is read from the Stripe session at send time (never stored)
+    // and the mail goes only with a live recovery link, under the same
+    // once-per-address, unsubscribe and already-paid checks as the guest path.
+    for (const c of stripeOnly) {
+      if (isInternalAccount(c.username)) { skipped++; continue }
+      if (!MAIL_STRIPE_ONLY_ADDRESSES) {
+        audience1.push({ username: c.username, path: 'stripe_only', recovery: false, why: 'stripe_only_off', mailed: false })
+        skipped++
+        continue
+      }
+      const rec = await recoveryFor(c.username, c.at)
+      const email = rec.stripeEmail
+      if (!rec.use || !email || isInternalAccount(c.username, email) || await addressBlocked(email)) {
+        audience1.push({ username: c.username, path: 'stripe_only', recovery: false, why: rec.use ? 'no_address' : rec.why, mailed: false })
+        skipped++
+        continue
+      }
+      audience1.push({ username: c.username, path: 'stripe_only', recovery: true, why: rec.why, mailed: !dry })
+      if (dry) { sent++; continue }
+      const token = await captureToken(email)
+      const ok = await sendAndLog(supabase, RESEND_API_KEY, {
+        to: email, username: c.username, template: 'checkout_abandon',
+        subject: 'You were one step from Pro — what stopped you?',
+        html: addressHtml(planLabelFor(c.plan), rec.url!),
+        unsub: `${Deno.env.get('SUPABASE_URL')}/functions/v1/email-unsubscribe?t=${token}`,
+        replyTo: REPLY_TO,
+        meta: { recovery_link: true, address_from: 'stripe' },
+      })
+      if (ok) sent++; else skipped++
     }
 
     // ── SEGMENT 2: shown the modal, never clicked ────────────────────────
@@ -436,7 +574,11 @@ Deno.serve(async (req) => {
 
     return new Response(JSON.stringify({
       dry,
-      checkout_clicked: { sent, skipped, candidates: latestByUser.size },
+      checkout_clicked: {
+        sent, skipped, candidates: latestByUser.size, stripe_only: stripeOnly.length,
+        recovery_links: audience1.filter(a => a.recovery).length,
+        audience: audience1,
+      },
       modal_no_click: { sent: sent2, skipped: skipped2, candidates: shownBy.size, audience: audience2 },
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }

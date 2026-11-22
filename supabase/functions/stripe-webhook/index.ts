@@ -24,12 +24,19 @@
 // src/utils/billing-issue.js), cleared on active and on
 // customer.subscription.deleted. Server-owned: sq_save_user keeps it
 // (migration 20261122130000). No new endpoint events.
+//
+// An expired session's recovery link (M-11, 2026-11-22):
+// checkout.session.expired adds `recovery_url` (https on checkout.stripe.com
+// or buy.stripe.com only), `recovery_expires_at`, and booleans
+// `stripe_email_present` / `prefilled_email` / `promotions_consent` to
+// `pro_checkout_expired` — never an email address. No new endpoint events.
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Stripe from "https://esm.sh/stripe@12.0.0?target=deno";
 import { pickCustomerRow } from "./customer-row.ts";
 import { paymentFailedEmail, stripeInvoiceUrl, startsAtTrialEnd, PORTAL_URL_DEFAULT } from "./payment-failed-email.ts";
+import { expiredSessionMeta } from "../_shared/checkout-recovery.ts";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
   apiVersion: "2023-10-16",
@@ -221,6 +228,9 @@ serve(async (req) => {
       
       const email = session.customer_details?.email?.toLowerCase();
       const username = session.client_reference_id; // We pass this from the app
+      // M-11: a session opened from an expired one's recovery link names the
+      // expired session here — the read of checkout_abandonment joins on it.
+      const recoveredFrom = session.recovered_from || null;
       
       if (!email && !username) {
         console.error("No email or username found in session");
@@ -326,6 +336,7 @@ serve(async (req) => {
             plan_type: planInfo.type,
             trial_end: expiry.toISOString(),
             stripe_session_id: session.id,
+            recovered_from: recoveredFrom,
             stripe_subscription_id: subscriptionId,
             pending: true,
           });
@@ -335,6 +346,7 @@ serve(async (req) => {
           plan_type: planInfo.type,
           amount_cents: session.amount_total || null,
           stripe_session_id: session.id,
+          recovered_from: recoveredFrom,
           has_email: !!email,
         });
         return new Response("User not found, payment stored for later", { status: 200 });
@@ -387,6 +399,7 @@ serve(async (req) => {
           plan_type: planInfo.type,
           trial_end: expiry.toISOString(),
           stripe_session_id: session.id,
+          recovered_from: recoveredFrom,
           stripe_subscription_id: subscriptionId,
         });
         return new Response("Trial started", { status: 200 });
@@ -397,6 +410,7 @@ serve(async (req) => {
         plan_type: planInfo.type,
         amount_cents: session.amount_total || null,
         stripe_session_id: session.id,
+        recovered_from: recoveredFrom,
         stripe_subscription_id: subscriptionId,
         auto_renew: userData.proAutoRenew,
       });
@@ -781,6 +795,11 @@ serve(async (req) => {
         source: meta.source || null,
         trial: meta.source ? meta.trial === "true" : null,
         region: meta.region || null,
+        // M-11 (2026-11-22): the recovery link, only if https on Stripe's own
+        // host, and booleans about the address — never the address itself
+        // (../_shared/checkout-recovery.ts). checkout-abandon reads the
+        // session back from Stripe before it mails the link.
+        ...expiredSessionMeta(session),
       });
       console.log(`⏳ Checkout session expired for ${username || "unknown"} (${planType})`);
       return new Response("Checkout expiry recorded", { status: 200 });

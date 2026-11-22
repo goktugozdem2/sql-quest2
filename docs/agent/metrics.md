@@ -3285,6 +3285,26 @@ purchase is the only signal, and it cannot separate "still deciding" from
 sessions lists every session with its status (open / complete / expired)
 and is the hand read until the deploy. Founder's week-2 item 9.
 
+**The recovery link (M-11, from the founder's deploy of
+`create-checkout-session`, `stripe-webhook` and `checkout-abandon`).** Three
+steps, people by username, 60-day windows, internal accounts excluded:
+
+| step | read |
+|---|---|
+| expired | `pro_checkout_expired` (`reason='stripe_webhook'`) sessions; `recovery_url is not null` = sessions that carry a link (every server-created session from the deploy; Payment Link sessions never do) |
+| mailed | `email_events` `template='checkout_abandon'`, `event='sent'`; `meta->>'recovery_link' = 'true'` = the button opened Stripe's recovery URL, else today's app link |
+| recovered | `pro_trial_started` or `pro_purchase_completed` (`reason='stripe_webhook'`) within 7 days of the send; `metadata->>'recovered_from'` not null = the session was opened from a recovery URL (it names the expired session) |
+
+Baseline (plan M-11, 60 d to 2026-11-22): 7 mailed of 23 expired; 1
+trial-or-paid per 112 abandon mails. `stripe_email_present` /
+`prefilled_email` / `promotions_consent` on the expired row are booleans
+only — no address is ever stored; with `consent_collection` off Stripe does
+not return a typed address for an expired session, so `stripe_email_present`
+should read ~0. The `stripe_only` entries in `checkout-abandon?dry=1` count
+the people only an address typed at Stripe could reach (not mailed:
+`MAIL_STRIPE_ONLY_ADDRESSES` is false). Before M-11, `?dry=1` still mailed
+segment 1; read no `checkout_abandon` send before the deploy as a dry run.
+
 ## `activated_note`
 
 The second ask, by email, to registered accounts with six or more solves
