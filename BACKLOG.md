@@ -127,6 +127,13 @@ nothing for traffic; these lines are for the owning lanes.
   homepage as `https://www.sqlquest.app/` (88 → 22 clicks), not the bare
   host — check which host Bing treats as canonical. This door made
   117 of 209 six-solvers in September; nothing in the app can replace it.
+  **C1 read 11-22** (`docs/reads/bing-drop-2026-11-22.md`): the index growth
+  is mostly not the question pages — `in_index` 830 vs a 422-URL sitemap;
+  the robots-blocked `/app/?` URLs (0 → 819 from the 09-23 rule) fill the
+  gap, and clicks peaked the week the rule shipped. Host, canonical, crawl
+  status and the page's own edits ruled out. Code PR: bingbot may fetch the
+  app URLs to read their noindex (A1). #72's `in_index` check is now
+  confounded — read its own URLs.
 - **C1 — the homepage lost half its views** (`landing_view` on `/`
   157–197/wk mid-September → 71–95/wk) while Google clicks stayed flat
   (~150/wk): find which Google/Bing queries used to land on `/`.
