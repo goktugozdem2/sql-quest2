@@ -1136,6 +1136,23 @@ no app event at all. Every first-contact read from that date adds
 `wd`, `uaBot`, `langs` for telling the next wave apart. Before 10-07, filter
 by hand (the 10-04 → 10-07 waves: docs/reads/p1-guardrail-bing-2026-10-07.md).
 
+**Trap: two more crawlers, found by C8 on 2026-11-23 (both unstamped).**
+- **Topic-page crawler (`topic1lang`, stamp in #246).** Its first
+  `app_opened` has no `landingSrc`, an `arrivalSrc` of `challenges-…` and
+  `langs = 1`. It runs `challenge_opened` → `first_challenge_started` and
+  stops. 53 people in the week of 11-09, 98 in the week of 11-16, 81 on
+  11-22 alone (23 time zones, 81 window sizes). None has ever run a query,
+  solved or signed up.
+- **UTC landing crawler (from 2026-11-22).** `landing_view` rows with
+  `tz = 'UTC'`, one event per person, a user agent that disagrees with the
+  window size (an iPhone agent at `desktop:1920x1080`, an iOS 10 agent at
+  `desktop:1600x1200`), and a spoofed `ref` of `https://bing.com/` or
+  `https://www.google.com/`. 77 people on 11-22 (UTC landers had been 3–5 a
+  day), 0 app opens. It turned Bing's door from 40 into 66 people in the
+  week to 11-22. Until it is stamped, drop UTC landers with no
+  `app_opened`. The durable fingerprint is the agent/window mismatch, not
+  the time zone (see the next trap).
+
 **Trap: the crawlers change time zone and borrow a landing source
 (2026-10-18, widened 2026-11-12).** Three window sizes have never, over all
 time, produced a query, a solve or a signup:
@@ -3901,6 +3918,30 @@ from feedback where created_at >= :from and created_at < :to group by 1, 2;
   is the one the daily read assigns.
 - Rows written while the 20260907 quote-consent migration is unapplied still
   land (PostgREST drops unknown keys); `context` is jsonb and was always there.
+## `feedback_loop`
+
+What happens to a message after it arrives (registered 2026-11-23,
+`docs/plans/feedback-system-2026-11-23.md`). `feedback_capture` counts what
+comes in; this counts whether anyone answered. The 69-day unread security
+report is the failure it exists to catch.
+
+- **read_24h**: the share of new `feedback` rows (every kind) that E1 read
+  within 24 hours of `created_at`. Source: the laptop's E1 log
+  (`~/.claude/sqlquest-cs-log.json`, `read_at` per row id). Target 100%.
+- **reply_drafted_24h**: the share of rows with `contact` that have a reply
+  draft within 24 hours. Same log, `drafted_at`.
+- **reply_sent**: the share of those drafts the founder sent. Gmail `in:sent`
+  to the contact after `drafted_at`, logged as `sent_at`. This is the founder's
+  number; the agents cannot move it.
+- **security_same_day**: security- or abuse-flagged rows that reached the
+  founder report on the same day ÷ such rows. Target 100%, every time.
+- **closed_loop**: `FB-…` BACKLOG items that shipped and whose reporter (with
+  contact) got a "you asked, it's live" draft ÷ shipped `FB-…` items.
+
+Read weekly by B2 (Fridays). n is tiny: report counts, never only rates.
+The log stays on the laptop because it holds contacts; the weekly read
+reports only counts.
+
 ## `uiux_findings`
 
 Critical + major findings in one full run of the UI/UX audit (`npm run uiux`,
