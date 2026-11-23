@@ -544,6 +544,28 @@ Every competitor fact cited must come from that read (URL + date).
 - **C3 (founder's hand)** — alternativeto.net and the dev.to post state
   $19 / 200+ / 10 categories.
 
+## Live QA — A2, 2026-11-23 (docs/reads/live-qa-2026-11-23.md)
+
+- **Footer links under 44 px on a phone, where #145's rule does not reach.**
+  `FOOTER_FIT_STYLE` (`scripts/footer-partner-link.mjs`) sizes `.flk a` and
+  `.fnav a` only. Measured at 375 px:
+  - the homepage `.flegal` links (Privacy, Terms, Refund) are 17 px tall;
+  - the `/for-teams/` footer links are 16 px tall;
+  - the Datrick partner link is 28–35 px tall on every page.
+
+  Start: add `.flegal a` and the partner link to the rule, and give
+  `/for-teams/` the shared footer. Extend `tests/uiux-footer.test.js`.
+- **11 px text outside the footers and question cards, set inline.** It
+  falls under DESIGN.md's 12 px floor:
+  - company-page hero stat captions and topic-coverage captions
+    (`build-company-pages.mjs` and the 23 older pages);
+  - `/sql-exercises/` solution pills (`build-exercise-solutions.mjs`);
+  - `/vs-sqlzoo/` table notes;
+  - the app's primary-tab badges (10 px) and their descriptions (11 px).
+
+  The homepage Coach mock is 11 px under `zoom:.85` on purpose. Leave it, or
+  decide it.
+
 ## P0 — security and money
 
 1. **Any account's data can still be overwritten with the public anon key.**
