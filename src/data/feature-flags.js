@@ -571,6 +571,17 @@ window.FEATURE_FLAGS = {
     // gets a self-serve fix", metric failed_charge_recovery.
     billingIssueLine: true,
 
+    // ── PostgreSQL mode — spike, dark (2026-11-22) ───────────────────────
+    // A "SQLite / PostgreSQL" toggle on the challenge page. PostgreSQL runs
+    // in PGlite (PostgreSQL 18.6 as WASM, ~5.4 MB gzipped), fetched from
+    // jsDelivr with SRI only when the person picks it; each challenge gets
+    // its own instance, graded with the same comparator, on the allow-list
+    // src/data/postgres-allowlist.json (301 of 312). The verdict is shown,
+    // never recorded — no solve, XP or quota. Preview:
+    // /app/?ff_features_postgresMode=true. Plan and recommendation:
+    // docs/plans/postgres-mode-2026-11-22.md.
+    postgresMode: false,
+
     // ── A company-page arrival opens question 1 (B5, 2026-11-22) ──────────
     // An A/B by aid (company_direct_v1, murmur-finalised hash): a person with
     // zero solves who arrives through `/app/?company=X` (no ?challenge=, no
@@ -584,6 +595,20 @@ window.FEATURE_FLAGS = {
     // 50/50 after #156 merges"), ahead of the 12-19 date above. The 12-18
     // banner claim is read on the `list` arm and non-test arrivals only.
     companyDirectOpen: true,
+
+    // ── The Debug question type (design PR #248, 2026-11-23) ──────────────
+    // "An AI assistant wrote this for the task below. It returns the wrong
+    // answer." Twelve items, ids 331-342, in src/data/debug-challenges.js,
+    // which appends them to the bank (and their TikTok / Shopify tags to the
+    // company map) ONLY while this is true. Off: no item, chip, line or count
+    // anywhere. On: the Practice "Debug" chip, line numbers + the optional
+    // spot step, the AI's query prefilled when no draft is saved, the bug
+    // line on a solve, debugStats on the profile and the Coach. A solve
+    // counts toward the 10 free solves like any challenge. Never a
+    // /questions/ page in v1. src/utils/debug-questions.js; ledger "the
+    // Debug set"; metric debug_solve_through. The orchestrator flips it in
+    // its own decision row. ON 2026-11-23 (orchestrator-decisions.md).
+    debugQuestions: true,
   },
 };
 

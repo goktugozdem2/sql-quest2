@@ -489,8 +489,8 @@ describe('the quota wall names the person\'s company', () => {
     expect(fn).toContain('findPlanTarget(prepTarget.company');
     expect(fn).toContain('target.kind === TARGET_KIND.ARCHETYPE ? companyMockTitle(target.company) : null');
     // M-07 routes both free_quota reasons through presentQuotaWall.
-    expect((app.match(/presentQuotaWall\(\{ type: 'free_quota'[^}]*wallCompany: quotaWallCompany\(\) \}/g) || []).length).toBe(2);
-    expect((app.match(/(setProModalReason|presentQuotaWall)\(\{ type: 'free_quota'/g) || []).length).toBe(2);
+    expect((app.match(/presentQuotaWall\((?:withDebugLock\()?\{ type: 'free_quota'[^}]*wallCompany: quotaWallCompany\(\) \}/g) || []).length).toBe(2);
+    expect((app.match(/(setProModalReason|presentQuotaWall)\((?:withDebugLock\()?\{ type: 'free_quota'/g) || []).length).toBe(2);
     expect(app).toContain('data-testid="quota-wall-company"');
     expect(app).toContain('wallCompany: proModalReason?.wallCompany?.company || null,');
     expect(app, 'the headline is #95\'s and stays').toMatch(/proModalReason\.type === 'free_quota'\s*\?\s*quotaWallHeadline\(proModalReason\.quota, trialOfferOn\)/);

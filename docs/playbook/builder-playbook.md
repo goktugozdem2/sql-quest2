@@ -161,6 +161,19 @@ the hard way, and where it helps the SQL Quest incident is named.
   migration stays with the founder.
 - **Budget the shared limits:** deploys a day, concurrent code agents, merges
   a day.
+- **Merged is not deployed, and drafted is not sent.** Count the end state,
+  not the step before it. On 2026-11-22 four merged fixes sat undeployed for
+  19 hours behind a rate-limited deploy that never retried. In the same week
+  about 17 outreach drafts were written and 2 were on record as sent. Check
+  the live site after every merge that should change it, and log each
+  draft's send.
+- **Every daily job checks its own result.** A scheduler that says
+  "succeeded" only means the HTTP call was made. Two daily mail jobs returned
+  500 two days running while pg_cron logged success. Read the real status,
+  or have the job log what it sent.
+- **A user report gets an acknowledgement the same day, even with no fix.**
+  A security report sat unacknowledged for 69 days because it came through
+  a widget with no reply path, and nobody re-read the widget's rows.
 
 ## 5. Day-one checklist for the next app
 

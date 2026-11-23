@@ -132,6 +132,92 @@ GROUP BY 1;
 **Read within a difficulty band.** An Easy at 43% is a worse result than a Hard
 at 90%.
 
+## `debug_solve_through`
+
+The Debug set ("an AI assistant wrote this query, find and fix the bug";
+design `docs/designs/debug-question-type.md`, ledger "the Debug set").
+Registered 2026-11-23, in its own PR, before the build's flag flips (rule 6b).
+The items are challenge ids **331–342** (`type: 'debug'`,
+`src/data/debug-challenges.js`). They exist in the app only while
+`features.debugQuestions` is on, so **t0 = the flip date**. The window is
+**t0 → t0 + 28 days**, and the baseline band is read **from the same window**,
+never from an earlier period.
+
+People are `coalesce(aid, username)`. Leave out internal accounts,
+`metadata.bot`, and the crawler window sizes and fingerprints at the top of
+docs/reads/funnel-2026-11-22.md.
+
+- **Primary: Debug solve-through by difficulty.** People who opened a Debug
+  item (`challenge_opened`, `challengeId` 331–342) and solved that same item
+  (`challenge_solved`, same id) in the window, divided by the people who
+  opened it. Counted per (person, item), then summed per difficulty band.
+- **The band (the floor):** the same ratio, in the same window, over every
+  other challenge of the same difficulty (all ids outside 331–342). The read
+  is the gap in points, Debug minus band, per difficulty.
+- **Openers:** distinct people with at least one `challenge_opened` on 331–342
+  in the window.
+- **Depth:** the share of those openers who reach **6 or more total distinct
+  solves** (any challenge, all time up to t0 + 28 days).
+- **Spot accuracy (descriptive only, no target):** from `debug_spot`, the
+  share with `correct = true`. Only the first tap per item is recorded.
+
+**Confound, stated in advance.** A Debug item opens with a prefilled editor
+(the AI's query), and a blank-editor challenge does not. A prefilled editor
+inflates first runs and solve-through: the person can press Run before
+writing a line, and the fix is often one line. So the band is a **floor**,
+not a peer. A Debug set at or above the band says little. A set far below
+it says the format is broken. Compare the set **against itself over time**
+first, and against the band only as that floor. Do not read
+`challenge_first_run` or `open_to_first_run` for these items as activation:
+the prefill moves them by construction.
+
+**Other confounds.**
+- Hard items are Pro, like every Hard question, so a Hard Debug opener who
+  is not Pro meets the wall before the editor. Count openers from
+  `challenge_opened` only (the wall writes `lock_reached`, not an open).
+- Discovery reaches people in three ways, each with its own `src`:
+  - the Practice chip (`debug_filter_on`);
+  - the trap pages (`src=pattern-debug-<slug>`);
+  - the AI pages (`src=ai-era-debug`, `src=validate-ai-debug`).
+
+  Split openers by source before reading a change in one of them.
+
+```sql
+with ev as (
+  select coalesce(((metadata #>> '{}')::jsonb)->>'aid', username) pid, event, created_at,
+         (metadata #>> '{}')::jsonb m
+  from pro_events
+  where username !~* '^(test|qa_|fabletest|linktest|internalroutine|sqlquest$|elena$)'
+    and coalesce(((metadata #>> '{}')::jsonb)->>'bot', 'false') <> 'true'
+    and created_at >= :flip and created_at < :flip + interval '28 days'
+    and event in ('challenge_opened', 'challenge_solved')
+),
+opened as (select distinct pid, (m->>'challengeId')::int cid, m->>'difficulty' diff
+           from ev where event = 'challenge_opened' and m->>'challengeId' ~ '^[0-9]+$'),
+solved as (select distinct pid, (m->>'challengeId')::int cid
+           from ev where event = 'challenge_solved' and m->>'challengeId' ~ '^[0-9]+$'),
+pairs as (select o.*, (o.cid between 331 and 342) is_debug, (s.pid is not null) did_solve
+          from opened o left join solved s using (pid, cid))
+select diff,
+  count(*) filter (where is_debug)                                   debug_opens,
+  round(100.0 * avg(did_solve::int) filter (where is_debug), 1)      debug_solve_through,
+  count(*) filter (where not is_debug)                               band_opens,
+  round(100.0 * avg(did_solve::int) filter (where not is_debug), 1)  band_solve_through,
+  count(distinct pid) filter (where is_debug)                        debug_openers
+from pairs
+group by diff
+order by case diff when 'Easy' then 0 when 'Medium' then 1 else 2 end;
+```
+
+**Thresholds, copied from the ledger claim (written before the data).**
+- **Target:** Debug solve-through within 10 points of the band, and at least
+  40 openers in 28 days.
+- **Falsification:**
+  - fewer than 20 openers in 28 days with discovery live → freeze the set at
+    12;
+  - solve-through more than 20 points below the band → fix the UX before
+    adding items.
+
 ## `first_contact_share`
 
 Of everyone whose first-ever challenge was X, what share of all first-contacts
@@ -617,6 +703,22 @@ Behaviour unchanged, label fixed: `generic` before 09-12 ≈ `generic` +
 `interview_locked` after. Two more reasons exist only behind flags:
 `company_set` (M1, from the 10-14 flip) and `coach_mock` (M5, from 10-12).
 
+**`debug_lock` (behind `debugQuestions`, defined 2026-11-23).** When a
+locked Debug item (`type: 'debug'`, ids 331–342) opens the Pro modal, the
+wall is the one it would meet anyway (founder: Debug has no price of its
+own — Easy/Medium count toward the free solves, Hard is Pro, a company-tagged
+item follows the company-set rule), so the modal copy is unchanged. Only the
+label changes: `pro_modal_shown.reason`, `pro_plan_clicked.modalReason`,
+`pro_checkout_clicked.modalReason` and the `pro_events.reason` of the modal's
+own rows read **`debug_lock`**, and `pro_modal_shown.lockedAs` keeps the wall
+underneath (`free_quota`, `hard_challenge` from the catcher's Pro path,
+`company_hard`, `company_set`); `lockedAs` is null on every other reason.
+`content_lock_reached` rows are untouched. From the flip, a `free_quota` or
+`hard_challenge` series that should count every wall adds the `debug_lock`
+rows whose `lockedAs` matches; before the flip the value cannot occur.
+Pure half: `withDebugLock` / `proModalReasonLabel` in
+`src/utils/debug-questions.js`.
+
 **Absence is organic, by design.** A direct open, a post-solve
 recommendation, a curriculum step — none of them carry the key, and a
 `challenge_opened` row without `openedFrom` is not a preview-surface open
@@ -1050,6 +1152,23 @@ no app event at all. Every first-contact read from that date adds
 `wd`, `uaBot`, `langs` for telling the next wave apart. Before 10-07, filter
 by hand (the 10-04 → 10-07 waves: docs/reads/p1-guardrail-bing-2026-10-07.md).
 
+**Trap: two more crawlers, found by C8 on 2026-11-23 (both unstamped).**
+- **Topic-page crawler (`topic1lang`, stamp in #246).** Its first
+  `app_opened` has no `landingSrc`, an `arrivalSrc` of `challenges-…` and
+  `langs = 1`. It runs `challenge_opened` → `first_challenge_started` and
+  stops. 53 people in the week of 11-09, 98 in the week of 11-16, 81 on
+  11-22 alone (23 time zones, 81 window sizes). None has ever run a query,
+  solved or signed up.
+- **UTC landing crawler (from 2026-11-22).** `landing_view` rows with
+  `tz = 'UTC'`, one event per person, a user agent that disagrees with the
+  window size (an iPhone agent at `desktop:1920x1080`, an iOS 10 agent at
+  `desktop:1600x1200`), and a spoofed `ref` of `https://bing.com/` or
+  `https://www.google.com/`. 77 people on 11-22 (UTC landers had been 3–5 a
+  day), 0 app opens. It turned Bing's door from 40 into 66 people in the
+  week to 11-22. Until it is stamped, drop UTC landers with no
+  `app_opened`. The durable fingerprint is the agent/window mismatch, not
+  the time zone (see the next trap).
+
 **Trap: the crawlers change time zone and borrow a landing source
 (2026-10-18, widened 2026-11-12).** Three window sizes have never, over all
 time, produced a query, a solve or a signup:
@@ -1120,6 +1239,74 @@ Of `challenge_solved` rows (by `aid` and `challengeId`), the share with a
 2026-09-23; `attempts[].hintsUsed` in `users.data` covers synced accounts
 before that). Tracked, no target yet — a difficulty-balance signal per
 challenge. Scorecard §2.
+
+## `second_solve_same_session`
+
+Defined 2026-11-23, before `mobileOneLayer` ships (rule 6b; rank 3 of
+docs/plans/mobile-acquisition-2026-11-23.md). Of people whose
+`first_challenge_solved` falls in the window, the share with a
+`challenge_solved` for a **different** `challengeId` in the same session.
+- *Person* = `coalesce(aid, username)`; the first solve is the person's
+  first `first_challenge_solved` row (it fires once per browser,
+  `onceKey`). Rows less than an hour old are left out of the denominator.
+- *Same session* = no gap over 30 minutes between consecutive events of
+  that person from the first solve to the second (the `hint_to_solve`
+  rule). A re-solve of the same challenge does not count.
+- *Device band* = the `viewport` stamp on the `first_challenge_solved` row
+  itself (`mobile:` = innerWidth < 768). Never the person's first
+  `app_opened`.
+- Population: the bot and internal filters of `docs/agent/fleet/README.md`
+  step 2.
+- Baseline (read 2026-11-23, by the query below): 28 days — mobile
+  **4 / 6 (67%)**, desktop 133 / 202 (66%); 90 days — mobile **18 / 30
+  (60%)**, desktop 668 / 973 (69%), tablet 10 / 13. **Mobile first solvers
+  are about 6 a month**, so a 50/50 test has about 3 per arm per month:
+  any read under 15 per arm is directional only, reported with n.
+- **By arm (`mobileOneLayer`):** the arm is `mobile_one_layer_assigned.arm`,
+  one row per person, fired at the person's first correct submit on a
+  narrow touch screen (coarse pointer or width < 768) with the flag on.
+  Denominator: assigned people whose `first_challenge_solved` is `mobile:`
+  and at or after the assignment; numerator as above. Compare `one` with
+  `control` over the same window. Read it together with
+  `mobile_run_bar_assigned.arm` (a person can be in both tests; report the
+  2×2 cell counts, never pool across a `mobileRunBar` flip).
+
+```sql
+with ev as (
+  select coalesce(((metadata #>> '{}')::jsonb)->>'aid', username) pid, event, created_at,
+         (metadata #>> '{}')::jsonb m
+  from pro_events
+  where created_at >= :since - interval '1 day'
+    and username !~* '^(test|qa_|fabletest|linktest|internalroutine|sqlquest$|elena$)'
+),
+clean as (
+  select * from ev where coalesce(m->>'bot', '') not in ('true', '1')
+    and coalesce(m->>'viewport', '') not in ('tablet:800x600', 'desktop:1280x1200', 'desktop:1919x992')
+),
+fs as (
+  select * from (
+    select distinct on (pid) pid, created_at t1, m->>'challengeId' cid, split_part(m->>'viewport', ':', 1) band
+    from clean where event = 'first_challenge_solved' order by pid, created_at
+  ) x where t1 >= :since and t1 < now() - interval '1 hour'
+),
+seq as (
+  select c.pid, c.created_at, c.event, c.m->>'challengeId' cid,
+         c.created_at - lag(c.created_at) over (partition by c.pid order by c.created_at) gap
+  from clean c join fs using (pid) where c.created_at >= fs.t1
+),
+brk as (select pid, min(created_at) tbreak from seq where gap > interval '30 minutes' group by pid),
+second as (
+  select distinct s.pid from seq s join fs using (pid) left join brk b using (pid)
+  where s.event = 'challenge_solved' and s.cid is distinct from fs.cid
+    and (b.tbreak is null or s.created_at < b.tbreak)
+)
+select band, count(*) people, count(second.pid) second_same_session,
+       round(100.0 * count(second.pid) / nullif(count(*), 0), 1) pct
+from fs left join second using (pid)
+group by band order by people desc;
+-- by arm: join fs to the first mobile_one_layer_assigned row per pid
+-- (m->>'arm', created_at <= fs.t1) and group by arm, band = 'mobile'.
+```
 
 ## `second_session_7d`
 
@@ -1478,6 +1665,70 @@ GROUP BY 1 ORDER BY browsers DESC;
 - **Local traffic before 2026-09-03 is in this data** (shared filters). The
   three `reason='landing'` rows of 2026-07-28 on aid `e5fcbad1a022…` are
   localhost verification; exclude that aid from any read that reaches back.
+
+## `content_funnel`
+
+**Per landing page, what the people who landed there did next** (2026-11-22,
+B2; founder's order to measure the content we publish). The money read for
+C5, C6 and C7: a page is judged by trials and purchases per 1,000 landing
+people, never by clicks.
+
+Source: `scripts/content-funnel.sql`, the same body as the view
+`public.content_funnel` (migration `20261122160000_content_funnel_view.sql`,
+**the founder applies it**). Mailed Mondays and Thursdays 07:50 UTC by
+`.github/workflows/content-funnel.yml` → `scripts/content-funnel-report.mjs`
+to `REPORT_TO`. **The repo and its Actions logs are public:** per-page numbers
+go only by mail, never into a commit, a log, a step summary or an issue.
+
+One row per `(window_days, page)`, windows 7, 28 and 60 days. The steps, each
+counted in **people** (`COALESCE(aid, username)`), each a subset of the
+landing people, each at or after that person's landing:
+
+| Step | Column | Definition |
+|---|---|---|
+| 1 | `landing_people` | a `landing_view` / `landing_engaged` row (reason `landing`) on the page, and in the window a `landing_engaged` or any non-landing event (the `landing_people` rule). Credited to the **first page the person landed on inside the window**, so pages sum to the total. |
+| 2 | `app_opened` | an `app_opened` row |
+| 3 | `first_run` | a `challenge_first_run` row |
+| 4 | `first_solve` | ≥ 1 distinct `challengeId` on `challenge_solved` |
+| 5 | `solves_3` | ≥ 3 distinct `challengeId` on `challenge_solved` |
+| 6 | `signup` | a `signup_completed` row |
+| 7 | `modal_shown` | a `pro_modal_shown` row |
+| 8 | `plan_click` | a `pro_plan_clicked` or `pro_checkout_clicked` row |
+| 9 | `trial_or_purchase` | `pro_trial_started` or `pro_purchase_completed` with reason `stripe_webhook` (also split as `trials`, `purchases`) |
+
+The per-page number a claim reads: **`trial_or_purchase` per 1,000
+`landing_people`**, 28-day window, plus the step where the page loses most.
+
+- **Out, by browser** (one row marks the person): internal usernames (shared
+  filters above + the fleet README's list), any `metadata.bot` stamp, the
+  crawler viewports `tablet:800x600`, `desktop:1280x1200`,
+  `desktop:1919x992`, `ref:aocr.org`, `verify-test`, and the founder's
+  2026-11-20 checkout tests (guest, modal reason `email_link`, 0 solves).
+- **Money joins through the username.** Webhook rows carry a username and no
+  aid; they join the landing person through any row where that username and
+  the person's aid appear together. A pending webhook row (no username) is
+  not joined, and a buyer who paid on a browser that never landed is counted
+  only if the same username wrote a row on the landing browser.
+- **First touch is inside the window**, not lifetime: a person who first
+  landed two months ago and came back through a blog post this week is
+  credited to the blog post in the 7- and 28-day rows. Read the 60-day row
+  for the longer view.
+- **The 7-day row gives late steps less time.** A trial converts on day 7;
+  read money at 28 days.
+- **Doors vs pages.** This metric keys on the landing page by `aid`, not on
+  `arrivalSrc`, so it does not depend on a link's `src`. Every `/app/` link
+  on a built page still carries a door from 2026-11-22
+  (`scripts/stamp-app-src.mjs`, `tests/app-link-src.test.js`), so
+  `door_solve_rate` reads the same pages. Links with `?company=` / `?sector=`
+  keep their derived `company:<x>` / `sector:<x>` door on purpose
+  (`company_set_wall` reads it).
+- **Pages that stamp a `src` for the first time on 2026-11-22**: the topic
+  hubs' nav button, `/turkce-sql-ogren/`, `/sql-interview-prep/`'s mentor
+  link, `/fraud-analytics-sql/`, three blog posts, `/kpis/`. Their
+  `arrivalSrc` door is born that day; `content_funnel` is unaffected.
+- **Small n.** A page under ~30 landing people in 28 days reads as noise;
+  0 trials there is not evidence. C5's kill rule needs ≥ 300 landing people
+  in 60 days.
 
 ## `blog_practice_exit`
 
@@ -3775,6 +4026,53 @@ where query is not null and page = 'https://sqlquest.app/<slug>/'
 - Position is impression-weighted (the query above), never a plain average of
   daily positions.
 
+## `topic_funnel`
+
+C6's metric (2026-11-22). Per SQL topic: of the people who arrived through
+that topic's doors, how many solved one of the topic's questions within 7
+days. A topic is a slug (`dml`, `ddl`, `set-operations`, …) with two parts
+written down in its research read (`docs/reads/topic-<slug>-<date>.md`):
+its **doors** (the `src` values its guide, hub and question cards carry:
+`topic-<slug>`, `challenges-<slug>`, `question-<question slug>`) and its
+**question set** (challenge ids).
+
+The door is `arrivalSrc` on the person's first `app_opened` (first touch, as
+in `door_solve_rate`). A person counts once per topic.
+
+```sql
+-- :doors  = the topic's src values, e.g. ARRAY['topic-dml','challenges-dml']
+-- :ids    = the topic's question set as text, e.g. ARRAY['325','326','327','328','329']
+WITH ev AS (
+  SELECT COALESCE(((metadata #>> '{}')::jsonb)->>'aid', username)  AS pid,
+         event, created_at,
+         ((metadata #>> '{}')::jsonb)->>'arrivalSrc'                AS door,
+         ((metadata #>> '{}')::jsonb)->>'challengeId'               AS cid
+  FROM pro_events
+  WHERE event IN ('app_opened', 'challenge_solved')
+    AND created_at >= :since AND created_at < :until
+    AND <shared filters>
+),
+arrived AS (
+  SELECT pid, min(created_at) AS at FROM ev
+  WHERE event = 'app_opened' AND door = ANY(:doors)
+  GROUP BY pid
+),
+solved AS (
+  SELECT DISTINCT a.pid FROM arrived a
+  JOIN ev s ON s.pid = a.pid AND s.event = 'challenge_solved'
+   AND s.cid = ANY(:ids) AND s.created_at BETWEEN a.at AND a.at + interval '7 days'
+)
+SELECT (SELECT count(*) FROM arrived) AS arrived,
+       (SELECT count(*) FROM solved)  AS solved_one,
+       round(100.0 * (SELECT count(*) FROM solved) / NULLIF((SELECT count(*) FROM arrived), 0), 0) AS pct;
+```
+
+Read beside it: `challenge_solve_through` per question in the set (any door),
+against the median of its difficulty band. Under 20 arrivals a topic is
+`UNREADABLE`. Bot traffic: apply the rendering-crawler filter (shared
+traps); a topic door is exactly the `?challenge=…&src=…` link shape those
+crawlers followed.
+
 ## `feedback_capture`
 
 The asked feedback prompts (E2, 2026-11-22; `src/utils/feedback-prompts.js`)
@@ -3811,10 +4109,43 @@ from feedback where created_at >= :from and created_at < :to group by 1, 2;
 - Apply the fleet's bot and internal-account filters (fleet README, Data).
 - `exit_reason` answers are one tap, `stuck` / `day2` are typed: compare each
   kind to its own target, never a pooled rate.
+- **Before the fix (2026-11-23 → the deploy of `fix/exit-reason-once`), count
+  answers by distinct people**, never by `feedback_submitted` rows or
+  `feedback` rows. Until then the card was not cleared after an answer: it
+  re-mounted after every Pro modal close and asked again with no new
+  `feedback_prompt_shown`, so one person wrote three exit rows to one shown
+  (docs/reads/funnel-2026-11-24.md §1) and rows ÷ shown read above 100%.
+  From the deploy, an answer or a skip ends `exit_reason` in that browser
+  (`sqlquest_fbp_exit_done_at`) and one show records at most one answer, for
+  all three kinds.
 - `context.themeHint` is a guess for the one-tap rows; the theme that counts
   is the one the daily read assigns.
 - Rows written while the 20260907 quote-consent migration is unapplied still
   land (PostgREST drops unknown keys); `context` is jsonb and was always there.
+## `feedback_loop`
+
+What happens to a message after it arrives (registered 2026-11-23,
+`docs/plans/feedback-system-2026-11-23.md`). `feedback_capture` counts what
+comes in; this counts whether anyone answered. The 69-day unread security
+report is the failure it exists to catch.
+
+- **read_24h**: the share of new `feedback` rows (every kind) that E1 read
+  within 24 hours of `created_at`. Source: the laptop's E1 log
+  (`~/.claude/sqlquest-cs-log.json`, `read_at` per row id). Target 100%.
+- **reply_drafted_24h**: the share of rows with `contact` that have a reply
+  draft within 24 hours. Same log, `drafted_at`.
+- **reply_sent**: the share of those drafts the founder sent. Gmail `in:sent`
+  to the contact after `drafted_at`, logged as `sent_at`. This is the founder's
+  number; the agents cannot move it.
+- **security_same_day**: security- or abuse-flagged rows that reached the
+  founder report on the same day ÷ such rows. Target 100%, every time.
+- **closed_loop**: `FB-…` BACKLOG items that shipped and whose reporter (with
+  contact) got a "you asked, it's live" draft ÷ shipped `FB-…` items.
+
+Read weekly by B2 (Fridays). n is tiny: report counts, never only rates.
+The log stays on the laptop because it holds contacts; the weekly read
+reports only counts.
+
 ## `uiux_findings`
 
 Critical + major findings in one full run of the UI/UX audit (`npm run uiux`,
@@ -3920,3 +4251,90 @@ Traps:
 - Baselines are read on the laptop (the cloud session has no production
   data). A claim made from a cloud session states "baseline: laptop read"
   and the laptop writes it before the read date.
+
+## `debug_pack_purchases`
+
+The Debug pack (founder's decision 2026-11-23, PR #251; built in PR #253,
+dark behind `debugPack`): the 12-item Debug set sold on its own, $9 once
+(India $3), Pro includes it. Registered 2026-11-23, before any data, for the
+ledger claim "the Debug pack". Read from the `debugPack` flip, never across
+it; nothing before the flip can be a pack purchase.
+
+**Numerator — pack purchases.** `pro_events` rows with
+`event = 'debug_pack_purchased'` and `reason = 'stripe_webhook'` (the only
+money truth), counted per **username**, once each (a redelivered event never
+writes a second row — the webhook is idempotent on the session id; a
+`debug_pack_duplicate` row is a second payment for the same thing and is
+NOT a purchase). Subtract usernames with a later `debug_pack_refunded` row
+whose `metadata->>'full' = 'true'`. Split by `metadata->>'region'`
+(`default` | `IN`) and report `metadata->>'amount'` summed per region.
+
+**Read beside it — Pro from a Debug lock.** People whose `pro_plan_clicked`
+(`reason = 'activation_funnel'`) carries `metadata->>'modalReason' =
+'debug_lock'` and `metadata->>'product'` absent (a Pro plan, not the pack),
+then a `stripe_webhook` `pro_purchase_completed` or `pro_trial_started` for
+the same **username** within 24 h of the click (the webhook row has no aid —
+shared traps). The same count with `modalReason = 'free_quota'` is the
+second series the cannibalisation rule reads.
+
+**Funnel, for context (not the verdict).** Shown the card:
+`pro_modal_shown` with `metadata->>'debugPackOffered' = 'true'` (people by
+aid). Clicked it: `pro_plan_clicked` with `metadata->>'product' =
+'debug_pack'`. Session made: `debug_pack_checkout_started`
+(`reason = 'checkout_session'`); refused: `debug_pack_checkout_failed`
+(`stage = 'debug_pack_unconfigured'` means a price secret is missing — a
+setup bug, not a buyer). Expired: `debug_pack_checkout_expired`
+(`stripe_webhook`).
+
+**Verdict (28 days after the flip), from the ledger, written before data:**
+- HIT: ≥ 3 pack purchases, and Pro purchases from `debug_lock` +
+  `free_quota` not below the 30 days before the flip.
+- MISS (withdraw the pack, Debug stays inside Pro): Pro purchases from
+  `debug_lock` + `free_quota` together below the 30 days before the flip
+  while pack purchases rise (#251's cannibalisation rule); or zero pack
+  purchases with ≥ 20 people shown the card.
+- FLAT: anything else — say so, do not round it to a hit.
+
+Traps:
+- Internal accounts (`isInternalAccount` patterns) and localhost are out;
+  analytics are muted on localhost.
+- `pro_checkout_clicked` rows with `product = 'debug_pack'` are pack clicks.
+  Any Pro checkout-click series read after the flip must exclude them (the
+  checkout-abandon sender already does).
+- n will be small (about 52 real new people a week in late November), so
+  read the rows, not a rate.
+
+## `debug_hub_search`
+
+The search half of the Debug hub `/sql-debugging-practice/` (PR #256, generated
+only while `debugQuestions` is on). Registered 2026-11-23, before the page
+exists, for the ledger claim in #256. Read from the `debugQuestions` flip,
+never across it. Baseline 0.
+
+**Google.** `gsc_daily`, the page slice only (`query IS NULL AND page =
+'https://sqlquest.app/sql-debugging-practice/'`): sum impressions and clicks
+over the 28 days after the flip. The query×page slice is read beside it for
+WHICH queries (the primary cluster: sql debugging practice / exercises, fix
+the sql query, find the bug, common sql mistakes interview, "what's wrong
+with my query"), never added to the page slice. GSC lands 2–3 days late:
+read on day 31.
+
+**Bing.** `bing_stats` page slice for the same URL. Its rows are WEEKLY
+buckets (a date is the seven days ending on it), so report whole weeks only
+and never mix them with GSC days.
+
+**Indexed.** GSC URL Inspection "Submitted and indexed", and on Bing either
+a `bing_url_status` crawl after the flip or URL Inspection by hand.
+
+**Cannibalisation guard.** `/blog/validate-ai-generated-sql/` page-slice GSC
+impressions in the same 28 days against its prior 28 days.
+
+**Product half (context, not the verdict).** `seo_page_funnel` for
+`landing_view` rows on the page, and `/app/` arrivals with `src=seo-debug`.
+
+**Verdict (from #256, written before data):**
+- HIT: at least 300 GSC impressions and at least 5 clicks, and indexed on both engines.
+- MISS, noindex through `src/data/seo-prune.json`: under 100 GSC
+  impressions; or validate-ai-generated-sql down more than 30% on its prior
+  28 days.
+- Anything between: INCONCLUSIVE; read again at 56 days.

@@ -41,6 +41,14 @@ reply), Jun 2025; linkjob guide Aug 2025; extrabrain guide Feb 2026;
 finalroundai analyst-track guide. Their dates and quotes are in
 `src/blog/capital-one-codesignal-data-analyst-assessment.html` §Sources.
 
+The two Blind threads whose links were swapped on the blog post until
+2026-11-23 (Q1 caught it on #220; pairing below is Q1's re-read of that day):
+
+| id | source | URL | dated | kind | fetch |
+|---|---|---|---|---|---|
+| B2 | Blind: "Capital One CodeSignal for Data Analysts" | https://www.teamblind.com/post/capital-one-codesignal-for-data-analysts-07h0ouhn | Feb 2022 ("14 questions instead of just 4"; "one question is a database question you have to use SQL for") | candidate report | Q1, 2026-11-23 |
+| B4 | Blind: "Captial one Code signal for Data Analysis" | https://www.teamblind.com/post/captial-one-code-signal-for-data-analysis-c318r0cw | Jun 2025 ("around 14–15 questions in 70 minutes"; Capital One account's reply: "Format has changed in last 4 years") | candidate report | Q1, 2026-11-23 |
+
 Not usable: Glassdoor (WebFetch 403 on a review page; not retried — the site
 refuses automated reads); Blind (402); Interview Query guide (429; not
 retried); 1point3acres BA thread 1090999 (login wall, not opened).
