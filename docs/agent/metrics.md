@@ -3942,6 +3942,53 @@ where query is not null and page = 'https://sqlquest.app/<slug>/'
 - Position is impression-weighted (the query above), never a plain average of
   daily positions.
 
+## `topic_funnel`
+
+C6's metric (2026-11-22). Per SQL topic: of the people who arrived through
+that topic's doors, how many solved one of the topic's questions within 7
+days. A topic is a slug (`dml`, `ddl`, `set-operations`, …) with two parts
+written down in its research read (`docs/reads/topic-<slug>-<date>.md`):
+its **doors** (the `src` values its guide, hub and question cards carry:
+`topic-<slug>`, `challenges-<slug>`, `question-<question slug>`) and its
+**question set** (challenge ids).
+
+The door is `arrivalSrc` on the person's first `app_opened` (first touch, as
+in `door_solve_rate`). A person counts once per topic.
+
+```sql
+-- :doors  = the topic's src values, e.g. ARRAY['topic-dml','challenges-dml']
+-- :ids    = the topic's question set as text, e.g. ARRAY['325','326','327','328','329']
+WITH ev AS (
+  SELECT COALESCE(((metadata #>> '{}')::jsonb)->>'aid', username)  AS pid,
+         event, created_at,
+         ((metadata #>> '{}')::jsonb)->>'arrivalSrc'                AS door,
+         ((metadata #>> '{}')::jsonb)->>'challengeId'               AS cid
+  FROM pro_events
+  WHERE event IN ('app_opened', 'challenge_solved')
+    AND created_at >= :since AND created_at < :until
+    AND <shared filters>
+),
+arrived AS (
+  SELECT pid, min(created_at) AS at FROM ev
+  WHERE event = 'app_opened' AND door = ANY(:doors)
+  GROUP BY pid
+),
+solved AS (
+  SELECT DISTINCT a.pid FROM arrived a
+  JOIN ev s ON s.pid = a.pid AND s.event = 'challenge_solved'
+   AND s.cid = ANY(:ids) AND s.created_at BETWEEN a.at AND a.at + interval '7 days'
+)
+SELECT (SELECT count(*) FROM arrived) AS arrived,
+       (SELECT count(*) FROM solved)  AS solved_one,
+       round(100.0 * (SELECT count(*) FROM solved) / NULLIF((SELECT count(*) FROM arrived), 0), 0) AS pct;
+```
+
+Read beside it: `challenge_solve_through` per question in the set (any door),
+against the median of its difficulty band. Under 20 arrivals a topic is
+`UNREADABLE`. Bot traffic: apply the rendering-crawler filter (shared
+traps); a topic door is exactly the `?challenge=…&src=…` link shape those
+crawlers followed.
+
 ## `feedback_capture`
 
 The asked feedback prompts (E2, 2026-11-22; `src/utils/feedback-prompts.js`)

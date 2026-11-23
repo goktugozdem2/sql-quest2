@@ -68,6 +68,7 @@ import { classifyErrorPatterns, recordErrorPatterns, describeErrorPatterns, patt
 import { nudgeAllowed, nudgeHeaders, nudgeUsername, personalNudgeLines } from './utils/live-nudge.js';
 import { HIRED_INTENT, isHired, ticketLocked, shouldAskOffer } from './utils/post-hire.js';
 import { gradeTicket, ticketFeedback } from './utils/ticket-grade.js';
+import { isStateGraded, gradeStateChallenge, runStateAttempt } from './utils/state-grade.js';
 import { TICKETS } from './data/tickets.js';
 import { DIALECTS, DIALECT_ROWS } from './utils/dialect-notes.js';
 import { modalLayoutArm, plansFirst } from './utils/modal-layout.js';
@@ -9821,16 +9822,16 @@ function SQLQuest() {
     }
 
     // Try to pick from target difficulty first
-    let available = challenges.filter(c => !usedIds.has(c.id) && c.difficulty === targetDiff);
+    let available = challenges.filter(c => !isStateGraded(c) && !usedIds.has(c.id) && c.difficulty === targetDiff);
 
     // Fallback: if no target-difficulty questions left, pick from any unused
     if (available.length === 0) {
-      available = challenges.filter(c => !usedIds.has(c.id) && (diff === 'all' || c.difficulty === diff));
+      available = challenges.filter(c => !isStateGraded(c) && !usedIds.has(c.id) && (diff === 'all' || c.difficulty === diff));
     }
 
     // Final fallback: allow repeats
     if (available.length === 0) {
-      const all = challenges.filter(c => diff === 'all' || c.difficulty === diff);
+      const all = challenges.filter(c => !isStateGraded(c) && (diff === 'all' || c.difficulty === diff));
       if (all.length > 0) {
         available = [all[Math.floor(Math.random() * all.length)]];
       } else return;
@@ -22925,6 +22926,21 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     challengeTablePlan(challenge, publicDatasets).forEach(step => loadDataset(database, step.dataset, step.tables));
   };
 
+  // State-graded challenges (grade:'state', DML/DDL, src/utils/state-grade.js)
+  // run every attempt and every reference on a FRESH copy of the challenge's
+  // tables — the ticketDbFor rule. The shared database is never handed to the
+  // grader; the grader closes every copy it opens. tests/state-grade.test.js
+  // pins the factory and every call site.
+  const stateChallengeDb = (challenge) => {
+    const SQL = sqlCtorRef.current;
+    if (!SQL) throw new Error('The database is still loading. Try again in a moment.');
+    const fresh = new SQL.Database();
+    loadChallengeDatasets(fresh, challenge);
+    return fresh;
+  };
+  const stateLoadedTables = (challenge) => challengeTablePlan(challenge, publicDatasets)
+    .flatMap(step => step.tables || Object.keys(publicDatasets[step.dataset]?.tables || {}));
+
   const selectDataset = (key) => {
     setCurrentDataset(key);
     if (db) {
@@ -24152,6 +24168,12 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
       
       // Calculate expected result
       try {
+        if (isStateGraded(challenge)) {
+          // A state challenge's expected output is the table its reference leaves behind.
+          const out = runStateAttempt({ makeDb: () => stateChallengeDb(challenge), challenge, sql: challenge.solution, loadedTables: stateLoadedTables(challenge) });
+          setChallengeExpected(out.check ? { columns: out.check.columns, rows: out.check.rows } : { columns: [], rows: [] });
+          return;
+        }
         const result = db.exec(challenge.solution);
         if (result.length > 0) {
           setChallengeExpected({ columns: result[0].columns, rows: result[0].values });
@@ -24524,6 +24546,11 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     if (!db || !currentChallenge?.dataset || !currentChallenge?.solution) return;
     if (challengeExpected.rows.length > 0) return; // already computed
     try {
+      if (isStateGraded(currentChallenge)) {
+        const out = runStateAttempt({ makeDb: () => stateChallengeDb(currentChallenge), challenge: currentChallenge, sql: currentChallenge.solution, loadedTables: stateLoadedTables(currentChallenge) });
+        if (out.check && out.check.rows.length > 0) setChallengeExpected({ columns: out.check.columns, rows: out.check.rows });
+        return;
+      }
       loadChallengeDatasets(db, currentChallenge);
       const result = db.exec(currentChallenge.solution);
       if (result.length > 0) {
@@ -25123,6 +25150,20 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
     // Real user feedback from a 1:1 SQL teaching session.
     const startTime = performance.now();
     try {
+      if (isStateGraded(currentChallenge)) {
+        // Run on a fresh copy: show the person's last SELECT if they wrote
+        // one, else what the table holds after their statements.
+        const out = runStateAttempt({ makeDb: () => stateChallengeDb(currentChallenge), challenge: currentChallenge, sql, loadedTables: stateLoadedTables(currentChallenge) });
+        if (out.refused) throw new Error(out.refused.message);
+        if (out.error) throw new Error(out.error);
+        const shown = out.last && out.last.columns.length ? out.last : out.check;
+        setChallengeResult({ columns: shown.columns, rows: shown.rows, error: null });
+        setChallengeRunAt(Date.now());
+        setChallengeRunMs(Math.round(performance.now() - startTime));
+        setChallengeStatus(null);
+        addToHistory(sql, true, 'challenge');
+        return;
+      }
       const result = db.exec(sql);
       const duration = Math.round(performance.now() - startTime);
       if (result.length > 0) {
@@ -25218,19 +25259,38 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
       // and returns [], and a perfectly correct answer is graded wrong 100% of
       // the time. Each side gets a freshly loaded dataset instead, so both are
       // measured from the same starting state.
-      const mutates = !!currentChallenge.mutates && !!currentChallenge.dataset;
-      if (mutates) loadChallengeDatasets(db, currentChallenge);
-      const userResult = db.exec(challengeQuery);
-      const userValues = userResult.length ? userResult[0].values : [];
+      // State-graded (DML/DDL, 2026-11-22): both sides run on fresh copies
+      // and are compared on what the table holds afterwards (the challenge's
+      // `check`), never on the shared database. A refused statement or one
+      // that errors goes down the error path, like a query that never parsed.
+      let userResult, expectedResultData, isSuccess;
+      let stateOut = null;
+      if (isStateGraded(currentChallenge)) {
+        stateOut = gradeStateChallenge({ makeDb: () => stateChallengeDb(currentChallenge), challenge: currentChallenge, sql: challengeQuery, compare: resultsMatch, loadedTables: stateLoadedTables(currentChallenge) });
+        if (stateOut.refused || stateOut.error) {
+          const stateErr = new Error(stateOut.error || 'This statement is not allowed here.');
+          stateErr.stateDiagnosis = stateOut.diagnosis || null;
+          throw stateErr;
+        }
+        const asExec = st => (st ? [{ columns: st.columns, values: st.rows }] : []);
+        userResult = asExec(stateOut.user.check);
+        expectedResultData = asExec(stateOut.expected.check);
+        isSuccess = !!stateOut.passed;
+      } else {
+        const mutates = !!currentChallenge.mutates && !!currentChallenge.dataset;
+        if (mutates) loadChallengeDatasets(db, currentChallenge);
+        userResult = db.exec(challengeQuery);
+        const userValues = userResult.length ? userResult[0].values : [];
 
-      if (mutates) loadChallengeDatasets(db, currentChallenge);
-      const expectedResultData = db.exec(currentChallenge.solution);
-      const expectedValues = expectedResultData.length ? expectedResultData[0].values : [];
+        if (mutates) loadChallengeDatasets(db, currentChallenge);
+        expectedResultData = db.exec(currentChallenge.solution);
+        const expectedValues = expectedResultData.length ? expectedResultData[0].values : [];
 
-      const isSuccess = resultsMatch(
-        userValues, expectedValues, currentChallenge.solution,
-        expectedResultData.length ? expectedResultData[0].columns : []
-      );
+        isSuccess = resultsMatch(
+          userValues, expectedValues, currentChallenge.solution,
+          expectedResultData.length ? expectedResultData[0].columns : []
+        );
+      }
       const isFirstTry = !solvedChallenges.has(currentChallenge.id);
       
       // Track this attempt. `topics` fans credit across every skill the
@@ -25644,7 +25704,9 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
             : { columns: [], rows: [] };
           // The challenge's own tags go in, so a window challenge is read as
           // one (founder QA 2026-09-19, item 3).
-          liveDiagnosis = diagnoseResult(userShape, expectedShape, null, {
+          // A state challenge speaks about the table ("ended up with N rows,
+          // expected M"), never in SELECT-diff wording.
+          liveDiagnosis = stateOut ? stateOut.diagnosis : diagnoseResult(userShape, expectedShape, null, {
             topics: [...(currentChallenge.skills || []), currentChallenge.category].filter(Boolean),
             query: challengeQuery,
             solution: currentChallenge.solution,
@@ -25769,7 +25831,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
       // Surface the SQL error through the diagnostic layer so users get
       // translated, actionable guidance instead of raw SQLite error text.
       try {
-        const errDiagnosis = diagnoseResult(null, null, err.message);
+        const errDiagnosis = (err && err.stateDiagnosis) || diagnoseResult(null, null, err.message);
         setChallengeDiagnosis(errDiagnosis);
         setDiagnosisCollapsed(false); // expand fresh diagnosis so user sees it
         // Error patterns (P1): a query that did not run is a habit too.

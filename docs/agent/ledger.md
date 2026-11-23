@@ -181,6 +181,108 @@ of the verifier and must never be rounded to `FLAT`.
 - **Confounds** the doors are born on the deploy day: a `(none)` share that
   falls across it is the stamp, not traffic.
 
+### State-graded DML/DDL: the first five (challenges 325-329, C6)
+
+- **Claimed** 2026-11-22 · **Shipped** on merge (no flag) · **Read** 2026-12-20.
+- **Change** A new challenge type, `grade: 'state'` (`src/utils/state-grade.js`):
+  the person's statements run on a fresh in-memory copy of the dataset, never
+  the shared `db`, behind a statement allow-list (DROP, ATTACH, PRAGMA and
+  foreign tables always refused), and are graded on what the table holds
+  afterwards through the app's comparator. First set, all on `ecommerce` /
+  `employees`: 325 "Build the VIP Mailing List" (Easy, INSERT from a query),
+  326 "A Raise for the Best-Rated Department" (Medium, UPDATE from a
+  subquery), 327 "The Sync Ran Twice" (Medium, delete copies, keep the
+  lowest id), 328 "Roll February's Units into the Totals" (Medium, upsert),
+  329 "A Refunds Table That Says No" (Medium, CREATE TABLE with PK, FK and
+  CHECK; three bad rows must be rejected). Tag `DDL/DML`, unmapped in
+  SKILL_TO_RADAR: they count as solves and move no Skillmap axis.
+- **Metric** `challenge_solve_through` (docs/agent/metrics.md) per card, read
+  within its band (Easy for 325, Medium for 326-329). `topic_funnel` is
+  defined the same day for C6's topic doors; this set has no topic door yet
+  (no guide or hub), so it is not read here.
+- **Baseline** Not readable from the cloud session (no production data). The
+  read takes it in the same window: the median solve-through of every Easy
+  and every Medium card with 10+ openers, 2026-11-23 → 2026-12-20, same
+  shared filters.
+- **Target** 325 at or above the Easy median; 326-329 pooled within 5 points
+  of the Medium median or above.
+- **Falsification** Pooled 326-329 more than 10 points under the Medium
+  median, or any card with 10+ openers under 40%: read that card's
+  `challenge_errored` messages first (a refusal message or a syntax error is
+  a tooling problem, not a content one). Fewer than 10 openers on a card is
+  `UNREADABLE` for that card; under 30 pooled openers the claim is
+  `UNREADABLE`.
+- **Guardrail** `challenge_errored` on 325-329: a refusal is logged there
+  with the gate's message. More than a third of submits refused means the
+  gate is too tight (e.g. a table function or schema-qualified name a person
+  can fairly use), and the allow-list is the fix.
+- **Confound** 326 and 327 also join the subqueries topic page's scalar/IN
+  section, so they get that page's openers too. Read the door beside the rate.
+
+### no exclusivity claims about the AI coach, tutor or Skillmap (C2)
+
+- **Claimed** 2026-11-23 · **Shipped** on merge (static pages, no flag) ·
+  **Read** none (a truthfulness fix, not a bet).
+- **Change** `/best-sql-practice-sites/` said SQL Quest was "the only
+  platform reviewed with a wrong-answer diagnostic, an AI Coach and an
+  adaptive 9-skill Skillmap" (FAQ, twice incl. JSON-LD) and that "no other
+  platform has" the diagnostic. B6's read (docs/reads/competitors-2026-11-22.md,
+  §1 and routing row 4) has dated counter-examples: StrataAI tutor (10-27)
+  and AI Interviewer, LDS's Socratic mentor, Aced AI feedback. Rewritten to what SQL Quest does: the
+  Skillmap across nine skills, the Coach picking the next step from it, the
+  tutor reading the query you wrote. The homepage comparison H2 "The tutor
+  features the question banks don't have" → "What the tutor does after a
+  wrong answer". Guard: `tests/no-exclusivity-claims.test.js` (src pages +
+  `scripts/build-*` generators).
+- **Metric** none. Truthfulness fix.
+- **Falsification** a page or generator states an exclusivity claim about
+  the AI coach, tutor, diagnostic or Skillmap again.
+
+### the Capital One guide's first screen: format, the other test, the mock by its numbers (C5)
+
+- **Claimed** 2026-11-23 · **Shipped** on merge (static page, no flag) · **Read** 2026-12-21 (28 d) and 2027-01-18 (56 d).
+- **Change** `/blog/capital-one-codesignal-data-analyst-assessment/` gets a
+  first-screen block under the skip-ahead box: the reported format (Blind
+  2021–2025 + CodeSignal's DAA help page from R1's dossier, read 2026-11-22,
+  never Capital One's words); one line telling the data-analyst test from the
+  four-question general coding test (B6 N8); the mock by its numbers (70 min,
+  14 questions, 12 MCQ in 48 + 2 written in 22, timed and scored; B6 N1);
+  the readiness test with `?company=capital-one`; question 1 (challenge 276)
+  with `freeTierSentence()`. Visible "Updated 2026-11-23" and JSON-LD
+  `dateModified`. The vendor page joins the format table and Sources. Title,
+  skip-ahead box and body unchanged.
+- **Why this one:** Capital One is 2 of the first 3 payers; its door is this
+  post (branch 3: 641 impressions, 39 clicks in 28 d), and B6's run 2
+  (`docs/reads/competitors-2026-11-23.md`, PR #214, pending; no read on main carries it)
+  found Interview Query's guide (updated 11-16, AI-mock button above the fold)
+  twice on the same query. Menu item 1 beat item 2 (a new sourced guide)
+  because this page already has the landings.
+- **Metric** `landing_to_trial` on the post, read with
+  `/capital-one-sql-interview/` as metrics.md says; `gsc_daily` page slice for
+  the post; `pro_modal_shown` with `linkSrc` `blog-capital-one`; clicks
+  `cta_blog_first_mock` / `cta_blog_first_readiness` / `cta_blog_first_question`.
+- **Baseline** (`gsc_daily`, 28 d to 2026-11-21, R1 dossier): 658 impressions,
+  39 clicks, position 7.3; branch-3 claim: 110 real readers of the post and
+  the page in 28 d to 11-22, 0 Pro modals from a Capital One mock link. Guide
+  `landing_to_trial` for the 28 d to 11-23: the laptop fills it before 12-21
+  (cloud run, no production data).
+- **Target** at 28 d: post clicks ≥ 39 at a position within 1 of 7.3, and
+  ≥ 15% of the post's landing people click one of the three new links. At
+  56 d: ≥ 3 Pro modals from `blog-capital-one` and ≥ 1 trial or purchase from
+  a person whose first landing was the post.
+- **Falsification, written now:** post clicks below 30 at a similar position
+  → the first screen pushed the answer down; move the block below the intro.
+  Fewer than 5% of landers click a new link at ≥ 150 landers → the block is
+  not read; cut it to the mock line. 0 Pro modals from `blog-capital-one` in
+  56 d at ≥ 150 landers → the mock is not what these readers want, as branch
+  3's falsification also says.
+- **Confound, stated:** the branch-3 claim (read 12-20) counts mock modals
+  with `linkSrc` `capital-one-*`; this block's mock link is
+  `blog-capital-one`. Read both srcs together for that claim, and apart here.
+- **Guard** `tests/capital-one-guide.test.js` (12 tests, six breaks caught).
+- **N2 → B3:** the mock has no question that joins tables and computes a
+  rate (its rate, c1-m5, is one table); the page does not claim one.
+
 ### a founder-led live mock — would people pay for it? (asked by hand)
 
 - **Claimed** 2026-11-22 · **Shipped** as 3 Gmail drafts, written by E1 at
