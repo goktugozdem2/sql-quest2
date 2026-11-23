@@ -211,7 +211,7 @@ ${copy.faq.map(([q, a]) => `    <h3 style="font-size:16px;font-weight:700;color:
     <a href="/sql-interview-prep/">Company Interview Guides →</a>
   </div>
 </div>
-<footer class="ft"><p><strong>SQL Quest</strong> — personalized SQL interview practice. <a href="/">Home</a> · <a href="/sql-exercises/">SQL Practice Questions</a> · <a href="/best-sql-practice-sites/">Best SQL Practice Sites</a></p><p style="margin-top:8px;font-size:11px;">© 2026 SQL Quest</p></footer>
+<footer class="ft"><p><strong>SQL Quest</strong> — personalized SQL interview practice. <a href="/">Home</a> · <a href="/sql-exercises/">SQL Practice Questions</a> · <a href="/best-sql-practice-sites/">Best SQL Practice Sites</a></p><p style="margin-top:8px;font-size:12px;">© 2026 SQL Quest</p></footer>
 </body>
 </html>
 `;

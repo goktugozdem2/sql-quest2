@@ -32780,7 +32780,7 @@ RULES:
                   ) : proModalReason.type === 'hard_challenge' ? (
                     <div className="mt-3">
                       <p className="text-sm" style={{ color: '#8A8E99' }}>
-                        Hard challenges are the exact patterns FAANG, Stripe, and JPMorgan ask in interviews. Pro unlocks the full bank plus mock interview pressure mode so you train under real conditions.
+                        Hard challenges are where interview screens end: multi-step windows, CTEs and business math. Pro unlocks the full bank plus mock interview pressure mode so you train under real conditions.
                       </p>
                     </div>
                   ) : proModalReason.type === 'rate_limit' ? (
@@ -40293,7 +40293,7 @@ RULES:
                           window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent('https://sqlquest.app')}&summary=${encodeURIComponent(txt)}`, '_blank');
                         }} className="flex-1 py-1.5 bg-[#0A66C2] hover:bg-[#094d92] rounded-lg font-bold text-xs text-[#F2F0EA]">LinkedIn</button>
                         <button onClick={() => {
-                          const txt = `Just solved a hard SQL challenge on SQL Quest 🔥\n\nThese are the exact patterns Meta, Google & Amazon ask in data interviews.\n\nFree practice: https://sqlquest.app #SQL #dataengineering`;
+                          const txt = `Just solved a hard SQL challenge on SQL Quest 🔥\n\nHard ones are where data interviews end.\n\nFree practice: https://sqlquest.app #SQL #dataengineering`;
                           window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(txt)}`, '_blank');
                         }} className="flex-1 py-1.5 bg-gray-700 hover:bg-gray-600 rounded-lg font-bold text-xs text-[#F2F0EA]">𝕏 Tweet</button>
                         <button onClick={() => navigator.clipboard?.writeText(`Just solved a hard SQL challenge on SQL Quest! Free interview prep: https://sqlquest.app`)} className="flex-1 py-1.5 bg-gray-700 hover:bg-gray-600 rounded-lg font-bold text-xs text-[#F2F0EA]">Copy</button>
