@@ -1886,6 +1886,13 @@ Two traps, stated before the first read:
   construction. Read the families apart; a headline share is the panel's
   mix, and a claim built on it must say which family it expects to move.
 
+**G1's panel (2026-11-22).** G1 (`docs/agent/fleet/G1-geo.md`) runs a fixed 15-prompt panel by hand each week:
+- Perplexity is read in a browser, not signed in. The other engines are read by the founder once a month.
+- The result is a table in `docs/reads/geo-<date>.md`. There is no JSON sidecar.
+- Same definition as above: named in the answer text, or our host among the answer's sources. Inline citation chips alone do not count as named.
+- Share = mentioned ÷ answered. A prompt behind a sign-in wall is unread, never a miss.
+- It is a different panel from `ai-visibility.json`. Never compare the two, and never pool them.
+
 ## `landing_src_split`
 
 Of the people who arrived through the `home` door, what share came from an

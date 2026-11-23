@@ -37,6 +37,39 @@ of the verifier and must never be rounded to `FLAT`.
 - **Target** ≥ 3 `team_interest` rows by 2026-12-22.
 - **Falsification, stated in advance (the plan's own kill rule):** fewer than 3 rows in the 30 days → drop the page and write it down; seats are then sold only through P1's direct conversations.
 
+### one SQL Quest entity in the structured data, and the 15 buyer questions in llms.txt (G1)
+
+- **Claimed** 2026-11-22 · **Shipped** on merge (static pages + llms.txt, no flag) · **Read** 2026-12-23.
+- **Change**
+  1. **JSON-LD on `/`, `/sql-practice-comparison/`, `/best-sql-practice-sites/` and `/sql-exercises/`.**
+     - Every SQL Quest author, publisher and provider now carries the Organization's `@id` and `url`. Before, they were bare name-only nodes.
+     - The SoftwareApplication sits at `https://sqlquest.app/` and is published by the Organization.
+     - The Course and the WebSite no longer point at `/app.html`, which is a 308.
+     - The SearchAction for a `?q=` search the app does not have is removed.
+  2. **`/llms.txt` gets "Questions people ask, and the page that answers".** It covers the 15 prompts of G1's panel in the person's words, each linked to sitemap pages.
+  3. **Guards:** `tests/entity-schema.test.js` and the "buyer questions" block in `tests/llms-txt.test.js`.
+- **Why:** `docs/reads/geo-2026-11-22.md`.
+  - Perplexity named us in the prose of 1 of 5 answered prompts and cited a URL in 3.
+  - It cited our `/stratascratch-alternatives/` for a general "best website" question, which is a page that does not answer it.
+  - llms.txt had no line for any of the 15 buyer questions.
+- **Metric**
+  - **Primary:** `ai_mention_share`, Perplexity lane, on G1's panel: named-or-cited ÷ answered, from the table in `docs/reads/geo-<date>.md` (metrics.md, G1 note).
+  - **Guard:** `ai_landings_month`.
+- **Baseline (2026-11-22)**
+  - Perplexity: named or cited 3/5 answered, named in prose 1/5. 10 of 15 were unread behind a sign-in wall.
+  - `ai_landings_month`: 99 people in the 30 days to 11-22 (ChatGPT 81, Gemini 16, Claude 1, Perplexity 1).
+- **Target (read 2026-12-23, the last two weekly reads pooled)**
+  - Named or cited in at least 60% of the prompts Perplexity answered.
+  - Named in prose on at least 2 prompts.
+  - At least one panel prompt outside #1–#5 cites a page listed for it in the new block.
+  - `ai_landings_month` for the 30 days to 12-23 at least 99.
+- **Falsification (written before the data)**
+  - **No effect:** named in prose stays at 1 or fewer, and no prompt cites the page llms.txt lists for it. Then the plumbing changed nothing an assistant shows. Keep it, because it is correctness (a 308 and a false SearchAction), but move G1's next fix effort to the C3 off-site lists, the only lever the baseline points at.
+  - **Wrong direction:** `ai_landings_month` falls below 79 (−20%). Look at Bing first (C1): ChatGPT and Copilot ground on it.
+- **Confounds**
+  - C2's AI-visibility pass shipped the same day, on the same metric and similar pages. These two cannot be told apart; read them together.
+  - Perplexity reads only about 5 prompts a week before its wall, so one answer is 20 points. A single-week move is `UNREADABLE`.
+  - Gemini is invisible to `ai_landings_month`.
 ### C7 run 1: five mined question shapes answered on three existing pages
 
 - **Claimed** 2026-11-22 · **Shipped** on merge (static pages, no flag) ·
