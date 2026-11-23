@@ -22,32 +22,28 @@ const ROOT = path.resolve(import.meta.dirname, '..');
 const read = p => fs.readFileSync(path.join(ROOT, p), 'utf8');
 const SRC = read('src/for-teams.html');
 
-describe('/for-teams/ stays unpublished until the founder says so', () => {
-  it('is noindex in source and in the built page', () => {
-    expect(SRC).toContain('<meta name="robots" content="noindex">');
+// Published 2026-11-22 by the founder's go in chat ("evet, /for-teams/ yayına
+// al"). The 30-day kill rule of docs/plans/monetization-2026-09-24.md row 6
+// starts that day: fewer than 3 team_interest rows by 2026-12-22 → drop it.
+describe('/for-teams/ is published (founder, 2026-11-22)', () => {
+  it('is indexable in source and in the built page', () => {
+    expect(SRC).toContain('<meta name="robots" content="index, follow">');
+    expect(SRC).not.toContain('content="noindex"');
     for (const f of ['public/for-teams/index.html', 'public/for-teams.html']) {
-      expect(read(f), f).toContain('<meta name="robots" content="noindex">');
+      expect(read(f), f).not.toContain('content="noindex"');
     }
   });
 
-  it('is not in the sitemap', () => {
-    expect(read('public/sitemap.xml')).not.toContain('/for-teams');
+  it('is in the sitemap', () => {
+    expect(read('public/sitemap.xml')).toContain('<loc>https://sqlquest.app/for-teams/</loc>');
   });
 
-  it('no other page, generator or template links to it', () => {
-    const offenders = [];
-    const walk = dir => {
-      for (const e of fs.readdirSync(path.join(ROOT, dir), { withFileTypes: true })) {
-        const rel = path.join(dir, e.name);
-        if (e.isDirectory()) walk(rel);
-        else if (/\.(html|mjs|js|jsx|md|json|txt)$/.test(e.name) && rel !== path.join('src', 'for-teams.html')) {
-          if (/href=["'][^"']*\/for-teams/.test(read(rel))) offenders.push(rel);
-        }
-      }
-    };
-    walk('src');
-    walk('scripts');
-    expect(offenders).toEqual([]);
+  it('the two instructor-facing pages link to it from their footers (an indexable page needs internal links)', () => {
+    for (const f of ['src/after-bootcamp.html', 'src/after-the-sql-course.html']) {
+      const html = read(f);
+      const foot = html.slice(html.indexOf('<footer>'), html.indexOf('</footer>'));
+      expect(foot, f).toContain('href="/for-teams/"');
+    }
   });
 
   it('states no price and no checkout', () => {

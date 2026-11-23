@@ -46,6 +46,7 @@ Founder, 2026-11-22: "bütün önemli şirketlerin interview sorularını araşt
 - **A fact seen only in a search snippet is not a source** (CLAUDE.md). Open the page.
 - Never sign in, never get past a paywall, never collect personal data about candidates. Usernames stay out.
 - Respect robots.txt and each site's terms. If a site refuses automated reads, use another source.
+- **A refusal is final for that run.** If a page answers 403 or 429, do not fetch the same page through a different tool, proxy or scraper service (Apify and the like): that routes around the site's refusal. Write the site in INDEX.md's run notes, back off, and try again on a later run. If it is the only rich source, list it under FOUNDER for a hand read.
 
 ## Each run
 

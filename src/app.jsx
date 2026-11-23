@@ -40,6 +40,7 @@ import { buildPracticePlan, PLAN_MIN_SOLVES_FOR_SKILLS } from './utils/practice-
 import { FIRST_SCREEN_STORAGE_KEY, firstScreenDecision } from './utils/first-screen.js';
 import { INTAKE_KEY, INTAKE_GOALS, INTAKE_ROLES, INTAKE_STEPS, INTAKE_COMPANIES, INTAKE_LEVELS, intakeStepsFor, intakeGoalFor, intakeGoalForIntent, nextIntakeStep, isIntakeStepRequired, isIntakeLevel, isValidIntakeDate, buildIntakeRecord, isIntakeComplete, readIntakeRecord, intakeEventPayload, newCoachGoalState, shouldShowIntake } from './utils/onboarding-intake.js';
 import { COMPANY_ASK_KEY, COMPANY_ASK_TEST_ID, COMPANY_ASK_UNDECIDED, companyAskDecision, normalizeCompanyAskRecord, matchCompanies, isCompanyAskAnswer } from './utils/company-ask.js';
+import { COMPANY_DIRECT_KEY, COMPANY_DIRECT_TEST_ID, companyDirectDecision, isCompanyListArrival } from './utils/company-direct.js';
 import { GOAL_PROFILE_KEY, GOAL_GATE_RECHECK_MS, GOAL_GATE_GOALS, TARGET_LEVELS, INDUSTRIES, DEADLINE_PRESETS, industryFor, isoDateInDays, isValidDeadline, missingFields, buildGoalProfile, goalProfileStatus, shouldShowGoalGate, prefillDraft, goalGateEventPayload, readGoalProfile, GOAL_GATE_MAX_DAYS_OUT } from './utils/goal-gate.js';
 import { PLACEMENT_TIERS, placementResult, placementEventPayload, readFirstRunPlacement, seedFloorsFor, seedFloorsFromReadiness, levelForReadiness, placementFromReadiness } from './utils/placement.js';
 import { QUESTIONS as READINESS_QUESTIONS, READINESS_SKILLS, READINESS_RECORD_KEY, companySkillWeights, scoreReadiness, summarizeScores, weakestSkills, readinessRecordFrom, readReadinessRecord } from './data/readiness-questions.js';
@@ -25827,6 +25828,47 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
     try { localStorage.setItem(FIRST_RUN_COMPLETED_KEY, 'true'); } catch (_) { /* ignore */ }
     pendingListDeepLinkRef.current = false; // consume once
   }, [isSessionLoading, currentUser]);
+  // A company arrival opens question 1 — an A/B (B5, 2026-11-22, dark flag
+  // `companyDirectOpen`). The page's hero promised "Solve <Company> question
+  // 1 now"; the list made the person read the banner and press the same
+  // promise again. In the `direct` arm a cold arrival (zero solves) lands in
+  // the challenge the banner button opens, through the same openChallenge
+  // and the same locks; `list` is today's screen. Decided only once the
+  // session — a resumed guest's record included — has loaded, so a returning
+  // guest's solves count (the deep-link rule: start guest mode, return, open
+  // on the next run; the list resolver above starts the guest).
+  // src/utils/company-direct.js; tests/company-direct.test.js.
+  const pendingCompanyDirectRef = useRef((() => {
+    if (typeof window === 'undefined') return false;
+    return isCompanyListArrival(window.location.search);
+  })());
+  useEffect(() => {
+    if (!pendingCompanyDirectRef.current) return;
+    if (shouldWaitForSession({ isSessionLoading, currentUser, storage: typeof localStorage !== 'undefined' ? localStorage : null })) return;
+    if (!currentUser) return; // the list resolver starts guest mode; wait for it
+    pendingCompanyDirectRef.current = false; // decide once
+    let record = null;
+    try { record = JSON.parse(localStorage.getItem(COMPANY_DIRECT_KEY) || 'null'); } catch (_) { record = null; }
+    const next = companyFilter ? companyBannerNext() : null;
+    const decision = companyDirectDecision({
+      flagOn: window.FF?.feature?.('companyDirectOpen') === true,
+      arrival: !!companyFilter,
+      aid: getAnonId(),
+      record,
+      solvedCount: solvedChallenges.size,
+      nextId: next ? next.id : null,
+    });
+    if (decision.assign) {
+      try { localStorage.setItem(COMPANY_DIRECT_KEY, JSON.stringify({ arm: decision.arm, at: Date.now() })); } catch (_) { /* ignore */ }
+      trackActivationEvent('company_direct_assigned', {
+        testId: COMPANY_DIRECT_TEST_ID, arm: decision.arm, company: companyFilter, nextId: next ? next.id : null,
+      }, { onceKey: 'company_direct_assigned' });
+    }
+    if (decision.open && next) {
+      setTimeout(() => openChallenge(next, { openedFrom: 'company_direct' }), 100);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSessionLoading, currentUser]);
   // ?payment=success — landing spot for the Stripe payment-link redirect.
   // The webhook stamps Pro server-side; this resolver confirms it (with a
   // short poll for webhook lag), celebrates, and for guest buyers opens the
@@ -32718,7 +32760,7 @@ RULES:
                   ) : proModalReason.type === 'hard_challenge' ? (
                     <div className="mt-3">
                       <p className="text-sm" style={{ color: '#8A8E99' }}>
-                        Hard challenges are the exact patterns FAANG, Stripe, and JPMorgan ask in interviews. Pro unlocks the full bank plus mock interview pressure mode so you train under real conditions.
+                        Hard challenges are where interview screens end: multi-step windows, CTEs and business math. Pro unlocks the full bank plus mock interview pressure mode so you train under real conditions.
                       </p>
                     </div>
                   ) : proModalReason.type === 'rate_limit' ? (
@@ -40231,7 +40273,7 @@ RULES:
                           window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent('https://sqlquest.app')}&summary=${encodeURIComponent(txt)}`, '_blank');
                         }} className="flex-1 py-1.5 bg-[#0A66C2] hover:bg-[#094d92] rounded-lg font-bold text-xs text-[#F2F0EA]">LinkedIn</button>
                         <button onClick={() => {
-                          const txt = `Just solved a hard SQL challenge on SQL Quest 🔥\n\nThese are the exact patterns Meta, Google & Amazon ask in data interviews.\n\nFree practice: https://sqlquest.app #SQL #dataengineering`;
+                          const txt = `Just solved a hard SQL challenge on SQL Quest 🔥\n\nHard ones are where data interviews end.\n\nFree practice: https://sqlquest.app #SQL #dataengineering`;
                           window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(txt)}`, '_blank');
                         }} className="flex-1 py-1.5 bg-gray-700 hover:bg-gray-600 rounded-lg font-bold text-xs text-[#F2F0EA]">𝕏 Tweet</button>
                         <button onClick={() => navigator.clipboard?.writeText(`Just solved a hard SQL challenge on SQL Quest! Free interview prep: https://sqlquest.app`)} className="flex-1 py-1.5 bg-gray-700 hover:bg-gray-600 rounded-lg font-bold text-xs text-[#F2F0EA]">Copy</button>

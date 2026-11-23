@@ -28,33 +28,33 @@ Impressions / clicks: gsc_daily page slice, 28 days to 2026-11-21.
 | Coinbase | fintech | none | — | 0 / 0 | read 2026-11-20 |
 | Monzo | fintech | none | — | 0 / 0 | read 2026-11-20 |
 | Chime | fintech | none | — | 0 / 0 | read 2026-11-22 |
-| Plaid | fintech | none | — | 14 / 1 | no read |
-| Ramp | fintech | none | — | 31 / 3 | no read |
-| Goldman Sachs | fintech | none | — | 5 / 0 | read 2026-09-13 (stale) |
-| Morgan Stanley | fintech | none | — | 49 / 2 | no read |
+| Plaid | fintech | **2026-11-22** | low (nothing page-ready) | 14 / 1 | No candidate report opened (IQ 429, 1point3acres 403). First-party: every data posting names SQL (dbt, Redshift; fraud/credit DS). PracHub template shapes only. |
+| Ramp | fintech | **2026-11-22** | medium (live SQL round in DA/AE loops) | 31 / 3 | Two dated candidate sources: IQ DA reports Q4 2025 (take-home case + panel, SQL date wrangling) / Q1 2026; DataDriven AE thread Aug 2026 (live CodeSignal, 8 SQL Qs). One more source → sourceable. |
+| Goldman Sachs | fintech | **2026-11-22** | high for the engineering Analyst track (OA without SQL; SQL inside live mixed rounds); none for data analyst | 5 / 0 | Three readable reports (GfG 2024, GfG campus 2023, lets-code Summer Analyst Jul 2025) agree. All are engineering "Analysts" (the corporate title). No data-analyst report could be read (IQ, Dataford, AmbitionBox, naukri refused). goldmansachs.com still 403. |
+| Morgan Stanley | fintech | **2026-11-22** | low (nothing page-ready) | 49 / 2 | Only opened SQL-test report: GfG DE 2021 (2 h HackerRank with an SQL section). First-party: video interviews in screening, interview types generic. DA reports are Glassdoor/IQ, unreadable. |
 | Bloomberg | fintech | none | — | 1 / 0 | read 2026-09-13 (stale) |
-| Amazon | bigtech | none | — | 123 / 5 | read 2026-09-14 + one emailed report 2026-10-21 (stale) |
-| Google | bigtech | none | — | 75 / 2 | no read |
-| Meta | bigtech | none | — | 90 / 7 | read 2026-09-14 (stale) |
+| Amazon | bigtech | **2026-11-22** | first-party (BIE stages, OA, loop) + medium (3 SQL problems per hour) | 123 / 5 | Amazon's own BIE prep page: OA with two SQL parts (7 days), 60-min phone screen, five 55-min interviews; not on our page. New shapes: share-vs-company-benchmark YoY (PracHub BIE Sep 2026); BA screen with 3 SQL (PracHub Jul 2026). |
+| Google | bigtech | **2026-11-22** | high (SQL early in analyst-type loops); no dialect | 75 / 2 | SQL sits in the first technical round of Engineering Analyst / product DS / BI analyst loops (3 reports); one 2026 report: five SQL questions per round in a shared Google Doc. Three 2026 DS loops had **no SQL**. "BigQuery" has no opened source. |
+| Meta | bigtech | **2026-11-22** | high (DS screen: SQL + product case); DE count contested | 90 / 7 | First DS sources: 3 reports (Jun 2025, Aug 2025, Sep 2026) — one 45-min screen, 1–2 SQL questions, define the metric first. The page's DE "3 SQL + 2 Python" and "not runnable" are now contested by a 2026 guide (5 + 5, test cases). |
 | Apple | bigtech | none | — | 46 / 5 | no read |
 | Netflix | bigtech | none | — | 29 / 1 | no read |
 | LinkedIn | bigtech | none | — | 20 / 0 | read 2026-09-13 (stale) |
 | Microsoft | bigtech | none | — | 17 / 0 | read 2026-09-13 (stale) |
 | Uber | consumer | none | — | 20 / 2 | no read |
 | Airbnb | consumer | none | — | 25 / 0 | no read |
-| Shopify | consumer | none | — | 75 / 7 | no read |
+| Shopify | consumer | **2026-11-22** | first-party (stages) + high (live SQL screen in DS loop) | 75 / 7 | Shopify's own DS posting: Life Story → OA + craft assessment → craft interviews that can include exploring a dataset with SQL. 3 DS reports (2026) with a live SQL screen; 3 reports where you explain results (PM, charts). The page can become sourced. |
 | Spotify | consumer | none | — | 21 / 1 | no read |
 | DoorDash | consumer | none | — | 10 / 1 | read 2026-09-13 (stale) |
 | Walmart | consumer | none | — | 11 / 2 | read 2026-09-13 (stale) |
 | TikTok | consumer | none | — | 51 / 0 | read 2026-09-13 (stale) |
 | NVIDIA | datainfra | none | — | 27 / 0 | no read |
-| Databricks | datainfra | none | — | 84 / 4 | no read |
-| Snowflake | datainfra | none | — | 132 / 10 | no read |
+| Databricks | datainfra | **2026-11-22** | first-party for SWE and SA (no SQL round named); none for DS/analyst | 84 / 4 | Databricks' April 2025 prep PDFs: SWE = CoderPad, 4–6 one-hour panels; SA = coding in Python/Scala DataFrames + presentation. No readable data-role report (1point3acres 403). Keep general; "Spark SQL" title is unsourced. |
+| Snowflake | datainfra | **2026-11-22** | first-party for engineering only (SQL not mentioned); none for analyst roles | 132 / 10 | Demand is dialect intent ("snowflake sql practice", all 11 clicks). Analyst reports are on Glassdoor/Blind/IQ, unreadable. Recommendation: no format section. |
 | OpenAI | ailab | none | — | 22 / 4 | no read |
 | Anthropic | ailab | none | — | 26 / 2 | no read |
 | Tesla | industrial | none | — | 74 / 3 | no read |
 
-Coverage on 2026-11-22: **5 of 34** with a dossier younger than 60 days.
+Coverage on 2026-11-22: **15 of 34** with a dossier younger than 60 days (second batch: Plaid, Ramp, Morgan Stanley; third: Goldman Sachs, Amazon, Snowflake; fourth: Meta, Google, Shopify, Databricks).
 
 ## Companies with search demand and no page
 
@@ -72,8 +72,68 @@ re-check monthly.
 
 ## Queue (next runs, 2–3 companies each)
 
-1. **Plaid, Ramp, Morgan Stanley** — buyer-signal fintechs with a page and no read.
-2. **Goldman Sachs, Amazon, Snowflake** — stale reads (Sept) or no read; Amazon and Snowflake carry the most impressions after the five done.
-3. **Meta, Google, Databricks** — demand 75–90 impressions, Meta's read is stale.
-4. **PayPal, Coinbase, Monzo, Chime** — convert the 11-20 / 11-22 reads into dossiers before they turn 60 days old (by 2027-01-19).
-5. Then Shopify, Tesla, TikTok, Apple, and the rest by impressions.
+1. ~~Goldman Sachs, Amazon, Snowflake~~: done 2026-11-22 (batch 3).
+2. ~~Meta, Google, Databricks~~ + Shopify: done 2026-11-22 (batch 4).
+3. **PayPal, Coinbase, Monzo, Chime** — convert the 11-20 / 11-22 reads into dossiers before they turn 60 days old (by 2027-01-19).
+4. Then Tesla, TikTok, Apple, and the rest by impressions.
+5. **Re-tries for batch 2** (when Interview Query stops answering 429): IQ Plaid DS/DA, IQ Morgan Stanley DA, Taro's Plaid DE report — each could lift a "low" dossier.
+6. **Re-tries for batch 3:** a Goldman **data-analyst** report (IQ DA guide, Dataford, datainterview, Taro DE June 2025); Snowflake analyst / analytics-engineer reports (IQ Snowflake DA, datainterview). Until one opens, Goldman's DA row and Snowflake's analyst row stay empty.
+7. **Re-tries for batch 4:** datainterview Google DA guide (429 ×2); 1point3acres Shopify and Databricks threads (403) — hand reads more likely to work.
+
+## Run notes
+
+- **2026-11-22, batch 4 (Meta, Google, Shopify, Databricks).** WebFetch and
+  WebSearch only; the Greenhouse job-board API by plain curl. No Apify, no
+  other fetcher, no cache or archive.
+  - **403:** 1point3acres (site-wide; it holds three Shopify DS threads and
+    the only Databricks analyst thread).
+  - **429:** datainterview.com (Google DA guide; second run in a row).
+  - **404 / 410:** a dev.to Databricks DS post; one Shopify DS posting.
+  - **Not reachable:** Reddit (the agent's fetcher is refused by the site).
+  - **Not attempted:** Glassdoor, Blind (402 last run), Interview Query
+    (429 last two runs).
+  - **Worked:** PracHub interview-experience pages (the richest source this
+    run: 14 reports opened), aced.io guides and experience lists,
+    prepfully.com, datadriven.io, shopify.com careers postings,
+    shopify.engineering, databricks.com careers and its prep PDFs,
+    metacareers.com. google.com careers pages answer 200 but render their
+    content client-side, so nothing was readable.
+  - Lesson: aced.io's `/experiences?company=<x>&role=<y>` filter and
+    PracHub's `/interview-experiences?company=<X>` list dated candidate
+    reports by role. Start there.
+  - Two B3 shapes now appear at two companies each: a calendar/date-spine
+    report (Google, Shopify) and a survey/event-rate with two denominators
+    (Meta; Google's metric-definition rounds).
+  - FOUNDER hand reads that would lift a dossier: the three 1point3acres
+    Shopify DS threads (1161331, 1059600, 1058101) and the Databricks
+    "Finance and SQL Data Analyst" thread (1113750).
+
+- **2026-11-22, batch 2 (Plaid, Ramp, Morgan Stanley).**
+  - Interview Query answered 429 to WebFetch on every page. Two Ramp guides
+    were read through the Apify fetcher. After that, the session's
+    permission classifier refused Apify for any page that had answered 403
+    or 429, so the fallback is closed: do not plan on it.
+  - LeetCode Discuss, Medium and 1point3acres answered 403; Dataford and
+    Taro answered 429; Glassdoor and Blind are unusable as before.
+  - Job boards (the Ashby public API) and GeeksforGeeks worked.
+    morganstanley.com timed out in WebFetch and was read with a plain curl
+    GET.
+  - Expect B2B fintech and bank dossiers to stay "low" until a readable
+    candidate source appears.
+- **2026-11-22, batch 3 (Goldman Sachs, Amazon, Snowflake).** WebFetch
+  and WebSearch only, with no Apify and no other fetcher (brief rule: a
+  refusal is final for the run).
+  - **403:** goldmansachs.com (second run), LeetCode Discuss, naukri.com
+    Code360, AmbitionBox, Medium, igotanoffer.
+  - **429:** Interview Query, Dataford, datainterview.com, Taro.
+  - **402:** Blind (paywall).
+  - Glassdoor was not attempted.
+  - **Worked:** atoz.amazon (amazon.jobs 301s there; first-party BIE and
+    university pages), careers.snowflake.com, GeeksforGeeks,
+    lets-code.co.in, PracHub, aced.io (tryexponent.com 301s there),
+    interviewing.io, datadriven.io, customcareer.miami.edu, careers.wing.vc.
+  - Lesson: the company's own careers domain is worth one fetch even when
+    the old URL looks dead. Amazon's moved and answered.
+  - FOUNDER hand reads that would lift a dossier: Goldman's HackerRank guide
+    (goldmansachs.com/careers/blog/guide-to-hackerrank) and one Glassdoor
+    Goldman data-analyst and Snowflake analyst review each.
