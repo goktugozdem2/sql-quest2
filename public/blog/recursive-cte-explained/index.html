@@ -24,6 +24,7 @@
     {"@type":"Question","name":"When do I actually need a recursive CTE?","acceptedAnswer":{"@type":"Answer","text":"When the depth is unknown: org charts (manager chains), category trees, bill-of-materials explosions, comment threads, graph reachability, and generating sequences of numbers or dates. If the depth is fixed and small — say, exactly two levels — plain self-joins are simpler and usually clearer."}},
     {"@type":"Question","name":"Why does my recursive CTE run forever?","acceptedAnswer":{"@type":"Answer","text":"The recursive step keeps producing rows. The classic causes: a cycle in the data (A manages B, B manages A), or a join condition that re-produces rows already seen. Defenses: add a depth column and cap it (WHERE depth < 20), and in engines that support it, use UNION instead of UNION ALL to drop duplicate rows, or track the visited path."}},
     {"@type":"Question","name":"What is the difference between UNION and UNION ALL in a recursive CTE?","acceptedAnswer":{"@type":"Answer","text":"UNION ALL keeps every row a round produces, including duplicates — it is the standard, fastest choice for trees, which have no cycles. UNION deduplicates between rounds, which costs more but terminates cycle traversals: once a row repeats, it is dropped, that branch produces nothing new, and recursion stops."}},
+    {"@type":"Question","name":"How do I show days with zero rows in a SQL report?","acceptedAnswer":{"@type":"Answer","text":"GROUP BY can only return dates that exist in the table, so a day with no rows disappears. Generate the dates first with a recursive CTE (in SQLite: anchor SELECT the first day, UNION ALL SELECT date(day, '+1 day') FROM days WHERE day < the last day; in PostgreSQL, generate_series), put that list on the left of a LEFT JOIN to the data, and count a column from the joined table, such as COUNT(l.login_id). COUNT(*) would count the NULL-padded row and report 1 for an empty day instead of 0."}},
     {"@type":"Question","name":"Do all databases support recursive CTEs?","acceptedAnswer":{"@type":"Answer","text":"All the majors do: PostgreSQL, MySQL 8+, SQL Server, Oracle, SQLite. Syntax differs slightly — PostgreSQL, MySQL and SQLite require the RECURSIVE keyword; SQL Server and Oracle use plain WITH and infer recursion from the self-reference."}}
   ]}
   </script>
@@ -103,7 +104,7 @@
       <li><a href="#shape">The shape: anchor + step + stop</a></li>
       <li><a href="#up">Walking UP: everyone above Bob</a></li>
       <li><a href="#down">Walking DOWN: everyone under Eva</a></li>
-      <li><a href="#generator">The other use: generating sequences</a></li>
+      <li><a href="#generator">The other use: generating sequences (and days with zero rows)</a></li>
       <li><a href="#infinite">The infinite-loop trap</a></li>
       <li><a href="#when-not">When NOT to use recursion</a></li>
       <li><a href="#faq">FAQ</a></li>
@@ -175,6 +176,37 @@
 )
 <span class="kw">SELECT</span> x <span class="kw">FROM</span> n;   <span class="cmt">-- 1, 2, 3, 4, 5</span></code></pre></div>
   <p>Note the difference from the org chart: here the data never runs out on its own, so the stop lives in the step's <code>WHERE x &lt; 5</code>. Swap 5 for a date and <code>+1</code> for <code>date(x, '+1 day')</code> and you have a calendar table — the standard fix for "my report skips days with no sales."</p>
+
+  <h3 id="missing-days">How do I show days with zero rows in a SQL report?</h3>
+  <p>A <code>GROUP BY</code> on a date can only return dates that exist in the table. A day with no logins has no row to group, so it disappears from the report instead of showing 0. On the app's <code>logins</code> table, the ten days from March 5 to March 14 come back as eight rows: March 8 and 9 are missing. The fix is to generate the days first, then attach the data to them:</p>
+  <div class="code-block"><div class="code-label">Logins per day, zero days included</div><pre data-q="date-spine"><code><span class="kw">WITH RECURSIVE</span> days(day) <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> <span class="str">'2024-03-05'</span>                            <span class="cmt">-- anchor: the first day</span>
+  <span class="kw">UNION ALL</span>
+  <span class="kw">SELECT</span> date(day, <span class="str">'+1 day'</span>) <span class="kw">FROM</span> days
+  <span class="kw">WHERE</span> day &lt; <span class="str">'2024-03-14'</span>                     <span class="cmt">-- stop: the last day</span>
+)
+<span class="kw">SELECT</span> d.day, <span class="kw">COUNT</span>(l.login_id) <span class="kw">AS</span> logins
+<span class="kw">FROM</span> days d
+<span class="kw">LEFT JOIN</span> logins l <span class="kw">ON</span> date(l.login_at) = d.day
+<span class="kw">GROUP BY</span> d.day
+<span class="kw">ORDER BY</span> d.day;</code></pre></div>
+  <table data-q-result="date-spine">
+    <thead><tr><th>day</th><th>logins</th></tr></thead>
+    <tbody>
+      <tr><td>2024-03-05</td><td>3</td></tr>
+      <tr><td>2024-03-06</td><td>2</td></tr>
+      <tr><td>2024-03-07</td><td>2</td></tr>
+      <tr><td>2024-03-08</td><td>0</td></tr>
+      <tr><td>2024-03-09</td><td>0</td></tr>
+      <tr><td>2024-03-10</td><td>2</td></tr>
+      <tr><td>2024-03-11</td><td>1</td></tr>
+      <tr><td>2024-03-12</td><td>1</td></tr>
+      <tr><td>2024-03-13</td><td>1</td></tr>
+      <tr><td>2024-03-14</td><td>1</td></tr>
+    </tbody>
+  </table>
+  <p>Two details decide whether this is right. First, the date list goes on the <em>left</em> of the <code>LEFT JOIN</code>, so every generated day survives whether or not a login matches it. Second, count a column from the right-hand table, <code>COUNT(l.login_id)</code>, not <code>COUNT(*)</code>. An unmatched day still produces one row, padded with NULLs, and <code>COUNT(*)</code> counts that row: March 8 and 9 would report 1 login each instead of 0. <code>COUNT(l.login_id)</code> skips the NULL and returns 0. For a sum, wrap it: <code>COALESCE(SUM(l.amount), 0)</code>, because <code>SUM</code> over nothing is NULL.</p>
+  <p><code>login_at</code> holds a timestamp, so the join compares <code>date(l.login_at)</code>, the day part, with the generated day. In PostgreSQL the generator is <code>generate_series('2024-03-05'::date, '2024-03-14', interval '1 day')</code> and the join compares <code>l.login_at::date</code>; the LEFT JOIN and the COUNT rule are the same.</p>
 
   <h2 id="infinite">The infinite-loop trap</h2>
   <div class="warn"><p><strong>The one way recursive CTEs hurt you:</strong> a cycle. If the data ever says A manages B and B manages A — one bad UPDATE is enough — the walk revisits rows forever, and the query runs until the engine's safety net (or your DBA) kills it.</p></div>

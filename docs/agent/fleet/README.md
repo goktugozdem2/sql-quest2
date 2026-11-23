@@ -30,7 +30,15 @@ An agent reads `CLAUDE.md`, this file and its own brief, in that order.
    `ref:aocr.org`), internal usernames
    (`^(test|qa_|fabletest|linktest|internalroutine|sqlquest$|elena$)`), and
    the founder's own checkout tests (2026-11-20 guest sessions with reason
-   `email_link` and 0 solves).
+   `email_link` and 0 solves). Until they are stamped, also drop by hand
+   (C8, 2026-11-23; `docs/reads/traffic-2026-11-23.md`):
+   - the topic-page crawler (`topic1lang`, #246): first `app_opened`
+     with no `landingSrc`, `arrivalSrc` starting `challenges-` and
+     `langs = 1`;
+   - the UTC landing crawler (from 2026-11-22): a person whose
+     `landing_view` has `tz = 'UTC'` and who never reaches `app_opened`.
+     Its referrer is spoofed (`bing.com`, `google.com`), so it inflates
+     the search doors.
 3. **Proof.**
    - Every new test fails by name under one deliberate break, and the
      commit says which break.
