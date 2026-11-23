@@ -120,33 +120,45 @@ export const COMPANY_INTERVIEWS = {
     },
   },
 
+  // 2026-11-23: rewritten from the R1 dossier docs/reads/companies/tiktok.md
+  // (sources read 2026-11-23). Out, as unsourced or single-source: "Data
+  // Analyst" in the roles row (the cited DataLemur blog names DS and DE), the
+  // HackerRank row (one guide; another says SQLPad), the 2022 Blind analyst
+  // row (one report, no URL, unreadable now), the ranked topic list (no
+  // counts), the difficulty grade (snippets never opened), "two sources
+  // agree". In: the read-or-debug row (medium, two reports).
   tiktok: {
     name: 'TikTok',
+    accessed: '23 Nov 2026',
     sector: 'consumer',
     crosslinkDesc: 'Engagement, day-2 activation, top video per user per day',
     accent: '#25F4EE',
     title: 'TikTok SQL Interview Questions — Engagement, Activation & Window Functions',
-    description: 'TikTok SQL interview questions: the data science and analyst screens as candidates report them (live, on HackerRank), the SQL they test (joins, window functions, day-2 activation), and practice on engagement-shaped data.',
-    hero: 'Two sources three years apart agree on a live SQL screen on HackerRank — joins and window functions, activation and engagement questions, ties broken the way the prompt says.',
-    dataShape: 'videos (uploads, likes, dates), user interactions, sign-up and confirmation events, and creator cohorts',
+    description: 'TikTok SQL interview questions: what candidates and prep guides report about the data-science and data-engineering screens, including being asked to read or debug an existing query, and practice on engagement-shaped data.',
+    hero: 'Candidates place SQL in TikTok\'s data-science process, and two recent reports describe being handed an existing query to read or debug rather than writing one from scratch. Practise joins, window functions and day-level activation questions here.',
+    topicsLabel: 'Named in the sources, with counts',
+    dataShape: 'what the prep guides\' practice questions use — videos (uploads, likes, dates), user interactions, and sign-up and confirmation events; no candidate report we could read describes the tables',
     format: [
-      ['Roles', 'Data Scientist, Data Analyst and Data Engineer.', ['datalemur-tt']],
-      ['Data science stages', 'Recruiter screen, a hiring-manager screen, a technical loop of three or four rounds of about 45 minutes each plus behavioural rounds, then a final manager conversation; all virtual.', ['exponent-tt']],
-      ['Technical screen', 'A 45–60 minute screen on HackerRank covering SQL alongside statistics and probability.', ['datalemur-tt']],
-      ['Data analyst screen', 'A 2022 candidate report describes a 30-minute live HackerRank screen: standard joins and window functions plus a short case.', ['blind-tt']],
+      ['Roles the sources cover', 'Data Scientist and Data Engineer. We found no readable candidate report for a data-analyst loop, so this page describes none.', ['datalemur-tt', 'prachub-tt-ds-jun26', 'prachub-tt-de-sep25']],
+      ['Data science stages', 'Recruiter screen, a hiring-manager screen, a loop of three or four rounds of about 45 minutes each (product sense, A/B testing, SQL, machine learning) plus behavioural rounds, then a final manager conversation; all virtual.', ['aced-tt', 'datalemur-ds-tt', 'prepfully-tt']],
+      ['Read or debug a query', 'Two candidate reports describe being given an existing query instead of a blank editor: a data scientist (June 2026) was asked to explain what a query does and what it returns, and a data engineer (September 2025) to find and fix the bug in a pre-written daily-active-users query.', ['prachub-tt-ds-jun26', 'prachub-tt-de-sep25']],
+      ['Platform', 'Sources disagree: one 2025 guide names HackerRank for the data-science screen, another guide says SQLPad, so this page names neither.', ['datalemur-ds-tt', 'prepfully-tt']],
     ],
-    reportedTopics: ['Joins across users, videos and events', 'Window functions (top video per user per day)', 'Aggregation with filtering', 'Date logic (confirmed on day 2, per-day grouping)', 'Ranking and top-N', 'Rates (activation, engagement)', 'Tie-breaking rules'],
-    difficulty: 'Reported as medium, with some reports of medium-to-hard.',
+    reportedTopics: ['Reading or debugging an existing query — 2 of the 3 candidate reports that describe the SQL', 'Window functions, such as each user\'s top item per day with a tie rule — both practice guides', 'Date logic: extracting a day or month and grouping by it — both practice guides'],
+    difficulty: 'Not reliably reported, so this page does not grade it.',
     shapes: [
-      ['Sign-ups and text confirmations: users who did not confirm on day 1 but did on day 2.', 'datalemur-q-tt'],
-      ['The same two tables: the overall activation rate — the share of sign-ups ever confirmed.', 'datalemur-tt'],
+      ['Given a query, explain what it does and what it returns.', 'prachub-tt-ds-jun26'],
+      ['A pre-written query meant to count daily active users has a bug: find it and fix it.', 'prachub-tt-de-sep25'],
+      ['Sign-ups and text confirmations: users who did not confirm on day 1 but did on day 2.', 'datalemur-tt'],
       ['Videos with uploads and likes: each user\'s most-liked video per day, the earliest upload winning ties.', 'datalemur-tt'],
     ],
     sources: {
-      'exponent-tt': ['Exponent — TikTok Data Scientist interview guide', 'https://www.tryexponent.com/guides/tiktok-data-scientist-interview', 'updated mid-2026'],
-      'datalemur-tt': ['DataLemur — TikTok SQL interview questions and data science guide', 'https://datalemur.com/blog/tiktok-sql-interview-questions', '5 Jan 2025'],
-      'datalemur-q-tt': ['DataLemur — second-day confirmation question', 'https://datalemur.com/questions/second-day-confirmation', 'undated'],
-      'blind-tt': ['Blind — TikTok data analyst screen report', null, '6 Feb 2022'],
+      'prachub-tt-ds-jun26': ['PracHub — TikTok Data Scientist: medium SQL and background follow-ups (candidate report, Jun 2026)', 'https://prachub.com/interview-experiences/tiktok-data-scientist-interview-experience-medium-sql-and-background-follow-ups-a9c0708de6', '5 Sep 2026'],
+      'prachub-tt-de-sep25': ['PracHub — TikTok Data Engineer (USDS): a final round that ended before any SQL was written (candidate report, Sep 2025)', 'https://prachub.com/interview-experiences/tiktok-data-engineer-interview-experience-recruiter-chaos-and-a-final-round-that-ended-before-i-wrote-any-sql', '25 Aug 2026'],
+      'aced-tt': ['Aced (formerly Exponent) — TikTok Data Scientist interview guide', 'https://www.aced.io/guides/tiktok-data-scientist-interview', 'shown as "updated 4 days ago" on 23 Nov 2026'],
+      'datalemur-ds-tt': ['DataLemur — TikTok Data Scientist interview guide', 'https://datalemur.com/blog/tiktok-data-scientist-interview-guide', '5 Jan 2025'],
+      'prepfully-tt': ['Prepfully — TikTok Data Scientist interview process (prep guide; names no sources)', 'https://prepfully.com/interview-guides/tiktok-data-scientist-interview-process', 'undated, read 23 Nov 2026'],
+      'datalemur-tt': ['DataLemur — TikTok SQL interview questions (practice questions; covers Data Science and Data Engineering)', 'https://datalemur.com/blog/tiktok-sql-interview-questions', '5 Jan 2025'],
     },
   },
 
@@ -212,31 +224,37 @@ export const COMPANY_INTERVIEWS = {
     },
   },
 
+  // 2026-11-23: rewritten from the R1 dossier docs/reads/companies/bloomberg.md
+  // (sources read 2026-11-23). Out: the two data-analyst rows (one prep guide
+  // that names no sources — low), "prices, trades and sessions" as a reported
+  // fact (it is DataLemur's practice set), the ranked topic list and two topics
+  // from snippets never opened, the difficulty grade. The one data-engineering
+  // screen report (B1) is low and stays off the page.
   bloomberg: {
     name: 'Bloomberg',
+    accessed: '23 Nov 2026',
     sector: 'fintech',
     crosslinkDesc: 'Time-bucketed aggregation, prices and trades, ranking',
     accent: '#F6A100',
     title: 'Bloomberg SQL Interview Questions — Prices, Trades & Time Buckets',
-    description: 'Bloomberg SQL interview questions: what candidates report about the data analyst process (including a data exercise on a messy dataset), what is not reliably reported, and practice on time-bucketed financial SQL.',
-    hero: 'Bloomberg\'s data-role SQL format is thinly reported, and this page says so. What is reported: a final round with a data exercise on a messy financial dataset, and SQL shaped around prices, trades and sessions by time period.',
-    dataShape: 'daily prices, trades and volume, terminal sessions, exchange data subscriptions, and financial filings',
+    description: 'Bloomberg SQL interview questions: what is and is not reliably reported about the data-role SQL round, and practice on time-bucketed financial SQL.',
+    hero: 'Bloomberg\'s data-role SQL format is thinly reported, and this page says so: no candidate report we could read describes the data-analyst SQL round. What is here is practice on time-bucketed financial SQL, built from our bank and a public practice guide, not from reports of Bloomberg\'s questions.',
+    topicsLabel: 'In one public practice guide, not candidate reports',
+    dataShape: 'what DataLemur\'s Bloomberg-tagged practice questions use — daily prices, trades and volume, terminal sessions and exchange data subscriptions; no candidate report we could read describes the tables',
     format: [
-      ['Data analyst stages', 'An application, an online assessment (logic, English, Excel), a recruiter call, then a final round of three or four interviews that includes a 30–60 minute data exercise on a messy corporate-filings dataset.', ['ophyai-bb']],
+      ['Data analyst process', 'One prep guide describes the data-analyst stages, but it names no sources and no candidate report we could read confirms them, so this page does not state them.', ['ophyai-bb']],
       ['SQL screen for data roles', 'Not reliably reported. The assessment platform reported for Bloomberg is for software-engineering phone screens, not data roles, so this page names none.', []],
-      ['What the analyst round weighs', 'Reported as basic SQL and Excel alongside data-quality judgement — finding errors and proposing checks.', ['ophyai-bb']],
     ],
-    reportedTopics: ['Aggregation by time period (monthly and daily averages)', 'Joins, INNER vs LEFT', 'Window functions and ranking', 'Date-window filters', 'NULL handling', 'Second-highest value'],
-    difficulty: 'Easy-to-medium.',
+    reportedTopics: ['Aggregation by time period (monthly and daily averages)', 'Window functions and ranking', 'Date-window filters (the last 30 days)', 'Second-highest value', 'HAVING on a count threshold'],
+    difficulty: 'Not reliably reported, so this page does not grade it.',
     shapes: [
-      ['Daily stock prices by ticker: for each ticker, the month with the highest and the month with the lowest opening price.', 'datalemur-q-bb'],
+      ['Terminal sessions by user: the users with more than 1,000 sessions in a year.', 'datalemur-bb'],
       ['Trades by symbol and date: the average daily trading volume per symbol.', 'datalemur-bb'],
       ['Customers and exchange data subscriptions with start dates and status: US customers with an active subscription started in the last 30 days.', 'datalemur-bb'],
     ],
     sources: {
-      'ophyai-bb': ['OphyAI — Bloomberg interview guide', 'https://ophyai.com/blog/company-guides/bloomberg-interview-guide', 'updated 3 Jun 2026'],
-      'datalemur-bb': ['DataLemur — Bloomberg SQL interview questions', 'https://datalemur.com/blog/bloomberg-sql-interview-questions', '17 Apr 2025'],
-      'datalemur-q-bb': ['DataLemur — stock min/max question (Bloomberg-tagged)', 'https://datalemur.com/questions/sql-bloomberg-stock-min-max-1', 'undated'],
+      'ophyai-bb': ['OphyAI — Bloomberg interview guide (prep guide; names no sources)', 'https://ophyai.com/blog/company-guides/bloomberg-interview-guide', 'updated 6 Nov 2026'],
+      'datalemur-bb': ['DataLemur — Bloomberg SQL interview questions (its own practice questions)', 'https://datalemur.com/blog/bloomberg-sql-interview-questions', '17 Apr 2025'],
     },
   },
   // 2026-11-20 — research notes: docs/reads/company-research-2026-11-20.md.
@@ -319,6 +337,9 @@ export const COMPANY_INTERVIEWS = {
     crosslinkDesc: 'Take-home SQL or Python on a business question, then a review of your logic',
     accent: '#FF4F40',
     title: 'Monzo SQL Interview Questions — The Take-Home and the Review',
+    // #209's `publishes`: the sources are Monzo's own posts, so the page must not
+    // open with "Monzo does not publish the format" (R1 batch 5).
+    publishes: 'Monzo publishes how its data interviews run, in posts on its own blog, and this page is built from them.',
     description: 'Monzo SQL interview: the data take-home as Monzo itself describes it, the review that follows, and practice on neobank ledger data. Sourced and dated.',
     hero: 'Monzo\'s own hiring posts describe the SQL as a take-home, not a live test: a business question answered in SQL or Python in your own time, then an interview that walks through your logic, trade-offs and testing. Practise that shape here, on data that looks like a bank account\'s ledger.',
     dataShape: 'accounts (signup date, plan, country), card transactions (merchant, category, amount, status, timestamps), transfers in and out between customers, and money moved into and out of savings pots',
@@ -509,6 +530,30 @@ export const SOURCED_FORMATS = {
       'blind-meta-mar25': ['Blind — "Meta Data Engineer: Technical Screen-Help" (poster plus two replying candidates; read 14 Sep 2026)', 'https://www.teamblind.com/post/meta-data-engineer-technical-screen-help-6fy3wafy', '17 Mar 2025'],
       'aced-meta-de': ['Aced (formerly Exponent) — Meta Data Engineer interview guide', 'https://www.aced.io/guides/meta-data-engineer-interview', 'shown as "updated 3 days ago" on 22 Nov 2026'],
       'prachub-meta-de-sep26': ['PracHub — Meta Senior+ Data Engineer: leadership and fullstack phone screen (candidate report, interview Sep 2026)', 'https://prachub.com/interview-experiences/meta-seniorplus-data-engineer-interview-experience-leadership-and-fullstack-phone-screen-rejected-over-not-enough-impact', '19 Sep 2026'],
+    },
+  },
+  // 2026-11-23: Apple becomes a sourced page on the R1 batch-5 dossier
+  // (docs/reads/companies/apple.md, sources read 2026-11-23). Only the rows it
+  // rates medium: the data-scientist screen pairs SQL with Python (two 2026
+  // reports), hiring-manager rounds can carry no SQL (two reports), the loop
+  // varies by team (a recruiter's word + a guide). Not stated, as low or
+  // conflicting: a platform, a question count, a length, anything for analysts.
+  apple: {
+    name: 'Apple',
+    role: 'Data Scientist',
+    accessed: '23 Nov 2026',
+    format: [
+      ['Data scientist screen', 'Two 2026 candidate reports describe a technical screen that pairs SQL with a short Python task. In one (September 2026) it ran live with the hiring manager.', ['prachub-apple-ds-sep26', 'prachub-apple-ds-may26']],
+      ['Rounds without SQL', 'Two candidates describe hiring-manager rounds that were product and metrics work with no SQL: A/B testing and channel attribution in one, churn, profit and lifetime value in the other.', ['aced-apple-ds-exp']],
+      ['It varies by team', 'A recruiter told one data-scientist candidate that the roles share one job family and the team is assigned after the interviews; a data-analyst prep guide says its description reflects one team\'s structure. Expect the loop to differ from team to team.', ['prachub-apple-ds-oct25', 'aced-apple-da']],
+      ['Not stated here', 'How many SQL questions the screen holds (the two reports disagree), how long it runs, the tool and the dialect, and anything about the data-analyst, BI or analytics-engineer loops: no source we could read states them reliably, so this page does not.', []],
+    ],
+    sources: {
+      'prachub-apple-ds-sep26': ['PracHub — Apple Data Scientist: exploring employee and audit tables with the hiring manager (candidate report, interview Sep 2026)', 'https://prachub.com/interview-experiences/apple-data-scientist-interview-experience-exploring-employee-and-audit-tables-with-the-hiring-manager', '28 Sep 2026'],
+      'prachub-apple-ds-may26': ['PracHub — Apple Data Scientist: telemetry design, a presentation, and an onsite that never happened (candidate report, interview May 2026)', 'https://prachub.com/interview-experiences/apple-data-scientist-interview-experience-telemetry-design-a-presentation-and-an-onsite-that-never-happened', '12 Nov 2026'],
+      'aced-apple-ds-exp': ['Aced (formerly Exponent) — Apple Data Scientist interview experiences (two candidate reports, interviews Sep 2025 and Mar 2026)', 'https://www.aced.io/guides/apple-data-scientist-interview/experiences', 'submitted 3 Apr and 14 Jun 2026'],
+      'prachub-apple-ds-oct25': ['PracHub — Apple Data Scientist: a quick HR call just to schedule the minicase (candidate report, interview Oct 2025)', 'https://prachub.com/interview-experiences/apple-data-scientist-interview-experience-a-quick-hr-call-just-to-schedule-the-minicase', '25 Aug 2026'],
+      'aced-apple-da': ['Aced (formerly Exponent) — Apple Data Analyst interview guide (says it reflects one team)', 'https://www.aced.io/guides/apple-data-analyst-interview-guide', 'shown as "updated 4 days ago" on 23 Nov 2026'],
     },
   },
   // 2026-11-23: Shopify becomes a sourced page (R1 dossier
