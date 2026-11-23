@@ -1,10 +1,10 @@
 {
   "note": "Written by scripts/sitemap-lastmod.mjs. A page's date moves only when its built bytes change.",
-  "updated": "2026-11-22",
+  "updated": "2026-11-23",
   "pages": {
     "/": {
       "hash": "224aa81f3f032f9f",
-      "lastmod": "2026-11-22"
+      "lastmod": "2026-11-23"
     },
     "/turkce-sql-ogren/": {
       "hash": "02e7c2f30c1cc67e",
@@ -140,11 +140,11 @@
     },
     "/sql-practice-comparison/": {
       "hash": "61007700f87c7671",
-      "lastmod": "2026-11-22"
+      "lastmod": "2026-11-23"
     },
     "/best-sql-practice-sites/": {
       "hash": "280b0d230d0c7e20",
-      "lastmod": "2026-11-22"
+      "lastmod": "2026-11-23"
     },
     "/sql-interview-prep/": {
       "hash": "3521a25dfdbc46c4",
@@ -179,8 +179,8 @@
       "lastmod": "2026-11-22"
     },
     "/sql-exercises/": {
-      "hash": "ad287eeb91ec56eb",
-      "lastmod": "2026-11-22"
+      "hash": "26fcbc6a80c1ca93",
+      "lastmod": "2026-11-23"
     },
     "/after-the-sql-course/": {
       "hash": "f9ee54f27d64359b",
