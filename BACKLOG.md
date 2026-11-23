@@ -542,6 +542,40 @@ touch them.
   shows the server's code. `claim-referral-reward` is undeployed too; it
   is a separate decision, because it grants Pro.
 
+## Competitor watch — B6, 2026-11-22 (docs/reads/competitors-2026-11-22.md)
+
+Ranked by expected money per hour. B6 builds none of these; each names its lane.
+Every competitor fact cited must come from that read (URL + date).
+
+1. **C5 — Capital One assessment block on the blog guide.** SERP for the
+   assessment is Blind, Glassdoor, IQ and Dataford guides; nobody offers a
+   timed rehearsal. Fetched, dated candidate reports → the mock → question 1.
+2. **C5 (+B3) — Wise sourced format section + a 4-question / 60-minute set.**
+   No page about Wise's SQL screen ranks; DataLemur's hit is WiseTech. Our
+   page has no sourced format section.
+3. **C1 — 301 `sql-quest2.vercel.app` → `sqlquest.app`.** The vercel.app host
+   is indexed with $19 / 200+ / May 2026 copy. Check Supabase Auth Site URL
+   and redirect URLs first (`src/data/config.js` names the vercel.app host).
+4. **C2 — drop the AI-coach exclusivity on the comparison pages.** "No other
+   platform has it" is stale: StrataAI tutor (10-27), LDS Socratic mentor,
+   Aced AI feedback. Keep the specific, still-true claims.
+5. **C5 — Revolut: cite the two PracHub candidate reports** (0 today) and put
+   the Revolut mock above the fold.
+6. **C5 / C1 — Monzo: question 1 and readiness test above the fold;** C1
+   checks why the page is absent from an empty SERP.
+7. **B4 — price landscape for the monthly read.** $10–15/mo annual cluster,
+   Dataford annual = $99 = ours, three lifetimes, LeetCode Black Friday code.
+   No agent changes a price.
+8. **C2 / C5 — say what a free account gets after a wrong answer** (the
+   diagnosis, from `freeTierSentence`); the market's top complaint is
+   paywalled solutions. No competitor named.
+9. **C6 — cohort retention + funnel conversion topic funnel** (Revolut,
+   Chime reports); C7 confirms demand.
+10. **backlog (orchestrator) — mock follow-up question** after a correct
+    answer, graded by the diagnosis. AI mocks are table stakes in the set.
+- **C3 (founder's hand)** — alternativeto.net and the dev.to post state
+  $19 / 200+ / 10 categories.
+
 ## P0 — security and money
 
 1. **Any account's data can still be overwritten with the public anon key.**

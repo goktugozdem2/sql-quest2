@@ -27,6 +27,92 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### the Revolut guide: a sourced blog door for the best fintech page (C5)
+
+- **Claimed** 2026-11-22 · **Shipped** on merge · **Read** 2026-12-20 (28 d) and 2027-01-17 (56 d).
+- **Change** `/blog/revolut-data-analyst-sql-screen/`: both Revolut SQL
+  rounds as interviewquery's 2026 guide reports them (one dated source, read
+  2026-09-12, quotes pinned verbatim against `interview-archetypes.js`),
+  three traps worked on `finans_neobank` (transfer legs, AVG over NULL,
+  a nested funnel), a 2-week plan, links to Revolut question 1, the readiness
+  test and the Pro mock. It solves neither the mock's written tasks nor any
+  set challenge. Linked from the Revolut page, the interview hub and the blog
+  index; in the sitemap.
+- **Why Revolut, why a guide:** Revolut and Wise are the two fintech pages
+  with proven clicks (seo-2026-11-13: 18.6% / 27% CTR); Revolut has 4.6× the
+  query impressions (company-research-2026-11-20: 87 vs 19) and is the only
+  one with a sourced format, a signed set and a Pro mock to sell. M-02's hero
+  already names question 1 on both, so menu item 1 is spent there; the
+  Capital One read (branch 3) says the blog is the door.
+- **Metric** `landing_to_trial` (defined today in metrics.md) on the guide
+  and on `/revolut-sql-interview/`; `gsc_daily` for the guide; `pro_modal_shown`
+  with `linkSrc` `revolut-blog`.
+- **Baseline** for the laptop to fill before 12-20: Revolut page landing
+  people and trial-or-paid, 28 days to 2026-11-22. The guide's baseline is 0.
+- **Target** at 28 d: the guide ≥ 150 impressions and ≥ 8 clicks, with the
+  Revolut page's clicks not below 90% of its own prior 28 d. At 56 d: ≥ 1
+  trial or purchase from a person whose first landing was the guide, and
+  ≥ 3 Pro modals from `revolut-blog`.
+- **Falsification, written now:** the Revolut page's clicks fall more than
+  20% while the guide takes its queries → cannibalised; noindex the guide
+  (`seo-prune.json`) and move its traps onto the page. At 56 d, ≥ 150 guide
+  landers and 0 app opens from it → the guide is not a door; one improvement
+  run, then the kill rule.
+
+### related links for thinly linked pages (C1)
+
+- **Claimed** 2026-11-22 · **Shipped** on merge (static pages, no flag) ·
+  **Read** 2026-12-20.
+- **Change:** `scripts/build-related-links.mjs` adds one contextual
+  "related" line to 16 source pages. The targets are 13 pages that had
+  0–3 distinct linking pages outside `/questions/`. Before → after:
+  `docs/reads/internal-links-2026-11-22.md`. The guard is
+  `tests/internal-links.test.js`: fewer than 2 linking pages fails.
+- **Page set, fixed now:**
+  - `/weekly/`
+  - `/datalemur-karsilastirma/`
+  - `/stratascratch-alternatives/`
+  - `/datalemur-alternatives/`
+  - `/learn-sql-for-beginners/`
+  - `/after-bootcamp/`
+  - `/after-the-sql-course/`
+  - `/sql-for-the-ai-era/`
+  - `/blog/validate-ai-generated-sql/`
+  - `/challenges/string-functions/`
+  - `/sql-rollup-interview-questions/`
+  - `/paypal-sql-interview/`
+  - `/coinbase-sql-interview/`
+  - `/chime-sql-interview/`
+  - `/monzo-sql-interview/`
+- **Metric:** `bing_crawled_share` / `linked_page_impressions`
+  (`docs/agent/metrics.md`, defined in this PR).
+- **Baseline:** laptop read before the deploy. It has three parts:
+  - `bing_url_status` for the 15 URLs: `last_crawled`, `checked_at`,
+    `anchor_count`;
+  - GSC page-slice impressions for the 28 days before the deploy;
+  - how many of the 15 are in `gsc_index_status` as indexed.
+
+  A cloud session has no production data, so this PR ships no number.
+- **Target:**
+  - ≥ 12 of the 15 crawled by Bing on or after the deploy date, with
+    `checked_at` after it.
+  - Page-slice impressions for the set up ≥ 25% over the prior 28 days,
+    counting pages at zero.
+- **Falsification:**
+  - **MISS:** fewer than 8 of 15 crawled since the deploy, among those
+    checked after it.
+  - **FLAT:** impressions within ±10%, with no page going from 0 to
+    > 0. That would say links from these pages carry no crawl signal at
+    this authority.
+  - **UNREADABLE:** under 10 of the 15 checked after the deploy. Do not
+    round that to FLAT.
+- **Confounds:**
+  - `/weekly/` changes lastmod on every `build:weekly`.
+  - #162 rewrites the snippets of 7 company pages in the same window. None
+    of the 15 is among them, but the set's impressions share the
+    Google-wide trend, so read it against the site's page-slice total for
+    the same windows.
+
 ### AI-visibility pass: answer-first summaries, honest competitor facts, llms.txt entry points (C2)
 
 - **Claimed** 2026-11-22 · **Shipped** on merge (static pages + llms.txt,
