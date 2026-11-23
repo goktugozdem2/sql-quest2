@@ -1224,6 +1224,74 @@ Of `challenge_solved` rows (by `aid` and `challengeId`), the share with a
 before that). Tracked, no target yet — a difficulty-balance signal per
 challenge. Scorecard §2.
 
+## `second_solve_same_session`
+
+Defined 2026-11-23, before `mobileOneLayer` ships (rule 6b; rank 3 of
+docs/plans/mobile-acquisition-2026-11-23.md). Of people whose
+`first_challenge_solved` falls in the window, the share with a
+`challenge_solved` for a **different** `challengeId` in the same session.
+- *Person* = `coalesce(aid, username)`; the first solve is the person's
+  first `first_challenge_solved` row (it fires once per browser,
+  `onceKey`). Rows less than an hour old are left out of the denominator.
+- *Same session* = no gap over 30 minutes between consecutive events of
+  that person from the first solve to the second (the `hint_to_solve`
+  rule). A re-solve of the same challenge does not count.
+- *Device band* = the `viewport` stamp on the `first_challenge_solved` row
+  itself (`mobile:` = innerWidth < 768). Never the person's first
+  `app_opened`.
+- Population: the bot and internal filters of `docs/agent/fleet/README.md`
+  step 2.
+- Baseline (read 2026-11-23, by the query below): 28 days — mobile
+  **4 / 6 (67%)**, desktop 133 / 202 (66%); 90 days — mobile **18 / 30
+  (60%)**, desktop 668 / 973 (69%), tablet 10 / 13. **Mobile first solvers
+  are about 6 a month**, so a 50/50 test has about 3 per arm per month:
+  any read under 15 per arm is directional only, reported with n.
+- **By arm (`mobileOneLayer`):** the arm is `mobile_one_layer_assigned.arm`,
+  one row per person, fired at the person's first correct submit on a
+  narrow touch screen (coarse pointer or width < 768) with the flag on.
+  Denominator: assigned people whose `first_challenge_solved` is `mobile:`
+  and at or after the assignment; numerator as above. Compare `one` with
+  `control` over the same window. Read it together with
+  `mobile_run_bar_assigned.arm` (a person can be in both tests; report the
+  2×2 cell counts, never pool across a `mobileRunBar` flip).
+
+```sql
+with ev as (
+  select coalesce(((metadata #>> '{}')::jsonb)->>'aid', username) pid, event, created_at,
+         (metadata #>> '{}')::jsonb m
+  from pro_events
+  where created_at >= :since - interval '1 day'
+    and username !~* '^(test|qa_|fabletest|linktest|internalroutine|sqlquest$|elena$)'
+),
+clean as (
+  select * from ev where coalesce(m->>'bot', '') not in ('true', '1')
+    and coalesce(m->>'viewport', '') not in ('tablet:800x600', 'desktop:1280x1200', 'desktop:1919x992')
+),
+fs as (
+  select * from (
+    select distinct on (pid) pid, created_at t1, m->>'challengeId' cid, split_part(m->>'viewport', ':', 1) band
+    from clean where event = 'first_challenge_solved' order by pid, created_at
+  ) x where t1 >= :since and t1 < now() - interval '1 hour'
+),
+seq as (
+  select c.pid, c.created_at, c.event, c.m->>'challengeId' cid,
+         c.created_at - lag(c.created_at) over (partition by c.pid order by c.created_at) gap
+  from clean c join fs using (pid) where c.created_at >= fs.t1
+),
+brk as (select pid, min(created_at) tbreak from seq where gap > interval '30 minutes' group by pid),
+second as (
+  select distinct s.pid from seq s join fs using (pid) left join brk b using (pid)
+  where s.event = 'challenge_solved' and s.cid is distinct from fs.cid
+    and (b.tbreak is null or s.created_at < b.tbreak)
+)
+select band, count(*) people, count(second.pid) second_same_session,
+       round(100.0 * count(second.pid) / nullif(count(*), 0), 1) pct
+from fs left join second using (pid)
+group by band order by people desc;
+-- by arm: join fs to the first mobile_one_layer_assigned row per pid
+-- (m->>'arm', created_at <= fs.t1) and group by arm, band = 'mobile'.
+```
+
 ## `second_session_7d`
 
 Of people whose first `app_opened` falls in the window (and at least seven
