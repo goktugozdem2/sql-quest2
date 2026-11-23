@@ -32692,10 +32692,16 @@ RULES:
       })()}
 
       {/* First-challenge onboarding tour (Murat lesson — UI opaque to first-timers) */}
+      {/* 2026-11-23 (payment test): no tour renders while the Pro modal is
+          open. The Challenges tour's tooltip (z 9999) sat over the plans and
+          the trial terms — pinned across the bottom of a phone — whenever a
+          person opened a locked Hard or the header's Pro button before
+          finishing it. The tour waits; it comes back when the modal closes.
+          tests/tour-over-pro-modal.test.js. */}
       {/* 2026-09-14: tours wait for the first solve. Practice is the first
           thing a visitor should do; a spotlight over the start screen was an
           interruption before anything had been earned. */}
-      {showFirstEntryTour && solvedChallenges.size >= 1 && showFirstRunStart && !showIntake && !currentChallenge && !showOnboardingTour && !showAppTour && (
+      {showFirstEntryTour && solvedChallenges.size >= 1 && showFirstRunStart && !showIntake && !currentChallenge && !showOnboardingTour && !showAppTour && !showProModal && (
         <OnboardingTour
           steps={FIRST_ENTRY_ONBOARDING_STEPS}
           onComplete={() => {
@@ -32709,7 +32715,7 @@ RULES:
         />
       )}
 
-      {showChallengesEntryTour && solvedChallenges.size >= 1 && activeTab === 'quests' && !currentChallenge && !(showFirstEntryTour && showFirstRunStart) && !showOnboardingTour && !showAppTour && (
+      {showChallengesEntryTour && solvedChallenges.size >= 1 && activeTab === 'quests' && !currentChallenge && !(showFirstEntryTour && showFirstRunStart) && !showOnboardingTour && !showAppTour && !showProModal && (
         <OnboardingTour
           steps={CHALLENGES_ENTRY_ONBOARDING_STEPS}
           onComplete={() => {
@@ -32723,7 +32729,7 @@ RULES:
         />
       )}
 
-      {showOnboardingTour && currentChallenge && !showFirstRunSimpleShell && (
+      {showOnboardingTour && currentChallenge && !showFirstRunSimpleShell && !showProModal && (
         <OnboardingTour
           steps={CHALLENGE_ONBOARDING_STEPS}
           onComplete={() => {
@@ -32741,7 +32747,7 @@ RULES:
           Mutually exclusive with the challenge tour — if both happened to be
           active at once we'd show two tooltips and two spotlights on top of
           each other. Challenge tour wins since it's the active task. */}
-      {showAppTour && !showOnboardingTour && (
+      {showAppTour && !showOnboardingTour && !showProModal && (
         <OnboardingTour
           steps={APP_ONBOARDING_STEPS}
           onComplete={() => {
