@@ -70,6 +70,26 @@ of the verifier and must never be rounded to `FLAT`.
   Databricks carry no claim of their own — their edits remove
   statements, not bets.
 
+### PostgreSQL mode — spike, dark (`postgresMode`)
+
+- **Claimed** 2026-11-22 · **Shipped** dark on merge (spike, orchestrator's
+  decision under the founder's delegation) · **Read** none until a flip.
+- **Change** a "SQLite / PostgreSQL" toggle on the challenge page, behind
+  `postgresMode` (false). PGlite 0.5.15 (PostgreSQL 18.6) loads from jsDelivr
+  with SRI only on pick; one instance per challenge; graded with
+  `resultsMatch` on the generated allow-list (301 of 312). The verdict is
+  shown, never recorded. Plan, numbers and recommendation:
+  `docs/plans/postgres-mode-2026-11-22.md`.
+- **Claim** none on people while dark. The flag off costs 0 bytes of PGlite
+  and +1.0 KB gzipped of app.js (test- and headless-bound).
+- **Metric** UNDEFINED: there are no `postgres_mode_*` events and no
+  metric in `docs/agent/metrics.md`. Both come with the ship PR, which
+  writes the real claim (and the Pro gate, a money flag, waits for the
+  founder's go).
+- **Falsification for the ship PR, stated now:** if one PGlite instance per
+  session cannot hold a 375-wide Chromium under ~700 MB renderer RSS after
+  five challenge switches, drop the feature.
+
 ### a founder-led live mock — would people pay for it? (asked by hand)
 
 - **Claimed** 2026-11-22 · **Shipped** as 3 Gmail drafts, written by E1 at

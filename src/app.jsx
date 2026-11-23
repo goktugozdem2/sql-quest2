@@ -8166,6 +8166,13 @@ function SQLQuest() {
   const [dataError, setDataError] = useState(null);
   
   const [currentChallenge, setCurrentChallenge] = useState(null);
+  // PostgreSQL mode (spike, flag postgresMode, 2026-11-22): the engine the
+  // challenge page runs on and PGlite's state. Hooks sit above the early
+  // returns. Flag off: the toggle never renders and nothing below loads.
+  const postgresModeOn = window.FF?.feature?.('postgresMode') === true;
+  const [sqlEngine, setSqlEngine] = useState('sqlite');
+  const [pgMode, setPgMode] = useState(null); // { phase: loading|ready|unavailable|error, loadMs, verdict, error }
+  const pgBundleRef = useRef(null);
   // i18n view of the active challenge — title/description/hint/example
   // swapped to the user's language when *_<lang> fields exist on the
   // challenge object. Render code reads `displayChallenge`; AI Tutor /
@@ -25092,6 +25099,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
   }, [currentUser, dbReady, isSessionLoading]);
 
   const runChallengeQuery = () => {
+    if (pgActive) { runChallengeQueryPg(false); return; }
     if (!db) return;
     // An empty editor with a starter shown (a first-time opener sees "Start
     // here: SELECT * FROM t LIMIT 5;" as the placeholder) used to make Run do
@@ -25135,7 +25143,66 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
     }
   };
 
+  // ── PostgreSQL mode (spike) ─────────────────────────────────────────────
+  // /pg-mode.js (src/pg-mode/entry.js) is injected only when a person picks
+  // PostgreSQL; it fetches PGlite from jsDelivr with SRI (src/utils/pg-cdn.js)
+  // and keeps one instance per challenge — never the shared `db`. The verdict
+  // is shown, never recorded: no attempt, solve, XP or quota moves.
+  const loadPgBundle = () => {
+    if (window.SQLQuestPg) return Promise.resolve(window.SQLQuestPg);
+    if (pgBundleRef.current) return pgBundleRef.current;
+    pgBundleRef.current = new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = '/pg-mode.js';
+      s.async = true;
+      s.onload = () => (window.SQLQuestPg ? resolve(window.SQLQuestPg) : reject(new Error('engine missing')));
+      s.onerror = () => { pgBundleRef.current = null; reject(new Error('engine did not load')); };
+      document.head.appendChild(s);
+    });
+    return pgBundleRef.current;
+  };
+  const pickSqlEngine = async (engine) => {
+    setSqlEngine(engine);
+    if (engine !== 'postgres' || !currentChallenge) { setPgMode(null); return; }
+    const forId = currentChallenge.id;
+    setPgMode({ phase: 'loading' });
+    try {
+      const pgApi = await loadPgBundle();
+      if (!pgApi.available(currentChallenge)) { setPgMode({ phase: 'unavailable', forId }); return; }
+      const t0 = performance.now();
+      const warm = await pgApi.run(currentChallenge, 'SELECT 1');
+      if (warm.error) throw new Error(warm.error);
+      setPgMode({ phase: 'ready', forId, loadMs: Math.round(performance.now() - t0) });
+    } catch (err) {
+      setPgMode({ phase: 'error', forId, error: err.message });
+    }
+  };
+  // A new challenge on PostgreSQL gets its own instance (and its own check
+  // against the allow-list).
+  useEffect(() => {
+    if (postgresModeOn && sqlEngine === 'postgres' && currentChallenge && pgMode?.forId !== currentChallenge.id) pickSqlEngine('postgres');
+  }, [currentChallenge?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  const pgActive = postgresModeOn && sqlEngine === 'postgres' && pgMode?.phase === 'ready' && pgMode.forId === currentChallenge?.id;
+  const runChallengeQueryPg = async (submit) => {
+    if (!pgActive || !window.SQLQuestPg || !challengeQuery.trim()) return;
+    markChallengeFirstRun(submit ? 'submit' : 'run');
+    setChallengeStatus(null);
+    if (!submit) {
+      const r = await window.SQLQuestPg.run(currentChallenge, challengeQuery);
+      setChallengeResult({ columns: r.columns, rows: r.rows, error: r.error });
+      setChallengeRunAt(Date.now());
+      setChallengeRunMs(r.ms);
+      setPgMode(p => ({ ...p, verdict: null, error: null }));
+      return;
+    }
+    const r = await window.SQLQuestPg.submit(currentChallenge, challengeQuery);
+    if (r.user) setChallengeResult({ columns: r.user.columns, rows: r.user.rows, error: r.user.error });
+    setChallengeRunAt(Date.now());
+    setPgMode(p => ({ ...p, verdict: r.error ? 'error' : r.correct ? 'correct' : 'wrong', error: r.error || null }));
+  };
+
   const submitChallenge = () => {
+    if (pgActive) { runChallengeQueryPg(true); return; }
     // Submit on the empty editor of a first-time opener runs the starter the
     // way Run does — shown, not graded (a SELECT * would be marked wrong
     // before the person has written a line). 2026-11-22.
@@ -39690,6 +39757,38 @@ RULES:
                     {deepLinkSwapNote && currentChallenge && currentChallenge.id === deepLinkSwapNote.toId && (
                       <div className="mb-3 p-2 rounded-lg" style={{ background: 'rgba(124,58,237,.08)', border: '1px solid rgba(124,58,237,.3)' }} data-testid="deeplink-swap-note">
                         <p className="text-sm" style={{ color: '#E2E8F0' }}>“{deepLinkSwapNote.fromTitle}” is part of Pro. This is a free Hard question of the same kind — a good first one.</p>
+                      </div>
+                    )}
+
+                    {postgresModeOn && (
+                      <div className="mb-2" data-testid="sql-engine-toggle">
+                        <div className="flex items-center gap-2 flex-wrap text-xs">
+                          <span className="text-gray-400">Engine</span>
+                          <div role="radiogroup" aria-label="SQL engine" className="inline-flex rounded-lg border border-[#2A2E38] overflow-hidden">
+                            {[['sqlite', 'SQLite'], ['postgres', 'PostgreSQL']].map(([k, label]) => (
+                              <button key={k} type="button" role="radio" aria-checked={sqlEngine === k} data-engine={k}
+                                onClick={() => pickSqlEngine(k)}
+                                className={`px-3 py-1 ${sqlEngine === k ? 'bg-[#2A2E38] text-white' : 'text-gray-400 hover:text-white'}`}>{label}</button>
+                            ))}
+                          </div>
+                          {sqlEngine === 'postgres' && pgMode && (
+                            <span data-testid="pg-status" data-phase={pgMode.phase}
+                              className={pgMode.phase === 'ready' ? 'text-green-400' : pgMode.phase === 'error' ? 'text-amber-400' : 'text-gray-400'}>
+                              {pgMode.phase === 'loading' && 'Loading PostgreSQL (about 5 MB, once)…'}
+                              {pgMode.phase === 'ready' && `PostgreSQL 18 ready · ${pgMode.loadMs} ms`}
+                              {pgMode.phase === 'unavailable' && 'PostgreSQL mode not available for this one yet'}
+                              {pgMode.phase === 'error' && `PostgreSQL did not load: ${pgMode.error}`}
+                            </span>
+                          )}
+                        </div>
+                        {pgActive && pgMode.verdict && (
+                          <p data-testid="pg-verdict" data-verdict={pgMode.verdict}
+                            className={`mt-2 text-sm ${pgMode.verdict === 'correct' ? 'text-green-400' : pgMode.verdict === 'wrong' ? 'text-red-400' : 'text-amber-400'}`}>
+                            {pgMode.verdict === 'correct' && 'Correct on PostgreSQL. Practice mode: not recorded as a solve.'}
+                            {pgMode.verdict === 'wrong' && 'Not the expected rows on PostgreSQL.'}
+                            {pgMode.verdict === 'error' && `PostgreSQL error: ${pgMode.error}`}
+                          </p>
+                        )}
                       </div>
                     )}
 
