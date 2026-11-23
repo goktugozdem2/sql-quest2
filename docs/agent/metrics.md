@@ -4093,6 +4093,15 @@ from feedback where created_at >= :from and created_at < :to group by 1, 2;
 - Apply the fleet's bot and internal-account filters (fleet README, Data).
 - `exit_reason` answers are one tap, `stuck` / `day2` are typed: compare each
   kind to its own target, never a pooled rate.
+- **Before the fix (2026-11-23 → the deploy of `fix/exit-reason-once`), count
+  answers by distinct people**, never by `feedback_submitted` rows or
+  `feedback` rows. Until then the card was not cleared after an answer: it
+  re-mounted after every Pro modal close and asked again with no new
+  `feedback_prompt_shown`, so one person wrote three exit rows to one shown
+  (docs/reads/funnel-2026-11-24.md §1) and rows ÷ shown read above 100%.
+  From the deploy, an answer or a skip ends `exit_reason` in that browser
+  (`sqlquest_fbp_exit_done_at`) and one show records at most one answer, for
+  all three kinds.
 - `context.themeHint` is a guess for the one-tap rows; the theme that counts
   is the one the daily read assigns.
 - Rows written while the 20260907 quote-consent migration is unapplied still
