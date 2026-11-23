@@ -65,7 +65,7 @@ import { sessionLoadingAtBoot, shouldWaitForSession } from './utils/session-boot
 import { SQLITE_TUTOR_RULES, mistakeStudyContext, buildMistakeContextBlock, mistakeOpeningPrompt, inlineOpenerMessage, diagnosisFixesLine, ladderRequestNumber } from './utils/tutor-context.js';
 import { buildUserSkill, pickNextBySkill, toCanonicalSkill, isLegacyMasteryRecord } from './utils/user-skill.js';
 import { classifyErrorPatterns, recordErrorPatterns, describeErrorPatterns, patternCount, emptyErrorStore } from './utils/error-patterns.js';
-import { isDebugChallenge, debugQuestionsOn, brokenQueryFor, debugEditorValue, emptyDebugStats, recordDebugSpot, recordDebugFix, debugStatsSummary, debugBugLine } from './utils/debug-questions.js';
+import { isDebugChallenge, debugQuestionsOn, brokenQueryFor, debugEditorValue, emptyDebugStats, recordDebugSpot, recordDebugFix, debugStatsSummary, debugBugLine, withDebugLock, proModalReasonLabel, debugLockedAs } from './utils/debug-questions.js';
 import { nudgeAllowed, nudgeHeaders, nudgeUsername, personalNudgeLines } from './utils/live-nudge.js';
 import { HIRED_INTENT, isHired, ticketLocked, shouldAskOffer } from './utils/post-hire.js';
 import { gradeTicket, ticketFeedback } from './utils/ticket-grade.js';
@@ -7290,7 +7290,7 @@ function SQLQuest() {
     const sessionsOn = !opts.linkFallback && window.FF?.feature?.('checkoutSessions') === true;
     const trial = wantsTrial({ sessionsOn, trialOn: window.FF?.feature?.('checkoutTrial') === true, plan });
     if (!opts.linkFallback) {
-      trackActivationEvent('pro_checkout_clicked', { plan, email: email || null, modalReason: proModalReason?.type || null, patternSlug: proModalReason?.patternSlug || null, linkSrc: proModalReason?.linkSrc || null, priceRegion, via: sessionsOn ? 'session' : 'link', trial });
+      trackActivationEvent('pro_checkout_clicked', { plan, email: email || null, modalReason: proModalReasonLabel(proModalReason), patternSlug: proModalReason?.patternSlug || null, linkSrc: proModalReason?.linkSrc || null, priceRegion, via: sessionsOn ? 'session' : 'link', trial });
     }
     // Leave a breadcrumb so the next app load can tell WHY a click didn't
     // become a purchase. Until now the funnel went silent between the click
@@ -7409,7 +7409,8 @@ function SQLQuest() {
       modalLayout,
       // Which ask this click answered, and the trap page behind it
       // (2026-09-25) — so a pattern page → checkout funnel joins by aid.
-      modalReason: proModalReason?.type || null,
+      // `debug_lock` for a locked Debug item (proModalReasonLabel).
+      modalReason: proModalReasonLabel(proModalReason),
       patternSlug: proModalReason?.patternSlug || null,
       linkSrc: proModalReason?.linkSrc || null,
       priceRegion,
@@ -7942,7 +7943,7 @@ function SQLQuest() {
 
   // Pro modal analytics — fire-and-forget
   const trackProEvent = (event, metadata = {}) => {
-    writeProEvent(event, proModalReason?.type || 'unknown', metadata);
+    writeProEvent(event, proModalReasonLabel(proModalReason) || 'unknown', metadata);
   };
 
   // Track Pro modal shown
@@ -7957,8 +7958,10 @@ function SQLQuest() {
       if (window.FF?.feature?.('checkoutSessions') === true) {
         warmCheckoutSession({ fetchImpl: window.fetch.bind(window), endpoint: `${window.SUPABASE_URL}/functions/v1/create-checkout-session`, anonKey: window.SUPABASE_ANON_KEY });
       }
+      // `debug_lock` for a locked Debug item (proModalReasonLabel).
+      const shownReason = proModalReasonLabel(proModalReason) || 'unknown';
       trackActivationEvent('pro_modal_shown', {
-        reason: proModalReason?.type || 'unknown',
+        reason: shownReason,
         // True when the prompt only fired because the offer gate stopped
         // trusting a stale proStatus flag. Lets the read separate newly
         // unblocked users from the ones who were always going to be asked.
@@ -7983,6 +7986,9 @@ function SQLQuest() {
         modalLayout,
         // Free-tier boundary M3: did this ask lead with a date, and how far.
         ...deadlineEventMeta(proModalReason),
+        // A locked Debug item reads reason `debug_lock`; this keeps the wall
+        // underneath it (free_quota, hard_challenge, …), null otherwise.
+        lockedAs: debugLockedAs(proModalReason),
       });
     }
   }, [showProModal]);
@@ -24001,12 +24007,12 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
       if (companyFilter && quietAskDecision({ flagOn: ftbFlag('quietEarlyAsks'), reason: 'company_hard', solvedCount: solvedChallenges.size }) === 'show') {
         const scoped = challenges.filter(c => (c.companies || []).includes(companyFilter));
         const hardCount = scoped.filter(c => c.difficulty === 'Hard').length;
-        setProModalReason({
+        setProModalReason(withDebugLock({
           type: 'company_hard',
           topic: companyFilter,
           hardCount,
           totalCount: scoped.length,
-        });
+        }, challenge));
         setShowProModal(true);
         return;
       }
@@ -24033,7 +24039,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
       // previews as "free", and the quota wall would refuse them. Say the
       // true thing instead — the lock row above is already written.
       if (freeQuotaSpent()) {
-        presentQuotaWall({ type: 'free_quota', used: solvedChallenges.size, quota: FREE_SOLVE_QUOTA, solvedCount: solvedChallenges.size, topic: null, wallCompany: quotaWallCompany() });
+        presentQuotaWall(withDebugLock({ type: 'free_quota', used: solvedChallenges.size, quota: FREE_SOLVE_QUOTA, solvedCount: solvedChallenges.size, topic: null, wallCompany: quotaWallCompany() }, challenge));
         return;
       }
       setPreviewCatcher({ challengeId: challenge.id, at: Date.now() });
@@ -24070,7 +24076,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
         solvedInSet: setGate.solvedInSet,
       });
       if (openColdStartInstead(challenge.id)) return;
-      setProModalReason({
+      setProModalReason(withDebugLock({
         type: 'company_set',
         topic: companyFilter,
         freeCount: setGate.freeCount,
@@ -24078,7 +24084,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
         solvedInSet: setGate.solvedInSet,
         // M5: the wall names the company's mock when one exists.
         mockTitle: companyMockTitle(companyFilter),
-      });
+      }, challenge));
       setShowProModal(true);
       return;
     }
@@ -24104,7 +24110,9 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
         quotaWallArm: quotaWallArmNow,
       });
       if (openColdStartInstead(challenge.id)) return;
-      presentQuotaWall({ type: 'free_quota', used: quota.used, quota: quota.quota, solvedCount: solvedChallenges.size, topic: null, wallCompany: quotaWallCompany() }, quotaModal);
+      // A Debug item past the quota meets the same wall; only the label the
+      // events carry is `debug_lock` (withDebugLock, founder 2026-11-23).
+      presentQuotaWall(withDebugLock({ type: 'free_quota', used: quota.used, quota: quota.quota, solvedCount: solvedChallenges.size, topic: null, wallCompany: quotaWallCompany() }, challenge), quotaModal);
       return;
     }
     if (foundationPractice?.lessonId) {
@@ -24257,9 +24265,11 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
   };
 
   const openProFromPreviewCatcher = () => {
+    // The Hard the person clicked: a Debug item labels the ask `debug_lock`.
+    const lockedItem = previewCatcher ? challenges.find(c => c.id === previewCatcher.challengeId) : null;
     setPreviewCatcher(null);
     previewCatcherReturnFocusRef.current = null;
-    setProModalReason({ type: 'hard_challenge', topic: null, solvedCount: solvedChallenges.size });
+    setProModalReason(withDebugLock({ type: 'hard_challenge', topic: null, solvedCount: solvedChallenges.size }, lockedItem));
     setShowProModal(true);
   };
 
@@ -26684,7 +26694,7 @@ RULES:
                       'Build the 30-day habit — full streak path, no Pro paywall mid-week',
                       '200+ warm-up questions — micro-drills for daily fluency',
                       'Direct support — questions answered by the person who built it',
-                    ]).map(feat => (
+                    ]).concat(DEBUG_QUESTIONS_ON ? [i18n_t('pro', 'debugFeature')] : []).map(feat => (
                       <div key={feat} className="flex items-start gap-2">
                         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="flex-shrink-0 mt-0.5">
                           <path d="M13.5 4.5L6 12L2.5 8.5" stroke="#8A8E99" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
