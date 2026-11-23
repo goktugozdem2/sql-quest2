@@ -3689,6 +3689,36 @@ where query is not null and page = 'https://sqlquest.app/<slug>/'
 - Position is impression-weighted (the query above), never a plain average of
   daily positions.
 
+## `uiux_findings`
+
+Critical + major findings in one full run of the UI/UX audit (`npm run uiux`,
+`scripts/smoke/uiux-audit.mjs`; A4, `docs/agent/fleet/A4-uiux.md`).
+Registered 2026-11-22. Not a people-metric: it counts layout defects on the
+built site, so it needs no bot filter and no Supabase read.
+
+```
+npm run build && npx serve public -l 4321
+npm run uiux -- --base http://localhost:4321 --repo-report
+# findings.json → .totals.critical + .totals.major
+```
+
+- **One run** = every sitemap page (`/questions/` sampled to 5) + the 13 app
+  screens in `appScenarios()`, × 6 viewports × 2 themes (1,596 runs on
+  2026-11-22). A finding is deduplicated per page × viewport × theme ×
+  selector; selectors are signatures, so one CSS rule broken on 60 pages is
+  ~60–700 findings, not one. Read the trend and the critical count; never
+  compare a run whose surface list changed (a new page adds its own findings)
+  without saying so.
+- **Critical** = U1 U2 U7 U8 (sideways scroll, a control off screen or cut
+  off, a primary button covered, a modal's primary unreachable on 375×667).
+  The target for critical is 0, always.
+- Run it against a local build of the commit being read, never against a
+  preview with different flags. The quota-wall and first-screen arms are
+  pinned by the harness, so A/B tosses do not move it.
+- Baseline 2026-11-22 (main at 523aa1d): critical **56**, major **20,506**
+  → `uiux_findings` **20,562**. With the six fix PRs (#143–#147, #149) merged
+  on a scratch branch: critical 0, major 13,707.
+
 ## `bing_crawled_share` / `linked_page_impressions`
 
 Whether pages given internal links get crawled and shown (2026-11-22, C1).
