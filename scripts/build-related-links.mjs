@@ -105,6 +105,14 @@ export const RELATED = {
   'blog/sql-cte-nedir.html': { lead: 'Hangi platformda çalışmalı', links: [
     ['/datalemur-karsilastirma/', 'SQL Quest ve DataLemur karşılaştırması'],
   ] },
+  // /for-teams/ (published 2026-11-22, #188): the two pages written for
+  // bootcamp and course graduates are the ones their instructors read.
+  'after-bootcamp.html': { lead: 'Teaching a data cohort', links: [
+    ['/for-teams/', 'SQL interview practice for your whole cohort'],
+  ] },
+  'after-the-sql-course.html': { lead: 'Running a SQL course', links: [
+    ['/for-teams/', 'seats for your students'],
+  ] },
 };
 
 const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
