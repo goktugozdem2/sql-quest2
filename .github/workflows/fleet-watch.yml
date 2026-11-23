@@ -1,0 +1,39 @@
+# Fleet watch (scripts/fleet/watch.mjs): hourly tripwire for the agent fleet.
+# Opens or comments one issue labelled `fleet-alert` when PRs flood, the
+# Vercel deploy budget nears its cap, a main deploy is rate-limited, or smoke
+# fails three times in a row. It never pauses agents and changes nothing else.
+name: Fleet watch
+
+on:
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  actions: read
+  deployments: read
+  statuses: read
+  pull-requests: read
+
+concurrency:
+  group: fleet-watch
+  cancel-in-progress: true
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Count the signals and report
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: node scripts/fleet/watch.mjs
