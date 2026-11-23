@@ -42,7 +42,7 @@ of the verifier and must never be rounded to `FLAT`.
   skip-ahead box and body unchanged.
 - **Why this one:** Capital One is 2 of the first 3 payers; its door is this
   post (branch 3: 641 impressions, 39 clicks in 28 d), and B6's run 2
-  (`docs/reads/competitors-2026-11-23.md`, branch `docs/competitors-2026-11-23`)
+  (`docs/reads/competitors-2026-11-23.md`, PR #214, pending; no read on main carries it)
   found Interview Query's guide (updated 11-16, AI-mock button above the fold)
   twice on the same query. Menu item 1 beat item 2 (a new sourced guide)
   because this page already has the landings.
