@@ -131,6 +131,20 @@ describe('the prose claims that lean on the numbers', () => {
     expect(roll.cells[3][5]).toBe('1');
   });
 
+  it('banking: the JPMorgan reconciliation line is cited to the guide\'s summary, never under a report\'s stamp', () => {
+    // Q1 on #266 (2026-11-24): the line had been carried under the expanded
+    // "Interviewed Q2 2025" report, which says nothing about reconciliation.
+    // It comes from Interview Query's summary of 21 reports; the one
+    // accepted-offer card is stamped Q1 2025 (docs/reads/companies/jpmorgan.md).
+    const page = html('banking-sql-interview-questions');
+    const lines = page.split('\n').filter(l => /reconcil/i.test(l) && /Interview Query/.test(l));
+    expect(lines.length).toBeGreaterThanOrEqual(2); // the claim and its Sources entry
+    for (const l of lines) {
+      expect(l, l).not.toMatch(/Interviewed Q\d \d{4}/);
+      expect(l, l).toMatch(/21 candidate reports/);
+    }
+  });
+
   it('banking: text subtraction returns 0; the julianday version has a tie at 6.8', () => {
     const qs = shownQueries(html('banking-sql-interview-questions'));
     expect(qs[3].single).toBe('0');
