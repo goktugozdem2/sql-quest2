@@ -27,6 +27,37 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### UI/UX: no critical layout defect, a third fewer major (A4 first run)
+
+- **Claimed** 2026-11-22 · **Shipped** on merge of #143, #144, #145, #146,
+  #147, #149 (no flag) · **Read** 2026-12-20.
+- **Change**
+  - #143: the mock list and a timed mock fit a phone; Quit is reachable.
+  - #144: blog tables, Amazon and the SQL quiz no longer scroll sideways.
+  - #145: the footer passes AA, with 44 px links and 12 px text.
+  - #146: the nav button keeps its colour; nav targets are 44 px.
+  - #147: company card text is 12 px, and the format link is readable.
+  - #149: muted app text is DESIGN.md's `--text-muted`.
+
+  Each fix has a guard test proven by one deliberate break.
+- **Why** `docs/reads/uiux-audit-2026-11-22.md`. 7 pages scrolled sideways
+  or hid a control on a phone, among them the timed mock's only exit and
+  the Interview tab. Footer, nav and app grey text failed WCAG AA sitewide.
+- **Metric** `uiux_findings` (critical + major per full audit run;
+  metrics.md as of this claim).
+- **Baseline** critical **56**, major **20,506** → **20,562** (main at
+  523aa1d, 1,596 runs). Measured with all six merged on a scratch branch:
+  critical 0, major 13,707.
+- **Target** by 12-20, on main: critical **0**, and `uiux_findings` ≤
+  **14,000** on the same surface list (pages added since are reported
+  separately).
+- **Falsification, stated in advance:** (a) a person reports a layout bug
+  (sideways scroll, a control they cannot reach or read, text cut off) on
+  a covered surface within 28 days of the last merge → **MISS** for the
+  audit's coverage, whatever the count says. Add the case to the harness
+  before fixing it. (b) critical > 0 on main at the read → **MISS**. (c) a
+  run without the six PRs merged → **UNREADABLE**.
+
 ### the Revolut guide: a sourced blog door for the best fintech page (C5)
 
 - **Claimed** 2026-11-22 · **Shipped** on merge · **Read** 2026-12-20 (28 d) and 2027-01-17 (56 d).
