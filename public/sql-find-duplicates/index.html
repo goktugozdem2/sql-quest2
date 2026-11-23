@@ -69,7 +69,7 @@
       {
         "@type": "Question",
         "name": "Should I use GROUP BY or ROW_NUMBER to handle duplicates?",
-        "acceptedAnswer": { "@type": "Answer", "text": "Use GROUP BY with HAVING when you want to know which values are duplicated and how many copies exist — it answers 'do I have a problem?'. Use ROW_NUMBER() OVER (PARTITION BY key ORDER BY tiebreak) when you need the rows themselves, because GROUP BY collapses them and cannot tell you which copy to keep. Deduplication needs ROW_NUMBER; detection only needs GROUP BY." }
+        "acceptedAnswer": { "@type": "Answer", "text": "Use GROUP BY with HAVING when you want to know which values are duplicated and how many copies exist — it answers \"do I have a problem?\". Use ROW_NUMBER() OVER (PARTITION BY key ORDER BY tiebreak) when you need the rows themselves, because GROUP BY collapses them and cannot tell you which copy to keep. Deduplication needs ROW_NUMBER; detection only needs GROUP BY." }
       },
       {
         "@type": "Question",
@@ -85,6 +85,11 @@
         "@type": "Question",
         "name": "Does DISTINCT remove duplicate rows?",
         "acceptedAnswer": { "@type": "Answer", "text": "DISTINCT de-duplicates the result set of your query; it does not touch the table. It also applies to the whole select list, not one column — SELECT DISTINCT email, name still returns two rows if the same email has two different names, which is precisely the case that trips people up. To change the stored data you need DELETE, and to pick a surviving row you need ROW_NUMBER." }
+      },
+      {
+        "@type": "Question",
+        "name": "What if the table has no id column to keep?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Use the row's hidden position instead. In SQLite every ordinary table has a rowid, so DELETE FROM customers WHERE rowid NOT IN (SELECT MIN(rowid) FROM customers GROUP BY email) keeps the first copy of each email; on the sample table it removes 3 rows and leaves 13. Use MAX(rowid) to keep the last copy instead. PostgreSQL has ctid for the same job; SQL Server has neither, so number the copies with ROW_NUMBER() OVER (PARTITION BY email ORDER BY ...) in a CTE and delete the rows numbered above 1. Run the SELECT version first, exactly as with the id-based DELETE." }
       }
     ]
   }
@@ -419,7 +424,8 @@ const FAQS=[
   ['Should I use GROUP BY or ROW_NUMBER to handle duplicates?','Use GROUP BY with HAVING when you want to know which values are duplicated and how many copies exist — it answers "do I have a problem?". Use ROW_NUMBER() OVER (PARTITION BY key ORDER BY tiebreak) when you need the rows themselves, because GROUP BY collapses them and cannot tell you which copy to keep. Deduplication needs ROW_NUMBER; detection only needs GROUP BY.'],
   ['How do I delete duplicate rows but keep one?','Keep the row with the smallest id per group: DELETE FROM customers WHERE customer_id NOT IN (SELECT MIN(customer_id) FROM customers GROUP BY email). Run it as a SELECT first and check the row count, because a DELETE with a wrong subquery empties the table. On a real system, take a backup or run inside a transaction you can roll back.'],
   ['Why does COUNT(*) not equal COUNT(DISTINCT column)?','The difference is exactly the number of extra copies. On the sample customers table, COUNT(*) is 16 and COUNT(DISTINCT email) is 13, so there are 3 surplus rows. Subtracting the two is the quickest one-line duplicate check there is — and COUNT(DISTINCT ...) also ignores NULLs, which is the usual reason two counts disagree when you were not expecting it.'],
-  ['Does DISTINCT remove duplicate rows?','DISTINCT de-duplicates the result set of your query; it does not touch the table. It also applies to the whole select list, not one column — SELECT DISTINCT email, name still returns two rows if the same email has two different names, which is precisely the case that trips people up. To change the stored data you need DELETE, and to pick a surviving row you need ROW_NUMBER.']
+  ['Does DISTINCT remove duplicate rows?','DISTINCT de-duplicates the result set of your query; it does not touch the table. It also applies to the whole select list, not one column — SELECT DISTINCT email, name still returns two rows if the same email has two different names, which is precisely the case that trips people up. To change the stored data you need DELETE, and to pick a surviving row you need ROW_NUMBER.'],
+  ['What if the table has no id column to keep?','Use the row\'s hidden position instead. In SQLite every ordinary table has a rowid, so DELETE FROM customers WHERE rowid NOT IN (SELECT MIN(rowid) FROM customers GROUP BY email) keeps the first copy of each email; on the sample table it removes 3 rows and leaves 13. Use MAX(rowid) to keep the last copy instead. PostgreSQL has ctid for the same job; SQL Server has neither, so number the copies with ROW_NUMBER() OVER (PARTITION BY email ORDER BY ...) in a CTE and delete the rows numbered above 1. Run the SELECT version first, exactly as with the id-based DELETE.']
 ];
 const faqc=document.getElementById('faqc');
 FAQS.forEach(f=>{const d=document.createElement('div');d.className='fi';d.innerHTML=`<div class="fh"><p style="font-size:16px;font-weight:700;color:#e2e8f0;padding-right:16px">${f[0]}</p><span class="ftg">+</span></div><div class="fa"><p style="font-size:14px;line-height:1.85;color:#94a3b8;padding-top:12px">${f[1]}</p></div>`;d.addEventListener('click',()=>d.classList.toggle('o'));faqc.appendChild(d);});

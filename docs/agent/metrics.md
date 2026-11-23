@@ -1865,6 +1865,13 @@ Two traps, stated before the first read:
   construction. Read the families apart; a headline share is the panel's
   mix, and a claim built on it must say which family it expects to move.
 
+**G1's panel (2026-11-22).** G1 (`docs/agent/fleet/G1-geo.md`) runs a fixed 15-prompt panel by hand each week:
+- Perplexity is read in a browser, not signed in. The other engines are read by the founder once a month.
+- The result is a table in `docs/reads/geo-<date>.md`. There is no JSON sidecar.
+- Same definition as above: named in the answer text, or our host among the answer's sources. Inline citation chips alone do not count as named.
+- Share = mentioned ÷ answered. A prompt behind a sign-in wall is unread, never a miss.
+- It is a different panel from `ai-visibility.json`. Never compare the two, and never pool them.
+
 ## `landing_src_split`
 
 Of the people who arrived through the `home` door, what share came from an
@@ -3667,6 +3674,36 @@ where query is not null and page = 'https://sqlquest.app/<slug>/'
   still grow. Read with a window ending at least three days before the read.
 - Position is impression-weighted (the query above), never a plain average of
   daily positions.
+
+## `uiux_findings`
+
+Critical + major findings in one full run of the UI/UX audit (`npm run uiux`,
+`scripts/smoke/uiux-audit.mjs`; A4, `docs/agent/fleet/A4-uiux.md`).
+Registered 2026-11-22. Not a people-metric: it counts layout defects on the
+built site, so it needs no bot filter and no Supabase read.
+
+```
+npm run build && npx serve public -l 4321
+npm run uiux -- --base http://localhost:4321 --repo-report
+# findings.json → .totals.critical + .totals.major
+```
+
+- **One run** = every sitemap page (`/questions/` sampled to 5) + the 13 app
+  screens in `appScenarios()`, × 6 viewports × 2 themes (1,596 runs on
+  2026-11-22). A finding is deduplicated per page × viewport × theme ×
+  selector; selectors are signatures, so one CSS rule broken on 60 pages is
+  ~60–700 findings, not one. Read the trend and the critical count; never
+  compare a run whose surface list changed (a new page adds its own findings)
+  without saying so.
+- **Critical** = U1 U2 U7 U8 (sideways scroll, a control off screen or cut
+  off, a primary button covered, a modal's primary unreachable on 375×667).
+  The target for critical is 0, always.
+- Run it against a local build of the commit being read, never against a
+  preview with different flags. The quota-wall and first-screen arms are
+  pinned by the harness, so A/B tosses do not move it.
+- Baseline 2026-11-22 (main at 523aa1d): critical **56**, major **20,506**
+  → `uiux_findings` **20,562**. With the six fix PRs (#143–#147, #149) merged
+  on a scratch branch: critical 0, major 13,707.
 
 ## `bing_crawled_share` / `linked_page_impressions`
 
