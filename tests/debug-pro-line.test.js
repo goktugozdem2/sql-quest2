@@ -134,6 +134,20 @@ describe('debug_lock: the app wiring', () => {
     expect(banner).not.toContain('withDebugLock');
   });
 
+  it("the cold-start gate's Pro path labels the item it was opened for (a 0-solve guest on a Hard Debug item)", () => {
+    // QA 2026-11-23: a guest with no solves who taps 340 meets the cold-start
+    // gate; "Unlock Pro anyway" showed the modal as cold_start_anyway with no
+    // debug_lock and no lockedAs.
+    const cold = bodyOf('openProFromColdStart');
+    expect(cold).toContain('challenges.find(c => c.id === previewCatcher.challengeId)');
+    expect(cold).toContain("setProModalReason(withDebugLock({ type: 'cold_start_anyway', topic: null, solvedCount: solvedChallenges.size }, lockedItem));");
+    expect(cold.indexOf('lockedItem =')).toBeLessThan(cold.indexOf('setPreviewCatcher(null)'));
+    const r = { type: 'cold_start_anyway', topic: null, solvedCount: 0 };
+    expect(proModalReasonLabel(withDebugLock(r, debugHard))).toBe('debug_lock');
+    expect(debugLockedAs(withDebugLock(r, debugHard))).toBe('cold_start_anyway');
+    expect(proModalReasonLabel(withDebugLock(r, null))).toBe('cold_start_anyway');
+  });
+
   it('the modal copy still keys on the wall type, never on the label', () => {
     expect(app).not.toMatch(/proModalReason\??\.type === 'debug_lock'/);
     expect(app).not.toMatch(/proModalReason\??\.debugLock/);

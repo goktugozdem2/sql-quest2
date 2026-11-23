@@ -24260,10 +24260,13 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
   // 09-29 cold-start read can tell an insisting buyer from a sold-to one:
   // this modal was asked for, never offered.
   const openProFromColdStart = () => {
+    // A guest with 0 solves who taps a Hard Debug item meets this gate, not
+    // the catcher: its Pro path labels the ask `debug_lock` too (QA 2026-11-23).
+    const lockedItem = previewCatcher ? challenges.find(c => c.id === previewCatcher.challengeId) : null;
     setPreviewCatcher(null);
     previewCatcherReturnFocusRef.current = null;
     trackActivationEvent('cold_start_pro_anyway', { solvedCount: solvedChallenges.size });
-    setProModalReason({ type: 'cold_start_anyway', topic: null, solvedCount: solvedChallenges.size });
+    setProModalReason(withDebugLock({ type: 'cold_start_anyway', topic: null, solvedCount: solvedChallenges.size }, lockedItem));
     setShowProModal(true);
   };
 
