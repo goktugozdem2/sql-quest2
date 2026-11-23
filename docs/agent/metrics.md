@@ -4147,6 +4147,86 @@ from feedback where created_at >= :from and created_at < :to group by 1, 2;
   is the one the daily read assigns.
 - Rows written while the 20260907 quote-consent migration is unapplied still
   land (PostgREST drops unknown keys); `context` is jsonb and was always there.
+- **Kind `purchase_reason`** (registered 2026-11-24, before flag
+  `purchaseReasonAsk` ships in #241; rule 6b). Shown → answered is the same
+  per-person count as the other kinds, `kind = 'purchase_reason'`; the
+  window starts at the deploy of #241, never earlier (the kind did not
+  exist). Two extra rules:
+  - **Denominator check, the arm is broken:** every person in
+    `feedback_prompt_shown {kind: 'purchase_reason'}` must have a
+    `pro_purchase_completed` or `pro_trial_started` row (client or
+    `stripe_webhook`) on the same UTC day or the day before. One person
+    without one is a bug, not a data point — report it by name and read
+    nothing else.
+  - **Answers** are the one-tap ids (`interview_soon`, `company_sets`, `tutor`,
+    `mock_interviews`, `other`) in `feedback.context->>'answer'` plus the optional
+    line. With a handful of buyers a month, list them per person; never a
+    share on fewer than 5 shown.
+
+```sql
+-- purchase_reason: people shown with no purchase or trial start that day
+-- or the day before (expected: zero rows)
+with shown as (
+  select distinct coalesce(aid, username) who, username, created_at::date d
+  from pro_events
+  where event = 'feedback_prompt_shown'
+    and (metadata #>> '{}')::jsonb ->> 'kind' = 'purchase_reason'
+    and created_at >= :from and created_at < :to
+)
+select s.* from shown s
+where not exists (
+  select 1 from pro_events p
+  where p.event in ('pro_purchase_completed', 'pro_trial_started')
+    and (coalesce(p.aid, p.username) = s.who or p.username = s.username)
+    and p.created_at::date between s.d - 1 and s.d
+);
+```
+
+## `feedback_reply_hint`
+
+Whether the 💬 widget's reply line gets question-askers to leave an email
+(registered 2026-11-24, before the reply expectation ships in #241; rule
+6b). The widget then shows "Want a reply? Add your email above." under a
+question-like message with no email, and, after a send with an email,
+"Thanks — we read every message. Any reply goes to the email you left."
+
+- **Question-like** = `looksLikeQuestion` in `src/utils/feedback-reply.js`
+  (a "?", or a message opening with how / why / what / nasıl / nasil /
+  neden). From the deploy of #241, `feedback.context->>'questionLike'` and
+  `feedback_submitted.questionLike` carry it; for rows before, apply the
+  same rule to `feedback.message` by hand (the baseline did).
+- **with_email** = question-like widget rows (`context->>'kind'` = `open`,
+  or null before 2026-11-22) whose `contact` holds an email
+  (`hasReplyEmail`: `^[^\s@]+@[^\s@]+\.[^\s@]+$`). Read from
+  `public.feedback`, not from `gaveContact` on the event, which is true for
+  any contact text.
+- **Rate** = with_email ÷ question-like rows, per person (one row per
+  sender per day). `replyHintShown` splits it: of the senders who saw the
+  hint while typing, how many then added an email before Send — a row with
+  `questionLike = true`, `replyHintShown = false` and an email is one who
+  added it (the hint is computed at Send).
+- **Baseline** (2026-11-23, internal accounts excluded, since 2026-07-01):
+  8 widget rows, 1 question-like, 0 of them with an email.
+
+```sql
+select date_trunc('week', created_at) wk,
+       count(*) filter (where (context->>'questionLike')::boolean)       question_like,
+       count(*) filter (where (context->>'questionLike')::boolean
+                         and contact ~ '^[^\s@]+@[^\s@]+\.[^\s@]+$')    with_email,
+       count(*) filter (where (context->>'replyHintShown')::boolean)     hint_at_send
+from feedback
+where coalesce(context->>'kind', 'open') = 'open'
+  and created_at >= :from and created_at < :to
+group by 1 order by 1;
+```
+
+- Apply the fleet's bot and internal-account filters (fleet README, Data).
+- n is tiny (1 question-like row in five months): report counts and read
+  the verbatims; never a rate on fewer than 5 question-like rows.
+- The reply line itself promises nothing (A1 REVISE on #241): what it
+  is judged by is whether an email arrives with the question, not whether
+  a reply went out — that is `feedback_loop.reply_sent`.
+
 ## `feedback_loop`
 
 What happens to a message after it arrives (registered 2026-11-23,
