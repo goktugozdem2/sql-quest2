@@ -1216,6 +1216,48 @@ existed, 30 days to 09-23: of opens that never became a solve, 92.3% had no
 submit at all (no `challenge_error_pattern`, no `challenge_errored`). Read
 split by `via` and by first-contact vs later opens. Scorecard §1.
 
+## `open_to_run_exit`
+
+Registered 2026-11-24, in the PR that adds its event (rule 6b: the
+definition ships with the event, before any experiment reads it). From
+B1's read `docs/reads/funnel-2026-11-24.md` §4: in the 28 days to 11-24,
+225 of 631 new app openers opened a challenge and never ran it, and 73–80%
+of them left no event after the open. This metric says how those opens
+ended.
+
+- **Event:** `challenge_left {challengeId, ms_on_page, typed, scrolled,
+  hint_opened, device_class, how}` (`src/utils/challenge-left.js`). At most
+  one per challenge open, only for an open with **no run and no submit**
+  (`challenge_first_run` never precedes it in the same open). `how`:
+  `navigate` (the challenge page left the screen inside the app), `hidden`
+  (the browser tab hidden or the page unloaded; sent with a keepalive
+  fetch), `switch` (another challenge opened over it). `typed` counts
+  characters the person inserted in the editor (deletions not subtracted);
+  `scrolled` is the person's own wheel / touch / page-key scroll, never the
+  app's scroll to the editor; `hint_opened` is the hint toggle or the
+  inline Help. No query text, nothing personal. Guests and accounts alike.
+- **Denominator:** person-challenge opens (`challenge_opened`, by
+  `coalesce(aid, username)` and `challengeId`) with no
+  `challenge_first_run` for that challenge in the same session (30-minute
+  gap rule). Rows less than an hour old are left out.
+- **Numerator and splits:** the share of the denominator with a
+  `challenge_left`, then the split of those by `how`, by `typed = 0` vs
+  `> 0`, by `scrolled`, by `hint_opened`, by `device_class`, and the median
+  `ms_on_page`. A **bounce** is `typed = 0`, not scrolled, under 15 s; a
+  **give-up** is `typed > 0` or over 60 s. The remainder of the denominator
+  (no `challenge_left`) is the still-unmeasured share: browsers that never
+  fire `visibilitychange`/`pagehide` before dying, and the bot rows.
+- **Start date:** the deploy of `measure/challenge-left` (the first
+  `challenge_left` row). Never read across it; there is no before.
+- **Traps:** `how = 'hidden'` includes a tab switch the person came back
+  from. A `challenge_first_run` for the same challenge after a
+  `challenge_left` in the same session means they returned and ran: count
+  that open as a return, not an exit. An open never seen on screen (opened
+  from a card while another tab is up) sends nothing. Apply the fleet's bot
+  and internal-account filters (fleet README, Data).
+- No target yet: this is a measurement, read first by B1 two weeks after
+  the start date.
+
 ## `hint_opened_rate`
 
 Of `challenge_solved` rows (by `aid` and `challengeId`), the share with a
