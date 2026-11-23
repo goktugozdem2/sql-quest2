@@ -18,7 +18,13 @@
 --   internal usernames (shared filters in metrics.md + fleet README), bot
 --   stamps (`metadata.bot`), the known crawler viewports, `ref:aocr.org`,
 --   `verify-test`, and the founder's 2026-11-20 checkout tests (guest,
---   modal reason `email_link`, 0 solves).
+--   modal reason `email_link`, 0 solves). From 2026-11-23 also the landing
+--   crawlers of public.crawler_people (docs/agent/metrics.md, "Trap: three
+--   crawlers stamped at the source"): the 1600x1200 window, a stale or
+--   phone-on-desktop user agent, and two landers who never open the app — no
+--   source in Asia/Shanghai (it passes the landing_engaged rule: it scrolls
+--   one page), and UTC from 2026-11-22. Inlined, not joined, so the view
+--   does not depend on another view's deploy order.
 --
 -- Money: `pro_trial_started` / `pro_purchase_completed` with reason
 -- 'stripe_webhook' only. Those rows carry a username and no aid, so they are
@@ -28,7 +34,7 @@
 -- Output is aggregates only: no aid, username, email or referrer leaves this
 -- query (tests/content-funnel.test.js parses the final SELECT and fails on
 -- one). The view public.content_funnel is this exact body
--- (supabase/migrations/20261122160000_content_funnel_view.sql, pinned by the
+-- (supabase/migrations/20261123180100_content_funnel_crawlers.sql, pinned by the
 -- same test); scripts/content-funnel-report.mjs reads the view.
 --
 -- Run by hand (laptop, read-only): supabase db query --linked -f scripts/content-funnel.sql
@@ -48,6 +54,9 @@ evp AS (
   SELECT ev.*, COALESCE(m->>'aid', username) AS pid
   FROM ev
 ),
+app_openers AS (
+  SELECT DISTINCT pid FROM evp WHERE event = 'app_opened' AND pid IS NOT NULL
+),
 excluded AS (
   SELECT DISTINCT pid
   FROM evp
@@ -56,8 +65,20 @@ excluded AS (
          OR username ~* '^(demo|admin|qa)[0-9]*$'
          OR username ILIKE '%fabletest%'
          OR COALESCE(m->>'bot', '') NOT IN ('', 'false')
-         OR m->>'viewport' IN ('tablet:800x600', 'desktop:1280x1200', 'desktop:1919x992')
+         OR m->>'viewport' IN ('tablet:800x600', 'desktop:1280x1200', 'desktop:1919x992', 'desktop:1600x1200')
          OR m->>'landingSrc' = 'ref:aocr.org'
+         OR (    reason = 'landing'
+             AND (   COALESCE(substring(m->>'ua' from 'Chrome/(\d+)')::int, 999) < 126
+                  OR COALESCE(substring(m->>'ua' from 'Firefox/(\d+)')::int, 999) < 110
+                  OR COALESCE(substring(m->>'ua' from 'iPhone OS (\d+)_')::int, 999) < 13
+                  OR COALESCE(substring(m->>'ua' from 'Android (\d+)')::int, 999) < 7
+                  OR (    m->>'viewport' LIKE 'desktop:%'
+                      AND COALESCE(m->>'ua', '') !~ 'iPad'
+                      AND (m->>'ua' ~ 'iPhone|iPod' OR (m->>'ua' ~ 'Android' AND m->>'ua' ~ 'Mobile')))))
+         OR (    reason = 'landing'
+             AND pid NOT IN (SELECT pid FROM app_openers)
+             AND (   (m->>'tz' = 'Asia/Shanghai' AND COALESCE(m->>'landingSrc', '') = '')
+                  OR (m->>'tz' = 'UTC' AND created_at >= '2026-11-22')))
          OR m->>'arrivalSrc' IN ('ref:aocr.org', 'verify-test')
          OR (    event = 'pro_modal_shown'
              AND m->>'reason' = 'email_link'

@@ -1153,6 +1153,93 @@ by hand (the 10-04 → 10-07 waves: docs/reads/p1-guardrail-bing-2026-10-07.md).
   `app_opened`. The durable fingerprint is the agent/window mismatch, not
   the time zone (see the next trap).
 
+**Trap: three crawlers stamped at the source (2026-11-23, B2).** The
+langs = 2 cluster, the UTC landing wave and the Asia/Shanghai one-page
+scroller. Measured read-only on `pro_events` that day. "Acted" means ran a
+query, solved, signed up or clicked checkout; a Pro modal opened by a mock
+link (reason `pattern_mock`) does not count. New stamps in
+src/utils/bot-signals.js (`CRAWLER_SIGNATURES`) and src/track.js, written
+and never dropped, live once the build deploys:
+- **`langs2nolv`** (app only). A first visit to `/app/?src=<page>`: no aid
+  in the browser before the app loaded, so it never loaded the page it
+  names. Also: no `landingSrc`, `langs = 2`, and a time zone in
+  Asia/Hong_Kong, Asia/Shanghai, Asia/Singapore, America/Los_Angeles,
+  America/Mexico_City or Etc/Unknown.
+  - Caught: 206 people in 28 days (32 mobile, 167 desktop, 7 tablet), 537
+    over all time (first seen 10-08), on top of the window-size rules.
+  - False positives: 0 acted.
+  - Trade-off: without the zone clause the rule also takes 2 real solvers
+    in 28 days (America/Chicago, Asia/Calcutta).
+- **`staleua`** (both trackers). A user agent of Chrome < 126, Firefox < 110
+  (a real solver used 112), iOS < 13 or Android < 7. The Nexus 5 / MRA58N
+  emulation string is Chrome 143 on Android 6.
+  - Caught: 1,337 landing people in the 120 days of `ua` (from 09-15). This
+    includes 446 of the ~900 Shanghai landers with no source and most of
+    the UTC wave.
+  - False positives: 1 opened the app; 0 acted (of 9,393 people with a
+    `ua`, 980 acted).
+- **`uamismatch`** (both trackers). A phone's agent (iPhone, or Android
+  with Mobile) in a `desktop:` window. Caught: 19 people from 11-22, 0
+  acted.
+- **`vp1600x1200`** (both trackers). The window alone: never seen in the
+  app, ever. Caught: 30 landing people from 11-22, 0 acted.
+- **UTC wave coverage.** Of the 110 UTC landers from 11-22, the stamps
+  take 84, and none has opened the app. The other 26 have current agents
+  at ordinary sizes.
+- **Shanghai coverage.** No client rule separates the rest of the Shanghai
+  scroller at landing time. 347 of its people use Chrome 126–150 with no
+  source, and so did a real app opener (Chrome 141).
+
+**The read side: `public.crawler_people`** (migration
+`20261123180000_crawler_people_view.sql`; the founder applies it). It
+returns one row per aid: `aid`, `first_seen`, `rules`. Exclude with
+`NOT EXISTS (SELECT 1 FROM public.crawler_people c WHERE c.aid = m->>'aid')`.
+- It holds every stamp, the window sizes, refspam, `staleua` and
+  `uamismatch` on landing rows, `topic1lang` (#246) and `langs2nolv` (by
+  hand), and two behavioural rules. Both behavioural rules take only a
+  person who never opens the app:
+  - `cn_nosrc_lander`: Asia/Shanghai, no source. 905 in 28 days.
+  - `utc_lander`: a UTC lander from 11-22. 110 so far.
+- Over all time it holds 7,142 aids, and 0 acted. 24 saw the Pro modal:
+  either a mock link opened it, or they are already-stamped window sizes.
+- Keyed on aid only: an aid-less row is `'guest'` or a real username.
+- `content_funnel` inlines the same landing rules (migration
+  `20261123180100_content_funnel_crawlers.sql`). In 28 days,
+  /best-sql-practice-sites/ reads 69 landers, not 92, and
+  /sql-practice-comparison/ reads 13, not 32. Its app openers are kept.
+
+**Before the stamp deploys** (and for any read that cannot use the view),
+apply these by hand on `m = (metadata #>> '{}')::jsonb`:
+```sql
+-- staleua / uamismatch / vp1600x1200 — any landing row of the person
+   reason = 'landing' AND (
+        COALESCE(substring(m->>'ua' from 'Chrome/(\d+)')::int, 999) < 126
+     OR COALESCE(substring(m->>'ua' from 'Firefox/(\d+)')::int, 999) < 110
+     OR COALESCE(substring(m->>'ua' from 'iPhone OS (\d+)_')::int, 999) < 13
+     OR COALESCE(substring(m->>'ua' from 'Android (\d+)')::int, 999) < 7
+     OR (m->>'viewport' LIKE 'desktop:%' AND COALESCE(m->>'ua','') !~ 'iPad'
+         AND (m->>'ua' ~ 'iPhone|iPod' OR (m->>'ua' ~ 'Android' AND m->>'ua' ~ 'Mobile'))))
+OR m->>'viewport' = 'desktop:1600x1200'
+-- langs2nolv — the person's FIRST app_opened, and no landing row ever
+OR (m->>'langs' = '2' AND COALESCE(m->>'landingSrc','') = ''
+    AND COALESCE(m->>'arrivalSrc','') NOT IN ('', 'home')
+    AND m->>'tz' IN ('Asia/Hong_Kong','Asia/Shanghai','Asia/Singapore',
+                     'America/Los_Angeles','America/Mexico_City','Etc/Unknown'))
+-- behavioural — a landing row, and the aid never has an app_opened
+OR (reason = 'landing' AND aid NOT IN (<app_opened aids>)
+    AND ((m->>'tz' = 'Asia/Shanghai' AND COALESCE(m->>'landingSrc','') = '')
+      OR (m->>'tz' = 'UTC' AND created_at >= '2026-11-22')))
+```
+- A series that spans the deploy mixes a hand filter with a stamp.
+- `langs2nolv` stamps only the first session of a browser. The read rule
+  above looks at the first `app_opened` too, so the two agree.
+- The two behavioural rules drop a real no-source reader in Shanghai or UTC
+  who never opens the app. Landing-only counts for those zones are
+  therefore a floor; never read them as a trend.
+- A wave that moves zone walks around `langs2nolv` and the behavioural
+  rules. Count new people who ran (`challenge_first_run`): no crawler has
+  moved that yet.
+
 **Trap: the crawlers change time zone and borrow a landing source
 (2026-10-18, widened 2026-11-12).** Three window sizes have never, over all
 time, produced a query, a solve or a signup:

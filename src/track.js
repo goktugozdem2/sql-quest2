@@ -302,6 +302,28 @@
     return isSpamReferrer(src) ? 'refspam' : null;
   }
 
+  // Crawler signatures (2026-11-23): the landing rows of CRAWLER_SIGNATURES
+  // in src/utils/bot-signals.js, in ES5 — the 1600x1200 window, a user agent
+  // older than any person who has ever acted (Chrome < 126, Firefox < 110,
+  // iOS < 13, Android < 7), and a phone's agent in a desktop-band window.
+  // The UTC landing wave of 2026-11-22 (spoofed bing.com / google.com
+  // referrers) is mostly these. Stamped, never dropped; tests/bot-signals.
+  // test.js runs this and crawlerSignature() over the same inputs.
+  // CRAWLER_SIGNATURES:begin
+  var STALE_UA_FLOORS = [[/Chrome\/(\d+)/, 126], [/Firefox\/(\d+)/, 110], [/iPhone OS (\d+)_/, 13], [/Android (\d+)/, 7]];
+  function crawlerSignature(ua, viewport) {
+    ua = String(ua || '');
+    if (viewport === 'desktop:1600x1200') return 'vp1600x1200';
+    for (var i = 0; ua && i < STALE_UA_FLOORS.length; i++) {
+      var m = STALE_UA_FLOORS[i][0].exec(ua);
+      if (m && parseInt(m[1], 10) < STALE_UA_FLOORS[i][1]) return 'staleua';
+    }
+    if (/^desktop:/.test(String(viewport || '')) && !/iPad/.test(ua)
+        && (/iPhone|iPod/.test(ua) || (/Android/.test(ua) && /Mobile/.test(ua)))) return 'uamismatch';
+    return null;
+  }
+  // CRAWLER_SIGNATURES:end
+
   // First touch wins — the same rule arrivalSrc uses in app.jsx. Explicit
   // param beats referrer: utm_source, else ref, else src (an assistant or a
   // share link can carry any of the three onto a landing page). Runs before
@@ -395,6 +417,7 @@
       try { meta.tz = Intl.DateTimeFormat().resolvedOptions().timeZone || null; } catch (_) {}
       meta.viewport = viewportLabel();
       var fp = softFingerprint(meta.viewport, meta.tz, meta.landingSrc);
+      if (!fp) { try { fp = crawlerSignature(navigator.userAgent, meta.viewport); } catch (_) {} }
       if (fp) meta.bot = fp;
 
       var user = null;
