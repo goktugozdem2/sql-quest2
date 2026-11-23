@@ -3845,6 +3845,38 @@ npm run uiux -- --base http://localhost:4321 --repo-report
   → `uiux_findings` **20,562**. With the six fix PRs (#143–#147, #149) merged
   on a scratch branch: critical 0, major 13,707.
 
+### Per-engine split (`uiux_findings` by engine, registered 2026-11-22)
+
+The daily run (`.github/workflows/uiux-daily.yml`) audits the browser ×
+device matrix (`--matrix devices`, eight rows, `DEVICE_MATRIX`), and
+`findings.json` carries `.engines` = critical / major / minor per engine.
+
+```
+npm run uiux -- --base http://localhost:4321 --matrix devices --repo-report
+# findings.json → .engines.chromium and .engines.webkit, each critical + major
+```
+
+- `uiux_findings[chromium]` = critical + major on the four Chromium rows
+  (Chrome 1366, Chrome 1920, Pixel 7, Galaxy S9+); `uiux_findings[webkit]` =
+  the same on the four WebKit rows (Safari 1440, iPhone SE, iPhone 15 Pro,
+  iPad Mini). Read the two as separate series: the rows differ (sizes,
+  checks U15–U17 run on WebKit only), so the totals are not comparable to
+  each other, only each to itself.
+- **Never compare a device-matrix count with the viewport-matrix baseline
+  above.** Different rows, different checks (U13–U18 exist only from this
+  date). The 20,562 baseline stays the viewport series.
+- A row that did not run (`.skipped`, e.g. WebKit not installed) makes that
+  engine's number **UNREADABLE** for the run, never zero.
+- These are engine emulations, not devices (A4-uiux.md, "The honest limit").
+- Baseline 2026-11-22, Chromium rows only (WebKit not installable in the
+  cloud session; its first number is the first daily Actions run), source at
+  main 9b46fd7 without #143–#147/#149, 134 surfaces, 1,072 runs:
+  **critical 228, major 13,654** → `uiux_findings[chromium]` **13,882**
+  (minor 310). Critical: 222 on Galaxy S9+ (320 px), 6 on Pixel 7, 0 on the
+  desktop rows. U13–U18: 0. Two false positives were corrected in the
+  harness before this count, each with a fixture: U14 had flagged a
+  bounded auto scroller, and U13 a `min-h-screen` shell stretched by its
+  content (32 hits).
 ## `bing_crawled_share` / `linked_page_impressions`
 
 Whether pages given internal links get crawled and shown (2026-11-22, C1).
