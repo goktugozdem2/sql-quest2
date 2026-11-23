@@ -27,6 +27,98 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### one SQL Quest entity in the structured data, and the 15 buyer questions in llms.txt (G1)
+
+- **Claimed** 2026-11-22 · **Shipped** on merge (static pages + llms.txt, no flag) · **Read** 2026-12-23.
+- **Change**
+  1. **JSON-LD on `/`, `/sql-practice-comparison/`, `/best-sql-practice-sites/` and `/sql-exercises/`.**
+     - Every SQL Quest author, publisher and provider now carries the Organization's `@id` and `url`. Before, they were bare name-only nodes.
+     - The SoftwareApplication sits at `https://sqlquest.app/` and is published by the Organization.
+     - The Course and the WebSite no longer point at `/app.html`, which is a 308.
+     - The SearchAction for a `?q=` search the app does not have is removed.
+  2. **`/llms.txt` gets "Questions people ask, and the page that answers".** It covers the 15 prompts of G1's panel in the person's words, each linked to sitemap pages.
+  3. **Guards:** `tests/entity-schema.test.js` and the "buyer questions" block in `tests/llms-txt.test.js`.
+- **Why:** `docs/reads/geo-2026-11-22.md`.
+  - Perplexity named us in the prose of 1 of 5 answered prompts and cited a URL in 3.
+  - It cited our `/stratascratch-alternatives/` for a general "best website" question, which is a page that does not answer it.
+  - llms.txt had no line for any of the 15 buyer questions.
+- **Metric**
+  - **Primary:** `ai_mention_share`, Perplexity lane, on G1's panel: named-or-cited ÷ answered, from the table in `docs/reads/geo-<date>.md` (metrics.md, G1 note).
+  - **Guard:** `ai_landings_month`.
+- **Baseline (2026-11-22)**
+  - Perplexity: named or cited 3/5 answered, named in prose 1/5. 10 of 15 were unread behind a sign-in wall.
+  - `ai_landings_month`: 99 people in the 30 days to 11-22 (ChatGPT 81, Gemini 16, Claude 1, Perplexity 1).
+- **Target (read 2026-12-23, the last two weekly reads pooled)**
+  - Named or cited in at least 60% of the prompts Perplexity answered.
+  - Named in prose on at least 2 prompts.
+  - At least one panel prompt outside #1–#5 cites a page listed for it in the new block.
+  - `ai_landings_month` for the 30 days to 12-23 at least 99.
+- **Falsification (written before the data)**
+  - **No effect:** named in prose stays at 1 or fewer, and no prompt cites the page llms.txt lists for it. Then the plumbing changed nothing an assistant shows. Keep it, because it is correctness (a 308 and a false SearchAction), but move G1's next fix effort to the C3 off-site lists, the only lever the baseline points at.
+  - **Wrong direction:** `ai_landings_month` falls below 79 (−20%). Look at Bing first (C1): ChatGPT and Copilot ground on it.
+- **Confounds**
+  - C2's AI-visibility pass shipped the same day, on the same metric and similar pages. These two cannot be told apart; read them together.
+  - Perplexity reads only about 5 prompts a week before its wall, so one answer is 20 points. A single-week move is `UNREADABLE`.
+  - Gemini is invisible to `ai_landings_month`.
+### C7 run 1: five mined question shapes answered on three existing pages
+
+- **Claimed** 2026-11-22 · **Shipped** on merge (static pages, no flag) ·
+  **Read** 2026-12-20.
+- **Change** Answers in our own words, every query run on the app's
+  datasets and pinned in `tests/question-answers-2026-11-22.test.js`:
+  Nth-highest salary with ties (`/blog/row-number-vs-rank-vs-dense-rank/`),
+  latest row per group, month-over-month change and consecutive-day
+  streaks (`/blog/window-functions-tutorial/`), deleting duplicates when
+  there is no id column (`/sql-find-duplicates/`). The two blogs' visible
+  FAQ now equals their JSON-LD (10 baseline lines retired). Read:
+  `docs/reads/questions-2026-11-22.md`.
+- **Metric** `gsc_page_clicks` (metrics.md), impressions on the three
+  pages, page slice; plus the query×page slice filtered to the five shapes
+  (`nth|second highest|latest|most recent|month over month|consecutive|streak|no id|rowid`).
+- **Baseline** not read: the cloud session has no production data. The
+  laptop reads the 28 days to 2026-11-21 for the three pages and writes it
+  here.
+- **Target** the three pages' impressions for the 28 days to 2026-12-17 at
+  or above the baseline + 20%, and at least one query from the five shapes
+  with impressions on the page that answers it.
+- **Falsification** (written before the data) impressions at or below the
+  baseline and no shape query on its page → answers inside long existing
+  posts don't move search demand. C7 stops adding sections and only adds
+  FAQ entries until a read shows a shape query landing.
+- **Confounds** the window tutorial and ranking blog also gained a visible
+  FAQ (same text as their schema); a Google core update in the window
+  would show on every page, so compare against the blog's other posts.
+### UI/UX: no critical layout defect, a third fewer major (A4 first run)
+
+- **Claimed** 2026-11-22 · **Shipped** on merge of #143, #144, #145, #146,
+  #147, #149 (no flag) · **Read** 2026-12-20.
+- **Change**
+  - #143: the mock list and a timed mock fit a phone; Quit is reachable.
+  - #144: blog tables, Amazon and the SQL quiz no longer scroll sideways.
+  - #145: the footer passes AA, with 44 px links and 12 px text.
+  - #146: the nav button keeps its colour; nav targets are 44 px.
+  - #147: company card text is 12 px, and the format link is readable.
+  - #149: muted app text is DESIGN.md's `--text-muted`.
+
+  Each fix has a guard test proven by one deliberate break.
+- **Why** `docs/reads/uiux-audit-2026-11-22.md`. 7 pages scrolled sideways
+  or hid a control on a phone, among them the timed mock's only exit and
+  the Interview tab. Footer, nav and app grey text failed WCAG AA sitewide.
+- **Metric** `uiux_findings` (critical + major per full audit run;
+  metrics.md as of this claim).
+- **Baseline** critical **56**, major **20,506** → **20,562** (main at
+  523aa1d, 1,596 runs). Measured with all six merged on a scratch branch:
+  critical 0, major 13,707.
+- **Target** by 12-20, on main: critical **0**, and `uiux_findings` ≤
+  **14,000** on the same surface list (pages added since are reported
+  separately).
+- **Falsification, stated in advance:** (a) a person reports a layout bug
+  (sideways scroll, a control they cannot reach or read, text cut off) on
+  a covered surface within 28 days of the last merge → **MISS** for the
+  audit's coverage, whatever the count says. Add the case to the harness
+  before fixing it. (b) critical > 0 on main at the read → **MISS**. (c) a
+  run without the six PRs merged → **UNREADABLE**.
+
 ### the Revolut guide: a sourced blog door for the best fintech page (C5)
 
 - **Claimed** 2026-11-22 · **Shipped** on merge · **Read** 2026-12-20 (28 d) and 2027-01-17 (56 d).
