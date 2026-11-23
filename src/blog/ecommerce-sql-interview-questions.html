@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- 2026-11-23 (sector articles, the founder's ask): retail / e-commerce analyst SQL. Keywords and SERP read:
+       docs/reads/sector-articles-keywords-2026-11-23.md. Every query runs on the ecommerce dataset and is re-run by
+       tests/sector-articles.test.js against the table printed under it. The dataset is small (40 orders, one product
+       per order, no returns table) and the page says so. No bank challenge solution. Company lines cite dated reads in
+       docs/reads/companies/. No frequency claim, no bank count. -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>E-commerce and Retail SQL Interview Questions | SQLQuest.app</title>
+  <meta name="description" content="E-commerce and retail SQL interview questions, worked: GMV vs net revenue, repeat purchase rate with the right denominator, and affinity with lift.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://sqlquest.app/blog/ecommerce-sql-interview-questions/">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://sqlquest.app/blog/ecommerce-sql-interview-questions/">
+  <meta property="og:title" content="E-commerce and Retail SQL Interview Questions">
+  <meta property="og:description" content="E-commerce and retail SQL interview questions, worked: GMV vs net revenue, repeat purchase rate with the right denominator, and affinity with lift.">
+  <meta property="og:image" content="https://sqlquest.app/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"Article","headline":"E-commerce SQL Interview Questions: GMV vs Revenue, Repeat Purchase and Basket Affinity","description":"E-commerce and retail SQL interview questions, worked: GMV vs net revenue, repeat purchase rate with the right denominator, and affinity with lift.","url":"https://sqlquest.app/blog/ecommerce-sql-interview-questions/","datePublished":"2026-11-23","dateModified":"2026-11-23","author":{"@type":"Organization","name":"SQL Quest"},"publisher":{"@type":"Organization","name":"SQL Quest","url":"https://sqlquest.app/"},"mainEntityOfPage":"https://sqlquest.app/blog/ecommerce-sql-interview-questions/"}
+  </script>
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What SQL questions do e-commerce companies ask data analysts?","acceptedAnswer":{"@type":"Answer","text":"Public candidate reports and prep guides describe revenue and order-value questions, shares of customers or groups against a benchmark, repeat purchase and retention cohorts, top products per category, and inventory questions such as sales since the last restock. Companies do not publish their questions, so treat any list as reported, not official."}},{"@type":"Question","name":"What is the difference between GMV and net revenue in SQL?","acceptedAnswer":{"@type":"Answer","text":"GMV sums every order placed; net revenue sums only the orders that count, usually completed ones, after cancellations and returns. In SQL, put the status in a CASE inside the aggregate to show both side by side, and leave out ELSE 0 when averaging so excluded orders drop out of the count."}},{"@type":"Question","name":"How do you calculate a repeat purchase rate in SQL?","acceptedAnswer":{"@type":"Answer","text":"Build one row per customer with a LEFT JOIN to their completed orders and COUNT(order_id), then divide customers with two or more orders by customers with at least one. Dividing by all registered customers answers a different question; say which denominator you used."}},{"@type":"Question","name":"Where can I practice e-commerce SQL interview questions?","acceptedAnswer":{"@type":"Answer","text":"SQL Quest runs e-commerce questions on an orders and customers dataset in the browser with no signup, and the Amazon, Walmart and Shopify pages each carry a practice set and the reported format with sources. A free account gets 10 free challenge solves, plus the lessons, warm-ups and the daily challenge."}}]}
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif;overflow-x:hidden}
+    .fd{font-family:'Space Grotesk',sans-serif}.fm{font-family:'JetBrains Mono','Fira Code',monospace}
+    a{color:#c084fc;text-decoration:none}a:hover{text-decoration:underline}
+    .nav{background:rgba(6,6,15,.95);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06);position:fixed;top:0;left:0;right:0;z-index:100}
+    .ni{max-width:1100px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+    .bp{padding:10px 24px;font-size:14px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:12px;font-weight:700;display:inline-block;text-decoration:none;transition:all .3s}.bp:hover{transform:translateY(-2px);text-decoration:none}
+    .article{max-width:740px;margin:0 auto;padding:120px 24px 80px}
+    .breadcrumb{font-size:13px;color:#8b98ab;margin-bottom:28px}.breadcrumb a{color:#8b98ab}.breadcrumb a:hover{color:#c084fc}
+    .article-meta{font-size:13px;color:#8b98ab;margin-bottom:32px;display:flex;gap:16px;flex-wrap:wrap}
+    h1{font-size:clamp(28px,4vw,44px);font-weight:800;line-height:1.12;margin-bottom:20px}
+    .intro{font-size:17px;line-height:1.8;color:#94a3b8;border-left:3px solid #10b981;padding-left:20px;margin-bottom:40px}
+    .toc{background:rgba(15,15,30,.7);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:24px 28px;margin-bottom:48px}
+    .toc-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#8b98ab;margin-bottom:14px}
+    .toc ol{padding-left:20px}.toc li{font-size:14px;line-height:1.8;color:#94a3b8}.toc a{color:#c084fc}
+    h2{font-size:clamp(20px,2.5vw,28px);font-weight:800;margin:48px 0 16px;padding-top:8px;border-top:1px solid rgba(255,255,255,.05)}
+    h3{font-size:18px;font-weight:700;color:#f1f5f9;margin:28px 0 12px}
+    p{font-size:15px;line-height:1.8;color:#94a3b8;margin-bottom:16px}
+    ul,ol{padding-left:22px;margin-bottom:20px}li{font-size:15px;line-height:1.8;color:#94a3b8;margin-bottom:6px}
+    li strong{color:#e2e8f0}
+    code{background:rgba(16,185,129,.12);color:#10b981;padding:2px 7px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:13px}
+    .code-block{background:rgba(10,10,25,.8);border:1px solid rgba(255,255,255,.08);border-radius:12px;overflow:hidden;margin:24px 0}
+    .code-label{padding:10px 16px;background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.06);font-size:12px;color:#8b98ab;font-family:'JetBrains Mono',monospace}
+    .code-block pre{padding:20px;margin:0;overflow-x:auto}.code-block code{background:none;padding:0;color:#e2e8f0;font-size:14px;line-height:1.7}
+    .kw{color:#7CC4FF;font-weight:700}.str{color:#B5E48C}.num{color:#FFB86C}.cmt{color:#8b98ab;font-style:italic}
+    .callout{background:rgba(16,185,129,.08);border-left:3px solid #10b981;border-radius:0 12px 12px 0;padding:16px 20px;margin:24px 0}
+    .callout p{margin:0;font-size:14px;color:#a7f3d0}.callout strong{color:#d1fae5}
+    .warn{background:rgba(239,68,68,.06);border-left:3px solid #ef4444;border-radius:0 12px 12px 0;padding:16px 20px;margin:24px 0}
+    .warn p{margin:0;font-size:14px;color:#fecaca}.warn strong{color:#fee2e2}
+    table{width:100%;border-collapse:collapse;margin:24px 0;font-size:14px}
+    th{text-align:left;padding:10px 14px;background:rgba(16,185,129,.1);color:#10b981;font-weight:700;border-bottom:1px solid rgba(16,185,129,.2);font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.05em}
+    td{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.05);color:#cbd5e1;font-family:'JetBrains Mono',monospace;font-size:13px}
+    tr:last-child td{border-bottom:none}
+    .practice-link{display:inline-flex;align-items:center;gap:6px;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.25);border-radius:8px;padding:8px 16px;font-size:13px;color:#10b981;text-decoration:none;margin:8px 0;transition:all .2s}.practice-link:hover{background:rgba(16,185,129,.18);text-decoration:none}
+    .cta-box{background:linear-gradient(135deg,rgba(16,185,129,.12),rgba(124,58,237,.08));border:1px solid rgba(16,185,129,.25);border-radius:20px;padding:40px;text-align:center;margin:48px 0}
+    .cta-box h3{font-size:24px;margin-bottom:12px;color:#f1f5f9;font-family:'Space Grotesk',sans-serif}.cta-box p{max-width:480px;margin:0 auto 28px}
+    .cta-main{padding:14px 36px;font-size:16px;background:linear-gradient(135deg,#10b981,#7c3aed);color:#fff;border-radius:12px;font-weight:700;display:inline-flex;align-items:center;transition:all .3s;text-decoration:none}.cta-main:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(16,185,129,.35);text-decoration:none}
+    .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center}.ft p{font-size:13px;color:#7f8da1}.ft a{color:#8b98ab}.ft a:hover{color:#c084fc}
+    .related{background:rgba(15,15,30,.5);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:24px 28px;margin:40px 0}
+    .related h4{font-size:13px;font-weight:700;color:#8b98ab;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px}
+    .related ul{margin-bottom:0;padding-left:20px}.related li{font-size:14px;line-height:1.8}
+    .sources{font-size:13px;color:#8b98ab;line-height:1.8}.sources li{font-size:13px;color:#8b98ab;margin-bottom:4px}
+    .faq details{border-bottom:1px solid rgba(255,255,255,.06);padding:14px 0}.faq summary{font-size:16px;font-weight:700;color:#e2e8f0;cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center}.faq summary::after{content:'+';color:#3b82f6;font-size:22px;flex-shrink:0;margin-left:16px}.faq details[open] summary::after{content:'−'}.faq details p{margin:12px 0 0;font-size:14px}
+  
+    /* Phone fit (A4 UI/UX audit, 2026-11-22): a table wider than the screen scrolls inside itself instead of widening the page. */
+    @media(max-width:600px){table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}}
+    .practice-list li{margin-bottom:8px}.pl-meta{color:#8b98ab;font-size:13px}
+  </style>
+  <!-- Microsoft Clarity behavioral analytics. Project wovalt3jwh.
+       Password/email inputs auto-masked. Privacy policy: /privacy.html -->
+  <script type="text/javascript">
+    (function(c,l,a,r,i,t,y){
+      c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+      t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+      y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+    })(window, document, "clarity", "script", "wovalt3jwh");
+  </script>
+</head>
+<body>
+<nav class="nav"><div class="ni">
+  <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;">
+    <div style="width:32px;height:32px;border-radius:8px;background:#7c3aed;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
+    <span class="fd" style="font-size:18px;font-weight:800;">SQL Quest</span>
+  </a>
+  <a data-track="cta_blog" href="/app/?company=Amazon&amp;goal=interview&amp;src=blog-ecommerce-sql-interview-questions" class="bp">Practice Free →</a>
+</div></nav>
+
+<article class="article">
+  <p class="breadcrumb"><a href="/">Home</a> › <a href="/blog/">Blog</a> › E-commerce SQL Interview Questions</p>
+  <h1 class="fd">E-commerce SQL Interview Questions: GMV vs Net Revenue, Repeat Purchase Rate and Basket Affinity, Worked</h1>
+  <div class="article-meta">
+    <span>Published November 2026</span>
+    <span>·</span>
+    <span>10 min read</span>
+    <span>·</span>
+    <span>Interview Prep</span>
+  </div>
+  <!-- blog-practice:start -->
+  <p style="margin:18px 0 26px;padding:14px 18px;border:1px solid rgba(124,58,237,.3);border-radius:12px;background:rgba(124,58,237,.07);font-size:15px;line-height:1.7;">Skip ahead to practice: <a href="/app/?challenge=14&amp;src=blog-ecommerce-sql-interview-questions" data-track="cta_blog_practice" style="color:#c084fc;font-weight:700;">pivot order status by country in the browser, free →</a> · or <a href="/sql-interview-readiness-test/?company=amazon" data-track="cta_blog_readiness" style="color:#c084fc;font-weight:700;">check your readiness for an e-commerce screen</a> (10 questions, no signup).</p>
+  <!-- blog-practice:end -->
+
+  <p class="intro">Retail and e-commerce analyst interviews ask SQL about orders and the people who place them: how much was sold, how much of it counts, who came back, and what gets bought together. The tables are simple; the definitions are not. Each question below has a wrong answer that runs cleanly and looks reasonable, and the difference is always a filter or a denominator. Every query was run on a small shop dataset, and its result is printed under it.</p>
+
+  <div class="toc">
+    <p class="toc-title">On this page</p>
+    <ol>
+      <li><a href="#what">What e-commerce SQL questions look like</a></li>
+      <li><a href="#data">The shop used below</a></li>
+      <li><a href="#gmv">Question 1: GMV, net revenue and order value</a></li>
+      <li><a href="#repeat">Question 2: a repeat purchase rate, and its denominator</a></li>
+      <li><a href="#affinity">Question 3: affinity, with lift and not just confidence</a></li>
+      <li><a href="#returns">Returns by cohort: the shape to know</a></li>
+      <li><a href="#practice">Practice on the same shop</a></li>
+      <li><a href="#faq">FAQ</a></li>
+      <li><a href="#sources">Sources</a></li>
+    </ol>
+  </div>
+
+  <h2 id="what">What e-commerce SQL questions look like</h2>
+  <p>The core tables are customers, orders, order lines and products, sometimes inventory and returns. Questions measure a business: revenue that counts, customers who return, products that move together, stock that runs out. The public material we have read describes shapes like these, paraphrased:</p>
+  <ul>
+    <li><strong>A share against a benchmark.</strong> A candidate report on PracHub for an Amazon business intelligence engineer screen (interview September 2026, recorded in our read of 22 November 2026) describes groups where more than half of members beat a target while the group's growth lags the company-wide average, year over year: conditional aggregation for the share, a company-level benchmark in a CTE.</li>
+    <li><strong>Metrics and reporting.</strong> Amazon's own interview-prep page for business intelligence engineers names SQL, and metrics and reporting, among the competencies it tests (read 22 November 2026).</li>
+    <li><strong>Inventory windows.</strong> Exponent's Walmart data analyst guide (updated mid-2026) describes total sales for each product since its most recent restock.</li>
+  </ul>
+  <p>These are shapes from dated public sources, not questions any retailer has confirmed, and nothing here says how often they come up. The three questions below are our own, on our own data.</p>
+
+  <h2 id="data">The shop used below</h2>
+  <p>A deliberately small shop, so every number can be checked by eye: 16 customers (customer_id, name, signup_date, membership) and 40 orders (order_id, customer_id, product, category, quantity, price, total, order_date, country, status) from January and February 2024, in two categories, Electronics and Furniture. Each order holds one product, and there is no returns table; both limits change how the questions below are asked, and the page says where. Every query runs on SQLite, as in the browser.</p>
+
+  <h2 id="gmv">Question 1: GMV, net revenue and order value</h2>
+  <p>Question: <em>what did the shop sell, and what was the average order value?</em> "Sold" has at least two meanings. Gross merchandise value (GMV) counts every order placed; net revenue counts the orders that completed. Pending and cancelled orders are in the table either way. One query can show both, with the status in a <code>CASE</code> instead of a <code>WHERE</code>, so the reader sees what the filter removed:</p>
+<div class="code-block" data-dataset="ecommerce"><div class="code-label">gross and net side by side</div><pre><code><span class="kw">SELECT</span> <span class="kw">COUNT</span>(*) <span class="kw">AS</span> orders,
+       <span class="kw">ROUND</span>(<span class="kw">SUM</span>(total), <span class="num">2</span>) <span class="kw">AS</span> gross_gmv,
+       <span class="kw">SUM</span>(status = <span class="str">'completed'</span>) <span class="kw">AS</span> completed_orders,
+       <span class="kw">ROUND</span>(<span class="kw">SUM</span>(<span class="kw">CASE</span> <span class="kw">WHEN</span> status = <span class="str">'completed'</span> <span class="kw">THEN</span> total <span class="kw">END</span>), <span class="num">2</span>) <span class="kw">AS</span> net_revenue,
+       <span class="kw">ROUND</span>(<span class="kw">AVG</span>(<span class="kw">CASE</span> <span class="kw">WHEN</span> status = <span class="str">'completed'</span> <span class="kw">THEN</span> total <span class="kw">END</span>), <span class="num">2</span>) <span class="kw">AS</span> aov
+<span class="kw">FROM</span> orders;</code></pre></div>
+  <table><thead><tr><th>orders</th><th>gross_gmv</th><th>completed_orders</th><th>net_revenue</th><th>aov</th></tr></thead><tbody>
+    <tr><td>40</td><td>8156.44</td><td>37</td><td>7971.51</td><td>215.45</td></tr>
+  </tbody></table>
+  <p>The average order value uses <code>AVG(CASE WHEN … THEN total END)</code> with no <code>ELSE</code>, so non-completed orders become NULL and drop out of both the sum and the count. Write <code>ELSE 0</code> and they would stay in the count as zero-value orders, pulling the average down. On real order-line data, AOV also needs the order grain: sum the lines per order first, then average the orders, or a three-line order counts three times.</p>
+
+  <h2 id="repeat">Question 2: a repeat purchase rate, and its denominator</h2>
+  <p>Question: <em>what share of customers bought again?</em> The numerator is clear: customers with two or more completed orders. The denominator is a choice. Customers who bought at least once is the usual meaning of repeat rate; all registered customers answers a different question, closer to activation. Build one row per customer, keeping those with no orders through a <code>LEFT JOIN</code>, then compute both:</p>
+<div class="code-block" data-dataset="ecommerce"><div class="code-label">one row per customer, two denominators</div><pre><code><span class="kw">WITH</span> per_customer <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> c.customer_id, <span class="kw">COUNT</span>(o.order_id) <span class="kw">AS</span> orders
+  <span class="kw">FROM</span> customers c
+  <span class="kw">LEFT JOIN</span> orders o <span class="kw">ON</span> o.customer_id = c.customer_id <span class="kw">AND</span> o.status = <span class="str">'completed'</span>
+  <span class="kw">GROUP BY</span> c.customer_id
+)
+<span class="kw">SELECT</span> <span class="kw">COUNT</span>(*) <span class="kw">AS</span> customers,
+       <span class="kw">SUM</span>(orders &gt;= <span class="num">1</span>) <span class="kw">AS</span> buyers,
+       <span class="kw">SUM</span>(orders &gt;= <span class="num">2</span>) <span class="kw">AS</span> repeat_buyers,
+       <span class="kw">ROUND</span>(<span class="num">100.0</span> * <span class="kw">SUM</span>(orders &gt;= <span class="num">2</span>) / <span class="kw">SUM</span>(orders &gt;= <span class="num">1</span>), <span class="num">1</span>) <span class="kw">AS</span> repeat_rate_of_buyers,
+       <span class="kw">ROUND</span>(<span class="num">100.0</span> * <span class="kw">SUM</span>(orders &gt;= <span class="num">2</span>) / <span class="kw">COUNT</span>(*), <span class="num">1</span>) <span class="kw">AS</span> repeat_rate_of_customers
+<span class="kw">FROM</span> per_customer;</code></pre></div>
+  <table><thead><tr><th>customers</th><th>buyers</th><th>repeat_buyers</th><th>repeat_rate_of_buyers</th><th>repeat_rate_of_customers</th></tr></thead><tbody>
+    <tr><td>16</td><td>10</td><td>10</td><td>100</td><td>62.5</td></tr>
+  </tbody></table>
+  <p>100% and 62.5% are both correct, for different questions; say which one you computed. Three details carry the answer. <code>COUNT(o.order_id)</code> counts matched orders only, so a customer with none gets 0, where <code>COUNT(*)</code> would give them 1. The status filter sits in the <code>ON</code> clause, so customers whose only order was cancelled stay in the table with zero orders; in a <code>WHERE</code> it would delete them (see <a href="/sql-left-join-where-filter/">the LEFT JOIN WHERE filter trap</a>). And a real repeat-rate question usually adds a window, such as a second order within 30 days of the first, which needs each customer's first order date.</p>
+
+  <h2 id="affinity">Question 3: affinity, with lift and not just confidence</h2>
+  <p>Question: <em>do furniture buyers also buy electronics?</em> Basket analysis normally pairs products inside one order. Here every order holds one product, so the honest version measures affinity across each customer's orders: build one row per buyer with a flag per category, then compare.</p>
+<div class="code-block" data-dataset="ecommerce"><div class="code-label">flags per buyer, then confidence and lift</div><pre><code><span class="kw">WITH</span> flags <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> customer_id,
+         <span class="kw">MAX</span>(category = <span class="str">'Furniture'</span>) <span class="kw">AS</span> furniture,
+         <span class="kw">MAX</span>(category = <span class="str">'Electronics'</span>) <span class="kw">AS</span> electronics
+  <span class="kw">FROM</span> orders
+  <span class="kw">WHERE</span> status = <span class="str">'completed'</span>
+  <span class="kw">GROUP BY</span> customer_id
+)
+<span class="kw">SELECT</span> <span class="kw">COUNT</span>(*) <span class="kw">AS</span> buyers,
+       <span class="kw">SUM</span>(furniture) <span class="kw">AS</span> furniture_buyers,
+       <span class="kw">SUM</span>(furniture <span class="kw">AND</span> electronics) <span class="kw">AS</span> both_categories,
+       <span class="kw">ROUND</span>(<span class="num">1.0</span> * <span class="kw">SUM</span>(furniture <span class="kw">AND</span> electronics) / <span class="kw">SUM</span>(furniture), <span class="num">2</span>) <span class="kw">AS</span> confidence,
+       <span class="kw">ROUND</span>(<span class="num">1.0</span> * <span class="kw">SUM</span>(electronics) / <span class="kw">COUNT</span>(*), <span class="num">2</span>) <span class="kw">AS</span> electronics_base_rate,
+       <span class="kw">ROUND</span>((<span class="num">1.0</span> * <span class="kw">SUM</span>(furniture <span class="kw">AND</span> electronics) / <span class="kw">SUM</span>(furniture))
+             / (<span class="num">1.0</span> * <span class="kw">SUM</span>(electronics) / <span class="kw">COUNT</span>(*)), <span class="num">2</span>) <span class="kw">AS</span> lift
+<span class="kw">FROM</span> flags;</code></pre></div>
+  <table><thead><tr><th>buyers</th><th>furniture_buyers</th><th>both_categories</th><th>confidence</th><th>electronics_base_rate</th><th>lift</th></tr></thead><tbody>
+    <tr><td>10</td><td>8</td><td>5</td><td>0.63</td><td>0.7</td><td>0.89</td></tr>
+  </tbody></table>
+  <p>Confidence says 63% of furniture buyers also bought electronics, which sounds like a strong pairing. Lift says otherwise: 70% of <em>all</em> buyers bought electronics, so furniture buyers are slightly <em>less</em> likely than average, a lift of 0.89. A lift above 1 is an affinity; below 1 is the opposite. Interviewers ask about lift precisely because confidence alone rewards whatever is popular. On order-line data the same idea starts from a self-join of the lines on the order id with <code>a.product &lt; b.product</code>, so each pair appears once and no product pairs with itself.</p>
+  <p><code>MAX(category = 'Furniture')</code> turns many orders into one yes-or-no per customer. Summing the comparison instead would count a customer with three furniture orders three times, and the ratios would stop being shares of people.</p>
+
+  <h2 id="returns">Returns by cohort: the shape to know</h2>
+  <p>This shop has no returns table, so here is the shape in words rather than a result. A returns question joins returns to the orders they reverse, then groups by a cohort, usually the customer's first-order month or signup month. Two traps: divide returned orders by orders placed <em>in the same cohort</em>, not by all orders in the period the return happened; and count a partially returned order once, by order id, unless the question asks for units. It is the same cohort skeleton as a retention table, which you can practise in <a href="/questions/customer-retention-cohort/">Customer Retention Cohort</a>.</p>
+
+  <h2 id="practice">Practice on the same shop</h2>
+  <p>These run on the same orders and customers, in the browser. Hard ones are marked Pro; the rest count toward a free account's 10 free challenge solves.</p>
+  <ul class="practice-list" data-practice="ecommerce-sql-interview-questions">
+    <li><a href="/app/?challenge=176&amp;src=blog-ecommerce-sql-interview-questions" data-track="cta_blog_challenge">Counting Across a JOIN</a> <span class="pl-meta">· Easy</span> — orders per customer</li>
+    <li><a href="/app/?challenge=14&amp;src=blog-ecommerce-sql-interview-questions" data-track="cta_blog_challenge">Pivot: Order Status by Country</a> <span class="pl-meta">· Medium</span> — status in a CASE, not a WHERE</li>
+    <li><a href="/app/?challenge=66&amp;src=blog-ecommerce-sql-interview-questions" data-track="cta_blog_challenge">Membership Tier Revenue Analysis</a> <span class="pl-meta">· Medium</span> — revenue per tier, customers with none kept</li>
+    <li><a href="/app/?challenge=157&amp;src=blog-ecommerce-sql-interview-questions" data-track="cta_blog_challenge">Active Spender Cohort (HAVING)</a> <span class="pl-meta">· Medium</span> — a threshold on a per-customer total</li>
+    <li><a href="/app/?challenge=162&amp;src=blog-ecommerce-sql-interview-questions" data-track="cta_blog_challenge">Most Recent Order Per Customer (ROW_NUMBER)</a> <span class="pl-meta">· Medium</span> — one row per customer</li>
+    <li><a href="/app/?challenge=82&amp;src=blog-ecommerce-sql-interview-questions" data-track="cta_blog_challenge">Order Funnel Conversion</a> <span class="pl-meta">· Hard · Pro</span> — conditional aggregation over statuses</li>
+    <li><a href="/app/?challenge=88&amp;src=blog-ecommerce-sql-interview-questions" data-track="cta_blog_challenge">Customer Retention Cohort</a> <span class="pl-meta">· Hard · Pro</span> — the cohort skeleton</li>
+    <li><a href="/app/?challenge=77&amp;src=blog-ecommerce-sql-interview-questions" data-track="cta_blog_challenge">Customers with Orders in ALL Categories</a> <span class="pl-meta">· Hard · Pro</span> — relational division</li>
+    <li><a href="/app/?challenge=58&amp;src=blog-ecommerce-sql-interview-questions" data-track="cta_blog_challenge">Customer Lifetime Value</a> <span class="pl-meta">· Hard · Pro</span> — value per customer across joins</li>
+    <!-- niche-343:links -->
+  </ul>
+  <p>Preparing for a named company? Each page carries a practice set, the reported format with its sources, and a readiness check: <a href="/amazon-sql-interview/" data-track="cta_blog_company">Amazon</a>, <a href="/walmart-sql-interview/" data-track="cta_blog_company">Walmart</a>, <a href="/shopify-sql-interview/" data-track="cta_blog_company">Shopify</a> and <a href="/doordash-sql-interview/" data-track="cta_blog_company">DoorDash</a>.</p>
+
+  <div class="cta-box">
+    <h3 class="fd">Find your weakest skill before the screen</h3>
+    <p>Ten questions, no signup: the readiness test scores you on the nine skills these questions lean on and points to the first one to fix. A free account gets 10 free challenge solves, plus the lessons, warm-ups and the daily challenge. Pro opens every challenge and the timed mocks.</p>
+    <a href="/sql-interview-readiness-test/?company=amazon" class="cta-main" data-track="cta_blog_readiness_end">Take the readiness test →</a>
+    <p style="margin:20px auto 0;font-size:13px"><a href="/app/?company=Amazon&amp;goal=interview&amp;src=blog-ecommerce-sql-interview-questions" data-track="cta_blog_company_end">or start the Amazon set in the browser →</a></p>
+  </div>
+
+  <h2 id="faq">FAQ</h2>
+  <!-- Mirrors the FAQPage JSON-LD in <head>; keep both in sync (tests/sector-articles.test.js). -->
+  <div class="faq">
+    <details>
+      <summary>What SQL questions do e-commerce companies ask data analysts?</summary>
+      <p>Public candidate reports and prep guides describe revenue and order-value questions, shares of customers or groups against a benchmark, repeat purchase and retention cohorts, top products per category, and inventory questions such as sales since the last restock. Companies do not publish their questions, so treat any list as reported, not official.</p>
+    </details>
+    <details>
+      <summary>What is the difference between GMV and net revenue in SQL?</summary>
+      <p>GMV sums every order placed; net revenue sums only the orders that count, usually completed ones, after cancellations and returns. In SQL, put the status in a CASE inside the aggregate to show both side by side, and leave out ELSE 0 when averaging so excluded orders drop out of the count.</p>
+    </details>
+    <details>
+      <summary>How do you calculate a repeat purchase rate in SQL?</summary>
+      <p>Build one row per customer with a LEFT JOIN to their completed orders and COUNT(order_id), then divide customers with two or more orders by customers with at least one. Dividing by all registered customers answers a different question; say which denominator you used.</p>
+    </details>
+    <details>
+      <summary>Where can I practice e-commerce SQL interview questions?</summary>
+      <p>SQL Quest runs e-commerce questions on an orders and customers dataset in the browser with no signup, and the Amazon, Walmart and Shopify pages each carry a practice set and the reported format with sources. A free account gets 10 free challenge solves, plus the lessons, warm-ups and the daily challenge.</p>
+    </details>
+  </div>
+
+  <h2 id="sources">Sources</h2>
+  <p>No retailer published the shapes above. Each line is what a candidate report, a prep guide or the company's own prep page said, with its date; our reads that recorded them are in the repository under docs/reads/companies/ (22 November 2026).</p>
+  <ul class="sources">
+    <li>Amazon — <a href="https://atoz.amazon/en-us/jobs/hiring-process/interview-prep/business-intelligence-engineer">Business intelligence engineer interview prep</a>, first-party, no date shown, read 22 November 2026 (SQL; metrics and reporting).</li>
+    <li>PracHub — <a href="https://prachub.com/interview-experiences/amazon-business-intelligence-engineer-interview-experience-sql-interrupted-and-a-shortened-phone-screen">Amazon BIE candidate report</a>, interview September 2026, read 22 November 2026 (a share above a target against a company-wide growth benchmark).</li>
+    <li>Exponent — Walmart data analyst interview guide, updated mid-2026 (sales for each product since its most recent restock); recorded in our Walmart page sources.</li>
+  </ul>
+
+  <div class="related">
+    <h4>Related reading</h4>
+    <ul>
+      <li><a href="/amazon-sql-interview/">Amazon SQL interview questions</a> — the BIE and analyst practice set</li>
+      <li><a href="/blog/payments-sql-interview-questions/">Payments SQL interview questions</a> · <a href="/blog/banking-sql-interview-questions/">Banking SQL interview questions</a></li>
+      <li><a href="/sql-interview-prep/">SQL Interview Prep Hub</a> — every company page</li>
+      <li><a href="/sql-average-of-averages/">The average of averages trap</a> · <a href="/sql-join-fan-out/">The join fan-out trap</a></li>
+      <li><a href="/blog/sql-group-by-tutorial/">GROUP BY tutorial</a> · <a href="/blog/sql-case-when-tutorial/">CASE WHEN tutorial</a></li>
+    </ul>
+  </div>
+</article>
+
+<footer class="ft">
+  <p>© 2026 SQL Quest · <a href="/">Home</a> · <a href="/blog/">Blog</a> · <a data-track="cta_blog" href="/app/?company=Amazon&amp;goal=interview&amp;src=blog-ecommerce-sql-interview-questions">Practice Free</a> · <a href="/sql-exercises/">SQL Practice Questions</a> · <a href="/best-sql-practice-sites/">Best SQL Practice Sites</a></p>
+</footer>
+</body>
+</html>

@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- 2026-11-23 (sector articles, the founder's ask): banking / credit-card analyst SQL. Keywords and SERP read:
+       docs/reads/sector-articles-keywords-2026-11-23.md. Every query runs on finans_banking (FDIC, public domain) or the
+       synthetic finans_fraud card ledger and is re-run by tests/sector-articles.test.js against the table printed under
+       it. No Capital One mock question or answer, no bank challenge solution. Company lines cite dated reads in
+       docs/reads/companies/. No frequency claim, no bank count. -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Banking SQL Interview Questions: Roll Rates | SQLQuest.app</title>
+  <meta name="description" content="Banking and credit-card analyst SQL interview questions, worked on FDIC data and a card ledger: risk buckets, roll rates and dispute windows, with traps.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://sqlquest.app/blog/banking-sql-interview-questions/">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://sqlquest.app/blog/banking-sql-interview-questions/">
+  <meta property="og:title" content="Banking SQL Interview Questions: Roll Rates">
+  <meta property="og:description" content="Banking and credit-card analyst SQL interview questions, worked on FDIC data and a card ledger: risk buckets, roll rates and dispute windows, with traps.">
+  <meta property="og:image" content="https://sqlquest.app/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"Article","headline":"Banking SQL Interview Questions: Buckets, Roll Rates and Dispute Windows","description":"Banking and credit-card analyst SQL interview questions, worked on FDIC data and a card ledger: risk buckets, roll rates and dispute windows, with traps.","url":"https://sqlquest.app/blog/banking-sql-interview-questions/","datePublished":"2026-11-23","dateModified":"2026-11-23","author":{"@type":"Organization","name":"SQL Quest"},"publisher":{"@type":"Organization","name":"SQL Quest","url":"https://sqlquest.app/"},"mainEntityOfPage":"https://sqlquest.app/blog/banking-sql-interview-questions/"}
+  </script>
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What SQL questions do banks ask data analysts?","acceptedAnswer":{"@type":"Answer","text":"Public prep material and candidate reports describe three recurring shapes: putting accounts, loans or banks into risk buckets with CASE WHEN; comparing those buckets between two periods, such as which accounts moved to a worse band (a roll rate); and timing or reconciliation questions, such as days from a charge to its dispute or matching totals across two reports. Banks do not publish their questions, so treat any list as reported, not official."}},{"@type":"Question","name":"How do you calculate a roll rate in SQL?","acceptedAnswer":{"@type":"Answer","text":"Bucket each account once per period in a CTE, then join the CTE to itself on the account: the earlier period on the left, the later period on the right, with the later period named in the ON clause of a LEFT JOIN. Count, per starting bucket, the accounts whose later bucket is higher. Keep accounts with no later row visible in their own column instead of letting an inner join drop them."}},{"@type":"Question","name":"Why does my CASE WHEN put everything in one bucket?","acceptedAnswer":{"@type":"Answer","text":"CASE returns the first branch that is true. If the first branch is a broad lower bound such as npl_ratio >= 0.5, it also catches every larger value, so the later branches never run. Order the branches so each can only see what the earlier ones left: rising upper bounds with <, or falling lower bounds with >=."}},{"@type":"Question","name":"Where can I practice SQL for a bank or credit card analyst interview?","acceptedAnswer":{"@type":"Answer","text":"SQL Quest runs bank questions on the FDIC's public bank data and card questions on a synthetic card ledger, in the browser with no signup. The Capital One, JPMorgan and Goldman Sachs pages each carry a practice set and the reported format with sources. A free account gets 10 free challenge solves, plus the lessons, warm-ups and the daily challenge."}}]}
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif;overflow-x:hidden}
+    .fd{font-family:'Space Grotesk',sans-serif}.fm{font-family:'JetBrains Mono','Fira Code',monospace}
+    a{color:#c084fc;text-decoration:none}a:hover{text-decoration:underline}
+    .nav{background:rgba(6,6,15,.95);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06);position:fixed;top:0;left:0;right:0;z-index:100}
+    .ni{max-width:1100px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+    .bp{padding:10px 24px;font-size:14px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:12px;font-weight:700;display:inline-block;text-decoration:none;transition:all .3s}.bp:hover{transform:translateY(-2px);text-decoration:none}
+    .article{max-width:740px;margin:0 auto;padding:120px 24px 80px}
+    .breadcrumb{font-size:13px;color:#8b98ab;margin-bottom:28px}.breadcrumb a{color:#8b98ab}.breadcrumb a:hover{color:#c084fc}
+    .article-meta{font-size:13px;color:#8b98ab;margin-bottom:32px;display:flex;gap:16px;flex-wrap:wrap}
+    h1{font-size:clamp(28px,4vw,44px);font-weight:800;line-height:1.12;margin-bottom:20px}
+    .intro{font-size:17px;line-height:1.8;color:#94a3b8;border-left:3px solid #10b981;padding-left:20px;margin-bottom:40px}
+    .toc{background:rgba(15,15,30,.7);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:24px 28px;margin-bottom:48px}
+    .toc-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#8b98ab;margin-bottom:14px}
+    .toc ol{padding-left:20px}.toc li{font-size:14px;line-height:1.8;color:#94a3b8}.toc a{color:#c084fc}
+    h2{font-size:clamp(20px,2.5vw,28px);font-weight:800;margin:48px 0 16px;padding-top:8px;border-top:1px solid rgba(255,255,255,.05)}
+    h3{font-size:18px;font-weight:700;color:#f1f5f9;margin:28px 0 12px}
+    p{font-size:15px;line-height:1.8;color:#94a3b8;margin-bottom:16px}
+    ul,ol{padding-left:22px;margin-bottom:20px}li{font-size:15px;line-height:1.8;color:#94a3b8;margin-bottom:6px}
+    li strong{color:#e2e8f0}
+    code{background:rgba(16,185,129,.12);color:#10b981;padding:2px 7px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:13px}
+    .code-block{background:rgba(10,10,25,.8);border:1px solid rgba(255,255,255,.08);border-radius:12px;overflow:hidden;margin:24px 0}
+    .code-label{padding:10px 16px;background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.06);font-size:12px;color:#8b98ab;font-family:'JetBrains Mono',monospace}
+    .code-block pre{padding:20px;margin:0;overflow-x:auto}.code-block code{background:none;padding:0;color:#e2e8f0;font-size:14px;line-height:1.7}
+    .kw{color:#7CC4FF;font-weight:700}.str{color:#B5E48C}.num{color:#FFB86C}.cmt{color:#8b98ab;font-style:italic}
+    .callout{background:rgba(16,185,129,.08);border-left:3px solid #10b981;border-radius:0 12px 12px 0;padding:16px 20px;margin:24px 0}
+    .callout p{margin:0;font-size:14px;color:#a7f3d0}.callout strong{color:#d1fae5}
+    .warn{background:rgba(239,68,68,.06);border-left:3px solid #ef4444;border-radius:0 12px 12px 0;padding:16px 20px;margin:24px 0}
+    .warn p{margin:0;font-size:14px;color:#fecaca}.warn strong{color:#fee2e2}
+    table{width:100%;border-collapse:collapse;margin:24px 0;font-size:14px}
+    th{text-align:left;padding:10px 14px;background:rgba(16,185,129,.1);color:#10b981;font-weight:700;border-bottom:1px solid rgba(16,185,129,.2);font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.05em}
+    td{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.05);color:#cbd5e1;font-family:'JetBrains Mono',monospace;font-size:13px}
+    tr:last-child td{border-bottom:none}
+    .practice-link{display:inline-flex;align-items:center;gap:6px;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.25);border-radius:8px;padding:8px 16px;font-size:13px;color:#10b981;text-decoration:none;margin:8px 0;transition:all .2s}.practice-link:hover{background:rgba(16,185,129,.18);text-decoration:none}
+    .cta-box{background:linear-gradient(135deg,rgba(16,185,129,.12),rgba(124,58,237,.08));border:1px solid rgba(16,185,129,.25);border-radius:20px;padding:40px;text-align:center;margin:48px 0}
+    .cta-box h3{font-size:24px;margin-bottom:12px;color:#f1f5f9;font-family:'Space Grotesk',sans-serif}.cta-box p{max-width:480px;margin:0 auto 28px}
+    .cta-main{padding:14px 36px;font-size:16px;background:linear-gradient(135deg,#10b981,#7c3aed);color:#fff;border-radius:12px;font-weight:700;display:inline-flex;align-items:center;transition:all .3s;text-decoration:none}.cta-main:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(16,185,129,.35);text-decoration:none}
+    .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center}.ft p{font-size:13px;color:#7f8da1}.ft a{color:#8b98ab}.ft a:hover{color:#c084fc}
+    .related{background:rgba(15,15,30,.5);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:24px 28px;margin:40px 0}
+    .related h4{font-size:13px;font-weight:700;color:#8b98ab;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px}
+    .related ul{margin-bottom:0;padding-left:20px}.related li{font-size:14px;line-height:1.8}
+    .sources{font-size:13px;color:#8b98ab;line-height:1.8}.sources li{font-size:13px;color:#8b98ab;margin-bottom:4px}
+    .faq details{border-bottom:1px solid rgba(255,255,255,.06);padding:14px 0}.faq summary{font-size:16px;font-weight:700;color:#e2e8f0;cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center}.faq summary::after{content:'+';color:#3b82f6;font-size:22px;flex-shrink:0;margin-left:16px}.faq details[open] summary::after{content:'−'}.faq details p{margin:12px 0 0;font-size:14px}
+  
+    /* Phone fit (A4 UI/UX audit, 2026-11-22): a table wider than the screen scrolls inside itself instead of widening the page. */
+    @media(max-width:600px){table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}}
+    .practice-list li{margin-bottom:8px}.pl-meta{color:#8b98ab;font-size:13px}
+  </style>
+  <!-- Microsoft Clarity behavioral analytics. Project wovalt3jwh.
+       Password/email inputs auto-masked. Privacy policy: /privacy.html -->
+  <script type="text/javascript">
+    (function(c,l,a,r,i,t,y){
+      c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+      t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+      y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+    })(window, document, "clarity", "script", "wovalt3jwh");
+  </script>
+<style data-phone-fit>.btn.bo{min-height:44px}@media(max-width:600px){.ni a,.ni .bp,.nl .btn{min-height:44px}}</style></head>
+<body>
+<nav class="nav"><div class="ni">
+  <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;">
+    <div style="width:32px;height:32px;border-radius:8px;background:#7c3aed;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
+    <span class="fd" style="font-size:18px;font-weight:800;">SQL Quest</span>
+  </a>
+  <a data-track="cta_blog" href="/app/?company=Capital%20One&amp;goal=interview&amp;src=blog-banking-sql-interview-questions" class="bp">Practice Free →</a>
+</div></nav>
+
+<article class="article">
+  <p class="breadcrumb"><a href="/">Home</a> › <a href="/blog/">Blog</a> › Banking SQL Interview Questions</p>
+  <h1 class="fd">Banking SQL Interview Questions: Risk Buckets, Roll Rates and Dispute Windows, Worked on Real Bank Data</h1>
+  <div class="article-meta">
+    <span>Published November 2026</span>
+    <span>·</span>
+    <span>11 min read</span>
+    <span>·</span>
+    <span>Interview Prep</span>
+  </div>
+  <!-- blog-practice:start -->
+  <p style="margin:18px 0 26px;padding:14px 18px;border:1px solid rgba(124,58,237,.3);border-radius:12px;background:rgba(124,58,237,.07);font-size:15px;line-height:1.7;">Skip ahead to practice: <a href="/app/?challenge=208&amp;src=blog-banking-sql-interview-questions" data-track="cta_blog_practice" style="color:#c084fc;font-weight:700;">bucket banks by size in the browser, free →</a> · or <a href="/sql-interview-readiness-test/?company=capital-one" data-track="cta_blog_readiness" style="color:#c084fc;font-weight:700;">check your readiness for a bank screen</a> (10 questions, no signup).</p>
+  <!-- blog-practice:end -->
+
+  <p class="intro">Bank and card-issuer analyst interviews ask SQL about money that is owed, late, or disputed. The shapes repeat across employers: put accounts into risk buckets, track how they move between buckets from one period to the next, and measure how long something takes, such as the time from a charge to a dispute. This guide works each one on real data: the FDIC's public bank filings for 2025 and a synthetic card ledger. Every query below was run, and the result under it is what it returns.</p>
+
+  <div class="toc">
+    <p class="toc-title">On this page</p>
+    <ol>
+      <li><a href="#what">What bank analyst SQL questions look like</a></li>
+      <li><a href="#data">The data used below</a></li>
+      <li><a href="#buckets">Question 1: risk buckets, and the CASE that swallows them</a></li>
+      <li><a href="#roll-rates">Question 2: roll rates between two quarters</a></li>
+      <li><a href="#dispute-window">Question 3: the dispute window, in days</a></li>
+      <li><a href="#practice">Practice on the same data</a></li>
+      <li><a href="#faq">FAQ</a></li>
+      <li><a href="#sources">Sources</a></li>
+    </ol>
+  </div>
+
+  <h2 id="what">What bank analyst SQL questions look like</h2>
+  <p>A retail bank or a card issuer runs on a few tables: accounts or loans, a monthly or quarterly snapshot of each one (balance, days past due, status), transactions, and disputes. Analyst questions are about the movement between those snapshots far more than about any single row. Three shapes come up in the public material we have read:</p>
+  <ul>
+    <li><strong>Buckets.</strong> Put each account, loan or bank into a band: current, 30 days past due, 60, 90+; or a ratio band. Prep guides for Capital One's data-analyst screen list "CASE WHEN for conditional metrics and buckets" among the topics (extrabrain guide, February 2026; see Sources).</li>
+    <li><strong>Movement between periods.</strong> Which accounts got worse since last month, which recovered, which disappeared. A credit team calls the share that moves to a worse bucket a <em>roll rate</em>. DataLemur's JPMorgan Chase set (updated 28 March 2025) includes accounts that were very active in a recent window or dormant over a longer one, and a card product's best and worst month of issuance: both are period-over-period questions.</li>
+    <li><strong>Reconciliation and timing.</strong> A candidate report in Interview Query's JPMorgan Chase data analyst guide (stamped Interviewed Q2 2025, read 22 November 2026) describes reconciling numbers across reports and tools. Card teams add timing: how many days from a charge to its dispute, and how long a dispute stays open.</li>
+  </ul>
+  <p>Those are paraphrased shapes from dated public sources, not questions any bank has confirmed, and none of them says how often a topic comes up. What follows is how to answer each shape correctly, and the mistake that makes a plausible wrong answer.</p>
+
+  <h2 id="data">The data used below</h2>
+  <p>Account-level delinquency data is private, so no public dataset has days-past-due per loan. The mechanics are the same one level up. The first two questions use <code>financials</code> from the FDIC's BankFind data: one row per bank per quarter-end for the four quarters of 2025, with each bank's non-performing loan ratio (<code>npl_ratio</code>, in percent). A bank's NPL ratio is the share of its loans that have stopped performing, so bucketing banks by it is the same SQL as bucketing loans by days past due. The third question uses a synthetic card ledger: <code>transactions</code> (txn_id, account_id, amount, txn_at, merchant_id, …) and <code>chargebacks</code> (chargeback_id, txn_id, reason_code, opened_at, resolved_at, status, …). Both run on SQLite, as they do in the browser.</p>
+
+  <h2 id="buckets">Question 1: risk buckets, and the CASE that swallows them</h2>
+  <p>Question: <em>how many banks fall into each NPL band at the end of 2025: under 0.5%, 0.5–1%, 1–2%, and 2% or more?</em> The natural first draft walks the thresholds upward with <code>&gt;=</code>:</p>
+<div class="code-block" data-dataset="finans_banking"><div class="code-label">wrong: the first WHEN catches everything above 0.5</div><pre><code><span class="kw">SELECT</span> <span class="kw">CASE</span> <span class="kw">WHEN</span> npl_ratio &gt;= <span class="num">0.5</span> <span class="kw">THEN</span> <span class="str">'0.5-1%'</span>
+            <span class="kw">WHEN</span> npl_ratio &gt;= <span class="num">1</span> <span class="kw">THEN</span> <span class="str">'1-2%'</span>
+            <span class="kw">WHEN</span> npl_ratio &gt;= <span class="num">2</span> <span class="kw">THEN</span> <span class="str">'2%+'</span>
+            <span class="kw">ELSE</span> <span class="str">'under 0.5%'</span> <span class="kw">END</span> <span class="kw">AS</span> npl_bucket,
+       <span class="kw">COUNT</span>(*) <span class="kw">AS</span> banks
+<span class="kw">FROM</span> financials
+<span class="kw">WHERE</span> period_end = <span class="str">'20251231'</span>
+<span class="kw">GROUP BY</span> npl_bucket
+<span class="kw">ORDER BY</span> npl_bucket;</code></pre></div>
+  <table><thead><tr><th>npl_bucket</th><th>banks</th></tr></thead><tbody>
+    <tr><td>0.5-1%</td><td>87</td></tr>
+    <tr><td>under 0.5%</td><td>106</td></tr>
+  </tbody></table>
+  <p>Two of the four bands are missing. <code>CASE</code> returns the first <code>WHEN</code> that is true, and every bank at 1% or 3% is also at least 0.5%, so the first branch takes them all. Nothing errors; the query just answers a different question. Write the bands so each branch can only see what the earlier ones left, either with upper bounds in rising order or lower bounds in falling order. Then put a sort key in the label, because <code>ORDER BY</code> on text puts "2%+" before "under 0.5%".</p>
+<div class="code-block" data-dataset="finans_banking"><div class="code-label">right: rising upper bounds, a sortable label</div><pre><code><span class="kw">SELECT</span> <span class="kw">CASE</span> <span class="kw">WHEN</span> npl_ratio &lt; <span class="num">0.5</span> <span class="kw">THEN</span> <span class="str">'1: under 0.5%'</span>
+            <span class="kw">WHEN</span> npl_ratio &lt; <span class="num">1</span> <span class="kw">THEN</span> <span class="str">'2: 0.5-1%'</span>
+            <span class="kw">WHEN</span> npl_ratio &lt; <span class="num">2</span> <span class="kw">THEN</span> <span class="str">'3: 1-2%'</span>
+            <span class="kw">ELSE</span> <span class="str">'4: 2%+'</span> <span class="kw">END</span> <span class="kw">AS</span> npl_bucket,
+       <span class="kw">COUNT</span>(*) <span class="kw">AS</span> banks
+<span class="kw">FROM</span> financials
+<span class="kw">WHERE</span> period_end = <span class="str">'20251231'</span>
+<span class="kw">GROUP BY</span> npl_bucket
+<span class="kw">ORDER BY</span> npl_bucket;</code></pre></div>
+  <table><thead><tr><th>npl_bucket</th><th>banks</th></tr></thead><tbody>
+    <tr><td>1: under 0.5%</td><td>106</td></tr>
+    <tr><td>2: 0.5-1%</td><td>62</td></tr>
+    <tr><td>3: 1-2%</td><td>20</td></tr>
+    <tr><td>4: 2%+</td><td>5</td></tr>
+  </tbody></table>
+  <p>The bands add up to the same 193 banks as before; only the split is now true. In an interview, say the boundary rule out loud: is a bank at exactly 1.0% in the 0.5–1% band or the 1–2% band? Here it is in 1–2%, because the test is <code>&lt; 1</code>. A days-past-due bucket has the same question at 30, 60 and 90 days.</p>
+
+  <h2 id="roll-rates">Question 2: roll rates between two quarters</h2>
+  <p>Question: <em>of the banks in each NPL band at the end of Q3 2025, how many moved to a better band by the end of Q4, how many stayed, and how many rolled to a worse one?</em> This is a roll-rate table. It needs each bank's band in two periods side by side: bucket once in a CTE, then join the table to itself on the bank, Q3 on the left and Q4 on the right.</p>
+<div class="code-block" data-dataset="finans_banking"><div class="code-label">bucket once, then join Q3 to Q4 on the bank</div><pre><code><span class="kw">WITH</span> b <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> cert, period_end,
+         <span class="kw">CASE</span> <span class="kw">WHEN</span> npl_ratio &lt; <span class="num">0.5</span> <span class="kw">THEN</span> <span class="num">1</span>
+              <span class="kw">WHEN</span> npl_ratio &lt; <span class="num">1</span> <span class="kw">THEN</span> <span class="num">2</span>
+              <span class="kw">WHEN</span> npl_ratio &lt; <span class="num">2</span> <span class="kw">THEN</span> <span class="num">3</span>
+              <span class="kw">ELSE</span> <span class="num">4</span> <span class="kw">END</span> <span class="kw">AS</span> bucket
+  <span class="kw">FROM</span> financials
+)
+<span class="kw">SELECT</span> q3.bucket <span class="kw">AS</span> from_bucket,
+       <span class="kw">COUNT</span>(*) <span class="kw">AS</span> banks,
+       <span class="kw">SUM</span>(q4.bucket &lt; q3.bucket) <span class="kw">AS</span> improved,
+       <span class="kw">SUM</span>(q4.bucket = q3.bucket) <span class="kw">AS</span> stayed,
+       <span class="kw">SUM</span>(q4.bucket &gt; q3.bucket) <span class="kw">AS</span> rolled_worse,
+       <span class="kw">SUM</span>(q4.cert <span class="kw">IS</span> <span class="kw">NULL</span>) <span class="kw">AS</span> no_q4_row
+<span class="kw">FROM</span> b q3
+<span class="kw">LEFT JOIN</span> b q4 <span class="kw">ON</span> q4.cert = q3.cert <span class="kw">AND</span> q4.period_end = <span class="str">'20251231'</span>
+<span class="kw">WHERE</span> q3.period_end = <span class="str">'20250930'</span>
+<span class="kw">GROUP BY</span> q3.bucket
+<span class="kw">ORDER BY</span> q3.bucket;</code></pre></div>
+  <table><thead><tr><th>from_bucket</th><th>banks</th><th>improved</th><th>stayed</th><th>rolled_worse</th><th>no_q4_row</th></tr></thead><tbody>
+    <tr><td>1</td><td>104</td><td>0</td><td>100</td><td>4</td><td>0</td></tr>
+    <tr><td>2</td><td>66</td><td>6</td><td>57</td><td>3</td><td>0</td></tr>
+    <tr><td>3</td><td>15</td><td>1</td><td>14</td><td>0</td><td>0</td></tr>
+    <tr><td>4</td><td>8</td><td>2</td><td>5</td><td>0</td><td>1</td></tr>
+  </tbody></table>
+  <p>Three things in that query are the answer to the follow-up questions an interviewer asks next.</p>
+  <ul>
+    <li><strong>Why a LEFT JOIN.</strong> One bank in the worst band has no Q4 row. Banks fail, merge or stop filing, as loans are paid off or charged off. An inner join drops it silently, and the band's denominator shrinks from 8 to 7. The <code>no_q4_row</code> column keeps it visible, which is where a reviewer looks first.</li>
+    <li><strong>Why the bucket is a number.</strong> Comparing <code>q4.bucket &gt; q3.bucket</code> only means "worse" because the bands are ordered integers. With text labels you would need a second CASE.</li>
+    <li><strong>Why the join condition holds the period.</strong> The Q4 filter sits in the <code>ON</code> clause, not in <code>WHERE</code>. In <code>WHERE</code>, <code>q4.period_end = '20251231'</code> would throw away the NULL row the LEFT JOIN just kept: the trap described on <a href="/sql-left-join-where-filter/">the LEFT JOIN WHERE filter page</a>.</li>
+  </ul>
+  <p>A roll rate is then a ratio of two cells: of the 66 banks in band 2 at Q3, 3 rolled worse, 4.5%. On loan data the same table runs month to month, and the classic question is the share of 30-day-late accounts that roll to 60 days.</p>
+
+  <h2 id="dispute-window">Question 3: the dispute window, in days</h2>
+  <p>Question: <em>for each chargeback reason, how many days pass on average between the card transaction and the dispute, and how many disputes were opened within 7 days?</em> Card networks give cardholders a limited window to dispute, so issuers watch this closely. Timestamps here are ISO text such as <code>2026-03-06T16:52:17.429Z</code>, and the tempting first draft subtracts them directly:</p>
+<div class="code-block" data-dataset="finans_fraud"><div class="code-label">wrong: subtracting two text timestamps</div><pre><code><span class="kw">SELECT</span> <span class="kw">ROUND</span>(<span class="kw">AVG</span>(c.opened_at - t.txn_at), <span class="num">1</span>) <span class="kw">AS</span> avg_days_to_dispute
+<span class="kw">FROM</span> chargebacks c
+<span class="kw">JOIN</span> transactions t <span class="kw">ON</span> t.txn_id = c.txn_id;</code></pre></div>
+  <p>That returns <strong>0</strong>.</p>
+  <p>Zero days, for every dispute. SQLite turns each string into the number at its front, 2026, and 2026 minus 2026 is 0. No error warns you. Convert both sides to day numbers with <code>julianday()</code> first (Postgres would subtract timestamps natively; on a CodeSignal-style platform, check which engine you are on):</p>
+<div class="code-block" data-dataset="finans_fraud"><div class="code-label">right: julianday() on both sides</div><pre><code><span class="kw">SELECT</span> c.reason_code,
+       <span class="kw">COUNT</span>(*) <span class="kw">AS</span> disputes,
+       <span class="kw">SUM</span>(julianday(c.opened_at) - julianday(t.txn_at) &lt;= <span class="num">7</span>) <span class="kw">AS</span> within_7_days,
+       <span class="kw">ROUND</span>(<span class="kw">AVG</span>(julianday(c.opened_at) - julianday(t.txn_at)), <span class="num">1</span>) <span class="kw">AS</span> avg_days_to_dispute
+<span class="kw">FROM</span> chargebacks c
+<span class="kw">JOIN</span> transactions t <span class="kw">ON</span> t.txn_id = c.txn_id
+<span class="kw">GROUP BY</span> c.reason_code
+<span class="kw">ORDER BY</span> avg_days_to_dispute, c.reason_code;</code></pre></div>
+  <table><thead><tr><th>reason_code</th><th>disputes</th><th>within_7_days</th><th>avg_days_to_dispute</th></tr></thead><tbody>
+    <tr><td>duplicate_charge</td><td>13</td><td>6</td><td>6.8</td></tr>
+    <tr><td>service_not_received</td><td>13</td><td>9</td><td>6.8</td></tr>
+    <tr><td>fraud_card_not_present</td><td>19</td><td>11</td><td>7.5</td></tr>
+    <tr><td>fraud_card_present</td><td>22</td><td>6</td><td>8.5</td></tr>
+    <tr><td>item_not_as_described</td><td>9</td><td>4</td><td>9</td></tr>
+  </tbody></table>
+  <p>Two habits make this answer defensible. The second <code>ORDER BY</code> key matters because two reasons tie at 6.8 days, and without it the order of a tie is up to the engine. And the join goes from the dispute to its transaction, one to one, so nothing fans out; joining disputes to <em>all</em> of an account's transactions would multiply every dispute. For the status of a dispute, read the columns rather than the label: practise that in <a href="/questions/chargeback-reason-codes-resolved-and-still-open/">Chargeback Reason Codes: Resolved and Still Open</a>.</p>
+  <div class="callout"><p><strong>Fraud is a different interview.</strong> Velocity rules, impossible travel and shared-device rings are fraud detection, not credit risk. They have their own walk-through: <a href="/blog/sql-for-fraud-analytics/">SQL for fraud analytics</a> and the <a href="/fraud-analytics-sql/">fraud analytics practice set</a>.</p></div>
+
+  <h2 id="practice">Practice on the same data</h2>
+  <p>These run on the same two datasets, in the browser. Hard ones are marked Pro; the rest count toward a free account's 10 free challenge solves.</p>
+  <ul class="practice-list" data-practice="banking-sql-interview-questions">
+    <li><a href="/app/?challenge=208&amp;src=blog-banking-sql-interview-questions" data-track="cta_blog_challenge">Asset Tier Classification</a> <span class="pl-meta">· Easy</span> — a CASE ladder on bank assets</li>
+    <li><a href="/app/?challenge=266&amp;src=blog-banking-sql-interview-questions" data-track="cta_blog_challenge">Trust Banks vs Others — NPL Profile Comparison</a> <span class="pl-meta">· Medium</span> — NPL ratios by group</li>
+    <li><a href="/app/?challenge=213&amp;src=blog-banking-sql-interview-questions" data-track="cta_blog_challenge">Above-Median NPL Banks</a> <span class="pl-meta">· Medium</span> — a threshold computed in a CTE</li>
+    <li><a href="/app/?challenge=262&amp;src=blog-banking-sql-interview-questions" data-track="cta_blog_challenge">Tier 1 Capital Below Well-Capitalized Threshold</a> <span class="pl-meta">· Medium</span> — a regulatory cut-off</li>
+    <li><a href="/app/?challenge=261&amp;src=blog-banking-sql-interview-questions" data-track="cta_blog_challenge">NPL Quarter-over-Quarter Acceleration</a> <span class="pl-meta">· Hard · Pro</span> — period over period with LAG</li>
+    <li><a href="/app/?challenge=217&amp;src=blog-banking-sql-interview-questions" data-track="cta_blog_challenge">QoQ Asset Growth — Top Banks</a> <span class="pl-meta">· Hard · Pro</span> — growth between quarters</li>
+    <li><a href="/app/?challenge=287&amp;src=blog-banking-sql-interview-questions" data-track="cta_blog_challenge">Chargeback Reason Codes: Resolved and Still Open</a> <span class="pl-meta">· Easy</span> — NULL timestamps on disputes</li>
+    <li><a href="/app/?challenge=280&amp;src=blog-banking-sql-interview-questions" data-track="cta_blog_challenge">Chargeback Rate Per Merchant</a> <span class="pl-meta">· Medium</span> — a dispute rate with the right denominator</li>
+    <li><a href="/app/?challenge=291&amp;src=blog-banking-sql-interview-questions" data-track="cta_blog_challenge">Spend and Disputes Per Cardholder — Without the Fan-Out</a> <span class="pl-meta">· Medium</span> — two facts per account, no double count</li>
+    <!-- niche-343:links -->
+  </ul>
+  <p>Preparing for a named bank? The company pages carry a practice set, the reported format with its sources, and a readiness check: <a href="/capital-one-sql-interview/" data-track="cta_blog_company">Capital One</a> (with a timed CodeSignal-style mock), <a href="/jpmorgan-sql-interview/" data-track="cta_blog_company">JPMorgan</a>, <a href="/goldman-sachs-sql-interview/" data-track="cta_blog_company">Goldman Sachs</a> and <a href="/morgan-stanley-sql-interview/" data-track="cta_blog_company">Morgan Stanley</a>. For Capital One's screen in particular, read <a href="/blog/capital-one-codesignal-data-analyst-assessment/">what the CodeSignal data analyst assessment asks</a>.</p>
+
+  <div class="cta-box">
+    <h3 class="fd">Find your weakest skill before the screen</h3>
+    <p>Ten questions, no signup: the readiness test scores you on the nine skills these questions lean on and points to the first one to fix. A free account gets 10 free challenge solves, plus the lessons, warm-ups and the daily challenge. In the app's Capital One set the first 3 are free to try; Pro opens every challenge and the timed mocks.</p>
+    <a href="/sql-interview-readiness-test/?company=capital-one" class="cta-main" data-track="cta_blog_readiness_end">Take the readiness test →</a>
+    <p style="margin:20px auto 0;font-size:13px"><a href="/app/?company=Capital%20One&amp;goal=interview&amp;src=blog-banking-sql-interview-questions" data-track="cta_blog_company_end">or start the Capital One set in the browser →</a></p>
+  </div>
+
+  <h2 id="faq">FAQ</h2>
+  <!-- Mirrors the FAQPage JSON-LD in <head>; keep both in sync (tests/sector-articles.test.js). -->
+  <div class="faq">
+    <details>
+      <summary>What SQL questions do banks ask data analysts?</summary>
+      <p>Public prep material and candidate reports describe three recurring shapes: putting accounts, loans or banks into risk buckets with CASE WHEN; comparing those buckets between two periods, such as which accounts moved to a worse band (a roll rate); and timing or reconciliation questions, such as days from a charge to its dispute or matching totals across two reports. Banks do not publish their questions, so treat any list as reported, not official.</p>
+    </details>
+    <details>
+      <summary>How do you calculate a roll rate in SQL?</summary>
+      <p>Bucket each account once per period in a CTE, then join the CTE to itself on the account: the earlier period on the left, the later period on the right, with the later period named in the ON clause of a LEFT JOIN. Count, per starting bucket, the accounts whose later bucket is higher. Keep accounts with no later row visible in their own column instead of letting an inner join drop them.</p>
+    </details>
+    <details>
+      <summary>Why does my CASE WHEN put everything in one bucket?</summary>
+      <p>CASE returns the first branch that is true. If the first branch is a broad lower bound such as npl_ratio &gt;= 0.5, it also catches every larger value, so the later branches never run. Order the branches so each can only see what the earlier ones left: rising upper bounds with &lt;, or falling lower bounds with &gt;=.</p>
+    </details>
+    <details>
+      <summary>Where can I practice SQL for a bank or credit card analyst interview?</summary>
+      <p>SQL Quest runs bank questions on the FDIC's public bank data and card questions on a synthetic card ledger, in the browser with no signup. The Capital One, JPMorgan and Goldman Sachs pages each carry a practice set and the reported format with sources. A free account gets 10 free challenge solves, plus the lessons, warm-ups and the daily challenge.</p>
+    </details>
+  </div>
+
+  <h2 id="sources">Sources</h2>
+  <p>No bank published the shapes above. Each line is what a prep guide or a candidate report said, with the date it carried; our own reads that recorded them are in the repository under docs/reads/companies/ (22 November 2026).</p>
+  <ul class="sources">
+    <li>extrabrain — Capital One CodeSignal data analyst prep guide, February 2026 (topic list including "CASE WHEN for conditional metrics and buckets"); recorded in our Capital One read of 22 November 2026.</li>
+    <li>DataLemur — <a href="https://datalemur.com/blog/jpmorgan-chase-sql-interview-questions">JPMorgan Chase SQL interview questions</a>, updated 28 March 2025 (card issuance by month; active and dormant accounts).</li>
+    <li>Interview Query — <a href="https://www.interviewquery.com/guides/jp-morgan-chase-data-analyst">JPMorgan Chase data analyst guide</a>, one candidate report stamped "Interviewed Q2 2025", read 22 November 2026 (reconciling numbers across reports).</li>
+    <li>FDIC BankFind Suite — bank financials for 2025, U.S. public domain; the dataset behind questions 1 and 2.</li>
+  </ul>
+
+  <div class="related">
+    <h4>Related reading</h4>
+    <ul>
+      <li><a href="/blog/capital-one-codesignal-data-analyst-assessment/">What the Capital One CodeSignal data analyst assessment asks</a> — the screen, from dated candidate reports</li>
+      <li><a href="/blog/payments-sql-interview-questions/">Payments SQL interview questions</a> — authorisation, reversals, currencies and reconciliation</li>
+      <li><a href="/blog/sql-for-fraud-analytics/">SQL for fraud analytics</a> · <a href="/fraud-analytics-sql/">fraud analytics practice</a></li>
+      <li><a href="/sql-interview-prep/">SQL Interview Prep Hub</a> — every company page</li>
+      <li><a href="/blog/sql-case-when-tutorial/">CASE WHEN tutorial</a> · <a href="/sql-left-join-where-filter/">The LEFT JOIN WHERE filter trap</a></li>
+    </ul>
+  </div>
+</article>
+
+<footer class="ft">
+  <p>© 2026 SQL Quest · <a href="/">Home</a> · <a href="/blog/">Blog</a> · <a data-track="cta_blog" href="/app/?company=Capital%20One&amp;goal=interview&amp;src=blog-banking-sql-interview-questions">Practice Free</a> · <a href="/sql-exercises/">SQL Practice Questions</a> · <a href="/best-sql-practice-sites/">Best SQL Practice Sites</a></p>
+<style data-footer-fit>@media(max-width:600px){.flk{row-gap:0}.flk a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;padding:0 4px}.fnav a{display:flex;align-items:center;min-height:44px;padding:0}}</style><p data-partner="datrick" style="margin:18px auto 0;max-width:1000px;padding:0 24px;font-size:12px;color:#8A8E99;text-align:center;">SQL Quest is built by Datrick, Inc. · <a href="https://datrick.com/sql-server-to-postgresql-migration" style="color:inherit;text-decoration:underline;">SQL Server to PostgreSQL migration</a></p></footer>
+  <script defer src="/track.js"></script>
+</body>
+</html>

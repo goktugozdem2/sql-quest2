@@ -301,6 +301,48 @@ of the verifier and must never be rounded to `FLAT`.
   - (d) This claim was written by the same model family that will fix and
     review the findings. Correlated blind spots are possible, so (b) is the
     honest test, not the count.
+### three sector SQL interview posts: banking, payments, e-commerce (founder's ask)
+
+- **Claimed** 2026-11-23 · **Shipped** on merge · **Read** 28 days after the
+  deploy (2026-12-21 if it deploys 2026-11-23), again at 56 days.
+- **Change:** `/blog/banking-sql-interview-questions/` (risk buckets, roll
+  rates, dispute windows on FDIC `finans_banking` + `finans_fraud`),
+  `/blog/payments-sql-interview-questions/` (authorised/settled/reversed,
+  mixed currencies, two-leg reconciliation on `finans_neobank`),
+  `/blog/ecommerce-sql-interview-questions/` (GMV vs net, repeat-rate
+  denominators, affinity with lift on `ecommerce`). Every shown query runs and
+  is pinned (`tests/sector-articles.test.js`). Linked the same day from 13
+  company pages (the crosslink strip's `SECTOR_GUIDES`), the interview hub,
+  the blog index, `/fraud-analytics-sql/` and the fraud blog post.
+- **Why these three:** `docs/reads/sector-articles-keywords-2026-11-23.md` —
+  the sector heads are DataLemur company-listicle SERPs with no worked sector
+  guide; buyer signal is Capital One (banking), fintech clicks (35 of 42 sector
+  clicks), Amazon (3 of 15 payers). Big tech skipped: every query names a
+  company that already has a page. SEO-loop rule 1 is RED; the founder's
+  explicit ask is the exception, capped at 3.
+- **Metric** `seo_page_funnel` (metrics.md) for the three paths, plus GSC
+  impressions and clicks per post (`gsc_daily`, page slice) and Bing
+  (`bing_stats`, page slice). Money read beside it with `landing_to_trial`.
+- **Baseline** 0 for all three (new URLs).
+- **Target at 28 d** (written before data): at least 2 of the 3 posts have
+  ≥ 100 GSC impressions each and are indexed on Google; together ≥ 10 clicks
+  (GSC + Bing); ≥ 15% of the posts' landing people open the app within 7 days
+  (`seo_page_funnel` opened-app step; the blog family read 3.8% solved in the
+  first run, so a solve is not the 28-day bar). At 56 d: ≥ 1 trial or purchase
+  from a person whose first landing was one of the posts.
+- **Falsification, written now:**
+  - (a) At 28 d, fewer than 2 posts reach 100 impressions → **MISS**; the
+    sector-head thesis was wrong for this domain. No more sector posts; merge
+    the weakest into its company pages.
+  - (b) A company page in the post's ring (Capital One, JPMorgan, Stripe,
+    Revolut, Wise, Amazon, Walmart) loses more than 20% of its prior-28-day
+    clicks while the post ranks for the same queries → cannibalised: noindex
+    the post (`seo-prune.json`) and keep the page.
+  - (c) At 56 d, ≥ 150 landing people across the posts and 0 app opens →
+    the posts are not doors; one improvement run, then the C5 kill rule.
+  - (d) S1 still RED at the read with Bing's index growing faster than the
+    sitemap → read the posts as a cost, not a win, whatever the clicks.
+
 ### the Revolut guide: a sourced blog door for the best fintech page (C5)
 
 - **Claimed** 2026-11-22 · **Shipped** on merge · **Read** 2026-12-20 (28 d) and 2027-01-17 (56 d).

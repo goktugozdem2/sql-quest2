@@ -96,6 +96,19 @@ const ADJACENT = {
 // Four own-sector links plus two adjacent keeps the ring inside the biggest
 // sector without turning the block into a farm. tests/company-crosslinks.test.js
 // binds the committed blocks to this generator so they cannot drift again.
+// 2026-11-23: the sector guides (docs/reads/sector-articles-keywords-2026-11-23.md).
+// One line in the strip, so the link reaches generated and hand-written pages
+// alike and a re-run of this script keeps it. A company not listed gets none.
+const BANKING_GUIDE = ['/blog/banking-sql-interview-questions/', 'Banking SQL interview questions: risk buckets, roll rates, dispute windows'];
+const PAYMENTS_GUIDE = ['/blog/payments-sql-interview-questions/', 'Payments SQL interview questions: authorisation, reversals, currencies, reconciliation'];
+const ECOMMERCE_GUIDE = ['/blog/ecommerce-sql-interview-questions/', 'E-commerce SQL interview questions: GMV vs revenue, repeat purchase, affinity'];
+const SECTOR_GUIDES = {
+  'capital-one': BANKING_GUIDE, jpmorgan: BANKING_GUIDE, 'goldman-sachs': BANKING_GUIDE, 'morgan-stanley': BANKING_GUIDE,
+  stripe: PAYMENTS_GUIDE, paypal: PAYMENTS_GUIDE, revolut: PAYMENTS_GUIDE, wise: PAYMENTS_GUIDE,
+  monzo: PAYMENTS_GUIDE, chime: PAYMENTS_GUIDE,
+  amazon: ECOMMERCE_GUIDE, walmart: ECOMMERCE_GUIDE, shopify: ECOMMERCE_GUIDE,
+};
+
 const OWN_SECTOR_LINKS = 4;
 const LINKS_PER_PAGE = 6;
 const START = '<!-- related-companies:start -->';
@@ -157,7 +170,8 @@ function block(slug) {
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;">
 ${cards}
     </div>
-    <p style="text-align:center;margin-top:28px;">
+${SECTOR_GUIDES[slug] ? `    <p style="text-align:center;margin-top:28px;font-size:14px;color:#94a3b8;">Sector guide: <a href="${SECTOR_GUIDES[slug][0]}" data-track="cta_sector_guide" style="color:#c084fc;text-decoration:none;font-weight:600;">${SECTOR_GUIDES[slug][1]} &rarr;</a></p>
+` : ''}    <p style="text-align:center;margin-top:28px;">
       <a href="/sql-interview-prep/" style="font-size:13px;color:#94a3b8;text-decoration:none;border-bottom:1px solid rgba(255,255,255,.12);padding-bottom:2px;">See all company question sets &rarr;</a>
     </p>
   </div>
@@ -165,7 +179,7 @@ ${cards}
 ${END}`;
 }
 
-export { COMPANIES, ADJACENT, LINKS_PER_PAGE, OWN_SECTOR_LINKS, START, END, relatedFor, block };
+export { COMPANIES, ADJACENT, SECTOR_GUIDES, LINKS_PER_PAGE, OWN_SECTOR_LINKS, START, END, relatedFor, block };
 
 // The committed block for a page, or null when it carries none. Used by the
 // test that binds the pages to this generator.
