@@ -783,3 +783,26 @@ Every competitor fact cited must come from that read (URL + date).
     Crypto, ≥ 100k iterations) on the next successful sign-in and marks the
     row's scheme; account-password writes the new scheme. Founder's call —
     it touches every sign-in.
+
+## Inbox review — 2026-11-23 (docs/reads/inbox-review-2026-11-23.md)
+
+- **IR-1 (B3/R1). The Stripe reconciliation round that a paying user
+  reported** (two partner tables against an expectations table; check the
+  key is unique; anti-join in both directions; filter the expectations to the
+  partner). Add it to `docs/reads/companies/stripe.md` as "a reconciliation
+  round reported by a candidate", unattributed, as the founder promised. Then
+  write one challenge in that shape. The Amazon report from the same person
+  already became three challenges.
+- **IR-2 (E2). The feedback widget is used as a help desk it can't serve.**
+  Twice a guest asked "what's my mistake" with no contact; the latest was on
+  11-19, from the /sql-exercises/ solutions. When the widget opens on a
+  challenge screen, attach the challenge id, the last query and the
+  diagnosis, and answer on the spot with a link to the diagnosis or the
+  tutor ("This box goes to the founder. For this query, the tutor answers
+  now."). Measure it with `feedback_submitted` rows that carry a challenge
+  id.
+- **IR-3 (founder). A payer's job question,** asked 2026-09-14 and never
+  answered. One honest line, either way.
+- **IR-4 (founder). Acknowledge the 09-15 security report** once #223 is
+  deployed. The reporter left no contact, so this item is just to close the
+  loop in the ledger.
