@@ -272,3 +272,12 @@ describe('every challenge in the bank: the starter on tables[0] runs on its data
     expect(failures).toEqual([]);
   });
 });
+
+// A1 review of #271 (2026-11-24): the post-solve share bar is fixed at
+// bottom-4 / z-50 and covered Run and Submit for up to 12 s in the bar arm.
+it('the share bar lifts above the fixed Run bar on a phone', () => {
+  const app = readFileSync(new URL('../src/app.jsx', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../src/input.css', import.meta.url), 'utf8');
+  expect(app).toMatch(/function MilestoneShareBar[\s\S]{0,800}className="sq-share-bar fixed bottom-4/);
+  expect(css).toMatch(/body\[data-run-bar="fixed"\] \.sq-share-bar \{\s*bottom: calc\(104px \+ env\(safe-area-inset-bottom\)\);/);
+});

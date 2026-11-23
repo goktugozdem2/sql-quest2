@@ -58,6 +58,53 @@ of the verifier and must never be rounded to `FLAT`.
   this is an effect-size rule fixed now, not a p-value. If either arm has
   fewer than 15 people at the read date, extend the read by 28 days once,
   then call it.
+- **Confound, stated in advance** (A1 review, 2026-11-24): `mobileOneLayer`,
+  `runSubmitNudge` (#243) and `companyDirectOpen` (ON at 50/50) reach the
+  same phones in the same window. Report the 2×2 cell counts with
+  `mobileOneLayer`, and the arm split within each other test, and never pool
+  across any of their flip dates.
+
+### One layer at a time after a solve on phones (`mobileOneLayer`, rank 3 of the mobile plan)
+
+- **Claimed** 2026-11-23 · **Shipped** dark on merge; ON at 50/50 only by
+  the orchestrator's decision row after review · **Read** 2026-12-21 (if
+  the flip lands later, 28 days after the flip).
+- **Change** on a narrow touch screen (coarse pointer or width < 768) the
+  first correct submit assigns an arm by aid (`mobile_one_layer_v1`, FNV +
+  murmur3 finalizer), written once as `mobile_one_layer_assigned {arm}`. In
+  `one`: the solve feedback, then the ask (soft email, then the intent
+  question) is the only layer; the achievement toast, LEVEL UP, the
+  Skillmap card, the share bar and the streak card are held until the next
+  challenge opens, where the first still pending shows alone and the rest
+  are dropped for the session; no tier-3 layer renders over a modal; every
+  close target on the shown layer is ≥ 44×44. `control`, desktop and the
+  flag off: today's behaviour. Headless 390×844, challenge 91: control
+  showed 5 layers at 3.5 s (intent, achievement, LEVEL UP, Skillmap card,
+  share bar; close targets 24×24 and 14×28); `one` showed the intent
+  question alone (smallest target 308×44), nothing after the answer, and
+  one achievement toast (close 44×44) at the next challenge open. Plan:
+  `docs/plans/mobile-acquisition-2026-11-23.md` §2 W3, §3 row 3.
+- **Metric** `second_solve_same_session`, mobile band, by arm (definition:
+  `docs/agent/metrics.md`, PR #280). Secondary: the intent question's
+  answer rate (`intent_captured` per assigned person), mobile, by arm.
+- **Baseline** mobile 60% (18 of 30, 90 days to 2026-11-23); 4 of 6 in the
+  last 28 days. Desktop 69% (668 of 973) — mobile first solvers who stay
+  are not rare, mobile first solvers are.
+- **Target** the `one` arm ≥ 10 points above `control`.
+- **Falsified if** at the call the `one` arm's rate is not ≥ 10 points above
+  `control`. **Revert** (keep today's layers) if `one` is ≥ 10 points below
+  `control`. **Small sample:** mobile first solvers are about 6 a month, so
+  about 3 per arm per 28 days. At 2026-12-21 report n and the rates as
+  directional only. While either arm has fewer than 15 people, extend by 28
+  days, at most three times; call it on 2027-03-15 whatever n is, and if n
+  is still under 15 per arm keep `one` only if it is not worse than
+  `control` (the plan's "keep only if not worse" rule).
+- **Confound** `mobileRunBar` (PR #271) targets the same phones in the same
+  window and should raise the number of mobile first solvers, so the
+  population changes under this test. The two arms are independent by
+  construction (tested over 10,000 aids, agreement 50 ± 3%). Read the 2×2
+  (`mobile_run_bar_assigned.arm` × `mobile_one_layer_assigned.arm`) and
+  never pool across a flip of either flag.
 
 ### the Debug set: "an AI wrote this query, find and fix the bug" (`debugQuestions`) — **OPEN**
 
