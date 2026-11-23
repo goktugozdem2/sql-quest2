@@ -410,6 +410,26 @@ Dossiers: `goldman-sachs.md`, `amazon.md`, `snowflake.md`.
     or push one non-docs commit after a rate-limited page merge.
   - This is a code change to the deploy path, so it goes to A1/A0.
 
+## SEO sentinel S1 + traffic C8, 2026-11-23
+
+Reads: `docs/reads/seo-sentinel-2026-11.md` (F4) and `docs/reads/traffic-2026-11-23.md`.
+
+- **C1 — RED, day 2.** Bing is 838 against 431 URLs (1.94), flat since #72.
+  `blocked_by_robots` is still +5 on 11-22, the first day #138 could show.
+  The 11-26 check stands.
+  - Only 8 of 312 question pages have been re-crawled since #72. Read #72 on
+    `in_index − blocked_by_robots` and `code_2xx`, never on `in_index` alone.
+- **B2 — stamp the UTC landing crawler.** It started 2026-11-22: 77 people,
+  0 app opens, and a spoofed `bing.com` / `google.com` referrer.
+  - Fingerprint: the user agent disagrees with the window band (a mobile
+    agent at a desktop size, a desktop agent at a mobile size). Do not
+    fingerprint the time zone.
+  - Put it in `src/utils/bot-signals.js` and `src/track.js` with a test.
+    Numbers are in the metrics.md trap of 11-23.
+- **B2 / A0 — #246 (`topic1lang`) is due.** That crawler was 98 people last
+  week and 69 on 11-23 by 15:52 UTC. Every read drops it by hand until
+  #246 merges.
+
 ## Funnel findings — B1, 2026-11-22 (docs/reads/funnel-2026-11-22.md)
 
 Six-solvers 209 → 57 (first solvers 500 → 222, reach-six 41.8% → 25.7%;
