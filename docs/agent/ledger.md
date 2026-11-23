@@ -27,6 +27,43 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### Run stays on screen on phones (`mobileRunBar`, rank 1 of the mobile plan)
+
+- **Claimed** 2026-11-23 · **Shipped** dark on merge; ON at 50/50 by the
+  orchestrator's decision row after review · **Read** 2026-12-21 (if the
+  flip lands later, 28 days after the flip).
+- **Change** on a narrow touch screen (coarse pointer or width < 768) the
+  first challenge open assigns an arm by aid (`mobile_run_bar_v1`, FNV +
+  murmur3 finalizer), written once as `mobile_run_bar_assigned {arm}`. In
+  `bar`, below `md`, the challenge's Run / Submit bar is fixed to the
+  bottom of the viewport (safe-area padded), lifts above the keyboard by
+  `visualViewport`, and shows "Tap Run to see the table" to a person with
+  no solve on an empty editor; `control` keeps today's sticky bar. Desktop
+  and `md`+ are unchanged in both arms (1280 screenshot: 0 pixels differ).
+  Headless 390×844: Run at y = 788–832 on load in `bar` on #105 and #91
+  (control: 1009–1053 on #105, below the 844 screen), and 452–496 with a
+  simulated 336 px keyboard (control: hidden). Plan:
+  `docs/plans/mobile-acquisition-2026-11-23.md` §3 row 1, §4.
+- **Also** (not part of the A/B): Run and Submit are at least 44 px tall
+  below `md` in both arms (QA D3, 2026-11-23: 40 px).
+- **Metric** `open_to_first_run`, mobile band, first-contact opens, by arm
+  (definition: `docs/agent/metrics.md`, PR #270). Secondary: mobile people
+  with a `challenge_solved`.
+- **Baseline** 20% (7 of 35, 28 days to 2026-11-23, people from a page or a
+  source); 9% (2 of 23) on empty-editor challenges.
+- **Target** ≥ 35% in the `bar` arm.
+- **Falsified if** at the read the `bar` arm's open → first run is below
+  35%, or under 15 points above `control`. **Small sample:** about 35
+  mobile first-challenge people arrive per 28 days, so about 17 per arm;
+  this is an effect-size rule fixed now, not a p-value. If either arm has
+  fewer than 15 people at the read date, extend the read by 28 days once,
+  then call it.
+- **Confound, stated in advance** (A1 review, 2026-11-24): `mobileOneLayer`,
+  `runSubmitNudge` (#243) and `companyDirectOpen` (ON at 50/50) reach the
+  same phones in the same window. Report the 2×2 cell counts with
+  `mobileOneLayer`, and the arm split within each other test, and never pool
+  across any of their flip dates.
+
 ### One layer at a time after a solve on phones (`mobileOneLayer`, rank 3 of the mobile plan)
 
 - **Claimed** 2026-11-23 · **Shipped** dark on merge; ON at 50/50 only by
