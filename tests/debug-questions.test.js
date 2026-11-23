@@ -201,9 +201,12 @@ describe('the twelve Debug items', () => {
 
 // ─── 3. the flag ───────────────────────────────────────────────────────────
 describe('debugQuestions: off by default, and off means nowhere', () => {
-  it('ships false, as an explicit key (a missing key reads TRUE in FF)', () => {
-    expect(readFlags().features.debugQuestions).toBe(false);
-    expect(debugFlagOn()).toBe(false);
+  // Flipped ON 2026-11-23 (orchestrator-decisions.md). What must hold either
+  // way: the key is an explicit boolean, never missing (a missing key reads
+  // TRUE in FF), and debugFlagOn() agrees with it.
+  it('is an explicit boolean key (a missing key reads TRUE in FF), and the reader agrees with it', () => {
+    expect(typeof readFlags().features.debugQuestions).toBe('boolean');
+    expect(debugFlagOn()).toBe(readFlags().features.debugQuestions);
     expect(debugQuestionsOn({ features: {} })).toBe(false);
     expect(debugQuestionsOn({ features: { debugQuestions: true } })).toBe(true);
   });
@@ -249,16 +252,19 @@ describe('discovery on the static site renders only with the flag on', () => {
   const { bank } = loadQuestionBank();
   const slugs = questionSlugs(bank);
 
-  it('flag off: no trap-page line, no AI-page section, and no built page carries one', () => {
+  it('flag off renders nothing; the built pages match the committed flag', () => {
+    const on = debugFlagOn();
     for (const p of SQL_PATTERNS) {
       expect(debugItemForTrap(p.slug, { flagOn: false, items })).toBeNull();
       const built = `public/${p.slug}/index.html`;
-      expect(read(built), built).not.toContain('Fix this bug yourself');
+      const want = on && !!debugItemForTrap(p.slug, { flagOn: true, items });
+      expect(read(built).includes('Fix this bug yourself'), built).toBe(want);
     }
     for (const p of AI_PAGES) {
       const html = read(`public/${p.file}`);
-      expect(html, p.file).not.toContain('debug-discovery:start');
-      expect(withAiSection(html, { flagOn: false, items, anchor: p.anchor, src: p.src })).toBe(html);
+      expect((html.match(/debug-discovery:start/g) || []).length, p.file).toBe(on ? 1 : 0);
+      const stripped = html.replace(/<!-- debug-discovery:start -->[\s\S]*?<!-- debug-discovery:end -->/g, '');
+      expect(withAiSection(stripped, { flagOn: false, items, anchor: p.anchor, src: p.src })).toBe(stripped);
     }
   });
 
