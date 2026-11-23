@@ -4006,3 +4006,55 @@ Traps:
 - Baselines are read on the laptop (the cloud session has no production
   data). A claim made from a cloud session states "baseline: laptop read"
   and the laptop writes it before the read date.
+
+## `debug_pack_purchases`
+
+The Debug pack (founder's decision 2026-11-23, PR #251; built in PR #253,
+dark behind `debugPack`): the 12-item Debug set sold on its own, $9 once
+(India $3), Pro includes it. Registered 2026-11-23, before any data, for the
+ledger claim "the Debug pack". Read from the `debugPack` flip, never across
+it; nothing before the flip can be a pack purchase.
+
+**Numerator — pack purchases.** `pro_events` rows with
+`event = 'debug_pack_purchased'` and `reason = 'stripe_webhook'` (the only
+money truth), counted per **username**, once each (a redelivered event never
+writes a second row — the webhook is idempotent on the session id; a
+`debug_pack_duplicate` row is a second payment for the same thing and is
+NOT a purchase). Subtract usernames with a later `debug_pack_refunded` row
+whose `metadata->>'full' = 'true'`. Split by `metadata->>'region'`
+(`default` | `IN`) and report `metadata->>'amount'` summed per region.
+
+**Read beside it — Pro from a Debug lock.** People whose `pro_plan_clicked`
+(`reason = 'activation_funnel'`) carries `metadata->>'modalReason' =
+'debug_lock'` and `metadata->>'product'` absent (a Pro plan, not the pack),
+then a `stripe_webhook` `pro_purchase_completed` or `pro_trial_started` for
+the same **username** within 24 h of the click (the webhook row has no aid —
+shared traps). The same count with `modalReason = 'free_quota'` is the
+second series the cannibalisation rule reads.
+
+**Funnel, for context (not the verdict).** Shown the card:
+`pro_modal_shown` with `metadata->>'debugPackOffered' = 'true'` (people by
+aid). Clicked it: `pro_plan_clicked` with `metadata->>'product' =
+'debug_pack'`. Session made: `debug_pack_checkout_started`
+(`reason = 'checkout_session'`); refused: `debug_pack_checkout_failed`
+(`stage = 'debug_pack_unconfigured'` means a price secret is missing — a
+setup bug, not a buyer). Expired: `debug_pack_checkout_expired`
+(`stripe_webhook`).
+
+**Verdict (28 days after the flip), from the ledger, written before data:**
+- HIT: ≥ 3 pack purchases, and Pro purchases from `debug_lock` +
+  `free_quota` not below the 30 days before the flip.
+- MISS (withdraw the pack, Debug stays inside Pro): Pro purchases from
+  `debug_lock` + `free_quota` together below the 30 days before the flip
+  while pack purchases rise (#251's cannibalisation rule); or zero pack
+  purchases with ≥ 20 people shown the card.
+- FLAT: anything else — say so, do not round it to a hit.
+
+Traps:
+- Internal accounts (`isInternalAccount` patterns) and localhost are out;
+  analytics are muted on localhost.
+- `pro_checkout_clicked` rows with `product = 'debug_pack'` are pack clicks.
+  Any Pro checkout-click series read after the flip must exclude them (the
+  checkout-abandon sender already does).
+- n will be small (about 52 real new people a week in late November), so
+  read the rows, not a rate.
