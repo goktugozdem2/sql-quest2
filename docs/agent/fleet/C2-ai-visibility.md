@@ -4,6 +4,8 @@
 **Cadence:** every other Wednesday.
 **Judged by:** `ai:*` landings per month (`landingSrc`) and, by hand, Bing Copilot citations.
 
+**Part of the SEO loop** (`SEO-loop.md`): stage 4 (act). C2 takes its page work from C1's weekly list and G1's gaps. It ships no new page while S1 is **RED**, and changes the same page at most once every two weeks.
+
 1. Find which pages assistants retrieve:
    - chat-shaped queries in `gsc_daily` (long, conversational, other languages, pasted exam questions), counted per page;
    - `landingSrc` `ai:*` landings by page.

@@ -501,6 +501,16 @@ export function findFreeTierClaims(text, { quotaOn, setGateOn, quota = FREE_SOLV
         [/\bfree Hard previews?\b/gi, '"free Hard previews" — a Hard preview is one of the quota\'s solves, not free on its own'],
         [/\bEasy and Medium (?:challenges )?(?:are|is|stay) free\b/gi, '"Easy and Medium are free" — under the quota ' + quota + ' solves are'],
         [/\bfree forever\b/gi, '"free forever" — never said of the challenges, and never at all under the quota'],
+        // 2026-11-22 (A1 on #132): the bank-wide preview count. "or one of the 6
+        // Hard previews" in the quota sentence, "Hard — 84 exercises, 6
+        // previews", "Pro + 6 previews", "Hard is Pro except 6 previews",
+        // "unlocks the other 76": the quota sentence says "or a Hard preview"
+        // and counts nothing. A set's own count ("this set … or its 3 Hard
+        // previews", a topic page's "including the 5 Hard previews") is
+        // generated from the set and stays.
+        [/\bone of (?:the )?\d+ (?:free )?Hard previews?\b/gi, '"one of N Hard previews" — the quota sentence says "or a Hard preview" (CLAUDE.md), no bank-wide count'],
+        [/\b(?:Pro \+|except|exercises,) \d+ previews?\b/gi, '"N previews" beside the Hard total — the quota sentence says "or a Hard preview", no bank-wide count'],
+        [/\bunlocks the other \d+\b/gi, '"unlocks the other N" — the Hard total minus a preview count; say what Pro opens, not the remainder'],
       ];
       for (const [re, why] of phrases) for (const m of s.text.matchAll(re)) if (!theirs(m)) add(s, m, why);
       if (/\bfree\b/i.test(s.text)) {
@@ -2013,11 +2023,18 @@ describe('6. free-tier copy matches freeQuota / companySetGate', () => {
       "<p>Free tier 20 challenge'ın hepsini çözmeye yeter.</p>",
       '<p>SQL Quest\'s free tier is free forever.</p>',
       '<p>It runs in the browser with no signup, and free challenges include the Easy and Medium ones.</p>',
+      // 2026-11-22: the bank-wide preview count (A1 on #132)
+      '<p>10 free challenge solves — any Easy or Medium exercise, or one of the 6 Hard previews.</p>',
+      '<p>Hard — 84 exercises, 6 previews</p>',
+      '<p>Hard is Pro except 6 previews, which a free solve can open.</p>',
+      '<p>Nested windows. Pro ($29/month) unlocks the other 76.</p>',
     ]) expect(findFreeTierClaims(bad, ON).length, bad).toBeGreaterThan(0);
     for (const good of [
       `<p>300+ challenges; your first ${FREE_SOLVE_QUOTA} solves are free.</p>`,
       `<p>${FREE_SOLVE_QUOTA} free challenge solves, plus the lessons, warm-ups and the daily challenge — Pro opens all 300+.</p>`,
       `<p>The first ${COMPANY_SET_FREE_COUNT} of the 25 are free to try; Pro opens the set.</p>`,
+      `<p>${FREE_SOLVE_QUOTA} free challenge solves — any Easy or Medium, or a Hard preview.</p>`,
+      `<p>Your ${FREE_SOLVE_QUOTA} free solves can go on the Easy and Medium challenges in this set or its 3 Hard previews.</p>`,
       '<p>SQL Tutorial — 12 Free Lessons, Each With a Live Challenge</p>',
       '<p>Are these SQL tools free? Yes, all five.</p>',
       '<h3>StrataScratch</h3><p>75+ free questions with hints.</p>',

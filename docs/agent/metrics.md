@@ -1764,6 +1764,27 @@ Three more traps that belong to cohort B only:
   moves materially against the 247 baseline, check the query mix before
   crediting anything — `UNREADABLE`, same rule as the blog's seasonality.
 
+## `team_interest`
+
+People (distinct `aid`, bots out per the shared filters) who pressed "Ask for
+seats" on `/for-teams/` in a window, and the seat counts they stated.
+Defined 2026-11-22 for the ledger claim "/for-teams/ is published" (A1, on
+#188: the claim named a metric this file did not have).
+
+- **Source:** `pro_events` rows with `event = 'team_interest'` and
+  `reason = 'landing'`, written by the `[data-track]` relay in `src/track.js`.
+  The seat count is `metadata.seats` (an integer, 1-500); `metadata.email`
+  is present only when the visitor typed one. Read metadata as
+  `(metadata #>> '{}')::jsonb`.
+- **Count:** `count(distinct ((metadata #>> '{}')::jsonb)->>'aid')`, never rows: one person may
+  press twice. Report the seat counts beside it (median and list; n is small).
+- **Exclude:** the shared bot fingerprints and internal accounts, and any
+  press before 2026-11-22 (the page was noindex and unlinked 09-26 -> 11-22;
+  baseline 0).
+- **Do not read** a person who left an email as a lead without the founder's
+  reply: the page promises a written price, so the funnel's next stage is a
+  reply sent by hand (P1's pipeline), not an event.
+
 ## `ai_landings_month`
 
 People per 30 days whose first `app_opened` carries a `landingSrc` in the
@@ -1864,6 +1885,13 @@ Two traps, stated before the first read:
   wrong") will score higher than "where do I practice SQL", by
   construction. Read the families apart; a headline share is the panel's
   mix, and a claim built on it must say which family it expects to move.
+
+**G1's panel (2026-11-22).** G1 (`docs/agent/fleet/G1-geo.md`) runs a fixed 15-prompt panel by hand each week:
+- Perplexity is read in a browser, not signed in. The other engines are read by the founder once a month.
+- The result is a table in `docs/reads/geo-<date>.md`. There is no JSON sidecar.
+- Same definition as above: named in the answer text, or our host among the answer's sources. Inline citation chips alone do not count as named.
+- Share = mentioned ÷ answered. A prompt behind a sign-in wall is unread, never a miss.
+- It is a different panel from `ai-visibility.json`. Never compare the two, and never pool them.
 
 ## `landing_src_split`
 
@@ -3492,6 +3520,24 @@ same `aid` within 1 hour. Baseline **19.1%** (247 / 1,290, 2026-10-08 →
 words name question 1 — read the click rate per page from that date only.
 Guardrail: company arrivals' first-solve rate (27% baseline).
 
+## `landing_to_trial`
+
+Per page, from 2026-11-22 (C5). The number C5 is judged by: trials and
+purchases per 1,000 landing people on one page.
+
+- **Landing people:** distinct `coalesce(aid, username)` whose FIRST
+  `landing_view` carries the page's `page` path. Bots out (README
+  fingerprints: `metadata.bot`, the four viewports, `ref:aocr.org`),
+  internal usernames out, Asia/Shanghai out.
+- **Opened:** the same person's `app_opened` within 1 hour.
+- **Trial or paid:** the same person's `pro_trial_started` or
+  `pro_purchase_completed` within 28 days of the landing, from
+  `stripe-webhook` rows only (the money truth). A person counts once.
+- **Rate:** trial-or-paid ÷ landing people × 1,000. Report n beside it; below
+  300 landing people, report the counts and call the rate UNREADABLE.
+- A blog guide is read together with the company page it feeds: also count
+  guide landers whose next `landing_view` is that company page.
+
 ## `goal_gate_funnel`
 
 The goal gate (2026-09-25, ledger "every person states a goal before using
@@ -3571,6 +3617,54 @@ from arm a
 left join shown s using (pid)
 left join answered an using (pid)
 left join second sec using (pid)
+group by a.arm;
+```
+
+## `company_direct_split`
+
+A company arrival opens question 1 (B5, 2026-11-22, ledger "a company arrival
+opens question 1"). Population: people with a `company_direct_assigned` row
+since the flip, by `arm` (`direct` | `list`). People by aid. Leave out
+internal accounts, `metadata.bot`, and the crawler window sizes and
+fingerprints listed at the top of docs/reads/funnel-2026-11-22.md. t0 = the
+assignment row. It fires at the first cold company arrival, after the guest
+has loaded.
+
+- **Primary — first_solve_10m from assignment:** share with a
+  `challenge_solved` within 10 minutes of t0.
+- **Secondary — first run in 10 minutes:** share with a
+  `challenge_first_run` within 10 minutes of t0. Do not read
+  `open_to_first_run` here: the `direct` arm opens a challenge for everyone,
+  so that ratio's denominator is moved by the arm.
+- **Guardrails:**
+  - share reaching 3 distinct solves within 24 h;
+  - people with `pro_plan_clicked`, and trial-or-paid (`stripe_webhook` by
+    username) within 14 days, as counts.
+- **Check the arm did what it says:** in `direct`, `challenge_opened` with
+  `openedFrom = 'company_direct'` within 1 minute of t0 for nearly
+  everyone. The exception is a person whose set had nothing open
+  (`nextId` null).
+
+```sql
+with ev as (
+  select coalesce(((metadata #>> '{}')::jsonb)->>'aid', username) pid, event, created_at, (metadata #>> '{}')::jsonb m
+  from pro_events
+  where username !~* '^(test|qa_|fabletest|linktest|internalroutine|sqlquest$)'
+    and created_at >= :flip
+),
+arm as (select distinct on (pid) pid, m->>'arm' arm, m->>'company' company, created_at t0
+        from ev where event = 'company_direct_assigned' and coalesce(m->>'bot','false') <> 'true'
+        order by pid, created_at),
+solves as (select e.pid, e.created_at, row_number() over (partition by e.pid order by e.created_at) n
+           from ev e where e.event = 'challenge_solved')
+select a.arm,
+  count(*) assigned,
+  round(100.0 * avg((exists (select 1 from solves s where s.pid = a.pid and s.n = 1 and s.created_at <= a.t0 + interval '10 minutes'))::int), 1) pct_solve_10m,
+  round(100.0 * avg((exists (select 1 from ev e where e.pid = a.pid and e.event = 'challenge_first_run' and e.created_at between a.t0 and a.t0 + interval '10 minutes'))::int), 1) pct_run_10m,
+  round(100.0 * avg((exists (select 1 from solves s where s.pid = a.pid and s.n = 3 and s.created_at <= a.t0 + interval '24 hours'))::int), 1) pct_three_24h,
+  count(*) filter (where exists (select 1 from ev e where e.pid = a.pid and e.event = 'pro_plan_clicked' and e.created_at <= a.t0 + interval '14 days')) plan_clickers,
+  round(100.0 * avg((exists (select 1 from ev e where e.pid = a.pid and e.event = 'challenge_opened' and e.m->>'openedFrom' = 'company_direct' and e.created_at <= a.t0 + interval '1 minute'))::int), 1) pct_direct_open
+from arm a
 group by a.arm;
 ```
 
@@ -3680,3 +3774,117 @@ where query is not null and page = 'https://sqlquest.app/<slug>/'
   still grow. Read with a window ending at least three days before the read.
 - Position is impression-weighted (the query above), never a plain average of
   daily positions.
+
+## `feedback_capture`
+
+The asked feedback prompts (E2, 2026-11-22; `src/utils/feedback-prompts.js`)
+and the widget, counted per person and per kind. Registered with flags
+`exitReasonAsk`, `stuckAsk`, `day2Ask`.
+
+- **shown** — people with `feedback_prompt_shown {kind, trigger}`.
+- **answered** — people with `feedback_submitted` whose `kind` is the same
+  (from 2026-11-22 every `feedback_submitted` carries `kind`; the widget is
+  `open`). Rate = answered ÷ shown, per kind. `feedback_prompt_skipped` is
+  the explicit no; a prompt neither answered nor skipped was walked past.
+- **reasons** — rows in `public.feedback` with `context->>'kind'` = the kind
+  in the window (the text itself is read in the daily read, never averaged).
+
+```sql
+-- per kind, the window [:from, :to)
+with ev as (
+  select coalesce(aid, username) who, event,
+         (metadata #>> '{}')::jsonb ->> 'kind' kind
+  from pro_events
+  where event in ('feedback_prompt_shown', 'feedback_submitted', 'feedback_prompt_skipped')
+    and created_at >= :from and created_at < :to
+)
+select kind,
+       count(distinct who) filter (where event = 'feedback_prompt_shown')   shown,
+       count(distinct who) filter (where event = 'feedback_submitted')      answered,
+       count(distinct who) filter (where event = 'feedback_prompt_skipped') skipped
+from ev group by kind order by kind;
+
+select context->>'kind' kind, context->>'trigger' trig, count(*)
+from feedback where created_at >= :from and created_at < :to group by 1, 2;
+```
+
+- Apply the fleet's bot and internal-account filters (fleet README, Data).
+- `exit_reason` answers are one tap, `stuck` / `day2` are typed: compare each
+  kind to its own target, never a pooled rate.
+- `context.themeHint` is a guess for the one-tap rows; the theme that counts
+  is the one the daily read assigns.
+- Rows written while the 20260907 quote-consent migration is unapplied still
+  land (PostgREST drops unknown keys); `context` is jsonb and was always there.
+## `uiux_findings`
+
+Critical + major findings in one full run of the UI/UX audit (`npm run uiux`,
+`scripts/smoke/uiux-audit.mjs`; A4, `docs/agent/fleet/A4-uiux.md`).
+Registered 2026-11-22. Not a people-metric: it counts layout defects on the
+built site, so it needs no bot filter and no Supabase read.
+
+```
+npm run build && npx serve public -l 4321
+npm run uiux -- --base http://localhost:4321 --repo-report
+# findings.json → .totals.critical + .totals.major
+```
+
+- **One run** = every sitemap page (`/questions/` sampled to 5) + the 13 app
+  screens in `appScenarios()`, × 6 viewports × 2 themes (1,596 runs on
+  2026-11-22). A finding is deduplicated per page × viewport × theme ×
+  selector; selectors are signatures, so one CSS rule broken on 60 pages is
+  ~60–700 findings, not one. Read the trend and the critical count; never
+  compare a run whose surface list changed (a new page adds its own findings)
+  without saying so.
+- **Critical** = U1 U2 U7 U8 (sideways scroll, a control off screen or cut
+  off, a primary button covered, a modal's primary unreachable on 375×667).
+  The target for critical is 0, always.
+- Run it against a local build of the commit being read, never against a
+  preview with different flags. The quota-wall and first-screen arms are
+  pinned by the harness, so A/B tosses do not move it.
+- Baseline 2026-11-22 (main at 523aa1d): critical **56**, major **20,506**
+  → `uiux_findings` **20,562**. With the six fix PRs (#143–#147, #149) merged
+  on a scratch branch: critical 0, major 13,707.
+
+## `bing_crawled_share` / `linked_page_impressions`
+
+Whether pages given internal links get crawled and shown (2026-11-22, C1).
+Defined for the related-links pass (`scripts/build-related-links.mjs`, read
+`docs/reads/internal-links-2026-11-22.md`), and reusable for any later
+linking pass: fix the page set in the claim, never after.
+
+**`bing_crawled_share`**: of a fixed set of URLs, the share whose
+`bing_url_status.last_crawled` is on or after the deploy date. The inspector
+walks the sitemap stalest-first, 150 URLs a day, so read it no earlier than
+four days after the deploy and use the row's `checked_at` to confirm it was
+checked after the deploy. A URL with no row or a `checked_at` before the
+deploy is **unknown**, not uncrawled: report it apart.
+
+```sql
+-- :set = the claim's URL list; :deploy = the merge's deploy date
+select count(*) filter (where s.last_crawled >= :deploy)               as crawled_since,
+       count(*) filter (where s.checked_at >= :deploy)                 as checked_since,
+       count(*)                                                        as in_set,
+       avg(s.anchor_count) filter (where s.checked_at >= :deploy)      as bing_anchor_count
+from unnest(:set::text[]) u(url)
+left join bing_url_status s on s.url = u.url;
+```
+
+`anchor_count` is Bing's own count of links it knows to the URL. Compare it
+with the baseline row's value, never with our built-site count (Bing counts
+external links too).
+
+**`linked_page_impressions`**: Google impressions for the same set, from
+`gsc_daily`'s **page slice only** (`query is null and page is not null`;
+never summed with another slice), 28 days after the deploy against the 28
+days before. Pages with zero impressions in both windows are counted, not
+dropped: going from 0 to anything is the point.
+
+Traps:
+- `/weekly/` is re-rendered by `npm run build:weekly`, which changes its
+  lastmod; a crawl after a weekly refresh is not evidence for the link.
+- `/datalemur-karsilastirma/` is Turkish. Read Google's impressions for it
+  without a country filter, and do not compare its clicks with the English
+  pages'.
+- Baselines are read on the laptop (the cloud session has no production
+  data). A claim made from a cloud session states "baseline: laptop read"
+  and the laptop writes it before the read date.
