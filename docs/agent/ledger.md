@@ -32,7 +32,9 @@ of the verifier and must never be rounded to `FLAT`.
 - **Claimed** 2026-11-23 · **Shipped** dark (`debugQuestions: false`), from
   the approved design `docs/designs/debug-question-type.md` (PR #248). The
   orchestrator flips it in its own decision row; **the clock starts at the
-  flip**. · **Read** 28 days after the flip.
+  flip**. · **Flipped ON 2026-11-23T22:09Z** (PR flags/debug-questions-on, after #249
+  merged with #252/#256/#258 and a 31/31 production smoke) · **Read**
+  2026-12-22 (28 days after the flip).
 - **Change** Twelve `type: 'debug'` items, ids 331–342 (4 Easy, 5 Medium,
   3 Hard), in `src/data/debug-challenges.js`: the editor opens on a wrong
   query an AI assistant "wrote" (only when no draft is saved), with line

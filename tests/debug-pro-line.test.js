@@ -61,9 +61,9 @@ describe('the Pro modal Debug line: renders only with the flag on', () => {
     expect((app.match(/i18n_t\('pro', 'debugFeature'\)/g) || []).length).toBe(1);
   });
 
-  it('DEBUG_QUESTIONS_ON is the literal-true read of the flag, and the flag ships off', () => {
+  it('DEBUG_QUESTIONS_ON is the literal-true read of the flag, and the flag is an explicit boolean', () => {
     expect(app).toContain('const DEBUG_QUESTIONS_ON = debugQuestionsOn(window.FEATURE_FLAGS);');
-    expect(flags).toMatch(/\n\s*debugQuestions: false,/);
+    expect(flags).toMatch(/\n\s*debugQuestions: (true|false),/);
   });
 
   it('the line is not drawn in the accent (DESIGN.md: accent only on the primary CTA)', () => {

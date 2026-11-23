@@ -607,8 +607,8 @@ window.FEATURE_FLAGS = {
     // counts toward the 10 free solves like any challenge. Never a
     // /questions/ page in v1. src/utils/debug-questions.js; ledger "the
     // Debug set"; metric debug_solve_through. The orchestrator flips it in
-    // its own decision row.
-    debugQuestions: false,
+    // its own decision row. ON 2026-11-23 (orchestrator-decisions.md).
+    debugQuestions: true,
   },
 };
 
