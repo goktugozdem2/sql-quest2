@@ -101,8 +101,10 @@ the hard way, and where it helps the SQL Quest incident is named.
   deep link that opened content before the user's record loaded bypassed the
   free quota.
 - **Paywalls the person opens convert better than paywalls that open on
-  them.** Plan clicks were 27–32% in self-opened modals vs 3–13% in automatic
-  ones. Give free users a button they can press.
+  them.** Checkout clicks were 27–32% in self-opened modals vs 3–13% in
+  automatic ones. The people who open it themselves are self-selected, so
+  this is not causal; it is still a reason to give free users a button they
+  can press.
 - **Ask one question at the moment it is answerable.** Put the "which
   company are you preparing for?" ask after the first solve, never as a gate
   before value.
@@ -189,30 +191,40 @@ yine benzer ne gibi uygulamalarda kullanabiliriz").
 
 SQL Quest works because of one shape, not because of SQL. Look for all four:
 
-1. **A dated, high-stakes test.** The person has an interview or exam on a
-   known day. Every SQL Quest purchase came before a date, never from
-   general interest.
+1. **A high-stakes test.** The person is preparing for an interview or an
+   exam. SQL Quest's payers were interview-shaped: the first three were
+   preparing for an interview, two of them for one named screen (from
+   conversations, not analytics). **None of the 9 payers had an interview
+   date on record**, and only 6 people of any kind have one
+   (`docs/reads/demand-2026-11-22.md` §1–2). So the date is a buying signal
+   we fail to capture, not one we have measured. Whether a known day makes
+   people pay faster is a hypothesis; capture the date before you lean on
+   it.
 2. **Answers that are checked automatically.** The answer runs in the browser
    and is graded against an expected output, table or figure. Free-text
    answers graded by AI are possible, but trust in the grade is lower.
 3. **A skill map with a known syllabus.** A fixed set of skills that a
    diagnostic can place someone on, which is what the Coach and the
    Skillmap stand on.
-4. **Searches that name the test.** People search by company or exam name,
-   so company pages, mocks and SEO with dated sources work again.
+4. **Searches that name the test.** People can arrive by company or exam
+   name. At SQL Quest company pages were the door for 3 of the 9 payers, and
+   146 people named a target company (64% fintech; part of that is where
+   they arrived). Company pages, mocks and SEO with dated sources carry
+   over.
 
-Weak without these: general skill practice with no date (bash, git, regex).
-People use it, but nobody pays for it in a hurry.
+Likely weak without these: general skill practice with no test behind it
+(bash, git, regex). This is a judgement, not a measured result: SQL Quest
+has never sold anything else.
 
 ### Candidates (scored 2026-11-22)
 
 | App | Fit | Difficulty |
 |---|---|---|
-| **Python/pandas interview prep** | Same buyers. Code runs in the browser (Pyodide instead of sql.js). Grading compares output tables, as now. Company pages, the Skillmap and the Coach carry over. | Low. **First choice.** |
+| **Python/pandas interview prep** | Same job market: Python is in 31–53% of data-analyst postings. Our own audience has not asked for it (no feedback, no tutor question, 3 Google impressions). Code runs in the browser (Pyodide instead of sql.js). Grading compares output tables, as now. Company pages, the Skillmap and the Coach carry over. | Low to build. **First new app, only after the demand test below.** |
 | Excel / financial-modelling tests (banking, PE, FP&A) | Dated tests, high willingness to pay. A browser formula engine (HyperFormula) exists, and answers are graded on figures (`ticket-grade`). | Medium |
 | Power BI (DAX) / Tableau certifications | Fixed syllabus, a dated exam, search by certificate name. | Medium. DAX is hard to run in the browser, so mostly scenario questions. |
-| Product-analytics / A/B-test case interviews | Same buyers; could be a module of the existing app. | AI grading of free text, so trust is lower. |
-| Data-engineering "first 90 days" tasks (dbt, ETL) | An extension of the post-hire tickets. | Medium; lower willingness to pay than an interview. |
+| Product-analytics / A/B-test case interviews | Adjacent to our buyers, not asked for in our data; A/B testing is in 7% of analyst postings. Could be a module of the existing app. | AI grading of free text, so trust is lower. |
+| Data-engineering "first 90 days" tasks (dbt, ETL) | An extension of the post-hire tickets. dbt shows up in our data only as SQL dialect demand. | Medium. Willingness to pay unmeasured; we have no post-hire payer. |
 | Turkish dated exams (e.g. ALES quantitative) | Dated and gradable; home market. | Different pricing and ability to pay; verify first. |
 
 ### What carries over unchanged

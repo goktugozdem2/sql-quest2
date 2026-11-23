@@ -35,9 +35,9 @@ of the verifier and must never be rounded to `FLAT`.
   14 days after the send.
 - **Change** No product change and no price. One question, by hand, to three
   engaged interview-intent people:
-  - an annual payer with six mock sittings;
-  - a free user who has sat the Fundamentals mock twice;
-  - a free user targeting Wise who reached the quota.
+  - a paying subscriber who uses the mocks;
+  - a free user who has sat a mock more than once;
+  - a free user with a fintech target who reached the quota.
 
   The question: would a 45-minute live mock with the founder (the company's
   format, interviewer follow-ups, written notes) be worth paying for, and
@@ -49,7 +49,8 @@ of the verifier and must never be rounded to `FLAT`.
   build.
 - **Metric** a hand count from the founder's inbox: replies, "yes" answers,
   and the price each "yes" names. It is not in `metrics.md`, because it is
-  read once, by hand, at n = 3.
+  read once, by hand, at n = 3. The verdict is read by hand from that count,
+  not marked UNDEFINED for a missing metric.
 - **Baseline** 0 asked.
 - **Target** ≥ 2 replies, and ≥ 1 "yes" at a named price of $49 or more.
 - **Falsification, stated in advance:** 0 "yes" answers from the people who
