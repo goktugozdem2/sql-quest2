@@ -451,6 +451,17 @@ window.FEATURE_FLAGS = {
     // The new `row_set` diagnosis kind (right count, wrong rows) is live
     // either way — it is a truer report, not a different surface.
     diagnosisHints: true,
+    // Feedback capture points 2-4 (E2, 2026-11-22; src/utils/feedback-prompts.js).
+    // One question each, skippable, one prompt a session at most, never in a
+    // mock, written to the existing `feedback` table (context.kind/trigger).
+    // Ledger: "the reasons are asked where they happen"; metric `feedback_capture`.
+    // exitReasonAsk sits on the paywall: it shows only AFTER the Pro modal or
+    // quota wall is closed with no plan click, once a day. A0 turns it on only
+    // after A1 confirms it never shows before/over the plans and changes no
+    // price or gate. stuckAsk and day2Ask are not money surfaces.
+    exitReasonAsk: false,
+    stuckAsk: false,
+    day2Ask: false,
     // The first screen test (2026-09-23, src/utils/first-screen.js): half of
     // first-run visitors land in challenge 91's editor instead of the
     // four-question placement quiz (42% of first visitors never opened a

@@ -3744,6 +3744,46 @@ where query is not null and page = 'https://sqlquest.app/<slug>/'
 - Position is impression-weighted (the query above), never a plain average of
   daily positions.
 
+## `feedback_capture`
+
+The asked feedback prompts (E2, 2026-11-22; `src/utils/feedback-prompts.js`)
+and the widget, counted per person and per kind. Registered with flags
+`exitReasonAsk`, `stuckAsk`, `day2Ask`.
+
+- **shown** — people with `feedback_prompt_shown {kind, trigger}`.
+- **answered** — people with `feedback_submitted` whose `kind` is the same
+  (from 2026-11-22 every `feedback_submitted` carries `kind`; the widget is
+  `open`). Rate = answered ÷ shown, per kind. `feedback_prompt_skipped` is
+  the explicit no; a prompt neither answered nor skipped was walked past.
+- **reasons** — rows in `public.feedback` with `context->>'kind'` = the kind
+  in the window (the text itself is read in the daily read, never averaged).
+
+```sql
+-- per kind, the window [:from, :to)
+with ev as (
+  select coalesce(aid, username) who, event,
+         (metadata #>> '{}')::jsonb ->> 'kind' kind
+  from pro_events
+  where event in ('feedback_prompt_shown', 'feedback_submitted', 'feedback_prompt_skipped')
+    and created_at >= :from and created_at < :to
+)
+select kind,
+       count(distinct who) filter (where event = 'feedback_prompt_shown')   shown,
+       count(distinct who) filter (where event = 'feedback_submitted')      answered,
+       count(distinct who) filter (where event = 'feedback_prompt_skipped') skipped
+from ev group by kind order by kind;
+
+select context->>'kind' kind, context->>'trigger' trig, count(*)
+from feedback where created_at >= :from and created_at < :to group by 1, 2;
+```
+
+- Apply the fleet's bot and internal-account filters (fleet README, Data).
+- `exit_reason` answers are one tap, `stuck` / `day2` are typed: compare each
+  kind to its own target, never a pooled rate.
+- `context.themeHint` is a guess for the one-tap rows; the theme that counts
+  is the one the daily read assigns.
+- Rows written while the 20260907 quote-consent migration is unapplied still
+  land (PostgREST drops unknown keys); `context` is jsonb and was always there.
 ## `uiux_findings`
 
 Critical + major findings in one full run of the UI/UX audit (`npm run uiux`,
