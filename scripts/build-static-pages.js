@@ -65,6 +65,7 @@ const blogPosts = [
   'sql-for-ai-company-interviews',
   'time-series-sql-hardware-interviews',
   'capital-one-codesignal-data-analyst-assessment',
+  'revolut-data-analyst-sql-screen',
 ];
 
 // First-party landing analytics. Injected here rather than pasted into each

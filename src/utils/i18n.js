@@ -373,6 +373,22 @@ const TRANSLATIONS = {
       thanks: 'Got it — thank you',
       thanksBody: 'We read every one.',
       error: "Couldn't send. Check your connection and try again.",
+      // Capture points 2-4 (src/utils/feedback-prompts.js). One line each,
+      // skippable, no price named anywhere.
+      exitQ: 'What held you back?',
+      exitTooExpensive: 'Too expensive',
+      exitNotReady: 'Not ready yet',
+      exitMoreFree: 'Want more free practice',
+      exitNotWhatINeed: 'Not what I need',
+      exitOther: 'Other',
+      exitOtherPlaceholder: 'In a few words (optional)',
+      stuckPromptQ: "What's unclear here?",
+      stuckPromptPlaceholder: 'One line is enough',
+      day2Q: 'One thing that would make SQL Quest better for you?',
+      day2Placeholder: 'One line is enough',
+      promptSkip: 'Skip',
+      promptSend: 'Send',
+      promptThanks: 'Thanks. A person reads this.',
     },
 
     // Review ask — the post-solve card. Copy rules, in the code because they
@@ -971,6 +987,12 @@ const TRANSLATIONS = {
       levelMid: 'Mid level',
       levelSenior: 'Senior or above',
       daysLeft: '🗓 {n} days left',
+      // The goal-note date ask (flag goalNoteDateAsk): one inline line after
+      // an interview answer from the email, never a modal.
+      noteDateTitle: 'When is it?',
+      noteDateSub: 'Pick the day and we count down to it.',
+      noteDateSave: 'Save date',
+      noteDateSkip: 'Skip',
     },
     companyAsk: {
       question: 'Which company are you preparing for?',
@@ -1465,6 +1487,20 @@ const TRANSLATIONS = {
       thanks: 'Ulaştı — teşekkürler',
       thanksBody: 'Hepsini okuyoruz.',
       error: 'Gönderilemedi. Bağlantını kontrol edip tekrar dene.',
+      exitQ: 'Seni ne durdurdu?',
+      exitTooExpensive: 'Çok pahalı',
+      exitNotReady: 'Henüz hazır değilim',
+      exitMoreFree: 'Daha fazla ücretsiz pratik istiyorum',
+      exitNotWhatINeed: 'İhtiyacım olan bu değil',
+      exitOther: 'Diğer',
+      exitOtherPlaceholder: 'Birkaç kelimeyle (isteğe bağlı)',
+      stuckPromptQ: 'Burada ne belirsiz?',
+      stuckPromptPlaceholder: 'Bir satır yeter',
+      day2Q: "SQL Quest'i senin için daha iyi yapacak tek bir şey?",
+      day2Placeholder: 'Bir satır yeter',
+      promptSkip: 'Geç',
+      promptSend: 'Gönder',
+      promptThanks: 'Teşekkürler. Bunu bir insan okuyor.',
     },
 
     review: {
@@ -1985,6 +2021,10 @@ const TRANSLATIONS = {
       levelMid: 'Orta seviye',
       levelSenior: 'Kıdemli ve üstü',
       daysLeft: '🗓 {n} gün kaldı',
+      noteDateTitle: 'Ne zaman?',
+      noteDateSub: 'Günü seç, geri sayımı biz tutalım.',
+      noteDateSave: 'Tarihi kaydet',
+      noteDateSkip: 'Geç',
     },
     companyAsk: {
       question: 'Hangi şirkete hazırlanıyorsun?',
