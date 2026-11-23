@@ -1646,6 +1646,42 @@ The per-page number a claim reads: **`trial_or_purchase` per 1,000
   0 trials there is not evidence. C5's kill rule needs ≥ 300 landing people
   in 60 days.
 
+## `segment_funnel`
+
+**The analytics lane's read (AN, 2026-11-23):** the funnel per country, per
+device and per landing page. Query 1 of `scripts/analytics/daily.sql`;
+brief `docs/agent/fleet/AN-analytics.md`; daily section in
+`docs/reads/analytics-<YYYY-MM>.md`.
+
+Steps, in people (`COALESCE(aid, username)`), each at or after entry:
+landed → `app_opened` → `challenge_first_run` → `challenge_solved` →
+`signup_completed` → `pro_modal_shown` → `pro_plan_clicked` |
+`pro_checkout_clicked` → paid (`pro_trial_started` |
+`pro_purchase_completed`, reason `stripe_webhook`, joined by username).
+The rate the rules read is **landed → first solve**.
+
+How it differs from the metrics it reuses:
+- **Landed** is the `landing_people` rule on the first page in the window
+  (as `content_funnel`), plus people who opened the app with no landing
+  row, as the page `(app only)` — so the site total includes app-only
+  arrivals.
+- **Windows are entry cohorts:** the 7-day row is people whose first entry
+  in the 28-day window falls in the last 7 days.
+- **Country** is `country` on the landing rows (once born, see shared
+  traps) else an IANA zone → country proxy (`tz_country`); **device** is the
+  first viewport band, else the landing `ua`.
+- **Exclusions:** README rule 2 plus the Asia/Shanghai scroll reader (landing
+  rows in that zone, never an `app_opened`).
+
+Baseline, 28 days to 2026-11-23: 1,323 landed → 683 opened → 280 ran →
+226 solved (17.1%) → 60 signups → 108 Pro modal → 14 checkout clicks → 6
+paid. Desktop 19.7% (n = 1,109), mobile 2.6% (n = 196). Page median 20.0%
+(8 pages with n ≥ 30).
+
+Rules (brief): n < 30 never acted on; CONVERTS ≥ 1.5 × the page median;
+DEAD ≥ 100 landers and 0 opens in 28 days; MOVED |z| > 2 for a country or
+device's 7-day rate against its 28-day rate, n7 ≥ 30.
+
 ## `blog_practice_exit`
 
 Of the people who read a blog post, how many took the post's practice exit —
