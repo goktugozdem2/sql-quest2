@@ -174,3 +174,25 @@ describe('counts and the free tier come from the helpers', () => {
     expect(first).not.toMatch(/<pre|<code/);
   });
 });
+
+// Q1 2026-11-23: the Feb 2022 and Jun 2025 Blind entries had each other's
+// link. Each thread id is pinned to the date and quote its page carries.
+describe('each Blind source sits on the thread that says it', () => {
+  const PAIRS = [
+    ['07h0ouhn', 'February 2022', '14 questions instead of just 4'],
+    ['c318r0cw', 'June 2025', 'around 14–15 questions in 70 minutes'],
+  ];
+  it('the Sources entry for each thread carries its own date and quote', () => {
+    const items = html.slice(html.indexOf('<ul class="sources">')).split('<li>');
+    for (const [id, date, quote] of PAIRS) {
+      const li = items.find(x => x.includes(id));
+      expect(li, id).toBeTruthy();
+      expect(li, id).toContain(`(${date};`);
+      expect(li, id).toContain(`"${quote}"`);
+    }
+  });
+  it("R1's dossier lists both thread URLs", () => {
+    const dossier = read('../docs/reads/companies/capital-one.md');
+    for (const [id] of PAIRS) expect(dossier, id).toMatch(new RegExp(`teamblind\\.com/post/[^\\s|)]*${id}`));
+  });
+});
