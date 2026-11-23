@@ -171,7 +171,10 @@ function runOnPlan(c) {
   db.exec('SAVEPOINT run');
   try {
     let rows = [];
-    for (const s of splitStatements(c.solution)) {
+    // A state-graded challenge (grade:'state') runs its setup first and is
+    // read through its check, the way src/utils/state-grade.js grades it.
+    const script = c.grade === 'state' ? [c.setup || '', c.solution, c.check].join(';\n') : c.solution;
+    for (const s of splitStatements(script)) {
       const st = db.prepare(s);
       rows = st.reader ? st.all() : (st.run(), []);
     }
