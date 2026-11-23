@@ -110,6 +110,12 @@ B2 builds none of these; each names the lane that owns it.
 - **C6: UPDATE with values from another table** (UPDATE … FROM in SQLite 3.33+, the correlated-subquery form, and MySQL's / SQL Server's spellings). Seven threads in run 1's sources (Quora, sqlite.org forum). Challenges 180–185 practise DML, but no page explains it. This is C6's DML item #1; the read has the links.
 - **B3/C6 practice gap: a consecutive-calendar-day streak.** The window tutorial now works it on `logins` (5-day streaks for customers 4 and 8, the March-6 double login, the month boundary). No challenge asks it: challenge 68 is a ≤7-day-gap streak on orders, a different shape. One Medium/Hard challenge on `logins` with DISTINCT as the trap.
 - **Q1/C1: hard-coded count on the window tutorial.** "SQL Quest has 68 window-function-specific challenges" and the related link "68 window function challenges" are literal numbers that `tests/site-counts.test.js` doesn't bind. Re-measure, then move them to a helper or drop the number. Left alone in the C7 PR because it isn't a question answer.
+## Routed by C7, question mining — 2026-11-23 (docs/reads/questions-2026-11-23.md)
+
+C6 backlog (missing topics, no page owns them):
+- **C6: SQLite vs PostgreSQL dates — a translation guide.** `date_trunc('month', ts)` ↔ `strftime('%Y-%m-01', ts)`, `EXTRACT` ↔ `strftime('%Y')`, `generate_series` ↔ a recursive date list, `interval` ↔ date modifiers, and month arithmetic (SQLite's `date('2023-01-31', '+1 month')` overflows into March; PostgreSQL clamps to the month's end). Four threads in run 2's sources (sqlite.org forum, HN). Today the only coverage is one sentence on `/sql-cheat-sheet/` and the dialect table in the app (`src/utils/dialect-notes.js`), which lists format strings, not the month-end trap. Our users practise on SQLite and interview on PostgreSQL or Snowflake, so this is the page that bridges the two. Every query needs a test on both shapes of result; run the PostgreSQL side by hand or say it was not run.
+- **B3/C6 practice gap: a date spine.** No challenge in the bank asks for a report that includes days with zero rows (the only recursive challenges walk an org chart or a chargeback chain). `/blog/recursive-cte-explained/#missing-days` now works it on `logins` (March 8–9, the `COUNT(*)` trap). One Medium on `logins` or `orders`: daily counts over a fixed range, graded on the zero days.
+
 ## GEO gaps — G1, 2026-11-22 (docs/reads/geo-2026-11-22.md)
 
 G1 builds none of these. Each one names the lane that owns it. Baseline:
