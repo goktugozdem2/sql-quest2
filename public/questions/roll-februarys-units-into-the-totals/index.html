@@ -49,7 +49,7 @@ h1{font-size:clamp(28px,4vw,42px);font-weight:800;line-height:1.15;margin-bottom
 
   <h2 class="fd">Schema</h2>
   <div class="tbl"><p class="fm tname">orders</p><table><thead><tr><th>order_id</th><th>customer_id</th><th>product</th><th>category</th><th>quantity</th><th>price</th><th>total</th><th>order_date</th><th>country</th><th>status</th></tr></thead><tbody><tr><td>1</td><td>1</td><td>Laptop Pro</td><td>Electronics</td><td>1</td><td>1299.99</td><td>1299.99</td><td>2024-01-15</td><td>USA</td><td>completed</td></tr><tr><td>2</td><td>2</td><td>Wireless Mouse</td><td>Electronics</td><td>2</td><td>49.99</td><td>99.98</td><td>2024-01-16</td><td>Canada</td><td>completed</td></tr><tr><td>3</td><td>3</td><td>Office Chair</td><td>Furniture</td><td>1</td><td>349.99</td><td>349.99</td><td>2024-01-17</td><td>USA</td><td>completed</td></tr></tbody></table></div>
-  <p style="font-size:14px;color:#94a3b8;"><strong style="color:#e2e8f0;">Expected output:</strong> country_units: 7 rows, USA 17, Canada 8, three new countries</p>
+  <p style="font-size:14px;color:#94a3b8;"><strong style="color:#e2e8f0;">Expected output:</strong> country_units: 7 rows, USA 20, Canada 8, three new countries</p>
 
   <h2 class="fd">Hint</h2>
   <div class="box" style="font-size:15px;color:#cbd5e1;">Work out February's completed units per country first. Then each of those rows either lands as a new country or adds to the existing total. Replacing a country's row would throw January away.</div>

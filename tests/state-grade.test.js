@@ -205,7 +205,7 @@ describe('the five challenges', () => {
     325: { rows: 6, first: [1, 'John Smith', 'john.smith@email.com'] },
     326: { rows: 50, changed: 8, by: 3000, dept: 'HR' },
     327: { rows: 41, ids: [...Array.from({ length: 37 }, (_, i) => i + 1), 141, 142, 143, 144] },
-    328: { rows: [['Australia', 5], ['Canada', 8], ['France', 5], ['Germany', 4], ['Japan', 2], ['UK', 3], ['USA', 17]] },
+    328: { rows: [['Australia', 5], ['Canada', 8], ['France', 5], ['Germany', 4], ['Japan', 2], ['UK', 3], ['USA', 20]] },
     329: { rows: [[1, 37, 29.99, 'Order cancelled'], [5, 5, 10, 'valid']] },
   };
 
@@ -282,6 +282,30 @@ describe('the five challenges', () => {
     const sql = `UPDATE country_units SET units = units + (SELECT u FROM (${feb}) f WHERE f.country = country_units.country) WHERE country IN (SELECT country FROM (${feb}));
 INSERT INTO country_units SELECT country, u FROM (${feb}) WHERE country NOT IN (SELECT country FROM country_units);`;
     expect(grade(328, sql).passed).toBe(true);
+  });
+
+  // Q1 2026-11-23: the setup carries a 02-29 (leap day) row and a 03-01 row, so a
+  // February filter with no upper bound, or one that stops at 02-28, ends in a
+  // different state from the reference.
+  it('#328: a February filter with no upper bound fails', () => {
+    const sql = "INSERT INTO country_units (country, units) SELECT country, SUM(quantity) FROM orders WHERE status = 'completed' AND order_date >= '2024-02-01' GROUP BY country ON CONFLICT (country) DO UPDATE SET units = units + excluded.units";
+    const g = grade(328, sql);
+    expect(g.passed).toBe(false);
+    expect(g.diagnosis.kind).toBe('state_values');
+  });
+
+  it("#328: BETWEEN '2024-02-01' AND '2024-02-28' fails (2024 is a leap year)", () => {
+    const sql = "INSERT INTO country_units (country, units) SELECT country, SUM(quantity) FROM orders WHERE status = 'completed' AND order_date BETWEEN '2024-02-01' AND '2024-02-28' GROUP BY country ON CONFLICT (country) DO UPDATE SET units = units + excluded.units";
+    const g = grade(328, sql);
+    expect(g.passed).toBe(false);
+    expect(g.diagnosis.kind).toBe('state_values');
+  });
+
+  it("#328: LIKE '2024-02%' and BETWEEN … '2024-02-29' still pass", () => {
+    for (const where of ["order_date LIKE '2024-02%'", "order_date BETWEEN '2024-02-01' AND '2024-02-29'", "strftime('%Y-%m', order_date) = '2024-02'"]) {
+      const sql = `INSERT INTO country_units (country, units) SELECT country, SUM(quantity) FROM orders WHERE status = 'completed' AND ${where} GROUP BY country ON CONFLICT (country) DO UPDATE SET units = units + excluded.units`;
+      expect(grade(328, sql).passed, where).toBe(true);
+    }
   });
 
   it('a statement that errors is an error, not a wrong answer', () => {
