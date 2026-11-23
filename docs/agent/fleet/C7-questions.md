@@ -9,7 +9,8 @@ C7 **posts nothing anywhere**. The founder's Reddit account is banned, and no ag
 **Cadence:** daily (runs before C6, so C6 gets fresh input).
 **Judged by:**
 - the share of mined question clusters that have a good answer on the site (target: every cluster asked ≥ 3 times in 30 days);
-- impressions on the queries those answers target (laptop GSC read, monthly).
+- impressions on the queries those answers target (laptop GSC read, monthly);
+- for the pages C7 adds answers to, **`content_funnel` for that page** (docs/agent/metrics.md): its 28-day row before the change is the baseline, read again at 28 days. An answer that brings landings and no first runs is a page to fix, not a win.
 
 Founder's order, 2026-11-22: "Reddit'i source olarak görüp, aslında araştırma konusu olan SQL hakkında herhangi bir konuda içeriğimiz olması iyi olur. Çalışmaya başla."
 

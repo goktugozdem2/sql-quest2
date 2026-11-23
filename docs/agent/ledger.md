@@ -70,6 +70,54 @@ of the verifier and must never be rounded to `FLAT`.
   Databricks carry no claim of their own — their edits remove
   statements, not bets.
 
+### PostgreSQL mode — spike, dark (`postgresMode`)
+
+- **Claimed** 2026-11-22 · **Shipped** dark on merge (spike, orchestrator's
+  decision under the founder's delegation) · **Read** none until a flip.
+- **Change** a "SQLite / PostgreSQL" toggle on the challenge page, behind
+  `postgresMode` (false). PGlite 0.5.15 (PostgreSQL 18.6) loads from jsDelivr
+  with SRI only on pick; one instance per challenge; graded with
+  `resultsMatch` on the generated allow-list (301 of 312). The verdict is
+  shown, never recorded. Plan, numbers and recommendation:
+  `docs/plans/postgres-mode-2026-11-22.md`.
+- **Claim** none on people while dark. The flag off costs 0 bytes of PGlite
+  and +1.0 KB gzipped of app.js (test- and headless-bound).
+- **Metric** UNDEFINED: there are no `postgres_mode_*` events and no
+  metric in `docs/agent/metrics.md`. Both come with the ship PR, which
+  writes the real claim (and the Pro gate, a money flag, waits for the
+  founder's go).
+- **Falsification for the ship PR, stated now:** if one PGlite instance per
+  session cannot hold a 375-wide Chromium under ~700 MB renderer RSS after
+  five challenge switches, drop the feature.
+
+### Content funnel: every content link carries a door, and the funnel is mailed per page (B2)
+
+- **Claimed** 2026-11-22 · **Shipped** on merge (build step + view + mail;
+  the view needs the founder to apply migration
+  `20261122160000_content_funnel_view.sql`) · **Read** 2026-12-10.
+- **Change** (1) `scripts/stamp-app-src.mjs`, a build step: every `/app/`
+  link on a built page without a door gets `src=<the page's door>`; 72
+  links on 23 pages on the day (topic hubs' nav button, Turkish pages,
+  `/fraud-analytics-sql/`, three blog posts, `/kpis/`, the interview hub's
+  mentor link). `?company=` / `?sector=` links keep their derived door.
+  (2) `public.content_funnel` + a twice-weekly mail of it. Guards:
+  `tests/app-link-src.test.js`, `tests/content-funnel.test.js`.
+- **Metric** `content_funnel` (metrics.md, defined in this PR) and, for the
+  door half, `door_solve_rate`'s `(none)` share of `app_opened` arrivals.
+- **Baseline** not read: no production data in a cloud session. The laptop
+  reads `(none)` share for the 14 days to the merge.
+- **Target** by the read: the mail has arrived at least twice with no
+  failure issue, and `app_opened` rows carry the newly stamped doors
+  (`challenges-*` from the nav button, `fraud-analytics-sql`,
+  `turkce-sql-ogren`, `blog-faang-sql-interview-guide`).
+- **Falsification** (written before the data) zero `app_opened` rows with
+  any of those doors in the 14 days after the deploy → the stamp is not
+  reaching production or the links are not clicked; check the built pages
+  first. A failure issue still open at the read → the view is not applied
+  or the mail is broken; the metric is UNREADABLE until fixed.
+- **Confounds** the doors are born on the deploy day: a `(none)` share that
+  falls across it is the stamp, not traffic.
+
 ### a founder-led live mock — would people pay for it? (asked by hand)
 
 - **Claimed** 2026-11-22 · **Shipped** as 3 Gmail drafts, written by E1 at
