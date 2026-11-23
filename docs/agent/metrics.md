@@ -3901,6 +3901,30 @@ from feedback where created_at >= :from and created_at < :to group by 1, 2;
   is the one the daily read assigns.
 - Rows written while the 20260907 quote-consent migration is unapplied still
   land (PostgREST drops unknown keys); `context` is jsonb and was always there.
+## `feedback_loop`
+
+What happens to a message after it arrives (registered 2026-11-23,
+`docs/plans/feedback-system-2026-11-23.md`). `feedback_capture` counts what
+comes in; this counts whether anyone answered. The 69-day unread security
+report is the failure it exists to catch.
+
+- **read_24h**: the share of new `feedback` rows (every kind) that E1 read
+  within 24 hours of `created_at`. Source: the laptop's E1 log
+  (`~/.claude/sqlquest-cs-log.json`, `read_at` per row id). Target 100%.
+- **reply_drafted_24h**: the share of rows with `contact` that have a reply
+  draft within 24 hours. Same log, `drafted_at`.
+- **reply_sent**: the share of those drafts the founder sent. Gmail `in:sent`
+  to the contact after `drafted_at`, logged as `sent_at`. This is the founder's
+  number; the agents cannot move it.
+- **security_same_day**: security- or abuse-flagged rows that reached the
+  founder report on the same day ÷ such rows. Target 100%, every time.
+- **closed_loop**: `FB-…` BACKLOG items that shipped and whose reporter (with
+  contact) got a "you asked, it's live" draft ÷ shipped `FB-…` items.
+
+Read weekly by B2 (Fridays). n is tiny: report counts, never only rates.
+The log stays on the laptop because it holds contacts; the weekly read
+reports only counts.
+
 ## `uiux_findings`
 
 Critical + major findings in one full run of the UI/UX audit (`npm run uiux`,
