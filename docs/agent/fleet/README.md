@@ -98,6 +98,11 @@ An agent reads `CLAUDE.md`, this file and its own brief, in that order.
 
        FLEET-RESULT {"agent":"A2","outcome":"pr|merged|read|drafts|noop|blocked","prs":[123],"value":"one line: what changed for a person or what we learned","founder":["..."]}
 
+9. **Leave the lane's state behind.** Update `docs/agent/fleet/state/<ID>.md`
+   in the same PR: the last run, the next step and any open threads. It
+   holds no customer data. This is how a lane resumes in the other runtime
+   (2026-11-23).
+
 ## Two runtimes — who does what (2026-11-22)
 
 - **Cloud** (claude.ai/code): A0 gate, A1 reviewer and every lane that needs

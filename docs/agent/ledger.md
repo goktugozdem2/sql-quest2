@@ -66,7 +66,121 @@ of the verifier and must never be rounded to `FLAT`.
   section, so they get that page's openers too. Read the door beside the rate.
 
 
+### a founder-led live mock — would people pay for it? (asked by hand)
+
+- **Claimed** 2026-11-22 · **Shipped** as 3 Gmail drafts, written by E1 at
+  the founder's request ("premium mock taslaklarını ekle"). They count only
+  once the founder sends them; **the clock starts at the send**. · **Read**
+  14 days after the send.
+- **Change** No product change and no price. One question, by hand, to three
+  engaged interview-intent people:
+  - a paying subscriber who uses the mocks;
+  - a free user who has sat a mock more than once;
+  - a free user with a fintech target who reached the quota.
+
+  The question: would a 45-minute live mock with the founder (the company's
+  format, interviewer follow-ups, written notes) be worth paying for, and
+  roughly what would feel fair? The recipients and draft ids are in the
+  laptop's E1 log, not in the repo.
+- **Why** `docs/reads/demand-2026-11-22.md`: the market pays $99–279 for a
+  human mock session; SQL Quest has nothing above $99 a year. It is the
+  only new offer that could add revenue inside the O2 window, and it needs no
+  build.
+- **Metric** a hand count from the founder's inbox: replies, "yes" answers,
+  and the price each "yes" names. It is not in `metrics.md`, because it is
+  read once, by hand, at n = 3. The verdict is read by hand from that count,
+  not marked UNDEFINED for a missing metric.
+- **Baseline** 0 asked.
+- **Target** ≥ 2 replies, and ≥ 1 "yes" at a named price of $49 or more.
+- **Falsification, stated in advance:** 0 "yes" answers from the people who
+  reply, or only "yes" with no price or a price under $30, means a
+  premium session is not worth building into the product yet. Stop. Any
+  price is the founder's decision either way.
+
+### goal-note for new sign-ups: the goal asked by the founder, a day after joining (E2)
+
+- **Claimed** 2026-11-22 · **Shipped** dark: the `mode=new` path of
+  `goal-note` is built and undeployed, unscheduled; the app's date ask is
+  behind `goalNoteDateAsk` (off). **Read** 28 days after the founder's first
+  `mode=new` send.
+- **Change** `goal-note?mode=new`: to each registrant 24 to 72 hours after
+  sign-up (`users.data.createdAt`) with an email, not internal, not opted out,
+  no goal on record, never mailed `goal_note` in either mode, no campaign in
+  48 hours. Sent at 09:xx to 10:xx in the person's own zone (14:xx UTC when no
+  zone is known), cap 20 a run. Founder in the subject, one fact (company page
+  or solve count), one question, three one-click answers
+  (`/app/?src=goal_note&goal=…&m=new`), the reply line for an interview, no
+  price, no sequence. App: after a `goal=interview` answer with no date, one
+  inline "When is it?" into `prepTarget.date` (flag `goalNoteDateAsk`).
+- **Metric** `goal_note_new` (metrics.md, defined in this PR): answer rate =
+  people with `intent_captured {src:'goal_note', m:'new'}` / people sent.
+- **Baseline** from the goal-capture plan (2026-09-17): modal → plan click was
+  **9.3%** among people who answered "interview" and **0 of 81** among people
+  with no answer. No answer-rate baseline exists for this channel; the first
+  read sets it.
+- **Target** answer rate **≥ 15%** of sends.
+- **Falsification** (written before the data) under **8%** after **50 sends**
+  → stop the mode (remove its cron line); the backlog run is unaffected.
+- **Confounds** the backlog run shares the template; split every read on
+  `meta->>'mode'`. The date ask flips separately; read date-set only from its
+  own flip date.
+### the reasons are asked where they happen: exit_reason (`exitReasonAsk`) — **OPEN**
+
+- **Flipped ON 2026-11-23** by A0 in its own PR, applying orchestrator-decisions 2026-11-22. Read 2026-12-21 (28 days). **Reverse rule (copied from the decision):** plan clicks per modal shown fall by more than 20% relative over 14 days against the 14 days before → OFF the same day. The falsification below still applies.
+
+- **Claimed** 2026-11-22 (E2) · **Shipped** dark; flips from the flag queue
+  after A1 confirms the paywall conditions below · **Read** 28 days after
+  the flip.
+- **Change** after the Pro modal or the quota wall is CLOSED with no plan
+  click, one card above the 💬 button asks "What held you back?" with five
+  taps (Too expensive · Not ready yet · Want more free practice · Not what I
+  need · Other + one line). Once a local day, one prompt a session, never
+  before the first solve, never in a mock, never rendered while the modal is
+  open. Writes to `feedback` (`context.kind='exit_reason'`).
+- **Metric** `feedback_capture`, kind `exit_reason`.
+- **Baseline** 0 — no reason for a closed modal has ever been recorded.
+- **Target** answered ÷ shown ≥ 15% and ≥ 10 reasons in the 28 days.
+- **Falsification** (written before the data) answered ÷ shown under 5%, or
+  `modal_click_rate` in the 28 days more than 20% below the 28 days before
+  the flip → turn it off; the prompt costs more than it tells.
+- **Never** names a price, changes a price, a plan or a gate.
+
+### the reasons are asked where they happen: stuck (`stuckAsk`) — **OPEN**
+
+- **Claimed** 2026-11-22 (E2) · **Shipped** dark · **Read** 28 days after
+  the flip.
+- **Change** a challenge open 3 minutes with no run, or the third wrong
+  submit, shows one line "What's unclear here?" (optional) on the challenge
+  page. Once per challenge, one prompt a session, never in a mock; the only
+  ask allowed before the first solve. The wrong-submit trigger sits inside
+  the existing third-try card (its `challenge_stuck_verdict` series is
+  unchanged).
+- **Metric** `feedback_capture`, kind `stuck`, split by trigger.
+- **Baseline** 0 typed reasons from the challenge page (the verdict taps are
+  a separate series).
+- **Target** answered ÷ shown ≥ 8% and ≥ 10 typed lines in the 28 days.
+- **Falsification** answered ÷ shown under 3% → turn it off; or
+  `open_to_first_run` more than 20% below its prior 28 days → turn it off
+  (the card is in the way of the run).
+
+### the reasons are asked where they happen: day2 (`day2Ask`) — **OPEN**
+
+- **Flipped ON 2026-11-23** by A0 in its own PR, applying orchestrator-decisions 2026-11-22. Read 2026-12-21 (28 days). **Reverse rule (copied from the decision):** `second_session_7d` or day-3 return drops more than 3 points over 14 days → OFF. The falsification below still applies.
+
+- **Claimed** 2026-11-22 (E2) · **Shipped** dark · **Read** 28 days after
+  the flip.
+- **Change** at the second session's first screen (a session = more than an
+  hour away, the `second_session_7d` gap), one card asks "One thing that
+  would make SQL Quest better for you?". Once ever, at least one solve,
+  nothing else open.
+- **Metric** `feedback_capture`, kind `day2`.
+- **Baseline** 0.
+- **Target** answered ÷ shown ≥ 10% and ≥ 10 lines in the 28 days.
+- **Falsification** answered ÷ shown under 3%, or solves in the second
+  session per person shown more than 20% below the 28 days before → off.
 ### a company arrival opens question 1 (`companyDirectOpen`, A/B)
+
+- **Flipped ON at 50/50 on 2026-11-23** by A0 in its own PR, applying orchestrator-decisions 2026-11-22 ("ON at 50/50 after #156 merges"), which overrides the 12-19 date below. **Reverse rule:** the entry's own stop rule (early harm check at 60 per arm; HIT / FLAT / MISS at 120 per arm; UNREADABLE by 2027-02-27). **Confound this creates:** the company-banner claim (read 12-18) shares these arrivals. Read that claim on the `list` arm and on arrivals outside the test (people with solves) only; the `list` arm keeps the banner byte for byte. The pre-flip company-door `first_solve_10m` baseline is owed by the laptop, from data before 2026-11-23.
 
 - **Claimed** 2026-11-22 · **Shipped** dark (flag `companyDirectOpen: false`); A0 may flip it no earlier than **2026-12-19** (flag-queue row 16) · **Read** 2027-01-30, or at the minimum n if that comes later (hard stop 2027-02-27).
 - **Change** an A/B by aid (`company_direct_v1`, murmur-finalised hash, independent of the first-screen, company-ask, quota-wall-inline and modal-layout arms). A person with **zero solves** who arrives through `/app/?company=X` with no `?challenge=` or `?interview=` (the hero of 33 of 34 company pages) gets one of two arms. `direct`: they land in the question the company banner's button would open (`companyBannerNext()`: same locks, same `openChallenge`, `openedFrom: 'company_direct'`). `list`: today's list and banner, unchanged. The arm is assigned once (`company_direct_assigned {testId, arm, company, nextId}`). Nothing is asked, gated or priced. src/utils/company-direct.js; tests/company-direct.test.js.
@@ -187,6 +301,45 @@ of the verifier and must never be rounded to `FLAT`.
   before fixing it. (b) critical > 0 on main at the read → **MISS**. (c) a
   run without the six PRs merged → **UNREADABLE**.
 
+### UI/UX across engines: Chrome and Safari, desktop, iPhone, Android, daily (A4)
+
+- **Claimed** 2026-11-22 · **Shipped** on merge (a harness extension and a
+  daily Actions workflow; no product change, no flag) · **Read** 2026-12-20.
+- **Change** The audit runs on eight browser × device rows (desktop Chrome
+  1366/1920, desktop Safari 1440, iPhone SE and 15 Pro on WebKit, Pixel 7
+  and Galaxy S9+ on Chromium, iPad Mini on WebKit), every day at 05:40 UTC
+  against production, hermetic. Six mobile-browser checks join U1–U12:
+  U13 100vh under the toolbar, U14 sticky in an overflow-hidden ancestor,
+  U15 inputs under 16 px, U16 safe-area insets, U17 date inputs, U18 smooth
+  scroll. Findings go to one `uiux-audit` issue, A4's daily fix queue.
+- **Why** The founder's order (2026-11-22): Android, iPhone and desktop, in
+  Chrome and Safari, checked daily and fixed. The first audit ran Chromium
+  at six widths only, the narrowest 375. Its first local run at 320 px
+  (Galaxy S9+) found 222 critical findings that 375 never showed. Among
+  them, the Interview tab is 412 px wide and its Start Interview button
+  sits off screen.
+- **Metric** `uiux_findings` split by engine (metrics.md, "Per-engine
+  split"): critical + major on the Chromium rows and on the WebKit rows,
+  read as two series.
+- **Baseline** Chromium rows, main 9b46fd7 without the #143–#149 fixes:
+  critical **228**, major **13,654** → **13,882** (1,072 runs). WebKit:
+  none yet; the first daily Actions run is its baseline. It is written
+  into this claim on that day, before any WebKit fix merges.
+- **Target** by 12-20, on main, from the daily run:
+  - `uiux_findings[chromium]` critical **0**;
+  - `uiux_findings[webkit]` critical **0**;
+  - each engine's major count ≤ **70 %** of its own baseline.
+- **Falsification, stated in advance:**
+  - (a) Critical > 0 on either engine in the 12-20 run → **MISS**.
+  - (b) A person reports a layout bug in Safari or on a phone, on a covered
+    surface, that the audit did not flag → **MISS** for coverage, whatever
+    the counts say. Add the case to the harness before fixing it.
+  - (c) Fewer than 20 of the 28 daily runs to 12-20 completed with both
+    engines → **UNREADABLE**: the loop did not run. A skipped engine never
+    counts as zero.
+  - (d) This claim was written by the same model family that will fix and
+    review the findings. Correlated blind spots are possible, so (b) is the
+    honest test, not the count.
 ### the Revolut guide: a sourced blog door for the best fintech page (C5)
 
 - **Claimed** 2026-11-22 · **Shipped** on merge · **Read** 2026-12-20 (28 d) and 2027-01-17 (56 d).
