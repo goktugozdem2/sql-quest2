@@ -179,7 +179,10 @@ describe('app.jsx applies the signatures', () => {
       expect(call, s).toContain(s);
     }
     expect(t.indexOf('if (sig) payload.bot = sig;')).toBeGreaterThan(-1);
-    expect(t.indexOf('if (sig) payload.bot = sig;')).toBeLessThan(t.indexOf("writeProEvent(event, 'activation_funnel', payload)"));
+    // No closing paren: #287 adds a fourth argument ({ keepalive }) to this call.
+    const write = t.indexOf("writeProEvent(event, 'activation_funnel', payload");
+    expect(write).toBeGreaterThan(-1);
+    expect(t.indexOf('if (sig) payload.bot = sig;')).toBeLessThan(write);
     // An earlier fingerprint keeps its id; a hard bot is never written anyway.
     expect(t).toMatch(/if \(!payload\.bot && decision\.write\) \{/);
   });
