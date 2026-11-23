@@ -9,6 +9,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { SQL_PATTERNS, PATTERN_PUBLISHED, patternTitle } from '../src/data/sql-patterns.js';
 import { loadQuestionBank, questionSlugs } from './question-slugs.mjs';
+import { debugFlagOn, loadDebugItems, debugItemForTrap, trapDebugLine } from './debug-discovery.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const PUB = path.join(ROOT, 'public');
@@ -102,7 +103,9 @@ const foot = `<script defer src="/track.js"></script>
 </html>
 `;
 
-export function renderPattern(p, { slugs, bank, year = new Date().getFullYear(), modified = PATTERN_PUBLISHED } = {}) {
+// `debugItem`: the Debug item that plants this trap — passed only while
+// features.debugQuestions is true (scripts/debug-discovery.mjs), else null.
+export function renderPattern(p, { slugs, bank, year = new Date().getFullYear(), modified = PATTERN_PUBLISHED, debugItem = null } = {}) {
   const url = `${SITE}/${p.slug}/`;
   const title = patternTitle(p, year) + ' | SQLQuest.app';
   const byId = new Map(bank.map(c => [c.id, c]));
@@ -157,7 +160,8 @@ export function renderPattern(p, { slugs, bank, year = new Date().getFullYear(),
   ${p.mock.id.startsWith('capital-one') ? `<p style="font-size:15px;color:#94a3b8;margin-top:10px;">Preparing for the Capital One screen? <a href="/capital-one-sql-interview/" data-track="cta_pattern_company">The Capital One SQL practice set →</a></p>` : ''}
 
   <h2 class="fd">Practise it</h2>
-  <div class="rel">${p.challenges.map(id => byId.get(id)).filter(Boolean).map(c => `<a href="/questions/${slugs.get(c.id)}/">${esc(c.title)}<span>${esc(c.difficulty)} · SQL practice question</span></a>`).join('')}</div>
+  <div class="rel">${p.challenges.map(id => byId.get(id)).filter(Boolean).map(c => `<a href="/questions/${slugs.get(c.id)}/">${esc(c.title)}<span>${esc(c.difficulty)} · SQL practice question</span></a>`).join('')}</div>${debugItem ? `
+  ${trapDebugLine(debugItem, p.slug)}` : ''}
 
   <h2 class="fd">Related SQL traps</h2>
   <div class="rel">${[...related, ...rest].map(o => `<a href="/${o.slug}/">${esc(o.short)}<span>${esc(o.h1.replace(/^SQL [^:]+: /, ''))}</span></a>`).join('')}</div>
@@ -185,10 +189,11 @@ function writeSitemap() {
 if (import.meta.url === `file://${process.argv[1]}`) {
   const { bank } = loadQuestionBank();
   const slugs = questionSlugs(bank);
+  const debug = { flagOn: debugFlagOn(), items: loadDebugItems() };
   for (const p of SQL_PATTERNS) {
     const out = path.join(PUB, p.slug);
     fs.mkdirSync(out, { recursive: true });
-    fs.writeFileSync(path.join(out, 'index.html'), renderPattern(p, { slugs, bank }));
+    fs.writeFileSync(path.join(out, 'index.html'), renderPattern(p, { slugs, bank, debugItem: debugItemForTrap(p.slug, debug) }));
   }
   writeSitemap();
   console.log(`[pattern-pages] ${SQL_PATTERNS.length} SQL trap pages · sitemap block ${SQL_PATTERNS.length} URLs`);

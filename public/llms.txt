@@ -9,12 +9,15 @@ _Generated 2026-11-23 from the live content bank by `scripts/build-llms-txt.js`.
 - https://sqlquest.app/app/ — The practice app. No signup: the first challenge runs in the browser, and the Coach picks the next one from your Skillmap.
 - https://sqlquest.app/sql-interview-readiness-test/ — Ten questions, no signup: a Skillmap across the nine skills and the one to fix first, optionally weighted for a named company.
 - https://sqlquest.app/sql-interview-prep/ — The interview hub: every company interview page, grouped by sector.
+- https://sqlquest.app/sql-interview-prep-plan/ — A 2-week SQL interview prep plan: one of the nine skills a day, Easy to Hard questions linked for each, the readiness test first and a timed mock near the end.
+- https://sqlquest.app/sql-mock-interview/ — Timed SQL mock interviews in the browser: what each mock is (questions, minutes, pass mark), which one is free and which are Pro, and how to rehearse a timed screen.
 - https://sqlquest.app/sql-exercises/ — SQL exercises by topic, with five worked solutions and the trap on each topic.
 - https://sqlquest.app/questions/ — Every challenge in the bank as its own page: the prompt, the tables and the skills it measures.
 - https://sqlquest.app/sql-practice-comparison/ — How SQL Quest compares with DataLemur, StrataScratch, LeetCode and HackerRank, with each competitor fact dated.
 - https://sqlquest.app/best-sql-practice-sites/ — Five SQL practice sites reviewed side by side, including where each beats SQL Quest.
 - https://sqlquest.app/vs-chatgpt/ — Why practise on questions with a fixed expected result instead of asking a chat assistant to grade you.
 - https://sqlquest.app/sql-tools/ — Free in-browser SQL tools: a checker, an explainer and an optimizer.
+- https://sqlquest.app/sql-debugging-practice/ — SQL debugging practice: questions that open on an AI assistant’s wrong query; find the line, fix it, and the fix is graded against the expected result.
 
 ## Questions people ask, and the page that answers
 
@@ -28,9 +31,9 @@ _Generated 2026-11-23 from the live content bank by `scripts/build-llms-txt.js`.
 - **Is there a SQL practice site with an AI tutor that explains my mistakes?** https://sqlquest.app/ , https://sqlquest.app/vs-chatgpt/ — In the app a wrong query gets a diagnosis that names the gap (missing rows, wrong values, wrong grain), and the AI tutor reads that diagnosis before it answers; the second page explains why a fixed expected result matters when an AI explains your SQL.
 - **How do I prepare for a Revolut data analyst SQL interview?** https://sqlquest.app/revolut-sql-interview/ — The rounds candidates report, with dated sources, a tagged practice set on a neobank ledger and a timed mock.
 - **Where can I practice SQL for a Meta data scientist interview?** https://sqlquest.app/meta-sql-interview/ — Meta-tagged practice problems on product-analytics tables.
-- **Where can I take a timed SQL mock interview online?** https://sqlquest.app/capital-one-sql-interview/ , https://sqlquest.app/revolut-sql-interview/ — The timed, scored company mocks live on these pages (Capital One, Revolut); they are Pro, and a free general mock lets you try the format first.
+- **Where can I take a timed SQL mock interview online?** https://sqlquest.app/sql-mock-interview/ , https://sqlquest.app/capital-one-sql-interview/ , https://sqlquest.app/revolut-sql-interview/ — A timed SQL mock in the browser: one clock, a limit per question, your rows checked and a score at the end. One mock is free; the company mocks (Capital One, Revolut) are Pro.
 - **How do I find my weak areas in SQL?** https://sqlquest.app/sql-interview-readiness-test/ , https://sqlquest.app/sql-quiz/ — Ten questions, no signup: a Skillmap across the nine skills and the one to fix first; or a five-minute adaptive level quiz.
-- **Is there a 2-week SQL interview prep plan?** https://sqlquest.app/amazon-sql-interview/ , https://sqlquest.app/sql-interview-prep/ — A 2-week plan on the Amazon page, and the interview hub with every company page.
+- **Is there a 2-week SQL interview prep plan?** https://sqlquest.app/sql-interview-prep-plan/ , https://sqlquest.app/sql-interview-prep/ — A 2-week plan, day by day: one of the nine SQL skills a day with questions linked for each, a readiness test first and a timed mock near the end; the interview hub has every company page.
 - **Where do I practice SQL after a bootcamp, to get interview-ready?** https://sqlquest.app/after-bootcamp/ — For bootcamp graduates: interview-level questions and the Coach that finds the gap the course left.
 - **SQL mülakatına hazırlanmak için en iyi site hangisi?** https://sqlquest.app/turkce-sql-ogren/ — Turkish landing page; the app and the Coach answer in Turkish when you write Turkish.
 
@@ -40,7 +43,7 @@ _Generated 2026-11-23 from the live content bank by `scripts/build-llms-txt.js`.
 - **Queries run in the browser.** A WebAssembly SQLite engine grades every query locally — no install, no server round-trip, no Docker, no local Postgres.
 - **What is free, in one sentence:** 10 free challenge solves, plus the lessons, warm-ups and the daily challenge — Pro opens all 300+.
 - **The free tier includes the Coach.** The adaptive Coach, placement check, Skillmap, weekly report, the lessons, the warm-ups, the daily challenge and 10 challenge solves are free. Pro opens the rest of the bank, the Hard set and the deeper banks (see Pricing).
-- **300+ hands-on SQL challenges** in the bank — 99 Easy, 129 Medium, 84 Hard on the date above. 203 are general and interview-focused; 109 are sector-specific on real public data.
+- **300+ hands-on SQL challenges** in the bank — 100 Easy, 133 Medium, 84 Hard on the date above. 208 are general and interview-focused; 109 are sector-specific on real public data.
 - **10 free challenge solves** — any Easy or Medium challenge, or a Hard preview, so a free user can sample the Pro-tier difficulty before deciding. After 10 solves the unsolved rest of the bank is Pro; everything already solved stays open.
 - **34 company interview pages**, **3 industry tracks**, **10 Socratic lessons**, **3 Coach goal paths**, and a Skillmap over **9 skills**.
 - **SQL dialect: SQLite.** Standard SQL — SELECT, JOIN, GROUP BY, CTEs, window functions, CASE — behaves as it does on PostgreSQL, MySQL, BigQuery and Snowflake. Vendor extensions (PL/SQL, ROWNUM, CONNECT BY, RETURNING, ARRAY types, lateral joins) are not supported.
@@ -534,12 +537,20 @@ Each comparison page quotes competitor prices and features from that site's own 
 - Hires per Year — SQL Interview Question | SQLQuest.app — https://sqlquest.app/questions/hires-per-year/
 - Weekend Logins — SQL Interview Question | SQLQuest.app — https://sqlquest.app/questions/weekend-logins/
 - Ages on Record by Class — SQL Interview Question | SQLQuest.app — https://sqlquest.app/questions/ages-on-record-by-class/
+- Build the VIP Mailing List — SQL Interview Question | SQLQuest.app — https://sqlquest.app/questions/build-the-vip-mailing-list/
+- A Raise for the Best-Rated Department — SQL Question | SQLQuest.app — https://sqlquest.app/questions/a-raise-for-the-best-rated-department/
+- The Sync Ran Twice — SQL Interview Question | SQLQuest.app — https://sqlquest.app/questions/the-sync-ran-twice/
+- Roll February's Units into the Totals — SQL Question | SQLQuest.app — https://sqlquest.app/questions/roll-februarys-units-into-the-totals/
+- A Refunds Table That Says No — SQL Interview Question | SQLQuest.app — https://sqlquest.app/questions/a-refunds-table-that-says-no/
 - SQL NOT IN with NULL: Why Your Query Returns 0 Rows (2026) | SQLQuest.app — https://sqlquest.app/sql-not-in-null/
 - SQL Join Fan-Out: Why SUM and COUNT Inflate After a JOIN (2026) | SQLQuest.app — https://sqlquest.app/sql-join-fan-out/
 - SQL BETWEEN with Timestamps: Why the Last Day Goes Missing (2026) | SQLQuest.app — https://sqlquest.app/sql-between-timestamp/
 - SQL Average of Averages: Why AVG of Group Rates Is Wrong (2026) | SQLQuest.app — https://sqlquest.app/sql-average-of-averages/
 - SQL LEFT JOIN with a WHERE Filter: Why It Becomes an INNER JOIN (2026) | SQLQuest.app — https://sqlquest.app/sql-left-join-where-filter/
 - SQL Rollup Interview Questions With Worked Answers | SQLQuest.app — https://sqlquest.app/sql-rollup-interview-questions/
+- 2-Week SQL Interview Prep Plan, Day by Day | SQLQuest.app — https://sqlquest.app/sql-interview-prep-plan/
+- Timed SQL Mock Interview Online, Scored in the Browser | SQLQuest.app — https://sqlquest.app/sql-mock-interview/
+- SQL Debugging Practice: Find and Fix the Bug | SQLQuest.app — https://sqlquest.app/sql-debugging-practice/
 
 **Comparisons**
 - DataLemur SQL Practice: Is It Free? Pricing (2026) | SQLQuest.app — https://sqlquest.app/vs-datalemur/
@@ -567,7 +578,7 @@ Each comparison page quotes competitor prices and features from that site's own 
 - Apple SQL Interview Questions — Practice Services & Product Analytics | SQLQuest.app — https://sqlquest.app/apple-sql-interview/
 - Uber SQL Interview Questions — Practice Marketplace Metrics | SQLQuest.app — https://sqlquest.app/uber-sql-interview/
 - Airbnb SQL Interview Questions — Practice Booking & Host Analytics | SQLQuest.app — https://sqlquest.app/airbnb-sql-interview/
-- Databricks SQL Interview Questions — Practice Spark SQL & Data Engineering | SQLQuest.app — https://sqlquest.app/databricks-sql-interview/
+- Databricks SQL Interview Questions — Practice Problems | SQLQuest.app — https://sqlquest.app/databricks-sql-interview/
 - Shopify SQL Interview Questions (2026): 15 Practice Problems | SQLQuest.app — https://sqlquest.app/shopify-sql-interview/
 - Spotify SQL Interview Questions — Practice Streaming & Listener Analytics | SQLQuest.app — https://sqlquest.app/spotify-sql-interview/
 - JPMorgan SQL Interview Questions — Practice Financial Analytics & Risk | SQLQuest.app — https://sqlquest.app/jpmorgan-sql-interview/
@@ -603,7 +614,7 @@ Each comparison page quotes competitor prices and features from that site's own 
 - SQL NULL Handling Practice — 24 Challenges: IS NULL, COALESCE, Counting Nullable Columns | SQLQuest.app — https://sqlquest.app/challenges/null-handling/
 - SQL String Functions Practice — 17 Challenges: SUBSTR, TRIM, LIKE | SQLQuest.app — https://sqlquest.app/challenges/string-functions/
 - SQL Joins Practice — 92 Challenges: INNER, LEFT, Self-Join, Anti-Join | SQLQuest.app — https://sqlquest.app/challenges/joins/
-- SQL Subquery Practice — 57 Challenges: Correlated, EXISTS, IN, Derived Tables | SQLQuest.app — https://sqlquest.app/challenges/subqueries/
+- SQL Subquery Practice — 59 Challenges: Correlated, EXISTS, IN, Derived Tables | SQLQuest.app — https://sqlquest.app/challenges/subqueries/
 - SQL Window Functions Practice — 70 Challenges: RANK, LAG, Running Totals | SQLQuest.app — https://sqlquest.app/challenges/window-functions/
 - SQL Ranking Functions Practice — 35 Challenges: ROW_NUMBER, RANK, DENSE_RANK | SQLQuest.app — https://sqlquest.app/challenges/ranking-functions/
 - Advanced SQL Interview Questions — 84 Challenges: Hard Window, CTE and Join Problems | SQLQuest.app — https://sqlquest.app/challenges/advanced/

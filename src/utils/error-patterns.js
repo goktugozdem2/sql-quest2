@@ -11,8 +11,16 @@
 // below can be explained to the student in one sentence, which is the point
 // of recording it. A wrong submit can carry more than one pattern.
 //
+// fan_out and date_upper_bound (2026-11-23) are also the `bugKind` of the
+// Debug items (src/data/debug-challenges.js): this object is the one enum of
+// bug kinds, for a learner's wrong submit and for an AI's wrong query alike.
+//
 // Store shape (userData.errorPatterns):
 //   { counts: { [pattern]: n }, recent: [{ p, c, at }] }   recent is capped
+
+// Same reading of the date bound as the diagnosis sentence, so the pattern
+// and the sentence can never disagree.
+import { dateUpperBoundTrap } from './diagnose.js';
 
 export const ERROR_PATTERNS = {
   missing_group_by: 'aggregated without GROUP BY, or grouped by the wrong columns',
@@ -23,6 +31,8 @@ export const ERROR_PATTERNS = {
   null_handling: 'NULL was compared with = / <> or aggregated as if it were a value',
   sort_order: 'the rows are right but ORDER BY does not match the ask',
   integer_division: 'integer / integer dropped the fractional part',
+  fan_out: 'a JOIN to a second child table repeated each row once per match, so the totals counted rows twice',
+  date_upper_bound: "a bare date as the upper bound ('2024-03-07') dropped the timestamps later on that day",
   value_calc: 'the calculation or CASE logic produced the wrong values',
   wrong_rows: 'the right number of rows, but not these rows',
   column_set: 'the wrong set or order of columns',
@@ -55,6 +65,12 @@ export function classifyErrorPatterns(diagnosis, query = '', challenge = null) {
   const hasHaving = has(/\bhaving\b/, q);
   const eqNull = has(/(=|<>|!=)\s*null\b/, q);
   const asksPer = /\b(per|each|every|by)\b/.test(desc) || /\bgroup\b/.test(desc);
+  // Fan-out: two or more JOINs feeding an aggregate in one SELECT, with no
+  // derived table or CTE to aggregate each child first.
+  const joinCount = (q.match(/\bjoin\b/g) || []).length;
+  const preAggregated = /\bwith\b[\s\S]*\bas\s*\(/.test(q) || /\bjoin\s*\(\s*select\b/.test(q) || /\bfrom\s*\(\s*select\b/.test(q);
+  const fanOut = hasAgg && joinCount >= 2 && !preAggregated;
+  const dateBound = !!dateUpperBoundTrap(query);
 
   switch (diagnosis.kind) {
     case 'runtime_error':
@@ -62,6 +78,7 @@ export function classifyErrorPatterns(diagnosis, query = '', challenge = null) {
       break;
     case 'empty_result':
       push('empty_result');
+      if (dateBound) push('date_upper_bound');
       if (eqNull) push('null_handling');
       if (hasWhere) push('extra_filter');
       break;
@@ -79,6 +96,7 @@ export function classifyErrorPatterns(diagnosis, query = '', challenge = null) {
         else if (asksPer && !hasGroupBy && !hasAgg) push('missing_group_by');
         if (out.length === 0) push('missing_filter');
       } else {
+        if (dateBound) push('date_upper_bound');
         if (hasJoin && !hasLeft) push('wrong_join_type');
         if (eqNull) push('null_handling');
         if (hasWhere || hasHaving) push('extra_filter');
@@ -88,6 +106,7 @@ export function classifyErrorPatterns(diagnosis, query = '', challenge = null) {
     }
     case 'row_set':
       push('wrong_rows');
+      if (dateBound) push('date_upper_bound');
       if (hasJoin && !hasLeft) push('wrong_join_type');
       if (hasWhere) push('extra_filter');
       break;
@@ -98,6 +117,8 @@ export function classifyErrorPatterns(diagnosis, query = '', challenge = null) {
       push('null_handling');
       break;
     case 'cell_values':
+      if (fanOut) push('fan_out');
+      if (dateBound) push('date_upper_bound');
       if (/integer division/i.test((diagnosis.details || '') + ' ' + ((diagnosis.hints || [])[0] || ''))) push('integer_division');
       push('value_calc');
       if (eqNull) push('null_handling');

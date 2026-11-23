@@ -85,7 +85,12 @@ export const SOURCED_PAGES = {
   // the sources give no number the row says the page does not state one.
   // Research notes: docs/reads/company-research-2026-09-14.md.
   'amazon-sql-interview': 'Blind BIE L5 candidate report (14 Sep 2025, replies to 15 Oct 2025) + Exponent BIE guide (read 14 Sep 2026)',
-  'meta-sql-interview': 'two Blind Data Engineer candidate reports (5 Apr 2025, 17 Mar 2025) that agree on the screen',
+  // 2026-11-23: Meta gains the data-scientist screen (three PracHub reports,
+  // interviews Aug 2025 - Sep 2026, and Aced) and its data-engineer count is
+  // now stated as disputed. docs/reads/companies/meta.md.
+  'meta-sql-interview': 'two Blind Data Engineer reports (Mar + Apr 2025), PracHub DS and DE reports (interviews Aug 2025 - Sep 2026), Aced DS and DE guides (Nov 2026); the DE question count is disputed and the page says so',
+  // 2026-11-23: docs/reads/companies/shopify.md.
+  'shopify-sql-interview': "Shopify's own data-science posting (stages, live 22 Nov 2026), PracHub and Aced DS candidate reports (interviews Jan - Oct 2026); no length, tool or dialect sourced and the page says so",
   // 2026-11-20: three more template pages. Research notes:
   // docs/reads/company-research-2026-11-20.md.
   'paypal-sql-interview': 'PracHub DS reports (interviews Jul + Dec 2025), GeeksforGeeks DA intern report (Mar 2023), PracHub guide (Nov 2026), DataLemur (Jan 2025); the reports disagree and the page says so',

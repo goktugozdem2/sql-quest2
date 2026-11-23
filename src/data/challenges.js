@@ -3958,5 +3958,148 @@ ORDER BY total_orders DESC;`,
     hint_tr: "Bir kolonu saymak satırları saymakla aynı şey değil: bir kolon üzerinden sayım o kolonun boş olduğu satırları atlar, satır sayımı atlamaz. Her sınıf için ikisinden birer tane kullan; eksik yaşlar aradaki farktır.",
     example_tr: { input: "3 sınıfta 891 yolcu", output: "3 satır — 1. sınıf: 216 yolcu, 174 kayıtlı yaş, 42 eksik" },
     dataset: "titanic"
+  },
+  // 325-329 (C6, 2026-11-22): the first state-graded set. Graded on what
+  // the tables hold after the person's statements, on a fresh copy of the
+  // dataset (src/utils/state-grade.js), never the shared db. Tag DDL/DML is
+  // left unmapped in SKILL_TO_RADAR on purpose: these count as solves and
+  // move no Skillmap axis until the founder decides on a tenth one.
+  // Pinned by tests/state-grade.test.js.
+  {
+    id: 325,
+    slug: "build-the-vip-mailing-list",
+    title: "Build the VIP Mailing List",
+    difficulty: "Easy",
+    category: "DDL/DML",
+    skills: ["DDL/DML"],
+    xpReward: 20,
+    grade: "state",
+    setup: "CREATE TABLE vip_list (customer_id INTEGER PRIMARY KEY, name TEXT, email TEXT);",
+    allow: ["INSERT"],
+    checkTable: "vip_list",
+    check: "SELECT customer_id, name, email FROM vip_list ORDER BY customer_id",
+    description: "Marketing created an empty table, `vip_list` (`customer_id`, `name`, `email`), for a VIP launch email. **Fill it with every Gold or Platinum customer** from `customers`, one row each.\n\nThis challenge is graded on what `vip_list` holds after your statements run, not on a query's output. Every attempt starts from a fresh copy of the data, so you can run it as often as you like.",
+    tables: ["customers"],
+    example: { input: "16 customers, Bronze to Platinum", output: "vip_list holds 6 rows, customers 1, 3, 5, 10, 12 and 13" },
+    hint: "You do not have to type the rows in by hand. The rows you want already exist in `customers`; find them with a filter on `membership`, and add exactly those three columns to `vip_list`.",
+    solution: "INSERT INTO vip_list (customer_id, name, email)\nSELECT customer_id, name, email FROM customers WHERE membership IN ('Gold', 'Platinum');",
+    title_tr: "VIP E-posta Listesini Kur",
+    description_tr: "Pazarlama bir VIP lansman e-postası için boş bir tablo açtı: `vip_list` (`customer_id`, `name`, `email`). **`customers` tablosundaki her Gold veya Platinum müşteriyle doldur**, her müşteri bir satır.\n\nBu challenge bir sorgunun çıktısına değil, ifadelerin çalıştıktan sonra `vip_list`'in ne tuttuğuna göre değerlendirilir. Her deneme verinin temiz bir kopyasından başlar; istediğin kadar çalıştırabilirsin.",
+    hint_tr: "Satırları elle yazman gerekmiyor. İstediğin satırlar `customers`'ta zaten var; `membership` üzerinde bir filtreyle bul ve tam o üç kolonu `vip_list`'e ekle.",
+    example_tr: { input: "Bronze'dan Platinum'a 16 müşteri", output: "vip_list 6 satır tutar, 1, 3, 5, 10, 12 ve 13 numaralı müşteriler" },
+    dataset: "ecommerce"
+  },
+  {
+    id: 326,
+    slug: "a-raise-for-the-best-rated-department",
+    title: "A Raise for the Best-Rated Department",
+    difficulty: "Medium",
+    category: "DDL/DML",
+    skills: ["DDL/DML"],
+    xpReward: 45,
+    grade: "state",
+    // Lifts HR's ratings so the best average (HR) is not the best single
+    // employee's, the biggest sum's or the biggest headcount's department
+    // (all Engineering): the hint's trap, SUM and COUNT must each fail.
+    setup: "UPDATE employees SET performance_rating = MIN(performance_rating + 0.5, 4.8) WHERE department = 'HR';",
+    allow: ["UPDATE"],
+    checkTable: "employees",
+    check: "SELECT emp_id, salary FROM employees ORDER BY emp_id",
+    description: "Leadership is rewarding a whole team this year. The department with the **highest average `performance_rating`** gets a flat **$3,000 raise for every one of its employees**. Nobody else's salary changes.\n\nChange the salaries in `employees`. The department must be found from the data, not typed in: the same statement has to stay right next year, when a different team may lead.\n\nGraded on the `employees` table after your statements run, on a fresh copy each attempt.",
+    tables: ["employees"],
+    example: { input: "5 departments, 50 employees", output: "employees: one department's salaries are each $3,000 higher, every other row unchanged" },
+    hint: "Two steps in one statement: first work out which department has the highest average rating (average per department, keep the top one), then raise salary by 3000 for the rows in that department. The best single employee is not the same as the best department.",
+    solution: "UPDATE employees SET salary = salary + 3000\nWHERE department = (\n  SELECT department FROM employees\n  GROUP BY department\n  ORDER BY AVG(performance_rating) DESC\n  LIMIT 1\n);",
+    title_tr: "En Yüksek Puanlı Departmana Zam",
+    description_tr: "Yönetim bu yıl bütün bir ekibi ödüllendiriyor. **Ortalama `performance_rating`'i en yüksek** departmandaki **her çalışana 3.000 $ sabit zam** yapılacak. Başka kimsenin maaşı değişmiyor.\n\n`employees` tablosundaki maaşları değiştir. Departman veriden bulunmalı, elle yazılmamalı: aynı ifade gelecek yıl, başka bir ekip öne geçtiğinde de doğru kalmalı.\n\nİfadelerin çalıştıktan sonra `employees` tablosuna göre değerlendirilir; her deneme temiz bir kopyada.",
+    hint_tr: "Tek ifadede iki adım: önce ortalama puanı en yüksek departmanı bul (departman başına ortalama, en üsttekini tut), sonra o departmandaki satırların maaşını 3000 artır. En iyi tek çalışan, en iyi departmanla aynı şey değil.",
+    example_tr: { input: "5 departman, 50 çalışan", output: "employees: bir departmanın maaşları 3.000 $ yüksek, diğer satırlar aynı" },
+    dataset: "employees"
+  },
+  {
+    id: 327,
+    slug: "the-sync-ran-twice",
+    title: "The Sync Ran Twice",
+    difficulty: "Medium",
+    category: "DDL/DML",
+    skills: ["DDL/DML"],
+    xpReward: 45,
+    grade: "state",
+    // The copies sit at login_id + 100; three genuine late logins sit above
+    // them too, so deleting by id range removes real rows and fails. 144
+    // shares 141's timestamp under another customer, so a dedupe on
+    // login_at alone removes a real login and fails.
+    setup: "INSERT INTO logins (login_id, customer_id, login_at) SELECT login_id + 100, customer_id, login_at FROM logins WHERE login_id % 4 = 0;\nINSERT INTO logins (login_id, customer_id, login_at) VALUES (141, 2, '2024-03-05 10:00:00'), (142, 7, '2024-03-05 11:30:00'), (143, 9, '2024-03-06 09:15:00'), (144, 3, '2024-03-05 10:00:00');",
+    allow: ["DELETE"],
+    checkTable: "logins",
+    check: "SELECT login_id, customer_id, login_at FROM logins ORDER BY login_id",
+    description: "Last night's sync job re-sent part of the `logins` table. Each re-sent row has the **same `customer_id` and `login_at`** as an existing row, under a new, higher `login_id`.\n\n**Remove the copies.** For every customer + timestamp that appears more than once, keep only the row with the **lowest `login_id`**. A login that appears once must stay.\n\nGraded on the `logins` table after your statements run, on a fresh copy each attempt.",
+    tables: ["logins"],
+    example: { input: "50 rows, 9 of them copies", output: "logins holds 41 rows: ids 1-37 and four later logins" },
+    hint: "Decide which rows SURVIVE first: one per customer + timestamp, the smallest id. Every row whose id is not in that set goes. Removing every row that has a twin would also remove the originals.",
+    solution: "DELETE FROM logins\nWHERE login_id NOT IN (\n  SELECT MIN(login_id) FROM logins GROUP BY customer_id, login_at\n);",
+    title_tr: "Senkronizasyon İki Kez Çalıştı",
+    description_tr: "Dün geceki senkronizasyon işi `logins` tablosunun bir kısmını yeniden gönderdi. Yeniden gönderilen her satır, mevcut bir satırla **aynı `customer_id` ve `login_at`** değerine sahip, ama yeni ve daha büyük bir `login_id` ile.\n\n**Kopyaları kaldır.** Birden fazla görünen her müşteri + zaman damgası için yalnızca **en küçük `login_id`**'li satırı tut. Bir kez görünen giriş kalmalı.\n\nİfadelerin çalıştıktan sonra `logins` tablosuna göre değerlendirilir; her deneme temiz bir kopyada.",
+    hint_tr: "Önce hangi satırların KALACAĞINA karar ver: her müşteri + zaman damgası için bir tane, en küçük id. Id'si o kümede olmayan her satır gider. İkizi olan her satırı silmek orijinalleri de siler.",
+    example_tr: { input: "50 satır, 9'u kopya", output: "logins 41 satır tutar: id 1-37 ve dört sonraki giriş" },
+    dataset: "ecommerce"
+  },
+  {
+    id: 328,
+    slug: "roll-februarys-units-into-the-totals",
+    title: "Roll February's Units into the Totals",
+    difficulty: "Medium",
+    category: "DDL/DML",
+    skills: ["DDL/DML"],
+    xpReward: 50,
+    grade: "state",
+    setup: "CREATE TABLE country_units (country TEXT PRIMARY KEY, units INTEGER NOT NULL);\nINSERT INTO country_units VALUES ('USA', 6), ('Canada', 4), ('UK', 2), ('Germany', 2);\nINSERT INTO orders (order_id, customer_id, product, category, quantity, price, total, order_date, country, status) VALUES (41, 2, 'Desk Lamp', 'Home', 3, 20.0, 60.0, '2024-02-29', 'USA', 'completed'), (42, 4, 'Desk Lamp', 'Home', 5, 20.0, 100.0, '2024-03-01', 'Canada', 'completed');",
+    allow: ["INSERT", "UPDATE"],
+    checkTable: "country_units",
+    check: "SELECT country, units FROM country_units ORDER BY country",
+    description: "`country_units` keeps a running total of units sold per country. It was last loaded at the end of January and only tracked four countries (USA 6, Canada 4, UK 2, Germany 2).\n\nFebruary's **completed** orders are in `orders`. **Add each country's February units** (`quantity`) **to its running total.** A country that is not in the table yet gets its own row with its February units. Countries keep one row each.\n\nGraded on `country_units` after your statements run, on a fresh copy each attempt.",
+    tables: ["orders"],
+    example: { input: "4 countries on record, 7 countries sold in February", output: "country_units: 7 rows, USA 20, Canada 8, three new countries" },
+    hint: "Work out February's completed units per country first. Then each of those rows either lands as a new country or adds to the existing total. Replacing a country's row would throw January away.",
+    solution: "INSERT INTO country_units (country, units)\nSELECT country, SUM(quantity) FROM orders\nWHERE status = 'completed' AND order_date >= '2024-02-01' AND order_date < '2024-03-01'\nGROUP BY country\nON CONFLICT (country) DO UPDATE SET units = units + excluded.units;",
+    title_tr: "Şubat Adetlerini Toplamlara Ekle",
+    description_tr: "`country_units` her ülke için satılan adetlerin yürüyen toplamını tutuyor. En son Ocak sonunda yüklendi ve yalnızca dört ülkeyi izliyordu (USA 6, Canada 4, UK 2, Germany 2).\n\nŞubat ayının **tamamlanmış** siparişleri `orders`'ta. **Her ülkenin Şubat adetlerini** (`quantity`) **yürüyen toplamına ekle.** Tabloda henüz olmayan bir ülke, Şubat adetleriyle kendi satırını alır. Her ülkenin tek satırı olur.\n\nİfadelerin çalıştıktan sonra `country_units`'e göre değerlendirilir; her deneme temiz bir kopyada.",
+    hint_tr: "Önce ülke başına Şubat'ta tamamlanan adetleri bul. Sonra bu satırların her biri ya yeni bir ülke olarak girer ya da mevcut toplama eklenir. Bir ülkenin satırını değiştirip yerine yenisini koymak Ocak'ı siler.",
+    example_tr: { input: "Kayıtlı 4 ülke, Şubat'ta satış yapan 7 ülke", output: "country_units: 7 satır, USA 20, Canada 8, üç yeni ülke" },
+    dataset: "ecommerce"
+  },
+  {
+    id: 329,
+    slug: "a-refunds-table-that-says-no",
+    title: "A Refunds Table That Says No",
+    difficulty: "Medium",
+    category: "DDL/DML",
+    skills: ["DDL/DML"],
+    xpReward: 50,
+    grade: "state",
+    setup: "CREATE UNIQUE INDEX orders_order_id ON orders(order_id);\nPRAGMA foreign_keys = ON;",
+    allow: ["CREATE TABLE", "INSERT"],
+    creates: ["refunds"],
+    checkTable: "refunds",
+    check: "SELECT refund_id, order_id, amount, reason FROM refunds ORDER BY refund_id",
+    probe: [
+      { label: "a second refund with refund_id 1", sql: "INSERT INTO refunds (refund_id, order_id, amount, reason) VALUES (1, 6, 15.00, 'duplicate id')" },
+      { label: "a refund for order 9999, which does not exist", sql: "INSERT INTO refunds (refund_id, order_id, amount, reason) VALUES (2, 9999, 10.00, 'no such order')" },
+      { label: "a refund of -20.00", sql: "INSERT INTO refunds (refund_id, order_id, amount, reason) VALUES (3, 5, -20.00, 'negative amount')" },
+      { label: "a refund of 0.00", sql: "INSERT INTO refunds (refund_id, order_id, amount, reason) VALUES (4, 5, 0.00, 'zero amount')" },
+      // The one good row: a correct schema accepts it, so a table that turns
+      // everything away (an extra required column, CHECK (refund_id = 1)) fails.
+      { label: "a valid refund of 10.00 for order 5", sql: "INSERT INTO refunds (refund_id, order_id, amount, reason) VALUES (5, 5, 10.00, 'valid')" },
+    ],
+    description: "Finance wants a `refunds` table that refuses bad data on its own, instead of trusting every script that writes to it. **Create `refunds`** with four columns:\n\n- `refund_id`: a whole number, and no two refunds may share one;\n- `order_id`: must be the `order_id` of an order that exists in `orders`;\n- `amount`: must be greater than zero;\n- `reason`: text.\n\nThen **record one refund**: `refund_id` 1, for order 37 (the cancelled one), `amount` 29.99, `reason` 'Order cancelled'.\n\nAfter your statements, the grader tries to write four bad rows (a repeated id, an order that does not exist, a negative amount, an amount of zero) and one good one (refund 5: 10.00 for order 5). Your table must turn the four away and accept the good one.",
+    tables: ["orders"],
+    example: { input: "An empty database for refunds; orders 1-40", output: "refunds holds 2 rows: yours and the good one; the four bad rows were rejected" },
+    hint: "Each rule in the list belongs in the table's definition, on its column: one keeps ids unique, one ties order_id to orders.order_id, one tests that amount is above zero. Then insert your one row.",
+    solution: "CREATE TABLE refunds (\n  refund_id INTEGER PRIMARY KEY,\n  order_id INTEGER NOT NULL REFERENCES orders(order_id),\n  amount REAL NOT NULL CHECK (amount > 0),\n  reason TEXT\n);\nINSERT INTO refunds (refund_id, order_id, amount, reason) VALUES (1, 37, 29.99, 'Order cancelled');",
+    title_tr: "Hayır Diyebilen Bir İade Tablosu",
+    description_tr: "Finans, kendisine yazan her betiğe güvenmek yerine kötü veriyi kendisi reddeden bir `refunds` tablosu istiyor. Dört kolonlu **`refunds` tablosunu oluştur**:\n\n- `refund_id`: tam sayı; iki iade aynı id'yi paylaşamaz;\n- `order_id`: `orders`'ta var olan bir siparişin `order_id` değeri olmalı;\n- `amount`: sıfırdan büyük olmalı;\n- `reason`: metin.\n\nSonra **bir iade kaydet**: `refund_id` 1, sipariş 37 (iptal edilen) için, `amount` 29.99, `reason` 'Order cancelled'.\n\nİfadelerinden sonra değerlendirici dört kötü satır (tekrarlanan bir id, var olmayan bir sipariş, negatif bir tutar, sıfır tutar) ve bir iyi satır (iade 5: sipariş 5 için 10.00) yazmayı dener. Tablon dört kötü satırı geri çevirmeli, iyi satırı kabul etmeli.",
+    hint_tr: "Listedeki her kural tablonun tanımında, kendi kolonunda yer alır: biri id'leri benzersiz tutar, biri order_id'yi orders.order_id'ye bağlar, biri tutarın sıfırdan büyük olduğunu sınar. Sonra kendi tek satırını ekle.",
+    example_tr: { input: "İadeler için boş bir veritabanı; 1-40 arası siparişler", output: "refunds 2 satır tutar: seninki ve iyi satır; dört kötü satır reddedildi" },
+    dataset: "ecommerce"
   }
 ];
