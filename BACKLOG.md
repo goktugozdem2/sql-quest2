@@ -744,3 +744,34 @@ off. Not built autonomously: it needs two deploys and a money decision.
     Crypto, ≥ 100k iterations) on the next successful sign-in and marks the
     row's scheme; account-password writes the new scheme. Founder's call —
     it touches every sign-in.
+
+## Competitor watch — B6 run 2, 2026-11-23 (docs/reads/competitors-2026-11-23.md)
+
+New items only; run 1's ten (PR #179) keep their numbers, progress in §4 of
+the read. Every competitor fact cited must come from that read (URL + date).
+
+- **N1 · C5 — Capital One blog guide answers IQ's 11-16 guide.** IQ's
+  `/guides/capital-one-data-analyst` (updated 2026-11-16, AI mock button
+  above the fold) holds our best payer query twice. Fold into run-1 #1: first
+  screen names the reported format from R1's dossier and offers our 70-min,
+  14-question timed mock by its specifics; show a visible updated date.
+- **N2 · C5 / B3 — the OA bottleneck is multi-file joins and rates under a
+  clock.** Confirm the `capital-one-codesignal` mock has a multi-table rate
+  question and the guide says so in our words; if not, B3 adds one.
+- **N3 · C2 — raise run-1 #4 (AI-coach exclusivity) above run-1 #5.**
+  `src/best-sql-practice-sites.html` L102/L635 still claim "the only
+  platform … with … an AI Coach"; two more dated counter-examples today
+  (IQ AI mock, Prepfully AI Wingman).
+- **N4 · B4 — price inputs.** Big Tech Interviews $359.99/yr and $949.99/yr;
+  LearnSQL $39 per course, $599 lifetime; Prepfully $99–$279 per coaching
+  session. No agent changes a price.
+- **N5 · C5 (+B3) — Monzo "debug this query" item** on `/monzo-sql-interview/`,
+  framed by the Monzo blog citation already on the page. Prepfully holds the
+  SERP with 6 paginated DS bank URLs and no runnable SQL.
+- **N6 · C1 (laptop) — check Revolut/Monzo index status and queries before
+  any content answer to pagination.** We do not paginate.
+- **N7 · C6 — `/sql-exercises/` vs "sql practice questions" intent**
+  (LearnSQL blog #1). Add only what our page lacks; no copying.
+- **N8 · C5 — one line on the Capital One guide separating the DA
+  assessment from the general coding assessment** quantvault.org describes.
+  Fold into N1.
