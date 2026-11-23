@@ -105,6 +105,31 @@ B2 builds none of these; each names the lane that owns it.
   `cta_practice_validate_ai_sql_*` and `editorial_claudequest_click` (0 rows,
   14 app opens from that page).
 
+## Content QA findings — Q1, 2026-11-22 (docs/reads/content-qa-2026-11-22.md)
+
+D1 (challenge 323's example range) is fixed in #167. These are the author
+lanes' calls:
+
+- **DONE 2026-11-23: Easy cards that need a window function (D2).** The
+  orchestrator decided it (#222, `orchestrator-decisions.md`): 320 and 321
+  stay Easy as window on-ramps. Q1's check 5 now allows one Easy shape, a
+  single window function over one table (PARTITION BY / ORDER BY only, no
+  frame, CTE, subquery or join). Reverse rule: if either card's solve-through
+  is more than 15 points below the Easy median on 2026-12-20, relabel both
+  Medium.
+- **B3 — on-ramp cards hand over the method and the query (D3).** Spot-checking
+  the Chime set: the hints of 172, 174, 289 and 291 contain the query or most
+  of it, and the prompts of 172 (LAG), 275 (strftime), 289 and 291 (CTE /
+  LEFT JOIN / COALESCE) name the method. This is the 168–179 on-ramp and
+  275–299 card-analytics style, and it conflicts with check 6 and with the
+  company-page card rule. Start by counting the cards whose hint parses as
+  SQL. Then decide, per set, whether the method text moves behind
+  `practiceNote` the way the Capital One prompts did on 2026-09-19.
+- **C1 — the rollup page's engine table has no dated read (D4).** PostgreSQL,
+  SQL Server, Oracle, Snowflake, MySQL WITH ROLLUP and SQLite have no
+  `docs/reads/` file. Fetch the vendor docs from the laptop, write the read,
+  and cite it in `src/data/sql-rollup.js`.
+
 ## Routed by C7, question mining — 2026-11-22 (docs/reads/questions-2026-11-22.md)
 
 - **C6: UPDATE with values from another table** (UPDATE … FROM in SQLite 3.33+, the correlated-subquery form, and MySQL's / SQL Server's spellings). Seven threads in run 1's sources (Quora, sqlite.org forum). Challenges 180–185 practise DML, but no page explains it. This is C6's DML item #1; the read has the links.
@@ -829,6 +854,29 @@ Every competitor fact cited must come from that read (URL + date).
     Crypto, ≥ 100k iterations) on the next successful sign-in and marks the
     row's scheme; account-password writes the new scheme. Founder's call —
     it touches every sign-in.
+
+## Inbox review — 2026-11-23 (docs/reads/inbox-review-2026-11-23.md)
+
+- **IR-1 (B3/R1). The Stripe reconciliation round that a paying user
+  reported** (two partner tables against an expectations table; check the
+  key is unique; anti-join in both directions; filter the expectations to the
+  partner). Add it to `docs/reads/companies/stripe.md` as "a reconciliation
+  round reported by a candidate", unattributed, as the founder promised. Then
+  write one challenge in that shape. The Amazon report from the same person
+  already became three challenges.
+- **IR-2 (E2). The feedback widget is used as a help desk it can't serve.**
+  Twice a guest asked "what's my mistake" with no contact; the latest was on
+  11-19, from the /sql-exercises/ solutions. When the widget opens on a
+  challenge screen, attach the challenge id, the last query and the
+  diagnosis, and answer on the spot with a link to the diagnosis or the
+  tutor ("This box goes to the founder. For this query, the tutor answers
+  now."). Measure it with `feedback_submitted` rows that carry a challenge
+  id.
+- **IR-3 (founder). A payer's job question,** asked 2026-09-14 and never
+  answered. One honest line, either way.
+- **IR-4 (founder). Acknowledge the 09-15 security report** once #223 is
+  deployed. The reporter left no contact, so this item is just to close the
+  loop in the ledger.
 
 ## Competitor watch — B6 run 2, 2026-11-23 (docs/reads/competitors-2026-11-23.md)
 

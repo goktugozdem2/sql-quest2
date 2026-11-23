@@ -132,6 +132,92 @@ GROUP BY 1;
 **Read within a difficulty band.** An Easy at 43% is a worse result than a Hard
 at 90%.
 
+## `debug_solve_through`
+
+The Debug set ("an AI assistant wrote this query, find and fix the bug";
+design `docs/designs/debug-question-type.md`, ledger "the Debug set").
+Registered 2026-11-23, in its own PR, before the build's flag flips (rule 6b).
+The items are challenge ids **331–342** (`type: 'debug'`,
+`src/data/debug-challenges.js`). They exist in the app only while
+`features.debugQuestions` is on, so **t0 = the flip date**. The window is
+**t0 → t0 + 28 days**, and the baseline band is read **from the same window**,
+never from an earlier period.
+
+People are `coalesce(aid, username)`. Leave out internal accounts,
+`metadata.bot`, and the crawler window sizes and fingerprints at the top of
+docs/reads/funnel-2026-11-22.md.
+
+- **Primary: Debug solve-through by difficulty.** People who opened a Debug
+  item (`challenge_opened`, `challengeId` 331–342) and solved that same item
+  (`challenge_solved`, same id) in the window, divided by the people who
+  opened it. Counted per (person, item), then summed per difficulty band.
+- **The band (the floor):** the same ratio, in the same window, over every
+  other challenge of the same difficulty (all ids outside 331–342). The read
+  is the gap in points, Debug minus band, per difficulty.
+- **Openers:** distinct people with at least one `challenge_opened` on 331–342
+  in the window.
+- **Depth:** the share of those openers who reach **6 or more total distinct
+  solves** (any challenge, all time up to t0 + 28 days).
+- **Spot accuracy (descriptive only, no target):** from `debug_spot`, the
+  share with `correct = true`. Only the first tap per item is recorded.
+
+**Confound, stated in advance.** A Debug item opens with a prefilled editor
+(the AI's query), and a blank-editor challenge does not. A prefilled editor
+inflates first runs and solve-through: the person can press Run before
+writing a line, and the fix is often one line. So the band is a **floor**,
+not a peer. A Debug set at or above the band says little. A set far below
+it says the format is broken. Compare the set **against itself over time**
+first, and against the band only as that floor. Do not read
+`challenge_first_run` or `open_to_first_run` for these items as activation:
+the prefill moves them by construction.
+
+**Other confounds.**
+- Hard items are Pro, like every Hard question, so a Hard Debug opener who
+  is not Pro meets the wall before the editor. Count openers from
+  `challenge_opened` only (the wall writes `lock_reached`, not an open).
+- Discovery reaches people in three ways, each with its own `src`:
+  - the Practice chip (`debug_filter_on`);
+  - the trap pages (`src=pattern-debug-<slug>`);
+  - the AI pages (`src=ai-era-debug`, `src=validate-ai-debug`).
+
+  Split openers by source before reading a change in one of them.
+
+```sql
+with ev as (
+  select coalesce(((metadata #>> '{}')::jsonb)->>'aid', username) pid, event, created_at,
+         (metadata #>> '{}')::jsonb m
+  from pro_events
+  where username !~* '^(test|qa_|fabletest|linktest|internalroutine|sqlquest$|elena$)'
+    and coalesce(((metadata #>> '{}')::jsonb)->>'bot', 'false') <> 'true'
+    and created_at >= :flip and created_at < :flip + interval '28 days'
+    and event in ('challenge_opened', 'challenge_solved')
+),
+opened as (select distinct pid, (m->>'challengeId')::int cid, m->>'difficulty' diff
+           from ev where event = 'challenge_opened' and m->>'challengeId' ~ '^[0-9]+$'),
+solved as (select distinct pid, (m->>'challengeId')::int cid
+           from ev where event = 'challenge_solved' and m->>'challengeId' ~ '^[0-9]+$'),
+pairs as (select o.*, (o.cid between 331 and 342) is_debug, (s.pid is not null) did_solve
+          from opened o left join solved s using (pid, cid))
+select diff,
+  count(*) filter (where is_debug)                                   debug_opens,
+  round(100.0 * avg(did_solve::int) filter (where is_debug), 1)      debug_solve_through,
+  count(*) filter (where not is_debug)                               band_opens,
+  round(100.0 * avg(did_solve::int) filter (where not is_debug), 1)  band_solve_through,
+  count(distinct pid) filter (where is_debug)                        debug_openers
+from pairs
+group by diff
+order by case diff when 'Easy' then 0 when 'Medium' then 1 else 2 end;
+```
+
+**Thresholds, copied from the ledger claim (written before the data).**
+- **Target:** Debug solve-through within 10 points of the band, and at least
+  40 openers in 28 days.
+- **Falsification:**
+  - fewer than 20 openers in 28 days with discovery live → freeze the set at
+    12;
+  - solve-through more than 20 points below the band → fix the UX before
+    adding items.
+
 ## `first_contact_share`
 
 Of everyone whose first-ever challenge was X, what share of all first-contacts
@@ -3815,6 +3901,30 @@ from feedback where created_at >= :from and created_at < :to group by 1, 2;
   is the one the daily read assigns.
 - Rows written while the 20260907 quote-consent migration is unapplied still
   land (PostgREST drops unknown keys); `context` is jsonb and was always there.
+## `feedback_loop`
+
+What happens to a message after it arrives (registered 2026-11-23,
+`docs/plans/feedback-system-2026-11-23.md`). `feedback_capture` counts what
+comes in; this counts whether anyone answered. The 69-day unread security
+report is the failure it exists to catch.
+
+- **read_24h**: the share of new `feedback` rows (every kind) that E1 read
+  within 24 hours of `created_at`. Source: the laptop's E1 log
+  (`~/.claude/sqlquest-cs-log.json`, `read_at` per row id). Target 100%.
+- **reply_drafted_24h**: the share of rows with `contact` that have a reply
+  draft within 24 hours. Same log, `drafted_at`.
+- **reply_sent**: the share of those drafts the founder sent. Gmail `in:sent`
+  to the contact after `drafted_at`, logged as `sent_at`. This is the founder's
+  number; the agents cannot move it.
+- **security_same_day**: security- or abuse-flagged rows that reached the
+  founder report on the same day ÷ such rows. Target 100%, every time.
+- **closed_loop**: `FB-…` BACKLOG items that shipped and whose reporter (with
+  contact) got a "you asked, it's live" draft ÷ shipped `FB-…` items.
+
+Read weekly by B2 (Fridays). n is tiny: report counts, never only rates.
+The log stays on the laptop because it holds contacts; the weekly read
+reports only counts.
+
 ## `uiux_findings`
 
 Critical + major findings in one full run of the UI/UX audit (`npm run uiux`,
@@ -3920,3 +4030,90 @@ Traps:
 - Baselines are read on the laptop (the cloud session has no production
   data). A claim made from a cloud session states "baseline: laptop read"
   and the laptop writes it before the read date.
+
+## `debug_pack_purchases`
+
+The Debug pack (founder's decision 2026-11-23, PR #251; built in PR #253,
+dark behind `debugPack`): the 12-item Debug set sold on its own, $9 once
+(India $3), Pro includes it. Registered 2026-11-23, before any data, for the
+ledger claim "the Debug pack". Read from the `debugPack` flip, never across
+it; nothing before the flip can be a pack purchase.
+
+**Numerator — pack purchases.** `pro_events` rows with
+`event = 'debug_pack_purchased'` and `reason = 'stripe_webhook'` (the only
+money truth), counted per **username**, once each (a redelivered event never
+writes a second row — the webhook is idempotent on the session id; a
+`debug_pack_duplicate` row is a second payment for the same thing and is
+NOT a purchase). Subtract usernames with a later `debug_pack_refunded` row
+whose `metadata->>'full' = 'true'`. Split by `metadata->>'region'`
+(`default` | `IN`) and report `metadata->>'amount'` summed per region.
+
+**Read beside it — Pro from a Debug lock.** People whose `pro_plan_clicked`
+(`reason = 'activation_funnel'`) carries `metadata->>'modalReason' =
+'debug_lock'` and `metadata->>'product'` absent (a Pro plan, not the pack),
+then a `stripe_webhook` `pro_purchase_completed` or `pro_trial_started` for
+the same **username** within 24 h of the click (the webhook row has no aid —
+shared traps). The same count with `modalReason = 'free_quota'` is the
+second series the cannibalisation rule reads.
+
+**Funnel, for context (not the verdict).** Shown the card:
+`pro_modal_shown` with `metadata->>'debugPackOffered' = 'true'` (people by
+aid). Clicked it: `pro_plan_clicked` with `metadata->>'product' =
+'debug_pack'`. Session made: `debug_pack_checkout_started`
+(`reason = 'checkout_session'`); refused: `debug_pack_checkout_failed`
+(`stage = 'debug_pack_unconfigured'` means a price secret is missing — a
+setup bug, not a buyer). Expired: `debug_pack_checkout_expired`
+(`stripe_webhook`).
+
+**Verdict (28 days after the flip), from the ledger, written before data:**
+- HIT: ≥ 3 pack purchases, and Pro purchases from `debug_lock` +
+  `free_quota` not below the 30 days before the flip.
+- MISS (withdraw the pack, Debug stays inside Pro): Pro purchases from
+  `debug_lock` + `free_quota` together below the 30 days before the flip
+  while pack purchases rise (#251's cannibalisation rule); or zero pack
+  purchases with ≥ 20 people shown the card.
+- FLAT: anything else — say so, do not round it to a hit.
+
+Traps:
+- Internal accounts (`isInternalAccount` patterns) and localhost are out;
+  analytics are muted on localhost.
+- `pro_checkout_clicked` rows with `product = 'debug_pack'` are pack clicks.
+  Any Pro checkout-click series read after the flip must exclude them (the
+  checkout-abandon sender already does).
+- n will be small (about 52 real new people a week in late November), so
+  read the rows, not a rate.
+
+## `debug_hub_search`
+
+The search half of the Debug hub `/sql-debugging-practice/` (PR #256, generated
+only while `debugQuestions` is on). Registered 2026-11-23, before the page
+exists, for the ledger claim in #256. Read from the `debugQuestions` flip,
+never across it. Baseline 0.
+
+**Google.** `gsc_daily`, the page slice only (`query IS NULL AND page =
+'https://sqlquest.app/sql-debugging-practice/'`): sum impressions and clicks
+over the 28 days after the flip. The query×page slice is read beside it for
+WHICH queries (the primary cluster: sql debugging practice / exercises, fix
+the sql query, find the bug, common sql mistakes interview, "what's wrong
+with my query"), never added to the page slice. GSC lands 2–3 days late:
+read on day 31.
+
+**Bing.** `bing_stats` page slice for the same URL. Its rows are WEEKLY
+buckets (a date is the seven days ending on it), so report whole weeks only
+and never mix them with GSC days.
+
+**Indexed.** GSC URL Inspection "Submitted and indexed", and on Bing either
+a `bing_url_status` crawl after the flip or URL Inspection by hand.
+
+**Cannibalisation guard.** `/blog/validate-ai-generated-sql/` page-slice GSC
+impressions in the same 28 days against its prior 28 days.
+
+**Product half (context, not the verdict).** `seo_page_funnel` for
+`landing_view` rows on the page, and `/app/` arrivals with `src=seo-debug`.
+
+**Verdict (from #256, written before data):**
+- HIT: at least 300 GSC impressions and at least 5 clicks, and indexed on both engines.
+- MISS, noindex through `src/data/seo-prune.json`: under 100 GSC
+  impressions; or validate-ai-generated-sql down more than 30% on its prior
+  28 days.
+- Anything between: INCONCLUSIVE; read again at 56 days.

@@ -33,6 +33,22 @@ const DAILY_LIMITS: Record<string, number> = {
 export const NUDGE_DAILY_LIMIT = 12;
 const NUDGE_BUCKET_SUFFIX = "#nudge";
 
+// Guests are also limited per network address (2026-11-23). The guest
+// buckets above are keyed on the username the browser sends, so a client that
+// sends a fresh `guest_…` name on every call never meets a limit: unlimited
+// billed calls, enough to spend the tutor's whole workspace budget (reported
+// by a user on 2026-09-15, found again in the inbox review of 11-23). This
+// bucket is keyed on a hash of the caller's first forwarded address, so the
+// raw IP is never stored. It is generous on purpose: a campus or a mobile
+// carrier puts many real guests behind one address.
+export const GUEST_IP_DAILY_LIMIT = 40;
+export async function guestIpBucket(forwardedFor: string | null): Promise<string> {
+  const ip = (forwardedFor || "").split(",")[0].trim() || "unknown";
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(`sqlquest-guest-ip:${ip}`));
+  const hex = Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("");
+  return `guestip_${hex.slice(0, 20)}`;
+}
+
 // Phase-dependent max tokens — keep responses short and fast
 const PHASE_MAX_TOKENS: Record<string, number> = {
   intro: 200,
@@ -226,6 +242,43 @@ serve(async (req) => {
 
     // --- 2. Atomic rate limit check-and-increment ---
     const today = new Date().toISOString().split("T")[0]; // "YYYY-MM-DD"
+
+    // Guest network bucket, checked and counted before any Claude call, on
+    // both paths below. Counting the attempt (not the success) is the point:
+    // it bounds what a renamed guest can spend.
+    if (isGuest) {
+      const ipBucket = await guestIpBucket(req.headers.get("x-forwarded-for"));
+      const { data: ipRow } = await supabase
+        .from("ai_usage")
+        .select("call_count")
+        .eq("username", ipBucket)
+        .eq("date", today)
+        .maybeSingle();
+      const ipCount = ipRow?.call_count || 0;
+      if (ipCount >= GUEST_IP_DAILY_LIMIT) {
+        return new Response(
+          JSON.stringify({
+            error: "Daily AI limit reached",
+            limit: dailyLimit,
+            used: dailyLimit,
+            plan: planType,
+            resetsAt: today + "T24:00:00Z",
+          }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      if (ipRow) {
+        await supabase
+          .from("ai_usage")
+          .update({ call_count: ipCount + 1, updated_at: new Date().toISOString() })
+          .eq("username", ipBucket)
+          .eq("date", today);
+      } else {
+        await supabase
+          .from("ai_usage")
+          .insert({ username: ipBucket, date: today, call_count: 1, plan_type: "guest_ip" });
+      }
+    }
 
     // Use upsert + check in a single operation to prevent race conditions
     const { data: upsertResult, error: upsertError } = await supabase
