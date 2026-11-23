@@ -29,6 +29,8 @@ of the verifier and must never be rounded to `FLAT`.
 
 ### the reasons are asked where they happen: exit_reason (`exitReasonAsk`) — **OPEN**
 
+- **Flipped ON 2026-11-23** by A0 in its own PR, applying orchestrator-decisions 2026-11-22. Read 2026-12-21 (28 days). **Reverse rule (copied from the decision):** plan clicks per modal shown fall by more than 20% relative over 14 days against the 14 days before → OFF the same day. The falsification below still applies.
+
 - **Claimed** 2026-11-22 (E2) · **Shipped** dark; flips from the flag queue
   after A1 confirms the paywall conditions below · **Read** 28 days after
   the flip.
@@ -66,6 +68,8 @@ of the verifier and must never be rounded to `FLAT`.
 
 ### the reasons are asked where they happen: day2 (`day2Ask`) — **OPEN**
 
+- **Flipped ON 2026-11-23** by A0 in its own PR, applying orchestrator-decisions 2026-11-22. Read 2026-12-21 (28 days). **Reverse rule (copied from the decision):** `second_session_7d` or day-3 return drops more than 3 points over 14 days → OFF. The falsification below still applies.
+
 - **Claimed** 2026-11-22 (E2) · **Shipped** dark · **Read** 28 days after
   the flip.
 - **Change** at the second session's first screen (a session = more than an
@@ -78,6 +82,8 @@ of the verifier and must never be rounded to `FLAT`.
 - **Falsification** answered ÷ shown under 3%, or solves in the second
   session per person shown more than 20% below the 28 days before → off.
 ### a company arrival opens question 1 (`companyDirectOpen`, A/B)
+
+- **Flipped ON at 50/50 on 2026-11-23** by A0 in its own PR, applying orchestrator-decisions 2026-11-22 ("ON at 50/50 after #156 merges"), which overrides the 12-19 date below. **Reverse rule:** the entry's own stop rule (early harm check at 60 per arm; HIT / FLAT / MISS at 120 per arm; UNREADABLE by 2027-02-27). **Confound this creates:** the company-banner claim (read 12-18) shares these arrivals. Read that claim on the `list` arm and on arrivals outside the test (people with solves) only; the `list` arm keeps the banner byte for byte. The pre-flip company-door `first_solve_10m` baseline is owed by the laptop, from data before 2026-11-23.
 
 - **Claimed** 2026-11-22 · **Shipped** dark (flag `companyDirectOpen: false`); A0 may flip it no earlier than **2026-12-19** (flag-queue row 16) · **Read** 2027-01-30, or at the minimum n if that comes later (hard stop 2027-02-27).
 - **Change** an A/B by aid (`company_direct_v1`, murmur-finalised hash, independent of the first-screen, company-ask, quota-wall-inline and modal-layout arms). A person with **zero solves** who arrives through `/app/?company=X` with no `?challenge=` or `?interview=` (the hero of 33 of 34 company pages) gets one of two arms. `direct`: they land in the question the company banner's button would open (`companyBannerNext()`: same locks, same `openChallenge`, `openedFrom: 'company_direct'`). `list`: today's list and banner, unchanged. The arm is assigned once (`company_direct_assigned {testId, arm, company, nextId}`). Nothing is asked, gated or priced. src/utils/company-direct.js; tests/company-direct.test.js.
