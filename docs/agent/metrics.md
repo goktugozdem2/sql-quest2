@@ -132,6 +132,92 @@ GROUP BY 1;
 **Read within a difficulty band.** An Easy at 43% is a worse result than a Hard
 at 90%.
 
+## `debug_solve_through`
+
+The Debug set ("an AI assistant wrote this query, find and fix the bug";
+design `docs/designs/debug-question-type.md`, ledger "the Debug set").
+Registered 2026-11-23, in its own PR, before the build's flag flips (rule 6b).
+The items are challenge ids **331–342** (`type: 'debug'`,
+`src/data/debug-challenges.js`). They exist in the app only while
+`features.debugQuestions` is on, so **t0 = the flip date**. The window is
+**t0 → t0 + 28 days**, and the baseline band is read **from the same window**,
+never from an earlier period.
+
+People are `coalesce(aid, username)`. Leave out internal accounts,
+`metadata.bot`, and the crawler window sizes and fingerprints at the top of
+docs/reads/funnel-2026-11-22.md.
+
+- **Primary: Debug solve-through by difficulty.** People who opened a Debug
+  item (`challenge_opened`, `challengeId` 331–342) and solved that same item
+  (`challenge_solved`, same id) in the window, divided by the people who
+  opened it. Counted per (person, item), then summed per difficulty band.
+- **The band (the floor):** the same ratio, in the same window, over every
+  other challenge of the same difficulty (all ids outside 331–342). The read
+  is the gap in points, Debug minus band, per difficulty.
+- **Openers:** distinct people with at least one `challenge_opened` on 331–342
+  in the window.
+- **Depth:** the share of those openers who reach **6 or more total distinct
+  solves** (any challenge, all time up to t0 + 28 days).
+- **Spot accuracy (descriptive only, no target):** from `debug_spot`, the
+  share with `correct = true`. Only the first tap per item is recorded.
+
+**Confound, stated in advance.** A Debug item opens with a prefilled editor
+(the AI's query), and a blank-editor challenge does not. A prefilled editor
+inflates first runs and solve-through: the person can press Run before
+writing a line, and the fix is often one line. So the band is a **floor**,
+not a peer. A Debug set at or above the band says little. A set far below
+it says the format is broken. Compare the set **against itself over time**
+first, and against the band only as that floor. Do not read
+`challenge_first_run` or `open_to_first_run` for these items as activation:
+the prefill moves them by construction.
+
+**Other confounds.**
+- Hard items are Pro, like every Hard question, so a Hard Debug opener who
+  is not Pro meets the wall before the editor. Count openers from
+  `challenge_opened` only (the wall writes `lock_reached`, not an open).
+- Discovery reaches people in three ways, each with its own `src`:
+  - the Practice chip (`debug_filter_on`);
+  - the trap pages (`src=pattern-debug-<slug>`);
+  - the AI pages (`src=ai-era-debug`, `src=validate-ai-debug`).
+
+  Split openers by source before reading a change in one of them.
+
+```sql
+with ev as (
+  select coalesce(((metadata #>> '{}')::jsonb)->>'aid', username) pid, event, created_at,
+         (metadata #>> '{}')::jsonb m
+  from pro_events
+  where username !~* '^(test|qa_|fabletest|linktest|internalroutine|sqlquest$|elena$)'
+    and coalesce(((metadata #>> '{}')::jsonb)->>'bot', 'false') <> 'true'
+    and created_at >= :flip and created_at < :flip + interval '28 days'
+    and event in ('challenge_opened', 'challenge_solved')
+),
+opened as (select distinct pid, (m->>'challengeId')::int cid, m->>'difficulty' diff
+           from ev where event = 'challenge_opened' and m->>'challengeId' ~ '^[0-9]+$'),
+solved as (select distinct pid, (m->>'challengeId')::int cid
+           from ev where event = 'challenge_solved' and m->>'challengeId' ~ '^[0-9]+$'),
+pairs as (select o.*, (o.cid between 331 and 342) is_debug, (s.pid is not null) did_solve
+          from opened o left join solved s using (pid, cid))
+select diff,
+  count(*) filter (where is_debug)                                   debug_opens,
+  round(100.0 * avg(did_solve::int) filter (where is_debug), 1)      debug_solve_through,
+  count(*) filter (where not is_debug)                               band_opens,
+  round(100.0 * avg(did_solve::int) filter (where not is_debug), 1)  band_solve_through,
+  count(distinct pid) filter (where is_debug)                        debug_openers
+from pairs
+group by diff
+order by case diff when 'Easy' then 0 when 'Medium' then 1 else 2 end;
+```
+
+**Thresholds, copied from the ledger claim (written before the data).**
+- **Target:** Debug solve-through within 10 points of the band, and at least
+  40 openers in 28 days.
+- **Falsification:**
+  - fewer than 20 openers in 28 days with discovery live → freeze the set at
+    12;
+  - solve-through more than 20 points below the band → fix the UX before
+    adding items.
+
 ## `first_contact_share`
 
 Of everyone whose first-ever challenge was X, what share of all first-contacts
