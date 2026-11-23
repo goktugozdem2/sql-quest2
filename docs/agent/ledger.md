@@ -27,6 +27,44 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### the Debug set: "an AI wrote this query, find and fix the bug" (`debugQuestions`) — **OPEN**
+
+- **Claimed** 2026-11-23 · **Shipped** dark (`debugQuestions: false`), from
+  the approved design `docs/designs/debug-question-type.md` (PR #248). The
+  orchestrator flips it in its own decision row; **the clock starts at the
+  flip**. · **Flipped ON 2026-11-23T22:09Z** (PR flags/debug-questions-on, after #249
+  merged with #252/#256/#258 and a 31/31 production smoke) · **Read**
+  2026-12-22 (28 days after the flip).
+- **Change** Twelve `type: 'debug'` items, ids 331–342 (4 Easy, 5 Medium,
+  3 Hard), in `src/data/debug-challenges.js`: the editor opens on a wrong
+  query an AI assistant "wrote" (only when no draft is saved), with line
+  numbers and an optional spot tap scored in `debugStats`, never a gate;
+  graded like any challenge; a solve names the bug and links the trap page
+  where one exists. Discovery with the flag on: the Practice "Debug" chip,
+  a line on the five trap pages, a section on `/sql-for-the-ai-era/` and the
+  validate-AI post. Free quota and the Hard/Pro boundary unchanged. No new
+  indexable page.
+- **Why** Reading and fixing someone else's query is reported as an
+  interview round in 3 dated reports at 2 companies (TikTok K1, K4; Shopify
+  S6 — `docs/reads/companies/`); the bank had no item of that shape. Demand
+  for an "AI" framing itself is unproven (none of the 9 payers arrived
+  through the AI pages).
+- **Metric** `debug_solve_through` (`docs/agent/metrics.md`, defined in its
+  own PR per rule 6b — until that PR merges the verdict would be UNDEFINED).
+  Debug solve-through vs same-difficulty challenges over the same 28 days,
+  plus openers and the share of openers who reach 6+ total solves.
+- **Baseline** none for the set (it does not exist yet); the same-band
+  challenge solve-through is read from the same 28-day window. Confound,
+  stated in advance: a prefilled editor inflates first runs and
+  solve-through against blank-editor items, so the band is a floor, not a
+  peer.
+- **Target** Debug solve-through within 10 points of same-band challenges,
+  and ≥ 40 people open a Debug item in 28 days.
+- **Falsification, written before the data:** fewer than 20 openers in 28
+  days with discovery live → nobody wants it: freeze the set at 12 and write
+  it down. Solve-through more than 20 points below the band → the format is
+  broken: fix the UX before adding items.
+
 ### Shopify becomes a sourced company page; Meta, Google, Databricks lose their unsourced claims (C2, R1 batch 4)
 
 - **Claimed** 2026-11-23 · **Shipped** on merge (static pages, no flag) ·
