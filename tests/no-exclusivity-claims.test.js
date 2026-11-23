@@ -2,8 +2,8 @@
 // (2026-11-23). /best-sql-practice-sites/ said SQL Quest was "the only
 // platform reviewed with a wrong-answer diagnostic, an AI Coach and an
 // adaptive 9-skill Skillmap" and that "no other platform has" the diagnostic.
-// B6's dated competitor read (docs/reads/competitors-2026-11-23.md) found
-// AI mock interviewers and AI interview assistants elsewhere, so the claim
+// B6's dated competitor read (docs/reads/competitors-2026-11-22.md, row 4)
+// found AI tutors, AI interviewers and AI feedback elsewhere, so the claim
 // was false, and it sat in FAQ JSON-LD that AI assistants quote.
 //
 // The rule: say what SQL Quest does (the Skillmap across nine skills, the
