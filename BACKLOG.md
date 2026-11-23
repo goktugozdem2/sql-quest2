@@ -110,13 +110,13 @@ B2 builds none of these; each names the lane that owns it.
 D1 (challenge 323's example range) is fixed in #167. These are the author
 lanes' calls:
 
-- **Orchestrator — Easy cards that need a window function (D2).** A product
-  call, logged in `orchestrator-decisions.md` (A1 on #168). Q1's check 5
-  says "an Easy that needs a window function is FAIL". B3 wrote 320 (MAX
-  per department) and 321 (number each customer's orders) as Easy on-ramps
-  for the Window cell, which had 3 Easy cards. Either relabel them Medium (and
-  re-measure the Easy cell), or amend check 5 to allow a single-window
-  on-ramp card. Decide once; the next B3 batch inherits it.
+- **DONE 2026-11-23: Easy cards that need a window function (D2).** The
+  orchestrator decided it (#222, `orchestrator-decisions.md`): 320 and 321
+  stay Easy as window on-ramps. Q1's check 5 now allows one Easy shape, a
+  single window function over one table (PARTITION BY / ORDER BY only, no
+  frame, CTE, subquery or join). Reverse rule: if either card's solve-through
+  is more than 15 points below the Easy median on 2026-12-20, relabel both
+  Medium.
 - **B3 — on-ramp cards hand over the method and the query (D3).** Spot-checking
   the Chime set: the hints of 172, 174, 289 and 291 contain the query or most
   of it, and the prompts of 172 (LAG), 275 (strftime), 289 and 291 (CTE /
