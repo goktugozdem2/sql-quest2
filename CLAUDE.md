@@ -88,6 +88,12 @@ map. Work plan: `docs/PLAN.md`. Ranked issues: `BACKLOG.md`.
   MERGE verdict, and nobody waits for the founder.** A0 still holds anything
   that sets a price or Stripe setting, flips a money flag, sends or posts
   outward, writes production, cuts session tokens or removes a guard.
+  **From 2026-11-22 the founder also delegated product decisions ("Benden
+  karar isteme, top sende"):** agents don't put choices to him. The
+  orchestrator decides and logs it in `docs/agent/fleet/orchestrator-decisions.md`
+  with a reverse rule. Credentialed actions (deploys, production writes,
+  dashboards) and mail sent as the founder's own words stay with the laptop
+  loop or the founder's hand, and are queued, not asked.
 - Counts on pages come from helpers (`bankCountLabel`, `freeSolvesLabel`);
   competitor facts only from a dated `docs/reads/` file.
 

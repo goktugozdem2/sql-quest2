@@ -556,6 +556,17 @@ window.FEATURE_FLAGS = {
     // billing_issue_shown / billing_issue_clicked; ledger "the day-7 charge
     // gets a self-serve fix", metric failed_charge_recovery.
     billingIssueLine: true,
+
+    // ── A company-page arrival opens question 1 (B5, 2026-11-22) ──────────
+    // An A/B by aid (company_direct_v1, murmur-finalised hash): a person with
+    // zero solves who arrives through `/app/?company=X` (no ?challenge=, no
+    // ?interview=) lands in the question the company banner would open, in
+    // the `direct` arm; the `list` arm keeps today's list + banner. Nothing
+    // is asked, gated or priced. DARK: flip no earlier than 2026-12-19 — the
+    // banner's own claim reads 12-18 on the same arrivals ("a company
+    // arrival gets a first question to press"). src/utils/company-direct.js;
+    // ledger "a company arrival opens question 1"; metric company_direct_split.
+    companyDirectOpen: false,
   },
 };
 
