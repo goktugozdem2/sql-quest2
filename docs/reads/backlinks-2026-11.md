@@ -179,3 +179,34 @@ Founder, SQL Quest
 4. Open thequerylab.com/blog/best-sql-practice-websites in a browser and
    check whether its SQL Quest row carries a link. If it does, that is
    our first live link.
+
+---
+
+## 2026-11-23, run 2: web-form outreach (founder's ask: "onlara websitelerinden form doldurarak ulaş")
+
+The founder approved the four forms without a CAPTCHA and the contact
+address `support@sqlquest.app` in chat. The texts were drafted by C3,
+re-checked against each page on 2026-11-23 and shown to the founder before
+anything was sent. The name field read "Göktuğ (SQL Quest)". Each message is
+dated, names the founder, asks one question and promises no follow-up.
+
+| # | Target | Page that would link | Result |
+|---|---|---|---|
+| 1 | TheQueryLab (correction: $19 → $29/$99, "60+ free" → 10 free solves, "unlimited AI" → not unlimited) | thequerylab.com/blog/best-sql-practice-websites (lists us as #6, plain text, no link) | **Not sent.** Pressing Send opens a "Sign in to continue" modal (Google sign-in), and no request reached their contact API. Creating an account on their site is the founder's call. FOUNDER: sign in and paste the text from the C3 file, or skip. |
+| 2 | Revarta, "Best Interview Prep App for Data Analysts in 2026" | revarta.com/blog/best-interview-prep-app-for-data-analysts-2026 | **Sent** 2026-11-23 ~15:50 UTC. The site confirmed "Your message has been sent successfully". |
+| 3 | UC San Diego Library, Data Science guide → "Data science interview prep" | ucsd.libguides.com (updated 2026-11-05; DataLemur is its only SQL site) | **Sent** 2026-11-23 ~15:55 UTC through LibAnswers "Email Us", affiliation "Non-UC San Diego / Other". The site confirmed "Thank you! We strive to respond … within two business days". |
+| 5 | Data Elixir (newsletter) | weekly issue, "Posts & Tutorials" | **Not sent.** CleanTalk anti-spam refused the automated browser ("Browser seems to be spambot"). We do not get around bot detection. FOUNDER: send the same text from your own browser, or skip. |
+| 4, 6, 7 | codewithfimi, KDnuggets, RustcodeWeb | (see the C3 file) | **Not attempted.** These forms have a reCAPTCHA, so they are the founder's to send. |
+
+The texts and fields for all seven are in the C3 research file written
+2026-11-23 (session scratchpad, `backlink-forms-2026-11-23.md`). They are
+not in the repo, because each holds an outward message, not data. The
+dropped list from that research:
+- FreeCodingCourses.com: email only, so it moves to the Gmail lane;
+- Analytics Vidhya: phone number and marketing consent required;
+- Estuary and Rivery: sales or demo forms only;
+- Liam ERD: GitHub or X only;
+- Data Research Analysis Collection: the form is broken.
+
+**Next live-link check:** Revarta and UCSD from 2026-12-07; no follow-up
+messages, as promised. **Live links: still 0.**

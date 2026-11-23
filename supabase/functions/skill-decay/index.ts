@@ -384,6 +384,29 @@ function buildEmailHtml(username: string, ctx: ReturnType<typeof buildSkillEmail
   `
 }
 
+// Users are read in pages (2026-11-23). One unpaged `select username, email,
+// data` over every row with an email took 15–19 s, and on 11-22 and 11-23 the
+// 10:00 run of skill-decay, welcome-back and streak-reminder hit the 8 s
+// statement timeout together: 500s, and no welcome-back or skill-decay mail
+// either day, while pg_cron logged "succeeded" (A3, docs/reads/errors-2026-11-23.md).
+// INLINED in skill-decay, welcome-back and streak-reminder — keep in sync.
+const USERS_PAGE = 200
+async function loadUsersWithEmail(supabase: any): Promise<any[]> {
+  const all: any[] = []
+  for (let from = 0; ; from += USERS_PAGE) {
+    const { data, error } = await supabase
+      .from('users')
+      .select('username, email, data')
+      .not('email', 'is', null)
+      .order('username')
+      .range(from, from + USERS_PAGE - 1)
+    if (error) throw error
+    all.push(...(data || []))
+    if (!data || data.length < USERS_PAGE) break
+  }
+  return all
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
@@ -419,12 +442,7 @@ Deno.serve(async (req) => {
     const cutoffDate = new Date(now.getTime() - INACTIVE_DAYS_THRESHOLD * 24 * 60 * 60 * 1000)
 
     // Get all users with emails
-    const { data: users, error } = await supabase
-      .from('users')
-      .select('username, email, data')
-      .not('email', 'is', null)
-
-    if (error) throw error
+    const users = await loadUsersWithEmail(supabase)
 
     // Lifetime send counts, read from the send log itself rather than a
     // counter on the user row. email_events already holds the complete
