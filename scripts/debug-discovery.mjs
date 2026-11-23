@@ -44,7 +44,12 @@ export const debugHref = (item, src) => `/app/?challenge=${item.id}&amp;src=${en
 /** The Debug item for a trap page, or null (always null with the flag off). */
 export function debugItemForTrap(slug, { flagOn, items }) {
   if (!flagOn) return null;
-  return (items || []).find(c => c && c.type === 'debug' && c.trap === slug) || null;
+  // Only an item a visitor with no solves can open: a Hard is Pro, and the
+  // app swaps a cold visitor to an unrelated free Hard preview, so "Fix this
+  // bug yourself" would land on a different question (A1 on #249). The
+  // fan-out and average-of-averages pages carry no line until a non-Hard
+  // item exists for them.
+  return (items || []).find(c => c && c.type === 'debug' && c.trap === slug && c.difficulty !== 'Hard') || null;
 }
 
 /** The trap page's line. */
@@ -60,7 +65,9 @@ export const AI_PAGES = [
 
 /** The one section on the two AI pages: what the set is, and three items to start with. */
 export function aiSectionHtml(items, src, { wrap = false } = {}) {
-  const pick = ['Easy', 'Medium', 'Hard'].map(d => items.find(c => c.difficulty === d)).filter(Boolean);
+  // Three a cold visitor can open: no Hard (Pro; see debugItemForTrap).
+  const open = items.filter(c => c.difficulty !== 'Hard');
+  const pick = [open.find(c => c.difficulty === 'Easy'), ...open.filter(c => c.difficulty === 'Medium').slice(0, 2)].filter(Boolean);
   const inner = `<h2 class="fd" id="fix-the-ai">Fix a query an AI wrote</h2>
   <p>${items.length} practice questions open on a query an AI assistant wrote for the task. Each runs, and each returns the wrong answer: a join that repeats rows, a NULL in a NOT IN, a date bound that drops the last day. Find the line, fix it, and the checker grades your fix like any other question.</p>
   <ul>${pick.map(c => `<li><a href="${debugHref(c, src)}" data-track="cta_ai_debug">${esc(c.title.replace(/^Debug: /, ''))}</a> (${esc(c.difficulty)})</li>`).join('')}</ul>`;
