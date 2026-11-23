@@ -2782,4 +2782,13 @@
     <priority>0.7</priority>
   </url>
   <!-- mock-page:end -->
+
+  <!-- debug-hub:start -->
+  <url>
+    <loc>https://sqlquest.app/sql-debugging-practice/</loc>
+    <lastmod>2026-11-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <!-- debug-hub:end -->
 </urlset>

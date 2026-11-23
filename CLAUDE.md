@@ -66,7 +66,10 @@ map. Work plan: `docs/PLAN.md`. Ranked issues: `BACKLOG.md`.
   which break it caught.
 
 ### Deploy flow
-- Push to `main` → Vercel deploys `public/` (~1–2 min). Then GitHub Actions:
+- Push to `main` → the `Deploy (production)` Action (`.github/workflows/deploy-prod.yml`,
+  since 2026-11-23) deploys `public/` only when a site file changed since the LIVE
+  deployment (`scripts/deploy-decide.sh`, rule in `scripts/site-paths.sh`); Vercel's
+  Git integration is off for main (`git.deploymentEnabled.main: false`). Then GitHub Actions:
   `ci.yml` (lint, tests, build), `smoke.yml` (production checks + gated
   rollback), `indexnow.yml` (pings Bing for changed URLs).
 - Edge functions deploy separately: `supabase functions deploy <name>`.

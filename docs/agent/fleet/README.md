@@ -135,9 +135,23 @@ An agent reads `CLAUDE.md`, this file and its own brief, in that order.
 ## Budgets
 
 - At most **2 code agents** at a time; read and draft agents run beside them.
-- About **15 merges a day** across the fleet. The Vercel Hobby build limit
-  was hit on 2026-11-22, and a rate-limited deploy is never retried; the
+- About **15 site-affecting merges a day** across the fleet. The Vercel Hobby
+  build limit was hit on 2026-11-22 and again on 11-23: 88 commits in 24 h,
+  of which 23 were deployed, 35 cancelled by the ignore step (which still
+  counted) and 28 rate-limited. A rate-limited deploy is never retried; the
   next push is what deploys.
+- **Deploy budget rules (2026-11-23):**
+  - **The merge train.** Merges happen in at most two batches a day (see
+    `A0-gate.md`, rule 5).
+  - **Docs are batched.** The laptop self-merges docs-only PRs at most twice
+    a day, together: around 12:00 and 20:00 UTC, never one per read.
+  - **Deploy only on a site change.** `deploy-prod.yml` (from PR
+    `ci/deploy-prod-action`) deploys only when `public/` or another
+    site-affecting path changed since the live deployment. After the
+    founder's go, the Vercel Git integration stops creating deployments for
+    main (`ci/deploy-main-switch`).
+  - **Paid option, the founder's call.** Vercel Pro raises the limit. Hobby
+    is meant for non-commercial use.
 - When a run finds nothing worth doing, the agent reports `noop` and stops.
   A `noop` is a good outcome, not a failure.
 
