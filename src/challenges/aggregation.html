@@ -3,19 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- 2026-09-29: snippet rewrite — 1,197 Google impressions, 0 clicks at position 15.7 in 28 days (docs/reads/seo-weekly-2026-09-28.md). Title/description only; the "164 Challenges" the head must carry, the H1, body and counts untouched. -->
-  <title>SQL GROUP BY and HAVING Exercises — 164 Challenges | SQLQuest.app</title>
+  <!-- 2026-09-29: snippet rewrite — 1,197 Google impressions, 0 clicks at position 15.7 in 28 days (docs/reads/seo-weekly-2026-09-28.md). Title/description only; the "176 Challenges" the head must carry, the H1, body and counts untouched. -->
+  <title>SQL GROUP BY and HAVING Exercises — 176 Challenges | SQLQuest.app</title>
   <!-- 2026-09-08: new topic page (docs/reads/keywords-2026-09-07.md row #21 / §3.5, which proposed the slug /challenges/group-by/ — shipped as /challenges/aggregation/ because the page is the whole Aggregation & Grouping radar axis, not the GROUP BY clause alone). Every count is computed, not typed: the page total is challengeMatchesSkill(c, 'Aggregation & Grouping') over the FULL bank (src/data/challenges.js + sector-challenges.js), "free" = Easy + Medium + Hard freePreview, and each section is a predicate over the reference solution inside that total. TOPIC_PAGES in tests/site-counts.test.js binds all of them — re-run the test, do not retype. THE 147 DECISION: this is the largest skill in the bank, more than half of it, and a page listing all 147 as cards is a wall. So the page lists a CHOSEN SUBSET and says so above the first section: the five sections are the five shapes aggregation takes, each one lists every bank challenge matching its predicate, and the sections were counted first (an under-3 section is not a section). Measured 2026-09-08 against the 285-challenge bank: whole-table aggregates 8, one grouping key on one table 19, two or more keys 32, HAVING 30, COUNT(DISTINCT) 12 — 101 cards over 86 distinct challenges. #conditional-aggregation was DROPPED: SUM/COUNT/AVG/MIN/MAX opening on CASE selects 16 here and 16 on /challenges/case-when/, and 15 of the ids are the same list — it would have been that page's section with a different heading. Every challenge left out of a section reaches for aggregation inside a JOIN, a window function, a CTE, a subquery or a CASE (verified: all 61). Cards are Easy → Medium → Hard, curriculum order inside each band (CLAUDE.md, the raw-array trap) — never id order. -->
-  <meta name="description" content="164 GROUP BY challenges in your browser, no signup: 34 Easy, 81 Medium, 49 Hard. Aggregates over a table, multi-key grouping, HAVING, COUNT(DISTINCT) vs COUNT(*).">
+  <meta name="description" content="176 GROUP BY challenges in your browser, no signup: 34 Easy, 86 Medium, 56 Hard. Aggregates over a table, multi-key grouping, HAVING, COUNT(DISTINCT) vs COUNT(*).">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://sqlquest.app/challenges/aggregation/">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://sqlquest.app/challenges/aggregation/">
-  <meta property="og:title" content="SQL GROUP BY and HAVING Exercises — 164 Challenges | SQLQuest.app">
-  <meta property="og:description" content="164 GROUP BY challenges in your browser, no signup: 34 Easy, 81 Medium, 49 Hard. Aggregates over a table, multi-key grouping, HAVING, COUNT(DISTINCT) vs COUNT(*).">
+  <meta property="og:title" content="SQL GROUP BY and HAVING Exercises — 176 Challenges | SQLQuest.app">
+  <meta property="og:description" content="176 GROUP BY challenges in your browser, no signup: 34 Easy, 86 Medium, 56 Hard. Aggregates over a table, multi-key grouping, HAVING, COUNT(DISTINCT) vs COUNT(*).">
   <meta property="og:image" content="https://sqlquest.app/og-image.png">
   <meta name="twitter:card" content="summary_large_image">
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"SQL GROUP BY and Aggregation Practice","description":"164 GROUP BY challenges in your browser, no signup: 34 Easy, 81 Medium, 49 Hard. Aggregates over a table, multi-key grouping, HAVING, COUNT(DISTINCT) vs COUNT(*).","url":"https://sqlquest.app/challenges/aggregation/","breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"SQL Exercises","item":"https://sqlquest.app/sql-exercises/"},{"@type":"ListItem","position":3,"name":"SQL GROUP BY and Aggregation","item":"https://sqlquest.app/challenges/aggregation/"}]}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"SQL GROUP BY and Aggregation Practice","description":"176 GROUP BY challenges in your browser, no signup: 34 Easy, 86 Medium, 56 Hard. Aggregates over a table, multi-key grouping, HAVING, COUNT(DISTINCT) vs COUNT(*).","url":"https://sqlquest.app/challenges/aggregation/","breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"SQL Exercises","item":"https://sqlquest.app/sql-exercises/"},{"@type":"ListItem","position":3,"name":"SQL GROUP BY and Aggregation","item":"https://sqlquest.app/challenges/aggregation/"}]}}</script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
   <style>
@@ -54,8 +54,8 @@
 </div></nav>
 <div class="wrap">
   <p class="breadcrumb"><a href="/">SQL Quest</a> › <a href="/sql-exercises/">SQL Exercises</a> › SQL GROUP BY and Aggregation</p>
-  <h1 class="fd">SQL GROUP BY and Aggregation Practice — <span style="background:linear-gradient(135deg,#c084fc,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">164 Challenges</span></h1>
-  <p>164 hands-on challenges counted from the live bank — 34 Easy, 81 Medium, 49 Hard — every one on the Skillmap's Aggregation &amp; Grouping axis: <code>COUNT</code> and <code>SUM</code> over a whole table, <code>GROUP BY</code> on one key or on several, <code>HAVING</code> to filter the groups you just made, and the <code>COUNT(DISTINCT …)</code> trap. Cards marked Free (including the 5 Hard previews) are open to free accounts — your first 10 challenge solves are free — and Pro opens every card. Real datasets, AI tutoring.</p>
+  <h1 class="fd">SQL GROUP BY and Aggregation Practice — <span style="background:linear-gradient(135deg,#c084fc,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">176 Challenges</span></h1>
+  <p>176 hands-on challenges counted from the live bank — 34 Easy, 86 Medium, 56 Hard — every one on the Skillmap's Aggregation &amp; Grouping axis: <code>COUNT</code> and <code>SUM</code> over a whole table, <code>GROUP BY</code> on one key or on several, <code>HAVING</code> to filter the groups you just made, and the <code>COUNT(DISTINCT …)</code> trap. Cards marked Free (including the 5 Hard previews) are open to free accounts — your first 10 challenge solves are free — and Pro opens every card. Real datasets, AI tutoring.</p>
   <a href="/app/?challenge=98&amp;src=challenges-aggregation" class="cta">Start Practicing Free →</a>
   <p style="margin-top:28px;font-size:14px;">More than half the bank touches aggregation, so this page does not put every one of them on a card. The five sections below are the five shapes the work takes, each a predicate over the reference solution — an aggregate with no <code>GROUP BY</code>, one grouping key on one table, two or more keys, a <code>HAVING</code> clause, a <code>COUNT(DISTINCT …)</code> — and each lists <em>every</em> challenge in the bank that matches it, so a section is complete even though the page is a selection. What is left out aggregates inside a join, a window function, a CTE, a subquery or a <code>CASE</code>: that is what the <a href="/challenges/joins/">joins</a>, <a href="/challenges/window-functions/">window functions</a>, <a href="/challenges/cte/">CTE</a>, <a href="/challenges/subqueries/">subquery</a> and <a href="/challenges/case-when/">CASE WHEN</a> pages are organised around.</p>
   <section class="sec" id="aggregate-functions">
@@ -114,7 +114,7 @@
     </div>
   </section>
   <section class="sec" id="group-by">
-    <h2 class="fd">Your first GROUP BY — one key, one table: 22 challenges</h2>
+    <h2 class="fd">Your first GROUP BY — one key, one table: 23 challenges</h2>
     <p>One grouping key, one table, no <code>HAVING</code>: <code>SELECT department, COUNT(*) FROM employees GROUP BY department</code>. The rule that catches everyone is that every column in the <code>SELECT</code> list is either aggregated or named in the <code>GROUP BY</code> — SQLite will happily return a value from an arbitrary row instead of erroring. Start with <strong>GROUP BY Basics</strong>; <strong>Monthly Order Count</strong> and <strong>Day-of-Week Order Pattern (strftime)</strong> group by an expression rather than a column, which is the next step. The <a href="/blog/sql-group-by-tutorial/">GROUP BY tutorial</a> walks the mental model.</p>
     <p class="stamp">Counted from the challenge bank, September 2026. Easy first, then Medium, then Hard.</p>
     <div class="q-grid">
@@ -250,10 +250,16 @@
         <p class="concepts">Finance &amp; Banking track · Uses: <code>GROUP BY</code> <code>Aggregation</code> <code>Date Functions</code> <code>JULIANDAY</code></p>
         <a href="/app/?challenge=295&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
       </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3><a href="/questions/system-npl-ratio-weighted-not-averaged/" style="color:inherit;">System NPL Ratio: Weighted, Not Averaged</a></h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>SUM</code> <code>AVG</code> <code>COUNT</code></p>
+        <a href="/app/?challenge=346&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
     </div>
   </section>
   <section class="sec" id="multi-level">
-    <h2 class="fd">Grouping by two or more keys: 36 challenges</h2>
+    <h2 class="fd">Grouping by two or more keys: 40 challenges</h2>
     <p>Add a key and the grain of the answer changes: <code>GROUP BY country, category</code> gives one row per pair, not one per country. This is where cross-tabs, cohort tables and per-group top-N live, and where a fanned-out join quietly doubles your <code>SUM</code>. Start with <strong>Counting Across a JOIN</strong>, then <strong>Survival Cross-Tab: Class × Sex</strong>; the Hard ones carry the pairs through CTEs and window functions. For a subtotal per group and a grand total in the same result, <code>GROUP BY ROLLUP</code> and <code>CUBE</code>, see <a href="/sql-rollup-interview-questions/">SQL rollup interview questions</a>.</p>
     <p class="stamp">Counted from the challenge bank, September 2026. Easy first, then Medium, then Hard.</p>
     <div class="q-grid">
@@ -384,6 +390,12 @@
         <a href="/app/?challenge=304&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
       </div>
       <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3><a href="/questions/each-users-largest-top-up-summed-by-method/" style="color:inherit;">Each User's Largest Top-Up, Summed by Method</a></h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>CTE</code> <code>MAX</code> <code>SUM</code> <code>COUNT</code></p>
+        <a href="/app/?challenge=347&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
         <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
         <h3><a href="/questions/recursive-team-size-rollup/" style="color:inherit;">Recursive Team Size Rollup</a></h3>
         <p class="concepts">Uses: <code>Recursive CTE</code> <code>CTE</code> <code>JOIN</code> <code>Aggregation</code></p>
@@ -472,6 +484,24 @@
         <h3><a href="/questions/three-day-login-streaks/" style="color:inherit;">Three-Day Login Streaks</a></h3>
         <p class="concepts">Uses: <code>CTE</code> <code>Window Functions</code> <code>ROW_NUMBER</code> <code>Date Functions</code></p>
         <a href="/app/?challenge=318&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3><a href="/questions/which-store-categories-share-shoppers/" style="color:inherit;">Which Store Categories Share Shoppers?</a></h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>CTE</code> <code>DISTINCT</code> <code>Self-Join</code> <code>JOIN</code></p>
+        <a href="/app/?challenge=351&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3><a href="/questions/growth-accounting-new-retained-resurrected-churned/" style="color:inherit;">Growth Accounting: New, Retained, Resurrected, Churned</a></h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>CTE</code> <code>EXISTS</code> <code>NOT EXISTS</code> <code>CASE</code></p>
+        <a href="/app/?challenge=352&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3><a href="/questions/dau-mau-stickiness-quiet-days-included/" style="color:inherit;">DAU/MAU Stickiness, Quiet Days Included</a></h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>Recursive CTE</code> <code>CTE</code> <code>LEFT JOIN</code> <code>COALESCE</code></p>
+        <a href="/app/?challenge=353&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
       </div>
     </div>
   </section>
@@ -675,7 +705,7 @@
     </div>
   </section>
   <section class="sec" id="distinct-counts">
-    <h2 class="fd">COUNT(DISTINCT x) against COUNT(*): 13 challenges</h2>
+    <h2 class="fd">COUNT(DISTINCT x) against COUNT(*): 17 challenges</h2>
     <p><code>COUNT(*)</code> counts rows, <code>COUNT(x)</code> counts the rows where <code>x</code> is not <code>NULL</code>, and <code>COUNT(DISTINCT x)</code> counts different values — after a join those are three different answers, and picking the wrong one is the most common wrong number in an analytics dashboard. Start with <strong>How Many Genres Do We Cover? (DISTINCT)</strong>; <strong>Daily Active Customers</strong> and <strong>Customer Retention Cohort</strong> are the shape an interview asks for.</p>
     <p class="stamp">Counted from the challenge bank, September 2026. Easy first, then Medium, then Hard.</p>
     <div class="q-grid">
@@ -728,6 +758,18 @@
         <a href="/app/?challenge=301&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
       </div>
       <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3><a href="/questions/new-vs-returning-card-spenders-by-month/" style="color:inherit;">New vs Returning Card Spenders by Month</a></h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>CTE</code> <code>CASE</code> <code>COUNT DISTINCT</code> <code>SUM</code></p>
+        <a href="/app/?challenge=344&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3><a href="/questions/dispute-rate-by-the-month-of-the-payment/" style="color:inherit;">Dispute Rate by the Month of the Payment</a></h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>CTE</code> <code>JOIN</code> <code>LEFT JOIN</code> <code>COUNT DISTINCT</code></p>
+        <a href="/app/?challenge=345&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
         <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
         <h3><a href="/questions/daily-active-customers/" style="color:inherit;">Daily Active Customers</a></h3>
         <p class="concepts">Uses: <code>GROUP BY</code> <code>Aggregation</code> <code>COUNT DISTINCT</code> <code>GROUP BY + Date Functions</code></p>
@@ -756,6 +798,18 @@
         <h3><a href="/questions/cards-that-never-spend-at-home/" style="color:inherit;">Cards That Never Spend at Home</a></h3>
         <p class="concepts">Finance &amp; Banking track · Uses: <code>JOIN</code> <code>GROUP BY</code> <code>HAVING</code> <code>CASE</code></p>
         <a href="/app/?challenge=296&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3><a href="/questions/dau-mau-stickiness-quiet-days-included/" style="color:inherit;">DAU/MAU Stickiness, Quiet Days Included</a></h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>Recursive CTE</code> <code>CTE</code> <code>LEFT JOIN</code> <code>COALESCE</code></p>
+        <a href="/app/?challenge=353&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3><a href="/questions/do-early-habits-predict-retention/" style="color:inherit;">Do Early Habits Predict Retention?</a></h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>CTE</code> <code>LEFT JOIN</code> <code>CASE</code> <code>COUNT DISTINCT</code></p>
+        <a href="/app/?challenge=354&amp;src=challenges-aggregation" class="btn-practice">Try it →</a>
       </div>
     </div>
     <p>Aggregation is the skill the rest of the bank is built on, so it also turns up wherever the other topics do. If you want it with a join, a window frame or a CTE around it, the sibling pages list those: <a href="/challenges/joins/">joins</a>, <a href="/challenges/window-functions/">window functions</a>, <a href="/challenges/cte/">CTEs</a>, <a href="/challenges/subqueries/">subqueries</a> and <a href="/challenges/case-when/">CASE WHEN</a>.</p>

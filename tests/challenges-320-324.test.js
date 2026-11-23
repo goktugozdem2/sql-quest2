@@ -79,9 +79,11 @@ describe('the five cards', () => {
   });
 
   it('were appended after the old top id, never re-numbering', () => {
-    const before = bank.filter(c => !IDS.includes(c.id));
-    expect(Math.max(...before.map(c => c.id))).toBe(319);
-    expect(bank.slice(-5).map(c => c.id)).toEqual(IDS);
+    // Later batches (343, 2026-11-23) are appended after these five; what
+    // must hold is that nothing before them was renumbered.
+    const at = bank.findIndex(c => c.id === 320);
+    expect(Math.max(...bank.slice(0, at).map(c => c.id))).toBe(319);
+    expect(bank.slice(at, at + 5).map(c => c.id)).toEqual(IDS);
   });
 
   it('aim at the measured cells: 2 Window Functions, 2 Date Functions, 1 NULL Handling', () => {

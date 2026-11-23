@@ -3,16 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SQL CTE Practice — 68 Challenges: Multiple CTEs to Recursive | SQLQuest.app</title>
+  <title>SQL CTE Practice — 79 Challenges: Multiple CTEs to Recursive | SQLQuest.app</title>
   <!-- 2026-09-07: moved from public/ to src/challenges/ so build-static-pages.js injects track.js. The population here is "reference solution uses WITH" over the FULL bank (the method the 47/18/13/3 figures below were already counted with, and which /blog/sql-cte-tutorial/ quotes), not the CTE tag (37 tagged, 14 free — 11 sector solutions reach for WITH without carrying the tag). TOPIC_PAGES in tests/site-counts.test.js binds every number on this page to that count — re-run the test, do not retype. -->
   <!-- 2026-09-07: "15+" replaced with the bank count (47 solutions use WITH, 18 free, 13 multi-CTE, 3 recursive) — counted from src/data via scripts/build-llms-txt.js loadBank(); re-count before editing. -->
-  <meta name="description" content="SQL CTE practice: 68 challenges solved with a WITH clause — including 21 that chain multiple CTEs and 3 recursive. Runs in your browser, no signup. September 2026.">
+  <meta name="description" content="SQL CTE practice: 79 challenges solved with a WITH clause — including 29 that chain multiple CTEs and 4 recursive. Runs in your browser, no signup. September 2026.">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://sqlquest.app/challenges/cte/">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://sqlquest.app/challenges/cte/">
-  <meta property="og:title" content="SQL CTE Practice — 68 Challenges: Multiple CTEs to Recursive | SQLQuest.app">
-  <meta property="og:description" content="68 SQL CTE challenges — including 21 that chain multiple CTEs and 3 recursive. Runs in your browser, no signup.">
+  <meta property="og:title" content="SQL CTE Practice — 79 Challenges: Multiple CTEs to Recursive | SQLQuest.app">
+  <meta property="og:description" content="79 SQL CTE challenges — including 29 that chain multiple CTEs and 4 recursive. Runs in your browser, no signup.">
   <meta property="og:image" content="https://sqlquest.app/og-image.png">
   <meta name="twitter:card" content="summary_large_image">
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"SQL CTEs (Common Table Expressions) Practice","url":"https://sqlquest.app/challenges/cte/","breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"SQL Exercises","item":"https://sqlquest.app/sql-exercises/"},{"@type":"ListItem","position":3,"name":"SQL CTEs (Common Table Expressions)","item":"https://sqlquest.app/challenges/cte/"}]}}</script>
@@ -54,20 +54,20 @@
 </div></nav>
 <div class="wrap">
   <p class="breadcrumb"><a href="/">SQL Quest</a> › <a href="/sql-exercises/">SQL Exercises</a> › SQL CTEs (Common Table Expressions)</p>
-  <h1 class="fd">SQL CTE Practice — <span style="background:linear-gradient(135deg,#c084fc,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">68 Challenges</span></h1>
-  <p>Master SQL Common Table Expressions (WITH clauses) on 68 challenges whose reference solution uses WITH — 1 Easy, 23 Medium, 44 Hard. 21 chain two or more CTEs and 3 are recursive. Cards marked Free (including the 3 Hard previews) are open to free accounts — your first 10 challenge solves are free — and Pro opens every card. Write cleaner, more readable SQL.</p>
+  <h1 class="fd">SQL CTE Practice — <span style="background:linear-gradient(135deg,#c084fc,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">79 Challenges</span></h1>
+  <p>Master SQL Common Table Expressions (WITH clauses) on 79 challenges whose reference solution uses WITH — 1 Easy, 27 Medium, 51 Hard. 29 chain two or more CTEs and 4 are recursive. Cards marked Free (including the 3 Hard previews) are open to free accounts — your first 10 challenge solves are free — and Pro opens every card. Write cleaner, more readable SQL.</p>
   <a href="/app/?challenge=154&amp;src=challenges-cte" class="cta">Start Practicing Free →</a>
   <!-- 2026-09-07: GSC read of 09-07 has this page at position 5.6 for "cte chain" and 23-37 for
        "multiple cte sql" / "multiple ctes" / "sql multiple cte", and the page listed no challenge at all —
        nothing answered the query. This section names the 13 bank challenges whose reference solution
        declares two or more CTEs (a "WITH a AS (...), b AS (...)" chain). Counted 2026-09-07 by loading the
        full bank (general + sector) through scripts/build-llms-txt.js loadBank() and counting "AS (" after
-       WITH in each solution; the same pass found 47 solutions using WITH (18 playable free) and 3 recursive.
+       WITH in each solution; the same pass found 47 solutions using WITH (18 playable free) and 4 recursive.
        Ids are the bank's; /app.html?challenge=<id> is the app deep-link (src/app.jsx pendingChallengeRef).
        Hard rows without freePreview are Pro — a guest gets the preview dialog, not a wall. Re-count before
        changing any number here. -->
   <section class="sec" id="multiple-ctes">
-    <h2 class="fd">Multiple CTEs in one query: 21 chained-CTE challenges</h2>
+    <h2 class="fd">Multiple CTEs in one query: 29 chained-CTE challenges</h2>
     <p>Every challenge below is solved with a chain — <code>WITH a AS (…), b AS (…)</code> — where a later CTE reads from an earlier one and the final <code>SELECT</code> pulls from the last step. Start with <strong>Multi-CTE Revenue Pipeline</strong>, the one written for exactly this pattern. The five Medium ones and the two Hard previews are marked Free.</p>
     <p class="stamp">Counted from the challenge bank, September 2026.</p>
     <div class="q-grid">
@@ -106,6 +106,18 @@
         <h3><a href="/questions/signup-cohort-activation-within-30-days/" style="color:inherit;">Signup Cohort Activation Within 30 Days</a></h3>
         <p class="concepts">Uses: <code>SELECT</code> <code>CTE</code> <code>LEFT JOIN</code> <code>GROUP BY</code> <code>julianday</code> <code>COUNT</code></p>
         <a href="/app/?challenge=303&amp;src=challenges-cte" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3><a href="/questions/new-vs-returning-card-spenders-by-month/" style="color:inherit;">New vs Returning Card Spenders by Month</a></h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>CTE</code> <code>CASE</code> <code>COUNT DISTINCT</code> <code>SUM</code></p>
+        <a href="/app/?challenge=344&amp;src=challenges-cte" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3><a href="/questions/dispute-rate-by-the-month-of-the-payment/" style="color:inherit;">Dispute Rate by the Month of the Payment</a></h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>CTE</code> <code>JOIN</code> <code>LEFT JOIN</code> <code>COUNT DISTINCT</code></p>
+        <a href="/app/?challenge=345&amp;src=challenges-cte" class="btn-practice">Try it →</a>
       </div>
       <div class="q-card">
         <span class="tag hard">Hard</span> <span class="tag free">Free preview</span>
@@ -197,12 +209,48 @@
         <p class="concepts">Uses: <code>CTE</code> <code>Window Functions</code> <code>LAG</code> <code>Date Functions</code></p>
         <a href="/app/?challenge=319&amp;src=challenges-cte" class="btn-practice">Try it →</a>
       </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3><a href="/questions/customer-funds-at-the-end-of-june-2026/" style="color:inherit;">Customer Funds at the End of June 2026</a></h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>CTE</code> <code>UNION ALL</code> <code>CASE</code> <code>COALESCE</code></p>
+        <a href="/app/?challenge=348&amp;src=challenges-cte" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3><a href="/questions/signup-to-kyc-to-first-payment-each-step-on-a-clock/" style="color:inherit;">Signup to KYC to First Payment, Each Step on a Clock</a></h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>CTE</code> <code>LEFT JOIN</code> <code>CASE</code> <code>Date Functions</code></p>
+        <a href="/app/?challenge=349&amp;src=challenges-cte" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3><a href="/questions/which-store-categories-share-shoppers/" style="color:inherit;">Which Store Categories Share Shoppers?</a></h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>CTE</code> <code>DISTINCT</code> <code>Self-Join</code> <code>JOIN</code></p>
+        <a href="/app/?challenge=351&amp;src=challenges-cte" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3><a href="/questions/growth-accounting-new-retained-resurrected-churned/" style="color:inherit;">Growth Accounting: New, Retained, Resurrected, Churned</a></h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>CTE</code> <code>EXISTS</code> <code>NOT EXISTS</code> <code>CASE</code></p>
+        <a href="/app/?challenge=352&amp;src=challenges-cte" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3><a href="/questions/dau-mau-stickiness-quiet-days-included/" style="color:inherit;">DAU/MAU Stickiness, Quiet Days Included</a></h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>Recursive CTE</code> <code>CTE</code> <code>LEFT JOIN</code> <code>COALESCE</code></p>
+        <a href="/app/?challenge=353&amp;src=challenges-cte" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3><a href="/questions/do-early-habits-predict-retention/" style="color:inherit;">Do Early Habits Predict Retention?</a></h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>CTE</code> <code>LEFT JOIN</code> <code>CASE</code> <code>COUNT DISTINCT</code></p>
+        <a href="/app/?challenge=354&amp;src=challenges-cte" class="btn-practice">Try it →</a>
+      </div>
     </div>
     <p>Chaining is what people usually mean by "nested CTEs". For the walkthrough — and the difference from a <code>WITH</code> literally nested inside another CTE — see <a href="/blog/sql-cte-tutorial/#multi">multiple CTEs in the CTE tutorial</a>. A CTE that references itself is a different mechanism: <a href="/blog/recursive-cte-explained/">recursive CTEs explained</a>.</p>
   </section>
   <section class="sec" id="recursive">
-    <h2 class="fd">Recursive CTEs: 3 challenges (all Pro)</h2>
-    <p>A CTE that references itself — <code>WITH RECURSIVE t AS (anchor UNION ALL step FROM t)</code> — walks a hierarchy one level per iteration: an org chart from the CEO down, a team's size rolled up through every report, a chain of chargebacks traced back to the first transaction. All three are Hard, which is Pro. For the mechanism — anchor member, recursive member, termination — read <a href="/blog/recursive-cte-explained/">recursive CTEs explained</a>; for totals rolled up a tree next to <code>GROUP BY ROLLUP</code> subtotals, see <a href="/sql-rollup-interview-questions/">SQL rollup interview questions</a>.</p>
+    <h2 class="fd">Recursive CTEs: 4 challenges (all Pro)</h2>
+    <p>A CTE that references itself — <code>WITH RECURSIVE t AS (anchor UNION ALL step FROM t)</code> — walks a hierarchy one level per iteration: an org chart from the CEO down, a team's size rolled up through every report, a chain of chargebacks traced back to the first transaction. All four are Hard, which is Pro. For the mechanism — anchor member, recursive member, termination — read <a href="/blog/recursive-cte-explained/">recursive CTEs explained</a>; for totals rolled up a tree next to <code>GROUP BY ROLLUP</code> subtotals, see <a href="/sql-rollup-interview-questions/">SQL rollup interview questions</a>.</p>
     <p class="stamp">Counted from the challenge bank, September 2026.</p>
     <div class="q-grid">
       <div class="q-card">
@@ -222,6 +270,12 @@
         <h3><a href="/questions/recursive-cte-chargeback-chain-investigation/" style="color:inherit;">Recursive CTE — Chargeback Chain Investigation</a></h3>
         <p class="concepts">Finance & Banking track · Uses: <code>Recursive CTE</code> <code>JOIN</code> <code>UNION ALL</code></p>
         <a href="/app/?challenge=274&amp;src=challenges-cte" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3><a href="/questions/dau-mau-stickiness-quiet-days-included/" style="color:inherit;">DAU/MAU Stickiness, Quiet Days Included</a></h3>
+        <p class="concepts">Finance &amp; Banking track · Uses: <code>Recursive CTE</code> <code>CTE</code> <code>LEFT JOIN</code> <code>COALESCE</code></p>
+        <a href="/app/?challenge=353&amp;src=challenges-cte" class="btn-practice">Try it →</a>
       </div>
     </div>
   </section>
