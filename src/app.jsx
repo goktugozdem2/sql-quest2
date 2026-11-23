@@ -40,6 +40,7 @@ import { buildPracticePlan, PLAN_MIN_SOLVES_FOR_SKILLS } from './utils/practice-
 import { FIRST_SCREEN_STORAGE_KEY, firstScreenDecision } from './utils/first-screen.js';
 import { INTAKE_KEY, INTAKE_GOALS, INTAKE_ROLES, INTAKE_STEPS, INTAKE_COMPANIES, INTAKE_LEVELS, intakeStepsFor, intakeGoalFor, intakeGoalForIntent, nextIntakeStep, isIntakeStepRequired, isIntakeLevel, isValidIntakeDate, buildIntakeRecord, isIntakeComplete, readIntakeRecord, intakeEventPayload, newCoachGoalState, shouldShowIntake } from './utils/onboarding-intake.js';
 import { COMPANY_ASK_KEY, COMPANY_ASK_TEST_ID, COMPANY_ASK_UNDECIDED, companyAskDecision, normalizeCompanyAskRecord, matchCompanies, isCompanyAskAnswer } from './utils/company-ask.js';
+import { COMPANY_DIRECT_KEY, COMPANY_DIRECT_TEST_ID, companyDirectDecision, isCompanyListArrival } from './utils/company-direct.js';
 import { GOAL_PROFILE_KEY, GOAL_GATE_RECHECK_MS, GOAL_GATE_GOALS, TARGET_LEVELS, INDUSTRIES, DEADLINE_PRESETS, industryFor, isoDateInDays, isValidDeadline, missingFields, buildGoalProfile, goalProfileStatus, shouldShowGoalGate, prefillDraft, goalGateEventPayload, readGoalProfile, GOAL_GATE_MAX_DAYS_OUT } from './utils/goal-gate.js';
 import { PLACEMENT_TIERS, placementResult, placementEventPayload, readFirstRunPlacement, seedFloorsFor, seedFloorsFromReadiness, levelForReadiness, placementFromReadiness } from './utils/placement.js';
 import { QUESTIONS as READINESS_QUESTIONS, READINESS_SKILLS, READINESS_RECORD_KEY, companySkillWeights, scoreReadiness, summarizeScores, weakestSkills, readinessRecordFrom, readReadinessRecord } from './data/readiness-questions.js';
@@ -86,6 +87,7 @@ import { DRILL_SIZE, DRILL_TARGET, buildDrillQueue, challengeMatchesSkill, prior
 import { lintSQL } from './utils/sql-lint.js';
 import { resultsMatch, solutionRequiresOrder, sortRowsCanonical } from './utils/grade.js';
 import { normalizeAiMessages } from './utils/ai-tutor-client.js';
+import { FEEDBACK_PROMPT_FLAGS, FBP_SESSION_KEY, FBP_EXIT_DAY_KEY, FBP_STUCK_IDS_KEY, FBP_DAY2_KEY, STUCK_NO_RUN_MS, EXIT_REASONS, nextSessionRecord, markPromptShown, canShowExitReason, stuckTrigger, canShowStuck, canShowDay2, buildPromptSubmission, localDay } from './utils/feedback-prompts.js';
 import { t as i18n_t, getCurrentLang, setLang as i18n_setLang, subscribeLang, SUPPORTED_LANGS, localizeChallenge, localizeInterview, localizeQuestion } from './utils/i18n.js';
 import { buildWeeklyReport, detectMilestones } from './utils/weekly-report.js';
 import { isMcqQuestion, scoreMcqAnswer, applyHintPenalty, nextOptionId, findOption, buildInterviewProgress, mockMistakeDiagnosis, weakConceptsFromHistory } from './utils/mock-interview.js';
@@ -4748,6 +4750,76 @@ const FEEDBACK_TOPICS = [
   { id: 'review', label: 'topicOther', placeholder: 'placeholderReview', hidden: true },
 ];
 
+/**
+ * FeedbackPromptCard — capture points 2-4 (E2, 2026-11-22). One question,
+ * skippable, never a modal: `exit_reason` (five taps, "Other" opens a line),
+ * `stuck` and `day2` (one line). Rules live in src/utils/feedback-prompts.js.
+ * Neutral surface colours only; the accent is never used here (DESIGN.md).
+ */
+function FeedbackPromptCard({ kind, onSend, onSkip, compact = false }) {
+  const [text, setText] = React.useState('');
+  const [picked, setPicked] = React.useState(null);
+  const [status, setStatus] = React.useState('idle'); // idle | sending | done | error
+  const tt = (k) => i18n_t('feedback', k);
+  const btn = 'min-h-[44px] px-3 rounded-md text-sm transition';
+  const neutral = { background: '#1F222B', border: '1px solid #2A2E38', color: '#F2F0EA' };
+  const send = async (answerId, line) => {
+    if (status === 'sending') return;
+    setStatus('sending');
+    const ok = await onSend(answerId, line);
+    setStatus(ok ? 'done' : 'error');
+  };
+  const question = kind === 'exit_reason' ? tt('exitQ') : kind === 'stuck' ? tt('stuckPromptQ') : tt('day2Q');
+  const placeholder = kind === 'exit_reason' ? tt('exitOtherPlaceholder') : kind === 'stuck' ? tt('stuckPromptPlaceholder') : tt('day2Placeholder');
+  const showLine = kind !== 'exit_reason' || picked === 'other';
+  if (status === 'done') {
+    return (
+      <div data-testid={`feedback-prompt-${kind}`} data-state="done" className={compact ? 'mt-3' : 'rounded-lg p-3'} style={compact ? undefined : { background: '#16181F', border: '1px solid #2A2E38' }}>
+        <p className="text-sm" style={{ color: '#8A8E99' }}>{tt('promptThanks')}</p>
+      </div>
+    );
+  }
+  return (
+    <div data-testid={`feedback-prompt-${kind}`} className={compact ? 'mt-3' : 'rounded-lg p-3'} style={compact ? undefined : { background: '#16181F', border: '1px solid #2A2E38' }}>
+      <div className="flex items-start justify-between gap-2 mb-2">
+        <p className="text-sm font-semibold" style={{ color: '#F2F0EA' }}>{question}</p>
+        {!compact && (
+          <button onClick={onSkip} className="min-h-[44px] min-w-[44px] -mt-3 -mr-2 text-sm shrink-0" style={{ color: '#8A8E99' }} data-testid="feedback-prompt-skip">{tt('promptSkip')}</button>
+        )}
+      </div>
+      {kind === 'exit_reason' && (
+        <div className="flex flex-wrap gap-2 mb-2">
+          {EXIT_REASONS.map(r => (
+            <button
+              key={r.id}
+              data-answer={r.id}
+              disabled={status === 'sending'}
+              onClick={() => { if (r.text) { setPicked('other'); } else { send(r.id, ''); } }}
+              className={btn}
+              style={picked === r.id ? { ...neutral, borderColor: '#8A8E99' } : neutral}
+            >{tt(r.label)}</button>
+          ))}
+        </div>
+      )}
+      {showLine && (
+        <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); const line = text.trim(); if (kind === 'exit_reason') send('other', line); else if (line) send(null, line); }}>
+          <input
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            maxLength={300}
+            placeholder={placeholder}
+            aria-label={question}
+            className="flex-1 min-w-0 min-h-[44px] px-3 rounded-md text-sm"
+            style={{ background: '#0E0F13', border: '1px solid #2A2E38', color: '#F2F0EA' }}
+          />
+          <button type="submit" disabled={status === 'sending' || (kind !== 'exit_reason' && !text.trim())} className={btn} style={neutral}>{tt('promptSend')}</button>
+        </form>
+      )}
+      {status === 'error' && <p className="text-xs mt-2" style={{ color: '#FF6B6B' }}>{tt('error')}</p>}
+    </div>
+  );
+}
+
 function FeedbackWidget({ open, onOpen, onClose, onSubmit, onTopicPick, screen, initialTopic = null }) {
   const [message, setMessage] = React.useState('');
   const [contact, setContact] = React.useState('');
@@ -7249,6 +7321,8 @@ function SQLQuest() {
   //              have found that.
   const proModalOpenedAtRef = useRef(0);
   const proModalPlansSeenRef = useRef(false);
+  // A plan click in this opening of the modal (exit_reason never asks then).
+  const proModalPlanClickedRef = useRef(false);
   const dismissProModal = (via) => {
     const openedAt = proModalOpenedAtRef.current;
     trackProEvent('modal_dismissed', {
@@ -7260,11 +7334,16 @@ function SQLQuest() {
       // own events never fired because none of them submitted or skipped.
       emailStepPending: checkoutPendingPlan || null,
     });
+    const pendingAtClose = checkoutPendingPlan;
     setShowProModal(false);
     setCheckoutPendingPlan(null);
+    // Capture point 2 (`exitReasonAsk`): asked AFTER the plans are closed,
+    // never in front of or over them, and never after a plan click.
+    try { maybeAskExitReason(via, pendingAtClose); } catch (_) { /* never break the close */ }
   };
 
   const beginCheckout = (plan) => {
+    proModalPlanClickedRef.current = true;
     const email = resolveCheckoutEmail();
     // Record the PLAN CLICK here, before the email branch.
     //
@@ -7741,7 +7820,7 @@ function SQLQuest() {
   // show a real error instead of pretending it sent — the entire point of this
   // channel is that a message doesn't silently disappear, which is exactly
   // what the support@sqlquest.app mailto has been doing (no MX on the domain).
-  const submitFeedback = async ({ message, contact, topic, quoteConsent, quoteName, quoteConsentAt }) => {
+  const submitFeedback = async ({ message, contact, topic, quoteConsent, quoteName, quoteConsentAt, kind = 'open', trigger = null, promptContext = null }) => {
     const payload = {
       username: currentUser || 'guest',
       message,
@@ -7759,6 +7838,11 @@ function SQLQuest() {
       screen: (typeof activeTab !== 'undefined' && activeTab) || 'unknown',
       context: {
         topic: topic || null,
+        // Capture point (E2, 2026-11-22): 'open' is the widget; exit_reason,
+        // stuck and day2 are the asked prompts (src/utils/feedback-prompts.js).
+        kind: kind || 'open',
+        trigger: trigger || null,
+        ...(promptContext || {}),
         solvedCount: solvedChallenges.size,
         isGuest: !!isGuest,
         isPro: !!isPro,
@@ -7797,6 +7881,8 @@ function SQLQuest() {
         length: message.length,
         gaveContact: !!contact,
         topic: topic || null,
+        kind: kind || 'open',
+        trigger: trigger || null,
         // Whether consent was given — never the name or the message itself.
         // pro_events is a behavioural table; the quotable content stays in
         // the feedback table, which anon cannot read back out.
@@ -24863,6 +24949,110 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
     trackActivationEvent('challenge_first_run', { challengeId: id, via, secondsOpen: at ? Math.round((Date.now() - at) / 1000) : null });
   };
 
+  // ── Feedback capture points 2-4 (E2, 2026-11-22) ─────────────────────────
+  // exit_reason · stuck · day2, each behind its own dark flag. Rules in
+  // src/utils/feedback-prompts.js; rows go through submitFeedback (the
+  // widget's anon insert into `feedback`, context.kind/trigger) — no new
+  // table, nothing a `users` trigger calls. Hooks sit here, above the
+  // `showAuth` / `dbReady` early returns (CLAUDE.md fragile area 1).
+  const [fbPrompt, setFbPrompt] = useState(null); // { kind, trigger, challengeId }
+  const fbFlag = (kind) => ftbFlag(FEEDBACK_PROMPT_FLAGS[kind]);
+  const fbReadJson = (key, fallback) => { try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch (_) { return fallback; } };
+  const fbSessionRef = useRef(null);
+  const fbTouchSession = () => {
+    const next = nextSessionRecord(fbReadJson(FBP_SESSION_KEY, null), Date.now());
+    fbSessionRef.current = next;
+    try { localStorage.setItem(FBP_SESSION_KEY, JSON.stringify(next)); } catch (_) {}
+    return next;
+  };
+  if (fbSessionRef.current === null && typeof localStorage !== 'undefined') fbTouchSession();
+  useEffect(() => {
+    const onVis = () => fbTouchSession();
+    document.addEventListener('visibilitychange', onVis);
+    const iv = setInterval(() => { if (document.visibilityState === 'visible') fbTouchSession(); }, 5 * 60 * 1000);
+    return () => { document.removeEventListener('visibilitychange', onVis); clearInterval(iv); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const fbInTimedMock = () => !!activeInterview && !interviewCompleted;
+  const fbShowPrompt = (kind, trigger, challengeId = null) => {
+    const rec = markPromptShown(fbSessionRef.current || fbTouchSession());
+    fbSessionRef.current = rec;
+    try { localStorage.setItem(FBP_SESSION_KEY, JSON.stringify(rec)); } catch (_) {}
+    setFbPrompt({ kind, trigger, challengeId });
+    trackActivationEvent('feedback_prompt_shown', { kind, trigger, challengeId, solves: solvedChallenges.size });
+  };
+  const fbSkipPrompt = () => {
+    if (fbPrompt) trackActivationEvent('feedback_prompt_skipped', { kind: fbPrompt.kind, trigger: fbPrompt.trigger });
+    setFbPrompt(null);
+  };
+  const fbSendPrompt = async (answerId, text) => {
+    if (!fbPrompt) return false;
+    const sub = buildPromptSubmission({ kind: fbPrompt.kind, trigger: fbPrompt.trigger, answerId, text, challengeId: fbPrompt.challengeId });
+    if (!sub) return false;
+    return submitFeedback({ message: sub.message, contact: null, topic: sub.topic, kind: fbPrompt.kind, trigger: fbPrompt.trigger, promptContext: sub.context });
+  };
+  // 2 — exit_reason: called by dismissProModal after the plans have closed.
+  const maybeAskExitReason = (via, checkoutPending) => {
+    if (fbPrompt) return;
+    const ok = canShowExitReason({
+      flagOn: fbFlag('exit_reason'), closedVia: via, planClicked: proModalPlanClickedRef.current,
+      checkoutPending: !!checkoutPending, solvedCount: solvedChallenges.size, inTimedMock: fbInTimedMock(),
+      sessionRec: fbSessionRef.current, lastExitDay: (() => { try { return localStorage.getItem(FBP_EXIT_DAY_KEY); } catch (_) { return null; } })(),
+    });
+    if (!ok) return;
+    try { localStorage.setItem(FBP_EXIT_DAY_KEY, localDay()); } catch (_) {}
+    fbShowPrompt('exit_reason', proModalReason?.type === 'free_quota' || proModalReason?.type === 'quota' ? 'quota_wall_closed' : 'pro_modal_closed');
+  };
+  // 3 — stuck: 3 minutes with no run, or 3 wrong submits; once per challenge.
+  const fbTryStuck = (trigger) => {
+    const id = currentChallenge?.id;
+    if (id == null || fbPrompt) return;
+    const askedIds = fbReadJson(FBP_STUCK_IDS_KEY, []);
+    const ok = canShowStuck({ flagOn: fbFlag('stuck'), challengeId: id, askedIds, trigger, solved: solvedChallenges.has(id), inTimedMock: fbInTimedMock(), sessionRec: fbSessionRef.current });
+    if (!ok) return;
+    try { localStorage.setItem(FBP_STUCK_IDS_KEY, JSON.stringify([...askedIds, id].slice(-500))); } catch (_) {}
+    fbShowPrompt('stuck', trigger, id);
+  };
+  useEffect(() => {
+    const id = currentChallenge?.id;
+    if (fbPrompt?.kind === 'stuck' && fbPrompt.challengeId !== id) setFbPrompt(null);
+    if (id == null || !fbFlag('stuck')) return;
+    const t = setTimeout(() => {
+      // Only while the challenge is on screen: currentChallenge outlives a
+      // switch to another tab of the app, and a hidden browser tab still runs
+      // the timer. A card nobody sees would spend the session's one ask and
+      // count as shown (A1, 2026-11-22).
+      if (document.visibilityState !== 'visible' || !document.querySelector('[data-testid="challenge-result-anchor"]')) return;
+      const at = challengeOpenedAtRef.current.id === id ? challengeOpenedAtRef.current.at : Date.now();
+      const trig = stuckTrigger({ msOpen: Date.now() - at, hasRun: firstRunSentRef.current.has(id), wrongSubmits: 0 });
+      if (trig) fbTryStuck(trig);
+    }, STUCK_NO_RUN_MS + 500);
+    return () => clearTimeout(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentChallenge?.id]);
+  useEffect(() => {
+    if (challengeStatus !== 'wrong') return;
+    const trig = stuckTrigger({ msOpen: 0, hasRun: true, wrongSubmits: wrongAttemptCount });
+    if (trig) fbTryStuck(trig);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wrongAttemptCount, challengeStatus]);
+  // 4 — day2: the second session's first screen, once ever, one attempt per load.
+  const fbDay2TriedRef = useRef(false);
+  useEffect(() => {
+    if (fbDay2TriedRef.current || !currentUser || !dbReady || isSessionLoading) return;
+    fbDay2TriedRef.current = true;
+    const ok = canShowDay2({
+      flagOn: fbFlag('day2'), sessionRec: fbSessionRef.current,
+      askedAt: (() => { try { return localStorage.getItem(FBP_DAY2_KEY); } catch (_) { return 'unreadable'; } })(),
+      solvedCount: solvedChallenges.size, inTimedMock: fbInTimedMock(), challengeOpen: !!currentChallenge,
+      overlayOpen: !!(fbPrompt || showProModal || showFeedback || goalAsk || showIntake),
+    });
+    if (!ok) return;
+    try { localStorage.setItem(FBP_DAY2_KEY, new Date().toISOString()); } catch (_) {}
+    fbShowPrompt('day2', 'second_session');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser, dbReady, isSessionLoading]);
+
   const runChallengeQuery = () => {
     if (!db) return;
     // An empty editor with a starter shown (a first-time opener sees "Start
@@ -25674,6 +25864,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
     if (!showProModal) return;
     proModalOpenedAtRef.current = Date.now();
     proModalPlansSeenRef.current = false;
+    proModalPlanClickedRef.current = false;
     let obs = null;
     const t = setTimeout(() => {
       const el = document.querySelector('[data-pro-plans]');
@@ -25826,6 +26017,47 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
     setFirstRunCompleted(true);
     try { localStorage.setItem(FIRST_RUN_COMPLETED_KEY, 'true'); } catch (_) { /* ignore */ }
     pendingListDeepLinkRef.current = false; // consume once
+  }, [isSessionLoading, currentUser]);
+  // A company arrival opens question 1 — an A/B (B5, 2026-11-22, dark flag
+  // `companyDirectOpen`). The page's hero promised "Solve <Company> question
+  // 1 now"; the list made the person read the banner and press the same
+  // promise again. In the `direct` arm a cold arrival (zero solves) lands in
+  // the challenge the banner button opens, through the same openChallenge
+  // and the same locks; `list` is today's screen. Decided only once the
+  // session — a resumed guest's record included — has loaded, so a returning
+  // guest's solves count (the deep-link rule: start guest mode, return, open
+  // on the next run; the list resolver above starts the guest).
+  // src/utils/company-direct.js; tests/company-direct.test.js.
+  const pendingCompanyDirectRef = useRef((() => {
+    if (typeof window === 'undefined') return false;
+    return isCompanyListArrival(window.location.search);
+  })());
+  useEffect(() => {
+    if (!pendingCompanyDirectRef.current) return;
+    if (shouldWaitForSession({ isSessionLoading, currentUser, storage: typeof localStorage !== 'undefined' ? localStorage : null })) return;
+    if (!currentUser) return; // the list resolver starts guest mode; wait for it
+    pendingCompanyDirectRef.current = false; // decide once
+    let record = null;
+    try { record = JSON.parse(localStorage.getItem(COMPANY_DIRECT_KEY) || 'null'); } catch (_) { record = null; }
+    const next = companyFilter ? companyBannerNext() : null;
+    const decision = companyDirectDecision({
+      flagOn: window.FF?.feature?.('companyDirectOpen') === true,
+      arrival: !!companyFilter,
+      aid: getAnonId(),
+      record,
+      solvedCount: solvedChallenges.size,
+      nextId: next ? next.id : null,
+    });
+    if (decision.assign) {
+      try { localStorage.setItem(COMPANY_DIRECT_KEY, JSON.stringify({ arm: decision.arm, at: Date.now() })); } catch (_) { /* ignore */ }
+      trackActivationEvent('company_direct_assigned', {
+        testId: COMPANY_DIRECT_TEST_ID, arm: decision.arm, company: companyFilter, nextId: next ? next.id : null,
+      }, { onceKey: 'company_direct_assigned' });
+    }
+    if (decision.open && next) {
+      setTimeout(() => openChallenge(next, { openedFrom: 'company_direct' }), 100);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSessionLoading, currentUser]);
   // ?payment=success — landing spot for the Stripe payment-link redirect.
   // The webhook stamps Pro server-side; this resolver confirms it (with a
@@ -27162,6 +27394,14 @@ RULES:
       {/* The app's only inbound channel. Rendered globally so it's reachable
           from every screen — a contact route you have to navigate to is a
           contact route most people never find. */}
+      {/* Capture points 2 and 4 (exit_reason, day2): a card above the 💬
+          button, never a modal and never over the plans. Stuck renders on the
+          challenge page instead. */}
+      {fbPrompt && fbPrompt.kind !== 'stuck' && !showProModal && (
+        <div className="fixed left-4 right-4 bottom-20 z-40 sm:left-auto sm:right-4 sm:w-[380px] shadow-lg" data-feedback-prompt-slot="global">
+          <FeedbackPromptCard key={`${fbPrompt.kind}-${fbPrompt.trigger}`} kind={fbPrompt.kind} onSend={fbSendPrompt} onSkip={fbSkipPrompt} />
+        </div>
+      )}
       <FeedbackWidget
         open={showFeedback}
         screen={activeTab}
@@ -39420,6 +39660,12 @@ RULES:
                        It used to sit between the editor and the verdict and
                        pushed "Wrong Answer" below the fold on a laptop. */}
                   <div ref={challengeResultRef} data-testid="challenge-result-anchor" />
+                  {/* Capture point 3, the no-run trigger (`stuckAsk`): three
+                      minutes open, no run. The wrong-submit trigger sits inside
+                      the third-try card below, so it is one card, not two. */}
+                  {fbPrompt?.kind === 'stuck' && fbPrompt.trigger === 'no_run_3m' && fbPrompt.challengeId === currentChallenge.id && (
+                    <FeedbackPromptCard key={`stuck-${currentChallenge.id}`} kind="stuck" onSend={fbSendPrompt} onSkip={fbSkipPrompt} />
+                  )}
                   {/* Result Status */}
                   {challengeStatus && (
                     <div className={`p-4 rounded-xl border ${challengeStatus === 'success' ? 'bg-green-500/10 border-green-500/50' : challengeStatus === 'error' ? 'bg-amber-500/10 border-amber-500/50' : 'bg-red-500/10 border-red-500/50'}`}>
@@ -39697,7 +39943,7 @@ RULES:
                           <div className="flex items-start justify-between gap-3 mb-1">
                             <p className="text-sm font-bold" style={{ color: '#F2F0EA' }}>{i18n_t('practice', 'stuckTitle')}</p>
                             <button
-                              onClick={() => setStuckAsk('dismissed')}
+                              onClick={() => { setStuckAsk('dismissed'); if (fbPrompt?.kind === 'stuck') fbSkipPrompt(); }}
                               aria-label="Dismiss"
                               className="text-lg leading-none px-1 shrink-0"
                               style={{ color: '#8A8E99' }}
@@ -39732,6 +39978,10 @@ RULES:
                             ))}
                           </div>
                         </>
+                      )}
+                      {/* Capture point 3, the wrong-submit trigger (`stuckAsk`). */}
+                      {fbPrompt?.kind === 'stuck' && fbPrompt.trigger === 'wrong_3' && fbPrompt.challengeId === currentChallenge.id && (
+                        <FeedbackPromptCard key={`stuck-${currentChallenge.id}`} kind="stuck" compact onSend={fbSendPrompt} onSkip={fbSkipPrompt} />
                       )}
                     </div>
                   )}

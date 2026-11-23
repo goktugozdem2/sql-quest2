@@ -3589,6 +3589,54 @@ left join second sec using (pid)
 group by a.arm;
 ```
 
+## `company_direct_split`
+
+A company arrival opens question 1 (B5, 2026-11-22, ledger "a company arrival
+opens question 1"). Population: people with a `company_direct_assigned` row
+since the flip, by `arm` (`direct` | `list`). People by aid. Leave out
+internal accounts, `metadata.bot`, and the crawler window sizes and
+fingerprints listed at the top of docs/reads/funnel-2026-11-22.md. t0 = the
+assignment row. It fires at the first cold company arrival, after the guest
+has loaded.
+
+- **Primary — first_solve_10m from assignment:** share with a
+  `challenge_solved` within 10 minutes of t0.
+- **Secondary — first run in 10 minutes:** share with a
+  `challenge_first_run` within 10 minutes of t0. Do not read
+  `open_to_first_run` here: the `direct` arm opens a challenge for everyone,
+  so that ratio's denominator is moved by the arm.
+- **Guardrails:**
+  - share reaching 3 distinct solves within 24 h;
+  - people with `pro_plan_clicked`, and trial-or-paid (`stripe_webhook` by
+    username) within 14 days, as counts.
+- **Check the arm did what it says:** in `direct`, `challenge_opened` with
+  `openedFrom = 'company_direct'` within 1 minute of t0 for nearly
+  everyone. The exception is a person whose set had nothing open
+  (`nextId` null).
+
+```sql
+with ev as (
+  select coalesce(((metadata #>> '{}')::jsonb)->>'aid', username) pid, event, created_at, (metadata #>> '{}')::jsonb m
+  from pro_events
+  where username !~* '^(test|qa_|fabletest|linktest|internalroutine|sqlquest$)'
+    and created_at >= :flip
+),
+arm as (select distinct on (pid) pid, m->>'arm' arm, m->>'company' company, created_at t0
+        from ev where event = 'company_direct_assigned' and coalesce(m->>'bot','false') <> 'true'
+        order by pid, created_at),
+solves as (select e.pid, e.created_at, row_number() over (partition by e.pid order by e.created_at) n
+           from ev e where e.event = 'challenge_solved')
+select a.arm,
+  count(*) assigned,
+  round(100.0 * avg((exists (select 1 from solves s where s.pid = a.pid and s.n = 1 and s.created_at <= a.t0 + interval '10 minutes'))::int), 1) pct_solve_10m,
+  round(100.0 * avg((exists (select 1 from ev e where e.pid = a.pid and e.event = 'challenge_first_run' and e.created_at between a.t0 and a.t0 + interval '10 minutes'))::int), 1) pct_run_10m,
+  round(100.0 * avg((exists (select 1 from solves s where s.pid = a.pid and s.n = 3 and s.created_at <= a.t0 + interval '24 hours'))::int), 1) pct_three_24h,
+  count(*) filter (where exists (select 1 from ev e where e.pid = a.pid and e.event = 'pro_plan_clicked' and e.created_at <= a.t0 + interval '14 days')) plan_clickers,
+  round(100.0 * avg((exists (select 1 from ev e where e.pid = a.pid and e.event = 'challenge_opened' and e.m->>'openedFrom' = 'company_direct' and e.created_at <= a.t0 + interval '1 minute'))::int), 1) pct_direct_open
+from arm a
+group by a.arm;
+```
+
 ## `pattern_to_checkout`
 
 SQL trap page → paid, end to end (2026-09-25). People by `aid` (the landing
@@ -3696,6 +3744,46 @@ where query is not null and page = 'https://sqlquest.app/<slug>/'
 - Position is impression-weighted (the query above), never a plain average of
   daily positions.
 
+## `feedback_capture`
+
+The asked feedback prompts (E2, 2026-11-22; `src/utils/feedback-prompts.js`)
+and the widget, counted per person and per kind. Registered with flags
+`exitReasonAsk`, `stuckAsk`, `day2Ask`.
+
+- **shown** — people with `feedback_prompt_shown {kind, trigger}`.
+- **answered** — people with `feedback_submitted` whose `kind` is the same
+  (from 2026-11-22 every `feedback_submitted` carries `kind`; the widget is
+  `open`). Rate = answered ÷ shown, per kind. `feedback_prompt_skipped` is
+  the explicit no; a prompt neither answered nor skipped was walked past.
+- **reasons** — rows in `public.feedback` with `context->>'kind'` = the kind
+  in the window (the text itself is read in the daily read, never averaged).
+
+```sql
+-- per kind, the window [:from, :to)
+with ev as (
+  select coalesce(aid, username) who, event,
+         (metadata #>> '{}')::jsonb ->> 'kind' kind
+  from pro_events
+  where event in ('feedback_prompt_shown', 'feedback_submitted', 'feedback_prompt_skipped')
+    and created_at >= :from and created_at < :to
+)
+select kind,
+       count(distinct who) filter (where event = 'feedback_prompt_shown')   shown,
+       count(distinct who) filter (where event = 'feedback_submitted')      answered,
+       count(distinct who) filter (where event = 'feedback_prompt_skipped') skipped
+from ev group by kind order by kind;
+
+select context->>'kind' kind, context->>'trigger' trig, count(*)
+from feedback where created_at >= :from and created_at < :to group by 1, 2;
+```
+
+- Apply the fleet's bot and internal-account filters (fleet README, Data).
+- `exit_reason` answers are one tap, `stuck` / `day2` are typed: compare each
+  kind to its own target, never a pooled rate.
+- `context.themeHint` is a guess for the one-tap rows; the theme that counts
+  is the one the daily read assigns.
+- Rows written while the 20260907 quote-consent migration is unapplied still
+  land (PostgREST drops unknown keys); `context` is jsonb and was always there.
 ## `uiux_findings`
 
 Critical + major findings in one full run of the UI/UX audit (`npm run uiux`,
