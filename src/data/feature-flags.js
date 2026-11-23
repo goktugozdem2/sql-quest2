@@ -243,6 +243,16 @@ window.FEATURE_FLAGS = {
     // asked, measured and planned before the first solve".
     goalMeasure: false,
 
+    // ── The goal-note date ask (2026-11-22) ──────────────────────────────
+    // The goal-note email's `goal=interview` answer, with no interview date
+    // on record, gets one inline, skippable line after the goal is recorded:
+    // "When is it?" (a date picker). It writes prepTarget.date through the
+    // intake date's own writer. Never a modal, never while the intake shows.
+    // Events goal_note_date_ask_shown / goal_note_date_set {daysOut} /
+    // goal_note_date_skipped, each with `m` (the email's mode); metric
+    // `goal_note_new`. Pure half src/utils/goal-note-date-ask.js. DARK.
+    goalNoteDateAsk: false,
+
     // ── The quarterly plan (2026-09-14) ──────────────────────────────────
     // $49 every 3 months, between monthly and annual. The founder's call:
     // three packages, 1 month / 3 months / 1 year. Annual stays the

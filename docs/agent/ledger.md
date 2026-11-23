@@ -27,6 +27,33 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### goal-note for new sign-ups: the goal asked by the founder, a day after joining (E2)
+
+- **Claimed** 2026-11-22 · **Shipped** dark: the `mode=new` path of
+  `goal-note` is built and undeployed, unscheduled; the app's date ask is
+  behind `goalNoteDateAsk` (off). **Read** 28 days after the founder's first
+  `mode=new` send.
+- **Change** `goal-note?mode=new`: to each registrant 24 to 72 hours after
+  sign-up (`users.data.createdAt`) with an email, not internal, not opted out,
+  no goal on record, never mailed `goal_note` in either mode, no campaign in
+  48 hours. Sent at 09:xx to 10:xx in the person's own zone (14:xx UTC when no
+  zone is known), cap 20 a run. Founder in the subject, one fact (company page
+  or solve count), one question, three one-click answers
+  (`/app/?src=goal_note&goal=…&m=new`), the reply line for an interview, no
+  price, no sequence. App: after a `goal=interview` answer with no date, one
+  inline "When is it?" into `prepTarget.date` (flag `goalNoteDateAsk`).
+- **Metric** `goal_note_new` (metrics.md, defined in this PR): answer rate =
+  people with `intent_captured {src:'goal_note', m:'new'}` / people sent.
+- **Baseline** from the goal-capture plan (2026-09-17): modal → plan click was
+  **9.3%** among people who answered "interview" and **0 of 81** among people
+  with no answer. No answer-rate baseline exists for this channel; the first
+  read sets it.
+- **Target** answer rate **≥ 15%** of sends.
+- **Falsification** (written before the data) under **8%** after **50 sends**
+  → stop the mode (remove its cron line); the backlog run is unaffected.
+- **Confounds** the backlog run shares the template; split every read on
+  `meta->>'mode'`. The date ask flips separately; read date-set only from its
+  own flip date.
 ### the reasons are asked where they happen: exit_reason (`exitReasonAsk`) — **OPEN**
 
 - **Claimed** 2026-11-22 (E2) · **Shipped** dark; flips from the flag queue

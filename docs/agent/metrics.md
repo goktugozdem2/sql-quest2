@@ -2904,6 +2904,37 @@ Traps, stated before the first read:
   never-asked. Server-side goal counts (weekly-digest, prep-plan-note) start
   at the flip; a `NULL` there before it means nothing.
 
+## `goal_note_new`
+
+The goal-note email's new-signup mode (`supabase/functions/goal-note?mode=new`,
+2026-11-22): one founder note to each person 24 to 72 hours after sign-up with
+no goal on record, asking what they are preparing for. People, not events.
+Born on the founder's first `mode=new` send; nothing before it is this series.
+
+| step | source | notes |
+|---|---|---|
+| sent | `email_events` `template='goal_note'`, `event='sent'`, `meta->>'mode'='new'` (or `pro_events` `goal_note_sent` with `metadata->>'mode'='new'`) | the denominator; `resend_id` on every row |
+| answered | `pro_events` `intent_captured` with `metadata->>'src'='goal_note'` and `metadata->>'m'='new'`, by the same username, within 14 days of its send | the click is the answer (the `?goal=` hook). It fires only when no goal was declared before, which is the audience. `m` exists from this change; the backlog run's answers carry `m` null |
+| date set | `goal_note_date_set {m, daysOut}` | only behind `goalNoteDateAsk` (dark at birth); interview answers only; the date itself never leaves the record |
+| date skipped | `goal_note_date_skipped {m}` · shown: `goal_note_date_ask_shown {m}` | |
+| trial or paid within 14 d | `pro_trial_started` or `pro_purchase_completed`, `reason='stripe_webhook'`, within 14 days of the send | stripe_webhook is the only money truth |
+
+**Answer rate** = answered / sent, per person. Split by `meta->>'variant'`
+(A / B) and by whether a company was named in the body (the dry run shows it;
+the sent row does not carry it, so read it from `pro_events` `arrivalSrc` like
+the sender does).
+
+Traps:
+- An answer from a guest browser lands under a guest username. Join on the
+  account username first; a person who clicked while signed out is a miss here
+  and a `guest_progress_merged` row later. Say how many such rows exist; do not
+  guess them in.
+- `intent_captured` does not fire when a goal was already declared on that
+  browser (the hook never overwrites). The audience has no goal on the row, but
+  a browser-only intent can exist: the post-solve ask writes localStorage only.
+  Such a click records nothing and is not an answer.
+- Under 30 sends, read verbatims and counts, not a rate (`UNREADABLE`).
+
 ## `first_run_reach`
 
 Of the people who saw the first-run start screen, how many opened a first
