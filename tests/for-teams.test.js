@@ -101,3 +101,41 @@ describe('the one button records team_interest through [data-track]', () => {
     expect(meta.href).toBeNull();
   });
 });
+
+// New-content QA 2026-11-23, D7: the page was indexed with no JSON-LD at all.
+// It now carries WebPage + BreadcrumbList + FAQPage, published by the one
+// SQL Quest entity (#187). No Product or Offer, because it states no price.
+// The FAQ schema must be the visible <details> text, word for word.
+describe('/for-teams/ structured data', () => {
+  const ORG_ID = 'https://sqlquest.app/#organization';
+  const blocks = html => [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)]
+    .map(m => JSON.parse(m[1]));
+  const nodes = html => blocks(html).flatMap(b => b['@graph'] || [b]);
+  const decode = s => s.replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+  const squash = s => decode(s).replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+
+  for (const f of ['src/for-teams.html', 'public/for-teams/index.html']) {
+    it(`${f}: a WebPage, a BreadcrumbList and a FAQPage, and nothing that sells`, () => {
+      const html = read(f);
+      const types = nodes(html).map(n => n['@type']);
+      expect(types).toEqual(expect.arrayContaining(['WebPage', 'BreadcrumbList', 'FAQPage']));
+      expect(types).not.toContain('Product');
+      expect(JSON.stringify(blocks(html))).not.toMatch(/"Offer"|"price"/);
+      const page = nodes(html).find(n => n['@type'] === 'WebPage');
+      expect(page.url).toBe('https://sqlquest.app/for-teams/');
+      expect(page.publisher['@id']).toBe(ORG_ID);
+      const crumbs = nodes(html).find(n => n['@type'] === 'BreadcrumbList').itemListElement;
+      expect(crumbs.map(c => c.item)).toEqual(['https://sqlquest.app/', 'https://sqlquest.app/for-teams/']);
+    });
+
+    it(`${f}: the FAQ schema is the visible FAQ, verbatim and in order`, () => {
+      const html = read(f);
+      const visible = [...html.matchAll(/<details>\s*<summary>([\s\S]*?)<\/summary>\s*<p>([\s\S]*?)<\/p>\s*<\/details>/g)]
+        .map(m => [squash(m[1]), squash(m[2])]);
+      expect(visible.length).toBeGreaterThan(0);
+      const faq = nodes(html).find(n => n['@type'] === 'FAQPage').mainEntity
+        .map(q => [q.name, q.acceptedAnswer.text]);
+      expect(faq).toEqual(visible);
+    });
+  }
+});

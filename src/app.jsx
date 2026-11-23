@@ -45,7 +45,7 @@ import { COMPANY_DIRECT_KEY, COMPANY_DIRECT_TEST_ID, companyDirectDecision, isCo
 import { GOAL_PROFILE_KEY, GOAL_GATE_RECHECK_MS, GOAL_GATE_GOALS, TARGET_LEVELS, INDUSTRIES, DEADLINE_PRESETS, industryFor, isoDateInDays, isValidDeadline, missingFields, buildGoalProfile, goalProfileStatus, shouldShowGoalGate, prefillDraft, goalGateEventPayload, readGoalProfile, GOAL_GATE_MAX_DAYS_OUT } from './utils/goal-gate.js';
 import { PLACEMENT_TIERS, placementResult, placementEventPayload, readFirstRunPlacement, seedFloorsFor, seedFloorsFromReadiness, levelForReadiness, placementFromReadiness } from './utils/placement.js';
 import { QUESTIONS as READINESS_QUESTIONS, READINESS_SKILLS, READINESS_RECORD_KEY, companySkillWeights, scoreReadiness, summarizeScores, weakestSkills, readinessRecordFrom, readReadinessRecord } from './data/readiness-questions.js';
-import { paidWallFor, isColdStart, practiceSolves, previewSwapFor } from './utils/paid-wall.js';
+import { paidWallFor, isColdStart, practiceSolves, previewSwapMatch } from './utils/paid-wall.js';
 import { priceRegionFor, planPrices, checkoutLinkFor } from './utils/regional-price.js';
 import { trialEndingLine } from './utils/trial-ending.js';
 import { billingIssueLine, billingIssueDays } from './utils/billing-issue.js';
@@ -8215,7 +8215,7 @@ function SQLQuest() {
   const [challengeStatus, setChallengeStatus] = useState(null);
   const [challengeStarterHint, setChallengeStarterHint] = useState(null);
   // A deep link to a locked Hard swapped for a free Hard preview (2026-11-22,
-  // src/utils/paid-wall.js previewSwapFor): the note above the editor.
+  // src/utils/paid-wall.js previewSwapMatch): the note above the problem.
   const [deepLinkSwapNote, setDeepLinkSwapNote] = useState(null);
   // After Run or Submit, bring the result into view if it landed below the
   // fold — the verdict now sits right under the editor, but on a short
@@ -23952,11 +23952,14 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
       // the visitor has solved nothing: open a free Hard preview of the same
       // kind instead of the cold-start dialog's Easy starter (2026-11-22).
       if (opts && opts.fromDeepLink && challenge.difficulty === 'Hard' && isColdStart(practiceSolveCount)) {
-        const swap = previewSwapFor(challenge, challenges, solvedChallenges);
+        // sameKind only when a defining tag is shared (QA 2026-11-23, D2);
+        // otherwise the note says it is a different question.
+        const match = previewSwapMatch(challenge, challenges, solvedChallenges);
+        const swap = match && match.swap;
         if (swap && !isContentLocked('challenge', swap)) {
-          trackActivationEvent('deeplink_preview_swap', { from: challenge.id, to: swap.id });
+          trackActivationEvent('deeplink_preview_swap', { from: challenge.id, to: swap.id, sameKind: match.sameKind });
           openChallenge(swap, { openedFrom: 'deeplink_swap' });
-          setDeepLinkSwapNote({ fromTitle: challenge.title, toId: swap.id });
+          setDeepLinkSwapNote({ fromTitle: challenge.title, toId: swap.id, sameKind: match.sameKind, shared: match.shared.slice(0, 2) });
           return;
         }
       }
@@ -39639,6 +39642,21 @@ RULES:
                   </div>
                   )}
                   
+                  {/* The deep-link swap note sits ABOVE the problem (QA 2026-11-23,
+                      D2): below the editor, a phone visitor read a different
+                      question before learning why it was not the one linked.
+                      "Same kind" only when previewSwapMatch found a defining
+                      tag in common; otherwise it says plainly it is different. */}
+                  {deepLinkSwapNote && currentChallenge && currentChallenge.id === deepLinkSwapNote.toId && (
+                    <div className="p-3 rounded-lg" style={{ background: 'rgba(124,58,237,.08)', border: '1px solid rgba(124,58,237,.3)' }} data-testid="deeplink-swap-note" data-same-kind={deepLinkSwapNote.sameKind ? 'true' : 'false'}>
+                      <p className="text-sm" style={{ color: '#E2E8F0' }}>
+                        {deepLinkSwapNote.sameKind
+                          ? `“${deepLinkSwapNote.fromTitle}” is part of Pro. This free Hard question also uses ${deepLinkSwapNote.shared.join(' and ')} — a good first one.`
+                          : `“${deepLinkSwapNote.fromTitle}” is part of Pro. This is a different question, a free Hard one, to start with.`}
+                      </p>
+                    </div>
+                  )}
+
                   {/* Problem Description */}
                   <div className="bg-black/30 rounded-xl border border-gray-700 p-4" data-onboarding="problem">
                     {/* The grading engine used to be invisible, and blurbs
@@ -39813,12 +39831,6 @@ RULES:
                     {showChallengeHint && (
                       <div className="mb-3 p-2 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
                         <p className="text-sm text-yellow-300">{displayChallenge.hint}</p>
-                      </div>
-                    )}
-
-                    {deepLinkSwapNote && currentChallenge && currentChallenge.id === deepLinkSwapNote.toId && (
-                      <div className="mb-3 p-2 rounded-lg" style={{ background: 'rgba(124,58,237,.08)', border: '1px solid rgba(124,58,237,.3)' }} data-testid="deeplink-swap-note">
-                        <p className="text-sm" style={{ color: '#E2E8F0' }}>“{deepLinkSwapNote.fromTitle}” is part of Pro. This is a free Hard question of the same kind — a good first one.</p>
                       </div>
                     )}
 
