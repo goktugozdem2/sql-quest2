@@ -53,3 +53,18 @@ export function checkoutLinkFor(plan, region, linksByRegion) {
   const regional = region !== 'default' ? linksByRegion?.[region]?.[plan] : null;
   return regional || linksByRegion?.default?.[plan] || null;
 }
+
+// The Debug set, sold on its own (founder's decision 2026-11-23, PR #251):
+// $9 once, India $3; Pro includes it. A ONE-TIME price, so it lives beside
+// PRICE_TABLE rather than in it — PRICE_TABLE's rows are the two
+// subscription plans and the SAVE badge is computed from them. The region is
+// the same one the plans are priced with (priceRegionFor). The Stripe prices
+// are STRIPE_PRICE_DEBUG_PACK / STRIPE_PRICE_DEBUG_PACK_IN on
+// create-checkout-session; tests/debug-pack.test.js binds the two.
+export const DEBUG_PACK_PRICE = { default: 9, IN: 3 };
+
+/** The pack's price text for a region ("$9"); unknown regions get the default. */
+export function debugPackPrice(region = 'default') {
+  const n = Object.prototype.hasOwnProperty.call(DEBUG_PACK_PRICE, region) ? DEBUG_PACK_PRICE[region] : DEBUG_PACK_PRICE.default;
+  return money(n);
+}

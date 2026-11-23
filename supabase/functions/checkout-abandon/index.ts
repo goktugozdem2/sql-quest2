@@ -214,11 +214,17 @@ Deno.serve(async (req) => {
       const u = row.username
       if (!u || latestByUser.has(u)) continue
       let plan = 'monthly', email: string | null = null
+      let product: string | null = null
       try {
         const md = JSON.parse(row.metadata) || {}
         plan = md.plan || 'monthly'
         email = typeof md.email === 'string' && md.email.includes('@') ? md.email : null
+        product = typeof md.product === 'string' ? md.product : null
       } catch (_) { /* keep defaults */ }
+      // The Debug pack (2026-11-23) is a $9 one-time purchase, not Pro: its
+      // click carries product 'debug_pack' and this note — which speaks of
+      // Pro and its plans — is not the answer to it.
+      if (product === 'debug_pack') continue
       const isGuest = u === 'guest' || u.startsWith('guest_')
       if (isGuest && !email) { // unreachable by us — no channel
         if (!noAddress.has(u)) noAddress.set(u, { username: u, plan, at: row.created_at })

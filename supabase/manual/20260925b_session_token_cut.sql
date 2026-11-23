@@ -31,7 +31,8 @@
 --   * the service role (JWT role service_role) and a direct database session
 --     are never refused (sq_session_trusted_caller);
 --   * the regression guard, the server-owned fields (billingIssue among them
---     since 20261122130000, M-01), the 20260925 password rule, a username
+--     since 20261122130000, M-01; debugPackOwned and its guest carry since
+--     20261123150000), the 20260925 password rule, a username
 --     with no row (read answers empty, as before).
 --
 -- Errcode 28000 (PostgREST answers 403); the client matches the MESSAGE text
@@ -140,7 +141,8 @@ declare
     'proStatus', 'proType', 'proExpiry', 'proAutoRenew', 'proGrantReason',
     'emailOptOut', 'trialReminder_2days_sent_at', 'trialReminder_1day_sent_at',
     'checkoutAbandonEmailAt', 'lastSkillDecayEmail', 'lastWelcomeBackEmail',
-    'billingIssue' -- M-01 (2026-11-22): written by stripe-webhook only
+    'billingIssue', -- M-01 (2026-11-22): written by stripe-webhook only
+    'debugPackOwned' -- the Debug pack (2026-11-23): written by stripe-webhook only
   ];
   plan_keys constant text[] := array[
     'proStatus', 'proType', 'proExpiry', 'proAutoRenew', 'proGrantReason',
@@ -186,6 +188,15 @@ begin
           end if;
         end loop;
       end if;
+      -- ── the Debug pack (2026-11-23): a guest's pack follows the guest into its new account ──
+      -- Only with the guest's own secret ('ok'): unlike the plan above there
+      -- is no pre-2026-09-22 browser to be lenient with. g was emptied above
+      -- if the secret was wrong, so g.username is null then.
+      if g.username is not null and jsonb_typeof(g.data -> 'debugPackOwned') = 'object'
+         and public.sq_session_token_check(p_carry_pro_from, p_carry_token, false) = 'ok' then
+        v_data := v_data || jsonb_build_object('debugPackOwned', g.data -> 'debugPackOwned');
+      end if;
+      -- ── end the Debug pack ──
     end if;
 
     insert into public.users (username, password_hash, salt, email, data, updated_at)

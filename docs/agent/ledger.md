@@ -27,6 +27,46 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### the Debug pack: the Debug set sold on its own, $9 once (`debugPack`) — **OPEN**
+
+- **Claimed** 2026-11-23 · **Shipped** dark (`debugPack: false`, needs
+  `debugQuestions` on too), held for the founder (rule 6d: money path). The
+  founder's decision is PR #251 ("bunu ayrı fiyatla ücretlendir", then
+  "$9 tek seferlik"). It flips only with the founder's written go, after the
+  Stripe product, the two price secrets and the migration
+  (20261123150000) are in. **The clock starts at the flip.** · **Read** 28
+  days after the flip.
+- **Change** A locked Debug item (a Hard, or any Debug item past the 10
+  free solves) opens the Pro modal (reason `debug_lock`, #252) with one
+  secondary card under the plans: "Debug set — $9 once, yours to keep. Pro
+  includes it." (India $3, by `/api/geo/` like the plans). The card opens a
+  one-time Checkout Session (`product: 'debug_pack'`, no trial, no Payment
+  Link fallback). stripe-webhook writes `users.data.debugPackOwned` (server-
+  owned) and logs `debug_pack_purchased {region, amount}`; the pack opens
+  the 12 Debug items and nothing else. Free rules for everyone else are
+  unchanged.
+- **Why** Founder's call: a $9 one-time door for people who will not take a
+  subscription. Orchestrator's note in #251: about 52 real new people since
+  11-22 are now split across two offers, so the read will be thin.
+- **Metric** `debug_pack_purchases` (`docs/agent/metrics.md`, defined in its
+  own PR per rule 6b — until it merges the verdict would be UNDEFINED):
+  `debug_pack_purchased` rows (reason `stripe_webhook`, net of
+  `debug_pack_refunded {full:true}`), read side by side with Pro purchases
+  (`pro_purchase_completed` + `pro_trial_started`, stripe_webhook) whose
+  session followed a `pro_plan_clicked` with `modalReason='debug_lock'`.
+- **Baseline** 0 pack purchases (the product does not exist). Pro purchases
+  from `debug_lock` and from `free_quota` in the 30 days before the flip,
+  counted the same way, are the comparison series.
+- **Target** ≥ 3 pack purchases in 28 days, with Pro purchases from
+  `debug_lock` + `free_quota` not below the 30 days before the flip.
+- **Falsification, written before the data (the cannibalisation rule from
+  #251):** Pro purchases from `debug_lock` and `free_quota` together fall
+  below the 30 days before the flip while pack sales rise → the pack is
+  withdrawn (flag off; buyers keep their items) and Debug stays inside Pro
+  only. Zero pack purchases in 28 days with ≥ 20 people shown the card
+  (`pro_modal_shown.debugPackOffered`) → nobody wants a separate pack:
+  withdraw it the same way.
+
 ### the Debug set: "an AI wrote this query, find and fix the bug" (`debugQuestions`) — **OPEN**
 
 - **Claimed** 2026-11-23 · **Shipped** dark (`debugQuestions: false`), from

@@ -27,7 +27,10 @@ const tok = read('supabase/migrations/20260923100000_account_session_tokens.sql'
 // The cut and its rollback are built on the latest sq_save_user migration:
 // 20261122130000 (the 20260925100000 prep body + billingIssue among the
 // server keys, M-01; tests/account-access.test.js pins that relation).
-const billing = read('supabase/migrations/20261122130000_billing_issue_server_owned.sql');
+// From 2026-11-23 the latest is 20261123150000 (that body + debugPackOwned
+// among the server keys and its guest carry block; tests/debug-pack.test.js
+// pins that relation). The name `billing` is kept for the diff's sake.
+const billing = read('supabase/migrations/20261123150000_debug_pack_server_owned.sql');
 const cut = read('supabase/manual/20260925b_session_token_cut.sql');
 const cutRollback = read('supabase/manual/20260925b_session_token_cut_rollback.sql');
 const replica = read('supabase/manual/account-session-tokens-replica-test.sql');
@@ -67,7 +70,7 @@ describe('the cut file (supabase/manual/20260925b_session_token_cut.sql)', () =>
     expect(cut).toMatch(/founder's explicit go/);
   });
 
-  it('sq_save_user is the latest migration\'s body (prep + billingIssue) with exactly three marked changes', () => {
+  it('sq_save_user is the latest migration\'s body (prep + billingIssue + debugPackOwned) with exactly three marked changes', () => {
     const before = fnOf(billing);
     let after = fnOf(cut);
     expect(after).toMatch(CUT_SAVE);
