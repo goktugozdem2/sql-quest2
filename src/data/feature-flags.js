@@ -584,6 +584,20 @@ window.FEATURE_FLAGS = {
     // 50/50 after #156 merges"), ahead of the 12-19 date above. The 12-18
     // banner claim is read on the `list` arm and non-test arrivals only.
     companyDirectOpen: true,
+
+    // ── The Debug question type (design PR #248, 2026-11-23) ──────────────
+    // "An AI assistant wrote this for the task below. It returns the wrong
+    // answer." Twelve items, ids 331-342, in src/data/debug-challenges.js,
+    // which appends them to the bank (and their TikTok / Shopify tags to the
+    // company map) ONLY while this is true. Off: no item, chip, line or count
+    // anywhere. On: the Practice "Debug" chip, line numbers + the optional
+    // spot step, the AI's query prefilled when no draft is saved, the bug
+    // line on a solve, debugStats on the profile and the Coach. A solve
+    // counts toward the 10 free solves like any challenge. Never a
+    // /questions/ page in v1. src/utils/debug-questions.js; ledger "the
+    // Debug set"; metric debug_solve_through. The orchestrator flips it in
+    // its own decision row.
+    debugQuestions: false,
   },
 };
 

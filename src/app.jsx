@@ -65,6 +65,7 @@ import { sessionLoadingAtBoot, shouldWaitForSession } from './utils/session-boot
 import { SQLITE_TUTOR_RULES, mistakeStudyContext, buildMistakeContextBlock, mistakeOpeningPrompt, inlineOpenerMessage, diagnosisFixesLine, ladderRequestNumber } from './utils/tutor-context.js';
 import { buildUserSkill, pickNextBySkill, toCanonicalSkill, isLegacyMasteryRecord } from './utils/user-skill.js';
 import { classifyErrorPatterns, recordErrorPatterns, describeErrorPatterns, patternCount, emptyErrorStore } from './utils/error-patterns.js';
+import { isDebugChallenge, debugQuestionsOn, brokenQueryFor, debugEditorValue, emptyDebugStats, recordDebugSpot, recordDebugFix, debugStatsSummary, debugBugLine } from './utils/debug-questions.js';
 import { nudgeAllowed, nudgeHeaders, nudgeUsername, personalNudgeLines } from './utils/live-nudge.js';
 import { HIRED_INTENT, isHired, ticketLocked, shouldAskOffer } from './utils/post-hire.js';
 import { gradeTicket, ticketFeedback } from './utils/ticket-grade.js';
@@ -2334,15 +2335,21 @@ const ROADMAP_LESSONS_BY_ID = {
 };
 
 // Reusable SQL editor powered by CodeMirror 5
-const SQLEditor = ({ value, onChange, onKeyDown, placeholder, height = '10rem', disabled = false, className = '' }) => {
+// lineNumbers / onGutterClick / markLines exist for the Debug items
+// (debugQuestions): the gutter shows line numbers and a tap on one is the
+// optional "spot" step (onGutterClick receives the 1-based line); markLines
+// tints the spotted line. Every other editor passes none of them.
+const SQLEditor = ({ value, onChange, onKeyDown, placeholder, height = '10rem', disabled = false, className = '', lineNumbers = false, onGutterClick = null, markLines = null }) => {
   const containerRef = useRef(null);
   const editorRef = useRef(null);
   const onChangeRef = useRef(onChange);
   const onKeyDownRef = useRef(onKeyDown);
+  const onGutterClickRef = useRef(onGutterClick);
   const isExternalUpdate = useRef(false);
 
   onChangeRef.current = onChange;
   onKeyDownRef.current = onKeyDown;
+  onGutterClickRef.current = onGutterClick;
 
   useEffect(() => {
     if (!containerRef.current || !window.CodeMirror) return;
@@ -2350,7 +2357,7 @@ const SQLEditor = ({ value, onChange, onKeyDown, placeholder, height = '10rem', 
       value: value || '',
       mode: 'text/x-sql',
       theme: 'material-darker',
-      lineNumbers: false,
+      lineNumbers: !!lineNumbers,
       matchBrackets: true,
       autoCloseBrackets: true,
       placeholder: placeholder || '',
@@ -2373,8 +2380,26 @@ const SQLEditor = ({ value, onChange, onKeyDown, placeholder, height = '10rem', 
       if (onKeyDownRef.current) onKeyDownRef.current(e);
     });
 
+    cm.on('gutterClick', (cm, line) => {
+      if (onGutterClickRef.current) onGutterClickRef.current(line + 1);
+    });
+
     return () => { cm.toTextArea && cm.toTextArea(); };
   }, []);
+
+  useEffect(() => {
+    if (editorRef.current) editorRef.current.setOption('lineNumbers', !!lineNumbers);
+  }, [lineNumbers]);
+
+  // The spotted line, tinted (1-based in, 0-based for CodeMirror).
+  const markKey = Array.isArray(markLines) ? markLines.join(',') : '';
+  useEffect(() => {
+    const cm = editorRef.current;
+    if (!cm) return undefined;
+    const lines = markKey ? markKey.split(',').map(Number).filter(n => n >= 1 && n <= cm.lineCount()) : [];
+    lines.forEach(n => cm.addLineClass(n - 1, 'background', 'cm-debug-spot'));
+    return () => { lines.forEach(n => { try { cm.removeLineClass(n - 1, 'background', 'cm-debug-spot'); } catch (_) {} }); };
+  }, [markKey, value]);
 
   // Sync external value changes into CodeMirror
   useEffect(() => {
@@ -3215,6 +3240,9 @@ const loadUserData = async (username, allowLocalFallback = true, options = {}) =
 // Data is loaded from separate files in /data folder
 const publicDatasets = window.publicDatasetsData || {};
 const challenges = window.challengesData || [];
+// The Debug items join `challenges` in src/data/debug-challenges.js only when
+// this is true; it also gates the Practice chip and the stats card.
+const DEBUG_QUESTIONS_ON = debugQuestionsOn(window.FEATURE_FLAGS);
 
 // Merge company tags (id -> [companies]) from challenge-companies.js onto each challenge.
 // Single source of truth for "which companies ask this pattern" across the app.
@@ -6302,6 +6330,15 @@ function SQLQuest() {
     } catch (_) { return emptyErrorStore(); }
   });
   const lastErrorPatternsRef = useRef([]);
+  // Debug items (debugQuestions): spots correct ÷ attempted, fixes solved ÷
+  // attempted — src/utils/debug-questions.js. Never a gate, never a radar axis.
+  const [debugStats, setDebugStats] = useState(() => {
+    try {
+      const saved = localStorage.getItem('sqlquest_debug_stats');
+      const parsed = saved ? JSON.parse(saved) : null;
+      return parsed && typeof parsed === 'object' && parsed.spots ? parsed : emptyDebugStats();
+    } catch (_) { return emptyDebugStats(); }
+  });
   // What the "Next quest" strip picked and why (P1 picker, `weakSkillNext`).
   const [nextChallengeRecMeta, setNextChallengeRecMeta] = useState(null);
   // Spaced retrieval (P2): reviews done per weak skill — the 3/7/14 clock
@@ -8348,6 +8385,8 @@ function SQLQuest() {
   // null. Session-only on purpose — a sticky skill filter would silently
   // narrow the list on the next visit the way the path filter once did.
   const [skillFilter, setSkillFilter] = useState(null);
+  // The Practice "Debug" chip (debugQuestions): session-only, like the skill filter.
+  const [debugFilter, setDebugFilter] = useState(false);
   const [sectorFilter, setSectorFilter] = useState(() => {
     if (typeof window === 'undefined') return null;
     try {
@@ -9629,6 +9668,7 @@ function SQLQuest() {
           skillMastery: skillMastery,
           lessonSkillStats: lessonSkillStats,
           errorPatterns: errorPatterns,
+          debugStats: debugStats,
           retrievalLog: retrievalLog,
           ticketLog: ticketLog,
           // (defeatedBosses + workoutStreak + lastWorkoutDate removed —
@@ -9659,7 +9699,7 @@ function SQLQuest() {
         saveUserData(currentUser, userData);
       })();
     }
-  }, [xp, solvedChallenges, unlockedAchievements, queryCount, aiLessonPhase, currentAiLesson, completedAiLessons, aiLessonCompletions, roadmapLessonCompletions, comprehensionCount, comprehensionCorrect, consecutiveCorrect, comprehensionConsecutive, completedExercises, challengeQueries, completedDailyChallenges, dailyStreak, challengeAttempts, dailyChallengeHistory, weeklyReports, weeklyReportLastSeen, weeklyDigestOptOut, earnedMilestones, coachState, userGoals, intakeRecord, goalProfile, companyAskRecord, prepTarget, goalsPromptDismissedAt, loginCalendar, speedRunHistory, explainHistory, userProStatus, proType, proExpiry, proAutoRenew, interviewHistory, challengeProgress, challengeStartDate, weaknessTracking, skillMastery, lessonSkillStats, errorPatterns, retrievalLog, ticketLog, dailyRewardClaimedDate]);
+  }, [xp, solvedChallenges, unlockedAchievements, queryCount, aiLessonPhase, currentAiLesson, completedAiLessons, aiLessonCompletions, roadmapLessonCompletions, comprehensionCount, comprehensionCorrect, consecutiveCorrect, comprehensionConsecutive, completedExercises, challengeQueries, completedDailyChallenges, dailyStreak, challengeAttempts, dailyChallengeHistory, weeklyReports, weeklyReportLastSeen, weeklyDigestOptOut, earnedMilestones, coachState, userGoals, intakeRecord, goalProfile, companyAskRecord, prepTarget, goalsPromptDismissedAt, loginCalendar, speedRunHistory, explainHistory, userProStatus, proType, proExpiry, proAutoRenew, interviewHistory, challengeProgress, challengeStartDate, weaknessTracking, skillMastery, lessonSkillStats, errorPatterns, debugStats, retrievalLog, ticketLog, dailyRewardClaimedDate]);
 
 
   // True when the URL signals explicit content intent — user clicked a
@@ -17911,6 +17951,10 @@ CRITICAL RULES:
         setErrorPatterns(userData.errorPatterns);
         try { localStorage.setItem('sqlquest_error_patterns', JSON.stringify(userData.errorPatterns)); } catch (_) {}
       }
+      if (userData.debugStats && typeof userData.debugStats === 'object' && userData.debugStats.spots) {
+        setDebugStats(userData.debugStats);
+        try { localStorage.setItem('sqlquest_debug_stats', JSON.stringify(userData.debugStats)); } catch (_) {}
+      }
       if (userData.retrievalLog && typeof userData.retrievalLog === 'object') {
         setRetrievalLog(userData.retrievalLog);
         try { localStorage.setItem('sqlquest_retrieval_log', JSON.stringify(userData.retrievalLog)); } catch (_) {}
@@ -21528,6 +21572,9 @@ Adapt based on this student's level — but ALWAYS stay direct and code-first:`;
     try { localStorage.setItem('sqlquest_error_patterns', JSON.stringify(errorPatterns)); } catch (_) {}
   }, [errorPatterns]);
   useEffect(() => {
+    try { localStorage.setItem('sqlquest_debug_stats', JSON.stringify(debugStats)); } catch (_) {}
+  }, [debugStats]);
+  useEffect(() => {
     try { localStorage.setItem('sqlquest_retrieval_log', JSON.stringify(retrievalLog)); } catch (_) {}
   }, [retrievalLog]);
   useEffect(() => {
@@ -24090,7 +24137,12 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     const savedQuery = challengeQueries[challenge.id] || '';
     setChallengeStarterHint(null);
     if (!(opts && opts.openedFrom === 'deeplink_swap')) setDeepLinkSwapNote(null);
-    if (!savedQuery && solvedChallenges.size === 0 && challenge.id === 91) {
+    // A Debug item opens on the AI's query — only when no draft is saved —
+    // and never takes the first-run starter branches below.
+    const debugValue = debugEditorValue(challenge, savedQuery, lang);
+    if (debugValue !== null) {
+      setChallengeQuery(debugValue);
+    } else if (!savedQuery && solvedChallenges.size === 0 && challenge.id === 91) {
       setChallengeQuery(`${ZERO_SQL_FIRST_QUERY};`);
     } else if (!savedQuery && solvedChallenges.size === 0) {
       // The starter line is a placeholder now, not text in the editor: as a
@@ -25202,6 +25254,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
         ...(drillTagApplies ? { source: 'drill' } : {}),
       };
       setChallengeAttempts(prev => [...prev, attempt]);
+      if (isDebugChallenge(currentChallenge)) setDebugStats(prev => recordDebugFix(prev, currentChallenge, isSuccess));
       
       // Update recommended difficulty after tracking
       if (isSuccess && isFirstTry) {
@@ -25699,6 +25752,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
       // graded "Wrong", streak zeroed. The behavioural half of that fix waited
       // for the Aug 3 reads (P6); those are done, so it ships now.
       setChallengeStatus('error');
+      if (isDebugChallenge(currentChallenge)) setDebugStats(prev => recordDebugFix(prev, currentChallenge, false));
       // Surface the SQL error through the diagnostic layer so users get
       // translated, actionable guidance instead of raw SQLite error text.
       try {
@@ -25763,7 +25817,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
     const searchActive = !!(challengeSearch || '').trim();
     return challenges
       .filter(c => {
-        if (searchActive) return true;
+        if (searchActive || debugFilter) return true;
         if (selectedPathStageId === 'all') return true;
         const selectedStage = activeRoadmapStages.find(stage => stage.id === selectedPathStageId);
         if (!selectedStage) return true;
@@ -25806,6 +25860,9 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
       // Skill filter (2026-09-12, P1): one of the nine canonical skills,
       // resolved through the same tag mapping the radar and the drills use.
       .filter(c => !skillFilter || challengeMatchesSkill(c, skillFilter))
+      // The Debug chip: only the AI-wrote-it items (and, like search, across
+      // every path stage).
+      .filter(c => !debugFilter || isDebugChallenge(c))
       .filter(c => {
         // Free-text search — case-insensitive, matches id, title, description,
         // skills, category. Whitespace-trimmed; empty string disables filter.
@@ -34244,6 +34301,19 @@ RULES:
                         </dd>
                       </div>
                     )}
+                    {DEBUG_QUESTIONS_ON && (() => {
+                      const ds = debugStatsSummary(debugStats);
+                      if (ds.fixesAttempted === 0 && ds.spotsAttempted === 0) return null;
+                      return (
+                        <div className="flex justify-between gap-3" data-testid="profile-debug">
+                          <dt style={{ color: '#8A8E99' }}>{i18n_t('practice', 'debugStatsTitle')}</dt>
+                          <dd className="text-right" style={{ color: '#F2F0EA' }}>
+                            {i18n_t('practice', 'debugStatsFixes', { solved: ds.fixesSolved, n: ds.fixesAttempted })}
+                            {ds.spotsAttempted > 0 ? ` · ${i18n_t('practice', 'debugStatsSpots', { correct: ds.spotsCorrect, n: ds.spotsAttempted })}` : ''}
+                          </dd>
+                        </div>
+                      );
+                    })()}
                     <div className="flex justify-between"><dt style={{ color: '#8A8E99' }}>Streak</dt><dd style={{ color: '#F2F0EA' }}>{streak} {streak === 1 ? 'day' : 'days'}</dd></div>
                     {lastDay && (
                       <div className="flex justify-between"><dt style={{ color: '#8A8E99' }}>Last login</dt><dd style={{ color: '#F2F0EA' }}>{fmt(lastDay)}</dd></div>
@@ -36641,6 +36711,22 @@ RULES:
                   </div>
                 );
               })()}
+              {/* ── Debug practice (debugQuestions, design PR #248) ── the two
+                  rates from debugStats, once the person has tried an item.
+                  Its own stat, not a Skillmap axis (decision 2026-11-22). */}
+              {DEBUG_QUESTIONS_ON && (() => {
+                const ds = debugStatsSummary(debugStats);
+                if (ds.fixesAttempted === 0 && ds.spotsAttempted === 0) return null;
+                return (
+                  <div className="bg-gray-900/60 rounded-xl border border-gray-700 p-4 mb-4" data-testid="coach-debug-stats">
+                    <p className="text-xs uppercase tracking-wide mb-2" style={{ color: '#8A8E99' }}>{i18n_t('practice', 'debugStatsTitle')}</p>
+                    <p className="text-sm" style={{ color: '#F2F0EA' }}>{i18n_t('practice', 'debugStatsFixes', { solved: ds.fixesSolved, n: ds.fixesAttempted })}</p>
+                    {ds.spotsAttempted > 0 && (
+                      <p className="text-sm mt-1" style={{ color: '#F2F0EA' }}>{i18n_t('practice', 'debugStatsSpots', { correct: ds.spotsCorrect, n: ds.spotsAttempted })}</p>
+                    )}
+                  </div>
+                );
+              })()}
               {/* ── Due today · spaced retrieval (P2, 2026-09-12, `spacedRetrievalCard`) ──
                   Weak canonical skills come back 3, 7 and 14 days after they
                   were last practised (src/utils/spaced-retrieval.js), each with
@@ -38811,6 +38897,27 @@ RULES:
                           ))}
                         </div>
 
+                        {/* The Debug chip (debugQuestions, design PR #248): the
+                            "an AI wrote this query, fix it" items only. */}
+                        {DEBUG_QUESTIONS_ON && (
+                          <div className="flex flex-wrap gap-2 mt-2 items-center">
+                            <span className="text-xs text-gray-500 self-center mr-1 w-16">{tPractice('type')}:</span>
+                            <button
+                              type="button"
+                              data-testid="practice-debug-chip"
+                              aria-pressed={debugFilter}
+                              onClick={() => {
+                                const next = !debugFilter;
+                                setDebugFilter(next);
+                                if (next) trackActivationEvent('debug_filter_on', {});
+                              }}
+                              className={`px-3 py-1 rounded-lg text-sm font-medium transition-all ${debugFilter ? 'bg-orange-500 text-[#F2F0EA]' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
+                            >
+                              {i18n_t('practice', 'debugFilter')}
+                            </button>
+                          </div>
+                        )}
+
                         {/* Tier 3: More filters expander (Company + Sector) */}
                         <div className="mt-3">
                           <button
@@ -39056,7 +39163,7 @@ RULES:
                             and Serge lost an evening to it on 2026-07-26. Search now
                             escapes the filter on its own; this is the browse-path
                             escape hatch. */}
-                        {challengePathFilter === 'recommended' && !(challengeSearch || '').trim() && (() => {
+                        {challengePathFilter === 'recommended' && !(challengeSearch || '').trim() && !debugFilter && (() => {
                           const total = challenges.length;
                           const filtered = getFilteredChallenges().length;
                           if (filtered >= total) return null;
@@ -39260,6 +39367,11 @@ RULES:
                               {isStarted && (
                                 <span className="text-xs font-bold text-orange-400 bg-orange-500/15 px-2 py-0.5 rounded" title="You started this but haven't finished yet">
                                   {i18n_t('practice', 'startedTag')}
+                                </span>
+                              )}
+                              {isDebugChallenge(c) && (
+                                <span className="text-xs font-bold text-purple-300 bg-purple-500/15 px-2 py-0.5 rounded" data-testid="debug-badge">
+                                  {i18n_t('practice', 'debugBadge')}
                                 </span>
                               )}
                               <span className={`text-xs font-bold ${diffColor}`}>{c.difficulty === 'Easy' || c.difficulty === 'Medium' || c.difficulty === 'Hard' ? i18n_t('practice', c.difficulty.toLowerCase()) : c.difficulty}</span>
@@ -39693,13 +39805,55 @@ RULES:
                       </div>
                     )}
 
+                    {/* A Debug item (debugQuestions): the framing, the optional
+                        spot step (a tap on a line number, scored only in
+                        debugStats — never a gate) and the way back to the
+                        AI's query. */}
+                    {isDebugChallenge(currentChallenge) && (() => {
+                      const spot = (debugStats.spots || {})[String(currentChallenge.id)] || null;
+                      return (
+                        <div className="mb-3 p-3 rounded-lg" style={{ background: 'rgba(124,58,237,.08)', border: '1px solid rgba(124,58,237,.3)' }} data-testid="debug-framing">
+                          <p className="text-sm font-medium" style={{ color: '#E2E8F0' }}>{i18n_t('practice', 'debugFraming')}</p>
+                          <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                            <p className="text-xs" style={{ color: spot ? (spot.correct ? '#4ADE80' : '#8A8E99') : '#8A8E99' }} data-testid="debug-spot-line">
+                              {spot
+                                ? i18n_t('practice', spot.correct ? 'debugSpotRight' : 'debugSpotWrong', { line: spot.line })
+                                : i18n_t('practice', 'debugSpotPrompt')}
+                            </p>
+                            <button
+                              type="button"
+                              data-testid="debug-reset"
+                              onClick={() => {
+                                updateChallengeQuery(brokenQueryFor(currentChallenge, lang));
+                                trackActivationEvent('debug_reset', { challengeId: currentChallenge.id });
+                              }}
+                              className="text-xs font-medium text-purple-300 hover:text-purple-200 underline underline-offset-2"
+                            >
+                              {i18n_t('practice', 'debugReset')}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })()}
+
                     <div data-scroll-target="challenge-editor">
                       <SQLEditor
                         value={challengeQuery}
                         onChange={val => updateChallengeQuery(val)}
                         onKeyDown={(e) => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); submitChallenge(); }}}
                         placeholder={challengeStarterHint || i18n_t('practice', 'editorPlaceholder')}
-                        height="14rem"
+                        height={isDebugChallenge(currentChallenge) ? '18rem' : '14rem'}
+                        lineNumbers={isDebugChallenge(currentChallenge)}
+                        className={isDebugChallenge(currentChallenge) ? 'sql-cm-debug' : ''}
+                        onGutterClick={isDebugChallenge(currentChallenge) ? (line) => {
+                          const already = !!(debugStats.spots || {})[String(currentChallenge.id)];
+                          if (already) return;
+                          const next = recordDebugSpot(debugStats, currentChallenge, line);
+                          setDebugStats(next);
+                          const rec = next.spots[String(currentChallenge.id)];
+                          trackActivationEvent('debug_spot', { challengeId: currentChallenge.id, line, correct: !!(rec && rec.correct), bugKind: currentChallenge.bugKind });
+                        } : null}
+                        markLines={isDebugChallenge(currentChallenge) && (debugStats.spots || {})[String(currentChallenge.id)] ? [(debugStats.spots || {})[String(currentChallenge.id)].line] : null}
                       />
                     </div>
                     
@@ -39754,6 +39908,28 @@ RULES:
                   {fbPrompt?.kind === 'stuck' && fbPrompt.trigger === 'no_run_3m' && fbPrompt.challengeId === currentChallenge.id && (
                     <FeedbackPromptCard key={`stuck-${currentChallenge.id}`} kind="stuck" onSend={fbSendPrompt} onSkip={fbSkipPrompt} />
                   )}
+                  {/* A Debug solve: one line naming the bug, and its trap page
+                      where one exists. */}
+                  {challengeStatus === 'success' && isDebugChallenge(currentChallenge) && (() => {
+                    const bug = debugBugLine(currentChallenge, lang);
+                    if (!bug) return null;
+                    return (
+                      <div className="p-3 rounded-lg" style={{ background: '#16181F', border: '1px solid #2A2E38' }} data-testid="debug-bug-line">
+                        <p className="text-sm" style={{ color: '#E2E8F0' }}>
+                          <span className="font-bold">{i18n_t('practice', 'debugBugWas')}</span> {bug.text}
+                          {bug.trapHref && (
+                            <>
+                              {' '}
+                              <a href={bug.trapHref} target="_blank" rel="noopener" className="text-purple-300 underline underline-offset-2 hover:text-purple-200"
+                                onClick={() => trackActivationEvent('debug_trap_clicked', { challengeId: currentChallenge.id, trap: currentChallenge.trap })}>
+                                {i18n_t('practice', 'debugTrapLink')}
+                              </a>
+                            </>
+                          )}
+                        </p>
+                      </div>
+                    );
+                  })()}
                   {/* Result Status */}
                   {challengeStatus && (
                     <div className={`p-4 rounded-xl border ${challengeStatus === 'success' ? 'bg-green-500/10 border-green-500/50' : challengeStatus === 'error' ? 'bg-amber-500/10 border-amber-500/50' : 'bg-red-500/10 border-red-500/50'}`}>
