@@ -505,6 +505,43 @@ Read: trial starts per Stripe session (today ~25%) and day-7 conversion
 card-free trials under 20% → card-free trials only move the start number;
 off. Not built autonomously: it needs two deploys and a money decision.
 
+## Errors — A3, 2026-11-23 (docs/reads/errors-2026-11-23.md)
+
+Each item needs the founder (cron, migration, deploy or auth). A3 does not
+touch them.
+
+- **A3-1. The 10:00 UTC mail crons time out together.** On 11-22,
+  `skill-decay`, `welcome-back` and the 10:00 `streak-reminder` all
+  returned 500. Each one reads every user with an email in a single request
+  (`select username, email, data`). The three ran at once and hit the 8 s
+  statement timeout at 10:00:12. On the two days before, the same runs
+  took 15.6–19.2 s. No welcome-back or skill-decay mail went out on 11-22,
+  while pg_cron logged "succeeded".
+  FOUNDER, smallest fix (spread the jobs out):
+  `select cron.alter_job((select jobid from cron.job where jobname='skill-decay'), schedule => '20 10 * * *');`
+  `select cron.alter_job((select jobid from cron.job where jobname='welcome-back-daily'), schedule => '40 10 * * *');`
+  Durable fix (a code PR in `supabase/functions/`, held for 6d): page
+  the users read with `.range()`, or select only the `data` keys each
+  sender needs.
+- **A3-2. The sign-up "email taken" check is at 60% of its timeout.**
+  `sq_email_registered` runs as anon with a 3 s limit and seq-scans 11,083
+  rows. It took 1.79 s on a warm cache, and one call timed out on 11-22
+  at 17:58. The client rethrows any non-404 error from it into the register
+  handler. FOUNDER: a migration with
+  `create index concurrently if not exists users_email_or_data_email_lower_idx on public.users (lower(coalesce(nullif(email, ''), data->>'email')));`
+  It matches the function's expression exactly, so the planner can use it.
+  Verify with EXPLAIN that it shows an index scan. Separately (auth, 6d):
+  decide whether a timeout there should let the sign-up continue to the
+  server's own check, instead of failing the form.
+- **A3-3. `my-referral-stats` was never deployed (it has been in the repo
+  since 05-02).** The profile and the referral modal call it. The preflight
+  gets 404, so the server-owned `personal_ref_code` never reaches the
+  client. Its RPC `get_my_referral_stats` exists in production.
+  FOUNDER: `supabase functions deploy my-referral-stats`. Then open the
+  referral modal once as a registered account and check that the card
+  shows the server's code. `claim-referral-reward` is undeployed too; it
+  is a separate decision, because it grants Pro.
+
 ## P0 — security and money
 
 1. **Any account's data can still be overwritten with the public anon key.**
