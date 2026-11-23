@@ -71,6 +71,24 @@ body {
 .sql-cm-editor .CodeMirror-cursor {
   border-left-color: #fff;
 }
+/* Debug items (debugQuestions): the line-number gutter is the "spot" control,
+   so it reads as tappable; the spotted line takes the brand purple tint. */
+.sql-cm-debug .CodeMirror-gutters {
+  background: rgb(17, 24, 39);
+  border-right: 1px solid #2A2E38;
+}
+.sql-cm-debug .CodeMirror-linenumber {
+  cursor: pointer;
+  color: #8A8E99;
+  min-width: 1.75rem;
+  padding: 0 6px 0 4px;
+}
+.sql-cm-debug .CodeMirror-linenumber:hover {
+  color: #F2F0EA;
+}
+.sql-cm-debug .cm-debug-spot {
+  background: rgba(124, 58, 237, 0.18);
+}
 
 /* RadarPopToast entrance — slide up + fade in. Used by the post-solve pop. */
 @keyframes radarPopIn {
