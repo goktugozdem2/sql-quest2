@@ -3958,5 +3958,31 @@ ORDER BY total_orders DESC;`,
     hint_tr: "Bir kolonu saymak satırları saymakla aynı şey değil: bir kolon üzerinden sayım o kolonun boş olduğu satırları atlar, satır sayımı atlamaz. Her sınıf için ikisinden birer tane kullan; eksik yaşlar aradaki farktır.",
     example_tr: { input: "3 sınıfta 891 yolcu", output: "3 satır — 1. sınıf: 216 yolcu, 174 kayıtlı yaş, 42 eksik" },
     dataset: "titanic"
+  },
+  // 325 (2026-11-23, fleet B3): a payment-partner reconciliation, the shape of
+  // a round one candidate reported to us (docs/reads/companies/stripe.md, the
+  // 2026-11-23 row; unattributed by promise). Our wording on our own synthetic
+  // tables (ecommerce.expected_payments / partner_a_report / partner_b_report),
+  // not the interview's question. tests/challenge-325.test.js runs the
+  // solution and shows a one-direction answer, an answer that ignores the
+  // partner, and one that repeats a duplicated row all fail.
+  {
+    id: 325,
+    slug: "reconcile-two-payment-partners-reports",
+    title: "Reconcile Two Payment Partners' Reports",
+    difficulty: "Hard",
+    category: "Subqueries & CTEs",
+    skills: ["SELECT", "CTE", "Subquery", "Correlated Subquery", "DISTINCT", "UNION ALL"],
+    xpReward: 90,
+    description: "The shop is paid through two payment partners, **A** and **B**. Each partner sends a settlement report — **partner_a_report** and **partner_b_report**, one row per transaction it settled. **expected_payments** lists every transaction we expect to be settled, for **both** partners, with the partner it was sent to in `partner`.\n\nFinance wants both reports reconciled. For each partner, list:\n\n- every transaction we expected **from that partner** that is not in that partner's report — `issue` = `'missing'`;\n- every transaction in that partner's report that we did not expect **from that partner** — `issue` = `'unexpected'`.\n\nShow **exactly these 3 columns**: `partner` (`'A'` or `'B'`), `txn_id` and `issue`. Order by `partner`, then `txn_id`.\n\nA transaction appears at most once per partner, even if a report lists it more than once. Expected means expected from the partner being reconciled: a transaction sent to A is not expected in B's report.",
+    tables: ["expected_payments", "partner_a_report", "partner_b_report"],
+    example: { input: "24 expected transactions (12 per partner), 11 rows in A's report, 13 in B's", output: "7 rows — 4 missing, 3 unexpected" },
+    hint: "Reconcile one partner at a time, then stack the results. For a partner, keep only the expected rows sent to that partner. Then look both ways: expected transactions with no matching row in the report, and report transactions with no matching expected one. Check whether a report can list the same transaction twice before you trust a row count.",
+    solution: "WITH a AS (SELECT DISTINCT txn_id FROM partner_a_report), b AS (SELECT DISTINCT txn_id FROM partner_b_report), exp_a AS (SELECT txn_id FROM expected_payments WHERE partner = 'A'), exp_b AS (SELECT txn_id FROM expected_payments WHERE partner = 'B') SELECT 'A' AS partner, txn_id, 'missing' AS issue FROM exp_a e WHERE NOT EXISTS (SELECT 1 FROM a WHERE a.txn_id = e.txn_id) UNION ALL SELECT 'A', txn_id, 'unexpected' FROM a WHERE NOT EXISTS (SELECT 1 FROM exp_a e WHERE e.txn_id = a.txn_id) UNION ALL SELECT 'B', txn_id, 'missing' FROM exp_b e WHERE NOT EXISTS (SELECT 1 FROM b WHERE b.txn_id = e.txn_id) UNION ALL SELECT 'B', txn_id, 'unexpected' FROM b WHERE NOT EXISTS (SELECT 1 FROM exp_b e WHERE e.txn_id = b.txn_id) ORDER BY partner, txn_id",
+    title_tr: "İki Ödeme Ortağının Raporlarının Mutabakatı",
+    description_tr: "Mağaza iki ödeme ortağı üzerinden ödeme alıyor: **A** ve **B**. Her ortağın gönderdiği bir tahsilat raporu var — **partner_a_report** ve **partner_b_report**; tahsil ettiği her işlem için bir satır. **expected_payments**, **iki** ortak için de tahsil edilmesini beklediğimiz her işlemi, gönderildiği ortağı `partner` kolonunda tutarak listeliyor.\n\nFinans iki raporun da mutabakatını istiyor. Her ortak için listele:\n\n- **o ortaktan** beklediğimiz ama o ortağın raporunda olmayan her işlem — `issue` = `'missing'`;\n- o ortağın raporunda olup **o ortaktan** beklemediğimiz her işlem — `issue` = `'unexpected'`.\n\n**Tam olarak şu 3 kolonu** göster: `partner` (`'A'` ya da `'B'`), `txn_id` ve `issue`. Önce `partner`, sonra `txn_id`'ye göre sırala.\n\nBir rapor bir işlemi birden fazla kez listelese bile, işlem her ortak için en fazla bir kez görünür. Beklenen, mutabakatı yapılan ortaktan beklenen demektir: A'ya gönderilmiş bir işlem B'nin raporunda beklenmez.",
+    hint_tr: "Her seferinde bir ortağın mutabakatını yap, sonra sonuçları alt alta ekle. Bir ortak için yalnızca o ortağa gönderilmiş beklenen satırları tut. Sonra iki yöne de bak: raporda eşleşen satırı olmayan beklenen işlemler ve eşleşen beklenen işlemi olmayan rapor işlemleri. Bir satır sayısına güvenmeden önce, bir raporun aynı işlemi iki kez listeleyip listeleyemeyeceğini kontrol et.",
+    example_tr: { input: "24 beklenen işlem (ortak başına 12), A'nın raporunda 11, B'ninkinde 13 satır", output: "7 satır — 4 missing, 3 unexpected" },
+    dataset: "ecommerce"
   }
 ];
