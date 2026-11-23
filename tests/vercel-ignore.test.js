@@ -28,6 +28,9 @@ const sha = (rev) => git('rev-parse', rev).trim();
 // prev = the commit of the last successful deployment (VERCEL_GIT_PREVIOUS_SHA); default: the parent.
 const run = (ref = 'main', prev = sha('HEAD^')) => spawnSync('bash', [SCRIPT], { cwd: repo, env: { ...globalThis.process.env, VERCEL_GIT_COMMIT_REF: ref, VERCEL_GIT_PREVIOUS_SHA: prev ?? '' } }).status;
 const SKIP = 0, BUILD = 1;
+// Each of these makes real git commits in a temp repo and runs a script per
+// commit; vitest's default 5000 ms timed out on CI (run 45227377403).
+const GIT_TIMEOUT = 20_000;
 
 beforeAll(() => {
   repo = fs.mkdtempSync(path.join(os.tmpdir(), 'vercel-ignore-'));
@@ -40,23 +43,23 @@ describe('vercel-ignore.sh', () => {
     commitTouching(['src/app.jsx']);
     expect(run('feat/anything')).toBe(SKIP);
     expect(run('')).toBe(SKIP);
-  });
+  }, GIT_TIMEOUT);
   it('builds main when the site can change', () => {
     for (const f of ['src/app.jsx', 'public/app.js', 'vercel.json', 'api/geo/index.js', 'package.json', 'scripts/build-question-pages.mjs']) {
       commitTouching([f]);
       expect(run(), f).toBe(BUILD);
     }
-  });
+  }, GIT_TIMEOUT);
   it('skips main when only docs, tests, supabase or CI changed', () => {
     commitTouching(['docs/agent/ledger.md', 'BACKLOG.md']);
     expect(run()).toBe(SKIP);
     commitTouching(['tests/x.test.js', 'supabase/functions/stripe-webhook/index.ts', '.github/workflows/ci.yml']);
     expect(run()).toBe(SKIP);
-  });
+  }, GIT_TIMEOUT);
   it('a mixed commit builds', () => {
     commitTouching(['docs/x.md', 'src/data/challenges.js']);
     expect(run()).toBe(BUILD);
-  });
+  }, GIT_TIMEOUT);
   it('vercel.json runs it', () => {
     const v = JSON.parse(fs.readFileSync(path.join(ROOT, 'vercel.json'), 'utf8'));
     expect(v.ignoreCommand).toBe('bash scripts/vercel-ignore.sh');
@@ -115,20 +118,20 @@ describe('vercel-ignore.sh compares against the last successful deployment', () 
     commitTouching(['src/app.jsx']);      // merged, but its deploy was rate-limited
     commitTouching(['docs/ledger.md']);   // the next merge is docs-only
     expect(run('main', lastDeployed)).toBe(BUILD);
-  });
+  }, GIT_TIMEOUT);
   it('still skips when nothing since the last deployment reaches the site', () => {
     commitTouching(['docs/a.md']);
     const lastDeployed = sha('HEAD');
     commitTouching(['docs/b.md']);
     commitTouching(['tests/c.test.js']);
     expect(run('main', lastDeployed)).toBe(SKIP);
-  });
+  }, GIT_TIMEOUT);
   it('builds when the last deployment sha is not in the clone', () => {
     commitTouching(['docs/e.md']);
     expect(run('main', 'deadbeef'.repeat(5))).toBe(BUILD);
-  });
+  }, GIT_TIMEOUT);
   it('builds when the last deployment is unknown', () => {
     commitTouching(['docs/d.md']);
     expect(run('main', '')).toBe(BUILD);
-  });
+  }, GIT_TIMEOUT);
 });
