@@ -427,3 +427,11 @@ it('both debug-stats strings read as correct/total in Turkish', () => {
   expect(i18n).toContain("debugStatsSpots: 'Bulunan hatalar: {correct}/{n}'");
   expect(i18n).toContain("debugStatsFixes: 'Çözülen düzeltmeler: {solved}/{n}'");
 });
+
+// QA 2026-11-23: the Coach card's uppercase heading rendered "PRATIĞI" on a
+// Turkish screen, because the page is lang="en" and CSS uppercases i → I.
+// The heading carries the UI language so Turkish uppercases i → İ.
+it('the uppercase debug-stats heading carries the UI language (TR: PRATİĞİ, not PRATIĞI)', () => {
+  const app = read('src/app.jsx');
+  expect(app).toMatch(/<p lang=\{getCurrentLang\(\)\} className="text-xs uppercase[^"]*"[^>]*>\{i18n_t\('practice', 'debugStatsTitle'\)\}/);
+});

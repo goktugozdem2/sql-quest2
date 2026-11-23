@@ -18,7 +18,7 @@ const app = read('src/app.jsx');
 const flags = read('src/data/feature-flags.js');
 
 const EN_LINE = 'Fix an AI-written query: the Debug set.';
-const TR_LINE = "AI'ın yazdığı sorguyu düzelt: Debug seti.";
+const TR_LINE = "AI'ın yazdığı sorguyu düzelt: Hata Ayıklama seti.";
 
 // A Debug Hard and a plain Hard, shaped like the bank's rows.
 const debugHard = { id: 340, type: 'debug', difficulty: 'Hard', brokenQuery: 'SELECT 1' };
