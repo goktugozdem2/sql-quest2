@@ -38,6 +38,9 @@ import { mergeProgress, hasProgress, isResumableGuest, GUEST_USER_KEY } from './
 import { companySetMatch } from './utils/company-set-match.js';
 import { buildPracticePlan, PLAN_MIN_SOLVES_FOR_SKILLS } from './utils/practice-plan.js';
 import { FIRST_SCREEN_STORAGE_KEY, firstScreenDecision } from './utils/first-screen.js';
+import { MOBILE_RUN_BAR_STORAGE_KEY, MOBILE_RUN_BAR_TEST_ID, isNarrowTouch, mobileRunBarDecision, runBarLabel, keyboardOffset } from './utils/mobile-run-bar.js';
+
+import { MOBILE_ONE_LAYER_STORAGE_KEY, MOBILE_ONE_LAYER_TEST_ID, isNarrowTouch as oneLayerNarrowTouch, mobileOneLayerDecision, oneLayerPick, oneLayerRelease } from './utils/mobile-one-layer.js';
 import { INTAKE_KEY, INTAKE_GOALS, INTAKE_ROLES, INTAKE_STEPS, INTAKE_COMPANIES, INTAKE_LEVELS, intakeStepsFor, intakeGoalFor, intakeGoalForIntent, nextIntakeStep, isIntakeStepRequired, isIntakeLevel, isValidIntakeDate, buildIntakeRecord, isIntakeComplete, readIntakeRecord, intakeEventPayload, newCoachGoalState, shouldShowIntake } from './utils/onboarding-intake.js';
 import { shouldArmGoalNoteDateAsk, shouldRenderGoalNoteDateAsk } from './utils/goal-note-date-ask.js';
 import { COMPANY_ASK_KEY, COMPANY_ASK_TEST_ID, COMPANY_ASK_UNDECIDED, companyAskDecision, normalizeCompanyAskRecord, matchCompanies, isCompanyAskAnswer } from './utils/company-ask.js';
@@ -4434,7 +4437,7 @@ function XPBar({ current, max, level }) {
 
 // Floating XP Gain Animation
 // Milestone Share Bar - Auto-appears after key moments
-function MilestoneShareBar({ content, onShare, onDismiss, referralUrl }) {
+function MilestoneShareBar({ content, onShare, onDismiss, referralUrl, bigTargets = false }) {
   const [visible, setVisible] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   
@@ -4447,7 +4450,7 @@ function MilestoneShareBar({ content, onShare, onDismiss, referralUrl }) {
   if (dismissed) return null;
   
   return (
-    <div className="fixed bottom-4 left-1/2 z-50 w-full max-w-md px-4" style={{
+    <div className="sq-share-bar fixed bottom-4 left-1/2 z-50 w-full max-w-md px-4" style={{
       transform: visible ? 'translate(-50%, 0)' : 'translate(-50%, 120%)',
       transition: 'transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1)',
     }}>
@@ -4468,19 +4471,19 @@ function MilestoneShareBar({ content, onShare, onDismiss, referralUrl }) {
               <p className="text-xs text-gray-400">{i18n_t('shareToast', 'shareYourProgress')}</p>
             </div>
           </div>
-          <button onClick={() => { setDismissed(true); onDismiss(); }} className="text-gray-500 hover:text-gray-300 text-lg">✕</button>
+          <button onClick={() => { setDismissed(true); onDismiss(); }} aria-label="Dismiss" className={`text-gray-500 hover:text-gray-300 text-lg${bigTargets ? ' min-w-[44px] min-h-[44px] -mr-2 flex items-center justify-center' : ''}`}>✕</button>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => onShare('twitter')} className="flex-1 py-2 bg-[#1DA1F2] hover:bg-[#1a8cd8] rounded-lg font-bold text-xs flex items-center justify-center gap-1">
+          <button onClick={() => onShare('twitter')} className={`flex-1 py-2 bg-[#1DA1F2] hover:bg-[#1a8cd8] rounded-lg font-bold text-xs flex items-center justify-center gap-1${bigTargets ? ' min-h-[44px]' : ''}`}>
             {i18n_t('shareToast', 'btnTwitter')}
           </button>
-          <button onClick={() => onShare('linkedin')} className="flex-1 py-2 bg-[#0A66C2] hover:bg-[#094d92] rounded-lg font-bold text-xs flex items-center justify-center gap-1">
+          <button onClick={() => onShare('linkedin')} className={`flex-1 py-2 bg-[#0A66C2] hover:bg-[#094d92] rounded-lg font-bold text-xs flex items-center justify-center gap-1${bigTargets ? ' min-h-[44px]' : ''}`}>
             {i18n_t('shareToast', 'btnLinkedin')}
           </button>
-          <button onClick={() => onShare('reddit')} className="flex-1 py-2 bg-[#FF4500] hover:bg-[#e03d00] rounded-lg font-bold text-xs flex items-center justify-center gap-1">
+          <button onClick={() => onShare('reddit')} className={`flex-1 py-2 bg-[#FF4500] hover:bg-[#e03d00] rounded-lg font-bold text-xs flex items-center justify-center gap-1${bigTargets ? ' min-h-[44px]' : ''}`}>
             {i18n_t('shareToast', 'btnReddit')}
           </button>
-          <button onClick={() => onShare('copy')} className="flex-1 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-bold text-xs flex items-center justify-center gap-1">
+          <button onClick={() => onShare('copy')} className={`flex-1 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-bold text-xs flex items-center justify-center gap-1${bigTargets ? ' min-h-[44px]' : ''}`}>
             {i18n_t('shareToast', 'btnCopy')}
           </button>
         </div>
@@ -4631,7 +4634,7 @@ function LevelUpBanner({ levelName, onComplete }) {
   );
 }
 
-function AchievementPopup({ achievement, onClose }) {
+function AchievementPopup({ achievement, onClose, bigTargets = false }) {
   useEffect(() => { const t = setTimeout(onClose, 3000); return () => clearTimeout(t); }, [onClose]);
   
   // Check if icon is emoji (starts with non-letter) or Lucide name
@@ -4649,13 +4652,20 @@ function AchievementPopup({ achievement, onClose }) {
   const IconComponent = !isEmoji ? (iconMap[achievement.icon] || getIcon('Star')) : null;
   
   return (
-    <div className="fixed top-3 right-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-[#F2F0EA] px-3 py-2 rounded-lg shadow-lg animate-bounce z-50 flex items-center gap-2 text-sm">
+    <div className={bigTargets
+      ? 'fixed top-3 right-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-[#F2F0EA] px-3 py-2 rounded-lg shadow-lg z-50 flex items-center gap-2 text-sm'
+      : 'fixed top-3 right-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-[#F2F0EA] px-3 py-2 rounded-lg shadow-lg animate-bounce z-50 flex items-center gap-2 text-sm'}>
       {isEmoji ? (
         <span className="text-2xl">{achievement.icon}</span>
       ) : (
         <IconComponent size={18} />
       )}
       <div><p className="text-xs opacity-80">{i18n_t('practice', 'achievementBadge')}</p><p className="font-semibold text-sm">{achievement.name}</p></div>
+      {/* mobileOneLayer: a toast that is the one layer on a phone gets a
+          close target a thumb can hit (44×44); everyone else, unchanged. */}
+      {bigTargets && (
+        <button type="button" onClick={onClose} aria-label="Dismiss" className="min-w-[44px] min-h-[44px] -my-2 -mr-3 flex items-center justify-center text-base">✕</button>
+      )}
     </div>
   );
 }
@@ -5572,7 +5582,7 @@ function InterviewStatusStrip({ model, onCell }) {
  * an onClose callback. Auto-dismiss is owned by the parent (useEffect timer).
  * Shows the archetype + the axes that went up, with yellow pulse rings.
  */
-function RadarPopToast({ pop, onClose, onShare }) {
+function RadarPopToast({ pop, onClose, onShare, bigTargets = false }) {
   if (!pop) return null;
   const deltaEntries = Object.entries(pop.deltas || {}).filter(([, v]) => v > 0);
   const deltaText = deltaEntries.map(([s, v]) => {
@@ -5590,10 +5600,12 @@ function RadarPopToast({ pop, onClose, onShare }) {
     >
       <button
         onClick={onClose}
-        className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center text-gray-500 hover:text-gray-200 text-base rounded-full hover:bg-white/5"
+        className={bigTargets
+          ? 'absolute top-0 right-0 w-11 h-11 flex items-center justify-center text-gray-500 hover:text-gray-200 text-base rounded-full hover:bg-white/5'
+          : 'absolute top-2 right-2 w-6 h-6 flex items-center justify-center text-gray-500 hover:text-gray-200 text-base rounded-full hover:bg-white/5'}
         aria-label="Dismiss"
       >×</button>
-      <div className="flex items-center gap-3 mb-2 pr-6">
+      <div className={bigTargets ? 'flex items-center gap-3 mb-2 pr-10' : 'flex items-center gap-3 mb-2 pr-6'}>
         <span className="text-2xl flex-shrink-0">{archetype.emoji}</span>
         <div className="min-w-0">
           <p className="text-sm font-bold text-[#F2F0EA] truncate">{archetype.name}</p>
@@ -5614,12 +5626,12 @@ function RadarPopToast({ pop, onClose, onShare }) {
       <div className="mt-2 flex gap-2">
         <button
           onClick={onClose}
-          className="flex-1 text-xs py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 font-semibold transition"
+          className={`flex-1 text-xs py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 font-semibold transition${bigTargets ? ' min-h-[44px]' : ''}`}
         >Dismiss</button>
         {onShare && (
           <button
             onClick={onShare}
-            className="flex-1 text-xs py-2 rounded-lg bg-yellow-400/90 hover:bg-yellow-400 text-gray-900 font-bold transition"
+            className={`flex-1 text-xs py-2 rounded-lg bg-yellow-400/90 hover:bg-yellow-400 text-gray-900 font-bold transition${bigTargets ? ' min-h-[44px]' : ''}`}
           >Share →</button>
         )}
       </div>
@@ -18367,6 +18379,85 @@ CRITICAL RULES:
     return { ...model, today, dots: weekDots({ today, practiced: practiceDays(challengeAttempts), frozen }) };
   })();
   const streakChipPulse = !!(currentUser && !isGuest && streakCardNow.pulse && !streakCardOpen);
+  // One layer at a time after a solve on phones (src/utils/mobile-one-layer.js,
+  // flag `mobileOneLayer`, ledger "One layer at a time after a solve on
+  // phones"). The walk at 390×844 found five layers open at once after the
+  // first solve. In the `one` arm, on a narrow touch screen only: the ask
+  // (soft email, then intent) is the one layer in the solve moment; the
+  // achievement / level-up / Skillmap / share / streak layers are held until
+  // the next challenge opens, where the first still pending shows alone and
+  // the rest are dropped. `control`, desktop and the flag off: unchanged
+  // (`oneLayerOn` stays false, every `oneLayerOk(...)` is true). These hooks
+  // sit above the `if (showAuth)` / `if (!dbReady) return` early returns
+  // (CLAUDE.md fragile area 1).
+  const [oneLayerOn, setOneLayerOn] = useState(false);
+  const [oneLayerHold, setOneLayerHold] = useState(false);
+  const oneLayerNarrow = () => {
+    try {
+      return oneLayerNarrowTouch({
+        coarse: !!window.matchMedia?.('(pointer: coarse)')?.matches,
+        width: window.innerWidth,
+      });
+    } catch (_) { return false; }
+  };
+  const oneLayerStored = () => {
+    try { return JSON.parse(localStorage.getItem(MOBILE_ONE_LAYER_STORAGE_KEY) || 'null'); } catch (_) { return null; }
+  };
+  // At a correct submit: assign once (mobile_one_layer_assigned), and in the
+  // `one` arm hold tier 3 until the next challenge opens. Called from
+  // submitChallenge before any celebration state is set, so the hold lands in
+  // the same render batch as the layers it holds.
+  const armOneLayerAtSolve = (challengeId) => {
+    const decision = mobileOneLayerDecision({
+      flagOn: ftbFlag('mobileOneLayer'),
+      narrowTouch: oneLayerNarrow(),
+      stored: oneLayerStored(),
+      aid: getAnonId(),
+      atSolve: true,
+    });
+    if (decision.assign) {
+      try { localStorage.setItem(MOBILE_ONE_LAYER_STORAGE_KEY, JSON.stringify({ arm: decision.arm, at: Date.now() })); } catch (_) { /* ignore */ }
+      trackActivationEvent('mobile_one_layer_assigned', { arm: decision.arm, test: MOBILE_ONE_LAYER_TEST_ID, challengeId: challengeId ?? null });
+    }
+    setOneLayerOn(decision.show);
+    if (decision.show) setOneLayerHold(true);
+  };
+  const oneLayerActive = oneLayerOn ? [
+    showSoftEmailCapture && 'soft_email',
+    showIntentAsk && 'intent_ask',
+    showAchievement && 'achievement',
+    showLevelUp && 'level_up',
+    radarPop && 'radar_pop',
+    milestoneShare && 'milestone_share',
+    (streakCardPending || streakCardOpen === 'auto') && 'streak_card',
+  ].filter(Boolean) : [];
+  const oneLayerTop = oneLayerOn
+    ? oneLayerPick({ active: oneLayerActive, hold: oneLayerHold, modalOpen: !!(showProModal || showSignupPrompt) })
+    : null;
+  const oneLayerOk = (id) => !oneLayerOn || oneLayerTop === id;
+  // The next challenge open is the natural pause: release the hold, keep the
+  // first held layer, drop the rest for the session. Also re-reads the arm,
+  // so a person assigned earlier gets the rule from their next solve on.
+  useEffect(() => {
+    if (!currentChallenge) return;
+    const decision = mobileOneLayerDecision({
+      flagOn: ftbFlag('mobileOneLayer'),
+      narrowTouch: oneLayerNarrow(),
+      stored: oneLayerStored(),
+      aid: getAnonId(),
+      atSolve: false,
+    });
+    setOneLayerOn(decision.show);
+    if (!oneLayerHold) return;
+    setOneLayerHold(false);
+    const { drop } = oneLayerRelease(oneLayerActive);
+    if (drop.includes('achievement')) setShowAchievement(null);
+    if (drop.includes('level_up')) setShowLevelUp(null);
+    if (drop.includes('radar_pop')) setRadarPop(null);
+    if (drop.includes('milestone_share')) setMilestoneShare(null);
+    if (drop.includes('streak_card')) setStreakCardPending(false);
+  }, [currentChallenge?.id]);
+
   // The day's first solve sets the card pending; it opens once the moment is
   // clear. The skill-radar toast, the achievement toast and the Pro modal all
   // fire on the same solve, and three things arriving at once read as noise —
@@ -18374,13 +18465,14 @@ CRITICAL RULES:
   useEffect(() => {
     if (!streakCardPending) return undefined;
     if (radarPop || showAchievement || showProModal) return undefined;
+    if (oneLayerOn && oneLayerTop !== 'streak_card') return undefined;
     const t = setTimeout(() => {
       setStreakCardPending(false);
       setStreakCardOpen(prev => prev || 'auto');
       trackActivationEvent('streak_card_opened', { source: 'auto', streak: dailyStreak });
     }, 900);
     return () => clearTimeout(t);
-  }, [streakCardPending, radarPop, showAchievement, showProModal]);
+  }, [streakCardPending, radarPop, showAchievement, showProModal, oneLayerOn, oneLayerTop]);
 
   // "Solve one now" opens ONE question, not the list (founder QA 2026-09-21:
   // the list asked the person to choose again, and the button promised one).
@@ -24648,6 +24740,69 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     if (decision.act) startFirstRunPath('zero', 'brand-new', { skipLesson: true, source: 'first_screen_test' });
   }, [currentUser, showFirstRunStart, showZeroSqlLesson, showIntake, showGoalMeasureOnStart, firstRunLevel]);
 
+  // Run stays on screen on phones (src/utils/mobile-run-bar.js, flag
+  // `mobileRunBar`, ledger "Run stays on screen on phones"). At a challenge
+  // open on a narrow touch screen a person is assigned an arm once
+  // (`mobile_run_bar_assigned`); the `bar` arm pins the challenge's Run /
+  // Submit bar to the bottom of the viewport below `md` and lifts it above
+  // the on-screen keyboard where visualViewport says where that is. These
+  // hooks sit above the `if (showAuth)` / `if (!dbReady) return` early
+  // returns (CLAUDE.md fragile area 1). Nothing here focuses the editor.
+  const [mobileRunBarShown, setMobileRunBarShown] = useState(false);
+  const [runBarKeyboardOffset, setRunBarKeyboardOffset] = useState(0);
+  useEffect(() => {
+    if (!currentChallenge) return;
+    let narrowTouch = false;
+    try {
+      narrowTouch = isNarrowTouch({
+        coarse: !!window.matchMedia?.('(pointer: coarse)')?.matches,
+        width: window.innerWidth,
+      });
+    } catch (_) { narrowTouch = false; }
+    let stored = null;
+    try { stored = JSON.parse(localStorage.getItem(MOBILE_RUN_BAR_STORAGE_KEY) || 'null'); } catch (_) { stored = null; }
+    const decision = mobileRunBarDecision({
+      flagOn: ftbFlag('mobileRunBar'),
+      narrowTouch,
+      stored,
+      aid: getAnonId(),
+    });
+    if (decision.assign) {
+      try { localStorage.setItem(MOBILE_RUN_BAR_STORAGE_KEY, JSON.stringify({ arm: decision.arm, at: Date.now() })); } catch (_) { /* ignore */ }
+      trackActivationEvent('mobile_run_bar_assigned', { arm: decision.arm, test: MOBILE_RUN_BAR_TEST_ID, challengeId: currentChallenge.id });
+    }
+    setMobileRunBarShown(decision.show);
+  }, [currentChallenge?.id]);
+  useEffect(() => {
+    if (!mobileRunBarShown) { setRunBarKeyboardOffset(0); return undefined; }
+    const vv = typeof window !== 'undefined' ? window.visualViewport : null;
+    if (!vv) return undefined; // unsupported: the bar stays at the bottom
+    const update = () => {
+      setRunBarKeyboardOffset(keyboardOffset({
+        innerWidth: window.innerWidth,
+        innerHeight: window.innerHeight,
+        vvHeight: vv.height,
+        vvOffsetTop: vv.offsetTop,
+      }));
+    };
+    update();
+    vv.addEventListener('resize', update);
+    vv.addEventListener('scroll', update);
+    return () => {
+      vv.removeEventListener('resize', update);
+      vv.removeEventListener('scroll', update);
+    };
+  }, [mobileRunBarShown]);
+  // body[data-run-bar="fixed"] while the fixed bar is mounted: input.css
+  // pads the page by the bar's height and lifts the feedback bubble and the
+  // prompt-card slot above it (phone widths only).
+  const mobileRunBarRef = useCallback((node) => {
+    try {
+      if (node) document.body.setAttribute('data-run-bar', 'fixed');
+      else document.body.removeAttribute('data-run-bar');
+    } catch (_) { /* ignore */ }
+  }, []);
+
   // Recompute Expected Output when db finishes loading AFTER a challenge was
   // opened. Otherwise a guest who lands on a challenge while sql.js is still
   // initializing never sees the Expected Output at all (which blanks the
@@ -25500,6 +25655,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
         setWrongAttemptCount(0);
         setStuckAsk(null);
         setShowAiNudge(false);
+        armOneLayerAtSolve(currentChallenge.id);
         addToHistory(challengeQuery, true, `challenge #${currentChallenge.id} ✓`);
         // First-session warm-up momentum: count distinct challenges solved
         // this session (re-solves don't inflate the goal). Fire an event the
@@ -27706,13 +27862,14 @@ RULES:
       {/* Interview-first: the toast does not render for an interview person.
           unlockAchievement still awards, saves and scores it — hide, never
           withhold. */}
-      {showAchievement && !showSoftEmailCapture && !interviewFirstOn('achievement_toast') && <AchievementPopup achievement={showAchievement} onClose={() => setShowAchievement(null)} />}
+      {showAchievement && !showSoftEmailCapture && !interviewFirstOn('achievement_toast') && oneLayerOk('achievement') && <AchievementPopup achievement={showAchievement} onClose={() => setShowAchievement(null)} bigTargets={oneLayerOn} />}
       {showConfetti && <ConfettiAnimation onComplete={() => setShowConfetti(false)} soundEnabled={soundEnabled} />}
       {floatingXP && <FloatingXP key={floatingXP.id} amount={floatingXP.amount} onComplete={() => setFloatingXP(null)} />}
-      {showLevelUp && <LevelUpBanner levelName={showLevelUp} onComplete={() => setShowLevelUp(null)} />}
-      {milestoneShare && (() => {
+      {showLevelUp && oneLayerOk('level_up') && <LevelUpBanner levelName={showLevelUp} onComplete={() => setShowLevelUp(null)} />}
+      {milestoneShare && oneLayerOk('milestone_share') && (() => {
         const content = getShareContent(milestoneShare.type, milestoneShare.data);
         return <MilestoneShareBar
+          bigTargets={oneLayerOn}
           content={content}
           referralUrl={getAppUrl()}
           onShare={(platform) => { shareToplatform(platform, milestoneShare.type, milestoneShare.data); setMilestoneShare(null); }}
@@ -27749,7 +27906,8 @@ RULES:
         tutorLine={showFeedback && !!feedbackChallengeCtxNow()}
         onTutor={openTutorFromFeedback}
       />
-      {radarPop && <RadarPopToast
+      {radarPop && oneLayerOk('radar_pop') && <RadarPopToast
+        bigTargets={oneLayerOn}
         pop={radarPop}
         onClose={() => setRadarPop(null)}
         onShare={async () => {
@@ -27811,7 +27969,7 @@ RULES:
               type="button"
               onClick={() => setStreakCardOpen(null)}
               aria-label={i18n_t('streakCard', 'close')}
-              className="text-sm leading-none px-1"
+              className={`text-sm leading-none px-1${oneLayerOn ? ' min-w-[44px] min-h-[44px] flex items-center justify-center' : ''}`}
               style={{ color: '#8A8E99' }}
             >✕</button>
           </div>
@@ -29315,7 +29473,7 @@ RULES:
       {/* One-question intent ask — after first solve, sequenced behind the
           soft email capture. Every answer (including "just exploring") is
           recorded so segmentation has no silent-dismissal blind spot. */}
-      {showIntentAsk && !showSoftEmailCapture && (
+      {showIntentAsk && !showSoftEmailCapture && oneLayerOk('intent_ask') && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(14,15,19,0.8)' }}>
           <div className="w-full max-w-md p-6" style={{ background: '#16181F', border: '1px solid #2A2E38', borderRadius: '10px' }}>
             <h3 className="text-lg font-semibold mb-1" style={{ color: '#F2F0EA' }}>One quick question</h3>
@@ -29334,7 +29492,7 @@ RULES:
                     setShowIntentAsk(false);
                     applyIntentRouting(key);
                   }}
-                  className="w-full text-left p-3 transition-colors"
+                  className={`w-full text-left p-3 transition-colors${oneLayerOn ? ' min-h-[44px]' : ''}`}
                   style={{ background: '#1F222B', border: '1px solid #2A2E38', borderRadius: '6px', color: '#F2F0EA' }}
                   onMouseEnter={e => { e.currentTarget.style.borderColor = '#8A8E99'; }}
                   onMouseLeave={e => { e.currentTarget.style.borderColor = '#2A2E38'; }}
@@ -29349,7 +29507,7 @@ RULES:
                 trackActivationEvent('intent_captured', { intent: 'exploring', source: 'ask' });
                 setShowIntentAsk(false);
               }}
-              className="w-full text-center text-xs mt-3 underline"
+              className={`w-full text-center text-xs mt-3 underline${oneLayerOn ? ' min-h-[44px]' : ''}`}
               style={{ color: '#8A8E99' }}
             >
               Just exploring
@@ -29357,7 +29515,7 @@ RULES:
           </div>
         </div>
       )}
-      {showSoftEmailCapture && (
+      {showSoftEmailCapture && oneLayerOk('soft_email') && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-3 sm:p-4" onClick={() => { setShowSoftEmailCapture(false); setSoftEmailCaptured(true); }}>
           <div className="bg-gradient-to-br from-gray-900 to-purple-900 rounded-2xl border border-purple-500/50 p-5 sm:p-6 w-full max-w-md overflow-hidden" onClick={e => e.stopPropagation()}>
             <div className="text-center mb-5">
@@ -29424,7 +29582,7 @@ RULES:
 
             <button
               onClick={() => { setShowSoftEmailCapture(false); setSoftEmailCaptured(true); }}
-              className="w-full mt-3 py-2 text-gray-400 hover:text-[#F2F0EA] text-sm transition-all"
+              className={`w-full mt-3 py-2 text-gray-400 hover:text-[#F2F0EA] text-sm transition-all${oneLayerOn ? ' min-h-[44px]' : ''}`}
             >
               Not now — keep playing
             </button>
@@ -40136,12 +40294,42 @@ RULES:
                         Surface + hairline per DESIGN.md (--surface #16181F,
                         --border #2A2E38). Submit keeps the accent because it is
                         a primary CTA, which is one of the five places yellow is
-                        allowed. No new accent surface is introduced. */}
-                    <div className="sticky bottom-0 z-20 flex gap-2 mt-3 border-t border-[#2A2E38] bg-[#16181F] py-3 md:static md:border-0 md:bg-transparent md:py-0">
-                      <button onClick={runChallengeQuery} data-onboarding="run" className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium flex items-center justify-center gap-2">
+                        allowed. No new accent surface is introduced.
+
+                        `mobileRunBar` (2026-11-23): sticky only holds inside
+                        this card, which starts below the fold, so on a phone
+                        Run was still off the first screen and fully under the
+                        keyboard. In the `bar` arm, below `md` only, the bar is
+                        fixed to the viewport (safe-area padded) and lifted
+                        above the keyboard by visualViewport; body[data-run-bar]
+                        pads the page so nothing sits under it. The control arm
+                        keeps the class string below; `md:` and up is the same
+                        static row in both arms.
+
+                        Run and Submit are at least 44 px tall below `md` in
+                        both arms (QA D3, 2026-11-23: they were 40 px). */}
+                    <div
+                      ref={mobileRunBarShown ? mobileRunBarRef : undefined}
+                      data-run-bar-arm={mobileRunBarShown ? 'bar' : undefined}
+                      style={mobileRunBarShown && runBarKeyboardOffset > 0 ? { transform: `translateY(-${runBarKeyboardOffset}px)` } : undefined}
+                      className={mobileRunBarShown
+                        ? 'fixed inset-x-0 bottom-0 z-30 flex flex-wrap gap-2 mt-3 border-t border-[#2A2E38] bg-[#16181F] px-4 pt-3 pb-[max(12px,env(safe-area-inset-bottom))] md:static md:z-20 md:flex-nowrap md:border-0 md:bg-transparent md:px-0 md:py-0'
+                        : 'sticky bottom-0 z-20 flex gap-2 mt-3 border-t border-[#2A2E38] bg-[#16181F] py-3 md:static md:border-0 md:bg-transparent md:py-0'}
+                    >
+                      {mobileRunBarShown && (() => {
+                        const labelKey = runBarLabel({
+                          solvedCount: solvedChallenges.size,
+                          editorEmpty: !challengeQuery.trim(),
+                          starterSql: starterSqlFromHint(challengeStarterHint),
+                        });
+                        return labelKey ? (
+                          <p data-testid="run-bar-label" className="basis-full text-xs text-gray-400 md:hidden">{i18n_t('practice', labelKey)}</p>
+                        ) : null;
+                      })()}
+                      <button onClick={runChallengeQuery} data-onboarding="run" className="flex-1 min-h-[44px] md:min-h-0 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium flex items-center justify-center gap-2">
                         <Play size={16} /> {i18n_t('practice', 'run')}
                       </button>
-                      <button onClick={submitChallenge} data-onboarding="submit" className="flex-1 px-4 py-2 bg-yellow-400 hover:bg-yellow-300 text-[#0E0F13] rounded-lg font-bold flex items-center justify-center gap-2">
+                      <button onClick={submitChallenge} data-onboarding="submit" className="flex-1 min-h-[44px] md:min-h-0 px-4 py-2 bg-yellow-400 hover:bg-yellow-300 text-[#0E0F13] rounded-lg font-bold flex items-center justify-center gap-2">
                         <CheckCircle size={16} /> {i18n_t('practice', 'submit')}
                       </button>
                       {/* Always-visible Help button — was gated by currentUser

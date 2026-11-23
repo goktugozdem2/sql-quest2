@@ -66,6 +66,16 @@ window.FEATURE_FLAGS = {
     // week on, then the founder decides. src/utils/company-ask.js,
     // tests/company-ask.test.js; ledger "one question after the first solve".
     intakeAfterFirstSolve: false,
+    // One layer at a time after a solve on phones (2026-11-23, rank 3 of
+    // docs/plans/mobile-acquisition-2026-11-23.md). When on, an A/B by aid
+    // (arm `one` | `control`, assigned at the first correct submit on a narrow
+    // touch screen, `mobile_one_layer_assigned`). The `one` arm shows the ask,
+    // then holds the achievement / level-up / Skillmap / share / streak
+    // layers until the next challenge opens; 44×44 close targets. Desktop and
+    // `control` unchanged. SHIPPED OFF. src/utils/mobile-one-layer.js,
+    // tests/mobile-one-layer.test.js; ledger "One layer at a time after a
+    // solve on phones".
+    mobileOneLayer: false,
     // Company practice-set match on the Coach (SEO plan P3.21, 2026-09-13):
     // for a named prepTarget.company that has NO interview archetype, how the
     // Skillmap matches what that company's practice set asks, plus the next
@@ -602,6 +612,18 @@ window.FEATURE_FLAGS = {
     // 50/50 after #156 merges"), ahead of the 12-19 date above. The 12-18
     // banner claim is read on the `list` arm and non-test arrivals only.
     companyDirectOpen: true,
+
+    // ── Run stays on screen on phones (rank 1 of the mobile plan, 2026-11-23)
+    // An A/B by aid (mobile_run_bar_v1, murmur-finalised hash), assigned at
+    // the first challenge open on a narrow touch screen and written once as
+    // `mobile_run_bar_assigned {arm}`. The `bar` arm pins the challenge's
+    // Run / Submit bar to the bottom of the viewport below `md` (above the
+    // keyboard where visualViewport is supported); `control` keeps today's
+    // sticky bar. Desktop is untouched in both arms. DARK until the
+    // orchestrator's decision row. src/utils/mobile-run-bar.js; ledger "Run
+    // stays on screen on phones"; metric open_to_first_run, mobile band.
+    // Plan: docs/plans/mobile-acquisition-2026-11-23.md §4.
+    mobileRunBar: false,
 
     // ── The Debug question type (design PR #248, 2026-11-23) ──────────────
     // "An AI assistant wrote this for the task below. It returns the wrong
