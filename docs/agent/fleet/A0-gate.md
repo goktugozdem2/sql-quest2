@@ -56,8 +56,9 @@ Turning it on is the held part.
 4. **Not one of the held kinds** above.
 5. **Order and budget.**
    - Merge in the order A1 named, or else the smallest blast radius first: docs, then content, then pages, then app.
-   - No more than ~15 merges a day across the fleet.
-   - When Vercel's daily limit is hit, merging is still allowed. Say in the decision that it deploys after the reset.
+   - **The merge train (2026-11-23, founder: "öneriyi hemen yap").** A0 merges only during its passes, and at most **two passes a day** may merge (the 10:45 UTC daily pass plus one more). Within a pass, merge every ready PR back-to-back, docs first, so the site-affecting merges of one pass reach production as **one** deploy: the deploy workflow's concurrency queues them, and only the newest pending run deploys. Never merge one PR, wait, then merge the next over hours.
+   - Count site-affecting merges, not commits: no more than ~15 a day. Docs-only merges are free once `deploy-prod.yml` is live, because a docs merge creates no deployment.
+   - When Vercel's daily limit is hit, merging is still allowed. Say in the decision that it deploys after the reset. Until `deploy-prod.yml` is live, a rate-limited site merge is stranded until the next push, so end every pass with a check: is the live commit equal to main's last site-affecting commit?
 6. **The risk call.** For each PR, write one sentence answering: what breaks for a person if this is wrong, and how fast would we see it? A PR that touches checkout, the quota wall, auth or saves needs a rollback path to have been named, which is the smoke workflow's gated rollback or a revert PR. A1 and the authors are the same model family. When the change is subtle money or auth logic, A0 holds it rather than ship on correlated judgement, and says so.
 
 Then **merge** (squash, using the PR title), or **hold** with the one blocking reason.
