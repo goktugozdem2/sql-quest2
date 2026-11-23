@@ -166,6 +166,19 @@ describe('the solutions, run and pinned', () => {
     expect(grades(323, "SELECT login_id, customer_id, login_at FROM logins WHERE strftime('%w', login_at) IN ('6', '7') ORDER BY login_at, login_id")).toBe(false);
   });
 
+  // Q1 content QA, 2026-11-22: the card's example said "37 logins between
+  // 2024-03-01 and 2024-03-31" while one of the 37 is 2024-04-01 21:37. The
+  // example line is shown on the challenge page and the question page, so a
+  // range it states must be the table's own.
+  it('323 — the example states the logins table\'s real count and date range, in both languages', () => {
+    const [{ n, first, last }] = run(323, 'SELECT COUNT(*) AS n, MIN(date(login_at)) AS first, MAX(date(login_at)) AS last FROM logins');
+    for (const input of [byId(323).example.input, byId(323).example_tr.input]) {
+      const dates = input.match(/\d{4}-\d{2}-\d{2}/g);
+      const count = Number(input.replace(/\d{4}-\d{2}-\d{2}/g, '').match(/\d+/)[0]);
+      expect([count, dates], input).toEqual([n, [first, last]]);
+    }
+  });
+
   it('324 — 891 passengers, 714 ages on record, 177 missing', () => {
     const rows = run(324);
     expect(rows).toEqual([
