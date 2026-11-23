@@ -68,6 +68,7 @@ import { classifyErrorPatterns, recordErrorPatterns, describeErrorPatterns, patt
 import { nudgeAllowed, nudgeHeaders, nudgeUsername, personalNudgeLines } from './utils/live-nudge.js';
 import { HIRED_INTENT, isHired, ticketLocked, shouldAskOffer } from './utils/post-hire.js';
 import { gradeTicket, ticketFeedback } from './utils/ticket-grade.js';
+import { isStateGraded, gradeStateChallenge, runStateAttempt } from './utils/state-grade.js';
 import { TICKETS } from './data/tickets.js';
 import { DIALECTS, DIALECT_ROWS } from './utils/dialect-notes.js';
 import { modalLayoutArm, plansFirst } from './utils/modal-layout.js';
@@ -8166,6 +8167,13 @@ function SQLQuest() {
   const [dataError, setDataError] = useState(null);
   
   const [currentChallenge, setCurrentChallenge] = useState(null);
+  // PostgreSQL mode (spike, flag postgresMode, 2026-11-22): the engine the
+  // challenge page runs on and PGlite's state. Hooks sit above the early
+  // returns. Flag off: the toggle never renders and nothing below loads.
+  const postgresModeOn = window.FF?.feature?.('postgresMode') === true;
+  const [sqlEngine, setSqlEngine] = useState('sqlite');
+  const [pgMode, setPgMode] = useState(null); // { phase: loading|ready|unavailable|error, loadMs, verdict, error }
+  const pgBundleRef = useRef(null);
   // i18n view of the active challenge — title/description/hint/example
   // swapped to the user's language when *_<lang> fields exist on the
   // challenge object. Render code reads `displayChallenge`; AI Tutor /
@@ -9814,16 +9822,16 @@ function SQLQuest() {
     }
 
     // Try to pick from target difficulty first
-    let available = challenges.filter(c => !usedIds.has(c.id) && c.difficulty === targetDiff);
+    let available = challenges.filter(c => !isStateGraded(c) && !usedIds.has(c.id) && c.difficulty === targetDiff);
 
     // Fallback: if no target-difficulty questions left, pick from any unused
     if (available.length === 0) {
-      available = challenges.filter(c => !usedIds.has(c.id) && (diff === 'all' || c.difficulty === diff));
+      available = challenges.filter(c => !isStateGraded(c) && !usedIds.has(c.id) && (diff === 'all' || c.difficulty === diff));
     }
 
     // Final fallback: allow repeats
     if (available.length === 0) {
-      const all = challenges.filter(c => diff === 'all' || c.difficulty === diff);
+      const all = challenges.filter(c => !isStateGraded(c) && (diff === 'all' || c.difficulty === diff));
       if (all.length > 0) {
         available = [all[Math.floor(Math.random() * all.length)]];
       } else return;
@@ -22918,6 +22926,21 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     challengeTablePlan(challenge, publicDatasets).forEach(step => loadDataset(database, step.dataset, step.tables));
   };
 
+  // State-graded challenges (grade:'state', DML/DDL, src/utils/state-grade.js)
+  // run every attempt and every reference on a FRESH copy of the challenge's
+  // tables — the ticketDbFor rule. The shared database is never handed to the
+  // grader; the grader closes every copy it opens. tests/state-grade.test.js
+  // pins the factory and every call site.
+  const stateChallengeDb = (challenge) => {
+    const SQL = sqlCtorRef.current;
+    if (!SQL) throw new Error('The database is still loading. Try again in a moment.');
+    const fresh = new SQL.Database();
+    loadChallengeDatasets(fresh, challenge);
+    return fresh;
+  };
+  const stateLoadedTables = (challenge) => challengeTablePlan(challenge, publicDatasets)
+    .flatMap(step => step.tables || Object.keys(publicDatasets[step.dataset]?.tables || {}));
+
   const selectDataset = (key) => {
     setCurrentDataset(key);
     if (db) {
@@ -24145,6 +24168,12 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
       
       // Calculate expected result
       try {
+        if (isStateGraded(challenge)) {
+          // A state challenge's expected output is the table its reference leaves behind.
+          const out = runStateAttempt({ makeDb: () => stateChallengeDb(challenge), challenge, sql: challenge.solution, loadedTables: stateLoadedTables(challenge) });
+          setChallengeExpected(out.check ? { columns: out.check.columns, rows: out.check.rows } : { columns: [], rows: [] });
+          return;
+        }
         const result = db.exec(challenge.solution);
         if (result.length > 0) {
           setChallengeExpected({ columns: result[0].columns, rows: result[0].values });
@@ -24517,6 +24546,11 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     if (!db || !currentChallenge?.dataset || !currentChallenge?.solution) return;
     if (challengeExpected.rows.length > 0) return; // already computed
     try {
+      if (isStateGraded(currentChallenge)) {
+        const out = runStateAttempt({ makeDb: () => stateChallengeDb(currentChallenge), challenge: currentChallenge, sql: currentChallenge.solution, loadedTables: stateLoadedTables(currentChallenge) });
+        if (out.check && out.check.rows.length > 0) setChallengeExpected({ columns: out.check.columns, rows: out.check.rows });
+        return;
+      }
       loadChallengeDatasets(db, currentChallenge);
       const result = db.exec(currentChallenge.solution);
       if (result.length > 0) {
@@ -25092,6 +25126,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
   }, [currentUser, dbReady, isSessionLoading]);
 
   const runChallengeQuery = () => {
+    if (pgActive) { runChallengeQueryPg(false); return; }
     if (!db) return;
     // An empty editor with a starter shown (a first-time opener sees "Start
     // here: SELECT * FROM t LIMIT 5;" as the placeholder) used to make Run do
@@ -25115,6 +25150,20 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
     // Real user feedback from a 1:1 SQL teaching session.
     const startTime = performance.now();
     try {
+      if (isStateGraded(currentChallenge)) {
+        // Run on a fresh copy: show the person's last SELECT if they wrote
+        // one, else what the table holds after their statements.
+        const out = runStateAttempt({ makeDb: () => stateChallengeDb(currentChallenge), challenge: currentChallenge, sql, loadedTables: stateLoadedTables(currentChallenge) });
+        if (out.refused) throw new Error(out.refused.message);
+        if (out.error) throw new Error(out.error);
+        const shown = out.last && out.last.columns.length ? out.last : out.check;
+        setChallengeResult({ columns: shown.columns, rows: shown.rows, error: null });
+        setChallengeRunAt(Date.now());
+        setChallengeRunMs(Math.round(performance.now() - startTime));
+        setChallengeStatus(null);
+        addToHistory(sql, true, 'challenge');
+        return;
+      }
       const result = db.exec(sql);
       const duration = Math.round(performance.now() - startTime);
       if (result.length > 0) {
@@ -25135,7 +25184,66 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
     }
   };
 
+  // ── PostgreSQL mode (spike) ─────────────────────────────────────────────
+  // /pg-mode.js (src/pg-mode/entry.js) is injected only when a person picks
+  // PostgreSQL; it fetches PGlite from jsDelivr with SRI (src/utils/pg-cdn.js)
+  // and keeps one instance per challenge — never the shared `db`. The verdict
+  // is shown, never recorded: no attempt, solve, XP or quota moves.
+  const loadPgBundle = () => {
+    if (window.SQLQuestPg) return Promise.resolve(window.SQLQuestPg);
+    if (pgBundleRef.current) return pgBundleRef.current;
+    pgBundleRef.current = new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = '/pg-mode.js';
+      s.async = true;
+      s.onload = () => (window.SQLQuestPg ? resolve(window.SQLQuestPg) : reject(new Error('engine missing')));
+      s.onerror = () => { pgBundleRef.current = null; reject(new Error('engine did not load')); };
+      document.head.appendChild(s);
+    });
+    return pgBundleRef.current;
+  };
+  const pickSqlEngine = async (engine) => {
+    setSqlEngine(engine);
+    if (engine !== 'postgres' || !currentChallenge) { setPgMode(null); return; }
+    const forId = currentChallenge.id;
+    setPgMode({ phase: 'loading' });
+    try {
+      const pgApi = await loadPgBundle();
+      if (!pgApi.available(currentChallenge)) { setPgMode({ phase: 'unavailable', forId }); return; }
+      const t0 = performance.now();
+      const warm = await pgApi.run(currentChallenge, 'SELECT 1');
+      if (warm.error) throw new Error(warm.error);
+      setPgMode({ phase: 'ready', forId, loadMs: Math.round(performance.now() - t0) });
+    } catch (err) {
+      setPgMode({ phase: 'error', forId, error: err.message });
+    }
+  };
+  // A new challenge on PostgreSQL gets its own instance (and its own check
+  // against the allow-list).
+  useEffect(() => {
+    if (postgresModeOn && sqlEngine === 'postgres' && currentChallenge && pgMode?.forId !== currentChallenge.id) pickSqlEngine('postgres');
+  }, [currentChallenge?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  const pgActive = postgresModeOn && sqlEngine === 'postgres' && pgMode?.phase === 'ready' && pgMode.forId === currentChallenge?.id;
+  const runChallengeQueryPg = async (submit) => {
+    if (!pgActive || !window.SQLQuestPg || !challengeQuery.trim()) return;
+    markChallengeFirstRun(submit ? 'submit' : 'run');
+    setChallengeStatus(null);
+    if (!submit) {
+      const r = await window.SQLQuestPg.run(currentChallenge, challengeQuery);
+      setChallengeResult({ columns: r.columns, rows: r.rows, error: r.error });
+      setChallengeRunAt(Date.now());
+      setChallengeRunMs(r.ms);
+      setPgMode(p => ({ ...p, verdict: null, error: null }));
+      return;
+    }
+    const r = await window.SQLQuestPg.submit(currentChallenge, challengeQuery);
+    if (r.user) setChallengeResult({ columns: r.user.columns, rows: r.user.rows, error: r.user.error });
+    setChallengeRunAt(Date.now());
+    setPgMode(p => ({ ...p, verdict: r.error ? 'error' : r.correct ? 'correct' : 'wrong', error: r.error || null }));
+  };
+
   const submitChallenge = () => {
+    if (pgActive) { runChallengeQueryPg(true); return; }
     // Submit on the empty editor of a first-time opener runs the starter the
     // way Run does — shown, not graded (a SELECT * would be marked wrong
     // before the person has written a line). 2026-11-22.
@@ -25151,19 +25259,38 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
       // and returns [], and a perfectly correct answer is graded wrong 100% of
       // the time. Each side gets a freshly loaded dataset instead, so both are
       // measured from the same starting state.
-      const mutates = !!currentChallenge.mutates && !!currentChallenge.dataset;
-      if (mutates) loadChallengeDatasets(db, currentChallenge);
-      const userResult = db.exec(challengeQuery);
-      const userValues = userResult.length ? userResult[0].values : [];
+      // State-graded (DML/DDL, 2026-11-22): both sides run on fresh copies
+      // and are compared on what the table holds afterwards (the challenge's
+      // `check`), never on the shared database. A refused statement or one
+      // that errors goes down the error path, like a query that never parsed.
+      let userResult, expectedResultData, isSuccess;
+      let stateOut = null;
+      if (isStateGraded(currentChallenge)) {
+        stateOut = gradeStateChallenge({ makeDb: () => stateChallengeDb(currentChallenge), challenge: currentChallenge, sql: challengeQuery, compare: resultsMatch, loadedTables: stateLoadedTables(currentChallenge) });
+        if (stateOut.refused || stateOut.error) {
+          const stateErr = new Error(stateOut.error || 'This statement is not allowed here.');
+          stateErr.stateDiagnosis = stateOut.diagnosis || null;
+          throw stateErr;
+        }
+        const asExec = st => (st ? [{ columns: st.columns, values: st.rows }] : []);
+        userResult = asExec(stateOut.user.check);
+        expectedResultData = asExec(stateOut.expected.check);
+        isSuccess = !!stateOut.passed;
+      } else {
+        const mutates = !!currentChallenge.mutates && !!currentChallenge.dataset;
+        if (mutates) loadChallengeDatasets(db, currentChallenge);
+        userResult = db.exec(challengeQuery);
+        const userValues = userResult.length ? userResult[0].values : [];
 
-      if (mutates) loadChallengeDatasets(db, currentChallenge);
-      const expectedResultData = db.exec(currentChallenge.solution);
-      const expectedValues = expectedResultData.length ? expectedResultData[0].values : [];
+        if (mutates) loadChallengeDatasets(db, currentChallenge);
+        expectedResultData = db.exec(currentChallenge.solution);
+        const expectedValues = expectedResultData.length ? expectedResultData[0].values : [];
 
-      const isSuccess = resultsMatch(
-        userValues, expectedValues, currentChallenge.solution,
-        expectedResultData.length ? expectedResultData[0].columns : []
-      );
+        isSuccess = resultsMatch(
+          userValues, expectedValues, currentChallenge.solution,
+          expectedResultData.length ? expectedResultData[0].columns : []
+        );
+      }
       const isFirstTry = !solvedChallenges.has(currentChallenge.id);
       
       // Track this attempt. `topics` fans credit across every skill the
@@ -25577,7 +25704,9 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
             : { columns: [], rows: [] };
           // The challenge's own tags go in, so a window challenge is read as
           // one (founder QA 2026-09-19, item 3).
-          liveDiagnosis = diagnoseResult(userShape, expectedShape, null, {
+          // A state challenge speaks about the table ("ended up with N rows,
+          // expected M"), never in SELECT-diff wording.
+          liveDiagnosis = stateOut ? stateOut.diagnosis : diagnoseResult(userShape, expectedShape, null, {
             topics: [...(currentChallenge.skills || []), currentChallenge.category].filter(Boolean),
             query: challengeQuery,
             solution: currentChallenge.solution,
@@ -25702,7 +25831,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
       // Surface the SQL error through the diagnostic layer so users get
       // translated, actionable guidance instead of raw SQLite error text.
       try {
-        const errDiagnosis = diagnoseResult(null, null, err.message);
+        const errDiagnosis = (err && err.stateDiagnosis) || diagnoseResult(null, null, err.message);
         setChallengeDiagnosis(errDiagnosis);
         setDiagnosisCollapsed(false); // expand fresh diagnosis so user sees it
         // Error patterns (P1): a query that did not run is a habit too.
@@ -39690,6 +39819,38 @@ RULES:
                     {deepLinkSwapNote && currentChallenge && currentChallenge.id === deepLinkSwapNote.toId && (
                       <div className="mb-3 p-2 rounded-lg" style={{ background: 'rgba(124,58,237,.08)', border: '1px solid rgba(124,58,237,.3)' }} data-testid="deeplink-swap-note">
                         <p className="text-sm" style={{ color: '#E2E8F0' }}>“{deepLinkSwapNote.fromTitle}” is part of Pro. This is a free Hard question of the same kind — a good first one.</p>
+                      </div>
+                    )}
+
+                    {postgresModeOn && (
+                      <div className="mb-2" data-testid="sql-engine-toggle">
+                        <div className="flex items-center gap-2 flex-wrap text-xs">
+                          <span className="text-gray-400">Engine</span>
+                          <div role="radiogroup" aria-label="SQL engine" className="inline-flex rounded-lg border border-[#2A2E38] overflow-hidden">
+                            {[['sqlite', 'SQLite'], ['postgres', 'PostgreSQL']].map(([k, label]) => (
+                              <button key={k} type="button" role="radio" aria-checked={sqlEngine === k} data-engine={k}
+                                onClick={() => pickSqlEngine(k)}
+                                className={`px-3 py-1 ${sqlEngine === k ? 'bg-[#2A2E38] text-white' : 'text-gray-400 hover:text-white'}`}>{label}</button>
+                            ))}
+                          </div>
+                          {sqlEngine === 'postgres' && pgMode && (
+                            <span data-testid="pg-status" data-phase={pgMode.phase}
+                              className={pgMode.phase === 'ready' ? 'text-green-400' : pgMode.phase === 'error' ? 'text-amber-400' : 'text-gray-400'}>
+                              {pgMode.phase === 'loading' && 'Loading PostgreSQL (about 5 MB, once)…'}
+                              {pgMode.phase === 'ready' && `PostgreSQL 18 ready · ${pgMode.loadMs} ms`}
+                              {pgMode.phase === 'unavailable' && 'PostgreSQL mode not available for this one yet'}
+                              {pgMode.phase === 'error' && `PostgreSQL did not load: ${pgMode.error}`}
+                            </span>
+                          )}
+                        </div>
+                        {pgActive && pgMode.verdict && (
+                          <p data-testid="pg-verdict" data-verdict={pgMode.verdict}
+                            className={`mt-2 text-sm ${pgMode.verdict === 'correct' ? 'text-green-400' : pgMode.verdict === 'wrong' ? 'text-red-400' : 'text-amber-400'}`}>
+                            {pgMode.verdict === 'correct' && 'Correct on PostgreSQL. Practice mode: not recorded as a solve.'}
+                            {pgMode.verdict === 'wrong' && 'Not the expected rows on PostgreSQL.'}
+                            {pgMode.verdict === 'error' && `PostgreSQL error: ${pgMode.error}`}
+                          </p>
+                        )}
                       </div>
                     )}
 

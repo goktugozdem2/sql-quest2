@@ -63,6 +63,10 @@ export const SNIPPET_PAGES = [
   // 2026-11-22: "rollup interview questions" — 657 impressions at 8.9, zero
   // clicks, on a question page that does not answer it. The new page that does.
   { src: 'src/sql-rollup-interview-questions.html', built: 'public/sql-rollup-interview-questions/index.html' },
+  // 2026-11-22, the G1 GEO read: no page answered "2-week SQL interview prep
+  // plan" or "timed SQL mock interview online" (panel prompts #13 and #11).
+  { src: 'src/sql-interview-prep-plan.html', built: 'public/sql-interview-prep-plan/index.html' },
+  { src: 'src/sql-mock-interview.html', built: 'public/sql-mock-interview/index.html' },
 ];
 
 // "228 free", "300+ free", "(18 Free)", "first 10 solves", "10 free challenge
