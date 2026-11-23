@@ -24,6 +24,7 @@ const TOPIC = [
   [/case-when/, ['/challenges/case-when/', 'CASE WHEN']],
   [/null/, ['/challenges/null-handling/', 'NULL handling']],
   [/capital-one/, ['/capital-one-sql-interview/', 'Capital One']],
+  [/revolut/, ['/revolut-sql-interview/', 'Revolut']],
   [/fraud/, ['/fraud-analytics-sql/', 'fraud analytics']],
 ];
 

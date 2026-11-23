@@ -243,6 +243,16 @@ window.FEATURE_FLAGS = {
     // asked, measured and planned before the first solve".
     goalMeasure: false,
 
+    // ── The goal-note date ask (2026-11-22) ──────────────────────────────
+    // The goal-note email's `goal=interview` answer, with no interview date
+    // on record, gets one inline, skippable line after the goal is recorded:
+    // "When is it?" (a date picker). It writes prepTarget.date through the
+    // intake date's own writer. Never a modal, never while the intake shows.
+    // Events goal_note_date_ask_shown / goal_note_date_set {daysOut} /
+    // goal_note_date_skipped, each with `m` (the email's mode); metric
+    // `goal_note_new`. Pure half src/utils/goal-note-date-ask.js. DARK.
+    goalNoteDateAsk: false,
+
     // ── The quarterly plan (2026-09-14) ──────────────────────────────────
     // $49 every 3 months, between monthly and annual. The founder's call:
     // three packages, 1 month / 3 months / 1 year. Annual stays the
@@ -451,6 +461,21 @@ window.FEATURE_FLAGS = {
     // The new `row_set` diagnosis kind (right count, wrong rows) is live
     // either way — it is a truer report, not a different surface.
     diagnosisHints: true,
+    // Feedback capture points 2-4 (E2, 2026-11-22; src/utils/feedback-prompts.js).
+    // One question each, skippable, one prompt a session at most, never in a
+    // mock, written to the existing `feedback` table (context.kind/trigger).
+    // Ledger: "the reasons are asked where they happen"; metric `feedback_capture`.
+    // exitReasonAsk sits on the paywall: it shows only AFTER the Pro modal or
+    // quota wall is closed with no plan click, once a day. A0 turns it on only
+    // after A1 confirms it never shows before/over the plans and changes no
+    // price or gate. stuckAsk and day2Ask are not money surfaces.
+    // ON 2026-11-23 (A0, orchestrator-decisions 2026-11-22): exitReasonAsk
+    // and day2Ask. stuckAsk waits until 2026-12-20 (it would move
+    // open_to_first_run under #99/#101/companyDirectOpen). Reverse rules in
+    // the ledger entries "the reasons are asked where they happen".
+    exitReasonAsk: true,
+    stuckAsk: false,
+    day2Ask: true,
     // The first screen test (2026-09-23, src/utils/first-screen.js): half of
     // first-run visitors land in challenge 91's editor instead of the
     // four-question placement quiz (42% of first visitors never opened a
@@ -545,6 +570,20 @@ window.FEATURE_FLAGS = {
     // billing_issue_shown / billing_issue_clicked; ledger "the day-7 charge
     // gets a self-serve fix", metric failed_charge_recovery.
     billingIssueLine: true,
+
+    // ── A company-page arrival opens question 1 (B5, 2026-11-22) ──────────
+    // An A/B by aid (company_direct_v1, murmur-finalised hash): a person with
+    // zero solves who arrives through `/app/?company=X` (no ?challenge=, no
+    // ?interview=) lands in the question the company banner would open, in
+    // the `direct` arm; the `list` arm keeps today's list + banner. Nothing
+    // is asked, gated or priced. DARK: flip no earlier than 2026-12-19 — the
+    // banner's own claim reads 12-18 on the same arrivals ("a company
+    // arrival gets a first question to press"). src/utils/company-direct.js;
+    // ledger "a company arrival opens question 1"; metric company_direct_split.
+    // ON 2026-11-23 at 50/50 (A0, orchestrator-decisions 2026-11-22: "ON at
+    // 50/50 after #156 merges"), ahead of the 12-19 date above. The 12-18
+    // banner claim is read on the `list` arm and non-test arrivals only.
+    companyDirectOpen: true,
   },
 };
 

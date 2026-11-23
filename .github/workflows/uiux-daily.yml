@@ -1,0 +1,104 @@
+# The daily UI/UX audit (A4, docs/agent/fleet/A4-uiux.md). Founder's order,
+# 2026-11-22: UI/UX checks on Android, iPhone and desktop, in Chrome and
+# Safari, every day, and an agent that fixes what they find.
+#
+# Every sitemap page and the 13 app screens, on eight browser × device rows
+# (scripts/smoke/uiux-checks.mjs DEVICE_MATRIX: Chrome 1366/1920, Safari 1440,
+# iPhone SE and 15 Pro on WebKit, Pixel 7 and Galaxy S9+ on Chromium, iPad
+# Mini on WebKit), dark and light, checks U1–U18, against production.
+# Engine emulations, not devices: WebKit is Safari's engine, Chromium is
+# Chrome's. iOS Safari's own toolbar and keyboard are not modelled.
+#
+# Hermetic: every Supabase request, every edge function (the AI tutor
+# included), /api/ and analytics are answered inside the browser — the same
+# stubs as SMOKE_HERMETIC=1 — so a run writes no production row, sends no
+# event and makes no billed tutor call. The harness refuses a non-local base
+# without UIUX_HERMETIC=1.
+#
+# Advisory: it gates nothing, rolls nothing back and fails no other job. Its
+# output is ONE issue labelled `uiux-audit` (opened or updated with the
+# critical and major findings new since the last run, closed on a clean run)
+# and a 14-day artifact. A job failure comments on that issue.
+# Guard: tests/uiux-daily-workflow.test.js.
+name: UI/UX daily audit
+
+on:
+  schedule:
+    - cron: '40 5 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: uiux-daily
+  cancel-in-progress: false
+
+env:
+  UIUX_URL: https://sqlquest.app
+  UIUX_HERMETIC: '1'
+  SMOKE_HERMETIC: '1'
+  # Pinned: the harness's device descriptors are this version's.
+  PLAYWRIGHT_VERSION: 1.63.0
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      - name: Install Playwright and both engines (Chromium, WebKit)
+        run: |
+          npm i --no-save --no-audit --no-fund "playwright@$PLAYWRIGHT_VERSION"
+          npx playwright install --with-deps chromium webkit
+
+      - name: Restore the last run's findings
+        uses: actions/cache/restore@v4
+        with:
+          path: uiux-last
+          key: uiux-last-${{ github.run_id }}
+          restore-keys: uiux-last-
+
+      - name: Audit production (hermetic)
+        run: >
+          node scripts/smoke/uiux-audit.mjs --base "$UIUX_URL" --matrix devices
+          --out uiux-out --concurrency 6 --repo-report
+
+      - name: Upload the report and screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: uiux-audit-${{ github.run_id }}
+          path: uiux-out
+          retention-days: 14
+          if-no-files-found: ignore
+
+      - name: Open, update or close the uiux-audit issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: >
+          node scripts/smoke/uiux-issue.mjs --findings uiux-out/findings.json
+          --previous uiux-last/findings.json --run-url "$RUN_URL"
+
+      - name: Keep these findings for tomorrow's comparison
+        run: mkdir -p uiux-last && cp uiux-out/findings.json uiux-last/findings.json
+
+      - uses: actions/cache/save@v4
+        with:
+          path: uiux-last
+          key: uiux-last-${{ github.run_id }}
+
+      - name: Report a job failure on the issue
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: node scripts/smoke/uiux-issue.mjs --failure --run-url "$RUN_URL"

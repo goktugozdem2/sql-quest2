@@ -27,6 +27,312 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### a founder-led live mock — would people pay for it? (asked by hand)
+
+- **Claimed** 2026-11-22 · **Shipped** as 3 Gmail drafts, written by E1 at
+  the founder's request ("premium mock taslaklarını ekle"). They count only
+  once the founder sends them; **the clock starts at the send**. · **Read**
+  14 days after the send.
+- **Change** No product change and no price. One question, by hand, to three
+  engaged interview-intent people:
+  - a paying subscriber who uses the mocks;
+  - a free user who has sat a mock more than once;
+  - a free user with a fintech target who reached the quota.
+
+  The question: would a 45-minute live mock with the founder (the company's
+  format, interviewer follow-ups, written notes) be worth paying for, and
+  roughly what would feel fair? The recipients and draft ids are in the
+  laptop's E1 log, not in the repo.
+- **Why** `docs/reads/demand-2026-11-22.md`: the market pays $99–279 for a
+  human mock session; SQL Quest has nothing above $99 a year. It is the
+  only new offer that could add revenue inside the O2 window, and it needs no
+  build.
+- **Metric** a hand count from the founder's inbox: replies, "yes" answers,
+  and the price each "yes" names. It is not in `metrics.md`, because it is
+  read once, by hand, at n = 3. The verdict is read by hand from that count,
+  not marked UNDEFINED for a missing metric.
+- **Baseline** 0 asked.
+- **Target** ≥ 2 replies, and ≥ 1 "yes" at a named price of $49 or more.
+- **Falsification, stated in advance:** 0 "yes" answers from the people who
+  reply, or only "yes" with no price or a price under $30, means a
+  premium session is not worth building into the product yet. Stop. Any
+  price is the founder's decision either way.
+
+### goal-note for new sign-ups: the goal asked by the founder, a day after joining (E2)
+
+- **Claimed** 2026-11-22 · **Shipped** dark: the `mode=new` path of
+  `goal-note` is built and undeployed, unscheduled; the app's date ask is
+  behind `goalNoteDateAsk` (off). **Read** 28 days after the founder's first
+  `mode=new` send.
+- **Change** `goal-note?mode=new`: to each registrant 24 to 72 hours after
+  sign-up (`users.data.createdAt`) with an email, not internal, not opted out,
+  no goal on record, never mailed `goal_note` in either mode, no campaign in
+  48 hours. Sent at 09:xx to 10:xx in the person's own zone (14:xx UTC when no
+  zone is known), cap 20 a run. Founder in the subject, one fact (company page
+  or solve count), one question, three one-click answers
+  (`/app/?src=goal_note&goal=…&m=new`), the reply line for an interview, no
+  price, no sequence. App: after a `goal=interview` answer with no date, one
+  inline "When is it?" into `prepTarget.date` (flag `goalNoteDateAsk`).
+- **Metric** `goal_note_new` (metrics.md, defined in this PR): answer rate =
+  people with `intent_captured {src:'goal_note', m:'new'}` / people sent.
+- **Baseline** from the goal-capture plan (2026-09-17): modal → plan click was
+  **9.3%** among people who answered "interview" and **0 of 81** among people
+  with no answer. No answer-rate baseline exists for this channel; the first
+  read sets it.
+- **Target** answer rate **≥ 15%** of sends.
+- **Falsification** (written before the data) under **8%** after **50 sends**
+  → stop the mode (remove its cron line); the backlog run is unaffected.
+- **Confounds** the backlog run shares the template; split every read on
+  `meta->>'mode'`. The date ask flips separately; read date-set only from its
+  own flip date.
+### the reasons are asked where they happen: exit_reason (`exitReasonAsk`) — **OPEN**
+
+- **Flipped ON 2026-11-23** by A0 in its own PR, applying orchestrator-decisions 2026-11-22. Read 2026-12-21 (28 days). **Reverse rule (copied from the decision):** plan clicks per modal shown fall by more than 20% relative over 14 days against the 14 days before → OFF the same day. The falsification below still applies.
+
+- **Claimed** 2026-11-22 (E2) · **Shipped** dark; flips from the flag queue
+  after A1 confirms the paywall conditions below · **Read** 28 days after
+  the flip.
+- **Change** after the Pro modal or the quota wall is CLOSED with no plan
+  click, one card above the 💬 button asks "What held you back?" with five
+  taps (Too expensive · Not ready yet · Want more free practice · Not what I
+  need · Other + one line). Once a local day, one prompt a session, never
+  before the first solve, never in a mock, never rendered while the modal is
+  open. Writes to `feedback` (`context.kind='exit_reason'`).
+- **Metric** `feedback_capture`, kind `exit_reason`.
+- **Baseline** 0 — no reason for a closed modal has ever been recorded.
+- **Target** answered ÷ shown ≥ 15% and ≥ 10 reasons in the 28 days.
+- **Falsification** (written before the data) answered ÷ shown under 5%, or
+  `modal_click_rate` in the 28 days more than 20% below the 28 days before
+  the flip → turn it off; the prompt costs more than it tells.
+- **Never** names a price, changes a price, a plan or a gate.
+
+### the reasons are asked where they happen: stuck (`stuckAsk`) — **OPEN**
+
+- **Claimed** 2026-11-22 (E2) · **Shipped** dark · **Read** 28 days after
+  the flip.
+- **Change** a challenge open 3 minutes with no run, or the third wrong
+  submit, shows one line "What's unclear here?" (optional) on the challenge
+  page. Once per challenge, one prompt a session, never in a mock; the only
+  ask allowed before the first solve. The wrong-submit trigger sits inside
+  the existing third-try card (its `challenge_stuck_verdict` series is
+  unchanged).
+- **Metric** `feedback_capture`, kind `stuck`, split by trigger.
+- **Baseline** 0 typed reasons from the challenge page (the verdict taps are
+  a separate series).
+- **Target** answered ÷ shown ≥ 8% and ≥ 10 typed lines in the 28 days.
+- **Falsification** answered ÷ shown under 3% → turn it off; or
+  `open_to_first_run` more than 20% below its prior 28 days → turn it off
+  (the card is in the way of the run).
+
+### the reasons are asked where they happen: day2 (`day2Ask`) — **OPEN**
+
+- **Flipped ON 2026-11-23** by A0 in its own PR, applying orchestrator-decisions 2026-11-22. Read 2026-12-21 (28 days). **Reverse rule (copied from the decision):** `second_session_7d` or day-3 return drops more than 3 points over 14 days → OFF. The falsification below still applies.
+
+- **Claimed** 2026-11-22 (E2) · **Shipped** dark · **Read** 28 days after
+  the flip.
+- **Change** at the second session's first screen (a session = more than an
+  hour away, the `second_session_7d` gap), one card asks "One thing that
+  would make SQL Quest better for you?". Once ever, at least one solve,
+  nothing else open.
+- **Metric** `feedback_capture`, kind `day2`.
+- **Baseline** 0.
+- **Target** answered ÷ shown ≥ 10% and ≥ 10 lines in the 28 days.
+- **Falsification** answered ÷ shown under 3%, or solves in the second
+  session per person shown more than 20% below the 28 days before → off.
+### a company arrival opens question 1 (`companyDirectOpen`, A/B)
+
+- **Flipped ON at 50/50 on 2026-11-23** by A0 in its own PR, applying orchestrator-decisions 2026-11-22 ("ON at 50/50 after #156 merges"), which overrides the 12-19 date below. **Reverse rule:** the entry's own stop rule (early harm check at 60 per arm; HIT / FLAT / MISS at 120 per arm; UNREADABLE by 2027-02-27). **Confound this creates:** the company-banner claim (read 12-18) shares these arrivals. Read that claim on the `list` arm and on arrivals outside the test (people with solves) only; the `list` arm keeps the banner byte for byte. The pre-flip company-door `first_solve_10m` baseline is owed by the laptop, from data before 2026-11-23.
+
+- **Claimed** 2026-11-22 · **Shipped** dark (flag `companyDirectOpen: false`); A0 may flip it no earlier than **2026-12-19** (flag-queue row 16) · **Read** 2027-01-30, or at the minimum n if that comes later (hard stop 2027-02-27).
+- **Change** an A/B by aid (`company_direct_v1`, murmur-finalised hash, independent of the first-screen, company-ask, quota-wall-inline and modal-layout arms). A person with **zero solves** who arrives through `/app/?company=X` with no `?challenge=` or `?interview=` (the hero of 33 of 34 company pages) gets one of two arms. `direct`: they land in the question the company banner's button would open (`companyBannerNext()`: same locks, same `openChallenge`, `openedFrom: 'company_direct'`). `list`: today's list and banner, unchanged. The arm is assigned once (`company_direct_assigned {testId, arm, company, nextId}`). Nothing is asked, gated or priced. src/utils/company-direct.js; tests/company-direct.test.js.
+- **Why** (docs/reads/onboarding-walk-2026-11-22.md): of five doors walked at 375 and 1366, the general company door is the only one with two presses before the editor. The hero promises "Solve <Company> question 1 now: <title>". The app shows a list and asks for the same promise a second time, at the fold on a phone, under ~16 lines of text. Company arrivals are the best money door (2.3% trial-or-paid per arrival). 63 of 149 company search arrivals opened nothing (35 days to 11-20).
+- **Metric** `company_direct_split` (metrics.md): `first_solve_10m` measured from assignment, by arm. Secondary: first run within 10 minutes. `open_to_first_run` is **not** the read here: the direct arm opens the challenge for everyone, so its denominator moves with the arm.
+- **Baseline** the `list` arm, run alongside (concurrent control). The pre-flip company-door `first_solve_10m` is a laptop read, to be filled in at the flip. This cloud session has no production data and states no number for it.
+- **Target** `direct` ≥ `list` + 8 points on first_solve_10m, at ≥ 120 assigned people per arm (bots and crawler window sizes out).
+- **Guardrails** (both arms):
+  - 3 solves within 24 h of assignment: `direct` must not trail `list` by more than 5 points.
+  - plan clicks and trial-or-paid within 14 days: read the counts. A `direct` arm with 0 against ≥ 4 for `list` holds the ship.
+- **Stop rule, written before the data:**
+  - **Early harm check at 60 per arm:** `direct` trails `list` by ≥ 10 points on first_solve_10m → flag off the same day; MISS.
+  - **At 120 per arm:**
+    - `direct` ≥ `list` + 8 → HIT. Ship `direct` as the default and remove the `list` branch.
+    - within ± 8 → FLAT. Flag off and delete the branch (the banner claim stands).
+    - `direct` < `list` − 3 → MISS. Flag off.
+  - Fewer than 120 per arm by 2027-02-27 → UNREADABLE. Flag off; do not extend a second time.
+- **Confounds** the banner claim ("a company arrival gets a first question to press", read 12-18) sits on the same arrivals, which is why the flip waits until 12-19. M-02's hero copy (read 12-20) is upstream of assignment and lands in both arms equally. `quotaWallInline` and `modalLayout` are independent arms. #99's first screen never shows on a `?company=` arrival.
+### /for-teams/ is published — the seat door's 30-day test starts
+
+- **Claimed** 2026-11-22 · **Shipped** on merge (founder's go in chat: "evet, /for-teams/ yayına al") · **Read** 2026-12-22.
+- **Change** `/for-teams/` goes from noindex to `index, follow`, enters the sitemap, and is linked from the footers of `/after-bootcamp/` and `/after-the-sql-course/` (the instructor-facing doors; the homepage footer stays at its 32-link cap). The page is unchanged otherwise: one button writing `team_interest {seats, email?}`, no price, no checkout. Guards `tests/for-teams.test.js` (breaks caught: restoring noindex; dropping the after-bootcamp link). P1 (partnerships) points pilots and replies at it.
+- **Why** `docs/plans/monetization-2026-09-24.md` row 6 — seats for instructors and bootcamps, tested as a door with a counter before anything is built. 0 `team_interest` rows while it was hidden; P1's 11-22 read found a school (SPTech, Moodle) already sending students unasked.
+- **Metric** `team_interest` rows (people by aid, bots out) and the seats they state; P1 pipeline stage moves.
+- **Baseline** 0 rows (page hidden 09-26 → 11-22).
+- **Target** ≥ 3 `team_interest` rows by 2026-12-22.
+- **Falsification, stated in advance (the plan's own kill rule):** fewer than 3 rows in the 30 days → drop the page and write it down; seats are then sold only through P1's direct conversations.
+
+### one SQL Quest entity in the structured data, and the 15 buyer questions in llms.txt (G1)
+
+- **Claimed** 2026-11-22 · **Shipped** on merge (static pages + llms.txt, no flag) · **Read** 2026-12-23.
+- **Change**
+  1. **JSON-LD on `/`, `/sql-practice-comparison/`, `/best-sql-practice-sites/` and `/sql-exercises/`.**
+     - Every SQL Quest author, publisher and provider now carries the Organization's `@id` and `url`. Before, they were bare name-only nodes.
+     - The SoftwareApplication sits at `https://sqlquest.app/` and is published by the Organization.
+     - The Course and the WebSite no longer point at `/app.html`, which is a 308.
+     - The SearchAction for a `?q=` search the app does not have is removed.
+  2. **`/llms.txt` gets "Questions people ask, and the page that answers".** It covers the 15 prompts of G1's panel in the person's words, each linked to sitemap pages.
+  3. **Guards:** `tests/entity-schema.test.js` and the "buyer questions" block in `tests/llms-txt.test.js`.
+- **Why:** `docs/reads/geo-2026-11-22.md`.
+  - Perplexity named us in the prose of 1 of 5 answered prompts and cited a URL in 3.
+  - It cited our `/stratascratch-alternatives/` for a general "best website" question, which is a page that does not answer it.
+  - llms.txt had no line for any of the 15 buyer questions.
+- **Metric**
+  - **Primary:** `ai_mention_share`, Perplexity lane, on G1's panel: named-or-cited ÷ answered, from the table in `docs/reads/geo-<date>.md` (metrics.md, G1 note).
+  - **Guard:** `ai_landings_month`.
+- **Baseline (2026-11-22)**
+  - Perplexity: named or cited 3/5 answered, named in prose 1/5. 10 of 15 were unread behind a sign-in wall.
+  - `ai_landings_month`: 99 people in the 30 days to 11-22 (ChatGPT 81, Gemini 16, Claude 1, Perplexity 1).
+- **Target (read 2026-12-23, the last two weekly reads pooled)**
+  - Named or cited in at least 60% of the prompts Perplexity answered.
+  - Named in prose on at least 2 prompts.
+  - At least one panel prompt outside #1–#5 cites a page listed for it in the new block.
+  - `ai_landings_month` for the 30 days to 12-23 at least 99.
+- **Falsification (written before the data)**
+  - **No effect:** named in prose stays at 1 or fewer, and no prompt cites the page llms.txt lists for it. Then the plumbing changed nothing an assistant shows. Keep it, because it is correctness (a 308 and a false SearchAction), but move G1's next fix effort to the C3 off-site lists, the only lever the baseline points at.
+  - **Wrong direction:** `ai_landings_month` falls below 79 (−20%). Look at Bing first (C1): ChatGPT and Copilot ground on it.
+- **Confounds**
+  - C2's AI-visibility pass shipped the same day, on the same metric and similar pages. These two cannot be told apart; read them together.
+  - Perplexity reads only about 5 prompts a week before its wall, so one answer is 20 points. A single-week move is `UNREADABLE`.
+  - Gemini is invisible to `ai_landings_month`.
+### C7 run 1: five mined question shapes answered on three existing pages
+
+- **Claimed** 2026-11-22 · **Shipped** on merge (static pages, no flag) ·
+  **Read** 2026-12-20.
+- **Change** Answers in our own words, every query run on the app's
+  datasets and pinned in `tests/question-answers-2026-11-22.test.js`:
+  Nth-highest salary with ties (`/blog/row-number-vs-rank-vs-dense-rank/`),
+  latest row per group, month-over-month change and consecutive-day
+  streaks (`/blog/window-functions-tutorial/`), deleting duplicates when
+  there is no id column (`/sql-find-duplicates/`). The two blogs' visible
+  FAQ now equals their JSON-LD (10 baseline lines retired). Read:
+  `docs/reads/questions-2026-11-22.md`.
+- **Metric** `gsc_page_clicks` (metrics.md), impressions on the three
+  pages, page slice; plus the query×page slice filtered to the five shapes
+  (`nth|second highest|latest|most recent|month over month|consecutive|streak|no id|rowid`).
+- **Baseline** not read: the cloud session has no production data. The
+  laptop reads the 28 days to 2026-11-21 for the three pages and writes it
+  here.
+- **Target** the three pages' impressions for the 28 days to 2026-12-17 at
+  or above the baseline + 20%, and at least one query from the five shapes
+  with impressions on the page that answers it.
+- **Falsification** (written before the data) impressions at or below the
+  baseline and no shape query on its page → answers inside long existing
+  posts don't move search demand. C7 stops adding sections and only adds
+  FAQ entries until a read shows a shape query landing.
+- **Confounds** the window tutorial and ranking blog also gained a visible
+  FAQ (same text as their schema); a Google core update in the window
+  would show on every page, so compare against the blog's other posts.
+### UI/UX: no critical layout defect, a third fewer major (A4 first run)
+
+- **Claimed** 2026-11-22 · **Shipped** on merge of #143, #144, #145, #146,
+  #147, #149 (no flag) · **Read** 2026-12-20.
+- **Change**
+  - #143: the mock list and a timed mock fit a phone; Quit is reachable.
+  - #144: blog tables, Amazon and the SQL quiz no longer scroll sideways.
+  - #145: the footer passes AA, with 44 px links and 12 px text.
+  - #146: the nav button keeps its colour; nav targets are 44 px.
+  - #147: company card text is 12 px, and the format link is readable.
+  - #149: muted app text is DESIGN.md's `--text-muted`.
+
+  Each fix has a guard test proven by one deliberate break.
+- **Why** `docs/reads/uiux-audit-2026-11-22.md`. 7 pages scrolled sideways
+  or hid a control on a phone, among them the timed mock's only exit and
+  the Interview tab. Footer, nav and app grey text failed WCAG AA sitewide.
+- **Metric** `uiux_findings` (critical + major per full audit run;
+  metrics.md as of this claim).
+- **Baseline** critical **56**, major **20,506** → **20,562** (main at
+  523aa1d, 1,596 runs). Measured with all six merged on a scratch branch:
+  critical 0, major 13,707.
+- **Target** by 12-20, on main: critical **0**, and `uiux_findings` ≤
+  **14,000** on the same surface list (pages added since are reported
+  separately).
+- **Falsification, stated in advance:** (a) a person reports a layout bug
+  (sideways scroll, a control they cannot reach or read, text cut off) on
+  a covered surface within 28 days of the last merge → **MISS** for the
+  audit's coverage, whatever the count says. Add the case to the harness
+  before fixing it. (b) critical > 0 on main at the read → **MISS**. (c) a
+  run without the six PRs merged → **UNREADABLE**.
+
+### UI/UX across engines: Chrome and Safari, desktop, iPhone, Android, daily (A4)
+
+- **Claimed** 2026-11-22 · **Shipped** on merge (a harness extension and a
+  daily Actions workflow; no product change, no flag) · **Read** 2026-12-20.
+- **Change** The audit runs on eight browser × device rows (desktop Chrome
+  1366/1920, desktop Safari 1440, iPhone SE and 15 Pro on WebKit, Pixel 7
+  and Galaxy S9+ on Chromium, iPad Mini on WebKit), every day at 05:40 UTC
+  against production, hermetic. Six mobile-browser checks join U1–U12:
+  U13 100vh under the toolbar, U14 sticky in an overflow-hidden ancestor,
+  U15 inputs under 16 px, U16 safe-area insets, U17 date inputs, U18 smooth
+  scroll. Findings go to one `uiux-audit` issue, A4's daily fix queue.
+- **Why** The founder's order (2026-11-22): Android, iPhone and desktop, in
+  Chrome and Safari, checked daily and fixed. The first audit ran Chromium
+  at six widths only, the narrowest 375. Its first local run at 320 px
+  (Galaxy S9+) found 222 critical findings that 375 never showed. Among
+  them, the Interview tab is 412 px wide and its Start Interview button
+  sits off screen.
+- **Metric** `uiux_findings` split by engine (metrics.md, "Per-engine
+  split"): critical + major on the Chromium rows and on the WebKit rows,
+  read as two series.
+- **Baseline** Chromium rows, main 9b46fd7 without the #143–#149 fixes:
+  critical **228**, major **13,654** → **13,882** (1,072 runs). WebKit:
+  none yet; the first daily Actions run is its baseline. It is written
+  into this claim on that day, before any WebKit fix merges.
+- **Target** by 12-20, on main, from the daily run:
+  - `uiux_findings[chromium]` critical **0**;
+  - `uiux_findings[webkit]` critical **0**;
+  - each engine's major count ≤ **70 %** of its own baseline.
+- **Falsification, stated in advance:**
+  - (a) Critical > 0 on either engine in the 12-20 run → **MISS**.
+  - (b) A person reports a layout bug in Safari or on a phone, on a covered
+    surface, that the audit did not flag → **MISS** for coverage, whatever
+    the counts say. Add the case to the harness before fixing it.
+  - (c) Fewer than 20 of the 28 daily runs to 12-20 completed with both
+    engines → **UNREADABLE**: the loop did not run. A skipped engine never
+    counts as zero.
+  - (d) This claim was written by the same model family that will fix and
+    review the findings. Correlated blind spots are possible, so (b) is the
+    honest test, not the count.
+### the Revolut guide: a sourced blog door for the best fintech page (C5)
+
+- **Claimed** 2026-11-22 · **Shipped** on merge · **Read** 2026-12-20 (28 d) and 2027-01-17 (56 d).
+- **Change** `/blog/revolut-data-analyst-sql-screen/`: both Revolut SQL
+  rounds as interviewquery's 2026 guide reports them (one dated source, read
+  2026-09-12, quotes pinned verbatim against `interview-archetypes.js`),
+  three traps worked on `finans_neobank` (transfer legs, AVG over NULL,
+  a nested funnel), a 2-week plan, links to Revolut question 1, the readiness
+  test and the Pro mock. It solves neither the mock's written tasks nor any
+  set challenge. Linked from the Revolut page, the interview hub and the blog
+  index; in the sitemap.
+- **Why Revolut, why a guide:** Revolut and Wise are the two fintech pages
+  with proven clicks (seo-2026-11-13: 18.6% / 27% CTR); Revolut has 4.6× the
+  query impressions (company-research-2026-11-20: 87 vs 19) and is the only
+  one with a sourced format, a signed set and a Pro mock to sell. M-02's hero
+  already names question 1 on both, so menu item 1 is spent there; the
+  Capital One read (branch 3) says the blog is the door.
+- **Metric** `landing_to_trial` (defined today in metrics.md) on the guide
+  and on `/revolut-sql-interview/`; `gsc_daily` for the guide; `pro_modal_shown`
+  with `linkSrc` `revolut-blog`.
+- **Baseline** for the laptop to fill before 12-20: Revolut page landing
+  people and trial-or-paid, 28 days to 2026-11-22. The guide's baseline is 0.
+- **Target** at 28 d: the guide ≥ 150 impressions and ≥ 8 clicks, with the
+  Revolut page's clicks not below 90% of its own prior 28 d. At 56 d: ≥ 1
+  trial or purchase from a person whose first landing was the guide, and
+  ≥ 3 Pro modals from `revolut-blog`.
+- **Falsification, written now:** the Revolut page's clicks fall more than
+  20% while the guide takes its queries → cannibalised; noindex the guide
+  (`seo-prune.json`) and move its traps onto the page. At 56 d, ≥ 150 guide
+  landers and 0 app opens from it → the guide is not a door; one improvement
+  run, then the kill rule.
+
 ### related links for thinly linked pages (C1)
 
 - **Claimed** 2026-11-22 · **Shipped** on merge (static pages, no flag) ·
