@@ -262,10 +262,27 @@ describe('discovery on the static site renders only with the flag on', () => {
     }
   });
 
+  it('flag on: a trap page links only a non-Hard Debug item (a Hard is Pro and swaps a cold visitor)', () => {
+    const linked = SQL_PATTERNS.map(p => [p.slug, debugItemForTrap(p.slug, { flagOn: true, items })?.id ?? null]);
+    expect(Object.fromEntries(linked)).toEqual({
+      'sql-not-in-null': 335,
+      'sql-join-fan-out': null,
+      'sql-between-timestamp': 331,
+      'sql-average-of-averages': null,
+      'sql-left-join-where-filter': 336,
+    });
+    for (const p of AI_PAGES) {
+      const once = withAiSection(read(`public/${p.file}`), { flagOn: true, items, anchor: p.anchor, src: p.src });
+      const ids = [...once.matchAll(/data-track="cta_ai_debug"/g)].length;
+      expect(ids, p.file).toBe(3);
+      expect(once, p.file).not.toContain('(Hard)');
+    }
+  });
+
   it('flag on: each trap page names its question, and each AI page gets the section once', () => {
     for (const p of SQL_PATTERNS) {
       const item = debugItemForTrap(p.slug, { flagOn: true, items });
-      expect(item, p.slug).toBeTruthy();
+      if (!item) continue;
       const html = renderPattern(p, { slugs, bank, debugItem: item });
       expect(html).toContain(`Fix this bug yourself: <a href="/app/?challenge=${item.id}&amp;src=pattern-debug-${p.slug}"`);
       expect(html).toContain(`question ${item.id}</a>`);
@@ -391,4 +408,22 @@ describe('app.jsx wiring', () => {
 // loadDebugItems is what the generators read; it must be the same twelve.
 it('the generators read the same twelve items', () => {
   expect(loadDebugItems().map(c => c.id)).toEqual(items.map(c => c.id));
+});
+
+// A1 on #249 (2026-11-23): Speed Mode is live and picks at random from the
+// whole bank with an empty editor, so with the flag on it served Debug items
+// ("Find the line… fix it" over nothing) in about 30% of 10-question runs.
+it('Speed Mode never serves a Debug item: every pool comes from the debug-free speedPool', () => {
+  const app = read('src/app.jsx');
+  const start = app.indexOf('const pickNextSpeedRunChallenge = ');
+  expect(start).toBeGreaterThan(-1);
+  const body = app.slice(start, app.indexOf('setSpeedRunCurrentChallenge(next)', start));
+  expect(body).toMatch(/const speedPool = challenges\.filter\(c => !isDebugChallenge\(c\)\)/);
+  expect(body).not.toMatch(/\bchallenges\.filter\(c => (?!!isDebugChallenge)/);
+});
+
+it('both debug-stats strings read as correct/total in Turkish', () => {
+  const i18n = read('src/utils/i18n.js');
+  expect(i18n).toContain("debugStatsSpots: 'Bulunan hatalar: {correct}/{n}'");
+  expect(i18n).toContain("debugStatsFixes: 'Çözülen düzeltmeler: {solved}/{n}'");
 });
