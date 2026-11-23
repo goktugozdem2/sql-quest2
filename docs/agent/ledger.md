@@ -27,6 +27,22 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### Run is not Submit (`runSubmitNudge`, A/B)
+
+- **Claimed** 2026-11-23 · **Shipped** dark (flag `runSubmitNudge: false`, flag-queue row 17); the orchestrator decides the flip, because `companyDirectOpen` "runs alone" · **Read** 28 days after the flip, or at the minimum n if that comes later (hard stop: UNREADABLE if not readable 90 days after the flip).
+- **Change** an A/B by aid (`run_submit_nudge_v1`, murmur-finalised hash, independent of the first-screen, company-ask, company-direct, quota-wall-inline and modal-layout arms). A person with **zero solves** whose Run returns rows on an unsolved, non-writing challenge is assigned once (`run_submit_nudge_assigned {testId, arm, challengeId}`, both arms). `nudge`: one line at the top of Your Output — "This matches the expected output. Press Submit to complete the challenge." when the output passes the same `resultsMatch` Submit uses, else "Run only shows your output. Submit checks it against the expected output." (`run_submit_nudge_shown {kind}`). `control`: today's panel. Nothing asked, gated or priced. src/utils/run-submit-nudge.js; tests/run-submit-nudge.test.js.
+- **Why** (docs/reads/onboarding-2026-11-23.md): first opens 11-09 → 11-23, bots and the new topic-page crawler out: of 143 people who ran a query, 100 ran first with Run and 41 with Submit. Submit-first: 90% solved, 0 left ungraded. Run-first: 72% solved, **21 left without ever being graded** — two thirds of the 32 runners who never solved. The walk: on challenge 91, Run on the empty editor writes and runs the whole answer (#101's starter) and shows a table identical to the Expected Output, and nothing says Submit is still needed.
+- **Metric** `first_solve_10m` measured from assignment, by arm (the `company_direct_split` shape: a `challenge_solved` within 10 minutes of `run_submit_nudge_assigned`). Mechanism (secondary): share of assigned people with no solve, no `challenge_error_pattern` and no `challenge_errored` on any challenge within 24 h ("left ungraded"). Bots, internal accounts and the topic-page crawler fingerprint (read §4) out. Not `open_to_first_run`: assignment happens at a Run, after the first run.
+- **Baseline** the `control` arm, run alongside. Pre-flip reference (11-09 → 11-23, Run-first people, not the assignment definition): 72% solved, 21% left ungraded.
+- **Target** `nudge` ≥ `control` + 8 points on solve within 10 min of assignment, at ≥ 100 assigned per arm; and `nudge`'s left-ungraded share ≥ 8 points below `control`'s. ~100 zero-solve Run-first people per 14 days today → ~4 weeks to 100 per arm.
+- **Guardrail** 3 solves within 24 h of assignment: `nudge` must not trail `control` by more than 5 points.
+- **Stop rule / falsification, written before the data:**
+  - **Early harm at 50 per arm:** `nudge` trails `control` by ≥ 10 points on solve-in-10 → flag off the same day; MISS.
+  - **At 100 per arm:** `nudge` ≥ `control` + 8 → HIT: ship the line to every zero-solve Run, remove the `control` branch. Within ± 8 → FLAT: flag off, delete the branch. `nudge` < `control` − 3 → MISS: flag off.
+  - **Mechanism falsified** if the left-ungraded share is not at least 8 points lower in `nudge` even when solve-in-10 moves: then the line is not why it moved; say so in the verdict.
+  - Fewer than 100 per arm 90 days after the flip → UNREADABLE; flag off, no extension.
+- **Confounds** `companyDirectOpen` (live 11-23) assigns at arrival on `?company=` links; this assigns later, at a Run, on an independent hash — read both within their own arms, and repeat this read without `?company=` arrivals. #99/#101 change who reaches a first Run (pre/post, to 12-20), equally in both arms. `stuckAsk` (waits to 12-20) fires on a challenge with no run, so never on an assigned person's first Run.
+
 ### a founder-led live mock — would people pay for it? (asked by hand)
 
 - **Claimed** 2026-11-22 · **Shipped** as 3 Gmail drafts, written by E1 at

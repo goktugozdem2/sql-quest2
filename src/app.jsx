@@ -42,6 +42,7 @@ import { INTAKE_KEY, INTAKE_GOALS, INTAKE_ROLES, INTAKE_STEPS, INTAKE_COMPANIES,
 import { shouldArmGoalNoteDateAsk, shouldRenderGoalNoteDateAsk } from './utils/goal-note-date-ask.js';
 import { COMPANY_ASK_KEY, COMPANY_ASK_TEST_ID, COMPANY_ASK_UNDECIDED, companyAskDecision, normalizeCompanyAskRecord, matchCompanies, isCompanyAskAnswer } from './utils/company-ask.js';
 import { COMPANY_DIRECT_KEY, COMPANY_DIRECT_TEST_ID, companyDirectDecision, isCompanyListArrival } from './utils/company-direct.js';
+import { RUN_SUBMIT_NUDGE_COPY, RUN_SUBMIT_NUDGE_KEY, RUN_SUBMIT_NUDGE_TEST_ID, runSubmitNudgeDecision, runSubmitNudgeEligible, runSubmitNudgeKind } from './utils/run-submit-nudge.js';
 import { GOAL_PROFILE_KEY, GOAL_GATE_RECHECK_MS, GOAL_GATE_GOALS, TARGET_LEVELS, INDUSTRIES, DEADLINE_PRESETS, industryFor, isoDateInDays, isValidDeadline, missingFields, buildGoalProfile, goalProfileStatus, shouldShowGoalGate, prefillDraft, goalGateEventPayload, readGoalProfile, GOAL_GATE_MAX_DAYS_OUT } from './utils/goal-gate.js';
 import { PLACEMENT_TIERS, placementResult, placementEventPayload, readFirstRunPlacement, seedFloorsFor, seedFloorsFromReadiness, levelForReadiness, placementFromReadiness } from './utils/placement.js';
 import { QUESTIONS as READINESS_QUESTIONS, READINESS_SKILLS, READINESS_RECORD_KEY, companySkillWeights, scoreReadiness, summarizeScores, weakestSkills, readinessRecordFrom, readReadinessRecord } from './data/readiness-questions.js';
@@ -8203,6 +8204,10 @@ function SQLQuest() {
   const [challengeResult, setChallengeResult] = useState({ columns: [], rows: [], error: null });
   const [challengeRunAt, setChallengeRunAt] = useState(null); // Timestamp of last Run click — used as React key to retrigger flash animation
   const [challengeRunMs, setChallengeRunMs] = useState(null); // Query duration in ms — shown to user as "Ran in Xms" confirmation
+  // Run is not Submit (src/utils/run-submit-nudge.js, flag `runSubmitNudge`):
+  // { challengeId, kind: 'match' | 'check' } after a zero-solve person's Run in
+  // the `nudge` arm. Declared here, far above the showAuth / dbReady returns.
+  const [runSubmitNudge, setRunSubmitNudge] = useState(null);
   const [challengeExpected, setChallengeExpected] = useState({ columns: [], rows: [] });
   const [challengeStatus, setChallengeStatus] = useState(null);
   const [challengeStarterHint, setChallengeStarterHint] = useState(null);
@@ -25126,13 +25131,50 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
       setChallengeRunMs(duration);
       setChallengeStatus(null);
       addToHistory(sql, true, 'challenge');
+      noteRunSubmitNudge(result.length > 0 ? result[0].values : [], null);
     } catch (err) {
       setChallengeResult({ columns: [], rows: [], error: err.message });
       setChallengeRunAt(Date.now());
       setChallengeRunMs(Math.round(performance.now() - startTime));
       setChallengeStatus(null);
       addToHistory(sql, false, 'challenge');
+      noteRunSubmitNudge([], err.message);
     }
+  };
+
+  // Run is not Submit (2026-11-23, ledger "Run is not Submit"). After a Run
+  // that returned rows, for a person with zero solves on a challenge they
+  // have not solved: assign the arm once (both arms, so the read has a
+  // denominator) and, in the `nudge` arm, put one line in the output panel
+  // saying Submit is what completes it. Compared with the same grader as
+  // Submit (resultsMatch); the shown line never grades anything itself.
+  const noteRunSubmitNudge = (rows, error) => {
+    const cid = currentChallenge?.id ?? null;
+    const eligible = runSubmitNudgeEligible({
+      flagOn: window.FF?.feature?.('runSubmitNudge') === true,
+      solvedCount: solvedChallenges.size,
+      challengeSolved: cid != null && solvedChallenges.has(cid),
+      hasRows: Array.isArray(rows) && rows.length > 0,
+      error,
+      mutates: !!currentChallenge?.mutates,
+    });
+    if (!eligible) { setRunSubmitNudge(null); return; }
+    let stored = null;
+    try { stored = JSON.parse(localStorage.getItem(RUN_SUBMIT_NUDGE_KEY) || 'null'); } catch (_) { stored = null; }
+    const decision = runSubmitNudgeDecision({ eligible, stored, aid: getAnonId() });
+    if (!decision.arm) { setRunSubmitNudge(null); return; }
+    if (decision.assign) {
+      try { localStorage.setItem(RUN_SUBMIT_NUDGE_KEY, JSON.stringify({ arm: decision.arm, at: Date.now() })); } catch (_) { /* ignore */ }
+      trackActivationEvent('run_submit_nudge_assigned', { testId: RUN_SUBMIT_NUDGE_TEST_ID, arm: decision.arm, challengeId: cid });
+    }
+    if (!decision.show) { setRunSubmitNudge(null); return; }
+    let matches = false;
+    try {
+      matches = challengeExpected.rows.length > 0 && resultsMatch(rows, challengeExpected.rows, currentChallenge.solution, challengeExpected.columns);
+    } catch (_) { matches = false; }
+    const kind = runSubmitNudgeKind(matches);
+    setRunSubmitNudge({ challengeId: cid, kind });
+    trackActivationEvent('run_submit_nudge_shown', { testId: RUN_SUBMIT_NUDGE_TEST_ID, kind, challengeId: cid });
   };
 
   const submitChallenge = () => {
@@ -25141,6 +25183,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
     // before the person has written a line). 2026-11-22.
     if (db && currentChallenge && !challengeQuery.trim() && starterSqlFromHint(challengeStarterHint)) { runChallengeQuery(); return; }
     if (!db || !challengeQuery.trim() || !currentChallenge) return;
+    setRunSubmitNudge(null);
     markChallengeFirstRun('submit');
     setChallengeSubmitAt(Date.now());
     try {
@@ -40408,6 +40451,12 @@ RULES:
                           <span className="text-xs text-gray-400 whitespace-nowrap">✓ Ran in {challengeRunMs}ms</span>
                         )}
                       </div>
+                      {/* Run is not Submit — the `nudge` arm only (ledger "Run is not Submit"). */}
+                      {runSubmitNudge && runSubmitNudge.challengeId === currentChallenge?.id && !challengeStatus && !challengeResult.error && (
+                        <p data-testid="run-submit-nudge" className={`mb-3 pb-3 border-b border-[#2A2E38] text-sm ${runSubmitNudge.kind === 'match' ? 'text-green-300' : 'text-gray-300'}`}>
+                          {RUN_SUBMIT_NUDGE_COPY[runSubmitNudge.kind]}
+                        </p>
+                      )}
                       <ResultsTable columns={challengeResult.columns} rows={challengeResult.rows} error={challengeResult.error} />
                     </div>
                   )}
