@@ -1136,6 +1136,23 @@ no app event at all. Every first-contact read from that date adds
 `wd`, `uaBot`, `langs` for telling the next wave apart. Before 10-07, filter
 by hand (the 10-04 → 10-07 waves: docs/reads/p1-guardrail-bing-2026-10-07.md).
 
+**Trap: two more crawlers, found by C8 on 2026-11-23 (both unstamped).**
+- **Topic-page crawler (`topic1lang`, stamp in #246).** Its first
+  `app_opened` has no `landingSrc`, an `arrivalSrc` of `challenges-…` and
+  `langs = 1`. It runs `challenge_opened` → `first_challenge_started` and
+  stops. 53 people in the week of 11-09, 98 in the week of 11-16, 81 on
+  11-22 alone (23 time zones, 81 window sizes). None has ever run a query,
+  solved or signed up.
+- **UTC landing crawler (from 2026-11-22).** `landing_view` rows with
+  `tz = 'UTC'`, one event per person, a user agent that disagrees with the
+  window size (an iPhone agent at `desktop:1920x1080`, an iOS 10 agent at
+  `desktop:1600x1200`), and a spoofed `ref` of `https://bing.com/` or
+  `https://www.google.com/`. 77 people on 11-22 (UTC landers had been 3–5 a
+  day), 0 app opens. It turned Bing's door from 40 into 66 people in the
+  week to 11-22. Until it is stamped, drop UTC landers with no
+  `app_opened`. The durable fingerprint is the agent/window mismatch, not
+  the time zone (see the next trap).
+
 **Trap: the crawlers change time zone and borrow a landing source
 (2026-10-18, widened 2026-11-12).** Three window sizes have never, over all
 time, produced a query, a solve or a signup:
