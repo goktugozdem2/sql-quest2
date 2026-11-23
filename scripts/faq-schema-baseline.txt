@@ -34,10 +34,6 @@ src/blog/recursive-cte-explained.html	What is a recursive CTE?
 src/blog/recursive-cte-explained.html	What is the difference between UNION and UNION ALL in a recursive CTE?
 src/blog/recursive-cte-explained.html	When do I actually need a recursive CTE?
 src/blog/recursive-cte-explained.html	Why does my recursive CTE run forever?
-src/blog/row-number-vs-rank-vs-dense-rank.html	Is a tiebreaker required with ROW_NUMBER?
-src/blog/row-number-vs-rank-vs-dense-rank.html	What is the difference between ROW_NUMBER, RANK and DENSE_RANK?
-src/blog/row-number-vs-rank-vs-dense-rank.html	Which ranking function should I use for top-N per group?
-src/blog/row-number-vs-rank-vs-dense-rank.html	Why does RANK skip numbers after a tie?
 src/blog/sql-anti-join.html	What is a semi-join?
 src/blog/sql-anti-join.html	What is an anti-join in SQL?
 src/blog/sql-anti-join.html	Which is better, NOT EXISTS or NOT IN?
@@ -97,12 +93,6 @@ src/blog/where-vs-having.html	Can HAVING be used without GROUP BY?
 src/blog/where-vs-having.html	Should non-aggregate conditions go in HAVING?
 src/blog/where-vs-having.html	What is the difference between WHERE and HAVING?
 src/blog/where-vs-having.html	Why does WHERE COUNT(*) > 5 give an error?
-src/blog/window-functions-tutorial.html	How are LAG and LEAD different?
-src/blog/window-functions-tutorial.html	What does PARTITION BY do?
-src/blog/window-functions-tutorial.html	What is the difference between RANK, DENSE_RANK, and ROW_NUMBER?
-src/blog/window-functions-tutorial.html	What is the difference between ROWS BETWEEN and RANGE BETWEEN?
-src/blog/window-functions-tutorial.html	Which window function pattern should I learn first for SQL interviews?
-src/blog/window-functions-tutorial.html	Why can't I filter on a window function in WHERE?
 src/learn-sql-for-beginners.html	Do I need a programming background to learn SQL?
 src/sql-tutorial.html	How long does this SQL tutorial take to complete?
 src/turkce-sql-ogren.html	Sektör bazlı SQL pratiği var mı? Bankacılık, gayrimenkul, üretim?

@@ -293,3 +293,129 @@ export const CLS_INIT = `(() => {
     }).observe({ type: 'layout-shift', buffered: true });
   } catch (_) {}
 })();`;
+
+// Installed before any page script: every programmatic smooth scroll the
+// page asks for (U18). The audit's own scrolls run after `__uiuxScrollOff`.
+export const SCROLL_INIT = `(() => {
+  window.__uiuxSmooth = [];
+  const sig = (el) => {
+    if (!el || el.nodeType !== 1) return 'window';
+    if (el.id) return '#' + el.id;
+    const t = el.getAttribute && el.getAttribute('data-testid');
+    if (t) return '[data-testid="' + t + '"]';
+    return el.tagName.toLowerCase() + [...el.classList].slice(0, 2).map(c => '.' + c).join('');
+  };
+  const smooth = (a) => a && typeof a === 'object' && a.behavior === 'smooth';
+  const wrap = (proto, name, api) => {
+    const orig = proto[name];
+    if (typeof orig !== 'function') return;
+    proto[name] = function (...args) {
+      if (!window.__uiuxScrollOff && smooth(args[0])) window.__uiuxSmooth.push({ api, target: this === window ? 'window' : sig(this) });
+      return orig.apply(this, args);
+    };
+  };
+  try {
+    wrap(Element.prototype, 'scrollIntoView', 'scrollIntoView');
+    wrap(Element.prototype, 'scrollTo', 'scrollTo');
+    wrap(Element.prototype, 'scrollBy', 'scrollBy');
+    wrap(window, 'scrollTo', 'scrollTo');
+    wrap(window, 'scrollBy', 'scrollBy');
+  } catch (_) {}
+})();`;
+
+// U13–U17: what the mobile-browser checks need. Measures only.
+export function collectMobile() {
+  const U = window.__uiux;
+  window.__uiuxScrollOff = true;
+  const vw = window.innerWidth, vh = window.innerHeight;
+
+  // Every readable style rule, flattened out of @media/@supports blocks.
+  const rules = [];
+  const walk = (list) => { for (const r of list || []) { if (r.cssRules && !r.selectorText) { try { if (!r.media || window.matchMedia(r.media.mediaText).matches) walk(r.cssRules); } catch (_) {} } else if (r.selectorText) rules.push(r); } };
+  for (const sh of document.styleSheets) { try { walk(sh.cssRules); } catch (_) { /* cross-origin sheet */ } }
+  const VH = /(^|[^\w-])\d+(\.\d+)?vh\b/;
+  const safeSelectors = [];
+  const vhRules = [];
+  for (const r of rules) {
+    const st = r.style;
+    if (/safe-area-inset/.test(st.cssText)) safeSelectors.push(r.selectorText);
+    for (const prop of ['height', 'min-height']) {
+      const v = st.getPropertyValue(prop);
+      if (v && VH.test(v)) vhRules.push({ sel: r.selectorText, prop, value: v.trim() });
+    }
+  }
+  const matchesAny = (el, sels) => sels.some(s => { try { return el.matches(s); } catch (_) { return false; } });
+  const usesSafe = (el) => [el, ...el.querySelectorAll('*')].slice(0, 200).some(e => /safe-area-inset/.test(e.getAttribute('style') || '') || matchesAny(e, safeSelectors));
+  const controlsIn = (el) => [...el.querySelectorAll(U.INTERACTIVE)].filter(U.visible);
+  const docH = Math.max(document.documentElement.scrollHeight, document.body ? document.body.scrollHeight : 0);
+
+  // U13: boxes sized by vh.
+  const vhBoxes = [];
+  const vhEls = new Map();
+  for (const r of vhRules) { let els = []; try { els = document.querySelectorAll(r.sel); } catch (_) {} for (const el of els) if (!vhEls.has(el)) vhEls.set(el, r); }
+  for (const el of document.querySelectorAll('[style*="vh"]')) {
+    for (const prop of ['height', 'min-height']) { const v = el.style.getPropertyValue(prop); if (v && VH.test(v)) { vhEls.set(el, { prop, value: v.trim() }); break; } }
+  }
+  for (const [el, r] of [...vhEls].slice(0, 200)) {
+    if (!U.visible(el)) continue;
+    const box = el.getBoundingClientRect();
+    const fixed = getComputedStyle(el).position === 'fixed';
+    let best = null;
+    for (const c of controlsIn(el)) { const cr = c.getBoundingClientRect(); const gap = box.bottom - cr.bottom; if (gap >= -1 && (!best || gap < best.gap)) best = { gap, sel: U.sel(c) }; }
+    vhBoxes.push({
+      selector: U.sel(el), visible: true, value: `${r.prop}: ${r.value}`, fixed,
+      heightRatio: box.height / vh, control: best ? best.sel : null, controlGap: best ? Math.max(0, best.gap) : Infinity,
+      roomBelow: fixed ? 0 : docH - (box.bottom + window.scrollY),
+    });
+  }
+
+  // U14: sticky elements and the ancestor that captures them.
+  const stickies = [];
+  for (const el of [...document.querySelectorAll('body *')].filter(e => /sticky/.test(getComputedStyle(e).position)).slice(0, 60)) {
+    if (!U.visible(el)) continue;
+    let anc = null, ov = '';
+    for (let p = el.parentElement; p && p !== document.body && p !== document.documentElement; p = p.parentElement) {
+      const cs = getComputedStyle(p);
+      const o = [cs.overflowX, cs.overflowY].find(v => /hidden|auto|scroll|overlay/.test(v)); // the nearest capturing ancestor, whatever kind
+      if (o) { anc = p; ov = o; break; }
+    }
+    const parent = el.parentElement;
+    stickies.push({
+      selector: U.sel(el), visible: true, ancestor: anc ? U.sel(anc) : null, overflow: ov,
+      scrolls: !!anc && (anc.scrollHeight > anc.clientHeight + 1 || anc.scrollWidth > anc.clientWidth + 1),
+      room: parent ? parent.getBoundingClientRect().height - el.getBoundingClientRect().height : 0,
+    });
+  }
+
+  // U15: text fields, including CodeMirror's hidden textarea (it takes focus).
+  const meta = (document.querySelector('meta[name=viewport]') || {}).content || '';
+  const viewportLocked = /maximum-scale\s*=\s*1(\.0+)?\b|user-scalable\s*=\s*(no|0)/i.test(meta);
+  const TEXTY = 'input:not([type]),input[type=text],input[type=email],input[type=password],input[type=search],input[type=tel],input[type=url],input[type=number],input[type=date],input[type=datetime-local],input[type=time],input[type=month],textarea,select';
+  const inputs = [];
+  for (const el of document.querySelectorAll(TEXTY)) {
+    const inCM = !!el.closest('.CodeMirror');
+    if (!U.visible(el) && !inCM) continue;
+    inputs.push({ selector: inCM ? '.CodeMirror textarea' : U.sel(el), visible: true, type: el.tagName === 'INPUT' ? (el.type || 'text') : el.tagName.toLowerCase(), fontSize: parseFloat(getComputedStyle(el).fontSize), disabled: !!el.disabled, readOnly: !!el.readOnly, viewportLocked });
+  }
+
+  // U16: full-width fixed bars on the top or bottom edge.
+  const cover = /viewport-fit\s*=\s*cover/i.test(meta);
+  const fixedBars = [];
+  for (const el of document.querySelectorAll('body *')) {
+    if (getComputedStyle(el).position !== 'fixed' || !U.visible(el)) continue;
+    const r = el.getBoundingClientRect();
+    if (r.width < vw * 0.9) continue;
+    const edge = r.bottom >= vh - 1 && r.top > 0 ? 'bottom' : r.top <= 1 && r.bottom < vh ? 'top' : null;
+    if (!edge) continue;
+    fixedBars.push({ selector: U.sel(el), visible: true, edge, cover, hasControl: controlsIn(el).length > 0, usesSafeArea: usesSafe(el) });
+  }
+
+  // U17: date-type inputs.
+  const dateInputs = [...document.querySelectorAll('input[type=date],input[type=datetime-local],input[type=time],input[type=month]')].filter(U.visible).map(el => ({
+    selector: U.sel(el), visible: true, empty: !el.value, placeholder: !!el.getAttribute('placeholder'),
+    labelled: !!(el.labels && el.labels.length) || !!el.getAttribute('aria-label') || !!el.getAttribute('aria-labelledby'),
+    minHeight: parseFloat(getComputedStyle(el).minHeight) || 0,
+  }));
+
+  return { vhBoxes, stickies, inputs, fixedBars, dateInputs, smoothScrolls: (window.__uiuxSmooth || []).slice(0, 50) };
+}

@@ -231,3 +231,16 @@ above): people arriving on `src=goal_note` with a goal recorded, over the
 founder's first run — like the other doors; and it shares the claim's
 falsification with `link` and `digest`: if the three email/link doors
 together capture under 10 people in 3 weeks, drop them.
+
+## Door 6 — goal-note for new sign-ups (2026-11-22)
+
+The founder's idea of 2026-11-22: ask the goal a day after someone registers,
+not months later. Not a new sender: `goal-note?mode=new`, same template, so a
+person gets the question once in their life, from whichever mode reaches them
+first. Audience, timing, copy and the logging are in the function's header and
+pinned by `tests/goal-note.test.js` (every new guard proven by a named break).
+In the app, a `goal=interview` answer with no date on record gets one inline,
+skippable "When is it?" (flag `goalNoteDateAsk`, dark), written through the
+intake date's writer. Metric `goal_note_new`; ledger "goal-note for new
+sign-ups". Deploy, dry run and the hourly cron line are the founder's (A0's
+held kind: outward); the commands are in the PR, not in any SQL file.
