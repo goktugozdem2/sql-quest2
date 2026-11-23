@@ -36732,7 +36732,7 @@ RULES:
                 if (ds.fixesAttempted === 0 && ds.spotsAttempted === 0) return null;
                 return (
                   <div className="bg-gray-900/60 rounded-xl border border-gray-700 p-4 mb-4" data-testid="coach-debug-stats">
-                    <p className="text-xs uppercase tracking-wide mb-2" style={{ color: '#8A8E99' }}>{i18n_t('practice', 'debugStatsTitle')}</p>
+                    <p lang={getCurrentLang()} className="text-xs uppercase tracking-wide mb-2" style={{ color: '#8A8E99' }}>{i18n_t('practice', 'debugStatsTitle')}</p>
                     <p className="text-sm" style={{ color: '#F2F0EA' }}>{i18n_t('practice', 'debugStatsFixes', { solved: ds.fixesSolved, n: ds.fixesAttempted })}</p>
                     {ds.spotsAttempted > 0 && (
                       <p className="text-sm mt-1" style={{ color: '#F2F0EA' }}>{i18n_t('practice', 'debugStatsSpots', { correct: ds.spotsCorrect, n: ds.spotsAttempted })}</p>
