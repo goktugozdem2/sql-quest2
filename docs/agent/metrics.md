@@ -2904,6 +2904,37 @@ Traps, stated before the first read:
   never-asked. Server-side goal counts (weekly-digest, prep-plan-note) start
   at the flip; a `NULL` there before it means nothing.
 
+## `goal_note_new`
+
+The goal-note email's new-signup mode (`supabase/functions/goal-note?mode=new`,
+2026-11-22): one founder note to each person 24 to 72 hours after sign-up with
+no goal on record, asking what they are preparing for. People, not events.
+Born on the founder's first `mode=new` send; nothing before it is this series.
+
+| step | source | notes |
+|---|---|---|
+| sent | `email_events` `template='goal_note'`, `event='sent'`, `meta->>'mode'='new'` (or `pro_events` `goal_note_sent` with `metadata->>'mode'='new'`) | the denominator; `resend_id` on every row |
+| answered | `pro_events` `intent_captured` with `metadata->>'src'='goal_note'` and `metadata->>'m'='new'`, by the same username, within 14 days of its send | the click is the answer (the `?goal=` hook). It fires only when no goal was declared before, which is the audience. `m` exists from this change; the backlog run's answers carry `m` null |
+| date set | `goal_note_date_set {m, daysOut}` | only behind `goalNoteDateAsk` (dark at birth); interview answers only; the date itself never leaves the record |
+| date skipped | `goal_note_date_skipped {m}` · shown: `goal_note_date_ask_shown {m}` | |
+| trial or paid within 14 d | `pro_trial_started` or `pro_purchase_completed`, `reason='stripe_webhook'`, within 14 days of the send | stripe_webhook is the only money truth |
+
+**Answer rate** = answered / sent, per person. Split by `meta->>'variant'`
+(A / B) and by whether a company was named in the body (the dry run shows it;
+the sent row does not carry it, so read it from `pro_events` `arrivalSrc` like
+the sender does).
+
+Traps:
+- An answer from a guest browser lands under a guest username. Join on the
+  account username first; a person who clicked while signed out is a miss here
+  and a `guest_progress_merged` row later. Say how many such rows exist; do not
+  guess them in.
+- `intent_captured` does not fire when a goal was already declared on that
+  browser (the hook never overwrites). The audience has no goal on the row, but
+  a browser-only intent can exist: the post-solve ask writes localStorage only.
+  Such a click records nothing and is not an answer.
+- Under 30 sends, read verbatims and counts, not a rate (`UNREADABLE`).
+
 ## `first_run_reach`
 
 Of the people who saw the first-run start screen, how many opened a first
@@ -3589,6 +3620,54 @@ left join second sec using (pid)
 group by a.arm;
 ```
 
+## `company_direct_split`
+
+A company arrival opens question 1 (B5, 2026-11-22, ledger "a company arrival
+opens question 1"). Population: people with a `company_direct_assigned` row
+since the flip, by `arm` (`direct` | `list`). People by aid. Leave out
+internal accounts, `metadata.bot`, and the crawler window sizes and
+fingerprints listed at the top of docs/reads/funnel-2026-11-22.md. t0 = the
+assignment row. It fires at the first cold company arrival, after the guest
+has loaded.
+
+- **Primary — first_solve_10m from assignment:** share with a
+  `challenge_solved` within 10 minutes of t0.
+- **Secondary — first run in 10 minutes:** share with a
+  `challenge_first_run` within 10 minutes of t0. Do not read
+  `open_to_first_run` here: the `direct` arm opens a challenge for everyone,
+  so that ratio's denominator is moved by the arm.
+- **Guardrails:**
+  - share reaching 3 distinct solves within 24 h;
+  - people with `pro_plan_clicked`, and trial-or-paid (`stripe_webhook` by
+    username) within 14 days, as counts.
+- **Check the arm did what it says:** in `direct`, `challenge_opened` with
+  `openedFrom = 'company_direct'` within 1 minute of t0 for nearly
+  everyone. The exception is a person whose set had nothing open
+  (`nextId` null).
+
+```sql
+with ev as (
+  select coalesce(((metadata #>> '{}')::jsonb)->>'aid', username) pid, event, created_at, (metadata #>> '{}')::jsonb m
+  from pro_events
+  where username !~* '^(test|qa_|fabletest|linktest|internalroutine|sqlquest$)'
+    and created_at >= :flip
+),
+arm as (select distinct on (pid) pid, m->>'arm' arm, m->>'company' company, created_at t0
+        from ev where event = 'company_direct_assigned' and coalesce(m->>'bot','false') <> 'true'
+        order by pid, created_at),
+solves as (select e.pid, e.created_at, row_number() over (partition by e.pid order by e.created_at) n
+           from ev e where e.event = 'challenge_solved')
+select a.arm,
+  count(*) assigned,
+  round(100.0 * avg((exists (select 1 from solves s where s.pid = a.pid and s.n = 1 and s.created_at <= a.t0 + interval '10 minutes'))::int), 1) pct_solve_10m,
+  round(100.0 * avg((exists (select 1 from ev e where e.pid = a.pid and e.event = 'challenge_first_run' and e.created_at between a.t0 and a.t0 + interval '10 minutes'))::int), 1) pct_run_10m,
+  round(100.0 * avg((exists (select 1 from solves s where s.pid = a.pid and s.n = 3 and s.created_at <= a.t0 + interval '24 hours'))::int), 1) pct_three_24h,
+  count(*) filter (where exists (select 1 from ev e where e.pid = a.pid and e.event = 'pro_plan_clicked' and e.created_at <= a.t0 + interval '14 days')) plan_clickers,
+  round(100.0 * avg((exists (select 1 from ev e where e.pid = a.pid and e.event = 'challenge_opened' and e.m->>'openedFrom' = 'company_direct' and e.created_at <= a.t0 + interval '1 minute'))::int), 1) pct_direct_open
+from arm a
+group by a.arm;
+```
+
 ## `pattern_to_checkout`
 
 SQL trap page → paid, end to end (2026-09-25). People by `aid` (the landing
@@ -3696,6 +3775,46 @@ where query is not null and page = 'https://sqlquest.app/<slug>/'
 - Position is impression-weighted (the query above), never a plain average of
   daily positions.
 
+## `feedback_capture`
+
+The asked feedback prompts (E2, 2026-11-22; `src/utils/feedback-prompts.js`)
+and the widget, counted per person and per kind. Registered with flags
+`exitReasonAsk`, `stuckAsk`, `day2Ask`.
+
+- **shown** — people with `feedback_prompt_shown {kind, trigger}`.
+- **answered** — people with `feedback_submitted` whose `kind` is the same
+  (from 2026-11-22 every `feedback_submitted` carries `kind`; the widget is
+  `open`). Rate = answered ÷ shown, per kind. `feedback_prompt_skipped` is
+  the explicit no; a prompt neither answered nor skipped was walked past.
+- **reasons** — rows in `public.feedback` with `context->>'kind'` = the kind
+  in the window (the text itself is read in the daily read, never averaged).
+
+```sql
+-- per kind, the window [:from, :to)
+with ev as (
+  select coalesce(aid, username) who, event,
+         (metadata #>> '{}')::jsonb ->> 'kind' kind
+  from pro_events
+  where event in ('feedback_prompt_shown', 'feedback_submitted', 'feedback_prompt_skipped')
+    and created_at >= :from and created_at < :to
+)
+select kind,
+       count(distinct who) filter (where event = 'feedback_prompt_shown')   shown,
+       count(distinct who) filter (where event = 'feedback_submitted')      answered,
+       count(distinct who) filter (where event = 'feedback_prompt_skipped') skipped
+from ev group by kind order by kind;
+
+select context->>'kind' kind, context->>'trigger' trig, count(*)
+from feedback where created_at >= :from and created_at < :to group by 1, 2;
+```
+
+- Apply the fleet's bot and internal-account filters (fleet README, Data).
+- `exit_reason` answers are one tap, `stuck` / `day2` are typed: compare each
+  kind to its own target, never a pooled rate.
+- `context.themeHint` is a guess for the one-tap rows; the theme that counts
+  is the one the daily read assigns.
+- Rows written while the 20260907 quote-consent migration is unapplied still
+  land (PostgREST drops unknown keys); `context` is jsonb and was always there.
 ## `uiux_findings`
 
 Critical + major findings in one full run of the UI/UX audit (`npm run uiux`,
@@ -3726,6 +3845,38 @@ npm run uiux -- --base http://localhost:4321 --repo-report
   → `uiux_findings` **20,562**. With the six fix PRs (#143–#147, #149) merged
   on a scratch branch: critical 0, major 13,707.
 
+### Per-engine split (`uiux_findings` by engine, registered 2026-11-22)
+
+The daily run (`.github/workflows/uiux-daily.yml`) audits the browser ×
+device matrix (`--matrix devices`, eight rows, `DEVICE_MATRIX`), and
+`findings.json` carries `.engines` = critical / major / minor per engine.
+
+```
+npm run uiux -- --base http://localhost:4321 --matrix devices --repo-report
+# findings.json → .engines.chromium and .engines.webkit, each critical + major
+```
+
+- `uiux_findings[chromium]` = critical + major on the four Chromium rows
+  (Chrome 1366, Chrome 1920, Pixel 7, Galaxy S9+); `uiux_findings[webkit]` =
+  the same on the four WebKit rows (Safari 1440, iPhone SE, iPhone 15 Pro,
+  iPad Mini). Read the two as separate series: the rows differ (sizes,
+  checks U15–U17 run on WebKit only), so the totals are not comparable to
+  each other, only each to itself.
+- **Never compare a device-matrix count with the viewport-matrix baseline
+  above.** Different rows, different checks (U13–U18 exist only from this
+  date). The 20,562 baseline stays the viewport series.
+- A row that did not run (`.skipped`, e.g. WebKit not installed) makes that
+  engine's number **UNREADABLE** for the run, never zero.
+- These are engine emulations, not devices (A4-uiux.md, "The honest limit").
+- Baseline 2026-11-22, Chromium rows only (WebKit not installable in the
+  cloud session; its first number is the first daily Actions run), source at
+  main 9b46fd7 without #143–#147/#149, 134 surfaces, 1,072 runs:
+  **critical 228, major 13,654** → `uiux_findings[chromium]` **13,882**
+  (minor 310). Critical: 222 on Galaxy S9+ (320 px), 6 on Pixel 7, 0 on the
+  desktop rows. U13–U18: 0. Two false positives were corrected in the
+  harness before this count, each with a fixture: U14 had flagged a
+  bounded auto scroller, and U13 a `min-h-screen` shell stretched by its
+  content (32 hits).
 ## `bing_crawled_share` / `linked_page_impressions`
 
 Whether pages given internal links get crawled and shown (2026-11-22, C1).

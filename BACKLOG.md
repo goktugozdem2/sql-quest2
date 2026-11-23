@@ -429,6 +429,17 @@ nothing for traffic; these lines are for the owning lanes.
   the 09-28 cohort (first week under the 10-solve quota). It costs few
   six-solvers (most reach six in the first session) but it is the quota's
   retention cost; read it with the quota's 10-09 rule, not as activation.
+- **FOUNDER (Stripe dashboard, ~15 min) — India checkout dies on Stripe's
+  page before any card attempt** (`docs/reads/india-checkout-2026-11-22.md`).
+  India-priced clickers: 17 in 90 days → 1 trial-or-paid (the same returning
+  payer); rest 9 of 29. Since 10-08: 8 new India session starters, 0 trials,
+  0 declines, 0 `pro_card_setup_failed` (0 rows ever, any region); median
+  click → return 11 s (n = 7) vs ~76 s elsewhere. Open those 8 sessions and
+  record: any payment/setup attempt, which methods were shown, RuPay under
+  Cards, `setup_intent.setup_failed` on the endpoint. ≥ 3 of 8 with a
+  declined attempt → issuer/3DS block (fix 3, on-session India pay); ≤ 2 →
+  B1 builds the India card line + the return-reason tap (fix 2). Also read
+  the one India trial's day-7 charge (due ~11-24 18:00 UTC) on 11-25.
 
 ## Decisions taken 2026-11-22 (founder: "kararlar sana ait olsun")
 
@@ -509,6 +520,41 @@ Read: trial starts per Stripe session (today ~25%) and day-7 conversion
 (today: every trial has a card). Falsification: day-7 conversion of
 card-free trials under 20% → card-free trials only move the start number;
 off. Not built autonomously: it needs two deploys and a money decision.
+
+## Errors — A3, 2026-11-23 (docs/reads/errors-2026-11-23.md)
+
+Each item needs the founder (cron, migration, deploy or auth). A3 does not
+touch them.
+
+- **A3-1. The 10:00 UTC mail crons time out together.** On 11-22,
+  `skill-decay`, `welcome-back` and the 10:00 `streak-reminder` all
+  returned 500. Each one reads every user with an email in a single request
+  (`select username, email, data`). The three ran at once and hit the 8 s
+  statement timeout at 10:00:12. On the two days before, the same runs
+  took 15.6–19.2 s. No welcome-back or skill-decay mail went out on 11-22,
+  while pg_cron logged "succeeded".
+  FOUNDER, smallest fix (spread the jobs out):
+  `select cron.alter_job((select jobid from cron.job where jobname='skill-decay'), schedule => '20 10 * * *');`
+  `select cron.alter_job((select jobid from cron.job where jobname='welcome-back-daily'), schedule => '40 10 * * *');`
+  Durable fix (a code PR in `supabase/functions/`, held for 6d): page
+  the users read with `.range()`, or select only the `data` keys each
+  sender needs.
+- **A3-2. The sign-up "email taken" check (`sq_email_registered`) is slow
+  and needs an index.** It timed out once on 11-22. FOUNDER: apply the
+  written migration `supabase/migrations/20261123100000_users_email_lookup_index.sql`
+  (one `create index concurrently` statement, no downtime), then run the
+  rolled-back probe `supabase/manual/20261123_users_email_lookup_index_probe.sql`
+  (it fails before the index and passes after; rollback file beside it).
+  Separately (auth, 6d): decide whether a timeout there should let the
+  sign-up continue to the server's own check, instead of failing the form.
+- **A3-3. `my-referral-stats` was never deployed (it has been in the repo
+  since 05-02).** The profile and the referral modal call it. The preflight
+  gets 404, so the server-owned `personal_ref_code` never reaches the
+  client. Its RPC `get_my_referral_stats` exists in production.
+  FOUNDER: `supabase functions deploy my-referral-stats`. Then open the
+  referral modal once as a registered account and check that the card
+  shows the server's code. `claim-referral-reward` is undeployed too; it
+  is a separate decision, because it grants Pro.
 
 ## Competitor watch — B6, 2026-11-22 (docs/reads/competitors-2026-11-22.md)
 
@@ -805,3 +851,34 @@ Every competitor fact cited must come from that read (URL + date).
     Crypto, ≥ 100k iterations) on the next successful sign-in and marks the
     row's scheme; account-password writes the new scheme. Founder's call —
     it touches every sign-in.
+
+## Competitor watch — B6 run 2, 2026-11-23 (docs/reads/competitors-2026-11-23.md)
+
+New items only; run 1's ten (PR #179) keep their numbers, progress in §4 of
+the read. Every competitor fact cited must come from that read (URL + date).
+
+- **N1 · C5 — Capital One blog guide answers IQ's 11-16 guide.** IQ's
+  `/guides/capital-one-data-analyst` (updated 2026-11-16, AI mock button
+  above the fold) holds our best payer query twice. Fold into run-1 #1: first
+  screen names the reported format from R1's dossier and offers our 70-min,
+  14-question timed mock by its specifics; show a visible updated date.
+- **N2 · C5 / B3 — the OA bottleneck is multi-file joins and rates under a
+  clock.** Confirm the `capital-one-codesignal` mock has a multi-table rate
+  question and the guide says so in our words; if not, B3 adds one.
+- **N3 · C2 — raise run-1 #4 (AI-coach exclusivity) above run-1 #5.**
+  `src/best-sql-practice-sites.html` L102/L635 still claim "the only
+  platform … with … an AI Coach"; two more dated counter-examples today
+  (IQ AI mock, Prepfully AI Wingman).
+- **N4 · B4 — price inputs.** Big Tech Interviews $359.99/yr and $949.99/yr;
+  LearnSQL $39 per course, $599 lifetime; Prepfully $99–$279 per coaching
+  session. No agent changes a price.
+- **N5 · C5 (+B3) — Monzo "debug this query" item** on `/monzo-sql-interview/`,
+  framed by the Monzo blog citation already on the page. Prepfully holds the
+  SERP with 6 paginated DS bank URLs and no runnable SQL.
+- **N6 · C1 (laptop) — check Revolut/Monzo index status and queries before
+  any content answer to pagination.** We do not paginate.
+- **N7 · C6 — `/sql-exercises/` vs "sql practice questions" intent**
+  (LearnSQL blog #1). Add only what our page lacks; no copying.
+- **N8 · C5 — one line on the Capital One guide separating the DA
+  assessment from the general coding assessment** quantvault.org describes.
+  Fold into N1.
