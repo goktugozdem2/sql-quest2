@@ -24,7 +24,7 @@ Post one PR comment that starts with **QA PASS** or **QA FAIL**, then a list. Ev
 2. **Alternative correct answers pass.** Write at least 2 other valid solutions (a different join shape, a CTE vs a subquery, a window vs a self-join). Each must be graded correct. If one is refused, the grading is too narrow: FAIL.
 3. **Common wrong answers fail.** Write at least 3 typical mistakes: a missing GROUP BY column, an INNER where a LEFT is needed, NULL handling, an off-by-one date, ties. Each must be graded wrong. If one passes, the grading is too loose: FAIL.
 4. **Determinism.** The result order is fixed when the prompt asks for an order, ties are impossible or handled, and there are no float-precision traps the prompt doesn't mention.
-5. **Difficulty is honest.** The ideas the solution needs match the label. An Easy that needs a window function is FAIL.
+5. **Difficulty is honest.** The ideas the solution needs match the label. An Easy that needs a window function is FAIL, with one exception (orchestrator, 2026-11-23, D2): a **window on-ramp** may be Easy when its whole solution is one window function over one table, with at most a PARTITION BY and an ORDER BY, no frame clause, no CTE or subquery, no join. Challenges 320 and 321 are the current on-ramps.
 6. **Prompt rules.** The prompt never names the method. The hints don't contain the query. EN and TR say the same thing.
 7. **State-graded (DDL/DML) challenges.** A forbidden statement is refused. The shared `db` is unchanged after an attempt. A second attempt starts clean.
 
