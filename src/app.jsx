@@ -39,6 +39,7 @@ import { companySetMatch } from './utils/company-set-match.js';
 import { buildPracticePlan, PLAN_MIN_SOLVES_FOR_SKILLS } from './utils/practice-plan.js';
 import { FIRST_SCREEN_STORAGE_KEY, firstScreenDecision } from './utils/first-screen.js';
 import { INTAKE_KEY, INTAKE_GOALS, INTAKE_ROLES, INTAKE_STEPS, INTAKE_COMPANIES, INTAKE_LEVELS, intakeStepsFor, intakeGoalFor, intakeGoalForIntent, nextIntakeStep, isIntakeStepRequired, isIntakeLevel, isValidIntakeDate, buildIntakeRecord, isIntakeComplete, readIntakeRecord, intakeEventPayload, newCoachGoalState, shouldShowIntake } from './utils/onboarding-intake.js';
+import { shouldArmGoalNoteDateAsk, shouldRenderGoalNoteDateAsk } from './utils/goal-note-date-ask.js';
 import { COMPANY_ASK_KEY, COMPANY_ASK_TEST_ID, COMPANY_ASK_UNDECIDED, companyAskDecision, normalizeCompanyAskRecord, matchCompanies, isCompanyAskAnswer } from './utils/company-ask.js';
 import { COMPANY_DIRECT_KEY, COMPANY_DIRECT_TEST_ID, companyDirectDecision, isCompanyListArrival } from './utils/company-direct.js';
 import { GOAL_PROFILE_KEY, GOAL_GATE_RECHECK_MS, GOAL_GATE_GOALS, TARGET_LEVELS, INDUSTRIES, DEADLINE_PRESETS, industryFor, isoDateInDays, isValidDeadline, missingFields, buildGoalProfile, goalProfileStatus, shouldShowGoalGate, prefillDraft, goalGateEventPayload, readGoalProfile, GOAL_GATE_MAX_DAYS_OUT } from './utils/goal-gate.js';
@@ -6911,6 +6912,10 @@ function SQLQuest() {
     try { const r = JSON.parse(localStorage.getItem('sqlquest_readiness_v1') || 'null'); return r && typeof r === 'object' && Number.isFinite(Number(r.at)) ? r : null; } catch (_) { return null; }
   });
   const [goalAsk, setGoalAsk] = useState(null);   // null | { stage: 'goal' | 'measure', source: 'link' | 'returning' }
+  // The goal-note date ask (flag goalNoteDateAsk): null | { m } — armed by the
+  // email's `goal=interview` answer when no date is on record.
+  const [goalNoteDateAsk, setGoalNoteDateAsk] = useState(null);
+  const [goalNoteDateInput, setGoalNoteDateInput] = useState('');
   // The goal gate (founder, 2026-09-25): goal, deadline, target level and
   // industry, all required, asked at every session start and on a ten-minute
   // tick until answered; asked again when the deadline passes. Browser
@@ -12840,10 +12845,16 @@ CRITICAL RULES:
       let intent = g.intent;
       if (!had || had === 'exploring') {
         setUserIntent(g.intent, 'link');
-        trackActivationEvent('intent_captured', { intent: g.intent, source: 'link', src, company: companyFilter || null });
+        trackActivationEvent('intent_captured', { intent: g.intent, source: 'link', src, m: params.get('m') || null, company: companyFilter || null });   // m: the goal-note email's mode ('new'), null on every other link; metric goal_note_new
         applyIntentRouting(g.intent, 'link');
       } else {
         intent = had;   // a declared goal is never overwritten
+      }
+      // The goal-note email's interview answer, with no date on record: one
+      // inline "When is it?" after the goal is recorded (rendered under the
+      // status strip; never a modal).
+      if (shouldArmGoalNoteDateAsk({ flagOn: window.FF?.feature?.('goalNoteDateAsk') === true, src, goal: g.intent, recordedIntent: intent, prepDate: prepTarget.date })) {
+        setGoalNoteDateAsk({ m: params.get('m') || null });
       }
       const level = params.get('level');
       const effectiveGoal = intakeGoalForIntent(intent) || goalId;
@@ -12875,6 +12886,33 @@ CRITICAL RULES:
     setGoalAsk({ stage: 'measure', source: 'link' });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser, dbReady, isSessionLoading, currentChallenge, showFirstRunStart, showIntake, intakeRecord]);
+
+  // The goal-note date ask: one shown event per arrival, the save through the
+  // intake date's own writer (setPrepPreference), and the skip.
+  const goalNoteDateAskVisible = shouldRenderGoalNoteDateAsk({
+    flagOn: window.FF?.feature?.('goalNoteDateAsk') === true,
+    armed: !!goalNoteDateAsk,
+    prepDate: prepTarget.date,
+    intakeOpen: showIntake,
+  });
+  const goalNoteDateAskShownRef = useRef(false);
+  useEffect(() => {
+    if (!goalNoteDateAskVisible || goalNoteDateAskShownRef.current) return;
+    goalNoteDateAskShownRef.current = true;
+    trackActivationEvent('goal_note_date_ask_shown', { m: goalNoteDateAsk?.m || null });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [goalNoteDateAskVisible]);
+  const saveGoalNoteDate = () => {
+    if (!isValidIntakeDate(goalNoteDateInput, Date.now())) return;
+    // The date itself never leaves the user record; the event carries daysOut.
+    trackActivationEvent('goal_note_date_set', { m: goalNoteDateAsk?.m || null, daysOut: daysUntil(goalNoteDateInput, Date.now()) });
+    setPrepPreference({ date: goalNoteDateInput });
+    setGoalNoteDateAsk(null);
+  };
+  const skipGoalNoteDate = () => {
+    trackActivationEvent('goal_note_date_skipped', { m: goalNoteDateAsk?.m || null });
+    setGoalNoteDateAsk(null);
+  };
 
   // E: the returning ask. A session with at least one solve and NO goal on
   // record — no intent (or 'exploring'), no intake record, no countdown
@@ -34872,6 +34910,56 @@ RULES:
         {interviewStatusOn && interviewStatus && (
           <InterviewStatusStrip model={interviewStatus} onCell={onInterviewStatusCell} />
         )}
+
+        {/* The goal-note date ask (2026-11-22, flag goalNoteDateAsk): after
+            the email's "An interview" answer, one inline, skippable line —
+            "When is it?" — into prepTarget.date. Never a modal. A form
+            control, not a CTA: no accent (DESIGN.md). */}
+        {goalNoteDateAskVisible && (() => {
+          const dateOk = isValidIntakeDate(goalNoteDateInput, Date.now());
+          const d = new Date();
+          const pad = n => String(n).padStart(2, '0');
+          const today = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+          return (
+            <div data-testid="goal-note-date-ask" className="mb-3 rounded-md px-4 py-3 flex flex-wrap items-center gap-x-3 gap-y-2" style={{ background: '#16181F', border: '1px solid #2A2E38', color: '#F2F0EA' }}>
+              <div className="min-w-0 flex-1 basis-48">
+                <p className="text-sm font-semibold">{i18n_t('intake', 'noteDateTitle')}</p>
+                <p className="text-xs" style={{ color: '#8A8E99' }}>{i18n_t('intake', 'noteDateSub')}</p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  type="date"
+                  data-testid="goal-note-date-input"
+                  aria-label={i18n_t('intake', 'noteDateTitle')}
+                  min={today}
+                  value={goalNoteDateInput}
+                  onChange={(e) => setGoalNoteDateInput(e.target.value || '')}
+                  className="px-3 py-2 rounded-lg text-sm tabular-nums"
+                  style={{ background: '#0E0F13', border: '1px solid #2A2E38', color: '#F2F0EA' }}
+                />
+                <button
+                  type="button"
+                  data-testid="goal-note-date-save"
+                  disabled={!dateOk}
+                  onClick={saveGoalNoteDate}
+                  className="px-3 py-2 text-sm font-semibold"
+                  style={{ background: '#1F222B', border: `1px solid ${dateOk ? '#8A8E99' : '#2A2E38'}`, color: dateOk ? '#F2F0EA' : '#8A8E99', borderRadius: '6px' }}
+                >
+                  {i18n_t('intake', 'noteDateSave')}
+                </button>
+                <button
+                  type="button"
+                  data-testid="goal-note-date-skip"
+                  onClick={skipGoalNoteDate}
+                  className="px-2 py-2 text-xs underline underline-offset-2"
+                  style={{ color: '#8A8E99' }}
+                >
+                  {i18n_t('intake', 'noteDateSkip')}
+                </button>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* The quota wall, inline (M-07, 2026-11-22; inline arm, a later hit
             the same day). Not a dialog: no overlay, nothing to swat. The

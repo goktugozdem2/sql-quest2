@@ -987,6 +987,12 @@ const TRANSLATIONS = {
       levelMid: 'Mid level',
       levelSenior: 'Senior or above',
       daysLeft: '🗓 {n} days left',
+      // The goal-note date ask (flag goalNoteDateAsk): one inline line after
+      // an interview answer from the email, never a modal.
+      noteDateTitle: 'When is it?',
+      noteDateSub: 'Pick the day and we count down to it.',
+      noteDateSave: 'Save date',
+      noteDateSkip: 'Skip',
     },
     companyAsk: {
       question: 'Which company are you preparing for?',
@@ -2015,6 +2021,10 @@ const TRANSLATIONS = {
       levelMid: 'Orta seviye',
       levelSenior: 'Kıdemli ve üstü',
       daysLeft: '🗓 {n} gün kaldı',
+      noteDateTitle: 'Ne zaman?',
+      noteDateSub: 'Günü seç, geri sayımı biz tutalım.',
+      noteDateSave: 'Tarihi kaydet',
+      noteDateSkip: 'Geç',
     },
     companyAsk: {
       question: 'Hangi şirkete hazırlanıyorsun?',
