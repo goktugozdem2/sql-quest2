@@ -3,31 +3,31 @@
   "updated": "2026-11-23",
   "pages": {
     "/": {
-      "hash": "99978401404480c3",
+      "hash": "267204d4ed43a819",
       "lastmod": "2026-11-23"
     },
     "/turkce-sql-ogren/": {
-      "hash": "e6012c0f6476949d",
+      "hash": "9580c5b22cccad52",
       "lastmod": "2026-11-23"
     },
     "/finans-sql/": {
-      "hash": "7d2b800bfaaee0b8",
+      "hash": "cdf5b66fbbb09424",
       "lastmod": "2026-11-23"
     },
     "/gayrimenkul-sql/": {
-      "hash": "c7e3efe4ca7eac90",
+      "hash": "205df7dc7e16da0e",
       "lastmod": "2026-11-23"
     },
     "/uretim-sql/": {
-      "hash": "8a23555565868453",
+      "hash": "f51870a29e67a35d",
       "lastmod": "2026-11-23"
     },
     "/meta-sql-interview/": {
-      "hash": "ff61a105e197b67d",
+      "hash": "da904dd9836bc5c8",
       "lastmod": "2026-11-23"
     },
     "/google-sql-interview/": {
-      "hash": "6eae908b6fbe16f9",
+      "hash": "52cd5f325f6dc876",
       "lastmod": "2026-11-23"
     },
     "/amazon-sql-interview/": {
@@ -75,11 +75,11 @@
       "lastmod": "2026-11-23"
     },
     "/databricks-sql-interview/": {
-      "hash": "dbaf7e06976d60f9",
+      "hash": "6431c12c77ccc7c5",
       "lastmod": "2026-11-23"
     },
     "/shopify-sql-interview/": {
-      "hash": "b4c609eba7b2e44a",
+      "hash": "5262cbbf5796cdfc",
       "lastmod": "2026-11-23"
     },
     "/spotify-sql-interview/": {
@@ -107,11 +107,11 @@
       "lastmod": "2026-11-21"
     },
     "/fraud-analytics-sql/": {
-      "hash": "f77f5b211000ab05",
+      "hash": "3ab851166a8bbd2f",
       "lastmod": "2026-11-23"
     },
     "/vs-datalemur/": {
-      "hash": "88d8d521cc154100",
+      "hash": "bb77d997dd12495a",
       "lastmod": "2026-11-23"
     },
     "/datalemur-karsilastirma/": {
@@ -119,19 +119,19 @@
       "lastmod": "2026-11-23"
     },
     "/vs-sqlbolt/": {
-      "hash": "1b872760c3f18bc2",
+      "hash": "164865fa4413d1bd",
       "lastmod": "2026-11-23"
     },
     "/vs-sqlzoo/": {
-      "hash": "7b8e66c8ad5cbb59",
+      "hash": "da107997cacf015a",
       "lastmod": "2026-11-23"
     },
     "/vs-stratascratch/": {
-      "hash": "b031b79556f04183",
+      "hash": "01b68af08489cb28",
       "lastmod": "2026-11-23"
     },
     "/vs-leetcode-sql/": {
-      "hash": "4e69f5a8b62f1ae3",
+      "hash": "2965d1240ba72f2d",
       "lastmod": "2026-11-23"
     },
     "/vs-hackerrank-sql/": {
@@ -143,11 +143,11 @@
       "lastmod": "2026-11-23"
     },
     "/best-sql-practice-sites/": {
-      "hash": "f1ece372374a59c3",
+      "hash": "5a224a57a9e0973b",
       "lastmod": "2026-11-23"
     },
     "/sql-interview-prep/": {
-      "hash": "2a2e4df38292bb5b",
+      "hash": "a8d7ee3efcf2af80",
       "lastmod": "2026-11-23"
     },
     "/learn-sql/": {
@@ -183,7 +183,7 @@
       "lastmod": "2026-11-23"
     },
     "/sql-exercises/": {
-      "hash": "33ee3fd5fff7f356",
+      "hash": "e03d0e2aa7f3cfdb",
       "lastmod": "2026-11-23"
     },
     "/after-the-sql-course/": {
@@ -191,7 +191,7 @@
       "lastmod": "2026-11-23"
     },
     "/after-bootcamp/": {
-      "hash": "f31f9134f708c129",
+      "hash": "8f0c4f77076678f3",
       "lastmod": "2026-11-23"
     },
     "/sql-for-the-ai-era/": {
@@ -199,43 +199,43 @@
       "lastmod": "2026-11-23"
     },
     "/challenges/": {
-      "hash": "96b415e8e19cbbda",
+      "hash": "efc4bc377957de62",
       "lastmod": "2026-11-23"
     },
     "/challenges/aggregation/": {
-      "hash": "b929adcde28a5d26",
+      "hash": "5a2816149eab055e",
       "lastmod": "2026-11-23"
     },
     "/challenges/case-when/": {
-      "hash": "a5c8afbce46db04f",
+      "hash": "f21bfe4ec2909dc2",
       "lastmod": "2026-11-23"
     },
     "/challenges/cte/": {
-      "hash": "8a96a2f717628f42",
+      "hash": "e56a6fff4020bf69",
       "lastmod": "2026-11-23"
     },
     "/challenges/date-functions/": {
-      "hash": "20d18b5bdb9001c5",
+      "hash": "ce332b79755ae7a5",
       "lastmod": "2026-11-23"
     },
     "/challenges/null-handling/": {
-      "hash": "836589af3b6dac0f",
+      "hash": "24b4108256c059dd",
       "lastmod": "2026-11-23"
     },
     "/challenges/string-functions/": {
-      "hash": "b8fa982e8728c3df",
+      "hash": "62dbbf59584e6535",
       "lastmod": "2026-11-23"
     },
     "/challenges/joins/": {
-      "hash": "058332e85bb438e4",
+      "hash": "f1cdc2db47c93bcb",
       "lastmod": "2026-11-23"
     },
     "/challenges/subqueries/": {
-      "hash": "c7efea9019ad2136",
+      "hash": "c680cc1ee4fdff20",
       "lastmod": "2026-11-23"
     },
     "/challenges/window-functions/": {
-      "hash": "3c6893227592d4bd",
+      "hash": "6977dec89318a471",
       "lastmod": "2026-11-23"
     },
     "/challenges/ranking-functions/": {
@@ -251,7 +251,7 @@
       "lastmod": "2026-11-23"
     },
     "/blog/faang-sql-interview-guide/": {
-      "hash": "a525746ec4062f3d",
+      "hash": "ba0c59a01e602f59",
       "lastmod": "2026-11-23"
     },
     "/blog/sql-joins-explained/": {
@@ -271,11 +271,11 @@
       "lastmod": "2026-11-23"
     },
     "/blog/sql-for-fraud-analytics/": {
-      "hash": "7c01de05de1f284f",
+      "hash": "215e60e726b6d1e8",
       "lastmod": "2026-11-23"
     },
     "/blog/sql-group-by-tutorial/": {
-      "hash": "38149bbe5afaddb0",
+      "hash": "26bc861eed6adef0",
       "lastmod": "2026-11-23"
     },
     "/blog/sql-case-when-tutorial/": {
@@ -331,7 +331,7 @@
       "lastmod": "2026-11-23"
     },
     "/blog/recursive-cte-explained/": {
-      "hash": "f9a69284a86512b9",
+      "hash": "e8bf97074e5b3313",
       "lastmod": "2026-11-23"
     },
     "/blog/row-number-vs-rank-vs-dense-rank/": {
@@ -451,7 +451,7 @@
       "lastmod": "2026-11-23"
     },
     "/questions/": {
-      "hash": "e024658d76846275",
+      "hash": "7e0af1ec1ceee49e",
       "lastmod": "2026-11-23"
     },
     "/questions/class-survival-breakdown/": {
@@ -815,15 +815,15 @@
       "lastmod": "2026-11-23"
     },
     "/questions/your-first-query/": {
-      "hash": "12c7569e13884091",
+      "hash": "e766b2dbc8d54f3e",
       "lastmod": "2026-11-23"
     },
     "/questions/pick-your-columns/": {
-      "hash": "c993f2acb7966380",
+      "hash": "3cb653643946e34b",
       "lastmod": "2026-11-23"
     },
     "/questions/filter-with-where/": {
-      "hash": "6c670b7adf5686bb",
+      "hash": "d4575702fbbf5890",
       "lastmod": "2026-11-23"
     },
     "/questions/comparison-operators/": {
@@ -1187,7 +1187,7 @@
       "lastmod": "2026-11-23"
     },
     "/questions/give-the-top-performers-a-raise/": {
-      "hash": "988f15c867c07560",
+      "hash": "be21d09e0b3092a0",
       "lastmod": "2026-11-23"
     },
     "/questions/recompute-a-stale-counter/": {
@@ -1395,11 +1395,11 @@
       "lastmod": "2026-11-23"
     },
     "/questions/distinct-fmea-categories/": {
-      "hash": "c0767025398f6691",
+      "hash": "6bf8e91ce10540a2",
       "lastmod": "2026-11-23"
     },
     "/questions/all-failure-mode-reference/": {
-      "hash": "54a71dea3ec900ce",
+      "hash": "b1d8d97b2a8a3f93",
       "lastmod": "2026-11-23"
     },
     "/questions/tool-wear-stress-tier/": {
@@ -1407,7 +1407,7 @@
       "lastmod": "2026-11-23"
     },
     "/questions/medium-quality-products/": {
-      "hash": "b3af2b80528569de",
+      "hash": "26a475532bb50d31",
       "lastmod": "2026-11-23"
     },
     "/questions/failure-count-by-mode/": {
@@ -1702,6 +1702,26 @@
       "hash": "6817cbdb58b3b12c",
       "lastmod": "2026-11-23"
     },
+    "/questions/build-the-vip-mailing-list/": {
+      "hash": "db81057f1558c2ab",
+      "lastmod": "2026-11-23"
+    },
+    "/questions/a-raise-for-the-best-rated-department/": {
+      "hash": "a3fa465b0eec0eee",
+      "lastmod": "2026-11-23"
+    },
+    "/questions/the-sync-ran-twice/": {
+      "hash": "5645a5b72373f970",
+      "lastmod": "2026-11-23"
+    },
+    "/questions/roll-februarys-units-into-the-totals/": {
+      "hash": "54052ca66b4be4ec",
+      "lastmod": "2026-11-23"
+    },
+    "/questions/a-refunds-table-that-says-no/": {
+      "hash": "91c3a79afb551e4b",
+      "lastmod": "2026-11-23"
+    },
     "/questions/which-markets-really-declined/": {
       "hash": "a226e8e8ae0c0ba2",
       "lastmod": "2026-11-23"
@@ -1772,6 +1792,14 @@
     },
     "/sql-rollup-interview-questions/": {
       "hash": "ad4e8814f3257feb",
+      "lastmod": "2026-11-23"
+    },
+    "/sql-interview-prep-plan/": {
+      "hash": "8e6e03d829e1a246",
+      "lastmod": "2026-11-23"
+    },
+    "/sql-mock-interview/": {
+      "hash": "755213f8c0120b9e",
       "lastmod": "2026-11-23"
     }
   }

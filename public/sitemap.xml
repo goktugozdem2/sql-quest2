@@ -2620,6 +2620,36 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://sqlquest.app/questions/build-the-vip-mailing-list/</loc>
+    <lastmod>2026-11-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://sqlquest.app/questions/a-raise-for-the-best-rated-department/</loc>
+    <lastmod>2026-11-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://sqlquest.app/questions/the-sync-ran-twice/</loc>
+    <lastmod>2026-11-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://sqlquest.app/questions/roll-februarys-units-into-the-totals/</loc>
+    <lastmod>2026-11-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://sqlquest.app/questions/a-refunds-table-that-says-no/</loc>
+    <lastmod>2026-11-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://sqlquest.app/questions/which-markets-really-declined/</loc>
     <lastmod>2026-11-23</lastmod>
     <changefreq>monthly</changefreq>
@@ -2734,4 +2764,22 @@
     <priority>0.7</priority>
   </url>
   <!-- rollup:end -->
+
+  <!-- prep-plan:start -->
+  <url>
+    <loc>https://sqlquest.app/sql-interview-prep-plan/</loc>
+    <lastmod>2026-11-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <!-- prep-plan:end -->
+
+  <!-- mock-page:start -->
+  <url>
+    <loc>https://sqlquest.app/sql-mock-interview/</loc>
+    <lastmod>2026-11-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <!-- mock-page:end -->
 </urlset>
