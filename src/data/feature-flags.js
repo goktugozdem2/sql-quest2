@@ -571,6 +571,17 @@ window.FEATURE_FLAGS = {
     // gets a self-serve fix", metric failed_charge_recovery.
     billingIssueLine: true,
 
+    // ── PostgreSQL mode — spike, dark (2026-11-22) ───────────────────────
+    // A "SQLite / PostgreSQL" toggle on the challenge page. PostgreSQL runs
+    // in PGlite (PostgreSQL 18.6 as WASM, ~5.4 MB gzipped), fetched from
+    // jsDelivr with SRI only when the person picks it; each challenge gets
+    // its own instance, graded with the same comparator, on the allow-list
+    // src/data/postgres-allowlist.json (301 of 312). The verdict is shown,
+    // never recorded — no solve, XP or quota. Preview:
+    // /app/?ff_features_postgresMode=true. Plan and recommendation:
+    // docs/plans/postgres-mode-2026-11-22.md.
+    postgresMode: false,
+
     // ── A company-page arrival opens question 1 (B5, 2026-11-22) ──────────
     // An A/B by aid (company_direct_v1, murmur-finalised hash): a person with
     // zero solves who arrives through `/app/?company=X` (no ?challenge=, no
