@@ -703,6 +703,22 @@ Behaviour unchanged, label fixed: `generic` before 09-12 ≈ `generic` +
 `interview_locked` after. Two more reasons exist only behind flags:
 `company_set` (M1, from the 10-14 flip) and `coach_mock` (M5, from 10-12).
 
+**`debug_lock` (behind `debugQuestions`, defined 2026-11-23).** When a
+locked Debug item (`type: 'debug'`, ids 331–342) opens the Pro modal, the
+wall is the one it would meet anyway (founder: Debug has no price of its
+own — Easy/Medium count toward the free solves, Hard is Pro, a company-tagged
+item follows the company-set rule), so the modal copy is unchanged. Only the
+label changes: `pro_modal_shown.reason`, `pro_plan_clicked.modalReason`,
+`pro_checkout_clicked.modalReason` and the `pro_events.reason` of the modal's
+own rows read **`debug_lock`**, and `pro_modal_shown.lockedAs` keeps the wall
+underneath (`free_quota`, `hard_challenge` from the catcher's Pro path,
+`company_hard`, `company_set`); `lockedAs` is null on every other reason.
+`content_lock_reached` rows are untouched. From the flip, a `free_quota` or
+`hard_challenge` series that should count every wall adds the `debug_lock`
+rows whose `lockedAs` matches; before the flip the value cannot occur.
+Pure half: `withDebugLock` / `proModalReasonLabel` in
+`src/utils/debug-questions.js`.
+
 **Absence is organic, by design.** A direct open, a post-solve
 recommendation, a curriculum step — none of them carry the key, and a
 `challenge_opened` row without `openedFrom` is not a preview-surface open
@@ -1215,6 +1231,31 @@ the share with a `challenge_first_run` for the same challenge (born
 existed, 30 days to 09-23: of opens that never became a solve, 92.3% had no
 submit at all (no `challenge_error_pattern`, no `challenge_errored`). Read
 split by `via` and by first-contact vs later opens. Scorecard §1.
+
+**The mobile band (defined 2026-11-23, before `mobileRunBar` ships).**
+- *Device* is the `viewport` stamp on the `challenge_opened` row itself
+  (app.jsx `trackActivationEvent`: `mobile:` = innerWidth < 768, `tablet:`
+  768–1023, `desktop:` ≥ 1024). Never the person's first `app_opened`: a
+  person who opens on two devices counts once in each band.
+- *First-contact open* = the person's first `challenge_opened` ever (by
+  `coalesce(aid, username)`); *ran* = a `challenge_first_run` for the same
+  person and `challengeId` (either `via`, the starter included) at or after
+  the open. The rate is people who ran ÷ people with a first-contact open.
+- Population: the bot and internal filters of `docs/agent/fleet/README.md`
+  step 2, plus the `/app/?src=<page>` crawler of the mobile plan §1a
+  (`langs = 2`, no `landing_view` and no `landingSrc`) until bot-signals
+  stamps it.
+- Baseline, 28 days to 2026-11-23, people who came from a page or a source
+  (`landing_view` or `landingSrc`): mobile **20%** (7 / 35), desktop 59%
+  (263 / 449); mobile on an empty-editor challenge 9% (2 / 23), on the
+  prefilled #91 42% (5 / 12). docs/plans/mobile-acquisition-2026-11-23.md §1.
+- **By arm (`mobileRunBar`):** the arm is `mobile_run_bar_assigned.arm`, one
+  row per person, fired at the first challenge open on a narrow touch screen
+  (coarse pointer or width < 768) with that open's `challengeId`. Denominator:
+  assigned people whose assignment row is `mobile:`; ran = a
+  `challenge_first_run` for that `challengeId`. Compare `bar` with `control`
+  over the same window — the arms include people without a landing source,
+  so the 20% above is context, not the control figure. Report n per arm.
 
 ## `hint_opened_rate`
 
@@ -4093,6 +4134,15 @@ from feedback where created_at >= :from and created_at < :to group by 1, 2;
 - Apply the fleet's bot and internal-account filters (fleet README, Data).
 - `exit_reason` answers are one tap, `stuck` / `day2` are typed: compare each
   kind to its own target, never a pooled rate.
+- **Before the fix (2026-11-23 → the deploy of `fix/exit-reason-once`), count
+  answers by distinct people**, never by `feedback_submitted` rows or
+  `feedback` rows. Until then the card was not cleared after an answer: it
+  re-mounted after every Pro modal close and asked again with no new
+  `feedback_prompt_shown`, so one person wrote three exit rows to one shown
+  (docs/reads/funnel-2026-11-24.md §1) and rows ÷ shown read above 100%.
+  From the deploy, an answer or a skip ends `exit_reason` in that browser
+  (`sqlquest_fbp_exit_done_at`) and one show records at most one answer, for
+  all three kinds.
 - `context.themeHint` is a guess for the one-tap rows; the theme that counts
   is the one the daily read assigns.
 - Rows written while the 20260907 quote-consent migration is unapplied still
