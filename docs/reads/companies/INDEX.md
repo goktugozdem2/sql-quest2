@@ -32,11 +32,11 @@ Impressions / clicks: gsc_daily page slice, 28 days to 2026-11-21.
 | Ramp | fintech | **2026-11-22** | medium (live SQL round in DA/AE loops) | 31 / 3 | Two dated candidate sources: IQ DA reports Q4 2025 (take-home case + panel, SQL date wrangling) / Q1 2026; DataDriven AE thread Aug 2026 (live CodeSignal, 8 SQL Qs). One more source → sourceable. |
 | Goldman Sachs | fintech | **2026-11-22** | high for the engineering Analyst track (OA without SQL; SQL inside live mixed rounds); none for data analyst | 5 / 0 | Three readable reports (GfG 2024, GfG campus 2023, lets-code Summer Analyst Jul 2025) agree. All are engineering "Analysts" (the corporate title). No data-analyst report could be read (IQ, Dataford, AmbitionBox, naukri refused). goldmansachs.com still 403. |
 | Morgan Stanley | fintech | **2026-11-22** | low (nothing page-ready) | 49 / 2 | Only opened SQL-test report: GfG DE 2021 (2 h HackerRank with an SQL section). First-party: video interviews in screening, interview types generic. DA reports are Glassdoor/IQ, unreadable. |
-| Bloomberg | fintech | none | — | 1 / 0 | read 2026-09-13 (stale) |
+| Bloomberg | fintech | **2026-11-23** | low (data roles thinly reported) | 1 / 0 | One DE screen (Jul 2025): 40 min, one SQL (Postgres; string extraction + weekday pivot + ties as a list) + one Python OOD. The page's DA stage rows rest on one guide (OphyAI) that names no sources; two of its six ranked topics came from unopened snippets. bloomberg.com 403. |
 | Amazon | bigtech | **2026-11-22** | first-party (BIE stages, OA, loop) + medium (3 SQL problems per hour) | 123 / 5 | Amazon's own BIE prep page: OA with two SQL parts (7 days), 60-min phone screen, five 55-min interviews; not on our page. New shapes: share-vs-company-benchmark YoY (PracHub BIE Sep 2026); BA screen with 3 SQL (PracHub Jul 2026). |
 | Google | bigtech | **2026-11-22** | high (SQL early in analyst-type loops); no dialect | 75 / 2 | SQL sits in the first technical round of Engineering Analyst / product DS / BI analyst loops (3 reports); one 2026 report: five SQL questions per round in a shared Google Doc. Three 2026 DS loops had **no SQL**. "BigQuery" has no opened source. |
 | Meta | bigtech | **2026-11-22** | high (DS screen: SQL + product case); DE count contested | 90 / 7 | First DS sources: 3 reports (Jun 2025, Aug 2025, Sep 2026) — one 45-min screen, 1–2 SQL questions, define the metric first. The page's DE "3 SQL + 2 Python" and "not runnable" are now contested by a 2026 guide (5 + 5, test cases). |
-| Apple | bigtech | none | — | 46 / 5 | no read |
+| Apple | bigtech | **2026-11-23** | medium (DS screen: SQL + Python) | 46 / 5 | Two 2026 DS reports: SQL + a Python task in the technical screen (one live on CoderPad with the HM); HM rounds can be metrics-only. Page's JSON-LD claims "every pattern asked in Apple … interviews" — unsourced. |
 | Netflix | bigtech | none | — | 29 / 1 | no read |
 | LinkedIn | bigtech | none | — | 20 / 0 | read 2026-09-13 (stale) |
 | Microsoft | bigtech | none | — | 17 / 0 | read 2026-09-13 (stale) |
@@ -46,15 +46,15 @@ Impressions / clicks: gsc_daily page slice, 28 days to 2026-11-21.
 | Spotify | consumer | none | — | 21 / 1 | no read |
 | DoorDash | consumer | none | — | 10 / 1 | read 2026-09-13 (stale) |
 | Walmart | consumer | none | — | 11 / 2 | read 2026-09-13 (stale) |
-| TikTok | consumer | none | — | 51 / 0 | read 2026-09-13 (stale) |
+| TikTok | consumer | **2026-11-23** | high (SQL in the DS process); platform conflicting | 51 / 0 | Two reports (DS Jun 2026, DE Sep 2025): asked to **read or debug** an existing query. HackerRank (2025 guide) vs SQLPad (Prepfully). The page's "Data Analyst" role and HackerRank row each rest on one source; topic order has no counts. |
 | NVIDIA | datainfra | none | — | 27 / 0 | no read |
 | Databricks | datainfra | **2026-11-22** | first-party for SWE and SA (no SQL round named); none for DS/analyst | 84 / 4 | Databricks' April 2025 prep PDFs: SWE = CoderPad, 4–6 one-hour panels; SA = coding in Python/Scala DataFrames + presentation. No readable data-role report (1point3acres 403). Keep general; "Spark SQL" title is unsourced. |
 | Snowflake | datainfra | **2026-11-22** | first-party for engineering only (SQL not mentioned); none for analyst roles | 132 / 10 | Demand is dialect intent ("snowflake sql practice", all 11 clicks). Analyst reports are on Glassdoor/Blind/IQ, unreadable. Recommendation: no format section. |
 | OpenAI | ailab | none | — | 22 / 4 | no read |
 | Anthropic | ailab | none | — | 26 / 2 | no read |
-| Tesla | industrial | none | — | 74 / 3 | no read |
+| Tesla | industrial | **2026-11-23** | low (nothing page-ready) | 74 / 3 | One DA report (Oct 2025): one SQL question (Fibonacci, recursive CTE), then a panel with a 10-min presentation. tesla.com 403, Glassdoor 403, IQ 429. Page meta/hero say what "Tesla screens for" with no source. |
 
-Coverage on 2026-11-22: **15 of 34** with a dossier younger than 60 days (second batch: Plaid, Ramp, Morgan Stanley; third: Goldman Sachs, Amazon, Snowflake; fourth: Meta, Google, Shopify, Databricks).
+Coverage on 2026-11-23: **19 of 34** with a dossier younger than 60 days (second batch: Plaid, Ramp, Morgan Stanley; third: Goldman Sachs, Amazon, Snowflake; fourth: Meta, Google, Shopify, Databricks; fifth: Tesla, TikTok, Apple, Bloomberg).
 
 ## Companies with search demand and no page
 
@@ -75,12 +75,41 @@ re-check monthly.
 1. ~~Goldman Sachs, Amazon, Snowflake~~: done 2026-11-22 (batch 3).
 2. ~~Meta, Google, Databricks~~ + Shopify: done 2026-11-22 (batch 4).
 3. **PayPal, Coinbase, Monzo, Chime** — convert the 11-20 / 11-22 reads into dossiers before they turn 60 days old (by 2027-01-19).
-4. Then Tesla, TikTok, Apple, and the rest by impressions.
+4. ~~Tesla, TikTok, Apple~~ + Bloomberg: done 2026-11-23 (batch 5). Next by impressions: Netflix (29), Airbnb (25), NVIDIA (27), Anthropic (26), OpenAI (22), Spotify (21), Uber (20), LinkedIn (20, stale read).
+8. **Re-tries for batch 5:** 1point3acres Tesla Senior DA (1182004), Apple DS (920907), TikTok DS (1087310, 1151536) — hand reads; a Glassdoor Tesla DA and Bloomberg Global Data review each; Dataford Bloomberg Industry Group DA guide (429).
 5. **Re-tries for batch 2** (when Interview Query stops answering 429): IQ Plaid DS/DA, IQ Morgan Stanley DA, Taro's Plaid DE report — each could lift a "low" dossier.
 6. **Re-tries for batch 3:** a Goldman **data-analyst** report (IQ DA guide, Dataford, datainterview, Taro DE June 2025); Snowflake analyst / analytics-engineer reports (IQ Snowflake DA, datainterview). Until one opens, Goldman's DA row and Snowflake's analyst row stay empty.
 7. **Re-tries for batch 4:** datainterview Google DA guide (429 ×2); 1point3acres Shopify and Databricks threads (403) — hand reads more likely to work.
 
 ## Run notes
+
+- **2026-11-23, batch 5 (Tesla, TikTok, Apple, Bloomberg).** WebFetch and
+  WebSearch only. No Apify, no other fetcher, no cache or archive.
+  - **403:** tesla.com careers; bloomberg.com (two application-process
+    pages); Glassdoor (first fetch of the run, not retried anywhere).
+  - **429:** Interview Query (first fetch, not retried); Dataford.
+  - **402:** Blind (a TikTok DS post).
+  - **404:** aced.io Tesla DS experiences page.
+  - **Not attempted:** 1point3acres (site-wide 403 in batch 4) — it holds a
+    thread for each of Tesla DA, Apple DS and TikTok DS; Reddit.
+  - **Worked:** PracHub (role filter `&role=Data%20Scientist` etc. works and
+    is the fastest way to find data-role reports), aced.io experience pages
+    and guides, DataLemur, Prepfully, OphyAI, datadriven.io,
+    jobs.apple.com (loads, but surfaced no data role).
+  - PracHub publishes some reports twice under different titles (TikTok DE
+    Sep 2025, Bloomberg DE Jul/Sep 2025); count such pairs once. Several
+    PracHub bodies are locked behind an XP unlock; only their titles were
+    used, and never as a counted report.
+  - **Cross-company B3 shape:** "read this query / fix this query" is now
+    reported at Shopify (OA, Oct 2026) and TikTok (DS Jun 2026, DE Sep 2025).
+    The bank has no such item.
+  - **Site-wide copy issue for C1:** the Tesla and Apple FAQ say "the one
+    page on this site that does carry dated public sources … is the Capital
+    One page" — stale. The sentence is in **21** `src/*-sql-interview.html`
+    pages (counted with grep, 2026-11-23), FAQ JSON-LD and visible FAQ.
+  - Tesla was kept rather than swapped for Netflix/Uber: it is thin, not
+    impossible (one dated report, and the page has unsourced claims worth
+    flagging).
 
 - **2026-11-22, batch 4 (Meta, Google, Shopify, Databricks).** WebFetch and
   WebSearch only; the Greenhouse job-board API by plain curl. No Apify, no
