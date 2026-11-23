@@ -38,7 +38,9 @@ if [ -z "$changed" ]; then
   echo "build: empty diff"
   exit 1
 fi
-if printf '%s\n' "$changed" | grep -Ev '^(docs/|tests/|supabase/|\.github/|\.claude/|[^/]+\.(md|sql)$)' >/dev/null; then
+# The path rule lives in scripts/site-paths.sh, shared with deploy-decide.sh.
+. "$(dirname "$0")/site-paths.sh"
+if printf '%s\n' "$changed" | touches_site; then
   echo "build: files that reach the site changed"
   exit 1
 fi
