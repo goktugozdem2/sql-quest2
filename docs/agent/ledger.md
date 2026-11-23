@@ -3688,6 +3688,15 @@ that needs its own path — the current rule is written down in the handler.
     for that page alone. `vs-leetcode-sql`'s entire pre-period is one app
     opener, so it has no readable per-page verdict at any outcome.
 
+#### Verdict (V1, read 2026-11-23; due 2026-10-08)
+
+- **Measured** 2026-11-23 · `blog_practice_exit`, the claim's own window: first `landing_view` per browser per page 2026-09-09 → 10-08 (the first `cta_practice_*` row is 09-09), solves within 7 days; internal accounts, stamped bots and the Asia/Shanghai no-referrer landing crawler out (metrics.md traps; README rule 2). Each cohort read on its own, never pooled.
+  - **Cohort A (blog):** `cta_practice_*` **7 clicks from 6 browsers** across the 21 posts in 30 days (rung 1 asked ≥ 40 from ≥ 30; the falsification line was < 15). `cta_blog`, the untouched control, 7 people of 181 readers: near zero too. The four baseline posts: **96 readers → 5 solved within 7 days = 5.2%** (baseline 8 of 171 = 4.7%; rung 2 asked ≥ 9%). The 6 clickers: 6 opened a challenge, 3 solved any challenge within 7 days (rung 3 asked ≥ 6 solving the named one). The other 17 posts: 85 readers, 4 took an exit, 3 solved.
+  - **Cohort B (comparison pages):** **0 `cta_practice_*` clicks** on the four pages in the window (rung 1 asked ≥ 20 from ≥ 15; falsification < 8); one click ever, on 10-12. 102 readers, 18 opened the app within 7 days (17.6%, baseline 22 of 247 = 8.9%) through the untouched nav / hero / closing links, 6 solved.
+- **Verdict** **MISS — the pre-registered falsification fired, in both cohorts.**
+- **Read** Cohort A met its own branch "under 15 clicks while `cta_blog` is also near zero": the exit was never the problem, readers take the answer and leave. Cohort B: 0 clicks from 102 readers; the comparison reader's job ends at the verdict, and the opens that did happen came through the links that were already there. Readers per window (96 and 102) sit below the 09-08 baselines (171 and 247), which were taken before the crawler was known, so the rates compare roughly; the click counts do not depend on that. The B2 line of 2026-11-22 filed under "interview countdown" (7 clicks from 6 browsers) is this claim's number and agrees with it.
+- **Next:** keep — the exits stay (two quiet links a page, no harm measured), no third exit and no "solve this now" card. From here the blog and the comparison pages are judged on impressions, rankings and AI citations, not as a practice funnel.
+
 ### interview countdown: a company, a date, and a plan between now and it
 - **Claimed** 2026-09-08 — built, tested and merged to `main`; **NOT LIVE**.
   Ships behind `FEATURE_FLAGS.features.interviewCountdown = false`.
@@ -3910,6 +3919,9 @@ that needs its own path — the current rule is written down in the handler.
   week short of the interview now draws 22 items plus the mock across all 14.
   Nobody saw either version — the flag has never been on — so this is a
   correction to the instrument, not a confound, and the baseline stays zero.
+- **Verdict correction** (V1, 2026-11-23) — the MISS line above is not this claim's. Its numbers are `cta_practice_*` clicks, the metric of "blog posts get a real exit", and it is restated under that entry. This claim's own state: `interviewCountdown` is still `false` on main (`src/data/feature-flags.js`), so **NOT FLIPPED — nothing to read**; the 2026-10-12 read date is void.
+- **Next:** re-read — a new date (flip + 21 days) is set the day `interviewCountdown` flips from the flag queue. If it is not queued by 2027-01-15, retire the claim and the card.
+
 ### review ask: give real users a way to say something in public
 - **Claimed** 2026-09-07 — built, tested and merged to `main`; **NOT LIVE**.
   Ships behind `FEATURE_FLAGS.features.reviewAsk = false`.
@@ -4828,7 +4840,7 @@ that needs its own path — the current rule is written down in the handler.
   hakko504 and adinajoshi were deliberately left out — both had already
   received a different email from the founder that day.
 
-### /sql-exercises/ on Google — the page that ranks 6 on Bing and 24.5 here — **OPEN**
+### /sql-exercises/ on Google — the page that ranks 6 on Bing and 24.5 here — **HIT**
 - **Claimed** 2026-09-11 · **Read** 2026-10-12
 - **The observation that opened it:** the same page, same content, ranks
   **6.36 on Bing with 11,400 impressions and 489 clicks** and **24.5 on Google
@@ -4851,8 +4863,12 @@ that needs its own path — the current rule is written down in the handler.
 - **Note on what is NOT being claimed:** the site-wide average position of 15.7
   is an artifact of 17,029 competitor-brand impressions at 0% CTR and is not a
   target. See `docs/reads/google-position-2026-09-11.md`.
+- **Measured** 2026-11-23 (V1; due 2026-10-12) · `gsc_position('/sql-exercises/')`, impression-weighted over the `gsc_daily` page slice (the API series; the registry's hand read predates it). The baseline reproduces exactly: 06-09 → 09-08, 1,250 impressions, 20 clicks, **24.5**. The 28 days 09-14 → 10-11: 962 impressions, 49 clicks, **11.3**. It held: 10-12 → 11-08 12.3 (1,541 / 72), 10-25 → 11-21 13.0 (1,201 / 55).
+- **Verdict** **HIT** — 11.3 against a target of ≤ 15; the falsification (still above 22) did not fire.
+- **Read** The page moved from the middle of page two to its top and has stayed there for two months, with clicks per 28 days up from about 7 to 49–72. Two changes shipped together (internal links 31 → 132 pages, and the title), so which one did it is not readable, and the weekly series was already at 19.1 and 17.5 in the two weeks before 09-11, so part of the move predates both. Page one was not claimed and has not happened.
+- **Next:** expand — the internal-link lever is cheap and coincided with a 13-place move. Give the next page-two page with a large Bing-vs-Google gap the same link count, one page per claim so each is readable (C1 picks it from `gsc_daily`; at 09-11 the candidates were `/snowflake-sql-interview/` at 13.2 and `/best-sql-practice-sites/` at 9.7).
 
-### Bing T1 — /sql-exercises/ answers the query it actually ranks for — **OPEN**
+### Bing T1 — /sql-exercises/ answers the query it actually ranks for — **MOVED**
 - **Claimed** 2026-09-11 · **Read** 2026-10-09 (with O1's day-30 checkpoint)
 - **Change** title / og / twitter / meta description / h1 on
   `src/sql-exercises.html` now carry "practice questions" alongside
@@ -4874,8 +4890,12 @@ that needs its own path — the current rule is written down in the handler.
   and, indirectly, the 09-29 cold-start read. Bing title propagation runs 1-3
   weeks, so the effect should land after that read closes. If the cold-start
   numbers move oddly in early October, check here first.
+- **Measured** 2026-11-23 (V1; due 2026-10-09) · `bing_page_ctr('/sql-exercises/')` from the `bing_stats` page slice (Bing's weekly buckets, Saturday → Friday; the registry's hand recipe predates the pipeline). The three weeks after one week of propagation, to 10-09: **594 clicks / 10,022 impressions = 5.93%**, position 6. Baseline on the same series, 13 weeks to 09-04: 433 / 10,481 = **4.13%** (hand read 4.28%). Guardrail, landing → solve within 7 days (first `landing_view` on `sql-exercises`, crawler and internal out): 202 / 705 = 28.7% after against 84 / 277 = 30.3% before; it holds.
+- **Verdict** **MOVED** — up 1.8 points, short of the 6.0% target and above the 5.0% falsification line.
+- **Read** The window decides the edge: counted from the ship week it is 6.05%, from two weeks of propagation 5.51%. The CTR was already rising before the change (5.85% in the week to 09-04, 5.39% to 09-11), so the title's own share cannot be separated. After 10-16 the page fell to 2.8–4.6% CTR, position 6 → 9 and 227 → 13 clicks a week; that is the Bing-wide drop (S1 F1, the `/app/?` robots rule of 09-23), not this title.
+- **Next:** keep — the title stays. The page's later fall is read under the Bing RED claims (#138, #72), and the title has since changed again under "/sql-exercises/ title names both nouns" (read 2026-12-12).
 
-### Bing T2 — the competitor-brand queries we rank for and never convert — **OPEN**
+### Bing T2 — the competitor-brand queries we rank for and never convert — **MISS**
 - **Claimed** 2026-09-11 · **Read** 2026-10-12
 - **Change** `/vs-datalemur/` retitled from "SQL Quest vs DataLemur: …" to
   "Is DataLemur Free? 2026 Pricing, Free Tier & SQL Practice". Someone
@@ -4909,8 +4929,12 @@ that needs its own path — the current rule is written down in the handler.
   say so in the first screen and argue the surrounding product instead. A
   comparison page that cannot find an honest advantage should say that rather
   than manufacture one.
+- **Measured** 2026-11-23 (V1; due 2026-10-12) · clicks on the four named queries, `bing_stats` query slice, weekly buckets 09-18 → 10-16 (≈ 30 days from the 09-11 ship): **1 click on 83 impressions** (`sqlzoo practice exercises` 1 / 10, `sql bolt exercises` 0 / 68, `datalemur` 0 / 5, `datalemur sql practice` no row). Baseline on the same series, 13 weeks to 09-11: 0 / 461 (claim: 0 / 452). 10-23 → 11-20: 0 / 76. The claim names no registry metric; this is the claim's own definition on the API series.
+- **Verdict** **MISS — the falsification fired** (under 5 clicks; the target was 15).
+- **Read** Competitor-brand searchers on Bing did not leave for us under either lever: the retitled `/vs-datalemur/` or the two dedicated pages (`/vs-sqlbolt/`, `/vs-sqlzoo/`). Google said the same about `/vs-datalemur/` (FLAT, 2026-11-19). Impressions on the two DataLemur queries also fell from about 25 a week (330 in the 13 weeks before) to about 1 a week (5 in the 5 weeks after), so the retitle may have cost Bing rank on them; that is not separable from the Bing-wide drop.
+- **Next:** keep — the pages stay (honest, cheap, and they rank for other queries); no more title work aimed at competitor-brand queries. C1's queued `/vs-datalemur/` retitle (`docs/reads/c1-search-week-2026-11-23.md`, item 3) should be weighed against this read and the Google FLAT before it takes a slot.
 
-### Bing T3 — get the other 44 pages into the index — **OPEN**
+### Bing T3 — get the other 44 pages into the index — **MOVED**
 - **Claimed** 2026-09-11 · **Read** 2026-10-12
 - **Change** `npm run indexnow -- --all` submitted all 87 sitemap URLs,
   HTTP 200. No quota on IndexNow; Bing's URL Submission holds 100/day in
@@ -4927,6 +4951,10 @@ that needs its own path — the current rule is written down in the handler.
   those pages have a quality or duplication problem. That is worth knowing
   before writing more of them, which is the whole reason this is a claim
   rather than a chore.
+- **Measured** 2026-11-23 (V1; due 2026-10-12) · pages with ≥ 1 Bing impression in the `bing_stats` page slice, counted over the 89 URLs of the sitemap as of 09-11 (the claim's 87 built pages plus two legal pages). The baseline reproduces: 13 weeks to 09-05, **41**. The same 13-week shape ending 10-09: **52** (ending 10-16: 53). Five weeks 09-18 → 10-16: 50, against 36 in the five weeks to 09-11. The 28 days to 11-20: 42.
+- **Verdict** **MOVED** — 41 → 52, short of the 60 target; the falsification (under 50) did not fire.
+- **Read** Submission widened what Bing showed by about a dozen pages within a month. The 13-week window still carries pre-change weeks, so 52 is a floor of the effect, not its size. The gain did not hold: 42 by 11-20, inside the Bing-wide drop that S1 reads as RED.
+- **Next:** keep — IndexNow has run after every deploy since 09-30; recovery is read under S1 F1 and the #138 claim, not here.
 
 ### schema columns on the challenge card (first-run shell had none) — **MISS**
 - **Claimed** 2026-08-21 · **Read** 2026-08-30 (window 08-21→08-29 per protocol)
