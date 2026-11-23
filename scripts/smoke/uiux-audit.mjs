@@ -7,6 +7,18 @@
 //   npm run uiux -- [--base http://localhost:4321] [--out dir] [--only marketing|app]
 //                   [--pages regex] [--viewports phone-s,laptop] [--themes dark]
 //                   [--concurrency 6] [--checks U1,U2,U7,U8] [--repo-report]
+//                   [--matrix viewports|devices] [--engines chromium,webkit]
+//
+// Two matrices. `viewports` (the default, and what `uiux_findings` was
+// baselined on): six Chromium viewports. `devices` (the daily run,
+// .github/workflows/uiux-daily.yml): eight browser × device rows — Chrome
+// and Safari on desktop, iPhone SE and 15 Pro on WebKit, Pixel 7 and
+// Galaxy S9+ on Chromium, iPad Mini on WebKit (DEVICE_MATRIX). An engine
+// that is not installed is skipped and named in the report, never guessed.
+// These are engine emulations, not devices (A4-uiux.md, "The honest limit").
+//
+// A run against anything but localhost must say UIUX_HERMETIC=1: the
+// stubs are always on, and a production run states it on purpose.
 //
 // Hermetic: every request to Supabase, the edge functions (the AI tutor
 // included), /api/ and analytics is answered in the browser — the same
@@ -25,15 +37,15 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { HERMETIC_PREAMBLE, firstScreenArmPreamble } from './lib.mjs';
-import { VIEWPORTS, THEMES, SEVERITY, CHECK_NAMES, runChecks, dedupe, countMatrix, severityTotals } from './uiux-checks.mjs';
-import { installHelpers, collectStatic, collectFocus, collectCoverProbes, collectModals, CLS_INIT } from './uiux-collect.js';
+import { VIEWPORTS, DEVICE_MATRIX, ENGINES, THEMES, SEVERITY, CHECK_NAMES, runChecks, dedupe, countMatrix, severityTotals, engineTotals } from './uiux-checks.mjs';
+import { installHelpers, collectStatic, collectFocus, collectCoverProbes, collectModals, collectMobile, CLS_INIT, SCROLL_INIT } from './uiux-collect.js';
 import { quotaWallHashArm } from '../../src/utils/quota-wall-inline.js';
 
 const require = createRequire(import.meta.url);
 
 // ── Arguments ───────────────────────────────────────────────────────────
 export function parseArgs(argv) {
-  const a = { base: 'http://localhost:4321', out: process.env.UIUX_OUT || path.join(process.cwd(), 'uiux-out'), only: null, pages: null, viewports: null, themes: null, concurrency: 6, checks: null, repoReport: false, shots: true };
+  const a = { base: 'http://localhost:4321', out: process.env.UIUX_OUT || path.join(process.cwd(), 'uiux-out'), only: null, pages: null, viewports: null, themes: null, concurrency: 6, checks: null, repoReport: false, shots: true, matrix: 'viewports', engines: null };
   for (let i = 0; i < argv.length; i++) {
     const k = argv[i], v = argv[i + 1];
     if (k === '--base') { a.base = v.replace(/\/$/, ''); i++; }
@@ -46,9 +58,42 @@ export function parseArgs(argv) {
     else if (k === '--checks') { a.checks = v.split(','); i++; }
     else if (k === '--repo-report') a.repoReport = true;
     else if (k === '--no-shots') a.shots = false;
+    else if (k === '--matrix') { a.matrix = v; i++; }
+    else if (k === '--engines') { a.engines = v.split(','); i++; }
+    else if (k === '--rows') { a.viewports = v.split(','); i++; }
     else if (/^https?:/.test(k)) a.base = k.replace(/\/$/, '');
   }
   return a;
+}
+
+// ── Rows ────────────────────────────────────────────────────────────────
+/** The rows of a matrix. The legacy viewports are Chromium rows with no descriptor. */
+export function matrixRows(matrix = 'viewports') {
+  if (matrix === 'devices') return DEVICE_MATRIX.map(r => ({ ...r }));
+  if (matrix !== 'viewports') throw new Error(`unknown matrix: ${matrix} (viewports | devices)`);
+  return VIEWPORTS.map(v => ({ ...v, engine: 'chromium', browser: 'Chrome', device: null }));
+}
+
+/**
+ * The rows as Playwright projects ({ name, use }), the shape a
+ * playwright.config.js `projects` array takes: an engine plus a built-in
+ * device descriptor. `devices` is playwright's own map.
+ */
+export function playwrightProjects(rows, devices) {
+  return rows.map(r => {
+    const d = r.device ? devices[r.device] : null;
+    if (r.device && !d) throw new Error(`no Playwright descriptor named "${r.device}"`);
+    const use = d ? { ...d } : { viewport: { width: r.width, height: r.height }, isMobile: !!r.phone, hasTouch: !!r.phone };
+    if (r.override || !d) use.viewport = { width: r.width, height: r.height };
+    // Phone pages: the device's scale is only the screenshot's resolution.
+    return { name: r.name, use: { ...use, browserName: r.engine } };
+  });
+}
+
+/** A non-local base needs UIUX_HERMETIC=1: production runs are hermetic on purpose. */
+export function hermeticRefusal(base, env = process.env) {
+  if (/^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:|\/|$)/.test(base)) return null;
+  return env.UIUX_HERMETIC === '1' ? null : `uiux: ${base} is not local — set UIUX_HERMETIC=1 to confirm a hermetic production run`;
 }
 
 // ── Surfaces ────────────────────────────────────────────────────────────
@@ -164,17 +209,14 @@ export function vendorFile(url, dir) {
 const HERMETIC_ROUTE = /supabase\.co|functions\/v1|vercel-insights|va\.vercel|clarity\.ms|googletagmanager|google-analytics|\/api\/|\/_vercel\//;
 
 async function runJob(browser, job, opts) {
-  const { surface, viewport, theme } = job;
-  const ctx = await browser.newContext({
-    viewport: { width: viewport.width, height: viewport.height },
-    isMobile: viewport.phone, hasTouch: viewport.phone,
-    colorScheme: theme, reducedMotion: 'reduce',
-  });
+  const { surface, viewport, theme, project } = job;
+  const ctx = await browser.newContext({ ...project.use, browserName: undefined, colorScheme: theme, reducedMotion: 'reduce' });
   const consoleErrors = [];
   const failedRequests = [];
   try {
     await ctx.addInitScript(HERMETIC_PREAMBLE);
     await ctx.addInitScript(CLS_INIT);
+    await ctx.addInitScript(SCROLL_INIT);
     if (surface.seed) await ctx.addInitScript(surface.seed);
     await ctx.route(HERMETIC_ROUTE, (r) => {
       const url = r.request().url();
@@ -217,6 +259,7 @@ async function runJob(browser, job, opts) {
     await page.keyboard.press('Tab').catch(() => {});
     snap.primaries = await page.evaluate(collectFocus).catch(() => []);
     snap.modals = await page.evaluate(collectModals).catch(() => []);
+    Object.assign(snap, await page.evaluate(collectMobile).catch(() => ({})));
     // Static findings decide the screenshot, before the cover probes scroll.
     let shot = null;
     const pre = runChecks({ ...snap, coverProbes: [] }, vp).filter(f => f.severity !== 'minor');
@@ -227,23 +270,42 @@ async function runJob(browser, job, opts) {
     snap.coverProbes = viewport.phone ? await page.evaluate(collectCoverProbes).catch(() => []) : [];
     let found = runChecks(snap, vp);
     if (opts.checks) found = found.filter(f => opts.checks.includes(f.check));
-    return found.map(f => ({ ...f, page: surface.id, viewport: viewport.name, theme, shot }));
+    return found.map(f => ({ ...f, page: surface.id, viewport: viewport.name, theme, shot, ...rowTags(viewport) }));
   } catch (e) {
-    return [{ check: 'U12', severity: SEVERITY.U12, selector: 'run', detail: 'audit could not run the page: ' + String(e.message || e).split('\n')[0].slice(0, 160), page: surface.id, viewport: viewport.name, theme, shot: null }];
+    return [{ check: 'U12', severity: SEVERITY.U12, selector: 'run', detail: 'audit could not run the page: ' + String(e.message || e).split('\n')[0].slice(0, 160), page: surface.id, viewport: viewport.name, theme, shot: null, ...rowTags(viewport) }];
   } finally {
     await ctx.close().catch(() => {});
   }
 }
 
+const rowTags = (r) => ({ engine: r.engine, browser: r.browser, device: r.device || `${r.width}×${r.height}` });
+
 const slug = (s) => String(s).replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '') || 'home';
 
 // ── Report ──────────────────────────────────────────────────────────────
-export function renderReport(findings, { title = 'UI/UX audit', surfaces = 0, jobs = 0, viewports = VIEWPORTS.map(v => v.name), repoReport = false } = {}) {
+export function renderReport(findings, { title = 'UI/UX audit', surfaces = 0, jobs = 0, viewports = VIEWPORTS.map(v => v.name), repoReport = false, rows = null, skipped = [] } = {}) {
   const lines = [];
   const tot = severityTotals(findings);
   lines.push(`# ${title}`, '');
   lines.push(`${surfaces} surfaces, ${jobs} page × viewport × theme runs. Findings are deduplicated per page, viewport, theme and selector.`, '');
   lines.push(`**Critical ${tot.critical} · major ${tot.major} · minor ${tot.minor}**`, '');
+  if (rows) {
+    lines.push('## Rows (engine emulations, not devices)', '');
+    lines.push('| row | engine | browser | Playwright descriptor | viewport |', '|---|---|---|---|---|');
+    for (const r of rows) lines.push(`| ${r.name} | ${r.engine} | ${r.browser} | ${r.device || '—'} | ${r.width}×${r.height} |`);
+    lines.push('');
+    lines.push('WebKit is Safari\'s engine and Chromium is Chrome\'s, each driven with a device\'s viewport, scale, user agent and touch. Not covered: iOS Safari\'s collapsing toolbar and on-screen keyboard, real device fonts, GPU and memory, Android Chrome\'s own UI, in-app webviews.', '');
+  }
+  if (skipped.length) {
+    lines.push(`**Skipped:** ${skipped.map(s => `${s.engine} (${s.rows.join(', ')}) — ${s.reason}`).join('; ')}`, '');
+  }
+  const et = engineTotals(findings);
+  const engines = Object.keys(et).sort();
+  if (engines.length) {
+    lines.push('## By engine', '', '| engine | critical | major | minor |', '|---|---:|---:|---:|');
+    for (const e of engines) lines.push(`| ${e} | ${et[e].critical} | ${et[e].major} | ${et[e].minor} |`);
+    lines.push('');
+  }
   lines.push('## Counts by check × viewport', '');
   lines.push(`| check | severity | ${viewports.join(' | ')} | total |`);
   lines.push(`|---|---|${viewports.map(() => '---:').join('|')}|---:|`);
@@ -283,6 +345,8 @@ export async function main(argv = process.argv.slice(2)) {
   const opts = parseArgs(argv);
   let playwright;
   try { playwright = require('playwright'); } catch (_) { console.error('uiux: Playwright is not installed (npm i -D playwright, or run where it is)'); process.exit(2); }
+  const refusal = hermeticRefusal(opts.base);
+  if (refusal) { console.error(refusal); process.exit(2); }
   fs.mkdirSync(path.join(opts.out, 'shots'), { recursive: true });
 
   let surfaces = [];
@@ -292,31 +356,48 @@ export async function main(argv = process.argv.slice(2)) {
   }
   if (opts.only !== 'marketing') surfaces.push(...appScenarios());
   if (opts.pages) surfaces = surfaces.filter(s => opts.pages.test(s.id));
-  const viewports = VIEWPORTS.filter(v => !opts.viewports || opts.viewports.includes(v.name));
+  let viewports = matrixRows(opts.matrix).filter(v => !opts.viewports || opts.viewports.includes(v.name));
+  if (opts.engines) viewports = viewports.filter(v => opts.engines.includes(v.engine));
   const themes = THEMES.filter(t => !opts.themes || opts.themes.includes(t));
-  const jobs = [];
-  for (const surface of surfaces) for (const viewport of viewports) for (const theme of themes) jobs.push({ surface, viewport, theme });
+  const projects = new Map(playwrightProjects(viewports, playwright.devices).map(p => [p.name, p]));
 
   const launch = {};
   if (process.env.UIUX_PROXY) launch.proxy = { server: process.env.UIUX_PROXY, bypass: 'localhost,127.0.0.1' };
-  const browser = await playwright.chromium.launch(launch);
+  // One browser per engine the rows need. An engine that will not launch
+  // (not installed here) is skipped and reported, never silently dropped.
+  const browsers = {};
+  const skipped = [];
+  for (const engine of ENGINES.filter(e => viewports.some(v => v.engine === e))) {
+    try { browsers[engine] = await playwright[engine].launch(launch); }
+    catch (e) { skipped.push({ engine, rows: viewports.filter(v => v.engine === engine).map(v => v.name), reason: String(e.message || e).split('\n')[0].slice(0, 120) }); }
+  }
+  const ran = viewports.filter(v => browsers[v.engine]);
+  for (const s of skipped) console.log(`uiux: ${s.engine} skipped (${s.rows.join(', ')}): ${s.reason}`);
+
+  const jobs = [];
+  for (const surface of surfaces) for (const viewport of ran) for (const theme of themes) jobs.push({ surface, viewport, theme, project: projects.get(viewport.name) });
   const all = [];
   let next = 0, done = 0;
   const t0 = Date.now();
   await Promise.all(Array.from({ length: Math.max(1, opts.concurrency) }, async () => {
     while (next < jobs.length) {
       const job = jobs[next++];
-      all.push(...await runJob(browser, job, opts));
+      all.push(...await runJob(browsers[job.viewport.engine], job, opts));
       done++;
       if (done % 50 === 0 || done === jobs.length) console.log(`uiux: ${done}/${jobs.length} runs, ${Math.round((Date.now() - t0) / 1000)} s`);
     }
   }));
-  await browser.close();
+  for (const b of Object.values(browsers)) await b.close();
 
   const findings = dedupe(all);
-  const out = { at: new Date().toISOString(), base: opts.base, surfaces: surfaces.length, jobs: jobs.length, totals: severityTotals(findings), matrix: countMatrix(findings, viewports.map(v => v.name)), findings };
+  const rowNames = ran.map(v => v.name);
+  const out = {
+    at: new Date().toISOString(), base: opts.base, matrix_kind: opts.matrix, surfaces: surfaces.length, jobs: jobs.length,
+    rows: ran.map(r => ({ name: r.name, engine: r.engine, browser: r.browser, device: r.device, width: r.width, height: r.height })),
+    skipped, totals: severityTotals(findings), engines: engineTotals(findings), matrix: countMatrix(findings, rowNames), findings,
+  };
   fs.writeFileSync(path.join(opts.out, 'findings.json'), JSON.stringify(out, null, 2));
-  const md = renderReport(findings, { surfaces: surfaces.length, jobs: jobs.length, viewports: viewports.map(v => v.name), repoReport: opts.repoReport });
+  const md = renderReport(findings, { surfaces: surfaces.length, jobs: jobs.length, viewports: rowNames, repoReport: opts.repoReport, rows: opts.matrix === 'devices' ? ran : null, skipped });
   fs.writeFileSync(path.join(opts.out, 'report.md'), md);
   console.log(`uiux: critical ${out.totals.critical} · major ${out.totals.major} · minor ${out.totals.minor} → ${path.join(opts.out, 'report.md')}`);
   return out;
