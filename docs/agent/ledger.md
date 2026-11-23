@@ -27,6 +27,24 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### no exclusivity claims about the AI coach, tutor or Skillmap (C2)
+
+- **Claimed** 2026-11-23 · **Shipped** on merge (static pages, no flag) ·
+  **Read** none (a truthfulness fix, not a bet).
+- **Change** `/best-sql-practice-sites/` said SQL Quest was "the only
+  platform reviewed with a wrong-answer diagnostic, an AI Coach and an
+  adaptive 9-skill Skillmap" (FAQ, twice incl. JSON-LD) and that "no other
+  platform has" the diagnostic. B6's read (docs/reads/competitors-2026-11-23.md,
+  PR #214) has dated counter-examples. Rewritten to what SQL Quest does: the
+  Skillmap across nine skills, the Coach picking the next step from it, the
+  tutor reading the query you wrote. The homepage comparison H2 "The tutor
+  features the question banks don't have" → "What the tutor does after a
+  wrong answer". Guard: `tests/no-exclusivity-claims.test.js` (src pages +
+  `scripts/build-*` generators).
+- **Metric** none. Truthfulness fix.
+- **Falsification** a page or generator states an exclusivity claim about
+  the AI coach, tutor, diagnostic or Skillmap again.
+
 ### AI-visibility pass: answer-first summaries, honest competitor facts, llms.txt entry points (C2)
 
 - **Claimed** 2026-11-22 · **Shipped** on merge (static pages + llms.txt,
