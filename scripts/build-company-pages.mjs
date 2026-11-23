@@ -370,8 +370,8 @@ export function withProvenance(html, { slug, name }) {
 export function formatSection(d, { accessed, role = null } = {}) {
   const srcKeys = Object.keys(d.sources);
   const cite = keys => keys.length
-    ? keys.map(k => `<a href="#src-${k}" style="color:#8b98ab;text-decoration:none;font-size:11px;vertical-align:super;">[${srcKeys.indexOf(k) + 1}]</a>`).join('')
-    : '<span style="color:#8b98ab;font-size:11px;"> (no reliable source)</span>';
+    ? keys.map(k => `<a href="#src-${k}" style="color:#8b98ab;text-decoration:none;font-size:12px;vertical-align:super;">[${srcKeys.indexOf(k) + 1}]</a>`).join('')
+    : '<span style="color:#8b98ab;font-size:12px;"> (no reliable source)</span>';
   const rows = d.format.map(r => `      <tr><th scope="row" style="text-align:left;vertical-align:top;padding:14px 16px;color:#e2e8f0;font-weight:700;font-size:14px;white-space:nowrap;border-bottom:1px solid rgba(255,255,255,.06);">${esc(r[0])}</th><td style="padding:14px 16px;color:#94a3b8;font-size:14px;line-height:1.7;border-bottom:1px solid rgba(255,255,255,.06);">${esc(r[1])}${cite(r[2])}</td></tr>`).join('\n');
   const list = srcKeys.map((k, i) => {
     const [label, href, date] = d.sources[k];
@@ -442,8 +442,8 @@ export function renderPage(key, d, f) {
   const faqs = faqFor(key, d, f);
   const srcKeys = Object.keys(d.sources);
   const cite = keys => keys.length
-    ? keys.map(k => `<a href="#src-${k}" style="color:#8b98ab;text-decoration:none;font-size:11px;vertical-align:super;">[${srcKeys.indexOf(k) + 1}]</a>`).join('')
-    : '<span style="color:#8b98ab;font-size:11px;"> (no reliable source)</span>';
+    ? keys.map(k => `<a href="#src-${k}" style="color:#8b98ab;text-decoration:none;font-size:12px;vertical-align:super;">[${srcKeys.indexOf(k) + 1}]</a>`).join('')
+    : '<span style="color:#8b98ab;font-size:12px;"> (no reliable source)</span>';
   const shapes = d.shapes.map(s => `      <li style="margin:0 0 12px;line-height:1.7;">${esc(s[0])}${cite([s[1]])}</li>`).join('\n');
   const reported = d.reportedTopics.map((t, i) => `<li style="margin:0 0 8px;"><span class="fm" style="color:#8b98ab;margin-right:8px;">${i + 1}</span>${esc(t)}</li>`).join('');
   const topicsJs = f.dist.map((x, i) => `  ['${x.share}%','${jsq(x.skill)}','${x.count} of the ${f.n} · ${jsq(SKILL_SUB[x.skill] || '')}','${['#c084fc', '#a78bfa', '#7c3aed', '#c084fc'][i % 4]}']`).join(',\n');
@@ -581,7 +581,7 @@ ${readinessBlock({ slug: key, name: d.name, src: slug })}
 const TOPICS=[
 ${topicsJs}
 ];
-document.getElementById('topic-cards').innerHTML=TOPICS.map(t=>\`<div class="tc"><p class="fd" style="font-size:28px;font-weight:800;color:\${t[3]}">\${t[0]}</p><p style="font-size:13px;font-weight:700;color:#e2e8f0;margin-top:4px">\${t[1]}</p><p style="font-size:11px;color:#8b98ab;margin-top:6px;line-height:1.5">\${t[2]}</p></div>\`).join('');
+document.getElementById('topic-cards').innerHTML=TOPICS.map(t=>\`<div class="tc"><p class="fd" style="font-size:28px;font-weight:800;color:\${t[3]}">\${t[0]}</p><p style="font-size:13px;font-weight:700;color:#e2e8f0;margin-top:4px">\${t[1]}</p><p style="font-size:12px;color:#8b98ab;margin-top:6px;line-height:1.5">\${t[2]}</p></div>\`).join('');
 
 // GENERATED FROM THE BANK — real SQL Quest challenges tagged ${d.name}, Easy → Hard.
 const FQ=[

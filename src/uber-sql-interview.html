@@ -153,9 +153,9 @@
       <a href="#questions" class="btn bo">See all 18 Uber-tagged challenges ↓</a>
     </div>
     <div style="display:flex;gap:28px;margin-top:44px;flex-wrap:wrap;justify-content:center;animation:fadeUp .6s .5s both;">
-      <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">18 challenges</p><p style="font-size:11px;color:#8b98ab;">Uber patterns</p></div></div>
-      <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">Real datasets</p><p style="font-size:11px;color:#8b98ab;">Rides & marketplaces</p></div></div>
-      <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">AI tutor</p><p style="font-size:11px;color:#8b98ab;">Step-by-step hints</p></div></div>
+      <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">18 challenges</p><p style="font-size:12px;color:#8b98ab;">Uber patterns</p></div></div>
+      <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">Real datasets</p><p style="font-size:12px;color:#8b98ab;">Rides & marketplaces</p></div></div>
+      <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">AI tutor</p><p style="font-size:12px;color:#8b98ab;">Step-by-step hints</p></div></div>
     </div>
   </div>
 </section>
@@ -289,7 +289,7 @@ const TOPICS=[
   ['17%','Conditional Logic','3 of the 18 · CASE for row labels, buckets and conditional aggregation','#3b82f6'],
   ['6%','String Functions','1 of the 18 · SUBSTR, INSTR, REPLACE, concatenation and parsing','#22c55e']
 ];
-document.getElementById('topic-cards').innerHTML=TOPICS.map(t=>`<div class="tc" onmouseenter="this.style.borderColor='${t[3]}44'" onmouseleave="this.style.borderColor='rgba(255,255,255,0.06)'"><p class="fd" style="font-size:32px;font-weight:800;color:${t[3]}">${t[0]}</p><p style="font-size:13px;font-weight:700;color:#e2e8f0;margin-top:4px">${t[1]}</p><p style="font-size:11px;color:#8b98ab;margin-top:6px;line-height:1.5">${t[2]}</p></div>`).join('');
+document.getElementById('topic-cards').innerHTML=TOPICS.map(t=>`<div class="tc" onmouseenter="this.style.borderColor='${t[3]}44'" onmouseleave="this.style.borderColor='rgba(255,255,255,0.06)'"><p class="fd" style="font-size:32px;font-weight:800;color:${t[3]}">${t[0]}</p><p style="font-size:13px;font-weight:700;color:#e2e8f0;margin-top:4px">${t[1]}</p><p style="font-size:12px;color:#8b98ab;margin-top:6px;line-height:1.5">${t[2]}</p></div>`).join('');
 
 const UBR='<svg width="18" height="18" viewBox="0 0 24 24" fill="#f5f5f7"><path d="M0 5.308v13.384C0 21.52 2.48 24 5.308 24h13.384C21.52 24 24 21.52 24 18.692V5.308C24 2.48 21.52 0 18.692 0H5.308C2.48 0 0 2.48 0 5.308zm4 3.615h4.923v1.846H6.462v2.462h2.461v1.846H4V8.923zm7.385 0h4.923c1.47 0 2.461.99 2.461 2.461v1.846c0 1.47-.99 2.461-2.461 2.461h-3.077v1.846h-1.846V8.923zm1.846 1.846v3.077h3.077v-3.077h-3.077z"/></svg>';
 // GENERATED FROM THE BANK — do not hand-edit. Every entry is a real SQL Quest

@@ -62,3 +62,50 @@ describe('no footer text under 12 px in a source page or generator', () => {
     expect(fs.readFileSync(path.join(ROOT, 'src/index.html'), 'utf8')).toContain('.fnav h3{font-size:12px');
   });
 });
+
+// A2 live QA, 2026-11-23 (docs/reads/live-qa-2026-11-23.md), measured at
+// 375 px: the homepage `.flegal` links were 17 px tall, the /for-teams/
+// footer links 16 px, the Datrick link 28–35 px on every page; company-page
+// hero and topic captions, /sql-exercises/ pills and labels (71 elements)
+// and /vs-sqlzoo/ table notes were 11 px, under DESIGN.md's 12 px floor.
+describe('the rest of the footer links are 44 px tall on a phone (2026-11-23)', () => {
+  it('the shared rule covers the homepage .flegal links and the Datrick link', () => {
+    expect(FOOTER_FIT_STYLE).toMatch(/\.flegal a\{[^}]*min-height:44px[^}]*min-width:44px/);
+    expect(FOOTER_FIT_STYLE).toMatch(/\[data-partner\] a\{[^}]*display:inline-flex[^}]*min-height:44px/);
+  });
+  it('the built homepage carries the rule and still has its .flegal links', () => {
+    const built = fs.readFileSync(path.join(ROOT, 'public/index.html'), 'utf8');
+    expect(built).toContain(FOOTER_FIT_STYLE + PARTNER_LINE);
+    expect(built).toMatch(/<div class="flegal"><a href="\/privacy\/">/);
+  });
+  it('/for-teams/ gives its own footer links a 44 px box under 600 px', () => {
+    const src = fs.readFileSync(path.join(ROOT, 'src/for-teams.html'), 'utf8');
+    expect(src).toMatch(/@media \(max-width:600px\)\{footer a\{[^}]*min-height:44px[^}]*min-width:44px/);
+    expect(fs.readFileSync(path.join(ROOT, 'public/for-teams/index.html'), 'utf8')).toContain(FOOTER_FIT_STYLE);
+  });
+});
+
+describe('no text under 12 px on the pages fixed 2026-11-23', () => {
+  const UNDER_12 = /font-size:\s*(?:[0-9]|1[01])(?:\.\d+)?px/g;
+  const under12 = (rel) => (fs.readFileSync(path.join(ROOT, rel), 'utf8').match(UNDER_12) || []).length;
+  const companies = fs.readdirSync(path.join(ROOT, 'src')).filter(f => /-sql-interview\.html$/.test(f));
+  it('finds the company pages', () => expect(companies.length).toBeGreaterThanOrEqual(30));
+  it('company pages (source, generator and built), /sql-exercises/ and /vs-sqlzoo/ state 12 px or more', () => {
+    const files = [
+      ...companies.map(f => `src/${f}`),
+      ...companies.map(f => `public/${f.replace(/\.html$/, '')}/index.html`),
+      'scripts/build-company-pages.mjs',
+      'src/sql-exercises.html', 'public/sql-exercises/index.html',
+      'src/vs-sqlzoo.html', 'public/vs-sqlzoo/index.html',
+    ];
+    const bad = files.filter(f => under12(f) > 0).map(f => `${f}: ${under12(f)}`);
+    expect(bad).toEqual([]);
+  });
+  it('the homepage hero result line, pricing badge and process labels are 12 px (the Coach mock, at zoom:.85, is exempt)', () => {
+    const src = fs.readFileSync(path.join(ROOT, 'src/index.html'), 'utf8');
+    expect(src).toContain('.proc-day{font-size:12px');
+    expect(src).toMatch(/<p class="fm" style="font-size:12px;[^"]*">✓ 3 rows returned/);
+    expect(src).toMatch(/font-size:12px;[^"]*">Save \d+%<\/div>/);
+    expect(src).toContain('.cm-wrap{zoom:.85}');
+  });
+});
