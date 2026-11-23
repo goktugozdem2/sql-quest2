@@ -199,12 +199,22 @@ describe('what is never queued', () => {
     expect(s1Status('no status line')).toMatchObject({ gsc: 'RED', bing: 'RED', known: false });
   });
 
-  it('a site-wide lastmod (a footer change) is not a reason to request a non-T1 indexed page', () => {
+  // Orchestrator, 2026-11-23: a footer change is not worth Google quota on an
+  // indexed T1 page either; T1 is re-requested only after its own change.
+  it('a site-wide lastmod (a footer change) is not a reason to request ANY indexed page, T1 included', () => {
     const sm = new Map([...BASE].map(([p]) => [p, '2026-11-23']));
     expect(sitewideDays(sm).has('2026-11-23')).toBe(true);
     const status = Object.fromEntries([...sm.keys()].map(p => [p, { verdict: 'PASS', coverage_state: 'Submitted and indexed', last_crawled: '2026-11-01' }]));
     const r = evaluate(ctx({ sitemap: sm, status }));
-    expect(r.queued.every(q => q.tier === 1)).toBe(true);
+    expect(r.queued).toEqual([]);
+  });
+
+  it('a T1 page with its own change (not a site-wide day) is still queued', () => {
+    const sm = new Map([...BASE].map(([p]) => [p, '2026-11-23']));
+    sm.set('/sql-exercises/', '2026-11-24');
+    const status = Object.fromEntries([...sm.keys()].map(p => [p, { verdict: 'PASS', coverage_state: 'Submitted and indexed', last_crawled: '2026-11-01' }]));
+    const r = evaluate(ctx({ sitemap: sm, status }));
+    expect(paths(r.queued)).toEqual(['/sql-exercises/']);
   });
 
   it('a pending page behind a live marker waits until the marker is seen live', () => {

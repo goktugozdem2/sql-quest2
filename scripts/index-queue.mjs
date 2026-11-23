@@ -156,7 +156,7 @@ export function evaluate(ctx) {
     if (last && Date.parse(`${date}T00:00:00Z`) - Date.parse(`${day(last)}T00:00:00Z`) < COOLDOWN_DAYS * DAY) { hold(p, `cooldown: requested ${day(last)}`, tier); continue; }
     if (last && !pend && lastmod && lastmod <= day(last)) { hold(p, `unchanged since the request of ${day(last)}`, tier); continue; }
     if (indexed && row?.last_crawled && lastmod && day(row.last_crawled) >= lastmod) { hold(p, `indexed, crawled ${day(row.last_crawled)} ≥ lastmod ${lastmod}`, tier); continue; }
-    if (tier !== 1 && !pend && indexed !== false && wide.has(lastmod)) { hold(p, `only a site-wide change (${lastmod})${gateNote ? '; ' + gateNote : ''}`, tier); continue; }
+    if (!pend && indexed !== false && wide.has(lastmod)) { hold(p, `only a site-wide change (${lastmod})${gateNote ? '; ' + gateNote : ''}`, tier); continue; }
     if (tier >= 3 && s1[engine] === 'RED') { hold(p, `S1 RED on ${engine}: T3/T4 paused`, tier); continue; }
     if (engine === 'bing') {
       if (tier !== 1) { hold(p, 'bing by hand: T1 only (the API submitter does the rest)', tier); continue; }

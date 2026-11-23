@@ -31,8 +31,10 @@ indexed, then a page never requested, then the newest lastmod.
 - **T1 — money doors:** `/`, `/sql-exercises/`, `/sql-interview-prep/`,
   `/capital-one-sql-interview/`, `/revolut-sql-interview/`,
   `/sql-interview-readiness-test/`. (The homepage is the pricing-bearing
-  page; there is no separate pricing page.) A T1 page is eligible whenever it
-  changed since its last crawl, even when the change was site-wide.
+  page; there is no separate pricing page.) A T1 page is eligible when it
+  changed since its last crawl by its own change. A site-wide change (a
+  footer) does not spend quota on an indexed T1 page (orchestrator,
+  2026-11-23, deciding the open question in #262).
 - **T2 — a new or materially changed page on a door that earns impressions:**
   company pages, topic pages (`/challenges/…`), trap pages and the rollup
   page, `/vs-*`, the alternatives and comparison pages, `/for-teams/`, the
@@ -62,8 +64,8 @@ it answers 200.
 
 **A site-wide change is not a change.** When more than half the sitemap's
 lastmods moved on the same day (a footer, a shared partial — 427 of 431 pages
-on 2026-11-23), that day's lastmod does not make an indexed T2–T5 page
-eligible. Only T1, pending, and not-indexed pages go.
+on 2026-11-23), that day's lastmod does not make any indexed page eligible,
+T1 included. Only pending and not-indexed pages go.
 
 ## 2. Daily caps, with a margin
 

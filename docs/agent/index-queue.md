@@ -6,31 +6,25 @@ Nothing here has been requested. Results go into `docs/agent/index-requests.json
 
 ## Indexing queue · GSC · from 2026-11-24
 
-S1: Google GREEN · Bing RED · index status: gsc_index_status / bing_url_status via Supabase MCP (read-only), 2026-11-23; rows for T1, pending and not-indexed pages only · live checks: not run (pass --live on the day)
+S1: Google GREEN · Bing RED · index status: gsc_index_status read 2026-11-23 ~16:20 UTC (MCP, read-only) · live checks: 16 pages
 
 ### 2026-11-24 · GSC · 8 of cap 8
 
-1. T1 `https://sqlquest.app/` — T1, changed 2026-11-23, never requested · live: check on the day
-2. T1 `https://sqlquest.app/sql-exercises/` — T1, changed 2026-11-23, never requested · live: check on the day
-3. T1 `https://sqlquest.app/sql-interview-prep/` — T1, changed 2026-11-23, never requested · live: check on the day
-4. T1 `https://sqlquest.app/capital-one-sql-interview/` — T1, changed 2026-11-23, never requested · live: check on the day
-5. T1 `https://sqlquest.app/revolut-sql-interview/` — T1, changed 2026-11-23, never requested · live: check on the day
-6. T1 `https://sqlquest.app/sql-interview-readiness-test/` — T1, changed 2026-11-23, never requested · live: check on the day
-7. T2 `https://sqlquest.app/sql-rollup-interview-questions/` — pending: #127; its ledger claim's 28-day window starts at the request · live: check on the day
-8. T2 `https://sqlquest.app/paypal-sql-interview/` — pending: #76 · live: check on the day
+1. T2 `https://sqlquest.app/sql-rollup-interview-questions/` — pending: #127; its ledger claim's 28-day window starts at the request · live ✓
+2. T2 `https://sqlquest.app/paypal-sql-interview/` — pending: #76 · live ✓
+3. T2 `https://sqlquest.app/for-teams/` — pending: #188 · live ✓
+4. T3 `https://sqlquest.app/blog/revolut-data-analyst-sql-screen/` — not indexed (URL is unknown to Google) · live ✓
+5. T5 `https://sqlquest.app/questions/ages-on-record-by-class/` — not indexed (URL is unknown to Google) · live ✓
+6. T5 `https://sqlquest.app/questions/every-employee-next-to-their-departments-top-salary/` — not indexed (URL is unknown to Google) · live ✓
+7. T5 `https://sqlquest.app/questions/hires-per-year/` — not indexed (URL is unknown to Google) · live ✓
+8. T5 `https://sqlquest.app/questions/number-each-customers-orders/` — not indexed (URL is unknown to Google) · live ✓
 
-### 2026-11-25 · GSC · 8 of cap 8 · not before 2026-11-25 16:00 UTC
+### 2026-11-25 · GSC · 2 of cap 8 · not before 2026-11-25 15:58 UTC
 
-1. T2 `https://sqlquest.app/for-teams/` — pending: #188 · live: check on the day
-2. T3 `https://sqlquest.app/blog/revolut-data-analyst-sql-screen/` — not indexed (URL is unknown to Google) · live: check on the day
-3. T5 `https://sqlquest.app/questions/ages-on-record-by-class/` — not indexed (URL is unknown to Google) · live: check on the day
-4. T5 `https://sqlquest.app/questions/every-employee-next-to-their-departments-top-salary/` — not indexed (URL is unknown to Google) · live: check on the day
-5. T5 `https://sqlquest.app/questions/hires-per-year/` — not indexed (URL is unknown to Google) · live: check on the day
-6. T5 `https://sqlquest.app/questions/number-each-customers-orders/` — not indexed (URL is unknown to Google) · live: check on the day
-7. T5 `https://sqlquest.app/questions/reviewed-twice-scored-higher-the-second-time/` — not indexed (URL is unknown to Google) · live: check on the day
-8. T5 `https://sqlquest.app/questions/weekend-logins/` — not indexed (URL is unknown to Google) · live: check on the day
+1. T5 `https://sqlquest.app/questions/reviewed-twice-scored-higher-the-second-time/` — not indexed (URL is unknown to Google) · live: check on the day
+2. T5 `https://sqlquest.app/questions/weekend-logins/` — not indexed (URL is unknown to Google) · live: check on the day
 
-### 2026-11-26 · GSC · 0 of cap 8 · not before 2026-11-26 16:00 UTC
+### 2026-11-26 · GSC · 0 of cap 8 · not before 2026-11-26 15:58 UTC
 
 _Nothing to request._
 
@@ -64,15 +58,7 @@ _Nothing to request._
 
 | Held because | Pages | Examples |
 |---|---|---|
-| only a site-wide change | 408 | `/turkce-sql-ogren/`, `/finans-sql/`, `/gayrimenkul-sql/` … |
+| only a site-wide change | 406 | `/turkce-sql-ogren/`, `/finans-sql/`, `/gayrimenkul-sql/` … |
+| indexed, crawled | 11 | `/`, `/plaid-sql-interview/`, `/shopify-sql-interview/` … |
 | on the skip list | 4 | `/weekly/`, `/privacy/`, `/terms/` … |
-| indexed, crawled | 3 | `/coinbase-sql-interview/`, `/monzo-sql-interview/`, `/chime-sql-interview/` |
 | flag-off | 1 | `/sql-debugging-practice/` |
-
-#### Seed notes (2026-11-23, replaced by the first S1 run)
-
-- Index status: `gsc_index_status` read through the Supabase MCP (read-only) on 2026-11-23, passed as a `--status` snapshot. Unknown to Google: `/sql-rollup-interview-questions/`, `/for-teams/`, `/paypal-sql-interview/`, `/blog/revolut-data-analyst-sql-screen/` and six `/questions/` pages. Chime, Coinbase and Monzo were crawled and indexed on 11-23, so they are held, not queued.
-- `--live` on 2026-11-23 ~15:55 UTC: all eight day-1 URLs answered 200 with no redirect, a self canonical, no noindex for Google, and are in the live sitemap. Re-run on the day.
-- `/challenges/window-functions/` and `/challenges/cte/` wait for #260's `topic-learn:start` on the live page; `/sql-debugging-practice/` (404 today) and the pages linking it wait for `debugQuestions` on.
-- Bing by hand on 2026-11-23: nothing (every T1 change today is the site-wide footer, which IndexNow already sent).
-- Nothing was requested in this run.
