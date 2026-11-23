@@ -175,6 +175,51 @@ of the verifier and must never be rounded to `FLAT`.
 - **Falsification** a page or generator states an exclusivity claim about
   the AI coach, tutor, diagnostic or Skillmap again.
 
+### the Capital One guide's first screen: format, the other test, the mock by its numbers (C5)
+
+- **Claimed** 2026-11-23 · **Shipped** on merge (static page, no flag) · **Read** 2026-12-21 (28 d) and 2027-01-18 (56 d).
+- **Change** `/blog/capital-one-codesignal-data-analyst-assessment/` gets a
+  first-screen block under the skip-ahead box: the reported format (Blind
+  2021–2025 + CodeSignal's DAA help page from R1's dossier, read 2026-11-22,
+  never Capital One's words); one line telling the data-analyst test from the
+  four-question general coding test (B6 N8); the mock by its numbers (70 min,
+  14 questions, 12 MCQ in 48 + 2 written in 22, timed and scored; B6 N1);
+  the readiness test with `?company=capital-one`; question 1 (challenge 276)
+  with `freeTierSentence()`. Visible "Updated 2026-11-23" and JSON-LD
+  `dateModified`. The vendor page joins the format table and Sources. Title,
+  skip-ahead box and body unchanged.
+- **Why this one:** Capital One is 2 of the first 3 payers; its door is this
+  post (branch 3: 641 impressions, 39 clicks in 28 d), and B6's run 2
+  (`docs/reads/competitors-2026-11-23.md`, PR #214, pending; no read on main carries it)
+  found Interview Query's guide (updated 11-16, AI-mock button above the fold)
+  twice on the same query. Menu item 1 beat item 2 (a new sourced guide)
+  because this page already has the landings.
+- **Metric** `landing_to_trial` on the post, read with
+  `/capital-one-sql-interview/` as metrics.md says; `gsc_daily` page slice for
+  the post; `pro_modal_shown` with `linkSrc` `blog-capital-one`; clicks
+  `cta_blog_first_mock` / `cta_blog_first_readiness` / `cta_blog_first_question`.
+- **Baseline** (`gsc_daily`, 28 d to 2026-11-21, R1 dossier): 658 impressions,
+  39 clicks, position 7.3; branch-3 claim: 110 real readers of the post and
+  the page in 28 d to 11-22, 0 Pro modals from a Capital One mock link. Guide
+  `landing_to_trial` for the 28 d to 11-23: the laptop fills it before 12-21
+  (cloud run, no production data).
+- **Target** at 28 d: post clicks ≥ 39 at a position within 1 of 7.3, and
+  ≥ 15% of the post's landing people click one of the three new links. At
+  56 d: ≥ 3 Pro modals from `blog-capital-one` and ≥ 1 trial or purchase from
+  a person whose first landing was the post.
+- **Falsification, written now:** post clicks below 30 at a similar position
+  → the first screen pushed the answer down; move the block below the intro.
+  Fewer than 5% of landers click a new link at ≥ 150 landers → the block is
+  not read; cut it to the mock line. 0 Pro modals from `blog-capital-one` in
+  56 d at ≥ 150 landers → the mock is not what these readers want, as branch
+  3's falsification also says.
+- **Confound, stated:** the branch-3 claim (read 12-20) counts mock modals
+  with `linkSrc` `capital-one-*`; this block's mock link is
+  `blog-capital-one`. Read both srcs together for that claim, and apart here.
+- **Guard** `tests/capital-one-guide.test.js` (12 tests, six breaks caught).
+- **N2 → B3:** the mock has no question that joins tables and computes a
+  rate (its rate, c1-m5, is one table); the page does not claim one.
+
 ### a founder-led live mock — would people pay for it? (asked by hand)
 
 - **Claimed** 2026-11-22 · **Shipped** as 3 Gmail drafts, written by E1 at

@@ -8,12 +8,12 @@
        dated prep guide — never to Capital One — and each source was read on 2026-09-07:
          Blind, "Has anyone attempted Code Signal assessment for data analyst position at Capital One?" (Sep 2021 thread;
            the Dec 1 2021 reply: "70 minutes code signal assessment", Senior Data Analyst)
-         Blind, "Captial one Code signal for Data Analysis" (Feb 2022: "14 questions instead of just 4"; "you can use a
+         Blind, "Capital One CodeSignal for Data Analysts" (Feb 2022: "14 questions instead of just 4"; "you can use a
            scripting language of choice (Python, R) or Excel"; "one question is a database question you have to use SQL
            for"; Jan 2023 reply: "Do not attempt the SQL until the very end. Work really quickly")
          Blind, "Capital One Senior Data Analyst Codesignal Assessment" (Mar 2022 thread; Nov 2022 reply: "14 questions
            and all of them were pretty lengthy", "csv data to answer multiple choice questions", "few sql questions")
-         Blind, "Capital One CodeSignal for Data Analysts" (Jun 2025: "around 14–15 questions in 70 minutes", "CSV files";
+         Blind, "Captial one Code signal for Data Analysis" (Jun 2025: "around 14–15 questions in 70 minutes", "CSV files";
            a Capital One employee's reply: "Format has changed in last 4 years")
          linkjob.ai, Peter Liu, Aug 1 2025: "about 70 to 80 minutes", "often around four to six" questions, "CSV data
            files", INNER JOIN / LEFT JOIN, COUNT / SUM / AVG, GROUP BY, subqueries, CTEs, ROW_NUMBER() / RANK()
@@ -43,7 +43,7 @@
   <meta property="og:image" content="https://sqlquest.app/og-image.png">
   <meta name="twitter:card" content="summary_large_image">
   <script type="application/ld+json">
-  {"@context":"https://schema.org","@type":"BlogPosting","headline":"What the Capital One CodeSignal Data Analyst Assessment Actually Asks (Candidate Reports, 2021–2026)","description":"Capital One's CodeSignal data analyst screen as candidates on Blind (2021–2025) and dated prep guides (2025–2026) describe it: about 70 minutes, around 14–15 questions, CSV/Excel datasets, mostly multiple choice plus written SQL. The SQL patterns the guides name, each worked on a card-transactions schema, the two mistakes that cost points on dataset questions, and a 2-week prep plan.","url":"https://sqlquest.app/blog/capital-one-codesignal-data-analyst-assessment/","datePublished":"2026-09-07","dateModified":"2026-09-07","author":{"@type":"Organization","name":"SQL Quest","url":"https://sqlquest.app/"},"publisher":{"@type":"Organization","name":"SQL Quest","logo":{"@type":"ImageObject","url":"https://sqlquest.app/og-image.png"}},"mainEntityOfPage":"https://sqlquest.app/blog/capital-one-codesignal-data-analyst-assessment/","keywords":"capital one codesignal data analyst assessment, capital one data analyst sql interview, codesignal sql","breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"Blog","item":"https://sqlquest.app/blog/"},{"@type":"ListItem","position":3,"name":"Capital One CodeSignal Data Analyst Assessment","item":"https://sqlquest.app/blog/capital-one-codesignal-data-analyst-assessment/"}]}}
+  {"@context":"https://schema.org","@type":"BlogPosting","headline":"What the Capital One CodeSignal Data Analyst Assessment Actually Asks (Candidate Reports, 2021–2026)","description":"Capital One's CodeSignal data analyst screen as candidates on Blind (2021–2025) and dated prep guides (2025–2026) describe it: about 70 minutes, around 14–15 questions, CSV/Excel datasets, mostly multiple choice plus written SQL. The SQL patterns the guides name, each worked on a card-transactions schema, the two mistakes that cost points on dataset questions, and a 2-week prep plan.","url":"https://sqlquest.app/blog/capital-one-codesignal-data-analyst-assessment/","datePublished":"2026-09-07","dateModified":"2026-11-23","author":{"@type":"Organization","name":"SQL Quest","url":"https://sqlquest.app/"},"publisher":{"@type":"Organization","name":"SQL Quest","logo":{"@type":"ImageObject","url":"https://sqlquest.app/og-image.png"}},"mainEntityOfPage":"https://sqlquest.app/blog/capital-one-codesignal-data-analyst-assessment/","keywords":"capital one codesignal data analyst assessment, capital one data analyst sql interview, codesignal sql","breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"Blog","item":"https://sqlquest.app/blog/"},{"@type":"ListItem","position":3,"name":"Capital One CodeSignal Data Analyst Assessment","item":"https://sqlquest.app/blog/capital-one-codesignal-data-analyst-assessment/"}]}}
   </script>
   <script type="application/ld+json">
   {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
@@ -128,6 +128,8 @@
   <div class="article-meta">
     <span>Published September 2026</span>
     <span>·</span>
+    <time datetime="2026-11-23" data-testid="updated-date">Updated 2026-11-23</time>
+    <span>·</span>
     <span>13 min read</span>
     <span>·</span>
     <span>🎯 Interview Prep</span>
@@ -135,6 +137,22 @@
   <!-- blog-practice:start -->
   <p style="margin:18px 0 26px;padding:14px 18px;border:1px solid rgba(124,58,237,.3);border-radius:12px;background:rgba(124,58,237,.07);font-size:15px;line-height:1.7;">Skip ahead to practice: <a href="/capital-one-sql-interview/" data-track="cta_blog_practice" style="color:#c084fc;font-weight:700;">solve Capital One questions in the browser →</a> · or <a href="/sql-interview-readiness-test/" data-track="cta_blog_readiness" style="color:#c084fc;font-weight:700;">check your SQL interview readiness</a> (10 questions, no signup). Ready for the clock? <a href="/app/?interview=capital-one-codesignal&amp;src=capital-one-blog" data-track="cta_blog_mock" style="color:#c084fc;font-weight:700;">Take the 70-minute timed mock · Pro →</a></p>
   <!-- blog-practice:end -->
+  <!-- first-screen:start — C5, 2026-11-23. The screen at a glance, before the long read. Format lines come only from
+       R1's dossier (docs/reads/companies/capital-one.md, read 2026-11-22) and the Blind reports already cited below;
+       none is Capital One's own words. The mock's numbers are read from src/data/mock-interviews.js by
+       tests/capital-one-guide.test.js. The skip-ahead box above keeps src=capital-one-blog (ledger "branch 3",
+       read 2026-12-20); links here carry src=blog-capital-one. -->
+  <section id="at-a-glance" data-testid="c1-first-screen" style="margin:0 0 36px;padding:20px 22px;border:1px solid rgba(255,255,255,.08);border-radius:14px;background:rgba(15,15,30,.7);">
+    <p class="toc-title" style="margin-bottom:10px;">The screen at a glance · updated 2026-11-23</p>
+    <ul style="margin-bottom:0;">
+      <li><strong>The format, as candidates report it:</strong> about 70 minutes and around 14–15 questions, mostly multiple choice answered from provided CSV data, plus written SQL (Blind reports, December 2021 to June 2025). CodeSignal's own help page describes its standard Data Analytics Assessment the same way: 70 minutes, 14 quiz questions and 1 coding question, with the CSV data worked in any tool (read 22 November 2026; that page does not name Capital One). Capital One does not publish the format.</li>
+      <li><strong>Not the general coding assessment.</strong> A guide that describes four algorithm questions is describing a different CodeSignal test: a February 2022 data analyst candidate counted "14 questions instead of just 4".</li>
+      <li><strong>Rehearse it on the clock.</strong> Our Capital One CodeSignal-style mock is 70 minutes and 14 questions, timed and scored: 12 multiple choice in 48 minutes, then 2 written SQL in 22, on a synthetic card-transactions dataset. That is 4 minutes a multiple-choice question, on joins at the right grain, a join that double-counts, a share of transactions and timestamps stored as text. <a href="/app/?interview=capital-one-codesignal&amp;src=blog-capital-one" data-track="cta_blog_first_mock" style="font-weight:700;">Take the timed mock · Pro →</a></li>
+      <li><strong>Check where you stand first.</strong> <a href="/sql-interview-readiness-test/?company=capital-one&amp;src=blog-capital-one" data-track="cta_blog_first_readiness" style="font-weight:700;">The readiness test for Capital One</a>: 10 questions, no signup, the score weighted by the skill mix of our Capital One practice set.</li>
+      <li><strong>Or start free with question 1:</strong> <a href="/app/?challenge=276&amp;src=blog-capital-one" data-track="cta_blog_first_question" style="font-weight:700;">Transaction Share by Merchant Category →</a> 10 free challenge solves, plus the lessons, warm-ups and the daily challenge.</li>
+    </ul>
+  </section>
+  <!-- first-screen:end -->
 
   <p class="intro">Capital One does not publish the format of its data analyst screen. What exists is a trail of candidate reports on Blind from 2021 to 2025 and a handful of prep guides dated 2025 and 2026, and they mostly agree: about 70 minutes, around 14–15 questions, provided CSV or Excel datasets, mostly multiple choice, plus written SQL. This post lays out what those sources say and where they disagree, then works each named SQL pattern on a card-transactions schema — the shape the datasets are described as having — and ends with the two mistakes that cost points and a 2-week plan. The runnable practice cut for the same screen is the <a href="/capital-one-sql-interview/">Capital One SQL interview questions</a> page.</p>
 
@@ -171,6 +189,7 @@
       <tr><td>Blind, Jun 2025</td><td>"around 14–15 questions in 70 minutes"; "CSV files involved in some of the questions"</td></tr>
       <tr><td>linkjob guide, Aug 2025</td><td>"about 70 to 80 minutes"; "CSV data files"; joins, aggregations, GROUP BY, subqueries, CTEs, ROW_NUMBER / RANK</td></tr>
       <tr><td>extrabrain guide, Feb 2026</td><td>"roughly 70 to 80 minutes"; datasets that "resemble real customer, transaction, account, product, or campaign datasets"; the full SQL list worked below</td></tr>
+      <tr><td>CodeSignal Help Center (the assessment vendor), read 22 Nov 2026</td><td>its standard Data Analytics Assessment: 70 minutes, 14 quiz questions and 1 coding question, CSV data downloaded and worked in any tool. The page does not name Capital One.</td></tr>
       <tr><td>finalroundai guide (analyst track)</td><td>"around 70 minutes"; "multiple MCQ questions and 4 to 6 general questions"; SQL joins, aggregations, window functions</td></tr>
     </tbody>
   </table>
@@ -541,14 +560,15 @@ ranked <span class="kw">AS</span> (
   </div>
 
   <h2 id="sources">Sources</h2>
-  <p>Read on 7 September 2026. Nothing on this page comes from Capital One; every format claim is one of these, dated.</p>
+  <p>Read on 7 September 2026, except the CodeSignal page, read on 22 November 2026 (updated 2026-11-23). Nothing on this page comes from Capital One; every format claim is one of these, dated.</p>
   <ul class="sources">
     <li>Blind — <a href="https://www.teamblind.com/post/Has-anyone-attempted-Code-Signal-assessment-for-data-analyst-position-at-Capital-One-spwo1Lm1">"Has anyone attempted Code Signal assessment for data analyst position at Capital One?"</a> (thread from September 2021; the 1 December 2021 reply reports a "70 minutes code signal assessment" for a Senior Data Analyst role).</li>
-    <li>Blind — <a href="https://www.teamblind.com/post/captial-one-code-signal-for-data-analysis-c318r0cw">"Captial one Code signal for Data Analysis"</a> (February 2022; "14 questions instead of just 4", tool choice, "one question is a database question you have to use SQL for"; the January 2023 reply on pacing).</li>
+    <li>Blind — <a href="https://www.teamblind.com/post/capital-one-codesignal-for-data-analysts-07h0ouhn">"Capital One CodeSignal for Data Analysts"</a> (February 2022; "14 questions instead of just 4", tool choice, "one question is a database question you have to use SQL for"; the January 2023 reply on pacing).</li>
     <li>Blind — <a href="https://www.teamblind.com/post/Capital-One-Senior-Data-Analyst-Codesignal-Assessment-A433su7R">"Capital One Senior Data Analyst Codesignal Assessment"</a> (thread from March 2022; the November 2022 reply: "14 questions", "csv data to answer multiple choice questions", "few sql questions").</li>
-    <li>Blind — <a href="https://www.teamblind.com/post/capital-one-codesignal-for-data-analysts-07h0ouhn">"Capital One CodeSignal for Data Analysts"</a> (June 2025; "around 14–15 questions in 70 minutes", CSV files; the reply from a Capital One account that the format "has changed in last 4 years").</li>
+    <li>Blind — <a href="https://www.teamblind.com/post/captial-one-code-signal-for-data-analysis-c318r0cw">"Captial one Code signal for Data Analysis"</a> (June 2025; "around 14–15 questions in 70 minutes", CSV files; the reply from a Capital One account that the format "has changed in last 4 years").</li>
     <li>linkjob.ai — <a href="https://www.linkjob.ai/interview-questions/capital-one-data-analyst-codesignal-questions-preparation/">"Preparation for Capital One Data Analyst CodeSignal Question"</a>, Peter Liu, 1 August 2025.</li>
     <li>extrabrain.app — <a href="https://extrabrain.app/interview-questions/capital-one-data-analyst-codesignal-questions-preparation-extrabrain/">"Capital One Data Analyst CodeSignal Questions: SQL, Python, and OA Prep"</a>, 11 February 2026.</li>
+    <li>CodeSignal Help Center — <a href="https://support.codesignal.com/hc/en-us/articles/4407377178647">"What should I expect when I take the Data Analytics Assessment (DAA), and how is it structured?"</a> (no date shown; read 22 November 2026). The assessment vendor's own description of the test; it does not name Capital One.</li>
     <li>finalroundai.com — <a href="https://www.finalroundai.com/blog/capital-one-business-analyst-codesignal-questions">"Capital One CodeSignal Questions for Business Analyst"</a> (undated; the analyst-track format and SQL topics).</li>
   </ul>
 
