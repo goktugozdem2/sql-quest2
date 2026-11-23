@@ -162,6 +162,8 @@ const TRANSLATIONS = {
       helpShort: 'Help',
       hideAlt: 'Hide',
       editorPlaceholder: 'Write your SQL solution here...',
+      // The line above Run in the `mobileRunBar` bar arm (src/utils/mobile-run-bar.js).
+      runBarFirstHint: 'Tap Run to see the table',
       expectedOutput: 'Expected Output ({n} rows)',
       expectedOutputOne: 'Expected Output (1 row)',
       // Header / guest banner
@@ -1311,6 +1313,8 @@ const TRANSLATIONS = {
       helpShort: 'Yardım',
       hideAlt: 'Gizle',
       editorPlaceholder: 'SQL çözümünü buraya yaz...',
+      // The Turkish button reads "Çalıştır", so the line names that, not "Run".
+      runBarFirstHint: 'Tabloyu görmek için Çalıştır\'a dokun',
       expectedOutput: 'Beklenen Çıktı ({n} satır)',
       logIn: 'Giriş Yap',
       logInTooltip: 'Hesabın var mı? Giriş yap, buradaki ilerlemen seninle gelir.',

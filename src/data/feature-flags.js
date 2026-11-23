@@ -595,6 +595,18 @@ window.FEATURE_FLAGS = {
     // 50/50 after #156 merges"), ahead of the 12-19 date above. The 12-18
     // banner claim is read on the `list` arm and non-test arrivals only.
     companyDirectOpen: true,
+
+    // ── Run stays on screen on phones (rank 1 of the mobile plan, 2026-11-23)
+    // An A/B by aid (mobile_run_bar_v1, murmur-finalised hash), assigned at
+    // the first challenge open on a narrow touch screen and written once as
+    // `mobile_run_bar_assigned {arm}`. The `bar` arm pins the challenge's
+    // Run / Submit bar to the bottom of the viewport below `md` (above the
+    // keyboard where visualViewport is supported); `control` keeps today's
+    // sticky bar. Desktop is untouched in both arms. DARK until the
+    // orchestrator's decision row. src/utils/mobile-run-bar.js; ledger "Run
+    // stays on screen on phones"; metric open_to_first_run, mobile band.
+    // Plan: docs/plans/mobile-acquisition-2026-11-23.md §4.
+    mobileRunBar: false,
   },
 };
 

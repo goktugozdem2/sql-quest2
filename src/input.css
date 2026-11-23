@@ -96,6 +96,30 @@ body {
   }
 }
 
+/* The fixed Run bar (`mobileRunBar` bar arm, 2026-11-23). Below `md` the
+   challenge's Run / Submit bar is fixed to the bottom of the viewport:
+   12px + a 44px button + max(12px, safe area), plus a 16px label line and
+   an 8px gap for a first-contact person — at most 92px over the safe area.
+   While it is mounted (body[data-run-bar="fixed"], set by the bar's ref):
+   - the page gets that much bottom padding, so the expected output and the
+     end of the page are never under the bar;
+   - the 💬 bubble (44px) lifts from 80px to clear it, and the exit-reason /
+     day-2 prompt slot sits the bubble's 44px + 8px above the bubble, the
+     same spacing PR #230 gives the two at 80px / 132px.
+   max-width 767px is Tailwind's `md` boundary exactly: at 768 the bar is
+   the static row again, so nothing here applies. */
+@media (max-width: 767px) {
+  body[data-run-bar="fixed"] {
+    padding-bottom: calc(96px + env(safe-area-inset-bottom));
+  }
+  body[data-run-bar="fixed"] .sq-feedback-fab {
+    bottom: calc(104px + env(safe-area-inset-bottom));
+  }
+  body[data-run-bar="fixed"] [data-feedback-prompt-slot="global"] {
+    bottom: calc(156px + env(safe-area-inset-bottom));
+  }
+}
+
 /* Profile panel buttons (2026-09-14 DESIGN.md pass).
    The panel had a purple→pink button beside an orange→red one beside a
    yellow→amber one. DESIGN.md forbids button gradients by name and allows one

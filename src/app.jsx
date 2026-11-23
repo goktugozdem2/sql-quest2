@@ -38,6 +38,7 @@ import { mergeProgress, hasProgress, isResumableGuest, GUEST_USER_KEY } from './
 import { companySetMatch } from './utils/company-set-match.js';
 import { buildPracticePlan, PLAN_MIN_SOLVES_FOR_SKILLS } from './utils/practice-plan.js';
 import { FIRST_SCREEN_STORAGE_KEY, firstScreenDecision } from './utils/first-screen.js';
+import { MOBILE_RUN_BAR_STORAGE_KEY, MOBILE_RUN_BAR_TEST_ID, isNarrowTouch, mobileRunBarDecision, runBarLabel, keyboardOffset } from './utils/mobile-run-bar.js';
 import { INTAKE_KEY, INTAKE_GOALS, INTAKE_ROLES, INTAKE_STEPS, INTAKE_COMPANIES, INTAKE_LEVELS, intakeStepsFor, intakeGoalFor, intakeGoalForIntent, nextIntakeStep, isIntakeStepRequired, isIntakeLevel, isValidIntakeDate, buildIntakeRecord, isIntakeComplete, readIntakeRecord, intakeEventPayload, newCoachGoalState, shouldShowIntake } from './utils/onboarding-intake.js';
 import { shouldArmGoalNoteDateAsk, shouldRenderGoalNoteDateAsk } from './utils/goal-note-date-ask.js';
 import { COMPANY_ASK_KEY, COMPANY_ASK_TEST_ID, COMPANY_ASK_UNDECIDED, companyAskDecision, normalizeCompanyAskRecord, matchCompanies, isCompanyAskAnswer } from './utils/company-ask.js';
@@ -24537,6 +24538,69 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     if (decision.act) startFirstRunPath('zero', 'brand-new', { skipLesson: true, source: 'first_screen_test' });
   }, [currentUser, showFirstRunStart, showZeroSqlLesson, showIntake, showGoalMeasureOnStart, firstRunLevel]);
 
+  // Run stays on screen on phones (src/utils/mobile-run-bar.js, flag
+  // `mobileRunBar`, ledger "Run stays on screen on phones"). At a challenge
+  // open on a narrow touch screen a person is assigned an arm once
+  // (`mobile_run_bar_assigned`); the `bar` arm pins the challenge's Run /
+  // Submit bar to the bottom of the viewport below `md` and lifts it above
+  // the on-screen keyboard where visualViewport says where that is. These
+  // hooks sit above the `if (showAuth)` / `if (!dbReady) return` early
+  // returns (CLAUDE.md fragile area 1). Nothing here focuses the editor.
+  const [mobileRunBarShown, setMobileRunBarShown] = useState(false);
+  const [runBarKeyboardOffset, setRunBarKeyboardOffset] = useState(0);
+  useEffect(() => {
+    if (!currentChallenge) return;
+    let narrowTouch = false;
+    try {
+      narrowTouch = isNarrowTouch({
+        coarse: !!window.matchMedia?.('(pointer: coarse)')?.matches,
+        width: window.innerWidth,
+      });
+    } catch (_) { narrowTouch = false; }
+    let stored = null;
+    try { stored = JSON.parse(localStorage.getItem(MOBILE_RUN_BAR_STORAGE_KEY) || 'null'); } catch (_) { stored = null; }
+    const decision = mobileRunBarDecision({
+      flagOn: ftbFlag('mobileRunBar'),
+      narrowTouch,
+      stored,
+      aid: getAnonId(),
+    });
+    if (decision.assign) {
+      try { localStorage.setItem(MOBILE_RUN_BAR_STORAGE_KEY, JSON.stringify({ arm: decision.arm, at: Date.now() })); } catch (_) { /* ignore */ }
+      trackActivationEvent('mobile_run_bar_assigned', { arm: decision.arm, test: MOBILE_RUN_BAR_TEST_ID, challengeId: currentChallenge.id });
+    }
+    setMobileRunBarShown(decision.show);
+  }, [currentChallenge?.id]);
+  useEffect(() => {
+    if (!mobileRunBarShown) { setRunBarKeyboardOffset(0); return undefined; }
+    const vv = typeof window !== 'undefined' ? window.visualViewport : null;
+    if (!vv) return undefined; // unsupported: the bar stays at the bottom
+    const update = () => {
+      setRunBarKeyboardOffset(keyboardOffset({
+        innerWidth: window.innerWidth,
+        innerHeight: window.innerHeight,
+        vvHeight: vv.height,
+        vvOffsetTop: vv.offsetTop,
+      }));
+    };
+    update();
+    vv.addEventListener('resize', update);
+    vv.addEventListener('scroll', update);
+    return () => {
+      vv.removeEventListener('resize', update);
+      vv.removeEventListener('scroll', update);
+    };
+  }, [mobileRunBarShown]);
+  // body[data-run-bar="fixed"] while the fixed bar is mounted: input.css
+  // pads the page by the bar's height and lifts the feedback bubble and the
+  // prompt-card slot above it (phone widths only).
+  const mobileRunBarRef = useCallback((node) => {
+    try {
+      if (node) document.body.setAttribute('data-run-bar', 'fixed');
+      else document.body.removeAttribute('data-run-bar');
+    } catch (_) { /* ignore */ }
+  }, []);
+
   // Recompute Expected Output when db finishes loading AFTER a challenge was
   // opened. Otherwise a guest who lands on a challenge while sql.js is still
   // initializing never sees the Expected Output at all (which blanks the
@@ -39875,12 +39939,42 @@ RULES:
                         Surface + hairline per DESIGN.md (--surface #16181F,
                         --border #2A2E38). Submit keeps the accent because it is
                         a primary CTA, which is one of the five places yellow is
-                        allowed. No new accent surface is introduced. */}
-                    <div className="sticky bottom-0 z-20 flex gap-2 mt-3 border-t border-[#2A2E38] bg-[#16181F] py-3 md:static md:border-0 md:bg-transparent md:py-0">
-                      <button onClick={runChallengeQuery} data-onboarding="run" className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium flex items-center justify-center gap-2">
+                        allowed. No new accent surface is introduced.
+
+                        `mobileRunBar` (2026-11-23): sticky only holds inside
+                        this card, which starts below the fold, so on a phone
+                        Run was still off the first screen and fully under the
+                        keyboard. In the `bar` arm, below `md` only, the bar is
+                        fixed to the viewport (safe-area padded) and lifted
+                        above the keyboard by visualViewport; body[data-run-bar]
+                        pads the page so nothing sits under it. The control arm
+                        keeps the class string below; `md:` and up is the same
+                        static row in both arms.
+
+                        Run and Submit are at least 44 px tall below `md` in
+                        both arms (QA D3, 2026-11-23: they were 40 px). */}
+                    <div
+                      ref={mobileRunBarShown ? mobileRunBarRef : undefined}
+                      data-run-bar-arm={mobileRunBarShown ? 'bar' : undefined}
+                      style={mobileRunBarShown && runBarKeyboardOffset > 0 ? { transform: `translateY(-${runBarKeyboardOffset}px)` } : undefined}
+                      className={mobileRunBarShown
+                        ? 'fixed inset-x-0 bottom-0 z-30 flex flex-wrap gap-2 mt-3 border-t border-[#2A2E38] bg-[#16181F] px-4 pt-3 pb-[max(12px,env(safe-area-inset-bottom))] md:static md:z-20 md:flex-nowrap md:border-0 md:bg-transparent md:px-0 md:py-0'
+                        : 'sticky bottom-0 z-20 flex gap-2 mt-3 border-t border-[#2A2E38] bg-[#16181F] py-3 md:static md:border-0 md:bg-transparent md:py-0'}
+                    >
+                      {mobileRunBarShown && (() => {
+                        const labelKey = runBarLabel({
+                          solvedCount: solvedChallenges.size,
+                          editorEmpty: !challengeQuery.trim(),
+                          starterSql: starterSqlFromHint(challengeStarterHint),
+                        });
+                        return labelKey ? (
+                          <p data-testid="run-bar-label" className="basis-full text-xs text-gray-400 md:hidden">{i18n_t('practice', labelKey)}</p>
+                        ) : null;
+                      })()}
+                      <button onClick={runChallengeQuery} data-onboarding="run" className="flex-1 min-h-[44px] md:min-h-0 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium flex items-center justify-center gap-2">
                         <Play size={16} /> {i18n_t('practice', 'run')}
                       </button>
-                      <button onClick={submitChallenge} data-onboarding="submit" className="flex-1 px-4 py-2 bg-yellow-400 hover:bg-yellow-300 text-[#0E0F13] rounded-lg font-bold flex items-center justify-center gap-2">
+                      <button onClick={submitChallenge} data-onboarding="submit" className="flex-1 min-h-[44px] md:min-h-0 px-4 py-2 bg-yellow-400 hover:bg-yellow-300 text-[#0E0F13] rounded-lg font-bold flex items-center justify-center gap-2">
                         <CheckCircle size={16} /> {i18n_t('practice', 'submit')}
                       </button>
                       {/* Always-visible Help button — was gated by currentUser
