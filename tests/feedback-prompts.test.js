@@ -9,7 +9,8 @@ import {
   nextSessionRecord, sessionHasRoom, markPromptShown,
   canShowExitReason, stuckTrigger, canShowStuck, canShowDay2,
   buildPromptSubmission, suggestTheme, localDay,
-  FBP_EXIT_DAY_KEY, FBP_EXIT_DONE_KEY, FBP_DAY2_KEY, PROMPT_THANKS_MS,
+  PURCHASE_REASONS, PURCHASE_TRIGGERS, PURCHASE_PENDING_MAX_MS, isPurchasePending, canShowPurchaseReason,
+  FBP_EXIT_DAY_KEY, FBP_EXIT_DONE_KEY, FBP_DAY2_KEY, FBP_PURCHASE_KEY, PROMPT_THANKS_MS,
   promptDoneKey, mayRecordAnswer, markPromptAnswered,
 } from '../src/utils/feedback-prompts.js';
 import { t, setLang } from '../src/utils/i18n.js';
@@ -160,6 +161,8 @@ describe('exit_reason: answered or skipped is the end of it', () => {
   it('day2 is remembered under its own once-ever key; stuck per challenge at show', () => {
     expect(promptDoneKey('exit_reason')).toBe(FBP_EXIT_DONE_KEY);
     expect(promptDoneKey('day2')).toBe(FBP_DAY2_KEY);
+    // purchase_reason ends under its own once-ever key (A1 REVISE on #241)
+    expect(promptDoneKey('purchase_reason')).toBe(FBP_PURCHASE_KEY);
     expect(promptDoneKey('stuck')).toBe(null);
     expect(FBP_EXIT_DONE_KEY).not.toBe(FBP_EXIT_DAY_KEY);
     expect(PROMPT_THANKS_MS).toBeGreaterThan(0);
@@ -213,6 +216,45 @@ describe('day2', () => {
   });
   it('never before the first solve', () => {
     expect(canShowDay2({ ...base, solvedCount: 0 })).toBe(false);
+  });
+});
+
+describe('purchase_reason (2026-11-23)', () => {
+  const pending = { at: T0 - 60 * 1000, trigger: 'purchase_completed' };
+  const base = { flagOn: true, isPro: true, pending, askedAt: null, inTimedMock: false, sessionRec: fresh(), overlayOpen: false, now: T0 };
+  it('shows after the return saw Pro or a trial, with no solve needed', () => {
+    expect(canShowPurchaseReason(base)).toBe(true);
+    expect(canShowPurchaseReason({ ...base, pending: { at: T0, trigger: 'trial_started' } })).toBe(true);
+    expect(PURCHASE_TRIGGERS).toEqual(['purchase_completed', 'trial_started']);
+  });
+  it('never before payment: not Pro, or nothing armed it, or an unknown trigger', () => {
+    expect(canShowPurchaseReason({ ...base, isPro: false })).toBe(false);
+    expect(canShowPurchaseReason({ ...base, isPro: 'yes' })).toBe(false);
+    expect(canShowPurchaseReason({ ...base, pending: null })).toBe(false);
+    expect(canShowPurchaseReason({ ...base, pending: { at: T0, trigger: 'plan_clicked' } })).toBe(false);
+    expect(canShowPurchaseReason({ ...base, pending: { at: T0, trigger: 'checkout_returned' } })).toBe(false);
+  });
+  it('never on a modal, in a mock, in a spent session, flag off, or a second time', () => {
+    expect(canShowPurchaseReason({ ...base, overlayOpen: true })).toBe(false);
+    expect(canShowPurchaseReason({ ...base, inTimedMock: true })).toBe(false);
+    expect(canShowPurchaseReason({ ...base, sessionRec: markPromptShown(fresh()) })).toBe(false);
+    expect(canShowPurchaseReason({ ...base, flagOn: false })).toBe(false);
+    expect(canShowPurchaseReason({ ...base, askedAt: '2026-11-23T10:00:00Z' })).toBe(false);
+  });
+  it('the armed ask dies after a week, and a future timestamp never counts', () => {
+    expect(PURCHASE_PENDING_MAX_MS).toBe(7 * 24 * 60 * 60 * 1000);
+    expect(isPurchasePending({ at: T0 - PURCHASE_PENDING_MAX_MS, trigger: 'trial_started' }, T0)).toBe(true);
+    expect(isPurchasePending({ at: T0 - PURCHASE_PENDING_MAX_MS - 1, trigger: 'trial_started' }, T0)).toBe(false);
+    expect(isPurchasePending({ at: T0 + 1000, trigger: 'trial_started' }, T0)).toBe(false);
+    expect(isPurchasePending({ at: 'x', trigger: 'trial_started' }, T0)).toBe(false);
+  });
+  it('the five answers in the brief\'s order; only the last takes text; written by id', () => {
+    expect(PURCHASE_REASONS.map(r => r.id)).toEqual(['interview_soon', 'company_sets', 'tutor', 'mock_interviews', 'other']);
+    expect(PURCHASE_REASONS.filter(r => r.text).map(r => r.id)).toEqual(['other']);
+    const a = buildPromptSubmission({ kind: 'purchase_reason', trigger: 'trial_started', answerId: 'company_sets' });
+    expect(a).toMatchObject({ message: 'company_sets', topic: 'purchase_reason', context: { kind: 'purchase_reason', trigger: 'trial_started', answer: 'company_sets' } });
+    expect(buildPromptSubmission({ kind: 'purchase_reason', answerId: 'other', text: ' my boss ' }).message).toBe('other: my boss');
+    expect(buildPromptSubmission({ kind: 'purchase_reason', answerId: 'too_expensive' })).toBe(null);
   });
 });
 
@@ -274,9 +316,10 @@ describe('the app wiring (source guards)', () => {
 
   // exitReasonAsk and day2Ask ON 2026-11-23 (orchestrator-decisions 2026-11-22);
   // stuckAsk stays dark until 2026-12-20. Any other state fails here.
-  const FLAG_STATE = { exitReasonAsk: true, stuckAsk: false, day2Ask: true };
+  // purchaseReasonAsk ON from birth (E2, 2026-11-23): post-purchase only.
+  const FLAG_STATE = { exitReasonAsk: true, stuckAsk: false, day2Ask: true, purchaseReasonAsk: true };
 
-  it('three flags in their decided state, read strictly through ftbFlag', () => {
+  it('four flags in their decided state, read strictly through ftbFlag', () => {
     for (const [kind, flag] of Object.entries(FEEDBACK_PROMPT_FLAGS)) {
       expect(FEEDBACK_PROMPT_KINDS).toContain(kind);
       expect(FLAG_STATE, flag).toHaveProperty(flag);
@@ -362,5 +405,55 @@ describe('the app wiring (source guards)', () => {
     expect(card.length).toBeGreaterThan(200);
     expect(card).not.toMatch(/FFE34D|F5C518|accent|fixed inset-0|role="dialog"|aria-modal/i);
     expect(card).toContain("tt('promptSkip')");
+  });
+
+  // ── purchase_reason wiring (2026-11-23) ──
+  const prStart = app.indexOf('// ── purchase_reason: show (E2, 2026-11-23, flag purchaseReasonAsk)');
+  const prEffect = app.slice(prStart, app.indexOf('}, [isSessionLoading, paymentSuccessState,', prStart) + 200);
+  const resolverStart = app.indexOf("const pendingPaymentSuccessRef = useRef(");
+  const resolver = app.slice(resolverStart, prStart);
+  const verifyStart = app.indexOf('const verifyPurchase = async () => {');
+  const verify = app.slice(verifyStart, app.indexOf('const pendingPaymentSuccessRef = useRef(', verifyStart));
+
+  it('purchase_reason: the show effect sits above the early returns and after the resolver', () => {
+    expect(prStart).toBeGreaterThan(resolverStart);
+    expect(prStart).toBeLessThan(app.indexOf('  if (showAuth) {'));
+    expect(prStart).toBeLessThan(app.indexOf('  if (!dbReady) return ('));
+  });
+
+  it('purchase_reason is armed only where the return SAW Pro or a trial', () => {
+    // The poll's success branch: Pro on, then the event, then the arm.
+    const ok = resolver.slice(resolver.indexOf("if (fresh?.proStatus && fresh?.proType && fresh.proType !== 'trial') {"));
+    const branch = ok.slice(0, ok.indexOf('return;'));
+    expect(branch).toContain('setUserProStatus(true);');
+    expect(branch).toMatch(/pro_trial_started' : 'pro_purchase_completed'[\s\S]*fbArmPurchaseReason\(fresh\.proTrial === true \? 'trial_started' : 'purchase_completed'\);/);
+    // Exactly one arm in the resolver, and none before the success branch.
+    expect(resolver.split('fbArmPurchaseReason(').length - 1).toBe(1);
+    expect(resolver.indexOf('fbArmPurchaseReason(')).toBeGreaterThan(resolver.indexOf('setUserProStatus(true);'));
+    // The pending-screen recovery arms only after it set Pro.
+    expect(verify.split('fbArmPurchaseReason(').length - 1).toBe(2);
+    for (const at of [verify.indexOf('fbArmPurchaseReason('), verify.lastIndexOf('fbArmPurchaseReason(')]) {
+      expect(verify.lastIndexOf('setUserProStatus(true);', at)).toBeGreaterThan(-1);
+    }
+    // Nowhere else: not the modal, not beginCheckout, not a plan click.
+    expect(app.split('fbArmPurchaseReason(').length - 1).toBe(3); // the three calls above
+    expect(hooks).toContain('const fbArmPurchaseReason = (trigger) => {');
+  });
+
+  it('purchase_reason shows through the pure gate, Pro now, nothing over it, once ever', () => {
+    expect(prEffect).toContain('canShowPurchaseReason({');
+    expect(prEffect).toContain('isPro: userProStatus === true,');
+    expect(prEffect).toContain('overlayOpen: !!(paymentSuccessState || showProModal || showSignupPrompt || showFeedback || showAuth),');
+    expect(prEffect.indexOf('localStorage.setItem(FBP_PURCHASE_KEY')).toBeLessThan(prEffect.indexOf("fbShowPrompt('purchase_reason', pending.trigger);"));
+    expect(prEffect).toContain("fbFlag('purchase_reason')");
+  });
+
+  it('day2 never spends the session\'s ask on a checkout return', () => {
+    expect(hooks).toMatch(/overlayOpen: !!\(fbPrompt \|\| showProModal \|\| showFeedback \|\| goalAsk \|\| showIntake \|\| fbIsCheckoutReturn\(\)\)/);
+  });
+
+  it('the card offers the purchase answers from the pure list', () => {
+    expect(card).toContain("kind === 'purchase_reason' ? PURCHASE_REASONS");
+    expect(card).toContain("tt('purchaseQ')");
   });
 });
