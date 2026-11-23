@@ -703,6 +703,22 @@ Behaviour unchanged, label fixed: `generic` before 09-12 ≈ `generic` +
 `interview_locked` after. Two more reasons exist only behind flags:
 `company_set` (M1, from the 10-14 flip) and `coach_mock` (M5, from 10-12).
 
+**`debug_lock` (behind `debugQuestions`, defined 2026-11-23).** When a
+locked Debug item (`type: 'debug'`, ids 331–342) opens the Pro modal, the
+wall is the one it would meet anyway (founder: Debug has no price of its
+own — Easy/Medium count toward the free solves, Hard is Pro, a company-tagged
+item follows the company-set rule), so the modal copy is unchanged. Only the
+label changes: `pro_modal_shown.reason`, `pro_plan_clicked.modalReason`,
+`pro_checkout_clicked.modalReason` and the `pro_events.reason` of the modal's
+own rows read **`debug_lock`**, and `pro_modal_shown.lockedAs` keeps the wall
+underneath (`free_quota`, `hard_challenge` from the catcher's Pro path,
+`company_hard`, `company_set`); `lockedAs` is null on every other reason.
+`content_lock_reached` rows are untouched. From the flip, a `free_quota` or
+`hard_challenge` series that should count every wall adds the `debug_lock`
+rows whose `lockedAs` matches; before the flip the value cannot occur.
+Pure half: `withDebugLock` / `proModalReasonLabel` in
+`src/utils/debug-questions.js`.
+
 **Absence is organic, by design.** A direct open, a post-solve
 recommendation, a curriculum step — none of them carry the key, and a
 `challenge_opened` row without `openedFrom` is not a preview-surface open
@@ -1223,6 +1239,74 @@ Of `challenge_solved` rows (by `aid` and `challengeId`), the share with a
 2026-09-23; `attempts[].hintsUsed` in `users.data` covers synced accounts
 before that). Tracked, no target yet — a difficulty-balance signal per
 challenge. Scorecard §2.
+
+## `second_solve_same_session`
+
+Defined 2026-11-23, before `mobileOneLayer` ships (rule 6b; rank 3 of
+docs/plans/mobile-acquisition-2026-11-23.md). Of people whose
+`first_challenge_solved` falls in the window, the share with a
+`challenge_solved` for a **different** `challengeId` in the same session.
+- *Person* = `coalesce(aid, username)`; the first solve is the person's
+  first `first_challenge_solved` row (it fires once per browser,
+  `onceKey`). Rows less than an hour old are left out of the denominator.
+- *Same session* = no gap over 30 minutes between consecutive events of
+  that person from the first solve to the second (the `hint_to_solve`
+  rule). A re-solve of the same challenge does not count.
+- *Device band* = the `viewport` stamp on the `first_challenge_solved` row
+  itself (`mobile:` = innerWidth < 768). Never the person's first
+  `app_opened`.
+- Population: the bot and internal filters of `docs/agent/fleet/README.md`
+  step 2.
+- Baseline (read 2026-11-23, by the query below): 28 days — mobile
+  **4 / 6 (67%)**, desktop 133 / 202 (66%); 90 days — mobile **18 / 30
+  (60%)**, desktop 668 / 973 (69%), tablet 10 / 13. **Mobile first solvers
+  are about 6 a month**, so a 50/50 test has about 3 per arm per month:
+  any read under 15 per arm is directional only, reported with n.
+- **By arm (`mobileOneLayer`):** the arm is `mobile_one_layer_assigned.arm`,
+  one row per person, fired at the person's first correct submit on a
+  narrow touch screen (coarse pointer or width < 768) with the flag on.
+  Denominator: assigned people whose `first_challenge_solved` is `mobile:`
+  and at or after the assignment; numerator as above. Compare `one` with
+  `control` over the same window. Read it together with
+  `mobile_run_bar_assigned.arm` (a person can be in both tests; report the
+  2×2 cell counts, never pool across a `mobileRunBar` flip).
+
+```sql
+with ev as (
+  select coalesce(((metadata #>> '{}')::jsonb)->>'aid', username) pid, event, created_at,
+         (metadata #>> '{}')::jsonb m
+  from pro_events
+  where created_at >= :since - interval '1 day'
+    and username !~* '^(test|qa_|fabletest|linktest|internalroutine|sqlquest$|elena$)'
+),
+clean as (
+  select * from ev where coalesce(m->>'bot', '') not in ('true', '1')
+    and coalesce(m->>'viewport', '') not in ('tablet:800x600', 'desktop:1280x1200', 'desktop:1919x992')
+),
+fs as (
+  select * from (
+    select distinct on (pid) pid, created_at t1, m->>'challengeId' cid, split_part(m->>'viewport', ':', 1) band
+    from clean where event = 'first_challenge_solved' order by pid, created_at
+  ) x where t1 >= :since and t1 < now() - interval '1 hour'
+),
+seq as (
+  select c.pid, c.created_at, c.event, c.m->>'challengeId' cid,
+         c.created_at - lag(c.created_at) over (partition by c.pid order by c.created_at) gap
+  from clean c join fs using (pid) where c.created_at >= fs.t1
+),
+brk as (select pid, min(created_at) tbreak from seq where gap > interval '30 minutes' group by pid),
+second as (
+  select distinct s.pid from seq s join fs using (pid) left join brk b using (pid)
+  where s.event = 'challenge_solved' and s.cid is distinct from fs.cid
+    and (b.tbreak is null or s.created_at < b.tbreak)
+)
+select band, count(*) people, count(second.pid) second_same_session,
+       round(100.0 * count(second.pid) / nullif(count(*), 0), 1) pct
+from fs left join second using (pid)
+group by band order by people desc;
+-- by arm: join fs to the first mobile_one_layer_assigned row per pid
+-- (m->>'arm', created_at <= fs.t1) and group by arm, band = 'mobile'.
+```
 
 ## `second_session_7d`
 
@@ -3942,6 +4026,53 @@ where query is not null and page = 'https://sqlquest.app/<slug>/'
 - Position is impression-weighted (the query above), never a plain average of
   daily positions.
 
+## `topic_funnel`
+
+C6's metric (2026-11-22). Per SQL topic: of the people who arrived through
+that topic's doors, how many solved one of the topic's questions within 7
+days. A topic is a slug (`dml`, `ddl`, `set-operations`, …) with two parts
+written down in its research read (`docs/reads/topic-<slug>-<date>.md`):
+its **doors** (the `src` values its guide, hub and question cards carry:
+`topic-<slug>`, `challenges-<slug>`, `question-<question slug>`) and its
+**question set** (challenge ids).
+
+The door is `arrivalSrc` on the person's first `app_opened` (first touch, as
+in `door_solve_rate`). A person counts once per topic.
+
+```sql
+-- :doors  = the topic's src values, e.g. ARRAY['topic-dml','challenges-dml']
+-- :ids    = the topic's question set as text, e.g. ARRAY['325','326','327','328','329']
+WITH ev AS (
+  SELECT COALESCE(((metadata #>> '{}')::jsonb)->>'aid', username)  AS pid,
+         event, created_at,
+         ((metadata #>> '{}')::jsonb)->>'arrivalSrc'                AS door,
+         ((metadata #>> '{}')::jsonb)->>'challengeId'               AS cid
+  FROM pro_events
+  WHERE event IN ('app_opened', 'challenge_solved')
+    AND created_at >= :since AND created_at < :until
+    AND <shared filters>
+),
+arrived AS (
+  SELECT pid, min(created_at) AS at FROM ev
+  WHERE event = 'app_opened' AND door = ANY(:doors)
+  GROUP BY pid
+),
+solved AS (
+  SELECT DISTINCT a.pid FROM arrived a
+  JOIN ev s ON s.pid = a.pid AND s.event = 'challenge_solved'
+   AND s.cid = ANY(:ids) AND s.created_at BETWEEN a.at AND a.at + interval '7 days'
+)
+SELECT (SELECT count(*) FROM arrived) AS arrived,
+       (SELECT count(*) FROM solved)  AS solved_one,
+       round(100.0 * (SELECT count(*) FROM solved) / NULLIF((SELECT count(*) FROM arrived), 0), 0) AS pct;
+```
+
+Read beside it: `challenge_solve_through` per question in the set (any door),
+against the median of its difficulty band. Under 20 arrivals a topic is
+`UNREADABLE`. Bot traffic: apply the rendering-crawler filter (shared
+traps); a topic door is exactly the `?challenge=…&src=…` link shape those
+crawlers followed.
+
 ## `feedback_capture`
 
 The asked feedback prompts (E2, 2026-11-22; `src/utils/feedback-prompts.js`)
@@ -3978,6 +4109,15 @@ from feedback where created_at >= :from and created_at < :to group by 1, 2;
 - Apply the fleet's bot and internal-account filters (fleet README, Data).
 - `exit_reason` answers are one tap, `stuck` / `day2` are typed: compare each
   kind to its own target, never a pooled rate.
+- **Before the fix (2026-11-23 → the deploy of `fix/exit-reason-once`), count
+  answers by distinct people**, never by `feedback_submitted` rows or
+  `feedback` rows. Until then the card was not cleared after an answer: it
+  re-mounted after every Pro modal close and asked again with no new
+  `feedback_prompt_shown`, so one person wrote three exit rows to one shown
+  (docs/reads/funnel-2026-11-24.md §1) and rows ÷ shown read above 100%.
+  From the deploy, an answer or a skip ends `exit_reason` in that browser
+  (`sqlquest_fbp_exit_done_at`) and one show records at most one answer, for
+  all three kinds.
 - `context.themeHint` is a guess for the one-tap rows; the theme that counts
   is the one the daily read assigns.
 - Rows written while the 20260907 quote-consent migration is unapplied still
