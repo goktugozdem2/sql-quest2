@@ -434,7 +434,7 @@ describe('the cold-start gate has a door for a buyer', () => {
     const app = fs.readFileSync(new URL('../src/app.jsx', import.meta.url), 'utf8');
     expect(app).toContain('data-testid="cold-start-pro-anyway"');
     expect(app).toContain('const openProFromColdStart = () => {');
-    expect(app).toMatch(/setProModalReason\(\{ type: 'cold_start_anyway'/);
+    expect(app).toMatch(/setProModalReason\((withDebugLock\()?\{ type: 'cold_start_anyway'/);
     expect(app).toMatch(/trackActivationEvent\('cold_start_pro_anyway'/);
     // The starter stays the primary action: the Pro button is not the one
     // carrying data-catcher-primary.

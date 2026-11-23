@@ -17,6 +17,7 @@ _Generated 2026-11-23 from the live content bank by `scripts/build-llms-txt.js`.
 - https://sqlquest.app/best-sql-practice-sites/ — Five SQL practice sites reviewed side by side, including where each beats SQL Quest.
 - https://sqlquest.app/vs-chatgpt/ — Why practise on questions with a fixed expected result instead of asking a chat assistant to grade you.
 - https://sqlquest.app/sql-tools/ — Free in-browser SQL tools: a checker, an explainer and an optimizer.
+- https://sqlquest.app/sql-debugging-practice/ — SQL debugging practice: questions that open on an AI assistant’s wrong query; find the line, fix it, and the fix is graded against the expected result.
 
 ## Questions people ask, and the page that answers
 
@@ -549,6 +550,7 @@ Each comparison page quotes competitor prices and features from that site's own 
 - SQL Rollup Interview Questions With Worked Answers | SQLQuest.app — https://sqlquest.app/sql-rollup-interview-questions/
 - 2-Week SQL Interview Prep Plan, Day by Day | SQLQuest.app — https://sqlquest.app/sql-interview-prep-plan/
 - Timed SQL Mock Interview Online, Scored in the Browser | SQLQuest.app — https://sqlquest.app/sql-mock-interview/
+- SQL Debugging Practice: Find and Fix the Bug | SQLQuest.app — https://sqlquest.app/sql-debugging-practice/
 
 **Comparisons**
 - DataLemur SQL Practice: Is It Free? Pricing (2026) | SQLQuest.app — https://sqlquest.app/vs-datalemur/

@@ -24,4 +24,7 @@ export const dataFiles = [
   'gayrimenkul-data.js',
   'uretim-data.js',
   'sector-challenges.js',
+  // After every bank file: appends the Debug items only when
+  // features.debugQuestions is true (it reads the flag set above).
+  'debug-challenges.js',
 ];
