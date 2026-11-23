@@ -3,7 +3,7 @@
   "updated": "2026-11-23",
   "pages": {
     "/": {
-      "hash": "4094dc3cfbe711a3",
+      "hash": "20eaa6a8b9a03512",
       "lastmod": "2026-11-23"
     },
     "/turkce-sql-ogren/": {
@@ -79,7 +79,7 @@
       "lastmod": "2026-11-23"
     },
     "/shopify-sql-interview/": {
-      "hash": "99fb36d14d162cf2",
+      "hash": "398d3e7d236cace3",
       "lastmod": "2026-11-23"
     },
     "/spotify-sql-interview/": {
@@ -183,7 +183,7 @@
       "lastmod": "2026-11-23"
     },
     "/sql-exercises/": {
-      "hash": "85bd64bb8371fc9d",
+      "hash": "0d9b5787a1d42642",
       "lastmod": "2026-11-23"
     },
     "/after-the-sql-course/": {
@@ -195,7 +195,7 @@
       "lastmod": "2026-11-23"
     },
     "/sql-for-the-ai-era/": {
-      "hash": "959fbcb9021510d8",
+      "hash": "3485d4c1d07c4a35",
       "lastmod": "2026-11-23"
     },
     "/challenges/": {
@@ -371,7 +371,7 @@
       "lastmod": "2026-11-23"
     },
     "/blog/validate-ai-generated-sql/": {
-      "hash": "a545436363266265",
+      "hash": "d32ecf9be833f619",
       "lastmod": "2026-11-23"
     },
     "/doordash-sql-interview/": {
@@ -387,7 +387,7 @@
       "lastmod": "2026-11-23"
     },
     "/tiktok-sql-interview/": {
-      "hash": "1f7d34628c989d58",
+      "hash": "39191112bfd3c975",
       "lastmod": "2026-11-23"
     },
     "/linkedin-sql-interview/": {
@@ -1723,23 +1723,23 @@
       "lastmod": "2026-11-23"
     },
     "/sql-not-in-null/": {
-      "hash": "50cf44a587df4c5a",
+      "hash": "9dd6c282cfcd0922",
       "lastmod": "2026-11-23"
     },
     "/sql-join-fan-out/": {
-      "hash": "848f9d3dc97464a0",
+      "hash": "ba28137db807f587",
       "lastmod": "2026-11-23"
     },
     "/sql-between-timestamp/": {
-      "hash": "e85dd87f96bd3d3e",
+      "hash": "ca6b38453b3eba0e",
       "lastmod": "2026-11-23"
     },
     "/sql-average-of-averages/": {
-      "hash": "62f0fd1802419ee9",
+      "hash": "4acd61147707c012",
       "lastmod": "2026-11-23"
     },
     "/sql-left-join-where-filter/": {
-      "hash": "fe495e1fa048d176",
+      "hash": "9bf5255361762ad4",
       "lastmod": "2026-11-23"
     },
     "/sql-rollup-interview-questions/": {
@@ -1752,6 +1752,10 @@
     },
     "/sql-mock-interview/": {
       "hash": "2f886c41a6b3c60f",
+      "lastmod": "2026-11-23"
+    },
+    "/sql-debugging-practice/": {
+      "hash": "8465260efb8352bc",
       "lastmod": "2026-11-23"
     }
   }

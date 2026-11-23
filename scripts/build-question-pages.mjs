@@ -25,7 +25,7 @@ import { ROLLUP_PRACTICE, ROLLUP_SLUG } from '../src/data/sql-rollup.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
-import { questionSlugs, loadQuestionBank } from './question-slugs.mjs';
+import { questionSlugs, loadQuestionBank, isQuestionPageItem } from './question-slugs.mjs';
 import { SKILL_PAGE } from './build-company-pages.mjs';
 import { SKILL_TO_RADAR, mapTopicToSkill, CANONICAL_SKILLS } from '../src/utils/skill-calc.js';
 import { isFreePreview } from '../src/utils/challenge-order.js';
@@ -394,7 +394,10 @@ function writeSitemap(slugs) {
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
-  const { bank, tags } = loadQuestionBank();
+  const loaded = loadQuestionBank();
+  // No page and no sitemap URL for a Debug item (design PR #248, S1 RED).
+  const bank = loaded.bank.filter(isQuestionPageItem);
+  const tags = loaded.tags;
   const slugs = questionSlugs(bank);
   const taggedBy = {};
   for (const [id, names] of Object.entries(tags)) taggedBy[id] = names;
