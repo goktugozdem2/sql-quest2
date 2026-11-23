@@ -203,6 +203,35 @@ of the verifier and must never be rounded to `FLAT`.
   - C2's AI-visibility pass shipped the same day, on the same metric and similar pages. These two cannot be told apart; read them together.
   - Perplexity reads only about 5 prompts a week before its wall, so one answer is 20 points. A single-week move is `UNREADABLE`.
   - Gemini is invisible to `ai_landings_month`.
+### C7 run 2: percentage of total and zero-row days answered on two existing posts
+
+- **Claimed** 2026-11-23 · **Shipped** on merge (static pages, no flag) ·
+  **Read** 2026-12-21.
+- **Change** Two worked answers in our own words, each query run on the
+  app's `ecommerce` data and pinned in
+  `tests/question-answers-2026-11-23.test.js`: percentage of the total per
+  group, with the integer-division trap (`/blog/sql-group-by-tutorial/#percent-of-total`),
+  and days with zero rows via a recursive date list and a LEFT JOIN, with
+  the `COUNT(*)` trap (`/blog/recursive-cte-explained/#missing-days`). One
+  FAQPage entry each, visible as the section heading. Read:
+  `docs/reads/questions-2026-11-23.md`.
+- **Metric** `gsc_page_clicks` (metrics.md), impressions on the two pages,
+  page slice; plus the query×page slice filtered to the two shapes
+  (`percent|percentage|share of total|missing (dates|days)|zero (rows|days)|days with no|generate dates|date (spine|series)`).
+- **Baseline** not read: the cloud session has no production data. The
+  laptop reads the 28 days to 2026-11-22 for the two pages and writes it
+  here.
+- **Target** the two pages' impressions for the 28 days to 2026-12-19 at or
+  above the baseline + 20%, and at least one query from the two shapes with
+  impressions on the page that answers it.
+- **Falsification** (written before the data) impressions at or below the
+  baseline and no shape query on its page → same conclusion as run 1's
+  claim: answers inside long existing posts don't move search demand.
+  Read both claims together; one PASS and one FAIL is not a verdict.
+- **Confounds** run 1's claim reads in the same window on other pages; a
+  Google core update would show on every page, so compare against the
+  blog's other posts.
+
 ### C7 run 1: five mined question shapes answered on three existing pages
 
 - **Claimed** 2026-11-22 · **Shipped** on merge (static pages, no flag) ·
