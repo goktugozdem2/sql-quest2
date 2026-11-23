@@ -66,6 +66,16 @@ window.FEATURE_FLAGS = {
     // week on, then the founder decides. src/utils/company-ask.js,
     // tests/company-ask.test.js; ledger "one question after the first solve".
     intakeAfterFirstSolve: false,
+    // One layer at a time after a solve on phones (2026-11-23, rank 3 of
+    // docs/plans/mobile-acquisition-2026-11-23.md). When on, an A/B by aid
+    // (arm `one` | `control`, assigned at the first correct submit on a narrow
+    // touch screen, `mobile_one_layer_assigned`). The `one` arm shows the ask,
+    // then holds the achievement / level-up / Skillmap / share / streak
+    // layers until the next challenge opens; 44×44 close targets. Desktop and
+    // `control` unchanged. SHIPPED OFF. src/utils/mobile-one-layer.js,
+    // tests/mobile-one-layer.test.js; ledger "One layer at a time after a
+    // solve on phones".
+    mobileOneLayer: false,
     // Company practice-set match on the Coach (SEO plan P3.21, 2026-09-13):
     // for a named prepTarget.company that has NO interview archetype, how the
     // Skillmap matches what that company's practice set asks, plus the next
