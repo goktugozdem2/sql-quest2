@@ -496,7 +496,7 @@ ${ld}
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif;overflow-x:hidden}
     .fd{font-family:'Space Grotesk',sans-serif}.fm{font-family:'JetBrains Mono',monospace}
-    .nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(6,6,15,.92);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06)}.ni{max-width:1200px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}.nl{display:flex;align-items:center;gap:22px}.nl a{color:#94a3b8;text-decoration:none;font-size:14px;font-weight:500}.nl a:hover{color:#e2e8f0}
+    .nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(6,6,15,.92);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06)}.ni{max-width:1200px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}.nl{display:flex;align-items:center;gap:22px}.nl a:not(.btn):not(.bp){color:#94a3b8;text-decoration:none;font-size:14px;font-weight:500}.nl a:not(.btn):not(.bp):hover{color:#e2e8f0}
     .btn{display:inline-flex;align-items:center;gap:8px;border-radius:12px;font-weight:700;cursor:pointer;text-decoration:none;border:none;transition:transform .15s ease-out}.bp{padding:13px 28px;font-size:15px;background:#FFE34D;color:#0E0F13}.bp:hover{transform:translateY(-1px)}.bo{padding:12px 24px;font-size:14px;background:transparent;color:#c084fc;border:1px solid rgba(124,58,237,.4)}
     .sec{max-width:1100px;margin:0 auto;padding:56px 24px}.sl{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#8b98ab}.st{font-size:clamp(26px,3.2vw,40px);font-weight:800;margin-top:10px;line-height:1.15}
     .qg{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}.qc{background:rgba(10,10,25,.5);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:18px}.qc:hover{border-color:rgba(192,132,252,.35)}
@@ -574,7 +574,7 @@ ${readinessBlock({ slug: key, name: d.name, src: slug })}
 </div></section>
 
 <footer class="ft"><p class="fd" style="font-size:16px;font-weight:800;">SQL Quest</p><p style="font-size:13px;color:#7f8da1;margin-top:6px;">Personalized SQL interview practice.</p>
-<div class="flk"><a href="/sql-interview-prep/">SQL Interview Prep</a><a href="/sql-exercises/">SQL Practice Questions</a><a href="/sql-interview-readiness-test/">Readiness Test</a><a href="/best-sql-practice-sites/">Best SQL Practice Sites</a><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><a href="/refund/">Refund Policy</a></div><p style="font-size:11px;color:#79879b;margin-top:20px;">© 2026 SQL Quest</p></footer>
+<div class="flk"><a href="/sql-interview-prep/">SQL Interview Prep</a><a href="/sql-exercises/">SQL Practice Questions</a><a href="/sql-interview-readiness-test/">Readiness Test</a><a href="/best-sql-practice-sites/">Best SQL Practice Sites</a><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><a href="/refund/">Refund Policy</a></div><p style="font-size:12px;color:#79879b;margin-top:20px;">© 2026 SQL Quest</p></footer>
 
 <script>
 // GENERATED FROM THE BANK — do not hand-edit. Bound by tests/company-pages.test.js.
