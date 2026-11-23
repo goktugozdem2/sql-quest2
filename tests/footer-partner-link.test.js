@@ -44,12 +44,15 @@ describe('Datrick footer link', () => {
     }
   });
 
-  it('is idempotent, needs a footer, and adds no colour of its own', () => {
+  it('is idempotent, needs a footer, and adds no colour outside DESIGN.md', () => {
     const page = '<body><footer><p>x</p></footer></body>';
     const once = withPartnerLink(page);
     expect(withPartnerLink(once)).toBe(once);
     expect(withPartnerLink('<body>no footer</body>')).toBe('<body>no footer</body>');
-    expect(once).not.toMatch(/#[0-9a-f]{3,6}/i);
+    // One colour, DESIGN.md's --text-muted (A4 UI/UX audit, 2026-11-22: the
+    // inherited grey at opacity .55 measured 2.50:1). Nothing else.
+    expect([...once.matchAll(/#[0-9a-f]{3,6}\b/gi)].map(m => m[0].toUpperCase())).toEqual(['#8A8E99']);
+    expect(once).not.toMatch(/opacity/);
   });
 
   it('runs in the build after every page generator', () => {
