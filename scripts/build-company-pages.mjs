@@ -574,7 +574,7 @@ ${readinessBlock({ slug: key, name: d.name, src: slug })}
 </div></section>
 
 <footer class="ft"><p class="fd" style="font-size:16px;font-weight:800;">SQL Quest</p><p style="font-size:13px;color:#7f8da1;margin-top:6px;">Personalized SQL interview practice.</p>
-<div class="flk"><a href="/sql-interview-prep/">SQL Interview Prep</a><a href="/sql-exercises/">SQL Practice Questions</a><a href="/sql-interview-readiness-test/">Readiness Test</a><a href="/best-sql-practice-sites/">Best SQL Practice Sites</a><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><a href="/refund/">Refund Policy</a></div><p style="font-size:11px;color:#79879b;margin-top:20px;">© 2026 SQL Quest</p></footer>
+<div class="flk"><a href="/sql-interview-prep/">SQL Interview Prep</a><a href="/sql-exercises/">SQL Practice Questions</a><a href="/sql-interview-readiness-test/">Readiness Test</a><a href="/best-sql-practice-sites/">Best SQL Practice Sites</a><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><a href="/refund/">Refund Policy</a></div><p style="font-size:12px;color:#79879b;margin-top:20px;">© 2026 SQL Quest</p></footer>
 
 <script>
 // GENERATED FROM THE BANK — do not hand-edit. Bound by tests/company-pages.test.js.
