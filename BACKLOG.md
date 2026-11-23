@@ -523,16 +523,14 @@ touch them.
   Durable fix (a code PR in `supabase/functions/`, held for 6d): page
   the users read with `.range()`, or select only the `data` keys each
   sender needs.
-- **A3-2. The sign-up "email taken" check is at 60% of its timeout.**
-  `sq_email_registered` runs as anon with a 3 s limit and seq-scans 11,083
-  rows. It took 1.79 s on a warm cache, and one call timed out on 11-22
-  at 17:58. The client rethrows any non-404 error from it into the register
-  handler. FOUNDER: a migration with
-  `create index concurrently if not exists users_email_or_data_email_lower_idx on public.users (lower(coalesce(nullif(email, ''), data->>'email')));`
-  It matches the function's expression exactly, so the planner can use it.
-  Verify with EXPLAIN that it shows an index scan. Separately (auth, 6d):
-  decide whether a timeout there should let the sign-up continue to the
-  server's own check, instead of failing the form.
+- **A3-2. The sign-up "email taken" check (`sq_email_registered`) is slow
+  and needs an index.** It timed out once on 11-22. FOUNDER: apply the
+  written migration `supabase/migrations/20261123100000_users_email_lookup_index.sql`
+  (one `create index concurrently` statement, no downtime), then run the
+  rolled-back probe `supabase/manual/20261123_users_email_lookup_index_probe.sql`
+  (it fails before the index and passes after; rollback file beside it).
+  Separately (auth, 6d): decide whether a timeout there should let the
+  sign-up continue to the server's own check, instead of failing the form.
 - **A3-3. `my-referral-stats` was never deployed (it has been in the repo
   since 05-02).** The profile and the referral modal call it. The preflight
   gets 404, so the server-owned `personal_ref_code` never reaches the
