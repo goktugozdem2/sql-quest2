@@ -2,6 +2,8 @@
 
 **Lane:** read what people actually ask about SQL, and make sure SQL Quest has a good answer for each recurring question.
 
+**Part of the SEO loop** (`SEO-loop.md`): stage 2 (find demand). Hand clusters to C1 as BACKLOG lines with the evidence; C1 decides what gets built.
+
 C7 **posts nothing anywhere**. The founder's Reddit account is banned, and no agent posts to communities. Reddit, Stack Overflow, Quora, Hacker News and similar sites are **read-only research sources** for C7.
 
 **Cadence:** daily (runs before C6, so C6 gets fresh input).

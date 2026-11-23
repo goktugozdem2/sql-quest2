@@ -110,6 +110,280 @@ B2 builds none of these; each names the lane that owns it.
 - **C6: UPDATE with values from another table** (UPDATE … FROM in SQLite 3.33+, the correlated-subquery form, and MySQL's / SQL Server's spellings). Seven threads in run 1's sources (Quora, sqlite.org forum). Challenges 180–185 practise DML, but no page explains it. This is C6's DML item #1; the read has the links.
 - **B3/C6 practice gap: a consecutive-calendar-day streak.** The window tutorial now works it on `logins` (5-day streaks for customers 4 and 8, the March-6 double login, the month boundary). No challenge asks it: challenge 68 is a ≤7-day-gap streak on orders, a different shape. One Medium/Hard challenge on `logins` with DISTINCT as the trap.
 - **Q1/C1: hard-coded count on the window tutorial.** "SQL Quest has 68 window-function-specific challenges" and the related link "68 window function challenges" are literal numbers that `tests/site-counts.test.js` doesn't bind. Re-measure, then move them to a helper or drop the number. Left alone in the C7 PR because it isn't a question answer.
+## GEO gaps — G1, 2026-11-22 (docs/reads/geo-2026-11-22.md)
+
+G1 builds none of these. Each one names the lane that owns it. Baseline:
+- Perplexity named or cited us in 3 of the 5 prompts it answered; it named us in 1 (a sign-in wall stopped it after 5 of 15).
+- 0 of 15 prompts in the search proxy's top 10.
+
+- **C2 — a page for "SQL practice with an AI tutor that explains my mistakes" (panel #8).** No page answers it, and neither console shows a matching query. The search proxy gives the slot to DataCamp's blog and academic papers. On the 2026-09-06 panel this was the family we won (4/4). The page shows the diagnosis on a real wrong query; `/vs-chatgpt/` already holds the rules for claims about AI.
+- **C2 — a general "timed SQL mock interview" page (panel #11).** The mocks sit inside the Capital One and Revolut pages. dbSyntax, DataDriven and Exponent each have a dedicated page in the top 10. Say "Pro" and the free general mock, as the homepage FAQ does.
+- **C2 — a general 2-week SQL interview plan (panel #13).** Only the Amazon page has one. The top 10 is Exponent, Coursera, datadriven.io and LearnSQL.
+- **C2 — a Turkish interview-prep page (panel #15).** `/turkce-sql-ogren/` is a learn-SQL page. The Turkish top 10 is DataCamp TR, Guru99 TR and Techcareer.
+- **C2 — `/meta-sql-interview/` ranks 20.1 on "meta sql interview questions" (GSC, 14 imp, 28 d; panel #10).** Fix the page's answer-first summary before building anything new.
+- **C3 — third-party lists cited for panel prompts that do not name us.** Each was checked on 2026-11-22.
+  - The lists: boot.dev best-sql-practice-sites (#1, #2), prepshotz best-sites and datalemur-alternatives (#1, #2), unchaindata best-sql-practice-sites (#1, #2), onjob.io sql-practice-sites (#1), tensortonic datalemur- and stratascratch-alternatives (#4, #5), analyticsinsight's 2026 top 10 (#2).
+  - What C3 does: drafts only, behind the founder. A correction or suggestion note to each list's author, with facts from llms.txt.
+  - The only list that names us is thequerylab.com, so it needs no note.
+- **C3 — alternativeto.net lists DataLemur's alternatives (cited for #4) and does not list SQL Quest.** It is a user-submitted directory. C3 drafts the listing text; the founder submits it.
+
+## Company research — R1, 2026-11-22 (docs/reads/companies/)
+
+R1 builds none of these; each names the lane that owns it. Dossiers:
+`capital-one.md`, `revolut.md`, `stripe.md`, `wise.md`, `jpmorgan.md`;
+batch 2: `plaid.md`, `ramp.md`, `morgan-stanley.md`; batch 3:
+`goldman-sachs.md`, `amazon.md`, `snowflake.md`; coverage and queue in
+`INDEX.md`.
+
+- **C1 — Capital One page + blog: cite the vendor, tighten the count.**
+  CodeSignal's own help page (support.codesignal.com article 4407377178647)
+  describes the Data Analytics Assessment as 70 minutes, **14 quiz + 1
+  coding**, CSV data in any tool. That is the shape candidates report for
+  Capital One. The page's "around 14 to 15 questions … plus one or a few
+  written SQL" can become "15 items: 14 multiple choice + 1 coding". Add the
+  vendor as a source row, and say that it does not name Capital One. New and
+  page-ready: the 200–600 score scale, no published cut-off, and two retakes
+  in 180 days (article 4407377197847). This also answers the Bing query
+  "does capital one codesignal allow sql?": any tool for the CSV questions;
+  the coding question is done in the platform.
+- **C1 — Capital One page: say which role it is for.** Data scientists get a
+  different CodeSignal: 4 Python/pandas tasks in 90 minutes (PracHub, interview
+  Aug 2026, plus one aced.io report; medium). Capital One's own business
+  analyst page describes cases, not a test (first-party). One line on the
+  page stops DS and BA searchers from preparing for the wrong screen.
+- **B3 — Capital One mock: 12 + 2 against the vendor's 14 + 1.**
+  `capital-one-codesignal` runs 12 multiple choice + 2 written SQL. The
+  vendor's assessment is 14 multiple choice + 1 coding. The 12 + 2 split was
+  the founder's QA call on 2026-09-19, so changing it needs the founder's go.
+  The page and the mock should at least not contradict the cited source.
+- **C1 — Revolut page: second source, and two caveats.** Add PracHub's Data
+  Analyst report (interview Feb 2026, published 2026-08-25): a four-question
+  SQL technical screen after the HR call. With Interview Query, the round is
+  now medium confidence. Also add Revolut's careers page (stage order:
+  intro → coding challenges → technical → culture fit → team fit). Update
+  "27 candidate reports" to Interview Query's current 30. Say that the live
+  round's length disagrees inside one publisher (45 vs 60 min). Mark "top
+  10%" and "MAU" as single-family; no second source confirms them.
+- **C1 — Stripe page: from general to sourced.** Three dated candidate
+  reports, Oct 2025 – Q4 2026, put live SQL in the Data Scientist and Data
+  Analyst loops (high). The first round is a hiring-manager conversation with
+  no coding (high). The DS loop has a one-week take-home: SQL or Python, a deck
+  plus code (high that it exists; details from one report). These go in
+  `SOURCED_FORMATS` or a template entry. The DA round's platform (HackerRank)
+  and length (45 min) come from one report and must be worded as one
+  candidate's account. Do not cite the "Stripe Candidate Recruiting Resource"
+  Google Doc: it is engineering-only and its origin is unverified.
+- **C1 — Wise page: one first-party row.** wise.jobs/analytics-case-study:
+  the analyst take-home is returned within 7 days, about 2 hours suggested,
+  no more than 3 hours. It is scored on analysis, problem solving and
+  presentation, and names no SQL or tool. Other first-party lines: interviews
+  default to Zoom, and AI use is allowed on the take-home if disclosed. **Do
+  not state a "30-minute SQL interview"** (a Bing query asks for one). No
+  source describes one; the 30-minute round on record is the recruiter/phone
+  screen.
+- **C1 — JPMorgan page: no change.** Nothing page-ready. Next step: a hand
+  read in a browser of JPMorganChase's application PDF
+  (`/content/dam/jpmorganchase/documents/careers/jpmc-ec-application-reflection.pdf`,
+  over 10 MB, too large for the fetcher). Its search snippet names HireVue
+  and HackerRank.
+- **B3 — "define the metric, then query it" (no challenge has this form).**
+  It is reported for Revolut (PracHub Feb 2026: success of a subscription
+  launch; Interview Query: a new plan with no defined metric) and Stripe
+  (S3: an abnormal metric; S8: choosing the metric was the hard part). That
+  is 4 sources from 3 publishers. Every challenge in the bank states its
+  metric. A two-step challenge on `finans_neobank` would fit: choose the
+  metric that answers "did the premium tier launch work?", then compute it.
+- **B3 — click-through rate from an event log.** Revolut, PracHub Feb 2026
+  (low, one report): views and clicks per product, a ratio guarded against
+  zero views, top 1. The bank has no event-log (view/click) table in any
+  fintech dataset, and no CTR challenge.
+- **B3 — combine fraud rules into one review list.** Revolut, PracHub
+  Feb 2026 (low): write several rules, such as login country ≠ registration
+  country or an amount or burst threshold, then flag the transactions with
+  the rule that fired. Challenges 270–273 each teach one rule alone; none
+  combines them.
+- **B3 — reconcile two sources.** Find the rows missing on either side, and
+  the matching keys whose amounts differ. Stripe data engineer (S10,
+  synthesis) and JPMorgan analyst (J5, reconcile figures across reports):
+  low–medium. No challenge does both-direction anti-join or full-outer
+  reconciliation.
+- Covered already, no B3 needed: completed spend within N days of sign-up
+  (303, 311), chargeback rate per merchant (280), decline rate (305),
+  top 10% by volume (302), MAU (301). The Stripe variants add a trailing
+  30-day window and a per-day split; those are content edits to 280 and 305,
+  not new shapes.
+- **C1 — companies with demand and no page: none found.** About 60 large
+  employers were checked in gsc_daily and bing_stats over 90 days; no
+  interview-intent query turned up. GSC cannot see queries for pages we lack,
+  so take C7's clusters instead and re-check monthly (`INDEX.md`).
+
+### R1 batch 2, 2026-11-22: Plaid, Ramp, Morgan Stanley
+
+- **C1 — Ramp page: wait for one more source, then make it sourced.** Two
+  dated candidate sources from two publishers put a **live SQL round** in
+  Ramp's loops (medium):
+  - Interview Query, Data Analyst, interviewed Q4 2025 (offer): SQL with
+    date wrangling and edge cases, after a take-home case presented to a
+    panel.
+  - DataDriven thread, analytics engineer, 2026-08-27: a live CodeSignal
+    session, 8 SQL questions + 3 follow-ups.
+
+  Do not state yet: the platform (one AE thread, possibly a Blind repost),
+  the take-home or the "AI interview + one-hour assessment" (one report
+  each). If C1 wants a line now, it can say that candidates for analyst and
+  analytics-engineering roles report a live SQL round, citing both, and
+  nothing more. Otherwise keep "no dated public source" until a third source
+  is found. The postings' "SQL (preferably Redshift, Snowflake, BigQuery)"
+  is a first-party fact about the job, usable in the topic sentence.
+- **C1 — Plaid page: no change.** No candidate report was opened. The only
+  facts are first-party job text: every data posting names SQL, with dbt
+  for analytics engineering and DBT/Airflow/Redshift for data engineering.
+  The page's "no dated public source" stays true.
+- **C1 — Morgan Stanley page: no change.** The one opened SQL-test report
+  (GfG, data engineer, 2021: a 2-hour HackerRank test with an SQL section)
+  is too old and too single to state. The first-party video-interview line
+  names no vendor. The data-analyst reports are on Glassdoor and Interview
+  Query, both unreadable this run.
+- **B3 — a calendar spine (fill the missing days) on a fintech dataset.**
+  Ramp's DA report (Q4 2025, low) names date wrangling with edge cases as
+  the hard part. The bank has date math, rolling windows (50, 319) and
+  streaks, but no challenge builds a day-by-day series with zero-activity
+  days (a recursive date CTE LEFT JOINed to activity). Only 44, 81 and 274
+  use a recursive CTE, and none for dates. Fit: daily card spend per
+  account on `finans_neobank` with gaps, then a trailing 7-day sum that
+  counts the empty days.
+- **B3 — rolling distinct active users (trailing 7 days, per day).** A
+  Dataford snippet (not opened) names it for Ramp DA. PracHub's Ramp and
+  Plaid templates (low) name trailing-window rates. Challenge 60 counts
+  daily distinct actives and 50 smooths revenue, but none counts *distinct*
+  users over a trailing window, which cannot be a window COUNT(DISTINCT) in
+  SQLite. Low; build only if B3 has a slot.
+- **B3 — success rate per counterparty over a trailing window.** Plaid
+  (PracHub template, low): API-call success per institution over 7 days.
+  The fintech datasets have no request/attempt log. The nearest is the
+  decline rate (305). If built, put it on `finans_neobank` card
+  authorisations (approve/decline per merchant, trailing 7 days).
+- **B3 — "how many rows does this join return?" as a mock MCQ.** Morgan
+  Stanley DE (GfG 2021, low): predict each join type's row count when the
+  key repeats on both sides. Challenges 291/298 and `/sql-join-fan-out/`
+  teach the fan-out by writing a query; no MCQ asks for the count. That is a
+  mock-question edit, not a new challenge.
+- Covered already, no B3 needed:
+  - nth-highest and top-N per department (29, 48, 89, 163);
+  - median without PERCENTILE (72; none on fintech data, a minor gap);
+  - cohort retention (88, 303);
+  - period-over-period (84, 126).
+- Plaid's settlement reconciliation by currency (PracHub, low) joins the
+  existing **"reconcile two sources"** B3 line above as a third report.
+
+### Batch 3, 2026-11-22: Goldman Sachs, Amazon, Snowflake
+
+Dossiers: `goldman-sachs.md`, `amazon.md`, `snowflake.md`.
+
+- **C1: Amazon page, add Amazon's own BIE process.** Amazon's BIE
+  interview-prep page (atoz.amazon, 301 from amazon.jobs `bie-interview-prep`;
+  first-party, undated) names an **online assessment** with a SQL challenge,
+  a "Working with SQL" part and a Work Styles survey, open for 7 days. It
+  also names a 60-minute phone screen with a senior leader (SQL, technical,
+  Leadership Principles), a loop of **five 55-minute interviews**, and four
+  competencies: SQL and scripting, analytical problem solving,
+  visualisation/metrics/reporting, and business acumen.
+  `SOURCED_FORMATS.amazon` has no OA row and cites only Blind and Exponent
+  for the stages. Add the first-party source and an OA row. "About five
+  rounds … 45 minutes to an hour" can become "five interviews of 55 minutes
+  (Amazon)". Keep the 75-minute phone-screen reports as candidate reports
+  (Blind 2025; PracHub Sep 2026, where it ended at about 60).
+- **C1: Amazon page, "three SQL problems in an hour" now has two reports.**
+  These are the round reported to us (BIE, Oct 2026) and PracHub's Business
+  Analyst screen (Jul 2026, published 2026-09-05: three SQL questions, a
+  behavioural deep-dive and a business case). Medium, across two roles, so
+  the row can say "two candidates in 2026" and name both roles. A dashboard
+  design task (PracHub BIE, Sep 2026) matches Amazon's named visualisation
+  competency. One line, medium.
+- **C1: Amazon page sits at position 36–46** for "amazon interview questions
+  on sql" (82 impressions / 90 days) and "amazon sql interview questions"
+  (29). It has demand and no rank. Adding the first-party facts above is the
+  content side; C1 owns the rest.
+- **C1: Goldman page, say whose "Analyst" it is, and cite three reports.**
+  Every readable report is an engineering-division **Analyst**, which is
+  Goldman's corporate title, not the data-analyst role. That holds for
+  GfG 2024 (on the page), GfG campus (last updated 2023-01-02) and
+  lets-code.co.in Summer Analyst (interviews 2025-07-16). In all three, SQL
+  comes inside live mixed rounds next to DSA problems, and the OA has no SQL
+  (GfG ×2 + LinkJob). Fixes: the page's "Where SQL appears" row (one source
+  today) can cite three; the description "the analyst process" should say
+  engineering Analyst; and the page should say that no data-analyst report
+  could be read. The Goldman page has 5 impressions in 28 days and no
+  query, so this is accuracy, not traffic.
+- **C1: Snowflake page, no interview-format section.** All 11 clicks in
+  90 days came from dialect queries ("snowflake sql practice", position
+  2.0). Snowflake's own hiring page covers engineering only and does not
+  mention SQL, and every analyst or analytics-engineer report is on
+  Glassdoor, Blind or Interview Query, which are unreadable. Keep the page
+  dialect-first. Do not add "How the interview runs (sourced)" until an
+  analyst report can be read. (Note: the title's "95 Runnable Challenges"
+  is a count. Check it against the site-count helpers; that is C1's lane,
+  not R1's.)
+- **B3: effective-dated salary history.** Goldman (GfG 2024, medium with the
+  September read): employees + salary history with start/end dates +
+  departments. Find each active employee's current salary, then the top
+  three departments by average. The `employees` dataset is one table with
+  no history, so **no challenge picks "the row that is current" from a
+  date range**. Fit: a new `salary_history` table, or account-tier history
+  on `finans_neobank`.
+- **B3: share threshold against a company benchmark, year over year.**
+  Amazon BIE (PracHub, Sep 2026; low, one report): departments where more
+  than half of employees beat their quarterly target but sales growth is
+  below the company average. The pieces exist separately (30 YoY,
+  108 above-average, 169 share), and nothing combines a conditional-
+  aggregation share, a company-level CTE and YoY in one HAVING. There is no
+  targets table.
+- **B3: a bridge table and the fan-out it causes.** Two companies, low each.
+  Amazon's follow-up asks about an employee in two departments. Snowflake's
+  campus round (GfG 2023) asks for employees on at least one project and the
+  department with the most active projects. No dataset has an
+  employee–project or employee–department assignment table. Teach EXISTS
+  vs JOIN (no duplicated employees) and count after dedupe. This joins the
+  `/sql-join-fan-out/` trap.
+- **B3: UNION with a source tag (the trap).** Goldman campus (GfG 2023,
+  low): return the distinct rows of two tables with a column naming the
+  source. Challenge 27 does UNION ALL with a source column, but no challenge
+  shows that a tag added before UNION keeps the cross-table duplicates.
+  Small; mock MCQ or a Medium.
+- Covered already, no B3 needed: dedupe keep-one (183, 73); nth-highest
+  (29, 89); earns more than manager (17, 149, 315); consecutive days (318,
+  319); above department average (131, 171); running totals (24, 173).
+
+## SEO sentinel — S1, 2026-11-22 (docs/reads/seo-sentinel-2026-11.md)
+
+- **C1 — RED: Bing index at 1.94 × the sitemap (`in_index` 833 vs 429
+  URLs; `blocked_by_robots` 828, still +9 on 11-21).** This is the starting
+  condition, diagnosed in `docs/reads/bing-drop-2026-11-22.md`.
+  - The fix, #138 (the bingbot group), is live: robots.txt is byte-equal to
+    main from the 12:15 UTC deploy on 11-22. No Bing data after it yet.
+  - Under SEO-loop rule 1, no new page ships while red.
+  - Watch: `blocked_by_robots` should stop rising by **11-26**, then fall
+    with `in_index`. If it is still rising on 11-26, re-check that bingbot
+    matches the group, for example with Bing's robots.txt tester (FOUNDER).
+  - Red ends the day the ratio falls below 1.3.
+  - The Bing clicks rule cannot fire while weekly Bing clicks are below 50
+    (now 32 a week); the index ratio is the rule that sees the drop.
+- **C1 — watch: Google positions on the `/sql-exercises/` queries.**
+  - `sql practice exercises with solutions` 4.2 → 7.9 and `sql exercises`
+    18.1 → 23.5, weeks 11-08 → 11-14 vs 11-15 → 11-21, on 12–27 impressions.
+  - Confounded by #65's title change on 11-20. Change nothing on the page
+    before #65's read on 12-12.
+  - Escalate if the first query stays below position 7 for two more weeks.
+- **A0 / orchestrator — amber: page PRs rate-limited on Vercel stay off the
+  site when only docs merges follow.**
+  - #144 and #146 show "Deployment rate limited", so production is still at
+    35afda6d (#143). The live sitemap has 330 lastmods behind main.
+  - `scripts/vercel-ignore.sh` diffs `HEAD^..HEAD` only, so every docs-only
+    merge since then skips the build.
+  - Fix: diff against the last deployed sha (Vercel documents
+    `VERCEL_GIT_PREVIOUS_SHA` for this step; check it before relying on it),
+    or push one non-docs commit after a rate-limited page merge.
+  - This is a code change to the deploy path, so it goes to A1/A0.
 
 ## Funnel findings — B1, 2026-11-22 (docs/reads/funnel-2026-11-22.md)
 
@@ -235,6 +509,40 @@ Read: trial starts per Stripe session (today ~25%) and day-7 conversion
 (today: every trial has a card). Falsification: day-7 conversion of
 card-free trials under 20% → card-free trials only move the start number;
 off. Not built autonomously: it needs two deploys and a money decision.
+
+## Competitor watch — B6, 2026-11-22 (docs/reads/competitors-2026-11-22.md)
+
+Ranked by expected money per hour. B6 builds none of these; each names its lane.
+Every competitor fact cited must come from that read (URL + date).
+
+1. **C5 — Capital One assessment block on the blog guide.** SERP for the
+   assessment is Blind, Glassdoor, IQ and Dataford guides; nobody offers a
+   timed rehearsal. Fetched, dated candidate reports → the mock → question 1.
+2. **C5 (+B3) — Wise sourced format section + a 4-question / 60-minute set.**
+   No page about Wise's SQL screen ranks; DataLemur's hit is WiseTech. Our
+   page has no sourced format section.
+3. **C1 — 301 `sql-quest2.vercel.app` → `sqlquest.app`.** The vercel.app host
+   is indexed with $19 / 200+ / May 2026 copy. Check Supabase Auth Site URL
+   and redirect URLs first (`src/data/config.js` names the vercel.app host).
+4. **C2 — drop the AI-coach exclusivity on the comparison pages.** "No other
+   platform has it" is stale: StrataAI tutor (10-27), LDS Socratic mentor,
+   Aced AI feedback. Keep the specific, still-true claims.
+5. **C5 — Revolut: cite the two PracHub candidate reports** (0 today) and put
+   the Revolut mock above the fold.
+6. **C5 / C1 — Monzo: question 1 and readiness test above the fold;** C1
+   checks why the page is absent from an empty SERP.
+7. **B4 — price landscape for the monthly read.** $10–15/mo annual cluster,
+   Dataford annual = $99 = ours, three lifetimes, LeetCode Black Friday code.
+   No agent changes a price.
+8. **C2 / C5 — say what a free account gets after a wrong answer** (the
+   diagnosis, from `freeTierSentence`); the market's top complaint is
+   paywalled solutions. No competitor named.
+9. **C6 — cohort retention + funnel conversion topic funnel** (Revolut,
+   Chime reports); C7 confirms demand.
+10. **backlog (orchestrator) — mock follow-up question** after a correct
+    answer, graded by the diagnosis. AI mocks are table stakes in the set.
+- **C3 (founder's hand)** — alternativeto.net and the dev.to post state
+  $19 / 200+ / 10 categories.
 
 ## P0 — security and money
 
