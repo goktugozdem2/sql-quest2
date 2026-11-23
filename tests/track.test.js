@@ -523,10 +523,10 @@ describe('src/track.js — crawler fingerprints by window size', () => {
     expect(n).toBe(84);
   });
 
-  it('the table has one row per module fingerprint (refspam is the referrer rule)', () => {
+  it('the table has one row per module fingerprint (refspam is the referrer rule; appOnly rows read the app door)', () => {
     const m = /SOFT_FINGERPRINTS:begin\s*var SOFT_FINGERPRINTS = (\[[\s\S]*?\]);\s*\/\/ SOFT_FINGERPRINTS:end/.exec(trackSource);
     expect(m, 'track.js must carry the table between the markers').toBeTruthy();
     const ids = JSON.parse(m[1].replace(/'/g, '"')).map(r => r[0]);
-    expect(ids.sort()).toEqual(SOFT_FINGERPRINTS.map(f => f.id).filter(id => id !== 'refspam').sort());
+    expect(ids.sort()).toEqual(SOFT_FINGERPRINTS.filter(f => !f.appOnly).map(f => f.id).filter(id => id !== 'refspam').sort());
   });
 });

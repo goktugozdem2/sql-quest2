@@ -18,7 +18,10 @@
 -- 2026-08-12 → 11-11) and desktop:1280x1200 (511 from 2026-10-15) — none of
 -- them ever ran a query; and
 -- referrer spam, landingSrc ref:aocr.org, on landing rows as well as app
--- rows (816 landing people from 2026-10-28; unstamped before refspam ships).
+-- rows (816 landing people from 2026-10-28; unstamped before refspam ships);
+-- and the topic-page crawler (bot 'topic1lang' once it ships): arrivalSrc
+-- challenges-*, empty landingSrc, langs = 1 — 211 people 2026-10-18 → 11-23,
+-- ~80 a day from 11-22, none ever ran a query, solved or signed up.
 --
 -- Definitions are the registered ones (docs/agent/metrics.md):
 --   activation  = first_solve_10m (and its secondaries)
@@ -80,7 +83,10 @@ humans as (
                and ((m->>'tz' = 'America/Los_Angeles' and m->>'viewport' = 'desktop:1920x1080')
                  or (m->>'tz' = 'UTC' and m->>'viewport' = 'desktop:1280x720')))
              or m->>'viewport' in ('desktop:1919x992', 'tablet:800x600', 'desktop:1280x1200')
-             or coalesce(m->>'landingSrc', '') ~* '^ref:(.+\.)?aocr\.org$')
+             or coalesce(m->>'landingSrc', '') ~* '^ref:(.+\.)?aocr\.org$'
+             or (coalesce(m->>'arrivalSrc', '') like 'challenges-%'
+                 and coalesce(m->>'landingSrc', '') = ''
+                 and m->>'langs' = '1'))
 ),
 
 -- ── Acquisition ─────────────────────────────────────────────────────────
