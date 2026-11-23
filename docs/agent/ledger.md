@@ -59,6 +59,59 @@ of the verifier and must never be rounded to `FLAT`.
   landers and 0 app opens from it → the guide is not a door; one improvement
   run, then the kill rule.
 
+### related links for thinly linked pages (C1)
+
+- **Claimed** 2026-11-22 · **Shipped** on merge (static pages, no flag) ·
+  **Read** 2026-12-20.
+- **Change:** `scripts/build-related-links.mjs` adds one contextual
+  "related" line to 16 source pages. The targets are 13 pages that had
+  0–3 distinct linking pages outside `/questions/`. Before → after:
+  `docs/reads/internal-links-2026-11-22.md`. The guard is
+  `tests/internal-links.test.js`: fewer than 2 linking pages fails.
+- **Page set, fixed now:**
+  - `/weekly/`
+  - `/datalemur-karsilastirma/`
+  - `/stratascratch-alternatives/`
+  - `/datalemur-alternatives/`
+  - `/learn-sql-for-beginners/`
+  - `/after-bootcamp/`
+  - `/after-the-sql-course/`
+  - `/sql-for-the-ai-era/`
+  - `/blog/validate-ai-generated-sql/`
+  - `/challenges/string-functions/`
+  - `/sql-rollup-interview-questions/`
+  - `/paypal-sql-interview/`
+  - `/coinbase-sql-interview/`
+  - `/chime-sql-interview/`
+  - `/monzo-sql-interview/`
+- **Metric:** `bing_crawled_share` / `linked_page_impressions`
+  (`docs/agent/metrics.md`, defined in this PR).
+- **Baseline:** laptop read before the deploy. It has three parts:
+  - `bing_url_status` for the 15 URLs: `last_crawled`, `checked_at`,
+    `anchor_count`;
+  - GSC page-slice impressions for the 28 days before the deploy;
+  - how many of the 15 are in `gsc_index_status` as indexed.
+
+  A cloud session has no production data, so this PR ships no number.
+- **Target:**
+  - ≥ 12 of the 15 crawled by Bing on or after the deploy date, with
+    `checked_at` after it.
+  - Page-slice impressions for the set up ≥ 25% over the prior 28 days,
+    counting pages at zero.
+- **Falsification:**
+  - **MISS:** fewer than 8 of 15 crawled since the deploy, among those
+    checked after it.
+  - **FLAT:** impressions within ±10%, with no page going from 0 to
+    > 0. That would say links from these pages carry no crawl signal at
+    this authority.
+  - **UNREADABLE:** under 10 of the 15 checked after the deploy. Do not
+    round that to FLAT.
+- **Confounds:**
+  - `/weekly/` changes lastmod on every `build:weekly`.
+  - #162 rewrites the snippets of 7 company pages in the same window. None
+    of the 15 is among them, but the set's impressions share the
+    Google-wide trend, so read it against the site's page-slice total for
+    the same windows.
 
 ### AI-visibility pass: answer-first summaries, honest competitor facts, llms.txt entry points (C2)
 
