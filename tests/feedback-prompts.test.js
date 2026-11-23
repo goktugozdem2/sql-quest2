@@ -174,10 +174,15 @@ describe('the app wiring (source guards)', () => {
   const dismissStart = app.indexOf('const dismissProModal = (via) => {');
   const dismiss = app.slice(dismissStart, app.indexOf('const beginCheckout = (plan) => {', dismissStart));
 
-  it('three dark flags, read strictly through ftbFlag', () => {
+  // exitReasonAsk and day2Ask ON 2026-11-23 (orchestrator-decisions 2026-11-22);
+  // stuckAsk stays dark until 2026-12-20. Any other state fails here.
+  const FLAG_STATE = { exitReasonAsk: true, stuckAsk: false, day2Ask: true };
+
+  it('three flags in their decided state, read strictly through ftbFlag', () => {
     for (const [kind, flag] of Object.entries(FEEDBACK_PROMPT_FLAGS)) {
       expect(FEEDBACK_PROMPT_KINDS).toContain(kind);
-      expect(flags, flag).toMatch(new RegExp(`\\n\\s*${flag}: false,`));
+      expect(FLAG_STATE, flag).toHaveProperty(flag);
+      expect(flags, flag).toMatch(new RegExp(`\\n\\s*${flag}: ${FLAG_STATE[flag]},`));
     }
     expect(hooks).toContain('const fbFlag = (kind) => ftbFlag(FEEDBACK_PROMPT_FLAGS[kind]);');
   });

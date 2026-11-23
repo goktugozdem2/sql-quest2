@@ -109,8 +109,8 @@ describe('the wiring in app.jsx', () => {
   const start = APP.indexOf('const pendingCompanyDirectRef');
   const block = APP.slice(start, APP.indexOf('}, [isSessionLoading, currentUser]);', start));
 
-  it('ships dark, read only as === true', () => {
-    expect(FLAGS).toMatch(/companyDirectOpen:\s*false,/);
+  it('on at 50/50 since 2026-11-23 (orchestrator decision), read only as === true', () => {
+    expect(FLAGS).toMatch(/companyDirectOpen:\s*true,/);
     expect(block).toContain("window.FF?.feature?.('companyDirectOpen') === true");
   });
 
