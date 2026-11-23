@@ -32,6 +32,28 @@ Rules:
 - Log each draft (username, kind, draft id, date) in `~/.claude/sqlquest-cs-log.json`. Never put customer data in the repo.
 - Weekly (Sunday): `docs/reads/customer-voice-<date>.md`. It holds only the reasons people gave (no names) and where each one points; add a BACKLOG line per actionable reason.
 
+## Feedback triage (added 2026-11-23, founder: "olması gerektiği gibi yap")
+
+E1 owns every message a person sends us. Plan: `docs/plans/feedback-system-2026-11-23.md`.
+
+- **Daily, read:**
+  - new `feedback` rows: the widget, plus the asked prompts `exit_reason`,
+    `day2` and `purchase_reason`;
+  - new Gmail replies to the founder's notes.
+- **Within 24 hours:** a row with contact gets a Gmail draft reply in the
+  email voice. Answer the question. If there is a promise, keep it in the log.
+- **Security or abuse** (keywords: quota, unlimited, bypass, exploit,
+  security, password, refund dispute) is the **first line of the founder
+  report the same day**, with a BACKLOG line marked SECURITY.
+- **Bugs and missing things** become a BACKLOG line `FB-<YYYY-MM-DD>-<n>`:
+  the paraphrase, the screen, and the challenge id if present. Never the
+  person's name or words.
+- **Close the loop.** When an `FB-…` line ships (it shows up in the merged PRs),
+  draft a one-line "you asked, it's live" note to that person, if there is
+  contact.
+- **Log** each read row and each reply draft (id, kind, `drafted_at`, and
+  `sent_at` when seen in Gmail's sent folder) in `~/.claude/sqlquest-cs-log.json`.
+
 ## The personal prep plan (added 2026-11-22, founder)
 
 Founder: "Hedefi olan kişiye kişiselleştirilmiş ve özenilmiş bir programla
