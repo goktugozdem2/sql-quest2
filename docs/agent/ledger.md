@@ -27,6 +27,69 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### learn → practice → next step on two topic pages (pilot)
+
+- **Claimed** 2026-11-23 · **Live** on the deploy that merges
+  `seo/topic-learn-pilot` · **Read** 28 days after that deploy (about
+  2026-12-21).
+- **Change** `/challenges/window-functions/` and `/challenges/cte/` get three
+  blocks above their challenge lists (`scripts/build-topic-learn.mjs`, content
+  `src/data/topic-learn.js`): "Learn it in 3 minutes" (plain words, the
+  syntax, one worked example on a tiny table with its result, an "Edit and
+  run" box that loads sql.js only on click, one common mistake with a link —
+  the join fan-out trap page on the CTE page); "Now try it", an Easy → Medium
+  → Hard ladder picked in curriculum order (window 168 → 112 → 23, CTE 179 →
+  111 → 50; all three playable free, the Hard ones are free previews), deep
+  links `/app/?challenge=<id>&src=topic-learn-<slug>`; "The next step" (the
+  readiness test, the three company sets that weigh the topic,
+  `freeTierSentence`). Events `learn_example_run`, `learn_ladder_click`,
+  `learn_next_step` (track.js, `reason='landing'`). The two tutorials
+  (`sql-cte-tutorial`, `window-functions-tutorial`) link the pages as
+  "Practice it" (`cta_blog_practice_it`). No new page (SEO rule 1).
+- **Why** GSC, 90 days: the tutorial posts get impressions and no clicks
+  (sql-cte-tutorial 5,848 / 9 at position 22; sql-joins-explained 4,038 / 6;
+  sql-group-by-tutorial 2,241 / 5), the practice pages win the click
+  (window-functions 793 / 50 at position 10; cte 844 / 39). Payers came from
+  company pages (7 of 15) and /sql-exercises/ (3), none from a tutorial. So
+  the explanation goes onto the page that already ranks and converts.
+- **Metric** `seo_page_funnel`, per page and per group: people (by `aid`,
+  bots, internal users and Asia/Shanghai out) whose FIRST `landing_view` in
+  the window was on the page → `app_opened` ≤ 7 days → `challenge_solved`
+  ≤ 7 days. Pilot = the two pages; control = the seven untouched hand-written
+  topic pages (joins, aggregation, case-when, subqueries, null-handling,
+  date-functions, string-functions). Context slices: `arrivalSrc` starting
+  `topic-learn-` on `app_opened` (how much of the arrival the ladder
+  carries), and people with each of the three events.
+- **Baseline** (landings 2026-10-26 → 11-22, read 2026-11-23 through the
+  read-only MCP; the last week's 7-day follow-up is truncated, and the read
+  uses the same rule):
+
+  | group | landed | opened ≤ 7d | solved ≤ 7d |
+  |---|---|---|---|
+  | pilot | 96 | 51 (53.1%) | 21 (21.9%) |
+  | · window-functions | 60 | 25 (41.7%) | 15 (25.0%) |
+  | · cte | 36 | 26 (72.2%) | 6 (16.7%) |
+  | control (7 pages) | 135 | 51 (37.8%) | 13 (9.6%) |
+
+- **Target** the pilot's landed → solved rate reaches **≥ 30%** while the
+  control stays within ±5 points of 9.6%, i.e. the pilot − control gap widens
+  from 12.3 to **≥ 18 points**; and **≥ 15%** of pilot landing people click a
+  ladder step (`learn_ladder_click`).
+- **Guardrails** the pilot's landed → opened rate stays at or above 45%; the
+  two pages' GSC clicks over the 28 days do not fall more than 25% against the
+  28 days before while the control's do not fall.
+- **Falsification, stated in advance:** pilot landed → solved at or below
+  21.9%, or the gap not wider than 12.3 points → the learn block does not
+  convert; if fewer than 5% of pilot landers also ran the example, remove the
+  learn block and keep the ladder and the next step. A guardrail breach (GSC
+  clicks down > 25% on the two pages only) → revert the whole block. Fewer
+  than 80 pilot landers in the window → **UNREADABLE** (at n ≈ 100 one
+  standard error is about 4 points), extend 28 days, do not roll out.
+- **Confounds** the bank and the free quota are unchanged in the window as of
+  the claim; any change to the seven control pages before the read voids the
+  comparison (`tests/topic-learn-pilot.test.js` fails if one of them gains
+  the pilot's blocks).
+
 ### a founder-led live mock — would people pay for it? (asked by hand)
 
 - **Claimed** 2026-11-22 · **Shipped** as 3 Gmail drafts, written by E1 at
