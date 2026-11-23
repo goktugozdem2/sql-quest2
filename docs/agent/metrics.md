@@ -4058,3 +4058,38 @@ Traps:
   checkout-abandon sender already does).
 - n will be small (about 52 real new people a week in late November), so
   read the rows, not a rate.
+
+## `debug_hub_search`
+
+The search half of the Debug hub `/sql-debugging-practice/` (PR #256, generated
+only while `debugQuestions` is on). Registered 2026-11-23, before the page
+exists, for the ledger claim in #256. Read from the `debugQuestions` flip,
+never across it. Baseline 0.
+
+**Google.** `gsc_daily`, the page slice only (`query IS NULL AND page =
+'https://sqlquest.app/sql-debugging-practice/'`): sum impressions and clicks
+over the 28 days after the flip. The query×page slice is read beside it for
+WHICH queries (the primary cluster: sql debugging practice / exercises, fix
+the sql query, find the bug, common sql mistakes interview, "what's wrong
+with my query"), never added to the page slice. GSC lands 2–3 days late:
+read on day 31.
+
+**Bing.** `bing_stats` page slice for the same URL. Its rows are WEEKLY
+buckets (a date is the seven days ending on it), so report whole weeks only
+and never mix them with GSC days.
+
+**Indexed.** GSC URL Inspection "Submitted and indexed", and on Bing either
+a `bing_url_status` crawl after the flip or URL Inspection by hand.
+
+**Cannibalisation guard.** `/blog/validate-ai-generated-sql/` page-slice GSC
+impressions in the same 28 days against its prior 28 days.
+
+**Product half (context, not the verdict).** `seo_page_funnel` for
+`landing_view` rows on the page, and `/app/` arrivals with `src=seo-debug`.
+
+**Verdict (from #256, written before data):**
+- HIT: at least 300 GSC impressions and at least 5 clicks, and indexed on both engines.
+- MISS, noindex through `src/data/seo-prune.json`: under 100 GSC
+  impressions; or validate-ai-generated-sql down more than 30% on its prior
+  28 days.
+- Anything between: INCONCLUSIVE; read again at 56 days.
