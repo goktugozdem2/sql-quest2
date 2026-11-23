@@ -606,6 +606,18 @@ window.FEATURE_FLAGS = {
     // banner claim is read on the `list` arm and non-test arrivals only.
     companyDirectOpen: true,
 
+    // ── Run stays on screen on phones (rank 1 of the mobile plan, 2026-11-23)
+    // An A/B by aid (mobile_run_bar_v1, murmur-finalised hash), assigned at
+    // the first challenge open on a narrow touch screen and written once as
+    // `mobile_run_bar_assigned {arm}`. The `bar` arm pins the challenge's
+    // Run / Submit bar to the bottom of the viewport below `md` (above the
+    // keyboard where visualViewport is supported); `control` keeps today's
+    // sticky bar. Desktop is untouched in both arms. DARK until the
+    // orchestrator's decision row. src/utils/mobile-run-bar.js; ledger "Run
+    // stays on screen on phones"; metric open_to_first_run, mobile band.
+    // Plan: docs/plans/mobile-acquisition-2026-11-23.md §4.
+    mobileRunBar: false,
+
     // ── The Debug question type (design PR #248, 2026-11-23) ──────────────
     // "An AI assistant wrote this for the task below. It returns the wrong
     // answer." Twelve items, ids 331-342, in src/data/debug-challenges.js,
