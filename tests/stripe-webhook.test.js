@@ -65,7 +65,7 @@ describe('stripe-webhook: the events that make abandonment and churn readable', 
     expect(at - guard, 'the guard is not the one wrapping this line').toBeLessThan(400);
     // A voluntary cancellation must still keep what it paid for.
     expect(b).toContain('endedForNonPayment');
-    expect(b).toContain('cancellation_details');
+    expect(b).toContain('cancellationDetails(subscription)');
   });
 
   it('every pro_events write in the file carries reason stripe_webhook', () => {
@@ -418,5 +418,58 @@ describe('stripe-webhook: a failed charge carries its own fix (M-01)', () => {
     expect(del).toBeLessThan(d.indexOf('.from("users")'));
     // before the trial path returns, so a trial that ends unpaid clears it too
     expect(del).toBeLessThan(d.indexOf('return new Response("Trial cancelled"'));
+  });
+});
+
+// ── Why they cancelled (E2, 2026-11-23) ─────────────────────────────────────
+// Stripe's cancellation_details (reason, feedback, comment) used to be read
+// for `reason` on the ended subscription only; feedback and comment were
+// dropped, and a SCHEDULED cancellation carried none of it. Stripe sends
+// feedback/comment only when the Customer Portal collects cancellation
+// reasons (founder, dashboard).
+describe('stripe-webhook: the cancellation reason rides the cancellation event', () => {
+  const start = src.indexOf('function cancellationDetails(');
+  const fnSrc = src.slice(start, src.indexOf('\n}\n', start) + 2)
+    .replace(/\(subscription: unknown\): \{[^}]*\} \{/, '(subscription) {')
+    .replace(/\(subscription as \{[\s\S]*?\} \| null \}\)/, '(subscription)')
+    .replace(/\(v: unknown\)/, '(v)');
+  const maxAt = src.indexOf('const CANCEL_COMMENT_MAX = ');
+  const maxSrc = src.slice(maxAt, src.indexOf(';', maxAt) + 1);
+  const cancellationDetails = new Function(`${maxSrc}\n${fnSrc}; return cancellationDetails;`)();
+
+  it('copies reason, feedback and comment, the comment cut at 500 characters', () => {
+    expect(maxSrc).toBe('const CANCEL_COMMENT_MAX = 500;');
+    const sub = { cancellation_details: { reason: 'cancellation_requested', feedback: 'too_expensive', comment: '  x'.repeat(400) } };
+    const d = cancellationDetails(sub);
+    expect(d.reason).toBe('cancellation_requested');
+    expect(d.feedback).toBe('too_expensive');
+    expect(d.comment.length).toBe(500);
+    expect(d.comment.startsWith('x')).toBe(true);
+    expect(cancellationDetails({ cancellation_details: { reason: 'payment_failed', feedback: null, comment: '   ' } }))
+      .toEqual({ reason: 'payment_failed', feedback: null, comment: null });
+    expect(cancellationDetails({})).toEqual({ reason: null, feedback: null, comment: null });
+    expect(cancellationDetails({ cancellation_details: null })).toEqual({ reason: null, feedback: null, comment: null });
+    expect(cancellationDetails(undefined)).toEqual({ reason: null, feedback: null, comment: null });
+  });
+
+  it('a scheduled cancellation carries it; a reactivation does not', () => {
+    const u = branch('customer.subscription.updated');
+    const paid = u.slice(u.indexOf('subscription.cancel_at_period_end ? "pro_subscription_cancelled"'));
+    expect(paid).toContain('...(subscription.cancel_at_period_end ? cancellationDetails(subscription) : {}),');
+    const trial = u.slice(u.indexOf('subscription.cancel_at_period_end ? "pro_trial_cancelled"'), u.indexOf('return new Response("Trial update recorded"'));
+    expect(trial).toContain('...(subscription.cancel_at_period_end ? cancellationDetails(subscription) : {}),');
+  });
+
+  it('the ended subscription carries feedback and comment on every cancellation row', () => {
+    const d = branch('customer.subscription.deleted');
+    expect(d).toContain('const cancelDetails = cancellationDetails(subscription);');
+    expect(d).toContain('const cancelReason = cancelDetails.reason;');
+    const rows = d.split(/logProEvent\("pro_(?:subscription|trial)_cancelled"/).slice(1);
+    expect(rows.length).toBe(3); // trial ended, paid ended, no user row
+    for (const r of rows) {
+      const call = r.slice(0, r.indexOf('});'));
+      expect(call).toMatch(/feedback: cancelDetails\.feedback/);
+      expect(call).toMatch(/comment: cancelDetails\.comment/);
+    }
   });
 });
