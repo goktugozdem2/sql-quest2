@@ -203,20 +203,28 @@ describe('the solutions, run and pinned, and the wrong answers that must fail', 
     expect(grades(348, edit(348, "WHERE status = 'completed' AND ts", 'WHERE ts'))).toBe(false);
   });
 
-  it('349 — seven mature 2026 cohorts; step 2 only counts after step 1', () => {
+  it('349 — eight 2026 cohorts (August up to its 24-day cut); step 2 only counts after step 1', () => {
     expect(run(349)).toEqual([
-      { signup_month: '2026-01', signups: 14, kyc_3d: 8, paid_30d: 6 },
-      { signup_month: '2026-02', signups: 19, kyc_3d: 7, paid_30d: 4 },
-      { signup_month: '2026-03', signups: 15, kyc_3d: 6, paid_30d: 2 },
-      { signup_month: '2026-04', signups: 16, kyc_3d: 10, paid_30d: 5 },
-      { signup_month: '2026-05', signups: 8, kyc_3d: 5, paid_30d: 2 },
-      { signup_month: '2026-06', signups: 15, kyc_3d: 11, paid_30d: 8 },
-      { signup_month: '2026-07', signups: 19, kyc_3d: 9, paid_30d: 5 },
+      { signup_month: '2026-01', signups: 14, kyc_3d: 8, paid_21d: 4 },
+      { signup_month: '2026-02', signups: 19, kyc_3d: 7, paid_21d: 4 },
+      { signup_month: '2026-03', signups: 15, kyc_3d: 6, paid_21d: 2 },
+      { signup_month: '2026-04', signups: 16, kyc_3d: 10, paid_21d: 3 },
+      { signup_month: '2026-05', signups: 8, kyc_3d: 5, paid_21d: 2 },
+      { signup_month: '2026-06', signups: 15, kyc_3d: 11, paid_21d: 8 },
+      { signup_month: '2026-07', signups: 20, kyc_3d: 9, paid_21d: 5 },
+      { signup_month: '2026-08', signups: 5, kyc_3d: 2, paid_21d: 2 },
     ]);
-    // Wrong 1: no maturity cut — an August cohort appears and July grows.
-    expect(grades(349, edit(349, "date('2026-08-31', '-33 days')", "'2026-08-31'"))).toBe(false);
+    // Wrong 1: no maturity cut — August takes in signups that have not had their 24 days.
+    expect(grades(349, edit(349, "date('2026-08-31', '-24 days')", "'2026-08-31'"))).toBe(false);
     // Wrong 2: step 2 counted on its own, not only after step 1.
     expect(grades(349, edit(349, 'SUM(kyc_ok * pay_ok)', 'SUM(pay_ok)'))).toBe(false);
+  });
+
+  it('349 — the payment clock run from signup, not from KYC, is graded wrong', () => {
+    // Q1, 2026-11-24: the card's own lesson. With a 30-day step 2 the two
+    // readings gave the same 32 users on this data and this answer was graded
+    // correct; at 21 days they split (2026-01: 4 vs 3, 2026-06: 8 vs 6).
+    expect(grades(349, edit(349, 'julianday(p.ts) - julianday(u.kyc_verified_at) <=', 'julianday(p.ts) - julianday(u.signup_date) <='))).toBe(false);
   });
 
   it('350 — 8 comparable markets; 672.4% headline against 466.3% like-for-like', () => {
@@ -262,6 +270,18 @@ describe('the solutions, run and pinned, and the wrong answers that must fail', 
     expect(grades(353, activeDaysOnly)).toBe(false);
   });
 
+  it('353 — stickiness is taken from the unrounded average, and the prompt says so', () => {
+    const rows = run(353);
+    // Q1, 2026-11-24: stickiness from the ROUNDED avg_dau is a different number
+    // in 2025-08 (0.77 / 15 = 5.1, the unrounded average gives 5.2). The prompt
+    // says which one it wants, in both languages, so that reading is graded wrong
+    // on purpose and the wording cannot drift back to "avg_dau / mau".
+    expect(rows.find(r => r.month === '2025-08')).toEqual({ month: '2025-08', mau: 15, avg_dau: 0.77, stickiness_pct: 5.2 });
+    expect(byId(353).description).toMatch(/\*\*unrounded\*\* average daily actives/);
+    expect(byId(353).description_tr).toMatch(/\*\*yuvarlanmamış\*\* ortalama günlük aktif/);
+    expect(grades(353, edit(353, 'ROUND(100.0 * AVG(f.dau) / m.mau, 1)', 'ROUND(100.0 * ROUND(AVG(f.dau), 2) / m.mau, 1)'))).toBe(false);
+  });
+
   it('354 — four buckets over 209 eligible users, the never-active included', () => {
     expect(run(354)).toEqual([
       { first_two_weeks_days: '0', users: 117, retained_users: 88, retention_pct: 75.2 },
@@ -284,7 +304,7 @@ describe('the examples state the data', () => {
       346: [186, 0.669, 0.602],
       347: [145, 113788, 163, 38500],
       348: [189, 481085.44, 23765.34, 20],
-      349: [14, 8, 6],
+      349: [14, 8, 4],
       350: [8],
       351: [152, 85.4],
       352: [96, 12, 63, 21],
