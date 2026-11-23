@@ -6,7 +6,7 @@ pages they land on, and the path from that page to question 1 and to the Pro
 part of their prep. C1 owns snippets, crawl and links. C2 owns AI citations.
 B3 owns the question bank. C5 asks B3 for questions and C1 for links.
 **Cadence:** daily, one asset per run.
-**Judged by:** trials and purchases per 1,000 landing people on the pages C5 made or changed, read at 28 and 56 days. Clicks don't count: a page with traffic and no buyers is not a win.
+**Judged by:** trials and purchases per 1,000 landing people on the pages C5 made or changed, read at 28 and 56 days from `content_funnel` (docs/agent/metrics.md; mailed Mondays and Thursdays). Clicks don't count: a page with traffic and no buyers is not a win.
 
 Founder's order, 2026-11-22: "Bize satış yaptıran içerikler oluşturan agent günlük çalışsın."
 
@@ -53,7 +53,7 @@ Each run, pick the highest item that has evidence today. Say in the PR why it be
   - internal links: the hub, the cross-link ring, related pages;
   - its sitemap entry and `sitemap-lastmod.json`;
   - a test that runs any query it shows;
-  - a ledger claim with metric `company_page_door` (or `landing_to_trial` per page, which you define in metrics.md if it is missing), a baseline, a target, a falsification written before the data, and read dates at 28 and 56 days.
-- **Kill rule, read monthly with B4.** A C5 page with ≥ 300 landing people and 0 trials or purchases in 60 days gets one improvement run. If it is still at 0 after 30 more days, it goes to `seo-prune.json` with a dated note, with the founder's OK for hand-written pages.
+  - a ledger claim with metric **`content_funnel` for the page** (its `page` slug as the tracker names it: `revolut-sql-interview`, `blog/<slug>`): the baseline is the page's 28-day row (or 0 for a new page), the target is trials or purchases per 1,000 landing people plus the step it should move, a falsification written before the data, and read dates at 28 and 56 days.
+- **Kill rule, read monthly with B4.** The `content_funnel` mail lists the candidates (60-day row). A C5 page with ≥ 300 landing people and 0 trials or purchases in 60 days gets one improvement run. If it is still at 0 after 30 more days, it goes to `seo-prune.json` with a dated note, with the founder's OK for hand-written pages.
 - **One PR per run.** A1 reviews and A0 decides. Never send, post or open a PR outside the repo.
-- **Cloud runs have no production data.** Pick from the latest dated reads, say which read, and leave the per-page money numbers to the laptop.
+- **Cloud runs have no production data.** Pick from the latest dated reads, say which read, and leave the per-page money numbers to the laptop and the `content_funnel` mail. Never paste a per-page number from that mail into the repo (public); a claim's verdict cites the metric and the read date.

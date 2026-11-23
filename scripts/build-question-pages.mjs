@@ -307,7 +307,11 @@ export function renderQuestion(c, ctx) {
   <p style="font-size:15px;color:#94a3b8;margin:4px 0 12px;" data-question-note="true">${esc(QUESTION_NOTES[slug].text)} <a href="${QUESTION_NOTES[slug].href}" data-track="${QUESTION_NOTES[slug].track}">${esc(QUESTION_NOTES[slug].link)} →</a></p>` : ''}
   <div class="prob">${paras(c.description)}</div>
   <p style="margin-top:22px;"><a class="btn bp" href="${appUrl}" data-track="cta_question_solve">Solve it in the browser editor →</a></p>
-  <p style="font-size:13px;color:#8b98ab;margin-top:10px;">Runs on SQLite in your browser, graded against the expected result, no signup. A wrong answer gets a diagnosis, not just "incorrect".${free ? ` Free accounts get ${FREE_SOLVE_QUOTA} free challenge solves, and this can be one of them.` : ''}</p>
+  <p style="font-size:13px;color:#8b98ab;margin-top:10px;">${c.grade === 'state'
+    // A state-graded (DML/DDL) challenge: the page says how it is graded and
+    // publishes the prompt only. Never the solution, the setup or the check.
+    ? 'Runs on SQLite in your browser, on a fresh copy of the tables every attempt, and is graded on what the table holds after your statements. No signup. A wrong answer says how your table differs, not just "incorrect".'
+    : 'Runs on SQLite in your browser, graded against the expected result, no signup. A wrong answer gets a diagnosis, not just "incorrect".'}${free ? ` Free accounts get ${FREE_SOLVE_QUOTA} free challenge solves, and this can be one of them.` : ''}</p>
 
   <h2 class="fd">Schema</h2>
   ${schemaHtml(c, datasets) || '<p style="color:#94a3b8;">The tables are listed in the editor.</p>'}
