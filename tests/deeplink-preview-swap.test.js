@@ -109,6 +109,24 @@ describe('the live bank: the swap for the 318/319 question-page links', () => {
     expect(m318.sameKind).toBe(false);
   });
 
+  // A1 review 2026-11-24: #29 and #80 matched #24 on the raw category
+  // "Window Function" — the singular spelling of the canonical skill every
+  // free Hard preview carries, so the note read "also uses Window Function".
+  it('no locked Hard is called "the same kind" on a spelling of a tag every preview carries', () => {
+    const previews = live.filter(c => c.freePreview && c.difficulty === 'Hard');
+    const universalCanon = [...new Set(previews.flatMap(c => parts(c).map(canon).filter(Boolean)))]
+      .filter(s => previews.every(c => parts(c).map(canon).includes(s)));
+    expect(universalCanon).toContain('Window Functions');
+    const norm = s => s.toLowerCase().replace(/s$/, '');
+    for (const target of live.filter(c => c.difficulty === 'Hard' && !c.freePreview)) {
+      const m = previewSwapMatch(target, live, []);
+      if (!m || !m.sameKind) continue;
+      for (const tag of m.shared) {
+        expect(universalCanon.map(norm), `#${target.id} -> #${m.swap.id} on "${tag}"`).not.toContain(norm(tag));
+      }
+    }
+  });
+
   it('a broad tag alone never makes "the same kind" (the #86 match)', () => {
     const m = previewSwapMatch(live.find(c => c.id === 318), live, []);
     if (m.swap.id === 86) expect(m.sameKind).toBe(false);

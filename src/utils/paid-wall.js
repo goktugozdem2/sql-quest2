@@ -177,8 +177,12 @@ function definingTags(c) {
       if (!tok) continue;
       const key = tok.toLowerCase();
       if (SWAP_GENERIC_TAGS.has(key)) continue;
-      if (!out.has(key)) out.set(key, tok);
       const canon = canonicalOf(tok);
+      // A tag that only spells its own canonical skill ("Window Function" for
+      // Window Functions) is that skill, not a narrower one: count it once, as
+      // the canonical, so the universal-tag drop below removes it too.
+      const spellsCanon = canon && key.replace(/s$/, '') === canon.toLowerCase().replace(/s$/, '');
+      if (!spellsCanon && !out.has(key)) out.set(key, tok);
       if (canon && canon !== 'Querying Basics' && !out.has(canon.toLowerCase())) out.set(canon.toLowerCase(), canon);
     }
   }
