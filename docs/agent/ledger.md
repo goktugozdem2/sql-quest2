@@ -27,6 +27,34 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### C7 run 1: five mined question shapes answered on three existing pages
+
+- **Claimed** 2026-11-22 · **Shipped** on merge (static pages, no flag) ·
+  **Read** 2026-12-20.
+- **Change** Answers in our own words, every query run on the app's
+  datasets and pinned in `tests/question-answers-2026-11-22.test.js`:
+  Nth-highest salary with ties (`/blog/row-number-vs-rank-vs-dense-rank/`),
+  latest row per group, month-over-month change and consecutive-day
+  streaks (`/blog/window-functions-tutorial/`), deleting duplicates when
+  there is no id column (`/sql-find-duplicates/`). The two blogs' visible
+  FAQ now equals their JSON-LD (10 baseline lines retired). Read:
+  `docs/reads/questions-2026-11-22.md`.
+- **Metric** `gsc_page_clicks` (metrics.md), impressions on the three
+  pages, page slice; plus the query×page slice filtered to the five shapes
+  (`nth|second highest|latest|most recent|month over month|consecutive|streak|no id|rowid`).
+- **Baseline** not read: the cloud session has no production data. The
+  laptop reads the 28 days to 2026-11-21 for the three pages and writes it
+  here.
+- **Target** the three pages' impressions for the 28 days to 2026-12-17 at
+  or above the baseline + 20%, and at least one query from the five shapes
+  with impressions on the page that answers it.
+- **Falsification** (written before the data) impressions at or below the
+  baseline and no shape query on its page → answers inside long existing
+  posts don't move search demand. C7 stops adding sections and only adds
+  FAQ entries until a read shows a shape query landing.
+- **Confounds** the window tutorial and ranking blog also gained a visible
+  FAQ (same text as their schema); a Google core update in the window
+  would show on every page, so compare against the blog's other posts.
 ### UI/UX: no critical layout defect, a third fewer major (A4 first run)
 
 - **Claimed** 2026-11-22 · **Shipped** on merge of #143, #144, #145, #146,
