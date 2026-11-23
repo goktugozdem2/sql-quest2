@@ -106,6 +106,29 @@ async function sendAndLog(supabase: any, apiKey: string, args: {
 }
 // ── end shared block ──
 
+// Users are read in pages (2026-11-23). One unpaged `select username, email,
+// data` over every row with an email took 15–19 s, and on 11-22 and 11-23 the
+// 10:00 run of skill-decay, welcome-back and streak-reminder hit the 8 s
+// statement timeout together: 500s, and no welcome-back or skill-decay mail
+// either day, while pg_cron logged "succeeded" (A3, docs/reads/errors-2026-11-23.md).
+// INLINED in skill-decay, welcome-back and streak-reminder — keep in sync.
+const USERS_PAGE = 200
+async function loadUsersWithEmail(supabase: any): Promise<any[]> {
+  const all: any[] = []
+  for (let from = 0; ; from += USERS_PAGE) {
+    const { data, error } = await supabase
+      .from('users')
+      .select('username, email, data')
+      .not('email', 'is', null)
+      .order('username')
+      .range(from, from + USERS_PAGE - 1)
+    if (error) throw error
+    all.push(...(data || []))
+    if (!data || data.length < USERS_PAGE) break
+  }
+  return all
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
@@ -175,12 +198,7 @@ Deno.serve(async (req) => {
       return d.toISOString().split('T')[0]
     }
 
-    const { data: users, error } = await supabase
-      .from('users')
-      .select('username, email, data')
-      .not('email', 'is', null)
-
-    if (error) throw error
+    const users = await loadUsersWithEmail(supabase)
 
     let sent = 0, skipped = 0
     const wouldSend: Array<{ username: string; tz: string; localHour: number; streak: number }> = []

@@ -41,8 +41,10 @@ describe('every deep-link resolver uses the one rule', () => {
     expect(block).toContain('setIsSessionLoading(false)');
   });
   it('no resolver mints a guest without the wait', () => {
-    // Three resolvers: ?challenge=, ?company=/?sector=, ?interview=.
-    expect((app.match(/shouldWaitForSession\(\{ isSessionLoading, currentUser/g) || []).length).toBe(3);
+    // Three resolvers: ?challenge=, ?company=/?sector=, ?interview= — plus
+    // the company-direct decision (B5, 2026-11-22), which mints no guest but
+    // waits the same way before it reads the person's solves.
+    expect((app.match(/shouldWaitForSession\(\{ isSessionLoading, currentUser/g) || []).length).toBe(4);
     expect(app).not.toMatch(/if \(!pendingListDeepLinkRef\.current\) return;\s*\n\s*if \(isSessionLoading\) return;/);
   });
 });
