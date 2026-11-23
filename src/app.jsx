@@ -89,7 +89,7 @@ import { DRILL_SIZE, DRILL_TARGET, buildDrillQueue, challengeMatchesSkill, prior
 import { lintSQL } from './utils/sql-lint.js';
 import { resultsMatch, solutionRequiresOrder, sortRowsCanonical } from './utils/grade.js';
 import { normalizeAiMessages } from './utils/ai-tutor-client.js';
-import { FEEDBACK_PROMPT_FLAGS, FBP_SESSION_KEY, FBP_EXIT_DAY_KEY, FBP_STUCK_IDS_KEY, FBP_DAY2_KEY, STUCK_NO_RUN_MS, EXIT_REASONS, nextSessionRecord, markPromptShown, canShowExitReason, stuckTrigger, canShowStuck, canShowDay2, buildPromptSubmission, localDay } from './utils/feedback-prompts.js';
+import { FEEDBACK_PROMPT_FLAGS, FBP_SESSION_KEY, FBP_EXIT_DAY_KEY, FBP_STUCK_IDS_KEY, FBP_DAY2_KEY, FBP_EXIT_DONE_KEY, STUCK_NO_RUN_MS, PROMPT_THANKS_MS, EXIT_REASONS, promptDoneKey, mayRecordAnswer, markPromptAnswered, nextSessionRecord, markPromptShown, canShowExitReason, stuckTrigger, canShowStuck, canShowDay2, buildPromptSubmission, localDay } from './utils/feedback-prompts.js';
 import { t as i18n_t, getCurrentLang, setLang as i18n_setLang, subscribeLang, SUPPORTED_LANGS, localizeChallenge, localizeInterview, localizeQuestion } from './utils/i18n.js';
 import { buildWeeklyReport, detectMilestones } from './utils/weekly-report.js';
 import { isMcqQuestion, scoreMcqAnswer, applyHintPenalty, nextOptionId, findOption, buildInterviewProgress, mockMistakeDiagnosis, weakConceptsFromHistory } from './utils/mock-interview.js';
@@ -4758,10 +4758,12 @@ const FEEDBACK_TOPICS = [
  * `stuck` and `day2` (one line). Rules live in src/utils/feedback-prompts.js.
  * Neutral surface colours only; the accent is never used here (DESIGN.md).
  */
-function FeedbackPromptCard({ kind, onSend, onSkip, compact = false }) {
+function FeedbackPromptCard({ kind, onSend, onSkip, compact = false, answered = false }) {
   const [text, setText] = React.useState('');
   const [picked, setPicked] = React.useState(null);
-  const [status, setStatus] = React.useState('idle'); // idle | sending | done | error
+  // `answered` comes from the prompt, not this card: a card re-mounted after a
+  // Pro modal closes must open on the thanks, never on the question again.
+  const [status, setStatus] = React.useState(answered ? 'done' : 'idle'); // idle | sending | done | error
   const tt = (k) => i18n_t('feedback', k);
   const btn = 'min-h-[44px] px-3 rounded-md text-sm transition';
   const neutral = { background: '#1F222B', border: '1px solid #2A2E38', color: '#F2F0EA' };
@@ -25053,15 +25055,34 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
     setFbPrompt({ kind, trigger, challengeId });
     trackActivationEvent('feedback_prompt_shown', { kind, trigger, challengeId, solves: solvedChallenges.size });
   };
+  // Answered or skipped: this browser never sees that kind again
+  // (promptDoneKey; 2026-11-24, one person answered one card three times).
+  const fbMarkDone = (kind) => {
+    const key = promptDoneKey(kind);
+    if (!key) return;
+    try { if (!localStorage.getItem(key)) localStorage.setItem(key, new Date().toISOString()); } catch (_) {}
+  };
   const fbSkipPrompt = () => {
-    if (fbPrompt) trackActivationEvent('feedback_prompt_skipped', { kind: fbPrompt.kind, trigger: fbPrompt.trigger });
+    if (fbPrompt && !fbPrompt.answered) trackActivationEvent('feedback_prompt_skipped', { kind: fbPrompt.kind, trigger: fbPrompt.trigger });
+    if (fbPrompt) fbMarkDone(fbPrompt.kind);
     setFbPrompt(null);
   };
+  // The prompt being answered, set synchronously so a second send from a
+  // re-mounted card cannot slip in before React re-renders.
+  const fbAnsweredRef = useRef(null);
   const fbSendPrompt = async (answerId, text) => {
-    if (!fbPrompt) return false;
-    const sub = buildPromptSubmission({ kind: fbPrompt.kind, trigger: fbPrompt.trigger, answerId, text, challengeId: fbPrompt.challengeId });
+    const prompt = fbPrompt;
+    if (!mayRecordAnswer(prompt) || fbAnsweredRef.current === prompt) return !!prompt;
+    const sub = buildPromptSubmission({ kind: prompt.kind, trigger: prompt.trigger, answerId, text, challengeId: prompt.challengeId });
     if (!sub) return false;
-    return submitFeedback({ message: sub.message, contact: null, topic: sub.topic, kind: fbPrompt.kind, trigger: fbPrompt.trigger, promptContext: sub.context });
+    fbAnsweredRef.current = prompt;
+    const ok = await submitFeedback({ message: sub.message, contact: null, topic: sub.topic, kind: prompt.kind, trigger: prompt.trigger, promptContext: sub.context });
+    if (!ok) { fbAnsweredRef.current = null; return false; }
+    fbMarkDone(prompt.kind);
+    setFbPrompt(p => (p && p.kind === prompt.kind && p.trigger === prompt.trigger && p.challengeId === prompt.challengeId ? markPromptAnswered(p) : p));
+    // The thanks stays a moment, then the card goes for good.
+    setTimeout(() => setFbPrompt(p => (p && p.answered && p.kind === prompt.kind && p.challengeId === prompt.challengeId ? null : p)), PROMPT_THANKS_MS);
+    return true;
   };
   // 2 — exit_reason: called by dismissProModal after the plans have closed.
   const maybeAskExitReason = (via, checkoutPending) => {
@@ -25070,6 +25091,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
       flagOn: fbFlag('exit_reason'), closedVia: via, planClicked: proModalPlanClickedRef.current,
       checkoutPending: !!checkoutPending, solvedCount: solvedChallenges.size, inTimedMock: fbInTimedMock(),
       sessionRec: fbSessionRef.current, lastExitDay: (() => { try { return localStorage.getItem(FBP_EXIT_DAY_KEY); } catch (_) { return null; } })(),
+      doneAt: (() => { try { return localStorage.getItem(FBP_EXIT_DONE_KEY); } catch (_) { return 'unreadable'; } })(),
     });
     if (!ok) return;
     try { localStorage.setItem(FBP_EXIT_DAY_KEY, localDay()); } catch (_) {}
@@ -27566,7 +27588,7 @@ RULES:
           challenge page instead. */}
       {fbPrompt && fbPrompt.kind !== 'stuck' && !showProModal && (
         <div className="fixed left-4 right-4 bottom-20 z-40 sm:left-auto sm:right-4 sm:w-[380px] shadow-lg" data-feedback-prompt-slot="global">
-          <FeedbackPromptCard key={`${fbPrompt.kind}-${fbPrompt.trigger}`} kind={fbPrompt.kind} onSend={fbSendPrompt} onSkip={fbSkipPrompt} />
+          <FeedbackPromptCard key={`${fbPrompt.kind}-${fbPrompt.trigger}`} kind={fbPrompt.kind} answered={!!fbPrompt.answered} onSend={fbSendPrompt} onSkip={fbSkipPrompt} />
         </div>
       )}
       <FeedbackWidget
@@ -39913,7 +39935,7 @@ RULES:
                       minutes open, no run. The wrong-submit trigger sits inside
                       the third-try card below, so it is one card, not two. */}
                   {fbPrompt?.kind === 'stuck' && fbPrompt.trigger === 'no_run_3m' && fbPrompt.challengeId === currentChallenge.id && (
-                    <FeedbackPromptCard key={`stuck-${currentChallenge.id}`} kind="stuck" onSend={fbSendPrompt} onSkip={fbSkipPrompt} />
+                    <FeedbackPromptCard key={`stuck-${currentChallenge.id}`} kind="stuck" answered={!!fbPrompt.answered} onSend={fbSendPrompt} onSkip={fbSkipPrompt} />
                   )}
                   {/* Result Status */}
                   {challengeStatus && (
@@ -40230,7 +40252,7 @@ RULES:
                       )}
                       {/* Capture point 3, the wrong-submit trigger (`stuckAsk`). */}
                       {fbPrompt?.kind === 'stuck' && fbPrompt.trigger === 'wrong_3' && fbPrompt.challengeId === currentChallenge.id && (
-                        <FeedbackPromptCard key={`stuck-${currentChallenge.id}`} kind="stuck" compact onSend={fbSendPrompt} onSkip={fbSkipPrompt} />
+                        <FeedbackPromptCard key={`stuck-${currentChallenge.id}`} kind="stuck" compact answered={!!fbPrompt.answered} onSend={fbSendPrompt} onSkip={fbSkipPrompt} />
                       )}
                     </div>
                   )}
