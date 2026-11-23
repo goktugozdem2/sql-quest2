@@ -9854,16 +9854,19 @@ function SQLQuest() {
     }
 
     // Try to pick from target difficulty first
-    let available = challenges.filter(c => !usedIds.has(c.id) && c.difficulty === targetDiff);
+    // Debug items need their broken query and the spot step; Speed Mode has
+    // neither (empty editor), so they never enter its pools (A1 on #249).
+    const speedPool = challenges.filter(c => !isDebugChallenge(c));
+    let available = speedPool.filter(c => !usedIds.has(c.id) && c.difficulty === targetDiff);
 
     // Fallback: if no target-difficulty questions left, pick from any unused
     if (available.length === 0) {
-      available = challenges.filter(c => !usedIds.has(c.id) && (diff === 'all' || c.difficulty === diff));
+      available = speedPool.filter(c => !usedIds.has(c.id) && (diff === 'all' || c.difficulty === diff));
     }
 
     // Final fallback: allow repeats
     if (available.length === 0) {
-      const all = challenges.filter(c => diff === 'all' || c.difficulty === diff);
+      const all = speedPool.filter(c => diff === 'all' || c.difficulty === diff);
       if (all.length > 0) {
         available = [all[Math.floor(Math.random() * all.length)]];
       } else return;

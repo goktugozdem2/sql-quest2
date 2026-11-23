@@ -392,3 +392,21 @@ describe('app.jsx wiring', () => {
 it('the generators read the same twelve items', () => {
   expect(loadDebugItems().map(c => c.id)).toEqual(items.map(c => c.id));
 });
+
+// A1 on #249 (2026-11-23): Speed Mode is live and picks at random from the
+// whole bank with an empty editor, so with the flag on it served Debug items
+// ("Find the line… fix it" over nothing) in about 30% of 10-question runs.
+it('Speed Mode never serves a Debug item: every pool comes from the debug-free speedPool', () => {
+  const app = read('src/app.jsx');
+  const start = app.indexOf('const pickNextSpeedRunChallenge = ');
+  expect(start).toBeGreaterThan(-1);
+  const body = app.slice(start, app.indexOf('setSpeedRunCurrentChallenge(next)', start));
+  expect(body).toMatch(/const speedPool = challenges\.filter\(c => !isDebugChallenge\(c\)\)/);
+  expect(body).not.toMatch(/\bchallenges\.filter\(c => (?!!isDebugChallenge)/);
+});
+
+it('both debug-stats strings read as correct/total in Turkish', () => {
+  const i18n = read('src/utils/i18n.js');
+  expect(i18n).toContain("debugStatsSpots: 'Bulunan hatalar: {correct}/{n}'");
+  expect(i18n).toContain("debugStatsFixes: 'Çözülen düzeltmeler: {solved}/{n}'");
+});
