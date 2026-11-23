@@ -44,6 +44,7 @@ import { isFreePreview } from '../src/utils/challenge-order.js';
 import { bankCountLabel, freeTierSentence, FREE_SOLVE_QUOTA, COMPANY_SET_FREE_COUNT } from '../src/utils/display-count.js';
 import { archetypeMemberCompanies } from '../src/data/interview-archetypes.js';
 import SKELETONS from '../src/utils/skeletons.js';
+import { llmsEntryPoint } from './build-debug-pages.mjs';
 
 const __dirname = import.meta.dirname;
 const ROOT = path.resolve(__dirname, '..');
@@ -320,6 +321,8 @@ export const ENTRY_POINTS = [
   ['/best-sql-practice-sites/', 'Five SQL practice sites reviewed side by side, including where each beats SQL Quest.'],
   ['/vs-chatgpt/', 'Why practise on questions with a fixed expected result instead of asking a chat assistant to grade you.'],
   ['/sql-tools/', 'Free in-browser SQL tools: a checker, an explainer and an optimizer.'],
+  // /sql-debugging-practice/ exists only while features.debugQuestions is true.
+  ...llmsEntryPoint(),
 ];
 
 // The buyer questions G1 measures every week (docs/agent/fleet/G1-geo.md,
