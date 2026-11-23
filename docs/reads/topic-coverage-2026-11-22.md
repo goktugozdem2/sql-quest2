@@ -66,6 +66,13 @@ both for new challenges. **Next step after it merges: move 180-185 onto
 `grade: 'state'`** (their trailing SELECT becomes the `check`), and drop the
 `mutates` path.
 
+## Handed in by C7, 2026-11-23 (docs/reads/questions-2026-11-23.md)
+
+Top of C6's queue from question mining, ranked by C6 against the table below:
+
+- **SQLite vs PostgreSQL dates**: `date_trunc` ↔ `strftime`, `generate_series` ↔ a recursive date list, and the month-end trap (`date('2023-01-31', '+1 month')` is `2023-03-03` in SQLite; PostgreSQL clamps to the month's end). Four threads; evidence in the read. BACKLOG line in the 2026-11-23 C7 section.
+- **A date-spine challenge** (practice gap, with B3): days with zero rows, graded on the zero days.
+
 ## The backlog, re-ranked
 
 Ranked on four things from the brief: interview relevance (fetched sources
