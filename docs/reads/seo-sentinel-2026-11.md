@@ -138,6 +138,7 @@ the README rule-2 exclusions.
 `date | state | clicks G / B (7 d, prev) | index:sitemap G / B | crawl | robots + sitemap | positions`
 
 - 2026-11-22 | **RED** (Bing index; known, see F1) | G 171 (11-15→21; prev 163) / B 32 (11-14→20; prev 37) | G 416/429 = 0.97 (sitemap URLs inspected 11-16) / B 833/429 = **1.94** | Bing errors 0, 4xx 0, 5xx 0; top 20 all 200, `index, follow`, self-canonical, ≤ 1 hop | first snapshot, no yesterday to diff; robots = main (bingbot group live), sitemap 429 URLs = main's URL set, lastmods behind main (F2) | G 8 of 20 comparable queries moved > 3, 2 of them down (F3); B 0 of 5
+- 2026-11-23 | **RED** (Bing index, F1; Google GREEN) | G 172 (11-16→22; prev 174) / B 38 (11-15→21; prev 35) | G 421/431 = 0.98 (all 431 sitemap URLs inspected 11-23: 421 indexed, 10 unknown to Google) / B 838/431 = **1.94** | Bing errors 0, 4xx 0, 5xx 0 (11-22); top 20 all 200, `index, follow`, self-canonical, ≤ 1 hop (www → bare, the standing 308) | robots unchanged from 11-22 and = main; sitemap 431 URLs (+2: `/for-teams/`, `/blog/revolut-data-analyst-sql-screen/`; none dropped), byte-equal to main (F2 cleared) | G 5 of 21 comparable moved > 3, all **up** (CTE/GROUP BY tail, `sqlbolt` 11.3 → 7.7); weighted mean 9.2 → 8.3; B 0 of 5 (bucket 11-20)
 
 ## Findings
 
@@ -238,6 +239,47 @@ queries had ≥ 10 impressions in both weeks, and 8 of those moved more than
   **12-12**. The samples are 12–27 impressions. S1 keeps reading daily and
   escalates only if `sql practice exercises with solutions` stays below
   position 7 for two more weeks.
+
+### F4 — 2026-11-23: Bing's ratio has not moved since #72, and should not have yet
+
+The question for this run: did the index-to-sitemap ratio on Bing move
+after #72 (merged 2026-11-20 18:51 +03, `bingbot` `noindex, follow` on the
+question pages)?
+
+| `bing_crawl_daily` | 11-19 | 11-20 | 11-21 | **11-22** |
+|---|---|---|---|---|
+| `in_index` | 825 | 830 | 833 | **838** |
+| `blocked_by_robots` | 807 | 819 | 828 | **833** |
+| sitemap URLs (live) | 429 | 429 | 429 | **431** |
+| ratio | 1.92 | 1.93 | 1.94 | **1.94** |
+
+- **No move.** The ratio is flat at 1.94 and both counts still rise
+  (+5 / +5 on 11-22). The 11-22 row is the first that could reflect #138
+  (live 11-22 12:15 UTC), so it says nothing yet; the 11-26 check in F1
+  stands.
+- **Why #72 cannot show yet.** A `noindex` only acts once Bing re-crawls the
+  page. `bing_url_status` (checked 11-22): **8 of 312** question pages were
+  crawled on or after 11-20; 267 have been crawled at some point. The live
+  page carries `<meta name="bingbot" content="noindex, follow">` (checked
+  today), so the signal is there to be read.
+- **What #72 would look like when it acts:** `in_index` falls by up to
+  ~300 toward the non-question set, and `code_2xx` falls with it. It
+  does not touch `blocked_by_robots`, which is #138's number. So the two
+  fixes can be read apart: `blocked_by_robots` falling = #138,
+  `in_index − blocked_by_robots` and `code_2xx` falling = #72.
+- **The status line for the indexing queue (#262, open, not run):**
+  `Google GREEN · Bing RED`. Bing stays RED until the ratio is below 1.3.
+
+### F3 update — 2026-11-23: the two `/sql-exercises/` drops are no longer flagged
+
+This week (11-16 → 11-22 vs 11-09 → 11-15) neither query moved more than 3
+places. The five that did were all up. F3 stays a watch until #65's read
+on 12-12; no escalation.
+
+### F2 update — 2026-11-23: cleared
+
+The live `sitemap.xml` is byte-equal to `origin/main:public/sitemap.xml`
+(427 lastmods 11-23), so the stranded #144 / #146 are now served.
 
 ### Standing notes (not findings)
 

@@ -318,8 +318,14 @@ export const SOURCED_SLUGS = new Set([
 
 export function provenanceBlock({ slug, name }) {
   const sourced = SOURCED_SLUGS.has(slug);
+  // An entry whose company publishes part of its process says so in its own
+  // `publishes` sentence instead of "does not publish" (Shopify, 2026-11-23).
+  const publishes = (SOURCED_FORMATS[slug] || COMPANY_INTERVIEWS[slug] || {}).publishes;
+  const opener = publishes
+    ? `${esc(publishes)} Every other specific about their process on this page is what candidates and prep guides described publicly`
+    : `${esc(name)} does not publish its interview format, so every specific about their process on this page is what candidates and prep guides described publicly`;
   const body = sourced
-    ? `<strong style="color:#e2e8f0;">What is sourced:</strong> ${esc(name)} does not publish its interview format, so every specific about their process on this page is what candidates and prep guides described publicly — each one carries its source and the date it showed. Formats change; treat them as reported, not official. <strong style="color:#e2e8f0;">What is ours:</strong> the practice questions are SQL Quest challenges, picked because their SQL matches the patterns those sources report. They are not questions ${esc(name)} has asked.`
+    ? `<strong style="color:#e2e8f0;">What is sourced:</strong> ${opener} — each one carries its source and the date it showed. Formats change; treat them as reported, not official. <strong style="color:#e2e8f0;">What is ours:</strong> the practice questions are SQL Quest challenges, picked because their SQL matches the patterns those sources report. They are not questions ${esc(name)} has asked.`
     : `<strong style="color:#e2e8f0;">What this page is:</strong> we have no dated public source for how ${esc(name)} runs its SQL round, so this page does not state one — no duration, no platform, no stage list. What follows is general SQL interview practice on the kind of data ${esc(name)} works with. <strong style="color:#e2e8f0;">What is ours:</strong> the questions are SQL Quest challenges and the topic emphasis is our editorial judgement, not a measured breakdown of ${esc(name)}'s interview. <a href="/sql-interview-prep/" style="color:#c084fc;text-decoration:none;font-weight:600;">Pages with dated sources</a> say so in this spot.`;
   return `<!-- company-provenance:start -->
 <div data-provenance="${sourced ? 'sourced' : 'general'}" style="max-width:760px;margin:0 auto;padding:0 24px;">
@@ -337,7 +343,7 @@ export function withSourcedFormat(html, slug) {
   let at = out.indexOf('<section id="topics"');
   if (at < 0) at = out.indexOf('<section id="questions"');
   if (at < 0) return out;
-  const block = `<!-- company-format:start -->\n${formatSection(d, { accessed: '14 Sep 2026', role: d.role })}\n<!-- company-format:end -->\n`;
+  const block = `<!-- company-format:start -->\n${formatSection(d, { accessed: d.accessed || '14 Sep 2026', role: d.role })}\n<!-- company-format:end -->\n`;
   return out.slice(0, at) + block + out.slice(at);
 }
 
@@ -361,7 +367,9 @@ export function withProvenance(html, { slug, name }) {
  * a page cannot end up with a second, differently-worded version of the same
  * claim family.
  *
- * @param d     {name, format: [[label, text, [srcKeys]]], sources: {key: [label, url|null, date, 'direct'?]}}
+ * @param d     {name, format: [[label, text, [srcKeys]]], sources: {key: [label, url|null, date, 'direct'?]}, publishes?}
+ *              `publishes` replaces "{name} does not publish the format." when
+ *              the company publishes part of its process (a first-party row).
  *              A fourth element `'direct'` marks a source told to us rather
  *              than published (a candidate's email); the intro then says so.
  * @param opts  {accessed, role} — `role` narrows the heading when the sources
@@ -385,7 +393,7 @@ export function formatSection(d, { accessed, role = null } = {}) {
   return `<section id="format" data-section="format-sourced" style="border-top:1px solid rgba(255,255,255,.04);"><div class="sec">
   <span class="sl">How the interview runs (sourced)</span>
   <h2 class="st fd">The ${esc(d.name)} SQL interview, as candidates report it</h2>
-  <p style="font-size:15px;color:#94a3b8;margin:14px 0 22px;max-width:760px;line-height:1.75;">${esc(d.name)} does not publish the format. Each row is what candidates and prep guides have described ${direct ? '— publicly, or to us directly —' : 'publicly,'} with its source; where sources disagree, the row says so.${direct ? ' A source marked as told to us is one candidate&#39;s account, by email; their name is withheld at their request.' : ''} Formats change — treat every specific as reported, not official.${role ? ` The sources below describe ${esc(role)}; other teams at ${esc(d.name)} may run a different loop.` : ''}</p>
+  <p style="font-size:15px;color:#94a3b8;margin:14px 0 22px;max-width:760px;line-height:1.75;">${d.publishes ? esc(d.publishes) : `${esc(d.name)} does not publish the format.`} Each row is what ${d.publishes ? `${esc(d.name)}, candidates and prep guides have` : 'candidates and prep guides have'} described ${direct ? '— publicly, or to us directly —' : 'publicly,'} with its source; where sources disagree, the row says so.${direct ? ' A source marked as told to us is one candidate&#39;s account, by email; their name is withheld at their request.' : ''} Formats change — treat every specific as reported, not official.${role ? ` The sources below describe ${esc(role)}; other teams at ${esc(d.name)} may run a different loop.` : ''}</p>
   <div class="tbl"><table>
     <tbody>
 ${rows}
