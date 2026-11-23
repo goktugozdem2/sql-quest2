@@ -571,7 +571,7 @@ Each comparison page quotes competitor prices and features from that site's own 
 - Apple SQL Interview Questions — Practice Services & Product Analytics | SQLQuest.app — https://sqlquest.app/apple-sql-interview/
 - Uber SQL Interview Questions — Practice Marketplace Metrics | SQLQuest.app — https://sqlquest.app/uber-sql-interview/
 - Airbnb SQL Interview Questions — Practice Booking & Host Analytics | SQLQuest.app — https://sqlquest.app/airbnb-sql-interview/
-- Databricks SQL Interview Questions — Practice Spark SQL & Data Engineering | SQLQuest.app — https://sqlquest.app/databricks-sql-interview/
+- Databricks SQL Interview Questions — Practice Problems | SQLQuest.app — https://sqlquest.app/databricks-sql-interview/
 - Shopify SQL Interview Questions (2026): 15 Practice Problems | SQLQuest.app — https://sqlquest.app/shopify-sql-interview/
 - Spotify SQL Interview Questions — Practice Streaming & Listener Analytics | SQLQuest.app — https://sqlquest.app/spotify-sql-interview/
 - JPMorgan SQL Interview Questions — Practice Financial Analytics & Risk | SQLQuest.app — https://sqlquest.app/jpmorgan-sql-interview/

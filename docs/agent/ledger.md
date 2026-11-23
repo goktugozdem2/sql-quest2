@@ -27,6 +27,49 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### Shopify becomes a sourced company page; Meta, Google, Databricks lose their unsourced claims (C2, R1 batch 4)
+
+- **Claimed** 2026-11-23 · **Shipped** on merge (static pages, no flag) ·
+  **Read** 2026-12-21.
+- **Change** `/shopify-sql-interview/` gets a "How the interview runs
+  (sourced)" section from `SOURCED_FORMATS.shopify`: Shopify's own
+  data-science posting for the stages (first-party), three 2026 candidate
+  reports for a live SQL screen announced as SQL and Python, two for
+  clarifying before writing, three for explaining results to a
+  non-technical audience; no length, tool or dialect (the dossier rates
+  them low). Its hero and JSON-LD stop saying "the SQL patterns Shopify
+  asks". Same PR, correctness only: Meta gains the data-scientist screen
+  rows and its data-engineer count and "not runnable" rows now say the
+  sources disagree; Google loses "the exact SQL patterns Google asks",
+  "BigQuery-style" and "two shapes account for most of…"; Databricks loses
+  the "Spark SQL" framing in its title, description and hero and gains one
+  first-party line (its April 2025 prep guides name no SQL round). Sources:
+  `docs/reads/companies/{shopify,meta,google,databricks}.md`.
+- **Metric** `gsc_page_clicks` for `/shopify-sql-interview/`, and
+  `company_page_door` for `page` = `shopify-sql-interview` (page → app
+  within 1 hour, people by `aid`, bots out).
+- **Baseline** 75 impressions / 7 clicks in the 28 days to 2026-11-21
+  (R1 INDEX). The page → app rate for this page is not read (no
+  production read in this run); the laptop reads 2026-10-24 → 11-22 before
+  the merge and writes it here.
+- **Target** for the 28 days to 2026-12-18 (three days before the read):
+  ≥ 10 clicks with impressions not below 75, and the page → app rate not
+  below its baseline.
+- **Falsification** (written before the data) clicks ≤ 7 with impressions
+  ≤ 75 → a sourced section did not move search on this page; keep it (it
+  is correctness), but stop converting general pages to sourced as a
+  search bet until a second page shows a move. Under 100 impressions in
+  the window reads `UNREADABLE`, not `FLAT`.
+- **Confounds** SEO-loop rule 4: all four pages took M-02 (the hero names
+  question 1) on 2026-11-22, one day earlier — read Shopify against the 19
+  older company pages this PR does not touch, which took M-02 and no
+  content change. The
+  app's company view keeps calling the Shopify set "general" until
+  `public/app.js` is next rebuilt and committed (`SOURCED_COMPANY_NAMES`
+  is bundled; this PR does not commit the bundle). Meta, Google and
+  Databricks carry no claim of their own — their edits remove
+  statements, not bets.
+
 ### a founder-led live mock — would people pay for it? (asked by hand)
 
 - **Claimed** 2026-11-22 · **Shipped** as 3 Gmail drafts, written by E1 at
