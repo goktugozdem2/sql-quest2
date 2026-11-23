@@ -192,7 +192,17 @@ describe('the app wiring (source guards)', () => {
     expect(hooks).toContain('canShowExitReason({');
     expect(hooks).toContain('canShowStuck({');
     expect(hooks).toContain('canShowDay2({');
-    expect(hooks).toMatch(/fbShowPrompt = \(kind, trigger, challengeId = null\) => \{[\s\S]*?markPromptShown\([\s\S]*?feedback_prompt_shown/);
+  });
+
+  it('a prompt counts as shown only once it is on screen (IntersectionObserver)', () => {
+    const show = hooks.slice(hooks.indexOf('const fbShowPrompt = '), hooks.indexOf('const fbMarkSeen = '));
+    const seen = hooks.slice(hooks.indexOf('const fbMarkSeen = '), hooks.indexOf('const fbSkipPrompt = '));
+    expect(show).toContain('setFbPrompt(');
+    expect(show).not.toMatch(/markPromptShown|feedback_prompt_shown|FBP_STUCK_IDS_KEY/);
+    expect(seen).toMatch(/markPromptShown\([\s\S]*FBP_STUCK_IDS_KEY[\s\S]*feedback_prompt_shown/);
+    expect(card).toMatch(/new IntersectionObserver\([\s\S]*isIntersecting[\s\S]*onSeen\(\)/);
+    expect(card).toContain('ref={rootRef}');
+    expect((app.match(/onSeen=\{fbMarkSeen\}/g) || []).length).toBe(3);
   });
 
   it('exit_reason is asked only after the plans close, and a plan click blocks it', () => {
