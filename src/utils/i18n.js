@@ -1823,7 +1823,7 @@ const TRANSLATIONS = {
       payLater: 'Sonra — çalışmaya devam',
       payGuestSignupTitle: 'Ödeme onaylandı!',
       payGuestSignupBody: 'Hesabını şimdi oluştur — Pro’n her cihazda sonsuza dek senin olsun.',
-      debugFeature: "AI'ın yazdığı sorguyu düzelt: Debug seti.",
+      debugFeature: "AI'ın yazdığı sorguyu düzelt: Hata Ayıklama seti.",
     },
     coachNext: {
       label: 'Sıradaki adım',
