@@ -1764,6 +1764,27 @@ Three more traps that belong to cohort B only:
   moves materially against the 247 baseline, check the query mix before
   crediting anything — `UNREADABLE`, same rule as the blog's seasonality.
 
+## `team_interest`
+
+People (distinct `aid`, bots out per the shared filters) who pressed "Ask for
+seats" on `/for-teams/` in a window, and the seat counts they stated.
+Defined 2026-11-22 for the ledger claim "/for-teams/ is published" (A1, on
+#188: the claim named a metric this file did not have).
+
+- **Source:** `pro_events` rows with `event = 'team_interest'` and
+  `reason = 'landing'`, written by the `[data-track]` relay in `src/track.js`.
+  The seat count is `metadata.seats` (an integer, 1-500); `metadata.email`
+  is present only when the visitor typed one. Read metadata as
+  `(metadata #>> '{}')::jsonb`.
+- **Count:** `count(distinct ((metadata #>> '{}')::jsonb)->>'aid')`, never rows: one person may
+  press twice. Report the seat counts beside it (median and list; n is small).
+- **Exclude:** the shared bot fingerprints and internal accounts, and any
+  press before 2026-11-22 (the page was noindex and unlinked 09-26 -> 11-22;
+  baseline 0).
+- **Do not read** a person who left an email as a lead without the founder's
+  reply: the page promises a written price, so the funnel's next stage is a
+  reply sent by hand (P1's pipeline), not an event.
+
 ## `ai_landings_month`
 
 People per 30 days whose first `app_opened` carries a `landingSrc` in the

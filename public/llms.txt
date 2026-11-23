@@ -202,6 +202,7 @@ Each comparison page quotes competitor prices and features from that site's own 
 - SQL for Fraud Analytics — Practice the Patterns Fraud Analysts Actually Run | SQLQuest.app — https://sqlquest.app/fraud-analytics-sql/
 - SQL Interview Preparation — 34 Company Tracks + Study Plan (2026) | SQLQuest.app — https://sqlquest.app/sql-interview-prep/
 - Learn SQL — Free, Online, From Zero to Confident | SQLQuest.app — https://sqlquest.app/learn-sql/
+- SQL Practice Seats for Cohorts | SQLQuest.app — https://sqlquest.app/for-teams/
 - SQL Cheat Sheet — Every Clause, With a Runnable Example | SQLQuest.app — https://sqlquest.app/sql-cheat-sheet/
 - SQL Tutorial — 12 Free Lessons, Each With a Live Challenge | SQLQuest.app — https://sqlquest.app/sql-tutorial/
 - Learn SQL for Beginners — Yes, Even You. Free, in Your Browser | SQLQuest.app — https://sqlquest.app/learn-sql-for-beginners/
