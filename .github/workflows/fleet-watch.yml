@@ -1,7 +1,13 @@
 # Fleet watch (scripts/fleet/watch.mjs): hourly tripwire for the agent fleet.
-# Opens or comments one issue labelled `fleet-alert` when PRs flood, the
-# Vercel deploy budget nears its cap, a main deploy is rate-limited, or smoke
-# fails three times in a row. It never pauses agents and changes nothing else.
+# Opens or comments one issue labelled `fleet-alert` when PRs flood, more than
+# 20 production deploys land in 24 h, main's site changes are not live with no
+# deploy coming, or smoke fails three times in a row. It never pauses agents
+# and changes nothing else.
+#
+# Deploys are read from deploy-prod.yml's runs (2026-11-23, #275/#276): main
+# commits no longer get a Vercel commit status or a GitHub deployment. The live
+# commit comes from scripts/vercel-live-sha.sh with the same three Vercel
+# secrets deploy-prod.yml uses; they are only ever environment variables.
 name: Fleet watch
 
 on:
@@ -13,8 +19,6 @@ permissions:
   contents: read
   issues: write
   actions: read
-  deployments: read
-  statuses: read
   pull-requests: read
 
 concurrency:
@@ -26,8 +30,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
+      # Full history of main: the stranded check diffs live..HEAD locally with
+      # scripts/site-paths.sh, the deploy workflow's own path rule.
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -36,4 +45,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: node scripts/fleet/watch.mjs

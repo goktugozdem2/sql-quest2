@@ -6,25 +6,126 @@
 // labelled `fleet-alert`. It never pauses agents or changes anything else: a
 // PAUSE is the founder's or the orchestrator's call (README rule 0).
 //
-// Run: GH_TOKEN=… GITHUB_REPOSITORY=owner/repo node scripts/fleet/watch.mjs [--dry]
+// Deploy signals follow the deploy path of 2026-11-23 (#275, #276): production
+// is deployed by .github/workflows/deploy-prod.yml (`vercel deploy --prebuilt
+// --prod --meta deployCommitSha=<sha>`), and Vercel's Git integration no
+// longer deploys main (vercel.json git.deploymentEnabled.main=false). So main
+// commits carry NO Vercel commit status and NO GitHub deployment; nothing here
+// reads either. Deploys are counted from deploy-prod.yml's runs, and the live
+// commit is read the way the deploy workflow reads it
+// (scripts/vercel-live-sha.sh), diffed with the deploy workflow's own path rule
+// (scripts/site-paths.sh).
+//
+// Run (from a full clone of main):
+//   GH_TOKEN=… GITHUB_REPOSITORY=owner/repo [VERCEL_TOKEN=… VERCEL_PROJECT_ID=…
+//   VERCEL_ORG_ID=…] node scripts/fleet/watch.mjs [--dry]
+import { execFileSync } from 'node:child_process';
 
 export const THRESHOLDS = {
-  prsPerHour: 12,          // more PRs opened in the last hour than a reviewer can read
-  deploysPerDay: 80,       // 80% of Vercel Hobby's 100 deployments a day
-  strandedCommits: 1,      // main commits rate-limited AFTER the newest successful deploy
-  smokeFailuresInARow: 3,  // the last N smoke runs all failed
+  prsPerHour: 12,           // more PRs opened in the last hour than a reviewer can read
+  deploysPerDay: 20,        // alert ABOVE this many production deploys in 24 h (target ≈ 6)
+  strandedCommits: 1,       // site commits on main that are not live, with no deploy coming
+  strandedGraceMinutes: 30, // how long a site change may wait with no deploy-prod run
+  smokeFailuresInARow: 3,   // the last N smoke runs all failed
 };
+
+const DEPLOY_WORKFLOW = 'deploy-prod.yml';
+const FAILED = new Set(['failure', 'timed_out', 'startup_failure']);
 
 /** Pure: metrics → list of alert lines (empty = healthy). */
 export function evaluate(m, t = THRESHOLDS) {
   const out = [];
   if (m.prsLastHour > t.prsPerHour) out.push(`${m.prsLastHour} PRs opened in the last hour (limit ${t.prsPerHour}).`);
-  if (m.deploysToday >= t.deploysPerDay) out.push(`${m.deploysToday} Vercel deployments today (alert at ${t.deploysPerDay} of 100).`);
-  if (m.strandedCommits >= t.strandedCommits) out.push(`${m.strandedCommits} main commit(s) rate-limited since the last successful deploy — production is on an older build until the next push to main deploys.`);
+  if (m.deploysLast24h > t.deploysPerDay) out.push(`${m.deploysLast24h} production deploys in the last 24 h (alert above ${t.deploysPerDay}; the target is about 6, Vercel Hobby's cap is 100).`);
+  if (m.strandedCommits >= t.strandedCommits) {
+    const why = m.strandedReason === 'deploy_failed'
+      ? `the newest ${DEPLOY_WORKFLOW} run for them failed`
+      : `no ${DEPLOY_WORKFLOW} run has deployed them for more than ${t.strandedGraceMinutes} minutes`;
+    out.push(`${m.strandedCommits} main commit(s) change the site but are not live (oldest ${String(m.oldestStranded).slice(0, 7)}) — ${why}. Production is on ${String(m.liveSha).slice(0, 7)}.`);
+  }
   if (m.smokeLastRuns.length >= t.smokeFailuresInARow && m.smokeLastRuns.slice(0, t.smokeFailuresInARow).every(c => c === 'failure')) {
     out.push(`The last ${t.smokeFailuresInARow} smoke runs failed.`);
   }
   return out;
+}
+
+/**
+ * Pure: did this deploy-prod.yml run create a production deployment?
+ * Yes when the decide step said deploy=true — the steps it gates (vercel pull /
+ * build / deploy) are then not skipped — or when the "vercel deploy" step
+ * succeeded. The jobs API carries step names and conclusions, not outputs.
+ */
+export function runDeployed(jobs) {
+  const steps = (jobs || []).flatMap(j => j.steps || []);
+  const gated = steps.filter(s => /^vercel (pull|build|deploy)\b/i.test(s.name || ''));
+  if (gated.some(s => /^vercel deploy\b/i.test(s.name) && s.conclusion === 'success')) return true;
+  return gated.some(s => s.conclusion && s.conclusion !== 'skipped');
+}
+
+/** Pure: production deploys in the window = max(deploy-prod runs that deployed, Vercel's own count). */
+export function countDeploys(runs, { since, vercelCount = null } = {}) {
+  const fromRuns = runs.filter(r => r.created_at >= since && runDeployed(r.jobs)).length;
+  return vercelCount == null ? fromRuns : Math.max(fromRuns, vercelCount);
+}
+
+/**
+ * Pure: is main stranded?
+ *   live        — the live production commit (null = unknown)
+ *   headSha     — main's HEAD
+ *   siteDiffers — a file outside scripts/site-paths.sh's ignore list differs live..HEAD
+ *   commits     — live..HEAD, oldest first: { sha, date (ISO), site (bool) }
+ *   runs        — deploy-prod.yml runs, newest first: { head_sha, status, conclusion, updated_at }
+ * Stranded when the site differs and either the newest run for a commit at or
+ * after the oldest stranded commit failed, or none ran (or deployed) for more
+ * than the grace period.
+ */
+export function strandedVerdict({ live, headSha, siteDiffers, commits, runs, now = new Date() }, t = THRESHOLDS) {
+  const none = { strandedCommits: 0, strandedReason: null, oldestStranded: null };
+  if (!live || live === headSha || !siteDiffers) return none;
+  const idx = commits.findIndex(c => c.site);
+  if (idx < 0) return none;
+  const range = commits.slice(idx);
+  const inRange = new Set(range.map(c => c.sha));
+  const relevant = runs.filter(r => inRange.has(r.head_sha));
+  const newest = relevant[0];
+  const verdict = (reason) => ({ strandedCommits: range.length, strandedReason: reason, oldestStranded: range[0].sha });
+  if (newest && newest.status === 'completed' && FAILED.has(newest.conclusion)) return verdict('deploy_failed');
+  if (newest && newest.status !== 'completed') return none; // queued or running: a deploy is coming
+  // No run, or a run that finished without moving production past these commits
+  // (it skipped, it was cancelled, or a rollback undid it).
+  const since = Math.max(Date.parse(range[0].date), newest ? Date.parse(newest.updated_at) : 0);
+  if ((now - since) / 60e3 > t.strandedGraceMinutes) return verdict('no_deploy');
+  return none;
+}
+
+/** The live production commit, read exactly as deploy-prod.yml reads it. Never prints the token. */
+export function liveShaFromVercel(env = process.env, root = process.cwd()) {
+  if (!env.VERCEL_TOKEN || !env.VERCEL_PROJECT_ID) return null;
+  try {
+    const out = execFileSync('bash', ['scripts/vercel-live-sha.sh'], { cwd: root, env, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+    return /^[0-9a-f]{40}$/.test(out) ? out : null;
+  } catch { return null; }
+}
+
+/**
+ * live..HEAD from the local clone, classified by scripts/site-paths.sh's
+ * touches_site (sourced, so the rule is the deploy workflow's own). Returns
+ * null when the live commit is not in this clone.
+ */
+export function siteCommitsSince(live, root = process.cwd()) {
+  const script = `
+    set -u
+    . scripts/site-paths.sh
+    git cat-file -e "$LIVE^{commit}" 2>/dev/null || { echo MISSING; exit 0; }
+    if git diff --name-only "$LIVE" HEAD | touches_site; then echo DIFFERS; else echo SAME; fi
+    git rev-list --reverse "$LIVE..HEAD" | while read -r c; do
+      if git diff-tree --no-commit-id --name-only -r -m --root "$c" | touches_site; then s=1; else s=0; fi
+      printf '%s %s %s\\n' "$c" "$(git show -s --format=%cI "$c")" "$s"
+    done`;
+  const out = execFileSync('bash', ['-c', script], { cwd: root, env: { ...process.env, LIVE: live }, encoding: 'utf8' }).trim().split('\n');
+  if (out[0] === 'MISSING') return null;
+  const commits = out.slice(1).filter(Boolean).map(l => { const [sha, date, s] = l.split(' '); return { sha, date, site: s === '1' }; });
+  return { siteDiffers: out[0] === 'DIFFERS', commits };
 }
 
 async function gh(path, token) {
@@ -33,27 +134,54 @@ async function gh(path, token) {
   return r.json();
 }
 
-async function collect(repo, token, now = new Date()) {
+// Vercel's own count of production deployments in the window (cross-check
+// only). The token only travels in the Authorization header; errors carry the
+// status code, never the URL or the header.
+async function vercelProductionCount(env, sinceMs) {
+  if (!env.VERCEL_TOKEN || !env.VERCEL_PROJECT_ID) return null;
+  const q = new URLSearchParams({ projectId: env.VERCEL_PROJECT_ID, target: 'production', since: String(sinceMs), limit: '100' });
+  if (env.VERCEL_ORG_ID) q.set('teamId', env.VERCEL_ORG_ID);
+  try {
+    const r = await fetch(`https://api.vercel.com/v6/deployments?${q}`, { headers: { Authorization: `Bearer ${env.VERCEL_TOKEN}` } });
+    if (!r.ok) { console.error(`vercel cross-check: HTTP ${r.status}`); return null; }
+    const body = await r.json();
+    return (body.deployments || []).filter(d => (d.created ?? d.createdAt ?? 0) >= sinceMs).length;
+  } catch { console.error('vercel cross-check: the API did not answer'); return null; }
+}
+
+async function collect(repo, token, now = new Date(), env = process.env) {
   const hourAgo = new Date(now - 3600e3).toISOString().slice(0, 19) + 'Z';
-  const dayAgo = new Date(now - 864e5).toISOString();
-  const midnight = now.toISOString().slice(0, 10) + 'T00:00:00Z';
+  const dayAgo = new Date(now - 864e5);
   const prs = await gh(`/search/issues?q=${encodeURIComponent(`repo:${repo} is:pr created:>=${hourAgo}`)}&per_page=1`, token);
-  const deployments = await gh(`/repos/${repo}/deployments?per_page=100`, token);
-  const deploysToday = deployments.filter(d => d.created_at >= midnight).length;
-  const commits = await gh(`/repos/${repo}/commits?sha=main&since=${dayAgo}&per_page=100`, token);
-  // Newest first. Stop at the newest commit that deployed: rate-limited
-  // commits older than a successful deploy are already live through it.
-  let strandedCommits = 0;
-  for (const c of commits) {
-    const st = await gh(`/repos/${repo}/commits/${c.sha}/statuses?per_page=20`, token);
-    const v = st.find(s => /vercel/i.test(s.context));
-    if (!v) continue;
-    if (/deployment has completed/i.test(v.description || '')) break;
-    if (/rate limit/i.test(v.description || '')) strandedCommits++;
+
+  // Deploys: deploy-prod.yml runs in the last 24 h whose deploy step ran.
+  const runsResp = await gh(`/repos/${repo}/actions/workflows/${DEPLOY_WORKFLOW}/runs?branch=main&per_page=100`, token);
+  const runs = runsResp.workflow_runs || [];
+  const since = dayAgo.toISOString();
+  for (const r of runs.filter(x => x.created_at >= since)) {
+    r.jobs = (await gh(`/repos/${repo}/actions/runs/${r.id}/jobs?per_page=10`, token)).jobs || [];
   }
-  const runs = await gh(`/repos/${repo}/actions/workflows/smoke.yml/runs?status=completed&per_page=5`, token);
-  const smokeLastRuns = (runs.workflow_runs || []).map(r => r.conclusion);
-  return { prsLastHour: prs.total_count || 0, deploysToday, strandedCommits, smokeLastRuns };
+  const vercelCount = await vercelProductionCount(env, dayAgo.getTime());
+  const deploysFromRuns = countDeploys(runs, { since });
+  const deploysLast24h = countDeploys(runs, { since, vercelCount });
+
+  // Stranded: the live commit vs main's HEAD, on the deploy workflow's path rule.
+  const headSha = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
+  const live = liveShaFromVercel(env);
+  const range = live ? siteCommitsSince(live) : null;
+  const stranded = range
+    ? strandedVerdict({ live, headSha, ...range, runs, now })
+    : { strandedCommits: 0, strandedReason: null, oldestStranded: null };
+
+  const smoke = await gh(`/repos/${repo}/actions/workflows/smoke.yml/runs?status=completed&per_page=5`, token);
+  const smokeLastRuns = (smoke.workflow_runs || []).map(r => r.conclusion);
+  return {
+    prsLastHour: prs.total_count || 0,
+    deploysLast24h, deploysFromRuns, deploysFromVercel: vercelCount,
+    liveSha: live, liveKnown: Boolean(range), headSha,
+    ...stranded,
+    smokeLastRuns,
+  };
 }
 
 async function report(repo, token, alerts, metrics) {
@@ -69,6 +197,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const token = process.env.GH_TOKEN; const repo = process.env.GITHUB_REPOSITORY;
   if (!token || !repo) { console.error('GH_TOKEN and GITHUB_REPOSITORY are required'); process.exit(1); }
   const metrics = await collect(repo, token);
+  if (!metrics.liveKnown) console.log('::warning::the live production commit is unknown (VERCEL_TOKEN / VERCEL_PROJECT_ID missing, the API did not answer, or the commit is not in this clone) — the stranded check was skipped');
   const alerts = evaluate(metrics);
   console.log(JSON.stringify({ metrics, alerts }));
   if (alerts.length && !process.argv.includes('--dry')) await report(repo, token, alerts, metrics);
