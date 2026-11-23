@@ -1582,7 +1582,7 @@ window.challengeCompanies = {
   ],
   // 2026-11-23: a payment-partner reconciliation card written from one
   // candidate's report of a Stripe round (docs/reads/companies/stripe.md).
-  "325": [
+  "330": [
     "Stripe"
   ],
   "270": [

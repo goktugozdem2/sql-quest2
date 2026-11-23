@@ -1,4 +1,4 @@
-// Challenge 325 (2026-11-23, fleet B3) — reconciling two payment partners'
+// Challenge 330 (2026-11-23, fleet B3) — reconciling two payment partners'
 // settlement reports against one expectations table. The shape comes from a
 // single candidate's report of a Stripe round (docs/reads/companies/stripe.md,
 // row dated 2026-11-23; unattributed by the founder's promise). The card is
@@ -30,7 +30,7 @@ for (const f of ['../src/data/datasets.js', '../src/data/challenges.js', '../src
   vm.runInContext(readFileSync(here(f), 'utf8'), sb);
 }
 const { publicDatasetsData: datasets, challengesData: bank, challengeCompanies: tags } = sb.window;
-const card = bank.find(c => c.id === 325);
+const card = bank.find(c => c.id === 330);
 
 function loadDb() {
   const db = new Database(':memory:');
@@ -80,9 +80,9 @@ const halfFiltered = card.solution
   .replace("FROM b WHERE NOT EXISTS (SELECT 1 FROM exp_b e", "FROM b WHERE NOT EXISTS (SELECT 1 FROM all_exp e");
 const repeated = card.solution.replace(/SELECT DISTINCT txn_id/g, 'SELECT txn_id');
 
-describe('card 325 — the record', () => {
+describe('card 330 — the record', () => {
   it('exists once, Hard, on the ecommerce tables, with every field the app reads', () => {
-    expect(bank.filter(c => c.id === 325)).toHaveLength(1);
+    expect(bank.filter(c => c.id === 330)).toHaveLength(1);
     for (const k of ['title', 'description', 'hint', 'solution', 'title_tr', 'description_tr', 'hint_tr', 'slug', 'category']) {
       expect(typeof card[k], k).toBe('string');
     }
@@ -98,7 +98,7 @@ describe('card 325 — the record', () => {
   });
 
   it('is tagged Stripe, and no other company', () => {
-    expect(tags['325']).toEqual(['Stripe']);
+    expect(tags['330']).toEqual(['Stripe']);
   });
 
   it('never names the method or the company in what the learner reads', () => {
@@ -118,7 +118,7 @@ describe('card 325 — the record', () => {
   });
 });
 
-describe('card 325 — the solution and the wrong answers, run', () => {
+describe('card 330 — the solution and the wrong answers, run', () => {
   it('the reference gives 7 rows: 4 missing, 3 unexpected', () => {
     expect(run(card.solution)).toEqual(EXPECTED);
   });

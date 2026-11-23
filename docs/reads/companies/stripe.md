@@ -49,7 +49,7 @@ medium.com/acing-ai (403).
 | Platform for the DA SQL round: **HackerRank**, a round called "Data Manipulation", 45 min with ~25 min for 4 SQL + metric questions. | S8 report only | low — word as one candidate's report |
 | S1's round ran out of time; the interviewer switched to asking for the approach. | S1 | low |
 | DS onsite: HM, business partner, presentation, stats, product case, SQL-in-case. | S3 | low |
-| **2026-11-23 — a reconciliation round** (a reconciliation round reported by a candidate, 2026-10, one report): three tables — two partner reporting tables (transaction-level rows from partner A and from partner B) and one expectations table holding what was expected from **both** partners. Task: reconcile — the transactions missing from a partner's report, and the ones a partner reported that were not expected. The approach the report credits: confirm the join key is unique first, compare in both directions, and narrow the expectations to the partner being reconciled; leaving that narrowing out is the common slip. Role and platform not recorded here. | S11 | **low** (n = 1, private, unverifiable; agrees in shape with S10's data-engineer reconciliation round) — never on a page as a format fact; it feeds practice card 325 (tagged Stripe; the card's own text never names the company) |
+| **2026-11-23 — a reconciliation round** (a reconciliation round reported by a candidate, 2026-10, one report): three tables — two partner reporting tables (transaction-level rows from partner A and from partner B) and one expectations table holding what was expected from **both** partners. Task: reconcile — the transactions missing from a partner's report, and the ones a partner reported that were not expected. The approach the report credits: confirm the join key is unique first, compare in both directions, and narrow the expectations to the partner being reconciled; leaving that narrowing out is the common slip. Role and platform not recorded here. | S11 | **low** (n = 1, private, unverifiable; agrees in shape with S10's data-engineer reconciliation round) — never on a page as a format fact; it feeds practice card 330 (tagged Stripe; the card's own text never names the company) |
 | No multiple choice reported anywhere. | — | — |
 | Dialect: not stated. Bug-squash round for data roles: **not confirmed** (snippet only). | — | — |
 
@@ -82,7 +82,7 @@ M = 10 public sources read; only five carry SQL content (S1, S3, S8, S9, S10). S
   table** that covers both partners: what each partner left out, and what it
   reported that was not expected from it. Skill: key uniqueness, anti-join
   in both directions, filtering the expectations to one partner. (S11; our
-  practice card is 325, "Reconcile Two Payment Partners' Reports", on our
+  practice card is 330, "Reconcile Two Payment Partners' Reports", on our
   own synthetic tables)
 
 ## Role variants
@@ -102,7 +102,7 @@ M = 10 public sources read; only five carry SQL content (S1, S3, S8, S9, S10). S
 **2026-11-23 (B3, IR-1):** S11 added — a reconciliation round reported by a
 candidate (2026-10, one report). It does not change the format confidence
 (the live SQL rows stay high); it adds one low-confidence question shape and
-challenge 325, tagged Stripe. On any page it may appear only as "a
+challenge 330, tagged Stripe. On any page it may appear only as "a
 reconciliation round reported by a candidate".
 
 **2026-11-22:**

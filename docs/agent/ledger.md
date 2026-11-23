@@ -449,10 +449,10 @@ of the verifier and must never be rounded to `FLAT`.
   page: a MISS on clicks with impressions above target is FLAT, not MISS.
   The P4 prune rule applies at eight weeks (no impressions → noindex).
 
-### a reconciliation card for the Stripe set (challenge 325, IR-1)
+### a reconciliation card for the Stripe set (challenge 330, IR-1)
 
 - **Claimed** 2026-11-23 · **Shipped** on merge · **Read** 2026-12-21.
-- **Change** One Hard card, 325 "Reconcile Two Payment Partners' Reports", on
+- **Change** One Hard card, 330 "Reconcile Two Payment Partners' Reports", on
   three new synthetic tables in `ecommerce` (`expected_payments`,
   `partner_a_report`, `partner_b_report`), tagged Stripe. The shape is a
   reconciliation round reported by a candidate (2026-10, one report;
@@ -460,14 +460,14 @@ of the verifier and must never be rounded to `FLAT`.
   pinned answer (7 rows) rejects a one-direction answer (4 or 3 rows), an
   answer that does not narrow the expectations to the partner (29 rows; the
   half-filter drops T-1013) and one that repeats a reported-twice row
-  (`tests/challenge-325.test.js`). The Stripe set goes 35 → 36.
-- **Metric** `challenge_solve_through` (docs/agent/metrics.md) for id 325,
+  (`tests/challenge-330.test.js`). The Stripe set goes 35 → 36.
+- **Metric** `challenge_solve_through` (docs/agent/metrics.md) for id 330,
   read within the Hard band.
 - **Baseline** Not readable from this session's lane without a production
   read; the read takes it in the same window: the median solve-through of
   every Hard card with 10+ openers, 2026-11-24 → 2026-12-21, same shared
   filters. A new card has no before.
-- **Target** 325 with 10+ openers at or above the Hard median, and at least
+- **Target** 330 with 10+ openers at or above the Hard median, and at least
   one opener arriving from the Stripe door (`src`/`linkSrc` =
   `stripe-sql-interview`).
 - **Falsification** Solve-through more than 15 points under the Hard median

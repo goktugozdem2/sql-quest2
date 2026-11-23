@@ -1242,7 +1242,7 @@ window.publicDatasetsData = {
         ]
       },
       // 2026-11-23: three small synthetic tables for the payment-partner
-      // reconciliation card (325). The shop's completed orders 1-25 are paid
+      // reconciliation card (330). The shop's completed orders 1-25 are paid
       // through two partners; expected_payments holds what we expect from
       // BOTH, each partner's report what it settled. Planted on purpose: two
       // misses per partner, one transaction partner A was never sent, one

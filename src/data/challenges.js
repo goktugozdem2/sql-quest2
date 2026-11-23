@@ -3959,15 +3959,15 @@ ORDER BY total_orders DESC;`,
     example_tr: { input: "3 sınıfta 891 yolcu", output: "3 satır — 1. sınıf: 216 yolcu, 174 kayıtlı yaş, 42 eksik" },
     dataset: "titanic"
   },
-  // 325 (2026-11-23, fleet B3): a payment-partner reconciliation, the shape of
+  // 330 (2026-11-23, fleet B3): a payment-partner reconciliation, the shape of
   // a round one candidate reported to us (docs/reads/companies/stripe.md, the
   // 2026-11-23 row; unattributed by promise). Our wording on our own synthetic
   // tables (ecommerce.expected_payments / partner_a_report / partner_b_report),
-  // not the interview's question. tests/challenge-325.test.js runs the
+  // not the interview's question. tests/challenge-330.test.js runs the
   // solution and shows a one-direction answer, an answer that ignores the
   // partner, and one that repeats a duplicated row all fail.
   {
-    id: 325,
+    id: 330,
     slug: "reconcile-two-payment-partners-reports",
     title: "Reconcile Two Payment Partners' Reports",
     difficulty: "Hard",
