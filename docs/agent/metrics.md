@@ -703,6 +703,22 @@ Behaviour unchanged, label fixed: `generic` before 09-12 ≈ `generic` +
 `interview_locked` after. Two more reasons exist only behind flags:
 `company_set` (M1, from the 10-14 flip) and `coach_mock` (M5, from 10-12).
 
+**`debug_lock` (behind `debugQuestions`, defined 2026-11-23).** When a
+locked Debug item (`type: 'debug'`, ids 331–342) opens the Pro modal, the
+wall is the one it would meet anyway (founder: Debug has no price of its
+own — Easy/Medium count toward the free solves, Hard is Pro, a company-tagged
+item follows the company-set rule), so the modal copy is unchanged. Only the
+label changes: `pro_modal_shown.reason`, `pro_plan_clicked.modalReason`,
+`pro_checkout_clicked.modalReason` and the `pro_events.reason` of the modal's
+own rows read **`debug_lock`**, and `pro_modal_shown.lockedAs` keeps the wall
+underneath (`free_quota`, `hard_challenge` from the catcher's Pro path,
+`company_hard`, `company_set`); `lockedAs` is null on every other reason.
+`content_lock_reached` rows are untouched. From the flip, a `free_quota` or
+`hard_challenge` series that should count every wall adds the `debug_lock`
+rows whose `lockedAs` matches; before the flip the value cannot occur.
+Pure half: `withDebugLock` / `proModalReasonLabel` in
+`src/utils/debug-questions.js`.
+
 **Absence is organic, by design.** A direct open, a post-solve
 recommendation, a curriculum step — none of them carry the key, and a
 `challenge_opened` row without `openedFrom` is not a preview-surface open

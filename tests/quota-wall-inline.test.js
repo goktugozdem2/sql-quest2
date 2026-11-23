@@ -99,7 +99,7 @@ describe('app.jsx wiring', () => {
     expect(fn).toContain("trackActivationEvent('quota_wall_inline_shown'");
     expect(app).toContain(`const quotaWallDayKey = () => \`\${QUOTA_WALL_DAY_KEY}_\${currentUser || 'guest'}\`;`);
     expect(QUOTA_WALL_DAY_KEY).toBe('sqlquest_quota_wall_modal_day');
-    expect((app.match(/presentQuotaWall\(\{ type: 'free_quota'/g) || []).length).toBe(2);
+    expect((app.match(/presentQuotaWall\((?:withDebugLock\()?\{ type: 'free_quota'/g) || []).length).toBe(2);
     expect(app, 'a free_quota modal opened around presentQuotaWall').not.toMatch(/setProModalReason\(\{ type: 'free_quota'/);
   });
   it('every hit still writes content_lock_reached, with modal and the arm', () => {
