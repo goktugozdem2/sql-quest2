@@ -91,3 +91,4 @@ the reason in one line, and the risk sentence.
 | 2026-11-23 | #215 | merged | Pass 3's 41924d56 + A0 merge of main → 490749e4, **mechanical**: ledger only, rebuild clean. 3,379 tests, lint 0, `verify` green. | Copy on the comparison page and homepage; read-only, a revert PR undoes it. |
 | 2026-11-23 | #220 | merged | Pass 3's 16671dbd + A0 merge of main → baea8057, **mechanical**: ledger only, rebuild clean. 3,393 tests, lint 0, `verify` green. | A format fact on the Capital One guide misleads a candidate; every fact traces to a dated source Q1 re-checked. |
 | 2026-11-23 | #174 | held | Unchanged: the free/Pro gate commit was graded by its author; waits on an independent review. | — |
+| 2026-11-23 | (pass 4) | smoke | Smoke run 45216107791 on main 7a2074be (all eight merges): **success**. Intermediate runs were cancelled by the workflow's concurrency, not failed. No revert. | — |
