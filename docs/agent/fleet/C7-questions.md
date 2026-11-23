@@ -13,13 +13,20 @@ C7 **posts nothing anywhere**. The founder's Reddit account is banned, and no ag
 
 Founder's order, 2026-11-22: "Reddit'i source olarak görüp, aslında araştırma konusu olan SQL hakkında herhangi bir konuda içeriğimiz olması iyi olur. Çalışmaya başla."
 
-## Sources (read only)
+## Sources (read only), in this order
 
-- **Reddit:** r/SQL, r/learnSQL, r/dataanalysis, r/dataengineering, r/datascience, r/cscareerquestions, r/analytics, r/PostgreSQL, r/SQLServer.
-- **Stack Overflow:** the `sql`, `sqlite`, `postgresql`, `window-functions`, `group-by` and `join` tags.
-- **Quora** SQL interview questions, and **Hacker News** threads about SQL interviews.
+Orchestrator decision, 2026-11-22, sent to C7 during run 1 after the first sources proved closed:
 
-Use WebSearch (`site:reddit.com …`, recent results) and WebFetch where the host answers. Titles and short summaries are enough as demand signals. Never log in, never scrape behind auth, and never collect usernames.
+1. **WebSearch titles and snippets** for `site:reddit.com/r/SQL`, `r/learnSQL`, `r/dataengineering`, `site:stackoverflow.com [sql]` and similar, recent results first. Titles are a demand signal only; nothing is fetched or copied.
+2. **The Stack Exchange API** (`api.stackexchange.com/2.3/questions?tagged=sql&site=stackoverflow&sort=creation`) and **HN Algolia** (`hn.algolia.com/api/v1/search?query=sql%20interview`). Try each once per run and record the result in the read.
+3. **Quora, Hacker News and the sqlite.org forum** through WebSearch restricted to those domains. These answered in run 1, but mostly with older threads, so they show that a question shape exists and recurs, not how often it was asked this month.
+4. **Laptop only, filled by the laptop loop:** GSC question-shaped queries (`gsc_daily`), the questions people type to the tutor (`tutor_events`), and `feedback` verbatims. These are the only recent counts we can get; a cloud run leaves this section to the laptop and says so in its read.
+
+**What cloud runs can't reach (measured 2026-11-22, run 1):** reddit.com and stackoverflow.com refuse Anthropic's agents. WebSearch returns no results from either domain and refuses a domain filter on them, and the fetch tool and the sandbox proxy refuse reddit.com and api.stackexchange.com. hn.algolia.com doesn't resolve in the cloud environment. Never route around a site's own block. Record what was tried and continue with the sources that answer.
+
+**Counts follow the source.** A cluster's number is the threads found in this run's sources. Call it a 30-day count only when the source is dated, which today means the laptop's GSC and `tutor_events` reads.
+
+Titles and short summaries are enough as demand signals. Never log in, never scrape behind auth, and never collect usernames.
 
 ## The run
 

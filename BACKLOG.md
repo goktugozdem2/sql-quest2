@@ -105,6 +105,11 @@ B2 builds none of these; each names the lane that owns it.
   `cta_practice_validate_ai_sql_*` and `editorial_claudequest_click` (0 rows,
   14 app opens from that page).
 
+## Routed by C7, question mining — 2026-11-22 (docs/reads/questions-2026-11-22.md)
+
+- **C6: UPDATE with values from another table** (UPDATE … FROM in SQLite 3.33+, the correlated-subquery form, and MySQL's / SQL Server's spellings). Seven threads in run 1's sources (Quora, sqlite.org forum). Challenges 180–185 practise DML, but no page explains it. This is C6's DML item #1; the read has the links.
+- **B3/C6 practice gap: a consecutive-calendar-day streak.** The window tutorial now works it on `logins` (5-day streaks for customers 4 and 8, the March-6 double login, the month boundary). No challenge asks it: challenge 68 is a ≤7-day-gap streak on orders, a different shape. One Medium/Hard challenge on `logins` with DISTINCT as the trap.
+- **Q1/C1: hard-coded count on the window tutorial.** "SQL Quest has 68 window-function-specific challenges" and the related link "68 window function challenges" are literal numbers that `tests/site-counts.test.js` doesn't bind. Re-measure, then move them to a helper or drop the number. Left alone in the C7 PR because it isn't a question answer.
 ## GEO gaps — G1, 2026-11-22 (docs/reads/geo-2026-11-22.md)
 
 G1 builds none of these. Each one names the lane that owns it. Baseline:
@@ -424,6 +429,17 @@ nothing for traffic; these lines are for the owning lanes.
   the 09-28 cohort (first week under the 10-solve quota). It costs few
   six-solvers (most reach six in the first session) but it is the quota's
   retention cost; read it with the quota's 10-09 rule, not as activation.
+- **FOUNDER (Stripe dashboard, ~15 min) — India checkout dies on Stripe's
+  page before any card attempt** (`docs/reads/india-checkout-2026-11-22.md`).
+  India-priced clickers: 17 in 90 days → 1 trial-or-paid (the same returning
+  payer); rest 9 of 29. Since 10-08: 8 new India session starters, 0 trials,
+  0 declines, 0 `pro_card_setup_failed` (0 rows ever, any region); median
+  click → return 11 s (n = 7) vs ~76 s elsewhere. Open those 8 sessions and
+  record: any payment/setup attempt, which methods were shown, RuPay under
+  Cards, `setup_intent.setup_failed` on the endpoint. ≥ 3 of 8 with a
+  declined attempt → issuer/3DS block (fix 3, on-session India pay); ≤ 2 →
+  B1 builds the India card line + the return-reason tap (fix 2). Also read
+  the one India trial's day-7 charge (due ~11-24 18:00 UTC) on 11-25.
 
 ## Decisions taken 2026-11-22 (founder: "kararlar sana ait olsun")
 
@@ -504,6 +520,40 @@ Read: trial starts per Stripe session (today ~25%) and day-7 conversion
 (today: every trial has a card). Falsification: day-7 conversion of
 card-free trials under 20% → card-free trials only move the start number;
 off. Not built autonomously: it needs two deploys and a money decision.
+
+## Competitor watch — B6, 2026-11-22 (docs/reads/competitors-2026-11-22.md)
+
+Ranked by expected money per hour. B6 builds none of these; each names its lane.
+Every competitor fact cited must come from that read (URL + date).
+
+1. **C5 — Capital One assessment block on the blog guide.** SERP for the
+   assessment is Blind, Glassdoor, IQ and Dataford guides; nobody offers a
+   timed rehearsal. Fetched, dated candidate reports → the mock → question 1.
+2. **C5 (+B3) — Wise sourced format section + a 4-question / 60-minute set.**
+   No page about Wise's SQL screen ranks; DataLemur's hit is WiseTech. Our
+   page has no sourced format section.
+3. **C1 — 301 `sql-quest2.vercel.app` → `sqlquest.app`.** The vercel.app host
+   is indexed with $19 / 200+ / May 2026 copy. Check Supabase Auth Site URL
+   and redirect URLs first (`src/data/config.js` names the vercel.app host).
+4. **C2 — drop the AI-coach exclusivity on the comparison pages.** "No other
+   platform has it" is stale: StrataAI tutor (10-27), LDS Socratic mentor,
+   Aced AI feedback. Keep the specific, still-true claims.
+5. **C5 — Revolut: cite the two PracHub candidate reports** (0 today) and put
+   the Revolut mock above the fold.
+6. **C5 / C1 — Monzo: question 1 and readiness test above the fold;** C1
+   checks why the page is absent from an empty SERP.
+7. **B4 — price landscape for the monthly read.** $10–15/mo annual cluster,
+   Dataford annual = $99 = ours, three lifetimes, LeetCode Black Friday code.
+   No agent changes a price.
+8. **C2 / C5 — say what a free account gets after a wrong answer** (the
+   diagnosis, from `freeTierSentence`); the market's top complaint is
+   paywalled solutions. No competitor named.
+9. **C6 — cohort retention + funnel conversion topic funnel** (Revolut,
+   Chime reports); C7 confirms demand.
+10. **backlog (orchestrator) — mock follow-up question** after a correct
+    answer, graded by the diagnosis. AI mocks are table stakes in the set.
+- **C3 (founder's hand)** — alternativeto.net and the dev.to post state
+  $19 / 200+ / 10 categories.
 
 ## P0 — security and money
 
@@ -744,3 +794,34 @@ off. Not built autonomously: it needs two deploys and a money decision.
     Crypto, ≥ 100k iterations) on the next successful sign-in and marks the
     row's scheme; account-password writes the new scheme. Founder's call —
     it touches every sign-in.
+
+## Competitor watch — B6 run 2, 2026-11-23 (docs/reads/competitors-2026-11-23.md)
+
+New items only; run 1's ten (PR #179) keep their numbers, progress in §4 of
+the read. Every competitor fact cited must come from that read (URL + date).
+
+- **N1 · C5 — Capital One blog guide answers IQ's 11-16 guide.** IQ's
+  `/guides/capital-one-data-analyst` (updated 2026-11-16, AI mock button
+  above the fold) holds our best payer query twice. Fold into run-1 #1: first
+  screen names the reported format from R1's dossier and offers our 70-min,
+  14-question timed mock by its specifics; show a visible updated date.
+- **N2 · C5 / B3 — the OA bottleneck is multi-file joins and rates under a
+  clock.** Confirm the `capital-one-codesignal` mock has a multi-table rate
+  question and the guide says so in our words; if not, B3 adds one.
+- **N3 · C2 — raise run-1 #4 (AI-coach exclusivity) above run-1 #5.**
+  `src/best-sql-practice-sites.html` L102/L635 still claim "the only
+  platform … with … an AI Coach"; two more dated counter-examples today
+  (IQ AI mock, Prepfully AI Wingman).
+- **N4 · B4 — price inputs.** Big Tech Interviews $359.99/yr and $949.99/yr;
+  LearnSQL $39 per course, $599 lifetime; Prepfully $99–$279 per coaching
+  session. No agent changes a price.
+- **N5 · C5 (+B3) — Monzo "debug this query" item** on `/monzo-sql-interview/`,
+  framed by the Monzo blog citation already on the page. Prepfully holds the
+  SERP with 6 paginated DS bank URLs and no runnable SQL.
+- **N6 · C1 (laptop) — check Revolut/Monzo index status and queries before
+  any content answer to pagination.** We do not paginate.
+- **N7 · C6 — `/sql-exercises/` vs "sql practice questions" intent**
+  (LearnSQL blog #1). Add only what our page lacks; no copying.
+- **N8 · C5 — one line on the Capital One guide separating the DA
+  assessment from the general coding assessment** quantvault.org describes.
+  Fold into N1.
