@@ -98,3 +98,29 @@ export function debugBugLine(challenge, lang = 'en') {
   if (!text) return null;
   return { text, trapHref: challenge.trap ? `/${challenge.trap}/` : null };
 }
+
+// ── The Pro modal's label for a locked Debug item (founder 2026-11-23) ──
+// Debug has no price of its own: an Easy or Medium counts toward the free
+// solves, a Hard is Pro like every Hard, a company-tagged item follows the
+// company-set rule. So the wall a locked Debug item meets is the wall it
+// would meet anyway — same reason `type`, same modal copy. Only the label
+// the events carry changes: `pro_modal_shown.reason`, `pro_plan_clicked` /
+// `pro_checkout_clicked.modalReason` and the pro_events row read
+// `debug_lock`, and `lockedAs` keeps the wall it really was, so a quota or
+// Hard series can still add the debug rows back in.
+export const DEBUG_LOCK_REASON = 'debug_lock';
+
+/** Stamp a modal reason as a Debug lock when the locked item is a Debug item. */
+export function withDebugLock(reason, challenge) {
+  if (!reason || !isDebugChallenge(challenge)) return reason;
+  return { ...reason, debugLock: true };
+}
+
+/** The reason the events carry: `debug_lock` for a stamped reason, else its own type (null when none). */
+export function proModalReasonLabel(reason) {
+  if (!reason || !reason.type) return null;
+  return reason.debugLock ? DEBUG_LOCK_REASON : reason.type;
+}
+
+/** The wall underneath a `debug_lock` label (free_quota, hard_challenge, …), else null. */
+export const debugLockedAs = (reason) => (reason && reason.debugLock && reason.type) || null;

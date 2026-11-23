@@ -736,6 +736,9 @@ const TRANSLATIONS = {
       payLater: 'Later — keep practicing',
       payGuestSignupTitle: 'Payment confirmed!',
       payGuestSignupBody: 'Create your account now so your Pro is yours forever — on any device.',
+      // The Pro modal's Debug line (debugQuestions, founder 2026-11-23): Debug
+      // is part of Pro under the same free rules, no separate price.
+      debugFeature: 'Fix an AI-written query: the Debug set.',
     },
     coachNext: {
       label: 'Next step',
@@ -1820,6 +1823,7 @@ const TRANSLATIONS = {
       payLater: 'Sonra — çalışmaya devam',
       payGuestSignupTitle: 'Ödeme onaylandı!',
       payGuestSignupBody: 'Hesabını şimdi oluştur — Pro’n her cihazda sonsuza dek senin olsun.',
+      debugFeature: "AI'ın yazdığı sorguyu düzelt: Hata Ayıklama seti.",
     },
     coachNext: {
       label: 'Sıradaki adım',
