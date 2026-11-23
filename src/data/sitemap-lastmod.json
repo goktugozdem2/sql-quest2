@@ -23,11 +23,11 @@
       "lastmod": "2026-11-23"
     },
     "/meta-sql-interview/": {
-      "hash": "9aaf5672e77fe40e",
+      "hash": "6e48d193a867ca02",
       "lastmod": "2026-11-23"
     },
     "/google-sql-interview/": {
-      "hash": "dc9f9e2812bac0c3",
+      "hash": "a472edad35596dec",
       "lastmod": "2026-11-23"
     },
     "/amazon-sql-interview/": {
@@ -75,11 +75,11 @@
       "lastmod": "2026-11-23"
     },
     "/databricks-sql-interview/": {
-      "hash": "b7fae1b44230b105",
+      "hash": "db47ecf0aeb775c3",
       "lastmod": "2026-11-23"
     },
     "/shopify-sql-interview/": {
-      "hash": "a242586bbd063646",
+      "hash": "99fb36d14d162cf2",
       "lastmod": "2026-11-23"
     },
     "/spotify-sql-interview/": {
@@ -147,7 +147,7 @@
       "lastmod": "2026-11-23"
     },
     "/sql-interview-prep/": {
-      "hash": "103b3e3136d1da33",
+      "hash": "01af8f8070398ef2",
       "lastmod": "2026-11-23"
     },
     "/learn-sql/": {
@@ -183,7 +183,7 @@
       "lastmod": "2026-11-23"
     },
     "/sql-exercises/": {
-      "hash": "a82895a2e4b07223",
+      "hash": "28fdc0683b1de872",
       "lastmod": "2026-11-23"
     },
     "/after-the-sql-course/": {
@@ -275,7 +275,7 @@
       "lastmod": "2026-11-23"
     },
     "/blog/sql-group-by-tutorial/": {
-      "hash": "5197dd4de51fb6f7",
+      "hash": "16a6a11829a175a5",
       "lastmod": "2026-11-23"
     },
     "/blog/sql-case-when-tutorial/": {
@@ -331,7 +331,7 @@
       "lastmod": "2026-11-23"
     },
     "/blog/recursive-cte-explained/": {
-      "hash": "f29938e354f722f2",
+      "hash": "5bd07e2f6f86cf2d",
       "lastmod": "2026-11-23"
     },
     "/blog/row-number-vs-rank-vs-dense-rank/": {
@@ -1724,6 +1724,14 @@
     },
     "/sql-rollup-interview-questions/": {
       "hash": "1d7e7c633dbdb364",
+      "lastmod": "2026-11-23"
+    },
+    "/sql-interview-prep-plan/": {
+      "hash": "de4066c955fbb0ab",
+      "lastmod": "2026-11-23"
+    },
+    "/sql-mock-interview/": {
+      "hash": "2f886c41a6b3c60f",
       "lastmod": "2026-11-23"
     }
   }
