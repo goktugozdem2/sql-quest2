@@ -78,11 +78,25 @@ describe('vercel.json git.deploymentEnabled', () => {
   });
   const v = JSON.parse(fs.readFileSync(path.join(ROOT, 'vercel.json'), 'utf8'));
   const de = (v.git && v.git.deploymentEnabled) || {};
-  it('never disables main', () => {
+  // 2026-11-23 (the switch): main is OFF for the Git integration too. The
+  // production deploy is .github/workflows/deploy-prod.yml, which creates a
+  // deployment only when a site file changed since the live one. Rollback:
+  // revert the "main": false line in vercel.json.
+  it('main is off: the Git integration creates no deployment for it', () => {
+    expect(de.main).toBe(false);
+  });
+  it('main is off only because the deploy Action exists to deploy it', () => {
+    const wf = path.join(ROOT, '.github/workflows/deploy-prod.yml');
+    expect(fs.existsSync(wf), 'deploy-prod.yml must be merged before this switch').toBe(true);
+    expect(fs.readFileSync(wf, 'utf8')).toMatch(/deploy --prebuilt --prod/);
+  });
+  it('every other pattern is off and none is a catch-all that could hide main by accident', () => {
     for (const [pattern, on] of Object.entries(de)) {
-      expect(minimatch('main', pattern), `pattern ${pattern} matches main`).toBe(false);
-      expect(pattern === 'main' || pattern === '*' || pattern === '**', `pattern ${pattern}`).toBe(false);
-      expect(on).toBe(false);
+      expect(on, pattern).toBe(false);
+      if (pattern !== 'main') {
+        expect(minimatch('main', pattern), `pattern ${pattern} matches main`).toBe(false);
+        expect(pattern === '*' || pattern === '**', `pattern ${pattern}`).toBe(false);
+      }
     }
   });
   it('turns off every fleet branch prefix', () => {
