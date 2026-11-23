@@ -598,6 +598,22 @@ window.FEATURE_FLAGS = {
     // Debug set"; metric debug_solve_through. The orchestrator flips it in
     // its own decision row.
     debugQuestions: false,
+
+    // ── The Debug pack: the Debug set sold on its own (2026-11-23) ────────
+    // Founder's decision (PR #251): $9 once, India $3; Pro includes it; the
+    // free rules for everyone else are unchanged. ON: a locked Debug item
+    // opens the Pro modal (reason `debug_lock`) with one secondary card for
+    // the pack beside the Pro plans; the card asks create-checkout-session
+    // for a one-time `product: 'debug_pack'` session (no Payment Link
+    // fallback — a failure says "Couldn't open checkout — try again").
+    // OFF: today's modal and today's walls, byte for byte. Ownership
+    // (`users.data.debugPackOwned`, written by stripe-webhook only, kept by
+    // sq_save_user) unlocks Debug items whatever this flag says — a buyer
+    // keeps what they bought. MONEY FLAG: flips only with the founder's
+    // written go, after the Stripe prices, the function secrets and the
+    // migration are in (PR "held: 6d — money path"). src/utils/debug-pack.js;
+    // ledger "the Debug pack"; metric debug_pack_purchases.
+    debugPack: false,
   },
 };
 

@@ -47,6 +47,7 @@ import { PLACEMENT_TIERS, placementResult, placementEventPayload, readFirstRunPl
 import { QUESTIONS as READINESS_QUESTIONS, READINESS_SKILLS, READINESS_RECORD_KEY, companySkillWeights, scoreReadiness, summarizeScores, weakestSkills, readinessRecordFrom, readReadinessRecord } from './data/readiness-questions.js';
 import { paidWallFor, isColdStart, practiceSolves, previewSwapFor } from './utils/paid-wall.js';
 import { priceRegionFor, planPrices, checkoutLinkFor } from './utils/regional-price.js';
+import { DEBUG_PACK_PRODUCT, debugPackOn, ownsDebugPack, proForChallenge, isDebugLockReason, debugPackOffered, debugPackCopy, buildDebugPackSessionBody, launchDebugPack, isDebugPackReturn } from './utils/debug-pack.js';
 import { trialEndingLine } from './utils/trial-ending.js';
 import { billingIssueLine, billingIssueDays } from './utils/billing-issue.js';
 import { wantsTrial, buildCheckoutSessionBody, requestCheckoutSession, launchWithFallback, checkoutInFlight, warmCheckoutSession, CHECKOUT_REENTRY_MS, trialOffered, TRIAL_CARD_COPY, TRIAL_TERMS, quotaWallHeadline, currencyLine, quotaWallCompanyLine } from './utils/checkout-session.js';
@@ -3243,6 +3244,9 @@ const challenges = window.challengesData || [];
 // The Debug items join `challenges` in src/data/debug-challenges.js only when
 // this is true; it also gates the Practice chip and the stats card.
 const DEBUG_QUESTIONS_ON = debugQuestionsOn(window.FEATURE_FLAGS);
+// The Debug pack (`debugPack`, 2026-11-23): whether a locked Debug item
+// OFFERS the pack. Ownership is read from the record whatever this says.
+const DEBUG_PACK_OFFER_ON = DEBUG_QUESTIONS_ON && debugPackOn(window.FEATURE_FLAGS);
 
 // Merge company tags (id -> [companies]) from challenge-companies.js onto each challenge.
 // Single source of truth for "which companies ask this pattern" across the app.
@@ -6561,6 +6565,10 @@ function SQLQuest() {
   // written and cleared by stripe-webhook only (server-owned). Set by
   // loadUserSession; read only by the billing line (src/utils/billing-issue.js).
   const [billingIssueRecord, setBillingIssueRecord] = useState(null);
+  // The Debug pack (2026-11-23): `users.data.debugPackOwned`, written by
+  // stripe-webhook only and kept by sq_save_user — the client only READS it.
+  // It unlocks the Debug items, nothing else (src/utils/debug-pack.js).
+  const [debugPackRecord, setDebugPackRecord] = useState(null);
   const [showProModal, setShowProModal] = useState(false);
   // Collision catcher (2026-09-06, paywall-surfaces T2 / plan D-2). Replaces
   // the locked-Hard soft toast: null = closed, { challengeId } = open for the
@@ -7379,6 +7387,7 @@ function SQLQuest() {
     const pendingAtClose = checkoutPendingPlan;
     setShowProModal(false);
     setCheckoutPendingPlan(null);
+    setDebugPackCheckout(null);
     // Capture point 2 (`exitReasonAsk`): asked AFTER the plans are closed,
     // never in front of or over them, and never after a plan click.
     try { maybeAskExitReason(via, pendingAtClose); } catch (_) { /* never break the close */ }
@@ -7433,6 +7442,47 @@ function SQLQuest() {
     setCheckoutEmailInput('');
     setCheckoutPendingPlan(plan);
     trackActivationEvent('checkout_email_step_shown', { plan });
+  };
+
+  // ── The Debug pack's card (`debugPack`, 2026-11-23) ──
+  // Offered only in a Debug lock's modal, only to someone with neither Pro
+  // nor the pack. One click → a one-time Checkout Session for
+  // `product: 'debug_pack'` in the region the modal priced with. No receipt
+  // step (Stripe asks for the email) and NO Payment Link fallback: a failed
+  // session shows "Couldn't open checkout — try again" and nothing else.
+  // (debugPackOfferNow — whether this modal shows the card — is computed
+  // right under the proModalReason state, further down.)
+  const [debugPackCheckout, setDebugPackCheckout] = useState(null); // null | 'opening' | 'error'
+  const debugPackStartedAtRef = useRef(0);
+  const beginDebugPackCheckout = () => {
+    if (checkoutInFlight(debugPackStartedAtRef.current) || checkoutInFlight(checkoutStartedAtRef.current)) return;
+    proModalPlanClickedRef.current = true;
+    const email = resolveCheckoutEmail();
+    const label = { plan: DEBUG_PACK_PRODUCT, product: DEBUG_PACK_PRODUCT, modalReason: proModalReasonLabel(proModalReason), lockedAs: debugLockedAs(proModalReason), priceRegion };
+    trackActivationEvent('pro_plan_clicked', { ...label, modalLayout, hadEmailOnFile: !!email });
+    trackActivationEvent('pro_checkout_clicked', { ...label, email: email || null, via: 'session', trial: false });
+    debugPackStartedAtRef.current = Date.now();
+    setDebugPackCheckout('opening');
+    try { window.addEventListener('pageshow', () => { debugPackStartedAtRef.current = 0; setDebugPackCheckout(null); }, { once: true }); } catch (_) { /* ignore */ }
+    // The return lands as a fresh load; the identity rides along like Pro's.
+    try { localStorage.setItem('sqlquest_purchase_user', currentUser || ''); } catch (_) { /* ignore */ }
+    const body = buildDebugPackSessionBody({ username: currentUser, email, region: priceRegion });
+    launchDebugPack({
+      request: () => (body
+        ? requestCheckoutSession({
+            fetchImpl: window.fetch.bind(window),
+            endpoint: `${window.SUPABASE_URL}/functions/v1/create-checkout-session`,
+            anonKey: window.SUPABASE_ANON_KEY,
+            body,
+          })
+        : Promise.reject(new Error('invalid_body'))),
+      navigate: url => { window.location.href = url; },
+      onError: reason => {
+        debugPackStartedAtRef.current = 0;
+        setDebugPackCheckout('error');
+        trackActivationEvent('debug_pack_checkout_failed', { reason: String(reason).slice(0, 60), priceRegion });
+      },
+    });
   };
 
   // Activation funnel analytics — fire-and-forget. Uses the existing
@@ -7986,6 +8036,9 @@ function SQLQuest() {
         modalLayout,
         // Free-tier boundary M3: did this ask lead with a date, and how far.
         ...deadlineEventMeta(proModalReason),
+        // The Debug pack (`debugPack`): whether the pack's card was on this
+        // modal — only on a Debug lock, so every other ask's row is unchanged.
+        ...(isDebugLockReason(proModalReason) ? { debugPackOffered: debugPackOfferNow } : {}),
         // A locked Debug item reads reason `debug_lock`; this keeps the wall
         // underneath it (free_quota, hard_challenge, …), null otherwise.
         lockedAs: debugLockedAs(proModalReason),
@@ -8078,6 +8131,9 @@ function SQLQuest() {
     return data.usedThisWeek && data.weekStart === (() => { const n = new Date(); const w = new Date(n); w.setDate(n.getDate()-n.getDay()); return w.toISOString().split('T')[0]; })();
   });
   const [proModalReason, setProModalReason] = useState({ type: 'generic', topic: null, solvedCount: 0 });
+  // The Debug pack's card shows in this modal (`debugPack`, a Debug lock,
+  // neither Pro nor the pack) — src/utils/debug-pack.js debugPackOffered.
+  const debugPackOfferNow = debugPackOffered({ flagOn: DEBUG_PACK_OFFER_ON, reason: proModalReason, isPro: userProStatus, packRecord: debugPackRecord });
   const [wrongAttemptCount, setWrongAttemptCount] = useState(0);
   // null = not asked yet | 'answered' | 'dismissed'. Scoped to one challenge:
   // reset wherever wrongAttemptCount resets, so the ask can appear once per
@@ -17807,6 +17863,7 @@ CRITICAL RULES:
       // M-01: whatever the plan says — a failed first charge after a trial
       // can leave proStatus false while the invoice is still payable.
       setBillingIssueRecord(userData.billingIssue && typeof userData.billingIssue === 'object' ? userData.billingIssue : null);
+      setDebugPackRecord(ownsDebugPack(userData.debugPackOwned) ? userData.debugPackOwned : null);
       if (userData.proStatus === true) {
         const access = resolveProAccess(userData);
         setUserProStatus(access.isPro);
@@ -20199,6 +20256,7 @@ CRITICAL RULES:
     setProExpiry(null);
     setProAutoRenew(false);
     setBillingIssueRecord(null);
+    setDebugPackRecord(null);
     setShowAuth(false);
     suppressSoundsRef.current = false;
     if (preserveFoundationResume && resumeLessonId) {
@@ -20997,6 +21055,7 @@ CRITICAL RULES:
     setProExpiry(null);
     setProAutoRenew(false);
     setBillingIssueRecord(null);
+    setDebugPackRecord(null);
     // Reset performance tracking
     setChallengeAttempts([]);
     setDailyChallengeHistory([]);
@@ -23673,7 +23732,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     return pickNextChallenge(scoped, c =>
       !solvedChallenges.has(c.id)
       && !isContentLocked('challenge', c)
-      && !companySetGate({ flagOn: ftbFlag('companySetGate'), isPro, companyFilter, challenge: c, scoped, solved: solvedChallenges }).gated
+      && !companySetGate({ flagOn: ftbFlag('companySetGate'), isPro: accessFor(c), companyFilter, challenge: c, scoped, solved: solvedChallenges }).gated
     );
   };
 
@@ -23760,8 +23819,16 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     trackActivationEvent('quota_wall_inline_shown', { used: reason.used, quota: reason.quota, quotaWallArm: quotaWallArmNow, wallCompany: reason.wallCompany?.company || null });
   };
 
+  // Does this person get THIS challenge as a Pro user would? Pro: every
+  // challenge. The Debug pack: Debug items only — never another Hard, never
+  // the quota for a non-Debug challenge. The one lock question
+  // (proForChallenge, src/utils/debug-pack.js); every per-challenge gate
+  // below passes its answer as `isPro`.
+  const accessFor = (challenge) => proForChallenge({ isPro, challenge, packRecord: debugPackRecord });
   const isContentLocked = (type, item) => {
     if (isPro) return false;
+    // The Debug pack opens Debug items, and only those (accessFor above).
+    if (type === 'challenge' && accessFor(item)) return false;
     switch (type) {
       // Hard challenges are Pro-gated EXCEPT those explicitly flagged
       // freePreview — those act as samplers so non-Pro users can try the
@@ -23950,6 +24017,19 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     setTrialBannerDismissedDate(v || null);
   }, [currentUser]);
 
+  // The Debug pack (`debugPack`): a locked Debug item opens the plans with
+  // the pack card beside Pro — reason stamped by #252's withDebugLock, so
+  // the events read `debug_lock` with the wall in `lockedAs`. Used where
+  // the wall would otherwise NOT be the modal: a Hard (the preview catcher)
+  // and the quota (the inline arm). The company-set wall already opens the
+  // modal. Flag off: false, and every wall runs exactly as it did.
+  const openDebugLockInstead = (challenge, wallReason) => {
+    if (!DEBUG_PACK_OFFER_ON || !isDebugChallenge(challenge)) return false;
+    setProModalReason(withDebugLock(wallReason, challenge));
+    setShowProModal(true);
+    return true;
+  };
+
   // `opts.openedFrom` (2026-09-06, paywall-surfaces T1): the surface that led
   // the user to a free Hard preview — 'preview_list' | 'preview_dialog' |
   // 'preview_coach'. Stamped onto challenge_opened ONLY when a caller passes
@@ -23994,6 +24074,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
         }
       }
       if (openColdStartInstead(challenge.id)) return;
+      if (openDebugLockInstead(challenge, { type: 'hard_challenge', topic: null, solvedCount: solvedChallenges.size })) return;
       // Company-page arrivals get a buyable wall, not the soft toast.
       // A "Databricks SQL interview" visitor clicking a Hard challenge is
       // the highest-intent purchase moment in the product — 14 of the 20
@@ -24061,7 +24142,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     // value in the series (metrics.md carries the discontinuity note).
     const setGate = companySetGate({
       flagOn: ftbFlag('companySetGate'),
-      isPro,
+      isPro: accessFor(challenge),
       companyFilter,
       challenge,
       scoped: companyScopedChallenges(),
@@ -24098,7 +24179,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     // other wall: the lock row, the cold-start diversion (moot at ten solves,
     // kept for the guard), then the ask. `wall: 'free_quota'` is its own
     // value in the series (metrics.md, quota_wall).
-    const quota = quotaGate({ flagOn: ftbFlag('freeQuota'), isPro, solvedCount: solvedChallenges.size, alreadySolved: solvedChallenges.has(challenge.id) });
+    const quota = quotaGate({ flagOn: ftbFlag('freeQuota'), isPro: accessFor(challenge), solvedCount: solvedChallenges.size, alreadySolved: solvedChallenges.has(challenge.id) });
     if (quota.gated) {
       const quotaModal = quotaWallModalNow();
       trackLockReached('challenge_quota', {
@@ -24113,6 +24194,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
         quotaWallArm: quotaWallArmNow,
       });
       if (openColdStartInstead(challenge.id)) return;
+      if (openDebugLockInstead(challenge, { type: 'free_quota', used: quota.used, quota: quota.quota, solvedCount: solvedChallenges.size, topic: null, wallCompany: quotaWallCompany() })) return;
       // A Debug item past the quota meets the same wall; only the label the
       // events carry is `debug_lock` (withDebugLock, founder 2026-11-23).
       presentQuotaWall(withDebugLock({ type: 'free_quota', used: quota.used, quota: quota.quota, solvedCount: solvedChallenges.size, topic: null, wallCompany: quotaWallCompany() }, challenge), quotaModal);
@@ -26235,7 +26317,10 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
   };
   const pendingPaymentSuccessRef = useRef((() => {
     if (typeof window === 'undefined') return false;
-    try { return new URLSearchParams(window.location.search).get('payment') === 'success'; } catch (_) { return false; }
+    // The Debug pack's return (`&product=debug_pack`) is not Pro: it has its
+    // own resolver below and must never reach the Pro poll or its pending
+    // screen.
+    try { return new URLSearchParams(window.location.search).get('payment') === 'success' && !isDebugPackReturn(window.location.search); } catch (_) { return false; }
   })());
   useEffect(() => {
     if (!pendingPaymentSuccessRef.current) return;
@@ -26275,6 +26360,62 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
       } catch (_) { /* transient fetch failure — keep polling */ }
       if (attempts < 6) setTimeout(poll, 2000);
       else setPaymentSuccessState('pending'); // webhook lag — the pending screen offers the recovery button
+    };
+    poll();
+    return () => { cancelled = true; };
+  }, [isSessionLoading, currentUser]);
+
+  // ?payment=success&product=debug_pack — the Debug pack's return (2026-11-23).
+  // The webhook writes users.data.debugPackOwned before the browser is back
+  // (the same 3-6 s lead the Pro purchases show); this re-reads the account
+  // with the Pro resolver's poll — six reads, two seconds apart — and on
+  // success opens Practice on the Debug chip. Nothing here grants anything:
+  // the record is the server's, and sq_save_user keeps it server-owned.
+  const pendingDebugPackReturnRef = useRef((() => {
+    if (typeof window === 'undefined') return false;
+    try { return isDebugPackReturn(window.location.search); } catch (_) { return false; }
+  })());
+  useEffect(() => {
+    if (!pendingDebugPackReturnRef.current) return;
+    if (isSessionLoading) return;
+    pendingDebugPackReturnRef.current = false; // consume once
+    try {
+      const p = new URLSearchParams(window.location.search);
+      p.delete('payment');
+      p.delete('product');
+      const qs = p.toString();
+      window.history.replaceState({}, document.title, window.location.pathname + (qs ? `?${qs}` : ''));
+    } catch (_) { /* ignore */ }
+    let stashed = null;
+    try { stashed = localStorage.getItem('sqlquest_purchase_user') || null; } catch (_) { /* ignore */ }
+    const target = currentUser || stashed;
+    const packCopy = debugPackCopy(lang, priceRegion);
+    if (!target) return;
+    let attempts = 0;
+    let cancelled = false;
+    const poll = async () => {
+      if (cancelled) return;
+      attempts += 1;
+      try {
+        const fresh = await loadUserData(target);
+        if (fresh && ownsDebugPack(fresh.debugPackOwned)) {
+          if (target === currentUser) setDebugPackRecord(fresh.debugPackOwned);
+          setShowProModal(false);
+          setCurrentChallenge(null);
+          setActiveTab('quests');
+          setPracticeSubTab('challenges');
+          setDebugFilter(true);
+          showMilestone('🔓', packCopy.opened, '');
+          try { localStorage.removeItem('sqlquest_purchase_user'); } catch (_) { /* ignore */ }
+          trackActivationEvent('debug_pack_return', { found: true, attempts, source: 'redirect_return' });
+          return;
+        }
+      } catch (_) { /* transient fetch failure — keep polling */ }
+      if (attempts < 6) setTimeout(poll, 2000);
+      else {
+        showMilestone('⏳', packCopy.pending, '');
+        trackActivationEvent('debug_pack_return', { found: false, attempts, source: 'redirect_return' });
+      }
     };
     poll();
     return () => { cancelled = true; };
@@ -33247,6 +33388,37 @@ RULES:
                   </p>
                 )}
 
+                {/* The Debug pack (`debugPack`, founder's decision 2026-11-23):
+                    one secondary card under the Pro plans, only in a Debug
+                    lock's modal. Never the accent (DESIGN.md: the yellow is
+                    the primary CTA's) — a quiet bordered row, like the free
+                    paths below. Flag off: nothing renders here. */}
+                {debugPackOfferNow && !checkoutPendingPlan && (() => {
+                  const packCopy = debugPackCopy(lang, priceRegion);
+                  return (
+                    <div className="mb-6 -mt-2" data-testid="debug-pack-offer">
+                      <button
+                        type="button"
+                        data-testid="debug-pack-cta"
+                        onClick={beginDebugPackCheckout}
+                        disabled={debugPackCheckout === 'opening' || !!checkoutOpening}
+                        aria-busy={debugPackCheckout === 'opening'}
+                        className={`w-full p-3 text-left transition-colors ${checkoutOpening ? 'opacity-50' : ''}`}
+                        style={{ background: 'transparent', border: '1px solid #2A2E38', borderRadius: '6px', color: '#F2F0EA' }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = '#8A8E99'; }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = '#2A2E38'; }}
+                      >
+                        <span className="block text-sm font-medium" data-testid="debug-pack-line">{packCopy.line}</span>
+                        <span className="block text-xs mt-1" style={{ color: '#8A8E99' }}>{packCopy.cta} →</span>
+                        {debugPackCheckout === 'opening' && <CheckoutOpeningLine />}
+                      </button>
+                      {debugPackCheckout === 'error' && (
+                        <p role="alert" className="text-xs mt-2" style={{ color: '#FF6B6B' }} data-testid="debug-pack-error">{packCopy.error}</p>
+                      )}
+                    </div>
+                  );
+                })()}
+
                 <div className="text-center mb-4">
                   {trialOfferOn && (
                     <p className="text-xs mb-1.5" style={{ color: '#F2F0EA' }} data-testid="trial-terms">
@@ -39325,9 +39497,9 @@ RULES:
                       // `companySetGate`, everything past the free three that
                       // is not already solved wears the same lock as a Hard.
                       const isLocked = isContentLocked('challenge', c)
-                        || companySetGate({ flagOn: ftbFlag('companySetGate'), isPro, companyFilter, challenge: c, scoped: companyScopedChallenges(), solved: solvedChallenges }).gated;
+                        || companySetGate({ flagOn: ftbFlag('companySetGate'), isPro: accessFor(c), companyFilter, challenge: c, scoped: companyScopedChallenges(), solved: solvedChallenges }).gated;
                       // Free quota (`freeQuota`): past ten solves every unsolved row wears the lock too.
-                      const isQuotaLocked = quotaGate({ flagOn: ftbFlag('freeQuota'), isPro, solvedCount: solvedChallenges.size, alreadySolved: isSolved }).gated;
+                      const isQuotaLocked = quotaGate({ flagOn: ftbFlag('freeQuota'), isPro: accessFor(c), solvedCount: solvedChallenges.size, alreadySolved: isSolved }).gated;
                       // A free Hard preview, shown to someone it is a preview
                       // FOR. Pro users never see the tag or the blue border.
                       const isPreview = !isPro && isFreePreview(c) && !isQuotaLocked;

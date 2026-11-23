@@ -239,7 +239,9 @@ describe('create-checkout-session: the edge function', () => {
     expect(bodies.length).toBeGreaterThan(5);
     for (const b of bodies) {
       const literalCode = /^\{ error: "[a-z_]+" \}$/.test(b);
-      const theResult = b === '{ url: session.url, plan, region: chosen.region, trial, notes }';
+      const theResult = b === '{ url: session.url, plan, region: chosen.region, trial, notes }'
+        // the Debug pack's one-time session (2026-11-23, tests/debug-pack.test.js)
+        || b === '{ url: session.url, product: DEBUG_PACK_PRODUCT, region, trial: false, notes }';
       expect(literalCode || theResult, b).toBe(true);
     }
     expect(code).toContain('checkout_unavailable');

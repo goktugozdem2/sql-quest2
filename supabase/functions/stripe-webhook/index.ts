@@ -30,6 +30,22 @@
 // or buy.stripe.com only), `recovery_expires_at`, and booleans
 // `stripe_email_present` / `prefilled_email` / `promotions_consent` to
 // `pro_checkout_expired` — never an email address. No new endpoint events.
+//
+// The Debug pack (2026-11-23, founder's decision PR #251): a one-time
+// `mode: 'payment'` session from create-checkout-session with
+// `metadata.product=debug_pack` (or one of the pack's two prices). On
+// checkout.session.completed with payment_status=paid it writes
+// users.data.debugPackOwned = { at, sessionId, paymentIntent, amount,
+// currency } and logs `debug_pack_purchased {region, amount}` — idempotent on
+// the session id, and it never touches proStatus or any Pro / Stripe-id
+// field (./debug-pack.ts). It is routed BEFORE the Pro activation, so an
+// unmapped pack price can never be sold as a month of Pro by the amount
+// fallback. A full charge.refunded of the pack's payment clears the field
+// and logs `debug_pack_refunded` — and never revokes Pro. An expired pack
+// session logs `debug_pack_checkout_expired`, never `pro_checkout_expired`
+// (checkout-abandon mails about Pro). Server-owned: sq_save_user keeps
+// debugPackOwned (migration 20261123150000). No new endpoint events: both
+// checkout.session.completed and charge.refunded are already subscribed.
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -37,6 +53,7 @@ import Stripe from "https://esm.sh/stripe@12.0.0?target=deno";
 import { pickCustomerRow } from "./customer-row.ts";
 import { paymentFailedEmail, stripeInvoiceUrl, startsAtTrialEnd, PORTAL_URL_DEFAULT } from "./payment-failed-email.ts";
 import { expiredSessionMeta } from "../_shared/checkout-recovery.ts";
+import { isDebugPackSession, packPriceIds, packRecordFrom, applyPackPurchase, applyPackRefund, DEBUG_PACK_PRODUCT } from "./debug-pack.ts";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
   apiVersion: "2023-10-16",
@@ -202,6 +219,91 @@ async function recordReferralConversion(
 // every three months like the other two subscriptions.
 const ONE_TIME_PLANS = new Set(["lifetime"]);
 
+// ── The Debug pack (2026-11-23) ──
+const DEBUG_PACK_PRICES = packPriceIds((k) => Deno.env.get(k));
+
+async function findPackBuyer(username: string | null, email: string | null) {
+  if (username) {
+    const { data } = await supabase.from("users").select("*").eq("username", username).maybeSingle();
+    if (data) return data;
+  }
+  if (email) {
+    const byColumn = await supabase.from("users").select("*").eq("email", email).limit(1);
+    if (byColumn.data && byColumn.data[0]) return byColumn.data[0];
+    const byData = await supabase.from("users").select("*").eq("data->>email", email).limit(1);
+    if (byData.data && byData.data[0]) return byData.data[0];
+  }
+  return null;
+}
+
+async function handleDebugPackCompleted(session: Stripe.Checkout.Session, username: string | null, email: string | null): Promise<Response> {
+  const meta = (session.metadata || {}) as Record<string, string>;
+  const region = meta.region || null;
+  const base = {
+    stripe_session_id: session.id,
+    region,
+    amount: session.amount_total ?? null,
+    currency: session.currency || null,
+  };
+  // Card payments are `paid` at completion. A delayed method would arrive
+  // later as checkout.session.async_payment_succeeded, which the endpoint
+  // does not subscribe to — so nothing is granted on an unpaid session.
+  if (session.payment_status !== "paid") {
+    await logProEvent("debug_pack_payment_pending", username, "stripe_webhook", { ...base, payment_status: session.payment_status || null });
+    return new Response("Debug pack not paid yet", { status: 200 });
+  }
+  const userRecord = await findPackBuyer(username, email);
+  if (!userRecord?.data) {
+    await logProEvent("debug_pack_purchase_pending", username, "stripe_webhook", { ...base, has_email: !!email });
+    console.error(`[stripe-webhook] debug pack: no user for ${username || "(no username)"} — session ${session.id}`);
+    return new Response("Debug pack: user not found, recorded", { status: 200 });
+  }
+  const record = packRecordFrom(session as unknown as Parameters<typeof packRecordFrom>[0]);
+  const applied = applyPackPurchase(userRecord.data as Record<string, unknown>, record);
+  if (applied.already === "same_session") {
+    console.log(`↺ debug pack ${session.id} already processed for ${userRecord.username}`);
+    return new Response("Already processed", { status: 200 });
+  }
+  if (applied.already === "owned") {
+    // A second purchase of what they already own: no access changes, the
+    // founder refunds it by hand.
+    await logProEvent("debug_pack_duplicate", userRecord.username, "stripe_webhook", base);
+    return new Response("Debug pack already owned, recorded", { status: 200 });
+  }
+  const { error } = await supabase
+    .from("users")
+    .update({ data: applied.data, updated_at: new Date().toISOString() })
+    .eq("username", userRecord.username);
+  if (error) {
+    console.error("[stripe-webhook] debug pack: user update failed:", error.message);
+    return new Response("Database update failed", { status: 500 });
+  }
+  await logProEvent("debug_pack_purchased", userRecord.username, "stripe_webhook", { ...base, payment_intent: record.paymentIntent });
+  console.log(`✅ Debug pack for ${userRecord.username} (${region || "default"})`);
+  return new Response("Debug pack granted", { status: 200 });
+}
+
+// Is this refunded charge the Debug pack's? A pack payment has no invoice;
+// the row that owns it names its PaymentIntent, and the PaymentIntent itself
+// carries `product=debug_pack` (create-checkout-session's
+// payment_intent_data). A failed Stripe read throws, so Stripe redelivers —
+// falling through to the Pro branch could revoke a subscriber's Pro over a
+// $9 refund.
+async function debugPackRefundTarget(charge: Stripe.Charge): Promise<{ isPack: boolean; userRecord: { username: string; data: Record<string, unknown> } | null; paymentIntent: string | null }> {
+  if (charge.invoice) return { isPack: false, userRecord: null, paymentIntent: null };
+  const paymentIntent = typeof charge.payment_intent === "string" ? charge.payment_intent : (charge.payment_intent as { id?: string } | null)?.id || null;
+  if (!paymentIntent) return { isPack: false, userRecord: null, paymentIntent: null };
+  const { data: owners } = await supabase
+    .from("users")
+    .select("*")
+    .filter("data->debugPackOwned->>paymentIntent", "eq", paymentIntent)
+    .limit(1);
+  if (owners && owners[0]) return { isPack: true, userRecord: owners[0], paymentIntent };
+  const pi = await stripe.paymentIntents.retrieve(paymentIntent);
+  const isPack = ((pi.metadata || {}) as Record<string, string>).product === DEBUG_PACK_PRODUCT;
+  return { isPack, userRecord: null, paymentIntent };
+}
+
 serve(async (req) => {
   const signature = req.headers.get("stripe-signature");
   const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
@@ -241,6 +343,12 @@ serve(async (req) => {
       const lineItems = await stripe.checkout.sessions.listLineItems(session.id);
       const priceId = lineItems.data[0]?.price?.id;
       const productId = lineItems.data[0]?.price?.product as string;
+
+      // The Debug pack is not Pro: routed here, before any plan mapping, so
+      // its price can never fall through to the amount fallback below.
+      if (isDebugPackSession(session as unknown as Parameters<typeof isDebugPackSession>[0], priceId, DEBUG_PACK_PRICES)) {
+        return await handleDebugPackCompleted(session, username || null, email || null);
+      }
       
       // Determine plan type: the id maps, then the price's own billing
       // interval, and only then the amount.
@@ -773,6 +881,15 @@ serve(async (req) => {
     if (event.type === "checkout.session.expired") {
       const session = event.data.object as Stripe.Checkout.Session;
       const username = session.client_reference_id || null;
+      // The Debug pack's own row: never pro_checkout_expired, which
+      // checkout-abandon reads to mail a Pro recovery link.
+      if (((session.metadata || {}) as Record<string, string>).product === DEBUG_PACK_PRODUCT) {
+        await logProEvent("debug_pack_checkout_expired", username, "stripe_webhook", {
+          stripe_session_id: session.id,
+          region: ((session.metadata || {}) as Record<string, string>).region || null,
+        });
+        return new Response("Debug pack expiry recorded", { status: 200 });
+      }
       let planType = "unknown";
       try {
         const lineItems = await stripe.checkout.sessions.listLineItems(session.id);
@@ -1070,6 +1187,38 @@ serve(async (req) => {
       const amount = charge.amount ?? 0;
       const refunded = charge.amount_refunded ?? 0;
       const full = amount > 0 && refunded >= amount;
+
+      // The Debug pack's refund: clear debugPackOwned on a full refund, and
+      // NEVER reach the Pro revocation below.
+      const pack = await debugPackRefundTarget(charge);
+      if (pack.isPack) {
+        let cleared = false;
+        if (pack.userRecord?.data) {
+          const next = applyPackRefund(pack.userRecord.data, pack.paymentIntent, full);
+          if (next.cleared) {
+            const { error } = await supabase
+              .from("users")
+              .update({ data: next.data, updated_at: new Date().toISOString() })
+              .eq("username", pack.userRecord.username);
+            if (error) {
+              console.error("[stripe-webhook] debug pack refund: user update failed:", error.message);
+              return new Response("Database update failed", { status: 500 });
+            }
+            cleared = true;
+          }
+        }
+        await logProEvent("debug_pack_refunded", pack.userRecord?.username || null, "stripe_webhook", {
+          full,
+          charge_id: charge.id,
+          payment_intent: pack.paymentIntent,
+          amount_cents: amount,
+          amount_refunded_cents: refunded,
+          currency: charge.currency || null,
+          cleared,
+          matched_user: !!pack.userRecord,
+        });
+        return new Response("Debug pack refund recorded", { status: 200 });
+      }
       let customerId = (charge.customer as string) || null;
       let subscriptionId: string | null = null;
 

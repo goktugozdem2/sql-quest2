@@ -37,8 +37,10 @@ describe('every way out of the Pro modal is counted', () => {
     // legitimate ones are the helper itself and the two places that close it
     // on success (purchase restored, deep-link handoff) — those are not
     // dismissals and are allowed, so this pins the count rather than zero.
+    // The fourth (2026-11-23) is the Debug pack's return: the purchase
+    // landed, the modal closes on success like the Pro one.
     const closes = [...src.matchAll(/setShowProModal\(false\)/g)].length;
-    expect(closes, 'a new setShowProModal(false) appeared — is it a dismissal? route it through dismissProModal').toBe(3);
+    expect(closes, 'a new setShowProModal(false) appeared — is it a dismissal? route it through dismissProModal').toBe(4);
   });
 
   it('records the three things that separate the hypotheses', () => {

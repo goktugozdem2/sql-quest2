@@ -17,6 +17,11 @@
 //
 // Input  (POST JSON): { plan: 'monthly'|'annual', region: 'default'|'IN',
 //                       username, email?, trial?: boolean, promo?: string }
+//   or, for the Debug pack (2026-11-23):
+//                     { product: 'debug_pack', region, username, email? }
+//   → a one-time `mode: 'payment'` session on STRIPE_PRICE_DEBUG_PACK /
+//     STRIPE_PRICE_DEBUG_PACK_IN; 503 `debug_pack_unconfigured` when the
+//     region's secret is unset (never another price).
 // Output (200 JSON):  { url, plan, region, trial, notes: string[] }
 //   `region` and `trial` are what was APPLIED, which may differ from what was
 //   asked; `notes` says why (e.g. 'in_price_unset' — the IN price secrets are
@@ -148,7 +153,7 @@ async function trialAlreadyUsed(username: string): Promise<boolean> {
 // outcome, reason 'checkout_session', never blocking the answer: a logging
 // failure — or a slow write, past LOG_TIMEOUT_MS — still returns the session.
 const LOG_TIMEOUT_MS = 1500;
-async function logCheckoutEvent(event: "pro_checkout_started" | "pro_checkout_session_failed", username: string, metadata: Record<string, unknown>): Promise<void> {
+async function logCheckoutEvent(event: "pro_checkout_started" | "pro_checkout_session_failed" | "debug_pack_checkout_started" | "debug_pack_checkout_failed", username: string, metadata: Record<string, unknown>): Promise<void> {
   const url = Deno.env.get("SUPABASE_URL");
   const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!url || !key) return;
@@ -202,6 +207,17 @@ serve(async (req) => {
     try { if (price) await stripe.prices.retrieve(price); } catch (_) { /* a warm-up never fails loudly */ }
     console.log(`warm ${Date.now() - t0}ms`);
     return new Response(null, { status: 204, headers: corsFor(origin) });
+  }
+
+  // ── The Debug pack (2026-11-23, founder's decision PR #251) ──
+  // `product: 'debug_pack'` is a separate one-time purchase: $9, India $3,
+  // its own Stripe prices, `mode: 'payment'`, no trial, no promo, no
+  // recovery link (checkout-abandon mails about Pro). The same Origin
+  // allowlist above guards it. A missing price secret answers 503
+  // `debug_pack_unconfigured` — never another price.
+  if (input.product !== undefined) {
+    if (input.product !== DEBUG_PACK_PRODUCT) return json({ error: "invalid_product" }, 400, origin);
+    return await debugPackSession(req, input, origin);
   }
 
   // ── strict validation: allowlists and shapes, nothing passed through ──
@@ -326,3 +342,82 @@ serve(async (req) => {
     return json({ error: "checkout_unavailable" }, 502, origin);
   }
 });
+
+// ── The Debug pack's session (2026-11-23) ──
+// Below serve() on purpose: the Pro path above reads top to bottom as it
+// always did. Declarations here are hoisted (functions) or initialised before
+// any request arrives (the const).
+export const DEBUG_PACK_PRODUCT = "debug_pack";
+
+// The pack's price for a region, or null when its secret is unset. No
+// fallback between regions: an India buyer is never charged the $9 price
+// because the $3 one is missing, and nobody is charged a Pro price.
+function debugPackPriceFor(region: string): string | null {
+  const v = region === "IN" ? Deno.env.get("STRIPE_PRICE_DEBUG_PACK_IN") : Deno.env.get("STRIPE_PRICE_DEBUG_PACK");
+  return v && v.length > 0 ? v : null;
+}
+
+async function debugPackSession(req: Request, input: Record<string, unknown>, origin: string) {
+  const regionAsked = input.region ?? "default";
+  const username = input.username;
+  const email = input.email;
+  if (typeof regionAsked !== "string" || !REGIONS.includes(regionAsked)) return json({ error: "invalid_region" }, 400, origin);
+  if (typeof username !== "string" || !USERNAME_RE.test(username)) return json({ error: "invalid_username" }, 400, origin);
+  if (email !== undefined && email !== null && email !== "" &&
+      (typeof email !== "string" || email.length > 254 || !EMAIL_RE.test(email))) {
+    return json({ error: "invalid_email" }, 400, origin);
+  }
+  // A pack has no trial and no promo; asking for either is a malformed call.
+  if (input.trial !== undefined && input.trial !== false) return json({ error: "invalid_trial" }, 400, origin);
+  if (input.plan !== undefined) return json({ error: "invalid_plan" }, 400, origin);
+
+  const notes: string[] = [];
+  let region = regionAsked;
+  const country = countryHeader(req);
+  if (region === "IN" && country && country !== "IN") {
+    region = "default";
+    notes.push("country_mismatch");
+  }
+  const price = debugPackPriceFor(region);
+  if (!price) {
+    console.error(`[create-checkout-session] debug pack price unset for ${region}`);
+    await logCheckoutEvent("debug_pack_checkout_failed", username, { product: DEBUG_PACK_PRODUCT, region, stage: "debug_pack_unconfigured" });
+    return json({ error: "debug_pack_unconfigured" }, 503, origin);
+  }
+
+  // Its own event names (debug_pack_checkout_started / _failed), so the Pro
+  // series that read pro_checkout_started are not inflated by the pack.
+  const metadata = { username, product: DEBUG_PACK_PRODUCT, region, source: "checkout_session" };
+  const params: Record<string, unknown> = {
+    mode: "payment",
+    line_items: [{ price, quantity: 1 }],
+    client_reference_id: username,
+    success_url: `${origin}/app/?payment=success&product=${DEBUG_PACK_PRODUCT}`,
+    cancel_url: `${origin}/app/`,
+    adaptive_pricing: { enabled: false },
+    metadata,
+    // The PaymentIntent carries the same marks, so a refund of this payment
+    // (charge.refunded) is recognised as the pack's and never revokes Pro.
+    payment_intent_data: { metadata },
+  };
+  if (typeof email === "string" && email) params.customer_email = email.toLowerCase();
+
+  try {
+    const tStripe = Date.now();
+    // deno-lint-ignore no-explicit-any
+    const session = await stripe.checkout.sessions.create(params as any);
+    console.log(`timing debug_pack stripe=${Date.now() - tStripe}ms`);
+    if (!session.url) {
+      await logCheckoutEvent("debug_pack_checkout_failed", username, { product: DEBUG_PACK_PRODUCT, region, stage: "no_url" });
+      return json({ error: "checkout_unavailable" }, 502, origin);
+    }
+    await logCheckoutEvent("debug_pack_checkout_started", username, { session_id: session.id, product: DEBUG_PACK_PRODUCT, region, trial: false, notes });
+    return json({ url: session.url, product: DEBUG_PACK_PRODUCT, region, trial: false, notes }, 200, origin);
+  } catch (err) {
+    const type = (err as { type?: string })?.type || "unknown";
+    const code = (err as { code?: string })?.code || "";
+    console.error(`[create-checkout-session] stripe error (debug pack) ${type} ${code}`);
+    await logCheckoutEvent("debug_pack_checkout_failed", username, { product: DEBUG_PACK_PRODUCT, region, stage: "stripe", error_type: type, error_code: code || null });
+    return json({ error: "checkout_unavailable" }, 502, origin);
+  }
+}
