@@ -27,6 +27,56 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### the reasons are asked where they happen: exit_reason (`exitReasonAsk`) — **OPEN**
+
+- **Claimed** 2026-11-22 (E2) · **Shipped** dark; flips from the flag queue
+  after A1 confirms the paywall conditions below · **Read** 28 days after
+  the flip.
+- **Change** after the Pro modal or the quota wall is CLOSED with no plan
+  click, one card above the 💬 button asks "What held you back?" with five
+  taps (Too expensive · Not ready yet · Want more free practice · Not what I
+  need · Other + one line). Once a local day, one prompt a session, never
+  before the first solve, never in a mock, never rendered while the modal is
+  open. Writes to `feedback` (`context.kind='exit_reason'`).
+- **Metric** `feedback_capture`, kind `exit_reason`.
+- **Baseline** 0 — no reason for a closed modal has ever been recorded.
+- **Target** answered ÷ shown ≥ 15% and ≥ 10 reasons in the 28 days.
+- **Falsification** (written before the data) answered ÷ shown under 5%, or
+  `modal_click_rate` in the 28 days more than 20% below the 28 days before
+  the flip → turn it off; the prompt costs more than it tells.
+- **Never** names a price, changes a price, a plan or a gate.
+
+### the reasons are asked where they happen: stuck (`stuckAsk`) — **OPEN**
+
+- **Claimed** 2026-11-22 (E2) · **Shipped** dark · **Read** 28 days after
+  the flip.
+- **Change** a challenge open 3 minutes with no run, or the third wrong
+  submit, shows one line "What's unclear here?" (optional) on the challenge
+  page. Once per challenge, one prompt a session, never in a mock; the only
+  ask allowed before the first solve. The wrong-submit trigger sits inside
+  the existing third-try card (its `challenge_stuck_verdict` series is
+  unchanged).
+- **Metric** `feedback_capture`, kind `stuck`, split by trigger.
+- **Baseline** 0 typed reasons from the challenge page (the verdict taps are
+  a separate series).
+- **Target** answered ÷ shown ≥ 8% and ≥ 10 typed lines in the 28 days.
+- **Falsification** answered ÷ shown under 3% → turn it off; or
+  `open_to_first_run` more than 20% below its prior 28 days → turn it off
+  (the card is in the way of the run).
+
+### the reasons are asked where they happen: day2 (`day2Ask`) — **OPEN**
+
+- **Claimed** 2026-11-22 (E2) · **Shipped** dark · **Read** 28 days after
+  the flip.
+- **Change** at the second session's first screen (a session = more than an
+  hour away, the `second_session_7d` gap), one card asks "One thing that
+  would make SQL Quest better for you?". Once ever, at least one solve,
+  nothing else open.
+- **Metric** `feedback_capture`, kind `day2`.
+- **Baseline** 0.
+- **Target** answered ÷ shown ≥ 10% and ≥ 10 lines in the 28 days.
+- **Falsification** answered ÷ shown under 3%, or solves in the second
+  session per person shown more than 20% below the 28 days before → off.
 ### a company arrival opens question 1 (`companyDirectOpen`, A/B)
 
 - **Claimed** 2026-11-22 · **Shipped** dark (flag `companyDirectOpen: false`); A0 may flip it no earlier than **2026-12-19** (flag-queue row 16) · **Read** 2027-01-30, or at the minimum n if that comes later (hard stop 2027-02-27).
