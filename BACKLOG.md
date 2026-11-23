@@ -105,6 +105,11 @@ B2 builds none of these; each names the lane that owns it.
   `cta_practice_validate_ai_sql_*` and `editorial_claudequest_click` (0 rows,
   14 app opens from that page).
 
+## Routed by C7, question mining — 2026-11-22 (docs/reads/questions-2026-11-22.md)
+
+- **C6: UPDATE with values from another table** (UPDATE … FROM in SQLite 3.33+, the correlated-subquery form, and MySQL's / SQL Server's spellings). Seven threads in run 1's sources (Quora, sqlite.org forum). Challenges 180–185 practise DML, but no page explains it. This is C6's DML item #1; the read has the links.
+- **B3/C6 practice gap: a consecutive-calendar-day streak.** The window tutorial now works it on `logins` (5-day streaks for customers 4 and 8, the March-6 double login, the month boundary). No challenge asks it: challenge 68 is a ≤7-day-gap streak on orders, a different shape. One Medium/Hard challenge on `logins` with DISTINCT as the trap.
+- **Q1/C1: hard-coded count on the window tutorial.** "SQL Quest has 68 window-function-specific challenges" and the related link "68 window function challenges" are literal numbers that `tests/site-counts.test.js` doesn't bind. Re-measure, then move them to a helper or drop the number. Left alone in the C7 PR because it isn't a question answer.
 ## GEO gaps — G1, 2026-11-22 (docs/reads/geo-2026-11-22.md)
 
 G1 builds none of these. Each one names the lane that owns it. Baseline:

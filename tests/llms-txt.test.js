@@ -115,7 +115,10 @@ describe('counts match the bank (recomputed independently)', () => {
 
     expect(facts.freePreviewCount).toBe(previews);
     expect(facts.freeChallengeCount).toBe(free);
-    expect(text).toContain(`one of ${previews} Hard previews`);
+    // 2026-11-22: the quota sentence says "or a Hard preview" and counts none
+    // (the bank-wide count is the retired wording, site-counts R3).
+    expect(text).toContain('or a Hard preview, so a free user');
+    expect(text).not.toMatch(/one of \d+ Hard previews/);
   });
 
   // 2026-09-26: llms.txt is what an assistant reads when asked "is SQL Quest

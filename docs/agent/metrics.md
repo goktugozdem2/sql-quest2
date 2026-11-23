@@ -3468,6 +3468,24 @@ same `aid` within 1 hour. Baseline **19.1%** (247 / 1,290, 2026-10-08 →
 words name question 1 — read the click rate per page from that date only.
 Guardrail: company arrivals' first-solve rate (27% baseline).
 
+## `landing_to_trial`
+
+Per page, from 2026-11-22 (C5). The number C5 is judged by: trials and
+purchases per 1,000 landing people on one page.
+
+- **Landing people:** distinct `coalesce(aid, username)` whose FIRST
+  `landing_view` carries the page's `page` path. Bots out (README
+  fingerprints: `metadata.bot`, the four viewports, `ref:aocr.org`),
+  internal usernames out, Asia/Shanghai out.
+- **Opened:** the same person's `app_opened` within 1 hour.
+- **Trial or paid:** the same person's `pro_trial_started` or
+  `pro_purchase_completed` within 28 days of the landing, from
+  `stripe-webhook` rows only (the money truth). A person counts once.
+- **Rate:** trial-or-paid ÷ landing people × 1,000. Report n beside it; below
+  300 landing people, report the counts and call the rate UNREADABLE.
+- A blog guide is read together with the company page it feeds: also count
+  guide landers whose next `landing_view` is that company page.
+
 ## `goal_gate_funnel`
 
 The goal gate (2026-09-25, ledger "every person states a goal before using
@@ -3656,3 +3674,77 @@ where query is not null and page = 'https://sqlquest.app/<slug>/'
   still grow. Read with a window ending at least three days before the read.
 - Position is impression-weighted (the query above), never a plain average of
   daily positions.
+
+## `uiux_findings`
+
+Critical + major findings in one full run of the UI/UX audit (`npm run uiux`,
+`scripts/smoke/uiux-audit.mjs`; A4, `docs/agent/fleet/A4-uiux.md`).
+Registered 2026-11-22. Not a people-metric: it counts layout defects on the
+built site, so it needs no bot filter and no Supabase read.
+
+```
+npm run build && npx serve public -l 4321
+npm run uiux -- --base http://localhost:4321 --repo-report
+# findings.json → .totals.critical + .totals.major
+```
+
+- **One run** = every sitemap page (`/questions/` sampled to 5) + the 13 app
+  screens in `appScenarios()`, × 6 viewports × 2 themes (1,596 runs on
+  2026-11-22). A finding is deduplicated per page × viewport × theme ×
+  selector; selectors are signatures, so one CSS rule broken on 60 pages is
+  ~60–700 findings, not one. Read the trend and the critical count; never
+  compare a run whose surface list changed (a new page adds its own findings)
+  without saying so.
+- **Critical** = U1 U2 U7 U8 (sideways scroll, a control off screen or cut
+  off, a primary button covered, a modal's primary unreachable on 375×667).
+  The target for critical is 0, always.
+- Run it against a local build of the commit being read, never against a
+  preview with different flags. The quota-wall and first-screen arms are
+  pinned by the harness, so A/B tosses do not move it.
+- Baseline 2026-11-22 (main at 523aa1d): critical **56**, major **20,506**
+  → `uiux_findings` **20,562**. With the six fix PRs (#143–#147, #149) merged
+  on a scratch branch: critical 0, major 13,707.
+
+## `bing_crawled_share` / `linked_page_impressions`
+
+Whether pages given internal links get crawled and shown (2026-11-22, C1).
+Defined for the related-links pass (`scripts/build-related-links.mjs`, read
+`docs/reads/internal-links-2026-11-22.md`), and reusable for any later
+linking pass: fix the page set in the claim, never after.
+
+**`bing_crawled_share`**: of a fixed set of URLs, the share whose
+`bing_url_status.last_crawled` is on or after the deploy date. The inspector
+walks the sitemap stalest-first, 150 URLs a day, so read it no earlier than
+four days after the deploy and use the row's `checked_at` to confirm it was
+checked after the deploy. A URL with no row or a `checked_at` before the
+deploy is **unknown**, not uncrawled: report it apart.
+
+```sql
+-- :set = the claim's URL list; :deploy = the merge's deploy date
+select count(*) filter (where s.last_crawled >= :deploy)               as crawled_since,
+       count(*) filter (where s.checked_at >= :deploy)                 as checked_since,
+       count(*)                                                        as in_set,
+       avg(s.anchor_count) filter (where s.checked_at >= :deploy)      as bing_anchor_count
+from unnest(:set::text[]) u(url)
+left join bing_url_status s on s.url = u.url;
+```
+
+`anchor_count` is Bing's own count of links it knows to the URL. Compare it
+with the baseline row's value, never with our built-site count (Bing counts
+external links too).
+
+**`linked_page_impressions`**: Google impressions for the same set, from
+`gsc_daily`'s **page slice only** (`query is null and page is not null`;
+never summed with another slice), 28 days after the deploy against the 28
+days before. Pages with zero impressions in both windows are counted, not
+dropped: going from 0 to anything is the point.
+
+Traps:
+- `/weekly/` is re-rendered by `npm run build:weekly`, which changes its
+  lastmod; a crawl after a weekly refresh is not evidence for the link.
+- `/datalemur-karsilastirma/` is Turkish. Read Google's impressions for it
+  without a country filter, and do not compare its clicks with the English
+  pages'.
+- Baselines are read on the laptop (the cloud session has no production
+  data). A claim made from a cloud session states "baseline: laptop read"
+  and the laptop writes it before the read date.

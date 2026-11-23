@@ -32,6 +32,19 @@ module.exports = {
         accent: '#FFE34D',
         'accent-ink': '#0E0F13',
       },
+      // Muted TEXT is DESIGN.md's --text-muted (A4 UI/UX audit, 2026-11-22).
+      // Stock text-gray-500 (#6B7280) is 3.5–4.1:1 on the app's dark
+      // surfaces and text-gray-600 (#4B5563) 2.2–2.6:1 — under WCAG AA
+      // (4.5:1) on every app screen: plan labels, "N/M solved", filter
+      // labels, challenge ids, the dialect table, empty rating stars.
+      // #8A8E99 is 5.9:1 on #0E0F13. Text only: bg-gray-* and border-gray-*
+      // keep Tailwind's shades.
+      textColor: {
+        gray: {
+          500: '#8A8E99',
+          600: '#8A8E99',
+        },
+      },
     },
   },
   plugins: [],
