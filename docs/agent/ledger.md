@@ -27,6 +27,38 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### the Revolut guide: a sourced blog door for the best fintech page (C5)
+
+- **Claimed** 2026-11-22 · **Shipped** on merge · **Read** 2026-12-20 (28 d) and 2027-01-17 (56 d).
+- **Change** `/blog/revolut-data-analyst-sql-screen/`: both Revolut SQL
+  rounds as interviewquery's 2026 guide reports them (one dated source, read
+  2026-09-12, quotes pinned verbatim against `interview-archetypes.js`),
+  three traps worked on `finans_neobank` (transfer legs, AVG over NULL,
+  a nested funnel), a 2-week plan, links to Revolut question 1, the readiness
+  test and the Pro mock. It solves neither the mock's written tasks nor any
+  set challenge. Linked from the Revolut page, the interview hub and the blog
+  index; in the sitemap.
+- **Why Revolut, why a guide:** Revolut and Wise are the two fintech pages
+  with proven clicks (seo-2026-11-13: 18.6% / 27% CTR); Revolut has 4.6× the
+  query impressions (company-research-2026-11-20: 87 vs 19) and is the only
+  one with a sourced format, a signed set and a Pro mock to sell. M-02's hero
+  already names question 1 on both, so menu item 1 is spent there; the
+  Capital One read (branch 3) says the blog is the door.
+- **Metric** `landing_to_trial` (defined today in metrics.md) on the guide
+  and on `/revolut-sql-interview/`; `gsc_daily` for the guide; `pro_modal_shown`
+  with `linkSrc` `revolut-blog`.
+- **Baseline** for the laptop to fill before 12-20: Revolut page landing
+  people and trial-or-paid, 28 days to 2026-11-22. The guide's baseline is 0.
+- **Target** at 28 d: the guide ≥ 150 impressions and ≥ 8 clicks, with the
+  Revolut page's clicks not below 90% of its own prior 28 d. At 56 d: ≥ 1
+  trial or purchase from a person whose first landing was the guide, and
+  ≥ 3 Pro modals from `revolut-blog`.
+- **Falsification, written now:** the Revolut page's clicks fall more than
+  20% while the guide takes its queries → cannibalised; noindex the guide
+  (`seo-prune.json`) and move its traps onto the page. At 56 d, ≥ 150 guide
+  landers and 0 app opens from it → the guide is not a door; one improvement
+  run, then the kill rule.
+
 ### related links for thinly linked pages (C1)
 
 - **Claimed** 2026-11-22 · **Shipped** on merge (static pages, no flag) ·

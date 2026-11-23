@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- 2026-11-22 (C5, revenue content): the Revolut companion to /revolut-sql-interview/, on the Capital One
+       pattern (ledger "Capital One: the 10-12 read, branch 3": the blog is the door, the page is the product).
+       Every format line is quoted from ONE dated source, read in a browser on 2026-09-12 and recorded verbatim in
+       src/data/interview-archetypes.js: interviewquery, "Revolut Data Analyst Interview Guide 2026",
+       "synthesized from 27 candidate reports", stamped "Interviewed Q3 2026". A cloud re-fetch on 2026-11-22 was
+       blocked by the session's network; re-read the guide before changing any format line. The worked queries
+       run on finans_neobank and are pinned by tests/revolut-guide.test.js. They never solve the mock's two
+       written tasks (MAU, top 10%) nor any challenge in the Revolut set. No bank count, no frequency claim. -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Revolut Data Analyst SQL Interview: Both Rounds, Sourced (2026) | SQLQuest.app</title>
+  <meta name="description" content="Revolut's data analyst SQL rounds as candidates describe them in 2026: a 60-minute HackerRank screen and a live session of four questions. Three traps, worked.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://sqlquest.app/blog/revolut-data-analyst-sql-screen/">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://sqlquest.app/blog/revolut-data-analyst-sql-screen/">
+  <meta property="og:title" content="Revolut Data Analyst SQL Interview: Both Rounds, Sourced (2026)">
+  <meta property="og:description" content="Revolut's data analyst SQL rounds as candidates describe them in 2026: a 60-minute HackerRank screen and a live session of four questions. Three traps, worked.">
+  <meta property="og:image" content="https://sqlquest.app/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">
+  {"@context": "https://schema.org", "@type": "BlogPosting", "headline": "Revolut Data Analyst SQL Interview: Both Rounds, Sourced (2026)", "description": "Revolut's data analyst SQL rounds as candidates describe them in 2026: a 60-minute HackerRank screen and a live session of four questions. Three traps, worked.", "url": "https://sqlquest.app/blog/revolut-data-analyst-sql-screen/", "datePublished": "2026-11-22", "dateModified": "2026-11-22", "author": {"@type": "Organization", "name": "SQL Quest"}, "publisher": {"@type": "Organization", "name": "SQL Quest", "url": "https://sqlquest.app/"}, "mainEntityOfPage": "https://sqlquest.app/blog/revolut-data-analyst-sql-screen/"}
+  </script>
+  <script type="application/ld+json">
+  {"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "How long is the Revolut data analyst SQL screen?", "acceptedAnswer": {"@type": "Answer", "text": "Candidate reports collected in interviewquery's 2026 guide (stamped Interviewed Q3 2026) describe a HackerRank screen of about 60 minutes: one report says \"60 minutes, with two SQL questions and several\" multiple-choice items. An earlier edition of the same guide gave 30 minutes. Revolut does not publish the format, so treat both as candidate-reported."}}, {"@type": "Question", "name": "What does the Revolut live SQL round ask?", "acceptedAnswer": {"@type": "Answer", "text": "The same guide describes \"four sequential questions on a set of interconnected tables (users, transactions, events, subscriptions)\", naming monthly active users with completed transactions, users in the top 10% by transaction volume, joins, aggregations, CTEs, filtering and date logic. Other candidates add window functions, cohort or funnel questions and conversion rates, and WHERE vs HAVING and NULL handling with COALESCE."}}, {"@type": "Question", "name": "Which SQL topics should I practice for a Revolut data analyst interview?", "acceptedAnswer": {"@type": "Answer", "text": "The topics the reports name: joins, GROUP BY and aggregation, WHERE vs HAVING, NULL handling with COALESCE, CTEs, window functions, date logic, cohorts, funnels and conversion rates. Most of the named tasks ask about users on a table of transactions, so practise getting the grain right: one row per user or per month, with a status filter on every money query."}}, {"@type": "Question", "name": "Where can I practice SQL for the Revolut data analyst interview?", "acceptedAnswer": {"@type": "Answer", "text": "SQL Quest's Revolut page (sqlquest.app/revolut-sql-interview/) has a practice set written for the reported screen on a synthetic neobank ledger, plus a 60-minute HackerRank-style timed mock. It runs in the browser with no signup. In the app's Revolut set the first 3 are free to try; Pro opens the full set and the mock. These are SQL Quest's own questions, not Revolut's."}}]}
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif;overflow-x:hidden}
+    .fd{font-family:'Space Grotesk',sans-serif}.fm{font-family:'JetBrains Mono','Fira Code',monospace}
+    a{color:#c084fc;text-decoration:none}a:hover{text-decoration:underline}
+    .nav{background:rgba(6,6,15,.95);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06);position:fixed;top:0;left:0;right:0;z-index:100}
+    .ni{max-width:1100px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+    .bp{padding:10px 24px;font-size:14px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:12px;font-weight:700;display:inline-block;text-decoration:none;transition:all .3s}.bp:hover{transform:translateY(-2px);text-decoration:none}
+    .article{max-width:740px;margin:0 auto;padding:120px 24px 80px}
+    .breadcrumb{font-size:13px;color:#8b98ab;margin-bottom:28px}.breadcrumb a{color:#8b98ab}.breadcrumb a:hover{color:#c084fc}
+    .article-meta{font-size:13px;color:#8b98ab;margin-bottom:32px;display:flex;gap:16px;flex-wrap:wrap}
+    h1{font-size:clamp(28px,4vw,44px);font-weight:800;line-height:1.12;margin-bottom:20px}
+    .intro{font-size:17px;line-height:1.8;color:#94a3b8;border-left:3px solid #10b981;padding-left:20px;margin-bottom:40px}
+    .toc{background:rgba(15,15,30,.7);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:24px 28px;margin-bottom:48px}
+    .toc-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#8b98ab;margin-bottom:14px}
+    .toc ol{padding-left:20px}.toc li{font-size:14px;line-height:1.8;color:#94a3b8}.toc a{color:#c084fc}
+    h2{font-size:clamp(20px,2.5vw,28px);font-weight:800;margin:48px 0 16px;padding-top:8px;border-top:1px solid rgba(255,255,255,.05)}
+    h3{font-size:18px;font-weight:700;color:#f1f5f9;margin:28px 0 12px}
+    p{font-size:15px;line-height:1.8;color:#94a3b8;margin-bottom:16px}
+    ul,ol{padding-left:22px;margin-bottom:20px}li{font-size:15px;line-height:1.8;color:#94a3b8;margin-bottom:6px}
+    li strong{color:#e2e8f0}
+    code{background:rgba(16,185,129,.12);color:#10b981;padding:2px 7px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:13px}
+    .code-block{background:rgba(10,10,25,.8);border:1px solid rgba(255,255,255,.08);border-radius:12px;overflow:hidden;margin:24px 0}
+    .code-label{padding:10px 16px;background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.06);font-size:12px;color:#8b98ab;font-family:'JetBrains Mono',monospace}
+    .code-block pre{padding:20px;margin:0;overflow-x:auto}.code-block code{background:none;padding:0;color:#e2e8f0;font-size:14px;line-height:1.7}
+    .kw{color:#7CC4FF;font-weight:700}.str{color:#B5E48C}.num{color:#FFB86C}.cmt{color:#8b98ab;font-style:italic}
+    .callout{background:rgba(16,185,129,.08);border-left:3px solid #10b981;border-radius:0 12px 12px 0;padding:16px 20px;margin:24px 0}
+    .callout p{margin:0;font-size:14px;color:#a7f3d0}.callout strong{color:#d1fae5}
+    .warn{background:rgba(239,68,68,.06);border-left:3px solid #ef4444;border-radius:0 12px 12px 0;padding:16px 20px;margin:24px 0}
+    .warn p{margin:0;font-size:14px;color:#fecaca}.warn strong{color:#fee2e2}
+    table{width:100%;border-collapse:collapse;margin:24px 0;font-size:14px}
+    th{text-align:left;padding:10px 14px;background:rgba(16,185,129,.1);color:#10b981;font-weight:700;border-bottom:1px solid rgba(16,185,129,.2);font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.05em}
+    td{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.05);color:#cbd5e1;font-family:'JetBrains Mono',monospace;font-size:13px}
+    tr:last-child td{border-bottom:none}
+    .practice-link{display:inline-flex;align-items:center;gap:6px;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.25);border-radius:8px;padding:8px 16px;font-size:13px;color:#10b981;text-decoration:none;margin:8px 0;transition:all .2s}.practice-link:hover{background:rgba(16,185,129,.18);text-decoration:none}
+    .cta-box{background:linear-gradient(135deg,rgba(16,185,129,.12),rgba(124,58,237,.08));border:1px solid rgba(16,185,129,.25);border-radius:20px;padding:40px;text-align:center;margin:48px 0}
+    .cta-box h3{font-size:24px;margin-bottom:12px;color:#f1f5f9;font-family:'Space Grotesk',sans-serif}.cta-box p{max-width:480px;margin:0 auto 28px}
+    .cta-main{padding:14px 36px;font-size:16px;background:linear-gradient(135deg,#10b981,#7c3aed);color:#fff;border-radius:12px;font-weight:700;display:inline-flex;align-items:center;transition:all .3s;text-decoration:none}.cta-main:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(16,185,129,.35);text-decoration:none}
+    .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center}.ft p{font-size:13px;color:#7f8da1}.ft a{color:#8b98ab}.ft a:hover{color:#c084fc}
+    .related{background:rgba(15,15,30,.5);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:24px 28px;margin:40px 0}
+    .related h4{font-size:13px;font-weight:700;color:#8b98ab;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px}
+    .related ul{margin-bottom:0;padding-left:20px}.related li{font-size:14px;line-height:1.8}
+    .sources{font-size:13px;color:#8b98ab;line-height:1.8}.sources li{font-size:13px;color:#8b98ab;margin-bottom:4px}
+    .faq details{border-bottom:1px solid rgba(255,255,255,.06);padding:14px 0}.faq summary{font-size:16px;font-weight:700;color:#e2e8f0;cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center}.faq summary::after{content:'+';color:#3b82f6;font-size:22px;flex-shrink:0;margin-left:16px}.faq details[open] summary::after{content:'−'}.faq details p{margin:12px 0 0;font-size:14px}
+  
+    /* Phone fit (A4 UI/UX audit, 2026-11-22): a table wider than the screen scrolls inside itself instead of widening the page. */
+    @media(max-width:600px){table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}}
+  </style>
+  <!-- Microsoft Clarity behavioral analytics. Project wovalt3jwh.
+       Password/email inputs auto-masked. Privacy policy: /privacy.html -->
+  <script type="text/javascript">
+    (function(c,l,a,r,i,t,y){
+      c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+      t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+      y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+    })(window, document, "clarity", "script", "wovalt3jwh");
+  </script>
+<style data-phone-fit>.btn.bo{min-height:44px}@media(max-width:600px){.ni a,.ni .bp,.nl .btn{min-height:44px}}</style></head>
+<body>
+<nav class="nav"><div class="ni">
+  <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;">
+    <div style="width:32px;height:32px;border-radius:8px;background:#7c3aed;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
+    <span class="fd" style="font-size:18px;font-weight:800;">SQL Quest</span>
+  </a>
+  <a data-track="cta_blog" href="/app/?company=Revolut&amp;goal=interview&amp;src=blog-revolut" class="bp">Practice Free →</a>
+</div></nav>
+
+<article class="article">
+  <p class="breadcrumb"><a href="/">Home</a> › <a href="/blog/">Blog</a> › Revolut Data Analyst SQL Interview</p>
+  <h1 class="fd">What the Revolut Data Analyst SQL Interview Asks: the HackerRank Screen and the Live Round (Candidate Reports, 2026)</h1>
+  <div class="article-meta">
+    <span>Published November 2026</span>
+    <span>·</span>
+    <span>10 min read</span>
+    <span>·</span>
+    <span>Interview Prep</span>
+  </div>
+  <!-- blog-practice:start -->
+  <p style="margin:18px 0 26px;padding:14px 18px;border:1px solid rgba(124,58,237,.3);border-radius:12px;background:rgba(124,58,237,.07);font-size:15px;line-height:1.7;">Skip ahead to practice: <a href="/app/?company=Revolut&amp;goal=interview&amp;src=blog-revolut" data-track="cta_blog_practice" style="color:#c084fc;font-weight:700;">solve Revolut question 1 in the browser, free →</a> · or <a href="/sql-interview-readiness-test/?company=revolut" data-track="cta_blog_readiness" style="color:#c084fc;font-weight:700;">check your readiness for Revolut</a> (10 questions, no signup). Ready for the clock? <a href="/app/?interview=revolut-analytics-screen&amp;src=revolut-blog" data-track="cta_blog_mock" style="color:#c084fc;font-weight:700;">Take the 60-minute timed mock · Pro →</a></p>
+  <!-- blog-practice:end -->
+
+  <p class="intro">Revolut does not publish the format of its data analyst interviews. The best public description we found is one prep guide, interviewquery's "Revolut Data Analyst Interview Guide 2026", which says it is "synthesized from 27 candidate reports" stamped "Interviewed Q3 2026". It describes two rounds where SQL is the work: an online HackerRank screen and a live coding session. This page sets out what those reports say, word for word where it matters, and then works the traps those task shapes set on a synthetic neobank ledger, with every query run.</p>
+
+  <div class="toc">
+    <p class="toc-title">On this page</p>
+    <ol>
+      <li><a href="#format">The two SQL rounds, as reported</a></li>
+      <li><a href="#schema">The ledger used below</a></li>
+      <li><a href="#transfers">Trap 1: a transfer is two rows</a></li>
+      <li><a href="#coalesce">Trap 2: an average that skips the people with no spend</a></li>
+      <li><a href="#funnel">Trap 3: a funnel with a moving denominator</a></li>
+      <li><a href="#plan">A 2-week plan</a></li>
+      <li><a href="#faq">FAQ</a></li>
+      <li><a href="#sources">Source</a></li>
+    </ol>
+  </div>
+
+  <h2 id="format">The two SQL rounds, as reported</h2>
+  <p>Everything in this section comes from one source, read in a browser on 12 September 2026: interviewquery's guide, built from candidate reports. Nothing comes from Revolut. Formats change; treat each line as what candidates said in Q3 2026.</p>
+  <table>
+    <thead><tr><th>Round</th><th>What the reports say</th></tr></thead>
+    <tbody>
+      <tr><td>Online screen (HackerRank)</td><td>One report: "60 minutes, with two SQL questions and several" multiple-choice items. Another: "SQL coding with multiple-choice questions". An earlier edition of the same guide gave 30 minutes; the 2026 reports say 60.</td></tr>
+      <tr><td>Live coding session</td><td>"four sequential questions on a set of interconnected tables (users, transactions, events, subscriptions)". The tasks named: "monthly active users with completed transactions, users in the top 10% by transaction volume, joins, aggregations, CTEs, filtering, and date logic".</td></tr>
+      <tr><td>Topics, second candidate</td><td>"window functions, cohort or funnel questions, and conversion rates".</td></tr>
+      <tr><td>Topics, third candidate</td><td>"joins, GROUP BY, WHERE vs HAVING, aggregations, NULL handling/COALESCE, CTEs".</td></tr>
+    </tbody>
+  </table>
+  <div class="callout"><p><strong>What this does not cover.</strong> The source describes these two SQL rounds; this page says nothing about any other stage of Revolut's process, and nothing about how often a topic comes up. We have no dated source for either.</p></div>
+  <p>Read the tasks again and one thing stands out: almost every one is a question about <em>people</em> on a table of <em>events</em>. Monthly active users, the top 10% of users, a cohort, a funnel, a conversion rate. The table has one row per transaction; the answer has one row per user, or one number over users. The traps below all live in that gap between the grain of the table and the grain of the question.</p>
+  <p>Two of the named tasks, monthly active users with completed transactions and the top 10% of users by volume, are the written questions of our <a href="/app/?interview=revolut-analytics-screen&amp;src=revolut-blog" data-track="cta_blog_mock_inline">60-minute Revolut-style mock</a>, so this page does not solve them. The three traps below are different questions on the same data.</p>
+
+  <h2 id="schema">The ledger used below</h2>
+  <p>A synthetic multi-currency consumer neobank, the same one SQL Quest's Revolut set and mock run on: 240 users in 12 countries, top-ups, and 3,433 transactions in 12 currencies, June 2025 to August 2026. It is a shape, not Revolut's data. It has users and transactions; it has no separate events or subscriptions table, so plan fees sit in <code>transactions</code> as <code>subscription_fee</code> rows.</p>
+  <table>
+    <thead><tr><th>Table</th><th>Columns</th></tr></thead>
+    <tbody>
+      <tr><td>users</td><td>user_id, signup_date, country, home_currency, plan, plan_since, kyc_verified_at, referred_by, birth_year</td></tr>
+      <tr><td>top_ups</td><td>top_up_id, user_id, ts, amount, currency, amount_gbp, method</td></tr>
+      <tr><td>transactions</td><td>txn_id, user_id, ts, type, amount, currency, amount_gbp, fee_gbp, merchant_category, merchant_country, counterparty_user_id, status, decline_reason</td></tr>
+      <tr><td>currencies</td><td>code, name, rate_to_gbp</td></tr>
+    </tbody>
+  </table>
+  <p><code>type</code> is one of card_payment, transfer_out, transfer_in, atm_withdrawal, fx_exchange, bill_payment, subscription_fee. <code>status</code> is completed, declined or reversed. Every query below runs on SQLite, as it does in the browser.</p>
+
+  <h2 id="transfers">Trap 1: a transfer is two rows</h2>
+  <p>Question: <em>how much money did users send each other, in GBP?</em> A peer-to-peer payment between two users of the same app is written twice: a <code>transfer_out</code> on the sender and a matching <code>transfer_in</code> on the receiver. Sum both legs and you count every pound twice. Forget the status filter and you also count transfers that were declined or reversed.</p>
+  <div class="code-block"><div class="code-label">wrong: both legs, every status</div><pre><code><span class="kw">SELECT</span> <span class="kw">ROUND</span>(<span class="kw">SUM</span>(amount_gbp), <span class="num">2</span>) <span class="kw">AS</span> p2p_volume_gbp
+<span class="kw">FROM</span> transactions
+<span class="kw">WHERE</span> type <span class="kw">IN</span> (<span class="str">'transfer_out'</span>, <span class="str">'transfer_in'</span>);</code></pre></div>
+  <p>That returns <strong>89,814.86</strong>.</p>
+  <div class="code-block"><div class="code-label">right: one leg, completed only</div><pre><code><span class="kw">SELECT</span> <span class="kw">COUNT</span>(*) <span class="kw">AS</span> transfers,
+       <span class="kw">ROUND</span>(<span class="kw">SUM</span>(amount_gbp), <span class="num">2</span>) <span class="kw">AS</span> p2p_volume_gbp
+<span class="kw">FROM</span> transactions
+<span class="kw">WHERE</span> type = <span class="str">'transfer_out'</span>
+  <span class="kw">AND</span> status = <span class="str">'completed'</span>;</code></pre></div>
+  <table><thead><tr><th>transfers</th><th>p2p_volume_gbp</th></tr></thead><tbody><tr><td>345</td><td>44469.97</td></tr></tbody></table>
+  <p>The wrong answer is about double the right one, which is exactly the kind of number that looks plausible on a screen with a clock running. Before you sum, say out loud what one row is. Here one transfer is two rows, and a status other than completed is money that never moved.</p>
+
+  <h2 id="coalesce">Trap 2: an average that skips the people with no spend</h2>
+  <p>Question: <em>average card spend per user in August 2026, by plan.</em> The natural first query aggregates spend per user and joins it to users. Users who made no completed card payment that month come out of the LEFT JOIN with a NULL, and <code>AVG</code> ignores NULLs. So the "average per user" is really the average per <em>spending</em> user.</p>
+  <div class="code-block"><div class="code-label">the NULL decides the ranking</div><pre><code><span class="kw">SELECT</span> u.plan,
+       <span class="kw">COUNT</span>(*) <span class="kw">AS</span> users,
+       <span class="kw">ROUND</span>(<span class="kw">AVG</span>(s.spend_gbp), <span class="num">2</span>) <span class="kw">AS</span> avg_spenders_only,
+       <span class="kw">ROUND</span>(<span class="kw">AVG</span>(<span class="kw">COALESCE</span>(s.spend_gbp, <span class="num">0</span>)), <span class="num">2</span>) <span class="kw">AS</span> avg_spend_gbp
+<span class="kw">FROM</span> users u
+<span class="kw">LEFT JOIN</span> (
+  <span class="kw">SELECT</span> user_id, <span class="kw">SUM</span>(amount_gbp) <span class="kw">AS</span> spend_gbp
+  <span class="kw">FROM</span> transactions
+  <span class="kw">WHERE</span> type = <span class="str">'card_payment'</span>
+    <span class="kw">AND</span> status = <span class="str">'completed'</span>
+    <span class="kw">AND</span> ts &gt;= <span class="str">'2026-08-01'</span> <span class="kw">AND</span> ts &lt; <span class="str">'2026-09-01'</span>
+  <span class="kw">GROUP BY</span> user_id
+) s <span class="kw">ON</span> s.user_id = u.user_id
+<span class="kw">GROUP BY</span> u.plan
+<span class="kw">ORDER BY</span> avg_spend_gbp <span class="kw">DESC</span>;</code></pre></div>
+  <table><thead><tr><th>plan</th><th>users</th><th>avg_spenders_only</th><th>avg_spend_gbp</th></tr></thead><tbody>
+    <tr><td>premium</td><td>21</td><td>199.17</td><td>104.33</td></tr>
+    <tr><td>plus</td><td>24</td><td>260.35</td><td>75.94</td></tr>
+    <tr><td>standard</td><td>182</td><td>174.71</td><td>59.52</td></tr>
+    <tr><td>metal</td><td>13</td><td>58.41</td><td>13.48</td></tr>
+  </tbody></table>
+  <p>Without <code>COALESCE</code>, plus looks like the top plan. With it, premium is. Neither number is wrong in itself; they answer different questions. Ask which one is wanted, then write that one on purpose. Note the date filter too: <code>ts &lt; '2026-09-01'</code> keeps every timestamp on 31 August, which a <code>BETWEEN '2026-08-01' AND '2026-08-31'</code> would drop (see <a href="/sql-between-timestamp/">the BETWEEN trap</a>).</p>
+
+  <h2 id="funnel">Trap 3: a funnel with a moving denominator</h2>
+  <p>Question: <em>of everyone who signed up, how many verified, topped up, and then paid by card?</em> A funnel is only a funnel if each step is a subset of the one before. Count each step on its own and a user who paid without a recorded top-up inflates a later step, so the rates stop meaning anything. Build one row per user with a flag per step, then require every earlier step.</p>
+  <div class="code-block"><div class="code-label">one row per user, then nested steps</div><pre><code><span class="kw">WITH</span> steps <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> u.user_id,
+         u.kyc_verified_at <span class="kw">IS NOT NULL</span> <span class="kw">AS</span> verified,
+         <span class="kw">EXISTS</span> (<span class="kw">SELECT</span> <span class="num">1</span> <span class="kw">FROM</span> top_ups t <span class="kw">WHERE</span> t.user_id = u.user_id) <span class="kw">AS</span> topped_up,
+         <span class="kw">EXISTS</span> (<span class="kw">SELECT</span> <span class="num">1</span> <span class="kw">FROM</span> transactions x
+                 <span class="kw">WHERE</span> x.user_id = u.user_id
+                   <span class="kw">AND</span> x.type = <span class="str">'card_payment'</span>
+                   <span class="kw">AND</span> x.status = <span class="str">'completed'</span>) <span class="kw">AS</span> paid
+  <span class="kw">FROM</span> users u
+)
+<span class="kw">SELECT</span> <span class="kw">COUNT</span>(*) <span class="kw">AS</span> signed_up,
+       <span class="kw">SUM</span>(verified) <span class="kw">AS</span> verified,
+       <span class="kw">SUM</span>(verified <span class="kw">AND</span> topped_up) <span class="kw">AS</span> topped_up,
+       <span class="kw">SUM</span>(verified <span class="kw">AND</span> topped_up <span class="kw">AND</span> paid) <span class="kw">AS</span> paid_by_card,
+       <span class="kw">ROUND</span>(<span class="num">100.0</span> * <span class="kw">SUM</span>(verified <span class="kw">AND</span> topped_up <span class="kw">AND</span> paid) / <span class="kw">COUNT</span>(*), <span class="num">1</span>) <span class="kw">AS</span> signup_to_card_pct
+<span class="kw">FROM</span> steps;</code></pre></div>
+  <table><thead><tr><th>signed_up</th><th>verified</th><th>topped_up</th><th>paid_by_card</th><th>signup_to_card_pct</th></tr></thead><tbody><tr><td>240</td><td>218</td><td>218</td><td>183</td><td>76.3</td></tr></tbody></table>
+  <p><code>EXISTS</code> keeps the grain at one row per user, so a user with forty card payments counts once. The <code>100.0</code> forces decimal division; with <code>100</code> SQLite divides integers and rounds the rate down to a whole number.</p>
+
+  <h2 id="plan">A 2-week plan</h2>
+  <ul>
+    <li><strong>Days 1–3: the grain.</strong> Per-user and per-month aggregates on a transactions table, with the status filter every time. Start with <a href="/questions/monthly-spend-per-account/">Revolut question 1, Monthly Spend Per Account</a>.</li>
+    <li><strong>Days 4–6: joins and NULLs.</strong> LEFT JOIN plus COALESCE, anti-joins for "users who never did X", WHERE against HAVING. <a href="/challenges/joins/">Joins practice</a> · <a href="/challenges/null-handling/">NULL handling</a>.</li>
+    <li><strong>Days 7–9: CTEs and cohorts.</strong> Signup cohorts, activation within N days, funnels built as above. <a href="/challenges/cte/">CTE practice</a>.</li>
+    <li><strong>Days 10–11: window functions.</strong> Deciles with NTILE, month-over-month with LAG, top N per group. <a href="/challenges/window-functions/">Window functions practice</a>.</li>
+    <li><strong>Days 12–14: under the clock.</strong> Sit the 60-minute screen as one block: multiple choice read off query output, then two written queries. Review every miss before you sit it again.</li>
+  </ul>
+
+  <div class="cta-box">
+    <h3 class="fd">Practice the Revolut set on the same ledger</h3>
+    <p>The Revolut set runs on this neobank ledger and a card ledger, in the browser, with no signup. In the app's Revolut set the first 3 are free to try. A free account gets 10 free challenge solves, plus the lessons, warm-ups and the daily challenge. Pro opens the full Revolut set and the 60-minute timed mock.</p>
+    <a href="/app/?company=Revolut&amp;goal=interview&amp;src=blog-revolut" class="cta-main" data-track="cta_practice_revolut_end">Start with Revolut question 1: Monthly Spend Per Account →</a>
+    <p style="margin:20px auto 0;font-size:13px"><a href="/revolut-sql-interview/" data-track="cta_topic_revolut_end">or open the full Revolut practice page →</a></p>
+  </div>
+
+  <h2 id="faq">FAQ</h2>
+  <!-- Mirrors the FAQPage JSON-LD in <head>; keep both in sync. -->
+  <div class="faq">
+    <details>
+      <summary>How long is the Revolut data analyst SQL screen?</summary>
+      <p>Candidate reports collected in interviewquery's 2026 guide (stamped Interviewed Q3 2026) describe a HackerRank screen of about 60 minutes: one report says "60 minutes, with two SQL questions and several" multiple-choice items. An earlier edition of the same guide gave 30 minutes. Revolut does not publish the format, so treat both as candidate-reported.</p>
+    </details>
+    <details>
+      <summary>What does the Revolut live SQL round ask?</summary>
+      <p>The same guide describes "four sequential questions on a set of interconnected tables (users, transactions, events, subscriptions)", naming monthly active users with completed transactions, users in the top 10% by transaction volume, joins, aggregations, CTEs, filtering and date logic. Other candidates add window functions, cohort or funnel questions and conversion rates, and WHERE vs HAVING and NULL handling with COALESCE.</p>
+    </details>
+    <details>
+      <summary>Which SQL topics should I practice for a Revolut data analyst interview?</summary>
+      <p>The topics the reports name: joins, GROUP BY and aggregation, WHERE vs HAVING, NULL handling with COALESCE, CTEs, window functions, date logic, cohorts, funnels and conversion rates. Most of the named tasks ask about users on a table of transactions, so practise getting the grain right: one row per user or per month, with a status filter on every money query.</p>
+    </details>
+    <details>
+      <summary>Where can I practice SQL for the Revolut data analyst interview?</summary>
+      <p>SQL Quest's Revolut page (sqlquest.app/revolut-sql-interview/) has a practice set written for the reported screen on a synthetic neobank ledger, plus a 60-minute HackerRank-style timed mock. It runs in the browser with no signup. In the app's Revolut set the first 3 are free to try; Pro opens the full set and the mock. These are SQL Quest's own questions, not Revolut's.</p>
+    </details>
+  </div>
+
+  <h2 id="sources">Source</h2>
+  <p>Read in a browser on 12 September 2026. Nothing on this page comes from Revolut; every format line is from this guide, which summarises candidate reports.</p>
+  <ul class="sources">
+    <li>interviewquery — <a href="https://www.interviewquery.com/interview-guides/revolut-data-analyst">"Revolut Data Analyst Interview Guide 2026"</a>, "synthesized from 27 candidate reports", reports stamped "Interviewed Q3 2026" (the screen, the live session and the three candidates' topic lists quoted above; the earlier edition's 30-minute screen).</li>
+  </ul>
+
+  <div class="related">
+    <h4>Related reading</h4>
+    <ul>
+      <li><a href="/revolut-sql-interview/">Revolut SQL Interview Questions</a> — the practice set, the sourced rounds and the timed mock</li>
+      <li><a href="/wise-sql-interview/">Wise SQL Interview Questions</a> · <a href="/monzo-sql-interview/">Monzo SQL Interview Questions</a></li>
+      <li><a href="/sql-interview-prep/">SQL Interview Prep Hub</a> — every company page and topic deep-dive</li>
+      <li><a href="/blog/capital-one-codesignal-data-analyst-assessment/">What the Capital One CodeSignal data analyst assessment asks</a> — the same kind of guide, for a card-data screen</li>
+      <li><a href="/blog/where-vs-having/">WHERE vs HAVING</a> · <a href="/blog/null-handling-mistakes/">NULL handling mistakes</a> · <a href="/sql-join-fan-out/">The join fan-out trap</a></li>
+    </ul>
+  </div>
+</article>
+
+<footer class="ft">
+  <p>© 2026 SQL Quest · <a href="/">Home</a> · <a href="/blog/">Blog</a> · <a data-track="cta_blog" href="/app/?company=Revolut&amp;goal=interview&amp;src=blog-revolut">Practice Free</a> · <a href="/sql-exercises/">SQL Practice Questions</a> · <a href="/best-sql-practice-sites/">Best SQL Practice Sites</a></p>
+<p data-partner="datrick" style="margin:18px auto 0;max-width:1000px;padding:0 24px;font-size:12px;opacity:.55;text-align:center;">SQL Quest is built by Datrick, Inc. · <a href="https://datrick.com/sql-server-to-postgresql-migration" style="color:inherit;text-decoration:underline;">SQL Server to PostgreSQL migration</a></p></footer>
+  <script defer src="/track.js"></script>
+</body>
+</html>
