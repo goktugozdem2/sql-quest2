@@ -1136,6 +1136,23 @@ no app event at all. Every first-contact read from that date adds
 `wd`, `uaBot`, `langs` for telling the next wave apart. Before 10-07, filter
 by hand (the 10-04 → 10-07 waves: docs/reads/p1-guardrail-bing-2026-10-07.md).
 
+**Trap: two more crawlers, found by C8 on 2026-11-23 (both unstamped).**
+- **Topic-page crawler (`topic1lang`, stamp in #246).** Its first
+  `app_opened` has no `landingSrc`, an `arrivalSrc` of `challenges-…` and
+  `langs = 1`. It runs `challenge_opened` → `first_challenge_started` and
+  stops. 53 people in the week of 11-09, 98 in the week of 11-16, 81 on
+  11-22 alone (23 time zones, 81 window sizes). None has ever run a query,
+  solved or signed up.
+- **UTC landing crawler (from 2026-11-22).** `landing_view` rows with
+  `tz = 'UTC'`, one event per person, a user agent that disagrees with the
+  window size (an iPhone agent at `desktop:1920x1080`, an iOS 10 agent at
+  `desktop:1600x1200`), and a spoofed `ref` of `https://bing.com/` or
+  `https://www.google.com/`. 77 people on 11-22 (UTC landers had been 3–5 a
+  day), 0 app opens. It turned Bing's door from 40 into 66 people in the
+  week to 11-22. Until it is stamped, drop UTC landers with no
+  `app_opened`. The durable fingerprint is the agent/window mismatch, not
+  the time zone (see the next trap).
+
 **Trap: the crawlers change time zone and borrow a landing source
 (2026-10-18, widened 2026-11-12).** Three window sizes have never, over all
 time, produced a query, a solve or a signup:
@@ -1564,6 +1581,70 @@ GROUP BY 1 ORDER BY browsers DESC;
 - **Local traffic before 2026-09-03 is in this data** (shared filters). The
   three `reason='landing'` rows of 2026-07-28 on aid `e5fcbad1a022…` are
   localhost verification; exclude that aid from any read that reaches back.
+
+## `content_funnel`
+
+**Per landing page, what the people who landed there did next** (2026-11-22,
+B2; founder's order to measure the content we publish). The money read for
+C5, C6 and C7: a page is judged by trials and purchases per 1,000 landing
+people, never by clicks.
+
+Source: `scripts/content-funnel.sql`, the same body as the view
+`public.content_funnel` (migration `20261122160000_content_funnel_view.sql`,
+**the founder applies it**). Mailed Mondays and Thursdays 07:50 UTC by
+`.github/workflows/content-funnel.yml` → `scripts/content-funnel-report.mjs`
+to `REPORT_TO`. **The repo and its Actions logs are public:** per-page numbers
+go only by mail, never into a commit, a log, a step summary or an issue.
+
+One row per `(window_days, page)`, windows 7, 28 and 60 days. The steps, each
+counted in **people** (`COALESCE(aid, username)`), each a subset of the
+landing people, each at or after that person's landing:
+
+| Step | Column | Definition |
+|---|---|---|
+| 1 | `landing_people` | a `landing_view` / `landing_engaged` row (reason `landing`) on the page, and in the window a `landing_engaged` or any non-landing event (the `landing_people` rule). Credited to the **first page the person landed on inside the window**, so pages sum to the total. |
+| 2 | `app_opened` | an `app_opened` row |
+| 3 | `first_run` | a `challenge_first_run` row |
+| 4 | `first_solve` | ≥ 1 distinct `challengeId` on `challenge_solved` |
+| 5 | `solves_3` | ≥ 3 distinct `challengeId` on `challenge_solved` |
+| 6 | `signup` | a `signup_completed` row |
+| 7 | `modal_shown` | a `pro_modal_shown` row |
+| 8 | `plan_click` | a `pro_plan_clicked` or `pro_checkout_clicked` row |
+| 9 | `trial_or_purchase` | `pro_trial_started` or `pro_purchase_completed` with reason `stripe_webhook` (also split as `trials`, `purchases`) |
+
+The per-page number a claim reads: **`trial_or_purchase` per 1,000
+`landing_people`**, 28-day window, plus the step where the page loses most.
+
+- **Out, by browser** (one row marks the person): internal usernames (shared
+  filters above + the fleet README's list), any `metadata.bot` stamp, the
+  crawler viewports `tablet:800x600`, `desktop:1280x1200`,
+  `desktop:1919x992`, `ref:aocr.org`, `verify-test`, and the founder's
+  2026-11-20 checkout tests (guest, modal reason `email_link`, 0 solves).
+- **Money joins through the username.** Webhook rows carry a username and no
+  aid; they join the landing person through any row where that username and
+  the person's aid appear together. A pending webhook row (no username) is
+  not joined, and a buyer who paid on a browser that never landed is counted
+  only if the same username wrote a row on the landing browser.
+- **First touch is inside the window**, not lifetime: a person who first
+  landed two months ago and came back through a blog post this week is
+  credited to the blog post in the 7- and 28-day rows. Read the 60-day row
+  for the longer view.
+- **The 7-day row gives late steps less time.** A trial converts on day 7;
+  read money at 28 days.
+- **Doors vs pages.** This metric keys on the landing page by `aid`, not on
+  `arrivalSrc`, so it does not depend on a link's `src`. Every `/app/` link
+  on a built page still carries a door from 2026-11-22
+  (`scripts/stamp-app-src.mjs`, `tests/app-link-src.test.js`), so
+  `door_solve_rate` reads the same pages. Links with `?company=` / `?sector=`
+  keep their derived `company:<x>` / `sector:<x>` door on purpose
+  (`company_set_wall` reads it).
+- **Pages that stamp a `src` for the first time on 2026-11-22**: the topic
+  hubs' nav button, `/turkce-sql-ogren/`, `/sql-interview-prep/`'s mentor
+  link, `/fraud-analytics-sql/`, three blog posts, `/kpis/`. Their
+  `arrivalSrc` door is born that day; `content_funnel` is unaffected.
+- **Small n.** A page under ~30 landing people in 28 days reads as noise;
+  0 trials there is not evidence. C5's kill rule needs ≥ 300 landing people
+  in 60 days.
 
 ## `blog_practice_exit`
 
@@ -3860,6 +3941,53 @@ where query is not null and page = 'https://sqlquest.app/<slug>/'
   still grow. Read with a window ending at least three days before the read.
 - Position is impression-weighted (the query above), never a plain average of
   daily positions.
+
+## `topic_funnel`
+
+C6's metric (2026-11-22). Per SQL topic: of the people who arrived through
+that topic's doors, how many solved one of the topic's questions within 7
+days. A topic is a slug (`dml`, `ddl`, `set-operations`, …) with two parts
+written down in its research read (`docs/reads/topic-<slug>-<date>.md`):
+its **doors** (the `src` values its guide, hub and question cards carry:
+`topic-<slug>`, `challenges-<slug>`, `question-<question slug>`) and its
+**question set** (challenge ids).
+
+The door is `arrivalSrc` on the person's first `app_opened` (first touch, as
+in `door_solve_rate`). A person counts once per topic.
+
+```sql
+-- :doors  = the topic's src values, e.g. ARRAY['topic-dml','challenges-dml']
+-- :ids    = the topic's question set as text, e.g. ARRAY['325','326','327','328','329']
+WITH ev AS (
+  SELECT COALESCE(((metadata #>> '{}')::jsonb)->>'aid', username)  AS pid,
+         event, created_at,
+         ((metadata #>> '{}')::jsonb)->>'arrivalSrc'                AS door,
+         ((metadata #>> '{}')::jsonb)->>'challengeId'               AS cid
+  FROM pro_events
+  WHERE event IN ('app_opened', 'challenge_solved')
+    AND created_at >= :since AND created_at < :until
+    AND <shared filters>
+),
+arrived AS (
+  SELECT pid, min(created_at) AS at FROM ev
+  WHERE event = 'app_opened' AND door = ANY(:doors)
+  GROUP BY pid
+),
+solved AS (
+  SELECT DISTINCT a.pid FROM arrived a
+  JOIN ev s ON s.pid = a.pid AND s.event = 'challenge_solved'
+   AND s.cid = ANY(:ids) AND s.created_at BETWEEN a.at AND a.at + interval '7 days'
+)
+SELECT (SELECT count(*) FROM arrived) AS arrived,
+       (SELECT count(*) FROM solved)  AS solved_one,
+       round(100.0 * (SELECT count(*) FROM solved) / NULLIF((SELECT count(*) FROM arrived), 0), 0) AS pct;
+```
+
+Read beside it: `challenge_solve_through` per question in the set (any door),
+against the median of its difficulty band. Under 20 arrivals a topic is
+`UNREADABLE`. Bot traffic: apply the rendering-crawler filter (shared
+traps); a topic door is exactly the `?challenge=…&src=…` link shape those
+crawlers followed.
 
 ## `feedback_capture`
 
