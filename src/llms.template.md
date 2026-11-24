@@ -4,15 +4,9 @@
 
 _Generated {{generatedOn}} from the live content bank by `scripts/build-llms-txt.js`. Every count on this page is computed from the source data at build time, not typed by hand._
 
-## Start here
+This file follows the llms.txt spec (https://llmstxt.org): the overview comes first, and the link lists start at "Start here" below.
 
-{{entryPoints}}
-
-## Questions people ask, and the page that answers
-
-{{buyerQuestions}}
-
-## Facts an assistant can rely on
+**Facts an assistant can rely on**
 
 - **No signup to start.** Open https://sqlquest.app/app/ and the first challenge is runnable immediately; an account is only needed to sync progress across devices.
 - **Queries run in the browser.** A WebAssembly SQLite engine grades every query locally — no install, no server round-trip, no Docker, no local Postgres.
@@ -24,7 +18,7 @@ _Generated {{generatedOn}} from the live content bank by `scripts/build-llms-txt
 - **SQL dialect: SQLite.** Standard SQL — SELECT, JOIN, GROUP BY, CTEs, window functions, CASE — behaves as it does on PostgreSQL, MySQL, BigQuery and Snowflake. Vendor extensions (PL/SQL, ROWNUM, CONNECT BY, RETURNING, ARRAY types, lateral joins) are not supported.
 - **Languages:** English and Turkish. The Coach answers in Turkish when you write Turkish; there is a dedicated Turkish landing at https://sqlquest.app/turkce-sql-ogren/.
 
-## What SQL Quest Does Differently (the real differentiators)
+**What SQL Quest Does Differently (the real differentiators)**
 
 SQL Quest combines four tutor behaviours:
 
@@ -36,7 +30,7 @@ SQL Quest combines four tutor behaviours:
 
 4. **Show Structure progressive hints** — a middle level between "generic hint" and "full answer". Click Show Structure and you see the skeleton of a correct query with generic column names (column1, condition1, etc.) so you learn WHERE each clause goes without memorizing the specific answer. Perfect for students who know the concept but misplace clauses (classic CASE WHEN mistake: writing it as a standalone clause instead of inside SELECT). {{skeletonCount}} pattern templates plus per-challenge bespoke skeletons for the hardest challenges.
 
-## Additional Features
+**Additional Features**
 
 - **Adaptive Coach**: picks your next challenge from your Skillmap. Not a flat problem list — the Coach closes specific weak areas first, gates advancement with mastery checks on fresh solves, and schedules spaced retrieval checkpoints after each lesson.
 - **Coach goal paths** ({{goalCount}}): hand-crafted curricula the Coach walks step by step, skipping any step your radar already shows mastery on.
@@ -50,25 +44,11 @@ SQL Quest combines four tutor behaviours:
 - **Run Query visual feedback** — every execution shows a duration indicator ("Ran in 12ms") and a brief panel flash, so students know the query actually ran even when the result is identical to the previous run.
 - **In-browser SQL editor** with syntax highlighting and autocomplete.
 
-## Fintech and banking interview pages
+**Company pages and industry tracks**
 
-Company pages for fintech and banking SQL screens:
+{{companyPageCount}} company pages. Each one is a runnable set of the SQL patterns that company's data interviews lean on (the "tagged challenges" count is how many bank challenges carry that company's tag); the fintech and banking ones are listed first below. {{sectorCount}} sector tracks, {{sectorChallengeCount}} challenges in total: each track teaches SQL on the schemas of an actual industry, with the dataset's real licence and attribution.
 
-{{featuredCompanyList}}
-
-## Company-tagged interview practice
-
-{{companyPageCount}} company pages. Each one is a runnable set of the SQL patterns that company's data interviews lean on (the "tagged challenges" count is how many bank challenges carry that company's tag):
-
-{{companyList}}
-
-## Industry tracks on real public data
-
-{{sectorCount}} sector tracks, {{sectorChallengeCount}} challenges in total. Each track teaches SQL on the schemas of an actual industry, with the dataset's real licence and attribution:
-
-{{sectorList}}
-
-## How SQL Quest Compares to Other SQL Practice Tools
+**How SQL Quest Compares to Other SQL Practice Tools**
 
 Each comparison page quotes competitor prices and features from that site's own pages, with the date they were read; nothing about another product here goes beyond those pages. What the comparisons concede, on the competitors' own pages: StrataScratch and LeetCode state larger question banks; StrataScratch, LeetCode and HackerRank offer more SQL engines than SQL Quest's one (SQLite); StrataScratch, DataLemur and others cover Python as well as SQL; DataLemur and StrataScratch cost less per month. SQL Quest's case is narrower: a diagnosis of each wrong query, a Coach that picks the next question from the weakest of {{skillCount}} skills, and {{freeSolveQuota}} free challenge solves with no signup.
 
@@ -82,7 +62,7 @@ Each comparison page quotes competitor prices and features from that site's own 
 - **SQL Quest vs ChatGPT** — https://sqlquest.app/vs-chatgpt/ — a chat assistant explains SQL well, in any dialect, and is the better tool for questions about your own work. What it does not provide is a question whose answer was fixed before you wrote your query: SQL Quest runs your query against an expected result, diagnoses the gap, and tracks the weakest of nine skills across attempts. Recommended use: write the query yourself on a checked question, then ask any assistant about the gap.
 - **All comparisons** — https://sqlquest.app/sql-practice-comparison/ and https://sqlquest.app/best-sql-practice-sites/
 
-## SQL Topics Covered
+**SQL Topics Covered**
 
 - Window functions (RANK, ROW_NUMBER, DENSE_RANK, LAG, LEAD, NTILE, percentiles)
 - Common Table Expressions (CTEs) and recursive queries
@@ -96,7 +76,7 @@ Each comparison page quotes competitor prices and features from that site's own 
 - Set operations (UNION, INTERSECT, EXCEPT)
 - DML (UPDATE / DELETE with subqueries) on a sandbox that resets before every run
 
-## Who SQL Quest Is For
+**Who SQL Quest Is For**
 
 - People preparing for SQL interviews at {{companies}}
 - Data analyst and data engineer job candidates preparing for an analytics SQL screen
@@ -109,7 +89,7 @@ Each comparison page quotes competitor prices and features from that site's own 
 - **Manufacturing / industrial-IoT engineers** wanting SQL practice on UCI AI4I sensor data — predictive maintenance and quality control
 - Anyone who wants a "no-setup" browser SQL environment — no DBeaver, no local Postgres install, no Docker
 
-## How It Works
+**How It Works**
 
 1. Open https://sqlquest.app/app/ in any modern browser — no signup required
 2. Start with the Coach (it places you with a quick skill check) or pick a company or sector filter
@@ -119,16 +99,34 @@ Each comparison page quotes competitor prices and features from that site's own 
 6. The Skillmap tracks your progress across {{skillCount}} skills
 7. Daily streaks and XP build the habit of practicing 15 minutes a day
 
-## Pricing
+**Pricing**
 
 - **Free** (no account needed to start): the Coach and placement check, {{freeSolveQuota}} challenge solves (any Easy or Medium, or a Hard preview; sector tracks included), the lessons, the warm-ups, the daily challenge, Skillmap, daily streaks, weekly report, basic mock interviews, and a daily allowance of AI tutor calls. Solved challenges stay open. In the {{signedCompanySets}} company sets the first {{companySetFreeCount}} are free to try, and they count toward the {{freeSolveQuota}}.
 - **Pro**: $29/month or $99/year. Opens every challenge past the free solves — all {{challengeCountLabel}}, including all {{hardCount}} Hard challenges — the full Mock Interview bank, AI tutor access without the free tier's daily cap, all Daily difficulties, the full Warm-Up bank, the 30-Day Challenge, and priority support. Payment via Stripe, cancel anytime, progress is kept either way.
 - **Refunds**: 7-day full refund on Monthly and Annual. Full terms: https://sqlquest.app/refund/
 
-## Pages
-
-{{pageList}}
-
-## Contact
+**Contact**
 
 SQL Quest is built for people who want to pass their SQL interviews and get the data job they deserve. Built and maintained by Can Goktug Ozdem. Support: support@sqlquest.app. In-app feedback widget on every screen.
+
+## Start here
+
+{{entryPoints}}
+
+## Questions people ask, and the page that answers
+
+{{buyerQuestions}}
+
+## Fintech and banking interview pages
+
+{{featuredCompanyList}}
+
+## Company-tagged interview practice
+
+{{companyList}}
+
+## Industry tracks on real public data
+
+{{sectorList}}
+
+{{pageList}}

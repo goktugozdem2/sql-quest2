@@ -176,6 +176,17 @@ export function readSitemapPages(rootDir = ROOT) {
   return pages;
 }
 
+// llms.txt spec (https://llmstxt.org; reference parser AnswerDotAI/llms-txt):
+// every line of an H2 section is `- [name](url)` with optional `: notes`, and
+// free prose goes only between the summary and the first H2.
+// scripts/llms-txt-spec.mjs checks the whole file; tests/llms-txt.test.js runs it.
+export function linkName(title) {
+  return String(title).replace(/\s*\|\s*SQL ?Quest(?:\.app)?\s*$/i, '').replace(/\[/g, '(').replace(/\]/g, ')').trim();
+}
+export function fileLink(name, url, notes) {
+  return `- [${linkName(name)}](${url})${notes ? `: ${notes}` : ''}`;
+}
+
 function formatPageList(pages) {
   const byGroup = new Map();
   for (const p of pages) {
@@ -186,7 +197,8 @@ function formatPageList(pages) {
   for (const group of GROUP_ORDER) {
     const list = byGroup.get(group);
     if (!list || !list.length) continue;
-    blocks.push(`**${group}**\n` + list.map(p => `- ${p.title} — ${p.url}`).join('\n'));
+    // One H2 per group: a bold group label inside a file list is not allowed.
+    blocks.push(`## Pages: ${group}\n\n` + list.map(p => fileLink(p.title, p.url)).join('\n'));
   }
   return blocks.join('\n\n');
 }
@@ -370,7 +382,8 @@ export function buyerQuestionList(pages) {
   const onSitemap = new Set(pages.map(p => p.path));
   return BUYER_QUESTIONS.map(({ q, paths, a }) => {
     for (const p of paths) if (!onSitemap.has(p)) throw new Error(`llms.txt buyer question "${q}" links ${p}, which is not on the sitemap`);
-    return `- **${q}** ${paths.map(p => `${SITE}${p}`).join(' , ')} — ${a}`;
+    const [first, ...more] = paths.map(p => `${SITE}${p}`);
+    return fileLink(q, first, more.length ? `${a} Also: ${more.join(' , ')}` : a);
   }).join('\n');
 }
 
@@ -381,9 +394,10 @@ const FEATURED_OPTIONAL = new Set(['Chime']);
 
 export function entryPointList(pages) {
   const onSitemap = new Set(pages.map(p => p.path));
+  const titleOf = new Map(pages.map(p => [p.path, p.title]));
   return ENTRY_POINTS.map(([p, line]) => {
     if (p !== '/app/' && !onSitemap.has(p)) throw new Error(`llms.txt entry point ${p} is not on the sitemap`);
-    return `- ${SITE}${p} — ${line}`;
+    return fileLink(p === '/app/' ? 'SQL Quest practice app' : titleOf.get(p) || p, `${SITE}${p}`, line);
   }).join('\n');
 }
 
@@ -398,7 +412,7 @@ export function featuredCompanyList(companies, mockCompanies = archetypeMemberCo
     }
     const parts = [c.taggedChallenges > 0 ? `${c.taggedChallenges} tagged challenges` : 'practice mapped onto the sector track'];
     if (mockCompanies.includes(name)) parts.push(`a set authored for it (the first ${COMPANY_SET_FREE_COUNT} free to try) and a timed mock screen (Pro)`);
-    lines.push(`- ${c.name} — ${parts.join(', ')} — ${c.url}`);
+    lines.push(fileLink(c.name, c.url, parts.join(', ')));
   }
   return lines.join('\n');
 }
@@ -433,11 +447,11 @@ export function templateValues(facts, generatedOn) {
     taggedCompanyCount: facts.companies.filter(c => c.taggedChallenges > 0).length,
     companies: facts.companies.map(c => c.name).join(', '),
     companyList: facts.companies
-      .map(c => `- ${c.name} — ${c.taggedChallenges > 0 ? `${c.taggedChallenges} tagged challenges` : 'no company-tagged challenges; the page maps the screen onto sector-track challenges'} — ${c.url}`)
+      .map(c => fileLink(c.name, c.url, c.taggedChallenges > 0 ? `${c.taggedChallenges} tagged challenges` : 'no company-tagged challenges; the page maps the screen onto sector-track challenges'))
       .join('\n'),
     sectorCount: facts.sectors.length,
     sectorList: facts.sectors
-      .map(s => `- ${s.name} — ${s.challengeCount} challenges — ${s.url}${s.attribution ? ` — data: ${s.attribution}` : ''}`)
+      .map(s => fileLink(s.name, s.url, `${s.challengeCount} challenges${s.attribution ? ` — data: ${s.attribution}` : ''}`))
       .join('\n'),
     lessonCount: facts.lessonCount,
     lessonList: facts.lessonTitles.join(', '),

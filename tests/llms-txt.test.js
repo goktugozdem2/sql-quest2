@@ -25,6 +25,7 @@ import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { buildLlmsTxt, ENTRY_POINTS, FEATURED_COMPANIES, BUYER_QUESTIONS } from '../scripts/build-llms-txt.js';
+import { lintLlmsTxt, parseLlmsTxt } from '../scripts/llms-txt-spec.mjs';
 import { CANONICAL_SKILLS } from '../src/utils/skill-calc.js';
 import { bankCountLabel, freeTierSentence } from '../src/utils/display-count.js';
 import { FREE_SOLVE_QUOTA, COMPANY_SET_FREE_COUNT } from '../src/utils/free-tier-boundary.js';
@@ -33,6 +34,13 @@ import { freeTierFlags } from './free-tier-state.js';
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..');
 const read = (...p) => fs.readFileSync(join(ROOT, ...p), 'utf8');
+// One H2 file-list section of llms.txt, up to the next H2.
+const h2Section = (txt, name) => {
+  const start = txt.indexOf(`\n## ${name}\n`);
+  if (start === -1) return '';
+  const end = txt.indexOf('\n## ', start + 1);
+  return txt.slice(start, end === -1 ? undefined : end);
+};
 
 // The retired 10-skill vocabulary. CLAUDE.md: never author a new reference
 // to these. The old llms.txt listed all of them as "the skill radar".
@@ -158,7 +166,7 @@ describe('counts match the bank (recomputed independently)', () => {
       const tagLine = c.taggedChallenges > 0
         ? `${c.taggedChallenges} tagged challenges`
         : 'no company-tagged challenges; the page maps the screen onto sector-track challenges';
-      expect(text).toContain(`- ${c.name} — ${tagLine} — ${c.url}`);
+      expect(text).toContain(`- [${c.name}](${c.url}): ${tagLine}`);
     }
   });
 
@@ -181,7 +189,7 @@ describe('counts match the bank (recomputed independently)', () => {
     for (const s of shipped) {
       const n = bank.sectorChallengesData.filter(c => (c.sectorTags || []).includes(s.id)).length;
       sum += n;
-      expect(text).toContain(`- ${s.en} — ${n} challenges — https://sqlquest.app${s.landing_path}/`);
+      expect(text).toContain(`- [${s.en}](https://sqlquest.app${s.landing_path}/): ${n} challenges`);
     }
     // Every sector challenge belongs to exactly one shipped sector.
     expect(sum).toBe(bank.sectorChallengesData.length);
@@ -213,7 +221,7 @@ describe('counts match the bank (recomputed independently)', () => {
     const locs = [...xml.matchAll(/<loc>\s*([^<]+?)\s*<\/loc>/g)].map(m => m[1]);
     expect(locs.length).toBeGreaterThan(50);
     expect(facts.pages.length).toBe(locs.length);
-    for (const url of locs) expect(text).toContain(` — ${url}`);
+    for (const url of locs) expect(text).toContain(`](${url})`);
     for (const p of facts.pages) {
       expect(p.title, p.url).not.toBe(p.path);
       expect(p.title).not.toContain('{{');
@@ -236,9 +244,11 @@ describe('pricing guard — llms.txt quotes the Pro modal in app.jsx, nothing el
     const reRegional = /className="text-2xl font-bold"[^>]*>\{shownPrices\.(monthly|annual)\}<\/div>\s*<div[^>]*>(Monthly|Annual)<\/div>/g;
     for (const m of app.matchAll(reRegional)) modal[m[2]] = String(PRICE_TABLE.default[m[1]]);
 
-    const start = text.indexOf('## Pricing');
-    const end = text.indexOf('\n## ', start + 1);
-    pricing = text.slice(start, end);
+    // A bold label in the overview since 2026-11-24 (the llms.txt spec keeps
+    // prose out of the H2 link lists); it runs to the next label.
+    const start = text.indexOf('**Pricing**');
+    const end = text.indexOf('\n\n**', start + 1);
+    pricing = start === -1 ? '' : text.slice(start, end);
   });
 
   it('finds the two plans in the modal', () => {
@@ -364,22 +374,21 @@ describe('the build is stable across days', () => {
 // and no claim about another product that no dated read supports.
 describe('AI-visibility block (C2, 2026-11-22)', () => {
   it('lists every entry point once, with a one-line description, under Start here', () => {
-    const start = text.slice(text.indexOf('## Start here'), text.indexOf('## Facts an assistant'));
+    const start = h2Section(text, 'Start here');
     for (const [p] of ENTRY_POINTS) {
-      const lines = start.split('\n').filter(l => l.startsWith(`- https://sqlquest.app${p} — `));
+      const lines = start.split('\n').filter(l => l.startsWith('- [') && l.includes(`](https://sqlquest.app${p}): `));
       expect(lines, p).toHaveLength(1);
-      expect(lines[0].length, p).toBeGreaterThan(`- https://sqlquest.app${p} — `.length + 20);
+      expect(lines[0].split(`](https://sqlquest.app${p}): `)[1].length, p).toBeGreaterThan(20);
     }
   });
 
   it('lists the fintech company pages that exist, with their tagged counts', () => {
-    const block = text.slice(text.indexOf('## Fintech and banking'), text.indexOf('## Company-tagged'));
+    const block = h2Section(text, 'Fintech and banking interview pages');
     for (const name of FEATURED_COMPANIES) {
       const c = facts.companies.find(x => x.name === name);
       if (!c) { expect(name).toBe('Chime'); continue; }   // the only optional one
-      expect(block).toContain(`- ${name} — `);
-      expect(block).toContain(c.url);
-      if (c.taggedChallenges) expect(block).toContain(`- ${name} — ${c.taggedChallenges} tagged challenges`);
+      expect(block).toContain(`- [${name}](${c.url}): `);
+      if (c.taggedChallenges) expect(block).toContain(`- [${name}](${c.url}): ${c.taggedChallenges} tagged challenges`);
     }
   });
 
@@ -417,18 +426,78 @@ describe('buyer questions (G1, 2026-11-22)', () => {
   });
 
   it('prints each question with its live links and a one-line answer, under its own heading', () => {
-    const block = text.slice(text.indexOf('## Questions people ask'), text.indexOf('## Facts an assistant'));
+    const block = h2Section(text, 'Questions people ask, and the page that answers');
     expect(block.length).toBeGreaterThan(0);
     const onSitemap = new Set(facts.pages.map(p => p.path));
     for (const { q, paths, a } of BUYER_QUESTIONS) {
-      const lines = block.split('\n').filter(l => l.startsWith(`- **${q}** `));
+      // The question is the link's name, its first page the link, the answer
+      // the notes; any further pages follow the answer ("Also: …").
+      const lines = block.split('\n').filter(l => l.startsWith(`- [${q}](https://sqlquest.app${paths[0]}): `));
       expect(lines, q).toHaveLength(1);
       for (const p of paths) {
         expect(onSitemap.has(p), p).toBe(true);
         expect(lines[0], q).toContain(`https://sqlquest.app${p}`);
       }
-      expect(lines[0], q).toContain(` — ${a}`);
+      expect(lines[0], q).toContain(`): ${a}`);
       expect(a.length, q).toBeGreaterThan(20);
     }
+  });
+});
+
+// 2026-11-24: llms.txt follows the spec (https://llmstxt.org) as its reference
+// parser reads it (AnswerDotAI/llms-txt, core.py v0.0.7, ported one regex for
+// one in scripts/llms-txt-spec.mjs): one H1, a one-line blockquote summary,
+// free prose with no headings, then H2 sections that are ONLY
+// `- [name](url): notes` lists. Before this the file put prose, bold group
+// labels and `- url — text` lines inside its H2s: 591 lines off-spec, and
+// the reference parser crashed on the first section.
+describe('llms.txt conforms to the llms.txt spec', () => {
+  const files = ['llms.txt', 'llms-full.txt'].filter(f => fs.existsSync(join(ROOT, 'public', f)));
+
+  it.each(files)('public/%s has no spec problem', (f) => {
+    const problems = lintLlmsTxt(read('public', f));
+    expect(problems.map(p => `line ${p.line}: ${p.message}`)).toEqual([]);
+  });
+
+  it('the freshly rendered file has none either, and the reference parser reads every section', () => {
+    expect(lintLlmsTxt(text)).toEqual([]);
+    const d = parseLlmsTxt(text);
+    expect(d.title).toBe('SQL Quest');
+    expect(d.summary.length).toBeGreaterThan(100);
+    for (const name of ['Start here', 'Questions people ask, and the page that answers',
+      'Fintech and banking interview pages', 'Company-tagged interview practice', 'Industry tracks on real public data']) {
+      expect(d.sections[name]?.length, name).toBeGreaterThan(0);
+    }
+    const links = Object.values(d.sections).flat();
+    expect(links.every(l => l.url.startsWith('https://sqlquest.app/')), 'every listed URL is ours and absolute').toBe(true);
+    expect(links.length).toBeGreaterThan(facts.pages.length);   // every sitemap page plus the curated lists
+  });
+});
+
+describe('the llms.txt spec check itself is honest', () => {
+  const ok = '# Site\n\n> One line.\n\nSome prose.\n\n- a prose list is fine here\n\n## Docs\n\n- [Guide](https://x.test/g): notes\n- [API](https://x.test/a)\n';
+  it('a conforming file passes, and parses like the reference', () => {
+    expect(lintLlmsTxt(ok)).toEqual([]);
+    expect(parseLlmsTxt(ok)).toEqual({
+      title: 'Site', summary: 'One line.', info: 'Some prose.\n\n- a prose list is fine here',
+      sections: { Docs: [{ title: 'Guide', url: 'https://x.test/g', desc: 'notes' }, { title: 'API', url: 'https://x.test/a', desc: null }] },
+    });
+  });
+  it('a file without an H1 fails', () => {
+    expect(lintLlmsTxt(ok.replace('# Site', 'Site'))).not.toEqual([]);
+  });
+  it('prose inside an H2 section fails — and crashes the reference parser', () => {
+    const bad = ok + 'A sentence.\n';
+    expect(lintLlmsTxt(bad).map(p => p.message).join('\n')).toMatch(/not a `- \[name\]\(url\): notes` list item/);
+    expect(() => parseLlmsTxt(bad)).toThrow(/reference parser crashes/);
+  });
+  it('the old `- url — text` line fails, and so does text after a link without ": "', () => {
+    expect(lintLlmsTxt(ok + '- https://x.test/p — text\n')).not.toEqual([]);
+    expect(lintLlmsTxt(ok + '- [P](https://x.test/p) — text\n').map(p => p.message).join()).toMatch(/must be `: notes`/);
+  });
+  it('an H3, a second H1 and a two-line summary fail', () => {
+    expect(lintLlmsTxt(ok + '### Sub\n')).not.toEqual([]);
+    expect(lintLlmsTxt(ok + '# Again\n')).not.toEqual([]);
+    expect(lintLlmsTxt(ok.replace('> One line.', '> One line.\n> Two.'))).not.toEqual([]);
   });
 });
