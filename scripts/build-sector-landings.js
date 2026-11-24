@@ -252,7 +252,7 @@ function generateLandingHtml(s) {
     "url": "https://sqlquest.app/${s.slug}/",
     "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD", "category": "free" },
     "isAccessibleForFree": true,
-    "courseMode": "online",
+    "hasCourseInstance": { "@type": "CourseInstance", "courseMode": "online" },
     "educationalLevel": "Beginner to Advanced",
     "numberOfCredits": 20,
     "teaches": ${JSON.stringify(s.dataset_block.tables.map(t => `${s.tr_name} schema: ${t.name} (${t.rows} rows) — ${t.desc}`))}
