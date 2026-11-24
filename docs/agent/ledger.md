@@ -27,6 +27,39 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### real-user speed is measured (`web-vitals`)
+
+- **Claimed** 2026-11-24 · **Shipped** live (no flag) in the code PR that
+  follows this one · **Read** 7 days after the deploy of that PR
+  (earliest 2026-12-02 if it deploys 11-25).
+- **Change** `track.js` on every static page and the /app shell load
+  Google's `web-vitals` (6.2.3, the attribution-free build, served from our
+  own origin) at the first idle moment after `load`, and write one
+  `web_vital` row per metric (LCP, INP, CLS, FCP, TTFB) per page load to
+  `pro_events`; bots, crawler fingerprints, localhost and internal
+  accounts send nothing.
+- **Why** the mobile funnel gap (landed → first solve, desktop 20.1% vs
+  mobile 3.2%, AN read 2026-11-24) has no speed data behind it: `app_boot`
+  covers /app only and has no INP or CLS, and Vercel Speed Insights cannot
+  be joined to a solve. This claim is about the instrument, not the gap.
+- **Metric** `web_vitals`, read 3 (coverage) (docs/agent/metrics.md;
+  defined in its own PR before the code, rule 6b).
+- **Baseline** 0 — no `web_vital` row exists.
+- **Target** ≥ 90% of `landing_view` rows (bot and crawler filters of the
+  fleet README applied) in the 7 days after the deploy have a `web_vital`
+  LCP row with the same `aid` and `page` within 30 minutes.
+- **Falsified if** coverage is under 90% → MISS. Read the `landing_engaged`
+  share beside it first: if that one is ≥ 90%, the hole is renderers and
+  bounces before the idle-time load, and the fix is loading earlier (on
+  `load`, not idle); if it is also under 90%, the send path is broken —
+  find where before trusting any p75 from this series.
+- **Guardrail** `app_boot` (the /app `lcpMs` p75 by viewport band) must not
+  rise by more than 100 ms against the 7 days before the deploy; the
+  library loads after `load`, so it should not move at all.
+- **First use of the data** the same read reports mobile vs desktop LCP p75
+  on `app` and on the top landing pages, and mobile open → first run by LCP
+  band, against the decision rule written in `web_vitals`.
+
 ### the interview date, asked after a company is named (company ask follow-up)
 
 - **Claimed** 2026-11-24 · **Shipped** dark behind `intakeAfterFirstSolve`
