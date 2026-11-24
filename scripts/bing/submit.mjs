@@ -46,6 +46,8 @@ export function pickSubmissions({ entries, status = {}, lastSubmitted = {}, now 
   const freshSince = now.getTime() - maxAgeDays * 86400000;
   const rank = { never: 0, stale: 1 };
   return entries
+    // Never a /questions/ page: they carry bingbot noindex since #72 (2026-11-23).
+    .filter(e => !/^https?:\/\/[^/]+\/questions\//.test(e.url))
     // Only a URL we looked at recently: "never crawled" read a week ago is not a fact today.
     .filter(e => status[e.url] && Date.parse(status[e.url].checked_at) >= freshSince)
     .map(e => ({ url: e.url, reason: classify(status[e.url], e.lastmod) }))
