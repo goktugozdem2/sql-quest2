@@ -105,11 +105,42 @@ B2 builds none of these; each names the lane that owns it.
   `cta_practice_validate_ai_sql_*` and `editorial_claudequest_click` (0 rows,
   14 app opens from that page).
 
+## Content QA findings — Q1, 2026-11-22 (docs/reads/content-qa-2026-11-22.md)
+
+D1 (challenge 323's example range) is fixed in #167. These are the author
+lanes' calls:
+
+- **DONE 2026-11-23: Easy cards that need a window function (D2).** The
+  orchestrator decided it (#222, `orchestrator-decisions.md`): 320 and 321
+  stay Easy as window on-ramps. Q1's check 5 now allows one Easy shape, a
+  single window function over one table (PARTITION BY / ORDER BY only, no
+  frame, CTE, subquery or join). Reverse rule: if either card's solve-through
+  is more than 15 points below the Easy median on 2026-12-20, relabel both
+  Medium.
+- **B3 — on-ramp cards hand over the method and the query (D3).** Spot-checking
+  the Chime set: the hints of 172, 174, 289 and 291 contain the query or most
+  of it, and the prompts of 172 (LAG), 275 (strftime), 289 and 291 (CTE /
+  LEFT JOIN / COALESCE) name the method. This is the 168–179 on-ramp and
+  275–299 card-analytics style, and it conflicts with check 6 and with the
+  company-page card rule. Start by counting the cards whose hint parses as
+  SQL. Then decide, per set, whether the method text moves behind
+  `practiceNote` the way the Capital One prompts did on 2026-09-19.
+- **C1 — the rollup page's engine table has no dated read (D4).** PostgreSQL,
+  SQL Server, Oracle, Snowflake, MySQL WITH ROLLUP and SQLite have no
+  `docs/reads/` file. Fetch the vendor docs from the laptop, write the read,
+  and cite it in `src/data/sql-rollup.js`.
+
 ## Routed by C7, question mining — 2026-11-22 (docs/reads/questions-2026-11-22.md)
 
 - **C6: UPDATE with values from another table** (UPDATE … FROM in SQLite 3.33+, the correlated-subquery form, and MySQL's / SQL Server's spellings). Seven threads in run 1's sources (Quora, sqlite.org forum). Challenges 180–185 practise DML, but no page explains it. This is C6's DML item #1; the read has the links.
 - **B3/C6 practice gap: a consecutive-calendar-day streak.** The window tutorial now works it on `logins` (5-day streaks for customers 4 and 8, the March-6 double login, the month boundary). No challenge asks it: challenge 68 is a ≤7-day-gap streak on orders, a different shape. One Medium/Hard challenge on `logins` with DISTINCT as the trap.
 - **Q1/C1: hard-coded count on the window tutorial.** "SQL Quest has 68 window-function-specific challenges" and the related link "68 window function challenges" are literal numbers that `tests/site-counts.test.js` doesn't bind. Re-measure, then move them to a helper or drop the number. Left alone in the C7 PR because it isn't a question answer.
+## Routed by C7, question mining — 2026-11-23 (docs/reads/questions-2026-11-23.md)
+
+C6 backlog (missing topics, no page owns them):
+- **C6: SQLite vs PostgreSQL dates — a translation guide.** `date_trunc('month', ts)` ↔ `strftime('%Y-%m-01', ts)`, `EXTRACT` ↔ `strftime('%Y')`, `generate_series` ↔ a recursive date list, `interval` ↔ date modifiers, and month arithmetic (SQLite's `date('2023-01-31', '+1 month')` overflows into March; PostgreSQL clamps to the month's end). Four threads in run 2's sources (sqlite.org forum, HN). Today the only coverage is one sentence on `/sql-cheat-sheet/` and the dialect table in the app (`src/utils/dialect-notes.js`), which lists format strings, not the month-end trap. Our users practise on SQLite and interview on PostgreSQL or Snowflake, so this is the page that bridges the two. Every query needs a test on both shapes of result; run the PostgreSQL side by hand or say it was not run.
+- **B3/C6 practice gap: a date spine.** No challenge in the bank asks for a report that includes days with zero rows (the only recursive challenges walk an org chart or a chargeback chain). `/blog/recursive-cte-explained/#missing-days` now works it on `logins` (March 8–9, the `COUNT(*)` trap). One Medium on `logins` or `orders`: daily counts over a fixed range, graded on the zero days.
+
 ## GEO gaps — G1, 2026-11-22 (docs/reads/geo-2026-11-22.md)
 
 G1 builds none of these. Each one names the lane that owns it. Baseline:
@@ -117,8 +148,8 @@ G1 builds none of these. Each one names the lane that owns it. Baseline:
 - 0 of 15 prompts in the search proxy's top 10.
 
 - **C2 — a page for "SQL practice with an AI tutor that explains my mistakes" (panel #8).** No page answers it, and neither console shows a matching query. The search proxy gives the slot to DataCamp's blog and academic papers. On the 2026-09-06 panel this was the family we won (4/4). The page shows the diagnosis on a real wrong query; `/vs-chatgpt/` already holds the rules for claims about AI.
-- **C2 — a general "timed SQL mock interview" page (panel #11).** The mocks sit inside the Capital One and Revolut pages. dbSyntax, DataDriven and Exponent each have a dedicated page in the top 10. Say "Pro" and the free general mock, as the homepage FAQ does.
-- **C2 — a general 2-week SQL interview plan (panel #13).** Only the Amazon page has one. The top 10 is Exponent, Coursera, datadriven.io and LearnSQL.
+- **BUILT 2026-11-22 (C2, branch `seo/prep-plan-and-mock-pages`): /sql-mock-interview/.** ~~**C2 — a general "timed SQL mock interview" page (panel #11).**~~ The mocks sit inside the Capital One and Revolut pages. dbSyntax, DataDriven and Exponent each have a dedicated page in the top 10. Say "Pro" and the free general mock, as the homepage FAQ does.
+- **BUILT 2026-11-22 (C2, branch `seo/prep-plan-and-mock-pages`): /sql-interview-prep-plan/.** ~~**C2 — a general 2-week SQL interview plan (panel #13).**~~ Only the Amazon page has one. The top 10 is Exponent, Coursera, datadriven.io and LearnSQL.
 - **C2 — a Turkish interview-prep page (panel #15).** `/turkce-sql-ogren/` is a learn-SQL page. The Turkish top 10 is DataCamp TR, Guru99 TR and Techcareer.
 - **C2 — `/meta-sql-interview/` ranks 20.1 on "meta sql interview questions" (GSC, 14 imp, 28 d; panel #10).** Fix the page's answer-first summary before building anything new.
 - **C3 — third-party lists cited for panel prompts that do not name us.** Each was checked on 2026-11-22.
@@ -384,6 +415,26 @@ Dossiers: `goldman-sachs.md`, `amazon.md`, `snowflake.md`.
     `VERCEL_GIT_PREVIOUS_SHA` for this step; check it before relying on it),
     or push one non-docs commit after a rate-limited page merge.
   - This is a code change to the deploy path, so it goes to A1/A0.
+
+## SEO sentinel S1 + traffic C8, 2026-11-23
+
+Reads: `docs/reads/seo-sentinel-2026-11.md` (F4) and `docs/reads/traffic-2026-11-23.md`.
+
+- **C1 — RED, day 2.** Bing is 838 against 431 URLs (1.94), flat since #72.
+  `blocked_by_robots` is still +5 on 11-22, the first day #138 could show.
+  The 11-26 check stands.
+  - Only 8 of 312 question pages have been re-crawled since #72. Read #72 on
+    `in_index − blocked_by_robots` and `code_2xx`, never on `in_index` alone.
+- **B2 — stamp the UTC landing crawler.** It started 2026-11-22: 77 people,
+  0 app opens, and a spoofed `bing.com` / `google.com` referrer.
+  - Fingerprint: the user agent disagrees with the window band (a mobile
+    agent at a desktop size, a desktop agent at a mobile size). Do not
+    fingerprint the time zone.
+  - Put it in `src/utils/bot-signals.js` and `src/track.js` with a test.
+    Numbers are in the metrics.md trap of 11-23.
+- **B2 / A0 — #246 (`topic1lang`) is due.** That crawler was 98 people last
+  week and 69 on 11-23 by 15:52 UTC. Every read drops it by hand until
+  #246 merges.
 
 ## Funnel findings — B1, 2026-11-22 (docs/reads/funnel-2026-11-22.md)
 
@@ -851,6 +902,29 @@ Every competitor fact cited must come from that read (URL + date).
     Crypto, ≥ 100k iterations) on the next successful sign-in and marks the
     row's scheme; account-password writes the new scheme. Founder's call —
     it touches every sign-in.
+
+## Inbox review — 2026-11-23 (docs/reads/inbox-review-2026-11-23.md)
+
+- **IR-1 (B3/R1). The Stripe reconciliation round that a paying user
+  reported** (two partner tables against an expectations table; check the
+  key is unique; anti-join in both directions; filter the expectations to the
+  partner). Add it to `docs/reads/companies/stripe.md` as "a reconciliation
+  round reported by a candidate", unattributed, as the founder promised. Then
+  write one challenge in that shape. The Amazon report from the same person
+  already became three challenges.
+- **IR-2 (E2). The feedback widget is used as a help desk it can't serve.**
+  Twice a guest asked "what's my mistake" with no contact; the latest was on
+  11-19, from the /sql-exercises/ solutions. When the widget opens on a
+  challenge screen, attach the challenge id, the last query and the
+  diagnosis, and answer on the spot with a link to the diagnosis or the
+  tutor ("This box goes to the founder. For this query, the tutor answers
+  now."). Measure it with `feedback_submitted` rows that carry a challenge
+  id.
+- **IR-3 (founder). A payer's job question,** asked 2026-09-14 and never
+  answered. One honest line, either way.
+- **IR-4 (founder). Acknowledge the 09-15 security report** once #223 is
+  deployed. The reporter left no contact, so this item is just to close the
+  loop in the ledger.
 
 ## Competitor watch — B6 run 2, 2026-11-23 (docs/reads/competitors-2026-11-23.md)
 

@@ -95,7 +95,20 @@ const TRANSLATIONS = {
     // Practice tab — covered fully (was tPractice)
     practice: {
       view: 'View', allChallenges: 'All Challenges', learningPath: 'Learning Path',
-      difficulty: 'Difficulty', status: 'Status',
+      // The Debug question type (debugQuestions, 2026-11-23)
+      debugBadge: 'Debug',
+      debugFraming: 'An AI assistant wrote this for the task below. It returns the wrong answer.',
+      debugSpotPrompt: 'Optional: tap the line number where you think the bug is.',
+      debugSpotRight: 'Line {line}: yes, the bug is there. Now fix it.',
+      debugSpotWrong: 'Line {line}: the bug is somewhere else. Run the query and compare its output with the expected output.',
+      debugReset: "Reset to the AI's query",
+      debugBugWas: 'The bug:',
+      debugTrapLink: 'Read this trap in detail',
+      debugFilter: 'Debug',
+      debugStatsTitle: 'Debug practice',
+      debugStatsSpots: 'Bugs spotted: {correct} of {n}',
+      debugStatsFixes: 'Fixes solved: {solved} of {n}',
+      difficulty: 'Difficulty', status: 'Status', type: 'Type',
       easy: 'Easy', medium: 'Medium', hard: 'Hard',
       unsolved: 'Unsolved', started: 'Started', solved: 'Solved',
       moreFilters: 'More filters', moreFiltersHide: 'Hide filters',
@@ -162,6 +175,8 @@ const TRANSLATIONS = {
       helpShort: 'Help',
       hideAlt: 'Hide',
       editorPlaceholder: 'Write your SQL solution here...',
+      // The line above Run in the `mobileRunBar` bar arm (src/utils/mobile-run-bar.js).
+      runBarFirstHint: 'Tap Run to see the table',
       expectedOutput: 'Expected Output ({n} rows)',
       expectedOutputOne: 'Expected Output (1 row)',
       // Header / guest banner
@@ -723,6 +738,9 @@ const TRANSLATIONS = {
       payLater: 'Later — keep practicing',
       payGuestSignupTitle: 'Payment confirmed!',
       payGuestSignupBody: 'Create your account now so your Pro is yours forever — on any device.',
+      // The Pro modal's Debug line (debugQuestions, founder 2026-11-23): Debug
+      // is part of Pro under the same free rules, no separate price.
+      debugFeature: 'Fix an AI-written query: the Debug set.',
     },
     coachNext: {
       label: 'Next step',
@@ -1251,7 +1269,20 @@ const TRANSLATIONS = {
 
     practice: {
       view: 'Görünüm', allChallenges: 'Tüm Sorular', learningPath: 'Öğrenme Yolu',
-      difficulty: 'Zorluk', status: 'Durum',
+      // Hata Ayıklama soru tipi (debugQuestions, 2026-11-23)
+      debugBadge: 'Hata Ayıkla',
+      debugFraming: 'Bunu aşağıdaki görev için bir yapay zekâ asistanı yazdı. Yanlış sonuç döndürüyor.',
+      debugSpotPrompt: 'İsteğe bağlı: hatanın olduğunu düşündüğün satırın numarasına dokun.',
+      debugSpotRight: 'Satır {line}: evet, hata orada. Şimdi düzelt.',
+      debugSpotWrong: 'Satır {line}: hata başka bir yerde. Sorguyu çalıştır ve çıktısını beklenen çıktıyla karşılaştır.',
+      debugReset: 'Yapay zekânın sorgusuna dön',
+      debugBugWas: 'Hata:',
+      debugTrapLink: 'Bu tuzağı ayrıntılı oku',
+      debugFilter: 'Hata Ayıkla',
+      debugStatsTitle: 'Hata ayıklama pratiği',
+      debugStatsSpots: 'Bulunan hatalar: {correct}/{n}',
+      debugStatsFixes: 'Çözülen düzeltmeler: {solved}/{n}',
+      difficulty: 'Zorluk', status: 'Durum', type: 'Tür',
       easy: 'Kolay', medium: 'Orta', hard: 'Zor',
       unsolved: 'Çözülmedi', started: 'Başladım', solved: 'Çözüldü',
       moreFilters: 'Daha fazla filtre', moreFiltersHide: 'Filtreleri gizle',
@@ -1311,6 +1342,8 @@ const TRANSLATIONS = {
       helpShort: 'Yardım',
       hideAlt: 'Gizle',
       editorPlaceholder: 'SQL çözümünü buraya yaz...',
+      // The Turkish button reads "Çalıştır", so the line names that, not "Run".
+      runBarFirstHint: 'Tabloyu görmek için Çalıştır\'a dokun',
       expectedOutput: 'Beklenen Çıktı ({n} satır)',
       logIn: 'Giriş Yap',
       logInTooltip: 'Hesabın var mı? Giriş yap, buradaki ilerlemen seninle gelir.',
@@ -1794,6 +1827,7 @@ const TRANSLATIONS = {
       payLater: 'Sonra — çalışmaya devam',
       payGuestSignupTitle: 'Ödeme onaylandı!',
       payGuestSignupBody: 'Hesabını şimdi oluştur — Pro’n her cihazda sonsuza dek senin olsun.',
+      debugFeature: "AI'ın yazdığı sorguyu düzelt: Hata Ayıklama seti.",
     },
     coachNext: {
       label: 'Sıradaki adım',

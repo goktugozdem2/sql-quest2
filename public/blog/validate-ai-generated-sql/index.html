@@ -285,7 +285,10 @@
     <li>The statement is a read, is bounded, and its plan has been looked at.</li>
   </ul>
 
-  <div class="cta-box">
+  <!-- debug-discovery:start --><div data-debug-section="true"><h2 class="fd" id="fix-the-ai">Fix a query an AI wrote</h2>
+  <p>12 practice questions open on a query an AI assistant wrote for the task. Each runs, and each returns the wrong answer: a join that repeats rows, a NULL in a NOT IN, a date bound that drops the last day. Find the line, fix it, and the checker grades your fix like any other question.</p>
+  <ul><li><a href="/app/?challenge=331&amp;src=validate-ai-debug" data-track="cta_ai_debug">The First Week's Logins</a> (Easy)</li><li><a href="/app/?challenge=335&amp;src=validate-ai-debug" data-track="cta_ai_debug">Nobody's Manager</a> (Medium)</li><li><a href="/app/?challenge=336&amp;src=validate-ai-debug" data-track="cta_ai_debug">Completed Orders for Every Customer</a> (Medium)</li></ul></div><!-- debug-hub-link:start --><p style="margin-top:14px;">All of them, with the bug each one trains: <a href="/sql-debugging-practice/" data-track="cta_ai_debug_hub">SQL debugging practice</a>.</p><!-- debug-hub-link:end --><!-- debug-discovery:end -->
+<div class="cta-box">
     <h3>Practice the judgment, not the syntax</h3>
     <p>Reading about validation builds recognition. Catching a wrong query builds judgment, and that only comes from predicting a result, running it, and being wrong in a way you can see. Every query on this page came from the same ledger the exercises use.</p>
     <a class="cta-main" data-track="cta_practice_validate_ai_sql_end" href="/app/?challenge=290&amp;src=validate-ai-generated-sql">Practice SQL validation — free →</a>

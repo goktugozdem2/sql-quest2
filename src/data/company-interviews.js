@@ -247,7 +247,7 @@ export const COMPANY_INTERVIEWS = {
     sector: 'fintech',
     crosslinkDesc: 'Payments and fraud, conditional sums, WHERE vs ON',
     accent: '#003087',
-    title: 'PayPal SQL Interview Questions — Payments, Fraud & Conditional Sums',
+    title: 'PayPal SQL Interview Questions — Payments & Fraud',
     description: 'PayPal SQL interview questions: analyst and data scientist rounds as candidates report them, the SQL they test, and practice on payment data. Sourced and dated.',
     hero: 'Candidate reports from 2023 to 2025 put SQL in every PayPal data loop they describe — a HackerRank assessment for an analyst intern, a one-hour phone round, an onsite round of three SQL questions — next to rounds on fraud and risk. Practise that shape here, on payment data.',
     dataShape: 'payments between users (payer, recipient, amount), account transactions (deposits and withdrawals), and card transactions with merchants and risk flags',
@@ -283,7 +283,7 @@ export const COMPANY_INTERVIEWS = {
     sector: 'fintech',
     crosslinkDesc: 'Crypto trades, 30-day activity, 7-day retention, cohorts',
     accent: '#0052FF',
-    title: 'Coinbase SQL Interview Questions — Trades, Retention & Cohorts',
+    title: 'Coinbase SQL Interview Questions — Trades & Retention',
     description: 'Coinbase SQL interview questions: the data science loop as candidates report it, the SQL it tests (30-day activity, retention) and practice. Sourced and dated.',
     hero: 'Two data scientist reports from 2025 each describe two SQL questions on users and their trades — who is active in the last 30 days, 7-day retention, time from adoption to first transaction — with the interviewer pressing on how each metric is defined.',
     dataShape: 'crypto trades (user, asset, volume, time), sign-ups and first trades, and user transactions with an adoption time and a region',
@@ -318,7 +318,7 @@ export const COMPANY_INTERVIEWS = {
     sector: 'fintech',
     crosslinkDesc: 'Take-home SQL or Python on a business question, then a review of your logic',
     accent: '#FF4F40',
-    title: 'Monzo SQL Interview Questions — The Take-Home and the Review',
+    title: 'Monzo SQL Interview Questions — Take-Home and Review',
     description: 'Monzo SQL interview: the data take-home as Monzo itself describes it, the review that follows, and practice on neobank ledger data. Sourced and dated.',
     hero: 'Monzo\'s own hiring posts describe the SQL as a take-home, not a live test: a business question answered in SQL or Python in your own time, then an interview that walks through your logic, trade-offs and testing. Practise that shape here, on data that looks like a bank account\'s ledger.',
     dataShape: 'accounts (signup date, plan, country), card transactions (merchant, category, amount, status, timestamps), transfers in and out between customers, and money moved into and out of savings pots',
@@ -356,7 +356,7 @@ export const COMPANY_INTERVIEWS = {
     sector: 'fintech',
     crosslinkDesc: 'Users and transactions: timestamps, rolling sums, a retention signal',
     accent: '#1EC677',
-    title: 'Chime SQL Interview Questions — Users, Transactions & Retention',
+    title: 'Chime SQL Interview Questions — Users & Retention',
     description: 'Chime SQL interview questions: data scientist screens as candidates report them, the SQL they test (timestamps, windows, retention) and practice. Sourced and dated.',
     hero: 'Two data scientist reports from late 2025 describe Chime\'s SQL on two tables, users and transactions: timestamps to truncate, CTEs, then ranking, the row before and a rolling sum — and, in one hiring-manager screen, a retention question with no schema given. Practise that shape here, on a card-transaction ledger.',
     dataShape: 'users and their transactions, with the transaction time stored as a full timestamp',
@@ -480,18 +480,61 @@ export const SOURCED_FORMATS = {
       'reported-amzn': ['A Business Intelligence Engineer candidate, by email to SQL Quest (name withheld at their request)', null, '21 Oct 2026', 'direct'],
     },
   },
+  // 2026-11-23: the data-scientist screen added and the data-engineer rows
+  // softened where 2026 sources contest them (R1 dossier
+  // docs/reads/companies/meta.md, sources read 2026-11-22/23). Only rows the
+  // dossier rates high or medium; the two Blind reports were read on
+  // 2026-09-14 and not re-read (Blind answered 402 in November).
   meta: {
     name: 'Meta',
-    role: 'Data Engineer',
+    role: 'Data Scientist (product analytics) and Data Engineer',
+    accessed: '22 Nov 2026',
     format: [
-      ['The technical screen', 'Two candidate reports agree on five problems in the screen: three SQL and two Python.', ['blind-meta-apr25', 'blind-meta-mar25']],
-      ['Environment', 'You are given the schema, and in both the screen and the onsite the code is not expected to be runnable — one report adds that the onsite also gives you the expected output. Interviewers differ in how strict they are about syntax.', ['blind-meta-apr25']],
-      ['What the SQL covers', 'Reported as medium difficulty: window functions, subqueries, CTEs and date/time work.', ['blind-meta-mar25']],
-      ['The onsite', 'Described as several rounds spanning product sense, data modelling, SQL, Python and behavioural. Neither report gives a length for the individual rounds, so this page does not state one.', ['blind-meta-apr25']],
+      ['Data scientist screen', 'One technical screen holds the SQL and a product or analytics case together, with one or two SQL questions. Two reports put the whole screen at 45 minutes; a third describes a 30-minute SQL call followed by a product case on the same tables.', ['prachub-meta-ds-aug25', 'prachub-meta-ds-sep26', 'aced-meta-ds-exp', 'aced-meta-ds']],
+      ['Define the metric first', 'Data-scientist candidates describe being asked to define the metric before writing the query — which denominator (events or users), which window, what counts as performance.', ['prachub-meta-ds-aug25', 'prachub-meta-ds-sep26', 'aced-meta-ds-exp']],
+      ['The clock', 'Time is the reported difficulty: one candidate calls the SQL fairly simple and still spent about 20 minutes on it, another did not finish both SQL questions, a third names time pressure as the hard part.', ['prachub-meta-ds-aug25', 'prachub-meta-ds-sep26', 'prachub-meta-ds-jul26']],
+      ['Data scientist loop', 'The full loop is reported to include a separate SQL interview beside product cases, statistics and a behavioural round.', ['aced-meta-ds', 'aced-meta-ds-exp']],
+      ['Data engineer screen', 'SQL and Python in the same screen. Sources disagree on the count: three SQL and two Python in both 2025 reports, three and three or five and five in a 2026 guide, one and one in a Senior+ report from September 2026 — so this page does not state one.', ['blind-meta-apr25', 'blind-meta-mar25', 'aced-meta-de', 'prachub-meta-de-sep26']],
+      ['Does the code run?', 'Sources disagree. A 2025 report says the code is not expected to run in the screen or the onsite; a 2026 guide says solutions are checked against test cases.', ['blind-meta-apr25', 'aced-meta-de']],
+      ['Data engineer onsite', 'Described as several rounds spanning product sense, data modelling, SQL, Python and behavioural. No candidate report gives a length for the individual rounds, so this page does not state one.', ['blind-meta-apr25', 'aced-meta-de']],
+      ['What the SQL covers', 'Across six candidate reports from both tracks, the SQL named is joins (four reports), date logic such as trailing windows and signup cohorts (four), conditional aggregation and ratios (three), window functions (three) and CTEs or subqueries (two). No report names a dialect.', ['blind-meta-mar25', 'prachub-meta-ds-aug25', 'prachub-meta-ds-sep26', 'prachub-meta-ds-jul26', 'aced-meta-ds-exp']],
     ],
     sources: {
-      'blind-meta-apr25': ['Blind — "Meta Data Engineer 2025 Interview Experience" (candidate report, E4 offer)', 'https://www.teamblind.com/post/meta-data-engineer-2025-interview-experience-zuvy6qgj', '5 Apr 2025'],
-      'blind-meta-mar25': ['Blind — "Meta Data Engineer: Technical Screen-Help" (poster plus two replying candidates)', 'https://www.teamblind.com/post/meta-data-engineer-technical-screen-help-6fy3wafy', '17 Mar 2025'],
+      'prachub-meta-ds-aug25': ['PracHub — Meta Senior Data Scientist, L5 product analytics: a 45-minute SQL and A/B test screen (candidate report, interview Aug 2025)', 'https://prachub.com/interview-experiences/meta-senior-data-scientist-interview-experience-45-minute-sql-and-a-b-test-screen-for-l5-product-analytics', '25 Aug 2026'],
+      'prachub-meta-ds-sep26': ['PracHub — Meta Senior Data Scientist: product sense plus two SQL questions (candidate report, interview Sep 2026)', 'https://prachub.com/interview-experiences/meta-senior-data-scientist-interview-experience-notification-product-sense-plus-two-sql-questions-rejected', '12 Nov 2026'],
+      'prachub-meta-ds-jul26': ['PracHub — Meta Data Scientist: timed SQL cases and A/B experiment design (candidate report, Jul 2026)', 'https://prachub.com/interview-experiences/meta-data-scientist-interview-timed-sql-cases-and-a-b-experiment-design-c96ea68fd2', '4 Sep 2026'],
+      'aced-meta-ds-exp': ['Aced (formerly Exponent) — Meta Data Scientist interview experiences (candidate reports; the dated ones submitted Jul and Aug 2026)', 'https://www.aced.io/guides/meta-data-scientist-interview/experiences', 'submitted 6 Jul and 9 Aug 2026'],
+      'aced-meta-ds': ['Aced (formerly Exponent) — Meta Data Scientist interview guide', 'https://www.aced.io/guides/meta-data-scientist-interview', 'shown as "updated 3 days ago" on 22 Nov 2026'],
+      'blind-meta-apr25': ['Blind — "Meta Data Engineer 2025 Interview Experience" (candidate report, E4 offer; read 14 Sep 2026)', 'https://www.teamblind.com/post/meta-data-engineer-2025-interview-experience-zuvy6qgj', '5 Apr 2025'],
+      'blind-meta-mar25': ['Blind — "Meta Data Engineer: Technical Screen-Help" (poster plus two replying candidates; read 14 Sep 2026)', 'https://www.teamblind.com/post/meta-data-engineer-technical-screen-help-6fy3wafy', '17 Mar 2025'],
+      'aced-meta-de': ['Aced (formerly Exponent) — Meta Data Engineer interview guide', 'https://www.aced.io/guides/meta-data-engineer-interview', 'shown as "updated 3 days ago" on 22 Nov 2026'],
+      'prachub-meta-de-sep26': ['PracHub — Meta Senior+ Data Engineer: leadership and fullstack phone screen (candidate report, interview Sep 2026)', 'https://prachub.com/interview-experiences/meta-seniorplus-data-engineer-interview-experience-leadership-and-fullstack-phone-screen-rejected-over-not-enough-impact', '19 Sep 2026'],
+    },
+  },
+  // 2026-11-23: Shopify becomes a sourced page (R1 dossier
+  // docs/reads/companies/shopify.md, sources read 2026-11-22/23). Shopify's own
+  // posting names the stages, so the section opens with `publishes` instead of
+  // "does not publish the format". Not stated, on the dossier's advice: the
+  // screen's length, a platform, a dialect, a question count (all low or none).
+  shopify: {
+    name: 'Shopify',
+    role: 'Data Scientist',
+    accessed: '22 Nov 2026',
+    publishes: 'Shopify publishes the stages of its data-science interview, not the format of its SQL round.',
+    format: [
+      ['Stages (Shopify\'s own words)', 'Shopify\'s data-science posting lists a Life Story conversation, then an online assessment followed by a craft assessment, then craft interviews. Depending on the role, a craft interview can include exploring a dataset using SQL, a deep dive on past projects, a design critique, or working a problem with the interviewer. The posting asks for a strong command of SQL.', ['shopify-ds-posting']],
+      ['The SQL screen', 'Three data-scientist candidates in 2026 describe a live SQL technical screen. It is announced as SQL and Python: two ran as both, and one ran as SQL only although the candidate had been told to expect both.', ['prachub-shop-jan26', 'prachub-shop-jul26', 'aced-shop-l5']],
+      ['Ask before you write', 'Two reports describe joins across several tables, and both stress pinning down what the question means before writing — in one, "over time" turned out to mean a running total, which the candidate learned late.', ['prachub-shop-jan26', 'aced-shop-l5']],
+      ['Explaining the result', 'Three 2026 reports describe explaining results to a non-technical audience: presenting the SQL results to a product manager at the end of the screen, reading charts and an A/B test result aloud in a phone screen, and finding the cause of a spike in a time series in an onsite round.', ['prachub-shop-jan26', 'prachub-shop-oct26', 'prachub-shop-apr26']],
+      ['Not stated here', 'How long the SQL screen runs, the tool it is written in and the SQL dialect: no source we could read states them reliably, so this page does not.', []],
+    ],
+    sources: {
+      'shopify-ds-posting': ['Shopify careers — Staff Product Data Scientists posting (first-party; the posting carries no date)', 'https://www.shopify.com/careers/staff-product-data-scientists-multiple-roles_362ecbdc-924e-4b3b-92b1-d57c8eed4263', 'live on 22 Nov 2026'],
+      'prachub-shop-jan26': ['PracHub — Shopify Data Scientist: a SQL-only screen on five tables (candidate report, interview Jan 2026)', 'https://prachub.com/interview-experiences/shopify-data-scientist-interview-experience-sql-only-screen-five-tables-and-a-passive-interviewer', '25 Aug 2026'],
+      'prachub-shop-jul26': ['PracHub — Shopify Data Scientist: guided SQL and Python screening (candidate report, Jul 2026)', 'https://prachub.com/interview-experiences/shopify-data-scientist-interview-guided-sql-and-python-screening-fad4d661fa', '4 Sep 2026'],
+      'aced-shop-l5': ['Aced (formerly Exponent) — Shopify Senior Data Scientist (L5) interview experience (candidate report, interview about Apr 2026)', 'https://www.aced.io/experiences/shopify-senior-data-scientist-interview-82404e', 'shown as "8 months ago" on 22 Nov 2026'],
+      'prachub-shop-oct26': ['PracHub — Shopify Senior Data Scientist: online assessment, then a chart-reading phone screen (candidate report, interview Oct 2026)', 'https://prachub.com/interview-experiences/shopify-senior-data-scientist-interview-experience-online-assessment-then-a-chart-reading-phone-screen', '12 Nov 2026'],
+      'prachub-shop-apr26': ['PracHub — Shopify Data Scientist onsite: a data-viz case, a marketplace case and the Life Story (candidate report, interview Apr 2026)', 'https://prachub.com/interview-experiences/shopify-data-scientist-interview-experience-data-viz-case-app-store-marketplace-case-and-life-story', '25 Aug 2026'],
     },
   },
 };
