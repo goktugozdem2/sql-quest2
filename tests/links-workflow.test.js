@@ -46,10 +46,10 @@ describe('links.yml — the weekly outbound link check', () => {
   });
 
   it('skips the hosts that block or rate-limit bots — and nothing broader', () => {
-    for (const u of ['https://www.linkedin.com/in/someone', 'https://x.com/someone', 'https://twitter.com/someone', 'https://www.glassdoor.com/Interview/x.htm', 'https://www.glassdoor.co.uk/x']) {
+    for (const u of ['https://www.linkedin.com/in/someone', 'https://x.com/someone', 'https://twitter.com/someone', 'https://www.glassdoor.com/Interview/x.htm', 'https://www.glassdoor.co.uk/x', 'https://www.teamblind.com/post/x-1a2b']) {
       expect(skipped(u), `${u} should be skipped`).toBe(true);
     }
-    for (const u of ['https://box.com/', 'https://dropbox.com/x', 'https://notlinkedin.co/', 'https://www.tryexponent.com/']) {
+    for (const u of ['https://box.com/', 'https://dropbox.com/x', 'https://notlinkedin.co/', 'https://www.tryexponent.com/', 'https://notteamblind.com/']) {
       expect(skipped(u), `${u} must not be swallowed by an ignore pattern`).toBe(false);
     }
   });
