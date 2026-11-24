@@ -36,12 +36,12 @@ export const END = '<!-- related-links:end -->';
 export const RELATED = {
   'challenges/index.html': { lead: 'Also practise', links: [
     ['/weekly/', 'this week\'s SQL challenge'],
-    ['/learn-sql-for-beginners/', 'SQL for complete beginners'],
+    ['/learn-sql/', 'learn SQL from zero'],
     ['/sql-rollup-interview-questions/', 'ROLLUP and GROUPING SETS interview questions'],
   ] },
   'sql-quiz.html': { lead: 'Next', links: [
     ['/weekly/', 'try this week\'s SQL challenge'],
-    ['/learn-sql-for-beginners/', 'start from zero with SQL for beginners'],
+    ['/learn-sql/', 'start from zero with SQL'],
   ] },
   'blog/index.html': { lead: 'More to read and practise', links: [
     ['/weekly/', 'the weekly SQL challenge'],
@@ -55,7 +55,7 @@ export const RELATED = {
     ['/sql-for-the-ai-era/', 'why SQL still matters in the AI era'],
   ] },
   'sql-tutorial.html': { lead: 'Where to go from here', links: [
-    ['/learn-sql-for-beginners/', 'SQL for complete beginners'],
+    ['/learn-sql/', 'learn SQL from zero'],
     ['/challenges/string-functions/', 'string function exercises'],
     ['/after-the-sql-course/', 'finished a SQL course? what to practise next'],
   ] },

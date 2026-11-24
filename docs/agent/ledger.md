@@ -27,6 +27,42 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### the first prune: 5 pages noindexed, 2 merged (SEO plan P4.25)
+
+- **Claimed** 2026-11-25 · **Shipped** with the deploy of the prune PR ·
+  **Read** 28 days after that deploy (GSC lags ~2 days; read a window that
+  ends 3 days before the read date).
+- **Change** `noindex, follow` and out of the sitemap:
+  `/goldman-sachs-sql-interview/`, `/microsoft-sql-interview/`,
+  `/gayrimenkul-sql/`, `/blog/sql-for-ai-company-interviews/`,
+  `/blog/time-series-sql-hardware-interviews/`. Permanent redirects:
+  `/learn-sql-for-beginners/` → `/learn-sql/`, `/blog/what-is-a-cte-in-sql/`
+  → `/blog/sql-cte-tutorial/`, with every internal link re-pointed. Read,
+  rules and the full 121-page table: `docs/reads/prune-2026-11-25.md`.
+- **Why** the founder's go (2026-11-25) to take out pages that do not earn
+  their place; none of the seven has had a Google click since its first
+  impression, none has a Bing impression or a backlink, and no one who
+  landed on them in 90 days opened the app.
+- **Metric** `gsc_page_clicks` (docs/agent/metrics.md), summed over the kept
+  pages (every sitemap page outside `/questions/` that is not one of the
+  seven), and read per page for the seven.
+- **Baseline** kept pages, 2026-10-24 → 2026-11-20: **590 clicks, 25,637
+  impressions**. The seven: 0 clicks, 73 impressions (pruned 31, merged 42).
+  `/questions/` in the same window, for the confound check: 31 clicks, 4,196
+  impressions.
+- **Target** kept pages hold: clicks and impressions within 10% of baseline
+  or above. The two merge targets keep their own clicks (`/learn-sql/` 5,
+  `/blog/sql-cte-tutorial/` 2 in the 28 days to 11-23).
+- **Falsified if** (a) clicks or impressions on the kept pages fall more than
+  10% over the 28 days after the deploy → revert the entries in one change,
+  unless `/questions/` and Bing fell by the same share (a Google-wide move,
+  not this change); or (b) any of the seven shows real traffic we missed — a
+  GSC or Bing click, or a landing person who opened the app → revert that
+  entry alone.
+- **Next batch** held with reasons in the read: `/datalemur-karsilastirma/`
+  (hreflang pair), `/bloomberg-sql-interview/` (one solve; re-read
+  2026-12-23), `/after-bootcamp/` (GEO panel prompt 14 answer page, G1 first).
+
 ### the interview date, asked after a company is named (company ask follow-up)
 
 - **Claimed** 2026-11-24 · **Shipped** dark behind `intakeAfterFirstSolve`
