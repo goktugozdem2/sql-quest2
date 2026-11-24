@@ -91,6 +91,9 @@ const WRONG = {
     ['customer_id alone', 'CREATE INDEX ix ON orders (customer_id)'],
     ['two single-column indexes', 'CREATE INDEX a ON orders (customer_id); CREATE INDEX b ON orders (order_date)'],
     ['a partial index', "CREATE INDEX ix ON orders (customer_id, order_date) WHERE status = 'completed'"],
+    // Q1 on #298: these two passed a text check (NOT LIKE '% WHERE %')
+    ['a partial index, WHERE on its own line', "CREATE INDEX ix ON orders (customer_id, order_date)\nWHERE status = 'completed'"],
+    ['a partial index written WHERE(', "CREATE INDEX ix ON orders (customer_id, order_date) WHERE(status = 'completed')"],
   ],
   356: [
     ['NOT IN over a list that holds NULL', 'DELETE FROM customers WHERE customer_id NOT IN (SELECT customer_id FROM orders)'],

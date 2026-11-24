@@ -4119,8 +4119,10 @@ ORDER BY total_orders DESC;`,
     checkTable: "orders",
     // Name-free: any index whose first two columns are customer_id then
     // order_date and that is not partial passes, whatever it is called and
-    // whatever columns follow. orders must still hold its 40 rows.
-    check: "SELECT (SELECT COUNT(*) FROM orders) AS orders_rows, EXISTS (SELECT 1 FROM sqlite_master m WHERE m.type = 'index' AND m.tbl_name = 'orders' AND m.sql NOT LIKE '% WHERE %' AND (SELECT name FROM pragma_index_info(m.name) WHERE seqno = 0) = 'customer_id' AND (SELECT name FROM pragma_index_info(m.name) WHERE seqno = 1) = 'order_date') AS lookup_is_served",
+    // whatever columns follow. Partial indexes are read from
+    // pragma_index_list, not the SQL text (Q1 on #298: WHERE on a new line or
+    // written WHERE( slipped past a LIKE). orders must still hold its 40 rows.
+    check: "SELECT (SELECT COUNT(*) FROM orders) AS orders_rows, EXISTS (SELECT 1 FROM sqlite_master m WHERE m.type = 'index' AND m.tbl_name = 'orders' AND (SELECT l.partial FROM pragma_index_list('orders') l WHERE l.name = m.name) = 0 AND (SELECT name FROM pragma_index_info(m.name) WHERE seqno = 0) = 'customer_id' AND (SELECT name FROM pragma_index_info(m.name) WHERE seqno = 1) = 'order_date') AS lookup_is_served",
     description: "A customer's account page shows their orders from a chosen date onward. To build it, the app asks `orders` for the rows of **one `customer_id`** with an **`order_date` on or after a given day**. Today SQLite reads all of `orders` to answer that, and the table is about to grow a thousandfold.\n\n**Make that lookup go straight to the one customer's rows from the given day onward,** without changing, adding or removing a single row.\n\nGraded on the database after your statements: the grader checks that SQLite now has a structure it can use to find one customer's orders from a date onward, and that `orders` still holds its 40 rows. You can look at SQLite's plan for the lookup before and after.",
     tables: ["orders"],
     example: { input: "orders: 40 rows, nothing but the table itself", output: "orders: the same 40 rows, and the lookup is served without reading the whole table" },

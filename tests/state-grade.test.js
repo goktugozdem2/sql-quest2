@@ -176,8 +176,10 @@ describe('the gate refuses before anything runs', () => {
 
 describe('the five challenges', () => {
   it('are state-graded, appended, tagged DDL/DML only, and the tag moves no Skillmap axis', () => {
-    // appended after every SELECT-graded challenge (later state sets, 355+, sit after them)
-    expect(Math.min(...IDS)).toBeGreaterThan(Math.max(...bank.filter(c => !isStateGraded(c)).map(c => c.id)));
+    // appended as one block: nothing else sits inside 325-329 (later sets,
+    // e.g. 330 and 355+, may follow it;
+    // A1 on #298: comparing against every SELECT id broke on the next one)
+    expect(bank.filter(c => c.id >= 325 && c.id <= 329).map(c => c.id).sort((a, b) => a - b)).toEqual(IDS);
     for (const id of IDS) {
       const c = byId(id);
       expect(bank.filter(x => x.id === id), `#${id}`).toHaveLength(1);
