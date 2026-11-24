@@ -155,8 +155,8 @@ describe('the queue — fixed priority, one layer at a time', () => {
 });
 
 describe('app.jsx — the gates, the targets, desktop and the flag', () => {
-  it('the flag ships off', () => {
-    expect(flags).toMatch(/\n\s*mobileOneLayer: false,/);
+  it('the flag is an explicit boolean (ON 2026-11-24 by decision row; off is the revert)', () => {
+    expect(flags).toMatch(/\n\s*mobileOneLayer: (true|false),/);
   });
   it('the hooks sit above the early returns (fragile area 1)', () => {
     const hooks = app.indexOf('const [oneLayerOn, setOneLayerOn] = useState(false);');
