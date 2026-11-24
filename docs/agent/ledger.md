@@ -27,6 +27,50 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### the interview date, asked after a company is named (company ask follow-up)
+
+- **Claimed** 2026-11-24 · **Shipped** dark behind `intakeAfterFirstSolve`
+  (off; the code is a separate draft PR) · **Flips** only by an
+  orchestrator decision row, with the company ask itself · **Read** 28 days
+  after the deploy of the flip commit.
+- **Change** in the company ask's `ask` arm, when the person names a company
+  (not "Not sure yet", not Skip), the same inline line turns into one
+  follow-up: "When is the interview?" — a date between today and +365 days,
+  "No date yet", Skip. A date → `prepTarget.date` (the countdown's and the
+  intake's own store, through `setPrepPreference`) and
+  `interview_date_captured {daysOut, source: 'company_ask'}` — the integer,
+  never the date; "No date yet" → `interview_date_captured {none: true}`.
+  Never asked when a date today or later is already on record; never asked
+  twice (the record keeps the answer, a skip included). On phones in
+  `mobileOneLayer` arm `one` it is part of the company ask in tier 2, not a
+  new layer. The first solve is untouched: the line appears only after it.
+- **Why** V1, 2026-11-24 (PR #313): two date-driven features —
+  `deadlineOffer` (M3) and the outcome note — got 0 data in 8 weeks because
+  there were **0 future dates on record**; goal-setters pay 2.9% (4 of 139)
+  vs 0.5% (3 of 597) without a goal (interim, all-time, engaged accounts).
+  A person who has just named a company is the one most likely to know the
+  date.
+- **Metric** `interview_date_capture` (docs/agent/metrics.md; defined in
+  its own PR before the code, rule 6b).
+- **Baseline** 0 dates captured through this door (it does not exist yet);
+  0 future dates on record in total (V1, 2026-11-24).
+- **Target** ≥ 40% of company answerers give a date.
+- **Falsified if** fewer than 20% of company answerers give a date at the
+  read → the moment is wrong for a date; take the follow-up out and keep the
+  company ask as it was. Between 20% and 40%: MOVED; keep it and look at
+  the "No date yet" share before changing the copy.
+- **Guardrail** the company ask's own guardrail (`company_ask_split`:
+  second solve within 24 h, ask arm not more than 3 points below control)
+  now includes this follow-up; if it fires, read it with and without the
+  people who were shown the date step before reverting both.
+- **Small sample** company answerers will be few (the ask arm is half of
+  first solvers, and the ask's own target is 25% naming a company). Below 10
+  company answerers at the read: report n and the rate as directional,
+  extend 28 days, at most twice.
+- **Confound** none inside this door; the date also unlocks the countdown
+  card, `deadlineOffer` and the outcome note, whose reads must from the flip
+  split dates by source (this door vs the rest).
+
 ### Run stays on screen on phones (`mobileRunBar`, rank 1 of the mobile plan)
 
 - **Claimed** 2026-11-23 · **Shipped** dark on merge; ON at 50/50 by the
