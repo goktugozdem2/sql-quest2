@@ -3774,6 +3774,53 @@ solves → `signup_completed`. Split by `company` (null = no company). The
 company score is a weighting of our tagged set, not a measurement of the
 company's interview; never quote it as one.
 
+**Count people by `metadata->>'aid'`, never by `username` (2026-11-25).**
+Every page event is written by `src/track.js` with `username = 'guest'`
+unless the browser holds a signed-in `sqlquest_user`, and `pro_events` has
+no `aid` column — the aid lives only in `metadata`. A read that counts
+`coalesce(aid, username)` against the column (or `count(distinct username)`)
+collapses every anonymous visitor into the single person `guest`: that is how
+the 2026-11-24 read reported "readiness_started 4 people (48 events)" when the
+same 90 days held **42 distinct aids** (the four "people" were `guest` plus
+three signed-in usernames). The page → app join is NOT broken: every
+`readiness_*` row carries `metadata.aid`, and `readiness_arrived` (written by
+the app, `reason='activation_funnel'`) carries the same aid as the page rows
+before it — checked on all six arrivals 2026-09-13 → 11-22.
+
+**Company key.** Until the Health Check release `readiness_started.company` is
+the page SLUG (`capital-one`) and `readiness_completed` / `readiness_plan_clicked`
+`.company` is the display NAME (`Capital One`) — never join or group the two
+steps on `company` without mapping. From that release every step also carries
+`companySlug` (the slug, null without a company), `role`
+(`data-analyst` | `analytics-engineer` | `data-engineer` | `data-scientist` | null)
+and `src` (the `?src=` the visitor arrived with, `[a-z0-9-]`, ≤ 60 chars; the
+company pages send `company-<slug>`, a shared result `share`), `goal`
+(`interview` | `first-job` | `move-up` | `ai-sql` | `learn` — asked first, so
+every starter has one) and `daysOut` (whole days to the interview date, or
+weeks × 7 for the other goals; null when not given — never the date).
+`readiness_completed` adds `archetype` (true only for a signed archetype
+company, the only case with a company-weighted number), `unit`
+(`week` | `day`) and `steps` (the roadmap's length). Split by `companySlug`
+and `goal` from then on; never compare completion across the release
+(the goal questions now sit before item 1).
+`readiness_shared {companySlug, role, method}` is the share action on the
+result (method `share` | `copy`); no scores, no answers.
+
+**The company door (from the Health Check release).** Rate = people who
+`readiness_started` with `src` starting `company-` ÷ people whose
+`landing_view` was on a `*-sql-interview` page in the same window, × 100.
+Before `src` existed, approximate the numerator as starters whose aid also has
+a company-page `landing_view` in the window (the baseline below uses that).
+
+Baseline, 90 days to 2026-11-24 (people by aid; bot fingerprints, `tz` UTC /
+`Etc/Unknown`, the listed bot viewports and internal usernames excluded; the
+founder's 2026-09-13 walk aid excluded):
+- test-page landing people 212 → started 41 (19%) → completed 10 (24% of
+  starters) → plan clicked 5 (50% of completers) → arrived in the app 5
+  (100% of clickers);
+- company-page landing people 1,705 → of them started the test 12
+  (**0.70 per 100**), completed 4.
+
 ## `seo_page_funnel`
 
 The product half of the weekly SEO dashboard: `scripts/seo-dashboard.sql`.
