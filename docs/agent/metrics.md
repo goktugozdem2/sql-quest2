@@ -3794,7 +3794,15 @@ steps on `company` without mapping. From that release every step also carries
 `companySlug` (the slug, null without a company), `role`
 (`data-analyst` | `analytics-engineer` | `data-engineer` | `data-scientist` | null)
 and `src` (the `?src=` the visitor arrived with, `[a-z0-9-]`, ≤ 60 chars; the
-company pages send `company-<slug>`). Split by `companySlug` from then on.
+company pages send `company-<slug>`, a shared result `share`), `goal`
+(`interview` | `first-job` | `move-up` | `ai-sql` | `learn` — asked first, so
+every starter has one) and `daysOut` (whole days to the interview date, or
+weeks × 7 for the other goals; null when not given — never the date).
+`readiness_completed` adds `archetype` (true only for a signed archetype
+company, the only case with a company-weighted number), `unit`
+(`week` | `day`) and `steps` (the roadmap's length). Split by `companySlug`
+and `goal` from then on; never compare completion across the release
+(the goal questions now sit before item 1).
 `readiness_shared {companySlug, role, method}` is the share action on the
 result (method `share` | `copy`); no scores, no answers.
 
