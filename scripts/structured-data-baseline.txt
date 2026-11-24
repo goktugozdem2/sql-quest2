@@ -3,88 +3,14 @@
 # tests/structured-data-validator.test.js. ERRORS are never listed here: they always fail.
 # Fixed one? Delete (or lower the count of) its line in the same commit.
 # <count>	<page>	<path in the JSON-LD block>	<rule>
-1	public/airbnb-sql-interview.html	Course	not-in-schema.org:courseMode
-1	public/airbnb-sql-interview/index.html	Course	not-in-schema.org:courseMode
-1	public/amazon-sql-interview.html	Course	not-in-schema.org:courseMode
-1	public/amazon-sql-interview/index.html	Course	not-in-schema.org:courseMode
-1	public/anthropic-sql-interview.html	Course	not-in-schema.org:courseMode
-1	public/anthropic-sql-interview/index.html	Course	not-in-schema.org:courseMode
-1	public/apple-sql-interview.html	Course	not-in-schema.org:courseMode
-1	public/apple-sql-interview/index.html	Course	not-in-schema.org:courseMode
-1	public/blog/capital-one-codesignal-data-analyst-assessment/index.html	BlogPosting	not-in-schema.org:breadcrumb
-1	public/blog/faang-sql-interview-guide/index.html	Article	not-in-schema.org:breadcrumb
-1	public/blog/is-null-vs-equals-null/index.html	Article	not-in-schema.org:breadcrumb
-1	public/blog/left-join-vs-inner-join/index.html	Article	not-in-schema.org:breadcrumb
-1	public/blog/null-handling-mistakes/index.html	Article	not-in-schema.org:breadcrumb
-1	public/blog/recursive-cte-explained/index.html	Article	not-in-schema.org:breadcrumb
-1	public/blog/row-number-vs-rank-vs-dense-rank/index.html	Article	not-in-schema.org:breadcrumb
-1	public/blog/sql-anti-join/index.html	Article	not-in-schema.org:breadcrumb
-1	public/blog/sql-case-when-tutorial/index.html	Article	not-in-schema.org:breadcrumb
-1	public/blog/sql-cte-nedir/index.html	Article	not-in-schema.org:breadcrumb
-1	public/blog/sql-cte-tutorial/index.html	Article	not-in-schema.org:breadcrumb
-1	public/blog/sql-for-ai-company-interviews/index.html	Article	not-in-schema.org:breadcrumb
-1	public/blog/sql-for-fraud-analytics/index.html	Article	not-in-schema.org:breadcrumb
-1	public/blog/sql-group-by-tutorial/index.html	Article	not-in-schema.org:breadcrumb
-1	public/blog/sql-join-nedir/index.html	Article	not-in-schema.org:breadcrumb
-1	public/blog/sql-joins-explained/index.html	Article	not-in-schema.org:breadcrumb
-1	public/blog/sql-running-total/index.html	Article	not-in-schema.org:breadcrumb
-1	public/blog/time-series-sql-hardware-interviews/index.html	Article	not-in-schema.org:breadcrumb
-1	public/blog/validate-ai-generated-sql/index.html	BlogPosting	not-in-schema.org:breadcrumb
-1	public/blog/what-is-a-cte-in-sql/index.html	Article	not-in-schema.org:breadcrumb
-1	public/blog/where-vs-having/index.html	Article	not-in-schema.org:breadcrumb
-1	public/blog/window-functions-tutorial/index.html	Article	not-in-schema.org:breadcrumb
-1	public/capital-one-sql-interview.html	Course	not-in-schema.org:courseMode
-1	public/capital-one-sql-interview/index.html	Course	not-in-schema.org:courseMode
-1	public/databricks-sql-interview.html	Course	not-in-schema.org:courseMode
-1	public/databricks-sql-interview/index.html	Course	not-in-schema.org:courseMode
-1	public/finans-sql/index.html	Course	not-in-schema.org:courseMode
-1	public/fraud-analytics-sql.html	Course	not-in-schema.org:courseMode
-1	public/fraud-analytics-sql/index.html	Course	not-in-schema.org:courseMode
-1	public/gayrimenkul-sql/index.html	Course	not-in-schema.org:courseMode
-1	public/google-sql-interview.html	Course	not-in-schema.org:courseMode
-1	public/google-sql-interview/index.html	Course	not-in-schema.org:courseMode
-1	public/index.html	Course	not-in-schema.org:courseMode
-3	public/index.html	ItemList > itemListElement:ListItem > item:Course	not-in-schema.org:courseMode
-1	public/index.html	Organization	not-in-schema.org:audience
-1	public/index.html	SoftwareApplication	not-in-schema.org:browserRequirements
-1	public/jpmorgan-sql-interview.html	Course	not-in-schema.org:courseMode
-1	public/jpmorgan-sql-interview/index.html	Course	not-in-schema.org:courseMode
-1	public/learn-sql-for-beginners.html	Course	not-in-schema.org:courseMode
-1	public/learn-sql-for-beginners/index.html	Course	not-in-schema.org:courseMode
-1	public/learn-sql.html	Course	not-in-schema.org:courseMode
 6	public/learn-sql.html	HowTo > step:HowToStep	recommended:image
 6	public/learn-sql.html	HowTo > step:HowToStep	recommended:itemListElement
 6	public/learn-sql.html	HowTo > step:HowToStep	recommended:url
 6	public/learn-sql.html	HowTo > step:HowToStep	recommended:video
-1	public/learn-sql/index.html	Course	not-in-schema.org:courseMode
 6	public/learn-sql/index.html	HowTo > step:HowToStep	recommended:image
 6	public/learn-sql/index.html	HowTo > step:HowToStep	recommended:itemListElement
 6	public/learn-sql/index.html	HowTo > step:HowToStep	recommended:url
 6	public/learn-sql/index.html	HowTo > step:HowToStep	recommended:video
-1	public/meta-sql-interview.html	Course	not-in-schema.org:courseMode
-1	public/meta-sql-interview/index.html	Course	not-in-schema.org:courseMode
-1	public/morgan-stanley-sql-interview.html	Course	not-in-schema.org:courseMode
-1	public/morgan-stanley-sql-interview/index.html	Course	not-in-schema.org:courseMode
-1	public/netflix-sql-interview.html	Course	not-in-schema.org:courseMode
-1	public/netflix-sql-interview/index.html	Course	not-in-schema.org:courseMode
-1	public/nvidia-sql-interview.html	Course	not-in-schema.org:courseMode
-1	public/nvidia-sql-interview/index.html	Course	not-in-schema.org:courseMode
-1	public/openai-sql-interview.html	Course	not-in-schema.org:courseMode
-1	public/openai-sql-interview/index.html	Course	not-in-schema.org:courseMode
-1	public/plaid-sql-interview.html	Course	not-in-schema.org:courseMode
-1	public/plaid-sql-interview/index.html	Course	not-in-schema.org:courseMode
-1	public/ramp-sql-interview.html	Course	not-in-schema.org:courseMode
-1	public/ramp-sql-interview/index.html	Course	not-in-schema.org:courseMode
-1	public/revolut-sql-interview.html	Course	not-in-schema.org:courseMode
-1	public/revolut-sql-interview/index.html	Course	not-in-schema.org:courseMode
-1	public/shopify-sql-interview.html	Course	not-in-schema.org:courseMode
-1	public/shopify-sql-interview/index.html	Course	not-in-schema.org:courseMode
-1	public/snowflake-sql-interview.html	Course	not-in-schema.org:courseMode
-1	public/snowflake-sql-interview/index.html	Course	not-in-schema.org:courseMode
-1	public/spotify-sql-interview.html	Course	not-in-schema.org:courseMode
-1	public/spotify-sql-interview/index.html	Course	not-in-schema.org:courseMode
-1	public/sql-exercises.html	Course	not-in-schema.org:courseMode
-1	public/sql-exercises/index.html	Course	not-in-schema.org:courseMode
 5	public/sql-find-duplicates.html	HowTo > step:HowToStep	recommended:image
 5	public/sql-find-duplicates.html	HowTo > step:HowToStep	recommended:itemListElement
 5	public/sql-find-duplicates.html	HowTo > step:HowToStep	recommended:url
@@ -93,22 +19,5 @@
 5	public/sql-find-duplicates/index.html	HowTo > step:HowToStep	recommended:itemListElement
 5	public/sql-find-duplicates/index.html	HowTo > step:HowToStep	recommended:url
 5	public/sql-find-duplicates/index.html	HowTo > step:HowToStep	recommended:video
-1	public/sql-interview-prep.html	Course	not-in-schema.org:courseMode
-1	public/sql-interview-prep/index.html	Course	not-in-schema.org:courseMode
-1	public/sql-tutorial.html	Course	not-in-schema.org:courseMode
-1	public/sql-tutorial/index.html	Course	not-in-schema.org:courseMode
-1	public/stripe-sql-interview.html	Course	not-in-schema.org:courseMode
-1	public/stripe-sql-interview/index.html	Course	not-in-schema.org:courseMode
-1	public/tesla-sql-interview.html	Course	not-in-schema.org:courseMode
-1	public/tesla-sql-interview/index.html	Course	not-in-schema.org:courseMode
-1	public/turkce-sql-ogren.html	ItemList	not-in-schema.org:inLanguage
-3	public/turkce-sql-ogren.html	ItemList > itemListElement:ListItem > item:Course	not-in-schema.org:courseMode
-1	public/turkce-sql-ogren/index.html	ItemList	not-in-schema.org:inLanguage
-3	public/turkce-sql-ogren/index.html	ItemList > itemListElement:ListItem > item:Course	not-in-schema.org:courseMode
-1	public/uber-sql-interview.html	Course	not-in-schema.org:courseMode
-1	public/uber-sql-interview/index.html	Course	not-in-schema.org:courseMode
-1	public/uretim-sql/index.html	Course	not-in-schema.org:courseMode
 1	public/vs-datalemur.html	SoftwareApplication > aggregateRating:AggregateRating	recommended:worstRating
 1	public/vs-datalemur/index.html	SoftwareApplication > aggregateRating:AggregateRating	recommended:worstRating
-1	public/wise-sql-interview.html	Course	not-in-schema.org:courseMode
-1	public/wise-sql-interview/index.html	Course	not-in-schema.org:courseMode
