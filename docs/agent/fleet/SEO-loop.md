@@ -48,6 +48,10 @@ and B1's funnel read found the drop two months later.
 6. **The founder's part is one list a week.** On Mondays C1 hands him the
    URLs to request indexing for in GSC and Bing, in order, at most 10. No
    agent touches the consoles.
+   **Amended 2026-11-23 (founder):** the list now comes from
+   `scripts/index-queue.mjs` (rules: `docs/plans/indexing-queue-2026-11-23.md`),
+   and S1's daily indexing step may press "Request indexing" for that list
+   through Claude in Chrome. No other console action by an agent.
 
 ## Judged by
 
