@@ -1,3 +1,5 @@
+import { SKILL_TO_RADAR, mapTopicToSkill } from './skill-calc.js';
+
 // Who may be shown a paid wall at all — the ordering rule, not the pricing.
 //
 // ── The incident ────────────────────────────────────────────────────────────
@@ -140,20 +142,85 @@ export function paidWallFor({ isPro = false, solved = null, companyFilter = null
 // visitor gets a free Hard preview of the same kind instead, in the editor —
 // free, so nothing is sold to someone who has solved nothing.
 //
-// Pick: unsolved free Hard previews, most shared skills/category with the
-// target first, then the bank's own order. null when none is left.
-export function previewSwapFor(target, challenges, solvedIds) {
+// Pick (rewritten 2026-11-23, new-content QA D2): a "same kind" match needs
+// a DEFINING tag in common, not a broad one. Before, the score counted every
+// tag and the category, so a gaps-and-islands login question (318, 319) was
+// matched to #86 "Multi-CTE Revenue Pipeline" on SELECT, CTE, JOIN, GROUP BY
+// and Window Functions — tags every free Hard carries — and the note called
+// a customer-spend DENSE_RANK question "a free Hard question of the same
+// kind". Now:
+//   - SWAP_GENERIC_TAGS (SELECT, JOIN, CTE, GROUP BY, …) never count, and a
+//     combined tag or category is split into its parts first ("Window
+//     Function / LAG" is "Window Function" and "LAG");
+//   - each remaining tag counts as itself (LAG) and as its canonical skill
+//     (Window Functions), Querying Basics never;
+//   - a tag that EVERY free Hard preview carries is dropped too: it cannot
+//     tell one preview from another (Window Functions, today).
+// The best preview by shared defining tags wins, the old all-tag overlap
+// breaks ties, then the bank's order. When nothing defining is shared the
+// swap still happens, but `sameKind` is false and the note says plainly that
+// it is a different question. null when no unsolved free Hard is left.
+export const SWAP_GENERIC_TAGS = new Set([
+  'select', 'from', 'where', 'join', 'inner join', 'cte', 'with', 'subquery',
+  'subqueries', 'group by', 'order by', 'having', 'distinct', 'aggregation',
+  'limit', 'alias', 'count', 'sum', 'avg',
+]);
+
+const canonicalOf = raw => SKILL_TO_RADAR[raw] || SKILL_TO_RADAR[mapTopicToSkill(raw || '')] || null;
+
+// tag key (lower case) -> display name, broad tags removed.
+function definingTags(c) {
+  const out = new Map();
+  for (const raw of [...(c.skills || []), c.category].filter(Boolean)) {
+    for (const part of String(raw).split(/[/+,]/)) {
+      const tok = part.trim();
+      if (!tok) continue;
+      const key = tok.toLowerCase();
+      if (SWAP_GENERIC_TAGS.has(key)) continue;
+      const canon = canonicalOf(tok);
+      // A tag that only spells its own canonical skill ("Window Function" for
+      // Window Functions) is that skill, not a narrower one: count it once, as
+      // the canonical, so the universal-tag drop below removes it too.
+      const spellsCanon = canon && key.replace(/s$/, '') === canon.toLowerCase().replace(/s$/, '');
+      if (!spellsCanon && !out.has(key)) out.set(key, tok);
+      if (canon && canon !== 'Querying Basics' && !out.has(canon.toLowerCase())) out.set(canon.toLowerCase(), canon);
+    }
+  }
+  return out;
+}
+
+const isFreeHard = c => c && c.freePreview && c.difficulty === 'Hard';
+
+export function previewSwapMatch(target, challenges, solvedIds) {
   if (!target || !Array.isArray(challenges)) return null;
   const solved = solvedIds instanceof Set ? solvedIds : new Set(solvedIds || []);
-  const tags = c => new Set([...(c.skills || []), c.category].filter(Boolean).map(t => String(t).toLowerCase()));
-  const want = tags(target);
-  const pool = challenges.filter(c => c && c.freePreview && c.difficulty === 'Hard' && c.id !== target.id && !solved.has(c.id));
+  const allTags = c => new Set([...(c.skills || []), c.category].filter(Boolean).map(t => String(t).toLowerCase()));
+  const previews = challenges.filter(c => isFreeHard(c) && c.id !== target.id);
+  const pool = previews.filter(c => !solved.has(c.id));
   if (!pool.length) return null;
-  let best = null, bestScore = -1;
-  for (const c of pool) {
-    let score = 0;
-    for (const t of tags(c)) if (want.has(t)) score++;
-    if (score > bestScore) { best = c; bestScore = score; }
+  // Tags every free Hard preview carries say nothing about kind.
+  const universal = new Set();
+  if (previews.length >= 2) {
+    const sets = previews.map(c => definingTags(c));
+    for (const key of sets[0].keys()) if (sets.every(m => m.has(key))) universal.add(key);
   }
-  return best;
+  const want = definingTags(target);
+  for (const key of universal) want.delete(key);
+  const wantAll = allTags(target);
+  let best = null, bestShared = [], bestPrimary = -1, bestSecondary = -1;
+  for (const c of pool) {
+    const shared = [];
+    for (const key of definingTags(c).keys()) if (want.has(key)) shared.push(want.get(key));
+    let secondary = 0;
+    for (const t of allTags(c)) if (wantAll.has(t)) secondary++;
+    if (shared.length > bestPrimary || (shared.length === bestPrimary && secondary > bestSecondary)) {
+      best = c; bestShared = shared; bestPrimary = shared.length; bestSecondary = secondary;
+    }
+  }
+  return { swap: best, sameKind: bestShared.length > 0, shared: bestShared };
+}
+
+export function previewSwapFor(target, challenges, solvedIds) {
+  const m = previewSwapMatch(target, challenges, solvedIds);
+  return m ? m.swap : null;
 }
