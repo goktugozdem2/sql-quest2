@@ -79,6 +79,10 @@ describe('/sql-debugging-practice/: GROUP BY in SQLite vs PostgreSQL', () => {
     const faq = ld.find(o => o['@type'] === 'FAQPage');
     expect(faq.mainEntity.map(e => e.name)).toContain(q);
   });
+  it('warns that PostgreSQL ROUND(x, 2) needs a NUMERIC, so a pasted query meets the GROUP BY error and not a ROUND one', () => {
+    expect(g.wrong.sql).toMatch(/ROUND\(SUM\(total\), 2\)/);
+    expect(page).toContain('ROUND(SUM(total)::numeric, 2)');
+  });
   it('makes no frequency claim', () => {
     for (const re of [/most[- ]asked/i, /most common(ly)? (asked|interview)/i, /\basked (in|at) \d+%/i]) {
       expect(page).not.toMatch(re);

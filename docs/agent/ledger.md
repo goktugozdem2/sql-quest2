@@ -598,6 +598,38 @@ of the verifier and must never be rounded to `FLAT`.
   - C2's AI-visibility pass shipped the same day, on the same metric and similar pages. These two cannot be told apart; read them together.
   - Perplexity reads only about 5 prompts a week before its wall, so one answer is 20 points. A single-week move is `UNREADABLE`.
   - Gemini is invisible to `ai_landings_month`.
+### C7 run 3: GROUP BY in SQLite vs PostgreSQL, and DISTINCT against a fan-out
+
+- **Claimed** 2026-11-24 · **Shipped** on merge (static pages, no flag) ·
+  **Read** 2026-12-22.
+- **Change** Two worked answers in our own words, each query run on the
+  app's data and pinned in `tests/question-answers-2026-11-24.test.js` and
+  `tests/sql-patterns.test.js`: a GROUP BY with a bare column that SQLite
+  runs and PostgreSQL refuses, with both fixes and an FAQPage entry
+  (`/sql-debugging-practice/#group-by-sqlite-postgresql`), and why DISTINCT
+  does not repair a join fan-out (a fourth "Why" line on `/sql-join-fan-out/`).
+  Read: `docs/reads/questions-2026-11-24.md`.
+- **Metric** `content_funnel` (metrics.md) for the two pages: landings and
+  first runs from them. Plus `gsc_page_clicks` impressions on the two pages,
+  query×page slice filtered to the two shapes
+  (`must appear in the group by|group by (error|sqlite|postgres)|bare column|distinct (join|duplicate)|sum (doubled|inflated)|duplicate rows after join`).
+- **Baseline** not read: the cloud session has no production data. The
+  laptop reads the 28 days to 2026-11-23 for the two pages and writes it
+  here.
+- **Target** the two pages' landings for the 28 days to 2026-12-21 at or
+  above the baseline + 20%, first runs from them not below the baseline, and
+  at least one query from the two shapes with impressions on the page that
+  answers it.
+- **Falsification** (written before the data) landings at or below the
+  baseline and no shape query on its page → same conclusion as runs 1 and 2.
+  Landings up with no first runs → the page needs fixing; it is not a win.
+- **Confounds** #235 changes the footer of the same two built pages in the
+  window; C7 runs 1 and 2 read in the same weeks on other pages; the
+  debugging hub went live on 2026-11-23, so its baseline is days, not 28 —
+  read the hub's line as UNREADABLE if it has fewer than 14 days of rows. A
+  Google core update would show on every page: compare against the other
+  trap pages.
+
 ### C7 run 2: percentage of total and zero-row days answered on two existing posts
 
 - **Claimed** 2026-11-23 · **Shipped** on merge (static pages, no flag) ·

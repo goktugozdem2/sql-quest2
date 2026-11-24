@@ -85,7 +85,7 @@ ol.steps{margin:10px 0 0 20px;color:#cbd5e1;font-size:16px}ol.steps li{margin:8p
 <span class="k">FROM</span> orders
 <span class="k">GROUP</span> <span class="k">BY</span> category;</code></pre>
   <p class="lead">In SQLite this runs and returns two rows, one per category. Each row shows the whole category’s revenue (4,984.68 for Electronics) next to one product name SQLite took from one of the category’s rows. Electronics has 23 products, and the row reads as if that one product earned all of it. Laptop Pro, the top seller, brought in 1,299.99.</p>
-  <p class="lead">PostgreSQL refuses the same query with an error that <code>orders.product</code> must appear in the GROUP BY clause or be used in an aggregate function, and MySQL’s default mode refuses it too. SQLite is the lenient one: a column that is neither grouped nor aggregated gets a value from some row of the group. The error is the database asking you what you meant. Answer it one of two ways.</p>
+  <p class="lead">PostgreSQL refuses the same query with an error that <code>orders.product</code> must appear in the GROUP BY clause or be used in an aggregate function, and MySQL’s default mode refuses it too. SQLite is the lenient one: a column that is neither grouped nor aggregated gets a value from some row of the group. The error is the database asking you what you meant. Answer it one of two ways. (In PostgreSQL, <code>ROUND(x, 2)</code> takes a NUMERIC: if <code>total</code> is a float column, write <code>ROUND(SUM(total)::numeric, 2)</code>, or PostgreSQL stops at the ROUND before it reaches the GROUP BY.)</p>
   <p class="lbl good">Fix 1: You wanted revenue per product: group by every column you show</p>
   <pre class="good"><code><span class="k">SELECT</span> category,
        product,
