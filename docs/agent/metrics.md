@@ -101,6 +101,41 @@ And two standing traps:
   reading arrivals; the week-over-week "drop" that follows is the burst
   leaving, not demand falling (weekly read 2026-09-07).
 
+## Reading an A/B with gbstats (2026-11-24)
+
+Our A/Bs are small: a few people per arm per week. From 2026-11-24 a live
+A/B on a yes/no metric is read with GrowthBook's stats engine (`gbstats`,
+MIT, pinned in `scripts/ab/requirements.txt`) as well as by its count.
+- **How:** `node scripts/ab/read-test.mjs <test>` prints the test's
+  read-only SQL (the metric as defined in this file, plus the README step-2
+  filters). Run it through `mcp__supabase__execute_sql`, then pass the rows
+  back: `node scripts/ab/read-test.mjs <test> --counts '<rows>'
+  --python <venv>/bin/python`. `--list` shows the tests it knows
+  (`companyDirectOpen`, `mobileOneLayer`, and `mobileRunBar` with `--since`
+  once it is on). For a test it does not know, run `python3 -I
+  scripts/ab/read.py --control <arm> --arm <arm>:<users>:<conversions> …`
+  on counts from this file's SQL. Python 3.11 in a venv, never the system
+  site-packages.
+- **Report one line per comparison:** n per arm, each arm's rate, the
+  chance to beat control, the absolute difference in points with its 95%
+  credible interval, and the frequentist p-value. Example: `direct 6/17
+  (35%) vs list 3/14 (21%): P(beat) 81%, +13.9 pts [−17, +45], p = 0.52,
+  directional (n < 15)`.
+- **gbstats informs; the claim decides.** The pre-registered rule in the
+  ledger (minimum n, points above control, stop dates) is still the verdict.
+  A chance to beat control of 95% at 6 per arm is not a HIT if the claim
+  says 120 per arm. Never rewrite a claim's falsification rule to a
+  probability after the data is in.
+- **When gbstats declines, say so.** Its tests are normal approximations.
+  An arm at 0% or 100% (zero variance), an empty arm, or a 0% control
+  for the relative uplift return no number (`ZERO_NEGATIVE_VARIANCE`,
+  `NO_UNITS_IN_VARIATION`, `ZERO_NEGATIVE_BASELINE_VARIATION`). Report the
+  counts and "gbstats declined". Never fill the gap with a formula of your
+  own. Under 15 people in an arm the line is marked directional.
+- **Not A/Bs:** `exitReasonAsk` and `day2Ask` have no arms (everyone in
+  scope gets the ask), so there is nothing for gbstats to compare. Read
+  them by their answer counts.
+
 ## `challenge_solve_through`
 
 Of the people who opened a challenge, how many solved it. The content-quality
