@@ -156,3 +156,142 @@ and this lane did not until today.
 
 Not done this run (no browser connected). First due Monday 2026-11-30; the
 checklist is in the brief.
+
+---
+
+## 2026-11-24 — second read
+
+Windows end 2026-11-24 ~17:25 UTC. **28 days** = people who entered from
+2026-10-27; **7 days** = people who entered from 2026-11-17. Same query as
+11-23 (`scripts/analytics/daily.sql`, Query 1 and 2) plus three hand rules
+from C8's 11-24 read (README rule 2, `docs/agent/metrics.md` shared traps),
+added to the query's `per` / `hand_rules` for this run only — `daily.sql`
+itself is not changed in this docs PR (rule 6b; open thread below):
+
+```sql
+-- per:
+bool_or(m->>'viewport' = 'desktop:1024x1024') AS vp1024,
+bool_or(m->>'tz' = 'Europe/Istanbul' AND m->>'viewport' = 'mobile:375x812'
+        AND created_at >= '2026-11-24 11:00+00' AND created_at < '2026-11-24 11:08+00') AS walk,
+-- hand_rules, after the four existing WHENs:
+WHEN walk   THEN 'walk_1124'
+WHEN vp1024 THEN 'vp1024'
+WHEN first_open_m IS NOT NULL AND COALESCE(first_open_m->>'landingSrc','') = ''
+     AND first_open_m->>'langs' = '1' AND NOT any_landing THEN 'app1lang'
+```
+
+### Site funnel
+
+| Window | Landed | Opened app | First run | First solve | Signup | Pro modal | Checkout click | Paid (webhook) |
+|---|---|---|---|---|---|---|---|---|
+| 28 d | 1,286 | 657 (51.1%) | 277 (21.5%) | 226 (17.6%) | 67 | 112 | 14 | 5 |
+| 7 d | 332 | 167 (50.3%) | 85 (25.6%) | 61 (18.4%) | 17 | 22 | 2 | 0 |
+
+Against 11-23 (1,323 → 226, 17.1%): the solvers are the same 226; the
+landers fell by 37, 24 of them `(app only)` arrivals that the new
+`app1lang` rule removes (94 → 70); the rest is the window moving a day. The
+28-day paid count is 5 (6 yesterday); not traced per person here (money
+stays off the repo), most likely an entry leaving the window.
+7-day landed → first solve 18.4% (z +0.38 against the 28 days): flat.
+
+### Countries (proxy: IANA `tz` → country; PR #277 not merged, `country` not yet on the rows)
+
+| Country | 28 d landed | Opened | First solve | Rate | 7 d landed | 7 d solve | 7 d rate | z | Flag |
+|---|---|---|---|---|---|---|---|---|---|
+| IN | 341 | 196 | 71 | 20.8% | 89 | 21 | 23.6% | +0.64 | |
+| US | 283 | 111 | 35 | 12.4% | 76 | 7 | 9.2% | −0.84 | |
+| GB | 85 | 52 | 18 | 21.2% | 25 | 8 | 32.0% | +1.32 | n<30 (7 d) |
+| (other zones) | 60 | 33 | 8 | 13.3% | | | | | |
+| TR | 39 | 25 | 10 | 25.6% | | | | | |
+| DE | 29 | 17 | 9 | 31.0% | | | | | n<30 |
+| PL | 28 | 18 | 7 | 25.0% | | | | | n<30 |
+| SG | 28 | 10 | 3 | 10.7% | | | | | n<30 |
+| CA | 28 | 14 | 2 | 7.1% | | | | | n<30 |
+| FR | 20 | 11 | 7 | 35.0% | | | | | n<30 |
+
+No country moved by the rule. Watch: the US opens the app less and less —
+landed → opened 32% in the 7 days (24 of 76) against 39% over 28 and 61%
+for India; the real `country` (#277) decides whether that is US people or
+crawler residue in US zones. HK still 19 landed, 0 opened (n<30,
+crawler-shaped).
+
+### Devices
+
+| Device | Window | Landed | Opened | First run | First solve | Signup | Pro modal | Rate | z (7 vs 28) |
+|---|---|---|---|---|---|---|---|---|---|
+| desktop | 28 d | 1,082 | 593 (55%) | 267 | 218 | 64 | 107 | 20.1% | |
+| mobile | 28 d | 186 | 53 (28%) | 8 | 6 | 3 | 4 | 3.2% | |
+| tablet | 28 d | 11 | 10 | 2 | 2 | 0 | 1 | n<30 | |
+| desktop | 7 d | 277 | 158 (57%) | 81 | 58 | 17 | 22 | 20.9% | +0.33 |
+| mobile | 7 d | 52 | 8 (15%) | 3 | 2 | 0 | 0 | 3.8% | +0.25 |
+
+The device gap holds at 6.3× (20.1% vs 3.2%). Mobile landed → opened is 15%
+in the 7 days against 28% over 28 (10% in yesterday's 7 days); the
+first-solve rule cannot fire on two solvers. Re-read 11-30 as planned.
+
+### Landing pages (28 days, top 20 by people; 7-day column where n ≥ 10)
+
+Site median (8 pages with n ≥ 30, `(app only)` out): **19.8%**; CONVERTS
+needs ≥ 29.7%. DEAD needs ≥ 100 landers and 0 opens.
+
+| # | Page | Landed | Opened | First run | First solve | Signup | Pro modal | Rate | 7 d (landed → solve) | Flag |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | /sql-exercises/ | 194 | 120 | 55 | 47 | 10 | 17 | 24.2% | 31 → 9 | |
+| 2 | / (home) | 178 | 96 | 49 | 36 | 12 | 25 | 20.2% | 48 → 12 | |
+| 3 | /blog/capital-one-codesignal-data-analyst-assessment/ | 73 | 10 | 3 | 3 | 0 | 2 | 4.1% | 22 → 0 (1 opened) | |
+| 4 | /best-sql-practice-sites/ | 66 | 18 | 9 | 7 | 2 | 4 | 10.6% | 11 → 2 | |
+| 5 | /wise-sql-interview/ | 59 | 37 | 15 | 13 | 8 | 10 | 22.0% | 20 → 5 | |
+| 6 | /challenges/window-functions/ | 36 | 25 | 15 | 14 | 4 | 4 | **38.9%** | 11 → 4 | **CONVERTS** |
+| 7 | /revolut-sql-interview/ | 36 | 22 | 8 | 6 | 1 | 2 | 16.7% | | |
+| 8 | /challenges/cte/ | 31 | 26 | 8 | 6 | 2 | 3 | 19.4% | 12 → 2 | |
+| 9 | /snowflake-sql-interview/ | 29 | 21 | 9 | 7 | 2 | 4 | 24.1% | | n<30 |
+| 10 | /challenges/aggregation/ | 24 | 21 | 9 | 5 | 1 | 0 | 20.8% | | n<30 |
+| 11 | /vs-sqlbolt/ | 21 | 4 | 1 | 1 | 0 | 0 | 4.8% | | n<30 |
+| 12 | /challenges/subqueries/ | 20 | 17 | 6 | 3 | 2 | 2 | 15.0% | | n<30 |
+| 13 | /turkce-sql-ogren/ | 18 | 12 | 7 | 6 | 1 | 1 | 33.3% | | n<30 |
+| 14 | /blog/sql-for-fraud-analytics/ | 16 | 2 | 0 | 0 | 0 | 0 | 0% | | n<30 |
+| 15 | /sql-cheat-sheet/ | 15 | 5 | 3 | 3 | 1 | 3 | 20.0% | | n<30 |
+| 16 | /sql-practice-comparison/ | 14 | 4 | 2 | 1 | 0 | 0 | 7.1% | | n<30 |
+| 17 | /challenges/ | 13 | 10 | 8 | 8 | 1 | 1 | 61.5% | | n<30 |
+| 18 | /meta-sql-interview/ | 13 | 6 | 2 | 2 | 1 | 2 | 15.4% | | n<30 |
+| 19 | /blog/faang-sql-interview-guide/ | 12 | 4 | 3 | 3 | 0 | 0 | 25.0% | | n<30 |
+| 20 | /capital-one-sql-interview/ | 12 | 5 | 1 | 1 | 0 | 2 | 8.3% | | n<30 |
+| — | (app only) | 70 | 70 | 10 | 10 | 4 | 12 | 14.3% | 14 → 3 | |
+
+- **Best:** `/challenges/window-functions/` still CONVERTS (38.9%, n = 36;
+  the 11-23 row in `signals.md` stands, no new row).
+- **Worst with n ≥ 30:** the Capital One CodeSignal blog guide, 4.1%; in
+  the last 7 days 22 landed and 1 opened the app (0 yesterday). Watch line,
+  no rule covers it; the action sits with C5 (`content_funnel`).
+- No DEAD page, no MOVED segment.
+
+### Signals raised
+
+None new. The only rule hit is the CONVERTS row of 11-23, which holds.
+
+### Exclusion audit (Query 2 with the three new rules, browsers with any event, 28 days)
+
+| Bucket | Browsers | First seen in the 7 days | Ran a query | Solved |
+|---|---|---|---|---|
+| kept | 2,521 | 653 | 280 | 229 |
+| Asia/Shanghai scroll reader | 1,704 | 191 | 0 | 0 |
+| rule 2 stamps and internal accounts | 453 | 31 | 0 | 0 |
+| `topic1lang` | 353 | 288 | 0 | 0 |
+| `langs = 2` no-landing group | 350 | 38 | 2 | 2 |
+| `app1lang` (new, C8 11-24) | 333 | 95 | 3 | 2 |
+| UTC landing crawler | 192 | 138 | 0 | 0 |
+| `desktop:1024x1024` crawler (new, C8 11-24) | 20 | 20 | 0 | 0 |
+| founder's walk guests, 11-24 11:00–11:08 UTC | 2 | 2 | 2 | 2 |
+
+- `topic1lang` jumped 277 → 353 (288 first seen in the last 7 days) and
+  `app1lang` takes another 333, 95 of them new this week: the topic-page
+  crawler is still growing, now through other doors (C8's N-row). Together
+  ~690 browsers in 28 days with 3 runs.
+- The UTC landing crawler 181 → 192.
+- Rule 2 stamps fell 697 → 453 as older stamped traffic left the window.
+- The `app1lang` rule costs 3 runs / 2 solves in 28 days — the price of a
+  hand rule that has no fingerprint beyond "one language, no landing".
+
+### Vercel hand-read
+
+Not due (Mondays; first one 2026-11-30).

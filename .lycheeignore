@@ -1,0 +1,28 @@
+# URLs the weekly outbound link check (.github/workflows/links.yml) skips.
+# One regular expression per line, matched against the full URL. Every entry
+# says why; "blocks bots" means it answers a link checker with 403/999 or a
+# challenge page whatever the link's real state, so a check there can only
+# ever be noise. Those links are not verified by anything — check them by hand
+# when a page that cites them changes. Probed with lychee's user agent on
+# 2026-11-24 unless noted.
+
+# Rate-limit or block crawlers by policy (named in the lane brief, 2026-11-24).
+^https?://([a-z0-9-]+\.)*linkedin\.com([/:?#]|$)
+^https?://(www\.)?x\.com([/:?#]|$)
+^https?://([a-z0-9-]+\.)*twitter\.com([/:?#]|$)
+^https?://([a-z0-9-]+\.)*glassdoor\.[a-z.]+([/:?#]|$)
+
+# Cloudflare challenge (cf-mitigated: challenge, 403) even for a browser user agent.
+^https?://(www\.)?prachub\.com([/:?#]|$)
+^https?://(www\.)?leetcode\.com([/:?#]|$)
+^https?://support\.codesignal\.com([/:?#]|$)
+
+# Akamai 403 to non-browser clients, browser user agent included.
+^https?://dev\.mysql\.com([/:?#]|$)
+
+# Bare origins used only for <link rel="preconnect">: the origin itself is a 404 by design.
+^https://fonts\.googleapis\.com/?$
+^https://fonts\.gstatic\.com/?$
+
+# Microsoft Clarity's loader prefix, built in an inline script — not a link.
+^https://www\.clarity\.ms/tag/?$

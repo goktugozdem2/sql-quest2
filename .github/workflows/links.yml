@@ -1,0 +1,83 @@
+# Outbound link check (2026-11-24) — lychee over the static site's EXTERNAL links.
+#
+# Why: company pages must carry dated source links (CLAUDE.md, "Company
+# pages"), the alternatives/comparison pages link competitors, and the blog
+# cites docs. A dead source is a page that claims something it can no longer
+# show. Nothing checked them. Internal links are scripts/seo-audit.mjs's job
+# (tests/seo-audit.test.js, on public/), so this checks ONLY external ones:
+#   - inputs: the committed src/*.html and src/blog/** pages;
+#   - every relative or root-relative link resolves against --base-url to
+#     https://sqlquest.app/…, and the --exclude below drops all of sqlquest.app;
+#   - --scheme http/https: no mailto:, no file://.
+# Hosts that block or rate-limit bots are listed in .lycheeignore. 429 is
+# accepted (a rate limit is not a dead link).
+# Weekly (Monday 05:20 UTC) and by hand. On failure: one open issue labelled
+# link-check, later failures comment on it (the gsc-fetch.yml pattern).
+# Guard: tests/links-workflow.test.js. Research: SEO/GEO tool shortlist
+# 2026-11-24, adopt-now #3.
+name: Outbound links
+
+on:
+  schedule:
+    - cron: '20 5 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: links
+  cancel-in-progress: false
+
+jobs:
+  lychee:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check external links
+        id: lychee
+        # v2.9.0 (2026-07-09), pinned by commit; runs lychee v0.24.2.
+        uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8
+        with:
+          lycheeVersion: v0.24.2
+          fail: true
+          output: lychee/out.md
+          args: >-
+            --no-progress
+            --scheme https --scheme http
+            --base-url https://sqlquest.app/
+            --exclude '^https?://([a-z0-9-]+\.)*sqlquest\.app([/:?#]|$)'
+            --accept '100..=103,200..=299,429'
+            --max-concurrency 8
+            --max-retries 3
+            --retry-wait-time 5
+            --timeout 30
+            'src/*.html'
+            'src/blog/**/*.html'
+
+      - name: Report the failure as an issue
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          title="Outbound link check failed"
+          gh label create link-check --color FBCA04 --description "Weekly outbound link check (links.yml)" 2>/dev/null || true
+          {
+            echo "Run: $RUN_URL ($(date -u +%Y-%m-%dT%H:%MZ))."
+            echo "Fix the source link in the page's generator or data file (company pages: src/data/company-interviews.js), or, for a host that blocks bots, add it to .lycheeignore with a reason."
+            echo
+            # An issue body holds 65,536 characters; the full report stays in the job summary.
+            if [ -f lychee/out.md ]; then head -c 60000 lychee/out.md; else echo "No lychee report: the step failed before it wrote one. Read the run log."; fi
+          } > link-report.md
+          existing=$(gh issue list --label link-check --state open --search "\"$title\" in:title" --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body-file link-report.md
+          else
+            gh issue create --title "$title" --label link-check --body-file link-report.md
+          fi

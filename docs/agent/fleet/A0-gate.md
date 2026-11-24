@@ -20,8 +20,8 @@ Before each pass, read `docs/agent/fleet/orchestrator-decisions.md`. A flag that
 ## What A0 may decide
 
 A0 decides **merge, hold or reject** on any open PR from a fleet branch:
-`content/`, `qa/`, `seo/`, `docs/`, `feat/`, `fix/`, `ci/`, `chore/` and the
-orchestrator's `claude/` branch. It may also merge `origin/main` into a branch,
+`content/`, `qa/`, `seo/`, `docs/`, `feat/`, `fix/`, `ci/`, `chore/`, G0's
+`goal/` (docs-only) and the orchestrator's `claude/` branch. It may also merge `origin/main` into a branch,
 rebuild, re-test and push, to clear a conflict in build output.
 
 ## What A0 never decides, even with an A1 MERGE
