@@ -2114,6 +2114,123 @@ async function main() {
       fail('a guest at 10 solves opening an unsolved challenge meets the quota wall: challenge_quota lock, Pro modal reason=free_quota, both plans, counter 10 of 10', JSON.stringify(quotaSummary));
     }
 
+    // ── A company arrival in the `direct` arm, mock answers only (2026-11-23) ──
+    // A2's live QA of `companyDirectOpen` (#229) left one persona unwalked: a
+    // guest with zero challenge solves and ten correct mock answers, arriving
+    // from a company page in the `direct` arm. Read from the code, not
+    // assumed: the free quota counts CHALLENGE solves only (`quotaGate` is
+    // fed `solvedChallenges.size` in openChallenge, companyBannerNext and the
+    // counter — "10 free challenge solves", CLAUDE.md); mock answers count in
+    // `practiceSolves`, which feeds the cold-start gate, the wall label and
+    // the header button, never the quota. So this guest has spent nothing:
+    // `companyDirectDecision` sees zero solves, assigns `direct`, and opens
+    // the banner's question — inside the quota (0 of 10 used), no wall, no
+    // Pro modal. The quota holds where it is spent: the same guest back at
+    // 10 challenge solves, with the `direct` arm already stored, gets the
+    // list and nothing opened. The aid is picked with the app's own hash
+    // (`companyDirectArm`, FNV + murmur3) — a2a2…0000 → direct, as in #229.
+    const directAid = 'a2a20000000000000000000000000000';
+    const directUrl = URL + '/app/?src=capital-one-sql-interview&company=Capital%20One';
+    // Four on the free mock + six on the top-10 mock = practiceSolves 10.
+    const directMocks = [
+      { interviewId: 'sql-fundamentals-free', ids: ['free-q1', 'free-q2', 'free-q3', 'free-q4'] },
+      { interviewId: 'top-10-most-asked', ids: ['top10-q1', 'top10-q2', 'top10-q3', 'top10-q4', 'top10-q5', 'top10-q6'] },
+    ].map((m, i) => ({
+      id: 1795300000000 + i,
+      interviewId: m.interviewId,
+      interviewTitle: m.interviewId,
+      passed: true,
+      questionsCorrect: m.ids.length,
+      questionsTotal: m.ids.length,
+      questionResults: m.ids.map(questionId => ({ questionId, correct: true })),
+      timestamp: new Date(Date.now() - 86400000).toISOString(),
+    }));
+    const directPersona = async ({ guest, solved, storedArm }) => {
+      consoleCapture.length = 0;
+      await cdp(tab, 'Runtime.discardConsoleEntries', {});
+      await evalInPage(tab, `
+        (() => {
+          localStorage.clear();
+          localStorage.setItem('sqlquest_aid', ${JSON.stringify(directAid)});
+          localStorage.setItem('sqlquest_guest_user', ${JSON.stringify(guest)});
+          localStorage.setItem('sqlquest_promo_6solves_guest', '1');
+          localStorage.setItem('sqlquest_promo_10solves_guest', '1');
+          ${storedArm ? `localStorage.setItem('sqlquest_company_direct_v1', JSON.stringify({ arm: ${JSON.stringify(storedArm)}, at: Date.now() - 86400000 }));` : ''}
+          localStorage.setItem('sqlquest_user_' + ${JSON.stringify(guest)}, JSON.stringify({
+            username: ${JSON.stringify(guest)},
+            solvedChallenges: ${JSON.stringify(solved)},
+            challengeAttempts: ${JSON.stringify(solved)}.map(id => ({ challengeId: id, correct: true, timestamp: Date.now() - 60000 })),
+            interviewHistory: ${JSON.stringify(directMocks)},
+            // A passed sitting is worth 100 XP (finishInterview). Without it a
+            // zero-challenge blob is not resumable (hasProgress) and the app
+            // mints a fresh guest — the mock answers would never be read.
+            xp: ${directMocks.length * 100},
+            createdAt: Date.now() - 86400000 * 2,
+            lastActive: Date.now() - 3600000,
+          }));
+          location.href = ${JSON.stringify(directUrl)};
+          return true;
+        })()`);
+      await new Promise(r => setTimeout(r, 7000));
+      const dom = await evalInPage(tab, `
+        (() => ({
+          flagOn: !!(window.FF && window.FF.feature && window.FF.feature('companyDirectOpen') === true),
+          quotaOn: !!(window.FF && window.FF.feature && window.FF.feature('freeQuota') === true),
+          headerProOn: !!(window.FF && window.FF.feature && window.FF.feature('headerProButton') === true),
+          editor: !!document.querySelector('.CodeMirror'),
+          proModal: !!document.querySelector('[data-testid="plan-monthly"], [data-testid="plan-annual"], [data-testid="pro-modal-free-quota"]'),
+          counter: (document.querySelector('[data-testid="free-quota-counter"]')?.textContent || '').trim().slice(0, 80),
+          aid: localStorage.getItem('sqlquest_aid'),
+          record: localStorage.getItem('sqlquest_company_direct_v1'),
+          // the resumed guest is the seeded one and still holds its mock sittings
+          guest: localStorage.getItem('sqlquest_guest_user'),
+          mockSittings: (JSON.parse(localStorage.getItem('sqlquest_user_' + ${JSON.stringify(guest)}) || '{}').interviewHistory || []).length,
+        }))()`);
+      const events = [];
+      for (const params of consoleCapture) {
+        const decoded = await decodeMutedAnalytics(tab, params);
+        if (decoded) events.push(decoded);
+      }
+      const of = (name) => events.filter(d => d.event === name);
+      return {
+        dom,
+        assigned: of('company_direct_assigned').map(d => ({ arm: d.metadata?.arm, nextId: d.metadata?.nextId })),
+        directOpens: of('challenge_opened').filter(d => d.metadata?.openedFrom === 'company_direct').map(d => Number(d.metadata?.challengeId)),
+        quotaLocks: of('content_lock_reached').filter(d => d.metadata?.surface === 'challenge_quota').map(d => d.metadata?.wall),
+        modalReasons: of('pro_modal_shown').map(d => d.metadata?.reason),
+        headerSolves: of('header_pro_shown').map(d => d.metadata?.solves),
+      };
+    };
+    const coldMock = await directPersona({ guest: 'guest_1795300000010', solved: [], storedArm: null });
+    const warmMock = await directPersona({ guest: 'guest_1795300000011', solved: [91, 92, 93, 94, 95, 96, 97, 98, 99, 100], storedArm: 'direct' });
+    const directSummary = { coldMock, warmMock };
+    const nextId = coldMock.assigned[0]?.nextId;
+    if (!coldMock.dom.flagOn || !coldMock.dom.quotaOn) {
+      pass('(companyDirectOpen or freeQuota off — the mock-answers direct-arm check skipped)');
+    } else if (
+      coldMock.dom.aid === directAid
+      && coldMock.dom.guest === 'guest_1795300000010' && coldMock.dom.mockSittings === directMocks.length
+      && warmMock.dom.guest === 'guest_1795300000011' && warmMock.dom.mockSittings === directMocks.length
+      && coldMock.assigned.length === 1 && coldMock.assigned[0].arm === 'direct' && nextId != null
+      && coldMock.directOpens.length === 1 && coldMock.directOpens[0] === Number(nextId)
+      && coldMock.dom.editor
+      && coldMock.quotaLocks.length === 0 && coldMock.modalReasons.length === 0 && !coldMock.dom.proModal
+      // back at 10 challenge solves with `direct` stored: the list, nothing opened, no wall
+      && warmMock.assigned.length === 0 && warmMock.directOpens.length === 0
+      && !warmMock.dom.editor && !warmMock.dom.proModal
+      && warmMock.quotaLocks.length === 0 && warmMock.modalReasons.length === 0
+      && /10 of 10/.test(warmMock.dom.counter)
+      // the seeded mock answers are read and counted in practiceSolves: the
+      // header button's count is 10 for the cold guest (0 + 10 mock
+      // answers) and 20 for the warm one (10 + 10)
+      && (!coldMock.dom.headerProOn || (coldMock.headerSolves.length > 0 && coldMock.headerSolves.every(n => n === 10)))
+      && (!warmMock.dom.headerProOn || (warmMock.headerSolves.length > 0 && warmMock.headerSolves.every(n => n === 20)))
+    ) {
+      pass(`direct arm, 0 challenge solves + 10 mock answers: assigned, opens the banner's question (${nextId}) inside the quota, no wall; at 10/10 with direct stored: list, nothing opened`);
+    } else {
+      fail('direct arm, 0 challenge solves + 10 mock answers: assigned, opens the banner\'s question inside the quota, no wall; at 10/10 with direct stored: list, nothing opened', JSON.stringify(directSummary));
+    }
+
     // ── The phone header holds the Pro button (2026-11-22, A2 live QA) ───
     // The header's "Try Pro" button (#107) shows from three solves. At
     // 375 px it pushed the row 62 px past the screen: "Try Pro" was cut in
