@@ -23,6 +23,7 @@ export const PGLITE_FILES = {
   data: { path: 'pglite.data', sha384: 'sha384-E5I5XyxT+6FROf0Jltz5bNi07pvslvubzGyMlS0nn+sDwoZEoPRGC85YhlR61/Mt', bytes: 6242272, gzip: 1860995 },
 };
 
-// The engine bundle the app loads when the person picks PostgreSQL (built by
-// scripts/build-pg-mode.mjs from src/pg-mode/entry.js). Same-origin.
-export const PG_MODE_BUNDLE = '/pg-mode.js';
+// The engine bundle's URL ('/pg-mode.js', built by vite.pg-mode.config.js
+// from src/pg-mode/entry.js) is NOT exported from here: app.jsx must import
+// none of the engine (tests/postgres-mode.test.js), so its one string literal
+// in loadPgBundle is the single source, pinned by that test.
