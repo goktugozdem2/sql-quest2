@@ -107,8 +107,8 @@ describe('mobileOneLayerDecision — assigned once, at a solve, only on a narrow
 
 describe('the queue — fixed priority, one layer at a time', () => {
   const ALL = ['streak_card', 'milestone_share', 'radar_pop', 'level_up', 'achievement', 'intent_ask', 'soft_email'];
-  it('the order is the asks, then achievement, level up, Skillmap card, share bar, streak card', () => {
-    expect(ONE_LAYER_ASKS).toEqual(['soft_email', 'intent_ask']);
+  it('the order is the asks (company ask, soft email, intent), then achievement, level up, Skillmap card, share bar, streak card', () => {
+    expect(ONE_LAYER_ASKS).toEqual(['company_ask', 'soft_email', 'intent_ask']);
     expect(ONE_LAYER_EXTRAS).toEqual(['achievement', 'level_up', 'radar_pop', 'milestone_share', 'streak_card']);
     expect(ONE_LAYER_ORDER).toEqual([...ONE_LAYER_ASKS, ...ONE_LAYER_EXTRAS]);
   });

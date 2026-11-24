@@ -27,6 +27,7 @@
 // would teach people not to answer the next question.
 
 import { INTAKE_COMPANIES, isIntakeCompany } from './onboarding-intake.js';
+import { daysUntil } from './interview-prep.js';
 
 export const COMPANY_ASK_TEST_ID = 'company_ask_v1';
 export const COMPANY_ASK_ARMS = ['ask', 'control'];
@@ -56,9 +57,13 @@ export function companyAskArm(aid) {
   return COMPANY_ASK_ARMS[(h >>> 0) % COMPANY_ASK_ARMS.length];
 }
 
+// The date follow-up's answers, kept on the record so it is never asked
+// twice: a date given, "no date yet", or skipped.
+export const COMPANY_ASK_DATE_ANSWERS = ['date', 'none', 'skipped'];
+
 /** An empty record: no arm, never asked, no answer. */
 export function emptyCompanyAskRecord() {
-  return { arm: null, asks: 0, answer: null, answeredAt: null };
+  return { arm: null, asks: 0, answer: null, answeredAt: null, dateAnswer: null, dateAnsweredAt: null };
 }
 
 export function normalizeCompanyAskRecord(raw) {
@@ -68,6 +73,8 @@ export function normalizeCompanyAskRecord(raw) {
     asks: Number.isInteger(r.asks) && r.asks >= 0 ? r.asks : 0,
     answer: typeof r.answer === 'string' ? r.answer : null,
     answeredAt: typeof r.answeredAt === 'string' ? r.answeredAt : null,
+    dateAnswer: COMPANY_ASK_DATE_ANSWERS.includes(r.dateAnswer) ? r.dateAnswer : null,
+    dateAnsweredAt: typeof r.dateAnsweredAt === 'string' ? r.dateAnsweredAt : null,
   };
 }
 
@@ -118,4 +125,67 @@ export function matchCompanies(query, list = INTAKE_COMPANIES, max = COMPANY_ASK
 /** An answer the ask accepts: one of the 30 companies, or "not sure yet". */
 export function isCompanyAskAnswer(value) {
   return value === COMPANY_ASK_UNDECIDED || isIntakeCompany(value);
+}
+
+// ── The interview date — one follow-up after a company is named (2026-11-24)
+//
+// V1 (2026-11-24) found two date-driven features with 0 data in 8 weeks: 0
+// future dates on record. A person who has just named a company is the one
+// most likely to know the date, so when the company ask is answered with a
+// company (never "not sure yet", never a skip) the same inline line turns
+// into ONE follow-up: "When is the interview?" — a date between today and
+// +365 days, "No date yet", Skip. The date goes to prepTarget.date (the
+// intake's and the countdown's store); `interview_date_captured` carries
+// `daysOut`, never the date. Asked at most once: the record keeps the
+// answer, a skip included. Not asked when a date today or later is already
+// on record. Metric: `interview_date_capture` (docs/agent/metrics.md).
+//
+// One frame for the bounds and the arithmetic: `daysUntil`'s UTC calendar
+// days, so `min` and `max` are exactly the dates that validate.
+
+export const INTERVIEW_DATE_MAX_DAYS = 365;
+export const COMPANY_ASK_DATE_NONE = 'none';
+export const INTERVIEW_DATE_SOURCE = 'company_ask';
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+const stamp = (ms) => new Date(ms).toISOString().slice(0, 10);
+
+/** The date input's `min` and `max`: today and today + 365, as YYYY-MM-DD. */
+export function interviewDateBounds(now = Date.now()) {
+  const d = new Date(Number(now));
+  const today = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+  return { min: stamp(today), max: stamp(today + INTERVIEW_DATE_MAX_DAYS * DAY_MS) };
+}
+
+/** A date the follow-up accepts: a real calendar day from today to +365. */
+export function isValidInterviewDate(value, now = Date.now()) {
+  const d = daysUntil(value, now);
+  return d !== null && d >= 0 && d <= INTERVIEW_DATE_MAX_DAYS;
+}
+
+/**
+ * Whether to turn the line into the date follow-up after this answer.
+ *   answer     — what the company ask was just answered with
+ *   knownDate  — prepTarget.date already on record, or null
+ *   record     — the company ask record (dateAnswer set = already asked)
+ * Only after a company; never twice; never over a date today or later
+ * (a past date is stale — the outcome flow takes it off — so it is asked).
+ */
+export function companyAskDateDecision({ answer = null, knownDate = null, record = null, now = Date.now() } = {}) {
+  if (!isIntakeCompany(answer)) return false;
+  if (normalizeCompanyAskRecord(record).dateAnswer) return false;
+  const known = daysUntil(knownDate, now);
+  if (known !== null && known >= 0) return false;
+  return true;
+}
+
+/**
+ * `interview_date_captured`'s payload: { daysOut, source } for a valid date,
+ * { none: true, source } for "no date yet", null for anything else. The
+ * date itself never leaves the browser.
+ */
+export function interviewDateEventPayload(value, now = Date.now()) {
+  if (value === COMPANY_ASK_DATE_NONE) return { none: true, source: INTERVIEW_DATE_SOURCE };
+  if (!isValidInterviewDate(value, now)) return null;
+  return { daysOut: daysUntil(value, now), source: INTERVIEW_DATE_SOURCE };
 }

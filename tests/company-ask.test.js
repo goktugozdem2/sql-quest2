@@ -5,7 +5,10 @@ import fs from 'node:fs';
 import {
   COMPANY_ASK_ARMS, COMPANY_ASK_UNDECIDED, companyAskArm, companyAskDecision,
   normalizeCompanyAskRecord, matchCompanies, isCompanyAskAnswer, emptyCompanyAskRecord,
+  COMPANY_ASK_DATE_NONE, INTERVIEW_DATE_MAX_DAYS, interviewDateBounds, isValidInterviewDate,
+  companyAskDateDecision, interviewDateEventPayload,
 } from '../src/utils/company-ask.js';
+import { ONE_LAYER_ASKS, oneLayerPick } from '../src/utils/mobile-one-layer.js';
 import { INTAKE_COMPANIES } from '../src/utils/onboarding-intake.js';
 import { firstScreenArm } from '../src/utils/first-screen.js';
 
@@ -147,9 +150,123 @@ describe('the app wiring (source guards)', () => {
 describe('every label exists in both languages', () => {
   const i18n = fs.readFileSync(new URL('../src/utils/i18n.js', import.meta.url), 'utf8');
   const blocks = i18n.split('    companyAsk: {').slice(1).map(b => b.slice(0, b.indexOf('\n    },')));
-  const keys = ['question', 'placeholder', 'undecided', 'skip', 'noMatch', 'done', 'seePlan', 'seeInterview', 'undecidedDone'];
+  const keys = ['question', 'placeholder', 'undecided', 'skip', 'noMatch', 'done', 'seePlan', 'seeInterview', 'undecidedDone',
+    'dateQuestion', 'dateSave', 'dateNone', 'dateSaved'];
   it('en and tr', () => {
     expect(blocks).toHaveLength(2);
     for (const b of blocks) for (const k of keys) expect(b).toMatch(new RegExp(`\\n\\s+${k}: '`));
+  });
+});
+
+// ── The interview date follow-up (2026-11-24) ─────────────────────────────
+// 2026-11-24 22:00 UTC: late in the day on purpose, so a local-vs-UTC slip
+// in the bounds would show.
+const NOW = Date.UTC(2026, 10, 24, 22, 0, 0);
+
+describe('the date follow-up — bounds', () => {
+  it('min is today and max is today + 365, and exactly those validate', () => {
+    const { min, max } = interviewDateBounds(NOW);
+    expect(min).toBe('2026-11-24');
+    expect(max).toBe('2027-11-24');
+    expect(INTERVIEW_DATE_MAX_DAYS).toBe(365);
+    expect(isValidInterviewDate(min, NOW)).toBe(true);
+    expect(isValidInterviewDate(max, NOW)).toBe(true);
+    expect(isValidInterviewDate('2026-11-23', NOW)).toBe(false);   // yesterday
+    expect(isValidInterviewDate('2027-11-25', NOW)).toBe(false);   // day 366
+  });
+  it('rejects what is not a calendar day', () => {
+    for (const v of ['', null, undefined, '2026-02-31', '24/11/2026', 'tomorrow', COMPANY_ASK_DATE_NONE]) {
+      expect(isValidInterviewDate(v, NOW)).toBe(false);
+    }
+  });
+});
+
+describe('the date follow-up — when it is asked', () => {
+  it('only after a company: never after "not sure yet", a skip or junk', () => {
+    expect(companyAskDateDecision({ answer: 'Capital One', now: NOW })).toBe(true);
+    expect(companyAskDateDecision({ answer: COMPANY_ASK_UNDECIDED, now: NOW })).toBe(false);
+    expect(companyAskDateDecision({ answer: null, now: NOW })).toBe(false);
+    expect(companyAskDateDecision({ answer: 'Not A Company Inc', now: NOW })).toBe(false);
+  });
+  it('never twice: a date, "no date yet" or a skip on the record ends it', () => {
+    for (const dateAnswer of ['date', 'none', 'skipped']) {
+      expect(companyAskDateDecision({ answer: 'Revolut', record: { arm: 'ask', asks: 1, dateAnswer }, now: NOW })).toBe(false);
+    }
+    expect(companyAskDateDecision({ answer: 'Revolut', record: { arm: 'ask', asks: 1, dateAnswer: null }, now: NOW })).toBe(true);
+  });
+  it('never over a date already on record (today or later); a past date is stale and is asked over', () => {
+    expect(companyAskDateDecision({ answer: 'Revolut', knownDate: '2026-11-24', now: NOW })).toBe(false);
+    expect(companyAskDateDecision({ answer: 'Revolut', knownDate: '2027-03-01', now: NOW })).toBe(false);
+    expect(companyAskDateDecision({ answer: 'Revolut', knownDate: '2026-10-01', now: NOW })).toBe(true);
+  });
+  it('the record keeps the date answer, and a bad one is dropped', () => {
+    expect(normalizeCompanyAskRecord({ dateAnswer: 'skipped', dateAnsweredAt: 'x' })).toMatchObject({ dateAnswer: 'skipped', dateAnsweredAt: 'x' });
+    expect(normalizeCompanyAskRecord({ dateAnswer: '2026-12-01' }).dateAnswer).toBe(null);
+  });
+});
+
+describe('the date follow-up — the event carries no date', () => {
+  it('a date → daysOut and source, and nothing that looks like a date', () => {
+    const p = interviewDateEventPayload('2026-12-01', NOW);
+    expect(p).toEqual({ daysOut: 7, source: 'company_ask' });
+    expect(JSON.stringify(p)).not.toMatch(/\d{4}-\d{2}-\d{2}/);
+  });
+  it('"no date yet" → none: true; anything invalid → no event', () => {
+    expect(interviewDateEventPayload(COMPANY_ASK_DATE_NONE, NOW)).toEqual({ none: true, source: 'company_ask' });
+    expect(interviewDateEventPayload('2028-01-01', NOW)).toBe(null);
+    expect(interviewDateEventPayload('', NOW)).toBe(null);
+  });
+});
+
+describe('the date follow-up — the app wiring (source guards)', () => {
+  const app = fs.readFileSync(new URL('../src/app.jsx', import.meta.url), 'utf8');
+  const start = app.indexOf('const renderCompanyAsk = () => {');
+  const block = app.slice(start, app.indexOf('// ── Onboarding intake (P0-1', start));
+  const answer = app.slice(app.indexOf('const answerCompanyAsk = (value) => {'), start);
+
+  it('the follow-up is decided only inside the company answer, from the pure decision', () => {
+    expect(app.match(/companyAskDateDecision\(/g)).toHaveLength(1);
+    expect(answer).toContain('const askDate = companyAskDateDecision({ answer: value, knownDate: prepTarget.date || null, record: companyAskRecord');
+    expect(answer).toContain("dateStep: askDate ? 'ask' : null");
+  });
+  it('a date lands in prepTarget.date through the intake writer; the event is the pure payload', () => {
+    expect(answer).toContain('if (value !== COMPANY_ASK_DATE_NONE) setPrepPreference({ date: value });');
+    expect(answer).toContain("trackActivationEvent('interview_date_captured', payload);");
+    expect(app.match(/trackActivationEvent\('interview_date_captured'/g)).toHaveLength(1);
+  });
+  it('a skip is recorded, so it is never asked again', () => {
+    expect(answer).toContain("dateAnswer: 'skipped'");
+    expect(answer).toMatch(/trackActivationEvent\('intake_skipped', \{ step: 'interview_date', surface: 'post_solve'/);
+  });
+  it('the date input is bounded and inline — not a modal, no accent', () => {
+    expect(block).toContain('type="date" data-company-ask-date="true"');
+    expect(block).toContain('min={min} max={max}');
+    expect(block).toContain('interviewDateBounds(Date.now())');
+    expect(block).toContain('data-company-ask-date-none');
+    expect(block).toContain('data-company-ask-date-skip');
+    expect(block).not.toMatch(/fixed inset-0|role="dialog"|aria-modal|#FFE34D/);
+  });
+  it('the hook sits above the early returns (fragile area 1)', () => {
+    const hook = app.indexOf("const [companyAskDateInput, setCompanyAskDateInput] = useState('');");
+    const early = Math.min(app.indexOf('\n  if (showAuth) {'), app.indexOf('\n  if (!dbReady) return ('));
+    expect(hook).toBeGreaterThan(0);
+    expect(hook).toBeLessThan(early);
+  });
+  it('a sign-in keeps the date answer, so a new browser does not ask again', () => {
+    expect(app).toContain('dateAnswer: acct.dateAnswer || local?.dateAnswer || null');
+  });
+});
+
+describe('the date follow-up — phones, mobileOneLayer arm `one`', () => {
+  const app = fs.readFileSync(new URL('../src/app.jsx', import.meta.url), 'utf8');
+  it('the company ask is a tier-2 ask, ahead of the soft email and the intent question', () => {
+    expect(ONE_LAYER_ASKS).toEqual(['company_ask', 'soft_email', 'intent_ask']);
+    expect(oneLayerPick({ active: ['soft_email', 'company_ask', 'achievement'], hold: true })).toBe('company_ask');
+    expect(oneLayerPick({ active: ['soft_email', 'achievement'], hold: true })).toBe('soft_email');
+  });
+  it('the line and its date step are one layer: pending until the date step resolves, gated by oneLayerOk', () => {
+    expect(app).toContain("&& (!companyAsk.answered || companyAsk.dateStep === 'ask'));");
+    expect(app).toContain("companyAskPending && 'company_ask',");
+    expect(app).toContain("if (pending && !oneLayerOk('company_ask')) return null;");
   });
 });

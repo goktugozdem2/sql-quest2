@@ -43,7 +43,7 @@ import { MOBILE_RUN_BAR_STORAGE_KEY, MOBILE_RUN_BAR_TEST_ID, isNarrowTouch, mobi
 import { MOBILE_ONE_LAYER_STORAGE_KEY, MOBILE_ONE_LAYER_TEST_ID, isNarrowTouch as oneLayerNarrowTouch, mobileOneLayerDecision, oneLayerPick, oneLayerRelease } from './utils/mobile-one-layer.js';
 import { INTAKE_KEY, INTAKE_GOALS, INTAKE_ROLES, INTAKE_STEPS, INTAKE_COMPANIES, INTAKE_LEVELS, intakeStepsFor, intakeGoalFor, intakeGoalForIntent, nextIntakeStep, isIntakeStepRequired, isIntakeLevel, isValidIntakeDate, buildIntakeRecord, isIntakeComplete, readIntakeRecord, intakeEventPayload, newCoachGoalState, shouldShowIntake } from './utils/onboarding-intake.js';
 import { shouldArmGoalNoteDateAsk, shouldRenderGoalNoteDateAsk } from './utils/goal-note-date-ask.js';
-import { COMPANY_ASK_KEY, COMPANY_ASK_TEST_ID, COMPANY_ASK_UNDECIDED, companyAskDecision, normalizeCompanyAskRecord, matchCompanies, isCompanyAskAnswer } from './utils/company-ask.js';
+import { COMPANY_ASK_KEY, COMPANY_ASK_TEST_ID, COMPANY_ASK_UNDECIDED, COMPANY_ASK_DATE_NONE, companyAskDecision, normalizeCompanyAskRecord, matchCompanies, isCompanyAskAnswer, companyAskDateDecision, interviewDateBounds, isValidInterviewDate, interviewDateEventPayload } from './utils/company-ask.js';
 import { COMPANY_DIRECT_KEY, COMPANY_DIRECT_TEST_ID, companyDirectDecision, isCompanyListArrival } from './utils/company-direct.js';
 import { GOAL_PROFILE_KEY, GOAL_GATE_RECHECK_MS, GOAL_GATE_GOALS, TARGET_LEVELS, INDUSTRIES, DEADLINE_PRESETS, industryFor, isoDateInDays, isValidDeadline, missingFields, buildGoalProfile, goalProfileStatus, shouldShowGoalGate, prefillDraft, goalGateEventPayload, readGoalProfile, GOAL_GATE_MAX_DAYS_OUT } from './utils/goal-gate.js';
 import { PLACEMENT_TIERS, placementResult, placementEventPayload, readFirstRunPlacement, seedFloorsFor, seedFloorsFromReadiness, levelForReadiness, placementFromReadiness } from './utils/placement.js';
@@ -6985,8 +6985,9 @@ function SQLQuest() {
   const [companyAskRecord, setCompanyAskRecord] = useState(() => {
     try { return normalizeCompanyAskRecord(JSON.parse(localStorage.getItem(COMPANY_ASK_KEY) || 'null')); } catch (_) { return normalizeCompanyAskRecord(null); }
   });
-  const [companyAsk, setCompanyAsk] = useState(null);   // { challengeId, askNumber, answered: null | company | 'undecided' } on the panel it belongs to
+  const [companyAsk, setCompanyAsk] = useState(null);   // { challengeId, askNumber, answered: null | company | 'undecided', dateStep: null | 'ask' | 'date' | 'none' } on the panel it belongs to
   const [companyAskQuery, setCompanyAskQuery] = useState('');
+  const [companyAskDateInput, setCompanyAskDateInput] = useState('');   // the date follow-up's input (2026-11-24); the date goes to prepTarget.date only on Save
   const companyAskEvaluatedRef = useRef(null);   // `${challengeId}:${solves}` already decided
   const companyAskShowingRef = useRef(false);   // the line is on screen — the first-solve intent modal stays shut (one question, not two)
   const companySetMatchShownRef = useRef(false);
@@ -13321,7 +13322,37 @@ CRITICAL RULES:
       if (!intent || intent === 'exploring') setUserIntent('interview', 'company_ask');
     }
     trackActivationEvent('intake_answered', { step: 'company', surface: 'post_solve', askNumber: companyAsk.askNumber, value, undecided: value === COMPANY_ASK_UNDECIDED });
-    setCompanyAsk({ ...companyAsk, answered: value });
+    // The interview date (2026-11-24): after a company — never after "not
+    // sure yet" — the same line turns into one follow-up, unless a date
+    // today or later is already on record or it was asked before.
+    const askDate = companyAskDateDecision({ answer: value, knownDate: prepTarget.date || null, record: companyAskRecord, now: Date.now() });
+    if (askDate) {
+      setCompanyAskDateInput('');
+      trackActivationEvent('intake_shown', { step: 'interview_date', surface: 'post_solve', askNumber: companyAsk.askNumber });
+    }
+    setCompanyAsk({ ...companyAsk, answered: value, dateStep: askDate ? 'ask' : null });
+  };
+
+  // The date follow-up's answer: a date (today..+365) → prepTarget.date
+  // through the intake's writer; "No date yet" → recorded, nothing written.
+  // `interview_date_captured` carries daysOut, never the date. Either way
+  // the record keeps dateAnswer, so it is never asked again.
+  const answerCompanyDate = (value) => {
+    if (!companyAsk || companyAsk.dateStep !== 'ask') return;
+    const payload = interviewDateEventPayload(value, Date.now());
+    if (!payload) return;
+    if (value !== COMPANY_ASK_DATE_NONE) setPrepPreference({ date: value });
+    persistCompanyAskRecord({ ...companyAskRecord, dateAnswer: value === COMPANY_ASK_DATE_NONE ? 'none' : 'date', dateAnsweredAt: new Date().toISOString() });
+    trackActivationEvent('interview_date_captured', payload);
+    setCompanyAsk({ ...companyAsk, dateStep: value === COMPANY_ASK_DATE_NONE ? 'none' : 'date', daysOut: payload.daysOut ?? null });
+  };
+
+  // A skip is an answer too: it is never asked again.
+  const skipCompanyDate = () => {
+    if (!companyAsk || companyAsk.dateStep !== 'ask') return;
+    persistCompanyAskRecord({ ...companyAskRecord, dateAnswer: 'skipped', dateAnsweredAt: new Date().toISOString() });
+    trackActivationEvent('intake_skipped', { step: 'interview_date', surface: 'post_solve', askNumber: companyAsk.askNumber, typed: !!companyAskDateInput });
+    setCompanyAsk({ ...companyAsk, dateStep: null });
   };
 
   const skipCompanyAsk = () => {
@@ -13334,8 +13365,36 @@ CRITICAL RULES:
 
   const renderCompanyAsk = () => {
     if (!companyAsk || !currentChallenge || companyAsk.challengeId !== currentChallenge.id) return null;
+    // mobileOneLayer arm `one`: the line (and its date follow-up) is the
+    // tier-2 ask `company_ask`; while another layer is the one shown, it
+    // waits. Inline in the success panel — never an overlay, so it cannot
+    // render over a modal. Desktop, control, flag off: oneLayerOk is true.
+    const pending = !companyAsk.answered || companyAsk.dateStep === 'ask';
+    if (pending && !oneLayerOk('company_ask')) return null;
     const muted = { color: '#8A8E99' };
     const chip = { background: '#1F222B', border: '1px solid #2A2E38', borderRadius: '6px', color: '#F2F0EA' };
+    const big = oneLayerOn ? ' min-h-[44px]' : '';
+    if (companyAsk.answered && companyAsk.answered !== COMPANY_ASK_UNDECIDED && companyAsk.dateStep === 'ask') {
+      const { min, max } = interviewDateBounds(Date.now());
+      const dateOk = isValidInterviewDate(companyAskDateInput, Date.now());
+      return (
+        <div className="border-t border-green-500/20 pt-3 mb-3" data-company-ask="date" data-company-ask-answer={companyAsk.answered}>
+          <label htmlFor="company-ask-date" className="block text-sm font-semibold text-[#F2F0EA]">{i18n_t('companyAsk', 'dateQuestion')}</label>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <input id="company-ask-date" type="date" data-company-ask-date="true"
+              min={min} max={max} value={companyAskDateInput}
+              onChange={e => setCompanyAskDateInput(e.target.value || '')}
+              className={`px-3 py-2 text-sm tabular-nums${big}`} style={chip} />
+            <button type="button" data-company-ask-date-save="true" disabled={!dateOk} onClick={() => answerCompanyDate(companyAskDateInput)}
+              className={`px-3 py-2 text-xs font-semibold${big}`} style={{ ...chip, opacity: dateOk ? 1 : 0.5 }}>{i18n_t('companyAsk', 'dateSave')}</button>
+            <button type="button" data-company-ask-date-none="true" onClick={() => answerCompanyDate(COMPANY_ASK_DATE_NONE)}
+              className={`px-3 py-2 text-xs font-semibold${big}`} style={chip}>{i18n_t('companyAsk', 'dateNone')}</button>
+            <button type="button" data-company-ask-date-skip="true" onClick={skipCompanyDate}
+              className={`px-2 py-2 text-xs underline${big ? `${big} min-w-[44px]` : ''}`} style={muted}>{i18n_t('companyAsk', 'skip')}</button>
+          </div>
+        </div>
+      );
+    }
     if (companyAsk.answered) {
       if (companyAsk.answered === COMPANY_ASK_UNDECIDED) {
         return (
@@ -13348,6 +13407,9 @@ CRITICAL RULES:
       return (
         <div className="border-t border-green-500/20 pt-3 mb-3" data-company-ask="done" data-company-ask-answer={company}>
           <p className="text-sm text-[#F2F0EA]">{i18n_t('companyAsk', 'done', { company })}</p>
+          {companyAsk.dateStep === 'date' && Number.isInteger(companyAsk.daysOut) && (
+            <p className="mt-1 text-xs" style={muted} data-company-ask-date-saved="true">{i18n_t('companyAsk', 'dateSaved', { n: companyAsk.daysOut })}</p>
+          )}
           <div className="mt-2 flex flex-wrap gap-2">
             <button type="button" data-company-ask-go="plan" className="px-3 py-1.5 text-xs font-semibold" style={chip}
               onClick={() => { trackActivationEvent('company_ask_payoff_clicked', { to: 'plan', company }); setCurrentChallenge(null); setActiveTab('guide'); }}>
@@ -17773,7 +17835,7 @@ CRITICAL RULES:
         let local = null;
         try { local = normalizeCompanyAskRecord(JSON.parse(localStorage.getItem(COMPANY_ASK_KEY) || 'null')); } catch (_) { local = null; }
         if (!local || acct.answer || acct.asks > local.asks || (!local.arm && acct.arm)) {
-          const merged = { ...acct, arm: acct.arm || local?.arm || null };
+          const merged = { ...acct, arm: acct.arm || local?.arm || null, dateAnswer: acct.dateAnswer || local?.dateAnswer || null, dateAnsweredAt: acct.dateAnsweredAt || local?.dateAnsweredAt || null };
           setCompanyAskRecord(merged);
           try { localStorage.setItem(COMPANY_ASK_KEY, JSON.stringify(merged)); } catch (_) {}
         }
@@ -18382,7 +18444,12 @@ CRITICAL RULES:
     setOneLayerOn(decision.show);
     if (decision.show) setOneLayerHold(true);
   };
+  // The company ask counts while its question or its date follow-up waits on
+  // this challenge's panel; the confirmation after it is not an ask.
+  const companyAskPending = !!(companyAsk && currentChallenge && companyAsk.challengeId === currentChallenge.id
+    && (!companyAsk.answered || companyAsk.dateStep === 'ask'));
   const oneLayerActive = oneLayerOn ? [
+    companyAskPending && 'company_ask',
     showSoftEmailCapture && 'soft_email',
     showIntentAsk && 'intent_ask',
     showAchievement && 'achievement',

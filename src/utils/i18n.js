@@ -1022,6 +1022,10 @@ const TRANSLATIONS = {
       seePlan: 'Your {company} plan →',
       seeInterview: '{company} interview prep →',
       undecidedDone: 'Noted. You can pick a company later on the Coach tab.',
+      dateQuestion: 'When is the interview?',
+      dateSave: 'Save date',
+      dateNone: 'No date yet',
+      dateSaved: 'Interview date saved: {n} days to go.',
     },
     goalGate: {
       eyebrow: 'Your goal',
@@ -2070,6 +2074,10 @@ const TRANSLATIONS = {
       seePlan: '{company} planın →',
       seeInterview: '{company} mülakat hazırlığı →',
       undecidedDone: 'Tamam. Şirketi sonra Koç sekmesinden seçebilirsin.',
+      dateQuestion: 'Mülakat ne zaman?',
+      dateSave: 'Tarihi kaydet',
+      dateNone: 'Henüz tarih yok',
+      dateSaved: 'Mülakat tarihi kaydedildi: {n} gün kaldı.',
     },
     goalGate: {
       eyebrow: 'Hedefin',
