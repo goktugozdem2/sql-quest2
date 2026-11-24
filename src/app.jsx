@@ -79,6 +79,7 @@ import { modalLayoutArm, plansFirst } from './utils/modal-layout.js';
 import { softGateReason, paywallMomentCopy, SOFT_GATE_ACTION_LABEL, SOFT_GATE_TOAST_MS, headerProCta } from './utils/paywall-moments.js';
 import { botSignals, botDecision } from './utils/bot-signals.js';
 import { bootTiming } from './utils/boot-timing.js';
+import { armWebVitals, isInternalUser } from './utils/web-vitals-report.js';
 import { starterHintFor, starterSqlFromHint } from './utils/starter-query.js';
 import { dueRetrievals, pickRetrievalChallenge, recordRetrieval, dailyQuota, MAX_DUE_SHOWN } from './utils/spaced-retrieval.js';
 import { computeRecap, shouldShowRecap } from './utils/session-recap.js';
@@ -8022,6 +8023,36 @@ function SQLQuest() {
         returning: !!localStorage.getItem('sqlquest_user'),
         // Real-user boot timing (src/utils/boot-timing.js, metric app_boot).
         ...bootTiming({ perf: window.performance, nav: navigator, win: window }),
+      });
+    } catch (_) {}
+  }, [isSessionLoading]);
+
+  // Real-user page speed (metric web_vitals, src/utils/web-vitals-report.js):
+  // once the session has settled, load /web-vitals.js at the first idle
+  // moment and write one web_vital per metric for this document. Bots (hard
+  // or soft signal), localhost and internal accounts load nothing. The ref
+  // keeps a report that lands minutes later (LCP/CLS wait for a page hide)
+  // on the current trackActivationEvent, not the first render's closure.
+  const trackActivationEventRef = useRef(null);
+  trackActivationEventRef.current = trackActivationEvent;
+  useEffect(() => {
+    if (isSessionLoading) return;
+    try {
+      const w = window.innerWidth;
+      const viewport = w ? `${w < 768 ? 'mobile' : w < 1024 ? 'tablet' : 'desktop'}:${w}x${window.innerHeight}` : null;
+      let landingSrc = null;
+      try { landingSrc = localStorage.getItem(LANDING_SRC_KEY) || null; } catch (_) {}
+      let tz = null;
+      try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || null; } catch (_) {}
+      const decision = botDecision(botSignals({
+        userAgent: navigator.userAgent, webdriver: navigator.webdriver, languages: navigator.languages,
+        viewport, landingSrc, tz,
+      }));
+      armWebVitals({
+        win: window,
+        doc: document,
+        blocked: ANALYTICS_MUTED || hardBotBrowser() || !decision.write || !!decision.stamp || isInternalUser(currentUser),
+        send: payload => { try { trackActivationEventRef.current('web_vital', { ...payload, page: 'app' }); } catch (_) {} },
       });
     } catch (_) {}
   }, [isSessionLoading]);
