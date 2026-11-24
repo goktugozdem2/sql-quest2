@@ -55,11 +55,13 @@
     "vitest": "^4.1.12",
     "ws": "^8.20.0"
   },
-  "dependencies": {
-    "@vercel/og": "^0.11.1"
-  },
   "overrides": {
     "sharp": "^0.35.3",
-    "brace-expansion": "^2.0.2"
+    "brace-expansion": "^2.0.2",
+    "fflate": "^0.7.5"
+  },
+  "dependencies": {
+    "@resvg/resvg-wasm": "2.4.1",
+    "satori": "0.33.5"
   }
 }
