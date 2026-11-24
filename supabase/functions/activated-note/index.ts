@@ -29,12 +29,21 @@
 //     person's radar when the record holds one, the company they named.
 //     Same substance, never byte-identical bodies.
 //
+//   - every letter goes out as HTML AND plain text (the text part is
+//     rendered from the same template; deliverability).
+//
 // The single CTA opens the Pro modal directly (?pro=1, reason 'email_link' in
 // src/app.jsx) — the surface where checkout happens, not a page about it.
 //
 // Env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, RESEND_API_KEY.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+// The letter itself (2026-11-25): the layout is a React Email template,
+// emails/activated-note.tsx, rendered at build time into
+// ./template.generated.ts (scripts/build-emails.mjs) — no React runtime here.
+// letter.ts picks the per-recipient sentences and fills the slots; it is
+// pure, so tests/activated-note-template.test.js renders real letters.
+import { renderActivatedNote, weakestSkill } from './letter.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -87,9 +96,14 @@ const footer = (unsub: string) => `
     <a href="${unsub}" style="color:#9ca3af;">Unsubscribe</a>
   </p>`
 
+// This copy differs from the other senders' in two optional fields, added
+// for the React Email letter (2026-11-25): `text` sends the plain-text part,
+// and `footerInHtml` says the template already carries the footer with the
+// unsubscribe link (a full <html> document must not get one appended after
+// </html>). Without them it behaves exactly like the other copies.
 async function sendAndLog(supabase: any, apiKey: string, args: {
   to: string; username: string; template: string; subject: string;
-  html: string; unsub: string; replyTo?: string;
+  html: string; unsub: string; replyTo?: string; text?: string; footerInHtml?: boolean;
 }): Promise<boolean> {
   let ok = false, resendId: string | null = null, status = 0
   try {
@@ -100,7 +114,8 @@ async function sendAndLog(supabase: any, apiKey: string, args: {
         from: FROM,
         to: args.to,
         subject: args.subject,
-        html: args.html + footer(args.unsub),
+        html: args.footerInHtml ? args.html : args.html + footer(args.unsub),
+        ...(args.text ? { text: args.text } : {}),
         ...(args.replyTo ? { reply_to: args.replyTo } : {}),
         headers: { 'List-Unsubscribe': `<${args.unsub}>` },
       }),
@@ -119,107 +134,6 @@ async function sendAndLog(supabase: any, apiKey: string, args: {
   return ok
 }
 // ── end shared block ──
-
-// The nine canonical skills (src/utils/skill-calc.js). A record written by
-// the app since 2026-09-12 carries these names; older records are ignored.
-const CANONICAL = [
-  'Querying Basics', 'Aggregation & Grouping', 'Joins', 'Subqueries & CTEs',
-  'Conditional Logic', 'Window Functions', 'String Functions', 'Date Functions', 'NULL Handling',
-]
-// The person's lowest practised skill, under 70 — or null.
-//
-// Two sources, in this order. `skillMastery` is the canonical user_skill
-// record, but it is rebuilt in the BROWSER (src/utils/user-skill.js, from
-// 2026-09-12): an account that has not opened the app since then still
-// carries the old fourteen-name record, whose rows have no numeric
-// `mastery`. That is most of this email's audience — lapsed non-payers —
-// and on 2026-10-01 a dry run showed `weakest: null` for all forty, people
-// with 105 and 114 solves among them. So the second source is the Skillmap
-// itself, `weaknessTracking.skillLevels`, which is canonical and numeric on
-// every one of those rows. A skill at 0 was never practised and is not "the
-// lowest line on your radar"; it is left out of both.
-function weakestSkill(userData: any): string | null {
-  const lowest = (read: (name: string) => unknown): string | null => {
-    let best: { name: string; value: number } | null = null
-    for (const name of CANONICAL) {
-      const v = read(name)
-      if (typeof v !== 'number' || !Number.isFinite(v) || v <= 0) continue
-      if (!best || v < best.value) best = { name, value: v }
-    }
-    return best && best.value < 70 ? best.name : null
-  }
-  const m = userData?.skillMastery
-  const hasMastery = m && typeof m === 'object' && CANONICAL.some(n => typeof m[n]?.mastery === 'number')
-  if (hasMastery) return lowest(n => m[n]?.mastery)
-  const levels = userData?.weaknessTracking?.skillLevels
-  if (levels && typeof levels === 'object') return lowest(n => levels[n])
-  return null
-}
-
-const ordinal = (n: number) => {
-  const s = ['th', 'st', 'nd', 'rd'], v = n % 100
-  return n + (s[(v - 20) % 10] || s[v] || s[0])
-}
-
-// The offer, in one sentence, with NO price in it (2026-10-01). The price a
-// reader meets is decided when the modal opens — India sees $9 / $39, the
-// rest $29 / $99 — and most of this list is in India, so a number here
-// would be wrong for most of the people reading it. What is the same for
-// everyone is the trial (flag `checkoutTrial`, on 2026-10-01).
-// tests/activated-note.test.js reads the flag: if the trial is switched
-// off, this sentence fails the build until it is rewritten.
-const OFFER_LINE = 'It starts with 7 days free: a card is required, nothing is charged today, and cancelling before day 7 costs nothing.'
-
-// Three subject lines, chosen by username so a batch never reads as one
-// mailing and the same person always gets the same one (idempotent dry runs).
-const SUBJECTS = [
-  (n: number) => `From SQL Quest's founder — after your ${ordinal(n)} solve`,
-  (n: number) => `SQL Quest's founder here — ${n} solves in, one question`,
-  (n: number) => `I build SQL Quest — the part after ${n} solves`,
-]
-const pick = (username: string, len: number) => {
-  let h = 0
-  for (const ch of username) h = (h * 31 + ch.charCodeAt(0)) >>> 0
-  return h % len
-}
-
-function renderBody(args: { username: string; solves: number; weakest: string | null; company: string | null; cta: string }): string {
-  const { username, solves, weakest, company, cta } = args
-  // Three openers, chosen by username; the middle one only reads right
-  // once someone is clearly past six, so under nine solves it is not offered.
-  const openers = [
-    `You have ${solves} solves on SQL Quest. That is the point where most people stop, so this one is from me, not from a sequence.`,
-    `${solves} solves. Most people who start never reach six, and you are well past it — so I am writing this myself.`,
-    `I looked at the accounts that got past six solves and never bought, and yours is one of a short list, so I am writing to you directly.`,
-  ]
-  const eligible = solves >= 9 ? openers : [openers[0], openers[2]]
-  const opener = eligible[pick(username, eligible.length)]
-  const radar = weakest
-    ? `Your radar's lowest line right now is <strong>${weakest}</strong>. That is the shape the screens save for last, and it is where the Hard set starts.`
-    : `The Hard set is where the screens' last question lives: a window function over a ledger, a NULL nobody handled, a correlated subquery.`
-  const target = company
-    ? `You named <strong>${company}</strong>. Its set and, where candidates have reported the format, its timed mock are in Pro.`
-    : `If there is a company on your calendar, its set is there — Revolut and Capital One also have a timed mock built to the reported screen.`
-  return `
-    <div style="font-family: -apple-system, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px; color: #1f2937;">
-      <p style="font-size: 15px; line-height: 1.8;">Hi ${username},</p>
-      <p style="font-size: 15px; line-height: 1.8;">${opener}</p>
-      <p style="font-size: 15px; line-height: 1.8;">${radar} ${target}</p>
-      <p style="font-size: 15px; line-height: 1.8;">
-        Pro is the interview run before the interview: the Hard set, the timed mocks, and a tutor that stays with you through the session.
-        ${OFFER_LINE}
-      </p>
-      <div style="text-align: center; margin: 28px 0;">
-        <a href="${cta}" style="display: inline-block; padding: 12px 32px; background: linear-gradient(135deg, #7c3aed, #db2777); color: white; text-decoration: none; border-radius: 8px; font-weight: 700;">
-          See what Pro adds →
-        </a>
-      </div>
-      <p style="font-size: 15px; line-height: 1.8;">
-        If you are not interviewing, ignore this — everything you have solved stays yours, and so do the lessons and the Coach. And if something stopped you last time, hit reply; it comes straight to me.
-      </p>
-      <p style="font-size: 15px; line-height: 1.8;">Göktuğ<br><span style="color:#6b7280;">Founder, SQL Quest</span></p>
-    </div>`
-}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
@@ -311,10 +225,12 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({
         dry: true, candidates: audience.length, batch: batch.length, cap: MAX_PER_RUN, skipped,
         preview: batch.map(c => ({ username: c.username, solves: c.solves, weakest: c.weakest, company: c.company })),
-        sample: sample ? {
-          subject: SUBJECTS[pick(sample.username, SUBJECTS.length)](sample.solves),
-          html: renderBody({ ...sample, cta: utm('/app/?src=activated_note&pro=1', TEMPLATE) }),
-        } : null,
+        // The unsubscribe link in a dry sample is a stand-in: a dry run writes
+        // nothing, so it mints no token.
+        sample: sample ? renderActivatedNote(sample, {
+          cta: utm('/app/?src=activated_note&pro=1', TEMPLATE),
+          unsub: unsubLink('dry-run-no-token'),
+        }) : null,
       }, null, 2), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
@@ -330,11 +246,13 @@ Deno.serve(async (req) => {
         .maybeSingle()
       if (fresh?.marked) { skipped++; continue }
       const unsubToken = await ensureUnsubToken(supabase, c.username, c.userData)
-      const subject = SUBJECTS[pick(c.username, SUBJECTS.length)](c.solves)
-      const html = renderBody({ ...c, cta: utm('/app/?src=activated_note&pro=1', TEMPLATE) })
+      const unsub = unsubLink(unsubToken)
+      const { subject, html, text } = renderActivatedNote(c, {
+        cta: utm('/app/?src=activated_note&pro=1', TEMPLATE), unsub,
+      })
       const ok = await sendAndLog(supabase, RESEND_API_KEY!, {
-        to: c.email, username: c.username, template: TEMPLATE, subject, html,
-        unsub: unsubLink(unsubToken), replyTo: REPLY_TO,
+        to: c.email, username: c.username, template: TEMPLATE, subject, html, text,
+        footerInHtml: true, unsub, replyTo: REPLY_TO,
       })
       if (ok) {
         await supabase
