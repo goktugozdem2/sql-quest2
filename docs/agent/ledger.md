@@ -144,6 +144,45 @@ of the verifier and must never be rounded to `FLAT`.
   it down. Solve-through more than 20 points below the band → the format is
   broken: fix the UX before adding items.
 
+### Apple becomes a sourced company page; TikTok, Bloomberg, Tesla, Amazon, Monzo lose their unsourced claims (C2, R1 batch 5)
+
+- **Claimed** 2026-11-23 · **Shipped** on merge (static pages, no flag) ·
+  **Read** 2026-12-21.
+- **Change** `/apple-sql-interview/` gets a "How the interview runs
+  (sourced)" section from `SOURCED_FORMATS.apple` with the three rows the
+  dossier rates medium (the data-scientist screen pairs SQL with Python;
+  hiring-manager rounds can carry no SQL; the loop varies by team) and a
+  "not stated here" row; its JSON-LD, meta and hero stop naming App Store /
+  Services content the set does not have and roles no source covers.
+  Correctness only, same PR: TikTok loses "Data Analyst" in the roles row,
+  the single-guide HackerRank row, the 2022 Blind row, the ranked topic list,
+  the difficulty grade and "two sources agree", and gains the medium
+  read-or-debug row; Bloomberg's analyst rows, "prices, trades and sessions"
+  as a reported fact, ranked topics and difficulty go; Tesla loses "patterns
+  Tesla screens for", "factory floors" and "Tesla-pattern"; Amazon's (and
+  Revolut's one) "no dated source" lines that contradicted their sourced
+  sections go; Monzo opens with `publishes`; the stale "the Capital One page
+  is the only page with sources" sentence is rewritten on 17 general pages by
+  the generator. Sources: `docs/reads/companies/{apple,tesla,tiktok,bloomberg,amazon}.md`,
+  `docs/reads/company-research-2026-11-20.md`.
+- **Metric** `gsc_page_clicks` for `/apple-sql-interview/`, and
+  `company_page_door` for `page` = `apple-sql-interview`.
+- **Baseline** 46 impressions / 5 clicks in the 28 days to 2026-11-21
+  (dossier). The page → app rate is not read in this run (no production
+  read); the laptop reads 2026-10-24 → 11-22 before the merge and writes it
+  here.
+- **Target** for the 28 days to 2026-12-18: ≥ 7 clicks with impressions not
+  below 46, and the page → app rate not below its baseline.
+- **Falsification** (written before the data) clicks ≤ 5 → the sourced rows
+  did not move search on this page; keep them (correctness). Under 100
+  impressions in the window reads `UNREADABLE`, not `FLAT` — likely here.
+- **Confounds** SEO-loop rule 4: these pages took M-02 (the hero names
+  question 1) on 2026-11-22; read Apple against the general company pages
+  this PR touches only through the one FAQ sentence. The app's company view
+  keeps calling the Apple set "general" until `public/app.js` is next
+  rebuilt and committed. The other pages carry no claim of their own — their
+  edits remove statements, not bets.
+
 ### Shopify becomes a sourced company page; Meta, Google, Databricks lose their unsourced claims (C2, R1 batch 4)
 
 - **Claimed** 2026-11-23 · **Shipped** on merge (static pages, no flag) ·
