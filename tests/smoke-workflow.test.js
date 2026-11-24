@@ -3,7 +3,7 @@
 // the pure halves of every script. No network, no Chrome: fake fetch only.
 import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
-import { classifyRun, touchesBackend, HERMETIC_PREAMBLE, chromeArgs, CLASSES, FIRST_SCREEN_KEY, FIRST_SCREEN_ARMS as SMOKE_ARMS, firstScreenArmPreamble } from '../scripts/smoke/lib.mjs';
+import { classifyRun, touchesBackend, HERMETIC_PREAMBLE, chromeArgs, CLASSES, FIRST_SCREEN_KEY, FIRST_SCREEN_ARMS as SMOKE_ARMS, firstScreenArmPreamble, parseDevToolsActivePort, waitForDevToolsPort, DEVTOOLS_ACTIVE_PORT_FILE } from '../scripts/smoke/lib.mjs';
 import { FIRST_SCREEN_STORAGE_KEY, FIRST_SCREEN_ARMS, firstScreenDecision } from '../src/utils/first-screen.js';
 import * as tutor from '../scripts/smoke/tutor-health.mjs';
 import { changedUrls, sitemapLastmods, waitForSitemap, run as runIndexNow } from '../scripts/smoke/indexnow-after-deploy.mjs';
@@ -172,6 +172,45 @@ describe('the run classification (lib)', () => {
       const src = fs.readFileSync(f, 'utf8');
       expect(src, f).not.toMatch(/new Response\(\s*(['"`])\1\s*,\s*\{\s*status:\s*(204|205|304)\b/);
     }
+  });
+
+  // 2026-11-23 (A2): the battery passed 21/31 on the laptop and 31/31 in CI.
+  // It hard-coded --remote-debugging-port=9222 and read 127.0.0.1:9222; an
+  // orphaned Chrome from an earlier, killed run still held that address, so
+  // the battery drove the orphan and its leftover guest instead of a fresh
+  // profile. The port now comes from our own profile's DevToolsActivePort.
+  it('the battery drives its OWN Chrome: no fixed debugging port, the port read from its own profile', () => {
+    const battery = read('scripts/smoke-test.js');
+    expect(battery).toContain("'--remote-debugging-port=0'");
+    expect(battery).not.toMatch(/--remote-debugging-port=(\$\{|[1-9])/);
+    expect(battery).not.toMatch(/127\.0\.0\.1:9222|DEBUG_PORT\s*=\s*\d/);
+    expect(battery).toMatch(/const debugPort = await waitForDevToolsPort\(profileDir\)/);
+    expect(battery).toMatch(/getJSON\(`http:\/\/127\.0\.0\.1:\$\{debugPort\}\/json`\)/);
+    // A crash or a kill from outside takes the browser down with the run.
+    expect(battery).toMatch(/main\(\)\.catch\(\(e\) => \{ stopChrome\(\);/);
+    expect(battery).toMatch(/for \(const sig of \['SIGINT', 'SIGTERM', 'SIGHUP'\]\) process\.on\(sig, \(\) => \{ stopChrome\(\);/);
+  });
+
+  it('DevToolsActivePort: the first line is the port; anything else is not a port', async () => {
+    expect(DEVTOOLS_ACTIVE_PORT_FILE).toBe('DevToolsActivePort');
+    expect(parseDevToolsActivePort('53117\n/devtools/browser/0f3c')).toBe(53117);
+    expect(parseDevToolsActivePort('')).toBeNull();
+    expect(parseDevToolsActivePort(null)).toBeNull();
+    expect(parseDevToolsActivePort('/devtools/browser/0f3c')).toBeNull();
+    expect(parseDevToolsActivePort('0\n')).toBeNull();
+    expect(parseDevToolsActivePort('70000\n')).toBeNull();
+    // Waits while Chrome has not written it yet, then reads it from the dir it was given.
+    let t = 0, calls = 0;
+    const seen = [];
+    const port = await waitForDevToolsPort('/tmp/p', {
+      readFile: (f) => { seen.push(f); calls++; if (calls < 3) throw new Error('ENOENT'); return '61234\n/devtools/browser/x'; },
+      now: () => t, sleep: async (ms) => { t += ms; },
+    });
+    expect(port).toBe(61234);
+    expect(seen.every(f => f === '/tmp/p/DevToolsActivePort')).toBe(true);
+    // Never written: null at the deadline, not a hang and not a guessed port.
+    t = 0;
+    expect(await waitForDevToolsPort('/tmp/p', { deadlineMs: 1000, readFile: () => { throw new Error('ENOENT'); }, now: () => t, sleep: async (ms) => { t += ms; } })).toBeNull();
   });
 
   it('a clean profile: fresh user-data-dir, extensions off, headless', () => {

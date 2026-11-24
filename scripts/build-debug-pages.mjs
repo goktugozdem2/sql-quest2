@@ -31,7 +31,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { debugFlagOn, loadDebugItems, debugHref } from './debug-discovery.mjs';
+import { debugFlagOn, loadDebugItems, debugHref, builtCopies } from './debug-discovery.mjs';
 import { CSS as PATTERN_CSS, highlight, inline, resultHtml } from './build-pattern-pages.mjs';
 import { sqlQuestFacts } from './build-alternatives-pages.mjs';
 import { SQL_PATTERNS } from '../src/data/sql-patterns.js';
@@ -325,12 +325,13 @@ export function buildDebugPages({ flagOn = debugFlagOn(), pub = PUB } = {}) {
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(path.join(dir, 'index.html'), renderHub(model));
   let links = 0;
+  // Both built copies of each page: Vercel serves the flat <slug>.html (S1 F5).
   for (const t of linkTargets(model.n)) {
-    const file = path.join(pub, t.file);
-    if (!fs.existsSync(file)) continue;
-    const html = fs.readFileSync(file, 'utf8');
-    const next = withHubLink(html, t, { flagOn });
-    if (next !== html) { fs.writeFileSync(file, next); links++; }
+    for (const file of builtCopies(pub, t.file)) {
+      const html = fs.readFileSync(file, 'utf8');
+      const next = withHubLink(html, t, { flagOn });
+      if (next !== html) { fs.writeFileSync(file, next); links++; }
+    }
   }
   return { pages: 1, links };
 }
