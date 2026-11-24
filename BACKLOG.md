@@ -436,6 +436,20 @@ Reads: `docs/reads/seo-sentinel-2026-11.md` (F4) and `docs/reads/traffic-2026-11
   week and 69 on 11-23 by 15:52 UTC. Every read drops it by hand until
   #246 merges.
 
+## SEO sentinel S1, 2026-11-24
+
+Read: `docs/reads/seo-sentinel-2026-11.md` (F5, indexing step).
+
+- **C1 / deploy owner — AMBER (F5).** The deployed site lacks the
+  `/sql-debugging-practice/` link on `/sql-exercises/`, `/sql-for-the-ai-era/`,
+  `/tiktok-sql-interview/` and `/shopify-sql-interview/`; main's committed
+  `public/` has it on all four (`scripts/build-debug-pages.mjs`
+  `linkTargets()`). Since #276 the deploy builds from source, so trace why
+  that build differs on these pages, and add a served-copy check for every
+  `linkTargets()` page. S1 re-checks on 11-25.
+- **C1 — RED, day 3 (F1), unchanged.** No new Bing data today (last fetch
+  11-23 18:40 UTC). The 11-26 `blocked_by_robots` check stands.
+
 ## Funnel findings — B1, 2026-11-22 (docs/reads/funnel-2026-11-22.md)
 
 Six-solvers 209 → 57 (first solvers 500 → 222, reach-six 41.8% → 25.7%;
