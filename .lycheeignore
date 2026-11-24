@@ -17,6 +17,12 @@
 ^https?://(www\.)?leetcode\.com([/:?#]|$)
 ^https?://support\.codesignal\.com([/:?#]|$)
 
+# 403 to the link checker's user agent, 200 to a browser (probed 2026-11-24, run
+# 45459520263: all 7 errors of the first run were teamblind.com posts cited as
+# sources on the Amazon, Meta and Capital One pages). We respect the block
+# rather than spoof a browser agent.
+^https?://(www\.)?teamblind\.com([/:?#]|$)
+
 # Akamai 403 to non-browser clients, browser user agent included.
 ^https?://dev\.mysql\.com([/:?#]|$)
 
