@@ -43,7 +43,7 @@ _Generated 2026-11-23 from the live content bank by `scripts/build-llms-txt.js`.
 - **Queries run in the browser.** A WebAssembly SQLite engine grades every query locally — no install, no server round-trip, no Docker, no local Postgres.
 - **What is free, in one sentence:** 10 free challenge solves, plus the lessons, warm-ups and the daily challenge — Pro opens all 300+.
 - **The free tier includes the Coach.** The adaptive Coach, placement check, Skillmap, weekly report, the lessons, the warm-ups, the daily challenge and 10 challenge solves are free. Pro opens the rest of the bank, the Hard set and the deeper banks (see Pricing).
-- **300+ hands-on SQL challenges** in the bank — 100 Easy, 133 Medium, 84 Hard on the date above. 208 are general and interview-focused; 109 are sector-specific on real public data.
+- **300+ hands-on SQL challenges** in the bank — 100 Easy, 133 Medium, 85 Hard on the date above. 209 are general and interview-focused; 109 are sector-specific on real public data.
 - **10 free challenge solves** — any Easy or Medium challenge, or a Hard preview, so a free user can sample the Pro-tier difficulty before deciding. After 10 solves the unsolved rest of the bank is Pro; everything already solved stays open.
 - **34 company interview pages**, **3 industry tracks**, **10 Socratic lessons**, **3 Coach goal paths**, and a Skillmap over **9 skills**.
 - **SQL dialect: SQLite.** Standard SQL — SELECT, JOIN, GROUP BY, CTEs, window functions, CASE — behaves as it does on PostgreSQL, MySQL, BigQuery and Snowflake. Vendor extensions (PL/SQL, ROWNUM, CONNECT BY, RETURNING, ARRAY types, lateral joins) are not supported.
@@ -84,7 +84,7 @@ Company pages for fintech and banking SQL screens:
 - Capital One — 25 tagged challenges, a set authored for it (the first 3 free to try) and a timed mock screen (Pro) — https://sqlquest.app/capital-one-sql-interview/
 - Revolut — 38 tagged challenges, a set authored for it (the first 3 free to try) and a timed mock screen (Pro) — https://sqlquest.app/revolut-sql-interview/
 - Wise — 16 tagged challenges — https://sqlquest.app/wise-sql-interview/
-- Stripe — 35 tagged challenges — https://sqlquest.app/stripe-sql-interview/
+- Stripe — 36 tagged challenges — https://sqlquest.app/stripe-sql-interview/
 - PayPal — 16 tagged challenges — https://sqlquest.app/paypal-sql-interview/
 - Monzo — 16 tagged challenges — https://sqlquest.app/monzo-sql-interview/
 - Chime — 16 tagged challenges — https://sqlquest.app/chime-sql-interview/
@@ -121,7 +121,7 @@ Company pages for fintech and banking SQL screens:
 - Shopify — 15 tagged challenges — https://sqlquest.app/shopify-sql-interview/
 - Snowflake — 95 tagged challenges — https://sqlquest.app/snowflake-sql-interview/
 - Spotify — 20 tagged challenges — https://sqlquest.app/spotify-sql-interview/
-- Stripe — 35 tagged challenges — https://sqlquest.app/stripe-sql-interview/
+- Stripe — 36 tagged challenges — https://sqlquest.app/stripe-sql-interview/
 - Tesla — 23 tagged challenges — https://sqlquest.app/tesla-sql-interview/
 - TikTok — 16 tagged challenges — https://sqlquest.app/tiktok-sql-interview/
 - Uber — 18 tagged challenges — https://sqlquest.app/uber-sql-interview/
@@ -190,7 +190,7 @@ Each comparison page quotes competitor prices and features from that site's own 
 ## Pricing
 
 - **Free** (no account needed to start): the Coach and placement check, 10 challenge solves (any Easy or Medium, or a Hard preview; sector tracks included), the lessons, the warm-ups, the daily challenge, Skillmap, daily streaks, weekly report, basic mock interviews, and a daily allowance of AI tutor calls. Solved challenges stay open. In the Capital One and Revolut company sets the first 3 are free to try, and they count toward the 10.
-- **Pro**: $29/month or $99/year. Opens every challenge past the free solves — all 300+, including all 84 Hard challenges — the full Mock Interview bank, AI tutor access without the free tier's daily cap, all Daily difficulties, the full Warm-Up bank, the 30-Day Challenge, and priority support. Payment via Stripe, cancel anytime, progress is kept either way.
+- **Pro**: $29/month or $99/year. Opens every challenge past the free solves — all 300+, including all 85 Hard challenges — the full Mock Interview bank, AI tutor access without the free tier's daily cap, all Daily difficulties, the full Warm-Up bank, the 30-Day Challenge, and priority support. Payment via Stripe, cancel anytime, progress is kept either way.
 - **Refunds**: 7-day full refund on Monthly and Annual. Full terms: https://sqlquest.app/refund/
 
 ## Pages
@@ -542,6 +542,7 @@ Each comparison page quotes competitor prices and features from that site's own 
 - The Sync Ran Twice — SQL Interview Question | SQLQuest.app — https://sqlquest.app/questions/the-sync-ran-twice/
 - Roll February's Units into the Totals — SQL Question | SQLQuest.app — https://sqlquest.app/questions/roll-februarys-units-into-the-totals/
 - A Refunds Table That Says No — SQL Interview Question | SQLQuest.app — https://sqlquest.app/questions/a-refunds-table-that-says-no/
+- Reconcile Two Payment Partners' Reports — SQL Question | SQLQuest.app — https://sqlquest.app/questions/reconcile-two-payment-partners-reports/
 - SQL NOT IN with NULL: Why Your Query Returns 0 Rows (2026) | SQLQuest.app — https://sqlquest.app/sql-not-in-null/
 - SQL Join Fan-Out: Why SUM and COUNT Inflate After a JOIN (2026) | SQLQuest.app — https://sqlquest.app/sql-join-fan-out/
 - SQL BETWEEN with Timestamps: Why the Last Day Goes Missing (2026) | SQLQuest.app — https://sqlquest.app/sql-between-timestamp/
@@ -595,10 +596,10 @@ Each comparison page quotes competitor prices and features from that site's own 
 - LinkedIn SQL Interview Questions — Joins, HAVING & Signup Funnels | SQLQuest.app — https://sqlquest.app/linkedin-sql-interview/
 - Microsoft SQL Interview Questions for Data Scientists & Analysts | SQLQuest.app — https://sqlquest.app/microsoft-sql-interview/
 - Bloomberg SQL Interview Questions — Prices, Trades & Time Buckets | SQLQuest.app — https://sqlquest.app/bloomberg-sql-interview/
-- PayPal SQL Interview Questions — Payments, Fraud & Conditional Sums | SQLQuest.app — https://sqlquest.app/paypal-sql-interview/
-- Coinbase SQL Interview Questions — Trades, Retention & Cohorts | SQLQuest.app — https://sqlquest.app/coinbase-sql-interview/
-- Monzo SQL Interview Questions — The Take-Home and the Review | SQLQuest.app — https://sqlquest.app/monzo-sql-interview/
-- Chime SQL Interview Questions — Users, Transactions & Retention | SQLQuest.app — https://sqlquest.app/chime-sql-interview/
+- PayPal SQL Interview Questions — Payments & Fraud | SQLQuest.app — https://sqlquest.app/paypal-sql-interview/
+- Coinbase SQL Interview Questions — Trades & Retention | SQLQuest.app — https://sqlquest.app/coinbase-sql-interview/
+- Monzo SQL Interview Questions — Take-Home and Review | SQLQuest.app — https://sqlquest.app/monzo-sql-interview/
+- Chime SQL Interview Questions — Users & Retention | SQLQuest.app — https://sqlquest.app/chime-sql-interview/
 
 **Industry tracks and Turkish**
 - Türkçe SQL Öğren — AI Tutor ile Ücretsiz Pratik | SQLQuest.app — https://sqlquest.app/turkce-sql-ogren/
@@ -609,15 +610,15 @@ Each comparison page quotes competitor prices and features from that site's own 
 **Challenge topic pages**
 - SQL GROUP BY and HAVING Exercises — 164 Challenges | SQLQuest.app — https://sqlquest.app/challenges/aggregation/
 - SQL CASE WHEN Practice — 54 Challenges: Buckets, Conditional Aggregation, Pivots | SQLQuest.app — https://sqlquest.app/challenges/case-when/
-- SQL CTE Practice — 68 Challenges: Multiple CTEs to Recursive | SQLQuest.app — https://sqlquest.app/challenges/cte/
+- SQL CTE Practice — 69 Challenges: Multiple CTEs to Recursive | SQLQuest.app — https://sqlquest.app/challenges/cte/
 - SQL Date Functions Practice — 41 Challenges: strftime, julianday, Date Ranges | SQLQuest.app — https://sqlquest.app/challenges/date-functions/
 - SQL NULL Handling Practice — 24 Challenges: IS NULL, COALESCE, Counting Nullable Columns | SQLQuest.app — https://sqlquest.app/challenges/null-handling/
 - SQL String Functions Practice — 17 Challenges: SUBSTR, TRIM, LIKE | SQLQuest.app — https://sqlquest.app/challenges/string-functions/
 - SQL Joins Practice — 92 Challenges: INNER, LEFT, Self-Join, Anti-Join | SQLQuest.app — https://sqlquest.app/challenges/joins/
-- SQL Subquery Practice — 59 Challenges: Correlated, EXISTS, IN, Derived Tables | SQLQuest.app — https://sqlquest.app/challenges/subqueries/
+- SQL Subquery Practice — 60 Challenges: Correlated, EXISTS, IN, Derived Tables | SQLQuest.app — https://sqlquest.app/challenges/subqueries/
 - SQL Window Functions Practice — 70 Challenges: RANK, LAG, Running Totals | SQLQuest.app — https://sqlquest.app/challenges/window-functions/
 - SQL Ranking Functions Practice — 35 Challenges: ROW_NUMBER, RANK, DENSE_RANK | SQLQuest.app — https://sqlquest.app/challenges/ranking-functions/
-- Advanced SQL Interview Questions — 84 Challenges: Hard Window, CTE and Join Problems | SQLQuest.app — https://sqlquest.app/challenges/advanced/
+- Advanced SQL Interview Questions — 85 Challenges: Hard Window, CTE and Join Problems | SQLQuest.app — https://sqlquest.app/challenges/advanced/
 
 **Blog**
 - SQLQuest.app Blog — Tutorials, Deep-Dives, Interview Prep — https://sqlquest.app/blog/
@@ -642,7 +643,7 @@ Each comparison page quotes competitor prices and features from that site's own 
 - SQL JOIN ve LEFT JOIN Nedir? INNER, LEFT, Anti-Join — Türkçe Örneklerle | SQLQuest.app — https://sqlquest.app/blog/sql-join-nedir/
 - SQL'de CTE (WITH) Nedir? Tek Sorguyla Türkçe Anlatım | SQLQuest.app — https://sqlquest.app/blog/sql-cte-nedir/
 - What the Capital One CodeSignal Data Analyst Assessment Actually Asks (Candidate Reports, 2021–2026) | SQLQuest.app — https://sqlquest.app/blog/capital-one-codesignal-data-analyst-assessment/
-- Revolut Data Analyst SQL Interview: Both Rounds, Sourced (2026) | SQLQuest.app — https://sqlquest.app/blog/revolut-data-analyst-sql-screen/
+- Revolut Data Analyst SQL Interview: Both Rounds (2026) | SQLQuest.app — https://sqlquest.app/blog/revolut-data-analyst-sql-screen/
 - Govern AI-Generated SQL Before Production: 7 Checks | SQLQuest.app — https://sqlquest.app/blog/validate-ai-generated-sql/
 
 **Legal**
