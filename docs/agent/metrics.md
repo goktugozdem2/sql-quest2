@@ -4180,6 +4180,42 @@ where query is not null and page = 'https://sqlquest.app/<slug>/'
 - Position is impression-weighted (the query above), never a plain average of
   daily positions.
 
+## `gsc_ai_queries`
+
+Google clicks, impressions and impression-weighted position for every search
+query that contains the word "ai", site-wide. Registered 2026-11-25 (C2/G1),
+before the change it judges, for the ledger claim on /sql-for-the-ai-era/ and
+/blog/validate-ai-generated-sql/. It is the query half of that claim; the page
+half is `gsc_page_clicks` on the two URLs.
+
+```sql
+-- the [date, query] slice only (page IS NULL); "ai" as a whole word
+select sum(clicks) clicks, sum(impressions) impressions,
+       round(sum(position * impressions) / nullif(sum(impressions), 0), 1) position,
+       count(distinct query) queries
+from gsc_daily
+where query is not null and page is null
+  and query ~* '\mai\M'
+  and date between :start and :start + 27;
+-- which pages carry them: the [date, query, page] slice, for context only
+select page, sum(clicks), sum(impressions) from gsc_daily
+where query is not null and page is not null and query ~* '\mai\M'
+  and date between :start and :start + 27 group by 1 order by 3 desc;
+```
+
+- **Whole word.** `\mai\M` matches "ai", "ai-generated" and "ai engineer", and
+  not "mail", "chain", "maintain" or "detail". Never `ilike '%ai%'`.
+- **Never add the slices together** (as in `gsc_page_clicks`). The query
+  slice is the total; the query×page slice omits anonymised queries.
+- **Chat-turn queries count.** Long, conversational queries ("how to govern
+  ai-generated sql before it reaches production") are assistants grounding on
+  a page (G1). They are in the total on purpose: being the page an assistant
+  reads is the point, even when Google shows no click.
+- Baseline, 28 days 2026-10-25 → 2026-11-21 (read 2026-11-25): 247
+  impressions, 1 click, position 3.4.
+- Search Console lags about two days: end the window at least three days
+  before the read.
+
 ## `topic_funnel`
 
 C6's metric (2026-11-22). Per SQL topic: of the people who arrived through
