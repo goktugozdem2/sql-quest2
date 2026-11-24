@@ -595,10 +595,10 @@ Each comparison page quotes competitor prices and features from that site's own 
 - LinkedIn SQL Interview Questions — Joins, HAVING & Signup Funnels | SQLQuest.app — https://sqlquest.app/linkedin-sql-interview/
 - Microsoft SQL Interview Questions for Data Scientists & Analysts | SQLQuest.app — https://sqlquest.app/microsoft-sql-interview/
 - Bloomberg SQL Interview Questions — Prices, Trades & Time Buckets | SQLQuest.app — https://sqlquest.app/bloomberg-sql-interview/
-- PayPal SQL Interview Questions — Payments, Fraud & Conditional Sums | SQLQuest.app — https://sqlquest.app/paypal-sql-interview/
-- Coinbase SQL Interview Questions — Trades, Retention & Cohorts | SQLQuest.app — https://sqlquest.app/coinbase-sql-interview/
-- Monzo SQL Interview Questions — The Take-Home and the Review | SQLQuest.app — https://sqlquest.app/monzo-sql-interview/
-- Chime SQL Interview Questions — Users, Transactions & Retention | SQLQuest.app — https://sqlquest.app/chime-sql-interview/
+- PayPal SQL Interview Questions — Payments & Fraud | SQLQuest.app — https://sqlquest.app/paypal-sql-interview/
+- Coinbase SQL Interview Questions — Trades & Retention | SQLQuest.app — https://sqlquest.app/coinbase-sql-interview/
+- Monzo SQL Interview Questions — Take-Home and Review | SQLQuest.app — https://sqlquest.app/monzo-sql-interview/
+- Chime SQL Interview Questions — Users & Retention | SQLQuest.app — https://sqlquest.app/chime-sql-interview/
 
 **Industry tracks and Turkish**
 - Türkçe SQL Öğren — AI Tutor ile Ücretsiz Pratik | SQLQuest.app — https://sqlquest.app/turkce-sql-ogren/
@@ -642,7 +642,7 @@ Each comparison page quotes competitor prices and features from that site's own 
 - SQL JOIN ve LEFT JOIN Nedir? INNER, LEFT, Anti-Join — Türkçe Örneklerle | SQLQuest.app — https://sqlquest.app/blog/sql-join-nedir/
 - SQL'de CTE (WITH) Nedir? Tek Sorguyla Türkçe Anlatım | SQLQuest.app — https://sqlquest.app/blog/sql-cte-nedir/
 - What the Capital One CodeSignal Data Analyst Assessment Actually Asks (Candidate Reports, 2021–2026) | SQLQuest.app — https://sqlquest.app/blog/capital-one-codesignal-data-analyst-assessment/
-- Revolut Data Analyst SQL Interview: Both Rounds, Sourced (2026) | SQLQuest.app — https://sqlquest.app/blog/revolut-data-analyst-sql-screen/
+- Revolut Data Analyst SQL Interview: Both Rounds (2026) | SQLQuest.app — https://sqlquest.app/blog/revolut-data-analyst-sql-screen/
 - Govern AI-Generated SQL Before Production: 7 Checks | SQLQuest.app — https://sqlquest.app/blog/validate-ai-generated-sql/
 
 **Legal**
