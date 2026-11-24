@@ -337,6 +337,61 @@ of the verifier and must never be rounded to `FLAT`.
 - **N2 → B3:** the mock has no question that joins tables and computes a
   rate (its rate, c1-m5, is one table); the page does not claim one.
 
+### the Monzo page's first screen: question 1, readiness, the Pro line, one "debug this query" (C5)
+
+- **Claimed** 2026-11-24 · **Shipped** on merge (static page, no flag) · **Read** 2026-12-22 (28 d) and 2027-01-19 (56 d).
+- **Change** `/monzo-sql-interview/` gets a "Start here" block right under the
+  hero (`scripts/company-first-screen.mjs`, run by the company generator):
+  question 1 straight into the app (challenge 176, the page's own
+  `companyFirstQuestion` pick), the readiness test with `?company=monzo`, and
+  one line on what Pro gives for this interview (the 4 Hard questions past the
+  free preview, all 300+ without the 10-solve stop, the full mock bank; from
+  the page facts and `freeSolvesLabel`, no price). Under it, "Debug this
+  query": framed by the Monzo Data Science post the page already cites (27 Apr
+  2026: the technical interview goes through your submission, its logic,
+  trade-offs and testing), a 9-line query on the Monzo set's own card ledger
+  (`finans_fraud`) that answers 0 accounts with no March spend when the answer
+  is 4 (a WHERE on the right table of a LEFT JOIN), the bug behind a
+  `<details>`, and the fix in the app as Debug question 336 (same bug, Medium,
+  free to open). Every new app link carries `src=company-monzo`; the hero
+  button keeps `src=monzo-sql-interview` so its series does not move.
+- **Why this one:** Monzo is consumer fintech, the archetype that converts;
+  B6 (`docs/reads/competitors-2026-11-23.md`, N5 and run-1 item 6) found the
+  Monzo SERP held by Prepfully's paginated DS bank with no runnable SQL, and
+  Prepfully went from 5 to 6 slots. Menu item 1 beat item 2 (a sourced Monzo
+  guide) because the page exists, is sourced from Monzo's own posts, and the
+  gap is page → question 1, not missing content. No format claim is added:
+  "SQL live debugging" in B6's notes comes from Glassdoor snippets that were
+  never fetched, so the page does not say Monzo asks debugging; it says the
+  review covers testing, which the cited post says.
+- **Metric** `content_funnel`, page `monzo-sql-interview`: `trial_or_purchase`
+  per 1,000 `landing_people`, 28-day window, and the step it should move,
+  `app_opened` / `landing_people`. Clicks `cta_first_question`,
+  `cta_first_readiness`, `cta_first_debug`; arrivals with `arrivalSrc`
+  `company-monzo`.
+- **Baseline** the page's 28-day `content_funnel` row to 2026-11-24 (the
+  laptop reads it from the Monday/Thursday mail; cloud run, no production
+  data, and per-page numbers never go in the repo). The site-wide prior from
+  `docs/plans/monetization-ideas-2026-11-22.md` §1f: company pages 2.3% of
+  arrivals to trial or purchase, 81% of landers never open the app.
+- **Target** at 28 d: `app_opened` / `landing_people` up by ≥ 5 points on the
+  baseline row, and ≥ 10% of landers click one of the three new links. At
+  56 d: `trial_or_purchase` per 1,000 landers at or above the company-page
+  prior (23), with ≥ 1 trial or purchase from a person whose first landing was
+  the page.
+- **Falsification, written now:** fewer than 5% of landers click a new link at
+  ≥ 100 landers → the block is not read; cut it to the question-1 line. App
+  opens flat or down at ≥ 100 landers → the block pushed the format section
+  down without moving anyone; move it below the format table. `cta_first_debug`
+  clicks with no `challenge_first_run` on 336 → the item reads as homework,
+  not practice; swap it for a Monzo-tagged question. Under 30 landers in
+  28 d → noise, read again at 56 d.
+- **Guard** `tests/company-first-screen.test.js` (both queries run on
+  `finans_fraud`, every number, not a mock query, the Debug item is live and
+  non-Hard, links and doors, Pro line from helpers, placement);
+  `tests/company-pages.test.js` `OFF_SET_LINKS` / `OFF_SET_NOTE` waive the tag
+  check for 336 only while the page says it is from the Debug set.
+
 ### a founder-led live mock — would people pay for it? (asked by hand)
 
 - **Claimed** 2026-11-22 · **Shipped** as 3 Gmail drafts, written by E1 at
