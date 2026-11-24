@@ -18,3 +18,6 @@
    - every new page's queries are run and pinned in tests.
 3. One PR per change type, for A1. Add a ledger claim with the GSC metric.
 4. Under FOUNDER, list the URLs to request indexing for (GSC needs his Chrome).
+   From 2026-11-24 the daily list is S1's (`scripts/index-queue.mjs`); C1 adds
+   a `pending` line to `src/data/index-tiers.json` for each page it ships or
+   materially changes, instead of a separate list.
