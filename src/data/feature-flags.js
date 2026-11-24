@@ -633,6 +633,18 @@ window.FEATURE_FLAGS = {
     // Debug set"; metric debug_solve_through. The orchestrator flips it in
     // its own decision row. ON 2026-11-23 (orchestrator-decisions.md).
     debugQuestions: true,
+
+    // ── Sector datasets load on demand (builder, 2026-11-24) ──────────────
+    // The five sector datasets (finans_banking, finans_fraud, finans_neobank,
+    // gayrimenkul_nyc, uretim_industrial) are ~half of data.js gzipped and
+    // every /app visit loads them. On: data.js leaves them out and the app
+    // fetches each one (public/data/<file>?v=<hash>) the first time a
+    // challenge, mock, ticket or first-run sector preview needs it, with a
+    // loading line and Run held until it arrives. BUILD-TIME: the bundler
+    // reads this value (scripts/bundle-data.js), so a URL override cannot
+    // switch it — flipping is a rebuild. Off: data.js byte for byte as before.
+    // src/utils/lazy-datasets.js; tests/lazy-datasets.test.js.
+    lazySectorData: false,
   },
 };
 

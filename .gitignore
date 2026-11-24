@@ -38,3 +38,5 @@ sqlquest-prod-*.json
 # Lighthouse CI output (scripts/lighthouse/run.mjs, .github/workflows/lighthouse.yml)
 .lighthouseci/
 lhci-reports/
+# Lazy sector datasets — build output of scripts/bundle-data.js (flag lazySectorData)
+public/data/

@@ -10,7 +10,7 @@ const config = JSON.parse(read('.size-limit.json'));
 const pkg = JSON.parse(read('package.json'));
 const ci = read('.github/workflows/ci.yml');
 
-const BUDGETED = ['public/app.js', 'public/data.js', 'public/styles.css'];
+const BUDGETED = ['public/app.js', 'public/data.js', 'public/styles.css', 'public/data/*.js'];
 
 // size-limit reads "418.55 kB" with kB = 1000 bytes.
 const toBytes = (limit) => {
@@ -20,7 +20,10 @@ const toBytes = (limit) => {
 };
 
 describe('.size-limit.json', () => {
-  it('budgets exactly app.js, data.js and styles.css', () => {
+  // public/data/*.js: the five sector datasets, written on every build and
+  // fetched on demand once lazySectorData is on (2026-11-24, measured
+  // 327.72 kB gzipped for all five together).
+  it('budgets exactly app.js, data.js, styles.css and the lazy sector datasets', () => {
     expect(config.map((e) => e.path).sort()).toEqual([...BUDGETED].sort());
   });
 
@@ -36,7 +39,7 @@ describe('.size-limit.json', () => {
     // Measured 2026-11-24 on a fresh build (gzip): app.js 406.36 kB,
     // data.js 658.28 kB, styles.css 13.7 kB. A limit far outside these
     // means the budget was raised (or typed) without a read.
-    const ranges = { 'public/app.js': [300e3, 600e3], 'public/data.js': [500e3, 900e3], 'public/styles.css': [8e3, 30e3] };
+    const ranges = { 'public/app.js': [300e3, 600e3], 'public/data.js': [500e3, 900e3], 'public/styles.css': [8e3, 30e3], 'public/data/*.js': [250e3, 450e3] };
     for (const entry of config) {
       const [lo, hi] = ranges[entry.path];
       const bytes = toBytes(entry.limit);
