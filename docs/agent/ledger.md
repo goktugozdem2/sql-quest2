@@ -66,9 +66,11 @@ of the verifier and must never be rounded to `FLAT`.
 
 ### One layer at a time after a solve on phones (`mobileOneLayer`, rank 3 of the mobile plan)
 
-- **Claimed** 2026-11-23 · **Shipped** dark on merge; ON at 50/50 only by
-  the orchestrator's decision row after review · **Read** 2026-12-21 (if
-  the flip lands later, 28 days after the flip).
+- **Claimed** 2026-11-23 · **Shipped** dark on merge; **ON at 50/50
+  2026-11-24** (orchestrator decision row; the clock starts at the deploy
+  of the flip commit) · **Read** 2026-12-22 (28 days after the flip).
+  Exclude the four walk guests of 2026-11-24 11:01–11:06 UTC (iOS
+  Simulator + production walk, stored arm, no `mobile_one_layer_assigned`).
 - **Change** on a narrow touch screen (coarse pointer or width < 768) the
   first correct submit assigns an arm by aid (`mobile_one_layer_v1`, FNV +
   murmur3 finalizer), written once as `mobile_one_layer_assigned {arm}`. In
@@ -143,6 +145,45 @@ of the verifier and must never be rounded to `FLAT`.
   days with discovery live → nobody wants it: freeze the set at 12 and write
   it down. Solve-through more than 20 points below the band → the format is
   broken: fix the UX before adding items.
+
+### Apple becomes a sourced company page; TikTok, Bloomberg, Tesla, Amazon, Monzo lose their unsourced claims (C2, R1 batch 5)
+
+- **Claimed** 2026-11-23 · **Shipped** on merge (static pages, no flag) ·
+  **Read** 2026-12-21.
+- **Change** `/apple-sql-interview/` gets a "How the interview runs
+  (sourced)" section from `SOURCED_FORMATS.apple` with the three rows the
+  dossier rates medium (the data-scientist screen pairs SQL with Python;
+  hiring-manager rounds can carry no SQL; the loop varies by team) and a
+  "not stated here" row; its JSON-LD, meta and hero stop naming App Store /
+  Services content the set does not have and roles no source covers.
+  Correctness only, same PR: TikTok loses "Data Analyst" in the roles row,
+  the single-guide HackerRank row, the 2022 Blind row, the ranked topic list,
+  the difficulty grade and "two sources agree", and gains the medium
+  read-or-debug row; Bloomberg's analyst rows, "prices, trades and sessions"
+  as a reported fact, ranked topics and difficulty go; Tesla loses "patterns
+  Tesla screens for", "factory floors" and "Tesla-pattern"; Amazon's (and
+  Revolut's one) "no dated source" lines that contradicted their sourced
+  sections go; Monzo opens with `publishes`; the stale "the Capital One page
+  is the only page with sources" sentence is rewritten on 17 general pages by
+  the generator. Sources: `docs/reads/companies/{apple,tesla,tiktok,bloomberg,amazon}.md`,
+  `docs/reads/company-research-2026-11-20.md`.
+- **Metric** `gsc_page_clicks` for `/apple-sql-interview/`, and
+  `company_page_door` for `page` = `apple-sql-interview`.
+- **Baseline** 46 impressions / 5 clicks in the 28 days to 2026-11-21
+  (dossier). The page → app rate is not read in this run (no production
+  read); the laptop reads 2026-10-24 → 11-22 before the merge and writes it
+  here.
+- **Target** for the 28 days to 2026-12-18: ≥ 7 clicks with impressions not
+  below 46, and the page → app rate not below its baseline.
+- **Falsification** (written before the data) clicks ≤ 5 → the sourced rows
+  did not move search on this page; keep them (correctness). Under 100
+  impressions in the window reads `UNREADABLE`, not `FLAT` — likely here.
+- **Confounds** SEO-loop rule 4: these pages took M-02 (the hero names
+  question 1) on 2026-11-22; read Apple against the general company pages
+  this PR touches only through the one FAQ sentence. The app's company view
+  keeps calling the Apple set "general" until `public/app.js` is next
+  rebuilt and committed. The other pages carry no claim of their own — their
+  edits remove statements, not bets.
 
 ### Shopify becomes a sourced company page; Meta, Google, Databricks lose their unsourced claims (C2, R1 batch 4)
 
@@ -825,6 +866,36 @@ of the verifier and must never be rounded to `FLAT`.
   indexing by hand first, re-read 2027-01-17). 4 weeks is short for a new
   page: a MISS on clicks with impressions above target is FLAT, not MISS.
   The P4 prune rule applies at eight weeks (no impressions → noindex).
+
+### a reconciliation card for the Stripe set (challenge 330, IR-1)
+
+- **Claimed** 2026-11-23 · **Shipped** on merge · **Read** 2026-12-21.
+- **Change** One Hard card, 330 "Reconcile Two Payment Partners' Reports", on
+  three new synthetic tables in `ecommerce` (`expected_payments`,
+  `partner_a_report`, `partner_b_report`), tagged Stripe. The shape is a
+  reconciliation round reported by a candidate (2026-10, one report;
+  `docs/reads/companies/stripe.md`, S11, confidence low), unattributed. The
+  pinned answer (7 rows) rejects a one-direction answer (4 or 3 rows), an
+  answer that does not narrow the expectations to the partner (29 rows; the
+  half-filter drops T-1013) and one that repeats a reported-twice row
+  (`tests/challenge-330.test.js`). The Stripe set goes 35 → 36.
+- **Metric** `challenge_solve_through` (docs/agent/metrics.md) for id 330,
+  read within the Hard band.
+- **Baseline** Not readable from this session's lane without a production
+  read; the read takes it in the same window: the median solve-through of
+  every Hard card with 10+ openers, 2026-11-24 → 2026-12-21, same shared
+  filters. A new card has no before.
+- **Target** 330 with 10+ openers at or above the Hard median, and at least
+  one opener arriving from the Stripe door (`src`/`linkSrc` =
+  `stripe-sql-interview`).
+- **Falsification** Solve-through more than 15 points under the Hard median
+  with 10+ openers: the prompt is unclear or the traps are unfair — read the
+  wrong submits (`challenge_error_pattern`) before writing another card from a
+  single report. Under 10 openers is `UNREADABLE`, not `FLAT` (a Pro Hard on
+  one company page may simply not be reached in 28 days).
+- **Confound** It also joins the CTE and subqueries topic pages and
+  /challenges/advanced/, so openers arrive from more doors than Stripe's; read
+  the door beside the rate.
 
 ### five Easy on-ramps: Window, Date and NULL (challenges 320-324)
 

@@ -60,9 +60,47 @@ line.
   While red, C1 and C2 ship no new pages (SEO-loop rule 1).
 - End with a short Turkish line for the founder, then the FLEET-RESULT line.
 
+## The daily indexing step (from 2026-11-24)
+
+Rules: `docs/plans/indexing-queue-2026-11-23.md`. After the checks above,
+and after the GSC fetch:
+
+1. Write today's `**Status:**` line in `state/S1.md` (`Google GREEN · Bing
+   RED` form). The queue reads it: RED pauses T3/T4 on that engine.
+2. `git fetch` origin/main, then
+   `node scripts/index-queue.mjs --live --engine gsc` (with the read-only
+   Supabase env if available; otherwise a `--status` snapshot from the MCP,
+   or the step is skipped and the script says so). Nothing is requested from
+   a list made without `--live`.
+3. **If Claude in Chrome is connected,** request indexing for day 1's list,
+   in order, following the memory recipe `gsc-request-indexing-recipe`:
+   - check the tab renders (`innerWidth > 0`) first;
+   - navigate to the property overview fresh for every URL, set the box via
+     the native setter, wait for the panel to show *that* URL, require
+     exactly one visible control reading exactly "Request indexing", click
+     it, return; confirm the queue toast in the next call;
+   - **never press Enter in the URL Inspection box after a request** — it
+     fires "Request again" on the URL already open;
+   - stop on the first "Quota Exceeded" (log it; the day is over).
+   **Otherwise** put the list under **FOUNDER:** in the report, in order.
+4. Append one row per URL to `docs/agent/index-requests.json` — `{url,
+   engine, date (full ISO time), by, result}`, nothing else — and run
+   `npx vitest run tests/index-queue.test.js`.
+5. Bing, the small form: `node scripts/index-queue.mjs --live --engine bing`.
+   It lists only T1 pages changed today (not site-wide), at most 10; request
+   them in Bing URL Inspection the same way, or hand them to the founder. Log
+   them with `engine: "bing"`. Never `/questions/` (bingbot noindex, #72).
+6. Re-generate the 7-day view:
+   `node scripts/index-queue.mjs --engine gsc --days 7 --write-queue` →
+   `docs/agent/index-queue.md`, in the same docs-only PR as the month file.
+
+This step is the one console action S1 takes (founder's request,
+2026-11-23); the read-only rule below holds for everything else.
+
 ## Rules
 
-- Read-only: no page edits, no robots or sitemap edits, no console actions.
+- Read-only: no page edits, no robots or sitemap edits, no console actions
+  other than the daily indexing step above.
 - Live-site checks use plain GETs. On a 403 or 429, stop that check for the
   day (README 7b, R1 rule).
 - Never route an alert to anyone outside the repo and the founder's report.

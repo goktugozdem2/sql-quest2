@@ -21,7 +21,7 @@ Impressions / clicks: gsc_daily page slice, 28 days to 2026-11-21.
 |---|---|---|---|---|---|
 | Capital One | fintech | **2026-11-22** | high (DA screen shape) | 106 / 9 (+ blog 658 / 39) | CodeSignal's own help page: DAA = 70 min, 14 quiz + 1 coding, CSV in any tool, 200–600, retake 2× in 180 days; DS gets 4 Python tasks / 90 min; BA gets cases. Our mock is 12 + 2. |
 | Revolut | fintech | **2026-11-22** | medium (four-question SQL round) | 205 / 36 | Second family confirms the four-question round (PracHub, Feb 2026); new shapes: CTR from an event log, define-a-metric, fraud rules; Revolut's careers page names the stage order. |
-| Stripe | fintech | **2026-11-22** | high (live SQL in DS/DA loops; DS take-home) | 69 / 4 | First dated sources: three candidate reports; HM first round; one-week DS take-home. The page can become sourced. |
+| Stripe | fintech | **2026-11-22** | high (live SQL in DS/DA loops; DS take-home) | 69 / 4 | First dated sources: three candidate reports; HM first round; one-week DS take-home. The page can become sourced. 2026-11-23: + a reconciliation round reported by a candidate (2026-10, one report; low) → challenge 330. |
 | Wise | fintech | **2026-11-22** | high (analyst take-home, first-party) | 206 / 53 | wise.jobs documents the analyst case: 7 days, ~2 h, ≤ 3 h. No source for a "30-minute SQL interview". |
 | JPMorgan | fintech | **2026-11-22** | low (nothing page-ready) | 56 / 3 | Only generic first-party lines; the JPMC application PDF (HireVue / HackerRank) needs a hand read. |
 | PayPal | fintech | none | — | 0 / 0 | read 2026-11-20 (page cites it) |

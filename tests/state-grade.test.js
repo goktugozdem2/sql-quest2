@@ -176,10 +176,13 @@ describe('the gate refuses before anything runs', () => {
 
 describe('the five challenges', () => {
   it('are state-graded, appended, tagged DDL/DML only, and the tag moves no Skillmap axis', () => {
-    // appended as one block: nothing else sits inside 325-329 (later sets,
-    // e.g. 330 and 355+, may follow it;
-    // A1 on #298: comparing against every SELECT id broke on the next one)
+    // Appended after 324 as one block, never renumbered: nothing else sits
+    // inside 325-329, and later sets (330 on 2026-11-23, 355+ on 2026-11-24)
+    // may follow it, so the rule is the ids below and inside the block, not
+    // every other id in the bank (A1 on #298).
     expect(bank.filter(c => c.id >= 325 && c.id <= 329).map(c => c.id).sort((a, b) => a - b)).toEqual(IDS);
+    expect(Math.min(...IDS)).toBeGreaterThan(324);
+    expect(Math.max(...bank.filter(c => !IDS.includes(c.id) && c.id < Math.min(...IDS)).map(c => c.id))).toBe(324);
     for (const id of IDS) {
       const c = byId(id);
       expect(bank.filter(x => x.id === id), `#${id}`).toHaveLength(1);
