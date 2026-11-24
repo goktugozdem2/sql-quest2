@@ -215,24 +215,3 @@ export function validateGoalRegistry({
 
   return issues;
 }
-
-// Thin wrapper that's safe to call at runtime in the app. Pulls data from
-// window.* globals and logs issues without throwing.
-export function runRegistryValidation() {
-  if (typeof window === 'undefined') return [];
-  const issues = validateGoalRegistry({
-    goals: window.coachGoals || [],
-    aiLessonsData: window.aiLessonsData || [],
-    challengesData: window.challengesData || [],
-  });
-  if (issues.length === 0) return issues;
-  for (const issue of issues) {
-    const prefix = `[coach-validate] ${issue.severity} [${issue.goalId}${issue.stepId ? '/' + issue.stepId : ''}]`;
-    if (issue.severity === 'error') {
-      console.error(prefix, issue.message);
-    } else {
-      console.warn(prefix, issue.message);
-    }
-  }
-  return issues;
-}
