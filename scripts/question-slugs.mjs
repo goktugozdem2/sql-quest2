@@ -11,6 +11,12 @@ import vm from 'node:vm';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 
+// A Debug item (type 'debug', src/data/debug-challenges.js) never gets a
+// /questions/ page in v1: S1 is RED and the SEO loop allows no new indexable
+// page (design PR #248). The debug file is not loaded below either; this is
+// the second wall, and tests/debug-questions.test.js pins both.
+export const isQuestionPageItem = c => !!c && c.type !== 'debug';
+
 export function loadQuestionBank() {
   const ctx = { window: {}, console: { log() {}, warn() {} } };
   vm.createContext(ctx);
@@ -19,7 +25,7 @@ export function loadQuestionBank() {
   }
   const byId = new Map();
   for (const c of [...ctx.window.challengesData, ...(ctx.window.sectorChallengesData || [])]) byId.set(c.id, c);
-  return { bank: [...byId.values()].sort((a, b) => a.id - b.id), tags: ctx.window.challengeCompanies || {} };
+  return { bank: [...byId.values()].filter(isQuestionPageItem).sort((a, b) => a.id - b.id), tags: ctx.window.challengeCompanies || {} };
 }
 
 export const slugify = s => String(s).toLowerCase()

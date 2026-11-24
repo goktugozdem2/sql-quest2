@@ -27,6 +27,123 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### Run stays on screen on phones (`mobileRunBar`, rank 1 of the mobile plan)
+
+- **Claimed** 2026-11-23 · **Shipped** dark on merge; ON at 50/50 by the
+  orchestrator's decision row after review · **Read** 2026-12-21 (if the
+  flip lands later, 28 days after the flip).
+- **Change** on a narrow touch screen (coarse pointer or width < 768) the
+  first challenge open assigns an arm by aid (`mobile_run_bar_v1`, FNV +
+  murmur3 finalizer), written once as `mobile_run_bar_assigned {arm}`. In
+  `bar`, below `md`, the challenge's Run / Submit bar is fixed to the
+  bottom of the viewport (safe-area padded), lifts above the keyboard by
+  `visualViewport`, and shows "Tap Run to see the table" to a person with
+  no solve on an empty editor; `control` keeps today's sticky bar. Desktop
+  and `md`+ are unchanged in both arms (1280 screenshot: 0 pixels differ).
+  Headless 390×844: Run at y = 788–832 on load in `bar` on #105 and #91
+  (control: 1009–1053 on #105, below the 844 screen), and 452–496 with a
+  simulated 336 px keyboard (control: hidden). Plan:
+  `docs/plans/mobile-acquisition-2026-11-23.md` §3 row 1, §4.
+- **Also** (not part of the A/B): Run and Submit are at least 44 px tall
+  below `md` in both arms (QA D3, 2026-11-23: 40 px).
+- **Metric** `open_to_first_run`, mobile band, first-contact opens, by arm
+  (definition: `docs/agent/metrics.md`, PR #270). Secondary: mobile people
+  with a `challenge_solved`.
+- **Baseline** 20% (7 of 35, 28 days to 2026-11-23, people from a page or a
+  source); 9% (2 of 23) on empty-editor challenges.
+- **Target** ≥ 35% in the `bar` arm.
+- **Falsified if** at the read the `bar` arm's open → first run is below
+  35%, or under 15 points above `control`. **Small sample:** about 35
+  mobile first-challenge people arrive per 28 days, so about 17 per arm;
+  this is an effect-size rule fixed now, not a p-value. If either arm has
+  fewer than 15 people at the read date, extend the read by 28 days once,
+  then call it.
+- **Confound, stated in advance** (A1 review, 2026-11-24): `mobileOneLayer`,
+  `runSubmitNudge` (#243) and `companyDirectOpen` (ON at 50/50) reach the
+  same phones in the same window. Report the 2×2 cell counts with
+  `mobileOneLayer`, and the arm split within each other test, and never pool
+  across any of their flip dates.
+
+### One layer at a time after a solve on phones (`mobileOneLayer`, rank 3 of the mobile plan)
+
+- **Claimed** 2026-11-23 · **Shipped** dark on merge; ON at 50/50 only by
+  the orchestrator's decision row after review · **Read** 2026-12-21 (if
+  the flip lands later, 28 days after the flip).
+- **Change** on a narrow touch screen (coarse pointer or width < 768) the
+  first correct submit assigns an arm by aid (`mobile_one_layer_v1`, FNV +
+  murmur3 finalizer), written once as `mobile_one_layer_assigned {arm}`. In
+  `one`: the solve feedback, then the ask (soft email, then the intent
+  question) is the only layer; the achievement toast, LEVEL UP, the
+  Skillmap card, the share bar and the streak card are held until the next
+  challenge opens, where the first still pending shows alone and the rest
+  are dropped for the session; no tier-3 layer renders over a modal; every
+  close target on the shown layer is ≥ 44×44. `control`, desktop and the
+  flag off: today's behaviour. Headless 390×844, challenge 91: control
+  showed 5 layers at 3.5 s (intent, achievement, LEVEL UP, Skillmap card,
+  share bar; close targets 24×24 and 14×28); `one` showed the intent
+  question alone (smallest target 308×44), nothing after the answer, and
+  one achievement toast (close 44×44) at the next challenge open. Plan:
+  `docs/plans/mobile-acquisition-2026-11-23.md` §2 W3, §3 row 3.
+- **Metric** `second_solve_same_session`, mobile band, by arm (definition:
+  `docs/agent/metrics.md`, PR #280). Secondary: the intent question's
+  answer rate (`intent_captured` per assigned person), mobile, by arm.
+- **Baseline** mobile 60% (18 of 30, 90 days to 2026-11-23); 4 of 6 in the
+  last 28 days. Desktop 69% (668 of 973) — mobile first solvers who stay
+  are not rare, mobile first solvers are.
+- **Target** the `one` arm ≥ 10 points above `control`.
+- **Falsified if** at the call the `one` arm's rate is not ≥ 10 points above
+  `control`. **Revert** (keep today's layers) if `one` is ≥ 10 points below
+  `control`. **Small sample:** mobile first solvers are about 6 a month, so
+  about 3 per arm per 28 days. At 2026-12-21 report n and the rates as
+  directional only. While either arm has fewer than 15 people, extend by 28
+  days, at most three times; call it on 2027-03-15 whatever n is, and if n
+  is still under 15 per arm keep `one` only if it is not worse than
+  `control` (the plan's "keep only if not worse" rule).
+- **Confound** `mobileRunBar` (PR #271) targets the same phones in the same
+  window and should raise the number of mobile first solvers, so the
+  population changes under this test. The two arms are independent by
+  construction (tested over 10,000 aids, agreement 50 ± 3%). Read the 2×2
+  (`mobile_run_bar_assigned.arm` × `mobile_one_layer_assigned.arm`) and
+  never pool across a flip of either flag.
+
+### the Debug set: "an AI wrote this query, find and fix the bug" (`debugQuestions`) — **OPEN**
+
+- **Claimed** 2026-11-23 · **Shipped** dark (`debugQuestions: false`), from
+  the approved design `docs/designs/debug-question-type.md` (PR #248). The
+  orchestrator flips it in its own decision row; **the clock starts at the
+  flip**. · **Flipped ON 2026-11-23T22:09Z** (PR flags/debug-questions-on, after #249
+  merged with #252/#256/#258 and a 31/31 production smoke) · **Read**
+  2026-12-22 (28 days after the flip).
+- **Change** Twelve `type: 'debug'` items, ids 331–342 (4 Easy, 5 Medium,
+  3 Hard), in `src/data/debug-challenges.js`: the editor opens on a wrong
+  query an AI assistant "wrote" (only when no draft is saved), with line
+  numbers and an optional spot tap scored in `debugStats`, never a gate;
+  graded like any challenge; a solve names the bug and links the trap page
+  where one exists. Discovery with the flag on: the Practice "Debug" chip,
+  a line on the five trap pages, a section on `/sql-for-the-ai-era/` and the
+  validate-AI post. Free quota and the Hard/Pro boundary unchanged. No new
+  indexable page.
+- **Why** Reading and fixing someone else's query is reported as an
+  interview round in 3 dated reports at 2 companies (TikTok K1, K4; Shopify
+  S6 — `docs/reads/companies/`); the bank had no item of that shape. Demand
+  for an "AI" framing itself is unproven (none of the 9 payers arrived
+  through the AI pages).
+- **Metric** `debug_solve_through` (`docs/agent/metrics.md`, defined in its
+  own PR per rule 6b — until that PR merges the verdict would be UNDEFINED).
+  Debug solve-through vs same-difficulty challenges over the same 28 days,
+  plus openers and the share of openers who reach 6+ total solves.
+- **Baseline** none for the set (it does not exist yet); the same-band
+  challenge solve-through is read from the same 28-day window. Confound,
+  stated in advance: a prefilled editor inflates first runs and
+  solve-through against blank-editor items, so the band is a floor, not a
+  peer.
+- **Target** Debug solve-through within 10 points of same-band challenges,
+  and ≥ 40 people open a Debug item in 28 days.
+- **Falsification, written before the data:** fewer than 20 openers in 28
+  days with discovery live → nobody wants it: freeze the set at 12 and write
+  it down. Solve-through more than 20 points below the band → the format is
+  broken: fix the UX before adding items.
+
 ### Shopify becomes a sourced company page; Meta, Google, Databricks lose their unsourced claims (C2, R1 batch 4)
 
 - **Claimed** 2026-11-23 · **Shipped** on merge (static pages, no flag) ·
