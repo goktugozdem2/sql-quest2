@@ -1,6 +1,6 @@
 {
   "note": "Written by scripts/sitemap-lastmod.mjs. A page's date moves only when its built bytes change.",
-  "updated": "2026-11-23",
+  "updated": "2026-11-24",
   "pages": {
     "/": {
       "hash": "b69691610a56f015",
@@ -183,24 +183,24 @@
       "lastmod": "2026-11-23"
     },
     "/sql-exercises/": {
-      "hash": "ba4973de3e436268",
-      "lastmod": "2026-11-23"
+      "hash": "935c26ff1fed2684",
+      "lastmod": "2026-11-24"
     },
     "/after-the-sql-course/": {
       "hash": "f72817c70a9da409",
       "lastmod": "2026-11-23"
     },
     "/after-bootcamp/": {
-      "hash": "e30fa6b9b8133a6a",
-      "lastmod": "2026-11-23"
+      "hash": "21dac207b2379eca",
+      "lastmod": "2026-11-24"
     },
     "/sql-for-the-ai-era/": {
       "hash": "7de747cd5d013e69",
       "lastmod": "2026-11-23"
     },
     "/challenges/": {
-      "hash": "08297b405d2f0763",
-      "lastmod": "2026-11-23"
+      "hash": "b299924aa5a59797",
+      "lastmod": "2026-11-24"
     },
     "/challenges/aggregation/": {
       "hash": "fe4e460a17623332",
@@ -231,20 +231,20 @@
       "lastmod": "2026-11-23"
     },
     "/challenges/subqueries/": {
-      "hash": "bdf675e778577182",
-      "lastmod": "2026-11-23"
+      "hash": "c3f79ba0daad501b",
+      "lastmod": "2026-11-24"
     },
     "/challenges/window-functions/": {
-      "hash": "11ab542b1cdd6c66",
-      "lastmod": "2026-11-23"
+      "hash": "92c2bd1fd177bcc0",
+      "lastmod": "2026-11-24"
     },
     "/challenges/ranking-functions/": {
       "hash": "71d41ca70facb24f",
       "lastmod": "2026-11-23"
     },
     "/challenges/advanced/": {
-      "hash": "a13a237f1e5442c8",
-      "lastmod": "2026-11-23"
+      "hash": "b96f8da54ba4a936",
+      "lastmod": "2026-11-24"
     },
     "/blog/": {
       "hash": "a0634e938116909b",
@@ -451,8 +451,8 @@
       "lastmod": "2026-11-23"
     },
     "/questions/": {
-      "hash": "08276cb7bca6ef41",
-      "lastmod": "2026-11-23"
+      "hash": "15b4d154c8ed4363",
+      "lastmod": "2026-11-24"
     },
     "/questions/class-survival-breakdown/": {
       "hash": "30690df3f1180074",
@@ -815,16 +815,16 @@
       "lastmod": "2026-11-23"
     },
     "/questions/your-first-query/": {
-      "hash": "e766b2dbc8d54f3e",
-      "lastmod": "2026-11-23"
+      "hash": "2756e8a00228d4cf",
+      "lastmod": "2026-11-24"
     },
     "/questions/pick-your-columns/": {
-      "hash": "3cb653643946e34b",
-      "lastmod": "2026-11-23"
+      "hash": "3691e2ec099ae304",
+      "lastmod": "2026-11-24"
     },
     "/questions/filter-with-where/": {
-      "hash": "d4575702fbbf5890",
-      "lastmod": "2026-11-23"
+      "hash": "8a0704e970f93089",
+      "lastmod": "2026-11-24"
     },
     "/questions/comparison-operators/": {
       "hash": "9c8abd0fde73da1f",
@@ -1711,16 +1711,36 @@
       "lastmod": "2026-11-23"
     },
     "/questions/the-sync-ran-twice/": {
-      "hash": "5645a5b72373f970",
-      "lastmod": "2026-11-23"
+      "hash": "7d5c18963cfa11bb",
+      "lastmod": "2026-11-24"
     },
     "/questions/roll-februarys-units-into-the-totals/": {
-      "hash": "54052ca66b4be4ec",
-      "lastmod": "2026-11-23"
+      "hash": "a251ef09b0cbaeac",
+      "lastmod": "2026-11-24"
     },
     "/questions/a-refunds-table-that-says-no/": {
-      "hash": "91c3a79afb551e4b",
-      "lastmod": "2026-11-23"
+      "hash": "924b5517df544ef8",
+      "lastmod": "2026-11-24"
+    },
+    "/questions/the-account-page-reads-every-order/": {
+      "hash": "f260790a78f19b84",
+      "lastmod": "2026-11-24"
+    },
+    "/questions/clear-out-the-sign-ups-that-never-bought/": {
+      "hash": "1aa1f84ee00f2432",
+      "lastmod": "2026-11-24"
+    },
+    "/questions/give-every-customer-a-lifetime-spend/": {
+      "hash": "29b744c74ccebe84",
+      "lastmod": "2026-11-24"
+    },
+    "/questions/close-the-books-on-february/": {
+      "hash": "e75604c99b8d2d5c",
+      "lastmod": "2026-11-24"
+    },
+    "/questions/apply-the-overnight-price-feed/": {
+      "hash": "517e3ce1d6994623",
+      "lastmod": "2026-11-24"
     },
     "/sql-not-in-null/": {
       "hash": "e0cd3c3c2bda9a01",
