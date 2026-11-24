@@ -1185,6 +1185,20 @@ by hand (the 10-04 → 10-07 waves: docs/reads/p1-guardrail-bing-2026-10-07.md).
   week to 11-22. Until it is stamped, drop UTC landers with no
   `app_opened`. The durable fingerprint is the agent/window mismatch, not
   the time zone (see the next trap).
+- **The topic-page crawler changed door (C8, 2026-11-24).** On 11-24 its
+  first `app_opened` moved from `challenges-…` (81 on 11-22, 78 on 11-23,
+  3 on 11-24) to company pages and other page doors (65 by 16:47 UTC: 47
+  `<company>-sql-interview`, the rest comparison, blog and pattern doors),
+  same shape: no `landingSrc`, no `landing_view`, `langs = 1`, one window
+  size and one time zone per person, 0 runs. Fingerprint it on the shape,
+  not the door (`app1lang`): since 2026-10-01, 873 people match and 3 ran
+  a query (0.3%, under the brief's one-in-fifty line). The
+  `langs = 2` no-landing cluster is the same shape one language wider.
+- **`desktop:1024x1024` crawler (C8, 2026-11-24, from 11-22).** Window
+  size `desktop:1024x1024`, mostly `tz = 'Etc/Unknown'`, one
+  `landing_engaged` per company/topic page, often with no `landing_view`
+  (so it lands in "no source, no landing" buckets). 21 people on 11-22,
+  7 on 11-23, none on 11-24; never ran a query. Drop the viewport.
 
 **Trap: the crawlers change time zone and borrow a landing source
 (2026-10-18, widened 2026-11-12).** Three window sizes have never, over all
@@ -3948,6 +3962,85 @@ left join answered an using (pid)
 left join second sec using (pid)
 group by a.arm;
 ```
+
+## `interview_date_capture`
+
+The interview date asked right after the company ask is answered with a
+company (2026-11-24, ledger "the interview date, asked after a company is
+named"). Defined BEFORE the code ships (fleet README rule 6b); the code is
+a separate PR behind `intakeAfterFirstSolve`, so this reads nothing until
+that flag flips. `:flip` = the deploy of the flip commit.
+
+Population: people by `coalesce(aid, username)` with a
+`company_ask_assigned` row since `:flip` with `arm = 'ask'`. Leave out
+internal accounts, `metadata.bot`, the crawler window sizes and the
+founder's walk guests listed in docs/agent/fleet/README.md rule 2, and the
+localhost preview aids of `company_ask_split`.
+
+- **Denominator — company answerers:** people in that population with an
+  `intake_answered` row, `step = 'company'`, `surface = 'post_solve'`,
+  `value <> 'undecided'`. "Not sure yet" and Skip are not in it: the date
+  is only ever asked after a company.
+- **Numerator — dates captured:** denominator people with an
+  `interview_date_captured` row, `source = 'company_ask'`, carrying a
+  `daysOut` (an integer 0–365). The event never carries the date itself.
+- **Rate** = numerator / denominator.
+- **Also report (not the rate):**
+  - shown: `intake_shown`, `step = 'interview_date'`,
+    `surface = 'post_solve'` (should equal the denominator minus people who
+    already had a date on record — a gap is the wiring, check it first);
+  - "No date yet": `interview_date_captured` with `none = true`;
+  - skipped: `intake_skipped`, `step = 'interview_date'`;
+  - ignored = shown − captured (either kind) − skipped;
+  - `daysOut` buckets: 0–7, 8–30, 31–90, 91–365 (the 45-day line is the
+    `deadlineOffer` copy's);
+  - the payoff after the date: `company_ask_payoff_clicked` among
+    denominator people, by whether they gave a date.
+- **Not this metric:** dates written by the countdown card or the intake
+  (`prep_target_set`, `intake_answered step 'date'`). This door only.
+
+```sql
+with ev as (
+  select coalesce(((metadata #>> '{}')::jsonb)->>'aid', username) pid, event, created_at, (metadata #>> '{}')::jsonb m
+  from pro_events
+  where username !~* '^(test|qa_|fabletest|linktest|internalroutine|sqlquest$|elena$)'
+    and created_at >= :flip
+),
+arm as (select distinct on (pid) pid from ev
+        where event = 'company_ask_assigned' and m->>'arm' = 'ask'
+          and coalesce(m->>'bot', 'false') <> 'true'
+          and pid not like '0da741eb852fc963%' and pid not like 'f2777777777777777%'
+        order by pid, created_at),
+named as (select distinct e.pid from ev e join arm using (pid)
+          where e.event = 'intake_answered' and e.m->>'step' = 'company'
+            and e.m->>'surface' = 'post_solve' and e.m->>'value' <> 'undecided'),
+shown as (select distinct pid from ev where event = 'intake_shown'
+          and m->>'step' = 'interview_date' and m->>'surface' = 'post_solve'),
+dated as (select distinct on (pid) pid, (m->>'daysOut')::int days_out from ev
+          where event = 'interview_date_captured' and m->>'source' = 'company_ask'
+            and m->>'daysOut' is not null order by pid, created_at),
+nodate as (select distinct pid from ev where event = 'interview_date_captured'
+           and m->>'source' = 'company_ask' and m->>'none' = 'true'),
+skipped as (select distinct pid from ev where event = 'intake_skipped' and m->>'step' = 'interview_date')
+select
+  count(*) named_company,
+  count(s.pid) shown,
+  count(d.pid) dated,
+  round(100.0 * count(d.pid) / nullif(count(*), 0), 1) pct_dated,
+  count(nd.pid) no_date_yet,
+  count(sk.pid) skipped,
+  count(*) filter (where d.days_out between 0 and 7) d_0_7,
+  count(*) filter (where d.days_out between 8 and 30) d_8_30,
+  count(*) filter (where d.days_out between 31 and 90) d_31_90,
+  count(*) filter (where d.days_out between 91 and 365) d_91_365
+from named n
+left join shown s using (pid)
+left join dated d using (pid)
+left join nodate nd using (pid)
+left join skipped sk using (pid);
+```
+Apply the README's hand-dropped crawler rules to `arm` before reading;
+they are not all stamped yet.
 
 ## `company_direct_split`
 

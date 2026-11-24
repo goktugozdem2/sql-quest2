@@ -139,6 +139,7 @@ the README rule-2 exclusions.
 
 - 2026-11-22 | **RED** (Bing index; known, see F1) | G 171 (11-15→21; prev 163) / B 32 (11-14→20; prev 37) | G 416/429 = 0.97 (sitemap URLs inspected 11-16) / B 833/429 = **1.94** | Bing errors 0, 4xx 0, 5xx 0; top 20 all 200, `index, follow`, self-canonical, ≤ 1 hop | first snapshot, no yesterday to diff; robots = main (bingbot group live), sitemap 429 URLs = main's URL set, lastmods behind main (F2) | G 8 of 20 comparable queries moved > 3, 2 of them down (F3); B 0 of 5
 - 2026-11-23 | **RED** (Bing index, F1; Google GREEN) | G 172 (11-16→22; prev 174) / B 38 (11-15→21; prev 35) | G 421/431 = 0.98 (all 431 sitemap URLs inspected 11-23: 421 indexed, 10 unknown to Google) / B 838/431 = **1.94** | Bing errors 0, 4xx 0, 5xx 0 (11-22); top 20 all 200, `index, follow`, self-canonical, ≤ 1 hop (www → bare, the standing 308) | robots unchanged from 11-22 and = main; sitemap 431 URLs (+2: `/for-teams/`, `/blog/revolut-data-analyst-sql-screen/`; none dropped), byte-equal to main (F2 cleared) | G 5 of 21 comparable moved > 3, all **up** (CTE/GROUP BY tail, `sqlbolt` 11.3 → 7.7); weighted mean 9.2 → 8.3; B 0 of 5 (bucket 11-20)
+- 2026-11-24 | **RED** (Bing index, F1, no new Bing data; Google GREEN) + **AMBER** (F5) | G 181 (11-17→23; prev 178) / B 38 (11-15→21; prev 35; no Bing fetch since 11-23 18:40 UTC, so the same rows as yesterday) | G 421/440 = 0.96 (`gsc_index_status` unchanged since the 11-23 inspection; the 9 URLs added since have no row yet) / B 838/440 = **1.90** (the 11-22 row; same count over a larger sitemap, not a fall) | Bing errors 0, 4xx 0, 5xx 0 (11-22); top 20 all 200, `index, follow`, self-canonical, ≤ 1 hop (www → bare, the standing 308) | robots unchanged from 11-23 and = main; sitemap 440 URLs (+9: `/sql-debugging-practice/`, `/sql-interview-prep-plan/`, `/sql-mock-interview/` and six `/questions/` pages; none dropped), byte-equal to main | G 7 of 22 comparable moved > 3, all **up** (`rollup interview questions` 9.2 → 3.4, `sqlbolt` 10.7 → 7.3, the CTE/JOIN/GROUP BY tail); weighted mean 9.5 → 7.5; B 0 of 5 (bucket 11-20)
 
 ## Findings
 
@@ -280,6 +281,80 @@ on 12-12; no escalation.
 
 The live `sitemap.xml` is byte-equal to `origin/main:public/sitemap.xml`
 (427 lastmods 11-23), so the stranded #144 / #146 are now served.
+
+### F5 — AMBER, 2026-11-24: the deployed site drops the Debug-hub link on 4 of its 11 target pages
+
+`scripts/build-debug-pages.mjs` (#256) injects a link to
+`/sql-debugging-practice/` into 11 built pages while `debugQuestions` is on
+(on since 11-23 ~22:30 UTC, #289). Main's committed `public/` carries all 11.
+The live site carries 7 (plain GETs, 2026-11-24 ~16:55 UTC):
+
+| Page | main `public/` | live |
+|---|---|---|
+| `/`, `/blog/validate-ai-generated-sql/`, the five trap pages | link | link |
+| `/sql-exercises/` | link | **none** |
+| `/sql-for-the-ai-era/` | link | **none** |
+| `/tiktok-sql-interview/` | link | **none** |
+| `/shopify-sql-interview/` | link | **none** |
+
+- The live `/sql-exercises/` is main's page minus exactly the
+  `debug-hub-link` paragraph (diffed; nothing else differs), so this is not
+  a deploy lag: the sitemap and robots are byte-equal to main.
+- Since #276 the production deploy builds from source (`vercel build`,
+  `buildCommand: npm run build`) instead of serving the committed
+  `public/`. The likeliest cause is an order or anchor difference in that
+  build for these four pages (their anchors are `topic-traps:end`,
+  `debug-discovery:end`, `company-topics:end`). Not traced further: S1 is
+  read-only.
+- **Why it matters for search:** `/sql-exercises/` is the site's top click
+  page on both engines and the hub's main internal link. The hub was
+  requested in GSC on 11-23 with fewer links than the request assumed.
+  The indexing queue reads the gate correctly (it holds `/sql-exercises/`
+  because the marker is not live).
+- **Not RED:** no page is blocked, dropped or noindexed. It is one link on
+  four pages.
+- **To C1 / the deploy owner** (BACKLOG): find why the deploy's build
+  differs from the committed `public/` on these four pages, and add a check
+  that the served copy of every `linkTargets()` page carries the marker.
+  Re-check here on 11-25.
+
+### Indexing step, 2026-11-24 (the first daily run)
+
+- The seven GSC requests the orchestrator made by hand on 11-23 are now rows
+  in `docs/agent/index-requests.json`, from the laptop fleet state: six at
+  19:05–19:15 UTC (rollup, PayPal, `/for-teams/`, the Revolut blog post,
+  `/sql-mock-interview/`, `/sql-interview-prep-plan/`) and the Debug hub at
+  22:00–22:45 UTC. Each row carries the end of its run, the conservative
+  reading. Three earlier by-hand requests (Chime, `/challenges/window-functions/`,
+  `/challenges/cte/`) are marked done in that state with no date. They are
+  noted under `unrecorded` and are not rows.
+- **The rolling window moves to 22:45 UTC, not 19:15.** The hub's request
+  was the last one, so `index-queue.mjs` holds today's batch until
+  **2026-11-24 22:45 UTC**. Run at 16:55 UTC, it says "0 of cap 0". The
+  list below is the same run with `--now 2026-11-24T22:46Z`.
+- **Day-1 GSC list (8, binding from 22:45 UTC):**
+  1. `/revolut-sql-interview/` (T1, changed 11-24)
+  2. `/monzo-sql-interview/` (pending, #76)
+  3. `/blog/validate-ai-generated-sql/` (#256 links the hub from here, marker live)
+  4. `/airbnb-sql-interview/`
+  5. `/amazon-sql-interview/`
+  6. `/anthropic-sql-interview/`
+  7. `/apple-sql-interview/`
+  8. `/bloomberg-sql-interview/`
+
+  Items 4–8 are T4: indexed pages whose lastmod moved on 11-24 (21 company
+  pages, #237 and its regeneration). The six unknown `/questions/` pages
+  follow on 11-26/27.
+- **Bing by hand: 1.** `/revolut-sql-interview/` (T1, changed today). Bing is
+  RED, which pauses T3/T4 only.
+- **A first sign the rollup request worked.** `/sql-rollup-interview-questions/`
+  shows in `gsc_daily` on 11-23 (279 impressions at mean position 1.1,
+  0 clicks). It was "unknown to Google" at the 11-23 15:45 inspection. Its
+  ledger claim's 28-day window starts at the 11-23 19:15 request.
+- **A gap in the queue, not urgent:** a URL with no `gsc_index_status` row on
+  a site-wide lastmod day is held as "only a site-wide change". The six
+  new `/questions/` pages are held that way until Monday's inspection gives
+  them a row. They are T5, so nothing is lost.
 
 ### Standing notes (not findings)
 
