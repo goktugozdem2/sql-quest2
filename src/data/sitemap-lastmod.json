@@ -1,6 +1,6 @@
 {
   "note": "Written by scripts/sitemap-lastmod.mjs. A page's date moves only when its built bytes change.",
-  "updated": "2026-11-23",
+  "updated": "2026-11-24",
   "pages": {
     "/": {
       "hash": "b69691610a56f015",
@@ -439,16 +439,16 @@
       "lastmod": "2026-11-23"
     },
     "/datalemur-alternatives/": {
-      "hash": "8cfb349a08351371",
-      "lastmod": "2026-11-23"
+      "hash": "989e5040e980c695",
+      "lastmod": "2026-11-24"
     },
     "/stratascratch-alternatives/": {
-      "hash": "8bf995929514023a",
-      "lastmod": "2026-11-23"
+      "hash": "676cd70461ece574",
+      "lastmod": "2026-11-24"
     },
     "/vs-chatgpt/": {
-      "hash": "7d69d9bd5e11e6a2",
-      "lastmod": "2026-11-23"
+      "hash": "e7386ecc3d75306c",
+      "lastmod": "2026-11-24"
     },
     "/questions/": {
       "hash": "08276cb7bca6ef41",
