@@ -84,7 +84,7 @@ describe('AI-generated SQL validation guide publication contract', () => {
 
     expect(article.author).toMatchObject({ '@type': 'Person', name: 'Can Goktug Ozdem' });
     expect(article.publisher).toMatchObject({ '@type': 'Organization', name: 'SQL Quest' });
-    expect(faq.mainEntity).toHaveLength(4);
+    expect(faq.mainEntity).toHaveLength(5);
     for (const item of faq.mainEntity) {
       expect(source).toContain(`<summary>${item.name}</summary>`);
       expect(source).toContain(item.acceptedAnswer.text);
