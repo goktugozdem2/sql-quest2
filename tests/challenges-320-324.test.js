@@ -181,6 +181,23 @@ describe('the solutions, run and pinned', () => {
     }
   });
 
+  // QA 2026-11-23, D4: 318 and 319 said "in March 2024" on the same table,
+  // whose last login is 2024-04-01 21:37 (Olivia's 5-day streak runs into
+  // April). Same fix as 323: the real count, customers and date range.
+  for (const id of [318, 319]) {
+    it(`${id} — the example states the logins table's real count, customers and date range, in both languages`, () => {
+      const [{ n, people, first, last }] = run(id, 'SELECT COUNT(*) AS n, COUNT(DISTINCT customer_id) AS people, MIN(date(login_at)) AS first, MAX(date(login_at)) AS last FROM logins');
+      const en = byId(id).example.input;
+      const tr = byId(id).example_tr.input;
+      expect(en).toContain(`${n} logins by ${people} customers`);
+      expect(tr).toContain(`${people} müşteriden ${n} giriş`);
+      for (const input of [en, tr]) {
+        expect(input.match(/\d{4}-\d{2}-\d{2}/g), input).toEqual([first, last]);
+        expect(input, input).not.toMatch(/March|Mart/);
+      }
+    });
+  }
+
   it('324 — 891 passengers, 714 ages on record, 177 missing', () => {
     const rows = run(324);
     expect(rows).toEqual([
