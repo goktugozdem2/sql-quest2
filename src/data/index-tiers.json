@@ -1,0 +1,147 @@
+{
+  "_comment": "The indexing queue's tier map (docs/plans/indexing-queue-2026-11-23.md, read by scripts/index-queue.mjs). Paths, never full URLs. t1 is a fixed list; t2/t3 are classes matched by regex, in order; /questions/ is always tier 5 and Google only. A class-2 page is queued at tier 2 only when it is new to the engine (not indexed) or listed under pending; otherwise it ranks as tier 4. pending holds the pages an agent shipped or materially changed: add a line in the same PR as the page, with the PR and the date. A gate holds a pending page until it is true: flag = the key must read true in src/data/feature-flags.js (a missing key is OFF here); liveMarker = the live page must contain this string (checked only with --live). flagGated maps a page that is rendered only behind a flag to that flag: such a page is never queued, on any engine, while the flag is off (and with --live, not before it answers 200). A pending gate only decides when the pending boost applies; with the gate closed the page is ranked by its class rules like any other. skip lists pages never worth a request (legal pages; /weekly/ changes every week by design).",
+  "t1": [
+    "/",
+    "/sql-exercises/",
+    "/sql-interview-prep/",
+    "/capital-one-sql-interview/",
+    "/revolut-sql-interview/",
+    "/sql-interview-readiness-test/"
+  ],
+  "t2": [
+    "^/[a-z0-9-]+-sql-interview/$",
+    "^/challenges/",
+    "^/sql-(not-in-null|join-fan-out|between-timestamp|average-of-averages|left-join-where-filter|rollup-interview-questions)/$",
+    "^/sql-debugging-practice/$",
+    "^/vs-",
+    "-alternatives/$",
+    "^/datalemur-karsilastirma/$",
+    "^/sql-practice-comparison/$",
+    "^/best-sql-practice-sites/$",
+    "^/for-teams/$"
+  ],
+  "t3": [
+    "^/blog/",
+    "^/sql-tutorial/$",
+    "^/learn-sql",
+    "^/sql-cheat-sheet/$",
+    "^/sql-cte-vs-subquery/$",
+    "^/sql-find-duplicates/$",
+    "^/sql-interview-questions-data-analyst/$",
+    "^/practice-sql-no-setup/$"
+  ],
+  "skip": [
+    "/privacy/",
+    "/terms/",
+    "/refund/",
+    "/weekly/"
+  ],
+  "flagGated": {
+    "/sql-debugging-practice/": "debugQuestions"
+  },
+  "pending": [
+    {
+      "path": "/sql-rollup-interview-questions/",
+      "tier": 2,
+      "added": "2026-11-22",
+      "source": "#127; its ledger claim's 28-day window starts at the request"
+    },
+    {
+      "path": "/paypal-sql-interview/",
+      "tier": 2,
+      "added": "2026-11-23",
+      "source": "#76"
+    },
+    {
+      "path": "/coinbase-sql-interview/",
+      "tier": 2,
+      "added": "2026-11-23",
+      "source": "#76"
+    },
+    {
+      "path": "/monzo-sql-interview/",
+      "tier": 2,
+      "added": "2026-11-23",
+      "source": "#76"
+    },
+    {
+      "path": "/chime-sql-interview/",
+      "tier": 2,
+      "added": "2026-11-22",
+      "source": "#134"
+    },
+    {
+      "path": "/for-teams/",
+      "tier": 2,
+      "added": "2026-11-23",
+      "source": "#188"
+    },
+    {
+      "path": "/challenges/window-functions/",
+      "tier": 2,
+      "added": "2026-11-23",
+      "source": "#260 (learn, practice, next step)",
+      "gate": {
+        "liveMarker": "topic-learn:start"
+      }
+    },
+    {
+      "path": "/challenges/cte/",
+      "tier": 2,
+      "added": "2026-11-23",
+      "source": "#260 (learn, practice, next step)",
+      "gate": {
+        "liveMarker": "topic-learn:start"
+      }
+    },
+    {
+      "path": "/sql-debugging-practice/",
+      "tier": 2,
+      "added": "2026-11-23",
+      "source": "#256, rendered only with debugQuestions on",
+      "gate": {
+        "flag": "debugQuestions"
+      }
+    },
+    {
+      "path": "/",
+      "tier": 1,
+      "added": "2026-11-23",
+      "source": "#256 links the Debug hub from here",
+      "gate": {
+        "flag": "debugQuestions",
+        "liveMarker": "/sql-debugging-practice/"
+      }
+    },
+    {
+      "path": "/sql-exercises/",
+      "tier": 1,
+      "added": "2026-11-23",
+      "source": "#256 links the Debug hub from here",
+      "gate": {
+        "flag": "debugQuestions",
+        "liveMarker": "/sql-debugging-practice/"
+      }
+    },
+    {
+      "path": "/sql-for-the-ai-era/",
+      "tier": 4,
+      "added": "2026-11-23",
+      "source": "#256 links the Debug hub from here",
+      "gate": {
+        "flag": "debugQuestions",
+        "liveMarker": "/sql-debugging-practice/"
+      }
+    },
+    {
+      "path": "/blog/validate-ai-generated-sql/",
+      "tier": 4,
+      "added": "2026-11-23",
+      "source": "#256 links the Debug hub from here",
+      "gate": {
+        "flag": "debugQuestions",
+        "liveMarker": "/sql-debugging-practice/"
+      }
+    }
+  ]
+}
