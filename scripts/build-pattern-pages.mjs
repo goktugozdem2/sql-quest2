@@ -40,7 +40,7 @@ const fmt = v => (typeof v === 'number' && !Number.isInteger(v)
   ? v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
   : typeof v === 'number' ? v.toLocaleString('en-US') : String(v));
 
-function resultHtml(q) {
+export function resultHtml(q) {
   if (q.rows && q.columns) {
     return `<div class="tbl"><table><thead><tr>${q.columns.map(c => `<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>${q.rows.map(r => `<tr>${r.map(v => `<td>${esc(fmt(v))}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
   }

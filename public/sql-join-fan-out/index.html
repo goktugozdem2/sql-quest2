@@ -65,7 +65,7 @@ pre .k{color:#7CC4FF}pre .s{color:#B5E48C}pre .n{color:#FFB86C}.bad{border-color
   
 
   <h2 class="fd">Why</h2>
-  <div class="why"><p>Each transaction at a merchant is paired with every chargeback at that merchant, not with its own. Aurora Cafe, a high-risk merchant with 90 transactions and 5 chargebacks, becomes 450 joined rows where there should be 90.</p><p>SUM then adds every transaction amount once per chargeback, and COUNT counts the pairs. Nothing about the result looks broken; the numbers are simply several times too large.</p><p>The tell: a total that grows when you add a join that should only have added columns.</p></div>
+  <div class="why"><p>Each transaction at a merchant is paired with every chargeback at that merchant, not with its own. Aurora Cafe, a high-risk merchant with 90 transactions and 5 chargebacks, becomes 450 joined rows where there should be 90.</p><p>SUM then adds every transaction amount once per chargeback, and COUNT counts the pairs. Nothing about the result looks broken; the numbers are simply several times too large.</p><p>The tell: a total that grows when you add a join that should only have added columns.</p><p>Adding DISTINCT does not repair it. <code>COUNT(DISTINCT cb.chargeback_id)</code> happens to return the right 10, because chargeback ids are unique, but <code>SUM(DISTINCT t.amount)</code> adds each amount value once, not each transaction. High-risk spend comes back as 78,600.19 instead of 78,986.43, because its 262 transactions carry only 259 distinct amounts. Close enough to pass a glance, and still wrong. Fix the join instead.</p></div>
 
   <h2 class="fd">The fix</h2>
   <p class="lbl good">Fix 1 — Join on the key that makes the rows one-to-one — the transaction</p>

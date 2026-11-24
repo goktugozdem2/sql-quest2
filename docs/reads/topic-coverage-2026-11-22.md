@@ -66,6 +66,15 @@ both for new challenges. **Next step after it merges: move 180-185 onto
 `grade: 'state'`** (their trailing SELECT becomes the `check`), and drop the
 `mutates` path.
 
+## Handed in by C7, 2026-11-24 (docs/reads/questions-2026-11-24.md)
+
+Missing topics from question mining, run 3, ahead of the ranked list:
+
+- **UPSERT** (`ON CONFLICT … DO UPDATE`, `INSERT OR REPLACE`, MySQL's `ON DUPLICATE KEY UPDATE`, `MERGE`). Six threads. The bank has 0. It belongs with DML (#1 below).
+- **Median and percentiles** (`percentile_cont` in PostgreSQL; SQLite's `median()` only behind the percentile extension, so the window-function form is the portable one). Five threads; no worked page today.
+
+BACKLOG lines in the 2026-11-24 C7 section.
+
 ## Handed in by C7, 2026-11-23 (docs/reads/questions-2026-11-23.md)
 
 Top of C6's queue from question mining, ranked by C6 against the table below:

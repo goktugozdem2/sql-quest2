@@ -80,6 +80,7 @@ export const SQL_PATTERNS = [
       'Each transaction at a merchant is paired with every chargeback at that merchant, not with its own. Aurora Cafe, a high-risk merchant with 90 transactions and 5 chargebacks, becomes 450 joined rows where there should be 90.',
       'SUM then adds every transaction amount once per chargeback, and COUNT counts the pairs. Nothing about the result looks broken; the numbers are simply several times too large.',
       'The tell: a total that grows when you add a join that should only have added columns.',
+      'Adding DISTINCT does not repair it. `COUNT(DISTINCT cb.chargeback_id)` happens to return the right 10, because chargeback ids are unique, but `SUM(DISTINCT t.amount)` adds each amount value once, not each transaction. High-risk spend comes back as 78,600.19 instead of 78,986.43, because its 262 transactions carry only 259 distinct amounts. Close enough to pass a glance, and still wrong. Fix the join instead.',
     ],
     fixes: [
       {
@@ -99,6 +100,10 @@ export const SQL_PATTERNS = [
     facts: [
       { text: '262 transactions', sql: "SELECT COUNT(*) FROM transactions t JOIN merchants m ON m.merchant_id = t.merchant_id WHERE m.risk_tier = 'high'", expect: 262 },
       { text: 'becomes 450 joined rows where there should be 90', sql: "SELECT 'becomes ' || COUNT(*) || ' joined rows where there should be ' || (SELECT COUNT(*) FROM transactions WHERE merchant_id = 3) FROM transactions t JOIN chargebacks cb ON cb.merchant_id = t.merchant_id WHERE t.merchant_id = 3", expect: 'becomes 450 joined rows where there should be 90' },
+      // C7 2026-11-24: "why not just add DISTINCT?" (docs/reads/questions-2026-11-24.md)
+      { text: 'comes back as 78,600.19 instead of 78,986.43', sql: "SELECT 'comes back as ' || printf('%,.2f', SUM(DISTINCT t.amount)) || ' instead of ' || (SELECT printf('%,.2f', SUM(t2.amount)) FROM transactions t2 JOIN merchants m2 ON m2.merchant_id = t2.merchant_id WHERE m2.risk_tier = 'high') FROM merchants m JOIN transactions t ON t.merchant_id = m.merchant_id JOIN chargebacks cb ON cb.merchant_id = m.merchant_id WHERE m.risk_tier = 'high'", expect: 'comes back as 78,600.19 instead of 78,986.43' },
+      { text: 'its 262 transactions carry only 259 distinct amounts', sql: "SELECT 'its ' || COUNT(*) || ' transactions carry only ' || COUNT(DISTINCT t.amount) || ' distinct amounts' FROM transactions t JOIN merchants m ON m.merchant_id = t.merchant_id WHERE m.risk_tier = 'high'", expect: 'its 262 transactions carry only 259 distinct amounts' },
+      { text: 'return the right 10', sql: "SELECT 'return the right ' || COUNT(DISTINCT cb.chargeback_id) FROM merchants m JOIN transactions t ON t.merchant_id = m.merchant_id JOIN chargebacks cb ON cb.merchant_id = m.merchant_id WHERE m.risk_tier = 'high'", expect: 'return the right 10' },
       { text: 'Aurora Cafe, a high-risk merchant', sql: "SELECT name || ', a ' || risk_tier || '-risk merchant' FROM merchants WHERE merchant_id = 3", expect: 'Aurora Cafe, a high-risk merchant' },
     ],
     rule: 'Before trusting a SUM or COUNT after a join, check that the join did not change the row count of the table you are summing.',
