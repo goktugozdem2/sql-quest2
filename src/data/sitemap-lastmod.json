@@ -3,95 +3,95 @@
   "updated": "2026-11-24",
   "pages": {
     "/": {
-      "hash": "b69691610a56f015",
-      "lastmod": "2026-11-23"
+      "hash": "089928c6b20c2057",
+      "lastmod": "2026-11-24"
     },
     "/turkce-sql-ogren/": {
-      "hash": "9580c5b22cccad52",
-      "lastmod": "2026-11-23"
+      "hash": "78b3484978939ef9",
+      "lastmod": "2026-11-24"
     },
     "/finans-sql/": {
-      "hash": "cdf5b66fbbb09424",
-      "lastmod": "2026-11-23"
+      "hash": "b6cdabfded3e1968",
+      "lastmod": "2026-11-24"
     },
     "/gayrimenkul-sql/": {
-      "hash": "205df7dc7e16da0e",
-      "lastmod": "2026-11-23"
+      "hash": "2534f300c027ef92",
+      "lastmod": "2026-11-24"
     },
     "/uretim-sql/": {
-      "hash": "f51870a29e67a35d",
-      "lastmod": "2026-11-23"
+      "hash": "616236a1327572fe",
+      "lastmod": "2026-11-24"
     },
     "/meta-sql-interview/": {
-      "hash": "29ae8999ef46bc33",
+      "hash": "9533798dbed9c342",
       "lastmod": "2026-11-24"
     },
     "/google-sql-interview/": {
-      "hash": "78ced686e61c5f19",
+      "hash": "ffc6a293198ca94b",
       "lastmod": "2026-11-24"
     },
     "/amazon-sql-interview/": {
-      "hash": "5483d501f3d1c108",
+      "hash": "36518557dd1dc19f",
       "lastmod": "2026-11-24"
     },
     "/netflix-sql-interview/": {
-      "hash": "9b5c02926d004970",
+      "hash": "5ef1ff12a4df9f47",
       "lastmod": "2026-11-24"
     },
     "/stripe-sql-interview/": {
-      "hash": "ef20bbe5ebe5655f",
+      "hash": "1b05db821cc65b38",
       "lastmod": "2026-11-24"
     },
     "/plaid-sql-interview/": {
-      "hash": "253e9b2682af3580",
+      "hash": "ae521154ab386d41",
       "lastmod": "2026-11-24"
     },
     "/ramp-sql-interview/": {
-      "hash": "60bb355c77acd09b",
+      "hash": "67040327d4021055",
       "lastmod": "2026-11-24"
     },
     "/revolut-sql-interview/": {
-      "hash": "f5b23129b0bd1209",
+      "hash": "114138a6bd2692a1",
       "lastmod": "2026-11-24"
     },
     "/capital-one-sql-interview/": {
-      "hash": "d2ea6b7c70646358",
+      "hash": "9be699d6f3c8662a",
       "lastmod": "2026-11-24"
     },
     "/wise-sql-interview/": {
-      "hash": "95cb7b9d5c7bdc4b",
+      "hash": "f540bf56204c06f4",
       "lastmod": "2026-11-24"
     },
     "/apple-sql-interview/": {
-      "hash": "a75aaeced575fdac",
+      "hash": "5a9af8633972096c",
       "lastmod": "2026-11-24"
     },
     "/uber-sql-interview/": {
-      "hash": "9a46541e2e2cb18e",
+      "hash": "9618372be3a91c0f",
       "lastmod": "2026-11-24"
     },
     "/airbnb-sql-interview/": {
-      "hash": "94f61054f44ff4f9",
+      "hash": "0eccbb06db3a342a",
       "lastmod": "2026-11-24"
     },
     "/databricks-sql-interview/": {
-      "hash": "7607de7bcb5282fc",
+      "hash": "244aec93df286edc",
       "lastmod": "2026-11-24"
     },
     "/shopify-sql-interview/": {
-      "hash": "e7d722dc7dd6e172",
+      "hash": "33b25b1bde3570a8",
       "lastmod": "2026-11-24"
     },
     "/spotify-sql-interview/": {
-      "hash": "c1bd2519216057f0",
+      "hash": "937f33182f30280e",
       "lastmod": "2026-11-24"
     },
     "/jpmorgan-sql-interview/": {
-      "hash": "4d5782c4e41eaea3",
+      "hash": "720afe2044b67a32",
       "lastmod": "2026-11-24"
     },
     "/snowflake-sql-interview/": {
-      "hash": "6a05280d00bdfa28",
+      "hash": "1e310585b836ae20",
       "lastmod": "2026-11-24"
     },
     "/practice-sql-no-setup/": {
@@ -107,7 +107,7 @@
       "lastmod": "2026-11-21"
     },
     "/fraud-analytics-sql/": {
-      "hash": "7de7a2250b9ba815",
+      "hash": "71a8c57b67da872e",
       "lastmod": "2026-11-24"
     },
     "/vs-datalemur/": {
@@ -147,12 +147,12 @@
       "lastmod": "2026-11-24"
     },
     "/sql-interview-prep/": {
-      "hash": "44455592d972e643",
-      "lastmod": "2026-11-23"
+      "hash": "db6ad2a304860bd8",
+      "lastmod": "2026-11-24"
     },
     "/learn-sql/": {
-      "hash": "65d06b3c2d851eb0",
-      "lastmod": "2026-11-23"
+      "hash": "6c0482da076aad82",
+      "lastmod": "2026-11-24"
     },
     "/for-teams/": {
       "hash": "78beb505090105f6",
@@ -163,12 +163,12 @@
       "lastmod": "2026-11-24"
     },
     "/sql-tutorial/": {
-      "hash": "9aaa091234e32549",
+      "hash": "a9bdfa1c260845a5",
       "lastmod": "2026-11-24"
     },
     "/learn-sql-for-beginners/": {
-      "hash": "a91b28e3f9eecc69",
-      "lastmod": "2026-11-23"
+      "hash": "4e408e9a02a8b9d4",
+      "lastmod": "2026-11-24"
     },
     "/sql-find-duplicates/": {
       "hash": "e700efaba18e8b5c",
@@ -183,7 +183,7 @@
       "lastmod": "2026-11-23"
     },
     "/sql-exercises/": {
-      "hash": "cbe7ee34fabf7887",
+      "hash": "77c1910922d9b29b",
       "lastmod": "2026-11-24"
     },
     "/after-the-sql-course/": {
@@ -251,35 +251,35 @@
       "lastmod": "2026-11-24"
     },
     "/blog/faang-sql-interview-guide/": {
-      "hash": "bfcf2b6e917af66d",
+      "hash": "4e53ea28e240bdf0",
       "lastmod": "2026-11-24"
     },
     "/blog/sql-joins-explained/": {
-      "hash": "e5590f05e4017ff0",
+      "hash": "2bc0b61bc58d12e8",
       "lastmod": "2026-11-24"
     },
     "/blog/window-functions-tutorial/": {
-      "hash": "abd601c41a74a0e4",
+      "hash": "e5ed0081d30f7573",
       "lastmod": "2026-11-24"
     },
     "/blog/null-handling-mistakes/": {
-      "hash": "e3a5ef19aa1c55e0",
-      "lastmod": "2026-11-23"
+      "hash": "44e03d8a159d552e",
+      "lastmod": "2026-11-24"
     },
     "/blog/sql-cte-tutorial/": {
-      "hash": "09c4645da0c6b8c1",
+      "hash": "63f475068c93c7cb",
       "lastmod": "2026-11-24"
     },
     "/blog/sql-for-fraud-analytics/": {
-      "hash": "574e05eda726bc99",
+      "hash": "e6e72d3ecd649e87",
       "lastmod": "2026-11-24"
     },
     "/blog/sql-group-by-tutorial/": {
-      "hash": "69f75f405d05c29b",
+      "hash": "13b346efefc92757",
       "lastmod": "2026-11-24"
     },
     "/blog/sql-case-when-tutorial/": {
-      "hash": "da4c6c9681bf6bde",
+      "hash": "087fbcfb16559dee",
       "lastmod": "2026-11-24"
     },
     "/privacy/": {
@@ -295,75 +295,75 @@
       "lastmod": "2026-11-22"
     },
     "/nvidia-sql-interview/": {
-      "hash": "6342cdc700452e5b",
+      "hash": "46ff24af069cf224",
       "lastmod": "2026-11-24"
     },
     "/openai-sql-interview/": {
-      "hash": "6847637ae65bc6f3",
+      "hash": "35c85363a9ad857b",
       "lastmod": "2026-11-24"
     },
     "/anthropic-sql-interview/": {
-      "hash": "62938dc48aa3946d",
+      "hash": "29cf4d6d8374ee6b",
       "lastmod": "2026-11-24"
     },
     "/tesla-sql-interview/": {
-      "hash": "4a9e9e6437262dc0",
+      "hash": "0c9864e0a73ca1c1",
       "lastmod": "2026-11-24"
     },
     "/morgan-stanley-sql-interview/": {
-      "hash": "f3487ef52c969224",
+      "hash": "a14e7c7d660f6a71",
       "lastmod": "2026-11-24"
     },
     "/blog/sql-for-ai-company-interviews/": {
-      "hash": "85106637d040bb79",
+      "hash": "92160c6b943680af",
       "lastmod": "2026-11-24"
     },
     "/blog/time-series-sql-hardware-interviews/": {
-      "hash": "37077b1960b16e70",
+      "hash": "c938548873cf9059",
       "lastmod": "2026-11-24"
     },
     "/blog/left-join-vs-inner-join/": {
-      "hash": "7e29554524ab5297",
+      "hash": "d9f60d44a7febdcc",
       "lastmod": "2026-11-24"
     },
     "/blog/what-is-a-cte-in-sql/": {
-      "hash": "5c16073051968d41",
+      "hash": "3c200fc96dde05a2",
       "lastmod": "2026-11-24"
     },
     "/blog/recursive-cte-explained/": {
-      "hash": "4afbc0ee6c183a58",
+      "hash": "b4e4b9a5107fbcbe",
       "lastmod": "2026-11-24"
     },
     "/blog/row-number-vs-rank-vs-dense-rank/": {
-      "hash": "cc0c61cd89bc5233",
+      "hash": "fad59d46ab08634e",
       "lastmod": "2026-11-24"
     },
     "/blog/where-vs-having/": {
-      "hash": "fb7846b6b82b6f6f",
+      "hash": "e4e715b70c60aae6",
       "lastmod": "2026-11-24"
     },
     "/blog/is-null-vs-equals-null/": {
-      "hash": "628a420cab08bcec",
+      "hash": "e401113eb9191b6d",
       "lastmod": "2026-11-24"
     },
     "/blog/sql-running-total/": {
-      "hash": "9d57637b099cef0e",
+      "hash": "9ce452ef5761bc5c",
       "lastmod": "2026-11-24"
     },
     "/blog/sql-anti-join/": {
-      "hash": "8451364101745f38",
+      "hash": "9e74bd39ef54fd84",
       "lastmod": "2026-11-24"
     },
     "/blog/sql-join-nedir/": {
-      "hash": "e81b21765d88130a",
-      "lastmod": "2026-11-23"
+      "hash": "7525258a01a89853",
+      "lastmod": "2026-11-24"
     },
     "/blog/sql-cte-nedir/": {
-      "hash": "95599dd4eb8fe9bb",
-      "lastmod": "2026-11-23"
+      "hash": "3ad6ad78992f58eb",
+      "lastmod": "2026-11-24"
     },
     "/blog/capital-one-codesignal-data-analyst-assessment/": {
-      "hash": "26e7988a1324e89b",
+      "hash": "625f17ceb2aed147",
       "lastmod": "2026-11-24"
     },
     "/blog/revolut-data-analyst-sql-screen/": {
@@ -371,8 +371,8 @@
       "lastmod": "2026-11-24"
     },
     "/blog/validate-ai-generated-sql/": {
-      "hash": "f45678318480d8c9",
-      "lastmod": "2026-11-23"
+      "hash": "e1d52f6adaee7db6",
+      "lastmod": "2026-11-24"
     },
     "/doordash-sql-interview/": {
       "hash": "cfe026febfa26e67",
