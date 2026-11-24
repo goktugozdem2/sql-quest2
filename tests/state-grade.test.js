@@ -176,9 +176,9 @@ describe('the gate refuses before anything runs', () => {
 
 describe('the five challenges', () => {
   it('are state-graded, appended, tagged DDL/DML only, and the tag moves no Skillmap axis', () => {
-    // Appended after 324, never renumbered: later batches (343-354,
-    // 2026-11-23) may come after these five, so the rule is the ids below
-    // them, not every other id in the bank.
+    // Appended after 324, never renumbered: later cards (330 and the
+    // 343-354 batch, 2026-11-23) may come after these five, so the rule is
+    // the ids below them, not every other id in the bank.
     expect(Math.min(...IDS)).toBeGreaterThan(324);
     expect(Math.max(...bank.filter(c => !IDS.includes(c.id) && c.id < Math.min(...IDS)).map(c => c.id))).toBe(324);
     for (const id of IDS) {
