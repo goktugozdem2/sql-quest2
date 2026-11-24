@@ -197,3 +197,38 @@ describe('no claim the site forbids', () => {
     expect(html).not.toMatch(/\b(?:Inter|Roboto|Poppins|Montserrat)\b/);
   });
 });
+
+// S1 F5 (2026-11-24): build-static-pages.js writes every page twice
+// (public/<slug>/index.html and public/<slug>.html) and Vercel serves the flat
+// copy for /<slug>/. The live /sql-exercises/ had no hub link because only the
+// index.html copy was patched. Both copies must carry the link.
+describe('the flat <slug>.html copy gets the hub link too (what Vercel serves)', () => {
+  let dir;
+  beforeAll(() => {
+    dir = fixturePub();
+    for (const t of linkTargets(model.n)) {
+      const m = t.file.match(/^(.+)\/index\.html$/);
+      if (!m) continue;
+      fs.writeFileSync(path.join(dir, `${m[1]}.html`), `<html><body><main>x ${t.anchor} y</main></body></html>`);
+    }
+    buildDebugPages({ flagOn: true, pub: dir });
+  });
+  afterAll(() => fs.rmSync(dir, { recursive: true, force: true }));
+
+  it('every flat copy that exists links to the hub exactly once', () => {
+    let checked = 0;
+    for (const t of linkTargets(model.n)) {
+      const m = t.file.match(/^(.+)\/index\.html$/);
+      if (!m) continue;
+      const flat = fs.readFileSync(path.join(dir, `${m[1]}.html`), 'utf8');
+      expect(flat.split(`href="${URL_PATH}"`), `${m[1]}.html`).toHaveLength(2);
+      checked++;
+    }
+    expect(checked).toBeGreaterThanOrEqual(8);
+  });
+  it('debug-discovery patches the flat AI-era copy as well (builtCopies)', async () => {
+    const { builtCopies } = await import('../scripts/debug-discovery.mjs');
+    const copies = builtCopies(dir, 'sql-for-the-ai-era/index.html').map(f => path.relative(dir, f)).sort();
+    expect(copies).toEqual(['sql-for-the-ai-era.html', 'sql-for-the-ai-era/index.html']);
+  });
+});

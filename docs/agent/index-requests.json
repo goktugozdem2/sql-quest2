@@ -8,7 +8,14 @@
     { "url": "https://sqlquest.app/vs-sqlbolt/", "engine": "gsc", "date": "2026-09-29", "by": "unknown", "result": "requested" },
     { "url": "https://sqlquest.app/challenges/advanced/", "engine": "gsc", "date": "2026-09-29", "by": "unknown", "result": "requested" },
     { "url": "https://sqlquest.app/questions/inactive-customers-by-tier/", "engine": "gsc", "date": "2026-09-29", "by": "unknown", "result": "requested" },
-    { "url": "https://sqlquest.app/shopify-sql-interview/", "engine": "gsc", "date": "2026-09-29", "by": "unknown", "result": "requested" }
+    { "url": "https://sqlquest.app/shopify-sql-interview/", "engine": "gsc", "date": "2026-09-29", "by": "unknown", "result": "requested" },
+    { "url": "https://sqlquest.app/sql-rollup-interview-questions/", "engine": "gsc", "date": "2026-11-23T19:15:00Z", "by": "laptop-agent", "result": "requested" },
+    { "url": "https://sqlquest.app/paypal-sql-interview/", "engine": "gsc", "date": "2026-11-23T19:15:00Z", "by": "laptop-agent", "result": "requested" },
+    { "url": "https://sqlquest.app/for-teams/", "engine": "gsc", "date": "2026-11-23T19:15:00Z", "by": "laptop-agent", "result": "requested" },
+    { "url": "https://sqlquest.app/blog/revolut-data-analyst-sql-screen/", "engine": "gsc", "date": "2026-11-23T19:15:00Z", "by": "laptop-agent", "result": "requested" },
+    { "url": "https://sqlquest.app/sql-mock-interview/", "engine": "gsc", "date": "2026-11-23T19:15:00Z", "by": "laptop-agent", "result": "requested" },
+    { "url": "https://sqlquest.app/sql-interview-prep-plan/", "engine": "gsc", "date": "2026-11-23T19:15:00Z", "by": "laptop-agent", "result": "requested" },
+    { "url": "https://sqlquest.app/sql-debugging-practice/", "engine": "gsc", "date": "2026-11-23T22:45:00Z", "by": "laptop-agent", "result": "requested" }
   ],
   "unrecorded": [
     { "date": "2026-09-07", "engine": "gsc", "count": "unknown", "source": "memory note gsc-request-indexing-recipe (Trap 3)", "note": "six requests just after 00:00 UTC; URLs not recorded" },
@@ -17,6 +24,6 @@
     { "date": "2026-09-12", "engine": "gsc", "count": 10, "source": "memory note gsc-request-indexing-recipe", "note": "URLs not recorded; a Bing URL Submission batch of 38 the same day" },
     { "date": "2026-09-25", "engine": "gsc", "count": "unknown", "source": "memory note gsc-request-indexing-recipe (Trap 8)", "note": "six URLs in a row; only Tesla is named in the repo (docs/plans/seo-authority-2026-09-22.md)" },
     { "date": "2026-09-23..2026-10-01", "engine": "bing", "count": "unknown", "source": "CLAUDE.md, Bing pipeline", "note": "the hand-pasted Bing batches were seeded into bing_submissions (seed-submissions.mjs), so the API submitter's cooldown already covers them" },
-    { "date": "2026-11-22..2026-11-23", "engine": "gsc", "count": "unknown", "source": "docs/agent/ledger.md (rollup claim)", "note": "the founder was asked to request /sql-rollup-interview-questions/ and note the date in the ledger; no date is noted, and gsc_index_status read it as unknown to Google on 11-23" }
+    { "date": "2026-11-22..2026-11-23", "engine": "gsc", "count": "unknown", "source": "fleet founder queue (laptop state, items marked done without a date or time)", "note": "/chime-sql-interview/ (with the rollup page, listed 11-22), /challenges/window-functions/ and /challenges/cte/ (after #260) are marked requested by hand with no date; not logged as rows. The rollup page's own request is the 2026-11-23 19:15 row above. Times on the seven 2026-11-23 rows are the END of the orchestrator's runs (19:05–19:15 and 22:00–22:45 UTC), the conservative reading" }
   ]
 }
