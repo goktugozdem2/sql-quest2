@@ -825,6 +825,36 @@ of the verifier and must never be rounded to `FLAT`.
   page: a MISS on clicks with impressions above target is FLAT, not MISS.
   The P4 prune rule applies at eight weeks (no impressions → noindex).
 
+### a reconciliation card for the Stripe set (challenge 330, IR-1)
+
+- **Claimed** 2026-11-23 · **Shipped** on merge · **Read** 2026-12-21.
+- **Change** One Hard card, 330 "Reconcile Two Payment Partners' Reports", on
+  three new synthetic tables in `ecommerce` (`expected_payments`,
+  `partner_a_report`, `partner_b_report`), tagged Stripe. The shape is a
+  reconciliation round reported by a candidate (2026-10, one report;
+  `docs/reads/companies/stripe.md`, S11, confidence low), unattributed. The
+  pinned answer (7 rows) rejects a one-direction answer (4 or 3 rows), an
+  answer that does not narrow the expectations to the partner (29 rows; the
+  half-filter drops T-1013) and one that repeats a reported-twice row
+  (`tests/challenge-330.test.js`). The Stripe set goes 35 → 36.
+- **Metric** `challenge_solve_through` (docs/agent/metrics.md) for id 330,
+  read within the Hard band.
+- **Baseline** Not readable from this session's lane without a production
+  read; the read takes it in the same window: the median solve-through of
+  every Hard card with 10+ openers, 2026-11-24 → 2026-12-21, same shared
+  filters. A new card has no before.
+- **Target** 330 with 10+ openers at or above the Hard median, and at least
+  one opener arriving from the Stripe door (`src`/`linkSrc` =
+  `stripe-sql-interview`).
+- **Falsification** Solve-through more than 15 points under the Hard median
+  with 10+ openers: the prompt is unclear or the traps are unfair — read the
+  wrong submits (`challenge_error_pattern`) before writing another card from a
+  single report. Under 10 openers is `UNREADABLE`, not `FLAT` (a Pro Hard on
+  one company page may simply not be reached in 28 days).
+- **Confound** It also joins the CTE and subqueries topic pages and
+  /challenges/advanced/, so openers arrive from more doors than Stripe's; read
+  the door beside the rate.
+
 ### five Easy on-ramps: Window, Date and NULL (challenges 320-324)
 
 - **Claimed** 2026-11-22 · **Shipped** on merge · **Read** 2026-12-20.
