@@ -84,16 +84,30 @@ export function withAiSection(html, { flagOn, items, anchor, src, wrap }) {
   return html.slice(0, i) + aiSectionHtml(items, src, { wrap }) + '\n' + html.slice(i);
 }
 
+/**
+ * Every built copy of a page. build-static-pages.js writes a page twice —
+ * public/<slug>/index.html and public/<slug>.html — and Vercel serves the
+ * flat <slug>.html for /<slug>/ (cleanUrls). An edit made to the index.html
+ * copy alone never reaches a visitor (S1 F5, 2026-11-24: the Debug hub link
+ * was missing on /sql-exercises/ and three more pages). Patch both.
+ */
+export function builtCopies(pub, file) {
+  const out = [path.join(pub, file)];
+  const m = file.match(/^(.+)\/index\.html$/);
+  if (m) out.push(path.join(pub, `${m[1]}.html`));
+  return out.filter(f => fs.existsSync(f));
+}
+
 if (import.meta.url === `file://${process.argv[1]}`) {
   const flagOn = debugFlagOn();
   const items = loadDebugItems();
   let n = 0;
   for (const p of AI_PAGES) {
-    const file = path.join(PUB, p.file);
-    if (!fs.existsSync(file)) continue;
-    const html = fs.readFileSync(file, 'utf8');
-    const next = withAiSection(html, { flagOn, items, anchor: p.anchor, src: p.src, wrap: p.file.startsWith('sql-for-the-ai-era') });
-    if (next !== html) { fs.writeFileSync(file, next); n++; }
+    for (const file of builtCopies(PUB, p.file)) {
+      const html = fs.readFileSync(file, 'utf8');
+      const next = withAiSection(html, { flagOn, items, anchor: p.anchor, src: p.src, wrap: p.file.startsWith('sql-for-the-ai-era') });
+      if (next !== html) { fs.writeFileSync(file, next); n++; }
+    }
   }
   console.log(`[debug-discovery] debugQuestions ${flagOn ? 'ON' : 'off'} · ${n} page(s) given the section`);
 }

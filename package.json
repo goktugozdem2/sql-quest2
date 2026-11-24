@@ -28,11 +28,13 @@
     "metrics:kpis": "node scripts/sqlquest-metrics-report.mjs --out public/kpis.json"
   },
   "devDependencies": {
+    "@adobe/structured-data-validator": "1.7.1",
     "@babel/cli": "^7.24.0",
     "@babel/core": "^7.24.0",
     "@babel/preset-react": "^7.24.0",
     "@electric-sql/pglite": "0.5.15",
     "@eslint/js": "^10.0.1",
+    "@marbec/web-auto-extractor": "2.2.1",
     "@vitejs/plugin-react": "^6.0.1",
     "better-sqlite3": "^12.9.0",
     "eslint": "^10.0.3",
