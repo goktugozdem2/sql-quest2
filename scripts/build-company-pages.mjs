@@ -204,14 +204,20 @@ export const SKILL_PAGE = {
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const jsq = s => String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 
+// The SQL Interview Health Check door (2026-11-25). Every readiness link on
+// a company page carries `src=company-<slug>`, so the check's events say which
+// company page sent the person (metric `readiness_funnel`, the company door).
+export const healthCheckHref = slug => `/sql-interview-readiness-test/?company=${slug}&amp;src=company-${slug}`;
+export const healthCheckLabel = name => `Check your ${name} SQL readiness — 10 minutes`;
+
 export function readinessBlock({ slug, name, src }) {
   return `<!-- company-readiness:start -->
 <section id="readiness" style="border-top:1px solid rgba(255,255,255,.04);"><div class="sec" style="padding:56px 24px;text-align:center;">
   <p class="sl" style="color:#8b98ab;margin-bottom:10px;">Skillmap</p>
   <h2 class="fd" style="font-size:clamp(26px,3.2vw,38px);font-weight:800;color:#e2e8f0;margin-bottom:12px;">How ready are you for the ${esc(name)} SQL round?</h2>
-  <p style="font-size:15px;color:#94a3b8;max-width:620px;margin:0 auto 26px;line-height:1.75;">Ten questions, no signup. You get a readiness score weighted to the SQL this page covers, your Skillmap across joins, window functions, aggregation and the rest, and the weakest skill to practise first.</p>
+  <p style="font-size:15px;color:#94a3b8;max-width:620px;margin:0 auto 26px;line-height:1.75;">The SQL Interview Health Check: free, ten questions, no signup. You get a readiness score weighted to the SQL this page covers, your Skillmap across joins, window functions, aggregation and the rest, and the weakest skill to practise first.</p>
   <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
-    <a href="/sql-interview-readiness-test/?company=${slug}" class="btn bp" data-track="cta_readiness_${slug.replace(/-/g, '_')}">Check my ${esc(name)} readiness</a>
+    <a href="${healthCheckHref(slug)}" class="btn bp" data-track="cta_readiness_${slug.replace(/-/g, '_')}">${esc(healthCheckLabel(name))}</a>
     <a href="/app/?company=${encodeURIComponent(name)}&amp;src=${src}&amp;goal=interview" class="btn bo" data-track="cta_start_set_${slug.replace(/-/g, '_')}">Start the ${esc(name)} set</a>
   </div>
 </div></section>
@@ -524,7 +530,7 @@ ${ld}
 
 <nav class="nav" id="nav"><div class="ni">
   <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;"><div style="width:34px;height:34px;border-radius:10px;background:#7c3aed;display:flex;align-items:center;justify-content:center;color:#fff;"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg></div><span class="fd" style="font-size:19px;font-weight:800;">SQL Quest</span></a>
-  <div class="nl"><a href="#format">Format</a><a href="#topics">Topics</a><a href="#questions">Questions</a><a href="#faq">FAQ</a><a href="/sql-interview-readiness-test/?company=${key}" class="btn bp" style="font-size:13px;padding:9px 18px;">Check readiness</a></div>
+  <div class="nl"><a href="#format">Format</a><a href="#topics">Topics</a><a href="#questions">Questions</a><a href="#faq">FAQ</a><a href="${healthCheckHref(key)}" class="btn bp" style="font-size:13px;padding:9px 18px;">Check readiness</a></div>
 </div></nav>
 
 <section class="hero"><div class="sec" style="padding-top:128px;padding-bottom:40px;">
@@ -533,7 +539,7 @@ ${ld}
   <p style="font-size:18px;line-height:1.75;color:#94a3b8;max-width:720px;margin-bottom:28px;">${esc(d.hero)}</p>
   <div style="display:flex;gap:12px;flex-wrap:wrap;">
     <a href="/app/?company=${encodeURIComponent(d.name)}&amp;src=${slug}&amp;goal=interview" class="btn bp" data-track="cta_hero_primary">${heroCtaLabel(d.name, f.first)}</a>
-    <a href="/sql-interview-readiness-test/?company=${key}" class="btn bo" data-track="cta_hero_readiness">Check my readiness</a>
+    <a href="${healthCheckHref(key)}" class="btn bo" data-track="cta_hero_readiness">Check my readiness</a>
   </div>
   <p style="font-size:13px;color:#8b98ab;margin-top:18px;">${f.n} practice challenges · ${f.easy} Easy / ${f.medium} Medium / ${f.hard} Hard · your first ${FREE_SOLVE_QUOTA} solves free · runs in the browser</p>
 </div></section>

@@ -27,6 +27,40 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### the SQL Interview Health Check: goal first, a roadmap back, company pages as the door
+
+- **Claimed** 2026-11-25 · **Shipped** live on merge (no flag; same URL,
+  `/sql-interview-readiness-test/`) · **Read** 28 days after the deploy.
+- **Change** the readiness test becomes the SQL Interview Health Check
+  ("Free · 10 minutes · no signup"). It asks the goal first (an interview at
+  a company + optional date, a first data job, moving up, SQL with AI tools,
+  learning SQL) and the role (analyst, analytics engineer, data engineer,
+  data scientist, AI/ML engineer); the ten items follow the goal and role;
+  the result is a 3–5 week (or day) roadmap of named challenges in
+  curriculum order, topic and trap pages, and a Pro mock for an interview.
+  The company-weighted number only for a signed archetype company. Every
+  company page's readiness block opens it with `src=company-<slug>`. The plan
+  link lands in the app with the chosen goal, date and role filled in
+  (intake through the `?goal=` link door).
+- **Metric** `readiness_funnel` (definition PR #346, people by
+  `metadata->>'aid'`).
+- **Baseline** (90 days to 2026-11-24): company-page landing people 1,705 →
+  12 started the test (**0.70 per 100**); test-page landers 212 → started 41
+  → completed 10 (**24%** of starters) → plan clicked 5 (**50%** of
+  completers) → arrived 5.
+- **Target** (28 days after deploy): (a) starters with `src=company-*` ≥ 2.0
+  per 100 company-page landing people; (b) completion ≥ 30% of starters;
+  (c) plan click ≥ 50% of completers, with arrival ≥ 80% of clickers.
+- **Falsification, written now:** (a) under 1.0 per 100 → the company door
+  did not work; revert the block's copy and look at the button, not the
+  test. (b) completion under 20% → the goal questions in front cost more
+  than they gave; cut the start card to goal only. (c) plan click under 35%
+  → the roadmap displaced the ask; put the plan button above the roadmap.
+  Fewer than 20 starters in the window → **UNREADABLE**, extend 28 days.
+- **Confounds:** the goal questions now sit before item 1, so a starter is
+  someone who answered the goal — read completion against the pre-release
+  41/10, not against later weeks; Google re-snippets the new title.
+
 ### the interview date, asked after a company is named (company ask follow-up)
 
 - **Claimed** 2026-11-24 · **Shipped** dark behind `intakeAfterFirstSolve`

@@ -297,9 +297,11 @@ describe('source guards — app.jsx keeps the measure dark, honest, and quiet ab
     expect(app).toMatch(/if \(userData\.intent && typeof userData\.intent === 'object' && typeof userData\.intent\.goal === 'string'\) \{\s*\n\s*setIntentRecord\(userData\.intent\);/);
     // the returning ask reads the account record too
     expect(block).toMatch(/const intent = getUserIntent\(\) \|\| intentRecord\?\.goal \|\| null;/);
-    // the public test's plan link arrives with a goal
-    expect(read('../scripts/build-readiness-test.mjs')).toContain("(next ? '&challenge=' + next.id : '') + '&goal=interview'");
-    expect(read('../src/sql-interview-readiness-test.html')).toContain("+ '&goal=interview'");
+    // the public test's plan link arrives with a goal — since the Health
+    // Check (2026-11-25) the goal the person CHOSE (its intent), not always
+    // 'interview'; tests/health-check.test.js binds the intents to the intake.
+    expect(read('../scripts/build-readiness-test.mjs')).toContain("(next ? '&challenge=' + next.id : '') + '&goal=' + goalObj.intent");
+    expect(read('../src/sql-interview-readiness-test.html')).toContain("+ '&goal=' + goalObj.intent");
   });
 
   it('E — the returning ask needs a solve, no goal on record, no open challenge; shows once; goal required', () => {

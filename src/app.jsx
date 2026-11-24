@@ -12930,10 +12930,24 @@ CRITICAL RULES:
       }
       const level = params.get('level');
       const effectiveGoal = intakeGoalForIntent(intent) || goalId;
-      linkGoalRef.current = { goal: effectiveGoal, company: companyFilter || null, level: isIntakeLevel(level) ? level : null, src };
+      // The SQL Interview Health Check (2026-11-25) asks the goal, the role
+      // and the date before its questions; its plan link arrives here with
+      // `src=readiness`, and the record it wrote carries the person's own
+      // answers. They complete the intake the way the intake would, so the
+      // Coach and the countdown start from what the person already said.
+      let checkDate = null;
+      let checkRole = null;
+      if (src === 'readiness') {
+        try {
+          const rec = JSON.parse(localStorage.getItem('sqlquest_readiness_v1') || 'null');
+          if (rec && isValidIntakeDate(rec.date, Date.now())) checkDate = rec.date;
+          if (rec && INTAKE_ROLES.includes(rec.intakeRole)) checkRole = rec.intakeRole;
+        } catch (_) {}
+      }
+      linkGoalRef.current = { goal: effectiveGoal, company: companyFilter || null, level: isIntakeLevel(level) ? level : null, src, date: checkDate, role: checkRole };
       if (companyFilter && !prepTarget.company) setPrepPreference({ company: companyFilter });
       if (!intakeRecord) {
-        const draft = { goal: effectiveGoal, goalSource: 'link', company: effectiveGoal === 'interview' ? (companyFilter || null) : null, level: effectiveGoal === 'interview' && isIntakeLevel(level) ? level : null, date: null, role: null };
+        const draft = { goal: effectiveGoal, goalSource: 'link', company: effectiveGoal === 'interview' ? (companyFilter || null) : null, level: effectiveGoal === 'interview' && isIntakeLevel(level) ? level : null, date: checkDate, role: checkRole };
         let next = nextIntakeStep('goal', effectiveGoal);
         if (next === 'company' && draft.company) next = nextIntakeStep('company', effectiveGoal);
         setIntakeDraft(draft);
@@ -12952,7 +12966,7 @@ CRITICAL RULES:
     if (showFirstRunStart || showIntake) return;   // the intake renders there with the goal pre-answered
     linkGoalRef.current = null;
     if (!intakeRecord) {
-      completeIntake({ goal: link.goal, goalSource: 'link', company: link.company, level: link.level, date: null, role: null });
+      completeIntake({ goal: link.goal, goalSource: 'link', company: link.company, level: link.level, date: link.date || null, role: link.role || null });
     }
     if (goalMeasureStatus) return;
     setGoalAsk({ stage: 'measure', source: 'link' });
