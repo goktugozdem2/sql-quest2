@@ -1,0 +1,10 @@
+# Known Lighthouse CI assertion failures — a ratchet, it may only shrink.
+# Read by scripts/lighthouse/run.mjs (the gate) and tests/lighthouse-ci.test.js.
+# A failure listed here is reported but does not fail the job; any failure NOT
+# listed fails it, and a line whose failure is gone fails it until deleted.
+# Never add a line to make a new regression pass: fix the page, or bring the
+# case to the founder. Performance is warn-only and never belongs here.
+# <preset>	<path>	<assertion id from lighthouserc.json>
+#
+# 2026-11-24, first run (6 pages × mobile/desktop × 3 runs, median): no page
+# fails a gate, so the baseline starts empty.

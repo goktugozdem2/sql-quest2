@@ -34,6 +34,7 @@
     "@babel/preset-react": "^7.24.0",
     "@electric-sql/pglite": "0.5.15",
     "@eslint/js": "^10.0.1",
+    "@lhci/cli": "0.16.1",
     "@marbec/web-auto-extractor": "2.2.1",
     "@vitejs/plugin-react": "^6.0.1",
     "better-sqlite3": "^12.9.0",
