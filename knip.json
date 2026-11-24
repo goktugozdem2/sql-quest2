@@ -1,0 +1,19 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": [
+    "src/track.js",
+    "src/blog-quiz.js",
+    "src/data/*.js",
+    "api/*.js",
+    "tests/**/*.{js,mjs}"
+  ],
+  "project": [
+    "src/**/*.{js,jsx,mjs}",
+    "api/**/*.js",
+    "scripts/**/*.{js,mjs,cjs}",
+    "tests/**/*.{js,mjs}",
+    "*.config.js"
+  ],
+  "ignoreBinaries": ["ruby"],
+  "ignoreDependencies": ["@babel/preset-react", "playwright"]
+}

@@ -1,0 +1,37 @@
+{
+  "ci": {
+    "collect": {
+      "startServerCommand": "npx --yes serve@14.2.8 public -l 4321",
+      "startServerReadyPattern": "Accepting connections",
+      "startServerReadyTimeout": 60000,
+      "url": [
+        "http://localhost:4321/",
+        "http://localhost:4321/sql-exercises/",
+        "http://localhost:4321/challenges/window-functions/",
+        "http://localhost:4321/capital-one-sql-interview/",
+        "http://localhost:4321/sql-not-in-null/",
+        "http://localhost:4321/questions/group-by-having/"
+      ],
+      "numberOfRuns": 3,
+      "settings": {
+        "blockedUrlPatterns": [
+          "*clarity.ms*",
+          "*supabase.co*",
+          "*/_vercel/*"
+        ]
+      }
+    },
+    "assert": {
+      "assertions": {
+        "categories:seo": ["error", { "minScore": 1, "aggregationMethod": "median" }],
+        "categories:accessibility": ["error", { "minScore": 0.9, "aggregationMethod": "median" }],
+        "cumulative-layout-shift": ["error", { "maxNumericValue": 0.1, "aggregationMethod": "median" }],
+        "categories:performance": ["warn", { "minScore": 0.9, "aggregationMethod": "median" }]
+      }
+    },
+    "upload": {
+      "target": "filesystem",
+      "outputDir": "./lhci-reports"
+    }
+  }
+}
