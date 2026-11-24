@@ -37,20 +37,31 @@ export const PARTNER_LINE =
 export const FOOTER_FIT_STYLE =
   '<style data-footer-fit>@media(max-width:600px){.flk{row-gap:0}.flk a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;padding:0 4px}.fnav a{display:flex;align-items:center;min-height:44px;padding:0}}</style>';
 
+// Links in running text (A4, Lighthouse a11y 2026-11-25): axe's
+// link-in-text-block failed on 92 pages. The purple link (#c084fc) sits at
+// 1.03:1 against the grey body text around it, so colour was the only cue.
+// Every unclassed link inside a paragraph, list item or table cell, and every
+// bare link in a `footer.ft` row, gets an underline. Classed links (buttons:
+// .bp, .bo, .btn …) and anything inside <nav> or <header> keep their look; a
+// card or pill link carries an inline `text-decoration:none`, which still
+// wins. No colour changes, so nothing new enters the palette. Same reason as
+// the footer fit for living here: the pages are not one template.
+export const LINK_CUE_STYLE =
+  '<style data-link-cue>:is(p,li,dd,td,blockquote,figcaption)>a:not([class]):not(nav *):not(header *),footer.ft>a:not([class]){text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}</style>';
+
 // The product shell and its legacy alias are not marketing pages.
 const SKIP = new Set(['app.html', 'app/index.html']);
 
 export function withPartnerLink(html) {
   // A page built before this version carries an older line (or no footer
-  // fit): replace it in place, so a committed public/ page never keeps it.
-  const old = html.match(/(?:<style data-footer-fit>[\s\S]*?<\/style>)?<p data-partner="datrick"[\s\S]*?<\/p>/);
-  if (old) {
-    const want = FOOTER_FIT_STYLE + PARTNER_LINE;
-    return old[0] === want ? html : html.replace(old[0], want);
-  }
+  // fit, or no link cue): replace it in place, so a committed public/ page
+  // never keeps it.
+  const want = LINK_CUE_STYLE + FOOTER_FIT_STYLE + PARTNER_LINE;
+  const old = html.match(/(?:<style data-link-cue>[\s\S]*?<\/style>)?(?:<style data-footer-fit>[\s\S]*?<\/style>)?<p data-partner="datrick"[\s\S]*?<\/p>/);
+  if (old) return old[0] === want ? html : html.replace(old[0], want);
   const i = html.lastIndexOf('</footer>');
   if (i === -1) return html;
-  return html.slice(0, i) + FOOTER_FIT_STYLE + PARTNER_LINE + html.slice(i);
+  return html.slice(0, i) + want + html.slice(i);
 }
 
 function* htmlFiles(dir, rel = '') {

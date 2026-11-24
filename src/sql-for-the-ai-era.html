@@ -125,6 +125,8 @@
 
     footer{padding:40px 24px;text-align:center;border-top:1px solid rgba(255,255,255,.04);color:#7f8da1;font-size:13px}
     footer a{color:#8b98ab;text-decoration:none;margin:0 12px}
+    /* Body links had no colour of their own and painted the browser blue, 2.1:1 on the near-black (A4, 2026-11-25). */
+    main :is(p,li)>a:not([class]){color:#c084fc}
     footer a:hover{color:#e2e8f0}
 
     /* Coach app-screenshot mock (scoped .cm-*) */

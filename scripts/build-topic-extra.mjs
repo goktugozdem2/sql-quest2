@@ -184,6 +184,7 @@ ${ld.map(o => `  <script type="application/ld+json">${JSON.stringify(o)}</script
   </a>
   <a href="/app/?src=challenges-${slug}" class="bp">Start Free →</a>
 </div></nav>
+<main>
 <div class="wrap">
   <p class="breadcrumb"><a href="/">SQL Quest</a> › <a href="/challenges/">Practice by topic</a> › ${esc(copy.short)}</p>
   <h1 class="fd">${esc(copy.name)} — <span style="background:linear-gradient(135deg,#c084fc,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">${t.count} Challenges</span></h1>
@@ -211,6 +212,7 @@ ${copy.faq.map(([q, a]) => `    <h3 style="font-size:16px;font-weight:700;color:
     <a href="/sql-interview-prep/">Company Interview Guides →</a>
   </div>
 </div>
+</main>
 <footer class="ft"><p><strong>SQL Quest</strong> — personalized SQL interview practice. <a href="/">Home</a> · <a href="/sql-exercises/">SQL Practice Questions</a> · <a href="/best-sql-practice-sites/">Best SQL Practice Sites</a></p><p style="margin-top:8px;font-size:12px;">© 2026 SQL Quest</p></footer>
 </body>
 </html>

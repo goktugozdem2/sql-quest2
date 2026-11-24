@@ -174,6 +174,7 @@ const head = ({ title, description, url, ld, bingNoindex = false }) => `<!DOCTYP
   <script defer src="/_vercel/insights/script.js"></script>
 ${ld.map(o => `  <script type="application/ld+json">${JSON.stringify(o)}</script>`).join('\n')}
   <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
   <style>${CSS}</style>
 </head>
