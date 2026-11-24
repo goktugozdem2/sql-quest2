@@ -27,6 +27,50 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### the interview date, asked after a company is named (company ask follow-up)
+
+- **Claimed** 2026-11-24 · **Shipped** dark behind `intakeAfterFirstSolve`
+  (off; the code is a separate draft PR) · **Flips** only by an
+  orchestrator decision row, with the company ask itself · **Read** 28 days
+  after the deploy of the flip commit.
+- **Change** in the company ask's `ask` arm, when the person names a company
+  (not "Not sure yet", not Skip), the same inline line turns into one
+  follow-up: "When is the interview?" — a date between today and +365 days,
+  "No date yet", Skip. A date → `prepTarget.date` (the countdown's and the
+  intake's own store, through `setPrepPreference`) and
+  `interview_date_captured {daysOut, source: 'company_ask'}` — the integer,
+  never the date; "No date yet" → `interview_date_captured {none: true}`.
+  Never asked when a date today or later is already on record; never asked
+  twice (the record keeps the answer, a skip included). On phones in
+  `mobileOneLayer` arm `one` it is part of the company ask in tier 2, not a
+  new layer. The first solve is untouched: the line appears only after it.
+- **Why** V1, 2026-11-24 (PR #313): two date-driven features —
+  `deadlineOffer` (M3) and the outcome note — got 0 data in 8 weeks because
+  there were **0 future dates on record**; goal-setters pay 2.9% (4 of 139)
+  vs 0.5% (3 of 597) without a goal (interim, all-time, engaged accounts).
+  A person who has just named a company is the one most likely to know the
+  date.
+- **Metric** `interview_date_capture` (docs/agent/metrics.md; defined in
+  its own PR before the code, rule 6b).
+- **Baseline** 0 dates captured through this door (it does not exist yet);
+  0 future dates on record in total (V1, 2026-11-24).
+- **Target** ≥ 40% of company answerers give a date.
+- **Falsified if** fewer than 20% of company answerers give a date at the
+  read → the moment is wrong for a date; take the follow-up out and keep the
+  company ask as it was. Between 20% and 40%: MOVED; keep it and look at
+  the "No date yet" share before changing the copy.
+- **Guardrail** the company ask's own guardrail (`company_ask_split`:
+  second solve within 24 h, ask arm not more than 3 points below control)
+  now includes this follow-up; if it fires, read it with and without the
+  people who were shown the date step before reverting both.
+- **Small sample** company answerers will be few (the ask arm is half of
+  first solvers, and the ask's own target is 25% naming a company). Below 10
+  company answerers at the read: report n and the rate as directional,
+  extend 28 days, at most twice.
+- **Confound** none inside this door; the date also unlocks the countdown
+  card, `deadlineOffer` and the outcome note, whose reads must from the flip
+  split dates by source (this door vs the rest).
+
 ### Run stays on screen on phones (`mobileRunBar`, rank 1 of the mobile plan)
 
 - **Claimed** 2026-11-23 · **Shipped** dark on merge; ON at 50/50 by the
@@ -2181,7 +2225,10 @@ of the verifier and must never be rounded to `FLAT`.
 - **Confounds** the date is self-reported and may not be the screen's date;
   `moved` is also the honest answer to "I never had one". Read `moved`
   separately and never as a miss.
-- **Verdict** _pending_
+- **Measured** 2026-11-24 (V1; due 2026-11-24) · `interview_outcome` from 2026-09-19: **0 `outcome_note_sent`, 0 `interview_outcome`** rows, 0 outcome emails in `email_events`, 0 `prepTarget.outcome` on record. The founder never ran the sender, and there was little to send: 6 dates on record have passed, 1 of them on a registered account with an address; **0 dates on record lie ahead** (internal accounts out).
+- **Verdict** **UNREADABLE — n = 0 noted, the treatment never ran; re-read 2027-01-15.**
+- **Read** Not a finding about the question: nobody was asked, and the claim's alternative trigger ("the first time ten dates have passed") is not met. The binding constraint is upstream: the product holds almost no interview dates (the intake that was to produce them is off), so the sender would have one person to mail today.
+- **Next:** re-read the first time ten dates have passed on reachable accounts, or 2027-01-15, whichever comes first (re-read 2027-01-15); until dates are captured, running the sender is not worth the founder's time. See signals.md (2026-11-24, dates).
 
 ### the free quota: ten solves, then Pro (founder's week-1 plan, item 2)
 
@@ -2485,7 +2532,10 @@ of the verifier and must never be rounded to `FLAT`.
   shared; fold them into one page and stop building more tools.
 - **Confounds** none of these doors existed before; the founder's send dates
   are the treatment and must be written into the tracker.
-- **Verdict** _pending_
+- **Measured** 2026-11-24 (V1; due 2026-11-24) · `tool_page_door`, first `landing_view` per person on the six pages, 09-13 → 11-24, stamped bots, the four crawler viewports, the 1024x1024 crawler and the UTC / Asia/Shanghai / Etc/Unknown no-app-open landers out: **87 people** (datalemur-alternatives 32, stratascratch-alternatives 18, explainer 13, tools hub 10, optimizer 7, checker 7). `tool_used`: **12 people ever** (36 rows, first 10-21), 12 of the 87 first-landers. Door clicks: **0** `cta_tool_readiness_*` / `cta_tool_practice_*` / `cta_alternatives_readiness_*` rows ever (other `cta_*` events record normally: 440 rows since 10-01), 2 hub → readiness clicks, 10 tool-to-tool cross clicks; **5 of 87 opened the app (5.7%)**, 2 solved within 7 days. `external_links` for the kit: the tracker in `docs/marketing/backlink-outreach-2026-09-13.md` is empty — **0 of 15 items sent**, and C3's live check of 11-23 found 0 live links.
+- **Verdict** **MISS for the tools** (`tool_used` 12 people against a 30-person falsification line and a 150 target; door 5.7% against ≥ 10%, by app opens, since the CTAs drew no click at all) · **UNREADABLE for the links** (the treatment, sending the kit, never happened; the "under 2 accepted after all 15 were sent" branch cannot fire; links re-read 2027-01-15).
+- **Read** The pre-registered branch fired: the tools neither rank nor get shared. The alternatives pages draw readers (50 of 87) but nobody takes a door from them. Nothing here says the outreach pitch fails; it was never made.
+- **Next:** fold the three tools into one page and build no more tools (the falsification's own instruction; C1 or B3, one PR, with redirects); the outreach kit stays C3's queue, read on links only after the founder sends — re-read the links part 2027-01-15. See signals.md.
 
 ### question pages, two more topic pages, and the internal link graph (founder's SEO plan P1.7–P1.12, 2026-09-13)
 
@@ -3162,7 +3212,10 @@ that needs its own path — the current rule is written down in the handler.
   moves to 2026-10-05; the Read stays 2026-11-24. `mockDoor` did NOT move:
   it acts only inside `withEarlyWall`, i.e. with `goalWallEarly` on, and that
   stays 10-12 behind the Coach-trust read.
-- **Verdict** _pending_
+- **Measured** 2026-11-24 (V1; due 2026-11-24) · `deadline_offer_split`, `pro_modal_shown` with `reason='milestone_solves'` 2026-09-26 (the flip, with `freeQuota` the same minute) → 11-23, people by `aid`, bots and internal out: **`deadline=true` 0 people, 0 shows**; `deadline=false` **212 people, 21 clicked a plan or checkout after the show (9.9%)**, 7 of them started a trial or paid (baseline 4.1%, 7 / 171).
+- **Verdict** **UNREADABLE — the deadline arm is empty (n = 0, line n ≥ 30).** The mechanism check (> 0 by 10-20) failed too. Re-read 2027-01-15.
+- **Read** The copy was never shown to anyone: no person reached six solves with a date inside 45 days, because almost no dates are captured (0 future dates on record; `onboardingIntake` and `interviewCountdown` are off). The no-date arm's rise to 9.9% is the quota and checkout changes, not this flag. Per the claim's own branch, the intake is the finding first.
+- **Next:** re-read only after a date-capturing surface is live (re-read 2027-01-15); leave the flag on — it costs nothing while it is inert. See signals.md (2026-11-24, dates).
 
 ### quiet the asks that have never sold (free-tier boundary M4)
 
@@ -4497,7 +4550,11 @@ that needs its own path — the current rule is written down in the handler.
   across the ship date — only clicks are. (iii) If the founder mails the 61
   dismissers (move 4 of the plan) during the window, some of them may return
   and buy for a reason that is not this change; record the send dates.
-- **Verdict** _pending_
+- **Checked** 2026-11-24 (V1; due 2026-11-24) · **NOT SHIPPED — nothing to read.** No intent gate and no lifetime cap exist on main: the milestone trigger in `src/app.jsx` (the `milestoneTier` effect) fires per tier on `proLiveForOffer` and the once-keys only, for every intent; no flag carries it.
+- **State of the metric anyway** (`paywall_ask_efficiency`, 2026-09-29 → 11-23, the claim's 8-week window, bots, crawler viewports and internal accounts out): **297 people shown, 33 clicked checkout = 11.1%** (baseline 12 / 282 = 4.3% over 60 days). Shows per person **2.73** (was 1.91), **119 people saw it 3+ times** (was 43), one saw it 17 times — the repeats are the quota wall (`free_quota` 483 shows / 147 people); the milestone ask is 320 / 212 = 1.5 per person.
+- **Verdict** **NOT SHIPPED** (the rate above is not this change's; `freeQuota`, `deadlineOffer`, Checkout Sessions and the checkout trial all landed in the window).
+- **Read** The claim's target (≥ 8.6% with ≥ 12 clicks) was reached without it, by the quota wall and checkout changes. Its fatigue premise moved to a different surface: the people seen 3+ times meet the wall on every locked open, and capping the wall's modal would hide its only exit.
+- **Next:** retire — do not ship the intent gate or the cap on the milestone ask; take 11.1% (33 / 297) as the new baseline for any future paywall claim. Repeat shows at the quota wall are a separate question for B4. See signals.md.
 
 ### goal-setting: a marker of a deadline, or something we can manufacture?
 - **Claimed** 2026-09-08 — **observation, not an intervention.** Nothing ships
@@ -4527,7 +4584,10 @@ that needs its own path — the current rule is written down in the handler.
 - **Falsification, stated in advance:** if by then goal-holders and
   goal-less engaged users convert within a factor of two of each other, the
   3/0 was noise and no offer should ever be conditioned on a goal.
-- **Verdict** _pending_
+- **Measured** 2026-11-24 (V1; interim — the entry reads on 11-24 **or** at 10 cumulative payers, whichever is later) · payers from `stripe_webhook` `pro_purchase_completed`, internal accounts out: **9**, so the claim is not due by its own rule. Interim split, all-time, engaged = 5+ solves on record, goal = a `coachState.goalId` not set by the intake: **with a goal 4 of 139 paid (2.9%), without 3 of 597 (0.5%)**; 2 payers have fewer than 5 solves on record. Caveat: the goal is the account's goal today, not at purchase.
+- **Verdict** **UNREADABLE — not due (9 payers < 10); re-read 2026-12-22**; interim direction holds (≈ 6× apart, outside the factor-of-two line), on 7 payers.
+- **Read** The marker has not dissolved with a larger population, but 7 people cannot carry a verdict, and nothing here says a goal causes payment.
+- **Next:** re-read at the 10th non-internal payer (re-read 2026-12-22, or earlier if it lands); never gate an offer on a goal in the meantime.
 
 ### grader: ties inside an ORDER BY no longer fail a correct query
 - **Claimed** 2026-09-06 — deployed 2026-09-06 13:42Z
