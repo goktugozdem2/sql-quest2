@@ -72,10 +72,12 @@ window.FEATURE_FLAGS = {
     // touch screen, `mobile_one_layer_assigned`). The `one` arm shows the ask,
     // then holds the achievement / level-up / Skillmap / share / streak
     // layers until the next challenge opens; 44×44 close targets. Desktop and
-    // `control` unchanged. SHIPPED OFF. src/utils/mobile-one-layer.js,
+    // `control` unchanged. Shipped off; ON at 50/50 2026-11-24 (orchestrator
+    // decision row, after an iOS Simulator + production walk: PASS).
+    // src/utils/mobile-one-layer.js,
     // tests/mobile-one-layer.test.js; ledger "One layer at a time after a
     // solve on phones".
-    mobileOneLayer: false,
+    mobileOneLayer: true,
     // Company practice-set match on the Coach (SEO plan P3.21, 2026-09-13):
     // for a named prepTarget.company that has NO interview archetype, how the
     // Skillmap matches what that company's practice set asks, plus the next

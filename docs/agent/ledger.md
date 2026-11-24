@@ -66,9 +66,11 @@ of the verifier and must never be rounded to `FLAT`.
 
 ### One layer at a time after a solve on phones (`mobileOneLayer`, rank 3 of the mobile plan)
 
-- **Claimed** 2026-11-23 · **Shipped** dark on merge; ON at 50/50 only by
-  the orchestrator's decision row after review · **Read** 2026-12-21 (if
-  the flip lands later, 28 days after the flip).
+- **Claimed** 2026-11-23 · **Shipped** dark on merge; **ON at 50/50
+  2026-11-24** (orchestrator decision row; the clock starts at the deploy
+  of the flip commit) · **Read** 2026-12-22 (28 days after the flip).
+  Exclude the four walk guests of 2026-11-24 11:01–11:06 UTC (iOS
+  Simulator + production walk, stored arm, no `mobile_one_layer_assigned`).
 - **Change** on a narrow touch screen (coarse pointer or width < 768) the
   first correct submit assigns an arm by aid (`mobile_one_layer_v1`, FNV +
   murmur3 finalizer), written once as `mobile_one_layer_assigned {arm}`. In
