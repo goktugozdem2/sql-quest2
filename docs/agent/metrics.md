@@ -1168,6 +1168,20 @@ by hand (the 10-04 → 10-07 waves: docs/reads/p1-guardrail-bing-2026-10-07.md).
   week to 11-22. Until it is stamped, drop UTC landers with no
   `app_opened`. The durable fingerprint is the agent/window mismatch, not
   the time zone (see the next trap).
+- **The topic-page crawler changed door (C8, 2026-11-24).** On 11-24 its
+  first `app_opened` moved from `challenges-…` (81 on 11-22, 78 on 11-23,
+  3 on 11-24) to company pages and other page doors (65 by 16:47 UTC: 47
+  `<company>-sql-interview`, the rest comparison, blog and pattern doors),
+  same shape: no `landingSrc`, no `landing_view`, `langs = 1`, one window
+  size and one time zone per person, 0 runs. Fingerprint it on the shape,
+  not the door (`app1lang`): since 2026-10-01, 873 people match and 3 ran
+  a query (0.3%, under the brief's one-in-fifty line). The
+  `langs = 2` no-landing cluster is the same shape one language wider.
+- **`desktop:1024x1024` crawler (C8, 2026-11-24, from 11-22).** Window
+  size `desktop:1024x1024`, mostly `tz = 'Etc/Unknown'`, one
+  `landing_engaged` per company/topic page, often with no `landing_view`
+  (so it lands in "no source, no landing" buckets). 21 people on 11-22,
+  7 on 11-23, none on 11-24; never ran a query. Drop the viewport.
 
 **Trap: the crawlers change time zone and borrow a landing source
 (2026-10-18, widened 2026-11-12).** Three window sizes have never, over all

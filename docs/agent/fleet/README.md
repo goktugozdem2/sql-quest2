@@ -53,6 +53,18 @@ dated `queue-*.md` files are history. The running state of the objective is
      `landing_view` has `tz = 'UTC'` and who never reaches `app_opened`.
      Its referrer is spoofed (`bing.com`, `google.com`), so it inflates
      the search doors.
+   - the app-only one-language crawler (`app1lang`, C8 2026-11-24; it
+     widens `topic1lang`): first `app_opened` with no `landingSrc`,
+     `langs = 1`, and no `landing_view` ever, **whatever the
+     `arrivalSrc`**. On 11-24 the topic-page crawler left the
+     `challenges-` doors (81 → 3) for company and other page doors (65).
+     Since 2026-10-01, 873 people, 3 ran a query (0.3%).
+   - the `desktop:1024x1024` crawler (C8 2026-11-24, from 11-22): window
+     size `desktop:1024x1024`, mostly `tz = 'Etc/Unknown'`, one
+     `landing_engaged` (often no `landing_view`) per page; 21 people on
+     11-22, 7 on 11-23, 0 ever ran a query.
+   - the founder's walk guests on 2026-11-24 (`Europe/Istanbul`,
+     `mobile:375x812`, 11:00–11:08 UTC).
 3. **Proof.**
    - Every new test fails by name under one deliberate break, and the
      commit says which break.
