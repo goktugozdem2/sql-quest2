@@ -3,8 +3,6 @@
 # tests/structured-data-validator.test.js. ERRORS are never listed here: they always fail.
 # Fixed one? Delete (or lower the count of) its line in the same commit.
 # <count>	<page>	<path in the JSON-LD block>	<rule>
-1	public/index.html	Organization	not-in-schema.org:audience
-1	public/index.html	SoftwareApplication	not-in-schema.org:browserRequirements
 6	public/learn-sql.html	HowTo > step:HowToStep	recommended:image
 6	public/learn-sql.html	HowTo > step:HowToStep	recommended:itemListElement
 6	public/learn-sql.html	HowTo > step:HowToStep	recommended:url
@@ -21,7 +19,5 @@
 5	public/sql-find-duplicates/index.html	HowTo > step:HowToStep	recommended:itemListElement
 5	public/sql-find-duplicates/index.html	HowTo > step:HowToStep	recommended:url
 5	public/sql-find-duplicates/index.html	HowTo > step:HowToStep	recommended:video
-1	public/turkce-sql-ogren.html	ItemList	not-in-schema.org:inLanguage
-1	public/turkce-sql-ogren/index.html	ItemList	not-in-schema.org:inLanguage
 1	public/vs-datalemur.html	SoftwareApplication > aggregateRating:AggregateRating	recommended:worstRating
 1	public/vs-datalemur/index.html	SoftwareApplication > aggregateRating:AggregateRating	recommended:worstRating
