@@ -28,6 +28,7 @@ WebFetch unless marked Apify.
 | S8 | Interview Query — Stripe Data Analyst guide, with one full candidate report ("Data Analyst · Interviewed Q4 2026", AI-anonymised by the site) | https://www.interviewquery.com/interview-guides/stripe-data-analyst | "Updated 2 days ago" on 2026-11-22 | prep guide + candidate report | Apify 200 (WebFetch 429) |
 | S9 | Interview Query — Stripe Data Scientist guide (report "DS · Interviewed Q4 2026") | https://www.interviewquery.com/interview-guides/stripe-data-scientist | "Updated 10 hours ago" on 2026-11-22 | prep guide + candidate report | Apify 200 |
 | S10 | Interview Query — Stripe Data Engineer guide (report "Staff DE · Interviewed Q4 2026") | https://www.interviewquery.com/guides/stripe-data-engineer | "Updated 3 days ago" on 2026-11-22 | prep guide + candidate report | Apify 200 |
+| S11 | **A reconciliation round reported by a candidate (2026-10, one report).** Added 2026-11-23 (B3, IR-1). Unattributed by the founder's promise: no name, no role detail, no words from the report here or on any page. | — not public; reported to us directly | round reported 2026-10-12 | candidate report (private) | — |
 
 Not usable: Blind (402) — snippets mention a data "bug squash" round (SQL
 handed over, find the logical bugs) and a first-round SQL CoderPad interview;
@@ -48,19 +49,20 @@ medium.com/acing-ai (403).
 | Platform for the DA SQL round: **HackerRank**, a round called "Data Manipulation", 45 min with ~25 min for 4 SQL + metric questions. | S8 report only | low — word as one candidate's report |
 | S1's round ran out of time; the interviewer switched to asking for the approach. | S1 | low |
 | DS onsite: HM, business partner, presentation, stats, product case, SQL-in-case. | S3 | low |
+| **2026-11-23 — a reconciliation round** (a reconciliation round reported by a candidate, 2026-10, one report): three tables — two partner reporting tables (transaction-level rows from partner A and from partner B) and one expectations table holding what was expected from **both** partners. Task: reconcile — the transactions missing from a partner's report, and the ones a partner reported that were not expected. The approach the report credits: confirm the join key is unique first, compare in both directions, and narrow the expectations to the partner being reconciled; leaving that narrowing out is the common slip. Role and platform not recorded here. | S11 | **low** (n = 1, private, unverifiable; agrees in shape with S10's data-engineer reconciliation round) — never on a page as a format fact; it feeds practice card 330 (tagged Stripe; the card's own text never names the company) |
 | No multiple choice reported anywhere. | — | — |
 | Dialect: not stated. Bug-squash round for data roles: **not confirmed** (snippet only). | — | — |
 
 ## Topics reported
 
-M = 10 sources read; only five carry SQL content (S1, S3, S8, S9, S10).
+M = 10 public sources read; only five carry SQL content (S1, S3, S8, S9, S10). S11 (private, one report) is counted separately and never added to M.
 
 - Choosing or defining a metric alongside the SQL — 2 of 10 (S3, S8)
 - Approval / decline rates by day (conditional aggregation) — 1 of 10 (S8)
 - Chargeback rate from payments joined to disputes over a trailing window — 1 of 10 (S8)
 - ETL design and rerun / edge-case robustness (idempotency) — 1 of 10 (S1)
 - Explaining an abnormal metric, then querying it — 1 of 10 (S3)
-- Reconciling mismatched records between two sources (data engineer) — 1 of 10 (S10, synthesis)
+- Reconciling mismatched records between two sources (data engineer) — 1 of 10 (S10, synthesis); plus S11, one private report of a partner-reconciliation round (2026-10)
 
 ## Question shapes (paraphrased)
 
@@ -76,6 +78,12 @@ M = 10 sources read; only five carry SQL content (S1, S3, S8, S9, S10).
   write the SQL. Skill: metric design, aggregation. (S3)
 - Data engineer: **find and explain the records that do not match** between
   two sources. Skill: anti-join both ways / full-outer reconciliation. (S10)
+- **Reconcile two partners' settlement reports against one expectations
+  table** that covers both partners: what each partner left out, and what it
+  reported that was not expected from it. Skill: key uniqueness, anti-join
+  in both directions, filtering the expectations to one partner. (S11; our
+  practice card is 330, "Reconcile Two Payment Partners' Reports", on our
+  own synthetic tables)
 
 ## Role variants
 
@@ -90,6 +98,14 @@ M = 10 sources read; only five carry SQL content (S1, S3, S8, S9, S10).
   round; staff level adds ledger system design (S10).
 
 ## What changed since the existing reads
+
+**2026-11-23 (B3, IR-1):** S11 added — a reconciliation round reported by a
+candidate (2026-10, one report). It does not change the format confidence
+(the live SQL rows stay high); it adds one low-confidence question shape and
+challenge 330, tagged Stripe. On any page it may appear only as "a
+reconciliation round reported by a candidate".
+
+**2026-11-22:**
 
 There was no Stripe read. The page's "no dated public source" line is now
 out of date: three dated candidate reports put live SQL in the DS and DA

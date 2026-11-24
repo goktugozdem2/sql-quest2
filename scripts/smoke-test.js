@@ -17,7 +17,10 @@
 
 import { spawn } from 'child_process';
 import http from 'http';
-import { resolveChrome, HERMETIC_PREAMBLE, firstScreenArmPreamble, waitForPageTarget } from './smoke/lib.mjs';
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
+import { resolveChrome, HERMETIC_PREAMBLE, firstScreenArmPreamble, waitForPageTarget, waitForDevToolsPort } from './smoke/lib.mjs';
 
 const URL = process.argv[2] || 'http://127.0.0.1:4321';
 // CHROME env first (the GitHub runner), then the platform defaults.
@@ -29,7 +32,19 @@ const CHROME = resolveChrome();
 // SMOKE_HERMETIC=1 forces it on, =0 off.
 const HERMETIC = process.env.SMOKE_HERMETIC === '1'
   || (process.env.SMOKE_HERMETIC !== '0' && !/^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:|\/|$)/.test(URL));
-const DEBUG_PORT = 9222;
+// No fixed debugging port (2026-11-23): Chrome picks a free one and we read
+// it from our own profile directory (waitForDevToolsPort, scripts/smoke/lib.mjs).
+// A fixed 9222 let the battery attach to an orphaned Chrome from an earlier
+// run and test that browser's leftover storage instead of a fresh profile.
+let chrome = null;
+let profileDir = null;
+const stopChrome = () => {
+  if (chrome) { try { chrome.kill('SIGKILL'); } catch (_) { /* gone */ } chrome = null; }
+  if (profileDir) { try { fs.rmSync(profileDir, { recursive: true, force: true }); } catch (_) { /* tmp */ } profileDir = null; }
+};
+// A run killed from outside (a tool timeout, Ctrl-C) must not leave its
+// Chrome behind: that orphan is what the next run used to attach to.
+for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.on(sig, () => { stopChrome(); process.exit(130); });
 
 const checks = [];
 const pass = (name) => { checks.push({ name, ok: true }); };
@@ -102,21 +117,24 @@ async function getJSON(url) {
 
 async function main() {
   console.log(`Smoke test → ${URL}`);
-  const chrome = spawn(CHROME, [
-    `--remote-debugging-port=${DEBUG_PORT}`,
+  profileDir = fs.mkdtempSync(path.join(os.tmpdir(), 'chrome-smoke-'));
+  chrome = spawn(CHROME, [
+    '--remote-debugging-port=0',
     '--headless=new',
     '--disable-gpu',
     '--no-first-run',
     '--disable-extensions',
-    '--user-data-dir=/tmp/chrome-smoke-' + Date.now(),
+    `--user-data-dir=${profileDir}`,
     'about:blank',
   ], { stdio: 'ignore' });
+  const debugPort = await waitForDevToolsPort(profileDir);
+  if (!debugPort) throw new Error(`Chrome wrote no ${'DevToolsActivePort'} into its profile`);
 
   // Wait for a page target — the same cold-start-safe wait as the other
   // smoke checks (scripts/smoke/lib.mjs, waitForPageTarget, 2026-10-16). This
   // loop used to give Chrome 6 s and stop at the first target of any type.
   const waited = await waitForPageTarget({
-    listTargets: () => getJSON(`http://127.0.0.1:${DEBUG_PORT}/json`),
+    listTargets: () => getJSON(`http://127.0.0.1:${debugPort}/json`),
   });
   const tab = waited.page;
   if (!tab) throw new Error(`no tab after ${Math.round(waited.waitedMs / 1000)} s`);
@@ -2153,7 +2171,7 @@ async function main() {
 
   } finally {
     ws.close();
-    chrome.kill();
+    stopChrome();
   }
 
   // ── UI/UX critical checks — ADVISORY, only with SMOKE_UIUX=1 ──────
@@ -2177,4 +2195,4 @@ async function main() {
   process.exit(failed > 0 ? 1 : 0);
 }
 
-main().catch((e) => { console.error('Smoke test crashed:', e); process.exit(2); });
+main().catch((e) => { stopChrome(); console.error('Smoke test crashed:', e); process.exit(2); });
