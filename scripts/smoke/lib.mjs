@@ -147,6 +147,36 @@ export function firstScreenArmPreamble(arm) {
   return `(() => { try { localStorage.setItem(${JSON.stringify(FIRST_SCREEN_KEY)}, JSON.stringify({ arm: ${JSON.stringify(arm)}, at: Date.now() })); } catch (_) {} })();`;
 }
 
+// Which port did OUR Chrome open (2026-11-23, A2)? The battery used to pass a
+// fixed --remote-debugging-port=9222 and then read http://127.0.0.1:9222/json.
+// On the founder's laptop an earlier run's headless Chrome, orphaned when that
+// run was killed mid-way, still held 127.0.0.1:9222; the new Chrome could only
+// bind [::1]:9222, so the battery drove YESTERDAY's browser, whose storage
+// still held the last step's guest at 3 solves. No first-run screen → the ten
+// first-run / placement / foundations checks failed (21/31) while CI, on a
+// clean runner, passed 31/31. With --remote-debugging-port=0 Chrome picks a
+// free port and writes it to <user-data-dir>/DevToolsActivePort: a port read
+// from our own profile directory can only belong to our own browser.
+export const DEVTOOLS_ACTIVE_PORT_FILE = 'DevToolsActivePort';
+export function parseDevToolsActivePort(text) {
+  const first = String(text || '').split('\n')[0].trim();
+  if (!/^\d+$/.test(first)) return null;
+  const port = Number(first);
+  return port > 0 && port < 65536 ? port : null;
+}
+export async function waitForDevToolsPort(userDataDir, { deadlineMs = CHROME_PAGE_DEADLINE_MS, intervalMs = 100, readFile = (p) => fs.readFileSync(p, 'utf8'), now = () => Date.now(), sleep = (ms) => new Promise(r => setTimeout(r, ms)) } = {}) {
+  const file = path.join(userDataDir, DEVTOOLS_ACTIVE_PORT_FILE);
+  const start = now();
+  while (now() - start < deadlineMs) {
+    let text = null;
+    try { text = readFile(file); } catch (_) { /* not written yet */ }
+    const port = parseDevToolsActivePort(text);
+    if (port) return port;
+    await sleep(intervalMs);
+  }
+  return null;
+}
+
 export function getJSON(url) {
   return new Promise((resolve, reject) => {
     http.get(url, (res) => {

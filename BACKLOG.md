@@ -436,6 +436,20 @@ Reads: `docs/reads/seo-sentinel-2026-11.md` (F4) and `docs/reads/traffic-2026-11
   week and 69 on 11-23 by 15:52 UTC. Every read drops it by hand until
   #246 merges.
 
+## SEO sentinel S1, 2026-11-24
+
+Read: `docs/reads/seo-sentinel-2026-11.md` (F5, indexing step).
+
+- **C1 / deploy owner — AMBER (F5).** The deployed site lacks the
+  `/sql-debugging-practice/` link on `/sql-exercises/`, `/sql-for-the-ai-era/`,
+  `/tiktok-sql-interview/` and `/shopify-sql-interview/`; main's committed
+  `public/` has it on all four (`scripts/build-debug-pages.mjs`
+  `linkTargets()`). Since #276 the deploy builds from source, so trace why
+  that build differs on these pages, and add a served-copy check for every
+  `linkTargets()` page. S1 re-checks on 11-25.
+- **C1 — RED, day 3 (F1), unchanged.** No new Bing data today (last fetch
+  11-23 18:40 UTC). The 11-26 `blocked_by_robots` check stands.
+
 ## Funnel findings — B1, 2026-11-22 (docs/reads/funnel-2026-11-22.md)
 
 Six-solvers 209 → 57 (first solvers 500 → 222, reach-six 41.8% → 25.7%;
@@ -640,6 +654,28 @@ Every competitor fact cited must come from that read (URL + date).
     answer, graded by the diagnosis. AI mocks are table stakes in the set.
 - **C3 (founder's hand)** — alternativeto.net and the dev.to post state
   $19 / 200+ / 10 categories.
+
+## Live QA — A2, 2026-11-23 (docs/reads/live-qa-2026-11-23.md)
+
+- **Footer links under 44 px on a phone, where #145's rule does not reach.**
+  `FOOTER_FIT_STYLE` (`scripts/footer-partner-link.mjs`) sizes `.flk a` and
+  `.fnav a` only. Measured at 375 px:
+  - the homepage `.flegal` links (Privacy, Terms, Refund) are 17 px tall;
+  - the `/for-teams/` footer links are 16 px tall;
+  - the Datrick partner link is 28–35 px tall on every page.
+
+  Start: add `.flegal a` and the partner link to the rule, and give
+  `/for-teams/` the shared footer. Extend `tests/uiux-footer.test.js`.
+- **11 px text outside the footers and question cards, set inline.** It
+  falls under DESIGN.md's 12 px floor:
+  - company-page hero stat captions and topic-coverage captions
+    (`build-company-pages.mjs` and the 23 older pages);
+  - `/sql-exercises/` solution pills (`build-exercise-solutions.mjs`);
+  - `/vs-sqlzoo/` table notes;
+  - the app's primary-tab badges (10 px) and their descriptions (11 px).
+
+  The homepage Coach mock is 11 px under `zoom:.85` on purpose. Leave it, or
+  decide it.
 
 ## P0 — security and money
 
@@ -934,3 +970,37 @@ the read. Every competitor fact cited must come from that read (URL + date).
 - **N8 · C5 — one line on the Capital One guide separating the DA
   assessment from the general coding assessment** quantvault.org describes.
   Fold into N1.
+
+## Competitor watch — B6 run 3, 2026-11-24 (docs/reads/competitors-2026-11-24.md)
+
+New items only; run 1 and run 2 items keep their numbers (progress in §7 of
+the read: #220 and #215 shipped; R1-2, R1-3, R1-5 still open). Every
+competitor fact cited must come from that read (URL + date).
+
+- **P1 · C5 — `/capital-one-sql-interview/` targets "capital one data analyst
+  sql interview".** The only practice platform on it is DataLemur's post
+  "Updated 2025-02-15", silent on the assessment. Our company page title has
+  no "Data Analyst"; add it to title/H1 with a visible updated date.
+- **P2 · B3 → C5 — one state-graded challenge in the reported
+  sequential-update shape** (IQ 11-16: a seat-reservation question processed
+  in order), on our own card/transaction data, using the DML engine (#172).
+  C5 adds one sourced line to the Capital One guide. Never copy IQ's text.
+- **P3 · C5 — link the Debug hub (`/sql-debugging-practice/`, live 11-24)
+  from the Monzo and Wise pages**, one sourced line each (candidates report
+  debugging a given query). Closes run-2 N5.
+- **P4 · C1 — raise R1-3 (301 `sql-quest2.vercel.app`) to the top.** Its
+  `/vs-datalemur/` page ("Updated May 2026") now shows in a DataLemur review
+  search.
+- **P5 · C2 / C1 — `/sql-mock-interview/` vs a weakly held SERP** (one DE
+  mock, Dataford previews, the rest editorial): analyst framing in an H2, the
+  two company mocks by their numbers; C1 requests indexing (laptop).
+- **P6 · C2 — `/sql-interview-prep-plan/` leads with the date-sized plan**;
+  the SERP is course marketing and nobody sizes a plan to the date.
+- **P7 · C5 / C7 — HackerRank is the reported test room for Revolut, Wise
+  and Stripe.** One sourced line per page after C5 fetches dated reports; C7
+  answers "what is the HackerRank SQL test like" on an existing post.
+- **P8 · backlog (orchestrator) — re-read R1-10 (mock follow-up) with new
+  evidence:** DataDriven ships up to 8 AI follow-ups, curveballs and a
+  hire/no-hire verdict (DE only). Claim nothing we lack.
+- **P9 · B4 / C2 — DataLemur unchanged: $15/mo, $60/yr, $300 lifetime.** Its
+  bank count is stated three ways on one page; C2 quotes none of them.

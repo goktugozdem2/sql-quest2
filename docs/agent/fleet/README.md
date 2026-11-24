@@ -6,6 +6,20 @@ by handing it its brief. The orchestrator is the main loop: the laptop
 session, with the scheduled task `sqlquest-autodev-loop` as its fallback.
 An agent reads `CLAUDE.md`, this file and its own brief, in that order.
 
+## G0 sets the day's work (2026-11-22)
+
+G0, the goal owner (`G0-goal.md`), runs first every day. A scheduled cloud
+task fires it at 06:47 Europe/Istanbul, and the laptop orchestrator runs it
+when no plan for the day exists. It does three things:
+- reads the current objective (`objectives.md`) against the newest numbers;
+- names the short lever;
+- writes `docs/agent/goal/<date>.md`: at most 6 rows, each with a lever, an
+  expected effect and a read date.
+
+**The orchestrator takes its rows from that plan before anything else.** The
+dated `queue-*.md` files are history. The running state of the objective is
+`docs/agent/goal/tracker.md`.
+
 ## The common protocol (every agent)
 
 0. **Check before you start (2026-11-22, from `docs/reads/autonomous-dev-sources-2026-11-22.md`).**
@@ -39,6 +53,18 @@ An agent reads `CLAUDE.md`, this file and its own brief, in that order.
      `landing_view` has `tz = 'UTC'` and who never reaches `app_opened`.
      Its referrer is spoofed (`bing.com`, `google.com`), so it inflates
      the search doors.
+   - the app-only one-language crawler (`app1lang`, C8 2026-11-24; it
+     widens `topic1lang`): first `app_opened` with no `landingSrc`,
+     `langs = 1`, and no `landing_view` ever, **whatever the
+     `arrivalSrc`**. On 11-24 the topic-page crawler left the
+     `challenges-` doors (81 → 3) for company and other page doors (65).
+     Since 2026-10-01, 873 people, 3 ran a query (0.3%).
+   - the `desktop:1024x1024` crawler (C8 2026-11-24, from 11-22): window
+     size `desktop:1024x1024`, mostly `tz = 'Etc/Unknown'`, one
+     `landing_engaged` (often no `landing_view`) per page; 21 people on
+     11-22, 7 on 11-23, 0 ever ran a query.
+   - the founder's walk guests on 2026-11-24 (`Europe/Istanbul`,
+     `mobile:375x812`, 11:00–11:08 UTC).
 3. **Proof.**
    - Every new test fails by name under one deliberate break, and the
      commit says which break.
@@ -120,7 +146,7 @@ An agent reads `CLAUDE.md`, this file and its own brief, in that order.
   production data, Gmail or sqlquest.app.
 - **Laptop** (the main session plus `sqlquest-autodev-loop`): the lanes that
   need read-only Supabase, the GSC/Bing tables, Gmail drafts or the live site
-  (B1, B2, A3, E1, C1/C2 reads, C8 traffic sources daily, S1 SEO sentinel daily, G1 GEO weekly, C3 backlinks daily, P1
+  (B1, B2, A3, E1, C1/C2 reads, C8 traffic sources daily, AN analytics breakdowns daily, S1 SEO sentinel daily, G1 GEO weekly, C3 backlinks daily, P1
   partnerships daily, production QA
   after a deploy). The laptop
   **does not review or merge cloud PRs**; it opens its own PRs and leaves
