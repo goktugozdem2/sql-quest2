@@ -934,3 +934,37 @@ the read. Every competitor fact cited must come from that read (URL + date).
 - **N8 · C5 — one line on the Capital One guide separating the DA
   assessment from the general coding assessment** quantvault.org describes.
   Fold into N1.
+
+## Competitor watch — B6 run 3, 2026-11-24 (docs/reads/competitors-2026-11-24.md)
+
+New items only; run 1 and run 2 items keep their numbers (progress in §7 of
+the read: #220 and #215 shipped; R1-2, R1-3, R1-5 still open). Every
+competitor fact cited must come from that read (URL + date).
+
+- **P1 · C5 — `/capital-one-sql-interview/` targets "capital one data analyst
+  sql interview".** The only practice platform on it is DataLemur's post
+  "Updated 2025-02-15", silent on the assessment. Our company page title has
+  no "Data Analyst"; add it to title/H1 with a visible updated date.
+- **P2 · B3 → C5 — one state-graded challenge in the reported
+  sequential-update shape** (IQ 11-16: a seat-reservation question processed
+  in order), on our own card/transaction data, using the DML engine (#172).
+  C5 adds one sourced line to the Capital One guide. Never copy IQ's text.
+- **P3 · C5 — link the Debug hub (`/sql-debugging-practice/`, live 11-24)
+  from the Monzo and Wise pages**, one sourced line each (candidates report
+  debugging a given query). Closes run-2 N5.
+- **P4 · C1 — raise R1-3 (301 `sql-quest2.vercel.app`) to the top.** Its
+  `/vs-datalemur/` page ("Updated May 2026") now shows in a DataLemur review
+  search.
+- **P5 · C2 / C1 — `/sql-mock-interview/` vs a weakly held SERP** (one DE
+  mock, Dataford previews, the rest editorial): analyst framing in an H2, the
+  two company mocks by their numbers; C1 requests indexing (laptop).
+- **P6 · C2 — `/sql-interview-prep-plan/` leads with the date-sized plan**;
+  the SERP is course marketing and nobody sizes a plan to the date.
+- **P7 · C5 / C7 — HackerRank is the reported test room for Revolut, Wise
+  and Stripe.** One sourced line per page after C5 fetches dated reports; C7
+  answers "what is the HackerRank SQL test like" on an existing post.
+- **P8 · backlog (orchestrator) — re-read R1-10 (mock follow-up) with new
+  evidence:** DataDriven ships up to 8 AI follow-ups, curveballs and a
+  hire/no-hire verdict (DE only). Claim nothing we lack.
+- **P9 · B4 / C2 — DataLemur unchanged: $15/mo, $60/yr, $300 lifetime.** Its
+  bank count is stated three ways on one page; C2 quotes none of them.
