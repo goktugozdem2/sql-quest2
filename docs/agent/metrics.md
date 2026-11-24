@@ -100,6 +100,20 @@ And two standing traps:
   `(none)`, 0 solves, 0 signups. Exclude that viewport on those two days when
   reading arrivals; the week-over-week "drop" that follows is the burst
   leaving, not demand falling (weekly read 2026-09-07).
+- **Google's own fetchers pass the bot filter (read 2026-11-24).**
+  `GoogleOther` and `Google-NotebookLM` carry no "bot" in their user agent,
+  so `isBot()` / `BOT_UA_RE` write their `landing_view` rows. 155 of 972 new
+  landing people in the 7 days to 11-24 (145 GoogleOther, 10 NotebookLM);
+  1,129 over all time, **0 opened the app, 0 acted**. From the deploy of
+  `measure/crawler-user-agents`, `landing_view` carries `cuaBot`
+  (true/false; absent = written before it): the user agent matches
+  the pinned upstream crawler list (`crawler-user-agents`, vendored by
+  `scripts/vendor-crawler-ua.mjs`). It is a stamp only — no read filters on
+  it yet; adopting it in `scripts/analytics/daily.sql` or any metric is its
+  own PR. The app does not carry it: 0 of these fetchers ever opened the app,
+  and the list costs 6.5 kB gzip of app.js's 12 kB size-limit headroom. Before the deploy, by hand: `m->>'ua' ~ 'GoogleOther|GoogleOt$|Google-NotebookLM'`
+  (`ua` is cut at 160 characters, which leaves the mobile GoogleOther string
+  ending in `GoogleOt`).
 
 ## `challenge_solve_through`
 

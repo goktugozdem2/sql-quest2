@@ -41,6 +41,7 @@
     "@size-limit/file": "12.1.0",
     "@vitejs/plugin-react": "^6.0.1",
     "better-sqlite3": "^12.9.0",
+    "crawler-user-agents": "1.66.0",
     "eslint": "^10.0.3",
     "eslint-plugin-react-hooks": "7.1.1",
     "globals": "17.14.0",
