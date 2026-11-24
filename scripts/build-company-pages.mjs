@@ -440,8 +440,8 @@ function faqFor(key, d, f) {
   const newest = src.map(s => s[2]).filter(x => /20\d\d/.test(x)).map(x => Number(x.match(/20\d\d/)[0])).sort().pop();
   const top = f.dist.slice(0, 4).map(x => `${x.skill} (${x.count})`).join(', ');
   return [
-    [`How does the ${d.name} SQL interview work?`, `${d.name} does not publish the format, so everything on this page is what candidates and prep guides have described publicly, with the source and date beside each fact. In short: ${d.format.map(r => r[1]).join(' ')} Sources are dated up to ${newest}; formats change, so treat every specific as reported, not official.`],
-    [`What SQL topics come up in ${d.name} interviews?`, `Reported most often: ${d.reportedTopics.slice(0, 5).join('; ')}. ${d.difficulty}`],
+    [`How does the ${d.name} SQL interview work?`, `${d.publishes ? `${d.publishes} Every fact on this page carries its public source and the date beside it.` : `${d.name} does not publish the format, so everything on this page is what candidates and prep guides have described publicly, with the source and date beside each fact.`} In short: ${d.format.map(r => r[1]).join(' ')} Sources are dated up to ${newest}; formats change, so treat every specific as reported, not official.`],
+    [`What SQL topics come up in ${d.name} interviews?`, `${d.topicsLabel || 'Reported most often'}: ${d.reportedTopics.slice(0, 5).join('; ')}. ${d.difficulty}`],
     [`Are these the real ${d.name} interview questions?`, `No. The question shapes on this page are paraphrased from the public sources cited beside them, and the practice set is ${f.n} SQL Quest challenges chosen because their SQL matches those reported patterns — not questions ${d.name} has asked. By skill, the set leans on ${top}.`],
     [`Is the ${d.name} practice set free?`, freeSetAnswer(d, f)],
   ];
@@ -457,7 +457,10 @@ export function renderPage(key, d, f) {
     ? keys.map(k => `<a href="#src-${k}" style="color:#8b98ab;text-decoration:none;font-size:11px;vertical-align:super;">[${srcKeys.indexOf(k) + 1}]</a>`).join('')
     : '<span style="color:#8b98ab;font-size:11px;"> (no reliable source)</span>';
   const shapes = d.shapes.map(s => `      <li style="margin:0 0 12px;line-height:1.7;">${esc(s[0])}${cite([s[1]])}</li>`).join('\n');
-  const reported = d.reportedTopics.map((t, i) => `<li style="margin:0 0 8px;"><span class="fm" style="color:#8b98ab;margin-right:8px;">${i + 1}</span>${esc(t)}</li>`).join('');
+  // `topicsLabel` (2026-11-23): an entry whose topics carry no counts, or come
+  // from practice guides rather than reports, names what the list is and drops
+  // the rank numbers — "Reported most often, in order" is a frequency claim.
+  const reported = d.reportedTopics.map((t, i) => `<li style="margin:0 0 8px;">${d.topicsLabel ? '' : `<span class="fm" style="color:#8b98ab;margin-right:8px;">${i + 1}</span>`}${esc(t)}</li>`).join('');
   const topicsJs = f.dist.map((x, i) => `  ['${x.share}%','${jsq(x.skill)}','${x.count} of the ${f.n} · ${jsq(SKILL_SUB[x.skill] || '')}','${['#c084fc', '#a78bfa', '#7c3aed', '#c084fc'][i % 4]}']`).join(',\n');
   const fq = f.ordered.slice(0, 6);
   const fqJs = fq.map(c => `  {id:${c.id},q:'${jsq(c.title)}',d:'${c.difficulty}',free:${playableFree(c)},t:[${(c.skills || []).slice(0, 3).map(t => `'${jsq(t)}'`).join(',')}]}`).join(',\n');
@@ -546,7 +549,7 @@ ${formatSection(d, { accessed: d.accessed || '13 Sep 2026' })}
   <h2 class="st fd">What ${esc(d.name)} SQL questions test</h2>
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:28px;margin-top:22px;">
     <div>
-      <p style="font-size:14px;color:#e2e8f0;font-weight:700;margin-bottom:12px;">Reported most often, in order</p>
+      <p style="font-size:14px;color:#e2e8f0;font-weight:700;margin-bottom:12px;">${esc(d.topicsLabel || 'Reported most often, in order')}</p>
       <ul style="list-style:none;font-size:15px;color:#94a3b8;line-height:1.6;">${reported}</ul>
       <p style="font-size:14px;color:#94a3b8;margin-top:16px;line-height:1.7;"><strong style="color:#e2e8f0;">Difficulty:</strong> ${esc(d.difficulty)} The data is ${esc(d.dataShape)}.</p>
     </div>
@@ -638,6 +641,34 @@ export function withHeroCta(html, { name, first, original = null }) {
   return html.slice(0, at) + next + html.slice(end);
 }
 
+// ── 4b. the "only Capital One has sources" sentence, retired (2026-11-23) ──
+//
+// The older pages' FAQ ("Does this page know what SQL questions X asks?") and
+// their general-guidance card ended on "The one page on this site that does
+// carry dated public sources for a company's screen is the Capital One page."
+// True in September; by November sixteen pages carried a sourced section, so
+// it was false on every page that said it (R1 dossiers tesla.md, apple.md).
+// The sentence was hand-copied into each page, so it is rewritten here, in
+// one place, on every run — and tests/company-pages.test.js fails on the old
+// wording anywhere under src/ or public/. The new wording is the one #209
+// gave Google and Databricks. A general page must not name the "How the
+// interview runs (sourced)" heading (tests/company-sections.test.js).
+export const STALE_SOURCES_POINTER = [
+  // FAQ, JSON-LD copy and the visible array's single-quoted copy
+  ["The one page on this site that does carry dated public sources for a company's screen is the Capital One page.",
+    "Pages that do carry dated public sources for a company's screen, such as the Capital One page, list them on the page with their dates."],
+  ["The one page on this site that does carry dated public sources for a company\\'s screen is the Capital One page.",
+    "Pages that do carry dated public sources for a company\\'s screen, such as the Capital One page, list them on the page with their dates."],
+  // the general-guidance card
+  [/The one page on this site with dated public sources for a company’s screen is the (<a href="\/capital-one-sql-interview\/"[^>]*>Capital One CodeSignal page<\/a>)\./g,
+    'Pages that do have dated public sources for a company’s screen, such as the $1, list them.'],
+];
+export function withCurrentSourcesPointer(html) {
+  let out = html;
+  for (const [from, to] of STALE_SOURCES_POINTER) out = typeof from === 'string' ? out.split(from).join(to) : out.replace(from, to);
+  return out;
+}
+
 // ── 5. shared modules for the pages that predate the template ─────────────
 // The 23 older company pages keep their copy (several rank and convert); they
 // get the template's readiness/Skillmap block after their question cards and
@@ -661,6 +692,7 @@ export function injectModules(bank) {
     html = withSourcedFormat(html, key);
     html = withProvenance(html, { slug: key, name });
     html = withHeroCta(html, { name, first: fx.first });
+    html = withCurrentSourcesPointer(html);
     fs.writeFileSync(file, html);
     done.push(key);
   }
