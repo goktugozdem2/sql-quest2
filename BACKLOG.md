@@ -385,6 +385,43 @@ Dossiers: `goldman-sachs.md`, `amazon.md`, `snowflake.md`.
   (29, 89); earns more than manager (17, 149, 315); consecutive days (318,
   319); above department average (131, 171); running totals (24, 173).
 
+### Batch 6, 2026-11-25: Netflix, Airbnb, NVIDIA, Anthropic
+
+Dossiers: `netflix.md`, `airbnb.md`, `nvidia.md`, `anthropic.md`. All four
+pages stay general; none clears "medium" for a SQL-round fact.
+
+- **C1: "patterns X screens for" with no source — NVIDIA, Anthropic (and
+  OpenAI, Plaid, Ramp, Morgan Stanley).** `<meta name="description">`,
+  `og:description`, `twitter:description` and JSON-LD `Course.description`
+  say what the company "screens for"; NVIDIA's hero adds "its interviews
+  screen for exactly that", two lines above the page's own "no dated public
+  source" box. Same fix as Tesla in #237: "Practice SQL on <kind of data>".
+  `grep -l "screens for" src/*-sql-interview.html` lists 8 pages; Revolut
+  and Wise are sourced pages, so check theirs against the dossier before
+  changing anything.
+- **C1: Netflix and Airbnb descriptions name roles no report covers.**
+  Netflix says "data analyst and data engineer", Airbnb "data analyst and
+  data scientist"; the readable reports are DS (Netflix) and DS + DE
+  (Airbnb). Drop the role list or name the reported roles.
+- **C1: Anthropic, one first-party dated line is page-ready.** Anthropic's
+  candidate AI guidance (anthropic.com/candidate-ai-guidance, updated
+  2025-07-10): take-homes and live interviews are done without AI unless
+  Anthropic says otherwise. A FAQ line with the link and date; it is not a
+  SQL-round claim, so the page stays general.
+- **C1: the stale FAQ sentence "such as the Capital One page"** is still in
+  17 `src/*-sql-interview.html` pages (grep 2026-11-25; 21 on 11-23).
+- **B3: page dwell time with LEAD.** Airbnb DE onsite (PracHub, Sep 2026;
+  low, one report): from a page-view log, time on each page = the next
+  event's timestamp minus this one, per user. The bank's only LEAD item is
+  47 (salaries); no item computes a duration from the next row. Fits any
+  event dataset; teaches LEAD + the last-event NULL.
+- **B3: "define the metric, then query it" gains a fifth source.** Airbnb
+  Sr DS tech screen (PracHub, Aug 2026): a vague retention request, define
+  which retention, then write it. Add to the existing line above (Revolut,
+  Stripe).
+- Covered already, no B3 needed: seven-day streaks (318, 319), top-N with
+  ties (20, 23, 28), conversion rate (Order Funnel Conversion; mock CTR).
+
 ## SEO sentinel — S1, 2026-11-22 (docs/reads/seo-sentinel-2026-11.md)
 
 - **C1 — RED: Bing index at 1.94 × the sitemap (`in_index` 833 vs 429
