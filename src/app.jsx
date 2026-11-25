@@ -38,7 +38,7 @@ import { mergeProgress, hasProgress, isResumableGuest, GUEST_USER_KEY } from './
 import { companySetMatch } from './utils/company-set-match.js';
 import { buildPracticePlan, PLAN_MIN_SOLVES_FOR_SKILLS } from './utils/practice-plan.js';
 import { FIRST_SCREEN_STORAGE_KEY, firstScreenDecision } from './utils/first-screen.js';
-import { MOBILE_RUN_BAR_STORAGE_KEY, MOBILE_RUN_BAR_TEST_ID, isNarrowTouch, mobileRunBarDecision, runBarLabel, keyboardOffset } from './utils/mobile-run-bar.js';
+import { MOBILE_RUN_BAR_STORAGE_KEY, MOBILE_RUN_BAR_TEST_ID, isNarrowTouch, isShortViewport, mobileRunBarDecision, runBarLabel, keyboardOffset } from './utils/mobile-run-bar.js';
 
 import { MOBILE_ONE_LAYER_STORAGE_KEY, MOBILE_ONE_LAYER_TEST_ID, isNarrowTouch as oneLayerNarrowTouch, mobileOneLayerDecision, oneLayerPick, oneLayerRelease } from './utils/mobile-one-layer.js';
 import { INTAKE_KEY, INTAKE_GOALS, INTAKE_ROLES, INTAKE_STEPS, INTAKE_COMPANIES, INTAKE_LEVELS, intakeStepsFor, intakeGoalFor, intakeGoalForIntent, nextIntakeStep, isIntakeStepRequired, isIntakeLevel, isValidIntakeDate, buildIntakeRecord, isIntakeComplete, readIntakeRecord, intakeEventPayload, newCoachGoalState, shouldShowIntake } from './utils/onboarding-intake.js';
@@ -5576,7 +5576,7 @@ function RadarPopToast({ pop, onClose, onShare, bigTargets = false }) {
 
   return (
     <div
-      className="fixed bottom-6 right-6 z-50 w-[320px] p-4 rounded-2xl bg-gray-900/95 backdrop-blur border border-yellow-400/30 shadow-2xl"
+      className="sq-radar-pop fixed bottom-6 right-6 z-50 w-[320px] p-4 rounded-2xl bg-gray-900/95 backdrop-blur border border-yellow-400/30 shadow-2xl"
       style={{ animation: 'radarPopIn 0.4s ease-out' }}
       role="status"
       aria-live="polite"
@@ -24713,6 +24713,28 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
   // returns (CLAUDE.md fragile area 1). Nothing here focuses the editor.
   const [mobileRunBarShown, setMobileRunBarShown] = useState(false);
   const [runBarKeyboardOffset, setRunBarKeyboardOffset] = useState(0);
+  // A short landscape viewport (isShortViewport) keeps today's sticky bar in
+  // the bar arm: the fixed bar took ~88 of ~165 pt with the keyboard up and
+  // hid the line being typed (iOS Simulator walk, 2026-11-24). Re-read on
+  // resize / rotation while a challenge is open; the arm never changes.
+  const [runBarShortViewport, setRunBarShortViewport] = useState(() => {
+    try { return isShortViewport({ innerWidth: window.innerWidth, innerHeight: window.innerHeight }); } catch (_) { return false; }
+  });
+  useEffect(() => {
+    if (!currentChallenge) return undefined;
+    const update = () => {
+      try {
+        setRunBarShortViewport(isShortViewport({ innerWidth: window.innerWidth, innerHeight: window.innerHeight }));
+      } catch (_) { /* ignore */ }
+    };
+    update();
+    window.addEventListener('resize', update);
+    window.addEventListener('orientationchange', update);
+    return () => {
+      window.removeEventListener('resize', update);
+      window.removeEventListener('orientationchange', update);
+    };
+  }, [currentChallenge?.id]);
   useEffect(() => {
     if (!currentChallenge) return;
     let narrowTouch = false;
@@ -24729,13 +24751,14 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
       narrowTouch,
       stored,
       aid: getAnonId(),
+      shortViewport: runBarShortViewport,
     });
     if (decision.assign) {
       try { localStorage.setItem(MOBILE_RUN_BAR_STORAGE_KEY, JSON.stringify({ arm: decision.arm, at: Date.now() })); } catch (_) { /* ignore */ }
       trackActivationEvent('mobile_run_bar_assigned', { arm: decision.arm, test: MOBILE_RUN_BAR_TEST_ID, challengeId: currentChallenge.id });
     }
     setMobileRunBarShown(decision.show);
-  }, [currentChallenge?.id]);
+  }, [currentChallenge?.id, runBarShortViewport]);
   useEffect(() => {
     if (!mobileRunBarShown) { setRunBarKeyboardOffset(0); return undefined; }
     const vv = typeof window !== 'undefined' ? window.visualViewport : null;
