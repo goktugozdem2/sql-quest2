@@ -217,7 +217,7 @@ Each comparison page quotes competitor prices and features from that site's own 
 - After the Bootcamp: Close Your SQL Gap in Weeks | SQLQuest.app — https://sqlquest.app/after-bootcamp/
 - Want to Work in AI? Learn SQL First. | SQLQuest.app — https://sqlquest.app/sql-for-the-ai-era/
 - SQL Practice by Topic — GROUP BY, Window Functions, Joins, CTEs, CASE WHEN, Subqueries, Dates | SQLQuest.app — https://sqlquest.app/challenges/
-- SQL Interview Health Check: Free, 10 Minutes, No Signup | SQLQuest.app — https://sqlquest.app/sql-interview-readiness-test/
+- SQL Interview Readiness Test — Free, 10 Questions, Your Skillmap | SQLQuest.app — https://sqlquest.app/sql-interview-readiness-test/
 - Free SQL Tools — Query Checker, Explainer, Optimizer and Skill Tests | SQLQuest.app — https://sqlquest.app/sql-tools/
 - SQL Query Checker — Find the Mistakes That Return Wrong Rows (Free) | SQLQuest.app — https://sqlquest.app/sql-query-checker/
 - SQL Query Explainer — Explain a SQL Query Step by Step (Free) | SQLQuest.app — https://sqlquest.app/sql-query-explainer/

@@ -651,6 +651,25 @@ window.FEATURE_FLAGS = {
     // orchestrator decides the flip (companyDirectOpen "runs alone").
     // Ledger "Run is not Submit"; read first_solve_10m from assignment by arm.
     runSubmitNudge: false,
+
+    // The SQL Interview Health Check (PR #349, 2026-11-25) — a BUILD-TIME
+    // flag for two generators plus one app door, flipped as one row:
+    //   - scripts/build-readiness-test.mjs: off writes today's readiness test
+    //     (scripts/readiness-test-legacy.mjs, byte for byte); on writes the
+    //     Health Check (goal + role first, ten items for the goal, a roadmap).
+    //   - scripts/build-company-pages.mjs: off keeps today's readiness-block
+    //     copy and links on the 30 company pages; on links them to the check
+    //     with src=company-<slug> ("Check your <Company> SQL readiness").
+    //   - app.jsx `?goal=` link door (ftbFlag): on, a src=readiness arrival's
+    //     intake takes the date and role the check recorded.
+    // Both generators run by hand (not in `npm run build`), so the flip PR
+    // sets this true, runs `node scripts/build-company-pages.mjs`,
+    // `node scripts/build-readiness-test.mjs`, then `npm run build`.
+    // tests/health-check-flag.test.js fails until the pages match the flag.
+    // DARK: flag-queue row 18, flipped by an orchestrator row; the flip PR's
+    // merge is the deploy date of both halves. Ledger "the SQL Interview
+    // Health Check"; metric readiness_funnel; read = flip + 56 days.
+    healthCheck: false,
   },
 };
 

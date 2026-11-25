@@ -12980,9 +12980,11 @@ CRITICAL RULES:
       // `src=readiness`, and the record it wrote carries the person's own
       // answers. They complete the intake the way the intake would, so the
       // Coach and the countdown start from what the person already said.
+      // Behind `healthCheck` (dark, PR #349): off, the door is today's —
+      // date and role stay null.
       let checkDate = null;
       let checkRole = null;
-      if (src === 'readiness') {
+      if (src === 'readiness' && ftbFlag('healthCheck')) {
         try {
           const rec = JSON.parse(localStorage.getItem('sqlquest_readiness_v1') || 'null');
           if (rec && isValidIntakeDate(rec.date, Date.now())) checkDate = rec.date;

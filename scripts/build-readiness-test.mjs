@@ -38,13 +38,19 @@
  * the page decodes and shows it client-side. A per-result og:image is not
  * built yet — the share card uses the site image.
  *
+ * DARK until the flip (PR #349 review): everything above from 2026-11-25 is
+ * `renderHealthCheck`, written only while the build-time flag `healthCheck`
+ * is true. Off, `render` writes today's page from
+ * scripts/readiness-test-legacy.mjs, byte for byte.
+ *
  * Run: node scripts/build-readiness-test.mjs   (writes src/sql-interview-readiness-test.html)
  */
 
 import { questionSlugs } from './question-slugs.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
-import { loadBank, facts, SKILL_PAGE } from './build-company-pages.mjs';
+import { loadBank, facts, SKILL_PAGE, HEALTH_CHECK_ON } from './build-company-pages.mjs';
+import { renderLegacy, legacyData } from './readiness-test-legacy.mjs';
 import { isFreePreview, makeChallengeComparator } from '../src/utils/challenge-order.js';
 import { SKILL_TO_RADAR, mapTopicToSkill } from '../src/utils/skill-calc.js';
 import { QUESTIONS, companySkillWeights, READINESS_ROLES, HEALTH_GOALS, EXTRA_QUESTIONS, SHARE_SKILLS, selectQuestions, applyRoleWeights, encodeShareCode, decodeShareCode, healthDaysOut, buildHealthRoadmap } from '../src/data/readiness-questions.js';
@@ -175,7 +181,16 @@ const FAQ = [
   ['What happens after the test?', 'You get your weakest skill, the practice page for it, and one next challenge chosen for that skill — from the company\'s own set when you picked one. "Build my personalized practice plan" opens that challenge in the app, where the Coach keeps picking from your Skillmap.'],
 ];
 
-export function render(data) {
+/**
+ * The page for the flag's state. `healthCheck` (src/data/feature-flags.js,
+ * build-time, read once as HEALTH_CHECK_ON) off: today's readiness test, byte
+ * for byte (scripts/readiness-test-legacy.mjs). On: the Health Check.
+ */
+export function render(data, { healthCheck = HEALTH_CHECK_ON } = {}) {
+  return healthCheck ? renderHealthCheck(data) : renderLegacy(legacyData(data));
+}
+
+export function renderHealthCheck(data) {
   const title = 'SQL Interview Health Check: Free, 10 Minutes, No Signup | SQLQuest.app';
   const description = 'Free SQL interview health check: 10 questions, 10 minutes, no signup. Pick your company and role, get your Skillmap, a readiness score and the plan for your weakest skill.';
   const url = `${SITE}/sql-interview-readiness-test/`;

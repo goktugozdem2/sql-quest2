@@ -12,6 +12,9 @@
 //   6. the page runs the module's own functions, events never carry the date;
 //   7. every company page sends people in with src=company-<slug>;
 //   8. the app's link door completes the intake from the check's record.
+// The whole check is DARK behind the build-time flag `healthCheck` (PR #349
+// review), so these tests read the flag-ON render, never the committed page;
+// tests/health-check-flag.test.js pins what each flag state writes.
 import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -26,12 +29,13 @@ import { SQL_PATTERNS } from '../src/data/sql-patterns.js';
 import { INTERVIEW_ARCHETYPES } from '../src/data/interview-archetypes.js';
 import { SQL_ROADMAP_CHALLENGE_ORDER } from '../src/data/roadmap-stages.js';
 import { makeChallengeComparator } from '../src/utils/challenge-order.js';
-import { buildData, render, inlineFn, TRAP_FOR_SKILL, ARCHETYPE_MOCKS, ARCHETYPE_SLUGS } from '../scripts/build-readiness-test.mjs';
-import { loadBank } from '../scripts/build-company-pages.mjs';
+import { buildData, render, renderHealthCheck, inlineFn, TRAP_FOR_SKILL, ARCHETYPE_MOCKS, ARCHETYPE_SLUGS } from '../scripts/build-readiness-test.mjs';
+import { loadBank, readinessBlock } from '../scripts/build-company-pages.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const read = f => fs.readFileSync(path.join(ROOT, f), 'utf8');
-const PAGE = read('src/sql-interview-readiness-test.html');
+const DATA = buildData();
+const PAGE = render(DATA, { healthCheck: true });   // the flag-ON page
 const ALL = [...QUESTIONS, ...EXTRA_QUESTIONS];
 
 describe('1. the goal and the role map onto the app\'s own stores', () => {
@@ -171,7 +175,7 @@ describe('3. the roadmap', () => {
 });
 
 describe('4. the page data: archetype numbers, curriculum order, honest Pro flags', () => {
-  const data = buildData();
+  const data = DATA;
   const bank = loadBank();
   it('only the signed archetype companies carry a readiness number and a company mock', () => {
     const signed = INTERVIEW_ARCHETYPES.flatMap(a => a.members.map(m => m.pageSlug));
@@ -229,8 +233,8 @@ describe('5. the share code', () => {
 });
 
 describe('6. the page runs the module, asks the goal first, and never sends the date', () => {
-  it('is the generator\'s output and inlines the module\'s functions verbatim', () => {
-    expect(PAGE).toBe(render(buildData()));
+  it('is the Health Check render and inlines the module\'s functions verbatim', () => {
+    expect(PAGE).toBe(renderHealthCheck(DATA));
     for (const fn of ['selectQuestions', 'applyRoleWeights', 'encodeShareCode', 'decodeShareCode', 'healthDaysOut', 'buildHealthRoadmap']) {
       const src = inlineFn(fn);
       expect(src.startsWith(`function ${fn}(`), fn).toBe(true);
@@ -272,14 +276,13 @@ describe('6. the page runs the module, asks the goal first, and never sends the 
   });
 });
 
-describe('7. every company page is a door into the check', () => {
+describe('7. every company page is a door into the check (flag on)', () => {
   const pages = fs.readdirSync(path.join(ROOT, 'src')).filter(f => /-sql-interview\.html$/.test(f));
   it('the readiness block\'s one accent button opens the check with src=company-<slug>', () => {
     expect(pages.length).toBeGreaterThanOrEqual(30);
     for (const f of pages) {
       const slug = f.replace(/-sql-interview\.html$/, '');
-      const html = read(`src/${f}`);
-      const block = html.slice(html.indexOf('<!-- company-readiness:start -->'), html.indexOf('<!-- company-readiness:end -->'));
+      const block = readinessBlock({ slug, name: 'X', src: `${slug}-sql-interview` }, true);
       expect(block, f).toContain(`href="/sql-interview-readiness-test/?company=${slug}&amp;src=company-${slug}" class="btn bp"`);
       expect(block, f).toMatch(/SQL readiness — 10 minutes<\/a>/);
       expect((block.match(/class="btn bp"/g) || []).length, f).toBe(1);
@@ -288,9 +291,9 @@ describe('7. every company page is a door into the check', () => {
 });
 
 describe('8. the app completes the intake from the check\'s own answers', () => {
-  it('the ?goal= link door reads date and role from the record only on src=readiness, validated', () => {
+  it('the ?goal= link door reads date and role from the record only on src=readiness, validated, behind the flag', () => {
     const app = read('src/app.jsx');
-    const at = app.indexOf("if (src === 'readiness') {");
+    const at = app.indexOf("if (src === 'readiness' && ftbFlag('healthCheck')) {");
     expect(at).toBeGreaterThan(0);
     const block = app.slice(at, at + 600);
     expect(block).toContain("localStorage.getItem('sqlquest_readiness_v1')");
