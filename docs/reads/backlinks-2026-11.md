@@ -335,3 +335,152 @@ Göktuğ
    day.
 
 **Next live-link check:** tomorrow. Revarta and UCSD from 2026-12-07.
+
+---
+
+## 2026-11-25 (C3, laptop, daily run)
+
+**Nothing was sent, posted, opened or submitted by this run.** Three Gmail
+drafts were created. No PR or form went out.
+
+### Correction: the onjob.io note never arrived
+
+The 11-24 section counted onjob.io among the founder's sends. The send did
+happen (Gmail Sent, 2026-11-23 11:45 UTC), but **it bounced 28 seconds
+later**. onjob.io's Microsoft 365 server answered
+`550 5.4.1 Recipient address rejected: Access denied`. The support inbox
+published in the page's structured data does not take mail from outside.
+So 4 of the 5 sends of 11-23 reached someone: boot.dev, Data Science Weekly,
+and the Revarta and UCSD forms.
+
+**Re-route (draft made).** onjob.io/contact lists six routes, and the
+obfuscated addresses decode to role inboxes only. There is no editorial or
+corrections address. Its "Business enquiries" route goes to the parent
+company, Pitch N Hire. A new draft goes there. It is not a copy of the 11-23
+text: it says the support inbox refused it, asks for a forward to whoever
+edits the guides, and keeps the same facts (free limit, price, the
+no-account page) and the same single question.
+
+### Live-link check (curl + GitHub code search + web search, 2026-11-25 ~09:40 UTC)
+
+| Page | HTTP | `sqlquest` in HTML |
+|---|---|---|
+| PavelGrigoryevDS/awesome-data-analysis README | 200 | no |
+| alexeygrigorev/data-science-interviews `awesome.md` | 200 | no |
+| amartinson193/The-Ultimate-List-of-Free-SQL-Resources README | 200 | no |
+| Extremesarova/data-science-resources README | 200 | no |
+| onjob.io/best/sql-practice-sites/ | 200 | no (the note bounced, see above) |
+| boot.dev/blog/backend/best-sql-practice-sites | 200 | no |
+| revarta.com/blog/best-interview-prep-app-for-data-analysts-2026 | 200 | no |
+| thequerylab.com/blog/best-sql-practice-websites | 200 | plain-text mention only, no `<a href>` (unchanged from 11-24) |
+
+None of the queue's targets links to us yet. The founder has opened no PR or
+issue outside our repo since 11-24 (`gh search prs/issues --author
+goktugozdem2`).
+
+**Two links that nobody asked for, found today by `gh search code
+"sqlquest.app"`.** Neither repo has stars, and GitHub marks its links
+nofollow, so the search value is close to zero. Both are real hyperlinks
+written by people we never contacted:
+
+| Repo | File | What it says | Added |
+|---|---|---|---|
+| johanccs/infra-setup | `tutorials/docs/playground.md` | a table of SQL playgrounds: "SQL Quest, Beginner–intermediate, Practice with a game feel, Free tier", linking `https://sqlquest.app/` | 2026-10-11 |
+| vincemaina/ae-practise-tool | `notes/research/competitor-landscape.md`, `feature-ideas-2026.md` | a builder's competitor research. It cites `/sql-practice-comparison/` as a source and names our AI coach | 2026-07 to 08 |
+
+Neither dates from November, so **links earned this month are still 0**.
+The month's running total of links found pointing at sqlquest.app is now 2,
+both unsolicited and both on GitHub. The web search for `"sqlquest.app"`
+off our hosts found only the alternativeto listing (still "250+"; the
+founder's edit is pending) and our own Vercel mirror.
+
+**Not C3's lane, noted for C1 and S1.** `sql-quest2.vercel.app` is indexed
+and serves an old build. Its home and llms.txt still claim "the only SQL
+site with an AI tutor that explains failed queries" and "a 7-day Pro trial
+on signup with no card required". This is duplicate content that carries
+stale claims, and search engines and assistants read it.
+
+### G1's two lists (BACKLOG "GEO gaps — G1")
+
+| List | Read 2026-11-25 | Verdict |
+|---|---|---|
+| analyticsinsight.net, "Where to Practice SQL in 2026? Top 10 Learning Platforms" | K Akash (reviewed by Sanchari Bhaduri), published and last updated **2026-02-15**. In order: HackerRank, LeetCode, CodeChef, DataCamp, Coursera, Kaggle, W3Schools, Mode, StrataScratch, SQLZoo. No affiliate disclosure on the page. The site sells sponsored content, but its about page says that coverage is never influenced by advertisers. | **Draft made, low odds.** Run 2 of 11-22 skipped it because it is nine months old. It is in G1's panel (#2), though, and the contact page publishes an editorial role inbox for "general feedback and corrections". A news site usually writes a fresh "2027" list rather than editing this one, so the note asks to be considered when the list is refreshed. It says plainly that this is not a request for sponsored placement. **If the answer is a rate card, decline: a paid placement is a bought link.** |
+| positioniseverything.net, "10 Best Platforms to Practice SQL: Choose by Your Goal" | "Position is Everything Team", published 2026-08-17, prices "as of November 24, 2026". Lists SQLBolt, SQLZoo, LeetCode, HackerRank, StrataScratch, DataLemur, Mode, Interview Query, W3Schools and Kaggle. None of the ten is linked. The page discloses affiliate links and states that some top positions are paid placements, and it carries a "Sponsor this article" box. The site is a general how-to and affiliate listicle site. | **Skip.** The route into this list is paid placement, so any link from it would be bought. Its curl fetch also answers 403. G1 can mark it closed: we do not chase this list. |
+
+### Today's two new targets
+
+The stop rule does not apply: the founder's last queue sends were on 11-23,
+two days ago.
+
+| # | Target | Read | Last activity | Route | Odds |
+|---|---|---|---|---|---|
+| 1 | Data Analysis Journal (Olga Berezovsky), "A Selection Of SQL Tutorials" | 2026-11-25 | weekly: Issue 341 on 11-11, a post on 11-18 | reply to an issue (subscribe first) | medium |
+| 2 | Analytics Insight, the 2026 list above | 2026-11-25 | the list dates from 2026-02-15; the site publishes daily | editorial role inbox (contact page) | low |
+
+#### 1. Data Analysis Journal: no-recipient draft, reply route (FOUNDER)
+
+- **What it is.** A weekly newsletter for working analysts, running since
+  2021 and still active: Issue 338 (2026-10-21) is "The New Reality of
+  Getting Hired in Data Analytics", and the 11-18 post launched a tool
+  bundle. Its free series "A Selection Of SQL Tutorials" (Issues 77, 141
+  and 163, the last on 2023-09-27) is a curated list of "mostly free SQL
+  tutorials and practice sites". The post says it is refreshed every six
+  months, and **it ends by asking readers to send the SQL links they think
+  belong on it.** That is an open invitation, so this is not a cold pitch.
+- **Why a link helps the reader.** The list's "Become proficient" section
+  already carries a piece on ON versus WHERE in PostgreSQL joins. Our
+  `/sql-left-join-where-filter/` works the same idea through on data:
+  15 rows instead of 25, why, and two fixes. It is free to read with no
+  account. The draft's numbers were checked on the live page today.
+- **Risk.** The series has not been refreshed since 2023, so the
+  invitation may be stale. The newsletter is active and the ask is one
+  line, so it is still worth a single note.
+- **Route.** The about page publishes only a personal address, given for
+  student discounts, and not as a route for links. We do not use it. The
+  post asks readers to "send", which for a Substack means replying to an
+  issue. The founder's inbox is **not subscribed**: Gmail holds only a 2023
+  Substack recommendation. So: subscribe (free tier), wait for the next
+  Wednesday issue, and send the draft as a reply to it.
+- **Draft (Gmail, no recipient):** "From the person who builds SQL Quest —
+  a link for your SQL tutorials list". It names Issue 163's invitation and
+  the ON-versus-WHERE piece, gives the page and what it shows, discloses
+  the paid tier in the gates' words, asks one question and promises no
+  follow-up.
+
+#### 2. Analytics Insight: draft to the editorial role inbox
+
+- **Draft (Gmail, to the editorial inbox on analyticsinsight.net/contact-us):**
+  "I build SQL Quest — for the next 'Where to Practice SQL' list". It
+  quotes the list's own overview line on timed challenges, gives the facts
+  and the no-account page, says that it is not asking for sponsored
+  placement, asks one question and promises no follow-up.
+
+### Looked at and skipped today
+
+| Target | Why not |
+|---|---|
+| positioniseverything.net | Paid placements and affiliate links (above). |
+| lichuang/awesome-sqlite (127 stars, outside PRs merged 11-15) | Every entry is an open-source repo or an article about SQLite itself. A closed SQL practice product that happens to run SQLite in the browser does not help that reader, and none of our pages is about SQLite. |
+| Airsequel/awesome-sqlite ("Apps building on SQLite") | Its CONTRIBUTING requires 100 GitHub stars or independent third-party coverage. Our only independent coverage is TheQueryLab's unlinked mention, which does not clearly meet the bar. Revisit once an independent article links us. |
+| awelist/awesome-sql (9 stars) | One merge since July. Of 12 outside PRs, 10 were closed, and CONTRIBUTING declines self-promotion. |
+| NC State IAA, "Mastering the Job Interview Process" (2026-04-30; it names DataLemur, Interview Query and StrataScratch) | A student-written blog post that will not be re-edited. The only routes are a phone line and a staff directory, with no role inbox. |
+| Data Insights (kaparker.substack.com) | Last issue 2025-07-23. Dormant. |
+| Stan-Wangg/data-analyst-roadmap | Its premise is "every skill for $0, from YouTube". A freemium product does not belong on it. |
+
+### FOUNDER (today)
+
+1. **onjob.io:** the 11-23 note bounced. Read the new draft to Pitch N Hire's
+   business inbox ("SQL Quest's founder here — a note for OnJob's SQL
+   practice sites page"), then send it or delete it.
+2. **Analytics Insight:** read the draft ("I build SQL Quest — for the next
+   'Where to Practice SQL' list"), then send it or delete it. If they answer
+   with a sponsored-content price, the answer is no.
+3. **Data Analysis Journal:** subscribe free to dataanalysis.substack.com,
+   then send the no-recipient draft ("From the person who builds SQL Quest —
+   a link for your SQL tutorials list") as a reply to the next issue.
+4. Still open from earlier runs, in this order: the amartinson193 PR (it
+   merges outside PRs within a day), the awesome-data-analysis PR, the
+   alternativeto.net edit (the listing still says "250+"), and the
+   data-science-interviews PR.
+
+**Next live-link check:** tomorrow. Revarta and UCSD from 2026-12-07.
