@@ -77,6 +77,15 @@ dated `queue-*.md` files are history. The running state of the objective is
      `Asia/Singapore`, no `landing_view` ever (1,629 since 08-23, 0 ran).
      `scripts/scorecard-weekly.sql` carries every rule in this list as
      one block.
+
+   - Google's unstamped fetchers (C8 2026-11-25): a person whose
+     `landing_view` has `ua` matching `GoogleOther` or `Google-NotebookLM`
+     and who never reaches `app_opened`. All `tz = America/Los_Angeles`,
+     no `landingSrc`, no window size (`innerWidth` 0). Since 2026-10-01:
+     GoogleOther 802 people, NotebookLM 108; 0 opened the app, 0
+     `landing_engaged`, 0 stamped. They sat in "none: landed on a page"
+     (~19 a day in 11-17 → 11-23). NotebookLM is a fetch a person asked
+     for: count it as an AI-assistant signal, never as a visitor.
 3. **Proof.**
    - Every new test fails by name under one deliberate break, and the
      commit says which break.
