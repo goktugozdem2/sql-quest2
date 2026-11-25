@@ -1048,3 +1048,50 @@ cheapest open items). Every competitor fact cited must come from that read.
 - **Q7 · C2 guard — timed company mocks are no longer rare** (StrataScratch
   AI mocks per loop, LeetCode Interview Simulations, IQ AI mock). Do not
   claim otherwise.
+
+## Career path — First 90 Days and Moving up (plans 2026-11-25)
+
+Founder's request 2026-11-25 ("ilk iş ilk 90 gün" / "yükselme ve güncel
+stack"). Two plans, measured starting points in each:
+[docs/plans/first-90-days-2026-11-25.md](docs/plans/first-90-days-2026-11-25.md)
+and
+[docs/plans/moving-up-current-stack-2026-11-25.md](docs/plans/moving-up-current-stack-2026-11-25.md).
+Metrics defined in `docs/agent/metrics.md` (rule 6b): `outcome_ask_answer`,
+`ticket_door`, `stack_content_reach`, `at_work_share`, `moving_up_goal`.
+
+**Starting point.**
+- First 90 Days: 1 real person has set `hired`, 0 non-internal ticket opens
+  since 2026-10-04, and 0 `interview_outcome` rows ever.
+- Moving up: 0 opens recorded for any id above 321 since 2026-11-15 (Debug
+  and DDL/DML included), and 96 dialect-note openers in 90 days.
+
+**First 90 Days, first three tasks**
+1. **F1 measure PR** (B2): `outcome_ask_shown`, `first90_link_shown`,
+   `ticket_card_shown`, and `interview_outcome.source='in_app'`. Behaviour is
+   unchanged.
+2. **F1 build:** the in-app "Did your interview happen?" ask, behind a flag,
+   with a ledger claim on `outcome_ask_answer`.
+3. **F2 build:** a ticket-1 Coach card for Analyst Day-One and job-ready
+   people (6+ solves), behind a flag, with a claim on `ticket_door`. Waits
+   for founder decision 1 in the plan.
+
+**Moving up, first three tasks**
+1. **U1** (A2 walk, then the owning lane): find why no challenge above
+   id 321 has an open since 2026-11-15, and fix it with a source guard
+   before 2026-12-08, so the 12-22 Debug read has real opens.
+2. **U2 measure PR:** the `at_work` intent answer ("I use SQL at work and
+   want to move up"), behind a flag, with a claim on `at_work_share`.
+   `first_solve_10m` is the guardrail.
+3. **U3 draft:** the "Moving up" goal in a branch, from existing ids only.
+   Not merged until U2 reads ≥ 10% and the founder approves.
+
+**Founder decisions:**
+- Tickets for people who are not hired.
+- The outcome email.
+- Stripe cancellation reasons and #242.
+- The "Moving up" and "SQL with AI" goals.
+- The `at_work` answer.
+- PostgreSQL mode.
+- Python in or out of O2.
+
+The full list is in §9 of each plan.
