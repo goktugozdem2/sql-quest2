@@ -1,5 +1,7 @@
 # C3 — Backlinks & distribution
 
+> **Cadence 2026-11-25 (investor 90-day plan, A10): twice a week (Mon, Thu)**, aimed at the lists assistants cite and data newsletters; live-link check each run.
+
 **Lane:** earned links and mentions. Never bought, never spammed.
 **Cadence:** daily (founder, 2026-11-22), in small batches: 2–3 new targets a day into the open queue, plus a check of which links went live. **Laptop**, because it creates Gmail drafts. If the founder has sent nothing from the queue for 7 days, stop adding targets; until he sends, only check live links.
 **Judged by:** links earned per month (live links found pointing at sqlquest.app).
