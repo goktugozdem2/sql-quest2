@@ -3539,6 +3539,113 @@ company-present when any of their rows carries `company` or an `arrivalSrc`
 starting `company:` — 09-26 → 11-21: **5 / 26 = 19.2%** clicked with a
 company vs **14 / 118 = 11.9%** without (bots and internal accounts out).
 
+## `free_quota_holdout`
+
+Defined 2026-11-25, in this PR's first commit, before the code (rule 6b).
+The read of the `freeQuota` holdout (flag `freeQuotaHoldout`, founder's
+written go 2026-11-25; design: docs/reads/returns-0926-flags-2026-11-25.md
+§5, PR #383; definitions: PR #382).
+
+- *Person* = the `aid`. *Arm* = `free_quota_arm_assigned.arm` (`quota` or
+  `holdout`), written once per browser at its first app open inside the
+  enrolment window (2026-11-26 → 2026-12-24 exclusive, as planned; the
+  window lives in `src/utils/free-quota-holdout.js`). Only browsers with no
+  earlier app state are assigned; every later `pro_events` row from an
+  assigned browser carries `fqArm`. Read by assignment (intent to treat):
+  a holdout browser that signs into an account created before the window
+  gets the quota back and stays in `holdout`.
+- *t0* = the assignment row's `created_at` (it fires on the first open).
+  *Day-0 solver* = at least one `challenge_solved` on t0's UTC day.
+  *Day-0 solves* = distinct `challengeId` on those rows.
+- **Primary: 7-day return of day-0 solvers, by arm.** Returned = any row
+  with `reason` not `landing` on a later UTC day than t0 and within 7 days
+  of t0 (the #382/#383 definition). Report it whole and split **1–9 vs
+  10+ day-0 solves**: the wall reaches only the 10+ group, so a recovery in
+  1–9 says the counter and the copy are the cause, one in 10+ alone says
+  the wall is.
+- **Guardrails (money), per arm, over everyone assigned:** people with a
+  `pro_checkout_clicked` (client row, carries `fqArm`); trials
+  (`pro_trial_started`) and purchases (`pro_purchase_completed`,
+  `reason='stripe_webhook'`) — server rows carry no `fqArm`, so join them
+  to the arm through the username: any client row of the aid that names a
+  non-`guest` username. Stripe stays the only money truth.
+- Population: the bot and internal filters of `docs/agent/fleet/README.md`
+  step 2 (one bot row drops the person). A person needs 7 full days after
+  t0: rows younger than that are left out of the denominator.
+- **n target:** ~125 day-0 solvers per arm (~65 a week, both arms; detects
+  ≥ 16 points at 80% power). Below 85 per arm at the read → UNREADABLE.
+- **Baseline** (PR #383, read 2026-11-25): day-0 solver 7-day return 44.3%
+  (n 497, first opens 08-17 → 09-25 22:45 UTC, quota off) vs 23.7% (n 494,
+  09-25 22:45 → 11-18, quota on); 1–9 solves 39.6% → 23.1% (n 414 → 445),
+  10+ 67.5% → 28.6% (n 83 → 49). Purchases 2 per 30 days before and after;
+  10 trials since 10-01, 4 of them had touched a `free_quota` ask.
+- **Decision rule, written before the data:** holdout − quota ≥ 12 points
+  (two-sided p < 0.05) → the quota cost the returns; weigh that against the
+  trials and purchases the wall brings. Gap ≤ 5 points → it did not; look
+  elsewhere (the 09-25 deploy's diff). In between → extend enrolment by 4
+  weeks, once.
+- **Money stop (halfway read, 2 weeks into enrolment, 2026-12-10):** the
+  holdout arm shows 0 trials while `quota` shows ≥ 3 → report it to the
+  founder the same day (he decides whether to stop; the agent does not
+  turn the flag off on its own). A dispute or refund tied to the holdout
+  arm → report the same day.
+- **Cells:** the holdout sits on its own cell, first open → 7-day return,
+  all devices. It nests the quota-wall tests (`quotaWallInline`,
+  `modalPlansFirst` on `free_quota` asks): holdout browsers never meet the
+  wall, so read those tests only on rows whose `fqArm` is not `holdout`,
+  and show the 2×2 where a person carries both.
+
+```sql
+with ev as (
+  select coalesce(((metadata #>> '{}')::jsonb)->>'aid', username) pid, username, event, reason, created_at,
+         (metadata #>> '{}')::jsonb m
+  from pro_events
+  where created_at >= :since - interval '1 day'
+    and coalesce(username, '') !~* '^(test|qa_|fabletest|linktest|internalroutine|sqlquest$|elena$)'
+),
+bots as (
+  select distinct pid from ev
+  where coalesce(m->>'bot', '') in ('true', '1')
+     or coalesce(m->>'viewport', '') in ('tablet:800x600', 'desktop:1280x1200', 'desktop:1919x992')
+),
+clean as (select * from ev where pid not in (select pid from bots)),
+arm as (
+  select distinct on (pid) pid, created_at t0, m->>'arm' arm
+  from clean where event = 'free_quota_arm_assigned' order by pid, created_at
+),
+names as (select distinct pid, username from clean where username is not null and username <> 'guest'),
+pp as (
+  select a.pid, a.arm, a.t0,
+    count(distinct x.m->>'challengeId') filter (where x.event = 'challenge_solved' and x.created_at::date = a.t0::date) solves0,
+    bool_or(x.reason is distinct from 'landing' and x.created_at::date > a.t0::date
+            and x.created_at <= a.t0 + interval '7 days') ret,
+    bool_or(x.event = 'pro_checkout_clicked') checkout
+  from arm a join clean x on x.pid = a.pid
+  where a.t0 < now() - interval '7 days'
+  group by a.pid, a.arm, a.t0
+),
+money as (
+  select n.pid,
+    bool_or(w.event = 'pro_trial_started') trial,
+    bool_or(w.event = 'pro_purchase_completed') paid
+  from names n join pro_events w on w.username = n.username and w.reason = 'stripe_webhook'
+  group by n.pid
+)
+select pp.arm,
+  count(*) assigned,
+  count(*) filter (where solves0 > 0) day0_solvers,
+  round(100.0 * avg(ret::int) filter (where solves0 > 0), 1) ret7_solvers,
+  count(*) filter (where solves0 between 1 and 9) s1_9,
+  round(100.0 * avg(ret::int) filter (where solves0 between 1 and 9), 1) ret7_1_9,
+  count(*) filter (where solves0 >= 10) s10,
+  round(100.0 * avg(ret::int) filter (where solves0 >= 10), 1) ret7_10,
+  count(*) filter (where checkout) checkout_people,
+  count(*) filter (where money.trial) trials,
+  count(*) filter (where money.paid) purchases
+from pp left join money using (pid)
+group by pp.arm order by pp.arm;
+```
+
 ## `payer_churn`
 
 Denominator: people (by username) with `pro_purchase_completed`,
