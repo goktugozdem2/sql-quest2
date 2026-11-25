@@ -15,7 +15,7 @@ import vm from 'node:vm';
 import Database from 'better-sqlite3';
 import { isMcqQuestion, validateMcqQuestion } from '../src/utils/mock-interview.js';
 import { resultsMatch } from '../src/utils/grade.js';
-import { CASE_ROUND_MOCK_ID, freePreviewCount, canStartMock, mockRunFor, previewEndReason, canResumeProgress } from '../src/utils/case-round.js';
+import { CASE_ROUND_MOCK_ID, freePreviewCount, freePreviewLabel, canStartMock, mockRunFor, previewEndReason, canResumeProgress } from '../src/utils/case-round.js';
 import { COMPANY_INTERVIEWS } from '../src/data/company-interviews.js';
 import { caseRoundLine, CASE_ROUND_LINE } from '../scripts/build-company-pages.mjs';
 import { registeredMetrics } from '../scripts/ledger/due.mjs';
@@ -366,6 +366,24 @@ describe('the company-page line: only where the page\'s own source says so', () 
       expect(COMPANY_INTERVIEWS[key].caseRound, key).toBeUndefined();
     }
     expect(read('../src/revolut-sql-interview.html')).not.toContain(CASE_ROUND_LINE);
+  });
+  it('the free count on the pages is the mock\'s own freeQuestionCount, never a literal', () => {
+    // A1 on #174 (2026-11-24): "the first 3" was hard-coded in the generator,
+    // so a mock moved to 5 would have left four pages saying 3.
+    const n = freePreviewCount(mock);
+    expect(n).toBe(mock.freeQuestionCount);
+    for (const key of WITH) {
+      const block = read(`../src/${key}-sql-interview.html`).match(/<!-- case-round:start -->[\s\S]*?<!-- case-round:end -->/)[0];
+      expect(block, key).toContain(`(${freePreviewLabel(mock)})`);
+      expect(block, key).toContain(`the first ${n} questions are free`);
+    }
+    const d = COMPANY_INTERVIEWS.chime;
+    const five = caseRoundLine(d, 'chime-sql-interview', { ...mock, freeQuestionCount: 5 });
+    expect(five).toContain('the first 5 questions are free, the rest is Pro');
+    expect(five).not.toMatch(/the first 3 questions/);
+    expect(caseRoundLine(d, 'chime-sql-interview', { ...mock, freeQuestionCount: 1 })).toContain('the first question is free, the rest is Pro');
+    expect(() => caseRoundLine(d, 'chime-sql-interview', { ...mock, freeQuestionCount: 0 })).toThrow(/no free questions/);
+    expect(read('../scripts/build-company-pages.mjs')).not.toMatch(/first \d+ questions? (are|is) free/);
   });
   it('the generator refuses a line that cites a source the page does not have', () => {
     const d = { ...COMPANY_INTERVIEWS.chime, caseRound: { note: 'x', sources: ['made-up'] } };

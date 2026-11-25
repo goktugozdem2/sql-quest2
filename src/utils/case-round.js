@@ -18,6 +18,20 @@ export function freePreviewCount(interview) {
   return Math.min(n, total);
 }
 
+/**
+ * The free count as page copy, from the mock's own `freeQuestionCount`
+ * (2026-11-25, A1 on #174: the company-page line said "the first 3" as a
+ * literal, so a mock moved to 5 would have left four pages saying 3).
+ * Empty when the mock has no preview: then there is nothing free to offer.
+ */
+export function freePreviewLabel(interview) {
+  const n = freePreviewCount(interview);
+  if (n === 0) return '';
+  return n === 1
+    ? 'the first question is free, the rest is Pro'
+    : `the first ${n} questions are free, the rest is Pro`;
+}
+
 /** True when this person can start the mock at all (whole or preview). */
 export function canStartMock(interview, isPro) {
   if (!interview) return false;

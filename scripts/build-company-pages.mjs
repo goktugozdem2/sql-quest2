@@ -48,6 +48,7 @@ import { archetypeForCompany } from '../src/data/interview-archetypes.js';
 import { t as i18nT, setLang } from '../src/utils/i18n.js';
 import { companyFirstQuestion, companyHeroCtaText } from '../src/utils/company-first-question.js';
 import { SQL_ROADMAP_CHALLENGE_ORDER } from '../src/data/roadmap-stages.js';
+import { CASE_ROUND_MOCK_ID, freePreviewLabel } from '../src/utils/case-round.js';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const SITE = 'https://sqlquest.app';
@@ -418,8 +419,29 @@ ${rows}
  * The link names Pro (tests/founder-review-2026-10-05.test.js, item 6).
  */
 export const CASE_ROUND_LINE = 'Their loop reportedly includes a metrics/case round';
-export function caseRoundLine(d, slug) {
+
+/** The case-round mock as the app ships it (src/data/mock-interviews.js). */
+export function loadCaseRoundMock() {
+  const ctx = { window: {}, console: { log() {}, warn() {} } };
+  vm.createContext(ctx);
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/data/mock-interviews.js'), 'utf8'), ctx);
+  const mock = (ctx.window.mockInterviewsData || []).find(i => i.id === CASE_ROUND_MOCK_ID);
+  if (!mock) throw new Error(`[company-pages] mock ${CASE_ROUND_MOCK_ID} not found in src/data/mock-interviews.js`);
+  return mock;
+}
+let caseRoundMock;
+
+/**
+ * The free count in the link is the mock's own `freeQuestionCount`, through
+ * `freePreviewLabel` (src/utils/case-round.js) — never a literal. `mock` is
+ * a parameter so the test can render the line for another count.
+ */
+export function caseRoundLine(d, slug, mock) {
   if (!d || !d.caseRound) return '';
+  const free = freePreviewLabel(mock || (caseRoundMock ||= loadCaseRoundMock()));
+  if (!free) {
+    throw new Error(`[company-pages] ${d.name}: the ${CASE_ROUND_MOCK_ID} mock has no free questions, so the line would offer what is not there`);
+  }
   const srcKeys = Object.keys(d.sources);
   const keys = d.caseRound.sources || [];
   if (!keys.length || keys.some(k => !srcKeys.includes(k))) {
@@ -427,7 +449,7 @@ export function caseRoundLine(d, slug) {
   }
   const cite = keys.map(k => `<a href="#src-${k}" style="color:#8b98ab;text-decoration:none;font-size:11px;vertical-align:super;">[${srcKeys.indexOf(k) + 1}]</a>`).join('');
   return `<!-- case-round:start -->
-  <p data-section="case-round" style="font-size:14px;color:#94a3b8;margin-top:18px;max-width:760px;line-height:1.75;padding:14px 18px;border:1px solid rgba(124,58,237,.22);border-left:3px solid #7c3aed;border-radius:10px;background:rgba(124,58,237,.05);">${esc(d.caseRound.note)}${cite} ${CASE_ROUND_LINE} &mdash; <a href="/app/?interview=metrics-case-round&amp;src=${slug}" data-track="cta_case_round" style="color:#c084fc;">practise it here (the first 3 questions are free, the rest is Pro)</a>.</p>
+  <p data-section="case-round" style="font-size:14px;color:#94a3b8;margin-top:18px;max-width:760px;line-height:1.75;padding:14px 18px;border:1px solid rgba(124,58,237,.22);border-left:3px solid #7c3aed;border-radius:10px;background:rgba(124,58,237,.05);">${esc(d.caseRound.note)}${cite} ${CASE_ROUND_LINE} &mdash; <a href="/app/?interview=${CASE_ROUND_MOCK_ID}&amp;src=${slug}" data-track="cta_case_round" style="color:#c084fc;">practise it here (${esc(free)})</a>.</p>
 <!-- case-round:end -->`;
 }
 
