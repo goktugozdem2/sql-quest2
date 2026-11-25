@@ -430,7 +430,7 @@ of the verifier and must never be rounded to `FLAT`.
   list shows only the current learning-path stage, the Debug chip sat ~940 px
   down (0 clicks in 14 days), and the Coach tab had 1,027 people in 14 days
   against 21 for `nav_practice`. The clock restarts at the deploy of the
-  Coach's Debug door (branch `feat/coach-debug-door`, flag `coachDebugDoor`,
+  Coach's Debug door (PR #373, branch `feat/coach-debug-door`, flag `coachDebugDoor`,
   claim "the Coach's Debug door"), date **D**. The read moves by the same
   number of days, D − 2026-11-23 (the flip): **Read = 2026-12-22 + (D −
   2026-11-23) = D + 29 days**, and every baseline window moves with it.
@@ -611,7 +611,7 @@ of the verifier and must never be rounded to `FLAT`.
   list shows only the current learning-path stage, the Debug chip sat ~940 px
   down (0 clicks in 14 days), and the Coach tab had 1,027 people in 14 days
   against 21 for `nav_practice`. The clock restarts at the deploy of the
-  Coach's Debug door (branch `feat/coach-debug-door`, flag `coachDebugDoor`,
+  Coach's Debug door (PR #373, branch `feat/coach-debug-door`, flag `coachDebugDoor`,
   claim "the Coach's Debug door"), date **D**. The read moves by the same
   number of days, D − 2026-11-23 (the merge): **Read = 2026-12-20 + (D −
   2026-11-23) = D + 27 days**, and every baseline window moves with it.
@@ -662,7 +662,7 @@ of the verifier and must never be rounded to `FLAT`.
   list shows only the current learning-path stage, the Debug chip sat ~940 px
   down (0 clicks in 14 days), and the Coach tab had 1,027 people in 14 days
   against 21 for `nav_practice`. The clock restarts at the deploy of the
-  Coach's Debug door (branch `feat/coach-debug-door`, flag `coachDebugDoor`,
+  Coach's Debug door (PR #373, branch `feat/coach-debug-door`, flag `coachDebugDoor`,
   claim "the Coach's Debug door"), date **D**. The read moves by the same
   number of days, D − 2026-11-25 (the merge): **Read = 2026-12-22 + (D −
   2026-11-25) = D + 27 days**, and every baseline window moves with it.
@@ -1312,7 +1312,7 @@ of the verifier and must never be rounded to `FLAT`.
   list shows only the current learning-path stage, the Debug chip sat ~940 px
   down (0 clicks in 14 days), and the Coach tab had 1,027 people in 14 days
   against 21 for `nav_practice`. The clock restarts at the deploy of the
-  Coach's Debug door (branch `feat/coach-debug-door`, flag `coachDebugDoor`,
+  Coach's Debug door (PR #373, branch `feat/coach-debug-door`, flag `coachDebugDoor`,
   claim "the Coach's Debug door"), date **D**. The read moves by the same
   number of days, D − 2026-11-24 (the merge): **Read = 2026-12-21 + (D −
   2026-11-24) = D + 27 days**, and every baseline window moves with it.
