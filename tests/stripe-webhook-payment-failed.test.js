@@ -10,7 +10,7 @@
 import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
-import { paymentFailedEmail, stripeInvoiceUrl, startsAtTrialEnd, PORTAL_URL_DEFAULT } from '../supabase/functions/stripe-webhook/payment-failed-email.ts';
+import { paymentFailedEmail, stripeInvoiceUrl, startsAtTrialEnd, failedChargeState, PORTAL_URL_DEFAULT } from '../supabase/functions/stripe-webhook/payment-failed-email.ts';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const app = fs.readFileSync(path.join(ROOT, 'src/app.jsx'), 'utf8');
@@ -103,5 +103,32 @@ describe('the founder\'s voice', () => {
   });
   it('a username is escaped', () => {
     expect(paymentFailedEmail({ ...base, username: '<b>x</b>' }).html).toContain('Hi &lt;b&gt;x&lt;/b&gt;,');
+  });
+});
+
+// A3 2026-11-25 (docs/reads/errors-2026-11-25.md): a trial's first charge
+// failed with attempt_count 0 and no next attempt, and the webhook revoked
+// Pro within the hour as if Stripe had given up. Only a charge that ran out
+// of counted attempts is final.
+describe('failedChargeState: only exhausted retries are final', () => {
+  it('a scheduled next attempt is retrying, whatever the count', () => {
+    expect(failedChargeState(1796132315, 1)).toBe('retrying');
+    expect(failedChargeState(1796132315, 0)).toBe('retrying');
+  });
+  it('no next attempt after counted attempts is gave_up', () => {
+    expect(failedChargeState(null, 1)).toBe('gave_up');
+    expect(failedChargeState(null, 4)).toBe('gave_up');
+  });
+  it('no next attempt and no counted attempt is waiting (the 2026-11-24 case)', () => {
+    expect(failedChargeState(null, 0)).toBe('waiting');
+    expect(failedChargeState(undefined, undefined)).toBe('waiting');
+    expect(failedChargeState(null, null)).toBe('waiting');
+  });
+  it('the waiting email neither promises a retry nor says Pro is paused', () => {
+    const html = paymentFailedEmail({ ...base, willRetry: false, waiting: true }).html;
+    expect(html).toContain('waiting for you on the invoice page');
+    expect(html).not.toContain('Stripe will retry');
+    expect(html).not.toContain('Pro is paused');
+    expect(html).toContain('Fix it in Stripe');
   });
 });
