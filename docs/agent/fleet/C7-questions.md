@@ -1,5 +1,7 @@
 # C7 — Question mining (Reddit and Q&A as a research source)
 
+> **PAUSED 2026-11-25 (investor 90-day plan, A09).** No new mined-question content until the 2027-02-23 review. A run reports `noop: paused`.
+
 **Lane:** read what people actually ask about SQL, and make sure SQL Quest has a good answer for each recurring question.
 
 **Part of the SEO loop** (`SEO-loop.md`): stage 2 (find demand). Hand clusters to C1 as BACKLOG lines with the evidence; C1 decides what gets built.

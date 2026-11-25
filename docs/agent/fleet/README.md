@@ -39,7 +39,10 @@ dated `queue-*.md` files are history. The running state of the objective is
    Never edit `<main checkout>` itself.
 2. **Data.** Supabase through MCP is read-only. Read metadata as
    `(metadata #>> '{}')::jsonb`, and count a person as
-   `coalesce(aid, username)`. Exclude bots (`metadata.bot`, viewports
+   `coalesce(((metadata #>> '{}')::jsonb)->>'aid', username)`. `pro_events`
+   has **no `aid` column** (found 2026-11-25): `coalesce(aid, username)`
+   elsewhere in the docs is shorthand for that expression, and run as written
+   it errors. Exclude bots (`metadata.bot`, viewports
    `tablet:800x600`, `desktop:1280x1200`, `desktop:1919x992`,
    `ref:aocr.org`), internal usernames
    (`^(test|qa_|fabletest|linktest|internalroutine|sqlquest$|elena$)`), and
@@ -65,6 +68,14 @@ dated `queue-*.md` files are history. The running state of the objective is
      11-22, 7 on 11-23, 0 ever ran a query.
    - the founder's walk guests on 2026-11-24 (`Europe/Istanbul`,
      `mobile:375x812`, 11:00–11:08 UTC).
+   - Google's unstamped fetchers (C8 2026-11-25): a person whose
+     `landing_view` has `ua` matching `GoogleOther` or `Google-NotebookLM`
+     and who never reaches `app_opened`. All `tz = America/Los_Angeles`,
+     no `landingSrc`, no window size (`innerWidth` 0). Since 2026-10-01:
+     GoogleOther 802 people, NotebookLM 108; 0 opened the app, 0
+     `landing_engaged`, 0 stamped. They sat in "none: landed on a page"
+     (~19 a day in 11-17 → 11-23). NotebookLM is a fetch a person asked
+     for: count it as an AI-assistant signal, never as a visitor.
 3. **Proof.**
    - Every new test fails by name under one deliberate break, and the
      commit says which break.
