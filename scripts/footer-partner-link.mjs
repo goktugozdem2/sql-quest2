@@ -43,17 +43,41 @@ export const FOOTER_FIT_STYLE =
 // The product shell and its legacy alias are not marketing pages.
 const SKIP = new Set(['app.html', 'app/index.html']);
 
-export function withPartnerLink(html) {
-  // A page built before this version carries an older line (or no footer
-  // fit): replace it in place, so a committed public/ page never keeps it.
-  const old = html.match(/(?:<style data-footer-fit>[\s\S]*?<\/style>)?<p data-partner="datrick"[\s\S]*?<\/p>/);
-  if (old) {
-    const want = FOOTER_FIT_STYLE + PARTNER_LINE;
-    return old[0] === want ? html : html.replace(old[0], want);
+// The fit rule goes in <head>, never in the footer (html-validate, 2026-11-24):
+// a <style> under <footer> is not permitted content in HTML, and it was the
+// one error on 508 of the 515 built pages. Browsers applied it anyway; the
+// rule's text and its place at the END of <head> (after every page style
+// that sets .flk/.fnav) keep the cascade it had.
+const FIT_RE = /<style data-footer-fit>[\s\S]*?<\/style>/g;
+
+function withFitInHead(html) {
+  const head = html.indexOf('</head>');
+  if (head === -1) return html;
+  const inHead = [...html.matchAll(FIT_RE)].find(m => m.index < head);
+  if (inHead) {
+    // Already in the head: keep its place (later build steps append their
+    // own <style> before </head>), refresh its text, drop any body copy.
+    const before = html.slice(0, inHead.index) + FOOTER_FIT_STYLE;
+    return before + html.slice(inHead.index + inHead[0].length).replace(FIT_RE, '');
   }
-  const i = html.lastIndexOf('</footer>');
-  if (i === -1) return html;
-  return html.slice(0, i) + FOOTER_FIT_STYLE + PARTNER_LINE + html.slice(i);
+  const out = html.replace(FIT_RE, '');
+  const i = out.indexOf('</head>');
+  return out.slice(0, i) + FOOTER_FIT_STYLE + out.slice(i);
+}
+
+export function withPartnerLink(html) {
+  // A page built before this version carries an older line (or the fit rule
+  // inside its footer): replace it in place, so a committed public/ page
+  // never keeps it.
+  const old = html.match(/<p data-partner="datrick"[\s\S]*?<\/p>/);
+  let out;
+  if (old) out = old[0] === PARTNER_LINE ? html : html.replace(old[0], PARTNER_LINE);
+  else {
+    const i = html.lastIndexOf('</footer>');
+    if (i === -1) return html;
+    out = html.slice(0, i) + PARTNER_LINE + html.slice(i);
+  }
+  return withFitInHead(out);
 }
 
 function* htmlFiles(dir, rel = '') {

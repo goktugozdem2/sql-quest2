@@ -36,9 +36,21 @@ describe('footer links are 44 px tap targets on a phone', () => {
     expect(FOOTER_FIT_STYLE).toMatch(/\.flk a\{[^}]*min-height:44px[^}]*min-width:44px/);
     expect(FOOTER_FIT_STYLE).toMatch(/\.fnav a\{[^}]*min-height:44px/);
   });
-  it('a built company page carries it', () => {
+  it('a built company page carries it — the rule in <head>, the line in the footer', () => {
     const built = fs.readFileSync(path.join(ROOT, 'public/wise-sql-interview/index.html'), 'utf8');
-    expect(built).toContain(FOOTER_FIT_STYLE + PARTNER_LINE);
+    const head = built.indexOf('</head>');
+    expect(built.indexOf(FOOTER_FIT_STYLE)).toBeGreaterThan(-1);
+    expect(built.indexOf(FOOTER_FIT_STYLE), 'a <style> under <footer> is not permitted content (html-validate)').toBeLessThan(head);
+    expect(built.split('data-footer-fit').length - 1).toBe(1);
+    expect(built.lastIndexOf(PARTNER_LINE)).toBeGreaterThan(built.lastIndexOf('<footer'));
+  });
+  it('moves a fit rule from an older footer into <head>, once, and is idempotent', () => {
+    const old = `<html><head><style>.flk a{color:red}</style></head><body><footer>x${FOOTER_FIT_STYLE}${PARTNER_LINE}</footer></body></html>`;
+    const out = withPartnerLink(old);
+    expect(out).toBe(`<html><head><style>.flk a{color:red}</style>${FOOTER_FIT_STYLE}</head><body><footer>x${PARTNER_LINE}</footer></body></html>`);
+    // a later build step appends its own style before </head>: the rule keeps its place
+    const later = out.replace('</head>', '<style data-phone-fit>p{}</style></head>');
+    expect(withPartnerLink(later)).toBe(later);
   });
 });
 
@@ -75,7 +87,11 @@ describe('the rest of the footer links are 44 px tall on a phone (2026-11-23)', 
   });
   it('the built homepage carries the rule and still has its .flegal links', () => {
     const built = fs.readFileSync(path.join(ROOT, 'public/index.html'), 'utf8');
-    expect(built).toContain(FOOTER_FIT_STYLE + PARTNER_LINE);
+    // Since #333 (html-validate) the fit rule sits at the end of <head>, not
+    // in the footer next to the partner line.
+    expect(built).toContain(FOOTER_FIT_STYLE);
+    expect(built.indexOf(FOOTER_FIT_STYLE)).toBeLessThan(built.indexOf('</head>'));
+    expect(built).toContain(PARTNER_LINE);
     expect(built).toMatch(/<div class="flegal"><a href="\/privacy\/">/);
   });
   it('/for-teams/ gives its own footer links a 44 px box under 600 px', () => {
