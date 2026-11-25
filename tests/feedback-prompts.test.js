@@ -308,6 +308,17 @@ describe('the app wiring (source guards)', () => {
     expect((app.match(/onSeen=\{fbMarkSeen\}/g) || []).length).toBe(3);
   });
 
+  it('a card re-mounted on its thanks (answered) never counts as shown again', () => {
+    // A1 on #227: after #286 the card re-mounts with `answered` when a Pro
+    // modal closes. That card was already seen; it must not fire onSeen, and
+    // fbMarkSeen must refuse an answered prompt even if it were called.
+    const seen = hooks.slice(hooks.indexOf('const fbMarkSeen = '), hooks.indexOf('const fbSkipPrompt = '));
+    expect(card).toMatch(/if \(!el \|\| !onSeen \|\| answered\) return;/);
+    expect(seen).toMatch(/if \(!p \|\| p\.answered\) return;/);
+    // And the same prompt seen twice (re-mount before an answer) counts once.
+    expect(seen).toMatch(/if \(fbSeenRef\.current === key\) return;\s*\n\s*fbSeenRef\.current = key;/);
+  });
+
   it('exit_reason is asked only after the plans close, and a plan click blocks it', () => {
     expect(dismiss.indexOf('setShowProModal(false);')).toBeGreaterThan(0);
     expect(dismiss.indexOf('maybeAskExitReason(')).toBeGreaterThan(dismiss.indexOf('setShowProModal(false);'));
