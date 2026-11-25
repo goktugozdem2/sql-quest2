@@ -19452,7 +19452,7 @@ CRITICAL RULES:
         <meta charset="UTF-8">
         <meta property="og:title" content="My SQL Quest Progress">
         <meta property="og:description" content="I've completed ${completedDays}/30 days of the SQL Master Challenge!">
-        <meta property="og:image" content="https://sql-quest2.vercel.app/og-progress.png">
+        <meta property="og:image" content="https://sqlquest.app/og-progress.png">
         <style>
           @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
           * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -19599,7 +19599,7 @@ CRITICAL RULES:
           
           <div class="footer">
             <div class="cta">Join me in learning SQL! 🚀</div>
-            <div class="url">sql-quest2.vercel.app</div>
+            <div class="url">sqlquest.app</div>
           </div>
         </div>
       </body>
@@ -20059,7 +20059,7 @@ CRITICAL RULES:
           
           <div class="footer">
             <div class="cta">Join me in learning SQL! 🚀</div>
-            <div class="hashtags">sql-quest2.vercel.app | #SQLQuest #${streak}DayStreak</div>
+            <div class="hashtags">sqlquest.app | #SQLQuest #${streak}DayStreak</div>
           </div>
         </div>
       </body>
