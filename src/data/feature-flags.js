@@ -488,6 +488,13 @@ window.FEATURE_FLAGS = {
     exitReasonAsk: true,
     stuckAsk: false,
     day2Ask: true,
+    // IR-2 (E2, 2026-11-23; src/utils/feedback-context.js): the 💬 widget,
+    // opened on a challenge, writes the challenge id, the last query (cut to
+    // ~1,000 chars) and the last diagnosis kind into the row's `context`, and
+    // shows one line pointing at the inline tutor. Default ON: an inbound-
+    // channel fix, not money and not paywall-adjacent. Event
+    // `feedback_tutor_redirect`. Ledger: "a feedback row says which challenge".
+    feedbackContext: true,
     // The first screen test (2026-09-23, src/utils/first-screen.js): half of
     // first-run visitors land in challenge 91's editor instead of the
     // four-question placement quiz (42% of first visitors never opened a
@@ -633,6 +640,17 @@ window.FEATURE_FLAGS = {
     // Debug set"; metric debug_solve_through. The orchestrator flips it in
     // its own decision row. ON 2026-11-23 (orchestrator-decisions.md).
     debugQuestions: true,
+
+    // Run is not Submit (2026-11-23, src/utils/run-submit-nudge.js): an A/B
+    // by aid (run_submit_nudge_v1, murmur-finalised hash). A person with ZERO
+    // solves whose Run returns rows on an unsolved challenge is assigned once
+    // (`run_submit_nudge_assigned`); the `nudge` arm sees one line in the
+    // output panel saying Submit completes it ("This matches the expected
+    // output…" when it does). Acts only after the first run, so it does not
+    // touch open_to_first_run (read to 12-20). DARK: flag-queue row 17, the
+    // orchestrator decides the flip (companyDirectOpen "runs alone").
+    // Ledger "Run is not Submit"; read first_solve_10m from assignment by arm.
+    runSubmitNudge: false,
   },
 };
 

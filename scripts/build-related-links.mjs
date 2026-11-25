@@ -32,32 +32,40 @@ const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const START = '<!-- related-links:start -->';
 export const END = '<!-- related-links:end -->';
 
+/** The page the 2026-11-23 push links to (see the block at the end of RELATED). */
+export const DA = '/sql-interview-questions-data-analyst/';
+
 /** source file (under src/) → { lang, lead, links: [[href, text], …] } */
 export const RELATED = {
   'challenges/index.html': { lead: 'Also practise', links: [
     ['/weekly/', 'this week\'s SQL challenge'],
     ['/learn-sql/', 'learn SQL from zero'],
     ['/sql-rollup-interview-questions/', 'ROLLUP and GROUPING SETS interview questions'],
+    [DA, 'SQL interview questions for data analysts, by level'],
   ] },
   'sql-quiz.html': { lead: 'Next', links: [
     ['/weekly/', 'try this week\'s SQL challenge'],
     ['/learn-sql/', 'start from zero with SQL'],
+    [DA, 'see what a data analyst SQL interview asks'],
   ] },
   'blog/index.html': { lead: 'More to read and practise', links: [
     ['/weekly/', 'the weekly SQL challenge'],
     ['/sql-for-the-ai-era/', 'SQL for the AI era'],
     ['/blog/validate-ai-generated-sql/', 'how to check AI-generated SQL'],
+    [DA, 'SQL interview questions for data analysts'],
   ] },
   // Not src/sql-tools.html: build-sql-tools.mjs writes that page whole and
   // tests/sql-tools.test.js pins it to the generator's output.
   'blog/sql-for-ai-company-interviews.html': { lead: 'Checking SQL an assistant wrote?', links: [
     ['/blog/validate-ai-generated-sql/', 'how to validate AI-generated SQL'],
     ['/sql-for-the-ai-era/', 'why SQL still matters in the AI era'],
+    [DA, 'SQL interview questions for data analysts'],
   ] },
   'sql-tutorial.html': { lead: 'Where to go from here', links: [
     ['/learn-sql/', 'learn SQL from zero'],
     ['/challenges/string-functions/', 'string function exercises'],
     ['/after-the-sql-course/', 'finished a SQL course? what to practise next'],
+    [DA, 'SQL interview questions for data analysts'],
   ] },
   'learn-sql-for-beginners.html': { lead: 'Already past the basics', links: [
     ['/after-the-sql-course/', 'after the SQL course: what to practise next'],
@@ -68,6 +76,7 @@ export const RELATED = {
     ['/stratascratch-alternatives/', 'StrataScratch alternatives'],
     ['/after-the-sql-course/', 'after a SQL course'],
     ['/after-bootcamp/', 'after a data bootcamp'],
+    [DA, 'SQL interview questions for data analysts'],
   ] },
   'vs-stratascratch.html': { lead: 'Weighing more than two options', links: [
     ['/stratascratch-alternatives/', 'every StrataScratch alternative, side by side'],
@@ -79,15 +88,18 @@ export const RELATED = {
   'sql-cheat-sheet.html': { lead: 'Practise what is on this sheet', links: [
     ['/challenges/string-functions/', 'string function exercises'],
     ['/sql-rollup-interview-questions/', 'ROLLUP and GROUPING SETS questions'],
+    [DA, 'the data analyst SQL interview questions it prepares you for'],
   ] },
   'blog/sql-group-by-tutorial.html': { lead: 'One step past GROUP BY', links: [
     ['/sql-rollup-interview-questions/', 'ROLLUP and GROUPING SETS interview questions'],
+    [DA, 'GROUP BY in data analyst SQL interview questions'],
   ] },
   'fraud-analytics-sql.html': { lead: 'Fintech company guides', links: [
     ['/paypal-sql-interview/', 'PayPal'],
     ['/coinbase-sql-interview/', 'Coinbase'],
     ['/chime-sql-interview/', 'Chime'],
     ['/monzo-sql-interview/', 'Monzo'],
+    [DA, 'SQL interview questions for data analysts'],
   ] },
   'blog/sql-for-fraud-analytics.html': { lead: 'Practise it for a fintech interview', links: [
     ['/fraud-analytics-sql/', 'fraud analytics SQL exercises'],
@@ -95,6 +107,7 @@ export const RELATED = {
     ['/coinbase-sql-interview/', 'Coinbase'],
     ['/chime-sql-interview/', 'Chime'],
     ['/monzo-sql-interview/', 'Monzo'],
+    [DA, 'SQL interview questions for data analysts'],
   ] },
   'turkce-sql-ogren.html': { lead: 'Karşılaştırma', links: [
     ['/datalemur-karsilastirma/', 'SQL Quest ve DataLemur, Türkçe karşılaştırma'],
@@ -109,9 +122,99 @@ export const RELATED = {
   // bootcamp and course graduates are the ones their instructors read.
   'after-bootcamp.html': { lead: 'Teaching a data cohort', links: [
     ['/for-teams/', 'SQL interview practice for your whole cohort'],
+    [DA, 'SQL interview questions for data analysts, by level'],
   ] },
   'after-the-sql-course.html': { lead: 'Running a SQL course', links: [
     ['/for-teams/', 'seats for your students'],
+    [DA, 'the SQL a data analyst interview asks, by level'],
+  ] },
+  // 2026-11-23 (C1, the /sql-exercises/ link push repeated on the next
+  // page-two page): /sql-interview-questions-data-analyst/ ranked 17.4 on
+  // Google with 196 impressions in 28 days and only four pages linking to it
+  // in content. Every source below is a page an analyst-interview reader
+  // passes through: the nine hand-written topic pages, the interview and
+  // pattern blog posts, and the practice hub. The two generated topic pages
+  // (advanced, ranking-functions) are pinned to build-topic-extra.mjs and the
+  // /questions/ template is left alone while Bing's #72 read runs. Ledger:
+  // "/sql-interview-questions-data-analyst/ on Google". Guard:
+  // tests/data-analyst-links.test.js.
+  'sql-exercises.html': { lead: 'Preparing for an analyst interview', links: [
+    [DA, 'SQL interview questions for data analysts, by experience level'],
+  ] },
+  'challenges/aggregation.html': { lead: 'Preparing for an analyst interview', links: [
+    [DA, 'SQL interview questions for data analysts'],
+  ] },
+  'challenges/case-when.html': { lead: 'Preparing for an analyst interview', links: [
+    [DA, 'SQL interview questions for data analysts'],
+  ] },
+  'challenges/cte.html': { lead: 'Preparing for an analyst interview', links: [
+    [DA, 'SQL interview questions for data analysts'],
+  ] },
+  'challenges/date-functions.html': { lead: 'Preparing for an analyst interview', links: [
+    [DA, 'SQL interview questions for data analysts'],
+  ] },
+  'challenges/joins.html': { lead: 'Preparing for an analyst interview', links: [
+    [DA, 'SQL interview questions for data analysts'],
+  ] },
+  'challenges/null-handling.html': { lead: 'Preparing for an analyst interview', links: [
+    [DA, 'SQL interview questions for data analysts'],
+  ] },
+  'challenges/string-functions.html': { lead: 'Preparing for an analyst interview', links: [
+    [DA, 'SQL interview questions for data analysts'],
+  ] },
+  'challenges/subqueries.html': { lead: 'Preparing for an analyst interview', links: [
+    [DA, 'SQL interview questions for data analysts'],
+  ] },
+  'challenges/window-functions.html': { lead: 'Preparing for an analyst interview', links: [
+    [DA, 'SQL interview questions for data analysts'],
+  ] },
+  'blog/capital-one-codesignal-data-analyst-assessment.html': { lead: 'Beyond one company\'s screen', links: [
+    [DA, 'SQL interview questions for data analysts, by experience level'],
+  ] },
+  'blog/revolut-data-analyst-sql-screen.html': { lead: 'Beyond one company\'s screen', links: [
+    [DA, 'SQL interview questions for data analysts, by experience level'],
+  ] },
+  'blog/faang-sql-interview-guide.html': { lead: 'Interviewing for an analyst role', links: [
+    [DA, 'SQL interview questions for data analysts, by level'],
+  ] },
+  'blog/time-series-sql-hardware-interviews.html': { lead: 'Interviewing for an analyst role', links: [
+    [DA, 'SQL interview questions for data analysts'],
+  ] },
+  'blog/sql-joins-explained.html': { lead: 'Where joins come up in interviews', links: [
+    [DA, 'SQL interview questions for data analysts'],
+  ] },
+  'blog/left-join-vs-inner-join.html': { lead: 'Where this comes up in interviews', links: [
+    [DA, 'SQL interview questions for data analysts'],
+  ] },
+  'blog/sql-anti-join.html': { lead: 'Where this comes up in interviews', links: [
+    [DA, 'SQL interview questions for data analysts'],
+  ] },
+  'blog/where-vs-having.html': { lead: 'Where this comes up in interviews', links: [
+    [DA, 'SQL interview questions for data analysts'],
+  ] },
+  'blog/is-null-vs-equals-null.html': { lead: 'Where this comes up in interviews', links: [
+    [DA, 'SQL interview questions for data analysts'],
+  ] },
+  'blog/sql-case-when-tutorial.html': { lead: 'Where this comes up in interviews', links: [
+    [DA, 'SQL interview questions for data analysts'],
+  ] },
+  'blog/row-number-vs-rank-vs-dense-rank.html': { lead: 'Where this comes up in interviews', links: [
+    [DA, 'SQL interview questions for data analysts'],
+  ] },
+  'blog/sql-running-total.html': { lead: 'Where this comes up in interviews', links: [
+    [DA, 'SQL interview questions for data analysts'],
+  ] },
+  'blog/window-functions-tutorial.html': { lead: 'Where window functions come up in interviews', links: [
+    [DA, 'SQL interview questions for data analysts'],
+  ] },
+  'blog/sql-cte-tutorial.html': { lead: 'Where CTEs come up in interviews', links: [
+    [DA, 'SQL interview questions for data analysts'],
+  ] },
+  'blog/what-is-a-cte-in-sql.html': { lead: 'Where CTEs come up in interviews', links: [
+    [DA, 'SQL interview questions for data analysts'],
+  ] },
+  'blog/recursive-cte-explained.html': { lead: 'Where CTEs come up in interviews', links: [
+    [DA, 'SQL interview questions for data analysts'],
   ] },
 };
 

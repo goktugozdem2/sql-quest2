@@ -204,7 +204,7 @@
       "includeFiles": "public/app.html"
     },
     "api/og-card.js": {
-      "includeFiles": "assets/fonts/**"
+      "includeFiles": "{assets/fonts/**,node_modules/harfbuzzjs/hb.wasm,node_modules/@resvg/resvg-wasm/index_bg.wasm}"
     }
   },
   "headers": [
