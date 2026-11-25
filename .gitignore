@@ -35,3 +35,6 @@ smoke-battery.log
 sqlquest-prod-*.json
 *service-account*.json
 .tmp/
+# Lighthouse CI output (scripts/lighthouse/run.mjs, .github/workflows/lighthouse.yml)
+.lighthouseci/
+lhci-reports/
