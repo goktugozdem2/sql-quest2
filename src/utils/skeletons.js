@@ -187,15 +187,6 @@ export function detectSkeletons(challenge) {
 }
 
 /**
- * Get a specific skeleton by key.
- * @param {string} key - skeleton key (e.g. "case_when")
- * @returns {Object|null} { label, description, template } or null
- */
-export function getSkeleton(key) {
-  return SKELETONS[key] || null;
-}
-
-/**
  * Return the primary (most relevant) skeleton for a challenge, or null
  * if no pattern matched.
  *
