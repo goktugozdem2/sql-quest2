@@ -39,6 +39,7 @@ import { questionSlugs, loadQuestionBank } from './question-slugs.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
+import { withFirstScreen } from './company-first-screen.mjs';
 import { COMPANY_INTERVIEWS, NEW_COMPANY_TAGS, SOURCED_FORMATS } from '../src/data/company-interviews.js';
 import { SKILL_TO_RADAR, mapTopicToSkill, CANONICAL_SKILLS } from '../src/utils/skill-calc.js';
 import { isFreePreview } from '../src/utils/challenge-order.js';
@@ -734,4 +735,14 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   console.log(`[company-pages] shared modules on ${injected.length} older pages`);
   const prov = injectProvenance();
   console.log(`[company-pages] provenance note on ${injected.length + prov.length} pages (${SOURCED_SLUGS.size} sourced)`);
+  // The first-screen block (scripts/company-first-screen.mjs), last: it sits
+  // right under the hero, ahead of the provenance note.
+  const fsBank = loadBank();
+  for (const [key, d] of Object.entries(COMPANY_INTERVIEWS)) {
+    const file = path.join(ROOT, 'src', `${key}-sql-interview.html`);
+    if (!fs.existsSync(file)) continue;
+    const before = fs.readFileSync(file, 'utf8');
+    const after = withFirstScreen(before, key, facts(fsBank, d.name));
+    if (after !== before) { fs.writeFileSync(file, after); console.log(`[company-pages] first screen on ${key}`); }
+  }
 }
