@@ -100,6 +100,11 @@ B2 builds none of these; each names the lane that owns it.
 - **B1 — `app_opened` per person halved (2.13 → 1.13) and
   `second_session_7d` fell to 6.9%.** Check whether #49 (10-08) changed what
   fires on a return visit before anyone reads retention (scorecard, 11-22).
+  **Read 11-25 (`docs/reads/second-session-2026-11-25.md`): not the event.**
+  Return-day coverage is flat at 82–89% across 10-08; returns themselves
+  fell, from the 09-26 flag batch on, inside the same doors. Baseline
+  restated 18.7% under today's crawler filter. Open question moves to
+  product: which 09-26 change cost the return.
 - **B1 — three events that never fire:** `pro_modal_shown {reason:
   'email_link'}` (0 rows ever, though 80 activated notes went out),
   `cta_practice_validate_ai_sql_*` and `editorial_claudequest_click` (0 rows,
