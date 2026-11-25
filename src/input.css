@@ -142,6 +142,28 @@ body {
   body[data-run-bar="fixed"] .sq-share-bar {
     bottom: calc(104px + env(safe-area-inset-bottom));
   }
+  body[data-run-bar="fixed"] .sq-radar-pop {
+    bottom: calc(104px + env(safe-area-inset-bottom));
+  }
+}
+/* Above (2026-11-24, iOS Simulator walk): the post-solve radar toast
+   (.sq-radar-pop, fixed bottom-6, z-50) lifts above the fixed bar the same
+   way; it covered the top ~31 pt of Run / Submit for 4.5 s after a solve.
+   Without the bar it keeps bottom-6. */
+
+/* iOS Safari zooms the page when a focused field's font is under 16px, and
+   the challenge editor was 14px. After that zoom the fixed Run bar was
+   cropped at the sides, hid when the toolbar expanded, and sat under the
+   address strip with the keyboard up (iOS Simulator walk, 2026-11-24). So
+   the editor is 16px below `md`, in both arms and with the flag off: the
+   zoom is the editor's, not the bar's. Never fixed with maximum-scale or
+   user-scalable=no — that takes pinch zoom away from people who need it.
+   The textarea rule covers CodeMirror's hidden-textarea input style. */
+@media (max-width: 767px) {
+  .sql-cm-editor .CodeMirror,
+  .sql-cm-editor .CodeMirror textarea {
+    font-size: 16px;
+  }
 }
 
 /* Profile panel buttons (2026-09-14 DESIGN.md pass).

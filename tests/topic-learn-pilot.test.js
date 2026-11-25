@@ -75,10 +75,17 @@ describe('both pilot pages carry all three blocks', () => {
 
   it.each(PILOT)('%s: exactly one accent CTA, and the accent nowhere else', slug => {
     expect((block[slug].match(/class="tl-cta[ "]/g) || []).length).toBe(1);
+    // The block's style sits in <head> since #333 (html-validate): one copy,
+    // before </head>, and none left inside the block.
+    const styles = page[slug].match(/<style data-topic-learn>[\s\S]*?<\/style>/g) || [];
+    expect(styles.length).toBe(1);
+    expect(page[slug].indexOf(styles[0])).toBeLessThan(page[slug].indexOf('</head>'));
+    expect(block[slug]).not.toMatch(/<style/);
+    const css = styles[0] + block[slug];
     // #FFE34D is declared once, as the token, and used only by .tl-cta.
-    expect((block[slug].match(/#FFE34D/gi) || []).length).toBe(1);
-    expect((block[slug].match(/var\(--tl-accent\)/g) || []).length).toBe(1);
-    expect(block[slug]).toMatch(/\.tl-cta\{[^}]*background:var\(--tl-accent\)/);
+    expect((css.match(/#FFE34D/gi) || []).length).toBe(1);
+    expect((css.match(/var\(--tl-accent\)/g) || []).length).toBe(1);
+    expect(css).toMatch(/\.tl-cta\{[^}]*background:var\(--tl-accent\)/);
   });
 
   it.each(PILOT)('%s: the three events, and only those, are on the new blocks', slug => {

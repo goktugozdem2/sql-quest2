@@ -136,13 +136,25 @@ describe('stripe-webhook: access comes back off', () => {
 
   it('a failed payment revokes only once Stripe has stopped retrying', () => {
     const b = branch('invoice.payment_failed');
-    expect(b).toContain('if (!willRetry && userRecord)');
+    // A3 2026-11-25: "no next attempt" alone is not "gave up" — a charge
+    // never attempted under the retry schedule (attempt_count 0) waits for
+    // the customer. The state comes from failedChargeState (run in
+    // tests/stripe-webhook-payment-failed.test.js) and only gave_up revokes.
+    expect(b).toContain('failedChargeState(invoice.next_payment_attempt, invoice.attempt_count)');
+    expect(b).toContain('if (chargeState === "gave_up" && userRecord)');
+    expect(b).not.toContain('if (!willRetry && userRecord)');
     expect(b).toContain('revokeProAccess');
     expect(b).toContain('"pro_access_revoked"');
-    // the revoke must not be reachable while retries are scheduled
+    // the revoke must not be reachable while retries are scheduled or the
+    // charge is waiting for the customer
     const at = b.indexOf('revokeProAccess');
-    const guard = b.indexOf('if (!willRetry');
+    const guard = b.indexOf('if (chargeState === "gave_up"');
+    expect(guard).toBeGreaterThan(-1);
     expect(at).toBeGreaterThan(guard);
+    expect(b.match(/revokeProAccess/g).length).toBe(1);
+    // the row says which state it was, and the email knows the waiting case
+    expect(b).toContain('charge_state: chargeState,');
+    expect(b).toContain('waiting: chargeState === "waiting",');
   });
 
   // 2026-10-01: the first buyer through a Checkout Session had his card

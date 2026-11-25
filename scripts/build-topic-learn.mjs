@@ -105,7 +105,7 @@ function resultTable(columns, rows, attrs = '') {
   return `<div class="tl-table"${attrs}><table><thead><tr>${columns.map(c => `<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${r.map(cell).join('')}</tr>`).join('')}</tbody></table></div>`;
 }
 
-const STYLE = `<style>
+const STYLE = `<style data-topic-learn>
     .tl{--tl-surface:#16181F;--tl-surface2:#1F222B;--tl-border:#2A2E38;--tl-text:#F2F0EA;--tl-muted:#8A8E99;--tl-accent:#FFE34D;--tl-ink:#0E0F13}
     .tl{text-align:left;scroll-margin-top:90px}.tl-in{margin-top:56px}
     .tl h2{font-size:clamp(22px,2.8vw,30px);font-weight:800;margin-bottom:14px;text-align:left;color:var(--tl-text)}
@@ -250,7 +250,6 @@ export function renderLearnBlock(slug, bank, qslugs, tags, bankCount) {
     ? `\n      <pre><code>${highlight(L.mistake.fix)}</code></pre>\n      ${resultTable(L.mistake.fixColumns, L.mistake.fixRows)}`
     : '';
   return `${START}
-${STYLE}
 <section class="${cls}" id="learn" data-topic-learn="${slug}">
   <p class="tl-eyebrow">Learn it in 3 minutes</p>
   <h2 class="fd">${esc(L.heading)}</h2>
@@ -312,12 +311,26 @@ export const PAGE_ANCHOR = {
 /** Insert the block after the page's anchor (first run) or replace it (every run after). */
 export function injectLearnBlock(html, block, slug) {
   const re = new RegExp(`${START}[\\s\\S]*?${END}`);
-  if (re.test(html)) return html.replace(re, () => block);
-  const anchor = PAGE_ANCHOR[slug].after;
-  const at = html.indexOf(anchor);
-  if (at < 0) throw new Error(`topic-learn: anchor not found on ${slug}`);
-  const end = at + anchor.length;
-  return `${html.slice(0, end)}${block}\n${html.slice(end)}`;
+  let out;
+  if (re.test(html)) out = html.replace(re, () => block);
+  else {
+    const anchor = PAGE_ANCHOR[slug].after;
+    const at = html.indexOf(anchor);
+    if (at < 0) throw new Error(`topic-learn: anchor not found on ${slug}`);
+    const end = at + anchor.length;
+    out = `${html.slice(0, end)}${block}\n${html.slice(end)}`;
+  }
+  return withLearnStyleInHead(out);
+}
+
+// The block's <style> lives in <head> (html-validate, #333: a <style> under
+// <body> or a <div> is not permitted content). One copy, refreshed each run.
+const STYLE_RE = /<style data-topic-learn>[\s\S]*?<\/style>\n?/g;
+export function withLearnStyleInHead(html) {
+  const out = html.replace(STYLE_RE, '');
+  const i = out.indexOf('</head>');
+  if (i < 0) return out;
+  return `${out.slice(0, i)}${STYLE}\n${out.slice(i)}`;
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
