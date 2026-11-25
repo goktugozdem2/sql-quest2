@@ -4816,3 +4816,190 @@ Traps:
   if they took ≥ 104 ms (the browser's buffered event-timing floor).
 - The landing pages and /app are measured by the same library but from
   different documents; never blend `app` into a "site" p75.
+
+## `interview_pass_test`
+
+The one-time Interview Pass against today's subscription (investor plan
+A06; design `docs/plans/interview-pass-test-2026-11-25.md`). Registered
+2026-11-25, in its own commit, before any code, flag or Stripe object
+exists (rule 6b). Nothing before the flip can be a pass purchase. Read
+only from the flip date, never across it.
+
+**Who is counted (the denominator).** People are `coalesce(aid, username)`.
+An eligible visitor is a browser with an `interview_pass_arm_assigned` row
+whose `status = 'enrolled'`, written at the browser's first app open inside
+the enrolment window. The arm is fixed at that moment, before anyone sees a
+price, so the treatment cannot change who is counted. Then remove:
+- internal accounts and `metadata.bot`, plus the crawler viewports and
+  fingerprints in the shared filters above and in
+  docs/reads/funnel-2026-11-22.md;
+- people whose `pro_modal_shown` ever carried `priceRegion = 'IN'`. India
+  sees the India control prices in both arms; its own test is a separate,
+  later hypothesis;
+- usernames with a `stripe_webhook` `pro_purchase_completed` or
+  `pro_trial_started` dated before their enrolment (past payers). The app
+  should never enrol them. This filter is a second check, and a non-zero
+  count here is a bug to report.
+
+**The money (the numerator).** Only `reason = 'stripe_webhook'` rows, joined
+to the person through the **username**. Webhook rows carry no `aid` (see
+`purchases`). Each person has a **45-day horizon** that starts at their own
+enrolment. The 45 days cover a trial's day-7 charge, the 7-day money-back
+window after it, a monthly plan's first renewal (day 30, or day 37 after a
+trial) and a week of retries.
+- `pro_purchase_completed`: `+ amount_cents`. This includes a trial's
+  `after_trial` charge and a `plan_type = 'pass_60d'` purchase.
+- `pro_renewal_completed`: `+ amount_cents`. This row has no `amount_cents`
+  on 2026-11-25. The pass code PR adds it. Until then, price it from the
+  plan's price for the person's region and say so in the read.
+- `pro_refunded`: `- amount_refunded_cents`, both full and partial.
+- Disputes: `- (disputed amount + the $15 Stripe dispute fee)`. This is a
+  hand read from Stripe → Disputes until the endpoint sends
+  `charge.dispute.created`.
+- Stripe processing fees are left out in both arms. Amounts are USD, since
+  sessions are created with Adaptive Pricing off. A Payment Link fallback
+  row in another currency is converted at the charge's own
+  `balance_transaction` rate and flagged.
+
+**Primary: net revenue per eligible visitor (NRPV), per arm** =
+sum of the person's net cents in the horizon ÷ eligible visitors in the arm.
+
+**Secondary, per arm (context for the verdict):**
+1. **Payment conversion.** Payers ÷ eligible. A payer has at least one
+   `pro_purchase_completed` in the horizon and no full refund of it. Split
+   by plan (`pass_60d` / `monthly` / `annual`) and by path (direct, or
+   after a trial).
+2. **Refunds.** Full refunds ÷ purchases, by plan. Also days from purchase
+   to refund.
+3. **Usage.** For each payer: distinct active days (`app_opened`) and
+   distinct solves (`challenge_solved`) in days 1–30 and 31–60 after the
+   purchase, by plan. The read runs once the last payer reaches day 60.
+4. **Support load.** `feedback` rows plus support@ threads about billing,
+   refund, renewal or cancelling, per payer, counted by hand. Read the
+   verbatims and do not aggregate them.
+5. **The Stripe page.** `pro_checkout_started` → paid, and
+   `pro_checkout_expired`, by `plan`. Add `pro_payment_failed
+   {at_checkout}` and `pro_card_setup_failed` (3D Secure) by plan.
+6. **Balance and guardrails.** Enrolled per arm, which must be within
+   45–55% by day 2. `pro_modal_shown` people ÷ eligible (the modal's
+   triggers are the same in both arms, so a gap here is a bug). Plan
+   clicks ÷ modal viewers.
+7. **After the pass (descriptive, read at day 120).** Pass holders who buy
+   again, or subscribe, within 30 days of their pass expiring.
+
+```sql
+-- :start / :end = enrolment window. Run on or after :end + 45 days.
+with ev as (
+  select event, reason, username, created_at, (metadata #>> '{}')::jsonb m
+  from pro_events
+  where created_at >= :start - interval '400 days'   -- past-payer lookback
+    and created_at <  :end + interval '45 days'
+),
+bad as (
+  select distinct coalesce(m->>'aid', username) pid from ev
+  where m->>'bot' is not null
+     or m->>'viewport' in ('tablet:800x600','desktop:1280x1200','desktop:1919x992')
+     or m->>'landingSrc' = 'ref:aocr.org'
+     or coalesce(username,'') ~* '^(test|qa_|fabletest|linktest|internalroutine|sqlquest$|elena$)'
+),
+enrolled as (
+  select coalesce(m->>'aid', username) pid, min(m->>'arm') arm, min(created_at) t0
+  from ev
+  where event = 'interview_pass_arm_assigned' and m->>'status' = 'enrolled'
+    and created_at >= :start and created_at < :end
+  group by 1
+),
+india as (
+  select distinct coalesce(m->>'aid', username) pid from ev
+  where event = 'pro_modal_shown' and m->>'priceRegion' = 'IN'
+),
+-- one username per person: the first real username an enrolled aid wrote
+who as (
+  select distinct on (m->>'aid') m->>'aid' pid, username
+  from ev
+  where m->>'aid' is not null and username is not null and username <> 'guest'
+    and m->>'ipArm' is not null
+  order by m->>'aid', created_at
+),
+money as (
+  select username, created_at, event, m->>'plan_type' plan,
+         case when event in ('pro_purchase_completed','pro_renewal_completed')
+                then coalesce((m->>'amount_cents')::int, 0)
+              when event = 'pro_refunded'
+                then -coalesce((m->>'amount_refunded_cents')::int, 0) end cents,
+         (event = 'pro_refunded' and m->>'full' = 'true') full_refund
+  from ev
+  where reason = 'stripe_webhook'
+    and event in ('pro_purchase_completed','pro_renewal_completed','pro_refunded','pro_trial_started')
+),
+past_payer as (
+  select distinct w.pid from enrolled e join who w on w.pid = e.pid
+  join money mo on mo.username = w.username
+  where mo.event in ('pro_purchase_completed','pro_trial_started') and mo.created_at < e.t0
+),
+per_person as (
+  select e.pid, e.arm,
+         coalesce(sum(mo.cents) filter (where mo.event <> 'pro_trial_started'), 0) net_cents,
+         bool_or(mo.event = 'pro_purchase_completed') bought,
+         bool_or(mo.full_refund) refunded,
+         string_agg(distinct mo.plan, ',') filter (where mo.event = 'pro_purchase_completed') plans
+  from enrolled e
+  left join who w on w.pid = e.pid
+  left join money mo on mo.username = w.username
+                    and mo.created_at >= e.t0 and mo.created_at < e.t0 + interval '45 days'
+  where e.pid not in (select pid from bad)
+    and e.pid not in (select pid from india)
+    and e.pid not in (select pid from past_payer)
+  group by 1, 2
+)
+select arm,
+       count(*)                                              eligible,
+       count(*) filter (where bought and not refunded)       payers,
+       count(*) filter (where plans like '%pass_60d%')       pass_buyers,
+       count(*) filter (where plans like '%annual%')         annual_buyers,
+       count(*) filter (where plans like '%monthly%')        monthly_buyers,
+       count(*) filter (where refunded)                      full_refunds,
+       round(sum(net_cents) / 100.0, 2)                      net_usd,
+       round(sum(net_cents) / 100.0 / nullif(count(*), 0), 4) nrpv_usd
+from per_person
+group by arm
+order by arm;
+```
+
+Also run `select count(*) from past_payer`. It should be 0.
+
+**The verdict (written before the data; copied from the plan, which owns
+the reasoning).** Payers will be few. At ~2 payments a month, 12 weeks of
+enrolment gives roughly 3 payers per arm, so read the rows, not a p-value.
+Also report a bootstrap P(NRPV_pass > NRPV_control) over people, 10,000
+resamples, as a number, never as a gate.
+- **ADOPT** (the pass takes the monthly card's place for the default
+  region) only if all four hold: NRPV_pass ≥ 1.2 × NRPV_control;
+  payers_pass ≥ payers_control − 1; full refunds of passes ≤ 20% of pass
+  sales; annual buyers in the pass arm ≥ annual buyers in control − 1.
+- **REVERT** if any one holds: NRPV_pass ≤ 0.8 × NRPV_control;
+  payers_pass ≤ payers_control − 3; annual buyers in the pass arm ≤ annual
+  buyers in control − 2; pass full-refund rate > 30% (with at least 3
+  passes sold).
+- **INCONCLUSIVE** otherwise. Extend enrolment once, by 8 weeks, under the
+  same rules, and do one combined read. If it is still inconclusive, today's
+  plans stay. The test must earn the change.
+- No early winner. The only reads before the end are the safety stops in
+  the plan (§8).
+
+Traps:
+- The client-side duplicate `pro_purchase_completed`
+  (`reason = 'activation_funnel'`, username `guest`) doubles revenue if the
+  reason filter is dropped (see `purchases`).
+- The achievement id `interview_pass` (src/data/config.js, "Hired!") is not
+  this product. The plan type is `pass_60d`. Never filter events on the
+  string `interview_pass`.
+- A pass row whose `plan_type` reads `quarterly` (90 days, auto-renew on)
+  is the webhook's amount fallback: $59 is ≥ $49. Treat it as an access bug
+  and a stop (plan §8), not as a quarterly sale.
+- Read the free-quota holdout (`fqArm`) before this test, never inside it.
+  The test starts after the founder's quota decision. If the free tier
+  changes during enrolment, read the parts before and after the change
+  separately and never pool them.
+- The static pages (homepage pricing, the company pages) show $29 / $99 in
+  both arms. That is a known confound and it is the same in both arms.
