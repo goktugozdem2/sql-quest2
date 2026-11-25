@@ -471,6 +471,43 @@ of the verifier and must never be rounded to `FLAT`.
   session cannot hold a 375-wide Chromium under ~700 MB renderer RSS after
   five challenge switches, drop the feature.
 
+### PostgreSQL mode — the opt-in switch (`postgresMode`, ready to flip)
+
+- **Claimed** 2026-11-25 · **Shipped** dark on merge; the flip is its own PR
+  and decision row · **Read** t0 + 28 days, t0 = the flip date.
+- **Change** the spike's toggle, made shippable. One PGlite instance per
+  session with a schema per challenge (switch 2–47 ms, was 429–490 ms; peak
+  renderer 739–762 MB, was 802–1,010 MB). The switch is shown only at 768 px+
+  with a fine pointer and no reported `deviceMemory` under 4 GB. SQLite stays
+  the default. Free and Pro alike, behind the existing quota and Hard gates.
+  `postgres_mode_*` events. Plan, walk and revert rule:
+  `docs/plans/postgres-mode-flip-2026-11-25.md`.
+- **Metric** `postgres_mode_use` (docs/agent/metrics.md, registered in this
+  PR before any event exists in production).
+- **Baseline** 0: there was no switch.
+  - Guardrail baseline: desktop/tablet `first_solve_10m` and
+    `open_to_first_run` in the 28 days before t0, read on the laptop at the
+    flip. Not read here: there is no production data in this run.
+- **Target** by t0 + 28:
+  - a pick rate of 5% or more of shown people, with 15 or more pickers;
+  - a submit rate of 40% or more of pickers;
+  - a failed-only rate of 10% or less.
+- **Falsification, written before the data:** a pick rate under 2% with 300+
+  shown, or fewer than 5 pickers in 28 days. Then keep it dark, and build no
+  phone release, no recorded solves and no Pro gate on it.
+- **Revert the same day** on any of these:
+  - a failed-only rate over 10% at 10+ pickers;
+  - 3+ `memory` failures, or a reported tab crash;
+  - a `mobile:` or touch row (the gate leaked);
+  - a SQLite solve lost after switching back.
+- **Confounds** none from an A/B, because this is not one and takes no cell.
+  The guardrail is a before/after read and says so.
+- **Open for A0/the founder:** the spike's drop line (375-wide, under ~700 MB
+  after five switches) is missed by 5–9% at the peak on macOS Chromium. That
+  cost is the instance itself, not the switching. This PR keeps phones and
+  tablets off and asks for the line to govern only a later phone or tablet
+  release.
+
 ### Content funnel: every content link carries a door, and the funnel is mailed per page (B2)
 
 - **Claimed** 2026-11-22 · **Shipped** on merge (build step + view + mail;

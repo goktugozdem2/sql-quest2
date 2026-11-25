@@ -10,21 +10,20 @@
 //   run(challenge, sql)         → {columns, rows, error, ms}
 //   submit(challenge, sql)      → {correct, user, expected, error, ms}
 //   timings()                   → {fetchMs, startMs, loadMs} of the cold start
-// Each challenge gets its OWN PGlite instance (never the app's shared sql.js
-// `db`), loaded once with that challenge's tables (challengeTablePlan); a
-// statement that writes runs inside a transaction that is rolled back, so the
-// next run starts from the same rows — what the app's SQLite path does by
-// reloading the dataset.
+// ONE PGlite instance per session (src/pg-mode/session.js, 2026-11-25; the
+// spike booted one per challenge), never the app's shared sql.js `db`. Each
+// challenge's tables (challengeTablePlan) load into their own schema, the
+// previous challenge's schema is dropped; a statement that writes runs inside
+// a transaction that is rolled back, so the next run starts from the same
+// rows — what the app's SQLite path does by reloading the dataset.
 import { challengeTablePlan } from '../utils/challenge-datasets.js';
 import { resultsMatch } from '../utils/grade.js';
-import {
-  pgLoadSql, pgDateColumns, pgExpectedSql, pgResultToSqlJs, splitStatements,
-  PG_SESSION_SQL, PG_TEXT_PARSED_OIDS,
-} from '../utils/pg-translate.js';
+import { pgDateColumns, pgExpectedSql, PG_TEXT_PARSED_OIDS } from '../utils/pg-translate.js';
+import { createPgSession } from './session.js';
 import { PGLITE_BASE, PGLITE_FILES } from '../utils/pg-cdn.js';
 import allow from '../data/postgres-allowlist.json';
 
-const timings = { fetchMs: null, startMs: null, loadMs: {} };
+const timings = { fetchMs: null, startMs: null };
 let libPromise = null;
 
 async function fetchChecked(file) {
@@ -58,25 +57,12 @@ function loadLib() {
 }
 
 const parsers = Object.fromEntries(PG_TEXT_PARSED_OIDS.map(o => [o, v => v]));
-const instances = new Map(); // challenge id → Promise<PGlite>
 
 function datasets() { return window.publicDatasetsData || {}; }
 
-// One live instance at a time: each PGlite instance holds its own WASM
-// memory (~300 MB of renderer RSS, measured in the spike), so moving to
-// another challenge closes the previous one.
-function closeOthers(keepId) {
-  for (const [id, p] of instances) {
-    if (id === keepId) continue;
-    instances.delete(id);
-    p.then(pg => pg.close()).catch(() => {});
-  }
-}
-
-function instanceFor(challenge) {
-  if (instances.has(challenge.id)) return instances.get(challenge.id);
-  closeOthers(challenge.id);
-  const p = (async () => {
+const session = createPgSession({
+  datasets,
+  create: async () => {
     const lib = await loadLib();
     const t0 = performance.now();
     const pg = await lib.PGlite.create({
@@ -85,38 +71,17 @@ function instanceFor(challenge) {
       fsBundle: lib.fsBundle,
       parsers,
     });
-    if (timings.startMs === null) timings.startMs = Math.round(performance.now() - t0);
-    const t1 = performance.now();
-    await pg.exec(PG_SESSION_SQL);
-    await pg.exec(pgLoadSql(challengeTablePlan(challenge, datasets()), datasets()));
-    timings.loadMs[challenge.id] = Math.round(performance.now() - t1);
+    timings.startMs = Math.round(performance.now() - t0);
     return pg;
-  })();
-  p.catch(() => instances.delete(challenge.id));
-  instances.set(challenge.id, p);
-  return p;
-}
+  },
+});
 
 const entryFor = challenge => (challenge && allow.challenges[challenge.id]) || null;
-
-async function exec(pg, sql) {
-  const stmts = splitStatements(sql);
-  const writes = stmts.some(s => !/^\s*(SELECT|WITH|VALUES|TABLE|EXPLAIN|SHOW)\b/i.test(s));
-  if (writes) await pg.exec('BEGIN');
-  try {
-    let res = null;
-    for (const s of stmts) res = await pg.query(s, [], { rowMode: 'array' });
-    return res ? pgResultToSqlJs(res) : { columns: [], values: [] };
-  } finally {
-    if (writes) await pg.exec('ROLLBACK').catch(() => {});
-  }
-}
 
 async function run(challenge, sql) {
   const t0 = performance.now();
   try {
-    const pg = await instanceFor(challenge);
-    const r = await exec(pg, sql);
+    const r = await session.exec(challenge, sql);
     return { columns: r.columns, rows: r.values, error: null, ms: Math.round(performance.now() - t0) };
   } catch (e) {
     return { columns: [], rows: [], error: String((e && e.message) || e), ms: Math.round(performance.now() - t0) };
@@ -141,6 +106,7 @@ window.SQLQuestPg = {
   available: challenge => !!entryFor(challenge),
   run,
   submit,
-  timings: () => JSON.parse(JSON.stringify(timings)),
-  liveInstances: () => instances.size,
+  timings: () => JSON.parse(JSON.stringify({ ...timings, loadMs: session.loadMs() })),
+  liveInstances: () => session.liveInstances(),
+  instancesCreated: () => session.instancesCreated(),
 };
