@@ -1,5 +1,7 @@
 # C5 — Revenue content (content that sells)
 
+> **Refocused 2026-11-25 (investor 90-day plan, A09): improve the seven money company pages** (Capital One, Revolut, Wise, Monzo, Amazon, Stripe, Snowflake) — sourced, current, a company-specific mock/CTA — before any new page. New pages only in small batches after search volume and buyer intent are verified.
+
 **Lane:** content whose job is to bring a person who will pay. That means
 interview-intent people with a company and a date. C5 makes and improves the
 pages they land on, and the path from that page to question 1 and to the Pro
