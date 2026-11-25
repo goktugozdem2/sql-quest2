@@ -621,11 +621,13 @@ window.FEATURE_FLAGS = {
     // `mobile_run_bar_assigned {arm}`. The `bar` arm pins the challenge's
     // Run / Submit bar to the bottom of the viewport below `md` (above the
     // keyboard where visualViewport is supported); `control` keeps today's
-    // sticky bar. Desktop is untouched in both arms. DARK until the
-    // orchestrator's decision row. src/utils/mobile-run-bar.js; ledger "Run
-    // stays on screen on phones"; metric open_to_first_run, mobile band.
+    // sticky bar. Desktop is untouched in both arms. Shipped off; ON at 50/50
+    // 2026-11-25 (orchestrator decision row, after an iOS Simulator +
+    // production walk on the bundle with #299's iOS fixes: PASS).
+    // src/utils/mobile-run-bar.js; ledger "Run stays on screen on phones";
+    // metric open_to_first_run, mobile band.
     // Plan: docs/plans/mobile-acquisition-2026-11-23.md §4.
-    mobileRunBar: false,
+    mobileRunBar: true,
 
     // ── The Debug question type (design PR #248, 2026-11-23) ──────────────
     // "An AI assistant wrote this for the task below. It returns the wrong

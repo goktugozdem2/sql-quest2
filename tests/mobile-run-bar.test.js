@@ -145,8 +145,8 @@ describe('keyboardOffset — sit above the keyboard where visualViewport is supp
 });
 
 describe('the app wiring (source guards)', () => {
-  it('the flag exists and ships off', () => {
-    expect(flags).toMatch(/\n\s+mobileRunBar: false,/);
+  it('the flag is an explicit boolean (ON 2026-11-25 by decision row; off is the revert)', () => {
+    expect(flags).toMatch(/\n\s+mobileRunBar: (true|false),/);
     expect(app).toContain("flagOn: ftbFlag('mobileRunBar')");
   });
   it('the decision hooks sit above the `if (showAuth)` and `if (!dbReady) return` early returns', () => {
