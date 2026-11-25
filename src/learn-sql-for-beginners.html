@@ -144,7 +144,7 @@
     .hero{position:relative;min-height:55vh;display:flex;align-items:center;overflow:hidden}.hbg{position:absolute;inset:0;background:radial-gradient(ellipse 80% 50% at 50% -20%,rgba(34,197,94,.08) 0%,transparent 60%)}.ho1{position:absolute;top:15%;left:8%;width:450px;height:450px;border-radius:50%;background:radial-gradient(circle,rgba(34,197,94,.06),transparent 70%);animation:float 8s ease-in-out infinite;filter:blur(50px)}.gt{background:linear-gradient(135deg,#7c3aed,#db2777);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-size:200% 200%;animation:gradient-shift 4s ease infinite}
     .hb{display:inline-flex;align-items:center;gap:8px;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);border-radius:100px;padding:6px 16px;margin-bottom:24px}.pd{width:8px;height:8px;border-radius:4px;background:#22c55e;animation:pulse-glow 2s infinite}
     /* Worries section: warmer styling, green accent (vs purple) */
-    .worries{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+    .worries{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(280px,100%),1fr));gap:14px}
     .worry{background:rgba(10,10,25,.55);border:1px solid rgba(34,197,94,.15);border-radius:14px;padding:24px 22px;transition:border-color .3s}.worry:hover{border-color:rgba(34,197,94,.4)}
     .worry-q{font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:800;color:#f1f5f9;margin-bottom:10px;line-height:1.3}
     .worry-q::before{content:'';display:inline-block;width:6px;height:6px;background:#22c55e;border-radius:50%;margin-right:10px;vertical-align:middle}
@@ -352,7 +352,7 @@
     <p style="font-size:16px;color:#94a3b8;margin-top:16px;max-width:640px;margin:16px auto 0;line-height:1.7;">Predictable plateaus come for everyone. Knowing they're coming makes them feel like progress, not failure.</p>
   </div>
 
-  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;max-width:980px;margin:0 auto;">
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(280px,100%),1fr));gap:14px;max-width:980px;margin:0 auto;">
     <div style="background:rgba(10,10,25,.55);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:24px 22px;">
       <p style="font-size:11px;color:#86efac;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;">Day 3-4</p>
       <h3 class="fd" style="font-size:16px;font-weight:800;color:#f1f5f9;margin-bottom:8px;">GROUP BY confusion</h3>

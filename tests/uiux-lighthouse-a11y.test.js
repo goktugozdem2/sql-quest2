@@ -43,9 +43,11 @@ describe('links in running text carry a non-colour cue', () => {
     expect(LINK_CUE_STYLE).not.toMatch(/color:/); // no colour enters the palette
   });
   it('rides with the footer line, once, and an older page gains it on the next build', () => {
-    const page = '<body><p>x <a href="/a/">a</a></p><footer class="ft"><a href="/b/">b</a></footer></body>';
+    const page = '<html><head><title>x</title></head><body><p>x <a href="/a/">a</a></p><footer class="ft"><a href="/b/">b</a></footer></body></html>';
     const once = withPartnerLink(page);
     expect(once.split('data-link-cue').length - 1).toBe(1);
+    // in <head>, never under <footer> (html-validate: a <style> there is not permitted content)
+    expect(once.indexOf(LINK_CUE_STYLE)).toBeLessThan(once.indexOf('</head>'));
     expect(withPartnerLink(once)).toBe(once);
     const older = once.replace(LINK_CUE_STYLE, '');
     expect(withPartnerLink(older)).toBe(once);

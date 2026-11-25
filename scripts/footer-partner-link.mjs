@@ -52,16 +52,43 @@ export const LINK_CUE_STYLE =
 // The product shell and its legacy alias are not marketing pages.
 const SKIP = new Set(['app.html', 'app/index.html']);
 
+// The page-wide rules go in <head>, never in the footer (html-validate,
+// 2026-11-24): a <style> under <footer> is not permitted content in HTML, and
+// it was the one error on 508 of the 515 built pages. Browsers applied it
+// anyway; the rules' text and their place at the END of <head> (after every
+// page style that sets .flk/.fnav or link decoration) keep the cascade they
+// had. The link cue (A4, 2026-11-25) rides in the same block, before the fit.
+const HEAD_STYLES = LINK_CUE_STYLE + FOOTER_FIT_STYLE;
+const HEAD_STYLE_RE = /<style data-(?:link-cue|footer-fit)>[\s\S]*?<\/style>/g;
+
+function withStylesInHead(html) {
+  const head = html.indexOf('</head>');
+  if (head === -1) return html;
+  const inHead = [...html.matchAll(HEAD_STYLE_RE)].find(m => m.index < head);
+  if (inHead) {
+    // Already in the head: keep its place (later build steps append their
+    // own <style> before </head>), refresh the block, drop every other copy.
+    const rest = html.slice(inHead.index).replace(HEAD_STYLE_RE, '');
+    return html.slice(0, inHead.index) + HEAD_STYLES + rest;
+  }
+  const out = html.replace(HEAD_STYLE_RE, '');
+  const i = out.indexOf('</head>');
+  return out.slice(0, i) + HEAD_STYLES + out.slice(i);
+}
+
 export function withPartnerLink(html) {
-  // A page built before this version carries an older line (or no footer
-  // fit, or no link cue): replace it in place, so a committed public/ page
-  // never keeps it.
-  const want = LINK_CUE_STYLE + FOOTER_FIT_STYLE + PARTNER_LINE;
-  const old = html.match(/(?:<style data-link-cue>[\s\S]*?<\/style>)?(?:<style data-footer-fit>[\s\S]*?<\/style>)?<p data-partner="datrick"[\s\S]*?<\/p>/);
-  if (old) return old[0] === want ? html : html.replace(old[0], want);
-  const i = html.lastIndexOf('</footer>');
-  if (i === -1) return html;
-  return html.slice(0, i) + want + html.slice(i);
+  // A page built before this version carries an older line (or the rules
+  // inside its footer, or no link cue): replace it in place, so a committed
+  // public/ page never keeps it.
+  const old = html.match(/<p data-partner="datrick"[\s\S]*?<\/p>/);
+  let out;
+  if (old) out = old[0] === PARTNER_LINE ? html : html.replace(old[0], PARTNER_LINE);
+  else {
+    const i = html.lastIndexOf('</footer>');
+    if (i === -1) return html;
+    out = html.slice(0, i) + PARTNER_LINE + html.slice(i);
+  }
+  return withStylesInHead(out);
 }
 
 function* htmlFiles(dir, rel = '') {

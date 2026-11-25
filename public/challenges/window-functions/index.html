@@ -45,7 +45,7 @@
     .topic-card li code{background:rgba(124,58,237,.1);color:#c084fc;padding:1px 5px;border-radius:3px;font-family:'JetBrains Mono',monospace;font-size:12px}
     .count{font-size:11px;color:#8b98ab;font-weight:600;margin:12px 0 8px;text-transform:uppercase;letter-spacing:.5px}
     .btn-practice{font-size:13px;color:#c084fc;border:1px solid rgba(124,58,237,.3);padding:7px 16px;border-radius:8px;display:inline-block;transition:all .2s;text-decoration:none;margin-top:4px}.btn-practice:hover{background:rgba(124,58,237,.12);text-decoration:none}
-    .q-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin:28px 0}
+    .q-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(280px,100%),1fr));gap:16px;margin:28px 0}
     .q-card{background:rgba(10,10,25,.6);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:22px;transition:border-color .3s}.q-card:hover{border-color:rgba(124,58,237,.35)}
     .tag{font-size:11px;font-weight:700;padding:3px 10px;border-radius:100px;display:inline-block;margin-bottom:12px}
     .tag.easy{background:rgba(124,196,255,.12);color:#7CC4FF}.tag.medium{background:rgba(255,176,32,.15);color:#FFB020}.tag.hard{background:rgba(255,107,107,.15);color:#FF6B6B}.tag.free{background:rgba(74,222,128,.12);color:#4ADE80}.tag.pro{background:rgba(255,255,255,.06);color:#94a3b8}
@@ -61,7 +61,42 @@
     .info-box{background:rgba(124,58,237,.07);border:1px solid rgba(124,58,237,.2);border-radius:14px;padding:20px 24px;margin:24px 0}
     .info-box p{margin:0;font-size:14px;color:#c4b5fd}
   </style>
-<style data-phone-fit>.btn.bo{min-height:44px}@media(max-width:600px){.ni a,.ni .bp,.nl .btn{min-height:44px}}</style></head>
+<style data-topic-learn>
+    .tl{--tl-surface:#16181F;--tl-surface2:#1F222B;--tl-border:#2A2E38;--tl-text:#F2F0EA;--tl-muted:#8A8E99;--tl-accent:#FFE34D;--tl-ink:#0E0F13}
+    .tl{text-align:left;scroll-margin-top:90px}.tl-in{margin-top:56px}
+    .tl h2{font-size:clamp(22px,2.8vw,30px);font-weight:800;margin-bottom:14px;text-align:left;color:var(--tl-text)}
+    .tl p{font-size:15px;line-height:1.75;color:#94a3b8;margin:0 0 14px;max-width:none;text-align:left}
+    .tl .tl-eyebrow{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--tl-muted);margin-bottom:8px}
+    .tl h3{font-size:17px;font-weight:700;color:var(--tl-text);margin:28px 0 10px;text-align:left}
+    .tl code{background:var(--tl-surface2);color:var(--tl-text);padding:1px 5px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:13px}
+    .tl pre{background:var(--tl-surface);border:1px solid var(--tl-border);border-radius:10px;padding:16px;margin:12px 0;overflow-x:auto;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.6;color:var(--tl-text)}
+    .tl pre code{background:none;padding:0;font-size:13px}
+    .tl-k{color:#7CC4FF;font-weight:700}.tl-s{color:#B5E48C}.tl-n{color:#FFB86C}.tl-c{color:#8A8E99;font-style:italic}
+    .tl-table{overflow-x:auto;margin:12px 0;border:1px solid var(--tl-border);border-radius:10px;max-width:100%}
+    .tl-table table{border-collapse:collapse;font-family:'JetBrains Mono',monospace;font-size:13px;min-width:100%}
+    .tl-table th,.tl-table td{padding:7px 12px;text-align:left;border-bottom:1px solid var(--tl-border);white-space:nowrap;color:var(--tl-text)}
+    .tl-table th{color:var(--tl-muted);font-weight:700;background:var(--tl-surface)}
+    .tl-table tr:last-child td{border-bottom:none}.tl-null{color:var(--tl-muted)!important;font-style:italic}
+    .tl-box{background:var(--tl-surface);border:1px solid var(--tl-border);border-radius:10px;padding:18px;margin:16px 0}
+    .tl-box p{margin-bottom:10px}
+    .tl-btn{font:inherit;font-size:14px;font-weight:700;color:var(--tl-text);background:transparent;border:1px solid var(--tl-border);border-radius:6px;padding:8px 14px;cursor:pointer;text-decoration:none;display:inline-block}
+    .tl-btn:hover{border-color:var(--tl-muted);text-decoration:none}
+    .tl-cta{font-size:15px;font-weight:800;color:var(--tl-ink);background:var(--tl-accent);border:none;border-radius:6px;padding:11px 20px;display:inline-block;text-decoration:none}
+    .tl-cta:hover{text-decoration:none;filter:brightness(1.05)}
+    .tl-editor{width:100%;min-height:150px;background:var(--tl-surface2);color:var(--tl-text);border:1px solid var(--tl-border);border-radius:10px;padding:14px;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.6;resize:vertical}
+    .tl [hidden]{display:none!important}.tl-editor:focus{outline:2px solid #7CC4FF;outline-offset:1px}
+    .tl-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:10px 0}
+    .tl-status{font-size:13px;color:var(--tl-muted)}.tl-err{color:#FF6B6B}
+    .tl-ladder{list-style:none;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin:18px 0;padding:0}
+    .tl-step{background:var(--tl-surface);border:1px solid var(--tl-border);border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:10px}
+    .tl-step h3{margin:0;font-size:16px}.tl-step h3 a{color:var(--tl-text)}
+    .tl-step .tl-step-n{font-size:12px;color:var(--tl-muted);font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+    .tl-step .tl-go{margin-top:auto}
+    .tl-next{list-style:none;padding:0;margin:14px 0}
+    .tl-next li{padding:12px 0;border-bottom:1px solid var(--tl-border);font-size:15px;line-height:1.7;color:#94a3b8}
+    .tl-next li:last-child{border-bottom:none}.tl-next a{font-weight:700}
+  </style>
+<style data-link-cue>:is(p,li,dd,td,blockquote,figcaption)>a:not([class]):not(nav *):not(header *),footer.ft>a:not([class]){text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}</style><style data-footer-fit>@media(max-width:600px){.flk{row-gap:0}.flk a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;padding:0 4px}.fnav a{display:flex;align-items:center;min-height:44px;padding:0}}</style><style data-phone-fit>.btn.bo{min-height:44px}@media(max-width:600px){.ni a,.ni .bp,.nl .btn{min-height:44px}}</style></head>
 <body>
 <nav class="nav"><div class="ni">
   <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;">
@@ -75,9 +110,169 @@
 <div class="hero-section">
   <p class="breadcrumb"><a href="/">SQL Quest</a> › <a href="/sql-exercises/">SQL Exercises</a> › Window Functions</p>
   <h1 class="fd">SQL Window Functions Practice<br><span style="background:linear-gradient(135deg,#c084fc,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">70 Challenges</span></h1>
-  <p class="hero-sub">70 hands-on challenges counted from the live bank — 5 Easy, 15 Medium, 50 Hard — covering every window function pattern: ranking, LAG/LEAD, running totals and frame clauses. Cards marked Free (including the 6 Hard previews) are open to free accounts — your first 10 challenge solves are free — and Pro opens every card. The most-tested topic in FAANG SQL interviews. Real datasets. AI tutoring.</p>
+  <p class="hero-sub">70 hands-on challenges counted from the live bank — 5 Easy, 15 Medium, 50 Hard — covering every window function pattern: ranking, LAG/LEAD, running totals and frame clauses. Cards marked Free (including the 6 Hard previews) are open to free accounts — your first 10 challenge solves are free — and Pro opens every card. Real datasets. AI tutoring.</p>
   <a href="/app/?challenge=170&amp;src=challenges-window-functions" class="cta-main">Start Practicing Free →</a>
 </div>
+
+<!-- topic-learn:start -->
+<section class="content tl" id="learn" data-topic-learn="window-functions">
+  <p class="tl-eyebrow">Learn it in 3 minutes</p>
+  <h2 class="fd">Window functions in plain words</h2>
+  <p>A window function computes something across a group of rows (a total, a rank, the previous value) and writes the answer onto every row. <code>GROUP BY</code> folds each group into one row; a window function keeps every row and adds a column.</p>
+  <p><code>PARTITION BY</code> says which rows belong together (the window restarts for each group). <code>ORDER BY</code> inside <code>OVER</code> says in what order to walk them, which is what makes a running total or a "previous row" possible.</p>
+  <h3>The syntax</h3>
+  <pre><code>function_name(column) <span class="tl-k">OVER</span> (
+  <span class="tl-k">PARTITION</span> <span class="tl-k">BY</span> group_column  <span class="tl-c">-- optional: restart for each group</span>
+  <span class="tl-k">ORDER</span> <span class="tl-k">BY</span> sort_column       <span class="tl-c">-- optional: the order inside the group</span>
+)</code></pre>
+  <h3>A worked example</h3>
+  <p>Weekly running distances for two runners. The table <code>runs</code>:</p>
+  <div class="tl-table"><table><thead><tr><th>runner</th><th>week</th><th>km</th></tr></thead><tbody><tr><td>Ana</td><td>1</td><td>5</td></tr><tr><td>Ana</td><td>2</td><td>8</td></tr><tr><td>Ana</td><td>3</td><td>6</td></tr><tr><td>Ben</td><td>1</td><td>10</td></tr><tr><td>Ben</td><td>2</td><td>7</td></tr></tbody></table></div>
+  <p>For each runner, the distance so far and the change from the week before.</p>
+  <div class="tl-box" data-tl-example data-setup="CREATE TABLE runs (runner TEXT, week INTEGER, km INTEGER);
+INSERT INTO runs VALUES ('Ana', 1, 5), ('Ana', 2, 8), ('Ana', 3, 6), ('Ben', 1, 10), ('Ben', 2, 7);">
+    <pre><code><span class="tl-k">SELECT</span> runner, week, km,
+       <span class="tl-k">SUM</span>(km) <span class="tl-k">OVER</span> (<span class="tl-k">PARTITION</span> <span class="tl-k">BY</span> runner <span class="tl-k">ORDER</span> <span class="tl-k">BY</span> week) <span class="tl-k">AS</span> km_so_far,
+       km - <span class="tl-k">LAG</span>(km) <span class="tl-k">OVER</span> (<span class="tl-k">PARTITION</span> <span class="tl-k">BY</span> runner <span class="tl-k">ORDER</span> <span class="tl-k">BY</span> week) <span class="tl-k">AS</span> change
+<span class="tl-k">FROM</span> runs
+<span class="tl-k">ORDER</span> <span class="tl-k">BY</span> runner, week;</code></pre>
+    <p class="tl-status">Result:</p>
+    <div class="tl-table"><table><thead><tr><th>runner</th><th>week</th><th>km</th><th>km_so_far</th><th>change</th></tr></thead><tbody><tr><td>Ana</td><td>1</td><td>5</td><td>5</td><td class="tl-null">NULL</td></tr><tr><td>Ana</td><td>2</td><td>8</td><td>13</td><td>3</td></tr><tr><td>Ana</td><td>3</td><td>6</td><td>19</td><td>-2</td></tr><tr><td>Ben</td><td>1</td><td>10</td><td>10</td><td class="tl-null">NULL</td></tr><tr><td>Ben</td><td>2</td><td>7</td><td>17</td><td>-3</td></tr></tbody></table></div>
+    <p>Every input row is still there. <code>km_so_far</code> restarts at Ben because of <code>PARTITION BY runner</code>, and <code>change</code> is NULL on each runner's first week: <code>LAG</code> has no earlier row to look at.</p>
+    <button type="button" class="tl-btn" data-tl-open>Edit and run this query</button>
+    <div data-tl-panel hidden>
+      <textarea class="tl-editor" spellcheck="false" aria-label="SQL query">SELECT runner, week, km,
+       SUM(km) OVER (PARTITION BY runner ORDER BY week) AS km_so_far,
+       km - LAG(km) OVER (PARTITION BY runner ORDER BY week) AS change
+FROM runs
+ORDER BY runner, week;</textarea>
+      <div class="tl-row">
+        <button type="button" class="tl-btn" data-tl-run data-track="learn_example_run" data-track-topic="window-functions">Run</button>
+        <button type="button" class="tl-btn" data-tl-reset>Reset</button>
+        <span class="tl-status" data-tl-status aria-live="polite">Runs in your browser on the table above.</span>
+      </div>
+      <div data-tl-out></div>
+    </div>
+  </div>
+  <h3>A common mistake: filtering on a window function in WHERE</h3>
+  <p><code>WHERE ROW_NUMBER() OVER (…) = 1</code> fails with "misuse of window function": <code>WHERE</code> runs before any window is computed. Compute the window in a CTE (or a subquery) and filter on it in the outer query.</p>
+      <pre><code><span class="tl-k">WITH</span> ranked <span class="tl-k">AS</span> (
+  <span class="tl-k">SELECT</span> runner, week, km,
+         <span class="tl-k">ROW_NUMBER</span>() <span class="tl-k">OVER</span> (<span class="tl-k">PARTITION</span> <span class="tl-k">BY</span> runner <span class="tl-k">ORDER</span> <span class="tl-k">BY</span> km <span class="tl-k">DESC</span>) <span class="tl-k">AS</span> rn
+  <span class="tl-k">FROM</span> runs
+)
+<span class="tl-k">SELECT</span> runner, week, km
+<span class="tl-k">FROM</span> ranked
+<span class="tl-k">WHERE</span> rn = <span class="tl-n">1</span>
+<span class="tl-k">ORDER</span> <span class="tl-k">BY</span> runner;</code></pre>
+      <div class="tl-table"><table><thead><tr><th>runner</th><th>week</th><th>km</th></tr></thead><tbody><tr><td>Ana</td><td>2</td><td>8</td></tr><tr><td>Ben</td><td>1</td><td>10</td></tr></tbody></table></div>
+  <p><a href="/challenges/ranking-functions/" data-track="learn_next_step" data-track-target="mistake" data-track-topic="window-functions">Practise rank-then-filter on the ranking functions page →</a></p>
+</section>
+<section class="content tl" id="practice-ladder" style="padding-top:0">
+  <p class="tl-eyebrow">Now try it</p>
+  <h2 class="fd">Three steps, from Easy to Hard</h2>
+  <p>Real questions from the bank, in the order the learning path takes them. Each opens in the browser with the dataset loaded.</p>
+  <ol class="tl-ladder">
+      <li class="tl-step" data-ladder-step="easy" data-challenge-id="168">
+        <span class="tl-step-n">Step 1</span>
+        <div><span class="tag easy">Easy</span> <span class="tag free">Free</span></div>
+        <h3><a href="/questions/your-first-window-function/">Your First Window Function</a></h3>
+        <a href="/app/?challenge=168&amp;src=topic-learn-window-functions" class="tl-cta tl-go" data-track="learn_ladder_click" data-track-step="easy" data-track-challenge="168" data-track-topic="window-functions">Start with this one →</a>
+      </li>
+      <li class="tl-step" data-ladder-step="medium" data-challenge-id="112">
+        <span class="tl-step-n">Step 2</span>
+        <div><span class="tag medium">Medium</span> <span class="tag free">Free</span></div>
+        <h3><a href="/questions/window-functions-row-number/">Window Functions: ROW_NUMBER</a></h3>
+        <a href="/app/?challenge=112&amp;src=topic-learn-window-functions" class="tl-btn tl-go" data-track="learn_ladder_click" data-track-step="medium" data-track-challenge="112" data-track-topic="window-functions">Solve it in the browser →</a>
+      </li>
+      <li class="tl-step" data-ladder-step="hard" data-challenge-id="23">
+        <span class="tl-step-n">Step 3</span>
+        <div><span class="tag hard">Hard</span> <span class="tag free">Free preview</span></div>
+        <h3><a href="/questions/salary-rank-within-department/">Salary Rank Within Department</a></h3>
+        <a href="/app/?challenge=23&amp;src=topic-learn-window-functions" class="tl-btn tl-go" data-track="learn_ladder_click" data-track-step="hard" data-track-challenge="23" data-track-topic="window-functions">Solve it in the browser →</a>
+      </li>
+  </ol>
+</section>
+<section class="content tl" id="next-step" style="padding-top:0">
+  <p class="tl-eyebrow">The next step</p>
+  <h2 class="fd">From one topic to the interview</h2>
+  <ul class="tl-next">
+    <li data-next="readiness"><a href="/sql-interview-readiness-test/" data-track="learn_next_step" data-track-target="readiness" data-track-topic="window-functions">Take the SQL interview readiness test →</a> Ten questions, no signup: it scores all nine skills and names the weakest.</li>
+    <li data-next="companies">Company sets where window function questions carry the most weight: <a href="/nvidia-sql-interview/" data-track="learn_next_step" data-track-target="company-nvidia" data-track-topic="window-functions">NVIDIA</a>, <a href="/openai-sql-interview/" data-track="learn_next_step" data-track-target="company-openai" data-track-topic="window-functions">OpenAI</a>, <a href="/anthropic-sql-interview/" data-track="learn_next_step" data-track-target="company-anthropic" data-track-topic="window-functions">Anthropic</a>. Each page lists the set and the topics it leans on.</li>
+    <li data-next="free-tier">10 free challenge solves, plus the lessons, warm-ups and the daily challenge — Pro opens all 300+. <a href="/#pricing" data-track="learn_next_step" data-track-target="pricing" data-track-topic="window-functions">See the plans →</a></li>
+  </ul>
+</section>
+<script>
+(function () {
+  var SDK = 'https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js';
+  var loading = null;
+  function sdk() {
+    if (loading) return loading;
+    loading = new Promise(function (ok, fail) {
+      if (window.initSqlJs) return ok(window.initSqlJs);
+      var s = document.createElement('script');
+      s.src = SDK; s.async = true; s.crossOrigin = 'anonymous';
+      s.onload = function () { ok(window.initSqlJs); };
+      s.onerror = function () { loading = null; fail(new Error('Could not load the SQL engine. Check the connection and try again.')); };
+      document.head.appendChild(s);
+    }).then(function (init) {
+      return init({ locateFile: function (f) { return SDK.replace(/[^/]*$/, '') + f; } });
+    });
+    return loading;
+  }
+  function cell(v) {
+    var td = document.createElement('td');
+    if (v === null) { td.className = 'tl-null'; td.textContent = 'NULL'; } else td.textContent = String(v);
+    return td;
+  }
+  function render(out, res) {
+    out.innerHTML = '';
+    if (!res.length) { out.innerHTML = '<p class="tl-status">The query ran and returned no rows.</p>'; return; }
+    var r = res[res.length - 1];
+    var wrap = document.createElement('div'); wrap.className = 'tl-table';
+    var t = document.createElement('table');
+    var hr = document.createElement('tr');
+    r.columns.forEach(function (c) { var th = document.createElement('th'); th.textContent = c; hr.appendChild(th); });
+    var th = document.createElement('thead'); th.appendChild(hr); t.appendChild(th);
+    var tb = document.createElement('tbody');
+    r.values.forEach(function (row) { var tr = document.createElement('tr'); row.forEach(function (v) { tr.appendChild(cell(v)); }); tb.appendChild(tr); });
+    t.appendChild(tb); wrap.appendChild(t); out.appendChild(wrap);
+  }
+  document.querySelectorAll('[data-tl-example]').forEach(function (box) {
+    var open = box.querySelector('[data-tl-open]');
+    var panel = box.querySelector('[data-tl-panel]');
+    var ed = box.querySelector('textarea');
+    var run = box.querySelector('[data-tl-run]');
+    var reset = box.querySelector('[data-tl-reset]');
+    var status = box.querySelector('[data-tl-status]');
+    var out = box.querySelector('[data-tl-out]');
+    var setup = box.getAttribute('data-setup');
+    var original = ed.value;
+    open.addEventListener('click', function () {
+      panel.hidden = false; open.hidden = true; ed.focus();
+      sdk().catch(function () {});
+    });
+    run.addEventListener('click', function () {
+      status.className = 'tl-status'; status.textContent = 'Running…';
+      sdk().then(function (SQL) {
+        var db = new SQL.Database();
+        try {
+          db.run(setup);
+          render(out, db.exec(ed.value));
+          status.textContent = 'Ran on the table above. Change the query and run it again.';
+        } finally { db.close(); }
+      }).catch(function (e) {
+        status.className = 'tl-status tl-err';
+        status.textContent = (e && e.message) ? e.message : String(e);
+      });
+    });
+    reset.addEventListener('click', function () {
+      ed.value = original; out.innerHTML = ''; status.className = 'tl-status'; status.textContent = 'Back to the original query.';
+    });
+  });
+})();
+</script>
+<!-- topic-learn:end -->
 
 <section class="content">
   <h2 class="fd">What are SQL window functions?</h2>
@@ -507,16 +702,19 @@
   <div class="other-topics">
     <a href="/challenges/joins/" class="topic-link"><strong>SQL Joins →</strong><span>INNER, LEFT, self-joins, anti-joins. 92 challenges.</span></a>
     <a href="/challenges/cte/" class="topic-link"><strong>CTEs →</strong><span>WITH clauses, chained and recursive. 69 challenges.</span></a>
-    <a href="/challenges/subqueries/" class="topic-link"><strong>Subqueries →</strong><span>Scalar, IN, correlated, EXISTS, derived tables. 60 challenges.</span></a>
+    <a href="/challenges/subqueries/" class="topic-link"><strong>Subqueries →</strong><span>Scalar, IN, correlated, EXISTS, derived tables. 63 challenges.</span></a>
     <a href="/challenges/case-when/" class="topic-link"><strong>CASE WHEN →</strong><span>Labels, buckets, conditional aggregation. 54 challenges.</span></a>
     <a href="/sql-exercises/" class="topic-link"><strong>Aggregation →</strong><span>SUM, COUNT, AVG, GROUP BY, HAVING.</span></a>
   </div>
 </section>
+<!-- related-links:start -->
+<p data-crosslink="related" style="max-width:760px;margin:32px auto;padding:0 20px;font-size:14px;line-height:1.8;color:#94a3b8;">Preparing for an analyst interview: <a href="/sql-interview-questions-data-analyst/" style="color:#c084fc;text-decoration:none;font-weight:600;">SQL interview questions for data analysts</a>.</p>
+<!-- related-links:end -->
 </main>
 <footer class="ft">
   <p><strong>SQL Quest</strong> — Master SQL through hands-on practice. <a href="/">Home</a> · <a href="/blog/faang-sql-interview-guide/">FAANG SQL Guide</a> · <a href="/sql-exercises/">SQL Practice Questions</a> · <a href="/best-sql-practice-sites/">Best SQL Practice Sites</a></p>
   <p style="margin-top:8px;font-size:12px;">© 2026 SQL Quest</p>
-<style data-link-cue>:is(p,li,dd,td,blockquote,figcaption)>a:not([class]):not(nav *):not(header *),footer.ft>a:not([class]){text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}</style><style data-footer-fit>@media(max-width:600px){.flk{row-gap:0}.flk a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;padding:0 4px}.fnav a{display:flex;align-items:center;min-height:44px;padding:0}}</style><p data-partner="datrick" style="margin:18px auto 0;max-width:1000px;padding:0 24px;font-size:12px;color:#8A8E99;text-align:center;">SQL Quest is built by Datrick, Inc. · <a href="https://datrick.com/sql-server-to-postgresql-migration" style="color:inherit;text-decoration:underline;">SQL Server to PostgreSQL migration</a></p></footer>
+<p data-partner="datrick" style="margin:18px auto 0;max-width:1000px;padding:0 24px;font-size:12px;color:#8A8E99;text-align:center;">SQL Quest is built by Datrick, Inc. · <a href="https://datrick.com/sql-server-to-postgresql-migration" style="color:inherit;text-decoration:underline;">SQL Server to PostgreSQL migration</a></p></footer>
   <script defer src="/track.js"></script>
 </body>
 </html>

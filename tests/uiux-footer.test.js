@@ -7,7 +7,7 @@
 import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
-import { withPartnerLink, PARTNER_LINE, FOOTER_FIT_STYLE, FOOTER_MUTED } from '../scripts/footer-partner-link.mjs';
+import { withPartnerLink, PARTNER_LINE, FOOTER_FIT_STYLE, FOOTER_MUTED, LINK_CUE_STYLE } from '../scripts/footer-partner-link.mjs';
 
 // WCAG 2 contrast, inline so this guard stands without the audit harness.
 const lum = (hex) => { const n = parseInt(hex.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255].map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }).reduce((a, v, i) => a + v * [0.2126, 0.7152, 0.0722][i], 0); };
@@ -36,9 +36,21 @@ describe('footer links are 44 px tap targets on a phone', () => {
     expect(FOOTER_FIT_STYLE).toMatch(/\.flk a\{[^}]*min-height:44px[^}]*min-width:44px/);
     expect(FOOTER_FIT_STYLE).toMatch(/\.fnav a\{[^}]*min-height:44px/);
   });
-  it('a built company page carries it', () => {
+  it('a built company page carries it — the rule in <head>, the line in the footer', () => {
     const built = fs.readFileSync(path.join(ROOT, 'public/wise-sql-interview/index.html'), 'utf8');
-    expect(built).toContain(FOOTER_FIT_STYLE + PARTNER_LINE);
+    const head = built.indexOf('</head>');
+    expect(built.indexOf(FOOTER_FIT_STYLE)).toBeGreaterThan(-1);
+    expect(built.indexOf(FOOTER_FIT_STYLE), 'a <style> under <footer> is not permitted content (html-validate)').toBeLessThan(head);
+    expect(built.split('data-footer-fit').length - 1).toBe(1);
+    expect(built.lastIndexOf(PARTNER_LINE)).toBeGreaterThan(built.lastIndexOf('<footer'));
+  });
+  it('moves a fit rule from an older footer into <head>, once, and is idempotent', () => {
+    const old = `<html><head><style>.flk a{color:red}</style></head><body><footer>x${FOOTER_FIT_STYLE}${PARTNER_LINE}</footer></body></html>`;
+    const out = withPartnerLink(old);
+    expect(out).toBe(`<html><head><style>.flk a{color:red}</style>${LINK_CUE_STYLE}${FOOTER_FIT_STYLE}</head><body><footer>x${PARTNER_LINE}</footer></body></html>`);
+    // a later build step appends its own style before </head>: the rule keeps its place
+    const later = out.replace('</head>', '<style data-phone-fit>p{}</style></head>');
+    expect(withPartnerLink(later)).toBe(later);
   });
 });
 

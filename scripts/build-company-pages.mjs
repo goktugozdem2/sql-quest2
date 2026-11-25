@@ -39,6 +39,7 @@ import { questionSlugs, loadQuestionBank } from './question-slugs.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
+import { withFirstScreen } from './company-first-screen.mjs';
 import { COMPANY_INTERVIEWS, NEW_COMPANY_TAGS, SOURCED_FORMATS } from '../src/data/company-interviews.js';
 import { SKILL_TO_RADAR, mapTopicToSkill, CANONICAL_SKILLS } from '../src/utils/skill-calc.js';
 import { isFreePreview } from '../src/utils/challenge-order.js';
@@ -388,13 +389,17 @@ export function formatSection(d, { accessed, role = null } = {}) {
   }).join('');
   const sentence = `Sources: ${srcKeys.map(k => `${d.sources[k][0]} (${d.sources[k][2]})`).join('; ')}.`;
   const direct = srcKeys.some(k => d.sources[k][3] === 'direct');
+  // The table scrolls inside its own wrapper (inline, not a page .tbl rule):
+  // this block is injected into hand-written pages that carry no .tbl CSS, and
+  // its nowrap row headers ran /shopify-sql-interview/ 61 px past a 320 px
+  // phone (A4, issue #308).
   // "(sourced)" in the heading itself: this section exists only on a page in
   // SOURCED_SLUGS, and the label says why (docs/plans/company-sourced-vs-topical-2026-09-21.md).
   return `<section id="format" data-section="format-sourced" style="border-top:1px solid rgba(255,255,255,.04);"><div class="sec">
   <span class="sl">How the interview runs (sourced)</span>
   <h2 class="st fd">The ${esc(d.name)} SQL interview, as candidates report it</h2>
   <p style="font-size:15px;color:#94a3b8;margin:14px 0 22px;max-width:760px;line-height:1.75;">${d.publishes ? esc(d.publishes) : `${esc(d.name)} does not publish the format.`} Each row is what ${d.publishes ? `${esc(d.name)}, candidates and prep guides have` : 'candidates and prep guides have'} described ${direct ? '— publicly, or to us directly —' : 'publicly,'} with its source; where sources disagree, the row says so.${direct ? ' A source marked as told to us is one candidate&#39;s account, by email; their name is withheld at their request.' : ''} Formats change — treat every specific as reported, not official.${role ? ` The sources below describe ${esc(role)}; other teams at ${esc(d.name)} may run a different loop.` : ''}</p>
-  <div class="tbl"><table>
+  <div class="tbl" style="overflow-x:auto;-webkit-overflow-scrolling:touch;"><table>
     <tbody>
 ${rows}
     </tbody>
@@ -510,7 +515,7 @@ ${ld}
     .nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(6,6,15,.92);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06)}.ni{max-width:1200px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}.nl{display:flex;align-items:center;gap:22px}.nl a:not(.btn):not(.bp){color:#94a3b8;text-decoration:none;font-size:14px;font-weight:500}.nl a:not(.btn):not(.bp):hover{color:#e2e8f0}
     .btn{display:inline-flex;align-items:center;gap:8px;border-radius:12px;font-weight:700;cursor:pointer;text-decoration:none;border:none;transition:transform .15s ease-out}.bp{padding:13px 28px;font-size:15px;background:#FFE34D;color:#0E0F13}.bp:hover{transform:translateY(-1px)}.bo{padding:12px 24px;font-size:14px;background:transparent;color:#c084fc;border:1px solid rgba(124,58,237,.4)}
     .sec{max-width:1100px;margin:0 auto;padding:56px 24px}.sl{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#8b98ab}.st{font-size:clamp(26px,3.2vw,40px);font-weight:800;margin-top:10px;line-height:1.15}
-    .qg{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}.qc{background:rgba(10,10,25,.5);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:18px}.qc:hover{border-color:rgba(192,132,252,.35)}
+    .qg{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:14px}.qc{background:rgba(10,10,25,.5);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:18px}.qc:hover{border-color:rgba(192,132,252,.35)}
     .db{font-size:12px;font-weight:700;padding:3px 10px;border-radius:100px}.dh{background:rgba(192,132,252,.14);color:#c084fc}.dm{background:rgba(255,227,77,.12);color:#FFE34D}.de{background:rgba(34,197,94,.15);color:#22c55e}.dp{background:rgba(255,255,255,.08);color:#94a3b8}.tt{font-size:12px;padding:3px 10px;border-radius:100px;background:rgba(124,58,237,.1);color:#a78bfa;font-weight:600}
     .tg{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}.tc{background:rgba(10,10,25,.6);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:20px 18px}
     .tbl{overflow-x:auto;border:1px solid rgba(255,255,255,.08);border-radius:14px;background:rgba(10,10,25,.55)}.tbl table{width:100%;border-collapse:collapse;min-width:560px}
@@ -544,7 +549,7 @@ ${formatSection(d, { accessed: d.accessed || '13 Sep 2026' })}
 <section id="topics" style="border-top:1px solid rgba(255,255,255,.04);"><div class="sec">
   <span class="sl">The SQL that comes up</span>
   <h2 class="st fd">What ${esc(d.name)} SQL questions test</h2>
-  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:28px;margin-top:22px;">
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:28px;margin-top:22px;">
     <div>
       <p style="font-size:14px;color:#e2e8f0;font-weight:700;margin-bottom:12px;">${esc(d.topicsLabel || 'Reported most often, in order')}</p>
       <ul style="list-style:none;font-size:15px;color:#94a3b8;line-height:1.6;">${reported}</ul>
@@ -732,4 +737,14 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   console.log(`[company-pages] shared modules on ${injected.length} older pages`);
   const prov = injectProvenance();
   console.log(`[company-pages] provenance note on ${injected.length + prov.length} pages (${SOURCED_SLUGS.size} sourced)`);
+  // The first-screen block (scripts/company-first-screen.mjs), last: it sits
+  // right under the hero, ahead of the provenance note.
+  const fsBank = loadBank();
+  for (const [key, d] of Object.entries(COMPANY_INTERVIEWS)) {
+    const file = path.join(ROOT, 'src', `${key}-sql-interview.html`);
+    if (!fs.existsSync(file)) continue;
+    const before = fs.readFileSync(file, 'utf8');
+    const after = withFirstScreen(before, key, facts(fsBank, d.name));
+    if (after !== before) { fs.writeFileSync(file, after); console.log(`[company-pages] first screen on ${key}`); }
+  }
 }
