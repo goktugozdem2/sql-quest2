@@ -641,6 +641,19 @@ window.FEATURE_FLAGS = {
     // its own decision row. ON 2026-11-23 (orchestrator-decisions.md).
     debugQuestions: true,
 
+    // ── The Coach's Debug door (orchestrator 2026-11-25, decision row in PR #372) ──
+    // One card near the top of the Coach (under "Your plan", above the
+    // roadmap; the goal next-step slot measured ~2,400-2,750 px down), "Fix a query an AI
+    // wrote": its button opens the next unsolved Debug item the person may
+    // open (curriculum order; through openChallenge, so the free quota and
+    // the Pro locks apply exactly), "See all N" opens Practice with the Debug
+    // chip on. Shown only with debugQuestions on, >= 1 solve, an unsolved
+    // Debug item, and not for a hired person (First 90 Days). A door, not a
+    // funnel-step A/B, so it ships ON. src/utils/coach-debug-door.js; events
+    // coach_debug_door_shown / coach_debug_door_clicked; metric
+    // coach_debug_door; ledger "the Coach's Debug door".
+    coachDebugDoor: true,
+
     // Run is not Submit (2026-11-23, src/utils/run-submit-nudge.js): an A/B
     // by aid (run_submit_nudge_v1, murmur-finalised hash). A person with ZERO
     // solves whose Run returns rows on an unsolved challenge is assigned once

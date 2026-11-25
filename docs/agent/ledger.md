@@ -27,6 +27,61 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### the Coach's Debug door (`coachDebugDoor`) — **OPEN**
+
+- **Claimed** 2026-11-25 · **Shipped** ON on merge (orchestrator decision,
+  delegated by the founder; decision row in PR #372: a door, not a
+  funnel-step A/B) · **Read** D + 28 days, where D is this PR's deploy date
+  (the same D that restarts the Debug, DDL/DML 325–329 / 355–359 and Stripe
+  330 clocks below).
+- **Change** One card on the Coach tab, "Fix a query an AI wrote", with one
+  line of why and two actions: **Fix it** opens the next unsolved Debug item
+  (331–342) in curriculum order (`pickNextChallengeWith`, never raw order),
+  preferring one the person may open; it always goes through
+  `openChallenge`, so the free quota and the Hard/Pro lock apply exactly
+  (a locked pick says "opens with Pro" and meets the usual wall, labelled
+  `debug_lock`). **See all 12** opens Practice with the Debug chip on (the
+  count is the bank's). Shown only with `debugQuestions` on, ≥ 1 challenge
+  solve, at least one Debug item unsolved, and never for a hired person
+  (First 90 Days owns their Coach). Secondary styling, no accent.
+  **Placement (deviation, measured):** the decision said "under the
+  next-step card". In a hermetic render at 1024x900 that slot sat at
+  2,369 px (goal) / 2,752 px (no goal) — below the 1,354 px roadmap and
+  Focus Tracks, deeper than the Practice chip that got 0 clicks at ~940 px.
+  The card sits right under "Your plan", above the roadmap, at 511 px.
+- **Why** 11-25 investigation: the Debug set and the other new items got
+  ~0 opens because no door showed them (`coach_tab_viewed` 1,027 people in
+  14 days vs `nav_practice` 21; the chip 0 clicks).
+- **Metric** `coach_debug_door` (`docs/agent/metrics.md`): people shown →
+  clicked (Fix it) → first run on that item → solved it, people by
+  `((metadata #>> '{}')::jsonb)->>'aid'`. Defined in its own docs PR per
+  rule 6b — until it merges the verdict would be `UNDEFINED`. Events
+  `coach_debug_door_shown {challengeId, locked, solvedInSet, setSize}` (once
+  per browser session per UTC day), `coach_debug_door_clicked {challengeId,
+  target: 'item' | 'see_all', locked}`; the open carries
+  `challenge_opened.openedFrom = 'coach_debug_door'`.
+- **Baseline** 0: the door did not exist. Context, not a baseline: Debug
+  openers from every other door were ~0 from the 11-23 flip to 11-25.
+- **Target** In 28 days: ≥ 150 people shown; shown → clicked ≥ 8% of
+  people; ≥ 40 people open a Debug item from the door (the Debug claim's
+  own openers target, reached through this door alone); of door openers
+  on an unlocked item, ≥ 40% solve it.
+- **Falsification, written before the data:** with ≥ 150 people shown,
+  shown → clicked under 3% → a card on the Coach does not pull either: the
+  problem is the item, not the door. Stop adding doors, write it down, and
+  leave the Debug claim's "nobody wants it" branch to decide the set. Under
+  150 shown → `UNREADABLE` (the Coach audience with ≥ 1 solve was smaller
+  than assumed; say so). Door solve-through under 20% on unlocked items →
+  read `challenge_error_pattern` on 331–342 before anything else.
+- **Guardrail** `first_solve_10m` and the next-step card's own
+  `coach_step_started` rate, before vs after D: the door sits above the
+  roadmap and the next-step card and must not take their clicks. A fall of
+  more than 5 points in either → move the door under the next-step card
+  and re-read.
+- **Excluded from every read:** aid `363dfb2bc1314757acc88c8438c4d2ea` (the
+  11-25 investigation walk, Europe/Istanbul, desktop 1024x768). The
+  hermetic render of this PR wrote nothing (all writes intercepted).
+
 ### /sql-interview-questions-data-analyst/ on Google — the /sql-exercises/ link push, next page (C1)
 
 - **Claimed** 2026-11-23 · **Shipped** on merge (static pages, no flag) ·
@@ -369,6 +424,19 @@ of the verifier and must never be rounded to `FLAT`.
   it down. Solve-through more than 20 points below the band → the format is
   broken: fix the UX before adding items.
 
+- **Amended 2026-11-25 (orchestrator, decision row in PR #372): the clock
+  restarts.** The 11-25 investigation found ~0 opens on these items because
+  no door showed them, not a bug: deep links and logging work, the Practice
+  list shows only the current learning-path stage, the Debug chip sat ~940 px
+  down (0 clicks in 14 days), and the Coach tab had 1,027 people in 14 days
+  against 21 for `nav_practice`. The clock restarts at the deploy of the
+  Coach's Debug door (branch `feat/coach-debug-door`, flag `coachDebugDoor`,
+  claim "the Coach's Debug door"), date **D**. The read moves by the same
+  number of days, D − 2026-11-23 (the flip): **Read = 2026-12-22 + (D −
+  2026-11-23) = D + 29 days**, and every baseline window moves with it.
+  Excluded from every read: aid `363dfb2bc1314757acc88c8438c4d2ea` (the 11-25 investigation walk,
+  Europe/Istanbul, desktop 1024x768).
+
 ### Apple becomes a sourced company page; TikTok, Bloomberg, Tesla, Amazon, Monzo lose their unsourced claims (C2, R1 batch 5)
 
 - **Claimed** 2026-11-23 · **Shipped** on merge (static pages, no flag) ·
@@ -537,6 +605,19 @@ of the verifier and must never be rounded to `FLAT`.
 - **Confound** 326 and 327 also join the subqueries topic page's scalar/IN
   section, so they get that page's openers too. Read the door beside the rate.
 
+- **Amended 2026-11-25 (orchestrator, decision row in PR #372): the clock
+  restarts.** The 11-25 investigation found ~0 opens on these items because
+  no door showed them, not a bug: deep links and logging work, the Practice
+  list shows only the current learning-path stage, the Debug chip sat ~940 px
+  down (0 clicks in 14 days), and the Coach tab had 1,027 people in 14 days
+  against 21 for `nav_practice`. The clock restarts at the deploy of the
+  Coach's Debug door (branch `feat/coach-debug-door`, flag `coachDebugDoor`,
+  claim "the Coach's Debug door"), date **D**. The read moves by the same
+  number of days, D − 2026-11-23 (the merge): **Read = 2026-12-20 + (D −
+  2026-11-23) = D + 27 days**, and every baseline window moves with it.
+  Excluded from every read: aid `363dfb2bc1314757acc88c8438c4d2ea` (the 11-25 investigation walk,
+  Europe/Istanbul, desktop 1024x768).
+
 ### State-graded DML/DDL: the second five (challenges 355-359, C6)
 
 - **Claimed** 2026-11-24 · **Shipped** on merge (no flag) · **Read** 2026-12-22.
@@ -574,6 +655,19 @@ of the verifier and must never be rounded to `FLAT`.
   357-358 in #scalar-and-in) and 359 the advanced page, so they get those
   pages' openers; read the door beside the rate. 325-329's read (12-20) and
   this one overlap by four weeks: read them as two sets, never pooled.
+
+- **Amended 2026-11-25 (orchestrator, decision row in PR #372): the clock
+  restarts.** The 11-25 investigation found ~0 opens on these items because
+  no door showed them, not a bug: deep links and logging work, the Practice
+  list shows only the current learning-path stage, the Debug chip sat ~940 px
+  down (0 clicks in 14 days), and the Coach tab had 1,027 people in 14 days
+  against 21 for `nav_practice`. The clock restarts at the deploy of the
+  Coach's Debug door (branch `feat/coach-debug-door`, flag `coachDebugDoor`,
+  claim "the Coach's Debug door"), date **D**. The read moves by the same
+  number of days, D − 2026-11-25 (the merge): **Read = 2026-12-22 + (D −
+  2026-11-25) = D + 27 days**, and every baseline window moves with it.
+  Excluded from every read: aid `363dfb2bc1314757acc88c8438c4d2ea` (the 11-25 investigation walk,
+  Europe/Istanbul, desktop 1024x768).
 
 ### no exclusivity claims about the AI coach, tutor or Skillmap (C2)
 
@@ -1211,6 +1305,19 @@ of the verifier and must never be rounded to `FLAT`.
 - **Confound** It also joins the CTE and subqueries topic pages and
   /challenges/advanced/, so openers arrive from more doors than Stripe's; read
   the door beside the rate.
+
+- **Amended 2026-11-25 (orchestrator, decision row in PR #372): the clock
+  restarts.** The 11-25 investigation found ~0 opens on these items because
+  no door showed them, not a bug: deep links and logging work, the Practice
+  list shows only the current learning-path stage, the Debug chip sat ~940 px
+  down (0 clicks in 14 days), and the Coach tab had 1,027 people in 14 days
+  against 21 for `nav_practice`. The clock restarts at the deploy of the
+  Coach's Debug door (branch `feat/coach-debug-door`, flag `coachDebugDoor`,
+  claim "the Coach's Debug door"), date **D**. The read moves by the same
+  number of days, D − 2026-11-24 (the merge): **Read = 2026-12-21 + (D −
+  2026-11-24) = D + 27 days**, and every baseline window moves with it.
+  Excluded from every read: aid `363dfb2bc1314757acc88c8438c4d2ea` (the 11-25 investigation walk,
+  Europe/Istanbul, desktop 1024x768).
 
 ### five Easy on-ramps: Window, Date and NULL (challenges 320-324)
 
