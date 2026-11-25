@@ -388,13 +388,17 @@ export function formatSection(d, { accessed, role = null } = {}) {
   }).join('');
   const sentence = `Sources: ${srcKeys.map(k => `${d.sources[k][0]} (${d.sources[k][2]})`).join('; ')}.`;
   const direct = srcKeys.some(k => d.sources[k][3] === 'direct');
+  // The table scrolls inside its own wrapper (inline, not a page .tbl rule):
+  // this block is injected into hand-written pages that carry no .tbl CSS, and
+  // its nowrap row headers ran /shopify-sql-interview/ 61 px past a 320 px
+  // phone (A4, issue #308).
   // "(sourced)" in the heading itself: this section exists only on a page in
   // SOURCED_SLUGS, and the label says why (docs/plans/company-sourced-vs-topical-2026-09-21.md).
   return `<section id="format" data-section="format-sourced" style="border-top:1px solid rgba(255,255,255,.04);"><div class="sec">
   <span class="sl">How the interview runs (sourced)</span>
   <h2 class="st fd">The ${esc(d.name)} SQL interview, as candidates report it</h2>
   <p style="font-size:15px;color:#94a3b8;margin:14px 0 22px;max-width:760px;line-height:1.75;">${d.publishes ? esc(d.publishes) : `${esc(d.name)} does not publish the format.`} Each row is what ${d.publishes ? `${esc(d.name)}, candidates and prep guides have` : 'candidates and prep guides have'} described ${direct ? '— publicly, or to us directly —' : 'publicly,'} with its source; where sources disagree, the row says so.${direct ? ' A source marked as told to us is one candidate&#39;s account, by email; their name is withheld at their request.' : ''} Formats change — treat every specific as reported, not official.${role ? ` The sources below describe ${esc(role)}; other teams at ${esc(d.name)} may run a different loop.` : ''}</p>
-  <div class="tbl"><table>
+  <div class="tbl" style="overflow-x:auto;-webkit-overflow-scrolling:touch;"><table>
     <tbody>
 ${rows}
     </tbody>
