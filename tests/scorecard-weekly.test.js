@@ -47,9 +47,10 @@ describe('scorecard-weekly.sql — source guards', () => {
     }
     expect(b).toMatch(/aocr/);
     expect(b).toMatch(/m->>'bot'/);
-    for (const rule of ['app1lang', 'topic1lang', 'prestamp_fp', 'utc1280', 'cn_app', 'utc_landing', 'cn_reader', 'langs2']) {
+    for (const rule of ['app1lang', 'topic1lang', 'prestamp_fp', 'utc1280', 'cn_app', 'utc_landing', 'cn_reader', 'langs2', 'google_ua', 'google_ua:notebooklm']) {
       expect(b).toContain(`'${rule}'`);
     }
+    expect(b).toContain("m->>'ua' ~ '(GoogleOther|Google-NotebookLM)'");
     expect(b).toContain("(e.metadata #>> '{}')::jsonb");
     expect(b).toContain("COALESCE(x.m->>'aid', e.username)");
   });
@@ -106,6 +107,10 @@ const ROWS = [
   ev('landing_view', 'landing', null, 4, { aid: 'k1', page: 'home', bot: 'utc1280x720' }),                       // bot stamp
   ev('app_opened', 'activation_funnel', null, 4, { aid: 'u1', tz: 'UTC', viewport: 'desktop:1280x720', landingSrc: 'search:google' }), // utc1280, spoofed source
   ev('app_opened', 'activation_funnel', null, 4, { aid: 'n1', tz: 'Asia/Hong_Kong', viewport: 'desktop:1366x768', arrivalSrc: 'question' }), // cn_app
+  // google_ua (C8 2026-11-25): Google's unstamped fetchers — LA zone, no source, no window size
+  ev('landing_view', 'landing', null, 4, { aid: 'o1', page: 'questions/y', tz: 'America/Los_Angeles',
+    ua: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; GoogleOther) Chrome/141.0.7390.122 Safari/537.36' }),
+  ev('landing_view', 'landing', null, 4, { aid: 'l1', page: 'sql-practice-comparison', tz: 'America/Los_Angeles', ua: 'Google-NotebookLM' }),
   // money (webhook rows carry a username, no aid; one is a JSON string, as in production)
   ev('pro_trial_started', 'stripe_webhook', 'alice', 5, { plan_type: 'monthly' }),
   ev('pro_trial_started', 'activation_funnel', 'alice', 5, { aid: 'a1' }), // client echo: never money
@@ -149,9 +154,9 @@ describe('scorecard-weekly.sql — runs on Postgres over a hand-computed fixture
 
   it('query 1: raw vs human visitors on the fixture week', async () => {
     const w = (await run('1'))[6];
-    expect(Number(w.raw_visitors)).toBe(11);
+    expect(Number(w.raw_visitors)).toBe(13);
     expect(Number(w.human_visitors)).toBe(3);
-    expect(Number(w.gap_pct)).toBe(72.7);
+    expect(Number(w.gap_pct)).toBe(76.9);
   });
 
   it('query 1: openers, activation, six-solvers and the day-0 return', async () => {
@@ -209,6 +214,7 @@ describe('scorecard-weekly.sql — runs on Postgres over a hand-computed fixture
     const by = Object.fromEntries(rows.map((r) => [r.bucket, Number(r.people)]));
     expect(by).toEqual({
       '(human)': 3, viewport: 1, app1lang: 1, internal: 1, founder: 1, utc_landing: 1, bot_stamp: 1, utc1280: 1, cn_app: 1,
+      google_ua: 1, 'google_ua:notebooklm': 1,
     });
   });
 });

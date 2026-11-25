@@ -43,6 +43,12 @@
 --   utc_landing    a landing_view in tz UTC from 2026-11-22, never an app_opened
 --   cn_reader      landing rows in Asia/Shanghai, never an app_opened
 --   langs2         an app_opened with langs = 2 and no landingSrc, no landing_view ever
+--   google_ua      a landing_view whose `ua` names GoogleOther or
+--                  Google-NotebookLM, never an app_opened (C8 2026-11-25:
+--                  all America/Los_Angeles, no landingSrc, no window size;
+--                  GoogleOther ~130-170 a week from mid-October). Query 4
+--                  shows NotebookLM apart as 'google_ua:notebooklm': a fetch
+--                  a person asked for, an AI-assistant signal, never a visit
 -- RAW counts the same people with no exclusion at all.
 --
 -- Money is reason = 'stripe_webhook' only, by username (internal usernames
@@ -115,6 +121,8 @@ facts AS (   -- one pass over every row a person ever wrote
     bool_or(reason = 'landing' AND m->>'tz' = 'Asia/Shanghai')                AS cn_landing,
     bool_or(event = 'app_opened' AND m->>'langs' = '2'
             AND COALESCE(m->>'landingSrc', '') = '')                          AS langs2_open,
+    bool_or(event = 'landing_view' AND m->>'ua' ~ '(GoogleOther|Google-NotebookLM)') AS google_ua,
+    bool_or(event = 'landing_view' AND m->>'ua' ~ 'Google-NotebookLM')        AS notebooklm,
     (array_agg(m ORDER BY created_at) FILTER (WHERE event = 'app_opened'))[1] AS fo
   FROM evp WHERE pid IS NOT NULL GROUP BY pid
 ),
@@ -137,6 +145,8 @@ person AS (   -- excl IS NULL = human
          AND fo->>'tz' IN ('Asia/Shanghai', 'Asia/Hong_Kong', 'Asia/Singapore') THEN 'cn_app'
     WHEN utc_landing AND NOT any_open                          THEN 'utc_landing'
     WHEN cn_landing AND NOT any_open                           THEN 'cn_reader'
+    WHEN google_ua AND NOT any_open AND notebooklm             THEN 'google_ua:notebooklm'
+    WHEN google_ua AND NOT any_open                            THEN 'google_ua'
     WHEN langs2_open AND NOT any_landing                       THEN 'langs2'
   END AS excl
   FROM facts
@@ -302,6 +312,8 @@ facts AS (   -- one pass over every row a person ever wrote
     bool_or(reason = 'landing' AND m->>'tz' = 'Asia/Shanghai')                AS cn_landing,
     bool_or(event = 'app_opened' AND m->>'langs' = '2'
             AND COALESCE(m->>'landingSrc', '') = '')                          AS langs2_open,
+    bool_or(event = 'landing_view' AND m->>'ua' ~ '(GoogleOther|Google-NotebookLM)') AS google_ua,
+    bool_or(event = 'landing_view' AND m->>'ua' ~ 'Google-NotebookLM')        AS notebooklm,
     (array_agg(m ORDER BY created_at) FILTER (WHERE event = 'app_opened'))[1] AS fo
   FROM evp WHERE pid IS NOT NULL GROUP BY pid
 ),
@@ -324,6 +336,8 @@ person AS (   -- excl IS NULL = human
          AND fo->>'tz' IN ('Asia/Shanghai', 'Asia/Hong_Kong', 'Asia/Singapore') THEN 'cn_app'
     WHEN utc_landing AND NOT any_open                          THEN 'utc_landing'
     WHEN cn_landing AND NOT any_open                           THEN 'cn_reader'
+    WHEN google_ua AND NOT any_open AND notebooklm             THEN 'google_ua:notebooklm'
+    WHEN google_ua AND NOT any_open                            THEN 'google_ua'
     WHEN langs2_open AND NOT any_landing                       THEN 'langs2'
   END AS excl
   FROM facts
@@ -511,6 +525,8 @@ facts AS (   -- one pass over every row a person ever wrote
     bool_or(reason = 'landing' AND m->>'tz' = 'Asia/Shanghai')                AS cn_landing,
     bool_or(event = 'app_opened' AND m->>'langs' = '2'
             AND COALESCE(m->>'landingSrc', '') = '')                          AS langs2_open,
+    bool_or(event = 'landing_view' AND m->>'ua' ~ '(GoogleOther|Google-NotebookLM)') AS google_ua,
+    bool_or(event = 'landing_view' AND m->>'ua' ~ 'Google-NotebookLM')        AS notebooklm,
     (array_agg(m ORDER BY created_at) FILTER (WHERE event = 'app_opened'))[1] AS fo
   FROM evp WHERE pid IS NOT NULL GROUP BY pid
 ),
@@ -533,6 +549,8 @@ person AS (   -- excl IS NULL = human
          AND fo->>'tz' IN ('Asia/Shanghai', 'Asia/Hong_Kong', 'Asia/Singapore') THEN 'cn_app'
     WHEN utc_landing AND NOT any_open                          THEN 'utc_landing'
     WHEN cn_landing AND NOT any_open                           THEN 'cn_reader'
+    WHEN google_ua AND NOT any_open AND notebooklm             THEN 'google_ua:notebooklm'
+    WHEN google_ua AND NOT any_open                            THEN 'google_ua'
     WHEN langs2_open AND NOT any_landing                       THEN 'langs2'
   END AS excl
   FROM facts

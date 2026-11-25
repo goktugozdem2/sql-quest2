@@ -1990,17 +1990,31 @@ kept beside the raw count, never instead of it. Query 1 (`raw_visitors`,
   `desktop:1919x992`, `desktop:1024x1024`; `ref:aocr.org` and `verify-test`;
   `app1lang`, `topic1lang`, the LA/1920x1080 pre-stamp shape, `utc1280`,
   `cn_app`, the UTC landing crawler (from 11-22), the Asia/Shanghai landing
-  reader, the `langs = 2` no-landing group. Query 4 names the first rule
-  that removed each person, in that order.
+  reader, `google_ua`, the `langs = 2` no-landing group. Query 4 names the
+  first rule that removed each person, in that order.
+- **`google_ua` (C8, 2026-11-25; PR #391's shared trap):** a person whose
+  `landing_view` carries `ua` (from 2026-09-13; read as
+  `((metadata #>> '{}')::jsonb)->>'ua'`) matching
+  `(GoogleOther|Google-NotebookLM)` and who never writes an `app_opened`.
+  Both fetchers are unstamped, all `tz = America/Los_Angeles`, no
+  `landingSrc`, no window size; no such person has ever opened the app.
+  GoogleOther added 29–172 "people" a week to human visitors (W40 → W47,
+  rising with Google's crawl from mid-October), all in `direct/home` and
+  the US row. **NotebookLM is not a visit but is worth reading:** it is a
+  fetch a person asked for (mostly the comparison pages), so Query 4
+  reports it apart as `google_ua:notebooklm` (5–23 a week) — an
+  AI-assistant signal, never a human visitor.
 - **A new rule changes the whole series.** The query re-reads all eight
   weeks every run, so a fingerprint added on a Friday rewrites earlier rows:
   compare a week only with weeks read by the same version of the file, and
   say in the Friday note when the block changed.
 
-Baseline (read 2026-11-25, week 2026-W47 = 11-16 → 11-22): **715 human of
-1,199 raw (40.4% not human)**; the eight weeks 10-04 → 11-22 ran 639–888
-human against 1,002–2,326 raw. The 2026-W40 raw count (2,326) is 1,347
-`utc1280` people; without the A01 rules it would read 2,159 human.
+Baseline (read 2026-11-25 with `google_ua`, week 2026-W47 = 11-16 → 11-22):
+**569 human of 1,199 raw (52.5% not human)**; the eight weeks 09-28 → 11-22
+ran 504–826 human against 1,002–2,326 raw. Before `google_ua` the same read
+gave 715 (639–888), and the series looked flat because the crawler rose as
+people fell. The 2026-W40 raw count (2,326) is 1,347 `utc1280` people;
+without the A01 rules it would read 2,111 human.
 
 **Trap: what is still inside "human".** Landing-only readers in
 `Asia/Hong_Kong` and `Asia/Singapore` (20–61 a week; HK opened the app once
@@ -2044,8 +2058,9 @@ snapshot, not a series — `users.data` keeps no history — so each Friday's
 row records that Friday. It is not the Stripe dashboard read; a subscription
 in dunning (`past_due`) drops out once `proExpiry` passes.
 
-Baseline (read 2026-11-25), week 2026-W47: 715 human visitors, 188 app
-openers, 148 new, 49 activated within 7 days (runway incomplete), 59
+Baseline (read 2026-11-25, `google_ua` excluded), week 2026-W47: 569 human
+visitors, 188 app openers, 148 new, 50 activated within 7 days (runway
+incomplete), 59
 solvers, 14 new six-solvers, 46 day-0 solvers of whom 7 returned (floor),
 29 shown the modal, 3 checkout clicks, 1 trial, 1 payment ($99), 0 refunds,
 1 failed charge. MRR $49.58 (4 paying: 1 monthly, 3 annual; 1 in trial).
