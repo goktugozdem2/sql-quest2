@@ -407,6 +407,44 @@ of the verifier and must never be rounded to `FLAT`.
 - **Confound** 326 and 327 also join the subqueries topic page's scalar/IN
   section, so they get that page's openers too. Read the door beside the rate.
 
+### State-graded DML/DDL: the second five (challenges 355-359, C6)
+
+- **Claimed** 2026-11-24 · **Shipped** on merge (no flag) · **Read** 2026-12-22.
+- **Change** Five more `grade: 'state'` challenges on `ecommerce`, same engine
+  and gate as 325-329, nothing in the engine changed: 355 "The Account Page
+  Reads Every Order" (Medium, a composite index; graded on its first two
+  columns, name-free, partial indexes refused; EXPLAIN allowed so the plan can
+  be read), 356 "Clear Out the Sign-Ups That Never Bought" (Medium, DELETE
+  with an anti-join; two guest orders with no `customer_id` make `NOT IN`
+  remove nobody), 357 "Give Every Customer a Lifetime Spend" (Medium, ALTER
+  TABLE ADD COLUMN + backfill; no-order customers must read 0, not NULL), 358
+  "Close the Books on February" (Medium, a two-table move in a transaction;
+  the 02-29 and 03-01 rows are the 328 leap-day trap again), 359 "Apply the
+  Overnight Price Feed" (Hard, an upsert that only takes strictly newer rows).
+  DDL/DML now has 10 challenges, still unmapped on the Skillmap (the
+  orchestrator's 2026-11-22 rule waits for 15 and 28 days of data).
+- **Metric** `challenge_solve_through` (docs/agent/metrics.md) per card, read
+  within its band (Medium for 355-358, Hard for 359). No topic door yet, so
+  `topic_funnel` and `content_funnel` are not read here.
+- **Baseline** Not readable from the cloud session. The read takes it in the
+  same window: the median solve-through of every Medium and every Hard card
+  with 10+ openers, 2026-11-25 → 2026-12-22, same shared filters.
+- **Target** 355-358 pooled within 5 points of the Medium median or above;
+  359 within 10 points of the Hard median.
+- **Falsification** (written before the data) 355-358 pooled more than 10
+  points under the Medium median, or any card with 10+ openers under 40%:
+  read that card's `challenge_errored` rows first (a refusal or a syntax
+  error near DO on 359 is tooling or hint, not content). Fewer than 10 openers
+  on a card is `UNREADABLE` for that card; under 30 pooled openers on 355-358
+  the claim is `UNREADABLE`.
+- **Guardrail** `challenge_errored` on 355-359: more than a third of submits
+  refused means the gate is too tight for these shapes (355's EXPLAIN, 358's
+  BEGIN / SAVEPOINT); widen `allow`, not the always-forbidden list.
+- **Confound** 356-358 join the subqueries topic page (356 in #correlated,
+  357-358 in #scalar-and-in) and 359 the advanced page, so they get those
+  pages' openers; read the door beside the rate. 325-329's read (12-20) and
+  this one overlap by four weeks: read them as two sets, never pooled.
+
 ### no exclusivity claims about the AI coach, tutor or Skillmap (C2)
 
 - **Claimed** 2026-11-23 · **Shipped** on merge (static pages, no flag) ·
