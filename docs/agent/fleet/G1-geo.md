@@ -50,8 +50,12 @@ Run the same buyer questions every week, in English unless marked:
 1. **Measure, per engine, per prompt.** Record whether SQL Quest is named,
    which of our URLs are cited, and which competitors are named. Keep only
    the cited URLs and names; never copy whole answers.
-   - **Perplexity** (perplexity.ai, no sign-in): the built-in browser, one
-     query per prompt.
+   - **Perplexity: monthly, not weekly (founder, 2026-11-25).** Since
+     11-25 perplexity.ai asks for a sign-in on the first query, so the
+     weekly no-sign-in rotation cannot run. Weekly runs skip it and mark it
+     "not read" (never a miss). Once a month (the first Wednesday) it joins
+     the monthly founder check below: list the 5 prompts for him to run
+     signed in and say where to record what he sees. Never sign in yourself.
    - **Grounding proxy for ChatGPT and Copilot**: Bing results for the same
      prompt (WebSearch, or `bing_stats` queries). Where we rank in Bing's
      top 10 is the pool those assistants cite from.

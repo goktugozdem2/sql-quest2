@@ -93,6 +93,7 @@ import { DRILL_SIZE, DRILL_TARGET, buildDrillQueue, challengeMatchesSkill, prior
 import { lintSQL } from './utils/sql-lint.js';
 import { resultsMatch, solutionRequiresOrder, sortRowsCanonical } from './utils/grade.js';
 import { normalizeAiMessages } from './utils/ai-tutor-client.js';
+import { buildFeedbackChallengeContext, feedbackEventContext } from './utils/feedback-context.js';
 import { FEEDBACK_PROMPT_FLAGS, FBP_SESSION_KEY, FBP_EXIT_DAY_KEY, FBP_STUCK_IDS_KEY, FBP_DAY2_KEY, FBP_EXIT_DONE_KEY, STUCK_NO_RUN_MS, PROMPT_THANKS_MS, EXIT_REASONS, promptDoneKey, mayRecordAnswer, markPromptAnswered, nextSessionRecord, markPromptShown, canShowExitReason, stuckTrigger, canShowStuck, canShowDay2, buildPromptSubmission, localDay } from './utils/feedback-prompts.js';
 import { t as i18n_t, getCurrentLang, setLang as i18n_setLang, subscribeLang, SUPPORTED_LANGS, localizeChallenge, localizeInterview, localizeQuestion } from './utils/i18n.js';
 import { buildWeeklyReport, detectMilestones } from './utils/weekly-report.js';
@@ -4862,7 +4863,7 @@ function FeedbackPromptCard({ kind, onSend, onSkip, compact = false, answered = 
   );
 }
 
-function FeedbackWidget({ open, onOpen, onClose, onSubmit, onTopicPick, screen, initialTopic = null }) {
+function FeedbackWidget({ open, onOpen, onClose, onSubmit, onTopicPick, screen, initialTopic = null, tutorLine = false, onTutor = null }) {
   const [message, setMessage] = React.useState('');
   const [contact, setContact] = React.useState('');
   const [topic, setTopic] = React.useState(null);
@@ -4988,6 +4989,22 @@ function FeedbackWidget({ open, onOpen, onClose, onSubmit, onTopicPick, screen, 
                 );
               })}
             </div>
+            {/* IR-2 (flag feedbackContext): on a challenge, say where this box
+                goes and where help is. Muted text, the link in body text —
+                never the accent, which stays on Send (DESIGN.md). */}
+            {tutorLine && onTutor && (
+              <p className="text-xs mb-2" style={{ color: '#8A8E99' }} data-testid="feedback-tutor-line">
+                {i18n_t('feedback', 'tutorLineBefore')}
+                <button
+                  type="button"
+                  onClick={onTutor}
+                  className="underline font-semibold"
+                  style={{ color: '#F2F0EA' }}
+                  data-testid="feedback-tutor-link"
+                >{i18n_t('feedback', 'tutorLineLink')}</button>
+                {i18n_t('feedback', 'tutorLineAfter')}
+              </p>
+            )}
             <textarea
               ref={taRef}
               value={message}
@@ -7878,7 +7895,26 @@ function SQLQuest() {
   // show a real error instead of pretending it sent — the entire point of this
   // channel is that a message doesn't silently disappear, which is exactly
   // what the support@sqlquest.app mailto has been doing (no MX on the domain).
+  // IR-2 (E2, 2026-11-23, flag `feedbackContext`): the challenge the widget
+  // was opened on — id, the last query (cut to ~1,000 characters) and the last
+  // diagnosis kind — or null off a challenge screen. A plain function, not a
+  // hook: it reads state at the moment it is called (open, render, submit).
+  // src/utils/feedback-context.js holds the rules.
+  const feedbackChallengeCtxNow = () => buildFeedbackChallengeContext({
+    flagOn: ftbFlag('feedbackContext'),
+    activeTab,
+    practiceSubTab,
+    challenge: currentChallenge,
+    inMock: !!activeInterview,
+    query: challengeQuery,
+    diagnosis: challengeDiagnosis,
+    status: challengeStatus,
+  });
+
   const submitFeedback = async ({ message, contact, topic, quoteConsent, quoteName, quoteConsentAt, kind = 'open', trigger = null, promptContext = null }) => {
+    // Only the widget itself ('open') carries the challenge context; the
+    // asked prompts bring their own promptContext.
+    const fbChallengeCtx = (kind || 'open') === 'open' ? feedbackChallengeCtxNow() : null;
     const payload = {
       username: currentUser || 'guest',
       message,
@@ -7901,6 +7937,7 @@ function SQLQuest() {
         kind: kind || 'open',
         trigger: trigger || null,
         ...(promptContext || {}),
+        ...(fbChallengeCtx || {}),
         solvedCount: solvedChallenges.size,
         isGuest: !!isGuest,
         isPro: !!isPro,
@@ -7945,6 +7982,9 @@ function SQLQuest() {
         // pro_events is a behavioural table; the quotable content stays in
         // the feedback table, which anon cannot read back out.
         quoteConsent: quoteConsent === true,
+        // IR-2: the challenge id and diagnosis kind, never the query — the
+        // query stays in the feedback row, which anon cannot read back.
+        ...feedbackEventContext(fbChallengeCtx),
       });
       return true;
     } catch (e) {
@@ -25184,6 +25224,31 @@ HINT PROGRESSION (based on conversation length):
     }
   };
 
+  // IR-2: the 💬 widget's "tutor" link. Closes the widget and opens the same
+  // inline Help the challenge page's Help button opens; if Help is already
+  // open it only scrolls there, so a conversation in progress is not reset.
+  const openTutorFromFeedback = () => {
+    const ctx = feedbackChallengeCtxNow();
+    trackActivationEvent('feedback_tutor_redirect', {
+      ...feedbackEventContext(ctx),
+      challengeStatus: ctx ? ctx.challengeStatus : null,
+      helpWasOpen: !!showInlineAiHelp,
+    });
+    setShowFeedback(false);
+    setReviewFeedbackTopic(null);
+    if (!ctx || !currentChallenge) return;
+    if (showInlineAiHelp) {
+      setTimeout(() => {
+        try {
+          const el = document.querySelector('[data-testid="inline-ai-help"]');
+          if (el) window.scrollTo(0, Math.max(0, Math.round(window.scrollY + el.getBoundingClientRect().top - 80)));
+        } catch (_) {}
+      }, 60);
+      return;
+    }
+    openInlineAiHelp(currentChallenge, challengeQuery);
+  };
+
   // Send a follow-up message in the inline AI help panel
   const sendInlineAiMessage = async (forcedMessage = null, opts = {}) => {
     const typed = typeof forcedMessage === 'string' ? forcedMessage : inlineAiInput;
@@ -27862,6 +27927,10 @@ RULES:
         initialTopic={reviewFeedbackTopic}
         onClose={() => { setShowFeedback(false); setReviewFeedbackTopic(null); }}
         onSubmit={submitFeedback}
+        // IR-2: the "goes to the founder / the tutor answers now" line, only
+        // when the widget is open on a challenge screen (feedbackContext).
+        tutorLine={showFeedback && !!feedbackChallengeCtxNow()}
+        onTutor={openTutorFromFeedback}
       />
       {radarPop && oneLayerOk('radar_pop') && <RadarPopToast
         bigTargets={oneLayerOn}
