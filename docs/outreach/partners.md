@@ -16,9 +16,11 @@ B2B or programme route exists, and the learners look like our buyers
 on one of those. **C** = weak fit, competitor, or pivoted.
 
 **What we offer today: a free cohort pilot** (Pro for one cohort, size
-stated, seats granted by hand, a short weekly note to the teacher). No seat
-price is quoted in any message until the founder confirms the price option
-(see `docs/reads/partners-2026-11-22.md`).
+stated, seats granted by hand, a short weekly note to the teacher). The seat
+price the founder picked on 2026-09-26 (Option B: $39 a seat for a 3-month
+cohort pass, 10-seat minimum) may be quoted once an organisation asks about
+paying (`orchestrator-decisions.md`, 2026-11-22); first notes offer the free
+pilot only.
 
 Sources: the 40 rows from 2026-09-26 come from
 `docs/outreach/teams-2026-09-26.md` (read there for the September notes).
@@ -31,11 +33,13 @@ Rows marked *re-read 11-22* were opened again on their own site on
 
 | # | Organisation | Type | P | Why they fit (page, read) | Public route | Stage | Next step | Date |
 |---|---|---|---|---|---|---|---|---|
-| 1 | WBS Coding School (Berlin) | Bootcamp | **A** | Data Analytics bootcamp, SQL (MySQL); the "Extracting knowledge" module promises SQL interview prep. Cohorts in progress (Oct, Nov); next Dec 10, Jan 18, Feb 19, Mar 22 (listed "Group Closed"). Hiring page offers companies sessions with cohorts. wbscodingschool.com/data-analytics-bootcamp/ · /hire-tech-talent/ (*re-read 11-22*, fetched) | info@wbscodingschool.com (site footer) · /hire-tech-talent/ form | **sent (founder)** 11-22 | Watch for a reply (none by 11-23); do not write again | 2026-11-23 |
-| 2 | SPTech — São Paulo Tech School (Brazil) | College (undergrad + postgrad) | **A** | **Warm: its Moodle links to our `/challenges/joins/` page** — 10 people from `moodle.sptech.school`, 2026-09-29 → 11-07, all São Paulo time zone, 0 solves (`pro_events`, landing ref). ADS degree has "Banco de Dados" (sem. 1) and "Análise de Dados" (sem. 5); internship guaranteed from the 2nd semester; 2027.1 intake open. Press (snippet) names bank partners Itaú, Bradesco, Safra. sptech.school (*new 11-22*, fetched) | secretaria@sptech.school (student services; no partnerships page) | **sent (founder)** 11-22 | Watch for a reply (none by 11-23); do not write again | 2026-11-23 |
-| 25 | Turing College (EU, online) | Online school | **A** (was B) | Data Analytics: "SQL with BigQuery" in Module 1 ("Core data analyst toolkit"); a group starts **Dec 14**, applications close **Dec 7, 2026**; "HR and technical mock interviews" in career support. turingcollege.com/data-analytics (*re-read 11-23*, fetched) | Partnerships inbox listed on turingcollege.com/contacts | draft ready | Founder sends before Dec 7 (free pilot: Dec 14 group, up to 25, three months) | 2026-11-23 |
-| 5 | UCLA Anderson — MS Business Analytics | University programme | **A** | Fall #1: "SQL & Basic data Management" (MGMTMSA 402, 5 weeks) beside the 10-week "MSBA Career Curriculum" that builds "technical and case interviewing". anderson.ucla.edu/…/academics (*re-read 11-23*, fetched) | **Route found 11-23:** the "General inquiries" inbox on the MSBA contact-us page (11-22 said not found) | draft ready | Founder sends (free pilot: current class, up to 40, winter quarter; asks for a forward to Career Services) | 2026-11-23 |
-| 23 | Coding Temple (USA) | Bootcamp (part-time, start anytime) | **A−** (was B) | Data Analytics, 4 months part-time; Module 03 "SQL with PostgreSQL" covers "JOINs, subqueries and CTEs"; FAQ: "mock technical and behavioral interviews"; page says "Last checked October 24, 2026". No cohorts ("start anytime"), so the pilot is the next 25 learners who reach Module 03. codingtemple.com/data-analytics/ (*re-read 11-23*, fetched) | General inbox in the site footer | draft ready | Founder sends (free pilot: next 25 Module 03 learners, three months) | 2026-11-23 |
+| 1 | WBS Coding School (Berlin) | Bootcamp | **A** | Data Analytics bootcamp, SQL (MySQL); the "Extracting knowledge" module promises SQL interview prep. Cohorts in progress (Oct, Nov); next Dec 10, Jan 18, Feb 19, Mar 22 (listed "Group Closed"). Hiring page offers companies sessions with cohorts. wbscodingschool.com/data-analytics-bootcamp/ · /hire-tech-talent/ (*re-read 11-22*, fetched) | info@wbscodingschool.com (site footer) · /hire-tech-talent/ form | **sent (founder)** 11-22 | Watch for a reply (none by 11-24); do not write again | 2026-11-24 |
+| 2 | SPTech — São Paulo Tech School (Brazil) | College (undergrad + postgrad) | **A** | **Warm: its Moodle links to our `/challenges/joins/` page** — 10 people from `moodle.sptech.school`, 2026-09-29 → 11-07, all São Paulo time zone, 0 solves (`pro_events`, landing ref). ADS degree has "Banco de Dados" (sem. 1) and "Análise de Dados" (sem. 5); internship guaranteed from the 2nd semester; 2027.1 intake open. Press (snippet) names bank partners Itaú, Bradesco, Safra. sptech.school (*new 11-22*, fetched) | secretaria@sptech.school (student services; no partnerships page) | **sent (founder)** 11-22 | Watch for a reply (none by 11-24); do not write again | 2026-11-24 |
+| 25 | Turing College (EU, online) | Online school | **A** (was B) | Data Analytics: "SQL with BigQuery" in Module 1 ("Core data analyst toolkit"); a group starts **Dec 14**, applications close **Dec 7, 2026**; "HR and technical mock interviews" in career support. turingcollege.com/data-analytics (*re-read 11-23*, fetched) | Partnerships inbox listed on turingcollege.com/contacts | **sent (founder)** 11-23/24 | Watch for a reply (none by 11-24); do not write again | 2026-11-24 |
+| 5 | UCLA Anderson — MS Business Analytics | University programme | **A** | Fall #1: "SQL & Basic data Management" (MGMTMSA 402, 5 weeks) beside the 10-week "MSBA Career Curriculum" that builds "technical and case interviewing". anderson.ucla.edu/…/academics (*re-read 11-23*, fetched) | **Route found 11-23:** the "General inquiries" inbox on the MSBA contact-us page (11-22 said not found) | **sent (founder)** 11-23 | Only an admissions auto-reply (11-23, stale 2022 dates), no human reply by 11-24; do not write again | 2026-11-24 |
+| 23 | Coding Temple (USA) | Bootcamp (part-time, start anytime) | **A−** (was B) | Data Analytics, 4 months part-time; Module 03 "SQL with PostgreSQL" covers "JOINs, subqueries and CTEs"; FAQ: "mock technical and behavioral interviews"; page says "Last checked October 24, 2026". No cohorts ("start anytime"), so the pilot is the next 25 learners who reach Module 03. codingtemple.com/data-analytics/ (*re-read 11-23*, fetched) | General inbox in the site footer | **sent (founder)** 11-23 | Watch for a reply (none by 11-24); do not write again | 2026-11-24 |
+| 50 | neue fische (Germany) | Bootcamp (full-time, funded by Bildungsgutschein) | **A−** | Data Analytics bootcamp: Phase 6 "Internal Data Sourcing with SQL and Databases"; starts Berlin Nov 30, remote Dec 7, remote **Feb 1, 2027**; Career Service ("Career Compass") with interview coaching; learners are career switchers. neuefische.de/en/bootcamp/data-analytics (*new 11-24*, fetched; reviews stamped 17/11/26) | info@neuefische.de (legal notice; no companies page found) | draft ready | Founder sends (free pilot: one cohort, Feb 1 remote suggested, up to 30, three months; readiness test as placement) | 2026-11-24 |
+| 51 | University of Maryland Smith — MS Business Analytics | University programme (career office) | **A** | Fall 2026 admits take BUDT 703 "Database Management Systems" in the first fall, so they finish it as spring recruiting starts; the business master's career page lists J.P. Morgan, Citi, Morgan Stanley, PayPal, Freddie Mac among employers who hired Smith students (we have J.P. Morgan, Morgan Stanley, PayPal pages). networth.rhsmith.umd.edu/ms-business-analytics/curriculum-2026 · rhsmith.umd.edu/programs/business-masters/career (*new 11-24*, fetched) | smithocsquestions@umd.edu (Office of Career Services "General Inquiries", careers.rhsmith.umd.edu/directory/) | draft ready | Founder sends (free pilot: Fall 2026 MSBA class, up to 50, spring semester) | 2026-11-24 |
 
 ## Qualified (A, next drafts)
 
@@ -73,7 +77,7 @@ before drafting to it.
 | # | Organisation | Type | P | Sept # | Stage | Next step | Date |
 |---|---|---|---|---|---|---|---|
 | 21 | Springboard | Bootcamp | B | 9 | qualified (snippet only, 403) | Re-read | 2026-09-26 |
-| 22 | CareerFoundry | Bootcamp | B | 10 | qualified | Re-read | 2026-09-26 |
+| 22 | CareerFoundry | Bootcamp | — | 10 | **lost** | *Re-read 11-24:* the site footer says CareerFoundry is ceasing operations. Drop | 2026-11-24 |
 | 24 | Per Scholas | Nonprofit bootcamp | C (was B) | 12 | found | *Re-read 11-23:* the data-analytics page says "There are no upcoming Data Analytics classes right now"; only a form and a phone number. Hold until a class is listed | 2026-11-23 |
 | 26 | 4Geeks Academy | Bootcamp | B | 14 | qualified | Re-read | 2026-09-26 |
 | 27 | Miuul (Türkiye) | Bootcamp | B | 15 | qualified (no route confirmed) | Re-read; Turkish segment | 2026-09-26 |
@@ -112,3 +116,24 @@ before drafting to it.
   graduates only.
 - **One referral to watch:** one person from `bluechip.kenan-flagler.unc.edu`
   (UNC Kenan-Flagler) on 2026-10-04. Too thin for a row.
+
+## Run log
+
+### 2026-11-24 (P1)
+
+- **Sends:** all five drafts are in Gmail Sent: WBS Coding School and SPTech
+  (11-22), UCLA Anderson MSBA, Coding Temple and Turing College (11-23/24).
+  Five sent in three days, so the 11-29 stop rule does not trigger.
+- **Replies:** 0 from a person. 1 automatic reply (UCLA MSBA's admissions
+  responder, with 2022 dates), counted as no reply. No bounces.
+- **New, qualified and drafted (2):** neue fische (row 50, Feb 1 remote
+  cohort, A−) and UMD Smith MSBA via the career office (row 51, A).
+- **Dropped:** CareerFoundry (row 22): its own site says it is ceasing
+  operations.
+- **Looked at, not added:** Noble Desktop Data Analytics Technologies (NYC,
+  Jan 2027 sections, SQL Levels 1–3) has no career or interview support on
+  the page, so B at best; Techcareer.net shows no current SQL bootcamp
+  (last one closed 2024); Codebasics sells its own SQL interview prep
+  (competitor).
+- **Pipeline by stage:** sent 5, draft ready 2, qualified/found as before,
+  lost 1.

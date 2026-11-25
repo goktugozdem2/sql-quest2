@@ -66,6 +66,18 @@ window.FEATURE_FLAGS = {
     // week on, then the founder decides. src/utils/company-ask.js,
     // tests/company-ask.test.js; ledger "one question after the first solve".
     intakeAfterFirstSolve: false,
+    // One layer at a time after a solve on phones (2026-11-23, rank 3 of
+    // docs/plans/mobile-acquisition-2026-11-23.md). When on, an A/B by aid
+    // (arm `one` | `control`, assigned at the first correct submit on a narrow
+    // touch screen, `mobile_one_layer_assigned`). The `one` arm shows the ask,
+    // then holds the achievement / level-up / Skillmap / share / streak
+    // layers until the next challenge opens; 44×44 close targets. Desktop and
+    // `control` unchanged. Shipped off; ON at 50/50 2026-11-24 (orchestrator
+    // decision row, after an iOS Simulator + production walk: PASS).
+    // src/utils/mobile-one-layer.js,
+    // tests/mobile-one-layer.test.js; ledger "One layer at a time after a
+    // solve on phones".
+    mobileOneLayer: true,
     // Company practice-set match on the Coach (SEO plan P3.21, 2026-09-13):
     // for a named prepTarget.company that has NO interview archetype, how the
     // Skillmap matches what that company's practice set asks, plus the next
@@ -476,6 +488,13 @@ window.FEATURE_FLAGS = {
     exitReasonAsk: true,
     stuckAsk: false,
     day2Ask: true,
+    // IR-2 (E2, 2026-11-23; src/utils/feedback-context.js): the 💬 widget,
+    // opened on a challenge, writes the challenge id, the last query (cut to
+    // ~1,000 chars) and the last diagnosis kind into the row's `context`, and
+    // shows one line pointing at the inline tutor. Default ON: an inbound-
+    // channel fix, not money and not paywall-adjacent. Event
+    // `feedback_tutor_redirect`. Ledger: "a feedback row says which challenge".
+    feedbackContext: true,
     // The first screen test (2026-09-23, src/utils/first-screen.js): half of
     // first-run visitors land in challenge 91's editor instead of the
     // four-question placement quiz (42% of first visitors never opened a
@@ -571,6 +590,17 @@ window.FEATURE_FLAGS = {
     // gets a self-serve fix", metric failed_charge_recovery.
     billingIssueLine: true,
 
+    // ── PostgreSQL mode — spike, dark (2026-11-22) ───────────────────────
+    // A "SQLite / PostgreSQL" toggle on the challenge page. PostgreSQL runs
+    // in PGlite (PostgreSQL 18.6 as WASM, ~5.4 MB gzipped), fetched from
+    // jsDelivr with SRI only when the person picks it; each challenge gets
+    // its own instance, graded with the same comparator, on the allow-list
+    // src/data/postgres-allowlist.json (301 of 312). The verdict is shown,
+    // never recorded — no solve, XP or quota. Preview:
+    // /app/?ff_features_postgresMode=true. Plan and recommendation:
+    // docs/plans/postgres-mode-2026-11-22.md.
+    postgresMode: false,
+
     // ── A company-page arrival opens question 1 (B5, 2026-11-22) ──────────
     // An A/B by aid (company_direct_v1, murmur-finalised hash): a person with
     // zero solves who arrives through `/app/?company=X` (no ?challenge=, no
@@ -584,6 +614,43 @@ window.FEATURE_FLAGS = {
     // 50/50 after #156 merges"), ahead of the 12-19 date above. The 12-18
     // banner claim is read on the `list` arm and non-test arrivals only.
     companyDirectOpen: true,
+
+    // ── Run stays on screen on phones (rank 1 of the mobile plan, 2026-11-23)
+    // An A/B by aid (mobile_run_bar_v1, murmur-finalised hash), assigned at
+    // the first challenge open on a narrow touch screen and written once as
+    // `mobile_run_bar_assigned {arm}`. The `bar` arm pins the challenge's
+    // Run / Submit bar to the bottom of the viewport below `md` (above the
+    // keyboard where visualViewport is supported); `control` keeps today's
+    // sticky bar. Desktop is untouched in both arms. DARK until the
+    // orchestrator's decision row. src/utils/mobile-run-bar.js; ledger "Run
+    // stays on screen on phones"; metric open_to_first_run, mobile band.
+    // Plan: docs/plans/mobile-acquisition-2026-11-23.md §4.
+    mobileRunBar: false,
+
+    // ── The Debug question type (design PR #248, 2026-11-23) ──────────────
+    // "An AI assistant wrote this for the task below. It returns the wrong
+    // answer." Twelve items, ids 331-342, in src/data/debug-challenges.js,
+    // which appends them to the bank (and their TikTok / Shopify tags to the
+    // company map) ONLY while this is true. Off: no item, chip, line or count
+    // anywhere. On: the Practice "Debug" chip, line numbers + the optional
+    // spot step, the AI's query prefilled when no draft is saved, the bug
+    // line on a solve, debugStats on the profile and the Coach. A solve
+    // counts toward the 10 free solves like any challenge. Never a
+    // /questions/ page in v1. src/utils/debug-questions.js; ledger "the
+    // Debug set"; metric debug_solve_through. The orchestrator flips it in
+    // its own decision row. ON 2026-11-23 (orchestrator-decisions.md).
+    debugQuestions: true,
+
+    // Run is not Submit (2026-11-23, src/utils/run-submit-nudge.js): an A/B
+    // by aid (run_submit_nudge_v1, murmur-finalised hash). A person with ZERO
+    // solves whose Run returns rows on an unsolved challenge is assigned once
+    // (`run_submit_nudge_assigned`); the `nudge` arm sees one line in the
+    // output panel saying Submit completes it ("This matches the expected
+    // output…" when it does). Acts only after the first run, so it does not
+    // touch open_to_first_run (read to 12-20). DARK: flag-queue row 17, the
+    // orchestrator decides the flip (companyDirectOpen "runs alone").
+    // Ledger "Run is not Submit"; read first_solve_10m from assignment by arm.
+    runSubmitNudge: false,
   },
 };
 

@@ -49,7 +49,7 @@
     "url": "https://sqlquest.app/fraud-analytics-sql/",
     "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD", "category": "free" },
     "isAccessibleForFree": true,
-    "courseMode": "online",
+    "hasCourseInstance": { "@type": "CourseInstance", "courseMode": "online" },
     "educationalLevel": "Intermediate to Advanced",
     "numberOfCredits": 12,
     "teaches": [
@@ -226,7 +226,7 @@
     .stat-l{font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-top:8px}
 
     /* Pattern cards */
-    .pat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:18px;margin-top:32px}
+    .pat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(290px,100%),1fr));gap:18px;margin-top:32px}
     .pat-card{background:rgba(15,15,30,.55);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:24px 22px;transition:border-color .3s}
     .pat-card:hover{border-color:rgba(124,58,237,.3)}
     .pat-tag{display:inline-block;font-family:'JetBrains Mono';font-size:10px;color:#fb923c;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px;padding:3px 8px;background:rgba(251,146,60,.10);border:1px solid rgba(251,146,60,.20);border-radius:4px}
@@ -243,7 +243,7 @@
     .schema-cols{font-family:'JetBrains Mono';font-size:11px;color:#94a3b8;line-height:1.7;word-break:break-word}
 
     /* Challenges */
-    .ch-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-top:28px}
+    .ch-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(280px,100%),1fr));gap:14px;margin-top:28px}
     .ch-card{display:block;background:rgba(15,15,30,.55);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:20px 22px;text-decoration:none;transition:all .3s}
     .ch-card:hover{border-color:rgba(124,58,237,.3);transform:translateY(-2px)}
     .ch-diff{display:inline-block;font-size:11px;font-weight:700;padding:3px 10px;border-radius:100px;margin-bottom:10px;text-transform:uppercase;letter-spacing:1px}
@@ -298,7 +298,7 @@
       y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
     })(window, document, "clarity", "script", "wovalt3jwh");
   </script>
-<style data-phone-fit>.btn.bo{min-height:44px}@media(max-width:600px){.ni a,.ni .bp,.nl .btn{min-height:44px}}</style></head>
+<style data-footer-fit>@media(max-width:600px){.flk{row-gap:0}.flk a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;padding:0 4px}.fnav a{display:flex;align-items:center;min-height:44px;padding:0}}</style><style data-phone-fit>.btn.bo{min-height:44px}@media(max-width:600px){.ni a,.ni .bp,.nl .btn{min-height:44px}}</style></head>
 <body>
 
 <nav class="nav" id="nav"><div class="ni">
@@ -311,7 +311,7 @@
     <a href="#dataset">Dataset</a>
     <a href="#challenges">Challenges</a>
     <a href="#faq">FAQ</a>
-    <a href="/app/?challenge=270&ref=lp_fraud" class="btn bp" style="font-size:14px;padding:10px 24px;">Start Free →</a>
+    <a href="/app/?challenge=270&ref=lp_fraud&src=fraud-analytics-sql" class="btn bp" style="font-size:14px;padding:10px 24px;">Start Free →</a>
   </div>
 </div></nav>
 
@@ -331,7 +331,7 @@
       A real synthetic dataset — 2,165 card transactions with fraud rings injected. Learn the five SQL patterns fraud teams actually ship: 3-sigma anomaly bounds, velocity rules, impossible-travel detection, collusion rings via shared device fingerprint, and recursive CTEs that walk a chargeback chain.
     </p>
     <div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center;animation:fadeUp .6s .4s both;">
-      <a href="/app/?challenge=270&ref=lp_fraud" class="btn bp">Start Practicing — Free</a>
+      <a href="/app/?challenge=270&ref=lp_fraud&src=fraud-analytics-sql" class="btn bp">Start Practicing — Free</a>
       <a href="#patterns" class="btn bo">See the patterns ↓</a>
     </div>
     <div class="stats" style="animation:fadeUp .6s .5s both;">
@@ -524,73 +524,73 @@
     </div>
     <div class="ch-grid">
 
-      <a href="/app/?challenge=270&ref=lp_fraud" class="ch-card">
+      <a href="/app/?challenge=270&ref=lp_fraud&src=fraud-analytics-sql" class="ch-card">
         <div><span class="ch-diff ch-hard">Hard</span><span class="ch-id">#270</span></div>
         <div class="ch-title">3-Sigma Anomaly: Transaction Amount Outliers</div>
         <div class="ch-prev">CTE + CROSS JOIN to compute mean/sigma, then filter transactions above the 3-sigma threshold. The classic anomaly-detection SQL pattern.</div>
       </a>
 
-      <a href="/app/?challenge=271&ref=lp_fraud" class="ch-card">
+      <a href="/app/?challenge=271&ref=lp_fraud&src=fraud-analytics-sql" class="ch-card">
         <div><span class="ch-diff ch-hard">Hard</span><span class="ch-id">#271</span></div>
         <div class="ch-title">Velocity Rule — 5+ Transactions in 5 Minutes</div>
         <div class="ch-prev">Self-join with julianday-based time math to find accounts with rapid burst activity. The bread-and-butter velocity check.</div>
       </a>
 
-      <a href="/app/?challenge=272&ref=lp_fraud" class="ch-card">
+      <a href="/app/?challenge=272&ref=lp_fraud&src=fraud-analytics-sql" class="ch-card">
         <div><span class="ch-diff ch-hard">Hard</span><span class="ch-id">#272</span></div>
         <div class="ch-title">Geographic Mismatch — Impossible Travel</div>
         <div class="ch-prev">LAG over (PARTITION BY account_id ORDER BY txn_at) plus a degree-distance proxy. Catches cards used in two cities within 25 minutes.</div>
       </a>
 
-      <a href="/app/?challenge=273&ref=lp_fraud" class="ch-card">
+      <a href="/app/?challenge=273&ref=lp_fraud&src=fraud-analytics-sql" class="ch-card">
         <div><span class="ch-diff ch-medium">Medium</span><span class="ch-id">#273</span></div>
         <div class="ch-title">Cross-Account Collusion — Shared Device Fingerprint</div>
         <div class="ch-prev">Self-join accounts on device_fingerprint with a.id &lt; b.id to dedupe pairs. Surfaces coordinated rings hiding behind separate accounts.</div>
       </a>
 
-      <a href="/app/?challenge=274&ref=lp_fraud" class="ch-card">
+      <a href="/app/?challenge=274&ref=lp_fraud&src=fraud-analytics-sql" class="ch-card">
         <div><span class="ch-diff ch-hard">Hard</span><span class="ch-id">#274</span></div>
         <div class="ch-title">Recursive CTE — Chargeback Chain Investigation</div>
         <div class="ch-prev">Walk a chargeback network via related_chargeback_id with a depth guard. The recursive CTE pattern fraud teams ship in production.</div>
       </a>
 
-      <a href="/app/?challenge=260&ref=lp_fraud" class="ch-card">
+      <a href="/app/?challenge=260&ref=lp_fraud&src=fraud-analytics-sql" class="ch-card">
         <div><span class="ch-diff ch-hard">Hard</span><span class="ch-id">#260</span></div>
         <div class="ch-title">Banks with NPL Above 2-Sigma</div>
         <div class="ch-prev">Same stats pattern as #270, applied to bank non-performing loan ratios — flag banks with risk profiles outside the 2-sigma envelope.</div>
       </a>
 
-      <a href="/app/?challenge=261&ref=lp_fraud" class="ch-card">
+      <a href="/app/?challenge=261&ref=lp_fraud&src=fraud-analytics-sql" class="ch-card">
         <div><span class="ch-diff ch-hard">Hard</span><span class="ch-id">#261</span></div>
         <div class="ch-title">NPL Quarter-over-Quarter Acceleration</div>
         <div class="ch-prev">LAG window function for QoQ deltas. Catches risk profile deteriorating fast, the leading indicator of a bank failure.</div>
       </a>
 
-      <a href="/app/?challenge=262&ref=lp_fraud" class="ch-card">
+      <a href="/app/?challenge=262&ref=lp_fraud&src=fraud-analytics-sql" class="ch-card">
         <div><span class="ch-diff ch-medium">Medium</span><span class="ch-id">#262</span></div>
         <div class="ch-title">Tier 1 Capital Below Well-Capitalized Threshold</div>
         <div class="ch-prev">Filter banks under the 8% regulatory floor. The simplest risk rule — a regulator's first query of the morning.</div>
       </a>
 
-      <a href="/app/?challenge=263&ref=lp_fraud" class="ch-card">
+      <a href="/app/?challenge=263&ref=lp_fraud&src=fraud-analytics-sql" class="ch-card">
         <div><span class="ch-diff ch-medium">Medium</span><span class="ch-id">#263</span></div>
         <div class="ch-title">Failure Clustering — State + Year</div>
         <div class="ch-prev">CAST + SUBSTR to extract year from a date, then GROUP BY (state, year) to surface contagion clusters during 2008-style waves.</div>
       </a>
 
-      <a href="/app/?challenge=264&ref=lp_fraud" class="ch-card">
+      <a href="/app/?challenge=264&ref=lp_fraud&src=fraud-analytics-sql" class="ch-card">
         <div><span class="ch-diff ch-medium">Medium</span><span class="ch-id">#264</span></div>
         <div class="ch-title">ROA Outliers — Top 5% by Return</div>
         <div class="ch-prev">Percentile via OFFSET trick (or PERCENT_RANK). Surfaces banks with suspiciously high profitability — sometimes legitimate, sometimes a yellow flag.</div>
       </a>
 
-      <a href="/app/?challenge=265&ref=lp_fraud" class="ch-card">
+      <a href="/app/?challenge=265&ref=lp_fraud&src=fraud-analytics-sql" class="ch-card">
         <div><span class="ch-diff ch-medium">Medium</span><span class="ch-id">#265</span></div>
         <div class="ch-title">Geographic Concentration — Single-State Banks</div>
         <div class="ch-prev">Self-join + ratio. Banks with all branches in one state carry concentration risk — the technique generalizes to single-merchant or single-IP fraud rings.</div>
       </a>
 
-      <a href="/app/?challenge=266&ref=lp_fraud" class="ch-card">
+      <a href="/app/?challenge=266&ref=lp_fraud&src=fraud-analytics-sql" class="ch-card">
         <div><span class="ch-diff ch-medium">Medium</span><span class="ch-id">#266</span></div>
         <div class="ch-title">Trust Banks vs Others — NPL Profile Comparison</div>
         <div class="ch-prev">CASE-based segmentation with conditional aggregation. The query shape applies cleanly to fraud-vs-legit account profile comparisons.</div>
@@ -598,7 +598,7 @@
 
     </div>
     <div style="text-align:center;margin-top:48px;">
-      <a href="/app/?challenge=270&ref=lp_fraud" class="btn bp blg">Start with #270 — 3-Sigma Anomaly →</a>
+      <a href="/app/?challenge=270&ref=lp_fraud&src=fraud-analytics-sql" class="btn bp blg">Start with #270 — 3-Sigma Anomaly →</a>
       <p style="font-size:13px;color:#8b98ab;margin-top:14px;">Browser-based · No signup · No credit card</p>
     </div>
   </div>
@@ -708,14 +708,14 @@
       <span class="gt">other queries miss.</span>
     </h2>
     <p style="font-size:18px;color:#94a3b8;max-width:560px;margin:0 auto 32px;">12 challenges, your first 10 solves free. Real synthetic fraud dataset. Your first query in 60 seconds.</p>
-    <a href="/app/?challenge=270&ref=lp_fraud" class="btn bp blg" style="box-shadow:0 0 40px rgba(124,58,237,.3);">Start Practicing — Free ⚡</a>
+    <a href="/app/?challenge=270&ref=lp_fraud&src=fraud-analytics-sql" class="btn bp blg" style="box-shadow:0 0 40px rgba(124,58,237,.3);">Start Practicing — Free ⚡</a>
     <p style="font-size:13px;color:#7f8da1;margin-top:20px;">Browser-based. No signup. SQLite-WASM runs on your machine.</p>
   </div>
 </section>
 
 <!-- ── Footer ──────────────────────────────────────────────── -->
 <!-- related-links:start -->
-<p data-crosslink="related" style="max-width:760px;margin:32px auto;padding:0 20px;font-size:14px;line-height:1.8;color:#94a3b8;">Fintech company guides: <a href="/paypal-sql-interview/" style="color:#c084fc;text-decoration:none;font-weight:600;">PayPal</a> · <a href="/coinbase-sql-interview/" style="color:#c084fc;text-decoration:none;font-weight:600;">Coinbase</a> · <a href="/chime-sql-interview/" style="color:#c084fc;text-decoration:none;font-weight:600;">Chime</a> · <a href="/monzo-sql-interview/" style="color:#c084fc;text-decoration:none;font-weight:600;">Monzo</a>.</p>
+<p data-crosslink="related" style="max-width:760px;margin:32px auto;padding:0 20px;font-size:14px;line-height:1.8;color:#94a3b8;">Fintech company guides: <a href="/paypal-sql-interview/" style="color:#c084fc;text-decoration:none;font-weight:600;">PayPal</a> · <a href="/coinbase-sql-interview/" style="color:#c084fc;text-decoration:none;font-weight:600;">Coinbase</a> · <a href="/chime-sql-interview/" style="color:#c084fc;text-decoration:none;font-weight:600;">Chime</a> · <a href="/monzo-sql-interview/" style="color:#c084fc;text-decoration:none;font-weight:600;">Monzo</a> · <a href="/sql-interview-questions-data-analyst/" style="color:#c084fc;text-decoration:none;font-weight:600;">SQL interview questions for data analysts</a>.</p>
 <!-- related-links:end -->
 <footer class="ft">
   <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:16px;">
@@ -724,7 +724,7 @@
   </div>
   <p style="font-size:13px;color:#7f8da1;">Practice the SQL fraud analysts actually run.</p>
   <div class="flk">
-    <a href="/app/?challenge=270&ref=lp_fraud">Start Free</a>
+    <a href="/app/?challenge=270&ref=lp_fraud&src=fraud-analytics-sql">Start Free</a>
     <a href="/blog/sql-for-fraud-analytics/">Tutorial</a>
     <a href="/sql-interview-prep/">Interview Prep</a>
     <a href="/finans-sql/">Finance SQL (TR)</a>
@@ -733,7 +733,7 @@
   <a href="/sql-exercises/">SQL Practice Questions</a>
 </div>
   <p style="font-size:12px;color:#79879b;margin-top:24px;">© 2026 SQL Quest · Synthetic dataset, public domain</p>
-<style data-footer-fit>@media(max-width:600px){.flk{row-gap:0}.flk a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;padding:0 4px}.fnav a{display:flex;align-items:center;min-height:44px;padding:0}}</style><p data-partner="datrick" style="margin:18px auto 0;max-width:1000px;padding:0 24px;font-size:12px;color:#8A8E99;text-align:center;">SQL Quest is built by Datrick, Inc. · <a href="https://datrick.com/sql-server-to-postgresql-migration" style="color:inherit;text-decoration:underline;">SQL Server to PostgreSQL migration</a></p></footer>
+<p data-partner="datrick" style="margin:18px auto 0;max-width:1000px;padding:0 24px;font-size:12px;color:#8A8E99;text-align:center;">SQL Quest is built by Datrick, Inc. · <a href="https://datrick.com/sql-server-to-postgresql-migration" style="color:inherit;text-decoration:underline;">SQL Server to PostgreSQL migration</a></p></footer>
 
 <script>
 window.addEventListener('scroll',()=>{document.getElementById('nav').classList.toggle('s',window.scrollY>50)},{passive:true});

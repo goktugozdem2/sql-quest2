@@ -5,18 +5,18 @@
   <script src="/ref-track.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PayPal SQL Interview Questions — Payments, Fraud &amp; Conditional Sums | SQLQuest.app</title>
+  <title>PayPal SQL Interview Questions — Payments &amp; Fraud | SQLQuest.app</title>
   <meta name="description" content="PayPal SQL interview questions: analyst and data scientist rounds as candidates report them, the SQL they test, and practice on payment data. Sourced and dated.">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://sqlquest.app/paypal-sql-interview/">
   <meta property="og:type" content="article">
   <meta property="og:url" content="https://sqlquest.app/paypal-sql-interview/">
   <meta property="og:site_name" content="SQLQuest.app">
-  <meta property="og:title" content="PayPal SQL Interview Questions — Payments, Fraud &amp; Conditional Sums | SQLQuest.app">
+  <meta property="og:title" content="PayPal SQL Interview Questions — Payments &amp; Fraud | SQLQuest.app">
   <meta property="og:description" content="PayPal SQL interview questions: analyst and data scientist rounds as candidates report them, the SQL they test, and practice on payment data. Sourced and dated.">
   <meta property="og:image" content="https://sqlquest.app/og-image.png">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="PayPal SQL Interview Questions — Payments, Fraud &amp; Conditional Sums | SQLQuest.app">
+  <meta name="twitter:title" content="PayPal SQL Interview Questions — Payments &amp; Fraud | SQLQuest.app">
   <meta name="twitter:description" content="PayPal SQL interview questions: analyst and data scientist rounds as candidates report them, the SQL they test, and practice on payment data. Sourced and dated.">
   <meta name="twitter:image" content="https://sqlquest.app/og-image.png">
   <script>window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };</script>
@@ -124,7 +124,7 @@
     .nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(6,6,15,.92);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06)}.ni{max-width:1200px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}.nl{display:flex;align-items:center;gap:22px}.nl a:not(.btn):not(.bp){color:#94a3b8;text-decoration:none;font-size:14px;font-weight:500}.nl a:not(.btn):not(.bp):hover{color:#e2e8f0}
     .btn{display:inline-flex;align-items:center;gap:8px;border-radius:12px;font-weight:700;cursor:pointer;text-decoration:none;border:none;transition:transform .15s ease-out}.bp{padding:13px 28px;font-size:15px;background:#FFE34D;color:#0E0F13}.bp:hover{transform:translateY(-1px)}.bo{padding:12px 24px;font-size:14px;background:transparent;color:#c084fc;border:1px solid rgba(124,58,237,.4)}
     .sec{max-width:1100px;margin:0 auto;padding:56px 24px}.sl{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#8b98ab}.st{font-size:clamp(26px,3.2vw,40px);font-weight:800;margin-top:10px;line-height:1.15}
-    .qg{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}.qc{background:rgba(10,10,25,.5);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:18px}.qc:hover{border-color:rgba(192,132,252,.35)}
+    .qg{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:14px}.qc{background:rgba(10,10,25,.5);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:18px}.qc:hover{border-color:rgba(192,132,252,.35)}
     .db{font-size:12px;font-weight:700;padding:3px 10px;border-radius:100px}.dh{background:rgba(192,132,252,.14);color:#c084fc}.dm{background:rgba(255,227,77,.12);color:#FFE34D}.de{background:rgba(34,197,94,.15);color:#22c55e}.dp{background:rgba(255,255,255,.08);color:#94a3b8}.tt{font-size:12px;padding:3px 10px;border-radius:100px;background:rgba(124,58,237,.1);color:#a78bfa;font-weight:600}
     .tg{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}.tc{background:rgba(10,10,25,.6);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:20px 18px}
     .tbl{overflow-x:auto;border:1px solid rgba(255,255,255,.08);border-radius:14px;background:rgba(10,10,25,.55)}.tbl table{width:100%;border-collapse:collapse;min-width:560px}
@@ -161,7 +161,7 @@
   <span class="sl">How the interview runs (sourced)</span>
   <h2 class="st fd">The PayPal SQL interview, as candidates report it</h2>
   <p style="font-size:15px;color:#94a3b8;margin:14px 0 22px;max-width:760px;line-height:1.75;">PayPal does not publish the format. Each row is what candidates and prep guides have described publicly, with its source; where sources disagree, the row says so. Formats change — treat every specific as reported, not official.</p>
-  <div class="tbl"><table>
+  <div class="tbl" style="overflow-x:auto;-webkit-overflow-scrolling:touch;"><table>
     <tbody>
       <tr><th scope="row" style="text-align:left;vertical-align:top;padding:14px 16px;color:#e2e8f0;font-weight:700;font-size:14px;white-space:nowrap;border-bottom:1px solid rgba(255,255,255,.06);">Roles where SQL is tested</th><td style="padding:14px 16px;color:#94a3b8;font-size:14px;line-height:1.7;border-bottom:1px solid rgba(255,255,255,.06);">Data Science, Data Engineering and Data Analytics.<a href="#src-datalemur-pp" style="color:#8b98ab;text-decoration:none;font-size:11px;vertical-align:super;">[1]</a></td></tr>
       <tr><th scope="row" style="text-align:left;vertical-align:top;padding:14px 16px;color:#e2e8f0;font-weight:700;font-size:14px;white-space:nowrap;border-bottom:1px solid rgba(255,255,255,.06);">Data scientist process</th><td style="padding:14px 16px;color:#94a3b8;font-size:14px;line-height:1.7;border-bottom:1px solid rgba(255,255,255,.06);">A prep guide describes four to five rounds over three to four weeks, including a live SQL and Python round of 45–60 minutes on a shared screen. The guide does not say where its round descriptions come from.<a href="#src-prachub-guide-pp" style="color:#8b98ab;text-decoration:none;font-size:11px;vertical-align:super;">[6]</a></td></tr>
@@ -178,7 +178,7 @@
 <section id="topics" style="border-top:1px solid rgba(255,255,255,.04);"><div class="sec">
   <span class="sl">The SQL that comes up</span>
   <h2 class="st fd">What PayPal SQL questions test</h2>
-  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:28px;margin-top:22px;">
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:28px;margin-top:22px;">
     <div>
       <p style="font-size:14px;color:#e2e8f0;font-weight:700;margin-bottom:12px;">Reported most often, in order</p>
       <ul style="list-style:none;font-size:15px;color:#94a3b8;line-height:1.6;"><li style="margin:0 0 8px;"><span class="fm" style="color:#8b98ab;margin-right:8px;">1</span>Conditional aggregation (CASE WHEN inside SUM or COUNT)</li><li style="margin:0 0 8px;"><span class="fm" style="color:#8b98ab;margin-right:8px;">2</span>Aggregates in HAVING</li><li style="margin:0 0 8px;"><span class="fm" style="color:#8b98ab;margin-right:8px;">3</span>Joins, and filters in WHERE vs ON</li><li style="margin:0 0 8px;"><span class="fm" style="color:#8b98ab;margin-right:8px;">4</span>Ranking with ties (average transaction per user)</li><li style="margin:0 0 8px;"><span class="fm" style="color:#8b98ab;margin-right:8px;">5</span>Funnels and conversion rates</li><li style="margin:0 0 8px;"><span class="fm" style="color:#8b98ab;margin-right:8px;">6</span>Transaction-flow and segmentation analysis</li><li style="margin:0 0 8px;"><span class="fm" style="color:#8b98ab;margin-right:8px;">7</span>Anomaly and data-quality checks on transactions</li></ul>
@@ -269,6 +269,9 @@
     </div>
     <p style="text-align:center;margin-top:28px;">
       <a href="/sql-interview-prep/" style="font-size:13px;color:#94a3b8;text-decoration:none;border-bottom:1px solid rgba(255,255,255,.12);padding-bottom:2px;">See all company question sets &rarr;</a>
+    </p>
+    <p style="text-align:center;margin-top:14px;">
+      <a href="/sql-interview-questions-data-analyst/" style="font-size:13px;color:#94a3b8;text-decoration:none;border-bottom:1px solid rgba(255,255,255,.12);padding-bottom:2px;">Interviewing for a data analyst role? SQL interview questions for data analysts, by level &rarr;</a>
     </p>
   </div>
 </section>

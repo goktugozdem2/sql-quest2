@@ -15,6 +15,8 @@ C1 owns snippets, crawl and links, so C6 hands it the links each new page needs.
 - solve-through on the new questions against the bank's median for their level;
 - trials or purchases traced to a topic door, read quarterly. Topic doors convert worse than company doors (§1f), so this one is read slowly and honestly.
 
+Every ledger claim on a C6 page reads **`content_funnel` for that page** (docs/agent/metrics.md): landing people → app opened → first run → first solve → 3 solves → trial or purchase, 28-day row, at 28 and 56 days. `topic_funnel` stays the question-level read. A new page's baseline is 0.
+
 Founder's order, 2026-11-22: "SQL tarafında başka hangi konular var … günlük araştırıp içerik ve soru funnel'ı oluşturan bir agent … en niş konuları da eklesin, mesela DDL/DML gibi konular eksik bizde."
 
 ## What we cover today (measured 2026-11-22, 421 challenges, reference solutions grepped)
@@ -72,7 +74,7 @@ Rank by interview relevance (analyst and data engineer), search demand (web rese
    - prompts that never name the method;
    - reference solutions run and pinned in a test;
    - one common wrong answer that must fail.
-3. **Guide.** A blog post or guide in which every query shown runs in a test on our data, plus the dialect sentence (`dialect-notes.js`). It links to question 1 (`/app/?challenge=<id>&src=topic-<slug>`).
+3. **Guide.** A blog post or guide in which every query shown runs in a test on our data, plus the dialect sentence (`dialect-notes.js`). It links to question 1 (`/app/?challenge=<id>&src=topic-<slug>`). A link without a `src` gets the page's own door at build time (`scripts/stamp-app-src.mjs`) and `tests/app-link-src.test.js` fails on any that escapes, but write the `src` yourself.
 4. **Hub.** A `/challenges/<topic>/` page, made through `EXTRA_TOPIC_SPECS` in `scripts/build-topic-extra.mjs`, never by hand.
 5. **Links.** C1 adds the hub, the sitemap entry and related-links from existing pages, through the generators.
 

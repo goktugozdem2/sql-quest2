@@ -44,6 +44,7 @@ import { isFreePreview } from '../src/utils/challenge-order.js';
 import { bankCountLabel, freeTierSentence, FREE_SOLVE_QUOTA, COMPANY_SET_FREE_COUNT } from '../src/utils/display-count.js';
 import { archetypeMemberCompanies } from '../src/data/interview-archetypes.js';
 import SKELETONS from '../src/utils/skeletons.js';
+import { llmsEntryPoint } from './build-debug-pages.mjs';
 
 const __dirname = import.meta.dirname;
 const ROOT = path.resolve(__dirname, '..');
@@ -312,12 +313,16 @@ export const ENTRY_POINTS = [
   ['/app/', 'The practice app. No signup: the first challenge runs in the browser, and the Coach picks the next one from your Skillmap.'],
   ['/sql-interview-readiness-test/', 'Ten questions, no signup: a Skillmap across the nine skills and the one to fix first, optionally weighted for a named company.'],
   ['/sql-interview-prep/', 'The interview hub: every company interview page, grouped by sector.'],
+  ['/sql-interview-prep-plan/', 'A 2-week SQL interview prep plan: one of the nine skills a day, Easy to Hard questions linked for each, the readiness test first and a timed mock near the end.'],
+  ['/sql-mock-interview/', 'Timed SQL mock interviews in the browser: what each mock is (questions, minutes, pass mark), which one is free and which are Pro, and how to rehearse a timed screen.'],
   ['/sql-exercises/', 'SQL exercises by topic, with five worked solutions and the trap on each topic.'],
   ['/questions/', 'Every challenge in the bank as its own page: the prompt, the tables and the skills it measures.'],
   ['/sql-practice-comparison/', 'How SQL Quest compares with DataLemur, StrataScratch, LeetCode and HackerRank, with each competitor fact dated.'],
   ['/best-sql-practice-sites/', 'Five SQL practice sites reviewed side by side, including where each beats SQL Quest.'],
   ['/vs-chatgpt/', 'Why practise on questions with a fixed expected result instead of asking a chat assistant to grade you.'],
   ['/sql-tools/', 'Free in-browser SQL tools: a checker, an explainer and an optimizer.'],
+  // /sql-debugging-practice/ exists only while features.debugQuestions is true.
+  ...llmsEntryPoint(),
 ];
 
 // The buyer questions G1 measures every week (docs/agent/fleet/G1-geo.md,
@@ -349,12 +354,12 @@ export const BUYER_QUESTIONS = [
     a: 'The rounds candidates report, with dated sources, a tagged practice set on a neobank ledger and a timed mock.' },
   { panel: 10, q: 'Where can I practice SQL for a Meta data scientist interview?', paths: ['/meta-sql-interview/'],
     a: 'Meta-tagged practice problems on product-analytics tables.' },
-  { panel: 11, q: 'Where can I take a timed SQL mock interview online?', paths: ['/capital-one-sql-interview/', '/revolut-sql-interview/'],
-    a: 'The timed, scored company mocks live on these pages (Capital One, Revolut); they are Pro, and a free general mock lets you try the format first.' },
+  { panel: 11, q: 'Where can I take a timed SQL mock interview online?', paths: ['/sql-mock-interview/', '/capital-one-sql-interview/', '/revolut-sql-interview/'],
+    a: 'A timed SQL mock in the browser: one clock, a limit per question, your rows checked and a score at the end. One mock is free; the company mocks (Capital One, Revolut) are Pro.' },
   { panel: 12, q: 'How do I find my weak areas in SQL?', paths: ['/sql-interview-readiness-test/', '/sql-quiz/'],
     a: 'Ten questions, no signup: a Skillmap across the nine skills and the one to fix first; or a five-minute adaptive level quiz.' },
-  { panel: 13, q: 'Is there a 2-week SQL interview prep plan?', paths: ['/amazon-sql-interview/', '/sql-interview-prep/'],
-    a: 'A 2-week plan on the Amazon page, and the interview hub with every company page.' },
+  { panel: 13, q: 'Is there a 2-week SQL interview prep plan?', paths: ['/sql-interview-prep-plan/', '/sql-interview-prep/'],
+    a: 'A 2-week plan, day by day: one of the nine SQL skills a day with questions linked for each, a readiness test first and a timed mock near the end; the interview hub has every company page.' },
   { panel: 14, q: 'Where do I practice SQL after a bootcamp, to get interview-ready?', paths: ['/after-bootcamp/'],
     a: 'For bootcamp graduates: interview-level questions and the Coach that finds the gap the course left.' },
   { panel: 15, q: 'SQL mülakatına hazırlanmak için en iyi site hangisi?', paths: ['/turkce-sql-ogren/'],

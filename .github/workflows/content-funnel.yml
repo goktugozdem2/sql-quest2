@@ -1,0 +1,41 @@
+# The content funnel, mailed twice a week (2026-11-22, B2):
+#   Mondays and Thursdays 07:50 UTC, plus a manual run.
+# scripts/content-funnel-report.mjs reads the view public.content_funnel and
+# mails the per-page funnel to REPORT_TO. THE REPO IS PUBLIC: the job prints
+# no numbers, writes no step summary, changes nothing in the repo, and a
+# failure issue carries no numbers either. Guards: tests/content-funnel.test.js.
+# Secrets: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, RESEND_API_KEY, REPORT_TO.
+name: Content funnel
+
+on:
+  schedule:
+    - cron: '50 7 * * 1,4'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Content funnel report (mailed, never logged)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          REPORT_TO: ${{ secrets.REPORT_TO }}
+        run: node scripts/content-funnel-report.mjs
+      - name: Report the failure as an issue
+        if: failure() || cancelled()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          HINT: 'Script scripts/content-funnel-report.mjs, view public.content_funnel. The log carries no numbers by design. A 404 on content_funnel means migration 20261122160000_content_funnel_view.sql is not applied yet.'
+        run: bash scripts/gsc/notify-failure.sh "Content funnel report failed" "$RUN_URL" "$HINT"

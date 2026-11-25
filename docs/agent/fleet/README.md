@@ -6,6 +6,20 @@ by handing it its brief. The orchestrator is the main loop: the laptop
 session, with the scheduled task `sqlquest-autodev-loop` as its fallback.
 An agent reads `CLAUDE.md`, this file and its own brief, in that order.
 
+## G0 sets the day's work (2026-11-22)
+
+G0, the goal owner (`G0-goal.md`), runs first every day. A scheduled cloud
+task fires it at 06:47 Europe/Istanbul, and the laptop orchestrator runs it
+when no plan for the day exists. It does three things:
+- reads the current objective (`objectives.md`) against the newest numbers;
+- names the short lever;
+- writes `docs/agent/goal/<date>.md`: at most 6 rows, each with a lever, an
+  expected effect and a read date.
+
+**The orchestrator takes its rows from that plan before anything else.** The
+dated `queue-*.md` files are history. The running state of the objective is
+`docs/agent/goal/tracker.md`.
+
 ## The common protocol (every agent)
 
 0. **Check before you start (2026-11-22, from `docs/reads/autonomous-dev-sources-2026-11-22.md`).**
@@ -30,7 +44,27 @@ An agent reads `CLAUDE.md`, this file and its own brief, in that order.
    `ref:aocr.org`), internal usernames
    (`^(test|qa_|fabletest|linktest|internalroutine|sqlquest$|elena$)`), and
    the founder's own checkout tests (2026-11-20 guest sessions with reason
-   `email_link` and 0 solves).
+   `email_link` and 0 solves). Until they are stamped, also drop by hand
+   (C8, 2026-11-23; `docs/reads/traffic-2026-11-23.md`):
+   - the topic-page crawler (`topic1lang`, #246): first `app_opened`
+     with no `landingSrc`, `arrivalSrc` starting `challenges-` and
+     `langs = 1`;
+   - the UTC landing crawler (from 2026-11-22): a person whose
+     `landing_view` has `tz = 'UTC'` and who never reaches `app_opened`.
+     Its referrer is spoofed (`bing.com`, `google.com`), so it inflates
+     the search doors.
+   - the app-only one-language crawler (`app1lang`, C8 2026-11-24; it
+     widens `topic1lang`): first `app_opened` with no `landingSrc`,
+     `langs = 1`, and no `landing_view` ever, **whatever the
+     `arrivalSrc`**. On 11-24 the topic-page crawler left the
+     `challenges-` doors (81 → 3) for company and other page doors (65).
+     Since 2026-10-01, 873 people, 3 ran a query (0.3%).
+   - the `desktop:1024x1024` crawler (C8 2026-11-24, from 11-22): window
+     size `desktop:1024x1024`, mostly `tz = 'Etc/Unknown'`, one
+     `landing_engaged` (often no `landing_view`) per page; 21 people on
+     11-22, 7 on 11-23, 0 ever ran a query.
+   - the founder's walk guests on 2026-11-24 (`Europe/Istanbul`,
+     `mobile:375x812`, 11:00–11:08 UTC).
 3. **Proof.**
    - Every new test fails by name under one deliberate break, and the
      commit says which break.
@@ -98,6 +132,11 @@ An agent reads `CLAUDE.md`, this file and its own brief, in that order.
 
        FLEET-RESULT {"agent":"A2","outcome":"pr|merged|read|drafts|noop|blocked","prs":[123],"value":"one line: what changed for a person or what we learned","founder":["..."]}
 
+9. **Leave the lane's state behind.** Update `docs/agent/fleet/state/<ID>.md`
+   in the same PR: the last run, the next step and any open threads. It
+   holds no customer data. This is how a lane resumes in the other runtime
+   (2026-11-23).
+
 ## Two runtimes — who does what (2026-11-22)
 
 - **Cloud** (claude.ai/code): A0 gate, A1 reviewer and every lane that needs
@@ -107,7 +146,7 @@ An agent reads `CLAUDE.md`, this file and its own brief, in that order.
   production data, Gmail or sqlquest.app.
 - **Laptop** (the main session plus `sqlquest-autodev-loop`): the lanes that
   need read-only Supabase, the GSC/Bing tables, Gmail drafts or the live site
-  (B1, B2, A3, E1, C1/C2 reads, C8 traffic sources daily, S1 SEO sentinel daily, G1 GEO weekly, C3 backlinks daily, P1
+  (B1, B2, A3, E1, C1/C2 reads, C8 traffic sources daily, AN analytics breakdowns daily, S1 SEO sentinel daily, G1 GEO weekly, C3 backlinks daily, P1
   partnerships daily, production QA
   after a deploy). The laptop
   **does not review or merge cloud PRs**; it opens its own PRs and leaves
@@ -122,9 +161,23 @@ An agent reads `CLAUDE.md`, this file and its own brief, in that order.
 ## Budgets
 
 - At most **2 code agents** at a time; read and draft agents run beside them.
-- About **15 merges a day** across the fleet. The Vercel Hobby build limit
-  was hit on 2026-11-22, and a rate-limited deploy is never retried; the
+- About **15 site-affecting merges a day** across the fleet. The Vercel Hobby
+  build limit was hit on 2026-11-22 and again on 11-23: 88 commits in 24 h,
+  of which 23 were deployed, 35 cancelled by the ignore step (which still
+  counted) and 28 rate-limited. A rate-limited deploy is never retried; the
   next push is what deploys.
+- **Deploy budget rules (2026-11-23):**
+  - **The merge train.** Merges happen in at most two batches a day (see
+    `A0-gate.md`, rule 5).
+  - **Docs are batched.** The laptop self-merges docs-only PRs at most twice
+    a day, together: around 12:00 and 20:00 UTC, never one per read.
+  - **Deploy only on a site change.** `deploy-prod.yml` (from PR
+    `ci/deploy-prod-action`) deploys only when `public/` or another
+    site-affecting path changed since the live deployment. After the
+    founder's go, the Vercel Git integration stops creating deployments for
+    main (`ci/deploy-main-switch`).
+  - **Paid option, the founder's call.** Vercel Pro raises the limit. Hobby
+    is meant for non-commercial use.
 - When a run finds nothing worth doing, the agent reports `noop` and stops.
   A `noop` is a good outcome, not a failure.
 
