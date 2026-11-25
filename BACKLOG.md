@@ -591,7 +591,9 @@ off. Not built autonomously: it needs two deploys and a money decision.
 Each item needs the founder (cron, migration, deploy or auth). A3 does not
 touch them.
 
-- **A3-1. The 10:00 UTC mail crons time out together.** On 11-22,
+- **A3-1. The 10:00 UTC mail crons time out together.** RESOLVED 2026-11-24
+  (#225 deployed 11-23 13:21 UTC; the 11-24 10:00 runs all returned 200 in
+  13–14 s, no statement timeout). On 11-22,
   `skill-decay`, `welcome-back` and the 10:00 `streak-reminder` all
   returned 500. Each one reads every user with an email in a single request
   (`select username, email, data`). The three ran at once and hit the 8 s
@@ -613,13 +615,39 @@ touch them.
   Separately (auth, 6d): decide whether a timeout there should let the
   sign-up continue to the server's own check, instead of failing the form.
 - **A3-3. `my-referral-stats` was never deployed (it has been in the repo
-  since 05-02).** The profile and the referral modal call it. The preflight
+  since 05-02).** RESOLVED 2026-11-23 13:21 UTC (deployed; 5 POSTs answered
+  200 on 11-24). The profile and the referral modal call it. The preflight
   gets 404, so the server-owned `personal_ref_code` never reaches the
   client. Its RPC `get_my_referral_stats` exists in production.
   FOUNDER: `supabase functions deploy my-referral-stats`. Then open the
   referral modal once as a registered account and check that the card
   shows the server's code. `claim-referral-reward` is undeployed too; it
   is a separate decision, because it grants Pro.
+
+## Errors — A3, 2026-11-25 (docs/reads/errors-2026-11-25.md)
+
+- **A3-4. Deploy `stripe-webhook`: it is behind main, and it revoked Pro from a
+  converted trial.** The deployed webhook predates M-01: its rows carry no
+  `after_trial`, and its emails have no invoice button. On 11-24 a trial's
+  first charge failed with `attempt_count` 0 and no next attempt. The webhook
+  read that as "Stripe gave up" and revoked Pro within the hour. The fix is in
+  #355 (draft, held under rule 6d).
+  FOUNDER:
+  1. Review #355.
+  2. Run `supabase functions deploy stripe-webhook`.
+  3. In Stripe, open the subscription with the open $9 invoice of 11-24
+     19:00 UTC. If it is still unpaid, send the customer the invoice's
+     hosted link and restore Pro by hand until it is settled.
+- **A3-5. `pro_events` has no index on `username`, so per-person lookups scan
+  the table.** On 11-23 at 15:00 the `checkout-abandon` read
+  `username = … AND event IN (plan/checkout clicked)` hit the 8 s statement
+  timeout. That code ignores the error, so it treats the person as "never
+  clicked" and can send them the modal-abandon note (fail-open). The `used`
+  check before the recovery link has the same shape.
+  FOUNDER (no downtime):
+  `create index concurrently if not exists idx_pro_events_username_event on public.pro_events (username, event);`
+  Source half (any lane, small PR in `supabase/functions/checkout-abandon/`):
+  skip the person when either read returns an `error`.
 
 ## Competitor watch — B6, 2026-11-22 (docs/reads/competitors-2026-11-22.md)
 
