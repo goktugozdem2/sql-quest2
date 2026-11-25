@@ -36,6 +36,7 @@
 
 import { describe, it, expect, beforeAll } from 'vitest';
 import fs from 'node:fs';
+import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { loadBank, readCompanyPages } from '../scripts/build-llms-txt.js';
@@ -367,6 +368,22 @@ export function findTopicsProblems(pageSource, facts) {
 // ---------------------------------------------------------------------------
 export const OFF_SET_LINKS = {
   'google-sql-interview': [163, 172, 84],
+  // 2026-11-24 (C5): the first-screen "debug this query" item links to the
+  // app's Debug question with the same bug (scripts/company-first-screen.mjs).
+  // It is a Debug item, not Monzo-tagged, and the button says so.
+  'monzo-sql-interview': [336],
+};
+// What each page says about its off-set links (the waiver holds only while it does).
+export const OFF_SET_NOTE = {
+  'google-sql-interview': /-tagged window-function challenges in the set/,
+  'monzo-sql-interview': /from our Debug set, not the Monzo set/,
+};
+// The Debug items (src/data/debug-challenges.js) live outside the main bank.
+const debugIds = () => {
+  const sb = { window: {}, console: { log() {} } };
+  vm.createContext(sb);
+  vm.runInContext(fs.readFileSync(new URL('../src/data/debug-challenges.js', import.meta.url), 'utf8'), sb);
+  return new Set((sb.window.debugChallengesData || []).map(c => c.id));
 };
 const CARD_ANCHOR = /<a href="[^"]*[?&]challenge=(\d+)[^"]*"[^>]*>([\s\S]*?)<\/a>/g;
 const ANY_LINK = /[?&]challenge=(\d+)\b/g;
@@ -760,10 +777,12 @@ describe('4. every ?challenge= link and every challenge card resolves to the ban
       const p = pages.find(x => x.slug === slug);
       expect(p, slug).toBeTruthy();
       for (const id of ids) {
-        expect(p.facts.allById.has(id), `${slug}: off-set #${id} is not a challenge at all`).toBe(true);
+        const real = p.facts.allById.has(id) || debugIds().has(id);
+        expect(real, `${slug}: off-set #${id} is not a challenge at all`).toBe(true);
         expect(p.facts.byId.has(id), `${slug}: off-set #${id} IS tagged — drop it from OFF_SET_LINKS`).toBe(false);
       }
-      expect(p.text, `${slug} must say which challenges are in the set`).toMatch(/-tagged window-function challenges in the set/);
+      expect(OFF_SET_NOTE[slug], `${slug}: no OFF_SET_NOTE`).toBeTruthy();
+      expect(p.text, `${slug} must say which challenges are in the set`).toMatch(OFF_SET_NOTE[slug]);
     }
   });
 

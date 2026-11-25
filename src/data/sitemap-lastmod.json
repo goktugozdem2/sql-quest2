@@ -111,7 +111,7 @@
       "lastmod": "2026-11-25"
     },
     "/vs-datalemur/": {
-      "hash": "e3f178a7e3828487",
+      "hash": "b0b82f8050913ad2",
       "lastmod": "2026-11-25"
     },
     "/datalemur-karsilastirma/": {
@@ -119,27 +119,27 @@
       "lastmod": "2026-11-25"
     },
     "/vs-sqlbolt/": {
-      "hash": "57e5e306a6b75256",
+      "hash": "ad7f62a8dcbd5f8f",
       "lastmod": "2026-11-25"
     },
     "/vs-sqlzoo/": {
-      "hash": "8106a99dd5c60611",
+      "hash": "1d46b8d1454dfe89",
       "lastmod": "2026-11-25"
     },
     "/vs-stratascratch/": {
-      "hash": "5cdbad7f1432bbaf",
+      "hash": "40883678ea3e7ae3",
       "lastmod": "2026-11-25"
     },
     "/vs-leetcode-sql/": {
-      "hash": "7dbc505a12d08ff4",
+      "hash": "c5921f3e9564cf7c",
       "lastmod": "2026-11-25"
     },
     "/vs-hackerrank-sql/": {
-      "hash": "1efc2d1dfc236565",
+      "hash": "3f9e1bca008fb59e",
       "lastmod": "2026-11-25"
     },
     "/sql-practice-comparison/": {
-      "hash": "5d747bc84181f9ac",
+      "hash": "039ed3c091a407cf",
       "lastmod": "2026-11-25"
     },
     "/best-sql-practice-sites/": {
@@ -183,7 +183,7 @@
       "lastmod": "2026-11-25"
     },
     "/sql-exercises/": {
-      "hash": "3c87824d30d96bc8",
+      "hash": "95aed7bd1ce9bd85",
       "lastmod": "2026-11-25"
     },
     "/after-the-sql-course/": {
@@ -191,7 +191,7 @@
       "lastmod": "2026-11-24"
     },
     "/after-bootcamp/": {
-      "hash": "054a956c042232d6",
+      "hash": "e1a5080dfd87ba6f",
       "lastmod": "2026-11-25"
     },
     "/sql-for-the-ai-era/": {
@@ -199,7 +199,7 @@
       "lastmod": "2026-11-24"
     },
     "/challenges/": {
-      "hash": "abd825e6957cfa5e",
+      "hash": "5275ef676324c3cf",
       "lastmod": "2026-11-25"
     },
     "/challenges/aggregation/": {
@@ -231,11 +231,11 @@
       "lastmod": "2026-11-25"
     },
     "/challenges/subqueries/": {
-      "hash": "fcfd46c59adee9bf",
+      "hash": "bdab505532e3f8b7",
       "lastmod": "2026-11-25"
     },
     "/challenges/window-functions/": {
-      "hash": "a46f090fe0d20d27",
+      "hash": "dd81ccbb825c5e76",
       "lastmod": "2026-11-25"
     },
     "/challenges/ranking-functions/": {
@@ -243,7 +243,7 @@
       "lastmod": "2026-11-24"
     },
     "/challenges/advanced/": {
-      "hash": "e5f06ec476ca80bc",
+      "hash": "3662ad26f7fab95d",
       "lastmod": "2026-11-25"
     },
     "/blog/": {
@@ -411,7 +411,7 @@
       "lastmod": "2026-11-25"
     },
     "/monzo-sql-interview/": {
-      "hash": "e210f5f6d169b0f5",
+      "hash": "970d44dd610e04b3",
       "lastmod": "2026-11-25"
     },
     "/chime-sql-interview/": {
@@ -451,7 +451,7 @@
       "lastmod": "2026-11-25"
     },
     "/questions/": {
-      "hash": "8c2b81c815a53ee1",
+      "hash": "d9c514b00d5cca35",
       "lastmod": "2026-11-25"
     },
     "/questions/class-survival-breakdown/": {
@@ -815,16 +815,16 @@
       "lastmod": "2026-11-24"
     },
     "/questions/your-first-query/": {
-      "hash": "de76436092941f17",
-      "lastmod": "2026-11-24"
+      "hash": "b6dc3528ade032f9",
+      "lastmod": "2026-11-25"
     },
     "/questions/pick-your-columns/": {
-      "hash": "fa2a3c49a7215639",
-      "lastmod": "2026-11-24"
+      "hash": "7925fb1d3c76e52c",
+      "lastmod": "2026-11-25"
     },
     "/questions/filter-with-where/": {
-      "hash": "4a14ca995349cca6",
-      "lastmod": "2026-11-24"
+      "hash": "e42d46d689990f16",
+      "lastmod": "2026-11-25"
     },
     "/questions/comparison-operators/": {
       "hash": "fdf8aea3521cd031",
@@ -1711,16 +1711,16 @@
       "lastmod": "2026-11-24"
     },
     "/questions/the-sync-ran-twice/": {
-      "hash": "fbf41c7104c72b89",
-      "lastmod": "2026-11-24"
+      "hash": "40854b876598e4cc",
+      "lastmod": "2026-11-25"
     },
     "/questions/roll-februarys-units-into-the-totals/": {
-      "hash": "9aaf8cd266158bdf",
-      "lastmod": "2026-11-24"
+      "hash": "af326f3fbbd14e62",
+      "lastmod": "2026-11-25"
     },
     "/questions/a-refunds-table-that-says-no/": {
-      "hash": "1fe6ccc3c72d6bd6",
-      "lastmod": "2026-11-24"
+      "hash": "12507e9aa35a2e0b",
+      "lastmod": "2026-11-25"
     },
     "/questions/reconcile-two-payment-partners-reports/": {
       "hash": "5e6949ad51fa7fbe",
@@ -1772,6 +1772,26 @@
     },
     "/questions/do-early-habits-predict-retention/": {
       "hash": "e11e394dc79df1c5",
+      "lastmod": "2026-11-25"
+    },
+    "/questions/the-account-page-reads-every-order/": {
+      "hash": "22aeca1913587a6d",
+      "lastmod": "2026-11-25"
+    },
+    "/questions/clear-out-the-sign-ups-that-never-bought/": {
+      "hash": "b68bc5fc43d5af27",
+      "lastmod": "2026-11-25"
+    },
+    "/questions/give-every-customer-a-lifetime-spend/": {
+      "hash": "d1a9aee7f57924a9",
+      "lastmod": "2026-11-25"
+    },
+    "/questions/close-the-books-on-february/": {
+      "hash": "693d058dcf02c7ef",
+      "lastmod": "2026-11-25"
+    },
+    "/questions/apply-the-overnight-price-feed/": {
+      "hash": "97dae7aabd74d5f6",
       "lastmod": "2026-11-25"
     },
     "/sql-not-in-null/": {
