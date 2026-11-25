@@ -17,13 +17,31 @@ after the numbers move, timed to O2's checkpoints. EU grants are out: they
 want deep tech or an R&D consortium, and a company established in the EU or
 Türkiye.
 
+## How this fits the investor 90-day plan
+
+`docs/plans/investor-90-day-2026-11-25.md` (adopted the same day) governs:
+prove willingness to pay first, no new features, investor review on
+2027-02-23. This plan follows it:
+- **Credits now.** They cut the cost table A02 asks for (Claude is the
+  largest variable cost). No traction needed, no story to keep consistent.
+- **Equity conversations after the 2027-01-09 checkpoint** (6 payments). The
+  Emerge email and the YC submission use the numbers read that week, and
+  every answer matches the due-diligence answers doc on Drive. If 01-09
+  misses, YC still goes (deadline ~02-08), led by the interview-outcome story.
+- **Skill data as an asset (founder's idea, 11-25):** narrative only until
+  02-23. In applications: "every user adds measured skill + interview-outcome
+  data, a future channel into hiring". No new feature (a verified Skillmap
+  certificate) and no B2B panel (A11 parks B2B) before the review. Individual
+  data is never sold or shared; the privacy policy says we do not sell
+  personal information.
+
 ## The plan
 
 | # | Program | What it gives | Fit | When | Who | Draft |
 |---|---|---|---|---|---|---|
 | 1 | **Anthropic, Claude for Startups** | $1,000 API credits + Claude Team year (announced 2026-10-06; one report says paused 10-09: check the page) | High: the tutor's model bill | This week | Founder submits | `docs/outreach/funding/anthropic-startups.md` |
 | 2 | **AWS Activate, Founders tier** | $1,000 credits, up to $5,000 over time; usable on Bedrock | Medium: only if we move model calls to Bedrock or add AWS | This week | Founder submits | `docs/outreach/funding/aws-activate.md` |
-| 3 | **Emerge (London edtech pre-seed fund)** | Pre-seed cheque; Fund II $73M | Medium: edtech + future-of-work thesis | Email this week, ask for a call in January | Founder sends | `docs/outreach/funding/emerge-email.md` |
+| 3 | **Emerge (London edtech pre-seed fund)** | Pre-seed cheque; Fund II $73M | Medium: edtech + future-of-work thesis | Email the week of 2027-01-11, with the 01-09 checkpoint numbers | Founder sends | `docs/outreach/funding/emerge-email.md` |
 | 4 | **Y Combinator Spring 2027** | Standard YC deal | Medium today, higher if O2 moves | Draft now, submit ≤ 2027-01-31 (deadline estimated ~02-08, not yet published) | Founder submits | `docs/outreach/funding/yc-spring-2027.md` |
 | 5 | **WISE EdTech Accelerator (Qatar)** | Global edtech cohort, 5% acceptance | Low now; wants proven educational impact | Next window ~Sep–Oct 2027 | Calendar it | none yet |
 
@@ -69,13 +87,15 @@ Sources (2026-11-25):
 ## What the founder does, in order
 
 1. **Today:** open the Anthropic page; if the form is live, paste the answers
-   from the draft and submit. Same for AWS Activate.
-2. **This week:** fill the `[LAPTOP]` numbers in the YC and Emerge drafts from
-   Stripe and `pro_events` (the cloud has no production data). Send the
-   Emerge email from your own address.
-3. **2027-01-08 (O2 checkpoint):** re-read payers / 30 d. If ≥ 5, submit YC
-   with the new numbers. If < 5, still submit (YC reads founders, not only
-   numbers) but lead with the interview-outcome story, not revenue.
+   from the draft and submit. Same for AWS Activate (only if Bedrock as the
+   tutor's fallback is a yes).
+2. **2027-01-09 (investor-plan checkpoint, 6 payments):** read the numbers
+   from Stripe and `pro_events` (the cloud has no production data) and fill
+   every `[LAPTOP]` field in the YC and Emerge drafts. Check each answer
+   against the due-diligence answers doc.
+3. **Week of 2027-01-11:** send the Emerge email from your own address.
+   Submit YC by 2027-01-31. If the checkpoint missed, YC still goes, led by
+   the interview-outcome story, not revenue.
 4. **Log every submission** in the table below: date, result, credit amount.
 
 ## Log
