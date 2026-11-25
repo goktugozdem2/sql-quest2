@@ -956,6 +956,58 @@ select count(distinct n.username) as noted,
 from noted n left join answered a on a.username = n.username;
 ```
 
+## `at_work_share`
+
+Who already works with SQL (Moving up U2). Defined 2026-11-25, before the
+code ships (rule 6b). It needs one new value of an existing event:
+`intent_captured {intent: 'at_work'}`.
+
+_Copied verbatim from PR #369 (defined there 2026-11-25, before this code, rule 6b) because #369 is not on main yet; if #369 merges first, keep one copy. Implementation note: from the post-solve ask, `intent_captured` carries `atWorkOffered: true` while `intentAtWork` is on (the "Just exploring" answer too), so a window can be kept to answers given with the fifth answer on screen. The intake and the returning ask also offer it, but they write `intake_answered {step:'goal', value:'work'}`, never `intent_captured` (both are dark today); read them apart._
+
+**Primary:** of the people with an `intent_captured` in the window (their
+latest answer in it), the share whose answer is `at_work`. **Secondary,**
+per intent value: the share reaching 6 distinct solves within 28 days of the
+answer (`reach_6_rate`'s solve definition), and the webhook payers among
+them by username. People, filters and crawler rules as above. Only people
+with at least one `challenge_solved` in the window count; this drops the
+crawlers that answer nothing else.
+
+```sql
+with ev as (
+  select coalesce(((metadata #>> '{}')::jsonb)->>'aid', username) pid, username, event, created_at,
+         (metadata #>> '{}')::jsonb m
+  from pro_events
+  where username !~* '^(test|qa_|fabletest|linktest|internalroutine|sqlquest$|elena$)'
+    and coalesce(((metadata #>> '{}')::jsonb)->>'bot', 'false') <> 'true'
+    and created_at >= :from and created_at < :to + interval '28 days'
+    and event in ('intent_captured', 'challenge_solved')
+),
+answer as (select distinct on (pid) pid, m->>'intent' intent, created_at ta from ev
+           where event = 'intent_captured' and created_at < :to and m->>'intent' is not null
+           order by pid, created_at desc),
+solves as (select a.pid, count(distinct e.m->>'challengeId') n from answer a join ev e on e.pid = a.pid
+           and e.event = 'challenge_solved' and e.created_at between a.ta and a.ta + interval '28 days'
+           group by a.pid),
+payers as (select distinct username from pro_events
+           where reason = 'stripe_webhook' and event = 'pro_purchase_completed' and created_at >= :from),
+usernames as (select distinct pid, username from ev)
+select a.intent, count(distinct a.pid) answered,
+       round(100.0 * count(distinct a.pid) / sum(count(distinct a.pid)) over (), 1) pct_of_answers,
+       count(distinct a.pid) filter (where s.n >= 6) reached_6,
+       count(distinct u.username) filter (where u.username in (select username from payers)) payers
+from answer a join solves s using (pid)
+left join usernames u on u.pid = a.pid
+group by a.intent order by answered desc;
+```
+
+**Baseline (2026-11-25):** the answer does not exist. The intake's role
+field is on 12 rows, so there is no current measure of employed users.
+Volume check (this query, answers 10-01 → 10-29): 241 solvers answered,
+interview 119 (49%), job_ready 62, learning 60; so 10% `at_work` would be
+about 24 people per 28 days, and the window is readable.
+**Decision rule:** the plan's §8, U2. Guardrail: `first_solve_10m`, because
+the intent question is on the first screen.
+
 ## `first_solve_10m`
 
 **The activation number (founder, 2026-09-22).** Of people whose FIRST
