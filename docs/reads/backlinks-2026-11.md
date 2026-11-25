@@ -210,3 +210,128 @@ dropped list from that research:
 
 **Next live-link check:** Revarta and UCSD from 2026-12-07; no follow-up
 messages, as promised. **Live links: still 0.**
+
+---
+
+## 2026-11-24 (C3, laptop, daily run)
+
+**Nothing was sent, posted, opened or submitted by this run. No Gmail draft
+was created**, because neither new target publishes an address. Both are
+founder routes.
+
+### Stop rule: not applied
+
+The 7-day rule counts days with no founder sends, and the last sends were
+yesterday. Gmail Sent (searched 2026-11-24 ~11:45 UTC) holds three C3 drafts
+that the founder sent on **2026-11-23**: Data Science Weekly (~10:32 UTC),
+onjob.io (~11:45) and boot.dev (~12:45). Run 2's two forms also went out that
+day with his approval (Revarta, UCSD Library). That makes **5 sends from the
+queue, 1 day ago**. No reply has come back yet from any of the five domains,
+or from thequerylab.com.
+
+Still waiting on the founder:
+- the GitHub PRs/issue (awesome-data-analysis, data-science-interviews,
+  Extremesarova, The-Ultimate-List-of-Free-SQL-Resources). None has been
+  opened: `gh search prs/issues --author goktugozdem2` shows nothing outside
+  our repo since 11-20;
+- the unaddressed Data Career Jumpstart draft (reply-to-an-issue route);
+- the forms for TheQueryLab (needs a sign-in), Data Elixir (CleanTalk) and
+  the three reCAPTCHA forms;
+- the alternativeto.net edit.
+
+### Live-link check (curl, 2026-11-24 ~11:50 UTC)
+
+| Page | HTTP | `sqlquest.app` in HTML |
+|---|---|---|
+| PavelGrigoryevDS/awesome-data-analysis | 200 | no |
+| alexeygrigorev/data-science-interviews `awesome.md` | 200 | no |
+| amartinson193/The-Ultimate-List-of-Free-SQL-Resources README | 200 | no |
+| onjob.io/best/sql-practice-sites/ | 200 | no |
+| boot.dev/blog/backend/best-sql-practice-sites | 200 | no |
+| revarta.com/blog/best-interview-prep-app-for-data-analysts-2026 | 200 | no |
+| thequerylab.com/blog/best-sql-practice-websites | 200 | **yes, as plain text**: "6. SQL Quest", then "Website: sqlquest.app" with no `<a href>`, in both the rendered HTML and the RSC payload |
+
+TheQueryLab therefore counts as an **unlinked mention**, not a link. This
+settles the 11-23 question: the row exists, and it carries no link. The
+correction message from run 2 is still the founder's to send (sign-in
+required); it could also ask for the name to be linked.
+
+**Live links: still 0.**
+
+### Today's two opportunities
+
+| # | Page | Read | By | Last activity | Route | Odds |
+|---|---|---|---|---|---|---|
+| 1 | chandukongara.substack.com/p/the-7-sql-patterns-behind-most-data ("Chandu Explains") | 2026-11-24 | Chandu Kongara, independent writer, sells nothing | published **2026-11-21** | Substack comment (founder's Substack account) | medium |
+| 2 | Data With Sarah (datawithsarah1.beehiiv.com) | 2026-11-24 | Sarah Rajani, a senior data analyst (7+ years) | issue **2026-11-03**; weekly to monthly | subscribe, then reply to an issue ("Hit reply anytime" goes to her) | low |
+
+#### 1. "The 7 SQL patterns behind most data analyst interview questions": comment (FOUNDER)
+
+- **What it is.** A post from three days ago. It organises analyst
+  interview SQL into seven patterns and says to solve three questions per
+  pattern on DataLemur or LeetCode SQL 50 (both linked). Pattern 5 is "find
+  what's missing (anti-join)", and pattern 7 is dedupe to the latest row.
+- **Why a link helps the reader.** The post teaches the anti-join pattern.
+  The way it breaks most often in practice is `NOT IN` over a column that
+  holds a NULL: the query returns 0 rows and raises no error. Our
+  `https://sqlquest.app/sql-not-in-null/` shows that on real data with the
+  fix, and it is free to read with no account. It adds to the post and
+  does not replace its practice links.
+- **Route.** No email, contact page or about-page address was found (post,
+  footer, and a name search). Commenting is an outward post, so it is the
+  founder's to make. Answer first; the link is the last line.
+
+**Comment text (founder pastes it, or skips):**
+
+```
+Good list. One addition to pattern 5. If the anti-join is written as
+NOT IN (SELECT id FROM ...) and that subquery returns even one NULL,
+the whole query returns 0 rows with no error. x NOT IN (1, NULL) is
+never true. NOT EXISTS, or LEFT JOIN ... WHERE right.id IS NULL, both
+avoid it. I wrote the case up with data here, if it's useful to
+anyone: https://sqlquest.app/sql-not-in-null/
+
+(Disclosure: I build SQL Quest.)
+Göktuğ
+```
+
+#### 2. Data With Sarah: reply to an issue (FOUNDER, optional)
+
+- **What it is.** A newsletter for working analysts and job-seekers (SQL,
+  career, resumes). Its 2026-11-03 issue is "7 years in analytics. Would I
+  struggle to get hired today?", and its archive has a "quick SQL request"
+  story and a coffee data challenge. It shows no third-party tool roundups,
+  so a link would be a one-off mention at best. **Odds: low.**
+- **Page suggested:** `https://sqlquest.app/sql-join-fan-out/`. It covers
+  the "quick request" whose SUM comes out tripled, which is the workplace
+  angle she writes in.
+- **Route.** The only route is a reply to an issue, which needs a
+  subscription. No address is published, so there is no draft. If the
+  founder subscribes, a reply in the email-voice rule's shape would say
+  that he builds SQL Quest, name her 11-03 issue, and ask one question
+  (would a worked JOIN trap fit a future issue?), with no follow-up.
+
+### Looked at and skipped today
+
+| Target | Why not |
+|---|---|
+| academic/awesome-datascience (30k stars; it merged outside PRs on 11-16 and 11-17 and lists datadriven.io under Tutorials) | Its CONTRIBUTING requires any commercial or freemium listing to **pay** $1/month or $12/year through GitHub Sponsors. A paid listing is a bought link, which this lane does not do. It is the founder's call if he ever wants it. |
+| danhuss/awesome-sql (456 stars) | 12 outside "Add X" PRs are open since 10-25 and none is merged. It is a queue with no merges. |
+| mtahiraslan / mrankitgupta data-analyst-roadmap repos | Their only outside PRs sit unmerged for months. |
+| DopplerHQ/awesome-interview-questions | Last merge 2024-07. |
+| TLDR Data | No editorial submission route; only "Advertise". |
+| amlanmohanty1.substack.com (Data Career School) | A competitor ranking its own product first. |
+| analysthive.io "Where to practice SQL for free" | A vendor page (course and pricing) that links no site at all. No contact. |
+| dataelevateengineer.substack.com SQL resources post (2026-04-25) | Its list is all YouTube/LinkedIn short links to the author's own material, and there is no contact. |
+| aaboutdata.substack.com | The about page says nothing about SQL tools and gives no contact. |
+| University LibGuides / syllabi (two searches) | Only UCSD surfaced, and it was already contacted on 11-23. |
+
+### FOUNDER (today)
+
+1. Optional: post the comment above on Chandu Kongara's 11-21 post.
+2. Optional: subscribe to Data With Sarah and reply to an issue.
+3. Everything listed under "Still waiting on the founder" above, with the
+   GitHub PR on amartinson193 first: it merged every outside PR within a
+   day.
+
+**Next live-link check:** tomorrow. Revarta and UCSD from 2026-12-07.

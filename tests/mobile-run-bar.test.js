@@ -12,8 +12,8 @@ import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 import Database from 'better-sqlite3';
 import {
-  MOBILE_RUN_BAR_ARMS, MOBILE_RUN_BAR_STORAGE_KEY, MOBILE_RUN_BAR_MAX_WIDTH,
-  isNarrowTouch, mobileRunBarArm, mobileRunBarDecision, runBarLabel, keyboardOffset,
+  MOBILE_RUN_BAR_ARMS, MOBILE_RUN_BAR_STORAGE_KEY, MOBILE_RUN_BAR_MAX_WIDTH, MOBILE_RUN_BAR_MIN_HEIGHT,
+  isNarrowTouch, isShortViewport, mobileRunBarArm, mobileRunBarDecision, runBarLabel, keyboardOffset,
 } from '../src/utils/mobile-run-bar.js';
 import { firstScreenArm } from '../src/utils/first-screen.js';
 import { companyAskArm } from '../src/utils/company-ask.js';
@@ -280,4 +280,75 @@ it('the share bar lifts above the fixed Run bar on a phone', () => {
   const css = readFileSync(new URL('../src/input.css', import.meta.url), 'utf8');
   expect(app).toMatch(/function MilestoneShareBar[\s\S]{0,800}className="sq-share-bar fixed bottom-4/);
   expect(css).toMatch(/body\[data-run-bar="fixed"\] \.sq-share-bar \{\s*bottom: calc\(104px \+ env\(safe-area-inset-bottom\)\);/);
+});
+
+// iOS Simulator walk of the bar arm (iOS 18.6 Safari, iPhone 16e and 16 Pro
+// Max, 2026-11-24). Three defects, one guard each.
+describe('iOS walk 2026-11-24 — focus zoom, the radar toast, landscape', () => {
+  const appHtml = readFileSync(here('../src/app.html'), 'utf8');
+  // Every `@media (max-width: 767px)` block, comments stripped.
+  const phoneBlocks = [...css.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/@media \(max-width: 767px\) \{([\s\S]*?)\n\}/g)].map((m) => m[1]);
+
+  it('the challenge editor is 16px below md (iOS zooms a focused field under 16px), 14px from md up', () => {
+    const editorRule = phoneBlocks.find((b) => /\.sql-cm-editor \.CodeMirror\b[^{]*\{[^}]*font-size:\s*16px/.test(b));
+    expect(editorRule, 'a phone-width rule sets the editor to 16px').toBeTruthy();
+    // Desktop keeps the 14px editor.
+    expect(css).toMatch(/\.sql-cm-editor \.CodeMirror \{[^}]*font-size: 14px;/);
+    // Not by taking zoom away: no maximum-scale, no user-scalable=no.
+    const viewport = /<meta name="viewport" content="([^"]+)"/.exec(appHtml)?.[1] || '';
+    expect(viewport).toContain('width=device-width');
+    expect(viewport).not.toMatch(/maximum-scale|user-scalable\s*=\s*(no|0)/);
+  });
+
+  it('the radar toast lifts above the fixed bar on a phone, and keeps bottom-6 otherwise', () => {
+    expect(app).toMatch(/function RadarPopToast[\s\S]{0,800}className="sq-radar-pop fixed bottom-6 right-6 z-50/);
+    const block = /@media \(max-width: 767px\) \{([\s\S]*?)\n\}/.exec(css)?.[1] || '';
+    const lift = Number(/body\[data-run-bar="fixed"\] \.sq-radar-pop \{\s*bottom: calc\((\d+)px \+ env\(safe-area-inset-bottom\)\);/.exec(block)?.[1]);
+    const pad = Number(/padding-bottom:\s*calc\((\d+)px/.exec(block)?.[1]);
+    // At least the bar's own height allowance: it starts above the bar, not on it.
+    expect(lift).toBeGreaterThanOrEqual(pad);
+    // Only under the bar arm's body attribute: no bare .sq-radar-pop rule.
+    expect(css.replace(/\/\*[\s\S]*?\*\//g, '').replace(block, '')).not.toContain('.sq-radar-pop');
+  });
+
+  it('isShortViewport: a landscape phone is short, no portrait screen is, a tablet is not', () => {
+    expect(MOBILE_RUN_BAR_MIN_HEIGHT).toBe(500);
+    // iPhone 16e / 16 Pro Max landscape in Safari (layout viewport).
+    expect(isShortViewport({ innerWidth: 750, innerHeight: 340 })).toBe(true);
+    expect(isShortViewport({ innerWidth: 814, innerHeight: 390 })).toBe(true);
+    // Portrait, even the smallest phone, keeps the fixed bar.
+    expect(isShortViewport({ innerWidth: 390, innerHeight: 664 })).toBe(false);
+    expect(isShortViewport({ innerWidth: 320, innerHeight: 460 })).toBe(false);
+    // A tablet in landscape, and junk input.
+    expect(isShortViewport({ innerWidth: 1024, innerHeight: 700 })).toBe(false);
+    expect(isShortViewport({})).toBe(false);
+    expect(isShortViewport({ innerWidth: 750, innerHeight: NaN })).toBe(false);
+  });
+
+  it('a short viewport changes show only: the arm, the assignment and the record are the portrait ones', () => {
+    const aid = [...Array(200).keys()].map((i) => `aid-${i}`).find((x) => mobileRunBarArm(x) === 'bar');
+    const portrait = mobileRunBarDecision({ flagOn: true, narrowTouch: true, stored: null, aid });
+    const landscape = mobileRunBarDecision({ flagOn: true, narrowTouch: true, stored: null, aid, shortViewport: true });
+    expect(portrait).toEqual({ arm: 'bar', assign: true, show: true });
+    expect(landscape).toEqual({ arm: 'bar', assign: true, show: false });
+    // Stored arm: kept, never re-announced, shown again when the phone turns back.
+    const stored = { arm: 'bar', at: 1 };
+    expect(mobileRunBarDecision({ flagOn: true, narrowTouch: true, stored, aid, shortViewport: true })).toEqual({ arm: 'bar', assign: false, show: false });
+    expect(mobileRunBarDecision({ flagOn: true, narrowTouch: true, stored, aid, shortViewport: false })).toEqual({ arm: 'bar', assign: false, show: true });
+  });
+
+  it('the app re-decides on rotation with the live viewport, above the early returns', () => {
+    const a = app.indexOf('const decision = mobileRunBarDecision({');
+    const effectEnd = app.indexOf('}, [', app.indexOf('setMobileRunBarShown(decision.show);', a));
+    const deps = app.slice(effectEnd, app.indexOf(']);', effectEnd));
+    expect(app.slice(a, effectEnd)).toContain('shortViewport: runBarShortViewport,');
+    expect(deps).toContain('runBarShortViewport');
+    const hook = app.indexOf('const [runBarShortViewport, setRunBarShortViewport] = useState(');
+    expect(hook).toBeGreaterThan(0);
+    expect(hook).toBeLessThan(app.indexOf('\n  if (showAuth) {'));
+    const listener = app.slice(hook, a);
+    expect(listener).toMatch(/isShortViewport\(\{ innerWidth: window\.innerWidth, innerHeight: window\.innerHeight \}\)/);
+    expect(listener).toContain("window.addEventListener('resize', update);");
+    expect(listener).toContain("window.addEventListener('orientationchange', update);");
+  });
 });
