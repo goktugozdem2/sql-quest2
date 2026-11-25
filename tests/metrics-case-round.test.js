@@ -18,6 +18,7 @@ import { resultsMatch } from '../src/utils/grade.js';
 import { CASE_ROUND_MOCK_ID, freePreviewCount, canStartMock, mockRunFor, previewEndReason, canResumeProgress } from '../src/utils/case-round.js';
 import { COMPANY_INTERVIEWS } from '../src/data/company-interviews.js';
 import { caseRoundLine, CASE_ROUND_LINE } from '../scripts/build-company-pages.mjs';
+import { registeredMetrics } from '../scripts/ledger/due.mjs';
 
 const here = (rel) => fileURLToPath(new URL(rel, import.meta.url));
 const read = (rel) => readFileSync(here(rel), 'utf8');
@@ -370,5 +371,25 @@ describe('the company-page line: only where the page\'s own source says so', () 
     const d = { ...COMPANY_INTERVIEWS.chime, caseRound: { note: 'x', sources: ['made-up'] } };
     expect(() => caseRoundLine(d, 'chime-sql-interview')).toThrow(/cite/);
     expect(caseRoundLine({ ...COMPANY_INTERVIEWS.chime, caseRound: undefined }, 'chime-sql-interview')).toBe('');
+  });
+});
+
+describe('the claim: case_round_funnel, one name for one funnel', () => {
+  // A1 on #174 (2026-11-24): the PR defined `content_funnel`, the name main's
+  // per-landing-page funnel (#173) already had, so the claim's verdict would
+  // read UNDEFINED. Renamed `case_round_funnel` (2026-11-25).
+  const ledger = read('../docs/agent/ledger.md');
+  const metricsText = read('../docs/agent/metrics.md');
+  it('the ledger claim names case_round_funnel, and metrics.md defines it under that heading once', () => {
+    const claim = ledger.match(/### the Metrics & Case Round[^\n]*\n[\s\S]*?(?=\n### |\n## )/);
+    expect(claim).toBeTruthy();
+    const metric = claim[0].match(/\*\*Metric\*\* `([a-z0-9_]+)`/);
+    expect(metric && metric[1]).toBe('case_round_funnel');
+    expect(registeredMetrics(metricsText).has('case_round_funnel')).toBe(true);
+    expect(metricsText.match(/^## `case_round_funnel`$/gm)).toHaveLength(1);
+    // main's content_funnel stays the per-landing-page funnel, and only that
+    const cf = metricsText.match(/^## `content_funnel`\n[\s\S]*?(?=\n## )/gm) || [];
+    expect(cf).toHaveLength(1);
+    expect(cf[0]).not.toMatch(/metrics-case-round/);
   });
 });

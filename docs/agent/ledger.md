@@ -48,7 +48,7 @@ of the verifier and must never be rounded to `FLAT`.
   citing each page's own sources). **Not on Revolut:** its page's one source
   (interviewquery, Q3 2026) describes a SQL screen and a live SQL session,
   no metrics or case round; the line would invent one.
-- **Metric** `content_funnel` (metrics.md, defined in this PR), scoped to
+- **Metric** `case_round_funnel` (metrics.md, defined in this PR), scoped to
   `interviewId = 'metrics-case-round'`: entry (`interview_started`), free
   part finished, Pro modal (`pro_modal_shown {reason: 'case_round'}`) →
   checkout → trial or purchase.
