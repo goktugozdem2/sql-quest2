@@ -27,6 +27,42 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### /sql-ddl-dml-practice/: the topic door to the state-graded set (C6)
+
+- **Claimed** 2026-11-25 · **Shipped** on merge (generated page, no flag) ·
+  **Read** 28 and 56 days after the deploy (2026-12-23 and 2027-01-20 if it
+  ships 11-25).
+- **Change** One new indexable page, `scripts/build-ddl-dml-page.mjs` from
+  `src/data/sql-ddl-dml.js`: what INSERT … SELECT, UPDATE (correlated
+  subquery and UPDATE … FROM), DELETE, UPSERT, CREATE TABLE with
+  constraints, ALTER TABLE + backfill and CREATE INDEX do on SQLite, and one
+  trap each (positional INSERT, the NULL-writing UPDATE, DELETE with no
+  WHERE, an ON CONFLICT target with no UNIQUE behind it, foreign keys off by
+  default, the forgotten backfill, the second index column alone). All 24
+  statements run on a fresh `ecommerce` copy in
+  `tests/sql-ddl-dml-page.test.js`, which pins what the page prints. Links
+  out to 325-329 with `src=topic-ddl-dml`; 355-359 link themselves once #298
+  is on main (an id the bank does not hold renders nothing). Links in from
+  `/sql-exercises/` and `/challenges/`, sitemap block `ddl-dml`.
+- **Metric** `content_funnel` for page `sql-ddl-dml-practice` (landing people
+  → app opened → first run → first solve → 3 solves → trial or purchase,
+  28-day row) and `topic_funnel` for the door `topic-ddl-dml`.
+- **Baseline** 0 (a new page, a new door).
+- **Target** at 56 days: 30+ landing people (bot-filtered), 5+ of them open
+  the app through the page's door, and 2+ of those solve a DDL/DML question.
+  Trials or purchases are read, not targeted: topic doors convert worse than
+  company doors (§1f).
+- **Falsification** (written before the data) fewer than 10 landing people at
+  56 days → the page is not reached; check indexing (GSC/Bing status) before
+  the content, then merge it into `/sql-exercises/` or noindex it through
+  `src/data/seo-prune.json` (SEO-loop rule 3). Landing people but 0 app opens
+  through `topic-ddl-dml` → the page answers the question and gives no reason
+  to practise; move the practice links above the first section.
+- **Confounds** `/sql-exercises/` gained one line on the same deploy (a page
+  change there is read beside this). S1 was RED (Bing index ratio, F1) on the
+  day this was built; Bing numbers for a page born while red are read but not
+  judged.
+
 ### the interview date, asked after a company is named (company ask follow-up)
 
 - **Claimed** 2026-11-24 · **Shipped** dark behind `intakeAfterFirstSolve`

@@ -34,7 +34,7 @@ const EXTRA_CSS = `.bp{padding:13px 26px;font-size:15px;background:#FFE34D;color
 const ld = objs => objs.map(o => `  <script type="application/ld+json">${JSON.stringify(o)}</script>`).join('\n');
 
 /** The whole page around `body` (already HTML). */
-export function shell({ generator, dataFile, title, description, url, ldObjects, crumb, body }) {
+export function shell({ generator, dataFile, title, description, url, ldObjects, crumb, body, parent = { href: '/sql-interview-prep/', name: 'SQL Interview Prep' } }) {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -64,7 +64,7 @@ ${EXTRA_CSS}</style>
 <body>
 <nav class="nav"><div class="ni"><a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:#e2e8f0;"><span style="width:32px;height:32px;border-radius:9px;background:#7c3aed;display:inline-flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg></span><span class="fd" style="font-weight:800;font-size:18px;">SQL Quest</span></a><a href="/sql-interview-prep/" style="font-size:14px;">Interview prep</a></div></nav>
 <main class="wrap">
-  <p class="crumb"><a href="/">SQL Quest</a> › <a href="/sql-interview-prep/">SQL Interview Prep</a> › ${esc(crumb)}</p>
+  <p class="crumb"><a href="/">SQL Quest</a> › <a href="${parent.href}">${esc(parent.name)}</a> › ${esc(crumb)}</p>
 ${body}
 </main>
 <footer class="ft">SQL Quest — personalized SQL interview practice · <a href="/sql-interview-prep/">Company guides</a> · <a href="/questions/">All SQL interview questions</a> · <a href="/sql-exercises/">Practice by difficulty</a> · <a href="/privacy/">Privacy</a></footer>

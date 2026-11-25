@@ -1,6 +1,6 @@
 {
   "note": "Written by scripts/sitemap-lastmod.mjs. A page's date moves only when its built bytes change.",
-  "updated": "2026-11-24",
+  "updated": "2026-11-25",
   "pages": {
     "/": {
       "hash": "089928c6b20c2057",
@@ -183,8 +183,8 @@
       "lastmod": "2026-11-23"
     },
     "/sql-exercises/": {
-      "hash": "0436e91548673e3e",
-      "lastmod": "2026-11-24"
+      "hash": "543219e8deacad0e",
+      "lastmod": "2026-11-25"
     },
     "/after-the-sql-course/": {
       "hash": "f72817c70a9da409",
@@ -199,8 +199,8 @@
       "lastmod": "2026-11-23"
     },
     "/challenges/": {
-      "hash": "b198a576b924673c",
-      "lastmod": "2026-11-23"
+      "hash": "912a4725ea19a89a",
+      "lastmod": "2026-11-25"
     },
     "/challenges/aggregation/": {
       "hash": "fe4e460a17623332",
@@ -1757,6 +1757,10 @@
     "/sql-mock-interview/": {
       "hash": "755213f8c0120b9e",
       "lastmod": "2026-11-23"
+    },
+    "/sql-ddl-dml-practice/": {
+      "hash": "899ad010098fb80b",
+      "lastmod": "2026-11-25"
     },
     "/sql-debugging-practice/": {
       "hash": "638dff88a1e61df0",
