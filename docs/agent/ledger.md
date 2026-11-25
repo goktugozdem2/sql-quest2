@@ -47,6 +47,136 @@ of the verifier and must never be rounded to `FLAT`.
   median with 10+ openers is rewritten or removed. Under 10 openers the card
   is `UNREADABLE`, not a miss.
 
+### /sql-interview-questions-data-analyst/ on Google — the /sql-exercises/ link push, next page (C1)
+
+- **Claimed** 2026-11-23 · **Shipped** on merge (static pages, no flag) ·
+  **Read** 2027-01-18 (ship + 56 days).
+- **Why this page.** The /sql-exercises/ claim read HIT on 2026-11-23
+  (24.5 → 11.3 after its linking pages went 31 → 132) and its Next line asks
+  for the same push on the next page-two page, one page per claim. In the
+  `gsc_daily` page slice, 28 days 10-26 → 11-22, the sitemap pages at an
+  impression-weighted position of 11–20, by impressions:
+  `/blog/sql-joins-explained/` 947 imp · 2 clk · 18.1 (39 linking pages) ·
+  **`/sql-interview-questions-data-analyst/` 196 · 3 · 17.4 (4)** ·
+  `/blog/window-functions-tutorial/` 146 · 0 · 13.5 (33) ·
+  `/blog/recursive-cte-explained/` 111 · 1 · 16.1 (32) ·
+  `/challenges/` 103 · 7 · 12.5 (12). Linking pages are
+  `scripts/seo/inbound-links.mjs` (distinct built pages, nav/footer/link
+  strips removed). This page leads to the product (an interview-prep page
+  for the role two of the first three payers were preparing for), and it is
+  the /sql-exercises/ shape: 4 linking pages (/sql-exercises/ had 31 before
+  its push) on a page Google already shows. Not in `seo-prune.json`, not
+  in C1's queue (`docs/reads/c1-search-week-2026-11-23.md`), no snippet
+  change since 09-24.
+- **Change.** Internal links to the page **4 → 76 linking pages**, title
+  and description untouched (so, unlike /sql-exercises/, the read isolates
+  the link lever). Sources: the "Keep prepping" strip on all 34 company
+  pages (`scripts/build-company-crosslinks.mjs`), and one contextual line on
+  38 pages through `scripts/build-related-links.mjs`: the nine hand-written
+  topic pages and `/challenges/`, 19 blog posts and the blog index, `/sql-exercises/`,
+  `/sql-quiz/`, `/sql-tutorial/`, `/sql-cheat-sheet/`,
+  `/best-sql-practice-sites/`, `/fraud-analytics-sql/`, `/after-bootcamp/`,
+  `/after-the-sql-course/`. Left out on purpose: the `/questions/` template
+  (Bing's #72 read runs on those pages), the two generated topic pages, the
+  Turkish posts, and the posts with a pending snippet read
+  (`/blog/validate-ai-generated-sql/`, `/blog/null-handling-mistakes/`).
+  Guard: `tests/data-analyst-links.test.js`.
+- **Title not changed, and why.** 3 clicks on 196 impressions, but 69 of the
+  116 impressions the query+page slice can attribute are the brand queries
+  "sqlquest" / "sql quest" at position 1.0 (sitelinks); the page's real query,
+  "sql interview questions for data analyst", sits at **42.8** (27
+  impressions, 1 click). The constraint is rank, not the snippet.
+- **Metric** `gsc_position('/sql-interview-questions-data-analyst/')`
+  (metrics.md, `gsc_position`): impression-weighted position and clicks over
+  the `gsc_daily` page slice (`query IS NULL`), 28 days ending on the latest
+  date in the table. **Guard read on the same rows:** the query+page slice
+  with `query ~* 'sql ?quest'` removed — the page slice blends brand
+  sitelinks at 1.0 with the real query at ~42, so a shift in the brand share
+  alone can move it (the weekly series ran 6.3 to 24.5 between 09-07 and
+  11-16 at 26–70 impressions a week).
+- **Baseline** page slice 10-26 → 11-22: **196 impressions, 3 clicks,
+  17.4** (90 days 08-25 → 11-22: 560, 7, 18.5). Non-brand, query+page
+  slice, same 28 days: 47 impressions, 1 click, **40.7**.
+- **Target** page-slice position **≤ 15** over the 28 days to the read date,
+  **and** the non-brand position ≤ 30 — the second says the page moved, not
+  the brand mix.
+- **Falsification (written now).** Page slice above **16** over the 28 days
+  and non-brand position still ≥ **38** → at this page, 72 more linking pages
+  moved nothing; links were not the constraint, and the next page in the list
+  is not worth the same push until `docs/plans/backlinks-2026-09-11.md`
+  moves. Page slice ≤ 15 with non-brand ≥ 38 is **UNREADABLE** (a mix shift),
+  never HIT. Fewer than 25 non-brand impressions in the window is
+  UNREADABLE.
+- **Confounds** #162 rewrote the snippets of seven company pages this month
+  (their bodies change here, not their snippets); Google's site-wide
+  impressions are rising (7,177 → 8,896 a week, C1 11-23) — read against the
+  site's page-slice position for the same windows. 72 pages get a new
+  lastmod, so IndexNow pings Bing for them on deploy; none is a
+  `/questions/` page.
+
+### learn → practice → next step on two topic pages (pilot)
+
+- **Claimed** 2026-11-23 · **Live** on the deploy that merges
+  `seo/topic-learn-pilot` · **Read** 28 days after that deploy (about
+  2026-12-21).
+- **Change** `/challenges/window-functions/` and `/challenges/cte/` get three
+  blocks above their challenge lists (`scripts/build-topic-learn.mjs`, content
+  `src/data/topic-learn.js`): "Learn it in 3 minutes" (plain words, the
+  syntax, one worked example on a tiny table with its result, an "Edit and
+  run" box that loads sql.js only on click, one common mistake with a link —
+  the join fan-out trap page on the CTE page); "Now try it", an Easy → Medium
+  → Hard ladder picked in curriculum order (window 168 → 112 → 23, CTE 179 →
+  111 → 50; all three playable free, the Hard ones are free previews), deep
+  links `/app/?challenge=<id>&src=topic-learn-<slug>`; "The next step" (the
+  readiness test, the three company sets that weigh the topic,
+  `freeTierSentence`). Events `learn_example_run`, `learn_ladder_click`,
+  `learn_next_step` (track.js, `reason='landing'`). The two tutorials
+  (`sql-cte-tutorial`, `window-functions-tutorial`) link the pages as
+  "Practice it" (`cta_blog_practice_it`). No new page (SEO rule 1).
+- **Why** GSC, 90 days: the tutorial posts get impressions and no clicks
+  (sql-cte-tutorial 5,848 / 9 at position 22; sql-joins-explained 4,038 / 6;
+  sql-group-by-tutorial 2,241 / 5), the practice pages win the click
+  (window-functions 793 / 50 at position 10; cte 844 / 39). Payers came from
+  company pages (7 of 15) and /sql-exercises/ (3), none from a tutorial. So
+  the explanation goes onto the page that already ranks and converts.
+- **Metric** `seo_page_funnel`, per page and per group: people (by `aid`,
+  bots, internal users and Asia/Shanghai out) whose FIRST `landing_view` in
+  the window was on the page → `app_opened` ≤ 7 days → `challenge_solved`
+  ≤ 7 days. Pilot = the two pages; control = the seven untouched hand-written
+  topic pages (joins, aggregation, case-when, subqueries, null-handling,
+  date-functions, string-functions). Context slices: `arrivalSrc` starting
+  `topic-learn-` on `app_opened` (how much of the arrival the ladder
+  carries), and people with each of the three events.
+- **Baseline** (landings 2026-10-26 → 11-22, read 2026-11-23 through the
+  read-only MCP; the last week's 7-day follow-up is truncated, and the read
+  uses the same rule):
+
+  | group | landed | opened ≤ 7d | solved ≤ 7d |
+  |---|---|---|---|
+  | pilot | 96 | 51 (53.1%) | 21 (21.9%) |
+  | · window-functions | 60 | 25 (41.7%) | 15 (25.0%) |
+  | · cte | 36 | 26 (72.2%) | 6 (16.7%) |
+  | control (7 pages) | 135 | 51 (37.8%) | 13 (9.6%) |
+
+- **Target** the pilot's landed → solved rate reaches **≥ 30%** while the
+  control stays within ±5 points of 9.6%, i.e. the pilot − control gap widens
+  from 12.3 to **≥ 18 points**; and **≥ 15%** of pilot landing people click a
+  ladder step (`learn_ladder_click`).
+- **Guardrails** the pilot's landed → opened rate stays at or above 45%; the
+  two pages' GSC clicks over the 28 days do not fall more than 25% against the
+  28 days before while the control's do not fall.
+- **Falsification, stated in advance:** pilot landed → solved at or below
+  21.9%, or the gap not wider than 12.3 points → the learn block does not
+  convert; if fewer than 5% of pilot landers also ran the example, remove the
+  learn block and keep the ladder and the next step. A guardrail breach (GSC
+  clicks down > 25% on the two pages only) → revert the whole block. Fewer
+  than 80 pilot landers in the window → **UNREADABLE** (at n ≈ 100 one
+  standard error is about 4 points), extend 28 days, do not roll out.
+- **Confounds** the bank and the free quota are unchanged in the window as of
+  the claim; any change to the seven control pages before the read voids the
+  comparison (`tests/topic-learn-pilot.test.js` fails if one of them gains
+  the pilot's blocks).
+
 ### real-user speed is measured (`web-vitals`)
 
 - **Claimed** 2026-11-24 · **Shipped** live (no flag) in the code PR that
