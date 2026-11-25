@@ -63,6 +63,10 @@ export const SNIPPET_PAGES = [
   // 2026-11-22: "rollup interview questions" — 657 impressions at 8.9, zero
   // clicks, on a question page that does not answer it. The new page that does.
   { src: 'src/sql-rollup-interview-questions.html', built: 'public/sql-rollup-interview-questions/index.html' },
+  // 2026-11-22, the G1 GEO read: no page answered "2-week SQL interview prep
+  // plan" or "timed SQL mock interview online" (panel prompts #13 and #11).
+  { src: 'src/sql-interview-prep-plan.html', built: 'public/sql-interview-prep-plan/index.html' },
+  { src: 'src/sql-mock-interview.html', built: 'public/sql-mock-interview/index.html' },
 ];
 
 // "228 free", "300+ free", "(18 Free)", "first 10 solves", "10 free challenge
@@ -278,5 +282,84 @@ describe('the Capital One title states the tagged set it opens', () => {
     expect(title).toMatch(/\(\d{4}\)/);
     expect(Number(title.match(/(\d+) Questions/)[1])).toBe(tagged);
     expect(Number(description.match(/(\d+) runnable questions/)[1])).toBe(tagged);
+  });
+});
+
+// Every company page and every blog post (new-content QA 2026-11-23, D5).
+// PayPal 82, Chime 78, Coinbase 77, Monzo 75 and the Revolut blog post 78
+// shipped over TITLE_MAX in November because nothing checked a page that was
+// not in SNIPPET_PAGES. A ratchet: every page in the two families stays at
+// or under TITLE_MAX, except the ones listed here, which were over it on
+// 2026-11-23 and get shortened one read at a time. The list may only shrink:
+// a listed page that now fits must leave it.
+export const TITLE_OVER_CAP_2026_11_23 = new Set([
+  'airbnb-sql-interview.html',
+  'anthropic-sql-interview.html',
+  'apple-sql-interview.html',
+  'bloomberg-sql-interview.html',
+  'doordash-sql-interview.html',
+  'goldman-sachs-sql-interview.html',
+  'google-sql-interview.html',
+  'jpmorgan-sql-interview.html',
+  'linkedin-sql-interview.html',
+  'meta-sql-interview.html',
+  'microsoft-sql-interview.html',
+  'morgan-stanley-sql-interview.html',
+  'netflix-sql-interview.html',
+  'nvidia-sql-interview.html',
+  'openai-sql-interview.html',
+  'ramp-sql-interview.html',
+  'shopify-sql-interview.html',
+  'snowflake-sql-interview.html',
+  'spotify-sql-interview.html',
+  'stripe-sql-interview.html',
+  'tesla-sql-interview.html',
+  'tiktok-sql-interview.html',
+  'uber-sql-interview.html',
+  'walmart-sql-interview.html',
+  'wise-sql-interview.html',
+  'blog/capital-one-codesignal-data-analyst-assessment.html',
+  'blog/is-null-vs-equals-null.html',
+  'blog/left-join-vs-inner-join.html',
+  'blog/sql-anti-join.html',
+  'blog/sql-case-when-tutorial.html',
+  'blog/sql-cte-tutorial.html',
+  'blog/sql-for-ai-company-interviews.html',
+  'blog/sql-for-fraud-analytics.html',
+  'blog/sql-group-by-tutorial.html',
+  'blog/sql-join-nedir.html',
+  'blog/time-series-sql-hardware-interviews.html',
+  'blog/what-is-a-cte-in-sql.html',
+  'blog/where-vs-having.html',
+]);
+
+describe('every company page and blog post: title within the cap (ratchet)', () => {
+  const pages = [
+    ...fs.readdirSync(path.join(ROOT, 'src')).filter(f => f.endsWith('-sql-interview.html')),
+    ...fs.readdirSync(path.join(ROOT, 'src/blog')).filter(f => f.endsWith('.html')).map(f => `blog/${f}`),
+  ];
+  it('finds both families', () => {
+    expect(pages.filter(p => p.startsWith('blog/')).length).toBeGreaterThan(10);
+    expect(pages.filter(p => !p.startsWith('blog/')).length).toBeGreaterThan(20);
+  });
+  it(`no page outside the 2026-11-23 list has a title over ${TITLE_MAX} characters`, () => {
+    const over = pages
+      .map(p => [p, snippetFields(fs.readFileSync(path.join(ROOT, 'src', p), 'utf8')).title || ''])
+      .filter(([p, t]) => t.length > TITLE_MAX && !TITLE_OVER_CAP_2026_11_23.has(p))
+      .map(([p, t]) => `${p}: ${t.length} "${t}"`);
+    expect(over).toEqual([]);
+  });
+  it('the list only shrinks: every listed page exists and is still over the cap', () => {
+    const stale = [...TITLE_OVER_CAP_2026_11_23].filter(p => {
+      const f = path.join(ROOT, 'src', p);
+      return !fs.existsSync(f) || (snippetFields(fs.readFileSync(f, 'utf8')).title || '').length <= TITLE_MAX;
+    });
+    expect(stale).toEqual([]);
+  });
+  it('the five pages the QA found are not on the list', () => {
+    for (const p of ['paypal-sql-interview.html', 'chime-sql-interview.html', 'coinbase-sql-interview.html', 'monzo-sql-interview.html', 'blog/revolut-data-analyst-sql-screen.html']) {
+      expect(pages).toContain(p);
+      expect(TITLE_OVER_CAP_2026_11_23.has(p)).toBe(false);
+    }
   });
 });

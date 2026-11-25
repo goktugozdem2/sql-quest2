@@ -1,0 +1,144 @@
+# Production deploys made by this workflow, not by Vercel's Git integration
+# (2026-11-23). On 2026-11-22 main got 88 commits: 23 deployed, 35 were
+# "Canceled by Ignored Build Step" (scripts/vercel-ignore.sh still CREATES a
+# deployment, and creations count against Hobby's 100 a day), 28 were "rate
+# limited — retry in 24 hours", which Vercel never retries. Here a deployment
+# is created only when the served site would change.
+#
+# Decision (scripts/deploy-decide.sh): the commit of the LIVE production
+# deployment (scripts/vercel-live-sha.sh — the newest READY production
+# deployment, via the API) is diffed against main's HEAD with the path rule in
+# scripts/site-paths.sh, the same file vercel-ignore.sh reads. Deploy when a
+# file that reaches the site changed, when the live commit is unknown, or on a
+# manual run with force. Never against HEAD^: that is the 11-22 stranding bug.
+#
+# Until vercel.json sets git.deploymentEnabled.main=false (the separate
+# switch PR), push and schedule runs skip — the Git integration is still
+# deploying — and only a manual run deploys. That is how the first deploy is
+# checked before anything is switched.
+#
+# Batching: one run at a time (group deploy-prod, never cancelled); GitHub
+# keeps only the newest pending run, so a burst of merges becomes one deploy
+# of main's HEAD. The 6-hourly schedule is the safety net for a run that
+# failed or was dropped.
+#
+# After a deploy: smoke.yml and indexnow.yml start on the same push to main
+# and poll the live site until this commit's build is served (app.js hash,
+# then the sitemap; 10-minute ceiling) — they are keyed to the push, not to a
+# Vercel deployment event, so nothing here needs to call them.
+#
+# Secrets (repo → Settings → Secrets and variables → Actions), shared with the
+# smoke rollback: VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID. They are only
+# ever environment variables; nothing prints them. Without the token a push or
+# schedule run skips with a warning; a run started by hand fails.
+name: Deploy (production)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      force:
+        description: 'Deploy even if no site file changed since the live deployment'
+        type: boolean
+        default: false
+  schedule:
+    - cron: '23 */6 * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
+
+env:
+  VERCEL_CLI: vercel@65.14.0
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      # main's HEAD, not the pushed sha: a run that waited in the queue deploys
+      # everything merged meanwhile, and the next run finds nothing to do.
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Are the Vercel secrets configured?
+        id: cfg
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          if [ -n "$VERCEL_TOKEN" ] && [ -n "$VERCEL_ORG_ID" ] && [ -n "$VERCEL_PROJECT_ID" ]; then
+            echo "on=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "::warning::VERCEL_TOKEN, VERCEL_ORG_ID or VERCEL_PROJECT_ID is not set, so nothing was deployed. Add them under Settings → Secrets and variables → Actions."
+          echo "on=false" >> "$GITHUB_OUTPUT"
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            echo "A run started by hand needs the three secrets." >&2
+            exit 1
+          fi
+
+      - name: Which commit is live?
+        id: live
+        if: steps.cfg.outputs.on == 'true'
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          live_sha="$(bash scripts/vercel-live-sha.sh)"
+          echo "sha=$live_sha" >> "$GITHUB_OUTPUT"
+          echo "live production deployment: ${live_sha:-unknown commit}"
+
+      - name: Decide whether the site changed since then
+        id: decide
+        if: steps.cfg.outputs.on == 'true'
+        env:
+          LIVE_SHA: ${{ steps.live.outputs.sha }}
+          FORCE: ${{ inputs.force == true }}
+          EVENT: ${{ github.event_name }}
+        run: bash scripts/deploy-decide.sh
+
+      - uses: actions/setup-node@v4
+        if: steps.decide.outputs.deploy == 'true'
+        with:
+          node-version: 22
+
+      - name: vercel pull (production settings and env)
+        if: steps.decide.outputs.deploy == 'true'
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: npx --yes "$VERCEL_CLI" pull --yes --environment=production --token="$VERCEL_TOKEN"
+
+      - name: vercel build --prod
+        if: steps.decide.outputs.deploy == 'true'
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: npx --yes "$VERCEL_CLI" build --prod --token="$VERCEL_TOKEN"
+
+      # deployCommitSha is what scripts/vercel-live-sha.sh reads back next time.
+      - name: vercel deploy --prebuilt --prod
+        id: deploy
+        if: steps.decide.outputs.deploy == 'true'
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          head_sha="$(git rev-parse HEAD)"
+          url="$(npx --yes "$VERCEL_CLI" deploy --prebuilt --prod --meta deployCommitSha="$head_sha" --token="$VERCEL_TOKEN")"
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "deployed $head_sha → $url"
+          echo "Deployed \`$head_sha\` to production: $url" >> "$GITHUB_STEP_SUMMARY"

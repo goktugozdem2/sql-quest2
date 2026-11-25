@@ -3,16 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SQL CTE Practice — 68 Challenges: Multiple CTEs to Recursive | SQLQuest.app</title>
+  <title>SQL CTE Practice — 69 Challenges: Multiple CTEs to Recursive | SQLQuest.app</title>
   <!-- 2026-09-07: moved from public/ to src/challenges/ so build-static-pages.js injects track.js. The population here is "reference solution uses WITH" over the FULL bank (the method the 47/18/13/3 figures below were already counted with, and which /blog/sql-cte-tutorial/ quotes), not the CTE tag (37 tagged, 14 free — 11 sector solutions reach for WITH without carrying the tag). TOPIC_PAGES in tests/site-counts.test.js binds every number on this page to that count — re-run the test, do not retype. -->
   <!-- 2026-09-07: "15+" replaced with the bank count (47 solutions use WITH, 18 free, 13 multi-CTE, 3 recursive) — counted from src/data via scripts/build-llms-txt.js loadBank(); re-count before editing. -->
-  <meta name="description" content="SQL CTE practice: 68 challenges solved with a WITH clause — including 21 that chain multiple CTEs and 3 recursive. Runs in your browser, no signup. September 2026.">
+  <meta name="description" content="SQL CTE practice: 69 challenges solved with a WITH clause — including 22 that chain multiple CTEs and 3 recursive. Runs in your browser, no signup. September 2026.">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://sqlquest.app/challenges/cte/">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://sqlquest.app/challenges/cte/">
-  <meta property="og:title" content="SQL CTE Practice — 68 Challenges: Multiple CTEs to Recursive | SQLQuest.app">
-  <meta property="og:description" content="68 SQL CTE challenges — including 21 that chain multiple CTEs and 3 recursive. Runs in your browser, no signup.">
+  <meta property="og:title" content="SQL CTE Practice — 69 Challenges: Multiple CTEs to Recursive | SQLQuest.app">
+  <meta property="og:description" content="69 SQL CTE challenges — including 22 that chain multiple CTEs and 3 recursive. Runs in your browser, no signup.">
   <meta property="og:image" content="https://sqlquest.app/og-image.png">
   <meta name="twitter:card" content="summary_large_image">
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"SQL CTEs (Common Table Expressions) Practice","url":"https://sqlquest.app/challenges/cte/","breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"SQL Exercises","item":"https://sqlquest.app/sql-exercises/"},{"@type":"ListItem","position":3,"name":"SQL CTEs (Common Table Expressions)","item":"https://sqlquest.app/challenges/cte/"}]}}</script>
@@ -43,6 +43,41 @@
     .tag{font-size:11px;font-weight:700;padding:3px 10px;border-radius:100px;display:inline-block}.tag.easy{background:rgba(124,196,255,.12);color:#7CC4FF}.tag.medium{background:rgba(255,176,32,.15);color:#FFB020}.tag.hard{background:rgba(255,107,107,.15);color:#FF6B6B}.tag.free{background:rgba(74,222,128,.12);color:#4ADE80}.tag.pro{background:rgba(255,255,255,.06);color:#94a3b8}
     .btn-practice{font-size:13px;color:#c084fc;border:1px solid rgba(124,58,237,.3);padding:7px 16px;border-radius:8px;display:inline-block;transition:all .2s;text-decoration:none}.btn-practice:hover{background:rgba(124,58,237,.12);text-decoration:none}
   </style>
+<style data-topic-learn>
+    .tl{--tl-surface:#16181F;--tl-surface2:#1F222B;--tl-border:#2A2E38;--tl-text:#F2F0EA;--tl-muted:#8A8E99;--tl-accent:#FFE34D;--tl-ink:#0E0F13}
+    .tl{text-align:left;scroll-margin-top:90px}.tl-in{margin-top:56px}
+    .tl h2{font-size:clamp(22px,2.8vw,30px);font-weight:800;margin-bottom:14px;text-align:left;color:var(--tl-text)}
+    .tl p{font-size:15px;line-height:1.75;color:#94a3b8;margin:0 0 14px;max-width:none;text-align:left}
+    .tl .tl-eyebrow{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--tl-muted);margin-bottom:8px}
+    .tl h3{font-size:17px;font-weight:700;color:var(--tl-text);margin:28px 0 10px;text-align:left}
+    .tl code{background:var(--tl-surface2);color:var(--tl-text);padding:1px 5px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:13px}
+    .tl pre{background:var(--tl-surface);border:1px solid var(--tl-border);border-radius:10px;padding:16px;margin:12px 0;overflow-x:auto;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.6;color:var(--tl-text)}
+    .tl pre code{background:none;padding:0;font-size:13px}
+    .tl-k{color:#7CC4FF;font-weight:700}.tl-s{color:#B5E48C}.tl-n{color:#FFB86C}.tl-c{color:#8A8E99;font-style:italic}
+    .tl-table{overflow-x:auto;margin:12px 0;border:1px solid var(--tl-border);border-radius:10px;max-width:100%}
+    .tl-table table{border-collapse:collapse;font-family:'JetBrains Mono',monospace;font-size:13px;min-width:100%}
+    .tl-table th,.tl-table td{padding:7px 12px;text-align:left;border-bottom:1px solid var(--tl-border);white-space:nowrap;color:var(--tl-text)}
+    .tl-table th{color:var(--tl-muted);font-weight:700;background:var(--tl-surface)}
+    .tl-table tr:last-child td{border-bottom:none}.tl-null{color:var(--tl-muted)!important;font-style:italic}
+    .tl-box{background:var(--tl-surface);border:1px solid var(--tl-border);border-radius:10px;padding:18px;margin:16px 0}
+    .tl-box p{margin-bottom:10px}
+    .tl-btn{font:inherit;font-size:14px;font-weight:700;color:var(--tl-text);background:transparent;border:1px solid var(--tl-border);border-radius:6px;padding:8px 14px;cursor:pointer;text-decoration:none;display:inline-block}
+    .tl-btn:hover{border-color:var(--tl-muted);text-decoration:none}
+    .tl-cta{font-size:15px;font-weight:800;color:var(--tl-ink);background:var(--tl-accent);border:none;border-radius:6px;padding:11px 20px;display:inline-block;text-decoration:none}
+    .tl-cta:hover{text-decoration:none;filter:brightness(1.05)}
+    .tl-editor{width:100%;min-height:150px;background:var(--tl-surface2);color:var(--tl-text);border:1px solid var(--tl-border);border-radius:10px;padding:14px;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.6;resize:vertical}
+    .tl [hidden]{display:none!important}.tl-editor:focus{outline:2px solid #7CC4FF;outline-offset:1px}
+    .tl-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:10px 0}
+    .tl-status{font-size:13px;color:var(--tl-muted)}.tl-err{color:#FF6B6B}
+    .tl-ladder{list-style:none;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin:18px 0;padding:0}
+    .tl-step{background:var(--tl-surface);border:1px solid var(--tl-border);border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:10px}
+    .tl-step h3{margin:0;font-size:16px}.tl-step h3 a{color:var(--tl-text)}
+    .tl-step .tl-step-n{font-size:12px;color:var(--tl-muted);font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+    .tl-step .tl-go{margin-top:auto}
+    .tl-next{list-style:none;padding:0;margin:14px 0}
+    .tl-next li{padding:12px 0;border-bottom:1px solid var(--tl-border);font-size:15px;line-height:1.7;color:#94a3b8}
+    .tl-next li:last-child{border-bottom:none}.tl-next a{font-weight:700}
+  </style>
 </head>
 <body>
 <nav class="nav"><div class="ni">
@@ -54,9 +89,168 @@
 </div></nav>
 <div class="wrap">
   <p class="breadcrumb"><a href="/">SQL Quest</a> › <a href="/sql-exercises/">SQL Exercises</a> › SQL CTEs (Common Table Expressions)</p>
-  <h1 class="fd">SQL CTE Practice — <span style="background:linear-gradient(135deg,#c084fc,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">68 Challenges</span></h1>
-  <p>Master SQL Common Table Expressions (WITH clauses) on 68 challenges whose reference solution uses WITH — 1 Easy, 23 Medium, 44 Hard. 21 chain two or more CTEs and 3 are recursive. Cards marked Free (including the 3 Hard previews) are open to free accounts — your first 10 challenge solves are free — and Pro opens every card. Write cleaner, more readable SQL.</p>
+  <h1 class="fd">SQL CTE Practice — <span style="background:linear-gradient(135deg,#c084fc,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">69 Challenges</span></h1>
+  <p>Master SQL Common Table Expressions (WITH clauses) on 69 challenges whose reference solution uses WITH — 1 Easy, 23 Medium, 45 Hard. 22 chain two or more CTEs and 3 are recursive. Cards marked Free (including the 3 Hard previews) are open to free accounts — your first 10 challenge solves are free — and Pro opens every card. Write cleaner, more readable SQL.</p>
   <a href="/app/?challenge=154&amp;src=challenges-cte" class="cta">Start Practicing Free →</a>
+<!-- topic-learn:start -->
+<section class="tl tl-in" id="learn" data-topic-learn="cte">
+  <p class="tl-eyebrow">Learn it in 3 minutes</p>
+  <h2 class="fd">CTEs in plain words</h2>
+  <p>A CTE (common table expression) gives a query a name for the length of one statement. You write <code>WITH name AS (…)</code> once, and the rest of the statement reads <code>name</code> as if it were a table.</p>
+  <p>Two things make it worth it: a long query reads top to bottom in steps, and a result you need twice (a total and the average of that total) is computed once and used by name.</p>
+  <h3>The syntax</h3>
+  <pre><code><span class="tl-k">WITH</span> first_step <span class="tl-k">AS</span> (
+  <span class="tl-k">SELECT</span> ...
+), second_step <span class="tl-k">AS</span> (
+  <span class="tl-k">SELECT</span> ... <span class="tl-k">FROM</span> first_step   <span class="tl-c">-- a later CTE may read an earlier one</span>
+)
+<span class="tl-k">SELECT</span> ... <span class="tl-k">FROM</span> second_step;</code></pre>
+  <h3>A worked example</h3>
+  <p>Support tickets and the minutes each one took. The table <code>tickets</code>:</p>
+  <div class="tl-table"><table><thead><tr><th>agent</th><th>minutes</th></tr></thead><tbody><tr><td>Ana</td><td>30</td></tr><tr><td>Ana</td><td>50</td></tr><tr><td>Ben</td><td>20</td></tr><tr><td>Ben</td><td>25</td></tr><tr><td>Ben</td><td>15</td></tr><tr><td>Caro</td><td>90</td></tr></tbody></table></div>
+  <p>The agents whose total minutes are above the average agent's total.</p>
+  <div class="tl-box" data-tl-example data-setup="CREATE TABLE tickets (agent TEXT, minutes INTEGER);
+INSERT INTO tickets VALUES ('Ana', 30), ('Ana', 50), ('Ben', 20), ('Ben', 25), ('Ben', 15), ('Caro', 90);">
+    <pre><code><span class="tl-k">WITH</span> per_agent <span class="tl-k">AS</span> (
+  <span class="tl-k">SELECT</span> agent, <span class="tl-k">COUNT</span>(*) <span class="tl-k">AS</span> tickets, <span class="tl-k">SUM</span>(minutes) <span class="tl-k">AS</span> minutes
+  <span class="tl-k">FROM</span> tickets
+  <span class="tl-k">GROUP</span> <span class="tl-k">BY</span> agent
+)
+<span class="tl-k">SELECT</span> agent, tickets, minutes
+<span class="tl-k">FROM</span> per_agent
+<span class="tl-k">WHERE</span> minutes &gt; (<span class="tl-k">SELECT</span> <span class="tl-k">AVG</span>(minutes) <span class="tl-k">FROM</span> per_agent)
+<span class="tl-k">ORDER</span> <span class="tl-k">BY</span> minutes <span class="tl-k">DESC</span>;</code></pre>
+    <p class="tl-status">Result:</p>
+    <div class="tl-table"><table><thead><tr><th>agent</th><th>tickets</th><th>minutes</th></tr></thead><tbody><tr><td>Caro</td><td>1</td><td>90</td></tr><tr><td>Ana</td><td>2</td><td>80</td></tr></tbody></table></div>
+    <p><code>per_agent</code> is used twice: once as the rows to return and once inside the subquery that averages it (80, 60 and 90 average to about 76.7). Without the CTE the <code>GROUP BY</code> would have to be written out in both places.</p>
+    <button type="button" class="tl-btn" data-tl-open>Edit and run this query</button>
+    <div data-tl-panel hidden>
+      <textarea class="tl-editor" spellcheck="false" aria-label="SQL query">WITH per_agent AS (
+  SELECT agent, COUNT(*) AS tickets, SUM(minutes) AS minutes
+  FROM tickets
+  GROUP BY agent
+)
+SELECT agent, tickets, minutes
+FROM per_agent
+WHERE minutes &gt; (SELECT AVG(minutes) FROM per_agent)
+ORDER BY minutes DESC;</textarea>
+      <div class="tl-row">
+        <button type="button" class="tl-btn" data-tl-run data-track="learn_example_run" data-track-topic="cte">Run</button>
+        <button type="button" class="tl-btn" data-tl-reset>Reset</button>
+        <span class="tl-status" data-tl-status aria-live="polite">Runs in your browser on the table above.</span>
+      </div>
+      <div data-tl-out></div>
+    </div>
+  </div>
+  <h3>A common mistake: joining two detail tables, then summing</h3>
+  <p>Join orders and refunds to the same customer and every order repeats once per refund, so <code>SUM</code> and <code>COUNT</code> come back multiplied, with no error. Aggregate each table in its own CTE first, then join the totals, one row per key on each side.</p>
+  <p><a href="/sql-join-fan-out/" data-track="learn_next_step" data-track-target="mistake" data-track-topic="cte">The join fan-out trap, worked through with real numbers →</a></p>
+</section>
+<section class="tl tl-in" id="practice-ladder">
+  <p class="tl-eyebrow">Now try it</p>
+  <h2 class="fd">Three steps, from Easy to Hard</h2>
+  <p>Real questions from the bank, in the order the learning path takes them. Each opens in the browser with the dataset loaded.</p>
+  <ol class="tl-ladder">
+      <li class="tl-step" data-ladder-step="easy" data-challenge-id="179">
+        <span class="tl-step-n">Step 1</span>
+        <div><span class="tag easy">Easy</span> <span class="tag free">Free</span></div>
+        <h3><a href="/questions/give-a-query-a-name-with/">Give a Query a Name (WITH)</a></h3>
+        <a href="/app/?challenge=179&amp;src=topic-learn-cte" class="tl-cta tl-go" data-track="learn_ladder_click" data-track-step="easy" data-track-challenge="179" data-track-topic="cte">Start with this one →</a>
+      </li>
+      <li class="tl-step" data-ladder-step="medium" data-challenge-id="111">
+        <span class="tl-step-n">Step 2</span>
+        <div><span class="tag medium">Medium</span> <span class="tag free">Free</span></div>
+        <h3><a href="/questions/your-first-cte-with-clause/">Your First CTE (WITH Clause)</a></h3>
+        <a href="/app/?challenge=111&amp;src=topic-learn-cte" class="tl-btn tl-go" data-track="learn_ladder_click" data-track-step="medium" data-track-challenge="111" data-track-topic="cte">Solve it in the browser →</a>
+      </li>
+      <li class="tl-step" data-ladder-step="hard" data-challenge-id="50">
+        <span class="tl-step-n">Step 3</span>
+        <div><span class="tag hard">Hard</span> <span class="tag free">Free preview</span></div>
+        <h3><a href="/questions/7-day-rolling-revenue-average/">7-Day Rolling Revenue Average</a></h3>
+        <a href="/app/?challenge=50&amp;src=topic-learn-cte" class="tl-btn tl-go" data-track="learn_ladder_click" data-track-step="hard" data-track-challenge="50" data-track-topic="cte">Solve it in the browser →</a>
+      </li>
+  </ol>
+</section>
+<section class="tl tl-in" id="next-step">
+  <p class="tl-eyebrow">The next step</p>
+  <h2 class="fd">From one topic to the interview</h2>
+  <ul class="tl-next">
+    <li data-next="readiness"><a href="/sql-interview-readiness-test/" data-track="learn_next_step" data-track-target="readiness" data-track-topic="cte">Take the SQL interview readiness test →</a> Ten questions, no signup: it scores all nine skills and names the weakest.</li>
+    <li data-next="companies">Company sets where CTE questions carry the most weight: <a href="/databricks-sql-interview/" data-track="learn_next_step" data-track-target="company-databricks" data-track-topic="cte">Databricks</a>, <a href="/monzo-sql-interview/" data-track="learn_next_step" data-track-target="company-monzo" data-track-topic="cte">Monzo</a>, <a href="/chime-sql-interview/" data-track="learn_next_step" data-track-target="company-chime" data-track-topic="cte">Chime</a>. Each page lists the set and the topics it leans on.</li>
+    <li data-next="free-tier">10 free challenge solves, plus the lessons, warm-ups and the daily challenge — Pro opens all 300+. <a href="/#pricing" data-track="learn_next_step" data-track-target="pricing" data-track-topic="cte">See the plans →</a></li>
+  </ul>
+</section>
+<script>
+(function () {
+  var SDK = 'https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js';
+  var loading = null;
+  function sdk() {
+    if (loading) return loading;
+    loading = new Promise(function (ok, fail) {
+      if (window.initSqlJs) return ok(window.initSqlJs);
+      var s = document.createElement('script');
+      s.src = SDK; s.async = true; s.crossOrigin = 'anonymous';
+      s.onload = function () { ok(window.initSqlJs); };
+      s.onerror = function () { loading = null; fail(new Error('Could not load the SQL engine. Check the connection and try again.')); };
+      document.head.appendChild(s);
+    }).then(function (init) {
+      return init({ locateFile: function (f) { return SDK.replace(/[^/]*$/, '') + f; } });
+    });
+    return loading;
+  }
+  function cell(v) {
+    var td = document.createElement('td');
+    if (v === null) { td.className = 'tl-null'; td.textContent = 'NULL'; } else td.textContent = String(v);
+    return td;
+  }
+  function render(out, res) {
+    out.innerHTML = '';
+    if (!res.length) { out.innerHTML = '<p class="tl-status">The query ran and returned no rows.</p>'; return; }
+    var r = res[res.length - 1];
+    var wrap = document.createElement('div'); wrap.className = 'tl-table';
+    var t = document.createElement('table');
+    var hr = document.createElement('tr');
+    r.columns.forEach(function (c) { var th = document.createElement('th'); th.textContent = c; hr.appendChild(th); });
+    var th = document.createElement('thead'); th.appendChild(hr); t.appendChild(th);
+    var tb = document.createElement('tbody');
+    r.values.forEach(function (row) { var tr = document.createElement('tr'); row.forEach(function (v) { tr.appendChild(cell(v)); }); tb.appendChild(tr); });
+    t.appendChild(tb); wrap.appendChild(t); out.appendChild(wrap);
+  }
+  document.querySelectorAll('[data-tl-example]').forEach(function (box) {
+    var open = box.querySelector('[data-tl-open]');
+    var panel = box.querySelector('[data-tl-panel]');
+    var ed = box.querySelector('textarea');
+    var run = box.querySelector('[data-tl-run]');
+    var reset = box.querySelector('[data-tl-reset]');
+    var status = box.querySelector('[data-tl-status]');
+    var out = box.querySelector('[data-tl-out]');
+    var setup = box.getAttribute('data-setup');
+    var original = ed.value;
+    open.addEventListener('click', function () {
+      panel.hidden = false; open.hidden = true; ed.focus();
+      sdk().catch(function () {});
+    });
+    run.addEventListener('click', function () {
+      status.className = 'tl-status'; status.textContent = 'Running…';
+      sdk().then(function (SQL) {
+        var db = new SQL.Database();
+        try {
+          db.run(setup);
+          render(out, db.exec(ed.value));
+          status.textContent = 'Ran on the table above. Change the query and run it again.';
+        } finally { db.close(); }
+      }).catch(function (e) {
+        status.className = 'tl-status tl-err';
+        status.textContent = (e && e.message) ? e.message : String(e);
+      });
+    });
+    reset.addEventListener('click', function () {
+      ed.value = original; out.innerHTML = ''; status.className = 'tl-status'; status.textContent = 'Back to the original query.';
+    });
+  });
+})();
+</script>
+<!-- topic-learn:end -->
   <!-- 2026-09-07: GSC read of 09-07 has this page at position 5.6 for "cte chain" and 23-37 for
        "multiple cte sql" / "multiple ctes" / "sql multiple cte", and the page listed no challenge at all —
        nothing answered the query. This section names the 13 bank challenges whose reference solution
@@ -67,7 +261,7 @@
        Hard rows without freePreview are Pro — a guest gets the preview dialog, not a wall. Re-count before
        changing any number here. -->
   <section class="sec" id="multiple-ctes">
-    <h2 class="fd">Multiple CTEs in one query: 21 chained-CTE challenges</h2>
+    <h2 class="fd">Multiple CTEs in one query: 22 chained-CTE challenges</h2>
     <p>Every challenge below is solved with a chain — <code>WITH a AS (…), b AS (…)</code> — where a later CTE reads from an earlier one and the final <code>SELECT</code> pulls from the last step. Start with <strong>Multi-CTE Revenue Pipeline</strong>, the one written for exactly this pattern. The five Medium ones and the two Hard previews are marked Free.</p>
     <p class="stamp">Counted from the challenge bank, September 2026.</p>
     <div class="q-grid">
@@ -197,6 +391,12 @@
         <p class="concepts">Uses: <code>CTE</code> <code>Window Functions</code> <code>LAG</code> <code>Date Functions</code></p>
         <a href="/app/?challenge=319&amp;src=challenges-cte" class="btn-practice">Try it →</a>
       </div>
+      <div class="q-card">
+        <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
+        <h3><a href="/questions/reconcile-two-payment-partners-reports/" style="color:inherit;">Reconcile Two Payment Partners' Reports</a></h3>
+        <p class="concepts">Uses: <code>CTE</code> <code>Subquery</code> <code>UNION ALL</code></p>
+        <a href="/app/?challenge=330&amp;src=challenges-cte" class="btn-practice">Try it →</a>
+      </div>
     </div>
     <p>Chaining is what people usually mean by "nested CTEs". For the walkthrough — and the difference from a <code>WITH</code> literally nested inside another CTE — see <a href="/blog/sql-cte-tutorial/#multi">multiple CTEs in the CTE tutorial</a>. A CTE that references itself is a different mechanism: <a href="/blog/recursive-cte-explained/">recursive CTEs explained</a>.</p>
   </section>
@@ -238,6 +438,9 @@
     <a href="/meta-sql-interview/">Meta SQL Interview →</a>
   </div>
 </div>
-<footer class="ft"><p><strong>SQL Quest</strong> — Master SQL through hands-on practice. <a href="/">Home</a> · <a href="/sql-exercises/">SQL Practice Questions</a> · <a href="/best-sql-practice-sites/">Best SQL Practice Sites</a></p><p style="margin-top:8px;font-size:11px;">© 2026 SQL Quest</p></footer>
+<!-- related-links:start -->
+<p data-crosslink="related" style="max-width:760px;margin:32px auto;padding:0 20px;font-size:14px;line-height:1.8;color:#94a3b8;">Preparing for an analyst interview: <a href="/sql-interview-questions-data-analyst/" style="color:#c084fc;text-decoration:none;font-weight:600;">SQL interview questions for data analysts</a>.</p>
+<!-- related-links:end -->
+<footer class="ft"><p><strong>SQL Quest</strong> — Master SQL through hands-on practice. <a href="/">Home</a> · <a href="/sql-exercises/">SQL Practice Questions</a> · <a href="/best-sql-practice-sites/">Best SQL Practice Sites</a></p><p style="margin-top:8px;font-size:12px;">© 2026 SQL Quest</p></footer>
 </body>
 </html>

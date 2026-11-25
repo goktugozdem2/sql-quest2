@@ -118,7 +118,6 @@
   {
     "@context": "https://schema.org",
     "@type": "ItemList",
-    "inLanguage": "tr",
     "name": "SQL Quest — Sektörel Pratik Track'ları",
     "description": "Gerçek public dataset'ler üzerinde sektör bazlı SQL pratiği. FAANG interview prep'i tamamlayan, sektörünüzün gerçek schema'sıyla pratik fırsatı.",
     "itemListElement": [
@@ -133,7 +132,7 @@
           "inLanguage": "tr",
           "provider": { "@type": "Organization", "name": "SQL Quest" },
           "isAccessibleForFree": true,
-          "courseMode": "online"
+          "hasCourseInstance": { "@type": "CourseInstance", "courseMode": "online" }
         }
       },
       {
@@ -147,7 +146,7 @@
           "inLanguage": "tr",
           "provider": { "@type": "Organization", "name": "SQL Quest" },
           "isAccessibleForFree": true,
-          "courseMode": "online"
+          "hasCourseInstance": { "@type": "CourseInstance", "courseMode": "online" }
         }
       },
       {
@@ -161,7 +160,7 @@
           "inLanguage": "tr",
           "provider": { "@type": "Organization", "name": "SQL Quest" },
           "isAccessibleForFree": true,
-          "courseMode": "online"
+          "hasCourseInstance": { "@type": "CourseInstance", "courseMode": "online" }
         }
       }
     ]
@@ -336,7 +335,7 @@
     <h2 class="st fd">Senin sektörünün <span class="gt">gerçek verisiyle.</span></h2>
     <p style="font-size:15px;color:#94a3b8;margin-top:16px;max-width:680px;margin:16px auto 0;line-height:1.7;">Generic passengers/movies tabloları yerine real bank, real estate, real industrial data. Mülakatta seni asıl soracakları schema'lar — industry pro 30 saniyede tanır.</p>
   </div>
-  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;">
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(280px,100%),1fr));gap:14px;">
     <a href="/finans-sql/" style="display:block;background:rgba(10,10,25,.6);border:1px solid rgba(16,185,129,.3);border-radius:14px;padding:24px 22px;text-decoration:none;transition:all .3s">
       <div style="font-size:32px;margin-bottom:10px;">🏦</div>
       <h3 class="fd" style="font-size:18px;font-weight:800;color:#10b981;margin-bottom:8px;">Finans & Bankacılık</h3>
@@ -407,10 +406,13 @@
 
 <!-- ── Footer ─────────────────────────────────────────────────── -->
 <p style="margin:28px auto;max-width:720px;padding:16px 20px;border:1px solid rgba(124,58,237,.25);border-radius:12px;background:rgba(124,58,237,.06);font-size:14px;line-height:1.7;color:#94a3b8;">Türkçe derinlemesine rehberler: <a href="/blog/sql-join-nedir/" style="color:#c084fc;font-weight:600;">SQL JOIN nedir?</a> ve <a href="/blog/sql-cte-nedir/" style="color:#c084fc;font-weight:600;">CTE (WITH) nedir?</a> — ikisi de gerçek veride çalıştırılmış örneklerle ve konu sonu mini testle.</p>
+<!-- related-links:start -->
+<p data-crosslink="related" style="max-width:760px;margin:32px auto;padding:0 20px;font-size:14px;line-height:1.8;color:#94a3b8;">Karşılaştırma: <a href="/datalemur-karsilastirma/" style="color:#c084fc;text-decoration:none;font-weight:600;">SQL Quest ve DataLemur, Türkçe karşılaştırma</a>.</p>
+<!-- related-links:end -->
 <footer class="ft"><div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:16px;"><div style="width:28px;height:28px;border-radius:8px;background:#7c3aed;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0;"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg></div><span class="fd" style="font-size:16px;font-weight:800;">SQL Quest</span></div><p style="font-size:13px;color:#7f8da1;">SQL'i pratik yaparak öğren.</p>
 <div class="flk"><a href="/app/?lang=tr">Hemen Başla</a><a href="/">English</a><a href="/sql-interview-prep/">Interview Prep</a><a href="/datalemur-karsilastirma/">DataLemur Karşılaştırma</a>
   <a href="/sql-exercises/">SQL Practice Questions</a>
-  <a href="/best-sql-practice-sites/">Best SQL Practice Sites</a><a href="/privacy/">Gizlilik</a><a href="/terms/">Şartlar</a></div><p style="font-size:11px;color:#79879b;margin-top:24px;">© 2026 SQL Quest</p></footer>
+  <a href="/best-sql-practice-sites/">Best SQL Practice Sites</a><a href="/privacy/">Gizlilik</a><a href="/terms/">Şartlar</a></div><p style="font-size:12px;color:#79879b;margin-top:24px;">© 2026 SQL Quest</p></footer>
 
 <script>
 window.addEventListener('scroll',()=>{document.getElementById('nav').classList.toggle('s',window.scrollY>50)},{passive:true});

@@ -36,6 +36,7 @@
 
 import { describe, it, expect, beforeAll } from 'vitest';
 import fs from 'node:fs';
+import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { loadBank, readCompanyPages } from '../scripts/build-llms-txt.js';
@@ -75,17 +76,28 @@ export const SOURCED_PAGES = {
   'doordash-sql-interview': 'Exponent guide (2026), StrataScratch (Mar 2026), DataLemur (May 2025), Blind (Jul 2022)',
   'goldman-sachs-sql-interview': 'GeeksforGeeks analyst report (2024), Exponent (2024), LinkJob (Sep 2025), DataLemur (Mar 2025)',
   'walmart-sql-interview': 'Exponent Walmart DA guide (2026), Blind (Jun 2021), Data Engineer Academy (Mar 2026)',
-  'tiktok-sql-interview': 'Exponent guide (2026), DataLemur guide (Jan 2025), Blind (Feb 2022)',
+  // 2026-11-23: rewritten on docs/reads/companies/tiktok.md — the Blind 2022
+  // analyst row and the single-guide HackerRank row are gone.
+  'tiktok-sql-interview': 'PracHub DS and DE candidate reports (Jun 2026, Sep 2025), Aced DS guide (Nov 2026), DataLemur guides (Jan 2025), Prepfully; the platform is disputed and the page says so',
   'linkedin-sql-interview': 'Exponent DA guide (2026), PracHub (Sep 2026), SQLPad (Apr 2024), DataLemur (Apr 2025)',
   'microsoft-sql-interview': 'Exponent DS guide (2026), DataLemur guides (May 2025), StrataScratch (Oct 2023); OA sources disagree and the page says so',
-  'bloomberg-sql-interview': 'OphyAI guide (Jun 2026), DataLemur (Apr 2025); SQL screen not reliably reported and the page says so',
+  // 2026-11-23: docs/reads/companies/bloomberg.md — the guide's analyst rows
+  // are no longer stated (one guide, no sources named).
+  'bloomberg-sql-interview': 'OphyAI guide (Nov 2026; names no sources, so the page states none of its stages), DataLemur practice guide (Apr 2025); SQL screen not reliably reported and the page says so',
   // 2026-09-14: the first two older pages given a sourced format section from
   // SOURCED_FORMATS (src/data/company-interviews.js). Same rule, no softer —
   // every row cites a source that was fetched on the research date, and where
   // the sources give no number the row says the page does not state one.
   // Research notes: docs/reads/company-research-2026-09-14.md.
   'amazon-sql-interview': 'Blind BIE L5 candidate report (14 Sep 2025, replies to 15 Oct 2025) + Exponent BIE guide (read 14 Sep 2026)',
-  'meta-sql-interview': 'two Blind Data Engineer candidate reports (5 Apr 2025, 17 Mar 2025) that agree on the screen',
+  // 2026-11-23: Meta gains the data-scientist screen (three PracHub reports,
+  // interviews Aug 2025 - Sep 2026, and Aced) and its data-engineer count is
+  // now stated as disputed. docs/reads/companies/meta.md.
+  'meta-sql-interview': 'two Blind Data Engineer reports (Mar + Apr 2025), PracHub DS and DE reports (interviews Aug 2025 - Sep 2026), Aced DS and DE guides (Nov 2026); the DE question count is disputed and the page says so',
+  // 2026-11-23: docs/reads/companies/apple.md — the data-scientist rows only.
+  'apple-sql-interview': 'PracHub DS candidate reports (interviews Oct 2025 - Sep 2026), Aced DS experiences (2025-26) and DA guide (Nov 2026); no count, length, tool or analyst loop sourced and the page says so',
+  // 2026-11-23: docs/reads/companies/shopify.md.
+  'shopify-sql-interview': "Shopify's own data-science posting (stages, live 22 Nov 2026), PracHub and Aced DS candidate reports (interviews Jan - Oct 2026); no length, tool or dialect sourced and the page says so",
   // 2026-11-20: three more template pages. Research notes:
   // docs/reads/company-research-2026-11-20.md.
   'paypal-sql-interview': 'PracHub DS reports (interviews Jul + Dec 2025), GeeksforGeeks DA intern report (Mar 2023), PracHub guide (Nov 2026), DataLemur (Jan 2025); the reports disagree and the page says so',
@@ -356,6 +368,22 @@ export function findTopicsProblems(pageSource, facts) {
 // ---------------------------------------------------------------------------
 export const OFF_SET_LINKS = {
   'google-sql-interview': [163, 172, 84],
+  // 2026-11-24 (C5): the first-screen "debug this query" item links to the
+  // app's Debug question with the same bug (scripts/company-first-screen.mjs).
+  // It is a Debug item, not Monzo-tagged, and the button says so.
+  'monzo-sql-interview': [336],
+};
+// What each page says about its off-set links (the waiver holds only while it does).
+export const OFF_SET_NOTE = {
+  'google-sql-interview': /-tagged window-function challenges in the set/,
+  'monzo-sql-interview': /from our Debug set, not the Monzo set/,
+};
+// The Debug items (src/data/debug-challenges.js) live outside the main bank.
+const debugIds = () => {
+  const sb = { window: {}, console: { log() {} } };
+  vm.createContext(sb);
+  vm.runInContext(fs.readFileSync(new URL('../src/data/debug-challenges.js', import.meta.url), 'utf8'), sb);
+  return new Set((sb.window.debugChallengesData || []).map(c => c.id));
 };
 const CARD_ANCHOR = /<a href="[^"]*[?&]challenge=(\d+)[^"]*"[^>]*>([\s\S]*?)<\/a>/g;
 const ANY_LINK = /[?&]challenge=(\d+)\b/g;
@@ -749,10 +777,12 @@ describe('4. every ?challenge= link and every challenge card resolves to the ban
       const p = pages.find(x => x.slug === slug);
       expect(p, slug).toBeTruthy();
       for (const id of ids) {
-        expect(p.facts.allById.has(id), `${slug}: off-set #${id} is not a challenge at all`).toBe(true);
+        const real = p.facts.allById.has(id) || debugIds().has(id);
+        expect(real, `${slug}: off-set #${id} is not a challenge at all`).toBe(true);
         expect(p.facts.byId.has(id), `${slug}: off-set #${id} IS tagged — drop it from OFF_SET_LINKS`).toBe(false);
       }
-      expect(p.text, `${slug} must say which challenges are in the set`).toMatch(/-tagged window-function challenges in the set/);
+      expect(OFF_SET_NOTE[slug], `${slug}: no OFF_SET_NOTE`).toBeTruthy();
+      expect(p.text, `${slug} must say which challenges are in the set`).toMatch(OFF_SET_NOTE[slug]);
     }
   });
 

@@ -200,8 +200,8 @@ describe('wiring', () => {
     expect(app).toContain('data-testid="pro-modal-pattern-mock"');
     // the funnel joins: modal, plan click and checkout click all carry the trap page
     expect(app).toMatch(/'pro_modal_shown', \{[\s\S]{0,700}patternSlug: proModalReason\?\.patternSlug \|\| null/);
-    expect(app).toMatch(/'pro_plan_clicked', \{[\s\S]{0,300}modalReason: proModalReason\?\.type \|\| null,\s*\n\s*patternSlug: proModalReason\?\.patternSlug \|\| null/);
-    expect(app).toMatch(/'pro_checkout_clicked', \{ plan, email: email \|\| null, modalReason: proModalReason\?\.type \|\| null, patternSlug: proModalReason\?\.patternSlug \|\| null/);
+    expect(app).toMatch(/'pro_plan_clicked', \{[\s\S]{0,300}modalReason: proModalReasonLabel\(proModalReason\),\s*\n\s*patternSlug: proModalReason\?\.patternSlug \|\| null/);
+    expect(app).toMatch(/'pro_checkout_clicked', \{ plan, email: email \|\| null, modalReason: proModalReasonLabel\(proModalReason\), patternSlug: proModalReason\?\.patternSlug \|\| null/);
     // and the trap page's link says where it came from
     for (const p of SQL_PATTERNS) expect(renderPattern(p, { slugs, bank })).toContain(`src=pattern-${p.slug}`);
   });

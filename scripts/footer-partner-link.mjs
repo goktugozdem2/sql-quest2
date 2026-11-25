@@ -20,18 +20,61 @@ import { fileURLToPath } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 export const PARTNER_URL = 'https://datrick.com/sql-server-to-postgresql-migration';
+// Colour (A4 UI/UX audit, 2026-11-22): the line used to inherit the footer's
+// text at opacity .55. Where a footer's text is the slate grey (#7f8da1 —
+// every blog post and question page) that painted 2.50:1 on the page, under
+// WCAG AA on 55 pages. It now takes DESIGN.md's --text-muted, #8A8E99, at
+// full opacity: 5.9:1 on the near-black, still quieter than the links.
+export const FOOTER_MUTED = '#8A8E99';
 export const PARTNER_LINE =
-  `<p data-partner="datrick" style="margin:18px auto 0;max-width:1000px;padding:0 24px;font-size:12px;opacity:.55;text-align:center;">` +
+  `<p data-partner="datrick" style="margin:18px auto 0;max-width:1000px;padding:0 24px;font-size:12px;color:${FOOTER_MUTED};text-align:center;">` +
   `SQL Quest is built by Datrick, Inc. · <a href="${PARTNER_URL}" style="color:inherit;text-decoration:underline;">SQL Server to PostgreSQL migration</a></p>`;
+
+// Footer links on a phone (same audit): `.flk a` rendered 17 px tall on 60
+// pages — under the 44 px tap target (the homepage sitemap footer, .fnav, too).
+// One rule for every page, here, because
+// the footers are not one template. Phones only; desktop is unchanged.
+export const FOOTER_FIT_STYLE =
+  '<style data-footer-fit>@media(max-width:600px){.flk{row-gap:0}.flk a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;padding:0 4px}.fnav a{display:flex;align-items:center;min-height:44px;padding:0}}</style>';
 
 // The product shell and its legacy alias are not marketing pages.
 const SKIP = new Set(['app.html', 'app/index.html']);
 
+// The fit rule goes in <head>, never in the footer (html-validate, 2026-11-24):
+// a <style> under <footer> is not permitted content in HTML, and it was the
+// one error on 508 of the 515 built pages. Browsers applied it anyway; the
+// rule's text and its place at the END of <head> (after every page style
+// that sets .flk/.fnav) keep the cascade it had.
+const FIT_RE = /<style data-footer-fit>[\s\S]*?<\/style>/g;
+
+function withFitInHead(html) {
+  const head = html.indexOf('</head>');
+  if (head === -1) return html;
+  const inHead = [...html.matchAll(FIT_RE)].find(m => m.index < head);
+  if (inHead) {
+    // Already in the head: keep its place (later build steps append their
+    // own <style> before </head>), refresh its text, drop any body copy.
+    const before = html.slice(0, inHead.index) + FOOTER_FIT_STYLE;
+    return before + html.slice(inHead.index + inHead[0].length).replace(FIT_RE, '');
+  }
+  const out = html.replace(FIT_RE, '');
+  const i = out.indexOf('</head>');
+  return out.slice(0, i) + FOOTER_FIT_STYLE + out.slice(i);
+}
+
 export function withPartnerLink(html) {
-  if (html.includes('data-partner="datrick"')) return html;
-  const i = html.lastIndexOf('</footer>');
-  if (i === -1) return html;
-  return html.slice(0, i) + PARTNER_LINE + html.slice(i);
+  // A page built before this version carries an older line (or the fit rule
+  // inside its footer): replace it in place, so a committed public/ page
+  // never keeps it.
+  const old = html.match(/<p data-partner="datrick"[\s\S]*?<\/p>/);
+  let out;
+  if (old) out = old[0] === PARTNER_LINE ? html : html.replace(old[0], PARTNER_LINE);
+  else {
+    const i = html.lastIndexOf('</footer>');
+    if (i === -1) return html;
+    out = html.slice(0, i) + PARTNER_LINE + html.slice(i);
+  }
+  return withFitInHead(out);
 }
 
 function* htmlFiles(dir, rel = '') {
@@ -50,8 +93,13 @@ export function applyPartnerLink(publicDir = path.join(ROOT, 'public')) {
     const html = fs.readFileSync(file, 'utf8');
     const out = withPartnerLink(html);
     if (out === html) { html.includes('data-partner="datrick"') ? already++ : noFooter++; continue; }
+    if (html.includes('data-partner="datrick"')) {
+      // /weekly/ is committed only after a deliberate `npm run build:weekly`
+      // (CLAUDE.md), which builds it fresh; a plain build leaves it alone.
+      if (rel === 'weekly.html' || rel.startsWith('weekly/')) { already++; continue; }
+      already++;
+    } else added++;
     fs.writeFileSync(file, out);
-    added++;
   }
   return { added, already, noFooter };
 }

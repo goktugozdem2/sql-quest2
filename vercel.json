@@ -1,6 +1,50 @@
 {
   "buildCommand": "npm run build",
   "ignoreCommand": "bash scripts/vercel-ignore.sh",
+  "git": {
+    "deploymentEnabled": {
+      "main": false,
+      "docs/**": false,
+      "feat/**": false,
+      "fix/**": false,
+      "qa/**": false,
+      "claude/**": false,
+      "content/**": false,
+      "chore/**": false,
+      "flags/**": false,
+      "goal/**": false,
+      "funnel/**": false,
+      "ci/**": false,
+      "seo/**": false,
+      "review/**": false,
+      "agent/**": false,
+      "mon/**": false,
+      "test/**": false,
+      "c1/**": false,
+      "c2/**": false,
+      "c3/**": false,
+      "c4/**": false,
+      "c5/**": false,
+      "c6/**": false,
+      "c7/**": false,
+      "b1/**": false,
+      "b2/**": false,
+      "b3/**": false,
+      "b4/**": false,
+      "b5/**": false,
+      "b6/**": false,
+      "a1/**": false,
+      "a2/**": false,
+      "a3/**": false,
+      "a4/**": false,
+      "e1/**": false,
+      "d2/**": false,
+      "q1/**": false,
+      "s1/**": false,
+      "r1/**": false,
+      "*/**": false
+    }
+  },
   "outputDirectory": "public",
   "cleanUrls": true,
   "trailingSlash": true,
@@ -150,7 +194,7 @@
       "includeFiles": "public/app.html"
     },
     "api/og-card.js": {
-      "includeFiles": "assets/fonts/**"
+      "includeFiles": "{assets/fonts/**,node_modules/harfbuzzjs/hb.wasm,node_modules/@resvg/resvg-wasm/index_bg.wasm}"
     }
   },
   "headers": [

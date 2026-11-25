@@ -44,6 +44,7 @@ import { isFreePreview } from '../src/utils/challenge-order.js';
 import { bankCountLabel, freeTierSentence, FREE_SOLVE_QUOTA, COMPANY_SET_FREE_COUNT } from '../src/utils/display-count.js';
 import { archetypeMemberCompanies } from '../src/data/interview-archetypes.js';
 import SKELETONS from '../src/utils/skeletons.js';
+import { llmsEntryPoint } from './build-debug-pages.mjs';
 
 const __dirname = import.meta.dirname;
 const ROOT = path.resolve(__dirname, '..');
@@ -312,13 +313,66 @@ export const ENTRY_POINTS = [
   ['/app/', 'The practice app. No signup: the first challenge runs in the browser, and the Coach picks the next one from your Skillmap.'],
   ['/sql-interview-readiness-test/', 'Ten questions, no signup: a Skillmap across the nine skills and the one to fix first, optionally weighted for a named company.'],
   ['/sql-interview-prep/', 'The interview hub: every company interview page, grouped by sector.'],
+  ['/sql-interview-prep-plan/', 'A 2-week SQL interview prep plan: one of the nine skills a day, Easy to Hard questions linked for each, the readiness test first and a timed mock near the end.'],
+  ['/sql-mock-interview/', 'Timed SQL mock interviews in the browser: what each mock is (questions, minutes, pass mark), which one is free and which are Pro, and how to rehearse a timed screen.'],
   ['/sql-exercises/', 'SQL exercises by topic, with five worked solutions and the trap on each topic.'],
   ['/questions/', 'Every challenge in the bank as its own page: the prompt, the tables and the skills it measures.'],
   ['/sql-practice-comparison/', 'How SQL Quest compares with DataLemur, StrataScratch, LeetCode and HackerRank, with each competitor fact dated.'],
   ['/best-sql-practice-sites/', 'Five SQL practice sites reviewed side by side, including where each beats SQL Quest.'],
   ['/vs-chatgpt/', 'Why practise on questions with a fixed expected result instead of asking a chat assistant to grade you.'],
   ['/sql-tools/', 'Free in-browser SQL tools: a checker, an explainer and an optimizer.'],
+  // /sql-debugging-practice/ exists only while features.debugQuestions is true.
+  ...llmsEntryPoint(),
 ];
+
+// The buyer questions G1 measures every week (docs/agent/fleet/G1-geo.md,
+// the fixed prompt panel), each with the page that answers it (G1,
+// 2026-11-22). An assistant reads llms.txt to decide where to send a person;
+// this block says it in the person's own words. `panel` is the prompt's
+// number in the brief, and every one of the 15 must be here (llms-txt.test.js).
+// Every path must be on the sitemap, or the build fails. Where no page answers
+// a prompt squarely, the line names the closest page and says what it holds —
+// never more (docs/reads/geo-2026-11-22.md lists those as page gaps for C2).
+export const BUYER_QUESTIONS = [
+  { panel: 1, q: 'What is the best website to practice SQL for data analyst interviews?', paths: ['/best-sql-practice-sites/', '/sql-interview-questions-data-analyst/'],
+    a: 'Five practice sites reviewed side by side, SQL Quest among them and disclosed as ours, and analyst interview questions by experience level.' },
+  { panel: 2, q: 'Is there SQL interview practice like LeetCode, but for data analysts?', paths: ['/vs-leetcode-sql/'],
+    a: 'LeetCode SQL against SQL Quest: SQL as one track of a coding platform, or a SQL-only product built around analyst interview questions.' },
+  { panel: 3, q: 'How do I prepare for the Capital One data analyst SQL assessment?', paths: ['/blog/capital-one-codesignal-data-analyst-assessment/', '/capital-one-sql-interview/'],
+    a: 'What candidates report about the CodeSignal-style assessment, with dated sources, and a practice set plus timed mocks on a synthetic card-transactions ledger.' },
+  { panel: 4, q: 'What are the alternatives to DataLemur?', paths: ['/datalemur-alternatives/'],
+    a: 'The alternatives side by side, with each competitor fact taken from that site\'s own pages and dated.' },
+  { panel: 5, q: 'What are the alternatives to StrataScratch?', paths: ['/stratascratch-alternatives/'],
+    a: 'The same comparison from StrataScratch\'s side.' },
+  { panel: 6, q: 'How do I practice SQL window functions for interviews?', paths: ['/challenges/window-functions/', '/blog/window-functions-tutorial/'],
+    a: 'Runnable window-function challenges from Easy to Hard, and a tutorial on RANK, LAG and running totals.' },
+  { panel: 7, q: 'Where can I practice SQL free, on real interview-style questions?', paths: ['/sql-exercises/'],
+    a: 'Exercises by topic with five worked solutions; the free tier is said in one sentence under "Facts" above.' },
+  { panel: 8, q: 'Is there a SQL practice site with an AI tutor that explains my mistakes?', paths: ['/', '/vs-chatgpt/'],
+    a: 'In the app a wrong query gets a diagnosis that names the gap (missing rows, wrong values, wrong grain), and the AI tutor reads that diagnosis before it answers; the second page explains why a fixed expected result matters when an AI explains your SQL.' },
+  { panel: 9, q: 'How do I prepare for a Revolut data analyst SQL interview?', paths: ['/revolut-sql-interview/'],
+    a: 'The rounds candidates report, with dated sources, a tagged practice set on a neobank ledger and a timed mock.' },
+  { panel: 10, q: 'Where can I practice SQL for a Meta data scientist interview?', paths: ['/meta-sql-interview/'],
+    a: 'Meta-tagged practice problems on product-analytics tables.' },
+  { panel: 11, q: 'Where can I take a timed SQL mock interview online?', paths: ['/sql-mock-interview/', '/capital-one-sql-interview/', '/revolut-sql-interview/'],
+    a: 'A timed SQL mock in the browser: one clock, a limit per question, your rows checked and a score at the end. One mock is free; the company mocks (Capital One, Revolut) are Pro.' },
+  { panel: 12, q: 'How do I find my weak areas in SQL?', paths: ['/sql-interview-readiness-test/', '/sql-quiz/'],
+    a: 'Ten questions, no signup: a Skillmap across the nine skills and the one to fix first; or a five-minute adaptive level quiz.' },
+  { panel: 13, q: 'Is there a 2-week SQL interview prep plan?', paths: ['/sql-interview-prep-plan/', '/sql-interview-prep/'],
+    a: 'A 2-week plan, day by day: one of the nine SQL skills a day with questions linked for each, a readiness test first and a timed mock near the end; the interview hub has every company page.' },
+  { panel: 14, q: 'Where do I practice SQL after a bootcamp, to get interview-ready?', paths: ['/after-bootcamp/'],
+    a: 'For bootcamp graduates: interview-level questions and the Coach that finds the gap the course left.' },
+  { panel: 15, q: 'SQL mülakatına hazırlanmak için en iyi site hangisi?', paths: ['/turkce-sql-ogren/'],
+    a: 'Turkish landing page; the app and the Coach answer in Turkish when you write Turkish.' },
+];
+
+export function buyerQuestionList(pages) {
+  const onSitemap = new Set(pages.map(p => p.path));
+  return BUYER_QUESTIONS.map(({ q, paths, a }) => {
+    for (const p of paths) if (!onSitemap.has(p)) throw new Error(`llms.txt buyer question "${q}" links ${p}, which is not on the sitemap`);
+    return `- **${q}** ${paths.map(p => `${SITE}${p}`).join(' , ')} — ${a}`;
+  }).join('\n');
+}
 
 // Fintech and banking pages listed by name (C2, 2026-11-22). Chime is listed
 // once its page exists (PR #134), so this needs no edit when it merges.
@@ -361,7 +415,8 @@ export function templateValues(facts, generatedOn) {
     easyCount: facts.easyCount,
     mediumCount: facts.mediumCount,
     hardCount: facts.hardCount,
-    freePreviewCount: facts.freePreviewCount,
+    // 2026-11-22: freePreviewCount stays in the facts but leaves the template:
+    // the quota sentence says "or a Hard preview" and counts none.
     // 2026-09-26 (freeQuota + companySetGate): the free tier is said as the
     // quota the gate reads, never as a count of free challenges — there is no
     // such count once the quota is on. facts.freeChallengeCount stays in the
@@ -370,6 +425,7 @@ export function templateValues(facts, generatedOn) {
     // The one sentence every page uses for the free tier (display-count.js).
     freeTierSentence: freeTierSentence(facts.challengeCount),
     entryPoints: entryPointList(facts.pages),
+    buyerQuestions: buyerQuestionList(facts.pages),
     featuredCompanyList: featuredCompanyList(facts.companies),
     companySetFreeCount: COMPANY_SET_FREE_COUNT,
     signedCompanySets: archetypeMemberCompanies().join(' and '),
