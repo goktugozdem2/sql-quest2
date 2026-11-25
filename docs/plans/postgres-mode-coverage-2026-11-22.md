@@ -5,23 +5,21 @@ Plan and recommendation: [postgres-mode-2026-11-22.md](postgres-mode-2026-11-22.
 
 | Status | Challenges | Share of 323 |
 |---|---|---|
-| unchanged | 183 | 56.7% |
-| rewritten | 111 | 34.4% |
+| unchanged | 192 | 59.4% |
+| rewritten | 113 | 35.0% |
 | sqlite_error | 10 | 3.1% |
-| nondeterministic | 6 | 1.9% |
 | rounding | 5 | 1.5% |
-| hand | 5 | 1.5% |
 | text_numbers | 3 | 0.9% |
-| **on the allow-list** | **302** | **93.5%** |
+| **on the allow-list** | **313** | **96.9%** |
 
 Rewrites used by challenges on the list:
 
 | Rewrite | Challenges |
 |---|---|
-| NULLS FIRST/LAST | 118 |
-| ROUND(x::numeric) | 80 |
+| NULLS FIRST/LAST | 120 |
+| ROUND(x::numeric) | 81 |
 | julianday→epoch | 23 |
-| strftime→to_char | 20 |
+| strftime→to_char | 21 |
 | CAST AS INTEGER→TRUNC | 9 |
 | LIKE→ILIKE | 7 |
 | INSTR→STRPOS | 7 |
@@ -42,7 +40,7 @@ Every challenge that does not run unchanged:
 | 10 | rounding | NULLS FIRST/LAST, ROUND(x::numeric) |  |
 | 13 | rewritten | NULLS FIRST/LAST, ROUND(x::numeric) |  |
 | 15 | rewritten | NULLS FIRST/LAST, ROUND(x::numeric) |  |
-| 20 | hand | NULLS FIRST/LAST | column "total_spent" does not exist |
+| 20 | rewritten | NULLS FIRST/LAST, ROUND(x::numeric) |  |
 | 22 | rewritten | NULLS FIRST/LAST, ROUND(x::numeric) |  |
 | 25 | rewritten | NULLS FIRST/LAST, ROUND(x::numeric) |  |
 | 26 | rewritten | CAST AS INTEGER→TRUNC, NULLS FIRST/LAST, julianday→epoch |  |
@@ -63,11 +61,8 @@ Every challenge that does not run unchanged:
 | 61 | rewritten | NULLS FIRST/LAST, ROUND(x::numeric) |  |
 | 64 | rewritten | NULLS FIRST/LAST, ROUND(x::numeric) |  |
 | 66 | rewritten | NULLS FIRST/LAST, ROUND(x::numeric) |  |
-| 67 | nondeterministic | NULLS FIRST/LAST | runs; the reference depends on row order |
 | 68 | rewritten | NULLS FIRST/LAST, julianday→epoch |  |
-| 69 | nondeterministic | NULLS FIRST/LAST, ROUND(x::numeric) | runs; the reference depends on row order |
 | 70 | rewritten | NULLS FIRST/LAST, ROUND(x::numeric) |  |
-| 71 | hand | NULLS FIRST/LAST | different rows (4 vs 4) |
 | 74 | rewritten | NULLS FIRST/LAST, ROUND(x::numeric) |  |
 | 75 | rewritten | NULLS FIRST/LAST, strftime→to_char |  |
 | 79 | rewritten | CAST AS INTEGER→TRUNC, NULLS FIRST/LAST, ROUND(x::numeric), julianday→epoch |  |
@@ -94,7 +89,7 @@ Every challenge that does not run unchanged:
 | 142 | rewritten | NULLS FIRST/LAST, ROUND(x::numeric) |  |
 | 146 | rewritten | INSTR→STRPOS, NULLS FIRST/LAST |  |
 | 147 | rewritten | NULLS FIRST/LAST, strftime→to_char |  |
-| 150 | hand | NULLS FIRST/LAST, strftime→to_char | different rows (64 vs 64) |
+| 150 | rewritten | NULLS FIRST/LAST, strftime→to_char |  |
 | 151 | rewritten | CAST AS INTEGER→TRUNC, NULLS FIRST/LAST, julianday→epoch |  |
 | 152 | rewritten | NULLS FIRST/LAST, strftime→to_char |  |
 | 153 | rewritten | NULLS FIRST/LAST, strftime→to_char |  |
@@ -110,19 +105,13 @@ Every challenge that does not run unchanged:
 | 227 | rewritten | NULLS FIRST/LAST |  |
 | 228 | text_numbers | LIKE→ILIKE, NULLS FIRST/LAST | the SQLite answer compares numbers stored as text; Postgres types them |
 | 229 | rewritten | LIKE→ILIKE, NULLS FIRST/LAST, date column::text |  |
-| 230 | hand | NULLS FIRST/LAST | different rows (15 vs 15) |
 | 231 | rewritten | NULLS FIRST/LAST, ROUND(x::numeric) |  |
 | 232 | text_numbers | NULLS FIRST/LAST | the SQLite answer compares numbers stored as text; Postgres types them |
 | 237 | rewritten | NULLS FIRST/LAST, date column::text |  |
-| 239 | nondeterministic | NULLS FIRST/LAST | UNION types date and text cannot be matched |
 | 243 | rewritten | ROUND(x::numeric) |  |
-| 247 | nondeterministic | NULLS FIRST/LAST | runs; the reference depends on row order |
-| 250 | nondeterministic | NULLS FIRST/LAST | runs; the reference depends on row order |
 | 254 | rewritten | NULLS FIRST/LAST, ROUND(x::numeric) |  |
 | 260 | rewritten | NULLS FIRST/LAST, ROUND(x::numeric) |  |
 | 261 | rewritten | NULLS FIRST/LAST, ROUND(x::numeric) |  |
-| 262 | nondeterministic | NULLS FIRST/LAST | runs; the reference depends on row order |
-| 263 | hand | NULLS FIRST/LAST | column "failure_count" does not exist |
 | 264 | rewritten | CAST AS INTEGER→TRUNC, NULLS FIRST/LAST |  |
 | 266 | rewritten | LIKE→ILIKE, NULLS FIRST/LAST, ROUND(x::numeric) |  |
 | 270 | rewritten | NULLS FIRST/LAST, ROUND(x::numeric) |  |
