@@ -143,7 +143,9 @@ The items are challenge ids **331–342** (`type: 'debug'`,
 **t0 → t0 + 28 days**, and the baseline band is read **from the same window**,
 never from an earlier period.
 
-People are `coalesce(aid, username)`. Leave out internal accounts,
+People are `coalesce(aid, username)`, where `aid` is
+`((metadata #>> '{}')::jsonb)->>'aid'` (pro_events has no aid column; the
+short form is shorthand everywhere in this file). Leave out internal accounts,
 `metadata.bot`, and the crawler window sizes and fingerprints at the top of
 docs/reads/funnel-2026-11-22.md.
 
