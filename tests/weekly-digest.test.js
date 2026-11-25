@@ -44,6 +44,31 @@ describe('weekly-digest: the goal question above the report', () => {
     expect(goalOnRecord({ intent: 'exploring' })).toBe(false);
   });
 
+  // Found 2026-11-25: setUserIntent (src/app.jsx) has written
+  // `userData.intent = { goal, source, at }` since 2026-09-17, and this gate
+  // compared it to plain strings — so every answer given in the app missed,
+  // and 7 of the 9 people the digest asked in the 70 days to 11-25 had
+  // already answered. Both shapes are read; the object's field is `goal`.
+  it('reads the declared intent in the shape the app writes it — `{ goal, source, at }`', () => {
+    const at = '2026-11-01T10:00:00.000Z';
+    for (const goal of ['interview', 'job_ready', 'learning', 'hired']) {
+      expect(goalOnRecord({ intent: { goal, source: 'ask', at } })).toBe(true);
+    }
+    expect(goalOnRecord({ intent: { goal: 'exploring', source: 'ask', at } })).toBe(false);
+    expect(goalOnRecord({ intent: { goal: null, source: null, at: null } })).toBe(false);
+    expect(goalOnRecord({ intent: {} })).toBe(false);
+    // The legacy string shape still counts.
+    expect(goalOnRecord({ intent: 'interview' })).toBe(true);
+    expect(goalOnRecord({ intent: 'hired' })).toBe(true);
+  });
+
+  it('the object shape is the one setUserIntent in app.jsx still writes', () => {
+    const app = fs.readFileSync(join(ROOT, 'src/app.jsx'), 'utf8');
+    const setter = between(app, 'const setUserIntent = (goal, source) => {', '\n  };\n');
+    expect(setter).toContain('const rec = { goal, source, at: new Date().toISOString() };');
+    expect(setter).toContain('userData.intent = rec;');
+  });
+
   it('the block is wired conditionally, above the report, and stamped on the sent row', () => {
     expect(fn).toContain('const askGoal = !goalOnRecord(userData)');
     expect(fn).toContain("${askGoal ? goalAskBlock() : ''}");

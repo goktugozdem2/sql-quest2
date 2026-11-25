@@ -35,7 +35,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Stripe from "https://esm.sh/stripe@12.0.0?target=deno";
 import { pickCustomerRow } from "./customer-row.ts";
-import { paymentFailedEmail, stripeInvoiceUrl, startsAtTrialEnd, PORTAL_URL_DEFAULT } from "./payment-failed-email.ts";
+import { paymentFailedEmail, stripeInvoiceUrl, startsAtTrialEnd, failedChargeState, PORTAL_URL_DEFAULT } from "./payment-failed-email.ts";
 import { expiredSessionMeta } from "../_shared/checkout-recovery.ts";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
@@ -551,6 +551,8 @@ serve(async (req) => {
       const invoice = event.data.object as Stripe.Invoice;
       const customerId = invoice.customer as string;
       const willRetry = !!invoice.next_payment_attempt;
+      // retrying | gave_up | waiting — only gave_up ends access (A3 2026-11-25).
+      const chargeState = failedChargeState(invoice.next_payment_attempt, invoice.attempt_count);
 
       // A failed FIRST invoice is a card declined on the checkout page, not
       // dunning. The buyer is still looking at Stripe's own "your card was
@@ -633,6 +635,7 @@ serve(async (req) => {
         next_attempt_unix: invoice.next_payment_attempt ?? null,
         billing_reason: invoice.billing_reason ?? null,
         after_trial: afterTrial,
+        charge_state: chargeState,
       });
 
       // Stripe has stopped retrying: this person is not going to pay for the
@@ -642,7 +645,11 @@ serve(async (req) => {
       // pay for, and pro-access.js adds its three read-only days on top, so
       // the grace window exists without anyone granting it. Downgrading on a
       // first decline would punish a card that recovers on the second try.
-      if (!willRetry && userRecord) {
+      // A charge Stripe never attempted under its retry schedule
+      // (attempt_count 0, chargeState "waiting") is not a final failure: it
+      // waits for the customer on the invoice page, and is treated like a
+      // scheduled retry: nothing is revoked.
+      if (chargeState === "gave_up" && userRecord) {
         const had = await revokeProAccess(userRecord);
         await logProEvent("pro_access_revoked", userRecord.username, "stripe_webhook", {
           cause: "payment_failed_final",
@@ -674,6 +681,7 @@ serve(async (req) => {
           billingReason: invoice.billing_reason ?? null,
           afterTrial,
           willRetry,
+          waiting: chargeState === "waiting",
           invoiceUrl: stripeInvoiceUrl(invoice.hosted_invoice_url),
           portalUrl: Deno.env.get("STRIPE_CUSTOMER_PORTAL_URL") || PORTAL_URL_DEFAULT,
         });

@@ -38,13 +38,14 @@ import { mergeProgress, hasProgress, isResumableGuest, GUEST_USER_KEY } from './
 import { companySetMatch } from './utils/company-set-match.js';
 import { buildPracticePlan, PLAN_MIN_SOLVES_FOR_SKILLS } from './utils/practice-plan.js';
 import { FIRST_SCREEN_STORAGE_KEY, firstScreenDecision } from './utils/first-screen.js';
-import { MOBILE_RUN_BAR_STORAGE_KEY, MOBILE_RUN_BAR_TEST_ID, isNarrowTouch, mobileRunBarDecision, runBarLabel, keyboardOffset } from './utils/mobile-run-bar.js';
+import { MOBILE_RUN_BAR_STORAGE_KEY, MOBILE_RUN_BAR_TEST_ID, isNarrowTouch, isShortViewport, mobileRunBarDecision, runBarLabel, keyboardOffset } from './utils/mobile-run-bar.js';
 
 import { MOBILE_ONE_LAYER_STORAGE_KEY, MOBILE_ONE_LAYER_TEST_ID, isNarrowTouch as oneLayerNarrowTouch, mobileOneLayerDecision, oneLayerPick, oneLayerRelease } from './utils/mobile-one-layer.js';
 import { INTAKE_KEY, INTAKE_GOALS, INTAKE_ROLES, INTAKE_STEPS, INTAKE_COMPANIES, INTAKE_LEVELS, intakeStepsFor, intakeGoalFor, intakeGoalForIntent, nextIntakeStep, isIntakeStepRequired, isIntakeLevel, isValidIntakeDate, buildIntakeRecord, isIntakeComplete, readIntakeRecord, intakeEventPayload, newCoachGoalState, shouldShowIntake } from './utils/onboarding-intake.js';
 import { shouldArmGoalNoteDateAsk, shouldRenderGoalNoteDateAsk } from './utils/goal-note-date-ask.js';
 import { COMPANY_ASK_KEY, COMPANY_ASK_TEST_ID, COMPANY_ASK_UNDECIDED, companyAskDecision, normalizeCompanyAskRecord, matchCompanies, isCompanyAskAnswer } from './utils/company-ask.js';
 import { COMPANY_DIRECT_KEY, COMPANY_DIRECT_TEST_ID, companyDirectDecision, isCompanyListArrival } from './utils/company-direct.js';
+import { RUN_SUBMIT_NUDGE_COPY, RUN_SUBMIT_NUDGE_KEY, RUN_SUBMIT_NUDGE_TEST_ID, runSubmitNudgeDecision, runSubmitNudgeEligible, runSubmitNudgeKind } from './utils/run-submit-nudge.js';
 import { GOAL_PROFILE_KEY, GOAL_GATE_RECHECK_MS, GOAL_GATE_GOALS, TARGET_LEVELS, INDUSTRIES, DEADLINE_PRESETS, industryFor, isoDateInDays, isValidDeadline, missingFields, buildGoalProfile, goalProfileStatus, shouldShowGoalGate, prefillDraft, goalGateEventPayload, readGoalProfile, GOAL_GATE_MAX_DAYS_OUT } from './utils/goal-gate.js';
 import { PLACEMENT_TIERS, placementResult, placementEventPayload, readFirstRunPlacement, seedFloorsFor, seedFloorsFromReadiness, levelForReadiness, placementFromReadiness } from './utils/placement.js';
 import { QUESTIONS as READINESS_QUESTIONS, READINESS_SKILLS, READINESS_RECORD_KEY, companySkillWeights, scoreReadiness, summarizeScores, weakestSkills, readinessRecordFrom, readReadinessRecord } from './data/readiness-questions.js';
@@ -93,6 +94,7 @@ import { DRILL_SIZE, DRILL_TARGET, buildDrillQueue, challengeMatchesSkill, prior
 import { lintSQL } from './utils/sql-lint.js';
 import { resultsMatch, solutionRequiresOrder, sortRowsCanonical } from './utils/grade.js';
 import { normalizeAiMessages } from './utils/ai-tutor-client.js';
+import { buildFeedbackChallengeContext, feedbackEventContext } from './utils/feedback-context.js';
 import { FEEDBACK_PROMPT_FLAGS, FBP_SESSION_KEY, FBP_EXIT_DAY_KEY, FBP_STUCK_IDS_KEY, FBP_DAY2_KEY, FBP_EXIT_DONE_KEY, STUCK_NO_RUN_MS, PROMPT_THANKS_MS, EXIT_REASONS, promptDoneKey, mayRecordAnswer, markPromptAnswered, nextSessionRecord, markPromptShown, canShowExitReason, stuckTrigger, canShowStuck, canShowDay2, buildPromptSubmission, localDay } from './utils/feedback-prompts.js';
 import { t as i18n_t, getCurrentLang, setLang as i18n_setLang, subscribeLang, SUPPORTED_LANGS, localizeChallenge, localizeInterview, localizeQuestion } from './utils/i18n.js';
 import { buildWeeklyReport, detectMilestones } from './utils/weekly-report.js';
@@ -4862,7 +4864,7 @@ function FeedbackPromptCard({ kind, onSend, onSkip, compact = false, answered = 
   );
 }
 
-function FeedbackWidget({ open, onOpen, onClose, onSubmit, onTopicPick, screen, initialTopic = null }) {
+function FeedbackWidget({ open, onOpen, onClose, onSubmit, onTopicPick, screen, initialTopic = null, tutorLine = false, onTutor = null }) {
   const [message, setMessage] = React.useState('');
   const [contact, setContact] = React.useState('');
   const [topic, setTopic] = React.useState(null);
@@ -4988,6 +4990,22 @@ function FeedbackWidget({ open, onOpen, onClose, onSubmit, onTopicPick, screen, 
                 );
               })}
             </div>
+            {/* IR-2 (flag feedbackContext): on a challenge, say where this box
+                goes and where help is. Muted text, the link in body text —
+                never the accent, which stays on Send (DESIGN.md). */}
+            {tutorLine && onTutor && (
+              <p className="text-xs mb-2" style={{ color: '#8A8E99' }} data-testid="feedback-tutor-line">
+                {i18n_t('feedback', 'tutorLineBefore')}
+                <button
+                  type="button"
+                  onClick={onTutor}
+                  className="underline font-semibold"
+                  style={{ color: '#F2F0EA' }}
+                  data-testid="feedback-tutor-link"
+                >{i18n_t('feedback', 'tutorLineLink')}</button>
+                {i18n_t('feedback', 'tutorLineAfter')}
+              </p>
+            )}
             <textarea
               ref={taRef}
               value={message}
@@ -5576,7 +5594,7 @@ function RadarPopToast({ pop, onClose, onShare, bigTargets = false }) {
 
   return (
     <div
-      className="fixed bottom-6 right-6 z-50 w-[320px] p-4 rounded-2xl bg-gray-900/95 backdrop-blur border border-yellow-400/30 shadow-2xl"
+      className="sq-radar-pop fixed bottom-6 right-6 z-50 w-[320px] p-4 rounded-2xl bg-gray-900/95 backdrop-blur border border-yellow-400/30 shadow-2xl"
       style={{ animation: 'radarPopIn 0.4s ease-out' }}
       role="status"
       aria-live="polite"
@@ -7878,7 +7896,26 @@ function SQLQuest() {
   // show a real error instead of pretending it sent — the entire point of this
   // channel is that a message doesn't silently disappear, which is exactly
   // what the support@sqlquest.app mailto has been doing (no MX on the domain).
+  // IR-2 (E2, 2026-11-23, flag `feedbackContext`): the challenge the widget
+  // was opened on — id, the last query (cut to ~1,000 characters) and the last
+  // diagnosis kind — or null off a challenge screen. A plain function, not a
+  // hook: it reads state at the moment it is called (open, render, submit).
+  // src/utils/feedback-context.js holds the rules.
+  const feedbackChallengeCtxNow = () => buildFeedbackChallengeContext({
+    flagOn: ftbFlag('feedbackContext'),
+    activeTab,
+    practiceSubTab,
+    challenge: currentChallenge,
+    inMock: !!activeInterview,
+    query: challengeQuery,
+    diagnosis: challengeDiagnosis,
+    status: challengeStatus,
+  });
+
   const submitFeedback = async ({ message, contact, topic, quoteConsent, quoteName, quoteConsentAt, kind = 'open', trigger = null, promptContext = null }) => {
+    // Only the widget itself ('open') carries the challenge context; the
+    // asked prompts bring their own promptContext.
+    const fbChallengeCtx = (kind || 'open') === 'open' ? feedbackChallengeCtxNow() : null;
     const payload = {
       username: currentUser || 'guest',
       message,
@@ -7901,6 +7938,7 @@ function SQLQuest() {
         kind: kind || 'open',
         trigger: trigger || null,
         ...(promptContext || {}),
+        ...(fbChallengeCtx || {}),
         solvedCount: solvedChallenges.size,
         isGuest: !!isGuest,
         isPro: !!isPro,
@@ -7945,6 +7983,9 @@ function SQLQuest() {
         // pro_events is a behavioural table; the quotable content stays in
         // the feedback table, which anon cannot read back out.
         quoteConsent: quoteConsent === true,
+        // IR-2: the challenge id and diagnosis kind, never the query — the
+        // query stays in the feedback row, which anon cannot read back.
+        ...feedbackEventContext(fbChallengeCtx),
       });
       return true;
     } catch (e) {
@@ -8268,6 +8309,10 @@ function SQLQuest() {
   const [challengeResult, setChallengeResult] = useState({ columns: [], rows: [], error: null });
   const [challengeRunAt, setChallengeRunAt] = useState(null); // Timestamp of last Run click — used as React key to retrigger flash animation
   const [challengeRunMs, setChallengeRunMs] = useState(null); // Query duration in ms — shown to user as "Ran in Xms" confirmation
+  // Run is not Submit (src/utils/run-submit-nudge.js, flag `runSubmitNudge`):
+  // { challengeId, kind: 'match' | 'check' } after a zero-solve person's Run in
+  // the `nudge` arm. Declared here, far above the showAuth / dbReady returns.
+  const [runSubmitNudge, setRunSubmitNudge] = useState(null);
   const [challengeExpected, setChallengeExpected] = useState({ columns: [], rows: [] });
   const [challengeStatus, setChallengeStatus] = useState(null);
   const [challengeStarterHint, setChallengeStarterHint] = useState(null);
@@ -24727,6 +24772,28 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
   // returns (CLAUDE.md fragile area 1). Nothing here focuses the editor.
   const [mobileRunBarShown, setMobileRunBarShown] = useState(false);
   const [runBarKeyboardOffset, setRunBarKeyboardOffset] = useState(0);
+  // A short landscape viewport (isShortViewport) keeps today's sticky bar in
+  // the bar arm: the fixed bar took ~88 of ~165 pt with the keyboard up and
+  // hid the line being typed (iOS Simulator walk, 2026-11-24). Re-read on
+  // resize / rotation while a challenge is open; the arm never changes.
+  const [runBarShortViewport, setRunBarShortViewport] = useState(() => {
+    try { return isShortViewport({ innerWidth: window.innerWidth, innerHeight: window.innerHeight }); } catch (_) { return false; }
+  });
+  useEffect(() => {
+    if (!currentChallenge) return undefined;
+    const update = () => {
+      try {
+        setRunBarShortViewport(isShortViewport({ innerWidth: window.innerWidth, innerHeight: window.innerHeight }));
+      } catch (_) { /* ignore */ }
+    };
+    update();
+    window.addEventListener('resize', update);
+    window.addEventListener('orientationchange', update);
+    return () => {
+      window.removeEventListener('resize', update);
+      window.removeEventListener('orientationchange', update);
+    };
+  }, [currentChallenge?.id]);
   useEffect(() => {
     if (!currentChallenge) return;
     let narrowTouch = false;
@@ -24743,13 +24810,14 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
       narrowTouch,
       stored,
       aid: getAnonId(),
+      shortViewport: runBarShortViewport,
     });
     if (decision.assign) {
       try { localStorage.setItem(MOBILE_RUN_BAR_STORAGE_KEY, JSON.stringify({ arm: decision.arm, at: Date.now() })); } catch (_) { /* ignore */ }
       trackActivationEvent('mobile_run_bar_assigned', { arm: decision.arm, test: MOBILE_RUN_BAR_TEST_ID, challengeId: currentChallenge.id });
     }
     setMobileRunBarShown(decision.show);
-  }, [currentChallenge?.id]);
+  }, [currentChallenge?.id, runBarShortViewport]);
   useEffect(() => {
     if (!mobileRunBarShown) { setRunBarKeyboardOffset(0); return undefined; }
     const vv = typeof window !== 'undefined' ? window.visualViewport : null;
@@ -25175,6 +25243,31 @@ HINT PROGRESSION (based on conversation length):
     }
   };
 
+  // IR-2: the 💬 widget's "tutor" link. Closes the widget and opens the same
+  // inline Help the challenge page's Help button opens; if Help is already
+  // open it only scrolls there, so a conversation in progress is not reset.
+  const openTutorFromFeedback = () => {
+    const ctx = feedbackChallengeCtxNow();
+    trackActivationEvent('feedback_tutor_redirect', {
+      ...feedbackEventContext(ctx),
+      challengeStatus: ctx ? ctx.challengeStatus : null,
+      helpWasOpen: !!showInlineAiHelp,
+    });
+    setShowFeedback(false);
+    setReviewFeedbackTopic(null);
+    if (!ctx || !currentChallenge) return;
+    if (showInlineAiHelp) {
+      setTimeout(() => {
+        try {
+          const el = document.querySelector('[data-testid="inline-ai-help"]');
+          if (el) window.scrollTo(0, Math.max(0, Math.round(window.scrollY + el.getBoundingClientRect().top - 80)));
+        } catch (_) {}
+      }, 60);
+      return;
+    }
+    openInlineAiHelp(currentChallenge, challengeQuery);
+  };
+
   // Send a follow-up message in the inline AI help panel
   const sendInlineAiMessage = async (forcedMessage = null, opts = {}) => {
     const typed = typeof forcedMessage === 'string' ? forcedMessage : inlineAiInput;
@@ -25438,13 +25531,50 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
       setChallengeRunMs(duration);
       setChallengeStatus(null);
       addToHistory(sql, true, 'challenge');
+      noteRunSubmitNudge(result.length > 0 ? result[0].values : [], null);
     } catch (err) {
       setChallengeResult({ columns: [], rows: [], error: err.message });
       setChallengeRunAt(Date.now());
       setChallengeRunMs(Math.round(performance.now() - startTime));
       setChallengeStatus(null);
       addToHistory(sql, false, 'challenge');
+      noteRunSubmitNudge([], err.message);
     }
+  };
+
+  // Run is not Submit (2026-11-23, ledger "Run is not Submit"). After a Run
+  // that returned rows, for a person with zero solves on a challenge they
+  // have not solved: assign the arm once (both arms, so the read has a
+  // denominator) and, in the `nudge` arm, put one line in the output panel
+  // saying Submit is what completes it. Compared with the same grader as
+  // Submit (resultsMatch); the shown line never grades anything itself.
+  const noteRunSubmitNudge = (rows, error) => {
+    const cid = currentChallenge?.id ?? null;
+    const eligible = runSubmitNudgeEligible({
+      flagOn: window.FF?.feature?.('runSubmitNudge') === true,
+      solvedCount: solvedChallenges.size,
+      challengeSolved: cid != null && solvedChallenges.has(cid),
+      hasRows: Array.isArray(rows) && rows.length > 0,
+      error,
+      mutates: !!currentChallenge?.mutates,
+    });
+    if (!eligible) { setRunSubmitNudge(null); return; }
+    let stored = null;
+    try { stored = JSON.parse(localStorage.getItem(RUN_SUBMIT_NUDGE_KEY) || 'null'); } catch (_) { stored = null; }
+    const decision = runSubmitNudgeDecision({ eligible, stored, aid: getAnonId() });
+    if (!decision.arm) { setRunSubmitNudge(null); return; }
+    if (decision.assign) {
+      try { localStorage.setItem(RUN_SUBMIT_NUDGE_KEY, JSON.stringify({ arm: decision.arm, at: Date.now() })); } catch (_) { /* ignore */ }
+      trackActivationEvent('run_submit_nudge_assigned', { testId: RUN_SUBMIT_NUDGE_TEST_ID, arm: decision.arm, challengeId: cid });
+    }
+    if (!decision.show) { setRunSubmitNudge(null); return; }
+    let matches = false;
+    try {
+      matches = challengeExpected.rows.length > 0 && resultsMatch(rows, challengeExpected.rows, currentChallenge.solution, challengeExpected.columns);
+    } catch (_) { matches = false; }
+    const kind = runSubmitNudgeKind(matches);
+    setRunSubmitNudge({ challengeId: cid, kind });
+    trackActivationEvent('run_submit_nudge_shown', { testId: RUN_SUBMIT_NUDGE_TEST_ID, kind, challengeId: cid });
   };
 
   // ── PostgreSQL mode (spike) ─────────────────────────────────────────────
@@ -25512,6 +25642,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
     // before the person has written a line). 2026-11-22.
     if (db && currentChallenge && !challengeQuery.trim() && starterSqlFromHint(challengeStarterHint)) { runChallengeQuery(); return; }
     if (!db || !challengeQuery.trim() || !currentChallenge) return;
+    setRunSubmitNudge(null);
     markChallengeFirstRun('submit');
     setChallengeSubmitAt(Date.now());
     try {
@@ -27853,6 +27984,10 @@ RULES:
         initialTopic={reviewFeedbackTopic}
         onClose={() => { setShowFeedback(false); setReviewFeedbackTopic(null); }}
         onSubmit={submitFeedback}
+        // IR-2: the "goes to the founder / the tutor answers now" line, only
+        // when the widget is open on a challenge screen (feedbackContext).
+        tutorLine={showFeedback && !!feedbackChallengeCtxNow()}
+        onTutor={openTutorFromFeedback}
       />
       {radarPop && oneLayerOk('radar_pop') && <RadarPopToast
         bigTargets={oneLayerOn}
@@ -41003,6 +41138,12 @@ RULES:
                           <span className="text-xs text-gray-400 whitespace-nowrap">✓ Ran in {challengeRunMs}ms</span>
                         )}
                       </div>
+                      {/* Run is not Submit — the `nudge` arm only (ledger "Run is not Submit"). */}
+                      {runSubmitNudge && runSubmitNudge.challengeId === currentChallenge?.id && !challengeStatus && !challengeResult.error && (
+                        <p data-testid="run-submit-nudge" className={`mb-3 pb-3 border-b border-[#2A2E38] text-sm ${runSubmitNudge.kind === 'match' ? 'text-green-300' : 'text-gray-300'}`}>
+                          {RUN_SUBMIT_NUDGE_COPY[runSubmitNudge.kind]}
+                        </p>
+                      )}
                       <ResultsTable columns={challengeResult.columns} rows={challengeResult.rows} error={challengeResult.error} />
                     </div>
                   )}
