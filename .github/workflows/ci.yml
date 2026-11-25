@@ -17,7 +17,9 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # 22, as deploy-prod.yml builds production: html-validate 11 needs
+          # Node ^22.22 || >=24.8 (Node 20 reached end of life 2026-04-30).
+          node-version: 22
           cache: npm
 
       - name: Install dependencies

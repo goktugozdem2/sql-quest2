@@ -46,6 +46,7 @@ describe('one app URL', () => {
 // "learn this first" say where a pattern sits; they do not claim a rate.
 const FREQUENCY = [
   /most[- ]asked/i,
+  /most[- ]tested/i,
   /by (?:rough )?frequency/i,
   /\b\d{1,3}% of (?:FAANG|hard|mid|interview|SQL interview)/i,
   /asked in roughly \d+%/i,

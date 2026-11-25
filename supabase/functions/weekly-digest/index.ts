@@ -129,19 +129,25 @@ const formatTime = (seconds: number): string => {
 // ── the goal question (founder's directive, 2026-09-17: ask every person
 // their goal; docs/plans/goal-capture-2026-09-17.md) ──────────────────────
 //
-// Does this account have a goal on record? The raw intent the post-solve ask
-// collects lives ONLY in localStorage (`sqlquest_user_intent`) — it is never
-// written to users.data — so the server reads the three places a goal does
-// reach the row: the intake record's `goal` (the same question, asked at the
-// door), a Coach goal (`coachState.goalId`), and a prep target (a company or
-// a date). `intent` / `userIntent` are read too, in case a later client
-// starts persisting the ask; today they are always absent. Someone who
+// Does this account have a goal on record? The server reads the four places
+// a goal reaches the row: the declared intent (`userData.intent`, written by
+// setUserIntent since 2026-09-17 as `{ goal, source, at }` — every answer to
+// the post-solve ask, the intake, the ?goal= link and the returning ask), the
+// intake record's `goal`, a Coach goal (`coachState.goalId`), and a prep
+// target (a company or a date). `userIntent` and a bare-string `intent` are
+// the older shapes and are still read. Someone who
 // answered "just exploring" is indistinguishable from someone never asked
 // and is asked again here — one link, no form, so the cost is a line.
 function goalOnRecord(userData: any): boolean {
   const d = userData || {}
-  const intent = d.intent || d.userIntent
-  if (intent === 'interview' || intent === 'job_ready' || intent === 'learning') return true
+  // `userData.intent` is the object `{ goal, source, at }` that setUserIntent
+  // in src/app.jsx has written since 2026-09-17; a bare string is the older
+  // shape. Until 2026-11-25 only the string was read, so every answer given
+  // through the app missed here and those people were asked again.
+  // 'exploring' is not a goal; 'hired' is a status the person declared.
+  const raw = d.intent || d.userIntent
+  const intent = raw && typeof raw === 'object' ? raw.goal : raw
+  if (intent === 'interview' || intent === 'job_ready' || intent === 'learning' || intent === 'hired') return true
   if (d.intake && typeof d.intake === 'object' && d.intake.goal) return true
   if (d.coachState && typeof d.coachState === 'object' && d.coachState.goalId) return true
   const t = d.prepTarget && typeof d.prepTarget === 'object' ? d.prepTarget : null
