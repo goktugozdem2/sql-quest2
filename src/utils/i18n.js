@@ -408,6 +408,11 @@ const TRANSLATIONS = {
       promptSkip: 'Skip',
       promptSend: 'Send',
       promptThanks: 'Thanks. A person reads this.',
+      // IR-2 (src/utils/feedback-context.js): on a challenge, one line above
+      // the textarea. Three pieces so "tutor" can be the button.
+      tutorLineBefore: 'This box goes to the founder. For help with this query, the ',
+      tutorLineLink: 'tutor',
+      tutorLineAfter: ' answers right now.',
     },
 
     // Review ask — the post-solve card. Copy rules, in the code because they
@@ -1542,6 +1547,9 @@ const TRANSLATIONS = {
       promptSkip: 'Geç',
       promptSend: 'Gönder',
       promptThanks: 'Teşekkürler. Bunu bir insan okuyor.',
+      tutorLineBefore: 'Bu kutu kurucuya gider. Bu sorguyla ilgili yardım için ',
+      tutorLineLink: 'tutor',
+      tutorLineAfter: ' hemen cevap verir.',
     },
 
     review: {

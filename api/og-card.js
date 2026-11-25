@@ -8,7 +8,9 @@
 // is silently rejected by every major card renderer. The card generator was
 // correct, deployed, and produced an image that unfurled precisely nowhere.
 //
-// So: same radar, same numbers, rasterised to PNG via satori/resvg.
+// So: same radar, same numbers, rasterised to PNG via satori/resvg
+// (api/_og-png.js — directly since 2026-11-25; @vercel/og 1.0.x cannot be
+// imported from an ES module on Node).
 //
 // SPLIT OF RESPONSIBILITIES (deliberate)
 //   - The radar is an inline SVG data URI containing GEOMETRY ONLY — rings,
@@ -22,7 +24,7 @@
 // the list DESIGN.md permits ("score/XP values ... streak indicators").
 import fs from 'fs';
 import path from 'path';
-import { ImageResponse } from '@vercel/og';
+import { renderPng, loadFallbackAsset } from './_og-png.js';
 
 const SUPABASE_URL = 'https://abmgtjafghpupaqsjnwe.supabase.co';
 const SUPABASE_ANON_KEY =
@@ -215,8 +217,7 @@ export async function renderCard(handle) {
   const h = String(handle || '').trim().toLowerCase();
   const profile = HANDLE_RE.test(h) ? await fetchProfile(h).catch(() => null) : null;
   const el = profile ? card(profile, h) : unclaimedCard(HANDLE_RE.test(h) ? h : 'sqlquest');
-  const img = new ImageResponse(el, { width: 1200, height: 630, fonts: fonts() });
-  return Buffer.from(await img.arrayBuffer());
+  return renderPng(el, { width: 1200, height: 630, fonts: fonts(), loadAdditionalAsset: loadFallbackAsset });
 }
 
 export default async function handler(req, res) {

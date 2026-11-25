@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SQL Subquery Practice — 60 Challenges: Correlated, EXISTS, IN, Derived Tables | SQLQuest.app</title>
+  <title>SQL Subquery Practice — 63 Challenges: Correlated, EXISTS, IN, Derived Tables | SQLQuest.app</title>
   <!-- 2026-09-07: new topic page (docs/reads/keywords-2026-09-07.md row #18 / §3.2). Every count is computed, not typed. The population is "the reference solution contains a parenthesised SELECT that is not a CTE body" — /(?<!\bAS\s*)\(\s*SELECT\b/ over the FULL bank (src/data/challenges.js + sector-challenges.js), the same solution-text method the CTE page uses for WITH. Chosen over the Subquery tag on purpose: the tag misses seven solutions that reach for a derived table or a scalar subquery without carrying it (27, 74, 126, 217, 219, 239, 259) and includes four that never open a subquery at all (19 and 134 are LEFT JOIN / NOT IN against a literal list; 72 and 238 use only CTEs). The read's "36 tagged, 22 free" was the core bank on the tag; the full bank on the solution gives 48 / 34. "free" = Easy + Medium + Hard freePreview. Sections are predicates inside that total: a non-CTE "(SELECT" that does not follow FROM / JOIN / EXISTS (#scalar-and-in — after a comparison, inside an expression, or after IN); tagged Correlated Subquery or a solution using EXISTS (SELECT (#correlated); FROM (SELECT / JOIN (SELECT (#derived-tables). TOPIC_PAGES in tests/site-counts.test.js binds all of them — re-run the test, do not retype. Easy coverage was the cliff this page shipped with: 3 Easy, all of them in #scalar-and-in, and ZERO in #correlated and #derived-tables. IDs 186-188 (2026-09-07) are the on-ramp — 186 a scalar in WHERE on movies, 187 an IN list drawn from the same table, 188 the first Easy derived table — so the page reads 53 / 39, #scalar-and-in 34 / 24 and #derived-tables 18 / 13. #correlated still has no Easy: a correlated subquery needs the outer-row reference to be the point, and none of the three on-ramps is that; it is the next one to author, not a number to retype. Cards were generated from the bank in Easy → Medium → Hard order, previews before Pro, curriculum order inside each band (CLAUDE.md, the raw-array trap). -->
-  <meta name="description" content="SQL subquery practice: 60 challenges solved with a subquery — scalar and IN subqueries in WHERE, correlated subqueries and EXISTS, derived tables in FROM. 8 Easy on-ramps to start on. Runs in your browser, no signup. September 2026.">
+  <meta name="description" content="SQL subquery practice: 63 challenges solved with a subquery — scalar and IN subqueries in WHERE, correlated subqueries and EXISTS, derived tables in FROM. 8 Easy on-ramps to start on. Runs in your browser, no signup. September 2026.">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://sqlquest.app/challenges/subqueries/">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://sqlquest.app/challenges/subqueries/">
-  <meta property="og:title" content="SQL Subquery Practice — 60 Challenges: Correlated, EXISTS, IN, Derived Tables | SQLQuest.app">
-  <meta property="og:description" content="60 SQL subquery challenges: scalar, IN, correlated, EXISTS and derived tables on real datasets, with AI tutoring.">
+  <meta property="og:title" content="SQL Subquery Practice — 63 Challenges: Correlated, EXISTS, IN, Derived Tables | SQLQuest.app">
+  <meta property="og:description" content="63 SQL subquery challenges: scalar, IN, correlated, EXISTS and derived tables on real datasets, with AI tutoring.">
   <meta property="og:image" content="https://sqlquest.app/og-image.png">
   <meta name="twitter:card" content="summary_large_image">
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"SQL Subquery Practice","description":"60 SQL subquery challenges: scalar, IN, correlated, EXISTS and derived tables on real datasets.","url":"https://sqlquest.app/challenges/subqueries/","breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"SQL Exercises","item":"https://sqlquest.app/sql-exercises/"},{"@type":"ListItem","position":3,"name":"SQL Subqueries","item":"https://sqlquest.app/challenges/subqueries/"}]}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"SQL Subquery Practice","description":"63 SQL subquery challenges: scalar, IN, correlated, EXISTS and derived tables on real datasets.","url":"https://sqlquest.app/challenges/subqueries/","breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"SQL Exercises","item":"https://sqlquest.app/sql-exercises/"},{"@type":"ListItem","position":3,"name":"SQL Subqueries","item":"https://sqlquest.app/challenges/subqueries/"}]}}</script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
   <style>
@@ -42,7 +42,7 @@
     .tag{font-size:11px;font-weight:700;padding:3px 10px;border-radius:100px;display:inline-block}.tag.easy{background:rgba(124,196,255,.12);color:#7CC4FF}.tag.medium{background:rgba(255,176,32,.15);color:#FFB020}.tag.hard{background:rgba(255,107,107,.15);color:#FF6B6B}.tag.free{background:rgba(74,222,128,.12);color:#4ADE80}.tag.pro{background:rgba(255,255,255,.06);color:#94a3b8}
     .btn-practice{font-size:13px;color:#c084fc;border:1px solid rgba(124,58,237,.3);padding:7px 16px;border-radius:8px;display:inline-block;transition:all .2s;text-decoration:none}.btn-practice:hover{background:rgba(124,58,237,.12);text-decoration:none}
   </style>
-<style data-phone-fit>.btn.bo{min-height:44px}@media(max-width:600px){.ni a,.ni .bp,.nl .btn{min-height:44px}}</style></head>
+<style data-footer-fit>@media(max-width:600px){.flk{row-gap:0}.flk a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;padding:0 4px}.fnav a{display:flex;align-items:center;min-height:44px;padding:0}}</style><style data-phone-fit>.btn.bo{min-height:44px}@media(max-width:600px){.ni a,.ni .bp,.nl .btn{min-height:44px}}</style></head>
 <body>
 <nav class="nav"><div class="ni">
   <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;">
@@ -53,12 +53,12 @@
 </div></nav>
 <div class="wrap">
   <p class="breadcrumb"><a href="/">SQL Quest</a> › <a href="/sql-exercises/">SQL Exercises</a> › SQL Subqueries</p>
-  <h1 class="fd">SQL Subquery Practice — <span style="background:linear-gradient(135deg,#c084fc,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">60 Challenges</span></h1>
-  <p>60 challenges whose reference solution uses a subquery — a SELECT in parentheses that is not a CTE — counted from the live bank: 8 Easy, 34 Medium, 18 Hard. Cards marked Free (including the 2 Hard previews) are open to free accounts — your first 10 challenge solves are free — and Pro opens every card. If the shape is new, take the on-ramp in order: <strong>A Subquery That Returns One Value</strong>, <strong>A Subquery That Returns a Set (IN)</strong>, then <strong>Filter on an Average You Just Computed</strong>, which is a whole query sitting in the FROM clause. After that the Medium ladder is wide. Real datasets, AI tutoring.</p>
+  <h1 class="fd">SQL Subquery Practice — <span style="background:linear-gradient(135deg,#c084fc,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">63 Challenges</span></h1>
+  <p>63 challenges whose reference solution uses a subquery — a SELECT in parentheses that is not a CTE — counted from the live bank: 8 Easy, 37 Medium, 18 Hard. Cards marked Free (including the 2 Hard previews) are open to free accounts — your first 10 challenge solves are free — and Pro opens every card. If the shape is new, take the on-ramp in order: <strong>A Subquery That Returns One Value</strong>, <strong>A Subquery That Returns a Set (IN)</strong>, then <strong>Filter on an Average You Just Computed</strong>, which is a whole query sitting in the FROM clause. After that the Medium ladder is wide. Real datasets, AI tutoring.</p>
   <a href="/app/?challenge=177&amp;src=challenges-subqueries" class="cta">Start Practicing Free →</a>
   <p style="margin-top:28px;font-size:14px;">Prefer to name the step instead of nesting it? <a href="/sql-cte-vs-subquery/">CTE vs subquery vs temp table</a> settles when the choice matters, and the <a href="/challenges/cte/">CTE challenges</a> are the WITH-clause side of the same bank.</p>
   <section class="sec" id="scalar-and-in">
-    <h2 class="fd">A subquery as a value or a list — scalar and IN: 38 challenges</h2>
+    <h2 class="fd">A subquery as a value or a list — scalar and IN: 40 challenges</h2>
     <p><code>WHERE salary &gt; (SELECT AVG(salary) FROM employees)</code> — the inner query runs once and returns one value; <code>WHERE customer_id IN (SELECT …)</code> returns a list to match against. The Easy on-ramps are here: <strong>A Subquery That Returns One Value</strong>, then the same shape on a second schema in <strong>Movies Rated Above the Average</strong>; then <strong>A Subquery That Returns a Set (IN)</strong>, and <strong>Every Film by a Director Who Once Hit 8.5</strong>, where the list comes out of the table you are already selecting from. The Medium ones move the scalar into the SELECT list, into HAVING, inside COALESCE; the Hard ones nest it inside a CTE or divide by it for a share. Mind <code>NOT IN</code> against a nullable column — <a href="/blog/null-handling-mistakes/#not-in-trap">the NOT IN trap</a>.</p>
     <p class="stamp">Counted from the challenge bank, September 2026. Easy first, then Medium, then Hard.</p>
     <div class="q-grid">
@@ -225,6 +225,18 @@
         <a href="/app/?challenge=327&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
       </div>
       <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3><a href="/questions/give-every-customer-a-lifetime-spend/" style="color:inherit;">Give Every Customer a Lifetime Spend</a></h3>
+        <p class="concepts">Uses: <code>DDL/DML</code></p>
+        <a href="/app/?challenge=357&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3><a href="/questions/close-the-books-on-february/" style="color:inherit;">Close the Books on February</a></h3>
+        <p class="concepts">Uses: <code>DDL/DML</code></p>
+        <a href="/app/?challenge=358&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
         <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
         <h3><a href="/questions/correlated-subquery-employees-above-department-median/" style="color:inherit;">Correlated Subquery: Employees Above Department Median</a></h3>
         <p class="concepts">Uses: <code>Correlated Subquery</code> <code>COUNT</code> <code>WHERE</code></p>
@@ -293,7 +305,7 @@
     </div>
   </section>
   <section class="sec" id="correlated">
-    <h2 class="fd">Correlated subqueries and EXISTS: 12 challenges</h2>
+    <h2 class="fd">Correlated subqueries and EXISTS: 13 challenges</h2>
     <p>The inner query references the outer row — <code>WHERE e1.salary &gt; (SELECT AVG(e2.salary) FROM employees e2 WHERE e2.department = e1.department)</code> — so it runs once per row. <code>EXISTS</code> is the correlated form for existence checks, and <code>NOT EXISTS</code> is the anti-join that survives NULLs where <code>NOT IN</code> does not. Start on the two Easy ones: <strong>Better Than Its Own Genre</strong>, where a single <code>m2.genre = m.genre</code> turns one average into one average per row, and <strong>Who Manages Nobody</strong>, where the <code>NOT IN</code> version of the same question really does return zero rows. Then <strong>Departments With High Earners</strong> and <strong>EXISTS vs IN</strong>; <strong>Correlated Subquery: Employees Above Department Median</strong> is the Hard one that names the pattern. <a href="/blog/sql-anti-join/">The anti-join explained</a> has the NOT EXISTS walkthrough.</p>
     <p class="stamp">Counted from the challenge bank, September 2026. Easy first, then Medium, then Hard.</p>
     <div class="q-grid">
@@ -350,6 +362,12 @@
         <h3><a href="/questions/cardholders-who-have-never-disputed-a-charge/" style="color:inherit;">Cardholders Who Have Never Disputed a Charge</a></h3>
         <p class="concepts">Uses: <code>Subquery</code> <code>JOIN</code> <code>GROUP BY</code></p>
         <a href="/app/?challenge=290&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
+      </div>
+      <div class="q-card">
+        <span class="tag medium">Medium</span> <span class="tag free">Free</span>
+        <h3><a href="/questions/clear-out-the-sign-ups-that-never-bought/" style="color:inherit;">Clear Out the Sign-Ups That Never Bought</a></h3>
+        <p class="concepts">Uses: <code>DDL/DML</code></p>
+        <a href="/app/?challenge=356&amp;src=challenges-subqueries" class="btn-practice">Try it →</a>
       </div>
       <div class="q-card">
         <span class="tag hard">Hard</span> <span class="tag pro">Pro</span>
@@ -498,7 +516,7 @@
     <a href="/blog/faang-sql-interview-guide/">FAANG SQL Guide →</a>
   </div>
 </div>
-<footer class="ft"><p><strong>SQL Quest</strong> — Master SQL through hands-on practice. <a href="/">Home</a> · <a href="/sql-exercises/">SQL Practice Questions</a> · <a href="/best-sql-practice-sites/">Best SQL Practice Sites</a></p><p style="margin-top:8px;font-size:12px;">© 2026 SQL Quest</p><style data-footer-fit>@media(max-width:600px){.flk{row-gap:0}.flk a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;padding:0 4px}.fnav a{display:flex;align-items:center;min-height:44px;padding:0}}</style><p data-partner="datrick" style="margin:18px auto 0;max-width:1000px;padding:0 24px;font-size:12px;color:#8A8E99;text-align:center;">SQL Quest is built by Datrick, Inc. · <a href="https://datrick.com/sql-server-to-postgresql-migration" style="color:inherit;text-decoration:underline;">SQL Server to PostgreSQL migration</a></p></footer>
+<footer class="ft"><p><strong>SQL Quest</strong> — Master SQL through hands-on practice. <a href="/">Home</a> · <a href="/sql-exercises/">SQL Practice Questions</a> · <a href="/best-sql-practice-sites/">Best SQL Practice Sites</a></p><p style="margin-top:8px;font-size:12px;">© 2026 SQL Quest</p><p data-partner="datrick" style="margin:18px auto 0;max-width:1000px;padding:0 24px;font-size:12px;color:#8A8E99;text-align:center;">SQL Quest is built by Datrick, Inc. · <a href="https://datrick.com/sql-server-to-postgresql-migration" style="color:inherit;text-decoration:underline;">SQL Server to PostgreSQL migration</a></p></footer>
   <script defer src="/track.js"></script>
 </body>
 </html>

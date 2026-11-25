@@ -44,6 +44,7 @@
     "eslint": "^10.0.3",
     "eslint-plugin-react-hooks": "7.1.1",
     "globals": "17.14.0",
+    "html-validate": "11.21.1",
     "knip": "6.45.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -55,13 +56,13 @@
     "vitest": "^4.1.12",
     "ws": "^8.20.0"
   },
-  "dependencies": {
-    "@vercel/analytics": "^2.0.1",
-    "@vercel/og": "^0.11.1",
-    "@vercel/speed-insights": "^2.0.0"
-  },
   "overrides": {
     "sharp": "^0.35.3",
-    "brace-expansion": "^2.0.2"
+    "brace-expansion": "^2.0.2",
+    "fflate": "^0.7.5"
+  },
+  "dependencies": {
+    "@resvg/resvg-wasm": "2.4.1",
+    "satori": "0.33.5"
   }
 }
