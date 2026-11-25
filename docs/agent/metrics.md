@@ -181,6 +181,8 @@ the prefill moves them by construction.
   - the Practice chip (`debug_filter_on`);
   - the trap pages (`src=pattern-debug-<slug>`);
   - the AI pages (`src=ai-era-debug`, `src=validate-ai-debug`).
+  - the Coach's Debug door (from its deploy, PR #373):
+    `challenge_opened.openedFrom = 'coach_debug_door'`; see `coach_debug_door`.
 
   Split openers by source before reading a change in one of them.
 
@@ -219,6 +221,102 @@ order by case diff when 'Easy' then 0 when 'Medium' then 1 else 2 end;
     12;
   - solve-through more than 20 points below the band → fix the UX before
     adding items.
+
+## `coach_debug_door`
+
+The Coach's Debug door (registered 2026-11-25, in its own PR per rule 6b;
+the product change is PR #373, flag `coachDebugDoor`, ledger "the Coach's
+Debug door"). A funnel of **people**, each step a subset of the one before:
+
+1. **shown**: a `coach_debug_door_shown` row (written once per browser
+   session per UTC day while the card renders);
+2. **clicked**: a `coach_debug_door_clicked` with `target = 'item'` after
+   their first shown. `target = 'see_all'` is counted on its own line, never
+   in this step;
+3. **first run**: a `challenge_first_run` on the `challengeId` they clicked,
+   after the click;
+4. **solved**: a `challenge_solved` on that `challengeId`, after the click.
+
+A person is `((metadata #>> '{}')::jsonb)->>'aid'`; with no aid the row is
+dropped, not counted by username, because a guest can mint a second username
+in the same browser. Steps 3–4 are read on **unlocked** clicks
+(`locked = false`); a locked click meets the wall by design, and its
+`content_lock_reached` / `pro_modal_shown {reason: 'debug_lock'}` rows are
+reported beside the funnel, not in it.
+
+Excluded on top of the shared filters and the fleet's bot filters
+(`docs/agent/fleet/README.md`, Data): aid
+`363dfb2bc1314757acc88c8438c4d2ea` (the 11-25 investigation walk,
+Europe/Istanbul, desktop 1024x768), and any aid with `metadata.bot`.
+
+```sql
+-- :d = the deploy date of PR #373; window d .. d + 28 days
+WITH ev AS (
+  SELECT ((metadata #>> '{}')::jsonb)->>'aid'          AS aid,
+         event, created_at,
+         ((metadata #>> '{}')::jsonb)                  AS m
+  FROM pro_events
+  WHERE event IN ('coach_debug_door_shown', 'coach_debug_door_clicked',
+                  'challenge_first_run', 'challenge_solved')
+    AND created_at >= :d AND created_at < :d + interval '28 days'
+    AND <shared filters>
+    AND coalesce(((metadata #>> '{}')::jsonb)->>'bot', 'false') <> 'true'
+),
+p AS (SELECT * FROM ev WHERE aid IS NOT NULL
+        AND aid <> '363dfb2bc1314757acc88c8438c4d2ea'),
+shown AS (SELECT aid, min(created_at) AS at FROM p
+          WHERE event = 'coach_debug_door_shown' GROUP BY aid),
+clicks AS (
+  SELECT c.aid, c.created_at AS at, (c.m->>'challengeId') AS cid,
+         coalesce((c.m->>'locked')::boolean, false) AS locked
+  FROM p c JOIN shown s ON s.aid = c.aid AND c.created_at >= s.at
+  WHERE c.event = 'coach_debug_door_clicked' AND c.m->>'target' = 'item'
+),
+first_click AS (SELECT DISTINCT ON (aid) * FROM clicks ORDER BY aid, at),
+ran AS (SELECT DISTINCT f.aid FROM first_click f
+        JOIN p r ON r.aid = f.aid AND r.event = 'challenge_first_run'
+         AND r.m->>'challengeId' = f.cid AND r.created_at >= f.at
+        WHERE NOT f.locked),
+won AS (SELECT DISTINCT f.aid FROM first_click f
+        JOIN p r ON r.aid = f.aid AND r.event = 'challenge_solved'
+         AND r.m->>'challengeId' = f.cid AND r.created_at >= f.at
+        WHERE NOT f.locked)
+SELECT
+  (SELECT count(*) FROM shown)                                  AS shown,
+  (SELECT count(*) FROM first_click)                            AS clicked,
+  (SELECT count(*) FROM first_click WHERE NOT locked)           AS clicked_unlocked,
+  (SELECT count(*) FROM first_click WHERE locked)               AS clicked_locked,
+  (SELECT count(*) FROM ran)                                    AS first_run,
+  (SELECT count(*) FROM won)                                    AS solved,
+  (SELECT count(DISTINCT c.aid) FROM p c JOIN shown s ON s.aid = c.aid
+    WHERE c.event = 'coach_debug_door_clicked' AND c.m->>'target' = 'see_all'
+      AND c.created_at >= s.at)                                 AS see_all_people;
+```
+
+Rates: clicked ÷ shown; first_run ÷ clicked_unlocked; solved ÷
+clicked_unlocked. The person's first item click is the one followed. A
+second click on another item does not add a second funnel.
+
+**Confounds, stated in advance.**
+- A Debug item opens with the AI's query prefilled, so `first_run` is
+  inflated by construction (see `debug_solve_through`). Read the solve step,
+  not the run step, as the outcome.
+- `shown` is written per session-day, not per render. A person who reloads
+  the Coach in a new tab on the same day may be written twice. The funnel
+  counts people, so that does not matter.
+- Born on the deploy date of PR #373. Do not read any window before it, and
+  check birth with the shared "5+ rows" rule.
+
+**Thresholds, copied from the ledger claim (written before the data).**
+- **Target** (28 days): ≥ 150 people shown; clicked ÷ shown ≥ 8%; ≥ 40
+  people open a Debug item from the door (`challenge_opened.openedFrom =
+  'coach_debug_door'`); solved ÷ clicked_unlocked ≥ 40%.
+- **Falsification:** with ≥ 150 shown, clicked ÷ shown under 3% → the door
+  does not pull. Under 150 shown → `UNREADABLE`. Solved ÷ clicked_unlocked
+  under 20% → read `challenge_error_pattern` on 331–342 first.
+- **Guardrail:** `first_solve_10m` and `coach_step_started` people per Coach
+  viewer, 28 days before D vs 28 days after. A fall of more than 5 points in
+  either → the card moves under the goal's next-step card.
 
 ## `first_contact_share`
 
