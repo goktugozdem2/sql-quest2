@@ -4816,3 +4816,235 @@ Traps:
   if they took ≥ 104 ms (the browser's buffered event-timing floor).
 - The landing pages and /app are measured by the same library but from
   different documents; never blend `app` into a "site" p75.
+
+## `outcome_ask_answer`
+
+The in-app outcome ask (First 90 Days F1,
+`docs/plans/first-90-days-2026-11-25.md`). Defined 2026-11-25, before the
+code ships (rule 6b). The events it reads do not exist yet; the measure PR
+adds them:
+- `outcome_ask_shown {surface: 'coach'|'interview_tab', trigger: 'date_passed'|'return_21d'}`
+  is written once per person per 30 days when the line is on screen;
+- the answer is the existing `interview_outcome`, with `source='in_app'`
+  and `outcome` ∈ passed | failed | moved ("not yet" is `moved`).
+
+**Primary:** of the people with `outcome_ask_shown` in the window, the share
+with an `interview_outcome {source:'in_app'}` within 7 days, split by
+`outcome`. **Secondary:** of the people who answered `passed`, the share with
+`post_hire_status_set {status:'hired'}` within 7 days (the offer ask's
+take-up). People are `coalesce(aid, username)`. Internal accounts,
+`metadata.bot` and the crawler fingerprints in the fleet README rule 2 are out.
+
+Traps:
+- Read `source='in_app'` apart from `source='link'` (the email). Never sum
+  the two into one answer rate: their denominators differ (shown vs sent).
+- `moved` here means "not yet". The email's `moved` also means "I never had
+  one". Read it as its own line, never as a miss.
+
+```sql
+with ev as (
+  select coalesce(((metadata #>> '{}')::jsonb)->>'aid', username) pid, event, created_at,
+         (metadata #>> '{}')::jsonb m
+  from pro_events
+  where username !~* '^(test|qa_|fabletest|linktest|internalroutine|sqlquest$|elena$)'
+    and coalesce(((metadata #>> '{}')::jsonb)->>'bot', 'false') <> 'true'
+    and created_at >= :from and created_at < :to + interval '7 days'
+    and event in ('outcome_ask_shown', 'interview_outcome', 'post_hire_status_set')
+),
+shown as (select pid, min(created_at) t0 from ev
+          where event = 'outcome_ask_shown' and created_at < :to group by pid),
+ans as (select distinct on (s.pid) s.pid, e.m->>'outcome' outcome, e.created_at ta
+        from shown s join ev e on e.pid = s.pid and e.event = 'interview_outcome'
+          and e.m->>'source' = 'in_app' and e.created_at between s.t0 and s.t0 + interval '7 days'
+        order by s.pid, e.created_at),
+hired as (select distinct a.pid from ans a join ev e on e.pid = a.pid
+          and e.event = 'post_hire_status_set' and e.m->>'status' = 'hired'
+          and e.created_at between a.ta and a.ta + interval '7 days'
+          where a.outcome = 'passed')
+select count(*) shown,
+       count(a.pid) answered_7d,
+       count(*) filter (where a.outcome = 'passed') passed,
+       count(*) filter (where a.outcome = 'failed') failed,
+       count(*) filter (where a.outcome = 'moved')  not_yet,
+       (select count(*) from hired) passed_to_hired
+from shown s left join ans a using (pid);
+```
+
+**Baseline (2026-11-25):** the ask does not exist. `interview_outcome` has 0
+rows ever (the email sender never ran). Eligible population: ~14 interview
+or job-ready people a month come back 14+ days after stating the intent
+(76 in the 120 days to 11-25). **Decision rule:** the plan's §8, F1.
+
+## `ticket_door`
+
+The ticket-1 Coach card for people who look like "first job" (First 90 Days
+F2). Defined 2026-11-25, before the code ships (rule 6b). New event:
+`ticket_card_shown {source: 'analyst_day_one'|'job_ready'|'hired'}`, written
+once per person per day when the card is on screen. The rest are existing
+events: `ticket_opened {ticketId, index, locked}`, `ticket_solved`.
+
+**Primary:** of the people with `ticket_card_shown` in the window, the share
+with an unlocked `ticket_opened` within 7 days, and of those, the share with
+`ticket_solved` for the same `ticketId`. Split by `source`; never one
+blended rate. **Secondary (F3):** locked opens (`locked: true`) → a
+`pro_plan_clicked` within 30 minutes. **Guardrail:** `reach_6_rate` of
+card-shown people against the same goal's people in the 28 days before the
+flip. Same people rule and filters as `outcome_ask_answer`.
+
+```sql
+with ev as (
+  select coalesce(((metadata #>> '{}')::jsonb)->>'aid', username) pid, event, created_at,
+         (metadata #>> '{}')::jsonb m
+  from pro_events
+  where username !~* '^(test|qa_|fabletest|linktest|internalroutine|sqlquest$|elena$)'
+    and coalesce(((metadata #>> '{}')::jsonb)->>'bot', 'false') <> 'true'
+    and created_at >= :from and created_at < :to + interval '7 days'
+    and event in ('ticket_card_shown', 'ticket_opened', 'ticket_solved', 'pro_plan_clicked')
+),
+shown as (select distinct on (pid) pid, m->>'source' src, created_at t0 from ev
+          where event = 'ticket_card_shown' and created_at < :to order by pid, created_at),
+opened as (select distinct s.pid, e.m->>'ticketId' tid from shown s join ev e on e.pid = s.pid
+           and e.event = 'ticket_opened' and coalesce(e.m->>'locked', 'false') <> 'true'
+           and e.created_at between s.t0 and s.t0 + interval '7 days'),
+solved as (select distinct o.pid from opened o join ev e on e.pid = o.pid
+           and e.event = 'ticket_solved' and e.m->>'ticketId' = o.tid),
+locked as (select e.pid, e.created_at tl from ev e where e.event = 'ticket_opened' and e.m->>'locked' = 'true'),
+locked_click as (select distinct l.pid from locked l join ev e on e.pid = l.pid
+                 and e.event = 'pro_plan_clicked' and e.created_at between l.tl and l.tl + interval '30 minutes')
+select s.src, count(distinct s.pid) shown,
+       count(distinct o.pid) opened_7d,
+       count(distinct so.pid) solved,
+       count(distinct l.pid) locked_openers,
+       count(distinct lc.pid) locked_to_plan_click
+from shown s
+left join opened o using (pid) left join solved so using (pid)
+left join locked l using (pid) left join locked_click lc using (pid)
+group by s.src;
+```
+
+**Baseline (2026-11-25):** 0 ticket opens by non-internal people since the
+tickets shipped on 2026-10-04. Audience: 226 job-ready solvers in 90 days;
+28 people chose Analyst Day-One in 90 days. **Decision rule:** the plan's
+§8, F2 and F3.
+
+## `stack_content_reach`
+
+Whether the current-stack content can be reached at all (Moving up U1,
+`docs/plans/moving-up-current-stack-2026-11-25.md`). Defined 2026-11-25. Per
+28-day window, distinct people (`coalesce(aid, username)`, same filters as
+above) with:
+- a `challenge_opened` on the Debug set (ids 331–342);
+- a `challenge_opened` on the DDL/DML items (ids 325–329, 355–359; extend
+  the list when C6 adds items, in its own PR);
+- a `dialect_notes_opened` (any challenge).
+
+Each set is read on its own; never summed into one reach. A person who opens
+both sets counts in both.
+
+```sql
+with ev as (
+  select coalesce(((metadata #>> '{}')::jsonb)->>'aid', username) pid, event,
+         (metadata #>> '{}')::jsonb m
+  from pro_events
+  where username !~* '^(test|qa_|fabletest|linktest|internalroutine|sqlquest$|elena$)'
+    and coalesce(((metadata #>> '{}')::jsonb)->>'bot', 'false') <> 'true'
+    and created_at >= :from and created_at < :from + interval '28 days'
+    and event in ('challenge_opened', 'dialect_notes_opened')
+)
+select
+  count(distinct pid) filter (where event = 'challenge_opened' and m->>'challengeId' ~ '^[0-9]+$'
+                              and (m->>'challengeId')::int between 331 and 342) debug_openers,
+  count(distinct pid) filter (where event = 'challenge_opened' and m->>'challengeId' ~ '^[0-9]+$'
+                              and ((m->>'challengeId')::int between 325 and 329
+                                   or (m->>'challengeId')::int between 355 and 359)) ddl_dml_openers,
+  count(distinct pid) filter (where event = 'dialect_notes_opened') dialect_note_openers
+from ev;
+```
+
+**Baseline (2026-11-25):** Debug 0 and DDL/DML 0. No `challenge_opened`
+above id 321 has been recorded since 2026-11-15, internal traffic included,
+so check reachability before reading anything. Dialect notes: 96 people in
+the 90 days to 11-25. **Decision rule:** the plan's §8, U1.
+
+## `at_work_share`
+
+Who already works with SQL (Moving up U2). Defined 2026-11-25, before the
+code ships (rule 6b). It needs one new value of an existing event:
+`intent_captured {intent: 'at_work'}`.
+
+**Primary:** of the people with an `intent_captured` in the window (their
+latest answer in it), the share whose answer is `at_work`. **Secondary,**
+per intent value: the share reaching 6 distinct solves within 28 days of the
+answer (`reach_6_rate`'s solve definition), and the webhook payers among
+them by username. People, filters and crawler rules as above. Only people
+with at least one `challenge_solved` in the window count; this drops the
+crawlers that answer nothing else.
+
+```sql
+with ev as (
+  select coalesce(((metadata #>> '{}')::jsonb)->>'aid', username) pid, username, event, created_at,
+         (metadata #>> '{}')::jsonb m
+  from pro_events
+  where username !~* '^(test|qa_|fabletest|linktest|internalroutine|sqlquest$|elena$)'
+    and coalesce(((metadata #>> '{}')::jsonb)->>'bot', 'false') <> 'true'
+    and created_at >= :from and created_at < :to + interval '28 days'
+    and event in ('intent_captured', 'challenge_solved')
+),
+answer as (select distinct on (pid) pid, m->>'intent' intent, created_at ta from ev
+           where event = 'intent_captured' and created_at < :to and m->>'intent' is not null
+           order by pid, created_at desc),
+solves as (select a.pid, count(distinct e.m->>'challengeId') n from answer a join ev e on e.pid = a.pid
+           and e.event = 'challenge_solved' and e.created_at between a.ta and a.ta + interval '28 days'
+           group by a.pid),
+payers as (select distinct username from pro_events
+           where reason = 'stripe_webhook' and event = 'pro_purchase_completed' and created_at >= :from),
+usernames as (select distinct pid, username from ev)
+select a.intent, count(distinct a.pid) answered,
+       round(100.0 * count(distinct a.pid) / sum(count(distinct a.pid)) over (), 1) pct_of_answers,
+       count(distinct a.pid) filter (where s.n >= 6) reached_6,
+       count(distinct u.username) filter (where u.username in (select username from payers)) payers
+from answer a join solves s using (pid)
+left join usernames u on u.pid = a.pid
+group by a.intent order by answered desc;
+```
+
+**Baseline (2026-11-25):** the answer does not exist. The intake's role
+field is on 12 rows, so there is no current measure of employed users.
+Volume check (this query, answers 10-01 → 10-29): 241 solvers answered,
+interview 119 (49%), job_ready 62, learning 60; so 10% `at_work` would be
+about 24 people per 28 days, and the window is readable.
+**Decision rule:** the plan's §8, U2. Guardrail: `first_solve_10m`, because
+the intent question is on the first screen.
+
+## `moving_up_goal`
+
+The "Moving up" and "SQL with AI" Coach goals (Moving up U3/U4), if the
+founder approves them. Defined 2026-11-25. It is `coach_goal_to_step`
+restricted to the new goal ids (`moving-up`, `sql-with-ai`; the exact ids
+are fixed in the goal PR and must match here), with the same two sources:
+- **record:** `users.data.coachState.goalId`, and `stepsCompleted` length
+  ≥ 1 and ≥ 5;
+- **events:** `goal_selected {goalId}` → a non-placement `coach_step_started`
+  within 14 days.
+
+Read per goal id beside Analyst Day-One in the same window. Never as one
+"new goals" rate.
+
+```sql
+select data->'coachState'->>'goalId' goal,
+       count(*) holders,
+       count(*) filter (where jsonb_typeof(data->'coachState'->'stepsCompleted') = 'array'
+                        and jsonb_array_length(data->'coachState'->'stepsCompleted') >= 1) one_step,
+       count(*) filter (where jsonb_typeof(data->'coachState'->'stepsCompleted') = 'array'
+                        and jsonb_array_length(data->'coachState'->'stepsCompleted') >= 5) five_steps
+from users
+where jsonb_typeof(data->'coachState') = 'object'
+  and data->'coachState'->>'goalId' in ('moving-up', 'sql-with-ai', 'analyst-day-one')
+  and (data->'coachState'->>'startedAt')::timestamptz >= :flip
+  and username !~* '^(test|qa_|fabletest|linktest|internalroutine|sqlquest$|elena$|demo|admin)'
+group by 1;
+```
+
+**Baseline (2026-11-25, all time, record):** the two goals do not exist.
+Comparison: Analyst Day-One 15 of 64 holders with ≥ 1 step; Fundamentals 9
+of 85; Interview Prep 1 of 67. **Decision rule:** the plan's §8, U3/U4.
