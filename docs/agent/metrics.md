@@ -4359,6 +4359,47 @@ from feedback where created_at >= :from and created_at < :to group by 1, 2;
   is the one the daily read assigns.
 - Rows written while the 20260907 quote-consent migration is unapplied still
   land (PostgREST drops unknown keys); `context` is jsonb and was always there.
+## `feedback_context`
+
+The 💬 widget's challenge context and its tutor redirect (E2, IR-2,
+2026-11-23; `src/utils/feedback-context.js`, flag `feedbackContext`).
+Registered with the ledger claim "a feedback row says which challenge".
+
+- **context share** — `feedback_submitted` rows with `kind='open'` and
+  `screen='quests'` that carry `challengeId`, over all such rows. The event
+  carries the id and `diagnosisKind`, never the query; the query is in
+  `public.feedback.context->>'lastQuery'` (anon cannot read it back).
+- **redirect rate** — people with `feedback_tutor_redirect` ÷ people with
+  `feedback_opened {screen:'quests'}`. `helpWasOpen` says whether Help was
+  already open (the link then only scrolls).
+
+```sql
+-- the window [:from, :to)
+with ev as (
+  select coalesce(aid, username) who, event, (metadata #>> '{}')::jsonb m
+  from pro_events
+  where event in ('feedback_opened', 'feedback_submitted', 'feedback_tutor_redirect')
+    and created_at >= :from and created_at < :to
+)
+select
+  count(*) filter (where event = 'feedback_submitted' and m->>'kind' = 'open' and m->>'screen' = 'quests') sent_on_quests,
+  count(*) filter (where event = 'feedback_submitted' and m->>'kind' = 'open' and m->>'screen' = 'quests' and m->>'challengeId' is not null) with_challenge,
+  count(distinct who) filter (where event = 'feedback_opened' and m->>'screen' = 'quests') opened_on_quests,
+  count(distinct who) filter (where event = 'feedback_tutor_redirect') took_tutor
+from ev;
+
+select created_at, context->>'challengeId' cid, context->>'diagnosisKind' dx,
+       context->>'queryTruncated' cut, message
+from feedback where created_at >= :from and created_at < :to
+  and coalesce(context->>'kind', 'open') = 'open' order by created_at desc;
+```
+
+- Apply the fleet's bot and internal-account filters (fleet README, Data).
+- `screen='quests'` also covers the other Practice sub-tabs (exercises,
+  speed run), where no challenge id is expected; a missing id there is not a
+  failure.
+- n is tiny: read the verbatims, never a rate on fewer than 10 rows.
+
 - **Kind `purchase_reason`** (registered 2026-11-24, before flag
   `purchaseReasonAsk` ships in #241; rule 6b). Shown → answered is the same
   per-person count as the other kinds, `kind = 'purchase_reason'`; the
