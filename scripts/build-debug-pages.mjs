@@ -32,7 +32,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { debugFlagOn, loadDebugItems, debugHref, builtCopies } from './debug-discovery.mjs';
-import { CSS as PATTERN_CSS } from './build-pattern-pages.mjs';
+import { CSS as PATTERN_CSS, highlight, inline, resultHtml } from './build-pattern-pages.mjs';
 import { sqlQuestFacts } from './build-alternatives-pages.mjs';
 import { SQL_PATTERNS } from '../src/data/sql-patterns.js';
 import { freeTierSentence, freeSolvesLabel } from '../src/utils/display-count.js';
@@ -73,6 +73,58 @@ export const FAMILY_BY_ID = {
   337: 'ties', 338: 'distinct', 339: 'group_by', 340: 'fan_out', 341: 'avg_of_avgs', 342: 'window_partition',
 };
 
+// C7 question mining, 2026-11-24 (docs/reads/questions-2026-11-24.md): "why
+// does my GROUP BY run in SQLite and fail in PostgreSQL?" answered on the page
+// with a worked example. It runs on the app's ecommerce dataset, never on a
+// Debug item's own data or query (the page must not show a broken query, and
+// tests/debug-seo-pages.test.js checks no two of its lines appear here).
+// Every query and every fact is run by tests/question-answers-2026-11-24.test.js.
+export const GROUP_BY_DIALECT = {
+  id: 'group-by-sqlite-postgresql',
+  heading: 'Why a GROUP BY runs in SQLite and fails in PostgreSQL',
+  dataset: 'ecommerce',
+  wrong: {
+    sql: "SELECT category,\n       product,\n       ROUND(SUM(total), 2) AS revenue\nFROM orders\nGROUP BY category;",
+    rowCount: 2,
+  },
+  fixes: [
+    {
+      label: 'You wanted revenue per product: group by every column you show',
+      sql: "SELECT category,\n       product,\n       ROUND(SUM(total), 2) AS revenue\nFROM orders\nGROUP BY category, product\nORDER BY revenue DESC\nLIMIT 3;",
+      columns: ['category', 'product', 'revenue'],
+      rows: [['Electronics', 'Laptop Pro', 1299.99], ['Furniture', 'Standing Desk', 599.99], ['Electronics', 'Graphics Card', 549.99]],
+    },
+    {
+      label: 'You wanted revenue per category: put the product inside an aggregate',
+      sql: "SELECT category,\n       COUNT(DISTINCT product) AS products,\n       ROUND(SUM(total), 2) AS revenue\nFROM orders\nGROUP BY category\nORDER BY category;",
+      columns: ['category', 'products', 'revenue'],
+      rows: [['Electronics', 23, 4984.68], ['Furniture', 17, 3171.76]],
+    },
+  ],
+  // Each `text` appears on the page; each `sql` returns `expect` on the dataset.
+  facts: [
+    { text: '4,984.68', sql: "SELECT ROUND(SUM(total), 2) FROM orders WHERE category = 'Electronics'", expect: 4984.68 },
+    { text: '23 products', sql: "SELECT COUNT(DISTINCT product) || ' products' FROM orders WHERE category = 'Electronics'", expect: '23 products' },
+    { text: 'Laptop Pro, the top seller, brought in 1,299.99', sql: "SELECT product || ', the top seller, brought in ' || printf('%,.2f', SUM(total)) FROM orders GROUP BY product ORDER BY SUM(total) DESC LIMIT 1", expect: 'Laptop Pro, the top seller, brought in 1,299.99' },
+  ],
+  before: 'In SQLite this runs and returns two rows, one per category. Each row shows the whole category’s revenue (4,984.68 for Electronics) next to one product name SQLite took from one of the category’s rows. Electronics has 23 products, and the row reads as if that one product earned all of it. Laptop Pro, the top seller, brought in 1,299.99.',
+  after: 'PostgreSQL refuses the same query with an error that `orders.product` must appear in the GROUP BY clause or be used in an aggregate function, and MySQL’s default mode refuses it too. SQLite is the lenient one: a column that is neither grouped nor aggregated gets a value from some row of the group. The error is the database asking you what you meant. Answer it one of two ways. (In PostgreSQL, `ROUND(x, 2)` takes a NUMERIC: if `total` is a float column, write `ROUND(SUM(total)::numeric, 2)`, or PostgreSQL stops at the ROUND before it reaches the GROUP BY.)',
+  rule: 'Every column in the SELECT list is either in the GROUP BY or inside an aggregate. If SQLite accepted a query that breaks this rule, the number is not wrong yet, but the label next to it can be.',
+};
+
+function groupByDialectHtml(g = GROUP_BY_DIALECT) {
+  return `
+  <h2 class="fd" id="${g.id}">${esc(g.heading)}</h2>
+  <p class="lbl bad">Runs in SQLite, refused by PostgreSQL</p>
+  <pre class="bad"><code>${highlight(g.wrong.sql)}</code></pre>
+  <p class="lead">${inline(g.before)}</p>
+  <p class="lead">${inline(g.after)}</p>
+${g.fixes.map((f, i) => `  <p class="lbl good">Fix ${i + 1}: ${esc(f.label)}</p>
+  <pre class="good"><code>${highlight(f.sql)}</code></pre>
+  ${resultHtml(f)}`).join('\n')}
+  <p class="rule"><strong>Rule of thumb.</strong> ${inline(g.rule)}</p>`;
+}
+
 const DIFF_ORDER = ['Easy', 'Medium', 'Hard'];
 const cleanTitle = t => String(t).replace(/^Debug: /, '');
 
@@ -101,6 +153,7 @@ export function pageModel(items = loadDebugItems(), facts = sqlQuestFacts()) {
     ['Did an AI assistant really write these queries?', 'Each query is presented as an AI assistant’s draft, because that is the situation you meet when you review one. We wrote and checked every query ourselves, so each has one known defect and an expected result to grade your fix against.'],
     ['Do I have to find the wrong line before I fix it?', 'No. Tapping the line you think is wrong is optional and scored on its own, as your spot accuracy. It never blocks the fix and a wrong tap never costs you a solve.'],
     ['Which SQL dialect do the questions use?', 'SQLite, running in your browser. The bugs in this set are about logic, not dialect: the same JOIN, NULL, date and window mistakes return wrong answers in PostgreSQL, MySQL, BigQuery or Snowflake.'],
+    ['Why does my GROUP BY query run in SQLite but fail in PostgreSQL?', 'SQLite lets you select a column that is neither in the GROUP BY nor inside an aggregate, and fills it with a value from some row of the group. PostgreSQL and MySQL’s default mode refuse that query. Either add the column to the GROUP BY, if you wanted one row per value of it, or wrap it in an aggregate such as COUNT(DISTINCT …) or MAX(…), if you wanted one row per group. The worked example on this page shows both on the same data.'],
     ['Is SQL debugging practice free?', access],
     ['Where can I read about these bugs first?', `Five of them have their own page with the query, the reason and the fix: ${SQL_PATTERNS.map(p => p.short).join(', ')}.`],
   ];
@@ -192,6 +245,7 @@ ol.steps{margin:10px 0 0 20px;color:#cbd5e1;font-size:16px}ol.steps li{margin:8p
     <thead><tr><th>Question</th><th>Difficulty</th><th>Bug kind</th></tr></thead>
     <tbody>${list.map(itemRow).join('')}</tbody>
   </table></div>
+${groupByDialectHtml()}
 
   <section class="faq">
     <h2 class="fd">Questions</h2>
