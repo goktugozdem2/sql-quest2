@@ -273,8 +273,9 @@ describe('the app wiring (source guards)', () => {
   const dismiss = app.slice(dismissStart, app.indexOf('const beginCheckout = (plan) => {', dismissStart));
 
   // exitReasonAsk and day2Ask ON 2026-11-23 (orchestrator-decisions 2026-11-22);
-  // stuckAsk stays dark until 2026-12-20. Any other state fails here.
-  const FLAG_STATE = { exitReasonAsk: true, stuckAsk: false, day2Ask: true };
+  // stuckAsk stays dark until 2026-12-20. leastReadyAsk and outcomeDebriefAsk
+  // ship dark (2026-11-25, tests/interview-asks.test.js). Any other state fails here.
+  const FLAG_STATE = { exitReasonAsk: true, stuckAsk: false, day2Ask: true, leastReadyAsk: false, outcomeDebriefAsk: false };
 
   it('three flags in their decided state, read strictly through ftbFlag', () => {
     for (const [kind, flag] of Object.entries(FEEDBACK_PROMPT_FLAGS)) {
@@ -295,7 +296,7 @@ describe('the app wiring (source guards)', () => {
     expect(hooks).toContain('canShowExitReason({');
     expect(hooks).toContain('canShowStuck({');
     expect(hooks).toContain('canShowDay2({');
-    expect(hooks).toMatch(/fbShowPrompt = \(kind, trigger, challengeId = null\) => \{[\s\S]*?markPromptShown\([\s\S]*?feedback_prompt_shown/);
+    expect(hooks).toMatch(/fbShowPrompt = \(kind, trigger, challengeId = null, extra = null\) => \{[\s\S]*?markPromptShown\([\s\S]*?feedback_prompt_shown/);
   });
 
   it('exit_reason is asked only after the plans close, and a plan click blocks it', () => {
@@ -305,7 +306,7 @@ describe('the app wiring (source guards)', () => {
     expect(app).toMatch(/proModalPlansSeenRef\.current = false;\s*\n\s*proModalPlanClickedRef\.current = false;/);
     expect(hooks).toContain('planClicked: proModalPlanClickedRef.current');
     // The global slot never renders while the modal is up.
-    expect(app).toContain("{fbPrompt && fbPrompt.kind !== 'stuck' && !showProModal && (");
+    expect(app).toContain("{promptSlot(fbPrompt) === 'global' && !showProModal && (");
   });
 
   it('stuck renders on the challenge page for its own challenge, one card per trigger', () => {
@@ -346,13 +347,15 @@ describe('the app wiring (source guards)', () => {
     expect(send).toMatch(/if \(!ok\)[\s\S]*?fbMarkDone\(prompt\.kind\);[\s\S]*?markPromptAnswered\(p\)[\s\S]*?PROMPT_THANKS_MS/);
     // Every slot hands the prompt's answered state to the card, and the card
     // opens on the thanks when it is set.
-    expect(app.match(/<FeedbackPromptCard [^>]*answered=\{!!fbPrompt\.answered\}/g) || []).toHaveLength(3);
-    expect(app.match(/<FeedbackPromptCard /g) || []).toHaveLength(3);
+    // Six slots since 2026-11-25: global, two stuck, least_ready on the mock
+    // results and on the Interview tab, the outcome debrief inline.
+    expect(app.match(/<FeedbackPromptCard [^>]*answered=\{!!fbPrompt\.answered\}/g) || []).toHaveLength(6);
+    expect(app.match(/<FeedbackPromptCard /g) || []).toHaveLength(6);
     expect(card).toContain("React.useState(answered ? 'done' : 'idle')");
   });
 
   it('answered or skipped is remembered in the browser, and the exit gate reads it', () => {
-    const skip = hooks.slice(hooks.indexOf('const fbSkipPrompt = () => {'), hooks.indexOf('const fbAnsweredRef'));
+    const skip = hooks.slice(hooks.indexOf('const fbSkipPrompt = (via = null) => {'), hooks.indexOf('const fbAnsweredRef'));
     expect(skip).toContain('fbMarkDone(fbPrompt.kind)');
     expect(hooks).toMatch(/const fbMarkDone = \(kind\) => \{\s*\n\s*const key = promptDoneKey\(kind\);/);
     expect(hooks).toContain('doneAt: (() => { try { return localStorage.getItem(FBP_EXIT_DONE_KEY); }');

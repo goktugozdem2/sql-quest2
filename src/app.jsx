@@ -95,7 +95,8 @@ import { lintSQL } from './utils/sql-lint.js';
 import { resultsMatch, solutionRequiresOrder, sortRowsCanonical } from './utils/grade.js';
 import { normalizeAiMessages } from './utils/ai-tutor-client.js';
 import { buildFeedbackChallengeContext, feedbackEventContext } from './utils/feedback-context.js';
-import { FEEDBACK_PROMPT_FLAGS, FBP_SESSION_KEY, FBP_EXIT_DAY_KEY, FBP_STUCK_IDS_KEY, FBP_DAY2_KEY, FBP_EXIT_DONE_KEY, STUCK_NO_RUN_MS, PROMPT_THANKS_MS, EXIT_REASONS, promptDoneKey, mayRecordAnswer, markPromptAnswered, nextSessionRecord, markPromptShown, canShowExitReason, stuckTrigger, canShowStuck, canShowDay2, buildPromptSubmission, localDay } from './utils/feedback-prompts.js';
+import { FEEDBACK_PROMPT_FLAGS, FBP_SESSION_KEY, FBP_EXIT_DAY_KEY, FBP_STUCK_IDS_KEY, FBP_DAY2_KEY, FBP_EXIT_DONE_KEY, FBP_LEAST_READY_KEY, STUCK_NO_RUN_MS, PROMPT_THANKS_MS, PROMPT_OPTIONS, PROMPT_COPY, promptSlot, promptDoneKey, mayRecordAnswer, markPromptAnswered, nextSessionRecord, markPromptShown, canShowExitReason, stuckTrigger, canShowStuck, canShowDay2, buildPromptSubmission, localDay } from './utils/feedback-prompts.js';
+import { OUTCOME_ASK_KEY, canShowLeastReady, leastReadyExtra, outcomeAskTrigger, canShowOutcomeAsk, outcomeAnswerEvent, afterOutcome, canShowDebrief, debriefTriggerFor } from './utils/interview-asks.js';
 import { t as i18n_t, getCurrentLang, setLang as i18n_setLang, subscribeLang, SUPPORTED_LANGS, localizeChallenge, localizeInterview, localizeQuestion } from './utils/i18n.js';
 import { buildWeeklyReport, detectMilestones } from './utils/weekly-report.js';
 import { isMcqQuestion, scoreMcqAnswer, applyHintPenalty, nextOptionId, findOption, buildInterviewProgress, mockMistakeDiagnosis, weakConceptsFromHistory } from './utils/mock-interview.js';
@@ -4813,9 +4814,13 @@ function FeedbackPromptCard({ kind, onSend, onSkip, compact = false, answered = 
     const ok = await onSend(answerId, line);
     setStatus(ok ? 'done' : 'error');
   };
-  const question = kind === 'exit_reason' ? tt('exitQ') : kind === 'stuck' ? tt('stuckPromptQ') : tt('day2Q');
-  const placeholder = kind === 'exit_reason' ? tt('exitOtherPlaceholder') : kind === 'stuck' ? tt('stuckPromptPlaceholder') : tt('day2Placeholder');
-  const showLine = kind !== 'exit_reason' || picked === 'other';
+  // Question, placeholder and the fixed answers per kind (PROMPT_COPY /
+  // PROMPT_OPTIONS in src/utils/feedback-prompts.js; least_ready 2026-11-25).
+  const copy = PROMPT_COPY[kind] || PROMPT_COPY.day2;
+  const question = tt(copy.q);
+  const placeholder = tt(copy.placeholder);
+  const options = PROMPT_OPTIONS[kind] || null;
+  const showLine = !options || picked === 'other';
   if (status === 'done') {
     return (
       <div data-testid={`feedback-prompt-${kind}`} data-state="done" className={compact ? 'mt-3' : 'rounded-lg p-3'} style={compact ? undefined : { background: '#16181F', border: '1px solid #2A2E38' }}>
@@ -4831,9 +4836,9 @@ function FeedbackPromptCard({ kind, onSend, onSkip, compact = false, answered = 
           <button onClick={onSkip} className="min-h-[44px] min-w-[44px] -mt-3 -mr-2 text-sm shrink-0" style={{ color: '#8A8E99' }} data-testid="feedback-prompt-skip">{tt('promptSkip')}</button>
         )}
       </div>
-      {kind === 'exit_reason' && (
+      {options && (
         <div className="flex flex-wrap gap-2 mb-2">
-          {EXIT_REASONS.map(r => (
+          {options.map(r => (
             <button
               key={r.id}
               data-answer={r.id}
@@ -4846,7 +4851,7 @@ function FeedbackPromptCard({ kind, onSend, onSkip, compact = false, answered = 
         </div>
       )}
       {showLine && (
-        <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); const line = text.trim(); if (kind === 'exit_reason') send('other', line); else if (line) send(null, line); }}>
+        <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); const line = text.trim(); if (options) send('other', line); else if (line) send(null, line); }}>
           <input
             value={text}
             onChange={(e) => setText(e.target.value)}
@@ -4856,7 +4861,7 @@ function FeedbackPromptCard({ kind, onSend, onSkip, compact = false, answered = 
             className="flex-1 min-w-0 min-h-[44px] px-3 rounded-md text-sm"
             style={{ background: '#0E0F13', border: '1px solid #2A2E38', color: '#F2F0EA' }}
           />
-          <button type="submit" disabled={status === 'sending' || (kind !== 'exit_reason' && !text.trim())} className={btn} style={neutral}>{tt('promptSend')}</button>
+          <button type="submit" disabled={status === 'sending' || (!options && !text.trim())} className={btn} style={neutral}>{tt('promptSend')}</button>
         </form>
       )}
       {status === 'error' && <p className="text-xs mt-2" style={{ color: '#FF6B6B' }}>{tt('error')}</p>}
@@ -12925,6 +12930,10 @@ CRITICAL RULES:
   // past date has no plan, and the Interview tab asks for the next one. The
   // company stays. Second clicks on the same link are harmless: no date, no
   // event.
+  // 2026-11-25 (flag outcomeDebriefAsk): a `failed` answer arms the one
+  // follow-up, "What do you wish you had practised more?" — shown once the
+  // session has loaded (the interview asks block, below), never here at mount.
+  const outcomeLinkDebriefRef = useRef(null);
   useEffect(() => {
     try {
       const params = new URLSearchParams(window.location.search);
@@ -12937,6 +12946,7 @@ CRITICAL RULES:
         company: prepTarget.company || null, daysSince: until === null ? null : -until,
       });
       setPrepPreference({ date: null, outcome: { value: outcome, at: new Date().toISOString() } });
+      if (outcome === 'failed') outcomeLinkDebriefRef.current = { outcome, company: prepTarget.company || null, daysSince: until === null ? null : -until };
     } catch (_) {}
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -25368,11 +25378,13 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const fbInTimedMock = () => !!activeInterview && !interviewCompleted;
-  const fbShowPrompt = (kind, trigger, challengeId = null) => {
+  // `extra` (2026-11-25): the whitelisted context a kind carries onto its row
+  // (pickPromptExtra) — least_ready's mock and days-out, the debrief's outcome.
+  const fbShowPrompt = (kind, trigger, challengeId = null, extra = null) => {
     const rec = markPromptShown(fbSessionRef.current || fbTouchSession());
     fbSessionRef.current = rec;
     try { localStorage.setItem(FBP_SESSION_KEY, JSON.stringify(rec)); } catch (_) {}
-    setFbPrompt({ kind, trigger, challengeId });
+    setFbPrompt({ kind, trigger, challengeId, extra });
     trackActivationEvent('feedback_prompt_shown', { kind, trigger, challengeId, solves: solvedChallenges.size });
   };
   // Answered or skipped: this browser never sees that kind again
@@ -25382,8 +25394,10 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
     if (!key) return;
     try { if (!localStorage.getItem(key)) localStorage.setItem(key, new Date().toISOString()); } catch (_) {}
   };
-  const fbSkipPrompt = () => {
-    if (fbPrompt && !fbPrompt.answered) trackActivationEvent('feedback_prompt_skipped', { kind: fbPrompt.kind, trigger: fbPrompt.trigger });
+  // `via` 'left' (2026-11-25): the screen that asked closed with no answer
+  // (least_ready on the mock results / Interview tab) — a skip, told apart.
+  const fbSkipPrompt = (via = null) => {
+    if (fbPrompt && !fbPrompt.answered) trackActivationEvent('feedback_prompt_skipped', { kind: fbPrompt.kind, trigger: fbPrompt.trigger, ...(typeof via === 'string' ? { via } : {}) });
     if (fbPrompt) fbMarkDone(fbPrompt.kind);
     setFbPrompt(null);
   };
@@ -25393,7 +25407,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
   const fbSendPrompt = async (answerId, text) => {
     const prompt = fbPrompt;
     if (!mayRecordAnswer(prompt) || fbAnsweredRef.current === prompt) return !!prompt;
-    const sub = buildPromptSubmission({ kind: prompt.kind, trigger: prompt.trigger, answerId, text, challengeId: prompt.challengeId });
+    const sub = buildPromptSubmission({ kind: prompt.kind, trigger: prompt.trigger, answerId, text, challengeId: prompt.challengeId, extra: prompt.extra || null });
     if (!sub) return false;
     fbAnsweredRef.current = prompt;
     const ok = await submitFeedback({ message: sub.message, contact: null, topic: sub.topic, kind: prompt.kind, trigger: prompt.trigger, promptContext: sub.context });
@@ -27111,12 +27125,198 @@ RULES:
     } catch (_) {}
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  // Which door opened the offer ask: the email link, or the in-app outcome
+  // card (2026-11-25) — `post_hire_status_set.source` tells them apart.
+  const offerAskSourceRef = useRef('outcome_link');
   const answerOfferAsk = (answer) => {
     try { localStorage.setItem('sqlquest_offer_asked', '1'); } catch (_) {}
-    trackActivationEvent('offer_ask_answered', { answer });
+    trackActivationEvent('offer_ask_answered', { answer, source: offerAskSourceRef.current });
     setOfferAskOpen(false);
-    if (answer === 'yes') setHiredStatus('outcome_link');
+    if (answer === 'yes') setHiredStatus(offerAskSourceRef.current);
   };
+
+  // ── The in-app interview asks (2026-11-25) ───────────────────────────────
+  // Two dark flags, rules in src/utils/interview-asks.js:
+  //   leastReadyAsk      feedback kind `least_ready` on the mock results
+  //                      (trigger mock_results) and the Interview tab
+  //                      (trigger interview_tab); once per browser.
+  //   outcomeDebriefAsk  ONE outcome flow (#369's F1 merged into #367's
+  //                      outcome_debrief): "Did your interview happen?" on the
+  //                      Coach and the Interview tab → `interview_outcome
+  //                      {source:'in_app'}`; passed → the offer ask above;
+  //                      failed → the debrief question in the same card. The
+  //                      ?outcome=failed door gets the same follow-up.
+  // Both share fbPrompt and the one-ask-a-session record with exit_reason /
+  // stuck / day2, so no card is ever stacked on another ask. Hooks sit above
+  // the showAuth / dbReady early returns (CLAUDE.md fragile area 1).
+  const [outcomeAsk, setOutcomeAsk] = useState(null); // { trigger, surface, stage: 'ask'|'answered', outcome }
+  const readOutcomeAskRec = () => {
+    try { const v = JSON.parse(localStorage.getItem(OUTCOME_ASK_KEY) || 'null'); return v && typeof v === 'object' ? v : {}; } catch (_) { return {}; }
+  };
+  const writeOutcomeAskRec = (patch) => {
+    try { localStorage.setItem(OUTCOME_ASK_KEY, JSON.stringify({ ...readOutcomeAskRec(), ...patch })); } catch (_) {}
+  };
+  const outcomeSurfaceNow = activeTab === 'trials' ? 'interview_tab'
+    : (activeTab === 'guide' && !!currentUser && !showSimpleLearningShell && !currentChallenge) ? 'coach' : null;
+  const tryOutcomeAsk = (surface) => {
+    if (!surface || outcomeAsk || fbPrompt) return false;
+    const now = Date.now();
+    const rec = readOutcomeAskRec();
+    const prevOutcome = prepTarget.outcome && prepTarget.outcome.value !== 'moved' ? prepTarget.outcome.at : null;
+    const trigger = outcomeAskTrigger({
+      prepDate: prepTarget.date, prepOutcomeAt: rec.answeredAt || prevOutcome || null,
+      intent: getUserIntent(), intentAt: intentRecord?.at || null, now,
+    });
+    const ok = canShowOutcomeAsk({
+      flagOn: ftbFlag('outcomeDebriefAsk'), trigger, hired, inTimedMock: fbInTimedMock(),
+      sessionRec: fbSessionRef.current, lastShownAt: rec.shownAt || null, now,
+    });
+    if (!ok) return false;
+    const srec = markPromptShown(fbSessionRef.current || fbTouchSession());
+    fbSessionRef.current = srec;
+    try { localStorage.setItem(FBP_SESSION_KEY, JSON.stringify(srec)); } catch (_) {}
+    writeOutcomeAskRec({ shownAt: new Date(now).toISOString() });
+    setOutcomeAsk({ trigger, surface, stage: 'ask', outcome: null });
+    trackActivationEvent('outcome_ask_shown', { surface, trigger });
+    return true;
+  };
+  const answerOutcomeAsk = (outcome, surface) => {
+    if (!outcomeAsk || outcomeAsk.stage !== 'ask') return;
+    const now = Date.now();
+    const ev = outcomeAnswerEvent({ outcome, surface, trigger: outcomeAsk.trigger, company: prepTarget.company, prepDate: prepTarget.date, now });
+    if (!ev) return;
+    trackActivationEvent('interview_outcome', ev);
+    const at = new Date(now).toISOString();
+    // A passed date comes off the record, as the link door does; "not yet"
+    // with no date keeps nothing, so the ask may come back in 30 days.
+    const datePassed = Number.isFinite(ev.daysSince) && ev.daysSince >= 1;
+    if (datePassed) setPrepPreference({ date: null, outcome: { value: outcome, at } });
+    else if (outcome !== 'moved') setPrepPreference({ outcome: { value: outcome, at } });
+    if (outcome !== 'moved') writeOutcomeAskRec({ answeredAt: at });
+    let offerAsked = false;
+    try { offerAsked = localStorage.getItem('sqlquest_offer_asked') === '1'; } catch (_) {}
+    const next = afterOutcome({ outcome, debriefOn: fbFlag('outcome_debrief'), hired, offerAsked });
+    let debrief = false;
+    if (next === 'offer') {
+      offerAskSourceRef.current = 'outcome_in_app';
+      setOfferAskOpen(true);
+    } else if (next === 'debrief') {
+      const trig = debriefTriggerFor(surface);
+      if (canShowDebrief({ flagOn: fbFlag('outcome_debrief'), trigger: trig, sessionRec: fbSessionRef.current, inTimedMock: fbInTimedMock(), continuesAsk: true })) {
+        fbShowPrompt('outcome_debrief', trig, null, { outcome, company: ev.company, daysSince: ev.daysSince, surface });
+        debrief = true;
+      }
+    }
+    setOutcomeAsk(a => (a ? { ...a, stage: 'answered', outcome, debrief } : a));
+  };
+  // After the answer: the debrief card while it is up, else a short thanks,
+  // then the card goes for the session.
+  useEffect(() => {
+    if (outcomeAsk?.stage !== 'answered' || fbPrompt?.kind === 'outcome_debrief') return;
+    const t = setTimeout(() => setOutcomeAsk(null), outcomeAsk.debrief ? 0 : PROMPT_THANKS_MS);
+    return () => clearTimeout(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [outcomeAsk?.stage, fbPrompt?.kind]);
+  // ONE render for both asks on a surface ('coach' | 'interview_tab'): the
+  // outcome card (or its debrief / thanks), else least_ready's tab card.
+  // Inline, never a modal; neutral surfaces, no accent (DESIGN.md).
+  const renderInterviewAsks = (surface) => {
+    const tt = (k) => i18n_t('feedback', k);
+    const boxStyle = { background: '#16181F', border: '1px solid #2A2E38' };
+    const btnStyle = { background: '#1F222B', border: '1px solid #2A2E38', color: '#F2F0EA' };
+    if (fbPrompt?.kind === 'outcome_debrief' && promptSlot(fbPrompt) === 'inline') {
+      return (
+        <div className="mb-4" data-testid="outcome-debrief" data-surface={surface}>
+          <FeedbackPromptCard key={`outcome_debrief-${fbPrompt.trigger}`} kind="outcome_debrief" answered={!!fbPrompt.answered} onSend={fbSendPrompt} onSkip={fbSkipPrompt} />
+        </div>
+      );
+    }
+    if (outcomeAsk) {
+      if (outcomeAsk.stage === 'answered') {
+        return outcomeAsk.debrief ? null : (
+          <div className="mb-4 rounded-lg p-3" style={boxStyle} data-testid="outcome-ask" data-state="done">
+            <p className="text-sm" style={{ color: '#8A8E99' }}>{tt('promptThanks')}</p>
+          </div>
+        );
+      }
+      return (
+        <div className="mb-4 rounded-lg p-3" style={boxStyle} data-testid="outcome-ask" data-surface={surface} data-trigger={outcomeAsk.trigger}>
+          <div className="flex items-start justify-between gap-2 mb-2">
+            <p className="text-sm font-semibold" style={{ color: '#F2F0EA' }}>{tt('outcomeAskQ')}</p>
+            <button type="button" onClick={() => skipOutcomeAsk(surface)} className="min-h-[44px] min-w-[44px] -mt-3 -mr-2 text-sm shrink-0" style={{ color: '#8A8E99' }} data-testid="outcome-ask-skip">{tt('promptSkip')}</button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {[['passed', 'outcomeAskPassed'], ['failed', 'outcomeAskFailed'], ['moved', 'outcomeAskNotYet']].map(([value, key]) => (
+              <button key={value} type="button" data-answer={value} onClick={() => answerOutcomeAsk(value, surface)} className="min-h-[44px] px-3 rounded-md text-sm transition" style={btnStyle}>{tt(key)}</button>
+            ))}
+          </div>
+        </div>
+      );
+    }
+    if (surface === 'interview_tab' && fbPrompt?.kind === 'least_ready' && fbPrompt.trigger === 'interview_tab') {
+      return (
+        <div data-testid="least-ready-tab">
+          <FeedbackPromptCard key="least_ready-interview_tab" kind="least_ready" answered={!!fbPrompt.answered} onSend={fbSendPrompt} onSkip={fbSkipPrompt} />
+        </div>
+      );
+    }
+    return null;
+  };
+  const skipOutcomeAsk = (surface) => {
+    if (!outcomeAsk || outcomeAsk.stage !== 'ask') return;
+    trackActivationEvent('outcome_ask_skipped', { surface, trigger: outcomeAsk.trigger });
+    setOutcomeAsk(null);
+  };
+  // least_ready on the mock results: once the results of a first full
+  // sitting are on screen.
+  useEffect(() => {
+    if (!interviewCompleted || !interviewResults || fbPrompt) return;
+    const ok = canShowLeastReady({
+      flagOn: fbFlag('least_ready'), trigger: 'mock_results', sessionRec: fbSessionRef.current,
+      inTimedMock: fbInTimedMock(), solvedCount: solvedChallenges.size,
+      doneAt: (() => { try { return localStorage.getItem(FBP_LEAST_READY_KEY); } catch (_) { return 'unreadable'; } })(),
+      retry: !!retryMode,
+    });
+    if (!ok) return;
+    fbShowPrompt('least_ready', 'mock_results', null, leastReadyExtra({ results: interviewResults, company: prepTarget.company, daysOut: daysUntil(prepTarget.date, Date.now()) }));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [interviewCompleted, interviewResults?.id]);
+  // The outcome card (Coach / Interview tab), then — on the Interview tab,
+  // only when nothing else asked there — least_ready's interview_tab trigger.
+  useEffect(() => {
+    if (!currentUser || !dbReady || isSessionLoading) return;
+    const asked = tryOutcomeAsk(outcomeSurfaceNow);
+    if (asked || activeTab !== 'trials' || fbPrompt || outcomeAsk) return;
+    const ok = canShowLeastReady({
+      flagOn: fbFlag('least_ready'), trigger: 'interview_tab', sessionRec: fbSessionRef.current,
+      inTimedMock: fbInTimedMock(), solvedCount: solvedChallenges.size,
+      doneAt: (() => { try { return localStorage.getItem(FBP_LEAST_READY_KEY); } catch (_) { return 'unreadable'; } })(),
+      interviewPerson: interviewFirstReasonNow !== null,
+      completedMocks: Array.isArray(interviewHistory) ? interviewHistory.length : 0,
+      otherAskOnTab: !!goalNoteDateAskVisible,
+    });
+    if (!ok) return;
+    fbShowPrompt('least_ready', 'interview_tab', null, leastReadyExtra({ company: prepTarget.company, daysOut: daysUntil(prepTarget.date, Date.now()) }));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, currentUser, dbReady, isSessionLoading, outcomeSurfaceNow]);
+  // The ?outcome=failed door's follow-up, once the session has loaded.
+  useEffect(() => {
+    const pending = outcomeLinkDebriefRef.current;
+    if (!pending || !currentUser || !dbReady || isSessionLoading || fbPrompt) return;
+    outcomeLinkDebriefRef.current = null;
+    if (!canShowDebrief({ flagOn: fbFlag('outcome_debrief'), trigger: 'outcome_link', sessionRec: fbSessionRef.current, inTimedMock: fbInTimedMock() })) return;
+    fbShowPrompt('outcome_debrief', 'outcome_link', null, pending);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser, dbReady, isSessionLoading]);
+  // Leaving the screen that asked, with no answer, is a skip (`via: 'left'`):
+  // least_ready is asked once per browser, answered or not.
+  useEffect(() => {
+    if (fbPrompt?.kind !== 'least_ready') return;
+    const gone = fbPrompt.trigger === 'mock_results' ? !interviewCompleted : activeTab !== 'trials';
+    if (!gone) return;
+    if (fbPrompt.answered) setFbPrompt(null); else fbSkipPrompt('left');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [interviewCompleted, activeTab]);
 
   // The render of the feature list, placed by `modalLayout` (defined beside
   // trialOfferOn): above the plans (control, today) or below them.
@@ -27951,7 +28151,7 @@ RULES:
       {/* Capture points 2 and 4 (exit_reason, day2): a card above the 💬
           button, never a modal and never over the plans. Stuck renders on the
           challenge page instead. */}
-      {fbPrompt && fbPrompt.kind !== 'stuck' && !showProModal && (
+      {promptSlot(fbPrompt) === 'global' && !showProModal && (
         <div className="fixed left-4 right-4 bottom-20 z-40 sm:left-auto sm:right-4 sm:w-[380px] shadow-lg" data-feedback-prompt-slot="global">
           <FeedbackPromptCard key={`${fbPrompt.kind}-${fbPrompt.trigger}`} kind={fbPrompt.kind} answered={!!fbPrompt.answered} onSend={fbSendPrompt} onSkip={fbSkipPrompt} />
         </div>
@@ -32298,6 +32498,14 @@ RULES:
               </div>
             )}
             
+            {/* least_ready (2026-11-25, flag leastReadyAsk): one inline card
+                under the score and XP rows, above the review list — never
+                over Retry or Back. First full sitting only. */}
+            {fbPrompt?.kind === 'least_ready' && fbPrompt.trigger === 'mock_results' && (
+              <div className="mb-6" data-testid="least-ready-results">
+                <FeedbackPromptCard key="least_ready-mock_results" kind="least_ready" answered={!!fbPrompt.answered} onSend={fbSendPrompt} onSkip={fbSkipPrompt} />
+              </div>
+            )}
             {/* The "How You Compare" block was removed on 2026-09-19 (founder
                 QA item 11). Its numbers were simulated — getPeerComparison
                 invents an average and an attempt count from the interview's
@@ -36373,6 +36581,7 @@ RULES:
                   two mount points, never both. */}
               {hired && renderFirst90Card()}
               {interviewFirstOn('coach_card_above') && renderInterviewPrepCard()}
+              {renderInterviewAsks('coach')}
               {renderGotTheJobLink()}
               {/* Your plan (founder's list, 2026-09-14): how long you have, what
                   is weakest, what to solve today, how much a day that is. Free
@@ -41536,6 +41745,9 @@ RULES:
         {/* Interviews Tab */}
         {activeTab === 'trials' && (
           <div className="space-y-6">
+            {/* The interview asks (2026-11-25, flags outcomeDebriefAsk /
+                leastReadyAsk): first thing under the status strip. */}
+            {renderInterviewAsks('interview_tab')}
             {/* Header */}
             <div className="bg-gradient-to-r from-purple-500/20 to-blue-500/20 rounded-xl border border-purple-500/30 p-6">
               <div className="flex items-center justify-between">

@@ -807,6 +807,69 @@ of the verifier and must never be rounded to `FLAT`.
 - **Falsification** answered ÷ shown under 3%, or solves in the second
   session per person shown more than 20% below the 28 days before → off.
 
+### what interview-preppers feel least ready for (`leastReadyAsk`) — **OPEN**
+
+- **Claimed** 2026-11-25 (PR `feat/interview-asks`) · **Shipped** dark;
+  A0 flips after A1's walk · **Read** 28 days after the flip.
+- **Change** one inline card, "Which part of the real interview do you feel
+  least ready for?", eight fixed answers (time pressure · window functions ·
+  joins and GROUP BY · the business question · explaining out loud · NULLs,
+  dates and edge cases · not preparing for an interview · something else +
+  one line). On a mock's results screen after a first full sitting (under
+  the score, above the review list, never over Retry / Back), and on the
+  Interview tab for an interview person with 3+ solves who has never
+  finished a mock. Once per browser across both (answered, skipped, or left
+  unanswered); one ask a session shared with exit_reason / stuck / day2;
+  never in a timed mock. Writes to `feedback` (`context.kind='least_ready'`).
+  Plan: docs/plans/interview-prep-feedback-2026-11-25.md (#367).
+- **Metric** `interview_prep_voice.answer_rate[mock_results]` (and
+  `[interview_tab]` beside it, never pooled); `reasons[answerId]`.
+- **Baseline** undefined — the kind does not exist before the flip (0 rows
+  that say what someone is preparing for, 2026-11-25).
+- **Target** ≥ 30% of people shown answer within 28 days of the flip, with
+  ≥ 10 shown (13 mock completers a month: the read may need all 28 days).
+- **Falsification** (written before the data) fewer than 3 answers from
+  ≥ 10 shown → remove the card from the results screen; more than half of
+  the answers `other` / `no_interview` → the list is wrong, rewrite it before
+  reading anything into it.
+- **Guardrail** among mock completers, the share who press Retry or start a
+  challenge in the same session does not fall against the 28 days before.
+- **What it buys** the ranked `answerId` list goes into E1's Sunday
+  customer-voice read; its top item becomes the next content or mock-format
+  backlog line. Nothing else changes on the strength of it.
+
+### the interview outcome is asked inside the app (`outcomeDebriefAsk`) — **OPEN**
+
+- **Claimed** 2026-11-25 (PR `feat/interview-asks`) · **Shipped** dark;
+  A0 flips after A1's walk · **Read** 28 days after the flip (2027-01-01 if
+  it flips by 12-04).
+- **Change** ONE flow (orchestrator decision 2026-11-25: no outcome email;
+  #369's F1 merged into #367's `outcome_debrief`). "Did your interview
+  happen?" — Yes, it went well / Yes, not this time / Not yet — inline on
+  the Coach and the Interview tab, for a person whose interview date passed
+  1–14 days ago or who declared interview / job_ready 21+ days ago with no
+  date ahead; never a hired person; once per 30 days; the session's one ask.
+  Exposure `outcome_ask_shown {surface, trigger}`; the answer is
+  `interview_outcome {source:'in_app'}` and a passed date comes off the
+  record as the link door does. Passed → the existing offer ask (source
+  `outcome_in_app`); not this time → "What do you wish you had practised
+  more?" in the same card (`feedback`, kind `outcome_debrief`); not yet →
+  nothing. The `?outcome=failed` link gets the same follow-up
+  (trigger `outcome_link`).
+- **Metric** `outcome_ask_answer` (shown → `interview_outcome {in_app}` in
+  7 days, by outcome; secondary passed → hired); `interview_prep_voice
+  .answer_rate[outcome_debrief]` beside it.
+- **Baseline** `interview_outcome` 0 rows ever (2026-11-25); the ask does
+  not exist. Eligible: ~14 interview / job-ready people a month return 14+
+  days after stating the intent; 7 rows hold a date.
+- **Target** answered ÷ shown ≥ 30% at ≥ 15 people shown (#369 §8 F1).
+- **Falsification** (written before the data) below 15% at ≥ 15 shown →
+  remove the ask; fewer than 15 shown by the read → extend once by 28 days,
+  then remove.
+- **Confounds** none from the email: `interview-outcome-note` stays
+  unscheduled (outward mail, the founder's call). Read `in_app` apart from
+  `link` always.
+
 ### a feedback row says which challenge (`feedbackContext`, IR-2) — **OPEN**
 
 - **Claimed** 2026-11-23 (E2) · **Shipped** ON (default; not money, not

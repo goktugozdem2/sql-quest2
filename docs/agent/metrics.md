@@ -929,6 +929,11 @@ Events:
   email's three links (`src=outcome_note`). Written by the app's outcome door
   (src/app.jsx), which also stores `prepTarget.outcome` and takes the past
   date off the record.
+- From 2026-11-25 (flag `outcomeDebriefAsk`, dark): `source='in_app'` from
+  the in-app card on the Coach / Interview tab, with `surface` and
+  `trigger`. Read it under `outcome_ask_answer` (its denominator is
+  `outcome_ask_shown`); never sum it with `link`, whose denominator is
+  `outcome_note_sent`.
 - Replies by hand (the founder's inbox) are recorded in the ledger with that
   provenance; they are the only place the *question* that decided it lives.
 
@@ -4816,3 +4821,133 @@ Traps:
   if they took ≥ 104 ms (the browser's buffered event-timing floor).
 - The landing pages and /app are measured by the same library but from
   different documents; never blend `app` into a "site" p75.
+
+## `interview_prep_voice`
+
+What people preparing for an interview tell us they are least ready for,
+and how the interview went. Kinds `least_ready` (triggers `mock_results`,
+`interview_tab`) and `outcome_debrief`; flags `leastReadyAsk`,
+`outcomeDebriefAsk`. Plan: docs/plans/interview-prep-feedback-2026-11-25.md.
+
+- **answer_rate[trigger]**: people with `feedback_submitted {kind}` ÷
+  people with `feedback_prompt_shown {kind, trigger}`, per trigger,
+  never pooled. A one-tap answer (`mock_results`, `interview_tab`) and a
+  typed one (`outcome_debrief`) are different asks.
+- **reasons[answerId]**: rows in `feedback` with `context->>'kind' =
+  'least_ready'`, counted by `context->>'answerId'` and split by
+  `context->>'trigger'`. Read the counts and the `other` text; never
+  average them.
+- **outcome_known**: people with `interview_outcome` (any source) ÷ people
+  whose `prepTarget.date` fell 1–14 days before the read. Report the
+  numerator by `source`.
+- Baseline: **undefined** for all three. The kinds do not exist before the
+  flag flips. `interview_outcome` has 0 rows ever (2026-11-25).
+- Filters: the shared filters and the fleet's bot list (README, Data).
+  A person is `coalesce(metadata->>'aid', username)`. `pro_events` has no
+  `aid` column; the aid rides in the double-encoded metadata (checked
+  2026-11-25: 3,981 of 3,994 rows in two days carry it). The same fix
+  applies to `feedback_capture`'s SQL, which reads a bare `aid`.
+
+```sql
+with ev as (
+  select coalesce((metadata #>> '{}')::jsonb ->> 'aid', username) who, event,
+         (metadata #>> '{}')::jsonb ->> 'kind' kind,
+         (metadata #>> '{}')::jsonb ->> 'trigger' trig
+  from pro_events
+  where event in ('feedback_prompt_shown','feedback_submitted','feedback_prompt_skipped')
+    and (metadata #>> '{}')::jsonb ->> 'kind' in ('least_ready','outcome_debrief')
+    and created_at >= :from and created_at < :to
+)
+select kind, trig,
+       count(distinct who) filter (where event = 'feedback_prompt_shown')   shown,
+       count(distinct who) filter (where event = 'feedback_submitted')      answered,
+       count(distinct who) filter (where event = 'feedback_prompt_skipped') skipped
+from ev group by 1, 2 order by 1, 2;
+
+select context->>'trigger' trig, context->>'answerId' answer, count(*)
+from feedback
+where context->>'kind' = 'least_ready' and created_at >= :from and created_at < :to
+group by 1, 2 order by 1, 3 desc;
+```
+
+Trap: `feedback_submitted` rows before the per-kind trigger existed carry no
+`trigger`. Join the answer to its show by `kind` and person, as
+`feedback_capture` does.
+
+Registered 2026-11-25 in the code PR (`feat/interview-asks`) because the
+metric PR proposed in docs/plans/interview-prep-feedback-2026-11-25.md (#367)
+had not reached main; the text above is that plan's, verbatim, written before
+the code. What the code writes, so the read can find it (not a change to the
+definition): `least_ready` rows carry `context.answerId` (and `answer`), plus
+`interviewId`, `passed`, `percentage`, `company`, `daysOut`; the in-app
+`outcome_debrief` triggers are `outcome_coach` and `outcome_tab` (the card's
+surface), and `outcome_link` after `?outcome=failed`. A `least_ready` card
+left with no answer writes `feedback_prompt_skipped {via:'left'}` — count it
+as a skip, split by `via` if needed.
+
+## `outcome_ask_answer`
+
+The in-app outcome ask (First 90 Days F1,
+`docs/plans/first-90-days-2026-11-25.md`). Defined 2026-11-25, before the
+code ships (rule 6b). The events it reads do not exist yet; the measure PR
+adds them:
+- `outcome_ask_shown {surface: 'coach'|'interview_tab', trigger: 'date_passed'|'return_21d'}`
+  is written once per person per 30 days when the line is on screen;
+- the answer is the existing `interview_outcome`, with `source='in_app'`
+  and `outcome` ∈ passed | failed | moved ("not yet" is `moved`).
+
+**Primary:** of the people with `outcome_ask_shown` in the window, the share
+with an `interview_outcome {source:'in_app'}` within 7 days, split by
+`outcome`. **Secondary:** of the people who answered `passed`, the share with
+`post_hire_status_set {status:'hired'}` within 7 days (the offer ask's
+take-up). People are `coalesce(aid, username)`. Internal accounts,
+`metadata.bot` and the crawler fingerprints in the fleet README rule 2 are out.
+
+Traps:
+- Read `source='in_app'` apart from `source='link'` (the email). Never sum
+  the two into one answer rate: their denominators differ (shown vs sent).
+- `moved` here means "not yet". The email's `moved` also means "I never had
+  one". Read it as its own line, never as a miss.
+
+```sql
+with ev as (
+  select coalesce(((metadata #>> '{}')::jsonb)->>'aid', username) pid, event, created_at,
+         (metadata #>> '{}')::jsonb m
+  from pro_events
+  where username !~* '^(test|qa_|fabletest|linktest|internalroutine|sqlquest$|elena$)'
+    and coalesce(((metadata #>> '{}')::jsonb)->>'bot', 'false') <> 'true'
+    and created_at >= :from and created_at < :to + interval '7 days'
+    and event in ('outcome_ask_shown', 'interview_outcome', 'post_hire_status_set')
+),
+shown as (select pid, min(created_at) t0 from ev
+          where event = 'outcome_ask_shown' and created_at < :to group by pid),
+ans as (select distinct on (s.pid) s.pid, e.m->>'outcome' outcome, e.created_at ta
+        from shown s join ev e on e.pid = s.pid and e.event = 'interview_outcome'
+          and e.m->>'source' = 'in_app' and e.created_at between s.t0 and s.t0 + interval '7 days'
+        order by s.pid, e.created_at),
+hired as (select distinct a.pid from ans a join ev e on e.pid = a.pid
+          and e.event = 'post_hire_status_set' and e.m->>'status' = 'hired'
+          and e.created_at between a.ta and a.ta + interval '7 days'
+          where a.outcome = 'passed')
+select count(*) shown,
+       count(a.pid) answered_7d,
+       count(*) filter (where a.outcome = 'passed') passed,
+       count(*) filter (where a.outcome = 'failed') failed,
+       count(*) filter (where a.outcome = 'moved')  not_yet,
+       (select count(*) from hired) passed_to_hired
+from shown s left join ans a using (pid);
+```
+
+**Baseline (2026-11-25):** the ask does not exist. `interview_outcome` has 0
+rows ever (the email sender never ran). Eligible population: ~14 interview
+or job-ready people a month come back 14+ days after stating the intent
+(76 in the 120 days to 11-25). **Decision rule:** the plan's §8, F1.
+
+Registered 2026-11-25 in the code PR (`feat/interview-asks`), verbatim from
+docs/plans/first-90-days-2026-11-25.md's metric PR (#369), which had not
+reached main. F1 ships merged into `outcomeDebriefAsk` (orchestrator
+decision 2026-11-25): the same card is the one ask, so the answer events are
+exactly the ones above. The code also writes `outcome_ask_skipped {surface,
+trigger}` (not read by this metric) and `interview_outcome.trigger`
+(`date_passed` | `return_21d`). `post_hire_status_set.source` is
+`outcome_in_app` when the offer ask was opened by this card.
