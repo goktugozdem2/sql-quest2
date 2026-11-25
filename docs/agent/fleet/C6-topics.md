@@ -1,5 +1,7 @@
 # C6 — Topics: research, content and the question funnel
 
+> **PAUSED 2026-11-25 (investor 90-day plan, A09).** No new topic pages, question pages or bulk challenge sets until the 2027-02-23 review: 298 question pages earned 88 clicks in 90 days. A run reports `noop: paused`. Exception: a fix to an existing page that a test or A2 flags.
+
 **Lane:** SQL *topics*: the subjects people search for and get asked in interviews, whatever the company. C5 owns company pages and guides. C6 owns:
 - topic guides and blog posts;
 - topic hub pages (`/challenges/<topic>/`);
