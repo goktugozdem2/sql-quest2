@@ -27,6 +27,185 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### /sql-interview-questions-data-analyst/ on Google — the /sql-exercises/ link push, next page (C1)
+
+- **Claimed** 2026-11-23 · **Shipped** on merge (static pages, no flag) ·
+  **Read** 2027-01-18 (ship + 56 days).
+- **Why this page.** The /sql-exercises/ claim read HIT on 2026-11-23
+  (24.5 → 11.3 after its linking pages went 31 → 132) and its Next line asks
+  for the same push on the next page-two page, one page per claim. In the
+  `gsc_daily` page slice, 28 days 10-26 → 11-22, the sitemap pages at an
+  impression-weighted position of 11–20, by impressions:
+  `/blog/sql-joins-explained/` 947 imp · 2 clk · 18.1 (39 linking pages) ·
+  **`/sql-interview-questions-data-analyst/` 196 · 3 · 17.4 (4)** ·
+  `/blog/window-functions-tutorial/` 146 · 0 · 13.5 (33) ·
+  `/blog/recursive-cte-explained/` 111 · 1 · 16.1 (32) ·
+  `/challenges/` 103 · 7 · 12.5 (12). Linking pages are
+  `scripts/seo/inbound-links.mjs` (distinct built pages, nav/footer/link
+  strips removed). This page leads to the product (an interview-prep page
+  for the role two of the first three payers were preparing for), and it is
+  the /sql-exercises/ shape: 4 linking pages (/sql-exercises/ had 31 before
+  its push) on a page Google already shows. Not in `seo-prune.json`, not
+  in C1's queue (`docs/reads/c1-search-week-2026-11-23.md`), no snippet
+  change since 09-24.
+- **Change.** Internal links to the page **4 → 76 linking pages**, title
+  and description untouched (so, unlike /sql-exercises/, the read isolates
+  the link lever). Sources: the "Keep prepping" strip on all 34 company
+  pages (`scripts/build-company-crosslinks.mjs`), and one contextual line on
+  38 pages through `scripts/build-related-links.mjs`: the nine hand-written
+  topic pages and `/challenges/`, 19 blog posts and the blog index, `/sql-exercises/`,
+  `/sql-quiz/`, `/sql-tutorial/`, `/sql-cheat-sheet/`,
+  `/best-sql-practice-sites/`, `/fraud-analytics-sql/`, `/after-bootcamp/`,
+  `/after-the-sql-course/`. Left out on purpose: the `/questions/` template
+  (Bing's #72 read runs on those pages), the two generated topic pages, the
+  Turkish posts, and the posts with a pending snippet read
+  (`/blog/validate-ai-generated-sql/`, `/blog/null-handling-mistakes/`).
+  Guard: `tests/data-analyst-links.test.js`.
+- **Title not changed, and why.** 3 clicks on 196 impressions, but 69 of the
+  116 impressions the query+page slice can attribute are the brand queries
+  "sqlquest" / "sql quest" at position 1.0 (sitelinks); the page's real query,
+  "sql interview questions for data analyst", sits at **42.8** (27
+  impressions, 1 click). The constraint is rank, not the snippet.
+- **Metric** `gsc_position('/sql-interview-questions-data-analyst/')`
+  (metrics.md, `gsc_position`): impression-weighted position and clicks over
+  the `gsc_daily` page slice (`query IS NULL`), 28 days ending on the latest
+  date in the table. **Guard read on the same rows:** the query+page slice
+  with `query ~* 'sql ?quest'` removed — the page slice blends brand
+  sitelinks at 1.0 with the real query at ~42, so a shift in the brand share
+  alone can move it (the weekly series ran 6.3 to 24.5 between 09-07 and
+  11-16 at 26–70 impressions a week).
+- **Baseline** page slice 10-26 → 11-22: **196 impressions, 3 clicks,
+  17.4** (90 days 08-25 → 11-22: 560, 7, 18.5). Non-brand, query+page
+  slice, same 28 days: 47 impressions, 1 click, **40.7**.
+- **Target** page-slice position **≤ 15** over the 28 days to the read date,
+  **and** the non-brand position ≤ 30 — the second says the page moved, not
+  the brand mix.
+- **Falsification (written now).** Page slice above **16** over the 28 days
+  and non-brand position still ≥ **38** → at this page, 72 more linking pages
+  moved nothing; links were not the constraint, and the next page in the list
+  is not worth the same push until `docs/plans/backlinks-2026-09-11.md`
+  moves. Page slice ≤ 15 with non-brand ≥ 38 is **UNREADABLE** (a mix shift),
+  never HIT. Fewer than 25 non-brand impressions in the window is
+  UNREADABLE.
+- **Confounds** #162 rewrote the snippets of seven company pages this month
+  (their bodies change here, not their snippets); Google's site-wide
+  impressions are rising (7,177 → 8,896 a week, C1 11-23) — read against the
+  site's page-slice position for the same windows. 72 pages get a new
+  lastmod, so IndexNow pings Bing for them on deploy; none is a
+  `/questions/` page.
+
+### learn → practice → next step on two topic pages (pilot)
+
+- **Claimed** 2026-11-23 · **Live** on the deploy that merges
+  `seo/topic-learn-pilot` · **Read** 28 days after that deploy (about
+  2026-12-21).
+- **Change** `/challenges/window-functions/` and `/challenges/cte/` get three
+  blocks above their challenge lists (`scripts/build-topic-learn.mjs`, content
+  `src/data/topic-learn.js`): "Learn it in 3 minutes" (plain words, the
+  syntax, one worked example on a tiny table with its result, an "Edit and
+  run" box that loads sql.js only on click, one common mistake with a link —
+  the join fan-out trap page on the CTE page); "Now try it", an Easy → Medium
+  → Hard ladder picked in curriculum order (window 168 → 112 → 23, CTE 179 →
+  111 → 50; all three playable free, the Hard ones are free previews), deep
+  links `/app/?challenge=<id>&src=topic-learn-<slug>`; "The next step" (the
+  readiness test, the three company sets that weigh the topic,
+  `freeTierSentence`). Events `learn_example_run`, `learn_ladder_click`,
+  `learn_next_step` (track.js, `reason='landing'`). The two tutorials
+  (`sql-cte-tutorial`, `window-functions-tutorial`) link the pages as
+  "Practice it" (`cta_blog_practice_it`). No new page (SEO rule 1).
+- **Why** GSC, 90 days: the tutorial posts get impressions and no clicks
+  (sql-cte-tutorial 5,848 / 9 at position 22; sql-joins-explained 4,038 / 6;
+  sql-group-by-tutorial 2,241 / 5), the practice pages win the click
+  (window-functions 793 / 50 at position 10; cte 844 / 39). Payers came from
+  company pages (7 of 15) and /sql-exercises/ (3), none from a tutorial. So
+  the explanation goes onto the page that already ranks and converts.
+- **Metric** `seo_page_funnel`, per page and per group: people (by `aid`,
+  bots, internal users and Asia/Shanghai out) whose FIRST `landing_view` in
+  the window was on the page → `app_opened` ≤ 7 days → `challenge_solved`
+  ≤ 7 days. Pilot = the two pages; control = the seven untouched hand-written
+  topic pages (joins, aggregation, case-when, subqueries, null-handling,
+  date-functions, string-functions). Context slices: `arrivalSrc` starting
+  `topic-learn-` on `app_opened` (how much of the arrival the ladder
+  carries), and people with each of the three events.
+- **Baseline** (landings 2026-10-26 → 11-22, read 2026-11-23 through the
+  read-only MCP; the last week's 7-day follow-up is truncated, and the read
+  uses the same rule):
+
+  | group | landed | opened ≤ 7d | solved ≤ 7d |
+  |---|---|---|---|
+  | pilot | 96 | 51 (53.1%) | 21 (21.9%) |
+  | · window-functions | 60 | 25 (41.7%) | 15 (25.0%) |
+  | · cte | 36 | 26 (72.2%) | 6 (16.7%) |
+  | control (7 pages) | 135 | 51 (37.8%) | 13 (9.6%) |
+
+- **Target** the pilot's landed → solved rate reaches **≥ 30%** while the
+  control stays within ±5 points of 9.6%, i.e. the pilot − control gap widens
+  from 12.3 to **≥ 18 points**; and **≥ 15%** of pilot landing people click a
+  ladder step (`learn_ladder_click`).
+- **Guardrails** the pilot's landed → opened rate stays at or above 45%; the
+  two pages' GSC clicks over the 28 days do not fall more than 25% against the
+  28 days before while the control's do not fall.
+- **Falsification, stated in advance:** pilot landed → solved at or below
+  21.9%, or the gap not wider than 12.3 points → the learn block does not
+  convert; if fewer than 5% of pilot landers also ran the example, remove the
+  learn block and keep the ladder and the next step. A guardrail breach (GSC
+  clicks down > 25% on the two pages only) → revert the whole block. Fewer
+  than 80 pilot landers in the window → **UNREADABLE** (at n ≈ 100 one
+  standard error is about 4 points), extend 28 days, do not roll out.
+- **Confounds** the bank and the free quota are unchanged in the window as of
+  the claim; any change to the seven control pages before the read voids the
+  comparison (`tests/topic-learn-pilot.test.js` fails if one of them gains
+  the pilot's blocks).
+
+### real-user speed is measured (`web-vitals`)
+
+- **Claimed** 2026-11-24 · **Shipped** live (no flag) in the code PR that
+  follows this one · **Read** 7 days after the deploy of that PR
+  (earliest 2026-12-02 if it deploys 11-25).
+- **Change** `track.js` on every static page and the /app shell load
+  Google's `web-vitals` (6.2.3, the attribution-free build, served from our
+  own origin) at the first idle moment after `load`, and write one
+  `web_vital` row per metric (LCP, INP, CLS, FCP, TTFB) per page load to
+  `pro_events`; bots, crawler fingerprints, localhost and internal
+  accounts send nothing.
+- **Why** the mobile funnel gap (landed → first solve, desktop 20.1% vs
+  mobile 3.2%, AN read 2026-11-24) has no speed data behind it: `app_boot`
+  covers /app only and has no INP or CLS, and Vercel Speed Insights cannot
+  be joined to a solve. This claim is about the instrument, not the gap.
+- **Metric** `web_vitals`, read 3 (coverage) (docs/agent/metrics.md;
+  defined in its own PR before the code, rule 6b).
+- **Baseline** 0 — no `web_vital` row exists.
+- **Target** ≥ 90% of `landing_view` rows (bot and crawler filters of the
+  fleet README applied) in the 7 days after the deploy have a `web_vital`
+  LCP row with the same `aid` and `page` within 30 minutes.
+- **Falsified if** coverage is under 90% → MISS. Read the `landing_engaged`
+  share beside it first: if that one is ≥ 90%, the hole is renderers and
+  bounces before the idle-time load, and the fix is loading earlier (on
+  `load`, not idle); if it is also under 90%, the send path is broken —
+  find where before trusting any p75 from this series.
+- **Guardrail** `app_boot` (the /app `lcpMs` p75 by viewport band) must not
+  rise by more than 100 ms against the 7 days before the deploy; the
+  library loads after `load`, so it should not move at all.
+- **First use of the data** the same read reports mobile vs desktop LCP p75
+  on `app` and on the top landing pages, and mobile open → first run by LCP
+  band, against the decision rule written in `web_vitals`.
+
+### Run is not Submit (`runSubmitNudge`, A/B)
+
+- **Claimed** 2026-11-23 · **Shipped** dark (flag `runSubmitNudge: false`, flag-queue row 17); the orchestrator decides the flip, because `companyDirectOpen` "runs alone" · **Read** 28 days after the flip, or at the minimum n if that comes later (hard stop: UNREADABLE if not readable 90 days after the flip).
+- **Change** an A/B by aid (`run_submit_nudge_v1`, murmur-finalised hash, independent of the first-screen, company-ask, company-direct, quota-wall-inline and modal-layout arms). A person with **zero solves** whose Run returns rows on an unsolved, non-writing challenge is assigned once (`run_submit_nudge_assigned {testId, arm, challengeId}`, both arms). `nudge`: one line at the top of Your Output — "This matches the expected output. Press Submit to complete the challenge." when the output passes the same `resultsMatch` Submit uses, else "Run only shows your output. Submit checks it against the expected output." (`run_submit_nudge_shown {kind}`). `control`: today's panel. Nothing asked, gated or priced. src/utils/run-submit-nudge.js; tests/run-submit-nudge.test.js.
+- **Why** (docs/reads/onboarding-2026-11-23.md): first opens 11-09 → 11-23, bots and the new topic-page crawler out: of 143 people who ran a query, 100 ran first with Run and 41 with Submit. Submit-first: 90% solved, 0 left ungraded. Run-first: 72% solved, **21 left without ever being graded** — two thirds of the 32 runners who never solved. The walk: on challenge 91, Run on the empty editor writes and runs the whole answer (#101's starter) and shows a table identical to the Expected Output, and nothing says Submit is still needed.
+- **Metric** `first_solve_10m` measured from assignment, by arm (the `company_direct_split` shape: a `challenge_solved` within 10 minutes of `run_submit_nudge_assigned`). Mechanism (secondary): share of assigned people with no solve, no `challenge_error_pattern` and no `challenge_errored` on any challenge within 24 h ("left ungraded"). Bots, internal accounts and the topic-page crawler fingerprint (read §4) out. Not `open_to_first_run`: assignment happens at a Run, after the first run.
+- **Baseline** the `control` arm, run alongside. Pre-flip reference (11-09 → 11-23, Run-first people, not the assignment definition): 72% solved, 21% left ungraded.
+- **Target** `nudge` ≥ `control` + 8 points on solve within 10 min of assignment, at ≥ 100 assigned per arm; and `nudge`'s left-ungraded share ≥ 8 points below `control`'s. ~100 zero-solve Run-first people per 14 days today → ~4 weeks to 100 per arm.
+- **Guardrail** 3 solves within 24 h of assignment: `nudge` must not trail `control` by more than 5 points.
+- **Stop rule / falsification, written before the data:**
+  - **Early harm at 50 per arm:** `nudge` trails `control` by ≥ 10 points on solve-in-10 → flag off the same day; MISS.
+  - **At 100 per arm:** `nudge` ≥ `control` + 8 → HIT: ship the line to every zero-solve Run, remove the `control` branch. Within ± 8 → FLAT: flag off, delete the branch. `nudge` < `control` − 3 → MISS: flag off.
+  - **Mechanism falsified** if the left-ungraded share is not at least 8 points lower in `nudge` even when solve-in-10 moves: then the line is not why it moved; say so in the verdict.
+  - Fewer than 100 per arm 90 days after the flip → UNREADABLE; flag off, no extension.
+- **Confounds** `companyDirectOpen` (live 11-23) assigns at arrival on `?company=` links; this assigns later, at a Run, on an independent hash — read both within their own arms, and repeat this read without `?company=` arrivals. #99/#101 change who reaches a first Run (pre/post, to 12-20), equally in both arms. `stuckAsk` (waits to 12-20) fires on a challenge with no run, so never on an assigned person's first Run.
+
 ### the interview date, asked after a company is named (company ask follow-up)
 
 - **Claimed** 2026-11-24 · **Shipped** dark behind `intakeAfterFirstSolve`
@@ -358,6 +537,44 @@ of the verifier and must never be rounded to `FLAT`.
 - **Confound** 326 and 327 also join the subqueries topic page's scalar/IN
   section, so they get that page's openers too. Read the door beside the rate.
 
+### State-graded DML/DDL: the second five (challenges 355-359, C6)
+
+- **Claimed** 2026-11-24 · **Shipped** on merge (no flag) · **Read** 2026-12-22.
+- **Change** Five more `grade: 'state'` challenges on `ecommerce`, same engine
+  and gate as 325-329, nothing in the engine changed: 355 "The Account Page
+  Reads Every Order" (Medium, a composite index; graded on its first two
+  columns, name-free, partial indexes refused; EXPLAIN allowed so the plan can
+  be read), 356 "Clear Out the Sign-Ups That Never Bought" (Medium, DELETE
+  with an anti-join; two guest orders with no `customer_id` make `NOT IN`
+  remove nobody), 357 "Give Every Customer a Lifetime Spend" (Medium, ALTER
+  TABLE ADD COLUMN + backfill; no-order customers must read 0, not NULL), 358
+  "Close the Books on February" (Medium, a two-table move in a transaction;
+  the 02-29 and 03-01 rows are the 328 leap-day trap again), 359 "Apply the
+  Overnight Price Feed" (Hard, an upsert that only takes strictly newer rows).
+  DDL/DML now has 10 challenges, still unmapped on the Skillmap (the
+  orchestrator's 2026-11-22 rule waits for 15 and 28 days of data).
+- **Metric** `challenge_solve_through` (docs/agent/metrics.md) per card, read
+  within its band (Medium for 355-358, Hard for 359). No topic door yet, so
+  `topic_funnel` and `content_funnel` are not read here.
+- **Baseline** Not readable from the cloud session. The read takes it in the
+  same window: the median solve-through of every Medium and every Hard card
+  with 10+ openers, 2026-11-25 → 2026-12-22, same shared filters.
+- **Target** 355-358 pooled within 5 points of the Medium median or above;
+  359 within 10 points of the Hard median.
+- **Falsification** (written before the data) 355-358 pooled more than 10
+  points under the Medium median, or any card with 10+ openers under 40%:
+  read that card's `challenge_errored` rows first (a refusal or a syntax
+  error near DO on 359 is tooling or hint, not content). Fewer than 10 openers
+  on a card is `UNREADABLE` for that card; under 30 pooled openers on 355-358
+  the claim is `UNREADABLE`.
+- **Guardrail** `challenge_errored` on 355-359: more than a third of submits
+  refused means the gate is too tight for these shapes (355's EXPLAIN, 358's
+  BEGIN / SAVEPOINT); widen `allow`, not the always-forbidden list.
+- **Confound** 356-358 join the subqueries topic page (356 in #correlated,
+  357-358 in #scalar-and-in) and 359 the advanced page, so they get those
+  pages' openers; read the door beside the rate. 325-329's read (12-20) and
+  this one overlap by four weeks: read them as two sets, never pooled.
+
 ### no exclusivity claims about the AI coach, tutor or Skillmap (C2)
 
 - **Claimed** 2026-11-23 · **Shipped** on merge (static pages, no flag) ·
@@ -485,6 +702,61 @@ of the verifier and must never be rounded to `FLAT`.
 - **N2 → B3:** the mock has no question that joins tables and computes a
   rate (its rate, c1-m5, is one table); the page does not claim one.
 
+### the Monzo page's first screen: question 1, readiness, the Pro line, one "debug this query" (C5)
+
+- **Claimed** 2026-11-24 · **Shipped** on merge (static page, no flag) · **Read** 2026-12-22 (28 d) and 2027-01-19 (56 d).
+- **Change** `/monzo-sql-interview/` gets a "Start here" block right under the
+  hero (`scripts/company-first-screen.mjs`, run by the company generator):
+  question 1 straight into the app (challenge 176, the page's own
+  `companyFirstQuestion` pick), the readiness test with `?company=monzo`, and
+  one line on what Pro gives for this interview (the 4 Hard questions past the
+  free preview, all 300+ without the 10-solve stop, the full mock bank; from
+  the page facts and `freeSolvesLabel`, no price). Under it, "Debug this
+  query": framed by the Monzo Data Science post the page already cites (27 Apr
+  2026: the technical interview goes through your submission, its logic,
+  trade-offs and testing), a 9-line query on the Monzo set's own card ledger
+  (`finans_fraud`) that answers 0 accounts with no March spend when the answer
+  is 4 (a WHERE on the right table of a LEFT JOIN), the bug behind a
+  `<details>`, and the fix in the app as Debug question 336 (same bug, Medium,
+  free to open). Every new app link carries `src=company-monzo`; the hero
+  button keeps `src=monzo-sql-interview` so its series does not move.
+- **Why this one:** Monzo is consumer fintech, the archetype that converts;
+  B6 (`docs/reads/competitors-2026-11-23.md`, N5 and run-1 item 6) found the
+  Monzo SERP held by Prepfully's paginated DS bank with no runnable SQL, and
+  Prepfully went from 5 to 6 slots. Menu item 1 beat item 2 (a sourced Monzo
+  guide) because the page exists, is sourced from Monzo's own posts, and the
+  gap is page → question 1, not missing content. No format claim is added:
+  "SQL live debugging" in B6's notes comes from Glassdoor snippets that were
+  never fetched, so the page does not say Monzo asks debugging; it says the
+  review covers testing, which the cited post says.
+- **Metric** `content_funnel`, page `monzo-sql-interview`: `trial_or_purchase`
+  per 1,000 `landing_people`, 28-day window, and the step it should move,
+  `app_opened` / `landing_people`. Clicks `cta_first_question`,
+  `cta_first_readiness`, `cta_first_debug`; arrivals with `arrivalSrc`
+  `company-monzo`.
+- **Baseline** the page's 28-day `content_funnel` row to 2026-11-24 (the
+  laptop reads it from the Monday/Thursday mail; cloud run, no production
+  data, and per-page numbers never go in the repo). The site-wide prior from
+  `docs/plans/monetization-ideas-2026-11-22.md` §1f: company pages 2.3% of
+  arrivals to trial or purchase, 81% of landers never open the app.
+- **Target** at 28 d: `app_opened` / `landing_people` up by ≥ 5 points on the
+  baseline row, and ≥ 10% of landers click one of the three new links. At
+  56 d: `trial_or_purchase` per 1,000 landers at or above the company-page
+  prior (23), with ≥ 1 trial or purchase from a person whose first landing was
+  the page.
+- **Falsification, written now:** fewer than 5% of landers click a new link at
+  ≥ 100 landers → the block is not read; cut it to the question-1 line. App
+  opens flat or down at ≥ 100 landers → the block pushed the format section
+  down without moving anyone; move it below the format table. `cta_first_debug`
+  clicks with no `challenge_first_run` on 336 → the item reads as homework,
+  not practice; swap it for a Monzo-tagged question. Under 30 landers in
+  28 d → noise, read again at 56 d.
+- **Guard** `tests/company-first-screen.test.js` (both queries run on
+  `finans_fraud`, every number, not a mock query, the Debug item is live and
+  non-Hard, links and doors, Pro line from helpers, placement);
+  `tests/company-pages.test.js` `OFF_SET_LINKS` / `OFF_SET_NOTE` waive the tag
+  check for 336 only while the page says it is from the Debug set.
+
 ### a founder-led live mock — would people pay for it? (asked by hand)
 
 - **Claimed** 2026-11-22 · **Shipped** as 3 Gmail drafts, written by E1 at
@@ -597,6 +869,43 @@ of the verifier and must never be rounded to `FLAT`.
 - **Target** answered ÷ shown ≥ 10% and ≥ 10 lines in the 28 days.
 - **Falsification** answered ÷ shown under 3%, or solves in the second
   session per person shown more than 20% below the 28 days before → off.
+
+### a feedback row says which challenge (`feedbackContext`, IR-2) — **OPEN**
+
+- **Claimed** 2026-11-23 (E2) · **Shipped** ON (default; not money, not
+  paywall-adjacent: an inbound-channel fix) · **Read** 2026-12-21 (28 days
+  after merge; move the date to merge + 28 if it merges later).
+- **Change** the 💬 widget, opened on the challenge editor (Practice →
+  Challenges, a challenge open, no mock), writes `challengeId`,
+  `challengeStatus`, `lastQuery` (trimmed, cut at 1,000 characters,
+  `queryTruncated`, `queryLength`) and `diagnosisKind` into the row's existing
+  `context` jsonb; `feedback_submitted` gets `challengeId` + `diagnosisKind`
+  (never the query). The widget shows one muted line above the textarea:
+  "This box goes to the founder. For help with this query, the tutor answers
+  right now." — "tutor" opens the challenge's existing inline Help and fires
+  `feedback_tutor_redirect`. No migration. src/utils/feedback-context.js;
+  tests/feedback-context.test.js.
+- **Why** twice a guest asked "what's my mistake?" through the widget with
+  no contact (latest 2026-11-19, arrived from /sql-exercises/ solutions);
+  the row had no challenge, query or diagnosis, so nobody could answer.
+- **Metric** `feedback_context` (metrics.md): share of `feedback_submitted
+  {kind: 'open', screen: 'quests'}` rows that carry a `challengeId`, and
+  people with `feedback_tutor_redirect` ÷ people with `feedback_opened
+  {screen: 'quests'}`.
+- **Baseline** (read 2026-11-23, 56 days, internal accounts excluded): 2
+  widget rows, both `screen='quests'`, both without contact, 0 carrying a
+  challenge id. No redirect has ever existed (0).
+- **Target** every widget row sent from the challenge editor carries a
+  challenge id (share = 100% of the rows whose sender was on the editor;
+  `screen='quests'` rows from another Practice sub-tab are the only allowed
+  gap), and ≥ 1 person in 28 days takes the tutor link.
+- **Falsification** (written before the data) a `feedback_submitted
+  {kind:'open'}` row with `screen='quests'` whose `public.feedback` row reads
+  as a question about a challenge but has no `challengeId` → the wiring is
+  broken, fix or turn off; or ≥ 10 people open the widget on `quests` and none
+  takes the tutor link → the line does not redirect; rewrite it.
+- **Confound** n is tiny (2 rows in 56 days). Read the verbatims, never a rate
+  on fewer than 10 rows; the redirect count is the main signal.
 ### a company arrival opens question 1 (`companyDirectOpen`, A/B)
 
 - **Flipped ON at 50/50 on 2026-11-23** by A0 in its own PR, applying orchestrator-decisions 2026-11-22 ("ON at 50/50 after #156 merges"), which overrides the 12-19 date below. **Reverse rule:** the entry's own stop rule (early harm check at 60 per arm; HIT / FLAT / MISS at 120 per arm; UNREADABLE by 2027-02-27). **Confound this creates:** the company-banner claim (read 12-18) shares these arrivals. Read that claim on the `list` arm and on arrivals outside the test (people with solves) only; the `list` arm keeps the banner byte for byte. The pre-flip company-door `first_solve_10m` baseline is owed by the laptop, from data before 2026-11-23.
