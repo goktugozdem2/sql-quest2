@@ -37,24 +37,24 @@ Impressions / clicks: gsc_daily page slice, 28 days to 2026-11-21.
 | Google | bigtech | **2026-11-22** | high (SQL early in analyst-type loops); no dialect | 75 / 2 | SQL sits in the first technical round of Engineering Analyst / product DS / BI analyst loops (3 reports); one 2026 report: five SQL questions per round in a shared Google Doc. Three 2026 DS loops had **no SQL**. "BigQuery" has no opened source. |
 | Meta | bigtech | **2026-11-22** | high (DS screen: SQL + product case); DE count contested | 90 / 7 | First DS sources: 3 reports (Jun 2025, Aug 2025, Sep 2026) — one 45-min screen, 1–2 SQL questions, define the metric first. The page's DE "3 SQL + 2 Python" and "not runnable" are now contested by a 2026 guide (5 + 5, test cases). |
 | Apple | bigtech | **2026-11-23** | medium (DS screen: SQL + Python) | 46 / 5 | Two 2026 DS reports: SQL + a Python task in the technical screen (one live on CoderPad with the HM); HM rounds can be metrics-only. Page's JSON-LD claims "every pattern asked in Apple … interviews" — unsourced. |
-| Netflix | bigtech | none | — | 29 / 1 | no read |
+| Netflix | bigtech | **2026-11-25** | low (nothing page-ready) | 29 / 1 | One DS loop (Oct 2025): live SQL in technical round 1, SQL + case in round 2, onsite on ad frequency caps. DS intern OA (Mar 2026): CodeSignal, 75 min, causal inference in Python/R, no SQL. AE "4 SQL + 2 Python, 50 min, HackerRank" only retold (low). Page names DA/DE; reports are DS. |
 | LinkedIn | bigtech | none | — | 20 / 0 | read 2026-09-13 (stale) |
 | Microsoft | bigtech | none | — | 17 / 0 | read 2026-09-13 (stale) |
 | Uber | consumer | none | — | 20 / 2 | no read |
-| Airbnb | consumer | none | — | 25 / 0 | no read |
+| Airbnb | consumer | **2026-11-25** | medium (a live SQL round in the DS and DE technical stage); details low | 25 / 0 | Sr DS (Aug 2026): case + case-oriented SQL screen (define retention, then query). DE (Sep 2026): OA, then SQL / coding / behavioural / data-modelling onsite (top-N ties, dwell time with LEAD, 7-day streaks). BA (Apr 2026): no SQL. One more agreeing report → sourceable. |
 | Shopify | consumer | **2026-11-22** | first-party (stages) + high (live SQL screen in DS loop) | 75 / 7 | Shopify's own DS posting: Life Story → OA + craft assessment → craft interviews that can include exploring a dataset with SQL. 3 DS reports (2026) with a live SQL screen; 3 reports where you explain results (PM, charts). The page can become sourced. |
 | Spotify | consumer | none | — | 21 / 1 | no read |
 | DoorDash | consumer | none | — | 10 / 1 | read 2026-09-13 (stale) |
 | Walmart | consumer | none | — | 11 / 2 | read 2026-09-13 (stale) |
 | TikTok | consumer | **2026-11-23** | high (SQL in the DS process); platform conflicting | 51 / 0 | Two reports (DS Jun 2026, DE Sep 2025): asked to **read or debug** an existing query. HackerRank (2025 guide) vs SQLPad (Prepfully). The page's "Data Analyst" role and HackerRank row each rest on one source; topic order has no counts. |
-| NVIDIA | datainfra | none | — | 27 / 0 | no read |
+| NVIDIA | datainfra | **2026-11-25** | none (no data-role report readable) | 27 / 0 | PracHub 30 / aced: engineering, QA, PM only. First-party: DS postings name SQL + Python, Databricks, Spark. Page meta, JSON-LD and hero say what NVIDIA "screens for" — unsourced (Tesla pattern). |
 | Databricks | datainfra | **2026-11-22** | first-party for SWE and SA (no SQL round named); none for DS/analyst | 84 / 4 | Databricks' April 2025 prep PDFs: SWE = CoderPad, 4–6 one-hour panels; SA = coding in Python/Scala DataFrames + presentation. No readable data-role report (1point3acres 403). Keep general; "Spark SQL" title is unsourced. |
 | Snowflake | datainfra | **2026-11-22** | first-party for engineering only (SQL not mentioned); none for analyst roles | 132 / 10 | Demand is dialect intent ("snowflake sql practice", all 11 clicks). Analyst reports are on Glassdoor/Blind/IQ, unreadable. Recommendation: no format section. |
 | OpenAI | ailab | none | — | 22 / 4 | no read |
-| Anthropic | ailab | none | — | 26 / 2 | no read |
+| Anthropic | ailab | **2026-11-25** | high (DS recruiter screen = why Anthropic); none for a SQL round | 26 / 2 | First-party, dated: take-homes and live interviews without AI unless told (candidate AI guidance, 2025-07-10) — page-ready. 3 DS reports: CodeSignal coding OA (1), conversion rate from a dataset (1), AI-safety round (2); none describes SQL. |
 | Tesla | industrial | **2026-11-23** | low (nothing page-ready) | 74 / 3 | One DA report (Oct 2025): one SQL question (Fibonacci, recursive CTE), then a panel with a 10-min presentation. tesla.com 403, Glassdoor 403, IQ 429. Page meta/hero say what "Tesla screens for" with no source. |
 
-Coverage on 2026-11-23: **19 of 34** with a dossier younger than 60 days (second batch: Plaid, Ramp, Morgan Stanley; third: Goldman Sachs, Amazon, Snowflake; fourth: Meta, Google, Shopify, Databricks; fifth: Tesla, TikTok, Apple, Bloomberg).
+Coverage on 2026-11-25: **23 of 34** with a dossier younger than 60 days (second batch: Plaid, Ramp, Morgan Stanley; third: Goldman Sachs, Amazon, Snowflake; fourth: Meta, Google, Shopify, Databricks; fifth: Tesla, TikTok, Apple, Bloomberg; sixth: Netflix, Airbnb, NVIDIA, Anthropic).
 
 ## Companies with search demand and no page
 
@@ -75,13 +75,40 @@ re-check monthly.
 1. ~~Goldman Sachs, Amazon, Snowflake~~: done 2026-11-22 (batch 3).
 2. ~~Meta, Google, Databricks~~ + Shopify: done 2026-11-22 (batch 4).
 3. **PayPal, Coinbase, Monzo, Chime** — convert the 11-20 / 11-22 reads into dossiers before they turn 60 days old (by 2027-01-19).
-4. ~~Tesla, TikTok, Apple~~ + Bloomberg: done 2026-11-23 (batch 5). Next by impressions: Netflix (29), Airbnb (25), NVIDIA (27), Anthropic (26), OpenAI (22), Spotify (21), Uber (20), LinkedIn (20, stale read).
+4. ~~Tesla, TikTok, Apple~~ + Bloomberg: done 2026-11-23 (batch 5). ~~Netflix, Airbnb, NVIDIA, Anthropic~~: done 2026-11-25 (batch 6). **Next (batch 7) by impressions: OpenAI (22), Spotify (21), Uber (20), LinkedIn (20, stale read)**; then Microsoft, Walmart, DoorDash (stale 09-13 reads).
+9. **Re-tries for batch 6:** Interview Query (Netflix DA, Airbnb DA, Anthropic DS/DE — 429 this run), Dataford (Netflix AE experiences, NVIDIA DS — 429), explore.jobs.netflix.net (429); hand reads: 1point3acres 1107374 (Netflix analytics/DS SQL), one Glassdoor NVIDIA DS and one Airbnb DA review.
 8. **Re-tries for batch 5:** 1point3acres Tesla Senior DA (1182004), Apple DS (920907), TikTok DS (1087310, 1151536) — hand reads; a Glassdoor Tesla DA and Bloomberg Global Data review each; Dataford Bloomberg Industry Group DA guide (429).
 5. **Re-tries for batch 2** (when Interview Query stops answering 429): IQ Plaid DS/DA, IQ Morgan Stanley DA, Taro's Plaid DE report — each could lift a "low" dossier.
 6. **Re-tries for batch 3:** a Goldman **data-analyst** report (IQ DA guide, Dataford, datainterview, Taro DE June 2025); Snowflake analyst / analytics-engineer reports (IQ Snowflake DA, datainterview). Until one opens, Goldman's DA row and Snowflake's analyst row stay empty.
 7. **Re-tries for batch 4:** datainterview Google DA guide (429 ×2); 1point3acres Shopify and Databricks threads (403) — hand reads more likely to work.
 
 ## Run notes
+
+- **2026-11-25, batch 6 (Netflix, Airbnb, NVIDIA, Anthropic).** WebFetch
+  and WebSearch only; the Greenhouse job-board API and NVIDIA's Workday JSON
+  search by plain curl. No Apify, no other fetcher, no cache or archive.
+  - **429:** Interview Query (first fetch, Netflix DA; not retried for the
+    other three companies); Dataford (Netflix AE experiences);
+    explore.jobs.netflix.net (Netflix's job API).
+  - **Not attempted:** Glassdoor, Blind, 1point3acres (earlier refusals).
+    Search results for all four companies are mostly Glassdoor; their
+    snippets (Netflix sign-up titles question, Airbnb "30-minute HackerRank",
+    NVIDIA "SQL + probability + ML") are not sources and are not used.
+  - **Worked:** PracHub experience pages, lists and resources (role filter
+    `&role=Data%20Scientist`), aced.io experiences and guides, codemia.io,
+    DataLemur, datadriven.io, anthropic.com, Greenhouse (Airbnb,
+    Anthropic), NVIDIA Workday.
+  - aced.io's role filter missed both Anthropic DS reports (slugs d3dfc1,
+    05afb6); a web search found them. Their pages give relative dates only
+    ("5 months ago", "a year ago"); the dossier converts them against the
+    read date and says so.
+  - PracHub resource articles sometimes retell a candidate post without
+    linking it (Netflix AE, 2026-03-10). Count a retelling as secondhand and
+    low; never as a report.
+  - **Cross-company:** the readable Netflix and Airbnb reports are data
+    scientist and data engineer, while both pages' descriptions name "data
+    analyst". The NVIDIA and Anthropic pages repeat Tesla's "patterns X
+    screens for" meta / JSON-LD wording (#237 fixed Tesla only).
 
 - **2026-11-23, batch 5 (Tesla, TikTok, Apple, Bloomberg).** WebFetch and
   WebSearch only. No Apify, no other fetcher, no cache or archive.

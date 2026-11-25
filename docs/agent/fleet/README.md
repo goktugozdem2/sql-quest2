@@ -39,7 +39,10 @@ dated `queue-*.md` files are history. The running state of the objective is
    Never edit `<main checkout>` itself.
 2. **Data.** Supabase through MCP is read-only. Read metadata as
    `(metadata #>> '{}')::jsonb`, and count a person as
-   `coalesce(aid, username)`. Exclude bots (`metadata.bot`, viewports
+   `coalesce(((metadata #>> '{}')::jsonb)->>'aid', username)`. `pro_events`
+   has **no `aid` column** (found 2026-11-25): `coalesce(aid, username)`
+   elsewhere in the docs is shorthand for that expression, and run as written
+   it errors. Exclude bots (`metadata.bot`, viewports
    `tablet:800x600`, `desktop:1280x1200`, `desktop:1919x992`,
    `ref:aocr.org`), internal usernames
    (`^(test|qa_|fabletest|linktest|internalroutine|sqlquest$|elena$)`), and
