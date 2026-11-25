@@ -1059,6 +1059,60 @@ Of people who opened a ticket (`ticket_opened`, not locked), the share with
 `ticket_submitted` attempts to solve. Locked opens (`locked: true`) are the
 Pro ask's own count. Baseline: none (born 2026-10-04).
 
+## `ticket_door`
+
+The ticket-1 Coach card for people who look like "first job" (First 90 Days
+F2). Defined 2026-11-25, before the code ships (rule 6b). New event:
+`ticket_card_shown {source: 'analyst_day_one'|'job_ready'|'hired'}`, written
+once per person per day when the card is on screen. The rest are existing
+events: `ticket_opened {ticketId, index, locked}`, `ticket_solved`.
+
+_Copied verbatim from PR #369 (defined there 2026-11-25, before this code, rule 6b) because #369 is not on main yet; if #369 merges first, keep one copy. Implementation note: `ticket_card_shown` fires through `trackActivationEvent`'s `onceKey` (per browser and account, per day), and `ticket_opened` from this card carries `source` too._
+
+**Primary:** of the people with `ticket_card_shown` in the window, the share
+with an unlocked `ticket_opened` within 7 days, and of those, the share with
+`ticket_solved` for the same `ticketId`. Split by `source`; never one
+blended rate. **Secondary (F3):** locked opens (`locked: true`) → a
+`pro_plan_clicked` within 30 minutes. **Guardrail:** `reach_6_rate` of
+card-shown people against the same goal's people in the 28 days before the
+flip. Same people rule and filters as `outcome_ask_answer`.
+
+```sql
+with ev as (
+  select coalesce(((metadata #>> '{}')::jsonb)->>'aid', username) pid, event, created_at,
+         (metadata #>> '{}')::jsonb m
+  from pro_events
+  where username !~* '^(test|qa_|fabletest|linktest|internalroutine|sqlquest$|elena$)'
+    and coalesce(((metadata #>> '{}')::jsonb)->>'bot', 'false') <> 'true'
+    and created_at >= :from and created_at < :to + interval '7 days'
+    and event in ('ticket_card_shown', 'ticket_opened', 'ticket_solved', 'pro_plan_clicked')
+),
+shown as (select distinct on (pid) pid, m->>'source' src, created_at t0 from ev
+          where event = 'ticket_card_shown' and created_at < :to order by pid, created_at),
+opened as (select distinct s.pid, e.m->>'ticketId' tid from shown s join ev e on e.pid = s.pid
+           and e.event = 'ticket_opened' and coalesce(e.m->>'locked', 'false') <> 'true'
+           and e.created_at between s.t0 and s.t0 + interval '7 days'),
+solved as (select distinct o.pid from opened o join ev e on e.pid = o.pid
+           and e.event = 'ticket_solved' and e.m->>'ticketId' = o.tid),
+locked as (select e.pid, e.created_at tl from ev e where e.event = 'ticket_opened' and e.m->>'locked' = 'true'),
+locked_click as (select distinct l.pid from locked l join ev e on e.pid = l.pid
+                 and e.event = 'pro_plan_clicked' and e.created_at between l.tl and l.tl + interval '30 minutes')
+select s.src, count(distinct s.pid) shown,
+       count(distinct o.pid) opened_7d,
+       count(distinct so.pid) solved,
+       count(distinct l.pid) locked_openers,
+       count(distinct lc.pid) locked_to_plan_click
+from shown s
+left join opened o using (pid) left join solved so using (pid)
+left join locked l using (pid) left join locked_click lc using (pid)
+group by s.src;
+```
+
+**Baseline (2026-11-25):** 0 ticket opens by non-internal people since the
+tickets shipped on 2026-10-04. Audience: 226 job-ready solvers in 90 days;
+28 people chose Analyst Day-One in 90 days. **Decision rule:** the plan's
+§8, F2 and F3.
+
 ## `app_boot`
 
 How long /app takes for the people who open it (2026-11-22, BACKLOG item

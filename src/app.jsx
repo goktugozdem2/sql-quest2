@@ -72,6 +72,7 @@ import { classifyErrorPatterns, recordErrorPatterns, describeErrorPatterns, patt
 import { isDebugChallenge, debugQuestionsOn, brokenQueryFor, debugEditorValue, emptyDebugStats, recordDebugSpot, recordDebugFix, debugStatsSummary, debugBugLine, withDebugLock, proModalReasonLabel, debugLockedAs } from './utils/debug-questions.js';
 import { nudgeAllowed, nudgeHeaders, nudgeUsername, personalNudgeLines } from './utils/live-nudge.js';
 import { HIRED_INTENT, isHired, ticketLocked, shouldAskOffer } from './utils/post-hire.js';
+import { TICKET_DOOR_FLAG, ticketDoorSource, showsTicketDoorCard, nextDoorTicket } from './utils/ticket-door.js';
 import { gradeTicket, ticketFeedback } from './utils/ticket-grade.js';
 import { isStateGraded, gradeStateChallenge, runStateAttempt } from './utils/state-grade.js';
 import { TICKETS } from './data/tickets.js';
@@ -27012,6 +27013,27 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
   const [offerAskOpen, setOfferAskOpen] = useState(false);
   const ticketDbsRef = useRef({});
   const hired = isHired(intentRecord);
+  // The ticket door (First 90 Days F2, 2026-11-25, flag `ticketForDayOne`,
+  // src/utils/ticket-door.js): Analyst Day-One holders and job_ready people
+  // with 6+ solves get one Coach card that opens the next ticket, not only
+  // `hired`. Flag off → null for everyone: no card, no event. With it on, a
+  // hired person's own First 90 card is counted as source 'hired'. The event
+  // fires once per person per day while the card is on screen (metric
+  // ticket_door). These hooks sit above the early returns.
+  const ticketDoor = ticketDoorSource({
+    flagOn: ftbFlag(TICKET_DOOR_FLAG),
+    intentRecord,
+    intent: getUserIntent(),
+    goalId: coachState?.goalId || null,
+    solves: solvedChallenges.size,
+  });
+  const ticketDoorVisible = !!ticketDoor && activeTab === 'guide' && !!currentUser && !showSimpleLearningShell
+    && (ticketDoor === 'hired' || !!nextDoorTicket(TICKETS, ticketLog));
+  useEffect(() => {
+    if (!ticketDoorVisible) return;
+    trackActivationEvent('ticket_card_shown', { source: ticketDoor, solves: solvedChallenges.size }, { onceKey: `ticket_card_shown_${getTodayString()}` });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ticketDoorVisible, ticketDoor]);
 
   const setHiredStatus = (source) => {
     setUserIntent(HIRED_INTENT, source);
@@ -27033,10 +27055,12 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
     return tdb;
   };
 
-  const openTicket = (ticket, index) => {
+  // `source`: the ticket door's source when the F2 card opened it (ticket_door);
+  // the hired card passes none, so its event is unchanged.
+  const openTicket = (ticket, index, source = null) => {
     const solved = !!ticketLog[ticket.id]?.solvedAt;
     const locked = ticketLocked({ index, isPro, solved });
-    trackActivationEvent('ticket_opened', { ticketId: ticket.id, index, locked });
+    trackActivationEvent('ticket_opened', { ticketId: ticket.id, index, locked, ...(source ? { source } : {}) });
     if (locked) {
       setProModalReason({ type: 'post_hire', topic: ticket.title, solvedCount: solvedChallenges.size });
       setShowProModal(true);
@@ -27191,6 +27215,34 @@ RULES:
           })}
         </div>
         <button type="button" onClick={leaveHiredStatus} className="mt-3 text-xs underline underline-offset-2 text-gray-500">Back to interview prep</button>
+      </div>
+    );
+  };
+
+  // The F2 card (ticketForDayOne): one ticket, the next unsolved one, ticket 1
+  // first. The lock is openTicket's own (FREE_TICKETS = 1; the rest open the
+  // `post_hire` Pro reason); the card never reads `reference`. Goes away when
+  // every ticket is solved.
+  const renderTicketDoorCard = () => {
+    if (!showsTicketDoorCard(ticketDoor)) return null;
+    const next = nextDoorTicket(TICKETS, ticketLog);
+    if (!next) return null;
+    const { ticket: doorTicket, index: doorIndex } = next;
+    const locked = ticketLocked({ index: doorIndex, isPro, solved: false });
+    const solvedN = TICKETS.filter(t => ticketLog[t.id]?.solvedAt).length;
+    return (
+      <div className="bg-gray-900/60 rounded-xl border border-gray-700 p-4 mb-4" data-testid="ticket-door-card" data-ticket-door={ticketDoor}>
+        <p className="text-[11px] uppercase tracking-wider text-gray-500 mb-1">A request from the business</p>
+        <p className="text-base font-bold text-gray-100">{doorIndex === 0 ? 'A request from a PM, on real data' : 'The next request'}</p>
+        <p className="text-xs text-gray-400 mt-1 mb-3">On the job nobody says which columns to return. A ticket says what someone needs to know; you pick the grain and the filters, and the answer is checked on its figures.{solvedN > 0 ? ` ${solvedN} of ${TICKETS.length} done.` : ''}</p>
+        <button type="button" onClick={() => openTicket(doorTicket, doorIndex, ticketDoor)} data-testid={`ticket-door-open-${doorTicket.id}`}
+          className="w-full text-left flex items-center justify-between gap-3 rounded-lg border border-gray-700 px-3 py-2 hover:border-gray-500">
+          <span>
+            <span className="block text-sm font-medium text-gray-100">{doorTicket.title}</span>
+            <span className="block text-xs text-gray-500">{doorTicket.from} · {doorTicket.due}</span>
+          </span>
+          <span className="text-xs shrink-0" style={{ color: '#8A8E99' }}>{locked ? 'Pro' : 'Open'}</span>
+        </button>
       </div>
     );
   };
@@ -37109,6 +37161,9 @@ RULES:
                   )}
                 </div>
               )}
+              {/* The ticket door (F2, ticketForDayOne): under the next-step
+                  card, so it never sits between a person and their step. */}
+              {renderTicketDoorCard()}
               {/* ── Skill radar on the Coach (2026-09-12, P0-4) ──
                   The landing mockup (scripts/coach-mock-snippet.html) has shown a
                   9-axis radar beside the next step since 2026-09-07; the live tab

@@ -651,6 +651,20 @@ window.FEATURE_FLAGS = {
     // orchestrator decides the flip (companyDirectOpen "runs alone").
     // Ledger "Run is not Submit"; read first_solve_10m from assignment by arm.
     runSubmitNudge: false,
+
+    // ── Ticket 1 for people who already look like "first job" (F2) ───────
+    // First 90 Days F2 (docs/plans/first-90-days-2026-11-25.md; orchestrator
+    // decision 1 of 2026-11-25, PR #372). One Coach card, under the next-step
+    // card, that opens the next ticket (ticket 1 first) for Analyst Day-One
+    // goal holders and job_ready people with 6+ solves — not only `hired`.
+    // FREE_TICKETS stays 1; tickets 2–5 stay Pro through the existing
+    // `post_hire` modal reason; own sql.js DB per dataset; `reference` never
+    // rendered. Event `ticket_card_shown {source}` once per person per day.
+    // SHIPPED OFF 2026-11-25: flips only in an orchestrator decision row,
+    // after a walk. src/utils/ticket-door.js, tests/ticket-door.test.js;
+    // ledger "ticket 1 for Analyst Day-One and job-ready people"; metric
+    // ticket_door.
+    ticketForDayOne: false,
   },
 };
 
