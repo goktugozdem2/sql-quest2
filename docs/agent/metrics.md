@@ -1282,6 +1282,17 @@ by hand (the 10-04 → 10-07 waves: docs/reads/p1-guardrail-bing-2026-10-07.md).
   `landing_engaged` per company/topic page, often with no `landing_view`
   (so it lands in "no source, no landing" buckets). 21 people on 11-22,
   7 on 11-23, none on 11-24; never ran a query. Drop the viewport.
+- **Google's unstamped fetchers (C8, 2026-11-25).** `landing_view.ua`
+  (from 2026-09-13) carries `GoogleOther` (802 people since 10-01) or
+  `Google-NotebookLM` (108). Every one: `tz = America/Los_Angeles`, no
+  `landingSrc`, no window size, one `landing_view`, never `landing_engaged`
+  or `app_opened`, never stamped `bot`/`uaBot`. Drop a person whose
+  `landing_view.ua` matches `(GoogleOther|Google-NotebookLM)` and who
+  never opens the app. GoogleOther rose from ~30 a week (early October)
+  to 172 (week of 11-09), so a "human visitors" series that keeps it
+  climbs with Google's crawl, not with people. NotebookLM fetches are a
+  person putting our page into NotebookLM; read them as an AI-assistant
+  signal (mostly the comparison pages), not as visits.
 
 **Trap: the crawlers change time zone and borrow a landing source
 (2026-10-18, widened 2026-11-12).** Three window sizes have never, over all
