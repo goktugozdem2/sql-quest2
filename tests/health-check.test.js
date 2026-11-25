@@ -271,6 +271,16 @@ describe('6. the page runs the module, asks the goal first, and never sends the 
     for (const e of ['readiness_started', 'readiness_completed', 'readiness_plan_clicked']) expect(calls.some(c => c.startsWith(`track('${e}'`) && /, L\)\)/.test(c)), e).toBe(true);
     expect(calls.some(c => c.startsWith("track('readiness_shared', { companySlug: L.companySlug, role: L.role, method })"))).toBe(true);
   });
+  it('the result copy says what the page does (headless walk, 2026-11-25)', () => {
+    // the start card does not promise that the goal/role stay local — the
+    // readiness_* events carry them; only the answers to the items stay
+    expect(PAGE).toContain('Your answers to the questions stay in this browser.');
+    expect(PAGE).not.toContain('Your answers stay in this browser.');
+    // "Built from your goal and your Skillmap." — a list, never "goal, Skillmap."
+    const lede = new Function('roleObj', 'L', 'arch', 'co', PAGE.slice(PAGE.indexOf("  const from = ['your goal'"), PAGE.indexOf("  const item = c =>")).replace(/\$\('rmlede'\)\.textContent = /, 'return '));
+    expect(lede(null, { daysOut: null }, false, null)).toMatch(/^Built from your goal and your Skillmap\. The skills that need the most work come first;/);
+    expect(lede({ label: 'Data analyst' }, { daysOut: 30 }, true, { name: 'Capital One' })).toMatch(/^Built from your goal, your Skillmap, the Data analyst lean and the 30 days you have\. The skills come in order of the gap, weighted by how much of our Capital One set uses them;/);
+  });
   it('the record keeps the app\'s shape and adds the person\'s own goal, date and role', () => {
     expect(PAGE).toContain("JSON.stringify({ at: Date.now(), company: co ? co.name : null, overall, weakest, scores: scoresObj, goal: goalObj.intakeGoal, healthGoal: L.goal, date: L.goal === 'interview' && L.daysOut !== null ? $('date').value : null, intakeRole: roleObj ? roleObj.intakeRole : null })");
   });

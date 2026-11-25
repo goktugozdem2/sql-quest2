@@ -285,7 +285,7 @@ ${ld}
       <select id="weeks"><option value="">Not sure</option><option value="2">2 weeks</option><option value="3">3 weeks</option><option value="4">4 weeks</option><option value="6">6 weeks</option><option value="8">8 weeks</option></select>
     </div>
     <p id="need" style="font-size:13px;color:#c084fc;margin-top:14px;" hidden>Choose what you are preparing for first.</p>
-    <p style="font-size:13px;color:#8b98ab;margin:14px 0 18px;line-height:1.6;">Your answers stay in this browser. For an interview at a company we have modelled, the score is weighted by that company's practice set; the role leans the weights toward the SQL that role works with.</p>
+    <p style="font-size:13px;color:#8b98ab;margin:14px 0 18px;line-height:1.6;">Your answers to the questions stay in this browser. For an interview at a company we have modelled, the score is weighted by that company's practice set; the role leans the weights toward the SQL that role works with.</p>
     <button class="btn bp" id="go" type="button">Start the health check</button>
   </section>
 
@@ -462,7 +462,14 @@ function finish() {
   const rm = buildHealthRoadmap({ goal: L.goal, scores: scoresObj, weights: W, daysOut: L.daysOut, pools, pages, traps: TRAPS, mock: (co && co.mock) || DATA.genericMock });
   const unit = rm.unit === 'day' ? 'Day' : 'Week';
   $('rmtitle').textContent = 'Your roadmap: ' + rm.steps.length + ' ' + (rm.unit === 'day' ? (rm.steps.length === 1 ? 'day' : 'days') : 'weeks');
-  $('rmlede').textContent = 'Built from your goal, your Skillmap' + (roleObj ? ', the ' + roleObj.label + ' lean' : '') + (L.daysOut !== null ? ' and the ' + L.daysOut + ' days you have' : '') + '. The skills that need the most work come first; the challenges are in the order the curriculum teaches them' + (co ? ', ' + co.name + '\\'s practice set first' : '') + '.';
+  // "goal, Skillmap, lean and days" read as a list ("your goal and your
+  // Skillmap" when nothing else was given — walk of 2026-11-25), and the
+  // order is said the way buildHealthRoadmap ranks: gap × weight, so on a
+  // signed company the set's skill mix can put a 50 ahead of a 0.
+  const from = ['your goal', 'your Skillmap'].concat(roleObj ? ['the ' + roleObj.label + ' lean'] : [], L.daysOut !== null ? ['the ' + L.daysOut + ' days you have'] : []);
+  $('rmlede').textContent = 'Built from ' + from.slice(0, -1).join(', ') + ' and ' + from[from.length - 1] + '. '
+    + (arch ? 'The skills come in order of the gap, weighted by how much of our ' + co.name + ' set uses them' : 'The skills that need the most work come first')
+    + '; the challenges are in the order the curriculum teaches them' + (co ? ', ' + co.name + '\\'s practice set first' : '') + '.';
   const item = c => '<li style="font-size:14px;line-height:1.9"><a href="/questions/' + c.slug + '/" style="color:#e2e8f0">' + esc(c.title) + '</a> <span style="color:#8b98ab">' + c.difficulty + '</span>' + (c.pro ? ' <span class="pro">Pro</span>' : '') + '</li>';
   const reads = st => (st.page || st.trap) ? '<p style="font-size:13px;color:#94a3b8;margin-top:6px">Read: ' + [st.page, st.trap].filter(Boolean).map(p => '<a href="' + p[0] + '" style="color:#c084fc">' + esc(p[1]) + '</a>').join(' · ') + '</p>' : '';
   $('rmsteps').innerHTML = rm.steps.map(st => '<li class="step"><p class="fd" style="font-weight:800;font-size:15px">' + unit + ' ' + st.n + ' · ' + esc(st.skill) + ' <span class="fm" style="color:#8b98ab;font-size:12px;font-weight:400">now ' + st.score + '</span></p><ul style="list-style:none;margin-top:8px">' + st.items.map(item).join('') + '</ul>' + reads(st) + '</li>').join('')
