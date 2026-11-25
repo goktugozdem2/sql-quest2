@@ -68,6 +68,14 @@ dated `queue-*.md` files are history. The running state of the objective is
      11-22, 7 on 11-23, 0 ever ran a query.
    - the founder's walk guests on 2026-11-24 (`Europe/Istanbul`,
      `mobile:375x812`, 11:00–11:08 UTC).
+   - Google's unstamped fetchers (C8 2026-11-25): a person whose
+     `landing_view` has `ua` matching `GoogleOther` or `Google-NotebookLM`
+     and who never reaches `app_opened`. All `tz = America/Los_Angeles`,
+     no `landingSrc`, no window size (`innerWidth` 0). Since 2026-10-01:
+     GoogleOther 802 people, NotebookLM 108; 0 opened the app, 0
+     `landing_engaged`, 0 stamped. They sat in "none: landed on a page"
+     (~19 a day in 11-17 → 11-23). NotebookLM is a fetch a person asked
+     for: count it as an AI-assistant signal, never as a visitor.
 3. **Proof.**
    - Every new test fails by name under one deliberate break, and the
      commit says which break.
