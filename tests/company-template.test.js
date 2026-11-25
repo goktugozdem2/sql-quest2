@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { COMPANY_INTERVIEWS, NEW_COMPANY_TAGS } from '../src/data/company-interviews.js';
 import { loadBank, facts, renderPage, withProvenance } from '../scripts/build-company-pages.mjs';
+import { withFirstScreen } from '../scripts/company-first-screen.mjs';
 import { QUESTIONS, buildData, render } from '../scripts/build-readiness-test.mjs';
 import { CANONICAL_SKILLS } from '../src/utils/skill-calc.js';
 
@@ -45,7 +46,9 @@ describe('company template', () => {
       const committed = stripStrip(read(`src/${key}-sql-interview.html`));
       // The provenance note (2026-09-14) is injected after generation, so the
       // expectation carries it too — the guard still covers that block.
-      const generated = withProvenance(renderPage(key, d, facts(bank, d.name)), { slug: key, name: d.name });
+      // So is the first-screen block (2026-11-24, scripts/company-first-screen.mjs).
+      const f = facts(bank, d.name);
+      const generated = withFirstScreen(withProvenance(renderPage(key, d, f), { slug: key, name: d.name }), key, f);
       expect(committed, `${key}: re-run node scripts/build-company-pages.mjs`).toBe(stripStrip(generated));
     }
   });
