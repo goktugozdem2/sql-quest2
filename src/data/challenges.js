@@ -3830,13 +3830,13 @@ ORDER BY total_orders DESC;`,
     xpReward: 90,
     description: "Retention wants every **streak** of logins on **3 or more consecutive calendar days**. **logins** has one row per login, with a timestamp in `login_at` \u2014 and some customers log in more than once a day.\n\nShow **exactly these 3 columns**: `name` (from **customers**), `streak_start` (the streak's first day, `YYYY-MM-DD`) and `streak_length` (its number of days). A customer with two separate streaks appears twice. Order by `streak_length` descending, then `name`, then `streak_start`.\n\nThe trap is the second login on the same day: counted as its own row, it breaks a real streak in two. A streak may cross the end of a month.",
     tables: ["logins", "customers"],
-    example: { input: "37 logins by 9 customers in March 2024", output: "5 streaks — two of 5 days, one of 4, two of 3" },
+    example: { input: "37 logins by 9 customers, 2024-03-01 to 2024-04-01", output: "5 streaks — two of 5 days, one of 4, two of 3" },
     hint: "Reduce the logins to one row per customer per calendar day first (DATE of the timestamp, DISTINCT). On those days, the day minus its ROW_NUMBER within the customer is the same for every day of one unbroken run \u2014 JULIANDAY makes the subtraction work in SQLite. Group by customer and that key, keep groups of 3 or more, and take MIN of the day and COUNT.",
     solution: "WITH days AS (SELECT DISTINCT customer_id, DATE(login_at) AS login_day FROM logins), keyed AS (SELECT customer_id, login_day, JULIANDAY(login_day) - ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY login_day) AS grp FROM days), streaks AS (SELECT customer_id, MIN(login_day) AS streak_start, COUNT(*) AS streak_length FROM keyed GROUP BY customer_id, grp HAVING COUNT(*) >= 3) SELECT c.name, s.streak_start, s.streak_length FROM streaks s JOIN customers c ON c.customer_id = s.customer_id ORDER BY s.streak_length DESC, c.name, s.streak_start",
     title_tr: "Üç Günlük Giriş Serileri",
     description_tr: "Elde tutma ekibi **3 veya daha fazla ard\u0131\u015f\u0131k takvim g\u00fcn\u00fc** s\u00fcren her giri\u015f **serisini** istiyor. **logins** tablosunda her giri\u015f i\u00e7in bir sat\u0131r var, zaman damgas\u0131 `login_at` kolonunda \u2014 ve baz\u0131 m\u00fc\u015fteriler g\u00fcnde birden fazla kez giri\u015f yap\u0131yor.\n\n**Tam olarak \u015fu 3 kolonu** g\u00f6ster: `name` (**customers** tablosundan), `streak_start` (serinin ilk g\u00fcn\u00fc, `YYYY-MM-DD`) ve `streak_length` (g\u00fcn say\u0131s\u0131). \u0130ki ayr\u0131 serisi olan m\u00fc\u015fteri iki kez g\u00f6r\u00fcn\u00fcr. `streak_length`'e g\u00f6re azalan, sonra `name`, sonra `streak_start`'a g\u00f6re s\u0131rala.\n\nTuzak, ayn\u0131 g\u00fcndeki ikinci giri\u015f: ayr\u0131 bir sat\u0131r olarak say\u0131l\u0131rsa ger\u00e7ek bir seriyi ikiye b\u00f6ler. Bir seri ay sonunu ge\u00e7ebilir.",
     hint_tr: "\u00d6nce giri\u015fleri m\u00fc\u015fteri ba\u015f\u0131na takvim g\u00fcn\u00fc ba\u015f\u0131na bir sat\u0131ra indir (zaman damgas\u0131n\u0131n DATE'i, DISTINCT). Bu g\u00fcnlerde, g\u00fcn eksi m\u00fc\u015fteri i\u00e7indeki ROW_NUMBER, kesintisiz bir serinin her g\u00fcn\u00fc i\u00e7in ayn\u0131d\u0131r \u2014 SQLite'ta \u00e7\u0131karmay\u0131 JULIANDAY yapar. M\u00fc\u015fteriye ve bu anahtara g\u00f6re grupla, 3 veya daha fazla g\u00fcnl\u00fck gruplar\u0131 tut, g\u00fcn\u00fcn MIN'ini ve COUNT'u al.",
-    example_tr: { input: "Mart 2024'te 9 müşteriden 37 giriş", output: "5 seri — ikisi 5 gün, biri 4, ikisi 3" },
+    example_tr: { input: "2024-03-01 ile 2024-04-01 arasında 9 müşteriden 37 giriş", output: "5 seri — ikisi 5 gün, biri 4, ikisi 3" },
     dataset: "ecommerce"
   },
   {
@@ -3849,13 +3849,13 @@ ORDER BY total_orders DESC;`,
     xpReward: 90,
     description: "The streak rule is too strict for the habit metric: a customer counts as **active** once they have logged in on **at least 3 different days within any 7-day window** \u2014 the days do not need to be consecutive. **logins** has one row per login (`login_at` is a timestamp).\n\nShow **exactly these 2 columns**: `name` (from **customers**) and `first_hit` \u2014 the earliest day (`YYYY-MM-DD`) on which the customer completed 3 login days inside 7 days. Order by `first_hit`, then `name`.\n\nA 7-day window means the first and the third login day are **at most 6 days apart**. Three logins on the **same** day are one login day, not three.",
     tables: ["logins", "customers"],
-    example: { input: "37 logins by 9 customers in March 2024", output: "7 customers, the first on 2024-03-03" },
+    example: { input: "37 logins by 9 customers, 2024-03-01 to 2024-04-01", output: "7 customers, the first on 2024-03-03" },
     hint: "Reduce the logins to distinct (customer, day) pairs first. On those days, LAG(day, 2) over the customer's days in date order is the login day two back; when today minus that is 6 days or less, three login days fit in one 7-day window. Keep those rows and take the MIN day per customer. (A COUNT window with a RANGE frame of 6 days also works.)",
     solution: "WITH days AS (SELECT DISTINCT customer_id, DATE(login_at) AS login_day FROM logins), lagged AS (SELECT customer_id, login_day, LAG(login_day, 2) OVER (PARTITION BY customer_id ORDER BY login_day) AS two_back FROM days) SELECT c.name, MIN(l.login_day) AS first_hit FROM lagged l JOIN customers c ON c.customer_id = l.customer_id WHERE JULIANDAY(l.login_day) - JULIANDAY(l.two_back) <= 6 GROUP BY c.name ORDER BY first_hit, c.name",
     title_tr: "Herhangi Bir 7 Günde Üç Giriş Günü",
     description_tr: "Seri kural\u0131 al\u0131\u015fkanl\u0131k metri\u011fi i\u00e7in fazla kat\u0131: bir m\u00fc\u015fteri, **herhangi bir 7 g\u00fcnl\u00fck pencerede en az 3 farkl\u0131 g\u00fcnde** giri\u015f yapt\u0131\u011f\u0131nda **aktif** say\u0131l\u0131r \u2014 g\u00fcnlerin ard\u0131\u015f\u0131k olmas\u0131 gerekmez. **logins** tablosunda her giri\u015f i\u00e7in bir sat\u0131r var (`login_at` bir zaman damgas\u0131).\n\n**Tam olarak \u015fu 2 kolonu** g\u00f6ster: `name` (**customers** tablosundan) ve `first_hit` \u2014 m\u00fc\u015fterinin 7 g\u00fcn i\u00e7inde 3 giri\u015f g\u00fcn\u00fcn\u00fc ilk tamamlad\u0131\u011f\u0131 g\u00fcn (`YYYY-MM-DD`). `first_hit`, sonra `name`'e g\u00f6re s\u0131rala.\n\n7 g\u00fcnl\u00fck pencere, birinci ve \u00fc\u00e7\u00fcnc\u00fc giri\u015f g\u00fcn\u00fcn\u00fcn **en fazla 6 g\u00fcn arayla** olmas\u0131 demektir. **Ayn\u0131** g\u00fcndeki \u00fc\u00e7 giri\u015f \u00fc\u00e7 de\u011fil, bir giri\u015f g\u00fcn\u00fcd\u00fcr.",
     hint_tr: "\u00d6nce giri\u015fleri tekil (m\u00fc\u015fteri, g\u00fcn) \u00e7iftlerine indir. Bu g\u00fcnlerde, m\u00fc\u015fterinin g\u00fcnleri \u00fczerinde tarih s\u0131ras\u0131yla LAG(g\u00fcn, 2) iki \u00f6nceki giri\u015f g\u00fcn\u00fcd\u00fcr; bug\u00fcn eksi o g\u00fcn 6 g\u00fcn veya daha azsa, \u00fc\u00e7 giri\u015f g\u00fcn\u00fc tek bir 7 g\u00fcnl\u00fck pencereye s\u0131\u011far. Bu sat\u0131rlar\u0131 tut ve m\u00fc\u015fteri ba\u015f\u0131na en k\u00fc\u00e7\u00fck g\u00fcn\u00fc al. (6 g\u00fcnl\u00fck RANGE \u00e7er\u00e7eveli bir COUNT penceresi de i\u015fe yarar.)",
-    example_tr: { input: "Mart 2024'te 9 müşteriden 37 giriş", output: "7 müşteri, ilki 2024-03-03'te" },
+    example_tr: { input: "2024-03-01 ile 2024-04-01 arasında 9 müşteriden 37 giriş", output: "7 müşteri, ilki 2024-03-03'te" },
     dataset: "ecommerce"
   },
   // 320-324 (2026-11-22, fleet B3): Easy on-ramps for the three thinnest
@@ -4101,5 +4101,172 @@ ORDER BY total_orders DESC;`,
     hint_tr: "Listedeki her kural tablonun tanımında, kendi kolonunda yer alır: biri id'leri benzersiz tutar, biri order_id'yi orders.order_id'ye bağlar, biri tutarın sıfırdan büyük olduğunu sınar. Sonra kendi tek satırını ekle.",
     example_tr: { input: "İadeler için boş bir veritabanı; 1-40 arası siparişler", output: "refunds 2 satır tutar: seninki ve iyi satır; dört kötü satır reddedildi" },
     dataset: "ecommerce"
+  },
+  // 330 (2026-11-23, fleet B3): a payment-partner reconciliation, the shape of
+  // a round one candidate reported to us (docs/reads/companies/stripe.md, the
+  // 2026-11-23 row; unattributed by promise). Our wording on our own synthetic
+  // tables (ecommerce.expected_payments / partner_a_report / partner_b_report),
+  // not the interview's question. tests/challenge-330.test.js runs the
+  // solution and shows a one-direction answer, an answer that ignores the
+  // partner, and one that repeats a duplicated row all fail.
+  {
+    id: 330,
+    slug: "reconcile-two-payment-partners-reports",
+    title: "Reconcile Two Payment Partners' Reports",
+    difficulty: "Hard",
+    category: "Subqueries & CTEs",
+    skills: ["SELECT", "CTE", "Subquery", "Correlated Subquery", "DISTINCT", "UNION ALL"],
+    xpReward: 90,
+    description: "The shop is paid through two payment partners, **A** and **B**. Each partner sends a settlement report — **partner_a_report** and **partner_b_report**, one row per transaction it settled. **expected_payments** lists every transaction we expect to be settled, for **both** partners, with the partner it was sent to in `partner`.\n\nFinance wants both reports reconciled. For each partner, list:\n\n- every transaction we expected **from that partner** that is not in that partner's report — `issue` = `'missing'`;\n- every transaction in that partner's report that we did not expect **from that partner** — `issue` = `'unexpected'`.\n\nShow **exactly these 3 columns**: `partner` (`'A'` or `'B'`), `txn_id` and `issue`. Order by `partner`, then `txn_id`.\n\nA transaction appears at most once per partner, even if a report lists it more than once. Expected means expected from the partner being reconciled: a transaction sent to A is not expected in B's report.",
+    tables: ["expected_payments", "partner_a_report", "partner_b_report"],
+    example: { input: "24 expected transactions (12 per partner), 11 rows in A's report, 13 in B's", output: "7 rows — 4 missing, 3 unexpected" },
+    hint: "Reconcile one partner at a time, then stack the results. For a partner, keep only the expected rows sent to that partner. Then look both ways: expected transactions with no matching row in the report, and report transactions with no matching expected one. Check whether a report can list the same transaction twice before you trust a row count.",
+    solution: "WITH a AS (SELECT DISTINCT txn_id FROM partner_a_report), b AS (SELECT DISTINCT txn_id FROM partner_b_report), exp_a AS (SELECT txn_id FROM expected_payments WHERE partner = 'A'), exp_b AS (SELECT txn_id FROM expected_payments WHERE partner = 'B') SELECT 'A' AS partner, txn_id, 'missing' AS issue FROM exp_a e WHERE NOT EXISTS (SELECT 1 FROM a WHERE a.txn_id = e.txn_id) UNION ALL SELECT 'A', txn_id, 'unexpected' FROM a WHERE NOT EXISTS (SELECT 1 FROM exp_a e WHERE e.txn_id = a.txn_id) UNION ALL SELECT 'B', txn_id, 'missing' FROM exp_b e WHERE NOT EXISTS (SELECT 1 FROM b WHERE b.txn_id = e.txn_id) UNION ALL SELECT 'B', txn_id, 'unexpected' FROM b WHERE NOT EXISTS (SELECT 1 FROM exp_b e WHERE e.txn_id = b.txn_id) ORDER BY partner, txn_id",
+    title_tr: "İki Ödeme Ortağının Raporlarının Mutabakatı",
+    description_tr: "Mağaza iki ödeme ortağı üzerinden ödeme alıyor: **A** ve **B**. Her ortağın gönderdiği bir tahsilat raporu var — **partner_a_report** ve **partner_b_report**; tahsil ettiği her işlem için bir satır. **expected_payments**, **iki** ortak için de tahsil edilmesini beklediğimiz her işlemi, gönderildiği ortağı `partner` kolonunda tutarak listeliyor.\n\nFinans iki raporun da mutabakatını istiyor. Her ortak için listele:\n\n- **o ortaktan** beklediğimiz ama o ortağın raporunda olmayan her işlem — `issue` = `'missing'`;\n- o ortağın raporunda olup **o ortaktan** beklemediğimiz her işlem — `issue` = `'unexpected'`.\n\n**Tam olarak şu 3 kolonu** göster: `partner` (`'A'` ya da `'B'`), `txn_id` ve `issue`. Önce `partner`, sonra `txn_id`'ye göre sırala.\n\nBir rapor bir işlemi birden fazla kez listelese bile, işlem her ortak için en fazla bir kez görünür. Beklenen, mutabakatı yapılan ortaktan beklenen demektir: A'ya gönderilmiş bir işlem B'nin raporunda beklenmez.",
+    hint_tr: "Her seferinde bir ortağın mutabakatını yap, sonra sonuçları alt alta ekle. Bir ortak için yalnızca o ortağa gönderilmiş beklenen satırları tut. Sonra iki yöne de bak: raporda eşleşen satırı olmayan beklenen işlemler ve eşleşen beklenen işlemi olmayan rapor işlemleri. Bir satır sayısına güvenmeden önce, bir raporun aynı işlemi iki kez listeleyip listeleyemeyeceğini kontrol et.",
+    example_tr: { input: "24 beklenen işlem (ortak başına 12), A'nın raporunda 11, B'ninkinde 13 satır", output: "7 satır — 4 missing, 3 unexpected" },
+    dataset: "ecommerce"
+  },
+  // 355-359 (C6, 2026-11-24): the second state-graded set. Ids skip 330-354
+  // (#236 holds 330, the Debug set 331-342, #268 holds 343-354). Same rules
+  // as 325-329: fresh copy per attempt, tag DDL/DML unmapped on the radar.
+  // Pinned by tests/state-grade-set2.test.js.
+  {
+    id: 355,
+    slug: "the-account-page-reads-every-order",
+    title: "The Account Page Reads Every Order",
+    difficulty: "Medium",
+    category: "DDL/DML",
+    skills: ["DDL/DML"],
+    xpReward: 45,
+    grade: "state",
+    allow: ["CREATE INDEX", "EXPLAIN"],
+    checkTable: "orders",
+    // Name-free: any index whose first two columns are customer_id then
+    // order_date and that is not partial passes, whatever it is called and
+    // whatever columns follow. Partial indexes are read from
+    // pragma_index_list, not the SQL text (Q1 on #298: WHERE on a new line or
+    // written WHERE( slipped past a LIKE). orders must still hold its 40 rows.
+    check: "SELECT (SELECT COUNT(*) FROM orders) AS orders_rows, EXISTS (SELECT 1 FROM sqlite_master m WHERE m.type = 'index' AND m.tbl_name = 'orders' AND (SELECT l.partial FROM pragma_index_list('orders') l WHERE l.name = m.name) = 0 AND (SELECT name FROM pragma_index_info(m.name) WHERE seqno = 0) = 'customer_id' AND (SELECT name FROM pragma_index_info(m.name) WHERE seqno = 1) = 'order_date') AS lookup_is_served",
+    description: "A customer's account page shows their orders from a chosen date onward. To build it, the app asks `orders` for the rows of **one `customer_id`** with an **`order_date` on or after a given day**. Today SQLite reads all of `orders` to answer that, and the table is about to grow a thousandfold.\n\n**Make that lookup go straight to the one customer's rows from the given day onward,** without changing, adding or removing a single row.\n\nGraded on the database after your statements: the grader checks that SQLite now has a structure it can use to find one customer's orders from a date onward, and that `orders` still holds its 40 rows. You can look at SQLite's plan for the lookup before and after.",
+    tables: ["orders"],
+    example: { input: "orders: 40 rows, nothing but the table itself", output: "orders: the same 40 rows, and the lookup is served without reading the whole table" },
+    hint: "SQLite can keep a sorted copy of some columns that points back to the rows. Which column does the lookup pin to a single value, and which one does it range over? The column held to one value has to come first.",
+    solution: "CREATE INDEX idx_orders_customer_date ON orders (customer_id, order_date);",
+    title_tr: "Hesap Sayfası Bütün Siparişleri Okuyor",
+    description_tr: "Bir müşterinin hesap sayfası, seçilen bir tarihten itibaren siparişlerini gösteriyor. Uygulama bunun için `orders`'tan **tek bir `customer_id`**'nin, **`order_date`'i belirli bir günde ya da sonrasında** olan satırlarını istiyor. Bugün SQLite buna cevap vermek için bütün `orders`'ı okuyor ve tablo bin katına çıkmak üzere.\n\n**Bu aramanın doğrudan o tek müşterinin o günden sonraki satırlarına gitmesini sağla;** tek bir satırı değiştirmeden, eklemeden ya da silmeden.\n\nİfadelerinden sonra veritabanına göre değerlendirilir: değerlendirici SQLite'ın artık bir müşterinin bir tarihten sonraki siparişlerini bulmak için kullanabileceği bir yapısı olduğunu ve `orders`'ın hâlâ 40 satır tuttuğunu kontrol eder. Aramanın planına öncesinde ve sonrasında bakabilirsin.",
+    hint_tr: "SQLite bazı kolonların sıralı bir kopyasını, satırlara işaret ederek tutabilir. Arama hangi kolonu tek bir değere sabitliyor, hangisinde aralık tarıyor? Tek değere sabitlenen kolon önce gelmeli.",
+    example_tr: { input: "orders: 40 satır, tablonun kendisinden başka bir şey yok", output: "orders: aynı 40 satır, ve arama bütün tabloyu okumadan cevaplanıyor" },
+    dataset: "ecommerce"
+  },
+  {
+    id: 356,
+    slug: "clear-out-the-sign-ups-that-never-bought",
+    title: "Clear Out the Sign-Ups That Never Bought",
+    difficulty: "Medium",
+    category: "DDL/DML",
+    skills: ["DDL/DML"],
+    xpReward: 45,
+    grade: "state",
+    // Two guest checkouts with no customer_id: a NOT IN over orders.customer_id
+    // then matches nothing and removes nobody. 14-16 carry a non-zero
+    // total_orders counter; only 14 has a row in orders (43, cancelled, which
+    // still counts as placed), so trusting the counter or the status fails.
+    setup: "INSERT INTO orders (order_id, customer_id, product, category, quantity, price, total, order_date, country, status) VALUES (41, NULL, 'Desk Lamp', 'Furniture', 1, 45.99, 45.99, '2024-02-25', 'USA', 'completed'), (42, NULL, 'Wall Clock', 'Furniture', 1, 34.99, 34.99, '2024-02-26', 'UK', 'completed'), (43, 14, 'Tablet Case', 'Electronics', 1, 29.99, 29.99, '2024-02-27', 'USA', 'cancelled');",
+    allow: ["DELETE"],
+    checkTable: "customers",
+    check: "SELECT customer_id, name FROM customers ORDER BY customer_id",
+    description: "Before a data-protection review, the team is removing accounts that never turned into a sale. **Remove every customer who has never placed an order** (any status counts as placed). Every customer with at least one order in `orders` stays.\n\n`orders` is the record of what was bought. It also holds guest checkouts, which belong to no customer.\n\nGraded on the `customers` table after your statements run, on a fresh copy each attempt.",
+    tables: ["customers", "orders"],
+    example: { input: "16 customers, 43 orders", output: "customers holds 11 rows: everyone with an order" },
+    hint: "For each customer, ask whether any order carries their id. Check what your filter does when the list of ids it compares against contains a row with no id at all. The `total_orders` column is a counter that was not kept up to date: go by `orders`.",
+    solution: "DELETE FROM customers\nWHERE NOT EXISTS (\n  SELECT 1 FROM orders o WHERE o.customer_id = customers.customer_id\n);",
+    title_tr: "Hiç Alışveriş Yapmamış Kayıtları Temizle",
+    description_tr: "Bir veri koruma incelemesi öncesinde ekip, hiç satışa dönüşmemiş hesapları kaldırıyor. **Hiç sipariş vermemiş her müşteriyi kaldır** (her durum verilmiş sayılır). `orders`'ta en az bir siparişi olan her müşteri kalır.\n\n`orders` ne satın alındığının kaydı. Hiçbir müşteriye ait olmayan misafir siparişlerini de tutuyor.\n\nİfadelerin çalıştıktan sonra `customers` tablosuna göre değerlendirilir; her deneme temiz bir kopyada.",
+    hint_tr: "Her müşteri için, kimliğini taşıyan bir sipariş olup olmadığını sor. Filtrenin, karşılaştırdığı id listesinde hiç id'si olmayan bir satır varken ne yaptığına bak. `total_orders` kolonu güncel tutulmamış bir sayaç: `orders`'a göre git.",
+    example_tr: { input: "16 müşteri, 43 sipariş", output: "customers 11 satır tutar: siparişi olan herkes" },
+    dataset: "ecommerce"
+  },
+  {
+    id: 357,
+    slug: "give-every-customer-a-lifetime-spend",
+    title: "Give Every Customer a Lifetime Spend",
+    difficulty: "Medium",
+    category: "DDL/DML",
+    skills: ["DDL/DML"],
+    xpReward: 50,
+    grade: "state",
+    allow: ["ALTER TABLE", "UPDATE"],
+    checkTable: "customers",
+    // ROUND keeps float summation order out of the grade; a NULL for a
+    // customer with no completed order still fails (it is not 0).
+    check: "SELECT customer_id, ROUND(lifetime_spend, 2) AS lifetime_spend FROM customers ORDER BY customer_id",
+    description: "The CRM wants each customer's spend on the customer row itself, so it stops adding up `orders` on every page view.\n\n**Give `customers` a new column, `lifetime_spend`, and fill it for every customer** with the sum of `total` over their **completed** orders. Pending and cancelled orders do not count. A customer with no completed order has spent **0**, not an unknown amount.\n\nGraded on `customers` after your statements run, on a fresh copy each attempt.",
+    tables: ["customers", "orders"],
+    example: { input: "16 customers, 40 orders, 37 of them completed", output: "customers: a lifetime_spend on all 16 rows; customer 1 has 2039.92, customer 11 has 0" },
+    hint: "Two steps: first the table gets the column, then every row gets its value. When a customer has no completed orders, adding up nothing gives no value at all, which is not 0; make the empty case come out as 0.",
+    solution: "ALTER TABLE customers ADD COLUMN lifetime_spend REAL;\nUPDATE customers SET lifetime_spend = (\n  SELECT COALESCE(SUM(o.total), 0) FROM orders o\n  WHERE o.customer_id = customers.customer_id AND o.status = 'completed'\n);",
+    title_tr: "Her Müşteriye Ömür Boyu Harcama Ver",
+    description_tr: "CRM, her sayfa görüntülemesinde `orders`'ı toplamayı bırakmak için her müşterinin harcamasını doğrudan müşteri satırında istiyor.\n\n**`customers`'a yeni bir kolon, `lifetime_spend`, ekle ve her müşteri için doldur:** **tamamlanmış** siparişlerinin `total` toplamı. Bekleyen ve iptal edilen siparişler sayılmaz. Tamamlanmış siparişi olmayan bir müşteri **0** harcamıştır, bilinmeyen bir tutar değil.\n\nİfadelerin çalıştıktan sonra `customers`'a göre değerlendirilir; her deneme temiz bir kopyada.",
+    hint_tr: "İki adım: önce tablo kolonu alır, sonra her satır değerini. Bir müşterinin tamamlanmış siparişi yoksa, hiçbir şeyi toplamak hiç değer vermez, bu da 0 değildir; boş durumun 0 çıkmasını sağla.",
+    example_tr: { input: "16 müşteri, 40 sipariş, 37'si tamamlanmış", output: "customers: 16 satırın hepsinde lifetime_spend; müşteri 1'de 2039.92, müşteri 11'de 0" },
+    dataset: "ecommerce"
+  },
+  {
+    id: 358,
+    slug: "close-the-books-on-february",
+    title: "Close the Books on February",
+    difficulty: "Medium",
+    category: "DDL/DML",
+    skills: ["DDL/DML"],
+    xpReward: 50,
+    grade: "state",
+    // 41 is a completed leap-day order (a filter that stops at 02-28 misses
+    // it); 42 is a completed March 1 order (no upper bound takes it). 22 and
+    // 29 (pending) and 37 (cancelled) are February rows that must stay.
+    setup: "CREATE TABLE orders_archive AS SELECT * FROM orders WHERE 0;\nINSERT INTO orders (order_id, customer_id, product, category, quantity, price, total, order_date, country, status) VALUES (41, 2, 'Desk Lamp', 'Furniture', 3, 20.0, 60.0, '2024-02-29', 'USA', 'completed'), (42, 4, 'Desk Lamp', 'Furniture', 5, 20.0, 100.0, '2024-03-01', 'Canada', 'completed');",
+    allow: ["INSERT", "DELETE", "BEGIN", "COMMIT", "END", "ROLLBACK", "SAVEPOINT", "RELEASE"],
+    checkTable: "orders_archive",
+    check: "SELECT 'orders' AS in_table, order_id, customer_id, total, order_date, status FROM orders UNION ALL SELECT 'orders_archive', order_id, customer_id, total, order_date, status FROM orders_archive ORDER BY in_table, order_id",
+    description: "February is closed. Finance keeps closed months out of the live `orders` table and in `orders_archive`, an empty table with the same columns as `orders`.\n\n**Move every completed February order** from `orders` into `orders_archive`, every column as it is, so that it is in the archive and no longer in `orders`. February orders that are pending or cancelled stay in `orders` for the team to chase. Nothing from January or March moves.\n\nThe move must never stop halfway: either both tables change or neither does.\n\nGraded on both tables after your statements run, on a fresh copy each attempt.",
+    tables: ["orders"],
+    example: { input: "orders: 42 rows (Jan 15 to Mar 1); orders_archive: empty", output: "orders_archive: February's completed orders; orders: January, March, and February's pending and cancelled" },
+    hint: "Two changes that must go together: copy the rows into the archive, then remove the same rows from orders. Use exactly the same condition for both. February has 29 days in 2024.",
+    solution: "BEGIN;\nINSERT INTO orders_archive\nSELECT * FROM orders\nWHERE status = 'completed' AND order_date >= '2024-02-01' AND order_date < '2024-03-01';\nDELETE FROM orders\nWHERE order_id IN (SELECT order_id FROM orders_archive);\nCOMMIT;",
+    title_tr: "Şubat'ın Defterini Kapat",
+    description_tr: "Şubat kapandı. Finans, kapanmış ayları canlı `orders` tablosunun dışında, `orders` ile aynı kolonlara sahip boş bir tablo olan `orders_archive`'da tutuyor.\n\n**Tamamlanmış her Şubat siparişini** `orders`'tan `orders_archive`'a, her kolonu olduğu gibi **taşı**: arşivde olsun ve artık `orders`'ta olmasın. Bekleyen ya da iptal edilmiş Şubat siparişleri, ekip takip etsin diye `orders`'ta kalır. Ocak ya da Mart'tan hiçbir şey taşınmaz.\n\nTaşıma asla yarıda kalmamalı: ya iki tablo da değişir ya da hiçbiri.\n\nİfadelerin çalıştıktan sonra iki tabloya göre değerlendirilir; her deneme temiz bir kopyada.",
+    hint_tr: "Birlikte olması gereken iki değişiklik: satırları arşive kopyala, sonra aynı satırları orders'tan kaldır. İkisinde de tam olarak aynı koşulu kullan. 2024'te Şubat 29 gün.",
+    example_tr: { input: "orders: 42 satır (15 Ocak - 1 Mart); orders_archive: boş", output: "orders_archive: Şubat'ın tamamlanmış siparişleri; orders: Ocak, Mart ve Şubat'ın bekleyen ve iptal edilenleri" },
+    dataset: "ecommerce"
+  },
+  {
+    id: 359,
+    slug: "apply-the-overnight-price-feed",
+    title: "Apply the Overnight Price Feed",
+    difficulty: "Hard",
+    category: "DDL/DML",
+    skills: ["DDL/DML"],
+    xpReward: 75,
+    grade: "state",
+    // Feed rows: 1 newer (applies); 2 older than the stored row (ignored);
+    // 3 and 7 a new product twice, the later stamp wins; 4 then 5 the same
+    // product twice, the later wins; 6 the same stamp as the stored row
+    // (ignored: only a newer row replaces).
+    setup: "CREATE TABLE product_prices (product TEXT PRIMARY KEY, price REAL NOT NULL, updated_at TEXT NOT NULL);\nINSERT INTO product_prices VALUES ('Laptop Pro', 1299.99, '2024-03-01 09:00'), ('Wireless Mouse', 49.99, '2024-03-01 09:00'), ('Office Chair', 349.99, '2024-03-03 14:00'), ('Standing Desk', 599.99, '2024-03-01 09:00'), ('Webcam HD', 89.99, '2024-03-02 12:00');\nCREATE TABLE price_feed (feed_id INTEGER PRIMARY KEY, product TEXT NOT NULL, price REAL NOT NULL, updated_at TEXT NOT NULL);\nINSERT INTO price_feed VALUES (1, 'Laptop Pro', 1249.99, '2024-03-02 08:00'), (2, 'Office Chair', 329.99, '2024-03-02 08:00'), (3, 'Desk Lamp', 44.99, '2024-03-02 08:00'), (4, 'Wireless Mouse', 44.99, '2024-03-02 08:00'), (5, 'Wireless Mouse', 47.99, '2024-03-02 18:00'), (6, 'Webcam HD', 99.99, '2024-03-02 12:00'), (7, 'Desk Lamp', 42.99, '2024-03-02 06:00');",
+    allow: ["INSERT", "UPDATE"],
+    checkTable: "product_prices",
+    check: "SELECT product, price, updated_at FROM product_prices ORDER BY product",
+    description: "The store keeps one current price per product in `product_prices` (`product`, `price`, `updated_at`; one row per product). Overnight, suppliers sent `price_feed` (`feed_id`, `product`, `price`, `updated_at`). Both tables are only here: look at them first.\n\n**Apply the feed to `product_prices`:**\n\n- a product that `product_prices` does not have yet gets a row;\n- a feed row replaces a stored price only if its `updated_at` is **later** than the stored one; a row stamped the same time or earlier changes nothing;\n- when the feed has several rows for one product, the latest one is the price that should end up stored (if it is newer than what is stored).\n\nThe store's `updated_at` must say when the stored price was set. Graded on `product_prices` after your statements run, on a fresh copy each attempt.",
+    tables: ["orders"],
+    example: { input: "product_prices: 5 products; price_feed: 7 rows for 6 products", output: "product_prices: 6 products: two prices changed, two feed rows ignored, one product added" },
+    hint: "Each feed row either lands as a new product or meets an existing row. When it meets one, the new price wins only if it is newer, so the overwrite needs a condition of its own, compared against the row already stored. If SQLite reports a syntax error near DO after a SELECT with no WHERE, give the SELECT a WHERE (WHERE true is enough).",
+    solution: "INSERT INTO product_prices (product, price, updated_at)\nSELECT product, price, updated_at FROM price_feed WHERE true\nON CONFLICT (product) DO UPDATE SET\n  price = excluded.price,\n  updated_at = excluded.updated_at\nWHERE excluded.updated_at > product_prices.updated_at;",
+    title_tr: "Gece Gelen Fiyat Akışını Uygula",
+    description_tr: "Mağaza her ürün için tek bir güncel fiyatı `product_prices`'ta tutuyor (`product`, `price`, `updated_at`; ürün başına bir satır). Gece tedarikçiler `price_feed`'i gönderdi (`feed_id`, `product`, `price`, `updated_at`). İki tablo da yalnızca burada var: önce onlara bak.\n\n**Akışı `product_prices`'a uygula:**\n\n- `product_prices`'ın henüz sahip olmadığı bir ürün bir satır alır;\n- bir akış satırı, kayıtlı fiyatın yerine yalnızca `updated_at`'i kayıtlıdan **daha geç** ise geçer; aynı zamanda ya da daha önce damgalanmış bir satır hiçbir şeyi değiştirmez;\n- akışta bir ürün için birden fazla satır olduğunda, sonunda kayıtlı kalması gereken fiyat en geç olanıdır (kayıtlıdan yeniyse).\n\nMağazanın `updated_at`'i kayıtlı fiyatın ne zaman konduğunu söylemeli. İfadelerin çalıştıktan sonra `product_prices`'a göre değerlendirilir; her deneme temiz bir kopyada.",
+    hint_tr: "Her akış satırı ya yeni bir ürün olarak girer ya da mevcut bir satırla karşılaşır. Karşılaştığında yeni fiyat yalnızca daha yeniyse kazanır; yani üzerine yazmanın, kayıtlı satırla karşılaştırılan kendi koşulu olmalı. SQLite WHERE'siz bir SELECT'ten sonra DO yakınında sözdizimi hatası verirse, SELECT'e bir WHERE ekle (WHERE true yeter).",
+    example_tr: { input: "product_prices: 5 ürün; price_feed: 6 ürün için 7 satır", output: "product_prices: 6 ürün: iki fiyat değişti, iki akış satırı yok sayıldı, bir ürün eklendi" },
+    dataset: "ecommerce"
   }
 ];
+

@@ -1,0 +1,63 @@
+# Lighthouse CI (2026-11-24, adopt-now #4 of the SEO/GEO tool shortlist;
+# founder: "ekle ve kullan bakalım ne çıkacak").
+#
+# Builds the site, serves public/ on :4321 and runs Lighthouse on six template
+# pages (home, /sql-exercises/, a topic page, a company page, a trap page, a
+# question page), mobile and desktop, three runs each, median.
+#
+# Gates (lighthouserc.json): SEO = 100, accessibility >= 90, CLS <= 0.1 fail;
+# performance only warns (runner timing is noisy). A page that fails today is
+# listed in scripts/lighthouse-baseline.txt — a shrink-only ratchet, so a new
+# regression still fails and a fixed page must leave the file.
+#
+# Reports stay private: upload target is `filesystem`, kept as a workflow
+# artifact. temporary-public-storage is never used (its reports are public).
+# tests/lighthouse-ci.test.js pins all of the above.
+name: Lighthouse
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'scripts/**'
+      - 'public/**'
+      - 'lighthouserc.json'
+      - '.github/workflows/lighthouse.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lighthouse-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lighthouse:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Lighthouse CI (mobile + desktop, gated by the baseline)
+        run: node scripts/lighthouse/run.mjs
+
+      - name: Keep the reports (private artifact)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-reports
+          path: lhci-reports/
+          retention-days: 14
+          if-no-files-found: warn

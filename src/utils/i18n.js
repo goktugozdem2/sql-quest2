@@ -420,6 +420,11 @@ const TRANSLATIONS = {
       // REVISE on #241, 2026-11-24): it says where a reply would go.
       thanksReply: 'Thanks — we read every message. Any reply goes to the email you left.',
       replyHint: 'Want a reply? Add your email above.',
+      // IR-2 (src/utils/feedback-context.js): on a challenge, one line above
+      // the textarea. Three pieces so "tutor" can be the button.
+      tutorLineBefore: 'This box goes to the founder. For help with this query, the ',
+      tutorLineLink: 'tutor',
+      tutorLineAfter: ' answers right now.',
     },
 
     // Review ask — the post-solve card. Copy rules, in the code because they
@@ -1559,6 +1564,9 @@ const TRANSLATIONS = {
       purchaseOtherPlaceholder: 'Birkaç kelimeyle (isteğe bağlı)',
       thanksReply: 'Teşekkürler — her mesajı okuyoruz. Bir cevap olursa bıraktığın e-postaya gelir.',
       replyHint: 'Cevap ister misin? E-postanı yukarıya ekle.',
+      tutorLineBefore: 'Bu kutu kurucuya gider. Bu sorguyla ilgili yardım için ',
+      tutorLineLink: 'tutor',
+      tutorLineAfter: ' hemen cevap verir.',
     },
 
     review: {

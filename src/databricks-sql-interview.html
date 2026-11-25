@@ -47,7 +47,7 @@
     "description": "20 hands-on SQL challenges for Databricks data roles: joins, CTEs, window functions, aggregation and pivots, each runnable in the browser with its solution shown once solved.",
     "provider": { "@type": "Organization", "name": "SQL Quest", "sameAs": "https://sqlquest.app/" },
     "url": "https://sqlquest.app/databricks-sql-interview/",
-    "courseMode": "online",
+    "hasCourseInstance": { "@type": "CourseInstance", "courseMode": "online" },
     "isAccessibleForFree": true,
     "inLanguage": "en",
     "educationalLevel": "Intermediate to Advanced",
@@ -109,9 +109,9 @@
     .hero{position:relative;min-height:70vh;display:flex;align-items:center;overflow:hidden}.hbg{position:absolute;inset:0;background:radial-gradient(ellipse 80% 50% at 50% -20%,rgba(255,54,33,.14) 0%,transparent 60%)}.ho1{position:absolute;top:15%;left:8%;width:450px;height:450px;border-radius:50%;background:radial-gradient(circle,rgba(255,54,33,.08),transparent 70%);animation:float 8s ease-in-out infinite;filter:blur(50px)}.ho2{position:absolute;bottom:10%;right:5%;width:350px;height:350px;border-radius:50%;background:radial-gradient(circle,rgba(124,58,237,.06),transparent 70%);animation:float 10s ease-in-out infinite 2s;filter:blur(50px)}.hgr{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.012) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.012) 1px,transparent 1px);background-size:60px 60px;-webkit-mask-image:radial-gradient(ellipse at center,black 30%,transparent 75%);mask-image:radial-gradient(ellipse at center,black 30%,transparent 75%)}
     .gt{background:linear-gradient(135deg,#FF3621,#c084fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-size:200% 200%;animation:gradient-shift 4s ease infinite}
     .hb{display:inline-flex;align-items:center;gap:8px;background:rgba(255,54,33,.14);border:1px solid rgba(255,54,33,.28);border-radius:100px;padding:6px 16px;margin-bottom:28px}.pd{width:8px;height:8px;border-radius:4px;background:#22c55e;animation:pulse-glow 2s infinite}.gd{width:6px;height:6px;border-radius:3px;background:#22c55e}
-    .qg{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}.qc{background:rgba(10,10,25,.5);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:20px;transition:border-color .3s}.qc:hover{border-color:rgba(255,54,33,.3)}.db{font-size:12px;font-weight:700;padding:3px 10px;border-radius:100px}.dh{background:rgba(239,68,68,.15);color:#ef4444}.dm{background:rgba(234,179,8,.15);color:#eab308}.de{background:rgba(34,197,94,.15);color:#22c55e}.dp{background:rgba(255,255,255,.08);color:#94a3b8}.tt{font-size:12px;padding:3px 10px;border-radius:100px;background:rgba(255,54,33,.1);color:#fca5a5;font-weight:600}
+    .qg{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));gap:16px}.qc{background:rgba(10,10,25,.5);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:20px;transition:border-color .3s}.qc:hover{border-color:rgba(255,54,33,.3)}.db{font-size:12px;font-weight:700;padding:3px 10px;border-radius:100px}.dh{background:rgba(239,68,68,.15);color:#ef4444}.dm{background:rgba(234,179,8,.15);color:#eab308}.de{background:rgba(34,197,94,.15);color:#22c55e}.dp{background:rgba(255,255,255,.08);color:#94a3b8}.tt{font-size:12px;padding:3px 10px;border-radius:100px;background:rgba(255,54,33,.1);color:#fca5a5;font-weight:600}
     .tg{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin:48px 0}.tc{background:rgba(10,10,25,.6);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:24px 20px;transition:border-color .3s,transform .3s;cursor:default}.tc:hover{transform:translateY(-3px)}
-    .fg{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}.fc{background:rgba(15,15,30,.6);border:1px solid rgba(255,255,255,.05);border-radius:16px;padding:28px 24px;transition:transform .3s,border-color .3s;cursor:default;position:relative;overflow:hidden}.fc:hover{transform:translateY(-3px)}
+    .fg{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:16px}.fc{background:rgba(15,15,30,.6);border:1px solid rgba(255,255,255,.05);border-radius:16px;padding:28px 24px;transition:transform .3s,border-color .3s;cursor:default;position:relative;overflow:hidden}.fc:hover{transform:translateY(-3px)}
     .fi{border-bottom:1px solid rgba(255,255,255,.06);padding:20px 0;cursor:pointer}.fh{display:flex;justify-content:space-between;align-items:center}.ftg{color:#FF3621;font-size:22px;transition:transform .3s;flex-shrink:0}.fa{max-height:0;overflow:hidden;transition:max-height .4s ease}.fi.o .fa{max-height:300px}.fi.o .ftg{transform:rotate(45deg)}
     .cs{position:relative;overflow:hidden}.cbg{position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 50% 100%,rgba(255,54,33,.14) 0%,transparent 60%)}
     .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center}.flk{margin-top:20px;display:flex;justify-content:center;gap:24px;flex-wrap:wrap}.flk a{color:#8b98ab;text-decoration:none;font-size:13px;transition:color .2s}.flk a:hover{color:#e2e8f0}
@@ -255,6 +255,9 @@
     </div>
     <p style="text-align:center;margin-top:28px;">
       <a href="/sql-interview-prep/" style="font-size:13px;color:#94a3b8;text-decoration:none;border-bottom:1px solid rgba(255,255,255,.12);padding-bottom:2px;">See all company question sets &rarr;</a>
+    </p>
+    <p style="text-align:center;margin-top:14px;">
+      <a href="/sql-interview-questions-data-analyst/" style="font-size:13px;color:#94a3b8;text-decoration:none;border-bottom:1px solid rgba(255,255,255,.12);padding-bottom:2px;">Interviewing for a data analyst role? SQL interview questions for data analysts, by level &rarr;</a>
     </p>
   </div>
 </section>

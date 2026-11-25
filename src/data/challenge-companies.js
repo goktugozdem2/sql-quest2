@@ -1580,6 +1580,11 @@ window.challengeCompanies = {
   "319": [
     "Amazon"
   ],
+  // 2026-11-23: a payment-partner reconciliation card written from one
+  // candidate's report of a Stripe round (docs/reads/companies/stripe.md).
+  "330": [
+    "Stripe"
+  ],
   "270": [
     "PayPal"
   ],
