@@ -538,6 +538,17 @@ window.FEATURE_FLAGS = {
     // this wall for anyone past ten solves. Ledger: "the free quota: ten
     // solves, then Pro".
     freeQuota: true,
+    // The free-quota holdout (2026-11-25, founder's written go in chat:
+    // "Full holdout (Recommended)"). A browser whose FIRST app open falls in
+    // the four-week enrolment window is split 50/50 by a murmur-finalised
+    // hash of its aid: `quota` keeps today's free tier, `holdout` reads
+    // `freeQuota` OFF — no wall, no "N of 10" counter, the pre-09-26 in-app
+    // wording. Returning browsers and accounts created before the window keep
+    // the quota. App only: the static pages keep today's wording. Off → nobody
+    // is enrolled and holdout browsers get the quota back (the kill switch).
+    // src/utils/free-quota-holdout.js; metric `free_quota_holdout`; ledger
+    // "the free-quota holdout"; read 2026-12-31.
+    freeQuotaHoldout: true,
 
     // ── The header's Pro button (M-04, 2026-11-22) ────────────────────────
     // "Try Pro free" (or "Pro" when no trial is offered) beside the identity
