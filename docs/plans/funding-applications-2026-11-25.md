@@ -35,6 +35,37 @@ Not applying, and why:
 - **EIC Accelerator, Eurostars (TÜBİTAK 1709):** deep tech / R&D consortium, EU or Türkiye entity. Not us.
 - **"EU €50B tech fund" (tweet, 2026-11-25):** not verified; the real programs are the 2025 AI plan and a €5B scale-up fund for Series B+. Not us.
 
+## If we open a company elsewhere (founder, 2026-11-25: Europe, Türkiye, Middle East or Asia)
+
+The rule: **the program picks the country, not the other way round.** Most
+programs ask for more than an entity: a resident founder, a local
+co-founder, or local shareholding. Opening a company alone unlocks little.
+
+| Country | Program | What it gives | What it asks | Fit | Next window |
+|---|---|---|---|---|---|
+| **Türkiye** | TÜBİTAK BiGG Yatırım (1812) | 1,350,000 TL for 3% (pre-seed, 2026 calls); BiGG+ Tohum up to 8M TL for ≤ 10% | A company in Türkiye; applied through an accredited implementing organisation | **High** | 2027-1 call (2026's ran Feb–Mar and Aug–Sep) |
+| **South Korea** | K-Startup Grand Challenge | Government accelerator for foreign founders | Non-Korean lead founder; no Korean entity needed to apply; be in Korea for the program | **Medium-high** | 2027 call expected around May–June (2026 closed 06-17) |
+| **UAE** | Hub71 (Abu Dhabi) | Up to AED 750,000 cash + in-kind; cash is now a SAFE (Hub71 takes equity) | One founder relocates to Abu Dhabi | Medium | Rolling cohorts; check hub71.com |
+| **Estonia** | e-Residency + OÜ | An EU company for €150 + €265; then local and EU grants on Estonian terms | Grants still need real activity there; EIC still wants deep tech | Low now | Any time |
+| Singapore | Startup SG Founder | Grant | Citizen or PR founder, local shareholding | **No** | — |
+| Saudi Arabia | Tech Founders (MCIT) | Support + incentives | A Saudi co-founder | **No** | — |
+| Saudi Arabia | Misk Launchpad | 10 weeks, no fee, mostly virtual | Willing to test and launch in Saudi | Low | Check misk.org.sa |
+
+Order: **BiGG first** (largest money for the smallest change, if the founder
+lives in Türkiye), **KSGC second** (no entity needed to apply), **Hub71**
+only if a move to Abu Dhabi is on the table. Estonia only when an EU grant
+we qualify for actually needs it.
+
+Sources (2026-11-25):
+- BiGG 1812: https://www.tubitak.gov.tr/tr/destekler/sanayi/ulusal-destek-programlari/1812-yatirim-tabanli-girisimcilik-destek-programi-bigg-yatirim ·
+  2026-2 call: https://tubitak.gov.tr/tr/duyuru/turkiyenin-ilk-yatirim-tabanli-girisimcilik-destek-programi-olan-bigg-yatirim-programinin-2026-2-cagrisi-acildi ·
+  BiGG+ Tohum: https://tubitak.gov.tr/tr/duyuru/bigg-tohum-yatirim-2026-yili-1-cagrisi-aciliyor
+- KSGC: https://ksgc.global/ · 2026 guidelines: https://ksgc.global/guidelines/KSGC_2026_Recruitment_Guidelines.pdf
+- Hub71: https://www.zawya.com/en/press-release/companies-news/hub71-revamps-incentive-program-and-offers-up-to-aed-750-000-cehh9u2y
+- Estonia: https://www.e-resident.gov.ee/blog/posts/funding-and-grants-for-startups/
+- Startup SG Founder: https://wise.com/sg/blog/startup-sg-founder-grant
+- Saudi Tech Founders: https://code.mcit.gov.sa/en/tech-founders-4th · Misk Launchpad: https://hub.misk.org.sa/programs/entrepreneurship/misk-launchpad/
+
 ## What the founder does, in order
 
 1. **Today:** open the Anthropic page; if the form is live, paste the answers
