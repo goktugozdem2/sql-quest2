@@ -1004,3 +1004,31 @@ competitor fact cited must come from that read (URL + date).
   hire/no-hire verdict (DE only). Claim nothing we lack.
 - **P9 · B4 / C2 — DataLemur unchanged: $15/mo, $60/yr, $300 lifetime.** Its
   bank count is stated three ways on one page; C2 quotes none of them.
+
+## Competitor watch — B6 run 4, 2026-11-25 (docs/reads/competitors-2026-11-25.md)
+
+New items only; earlier items keep their numbers (progress in §7 of the read:
+only the Monzo format section moved since run 3; P1 and P3 are still the
+cheapest open items). Every competitor fact cited must come from that read.
+
+- **Q1 · C6 / C5 / C1 — the Debug hub against an empty SERP.** "fix the sql
+  query interview" and "sql debugging practice" are held by docs, blogs and
+  single question pages (PracHub, Dataford). Interview framing in the hub's
+  title or H2; link it from Monzo and Wise (closes P3); C1 requests indexing.
+- **Q2 · C6 — a DML practice hub.** "ddl dml practice exercises" is PDFs and
+  Scribd; our state-graded DML items (325–329) have question pages but no
+  hub. Generated like the Debug hub, with sitemap and links in one commit.
+- **Q3 · C5 / C2 — StrataScratch sells "your interview loop" but pools
+  fintech** into one Stripe/PayPal/Block DA loop, with no Capital One,
+  Revolut, Wise, Monzo or Chime loop. Show the round-by-round shape above the
+  fold on our five consumer-fintech pages; C2 adds one dated comparison line.
+- **Q4 · B4 — Black Friday is live:** StrataScratch 40% off Yearly and
+  Lifetime, LeetCode $30 off annual. Founder-held; no agent creates a code or
+  changes a price.
+- **Q5 · B4 / C2 — AI is credit-metered at StrataScratch and LeetCode.**
+  Context beside our tutor caps; never claim "unlimited" or "no credits".
+- **Q6 · C7 (after a C5 fetch) — practise a query without running it**
+  (Wise: short timed sets in a Google Doc). Copy in our own words, sourced.
+- **Q7 · C2 guard — timed company mocks are no longer rare** (StrataScratch
+  AI mocks per loop, LeetCode Interview Simulations, IQ AI mock). Do not
+  claim otherwise.
