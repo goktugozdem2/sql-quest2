@@ -1354,6 +1354,53 @@ days before the read), the share with another `app_opened` more than one hour
 and at most seven days after it. Crawler filter from `first_solve_10m`.
 Baseline, first opens 2026-08-17 → 09-16: **16.2%** (n = 1,177). Scorecard §4.
 
+**2026-11-25 (B1, `docs/reads/second-session-2026-11-25.md`): the drop to
+6.9–7.9% is real; `app_opened` is not broken.** The share of return days
+that carry an `app_opened` is 82–89% in every week from 08-10 to 11-16, flat
+across #49 (10-08); what halved is the number of return days. Day-0 solvers'
+7-day return stepped from 40–53% to 18–33% with the first opens of
+09-25/26 (the six-flag batch of 09-26), inside the same doors.
+
+- **Restated baseline:** under today's crawler filter (`metadata.bot`, the
+  three viewports `tablet:800x600`, `desktop:1280x1200`, `desktop:1919x992`,
+  a person with any such row dropped whole) the 08-17 → 09-16 cohort reads
+  **18.7%** (n = 1,067). Compare new reads against that, not 16.2%.
+- **Known bias, constant over time:** `app_opened` fires once per browser
+  per UTC day, so a same-day return never counts, and a tab left open across
+  midnight returns without one (likely most of the 11–18% of return days
+  that carry none). Read the cross-check
+  below beside it; do not swap definitions mid-series.
+
+Cross-check — any app event (not `reason='landing'`) on a later UTC day
+within seven days. This query as written, run 2026-11-25: 08-17 → 09-16
+**21.7%** (n 1,061); 10-18 → 10-31 **9.1%** (n 563); 11-01 → 11-14 **9.2%**
+(n 401) — the read's 21.6 / 8.9 / 8.7 differ only by the bot-row window:
+
+```sql
+with e2 as (
+  select created_at, event, reason,
+         coalesce(((metadata #>> '{}')::jsonb)->>'aid', username) pid,
+         (((metadata #>> '{}')::jsonb)->>'bot' is not null
+          or coalesce(((metadata #>> '{}')::jsonb)->>'viewport','')
+             in ('tablet:800x600','desktop:1280x1200','desktop:1919x992')) isbot
+  from pro_events
+  where created_at >= :from - interval '30 days' and created_at < :to + interval '7 days'
+    and coalesce(username,'') !~* '^(test|qa_|fabletest|linktest|internalroutine|sqlquest$|elena$)'
+    and coalesce(((metadata #>> '{}')::jsonb)->>'aid','') <> '363dfb2bc1314757acc88c8438c4d2ea'
+),
+p as (select pid, bool_or(isbot) b, min(created_at) filter (where event='app_opened') f
+      from e2 group by pid),
+c as (select pid, f from p where not b and f >= :from and f < :to)
+select count(*) people,
+  round(100.0*avg((exists (select 1 from e2 x where x.pid=c.pid
+     and x.reason is distinct from 'landing'
+     and x.created_at::date > c.f::date and x.created_at <= c.f + interval '7 days'))::int),1) pct_returned
+from c;
+```
+
+(The 30 days loaded before `:from` keep a person who opened earlier out of
+the cohort; the 11-25 read loaded from 2026-08-01.)
+
 ## `visitor_to_payer`
 
 People (by `aid`) with a `landing_view` or an `app_opened` in the 30-day
