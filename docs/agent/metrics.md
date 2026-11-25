@@ -1168,6 +1168,20 @@ by hand (the 10-04 → 10-07 waves: docs/reads/p1-guardrail-bing-2026-10-07.md).
   week to 11-22. Until it is stamped, drop UTC landers with no
   `app_opened`. The durable fingerprint is the agent/window mismatch, not
   the time zone (see the next trap).
+- **The topic-page crawler changed door (C8, 2026-11-24).** On 11-24 its
+  first `app_opened` moved from `challenges-…` (81 on 11-22, 78 on 11-23,
+  3 on 11-24) to company pages and other page doors (65 by 16:47 UTC: 47
+  `<company>-sql-interview`, the rest comparison, blog and pattern doors),
+  same shape: no `landingSrc`, no `landing_view`, `langs = 1`, one window
+  size and one time zone per person, 0 runs. Fingerprint it on the shape,
+  not the door (`app1lang`): since 2026-10-01, 873 people match and 3 ran
+  a query (0.3%, under the brief's one-in-fifty line). The
+  `langs = 2` no-landing cluster is the same shape one language wider.
+- **`desktop:1024x1024` crawler (C8, 2026-11-24, from 11-22).** Window
+  size `desktop:1024x1024`, mostly `tz = 'Etc/Unknown'`, one
+  `landing_engaged` per company/topic page, often with no `landing_view`
+  (so it lands in "no source, no landing" buckets). 21 people on 11-22,
+  7 on 11-23, none on 11-24; never ran a query. Drop the viewport.
 
 **Trap: the crawlers change time zone and borrow a landing source
 (2026-10-18, widened 2026-11-12).** Three window sizes have never, over all
@@ -3760,6 +3774,53 @@ solves → `signup_completed`. Split by `company` (null = no company). The
 company score is a weighting of our tagged set, not a measurement of the
 company's interview; never quote it as one.
 
+**Count people by `metadata->>'aid'`, never by `username` (2026-11-25).**
+Every page event is written by `src/track.js` with `username = 'guest'`
+unless the browser holds a signed-in `sqlquest_user`, and `pro_events` has
+no `aid` column — the aid lives only in `metadata`. A read that counts
+`coalesce(aid, username)` against the column (or `count(distinct username)`)
+collapses every anonymous visitor into the single person `guest`: that is how
+the 2026-11-24 read reported "readiness_started 4 people (48 events)" when the
+same 90 days held **42 distinct aids** (the four "people" were `guest` plus
+three signed-in usernames). The page → app join is NOT broken: every
+`readiness_*` row carries `metadata.aid`, and `readiness_arrived` (written by
+the app, `reason='activation_funnel'`) carries the same aid as the page rows
+before it — checked on all six arrivals 2026-09-13 → 11-22.
+
+**Company key.** Until the Health Check release `readiness_started.company` is
+the page SLUG (`capital-one`) and `readiness_completed` / `readiness_plan_clicked`
+`.company` is the display NAME (`Capital One`) — never join or group the two
+steps on `company` without mapping. From that release every step also carries
+`companySlug` (the slug, null without a company), `role`
+(`data-analyst` | `analytics-engineer` | `data-engineer` | `data-scientist` | null)
+and `src` (the `?src=` the visitor arrived with, `[a-z0-9-]`, ≤ 60 chars; the
+company pages send `company-<slug>`, a shared result `share`), `goal`
+(`interview` | `first-job` | `move-up` | `ai-sql` | `learn` — asked first, so
+every starter has one) and `daysOut` (whole days to the interview date, or
+weeks × 7 for the other goals; null when not given — never the date).
+`readiness_completed` adds `archetype` (true only for a signed archetype
+company, the only case with a company-weighted number), `unit`
+(`week` | `day`) and `steps` (the roadmap's length). Split by `companySlug`
+and `goal` from then on; never compare completion across the release
+(the goal questions now sit before item 1).
+`readiness_shared {companySlug, role, method}` is the share action on the
+result (method `share` | `copy`); no scores, no answers.
+
+**The company door (from the Health Check release).** Rate = people who
+`readiness_started` with `src` starting `company-` ÷ people whose
+`landing_view` was on a `*-sql-interview` page in the same window, × 100.
+Before `src` existed, approximate the numerator as starters whose aid also has
+a company-page `landing_view` in the window (the baseline below uses that).
+
+Baseline, 90 days to 2026-11-24 (people by aid; bot fingerprints, `tz` UTC /
+`Etc/Unknown`, the listed bot viewports and internal usernames excluded; the
+founder's 2026-09-13 walk aid excluded):
+- test-page landing people 212 → started 41 (19%) → completed 10 (24% of
+  starters) → plan clicked 5 (50% of completers) → arrived in the app 5
+  (100% of clickers);
+- company-page landing people 1,705 → of them started the test 12
+  (**0.70 per 100**), completed 4.
+
 ## `seo_page_funnel`
 
 The product half of the weekly SEO dashboard: `scripts/seo-dashboard.sql`.
@@ -3932,6 +3993,85 @@ left join second sec using (pid)
 group by a.arm;
 ```
 
+## `interview_date_capture`
+
+The interview date asked right after the company ask is answered with a
+company (2026-11-24, ledger "the interview date, asked after a company is
+named"). Defined BEFORE the code ships (fleet README rule 6b); the code is
+a separate PR behind `intakeAfterFirstSolve`, so this reads nothing until
+that flag flips. `:flip` = the deploy of the flip commit.
+
+Population: people by `coalesce(aid, username)` with a
+`company_ask_assigned` row since `:flip` with `arm = 'ask'`. Leave out
+internal accounts, `metadata.bot`, the crawler window sizes and the
+founder's walk guests listed in docs/agent/fleet/README.md rule 2, and the
+localhost preview aids of `company_ask_split`.
+
+- **Denominator — company answerers:** people in that population with an
+  `intake_answered` row, `step = 'company'`, `surface = 'post_solve'`,
+  `value <> 'undecided'`. "Not sure yet" and Skip are not in it: the date
+  is only ever asked after a company.
+- **Numerator — dates captured:** denominator people with an
+  `interview_date_captured` row, `source = 'company_ask'`, carrying a
+  `daysOut` (an integer 0–365). The event never carries the date itself.
+- **Rate** = numerator / denominator.
+- **Also report (not the rate):**
+  - shown: `intake_shown`, `step = 'interview_date'`,
+    `surface = 'post_solve'` (should equal the denominator minus people who
+    already had a date on record — a gap is the wiring, check it first);
+  - "No date yet": `interview_date_captured` with `none = true`;
+  - skipped: `intake_skipped`, `step = 'interview_date'`;
+  - ignored = shown − captured (either kind) − skipped;
+  - `daysOut` buckets: 0–7, 8–30, 31–90, 91–365 (the 45-day line is the
+    `deadlineOffer` copy's);
+  - the payoff after the date: `company_ask_payoff_clicked` among
+    denominator people, by whether they gave a date.
+- **Not this metric:** dates written by the countdown card or the intake
+  (`prep_target_set`, `intake_answered step 'date'`). This door only.
+
+```sql
+with ev as (
+  select coalesce(((metadata #>> '{}')::jsonb)->>'aid', username) pid, event, created_at, (metadata #>> '{}')::jsonb m
+  from pro_events
+  where username !~* '^(test|qa_|fabletest|linktest|internalroutine|sqlquest$|elena$)'
+    and created_at >= :flip
+),
+arm as (select distinct on (pid) pid from ev
+        where event = 'company_ask_assigned' and m->>'arm' = 'ask'
+          and coalesce(m->>'bot', 'false') <> 'true'
+          and pid not like '0da741eb852fc963%' and pid not like 'f2777777777777777%'
+        order by pid, created_at),
+named as (select distinct e.pid from ev e join arm using (pid)
+          where e.event = 'intake_answered' and e.m->>'step' = 'company'
+            and e.m->>'surface' = 'post_solve' and e.m->>'value' <> 'undecided'),
+shown as (select distinct pid from ev where event = 'intake_shown'
+          and m->>'step' = 'interview_date' and m->>'surface' = 'post_solve'),
+dated as (select distinct on (pid) pid, (m->>'daysOut')::int days_out from ev
+          where event = 'interview_date_captured' and m->>'source' = 'company_ask'
+            and m->>'daysOut' is not null order by pid, created_at),
+nodate as (select distinct pid from ev where event = 'interview_date_captured'
+           and m->>'source' = 'company_ask' and m->>'none' = 'true'),
+skipped as (select distinct pid from ev where event = 'intake_skipped' and m->>'step' = 'interview_date')
+select
+  count(*) named_company,
+  count(s.pid) shown,
+  count(d.pid) dated,
+  round(100.0 * count(d.pid) / nullif(count(*), 0), 1) pct_dated,
+  count(nd.pid) no_date_yet,
+  count(sk.pid) skipped,
+  count(*) filter (where d.days_out between 0 and 7) d_0_7,
+  count(*) filter (where d.days_out between 8 and 30) d_8_30,
+  count(*) filter (where d.days_out between 31 and 90) d_31_90,
+  count(*) filter (where d.days_out between 91 and 365) d_91_365
+from named n
+left join shown s using (pid)
+left join dated d using (pid)
+left join nodate nd using (pid)
+left join skipped sk using (pid);
+```
+Apply the README's hand-dropped crawler rules to `arm` before reading;
+they are not all stamped yet.
+
 ## `company_direct_split`
 
 A company arrival opens question 1 (B5, 2026-11-22, ledger "a company arrival
@@ -4087,6 +4227,42 @@ where query is not null and page = 'https://sqlquest.app/<slug>/'
 - Position is impression-weighted (the query above), never a plain average of
   daily positions.
 
+## `gsc_ai_queries`
+
+Google clicks, impressions and impression-weighted position for every search
+query that contains the word "ai", site-wide. Registered 2026-11-25 (C2/G1),
+before the change it judges, for the ledger claim on /sql-for-the-ai-era/ and
+/blog/validate-ai-generated-sql/. It is the query half of that claim; the page
+half is `gsc_page_clicks` on the two URLs.
+
+```sql
+-- the [date, query] slice only (page IS NULL); "ai" as a whole word
+select sum(clicks) clicks, sum(impressions) impressions,
+       round(sum(position * impressions) / nullif(sum(impressions), 0), 1) position,
+       count(distinct query) queries
+from gsc_daily
+where query is not null and page is null
+  and query ~* '\mai\M'
+  and date between :start and :start + 27;
+-- which pages carry them: the [date, query, page] slice, for context only
+select page, sum(clicks), sum(impressions) from gsc_daily
+where query is not null and page is not null and query ~* '\mai\M'
+  and date between :start and :start + 27 group by 1 order by 3 desc;
+```
+
+- **Whole word.** `\mai\M` matches "ai", "ai-generated" and "ai engineer", and
+  not "mail", "chain", "maintain" or "detail". Never `ilike '%ai%'`.
+- **Never add the slices together** (as in `gsc_page_clicks`). The query
+  slice is the total; the query×page slice omits anonymised queries.
+- **Chat-turn queries count.** Long, conversational queries ("how to govern
+  ai-generated sql before it reaches production") are assistants grounding on
+  a page (G1). They are in the total on purpose: being the page an assistant
+  reads is the point, even when Google shows no click.
+- Baseline, 28 days 2026-10-25 → 2026-11-21 (read 2026-11-25): 247
+  impressions, 1 click, position 3.4.
+- Search Console lags about two days: end the window at least three days
+  before the read.
+
 ## `topic_funnel`
 
 C6's metric (2026-11-22). Per SQL topic: of the people who arrived through
@@ -4183,6 +4359,47 @@ from feedback where created_at >= :from and created_at < :to group by 1, 2;
   is the one the daily read assigns.
 - Rows written while the 20260907 quote-consent migration is unapplied still
   land (PostgREST drops unknown keys); `context` is jsonb and was always there.
+## `feedback_context`
+
+The 💬 widget's challenge context and its tutor redirect (E2, IR-2,
+2026-11-23; `src/utils/feedback-context.js`, flag `feedbackContext`).
+Registered with the ledger claim "a feedback row says which challenge".
+
+- **context share** — `feedback_submitted` rows with `kind='open'` and
+  `screen='quests'` that carry `challengeId`, over all such rows. The event
+  carries the id and `diagnosisKind`, never the query; the query is in
+  `public.feedback.context->>'lastQuery'` (anon cannot read it back).
+- **redirect rate** — people with `feedback_tutor_redirect` ÷ people with
+  `feedback_opened {screen:'quests'}`. `helpWasOpen` says whether Help was
+  already open (the link then only scrolls).
+
+```sql
+-- the window [:from, :to)
+with ev as (
+  select coalesce(aid, username) who, event, (metadata #>> '{}')::jsonb m
+  from pro_events
+  where event in ('feedback_opened', 'feedback_submitted', 'feedback_tutor_redirect')
+    and created_at >= :from and created_at < :to
+)
+select
+  count(*) filter (where event = 'feedback_submitted' and m->>'kind' = 'open' and m->>'screen' = 'quests') sent_on_quests,
+  count(*) filter (where event = 'feedback_submitted' and m->>'kind' = 'open' and m->>'screen' = 'quests' and m->>'challengeId' is not null) with_challenge,
+  count(distinct who) filter (where event = 'feedback_opened' and m->>'screen' = 'quests') opened_on_quests,
+  count(distinct who) filter (where event = 'feedback_tutor_redirect') took_tutor
+from ev;
+
+select created_at, context->>'challengeId' cid, context->>'diagnosisKind' dx,
+       context->>'queryTruncated' cut, message
+from feedback where created_at >= :from and created_at < :to
+  and coalesce(context->>'kind', 'open') = 'open' order by created_at desc;
+```
+
+- Apply the fleet's bot and internal-account filters (fleet README, Data).
+- `screen='quests'` also covers the other Practice sub-tabs (exercises,
+  speed run), where no challenge id is expected; a missing id there is not a
+  failure.
+- n is tiny: read the verbatims, never a rate on fewer than 10 rows.
+
 - **Kind `purchase_reason`** (registered 2026-11-24, before flag
   `purchaseReasonAsk` ships in #241; rule 6b). Shown → answered is the same
   per-person count as the other kinds, `kind = 'purchase_reason'`; the
@@ -4479,3 +4696,123 @@ impressions in the same 28 days against its prior 28 days.
   impressions; or validate-ai-generated-sql down more than 30% on its prior
   28 days.
 - Anything between: INCONCLUSIVE; read again at 56 days.
+
+## `web_vitals`
+
+Real-user page speed, measured with Google's `web-vitals` library (founder's
+go 2026-11-24, "önerdiklerini kur ve kullan"). Registered 2026-11-24, before
+the code (rule 6b; the code is the next PR), for the ledger claim "real-user
+speed is measured". The question it exists to answer: do slow loads explain
+the mobile funnel gap — landed → first solve, desktop 20.1% vs mobile 3.2%
+(AN read 2026-11-24)? Read from the deploy of the code PR, never across it.
+Baseline: nothing (the app's own `lcpMs` on `app_opened`, metric `app_boot`,
+is /app only, one row per browser per day, and has no INP or CLS).
+
+**The event.** `web_vital`, one row per metric per page load, metadata:
+
+| key | value |
+|---|---|
+| `name` | `LCP` \| `INP` \| `CLS` \| `FCP` \| `TTFB` |
+| `value` | ms, rounded to an integer; CLS unitless, rounded to 4 decimals |
+| `rating` | `good` \| `needs-improvement` \| `poor` — the library's own thresholds (LCP 2.5 s / 4 s, INP 200 / 500 ms, CLS 0.1 / 0.25, FCP 1.8 / 3 s, TTFB 0.8 / 1.8 s) |
+| `page` | the same slug `landing_view` carries (`home`, `sql-exercises`, `questions/<slug>`…); `app` for /app |
+| `device` | `mobile` when `innerWidth` < 768 at send time, else `desktop` — the same cut as the `mobile:` band of `open_to_first_run`. Tablets fold into `desktop`; the row's `viewport` stamp splits them when it matters |
+| `navType` | the library's `navigationType`: `navigate` \| `reload` \| `back-forward` \| `back-forward-cache` \| `prerender` \| `restore` |
+| `lib` | the library version (`6.2.3` at birth) — a version change is a series break |
+
+Plus what each door already stamps: on static pages (`reason = 'landing'`,
+`src/track.js`) `aid`, `page`, `variant`, `utm`, `landingSrc`, `tz`,
+`viewport`, `ctaArm`; on /app (`reason = 'activation_funnel'`,
+`trackActivationEvent`) `aid`, `arrivalSrc`, `landingSrc`, `intent`, `tz`,
+`viewport`, `solvedCount`, `isGuest`.
+
+**Never on the row:** the referrer (`ref`, which can carry another site's
+query string — dropped for this event only), the user agent, any URL or
+query string, the library's `entries` (DOM nodes) or attribution data (the
+attribution-free build is the one loaded, so there is no CSS selector to
+leak). Nothing typed by the person.
+
+**Sample: every page load, no sampling.** All pages that carry `track.js`
+(every static page: landing pages, blog, `/questions/`, company pages) and
+the first load of /app (one document per SPA session; later in-app
+navigation is not a page load and writes nothing). At this traffic (~50 real
+new people a day) sampling would leave no mobile cell readable. The library
+is loaded lazily — after `load`, at the first idle moment — from the site's
+own origin (`/web-vitals.js`, exact-pinned), so it never competes with the
+page it measures.
+
+**One row per metric per page load.** The first report the library makes
+for each metric wins; later reports of the same metric (CLS and INP grow
+until the page is hidden; a back-forward-cache restore starts new ones) are
+dropped. LCP and CLS therefore report at the first input or the first time
+the page is hidden; INP only exists when there was an interaction; TTFB and
+FCP report as soon as they are known. A page closed before the idle-time
+load writes nothing — that loss is what the ledger claim's coverage check
+measures.
+
+**Not sent at all** (the library is not even loaded): a user agent that
+`track.js`'s `isBot()` / the app's `hardBotBrowser()` catches, `webdriver`,
+localhost, a soft crawler fingerprint (`SOFT_FINGERPRINTS` in `track.js`,
+`botSignals` in the app — stamped rows for other events, but here nothing),
+and an internal account (`isInternalAccount` on the stored username, the
+`src/utils/leagues.js` rule). The read still applies every filter of
+`docs/agent/fleet/README.md` step 2, because the crawlers named there by
+hand (UTC landing crawler, `desktop:1024x1024`, `app1lang`) are not stamped.
+
+**How to read it.** Metadata is double-encoded: `m = (metadata #>> '{}')::jsonb`.
+
+1. **p75 by device and page**, per metric, over the window:
+
+   ```sql
+   WITH v AS (
+     SELECT (metadata #>> '{}')::jsonb AS m, created_at
+     FROM pro_events
+     WHERE event = 'web_vital' AND created_at >= :start
+   )
+   SELECT m->>'name' AS metric, m->>'device' AS device, m->>'page' AS page,
+          count(*) AS n,
+          percentile_cont(0.75) WITHIN GROUP (ORDER BY (m->>'value')::numeric) AS p75,
+          avg(((m->>'rating') = 'good')::int) AS good_share
+   FROM v
+   WHERE m->>'bot' IS NULL
+   GROUP BY 1, 2, 3
+   HAVING count(*) >= 30
+   ORDER BY 1, 2, n DESC;
+   ```
+
+   Report `app` plus the ten pages with the most `landing_view` rows. A cell
+   under n = 30 is reported as its n only, never as a p75.
+2. **Joined to the funnel by `aid`: open → first run by LCP band.** A
+   person's band is the rating of their first `web_vital` LCP row on `app`
+   (the page they practise on): good ≤ 2.5 s, needs-improvement ≤ 4 s,
+   poor > 4 s. Within each device × band: people with a first-contact
+   `challenge_opened`, and the share of them with a `challenge_first_run`
+   for the same challenge — exactly `open_to_first_run`'s mobile-band
+   definition, with the band as one more split. Device is the
+   `web_vital` row's own `device`.
+3. **Coverage** (the ledger check): of `landing_view` rows in the window
+   (bot and crawler filters applied), the share whose `aid` has a
+   `web_vital` LCP row with the same `page` within 30 minutes after it.
+   Beside it, the same share over `landing_engaged` rows — renderers that
+   run the script but never paint for a person sit in the first
+   denominator, not the second.
+
+**Decision rule, written before the data.**
+- Speed is a candidate cause of the mobile gap if the mobile LCP p75 on
+  `app` is > 4.0 s (poor) **and** mobile open → first run in the `good`
+  band is at least twice the `poor` band's, n ≥ 30 people per band → open
+  a speed task for the mobile /app shell (what the `app_boot` split says it
+  waits on).
+- Speed does not explain the gap if the mobile LCP p75 on `app` is ≤ 2.5 s,
+  or the bands' rates are within each other's noise → say so in the read,
+  and keep the mobile plan on layout (`mobileRunBar`, `mobileOneLayer`).
+- Anything between: report the numbers and n; read again at 28 days.
+
+Traps:
+- `created_at` is client time (shared traps above); a `web_vital` row can
+  land after the session's other rows, because LCP and CLS wait for a page
+  hide. Join by `aid`, never by row order.
+- INP can under-read: interactions before the library loads are seen only
+  if they took ≥ 104 ms (the browser's buffered event-timing floor).
+- The landing pages and /app are measured by the same library but from
+  different documents; never blend `app` into a "site" p75.

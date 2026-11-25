@@ -158,6 +158,11 @@ G1 builds none of these. Each one names the lane that owns it. Baseline:
   - The only list that names us is thequerylab.com, so it needs no note.
 - **C3 — alternativeto.net lists DataLemur's alternatives (cited for #4) and does not list SQL Quest.** It is a user-submitted directory. C3 drafts the listing text; the founder submits it.
 
+**G1, 2026-11-25 (docs/reads/geo-weekly-2026-11-25.md).** Perplexity was not read: a sign-in wall on the first query. The search proxy had 1 of 15 in its top 10 (#8), on the wrong host. Google had 5 of 15, flat. `ai:*` landings were 100 people in 30 d (99 last week).
+- **C1 — the 301 `sql-quest2.vercel.app` → `sqlquest.app` now costs a panel citation.** For #8 (AI tutor that explains mistakes), the search proxy cites `sql-quest2.vercel.app/llms.txt` and names SQL Quest from it. It is the week's only proxy hit, and it credits the duplicate host. `llms.txt` is plain text with no canonical, so only the host redirect fixes it. Same item as R1-3 / P4 below: check the Supabase Auth Site URL first.
+- **C2 — the #8 AI-tutor page, re-raised.** It is still unbuilt. It is the one panel intent where a search summary names us unprompted, but the citation has no sqlquest.app page to land on. The proxy still shows no competitor page built for this intent (DataCamp blog, research prototypes).
+- **C3 — two more #1 lists that omit us** (fetched 2026-11-25): analyticsinsight.net `/photo/best-sql-interview-preparation-platforms` and positioniseverything.net `/10-best-platforms-to-practice-sql-choose-by-your-goal/`. Drafts only, behind the founder.
+
 ## Company research — R1, 2026-11-22 (docs/reads/companies/)
 
 R1 builds none of these; each names the lane that owns it. Dossiers:
@@ -435,6 +440,20 @@ Reads: `docs/reads/seo-sentinel-2026-11.md` (F4) and `docs/reads/traffic-2026-11
 - **B2 / A0 — #246 (`topic1lang`) is due.** That crawler was 98 people last
   week and 69 on 11-23 by 15:52 UTC. Every read drops it by hand until
   #246 merges.
+
+## SEO sentinel S1, 2026-11-24
+
+Read: `docs/reads/seo-sentinel-2026-11.md` (F5, indexing step).
+
+- **C1 / deploy owner — AMBER (F5).** The deployed site lacks the
+  `/sql-debugging-practice/` link on `/sql-exercises/`, `/sql-for-the-ai-era/`,
+  `/tiktok-sql-interview/` and `/shopify-sql-interview/`; main's committed
+  `public/` has it on all four (`scripts/build-debug-pages.mjs`
+  `linkTargets()`). Since #276 the deploy builds from source, so trace why
+  that build differs on these pages, and add a served-copy check for every
+  `linkTargets()` page. S1 re-checks on 11-25.
+- **C1 — RED, day 3 (F1), unchanged.** No new Bing data today (last fetch
+  11-23 18:40 UTC). The 11-26 `blocked_by_robots` check stands.
 
 ## Funnel findings — B1, 2026-11-22 (docs/reads/funnel-2026-11-22.md)
 
@@ -956,3 +975,65 @@ the read. Every competitor fact cited must come from that read (URL + date).
 - **N8 · C5 — one line on the Capital One guide separating the DA
   assessment from the general coding assessment** quantvault.org describes.
   Fold into N1.
+
+## Competitor watch — B6 run 3, 2026-11-24 (docs/reads/competitors-2026-11-24.md)
+
+New items only; run 1 and run 2 items keep their numbers (progress in §7 of
+the read: #220 and #215 shipped; R1-2, R1-3, R1-5 still open). Every
+competitor fact cited must come from that read (URL + date).
+
+- **P1 · C5 — `/capital-one-sql-interview/` targets "capital one data analyst
+  sql interview".** The only practice platform on it is DataLemur's post
+  "Updated 2025-02-15", silent on the assessment. Our company page title has
+  no "Data Analyst"; add it to title/H1 with a visible updated date.
+- **P2 · B3 → C5 — one state-graded challenge in the reported
+  sequential-update shape** (IQ 11-16: a seat-reservation question processed
+  in order), on our own card/transaction data, using the DML engine (#172).
+  C5 adds one sourced line to the Capital One guide. Never copy IQ's text.
+- **P3 · C5 — link the Debug hub (`/sql-debugging-practice/`, live 11-24)
+  from the Monzo and Wise pages**, one sourced line each (candidates report
+  debugging a given query). Closes run-2 N5.
+- **P4 · C1 — raise R1-3 (301 `sql-quest2.vercel.app`) to the top.** Its
+  `/vs-datalemur/` page ("Updated May 2026") now shows in a DataLemur review
+  search.
+- **P5 · C2 / C1 — `/sql-mock-interview/` vs a weakly held SERP** (one DE
+  mock, Dataford previews, the rest editorial): analyst framing in an H2, the
+  two company mocks by their numbers; C1 requests indexing (laptop).
+- **P6 · C2 — `/sql-interview-prep-plan/` leads with the date-sized plan**;
+  the SERP is course marketing and nobody sizes a plan to the date.
+- **P7 · C5 / C7 — HackerRank is the reported test room for Revolut, Wise
+  and Stripe.** One sourced line per page after C5 fetches dated reports; C7
+  answers "what is the HackerRank SQL test like" on an existing post.
+- **P8 · backlog (orchestrator) — re-read R1-10 (mock follow-up) with new
+  evidence:** DataDriven ships up to 8 AI follow-ups, curveballs and a
+  hire/no-hire verdict (DE only). Claim nothing we lack.
+- **P9 · B4 / C2 — DataLemur unchanged: $15/mo, $60/yr, $300 lifetime.** Its
+  bank count is stated three ways on one page; C2 quotes none of them.
+
+## Competitor watch — B6 run 4, 2026-11-25 (docs/reads/competitors-2026-11-25.md)
+
+New items only; earlier items keep their numbers (progress in §7 of the read:
+only the Monzo format section moved since run 3; P1 and P3 are still the
+cheapest open items). Every competitor fact cited must come from that read.
+
+- **Q1 · C6 / C5 / C1 — the Debug hub against an empty SERP.** "fix the sql
+  query interview" and "sql debugging practice" are held by docs, blogs and
+  single question pages (PracHub, Dataford). Interview framing in the hub's
+  title or H2; link it from Monzo and Wise (closes P3); C1 requests indexing.
+- **Q2 · C6 — a DML practice hub.** "ddl dml practice exercises" is PDFs and
+  Scribd; our state-graded DML items (325–329) have question pages but no
+  hub. Generated like the Debug hub, with sitemap and links in one commit.
+- **Q3 · C5 / C2 — StrataScratch sells "your interview loop" but pools
+  fintech** into one Stripe/PayPal/Block DA loop, with no Capital One,
+  Revolut, Wise, Monzo or Chime loop. Show the round-by-round shape above the
+  fold on our five consumer-fintech pages; C2 adds one dated comparison line.
+- **Q4 · B4 — Black Friday is live:** StrataScratch 40% off Yearly and
+  Lifetime, LeetCode $30 off annual. Founder-held; no agent creates a code or
+  changes a price.
+- **Q5 · B4 / C2 — AI is credit-metered at StrataScratch and LeetCode.**
+  Context beside our tutor caps; never claim "unlimited" or "no credits".
+- **Q6 · C7 (after a C5 fetch) — practise a query without running it**
+  (Wise: short timed sets in a Google Doc). Copy in our own words, sourced.
+- **Q7 · C2 guard — timed company mocks are no longer rare** (StrataScratch
+  AI mocks per loop, LeetCode Interview Simulations, IQ AI mock). Do not
+  claim otherwise.
