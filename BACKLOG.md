@@ -158,6 +158,11 @@ G1 builds none of these. Each one names the lane that owns it. Baseline:
   - The only list that names us is thequerylab.com, so it needs no note.
 - **C3 — alternativeto.net lists DataLemur's alternatives (cited for #4) and does not list SQL Quest.** It is a user-submitted directory. C3 drafts the listing text; the founder submits it.
 
+**G1, 2026-11-25 (docs/reads/geo-weekly-2026-11-25.md).** Perplexity was not read: a sign-in wall on the first query. The search proxy had 1 of 15 in its top 10 (#8), on the wrong host. Google had 5 of 15, flat. `ai:*` landings were 100 people in 30 d (99 last week).
+- **C1 — the 301 `sql-quest2.vercel.app` → `sqlquest.app` now costs a panel citation.** For #8 (AI tutor that explains mistakes), the search proxy cites `sql-quest2.vercel.app/llms.txt` and names SQL Quest from it. It is the week's only proxy hit, and it credits the duplicate host. `llms.txt` is plain text with no canonical, so only the host redirect fixes it. Same item as R1-3 / P4 below: check the Supabase Auth Site URL first.
+- **C2 — the #8 AI-tutor page, re-raised.** It is still unbuilt. It is the one panel intent where a search summary names us unprompted, but the citation has no sqlquest.app page to land on. The proxy still shows no competitor page built for this intent (DataCamp blog, research prototypes).
+- **C3 — two more #1 lists that omit us** (fetched 2026-11-25): analyticsinsight.net `/photo/best-sql-interview-preparation-platforms` and positioniseverything.net `/10-best-platforms-to-practice-sql-choose-by-your-goal/`. Drafts only, behind the founder.
+
 ## Company research — R1, 2026-11-22 (docs/reads/companies/)
 
 R1 builds none of these; each names the lane that owns it. Dossiers:
