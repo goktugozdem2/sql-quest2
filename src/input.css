@@ -112,6 +112,13 @@ body {
   .sq-feedback-fab {
     bottom: 80px;
   }
+  /* The exit-reason / day-2 prompt card sat at bottom-20 (80px), the same
+     height the bubble lifts to on a phone, so the 44px bubble covered the
+     right edge of the card's Send button at 375/390/414 (A2, 2026-11-23).
+     On a phone the card sits above the bubble: 80 + 44 + 8. */
+  [data-feedback-prompt-slot="global"] {
+    bottom: 132px;
+  }
 }
 
 /* The fixed Run bar (`mobileRunBar` bar arm, 2026-11-23). Below `md` the

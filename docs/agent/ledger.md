@@ -90,6 +90,39 @@ of the verifier and must never be rounded to `FLAT`.
   comparison (`tests/topic-learn-pilot.test.js` fails if one of them gains
   the pilot's blocks).
 
+### real-user speed is measured (`web-vitals`)
+
+- **Claimed** 2026-11-24 · **Shipped** live (no flag) in the code PR that
+  follows this one · **Read** 7 days after the deploy of that PR
+  (earliest 2026-12-02 if it deploys 11-25).
+- **Change** `track.js` on every static page and the /app shell load
+  Google's `web-vitals` (6.2.3, the attribution-free build, served from our
+  own origin) at the first idle moment after `load`, and write one
+  `web_vital` row per metric (LCP, INP, CLS, FCP, TTFB) per page load to
+  `pro_events`; bots, crawler fingerprints, localhost and internal
+  accounts send nothing.
+- **Why** the mobile funnel gap (landed → first solve, desktop 20.1% vs
+  mobile 3.2%, AN read 2026-11-24) has no speed data behind it: `app_boot`
+  covers /app only and has no INP or CLS, and Vercel Speed Insights cannot
+  be joined to a solve. This claim is about the instrument, not the gap.
+- **Metric** `web_vitals`, read 3 (coverage) (docs/agent/metrics.md;
+  defined in its own PR before the code, rule 6b).
+- **Baseline** 0 — no `web_vital` row exists.
+- **Target** ≥ 90% of `landing_view` rows (bot and crawler filters of the
+  fleet README applied) in the 7 days after the deploy have a `web_vital`
+  LCP row with the same `aid` and `page` within 30 minutes.
+- **Falsified if** coverage is under 90% → MISS. Read the `landing_engaged`
+  share beside it first: if that one is ≥ 90%, the hole is renderers and
+  bounces before the idle-time load, and the fix is loading earlier (on
+  `load`, not idle); if it is also under 90%, the send path is broken —
+  find where before trusting any p75 from this series.
+- **Guardrail** `app_boot` (the /app `lcpMs` p75 by viewport band) must not
+  rise by more than 100 ms against the 7 days before the deploy; the
+  library loads after `load`, so it should not move at all.
+- **First use of the data** the same read reports mobile vs desktop LCP p75
+  on `app` and on the top landing pages, and mobile open → first run by LCP
+  band, against the decision rule written in `web_vitals`.
+
 ### the interview date, asked after a company is named (company ask follow-up)
 
 - **Claimed** 2026-11-24 · **Shipped** dark behind `intakeAfterFirstSolve`
@@ -597,6 +630,43 @@ of the verifier and must never be rounded to `FLAT`.
 - **Target** answered ÷ shown ≥ 10% and ≥ 10 lines in the 28 days.
 - **Falsification** answered ÷ shown under 3%, or solves in the second
   session per person shown more than 20% below the 28 days before → off.
+
+### a feedback row says which challenge (`feedbackContext`, IR-2) — **OPEN**
+
+- **Claimed** 2026-11-23 (E2) · **Shipped** ON (default; not money, not
+  paywall-adjacent: an inbound-channel fix) · **Read** 2026-12-21 (28 days
+  after merge; move the date to merge + 28 if it merges later).
+- **Change** the 💬 widget, opened on the challenge editor (Practice →
+  Challenges, a challenge open, no mock), writes `challengeId`,
+  `challengeStatus`, `lastQuery` (trimmed, cut at 1,000 characters,
+  `queryTruncated`, `queryLength`) and `diagnosisKind` into the row's existing
+  `context` jsonb; `feedback_submitted` gets `challengeId` + `diagnosisKind`
+  (never the query). The widget shows one muted line above the textarea:
+  "This box goes to the founder. For help with this query, the tutor answers
+  right now." — "tutor" opens the challenge's existing inline Help and fires
+  `feedback_tutor_redirect`. No migration. src/utils/feedback-context.js;
+  tests/feedback-context.test.js.
+- **Why** twice a guest asked "what's my mistake?" through the widget with
+  no contact (latest 2026-11-19, arrived from /sql-exercises/ solutions);
+  the row had no challenge, query or diagnosis, so nobody could answer.
+- **Metric** `feedback_context` (metrics.md): share of `feedback_submitted
+  {kind: 'open', screen: 'quests'}` rows that carry a `challengeId`, and
+  people with `feedback_tutor_redirect` ÷ people with `feedback_opened
+  {screen: 'quests'}`.
+- **Baseline** (read 2026-11-23, 56 days, internal accounts excluded): 2
+  widget rows, both `screen='quests'`, both without contact, 0 carrying a
+  challenge id. No redirect has ever existed (0).
+- **Target** every widget row sent from the challenge editor carries a
+  challenge id (share = 100% of the rows whose sender was on the editor;
+  `screen='quests'` rows from another Practice sub-tab are the only allowed
+  gap), and ≥ 1 person in 28 days takes the tutor link.
+- **Falsification** (written before the data) a `feedback_submitted
+  {kind:'open'}` row with `screen='quests'` whose `public.feedback` row reads
+  as a question about a challenge but has no `challengeId` → the wiring is
+  broken, fix or turn off; or ≥ 10 people open the widget on `quests` and none
+  takes the tutor link → the line does not redirect; rewrite it.
+- **Confound** n is tiny (2 rows in 56 days). Read the verbatims, never a rate
+  on fewer than 10 rows; the redirect count is the main signal.
 ### a company arrival opens question 1 (`companyDirectOpen`, A/B)
 
 - **Flipped ON at 50/50 on 2026-11-23** by A0 in its own PR, applying orchestrator-decisions 2026-11-22 ("ON at 50/50 after #156 merges"), which overrides the 12-19 date below. **Reverse rule:** the entry's own stop rule (early harm check at 60 per arm; HIT / FLAT / MISS at 120 per arm; UNREADABLE by 2027-02-27). **Confound this creates:** the company-banner claim (read 12-18) shares these arrivals. Read that claim on the `list` arm and on arrivals outside the test (people with solves) only; the `list` arm keeps the banner byte for byte. The pre-flip company-door `first_solve_10m` baseline is owed by the laptop, from data before 2026-11-23.
