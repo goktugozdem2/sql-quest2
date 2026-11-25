@@ -20,12 +20,12 @@
 // from source (`vercel build` runs `npm run build`), so the deploy renders
 // them; the committed HTML carries only the changed meta tags.
 //
-// DETERMINISTIC AND CACHED: satori + resvg (through @vercel/og, the same
-// renderer api/og-card.js uses) give the same bytes for the same input. The
-// fonts are the vendored Geist files (DESIGN.md's body face; never a network
-// font). fetch is blocked while rendering: a glyph Geist lacks would make
-// @vercel/og fetch a Google font, and a build must not depend on that — it
-// fails loudly instead. A card is re-rendered only when the hash of
+// DETERMINISTIC AND CACHED: satori + resvg (renderPng in api/_og-png.js, the
+// same renderer api/og-card.js uses since @vercel/og was dropped) give the
+// same bytes for the same input. The fonts are the vendored Geist files
+// (DESIGN.md's body face; never a network font). A glyph Geist lacks reaches
+// satori's missing-glyph hook, which here records it and fetches nothing:
+// the build fails loudly instead of depending on a Google font download. A card is re-rendered only when the hash of
 // (title + kind + this file + the fonts) changes; the hashes live in
 // public/og/.cache.json next to the PNGs.
 //
@@ -205,25 +205,21 @@ export const cardHash = (title, kind) =>
   crypto.createHash('sha256').update(`${templateHash()}\n${kind}\n${title}`).digest('hex').slice(0, 16);
 
 export async function renderCard(title, kind) {
-  const { ImageResponse } = await import('@vercel/og');
-  // @vercel/og swallows a failed font fetch and draws tofu, so the attempt is
-  // recorded here and turned into an error after the render.
-  const realFetch = globalThis.fetch;
-  let attempted = null;
-  globalThis.fetch = async (url) => {
-    attempted = String(url);
-    throw new Error('[build-og-images] network is off while rendering');
-  };
-  try {
-    const res = new ImageResponse(cardTree(title, kind), { width: WIDTH, height: HEIGHT, fonts: fonts() });
-    const png = Buffer.from(await res.arrayBuffer());
-    if (attempted) {
-      throw new Error(`[build-og-images] a glyph in "${title}" is not in the vendored Geist fonts (renderer tried to fetch ${attempted.slice(0, 80)})`);
-    }
-    return png;
-  } finally {
-    globalThis.fetch = realFetch;
+  const { renderPng } = await import('../api/_og-png.js');
+  // satori asks loadAdditionalAsset for any glyph the given fonts lack (an
+  // emoji, a CJK character, ...). api/og-card.js answers that with a Google
+  // Fonts / twemoji download; this build never does. The hook records the
+  // request, hands back nothing (so nothing is fetched), and the render is
+  // turned into an error: left alone, satori would draw nothing for the glyph.
+  const missing = [];
+  const png = await renderPng(cardTree(title, kind), {
+    width: WIDTH, height: HEIGHT, fonts: fonts(),
+    loadAdditionalAsset: async (code, segment) => { missing.push(`${code}:${segment}`); return []; },
+  });
+  if (missing.length) {
+    throw new Error(`[build-og-images] a glyph in "${title}" is not in the vendored Geist fonts (renderer asked for ${missing.join(', ').slice(0, 80)})`);
   }
+  return png;
 }
 
 // ---- the meta tags ------------------------------------------------------------

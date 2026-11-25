@@ -1380,9 +1380,10 @@ The weekly report and skill-drill mirrors are gone (app.jsx imports `src/utils/w
   every company page, trap page and blog post into `public/og/<slug>.png`
   and points the BUILT copy's og:image / twitter:image at it. src files keep
   the global `/og-image.png`, as does every other page. The PNGs are
-  gitignored — production renders them at deploy. Satori via `@vercel/og`,
-  vendored Geist only (a glyph Geist lacks fails the build; it never fetches
-  a font). Guards: `tests/og-images.test.js`. A new page kind is a line in
+  gitignored — production renders them at deploy. Satori + resvg via
+  `renderPng` (`api/_og-png.js`), vendored Geist only (a glyph Geist lacks
+  reaches the missing-glyph hook and fails the build; it never fetches a
+  font). Guards: `tests/og-images.test.js`. A new page kind is a line in
   `ogTargets()`.
 
 ### Search-engine indexing
