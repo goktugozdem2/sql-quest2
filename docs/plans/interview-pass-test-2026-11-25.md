@@ -254,9 +254,19 @@ it needs a review and never auto-merges.
 
 **Pages:**
 
-11. `src/refund.html` gains a pass section ("Full refund within 7 days of
-    purchase", or the founder's choice, §11). It ships with the flip, not
-    before.
+11. `src/refund.html` gains a pass section stating the usage-based rule
+    in §7a word for word. It ships with the flip, not before.
+11a. **Refund request flow (semi-automatic, §7a):** an "Ask for a refund"
+    button on the account page for a pass holder → a server function reads
+    the pass's purchase time and usage (Pro solves, finished mocks, tutor
+    calls over the free daily cap) and classifies the request:
+    `eligible` → the founder gets a one-click approval with the usage
+    summary (the refund itself is issued in Stripe by the founder or by
+    that approval; no code issues money on its own); `not_eligible` → the
+    person gets the reason politely, the founder gets a copy and may make
+    an exception. Events `refund_requested {eligible, reason, hoursSince,
+    proSolves, mocksFinished}` — never the amount or card. Full automatic
+    refunds only if pass sales pass 20–30 a month (founder decision then).
 
 **Tests, each proven by a deliberate break (rule):**
 
@@ -285,7 +295,8 @@ The pass card, word for word except the price, which comes from
 `PRICE_TABLE`:
 
 > **Interview Pass** · **$59** · 60 days of Pro · One payment — never
-> renews, nothing to cancel · Full refund within 7 days
+> renews, nothing to cancel · Full refund within 7 days if you haven't
+> used Pro yet (under 10 Pro solves, no finished mock)
 
 After purchase: "Pro · Interview Pass — ends 8 Mar 2027" (a date, not a
 renewal).
@@ -308,6 +319,33 @@ carries no percentage, because that is what went stale on "Annual (Save
 SQLQUEST.APP.
 
 **Turkish** copy carries the same facts and nothing more.
+
+
+## 7a. Refund rule (founder's go, chat 2026-11-25: "uygulayabilirsin")
+
+Subscriptions keep today's rule (7 days, unconditional): 1 refund and 0
+disputes ever, no abuse seen. The pass gets a usage-based rule, because
+interview prep is short: buy, prepare for a few days, ask for the money
+back.
+
+"Used" = any of: ≥ 10 Pro solves since purchase · ≥ 1 finished timed
+mock · tutor calls above the free daily cap.
+
+| When | Not used | Used |
+|---|---|---|
+| First 48 h | full refund | no refund (founder may give a partial one) |
+| Day 3–7 | full refund | no refund |
+| After day 7 | no refund | no refund |
+
+Conditions that make it hold:
+1. **Shown before payment.** The card line in §7 and the Stripe checkout's
+   custom text state the rule; an unannounced rule loses disputes.
+2. **EU buyers:** a required checkbox at checkout — "Start my access now; I
+   understand I lose the 14-day right of withdrawal once I use it" (digital
+   content waiver). Without it an EU buyer may withdraw within 14 days.
+3. **Disputes:** on a card dispute, submit the usage log (solves, mocks,
+   timestamps) and the accepted terms as evidence. A generous first 48 h
+   is cheaper than disputes ($15 fee each plus account risk).
 
 ## 8. Metric, sample size, duration and stopping rules
 
