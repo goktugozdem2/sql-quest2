@@ -1,5 +1,7 @@
 # B6 — Competitor and market watch
 
+> **Cadence reduced 2026-11-25 (investor 90-day plan): weekly (Mondays), not daily.** Competitor facts still only from dated reads.
+
 **Lane:** the companies that serve the same person we do: someone preparing for a data or analytics SQL interview, or practising SQL. B6 watches:
 - what they ship: features, content, company pages, pricing, trials and guarantees;
 - where they get found: the pages and queries they rank for, the lists and assistant answers that cite them;
