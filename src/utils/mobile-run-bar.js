@@ -28,6 +28,12 @@ export const MOBILE_RUN_BAR_STORAGE_KEY = 'sqlquest_mobile_run_bar_v1';
 // Tailwind's `md` breakpoint. The fixed bar exists only below it; from `md`
 // up the bar is today's `md:static` row, in both arms.
 export const MOBILE_RUN_BAR_MAX_WIDTH = 768;
+// A landscape phone's layout viewport is 320–430 px tall; with the keyboard
+// up only ~165 pt of it is visible, and the fixed bar (~88 pt) hid the line
+// being typed (iOS Simulator walk, 2026-11-24). Under this height, in
+// landscape, the bar arm falls back to today's sticky bar. Portrait phones
+// start at ~548 (iPhone SE, Safari's toolbars out), so they never hit it.
+export const MOBILE_RUN_BAR_MIN_HEIGHT = 500;
 
 /**
  * A narrow touch screen: a coarse pointer, or a viewport under 768 px.
@@ -39,6 +45,20 @@ export function isNarrowTouch({ coarse = false, width = null } = {}) {
   if (coarse === true) return true;
   const w = Number(width);
   return Number.isFinite(w) && w > 0 && w < MOBILE_RUN_BAR_MAX_WIDTH;
+}
+
+/**
+ * A short landscape viewport: wider than tall and under 500 px tall, read
+ * from the LAYOUT viewport (`innerWidth` / `innerHeight`). The keyboard does
+ * not change the layout viewport on iOS, so the answer does not flip while
+ * someone types; it changes on rotation. A portrait screen is never short,
+ * however small, because portrait is where the fixed bar is needed.
+ */
+export function isShortViewport({ innerWidth = 0, innerHeight = 0 } = {}) {
+  const w = Number(innerWidth);
+  const h = Number(innerHeight);
+  if (!(Number.isFinite(w) && w > 0) || !(Number.isFinite(h) && h > 0)) return false;
+  return w > h && h < MOBILE_RUN_BAR_MIN_HEIGHT;
 }
 
 /**
@@ -80,15 +100,20 @@ export function mobileRunBarArm(aid) {
  * assigned off a narrow touch screen (a desktop opener is not in the test's
  * population), and with the flag off nothing is assigned or shown — the
  * stored record is left alone for when it comes back on.
+ *
+ * `shortViewport` (isShortViewport(...) right now) changes `show` only: the
+ * arm is assigned and kept exactly as in portrait, and the bar arm shows
+ * today's sticky bar until the phone turns back.
  */
-export function mobileRunBarDecision({ flagOn = false, narrowTouch = false, stored = null, aid = null } = {}) {
+export function mobileRunBarDecision({ flagOn = false, narrowTouch = false, stored = null, aid = null, shortViewport = false } = {}) {
   if (!flagOn) return { arm: null, assign: false, show: false };
+  const fits = shortViewport !== true;
   if (stored && MOBILE_RUN_BAR_ARMS.includes(stored.arm)) {
-    return { arm: stored.arm, assign: false, show: stored.arm === 'bar' && narrowTouch === true };
+    return { arm: stored.arm, assign: false, show: stored.arm === 'bar' && narrowTouch === true && fits };
   }
   if (narrowTouch !== true || !aid) return { arm: null, assign: false, show: false };
   const arm = mobileRunBarArm(aid);
-  return { arm, assign: true, show: arm === 'bar' };
+  return { arm, assign: true, show: arm === 'bar' && fits };
 }
 
 /**

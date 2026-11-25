@@ -1,0 +1,74 @@
+# Known HTML errors on the built site — a ratchet, it may only shrink.
+# Written by `node scripts/html-validate.mjs --write-baseline`; guarded by
+# tests/html-validate.test.js. Fixed one? Delete (or lower the count of) its line in the same commit.
+# <count>	<page>	<rule>	<message>
+1	public/airbnb-sql-interview.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/airbnb-sql-interview/index.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/amazon-sql-interview.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/amazon-sql-interview/index.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/anthropic-sql-interview.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/anthropic-sql-interview/index.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/apple-sql-interview.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/apple-sql-interview/index.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/bloomberg-sql-interview.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/bloomberg-sql-interview/index.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/capital-one-sql-interview.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/capital-one-sql-interview/index.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/chime-sql-interview.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/chime-sql-interview/index.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/coinbase-sql-interview.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/coinbase-sql-interview/index.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/databricks-sql-interview.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/databricks-sql-interview/index.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/doordash-sql-interview.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/doordash-sql-interview/index.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/for-teams.html	wcag/h32	<form> element must have a submit button
+1	public/for-teams/index.html	wcag/h32	<form> element must have a submit button
+1	public/goldman-sachs-sql-interview.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/goldman-sachs-sql-interview/index.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/google-sql-interview.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/google-sql-interview/index.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/jpmorgan-sql-interview.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/jpmorgan-sql-interview/index.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/linkedin-sql-interview.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/linkedin-sql-interview/index.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/meta-sql-interview.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/meta-sql-interview/index.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/microsoft-sql-interview.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/microsoft-sql-interview/index.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/monzo-sql-interview.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/monzo-sql-interview/index.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/morgan-stanley-sql-interview.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/morgan-stanley-sql-interview/index.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/netflix-sql-interview.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/netflix-sql-interview/index.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/nvidia-sql-interview.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/nvidia-sql-interview/index.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/openai-sql-interview.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/openai-sql-interview/index.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/paypal-sql-interview.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/paypal-sql-interview/index.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/plaid-sql-interview.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/plaid-sql-interview/index.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/ramp-sql-interview.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/ramp-sql-interview/index.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/revolut-sql-interview.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/revolut-sql-interview/index.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/shopify-sql-interview.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/shopify-sql-interview/index.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/snowflake-sql-interview.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/snowflake-sql-interview/index.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/spotify-sql-interview.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/spotify-sql-interview/index.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/stripe-sql-interview.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/stripe-sql-interview/index.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/tesla-sql-interview.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/tesla-sql-interview/index.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/tiktok-sql-interview.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/tiktok-sql-interview/index.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/uber-sql-interview.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/uber-sql-interview/index.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/walmart-sql-interview.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/walmart-sql-interview/index.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/wise-sql-interview.html	element-permitted-content	<style> element is not permitted as content under <section>
+1	public/wise-sql-interview/index.html	element-permitted-content	<style> element is not permitted as content under <section>
