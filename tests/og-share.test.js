@@ -8,6 +8,7 @@
 //      rejects.
 //
 // fetch is stubbed so the suite stays hermetic — no Supabase round-trip.
+import fs from 'fs';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 const ELENA = {
@@ -190,6 +191,18 @@ describe('PNG share card', () => {
   it('carries all 9 canonical skills, in the canonical order', async () => {
     const { CANONICAL_SKILLS } = await import('../src/utils/skill-calc.js');
     expect(O.SKILLS).toEqual([...CANONICAL_SKILLS]);
+  });
+
+  // The renderer reads two wasm files from node_modules at runtime (satori's
+  // harfbuzz, resvg). A file missing from the deployed function would not fail
+  // here — it would 302 every card to the static image in production.
+  it('ships the wasm files the renderer reads at runtime with the function', () => {
+    const inc = JSON.parse(fs.readFileSync('vercel.json', 'utf8')).functions['api/og-card.js'].includeFiles;
+    expect(inc).toContain('assets/fonts/**');
+    for (const f of ['node_modules/harfbuzzjs/hb.wasm', 'node_modules/@resvg/resvg-wasm/index_bg.wasm']) {
+      expect(inc).toContain(f);
+      expect(fs.existsSync(f)).toBe(true);
+    }
   });
 
   it('clamps out-of-range skill values instead of drawing outside the chart', () => {

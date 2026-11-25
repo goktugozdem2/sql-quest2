@@ -40,6 +40,29 @@ export function startsAtTrialEnd(periodStart: number | null | undefined, trialEn
   return Math.abs(periodStart - trialEnd) <= 6 * 3600;
 }
 
+// What a failed charge means for access (A3, 2026-11-25;
+// docs/reads/errors-2026-11-25.md). "No next attempt" used to be read as
+// "Stripe gave up", and access was revoked on it. But Stripe also leaves
+// next_payment_attempt empty on a charge it never attempted under the retry
+// schedule (attempt_count 0), for example one that waits for the customer to
+// confirm it on the invoice page. On 2026-11-24 a trial's first charge failed
+// that way (attempt_count 0, next attempt null) and Pro was revoked within the
+// hour of the trial converting. Three states:
+//   retrying  — a next attempt is scheduled; touch nothing.
+//   gave_up   — no next attempt after at least one counted attempt; the
+//               retries ran out, so access ends here.
+//   waiting   — no next attempt and no counted attempt; the invoice is open
+//               and waits for the customer. Nothing is revoked: proExpiry
+//               already stops at the period paid for (a trial's end), with
+//               pro-access.js's three read-only days on top, exactly as while
+//               retrying. Paid, invoice.payment_succeeded extends it; never
+//               paid, the subscription ends the usual way.
+export type FailedChargeState = "retrying" | "gave_up" | "waiting";
+export function failedChargeState(nextPaymentAttempt: unknown, attemptCount: unknown): FailedChargeState {
+  if (nextPaymentAttempt) return "retrying";
+  return (Number(attemptCount) || 0) > 0 ? "gave_up" : "waiting";
+}
+
 const esc = (s: unknown) => String(s ?? "").replace(/[&<>"']/g, (c) => (
   { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" } as Record<string, string>
 )[c]);
@@ -51,6 +74,8 @@ export type PaymentFailedEmailInput = {
   billingReason?: string | null;
   afterTrial?: boolean;
   willRetry?: boolean;
+  // failedChargeState() === "waiting": no retry is scheduled, nothing revoked.
+  waiting?: boolean;
   invoiceUrl?: string | null;
   portalUrl?: string | null;
 };
@@ -77,7 +102,9 @@ export function paymentFailedEmail(input: PaymentFailedEmailInput) {
 
   const retryLine = input.willRetry
     ? "Stripe will retry the charge automatically over the next few days — if the card just needs a top-up, you don't have to do anything."
-    : "Stripe has stopped retrying, so Pro is paused until this charge is paid.";
+    : input.waiting
+      ? "Stripe couldn't finish this charge on its own and won't retry it by itself, so it is waiting for you on the invoice page."
+      : "Stripe has stopped retrying, so Pro is paused until this charge is paid.";
 
   const p = (html: string) => `<p style="font-size: 15px; line-height: 1.8;">${html}</p>`;
   const parts: string[] = [
