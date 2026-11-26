@@ -167,7 +167,7 @@ describe('the copy and the app wiring', () => {
     expect((APP.match(/renderPathSprintSetup\(\)/g) || []).length).toBe(1);
     const early = APP.indexOf('  if (showAuth) {');
     for (const h of ['const [pathSprintPick, setPathSprintPick] = useState(null);', 'const pathFinishSprint = (', 'const pathSprintShownRef = useRef(false);',
-      "if (!pathUi.sprint || !pathUi.hideTabs || !pathState.plan || isSessionLoading || !currentUser || !dbReady || currentChallenge) return;"]) {
+      "if (!pathUi.active || pathUi.ladderActive || !pathUi.hideTabs || !pathState.plan || isSessionLoading || !currentUser || !dbReady || currentChallenge) return;"]) {
       const i = APP.indexOf(h);
       expect(i, h).toBeGreaterThan(0);
       expect(i, h).toBeLessThan(early);

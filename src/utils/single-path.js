@@ -51,6 +51,13 @@ export const LADDER_STUCK_WRONGS = 3;
 export const LADDER_STUCK_SECS = Object.freeze([360, 600, 600]);
 export const LADDER_OUTCOMES = Object.freeze(['fast', 'solved', 'stuck']);
 export const LADDER_ORDER = buildCurriculumOrder(LADDER_RUNGS.map(ids => ({ challengeIds: [...ids] })));
+/**
+ * After the ladder, the plan line stays the only navigation until this many
+ * plan steps are done (or the person opens "All steps", or the plan has no
+ * free step left). Walk fix B3, 2026-11-26: the tab row and the guest banner
+ * coming back with the plan broke the single focus the moment it appeared.
+ */
+export const PLAN_FOCUS_STEPS = 3;
 
 // ── the sprint (arm D, plan §4) ─────────────────────────────────────────────
 /** One tap: 7 days, 14 days, or no date (null — the roadmap's default sprint by level). */
@@ -126,26 +133,36 @@ export function normalizePathState(raw) {
  *
  *   state       — normalizePathState(...)
  *   hasChallenge — a challenge is open (D's sprint screen waits for none)
- *   today       — the app's day (YYYY-MM-DD), for D's tab rule
  */
-export function pathUiFlags({ behaviour = null, state = null, hasChallenge = false, today = null } = {}) {
+export function pathUiFlags({ behaviour = null, state = null, hasChallenge = false } = {}) {
   const off = {
     arm: null, active: false, ladderActive: false, hideTabs: false, extendShell: false,
     showPlanLine: false, suppressAsks: false, suppressNextStrip: false, sprintSetup: false,
     starterPrefill: false, companyDirect: false, holdLayers: false, fixedRunBar: false, sprint: false,
+    holdSignupAsks: false, hideGuestBanner: false, suppressTour: false,
   };
   if (!isPathArm(behaviour)) return off;
   const s = state && state.v ? state : normalizePathState(state);
   if (behaviour === SINGLE_PATH_ARM) {
     const ladderActive = !s.ladder.done;
+    const tabsOpen = pathTabsOpen(s, { arm: behaviour });
     return {
       ...off,
       arm: behaviour,
       active: true,
       ladderActive,
-      // No tabs and no menu until the ladder ends (plan §3.5).
-      hideTabs: ladderActive,
-      extendShell: ladderActive,
+      // No tabs and no menu on the ladder, nor for the first plan steps
+      // after it: the plan line is the only navigation (plan §3.5).
+      hideTabs: !tabsOpen,
+      hideGuestBanner: !tabsOpen,
+      // The first-run shell (no header stats, no challenge-list buttons) runs
+      // to the same point, so the plan line is the only way on (walk fix B3).
+      extendShell: !tabsOpen,
+      // Sign-up / save prompts are held on the ladder; at most one is asked
+      // when it ends (walk fix B1).
+      holdSignupAsks: ladderActive,
+      // The "Take tour" prompt never shows in B's first session (walk fix B2).
+      suppressTour: true,
       showPlanLine: !ladderActive && !!s.plan,
       // The intent modal and the company ask are questions; "seçenek tanımadan".
       suppressAsks: ladderActive,
@@ -161,13 +178,16 @@ export function pathUiFlags({ behaviour = null, state = null, hasChallenge = fal
   }
   // D — the sprint screen first; tabs after the first day's count or the first solve of day 2.
   const setUp = !!(s.sprint && s.sprint.setAt);
-  const tabsOpen = setUp && sprintTabsOpen(s, { today });
+  const tabsOpen = setUp && pathTabsOpen(s, { arm: behaviour });
   return {
     ...off,
     arm: behaviour,
     active: true,
     sprint: true,
     hideTabs: !tabsOpen,
+    // The guest banner and the tour wait with the tabs (B's walk fixes, D too).
+    hideGuestBanner: !tabsOpen,
+    suppressTour: true,
     extendShell: !tabsOpen,
     showPlanLine: setUp && !!s.plan,
     suppressAsks: !tabsOpen,
@@ -179,6 +199,19 @@ export function pathUiFlags({ behaviour = null, state = null, hasChallenge = fal
     holdLayers: !tabsOpen,
     fixedRunBar: true,
   };
+}
+
+/**
+ * Has the tab row come back? Arm B: never on the ladder; after it, once the
+ * reveal was recorded (`tabsOpenedAt`: "All steps", the plan's free steps ran
+ * out) or PLAN_FOCUS_STEPS plan steps are logged done.
+ */
+export function pathTabsOpen(state, { arm = SINGLE_PATH_ARM } = {}) {
+  const s = state && state.v ? state : normalizePathState(state);
+  if (arm === SPRINT_ARM) return sprintTabsOpen(s);
+  if (arm !== SINGLE_PATH_ARM) return false;
+  if (!s.ladder.done) return false;
+  return !!s.tabsOpenedAt || s.doneLog.length >= PLAN_FOCUS_STEPS;
 }
 
 // ───────────────────────────── the ladder ───────────────────────────────────
