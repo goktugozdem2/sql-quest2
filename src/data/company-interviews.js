@@ -482,21 +482,34 @@ export const NEW_COMPANY_TAG_REASONS = {
 // moment its slug appears, so the entry has to be right before it ships.
 // ---------------------------------------------------------------------------
 export const SOURCED_FORMATS = {
+  // 2026-11-26 (C5): rows rebuilt from the R1 dossier
+  // docs/reads/companies/amazon.md (sources read 2026-11-22, refresh by
+  // 2027-01-21). Amazon's own BIE prep page (first-party) now carries the
+  // stages, the online assessment, the phone screen's length and the loop;
+  // Exponent's guide moved to aced.io; two PracHub reports (Jul, Sep 2026).
+  // The Blind report was read 2026-09-14 and not re-read (Blind answers 402).
   amazon: {
     name: 'Amazon',
     role: 'Business Intelligence Engineer / data analytics roles',
+    publishes: 'Amazon publishes the stages of its Business Intelligence Engineer interview on its own hiring page, not the questions in its SQL round.',
+    accessed: '22 Nov 2026',
     format: [
-      ['Stages', 'A recruiter screen of about 30 minutes, one or two technical phone screens, then a virtual onsite loop of about five rounds.', ['blind-amzn', 'exponent-amzn']],
-      ['Round length', 'One candidate report puts the technical phone screens at 75 minutes each and the onsite rounds at roughly 60 minutes. A prep guide describes the onsite as five to six rounds of 45 minutes to an hour.', ['blind-amzn', 'exponent-amzn']],
-      ['Environment', 'The same report describes SQL written on a "CoderPad-style" editor where you often cannot execute the query, so correctness has to be reasoned rather than run.', ['blind-amzn']],
-      ['What the SQL round covers', 'Joins, window functions and ranking, with follow-ups on edge cases; the guide says to expect at least five questions across SQL, Python, visualisation and business analytics in the technical screen, without splitting out how many are SQL.', ['blind-amzn', 'exponent-amzn']],
-      ['Alongside the SQL', 'Leadership Principles come up throughout, including inside technical rounds — not only in the behavioural ones.', ['exponent-amzn', 'blind-amzn']],
+      ['Stages', 'Amazon\'s own prep page lists an online assessment, then one or two technical phone screens (some candidates go straight to the loop), then the interview loop.', ['amazon-bie']],
+      ['Online assessment', 'Three parts: a SQL challenge, a "Working with SQL" section and a Work Styles survey. It stays open for seven days.', ['amazon-bie']],
+      ['Round length', 'Amazon gives the phone screen as 60 minutes with a senior leader, and the loop as five 55-minute interviews. Two candidate reports say they were told 75 minutes for the phone screen; in one it ended after about an hour.', ['amazon-bie', 'blind-amzn', 'prachub-bie-amzn']],
+      ['Environment', 'One candidate report describes a "CoderPad-style" shared editor where you often cannot run the query; the candidate who wrote to us describes an Amazon-branded web editor. Amazon does not say whether queries run, so plan to reason about correctness rather than run it.', ['blind-amzn', 'reported-amzn']],
+      ['What the SQL round covers', 'Amazon names SQL and basic scripting, analytical problem solving, visualisation, metrics and reporting, and business acumen. Candidate reports describe joins, window functions and ranking, with follow-ups on edge cases and duplicates. A prep guide expects at least five questions across SQL, Python, visualisation and business analytics in the technical screen, without splitting out how many are SQL.', ['amazon-bie', 'blind-amzn', 'aced-amzn']],
+      ['Alongside the SQL', 'Leadership Principles come up throughout: Amazon puts them in the phone screen, and says each loop interviewer typically asks two or three behavioural questions. One September 2026 report also describes a dashboard-design task in the technical screen: the metrics and charts for one operations page.', ['amazon-bie', 'prachub-bie-amzn']],
       // 2026-10-21: one round reported to us by email (docs/reads/amazon-bie-candidate-report-2026-10-21.md).
       ['A round reported to us', 'A Business Intelligence Engineer candidate described a 60-minute technical and behavioural round in October 2026: three SQL problems, each followed by questions about the query and changes to it — why a self-join, what a JOIN with no type performs, COUNT(*) against COUNT(column), ROW_NUMBER against RANK and DENSE_RANK, and how duplicate rows change a streak. The shapes: employees paid above their department\'s average; reviewers who rated the same title exactly twice with the second rating higher; users with three or more consecutive login days, with the streak\'s start and length.', ['reported-amzn']],
+      ['Business analyst', 'One July 2026 report of a Business Analyst screen describes three SQL questions, a behavioural deep-dive and a business case.', ['prachub-ba-amzn']],
     ],
     sources: {
-      'blind-amzn': ['Blind — "Amazon Business Intelligence Engineer (BIE L5) Interview 2025" (candidate report, replies to 15 Oct 2025)', 'https://www.teamblind.com/post/amazon-business-intelligence-engineer-bie-l5-interview-2025-jdr2idmd', '14 Sep 2025'],
-      'exponent-amzn': ['Exponent — Amazon Business Intelligence Engineer interview guide', 'https://www.tryexponent.com/guides/amazon-bie-interview', 'shown as "updated 2 months ago" on 14 Sep 2026'],
+      'amazon-bie': ['Amazon — Business Intelligence Engineer interview prep (Amazon\'s own hiring page)', 'https://atoz.amazon/en-us/jobs/hiring-process/interview-prep/business-intelligence-engineer', 'no date shown; read 22 Nov 2026'],
+      'blind-amzn': ['Blind — "Amazon Business Intelligence Engineer (BIE L5) Interview 2025" (candidate report, replies to 15 Oct 2025; read 14 Sep 2026, not re-read since)', 'https://www.teamblind.com/post/amazon-business-intelligence-engineer-bie-l5-interview-2025-jdr2idmd', '14 Sep 2025'],
+      'aced-amzn': ['aced.io (formerly Exponent) — Amazon Business Intelligence Engineer interview guide', 'https://www.aced.io/guides/amazon-business-intelligence-engineer-interview', 'shown as "updated 3 days ago" on 22 Nov 2026'],
+      'prachub-bie-amzn': ['PracHub — "Amazon Business Intelligence Engineer interview experience: SQL interrupted and a shortened phone screen" (candidate report, interview Sep 2026)', 'https://prachub.com/interview-experiences/amazon-business-intelligence-engineer-interview-experience-sql-interrupted-and-a-shortened-phone-screen', '28 Sep 2026'],
+      'prachub-ba-amzn': ['PracHub — "Amazon Business Analyst interview with SQL and business case" (candidate report, interview Jul 2026)', 'https://prachub.com/interview-experiences/amazon-business-analyst-interview-with-sql-and-business-case-88452e0571', '5 Sep 2026'],
       // `direct`: told to us, not published — the page says so and names no one.
       'reported-amzn': ['A Business Intelligence Engineer candidate, by email to SQL Quest (name withheld at their request)', null, '21 Oct 2026', 'direct'],
     },

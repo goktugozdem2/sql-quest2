@@ -8,7 +8,7 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import Database from 'better-sqlite3';
-import { FIRST_SCREENS, firstScreenBlock, withFirstScreen } from '../scripts/company-first-screen.mjs';
+import { FIRST_SCREENS, firstScreenBlock, withFirstScreen, pageData } from '../scripts/company-first-screen.mjs';
 import { loadBank, facts } from '../scripts/build-company-pages.mjs';
 import { COMPANY_INTERVIEWS } from '../src/data/company-interviews.js';
 import { freeSolvesLabel } from '../src/utils/display-count.js';
@@ -21,6 +21,7 @@ let dbs, mocks, debugItems, bank;
 beforeAll(() => {
   const sb = { window: { publicDatasetsData: {} }, console: { log() {} } };
   vm.createContext(sb);
+  vm.runInContext(read('src/data/datasets.js'), sb); // ecommerce (Amazon)
   vm.runInContext(read('src/data/finans-fraud-data.js'), sb);
   vm.runInContext(read('src/data/mock-interviews.js'), sb);
   vm.runInContext(read('src/data/debug-challenges.js'), sb);
@@ -41,6 +42,7 @@ beforeAll(() => {
   bank = loadBank();
 });
 const one = (db, sql) => db.prepare(sql.replace(/;\s*$/, '')).raw(true).all()[0][0];
+const amazon = FIRST_SCREENS.amazon;
 
 describe('the debug item: every shown query runs, and the broken one is wrong', () => {
   for (const [key, cfg] of Object.entries(FIRST_SCREENS)) {
@@ -50,13 +52,14 @@ describe('the debug item: every shown query runs, and the broken one is wrong', 
       expect(one(db, cfg.broken), `${key} broken`).toBe(cfg.brokenAnswer);
       expect(one(db, cfg.fix), `${key} fix`).toBe(cfg.fixAnswer);
       expect(cfg.fixAnswer).not.toBe(cfg.brokenAnswer);
-      // The bug line the copy names is the line the fix changes.
-      expect(cfg.broken.split('\n')[cfg.bugLine - 1]).toMatch(/^\s*WHERE t\./);
+      // The bug line the copy names is a line the fix does not keep
+      // (the fix may move it, as Monzo's does, but never keeps it).
+      expect(cfg.fix.split('\n'), `${key}: the fix still holds line ${cfg.bugLine}`).not.toContain(cfg.broken.split('\n')[cfg.bugLine - 1]);
     });
 
     it(`${key}: every number in the copy is what the dataset returns`, () => {
       const db = dbs[cfg.dataset];
-      const html = text(firstScreenBlock(key, facts(bank, COMPANY_INTERVIEWS[key].name)));
+      const html = text(firstScreenBlock(key, facts(bank, pageData(key).name)));
       for (const f of cfg.facts) {
         expect(one(db, f.sql), f.text).toBe(f.expect);
         expect(html, f.text).toContain(f.text.replace(/ of them$/, ''));
@@ -77,7 +80,7 @@ describe('the debug item: every shown query runs, and the broken one is wrong', 
       expect(item.type).toBe('debug');
       expect(item.difficulty).not.toBe('Hard'); // a Hard is Pro: a cold visitor would be swapped away
       expect(item.trap).toBe(cfg.trapSlug);
-      expect(fs.existsSync(new URL(`../public/${cfg.trapSlug}/index.html`, import.meta.url))).toBe(true);
+      if (cfg.trapSlug) expect(fs.existsSync(new URL(`../public/${cfg.trapSlug}/index.html`, import.meta.url))).toBe(true);
       expect(/\n\s*debugQuestions:\s*true,/.test(read('src/data/feature-flags.js')), 'Debug set is live').toBe(true);
     });
   }
@@ -131,5 +134,84 @@ describe('the block on the page', () => {
     const chime = read('src/chime-sql-interview.html');
     expect(withFirstScreen(chime, 'chime', facts(bank, 'Chime'))).toBe(chime);
     expect(chime).not.toContain('company-first-screen');
+  });
+});
+
+// Amazon (C5, 2026-11-26): an older, hand-written page given the block by the
+// generator's last step. "Start with" is #131, the first shape in the BIE
+// round reported to us; the hero keeps #19 (its series is pinned).
+describe('the Amazon first screen', () => {
+  const f = () => facts(bank, 'Amazon');
+  it('sits right under the hero on the committed and built page, ahead of the provenance note and the sourced format', () => {
+    for (const rel of ['src/amazon-sql-interview.html', 'public/amazon-sql-interview/index.html']) {
+      const html = read(rel);
+      const heroEnd = html.indexOf('</section>', html.indexOf('<section class="hero"'));
+      const start = html.indexOf('<!-- company-first-screen:start -->');
+      expect(start, rel).toBeGreaterThan(heroEnd);
+      expect(html.split('<!-- company-first-screen:start -->').length, rel).toBe(2);
+      expect(html.indexOf('<!-- company-provenance:start -->'), rel).toBeGreaterThan(html.indexOf('<!-- company-first-screen:end -->'));
+      expect(html.indexOf('<section id="format"'), rel).toBeGreaterThan(start);
+    }
+  });
+
+  it('is what the generator writes (idempotent)', () => {
+    const page = read('src/amazon-sql-interview.html');
+    expect(withFirstScreen(page, 'amazon', f())).toBe(page);
+  });
+
+  it('every app link carries src=company-amazon; readiness names amazon; the set link declares the goal', () => {
+    const html = firstScreenBlock('amazon', f());
+    const appLinks = [...html.matchAll(/href="(\/app\/[^"]*)"/g)].map(m => m[1]);
+    expect(appLinks.length).toBe(4);
+    for (const h of appLinks) expect(h, h).toMatch(/[?;]src=company-amazon$/);
+    expect(appLinks).toEqual(expect.arrayContaining([
+      '/app/?challenge=131&amp;src=company-amazon',
+      '/app/?company=Amazon&amp;goal=interview&amp;src=company-amazon',
+      '/app/?interview=faang-sql-interview&amp;src=company-amazon',
+      '/app/?challenge=334&amp;src=company-amazon',
+    ]));
+    expect(html).toContain('/sql-interview-readiness-test/?company=amazon&amp;src=company-amazon');
+  });
+
+  it('"Start with" is a free-tier, Amazon-tagged Medium on a shape the reported round names, and says what it measures, not how', () => {
+    const c = f().ordered.find(x => x.id === amazon.firstId);
+    expect(c, '#131 is not tagged Amazon').toBeTruthy();
+    expect(c.difficulty).toBe('Medium');
+    const t = text(firstScreenBlock('amazon', f()));
+    expect(t).toContain(`Start with: ${c.title} (Medium): a row compared against its own group's average.`);
+    const line = t.split('Start with:')[1].split('The set:')[0];
+    expect(line).not.toMatch(/\b(AVG|PARTITION BY|GROUP BY|subquery|correlated|JOIN)\b/i);
+    // The shape is the reported round's first problem.
+    expect(read('docs/reads/amazon-bie-candidate-report-2026-10-21.md')).toMatch(/salary exceeds their department's average/);
+  });
+
+  it('the set line states the live split, and the Pro line names the closest Pro mock honestly', () => {
+    const fx = f();
+    const t = text(firstScreenBlock('amazon', fx));
+    expect(t).toContain(`all ${fx.n} Amazon-tagged challenges in the app (${fx.medium} Medium, ${fx.hard} Hard)`);
+    expect(t).toContain('not questions Amazon has asked');
+    const m = mocks.find(x => x.id === amazon.mock.id);
+    expect(m.isFree).toBe(false);
+    expect(m.totalTime).toBe(50 * 60);
+    expect(m.questions.length).toBe(5);
+    expect(m.questions.map(q => q.title)).toEqual(expect.arrayContaining(['Second highest salary', 'Consecutive Orders']));
+    expect(t).toMatch(/the Hard SQL Interview mock \(Pro\) ?, 50 minutes, five written questions/);
+    expect(t).toContain('not modelled on Amazon');
+    expect(t).not.toMatch(/\$\d|unlimited|most[- ]asked|Amazon's own (mock|question)/i);
+  });
+
+  it('the frame cites the reported round already in the sourced table, and its follow-up is on record', () => {
+    const [title, , date] = pageData('amazon').sources[amazon.sourceKey];
+    const html = firstScreenBlock('amazon', f());
+    expect(text(html)).toContain(`${title}, ${date}`);
+    expect(html).toContain('href="#src-reported-amzn"');
+    expect(read('src/amazon-sql-interview.html')).toContain('id="src-reported-amzn"');
+    expect(read('docs/reads/amazon-bie-candidate-report-2026-10-21.md')).toMatch(/COUNT\(\*\) vs COUNT\(column\)/);
+  });
+
+  it('Debug 334 is the same COUNT(*) against COUNT(column) difference', () => {
+    const item = debugItems.find(c => c.id === amazon.debugId);
+    expect(item.brokenQuery.split('\n')[item.bugLines[0] - 1]).toMatch(/COUNT\(\*\)/);
+    expect(item.solution).toMatch(/COUNT\(age\)/);
   });
 });
