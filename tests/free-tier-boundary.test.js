@@ -28,7 +28,8 @@ const SET = [
   { id: 105, difficulty: 'Easy' },
   { id: 47, difficulty: 'Hard' },
 ];
-const ON = { flagOn: true, isPro: false, companyFilter: 'Stripe', scoped: SET, solved: new Set() };
+// An authored set (a signed archetype member) — the only kind the gate walls.
+const ON = { flagOn: true, isPro: false, companyFilter: 'Capital One', authored: true, scoped: SET, solved: new Set() };
 
 describe('M1 · the company set — first three free, then the wall', () => {
   it('orders the set the way the company view lists it: difficulty, then id', () => {
@@ -407,6 +408,41 @@ describe('companySetGate applies to authored sets only', () => {
     const app = fs.readFileSync(new URL('../src/app.jsx', import.meta.url), 'utf8');
     expect(app).toContain('const companyHasAuthoredSet = (company) =>');
     expect(app).toMatch(/ftbFlag\('companySetGate'\) && companyFilter && !isPro && companyHasAuthoredSet\(companyFilter\)/);
+  });
+  // 2026-11-26 (founder's go): the 09-20 rule lived only in the banner's
+  // `companyGateFreeIds`; the gate itself walled Snowflake's, Wise's, Meta's …
+  // topical sets (pro_modal_shown {reason:'company_set'} from 09-26).
+  it('the pure gate never walls a set that was not authored for the company', () => {
+    for (const authored of [false, undefined, null, 'yes', 1]) {
+      for (const id of [91, 6, 7, 20, 47, 50]) {
+        expect(companySetGate({ ...ON, companyFilter: 'Snowflake', authored, challenge: { id } }).gated).toBe(false);
+      }
+    }
+    const { authored: _drop, ...noArg } = ON;
+    expect(companySetGate({ ...noArg, challenge: { id: 7 } }).gated).toBe(false);
+  });
+  it('an authored set keeps the wall exactly as before: first three free, the fourth walled', () => {
+    expect(companySetGate({ ...ON, challenge: { id: 6 } }).gated).toBe(false);
+    expect(companySetGate({ ...ON, challenge: { id: 7 } })).toMatchObject({ gated: true, position: 4, freeCount: 3, setSize: 7 });
+  });
+  it('every companySetGate( call in app.jsx passes authored: companyHasAuthoredSet(companyFilter)', () => {
+    const app = read('../src/app.jsx');
+    const calls = [];
+    const re = /\bcompanySetGate\(/g;
+    let m;
+    while ((m = re.exec(app))) {
+      // the argument object: from the call to its matching close paren
+      let depth = 0, i = m.index + m[0].length - 1, end = -1;
+      for (; i < app.length; i++) {
+        if (app[i] === '(') depth++;
+        else if (app[i] === ')') { depth--; if (depth === 0) { end = i; break; } }
+      }
+      calls.push({ at: app.slice(0, m.index).split('\n').length, args: app.slice(m.index, end + 1) });
+    }
+    // the import line names it without calling it, so every match is a call
+    expect(calls.length).toBeGreaterThanOrEqual(3);
+    const missing = calls.filter(c => !/\bauthored:\s*companyHasAuthoredSet\(companyFilter\)/.test(c.args)).map(c => `app.jsx:${c.at}`);
+    expect(missing).toEqual([]);
   });
   it('the signed members are the gated ones', async () => {
     const { archetypeForCompany, archetypeMemberCompanies } = await import('../src/data/interview-archetypes.js');

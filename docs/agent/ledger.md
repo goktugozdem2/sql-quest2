@@ -27,6 +27,35 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### the company-set gate walls only authored sets (Capital One, Revolut) — bug fix
+
+- **Claimed** 2026-11-26 (founder's go in chat, "1'i uygula") · **Shipped**
+  on merge, no flag · **Read** 2026-12-10.
+- **Change.** The 2026-09-20 decision (M1 amended: only a set AUTHORED for
+  the company is walled) lived only in the banner's `companyGateFreeIds`.
+  The gate itself (`companySetGate`, three call sites in app.jsx: the
+  banner's next pick, the openChallenge wall, the row lock) never checked
+  it, so since the 09-26 flip a topical set (Snowflake, Wise, Meta, …)
+  walled its fourth question under reason `company_set` while its page and
+  banner promised only the general 10-solve quota. `companySetGate` now
+  takes `authored` and is ungated unless it is `true`; every call passes
+  `companyHasAuthoredSet(companyFilter)`.
+- **Metric** `company_set_wall` (docs/agent/metrics.md), here as a
+  correctness check on `pro_modal_shown {reason: 'company_set'}` by company.
+- **Baseline** 2026-09-26 → 11-26 (read-only, pro_events): the modal fired
+  in Snowflake (6), Wise (4) and Meta (2) views, and also in OpenAI, Amazon,
+  Airbnb and Google views — none of them authored sets.
+- **Target** 0 `company_set` walls or modals outside Capital One and Revolut
+  from the deploy; Capital One / Revolut walls still fire (> 0 if any
+  non-Pro reaches a fourth question there).
+- **Falsified if** any `company_set` row names another company after the
+  deploy (then a call site skips `authored`, or a stale bundle is served).
+- **Confounds.** The 11-22 verdict of "the company set wall" above counted
+  every company's wall; from this deploy only two companies can reach it,
+  so never read that series across 11-26. The freeQuota holdout (#384,
+  enrolment from 11-27) leaves the company gate the same in both arms; this
+  lands on both arms alike.
+
 ### the first-session tournament (`firstSessionTournament`, 3 arms; arm B = the single path)
 
 - **Claimed** 2026-11-26 (planner lane, plan only) · **Ships** dark across four PRs (plan §8) · **Flip** no earlier than **2026-12-10**, after the plan's §2.4 gates and the founder's go on the §7 money strings · **First read** the Friday on which every challenger has ≥ 150 eligible people. At ~23 human openers a day that is ~2027-01-08 with three arms; the hard latest for the first elimination is **2027-01-22** (the 6-week fallback).
