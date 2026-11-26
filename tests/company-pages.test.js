@@ -944,6 +944,8 @@ describe('mocks: company claims only where sourced', () => {
   it('the Interview tab renders the two sections from that flag', () => {
     const app = _rf(new URL('../src/app.jsx', import.meta.url), 'utf8');
     expect(app).toContain("i18n_t('interviewList', interview.sourced ? 'sectionCompany' : 'sectionGeneral')");
-    expect(app).toContain('[...shownMocks.filter(i => i.sourced), ...shownMocks.filter(i => !i.sourced)]');
+    // 2026-11-22: a mock with free leading questions opens the general
+    // section (the Metrics & Case Round); the two sections are unchanged.
+    expect(app).toContain('...shownMocks.filter(i => i.sourced),\n                ...shownMocks.filter(i => !i.sourced && freePreviewCount(i) > 0),\n                ...shownMocks.filter(i => !i.sourced && freePreviewCount(i) === 0),');
   });
 });

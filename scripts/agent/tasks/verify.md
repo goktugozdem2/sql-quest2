@@ -39,6 +39,14 @@ Two checks before you believe any number:
 2. **n.** If either side of the comparison is under ~12 people, the verdict is
    `UNREADABLE`. State the actual n. Do not report a percentage of four people.
 
+**An A/B claim gets the gbstats line too.** If the claim has arms, run
+`node scripts/ab/read-test.mjs <test>` (or `scripts/ab/read.py` on the
+metric's counts). Add one line to the verdict: n per arm, rates, chance to
+beat control, the 95% interval in points, and p. If gbstats declines, write
+"gbstats declined". The line informs the read; the claim's own
+falsification rule is still the verdict (`docs/agent/metrics.md`, "Reading an
+A/B with gbstats").
+
 ## Step 3 — write the verdict
 
 Move the entry from `## Open` to `## Closed` and append:
