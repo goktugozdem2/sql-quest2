@@ -27,8 +27,9 @@ openers a day (§2.1).
 
 **Constraints this plan does not touch** (`docs/plans/investor-90-day-2026-11-25.md`):
 - no price change and no quota change: `FREE_SOLVE_QUOTA` stays 10;
-- the freeQuota holdout (#384) runs orthogonally. It enrols 11-26 → 12-23,
-  with the money read on 12-10 and the full read on 12-31;
+- the freeQuota holdout (#384) runs orthogonally. It enrols 11-27 → 12-24,
+  with the money read on 12-11 and the full read on 2027-01-01 (moved a day
+  on 2026-11-26: it starts on merge);
 - money copy needs the founder's go. §7 lists every such string.
 
 Metrics: `first_session_tournament` (the decision metric) and
@@ -248,7 +249,7 @@ B–D person never writes `first_screen_assigned`,
 | `companyDirectOpen` (live 50/50 since 11-23) | B and D: a `?company=` arrival opens the company's question 1 directly, using the `direct` arm's resolver `companyBannerNext()`. C: the readiness check first, weighted by that company (`?company=` → `companySkillWeights`). | Its read keeps only people with no `tournament_assigned` or arm A. **Gate:** its 120-per-arm verdict should be in before launch. If it is not, it accrues at a quarter of today's rate after 12-10. |
 | `runnableStarter` (approved to flip after #402) | B–D: the starter text on every first-contact empty editor (`src/utils/runnable-starter.js`, the `starter` arm's behaviour, reused). | Its read keeps only people with no `tournament_assigned` or arm A. Its +15 pp interim read (~160 per arm, 12-17) lands mostly before launch. **Its +10 pp final (360 per arm, 01-07) cannot be reached on a quarter of the traffic.** Read it at the interim, and treat a HIT there as the ship decision (arm A then goes v2). |
 | `mobileRunBar` (dark) | B–D phones: today's sticky bar (the `control` behaviour) until that test is read, then whatever ships. | Its read keeps only people with no `tournament_assigned` or arm A. |
-| `freeQuotaHoldout` (live 11-26 → 12-23) | **Orthogonal, not superseded.** Every arm can be in `quota` or `holdout`. | Both reads report the 2×2. The holdout's 12-31 read gives its primary twice: on all its enrolled people, and on its people outside arms B–D (enrolled before 12-10, or arm A), and says whether they differ. |
+| `freeQuotaHoldout` (live 11-27 → 12-24) | **Orthogonal, not superseded.** Every arm can be in `quota` or `holdout`. | Both reads report the 2×2. The holdout's 2027-01-01 read gives its primary twice: on all its enrolled people, and on its people outside arms B–D (enrolled before 12-10, or arm A), and says whether they differ. |
 | Later-step tests (`runSubmitNudge`, `mobileOneLayer`, `quotaWallInline`, `modalPlansFirst`, `exitReasonAsk`, `day2Ask`) | Run in every arm as today, by their own hash. | Their reads add `tArm` as a split column. A test whose surface an arm removes reports that arm's cell as "not exposed" (B suppresses the post-solve "What's next" strip, for example). |
 
 ### 2.4 Launch gates (the flip PR checks all of them)

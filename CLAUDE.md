@@ -1012,13 +1012,14 @@ URLs filled, brand icon is the bolt, brand colour #FFE34D.
   moves to 20, with the founder's Go.
 - **The quota is under a 50/50 holdout (2026-11-25, founder's written go,
   flag `freeQuotaHoldout`).** A browser whose first app open falls in
-  2026-11-26 → 12-23 is split by `freeQuotaArm(aid)`; the `holdout` arm reads
+  2026-11-27 → 12-24 is split by `freeQuotaArm(aid)`; the `holdout` arm reads
   `freeQuota` OFF (no wall, no counter, the pre-09-26 in-app wording),
   returning browsers and pre-window accounts keep the quota. Every
   `freeQuota` read in app.jsx goes through `freeQuotaOn()`, never a bare
   `ftbFlag('freeQuota')` (test-bound); the static pages keep today's wording.
-  Read 2026-12-31 (ledger "the free-quota holdout", metric
-  `free_quota_holdout`). src/utils/free-quota-holdout.js.
+  Arm-balance check 2026-12-03, halfway money read 12-11, read 2027-01-01
+  (ledger "the free-quota holdout", metric `free_quota_holdout`).
+  src/utils/free-quota-holdout.js.
 
 ### Testing
 - **Rule (founder, 2026-09-25): a new test is proven by at least one

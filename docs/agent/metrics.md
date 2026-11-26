@@ -3905,8 +3905,9 @@ written go 2026-11-25; design: docs/reads/returns-0926-flags-2026-11-25.md
 
 - *Person* = the `aid`. *Arm* = `free_quota_arm_assigned.arm` (`quota` or
   `holdout`), written once per browser at its first app open inside the
-  enrolment window (2026-11-26 → 2026-12-24 exclusive, as planned; the
-  window lives in `src/utils/free-quota-holdout.js`). Only browsers with no
+  enrolment window (2026-11-27 → 2026-12-25 exclusive, i.e. first opens
+  11-27 through 12-24; fixed constants in `src/utils/free-quota-holdout.js`,
+  moved from 11-26 on 2026-11-26 because the earliest merge is 11-27). Only browsers with no
   earlier app state are assigned; every later `pro_events` row from an
   assigned browser carries `fqArm`. Read by assignment (intent to treat):
   a holdout browser that signs into an account created before the window
@@ -3941,11 +3942,31 @@ written go 2026-11-25; design: docs/reads/returns-0926-flags-2026-11-25.md
   trials and purchases the wall brings. Gap ≤ 5 points → it did not; look
   elsewhere (the 09-25 deploy's diff). In between → extend enrolment by 4
   weeks, once.
-- **Money stop (halfway read, 2 weeks into enrolment, 2026-12-10):** the
+- **Money stop (halfway read, 2 weeks into enrolment, 2026-12-11):** the
   holdout arm shows 0 trials while `quota` shows ≥ 3 → report it to the
   founder the same day (he decides whether to stop; the agent does not
   turn the flag off on its own). A dispute or refund tied to the holdout
   arm → report the same day.
+- **Arm-balance check 2026-12-03** (7 days into enrolment; written before
+  the data, ledger "the free-quota holdout"): over **every** bot-filtered
+  browser with a `free_quota_arm_assigned` row — the query below's `arm`
+  CTE, not its `assigned` column, which keeps only browsers 7 days past t0
+  and would hold almost nobody on 12-03 — each arm must hold 45–55% (±5
+  points of 50/50). Needs ≥ 200 assigned; if fewer on 12-03, re-run daily
+  until 200. Outside 45–55 → falsified: pause enrolment the same day (flag
+  `freeQuotaHoldout` off, which returns everyone to today's quota) and
+  report to the founder; investigate the hash (stored arm vs
+  `freeQuotaArm(aid)`, and whether one arm loses or bot-flags its
+  assignment row more often), fix, re-enrol from zero under a new test id.
+  Nothing else is read before it passes. Run it as the query below with
+  the final `select` replaced by:
+
+  ```sql
+  select arm, count(*) assigned,
+         round(100.0 * count(*) / sum(count(*)) over (), 1) pct
+  from arm group by arm order by arm;
+  ```
+- **Read** 2027-01-01, the 7th day after enrolment ends.
 - **Cells:** the holdout sits on its own cell, first open → 7-day return,
   all devices. It nests the quota-wall tests (`quotaWallInline`,
   `modalPlansFirst` on `free_quota` asks): holdout browsers never meet the
