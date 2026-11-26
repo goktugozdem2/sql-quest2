@@ -1020,8 +1020,11 @@ Every competitor fact cited must come from that read (URL + date).
   tutor ("This box goes to the founder. For this query, the tutor answers
   now."). Measure it with `feedback_submitted` rows that carry a challenge
   id.
-- **IR-3 (founder). A payer's job question,** asked 2026-09-14 and never
-  answered. One honest line, either way.
+- ~~**IR-3 (founder). A payer's job question,** asked 2026-09-14 and never
+  answered. One honest line, either way.~~ **Closed 2026-11-24:** the payer
+  asked again on 11-24 and the founder answered in the same thread that day
+  (no opening promised; he would name her if asked for someone). E1 checked
+  on 11-26: the founder's reply is the last message, so no further draft.
 - **IR-4 (founder). Acknowledge the 09-15 security report** once #223 is
   deployed. The reporter left no contact, so this item is just to close the
   loop in the ledger.
