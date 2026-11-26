@@ -100,6 +100,7 @@ import { t as i18n_t, getCurrentLang, setLang as i18n_setLang, subscribeLang, SU
 import { buildWeeklyReport, detectMilestones } from './utils/weekly-report.js';
 import { isMcqQuestion, scoreMcqAnswer, applyHintPenalty, nextOptionId, findOption, buildInterviewProgress, mockMistakeDiagnosis, weakConceptsFromHistory } from './utils/mock-interview.js';
 import { explainsApproach, approachSubmittedEvent } from './utils/mock-approach.js';
+import { CHALLENGE_LEFT_EVENT, startOpen, noteTyped, noteFlag, leaveHowForView, shouldSendLeft, markSent, challengeLeftPayload } from './utils/challenge-left.js';
 
 // 2026-09-12 (founder's cleanup item 12): the sector deep-link parameter is
 // English on every link — ?sector=finance | real-estate | manufacturing |
@@ -7059,7 +7060,7 @@ function SQLQuest() {
     try { if (window.__SQLQUEST_SMOKE__ === true) return false; } catch (_) {}
     try { return botSignals({ userAgent: navigator.userAgent, webdriver: navigator.webdriver }).hard; } catch (_) { return false; }
   };
-  const writeProEvent = (event, reason, metadata = {}) => {
+  const writeProEvent = (event, reason, metadata = {}, opts = {}) => {
     if (ANALYTICS_MUTED) {
       try { console.debug('[sqlquest] analytics muted on localhost:', event, reason, metadata); } catch (_) {}
       return;
@@ -7070,6 +7071,10 @@ function SQLQuest() {
     try {
       supabaseFetch('pro_events', {
         method: 'POST',
+        // An exit event (challenge_left) is written as the page goes away:
+        // keepalive lets the request outlive it. Not sendBeacon — PostgREST
+        // needs the apikey header, which a beacon cannot set.
+        ...(opts && opts.keepalive === true ? { keepalive: true } : {}),
         headers: { 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
         body: JSON.stringify({
           event,
@@ -7532,7 +7537,7 @@ function SQLQuest() {
       const decision = botDecision(signals);
       if (decision.stamp) payload.bot = decision.stamp;
       if (event === 'app_opened' && signals) Object.assign(payload, { wd: signals.wd, uaBot: signals.uaBot, langs: signals.langs });
-      writeProEvent(event, 'activation_funnel', payload);
+      writeProEvent(event, 'activation_funnel', payload, { keepalive: options.keepalive === true });
     } catch (_) {}
   };
 
@@ -24119,6 +24124,73 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
   // it; every existing call site is unchanged and sends no key, which the read
   // treats as organic. No new event — a separate hard_preview_opened would
   // duplicate challenge_opened (plan §Measurement).
+  // ── challenge_left (2026-11-24) ─────────────────────────────────────────
+  // One event per challenge open, sent when the person leaves it without a
+  // run or a submit: back to the list or another app tab (`navigate`), the
+  // browser tab hidden or closed (`hidden`), another challenge opened over it
+  // (`switch`). Counts and flags only — never the query text. Rules in
+  // src/utils/challenge-left.js; metric `open_to_run_exit`. Guests and
+  // accounts alike. Hooks sit here, above the `showAuth` / `dbReady` early
+  // returns (CLAUDE.md fragile area 1).
+  const chLeftRef = useRef(null);
+  const chViewRef = useRef(null);
+  const chLeftNote = (flag) => { chLeftRef.current = noteFlag(chLeftRef.current, flag); };
+  const chLeftSend = (how) => {
+    const open = chLeftRef.current;
+    if (!shouldSendLeft(open, how)) return;
+    chLeftRef.current = markSent(open);
+    trackActivationEvent(CHALLENGE_LEFT_EVENT, challengeLeftPayload(open, { how, now: Date.now(), width: typeof window !== 'undefined' ? window.innerWidth : null }), { keepalive: true });
+  };
+  const chLeftSendRef = useRef(chLeftSend);
+  chLeftSendRef.current = chLeftSend;
+  // The challenge page on screen: the Practice tab's Challenges view with a
+  // challenge open. `currentChallenge` alone outlives a switch to another tab.
+  const chLeftView = (currentChallenge && activeTab === 'quests' && practiceSubTab === 'challenges') ? currentChallenge.id : null;
+  chViewRef.current = chLeftView;
+  const chLeftBegin = (id) => {
+    const prev = chLeftRef.current;
+    if (prev && !prev.sent && String(prev.challengeId) === String(id)) return; // the same page, still open
+    if (prev) chLeftSend('switch');
+    let next = startOpen(id, Date.now());
+    if (chViewRef.current != null && String(chViewRef.current) === String(id)) next = noteFlag(next, 'seen');
+    chLeftRef.current = next;
+  };
+  useEffect(() => {
+    const open = chLeftRef.current;
+    if (!open) return;
+    if (chLeftView != null && String(chLeftView) === String(open.challengeId)) { chLeftNote('seen'); return; }
+    const how = leaveHowForView(open, chLeftView);
+    if (how) chLeftSend(how);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chLeftView]);
+  useEffect(() => {
+    const onScreen = () => chViewRef.current != null && !!chLeftRef.current;
+    const onVis = () => { if (document.visibilityState === 'hidden' && onScreen()) chLeftSendRef.current('hidden'); };
+    const onPageHide = () => { if (onScreen()) chLeftSendRef.current('hidden'); };
+    // The person's own scroll (wheel, touch drag, page keys), never the app's
+    // programmatic scroll to the editor.
+    const onScroll = () => { if (onScreen() && !chLeftRef.current.scrolled) chLeftNote('scrolled'); };
+    const onKey = (e) => {
+      if (!['PageDown', 'PageUp', 'Home', 'End', ' '].includes(e.key)) return;
+      const t = e.target;
+      if (t && t.closest && t.closest('.CodeMirror, input, textarea, select, [contenteditable="true"]')) return;
+      onScroll();
+    };
+    document.addEventListener('visibilitychange', onVis);
+    window.addEventListener('pagehide', onPageHide);
+    window.addEventListener('wheel', onScroll, { passive: true });
+    window.addEventListener('touchmove', onScroll, { passive: true });
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('visibilitychange', onVis);
+      window.removeEventListener('pagehide', onPageHide);
+      window.removeEventListener('wheel', onScroll);
+      window.removeEventListener('touchmove', onScroll);
+      window.removeEventListener('keydown', onKey);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const openChallenge = (challenge, opts = {}) => {
     if (isContentLocked('challenge', challenge)) {
       trackLockReached('challenge_hard', {
@@ -24302,6 +24374,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
       // Present only on the three preview surfaces — see the note above.
       ...(opts && opts.openedFrom ? { openedFrom: opts.openedFrom } : {}),
     });
+    chLeftBegin(challenge.id);
     if (solvedChallenges.size === 0 && challengeAttempts.length === 0) {
       trackActivationEvent('first_challenge_started', {
         challengeId: challenge.id,
@@ -25213,6 +25286,7 @@ HINT PROGRESSION (based on conversation length):
     setInlineAiInput('');
     setInlineAiLoading(false);
     setShowInlineAiHelp(true);
+    chLeftNote('hintOpened');
     trackActivationEvent('inline_help_opened', { challengeId: challenge?.id ?? null, opener: dx ? 'diagnosis' : (q ? 'query' : 'empty'), hasDiagnosis: !!dx });
     setTimeout(() => {
       try {
@@ -25337,6 +25411,8 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
   }
   const markChallengeFirstRun = (via) => {
     const id = currentChallenge?.id;
+    // A run or a submit on this open: challenge_left never fires for it.
+    if (chLeftRef.current && id != null && String(chLeftRef.current.challengeId) === String(id)) chLeftNote('ran');
     if (id == null || firstRunSentRef.current.has(id)) return;
     firstRunSentRef.current.add(id);
     const at = challengeOpenedAtRef.current.id === id ? challengeOpenedAtRef.current.at : 0;
@@ -40235,7 +40311,7 @@ RULES:
                             {showChallengeStructure ? `🙈 ${i18n_t('practice', 'hideStructure')}` : `🧩 ${i18n_t('practice', 'showStructure')}`}
                           </button>
                         )}
-                        <button onClick={() => { if (!showChallengeHint && currentChallenge) trackActivationEvent('challenge_hint_opened', { challengeId: currentChallenge.id, difficulty: currentChallenge.difficulty }); setShowChallengeHint(!showChallengeHint); }} className="text-sm text-yellow-400 hover:text-yellow-300">
+                        <button onClick={() => { if (!showChallengeHint) chLeftNote('hintOpened'); if (!showChallengeHint && currentChallenge) trackActivationEvent('challenge_hint_opened', { challengeId: currentChallenge.id, difficulty: currentChallenge.difficulty }); setShowChallengeHint(!showChallengeHint); }} className="text-sm text-yellow-400 hover:text-yellow-300">
                           {showChallengeHint ? `🙈 ${i18n_t('practice', 'hideHint')}` : `💡 ${i18n_t('practice', 'showHint')}`}
                         </button>
                       </div>
@@ -40349,7 +40425,7 @@ RULES:
                     <div data-scroll-target="challenge-editor">
                       <SQLEditor
                         value={challengeQuery}
-                        onChange={val => updateChallengeQuery(val)}
+                        onChange={val => { chLeftRef.current = noteTyped(chLeftRef.current, challengeQuery, val); updateChallengeQuery(val); }}
                         onKeyDown={(e) => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); submitChallenge(); }}}
                         placeholder={challengeStarterHint || i18n_t('practice', 'editorPlaceholder')}
                         height={isDebugChallenge(currentChallenge) ? '18rem' : '14rem'}
