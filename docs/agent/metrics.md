@@ -4672,6 +4672,55 @@ where query is not null and page = 'https://sqlquest.app/<slug>/'
 - Position is impression-weighted (the query above), never a plain average of
   daily positions.
 
+## `case_round_funnel`
+
+The Metrics & Case Round's funnel (`metrics-case-round`), from the first time
+a person opens it to money (2026-11-22; named `content_funnel` in the PR
+until 2026-11-25, renamed because main's `content_funnel` above is the
+per-landing-page funnel). People by `aid` (the landing script and the app
+stamp the same one); internal accounts out (shared filters). Scope every
+step to the set:
+
+1. **Entered** — `interview_started` with
+   `interviewId = 'metrics-case-round'`. Split by `preview` (true: a free
+   person on the free questions; false: Pro, the whole set) and by door:
+   `cta_case_round` (`reason='landing'`, `m.page` = the company page) before
+   it within 30 minutes is the page door; none is the in-app door (the
+   Interview tab).
+2. **Finished the free part** — `interview_completed` with the same
+   `interviewId` and `questions` = the mock's `freeQuestionCount` (3 on
+   2026-11-25).
+3. **Saw the ask** — `pro_modal_shown` with `reason = 'case_round'`, fired
+   when the free run ends. A page link to this set opens the free run, so it
+   never produces a `mock_link` row.
+4. **Went to Stripe** — `pro_checkout_clicked` with `modalReason =
+   'case_round'`.
+5. **Trial or paid** — `pro_trial_started` or `pro_purchase_completed`
+   (`reason='stripe_webhook'`), joined by **username** (the webhook row has
+   no aid) within 24 h of step 4.
+
+```sql
+-- step 1, people per door, the window :start .. :start + 27
+with e as (
+  select distinct aid, ((metadata #>> '{}')::jsonb)->>'preview' as preview
+  from pro_events
+  where event = 'interview_started'
+    and ((metadata #>> '{}')::jsonb)->>'interviewId' = 'metrics-case-round'
+    and created_at >= :start and created_at < :start + 28
+)
+select preview, count(*) from e group by 1;
+-- step 3
+select count(distinct aid) from pro_events
+where event = 'pro_modal_shown'
+  and ((metadata #>> '{}')::jsonb)->>'reason' = 'case_round'
+  and created_at >= :start and created_at < :start + 28;
+```
+
+- Born 2026-11-22 (this PR). Before it, no `case_round` row exists; the
+  comparison for step 3 → 5 is `reason = 'interview_locked'` over the same
+  window.
+- Small n: read people, never rates, below 20 entries.
+
 ## `gsc_ai_queries`
 
 Google clicks, impressions and impression-weighted position for every search

@@ -35,6 +35,9 @@ const OFF = [
   'capital-one-codesignal', 'revolut-analytics-screen',
   'sql-fundamentals-free', 'data-analyst-mid', 'backend-engineer-sql', 'faang-sql-interview',
   'business-analyst-sql', 'senior-data-engineer', 'top-10-most-asked',
+  // 2026-11-22: a practice set, not a live round; its written items show
+  // grading notes after submit instead.
+  'metrics-case-round',
 ];
 
 describe('the box is a per-question flag', () => {
