@@ -87,7 +87,7 @@ import { dueRetrievals, pickRetrievalChallenge, recordRetrieval, dailyQuota, MAX
 import { computeRecap, shouldShowRecap } from './utils/session-recap.js';
 import { getAnonId } from './utils/anon-id.js';
 import { FREE_QUOTA_HOLDOUT_KEY, FREE_QUOTA_HOLDOUT_TEST_ID, freeQuotaEnrolment, hasPriorAppUse, normalizeFreeQuotaRecord, freeQuotaEffective, freeQuotaEventStamp } from './utils/free-quota-holdout.js';
-import { TOURNAMENT_KEY, tournamentEnrolment, tournamentPriorAppUse, normalizeTournamentRecord, adoptAccountRecord, tournamentEffectiveArm, tournamentBehaviour, tournamentSupersedes, tournamentEventStamp, shouldAnnounceTournament, tournamentAssignedPayload } from './utils/tournament.js';
+import { TOURNAMENT_KEY, tournamentEnrolment, tournamentPriorAppUse, normalizeTournamentRecord, adoptAccountRecord, tournamentEffectiveArm, tournamentBehaviour, tournamentSupersedes, tournamentEventStamp, shouldAnnounceTournament, tournamentAssignedPayload, buildVisitorProfile, enrichTournamentProfile } from './utils/tournament.js';
 import { quotaWallArm, quotaWallShowsModal, quotaInlineCopy, QUOTA_WALL_DAY_KEY } from './utils/quota-wall-inline.js';
 import { classifyLandingSrc, LANDING_SRC_KEY } from './utils/landing-src.js';
 import { classifyQueryError } from './utils/query-error.js';
@@ -132,6 +132,18 @@ function canonicalSectorId(raw) {
   return SECTOR_PARAM_ALIASES[key] || key;
 }
 
+// The localStorage keys exactly as the browser brought them, before any
+// module-load block below writes one (the holdout mints the aid). The
+// tournament's profile reads `landingBefore` from it: a landing page's
+// `sqlquest_aid` here means the person saw the site before the app.
+const BOOT_KEYS = (() => {
+  const keys = [];
+  try {
+    if (typeof localStorage !== 'undefined') for (let i = 0; i < localStorage.length; i++) keys.push(localStorage.key(i));
+  } catch (_) { /* storage blocked */ }
+  return keys;
+})();
+
 // The free-quota holdout (2026-11-25, src/utils/free-quota-holdout.js):
 // decided HERE, at module load, before anything below writes a key — the
 // "has the app run in this browser before?" test reads the keys as the
@@ -165,6 +177,9 @@ if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
 // ignored). A stored record always wins — nobody is re-armed. The component
 // reads TOURNAMENT_RECORD through tournamentArm() / tournamentBehaviourNow()
 // and writeProEvent; tournament_assigned fires once, after the session loads.
+// Profile first (founder, 2026-11-26): a new browser's profile is read here
+// from what is known before it does anything (buildVisitorProfile), it names
+// the stratum, and the arm is drawn inside the stratum.
 let TOURNAMENT_RECORD = null;
 if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
   try {
@@ -173,14 +188,36 @@ if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
     const keys = [];
     for (let i = 0; i < localStorage.length; i++) keys.push(localStorage.key(i));
     const flagOn = window.FF?.feature?.('firstSessionTournament') === true;
+    const deciding = flagOn && !normalizeTournamentRecord(stored);
+    let profile = null;
+    if (deciding) {
+      const readLs = (k) => { try { return localStorage.getItem(k); } catch (_) { return null; } };
+      let readinessRecord = null;
+      try { readinessRecord = JSON.parse(readLs('sqlquest_readiness_v1') || 'null'); } catch (_) { readinessRecord = null; }
+      let country = null;
+      try { country = sessionStorage.getItem('sqlquest_geo_country'); } catch (_) { country = null; }
+      profile = buildVisitorProfile({
+        search: window.location.search,
+        referrer: typeof document !== 'undefined' ? document.referrer : '',
+        siteHost: window.location.hostname,
+        landingSrc: readLs(LANDING_SRC_KEY),
+        viewportWidth: window.innerWidth,
+        country,
+        navigatorLanguage: typeof navigator !== 'undefined' ? navigator.language : null,
+        tzOffsetEastMin: -new Date().getTimezoneOffset(),
+        bootKeys: BOOT_KEYS,
+        readinessRecord,
+      });
+    }
     const decision = tournamentEnrolment({
       flagOn,
       record: stored,
-      aid: flagOn && !normalizeTournamentRecord(stored) ? getAnonId() : null,
+      aid: deciding ? getAnonId() : null,
       now: Date.now(),
       priorAppUse: tournamentPriorAppUse(keys),
       search: window.location.search,
       pathname: window.location.pathname,
+      profile,
     });
     if (decision.write) localStorage.setItem(TOURNAMENT_KEY, JSON.stringify(decision.write));
     TOURNAMENT_RECORD = decision.record;
@@ -12475,6 +12512,9 @@ CRITICAL RULES:
   useEffect(() => {
     if (isSessionLoading) return;
     if (!shouldAnnounceTournament({ flagOn: ftbFlag('firstSessionTournament'), record: TOURNAMENT_RECORD })) return;
+    // /api/geo/ may have answered by now: fill the profile's country (never
+    // the stratum, which was decided at the first open).
+    try { TOURNAMENT_RECORD = enrichTournamentProfile(TOURNAMENT_RECORD, { country: sessionStorage.getItem('sqlquest_geo_country') }); } catch (_) { /* keep the record */ }
     const payload = tournamentAssignedPayload(TOURNAMENT_RECORD);
     if (!payload) return;
     TOURNAMENT_RECORD = { ...TOURNAMENT_RECORD, announced: true };

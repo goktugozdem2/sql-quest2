@@ -3,8 +3,10 @@
 // docs/plans/first-session-tournament-2026-11-26.md §2.2; metric
 // `first_session_tournament` in docs/agent/metrics.md).
 //
-// New visitors are split by aid across the ACTIVE arms, equal weights. Arm A
-// (today's product) is permanent; the challengers come and go:
+// New visitors are profiled, put in a stratum (TOURNAMENT_STRATA, below),
+// and split by aid across the ACTIVE arms inside it — equal weights unless
+// the stratum is routed (TOURNAMENT_STRATUM_WEIGHTS). Arm A (today's
+// product) is permanent; the challengers come and go:
 //   - the worst challenger is eliminated (status 'eliminated', an endDate),
 //     and the next queued hypothesis takes its place with round + 1;
 //   - a challenger that beats control (P ≥ 0.95 on two consecutive Friday
@@ -116,3 +118,50 @@ export function activeTournamentArms(arms = TOURNAMENT_ARMS) {
 export function tournamentArmById(id, arms = TOURNAMENT_ARMS) {
   return arms.find(a => a && a.id === id) || null;
 }
+
+// ── Strata: profile first, then the draw (founder, chat, 2026-11-26) ──────
+// "kişinin profilini anlamadan onu bir gruba alamayız. profile göre gruba
+// almalıyız." A person's profile is read at the first app open
+// (buildVisitorProfile, src/utils/tournament.js); it puts them in ONE of
+// four strata; the arm is then drawn at random INSIDE the stratum. Picking
+// the arm FROM the profile would make arm and profile the same thing and
+// no read could tell them apart; drawing inside the stratum keeps every
+// arm comparable within every profile.
+//
+// Four, not more: ~23 new people a day, so every extra cut halves each cell.
+//   IT = interview-target (company page, `?company=`, the readiness test or
+//        its stored result, the Capital One blog — #409's entry definition)
+//   NI = everyone else
+//   D  = desktop (and a device that could not be read)
+//   M  = phone or tablet
+export const TOURNAMENT_STRATA = Object.freeze(['IT-D', 'IT-M', 'NI-D', 'NI-M']);
+export const TOURNAMENT_STRATUM_LABELS = Object.freeze({
+  'IT-D': 'interview-target · desktop',
+  'IT-M': 'interview-target · phone/tablet',
+  'NI-D': 'not interview-target · desktop',
+  'NI-M': 'not interview-target · phone/tablet',
+});
+
+// Exploration floor: a routed stratum keeps at least this share on the arms
+// that did NOT win it, so the read keeps seeing them (and drift is caught).
+export const TOURNAMENT_MIN_EXPLORE = 0.2;
+
+// Per-stratum weights — the routing table. A stratum with no entry draws
+// with EQUAL weights over the active arms (weightsVersion 0). An entry
+// routes it, by an orchestrator decision row and only after the routing
+// rule (metrics.md `first_session_tournament`: P(best in stratum) ≥ 0.95 on
+// two consecutive Friday reads, ≥ 100 eligible per arm in that stratum):
+//
+//   'IT-D': Object.freeze({
+//     version: 1,                       // bumps on every change; the read restarts
+//     since: '2027-03-05',              //   the stratum's per-arm counts at it
+//     decision: 'orchestrator-decisions.md 2027-03-05',
+//     weights: Object.freeze({ B_single_path: 0.8, A_control: 0.1, D_interview_sprint: 0.1 }),
+//   }),
+//
+// Weights name ACTIVE arms only; every active arm keeps > 0 and the winner
+// at most 1 − TOURNAMENT_MIN_EXPLORE. An entry that breaks either rule is
+// ignored (the stratum draws equally) — tests/tournament.test.js holds the
+// live table to it. Changing a weight re-buckets only browsers with no
+// record yet; stored records keep their arm.
+export const TOURNAMENT_STRATUM_WEIGHTS = Object.freeze({});

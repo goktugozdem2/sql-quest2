@@ -42,7 +42,9 @@ const hexAids = (n, seed = 1) => {
 };
 const AIDS = hexAids(12000);
 const NOW = Date.parse('2026-12-11T10:00:00Z');
-const aidFor = (armId) => AIDS.find(a => tournamentAssign(a).id === armId);
+// An enrolment with no profile is read as an empty one: not interview-target,
+// desktop — stratum NI-D (tests/tournament-profile.test.js covers the rest).
+const aidFor = (armId) => AIDS.find(a => tournamentAssign(a, TOURNAMENT_ARMS, { stratum: 'NI-D' }).id === armId);
 
 describe('the registry', () => {
   it('launches with three active arms — A control (permanent, slot 0), B, D — and C queued', () => {
@@ -92,6 +94,8 @@ describe('the registry', () => {
   });
 });
 
+// These run the draw with no stratum salt (the hash as PR 1 shipped it);
+// the per-stratum draws are tested in tests/tournament-profile.test.js.
 describe('assignment — by aid, murmur-finalised, ACTIVE arms only, equal weights', () => {
   it('is deterministic per aid', () => {
     for (const a of AIDS.slice(0, 50)) expect(tournamentAssign(a).id).toBe(tournamentAssign(a).id);
@@ -180,10 +184,12 @@ describe('assignment — by aid, murmur-finalised, ACTIVE arms only, equal weigh
 describe('who enters — a new visitor\'s first app open, once', () => {
   const fresh = (over = {}) => tournamentEnrolment({ flagOn: true, record: null, aid: AIDS[0], now: NOW, priorAppUse: false, ...over });
 
-  it('a fresh browser is enrolled, with the arm, version, round, slot and time', () => {
+  it('a fresh browser is enrolled, with the arm, version, round, slot and time — and why (stratum, profile, weights, draw, reason)', () => {
     const d = fresh();
-    const entry = tournamentAssign(AIDS[0]);
-    expect(d.write).toEqual({ status: 'enrolled', arm: entry.id, armVersion: entry.armVersion, round: entry.round, slot: entry.slot, assignedAt: NOW, announced: false });
+    const entry = tournamentAssign(AIDS[0], TOURNAMENT_ARMS, { stratum: 'NI-D' });
+    expect(d.write).toMatchObject({ status: 'enrolled', arm: entry.id, armVersion: entry.armVersion, round: entry.round, slot: entry.slot, assignedAt: NOW, announced: false, stratum: 'NI-D', weightsVersion: 0 });
+    expect(d.write.profile.door).toBe('direct_unknown');
+    expect(d.write.reason).toMatch(/→ stratum NI-D; equal weights A\/B\/D; hash draw 0\.\d\d → [ABD]$/);
     expect(d.record).toEqual(d.write);
   });
 
@@ -291,10 +297,11 @@ describe('tournament_assigned — once per browser', () => {
     expect(shouldAnnounceTournament({ flagOn: true, record: rec })).toBe(true);
     expect(shouldAnnounceTournament({ flagOn: true, record: { ...rec, announced: true } })).toBe(false);
     const p = tournamentAssignedPayload(rec);
-    expect(p).toEqual({
+    expect(p).toMatchObject({
       test: 'first_session_tournament_v1', arm: rec.arm, armVersion: rec.armVersion, round: rec.round,
-      slot: rec.slot, firstOpenAt: new Date(NOW).toISOString(),
+      slot: rec.slot, firstOpenAt: new Date(NOW).toISOString(), stratum: rec.stratum, reason: rec.reason,
     });
+    expect(p.profile).toEqual(rec.profile);
     expect(tournamentAssignedPayload({ status: 'returning' })).toBe(null);
   });
 
