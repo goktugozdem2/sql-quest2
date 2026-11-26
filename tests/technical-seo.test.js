@@ -56,16 +56,114 @@ describe('one host: every other host the project answers on redirects to sqlques
   // 2026-11-25 (G1, R1-3): sql-quest2.vercel.app served a full 200 copy of
   // the site; search engines indexed it and the week's only AI-search
   // citation credited sql-quest2.vercel.app/llms.txt instead of sqlquest.app.
-  const redirects = JSON.parse(read('vercel.json')).redirects;
-  for (const host of ['www.sqlquest.app', 'sql-quest2.vercel.app']) {
-    it(`${host} → https://sqlquest.app/:path*, permanent`, () => {
-      const rule = redirects.find(r => (r.has || []).some(h => h.type === 'host' && h.value === host));
-      expect(rule, host).toBeTruthy();
-      expect(rule.source).toBe('/:path*');
-      expect(rule.destination).toBe('https://sqlquest.app/:path*');
-      expect(rule.permanent).toBe(true);
+  //
+  // 2026-11-26 (live QA §4): the single `/:path*` rule fired for /app.js,
+  // /robots.txt and /sitemap.xml but never for /, /app/, /blog/ or
+  // /sql-exercises/. Cause, read in @vercel/routing-utils: a redirect source
+  // is compiled by path-to-regexp v6 with `strict: true`, so `/:path*`
+  // cannot match a path that ends in "/", and under `trailingSlash: true`
+  // every page ends in "/". The fix is a `/` and a `/:path*/` entry per
+  // host, ahead of `/:path*`. This block simulates Vercel's order
+  // (trailingSlash routes, then redirects) with that compiler's output.
+  const config = JSON.parse(read('vercel.json'));
+  const redirects = config.redirects;
+  const HOSTS = { 'www.sqlquest.app': 308, 'sql-quest2.vercel.app': 301 };
+
+  // path-to-regexp v6, { strict: true, sensitive: true, delimiter: '/' },
+  // for the only syntax host rules use: literals, `/:name`, `/:name*`.
+  const SEG = '[^\\/#\\?]+?';
+  function sourceToRegex(source) {
+    if (/[()?+]/.test(source)) throw new Error(`unsupported source in host rule: ${source}`);
+    const names = [];
+    let re = '';
+    let rest = source;
+    while (rest) {
+      const m = rest.match(/^\/:(\w+)(\*?)/);
+      if (m) {
+        names.push(m[1]);
+        re += m[2] ? `(?:\\/((?:${SEG})(?:\\/(?:${SEG}))*))?` : `\\/(${SEG})`;
+        rest = rest.slice(m[0].length);
+      } else {
+        re += rest[0].replace(/[.*+?^${}()|[\]\\/]/g, '\\$&');
+        rest = rest.slice(1);
+      }
+    }
+    return { re: new RegExp(`^${re}$`), names };
+  }
+  const fill = (dest, names, m) => names.reduce((d, n, i) =>
+    d.replace(new RegExp(`/:${n}\\*?`), m[i + 1] === undefined ? '' : `/${m[i + 1]}`), dest);
+  const statusOf = (r) => r.statusCode ?? (r.permanent === false ? 307 : 308);
+
+  // convertTrailingSlash(true) in @vercel/routing-utils, then the redirects.
+  const TRAILING = [
+    { re: /^\/\.well-known(?:\/.*)?$/, stop: true },
+    { re: /^\/((?:[^/]+\/)*[^/.]+)$/, to: (m) => `/${m[1]}/` },
+    { re: /^\/((?:[^/]+\/)*[^/]+\.\w+)\/$/, to: (m) => `/${m[1]}` },
+  ];
+  function hop(host, path) {
+    if (config.trailingSlash === true) {
+      for (const t of TRAILING) {
+        const m = path.match(t.re);
+        if (m) { if (t.stop) return null; return { status: 308, location: t.to(m) }; }
+      }
+    }
+    for (const r of redirects) {
+      const hostHas = (r.has || []).find(h => h.type === 'host');
+      if (!hostHas || hostHas.value !== host) continue;   // path-only rules are not under test here
+      const { re, names } = sourceToRegex(r.source);
+      const m = path.match(re);
+      if (m) return { status: statusOf(r), location: fill(r.destination, names, m) };
+    }
+    return null;
+  }
+  // Follows hops the way a client does; returns the first off-host hop.
+  function resolve(host, path) {
+    for (let i = 0; i < 4; i++) {
+      const h = hop(host, path);
+      if (!h) return { served: `${host}${path}` };
+      if (/^https?:\/\//.test(h.location)) return h;
+      path = h.location;
+    }
+    throw new Error('redirect loop');
+  }
+
+  const CASES = [
+    ['/', 'https://sqlquest.app/'],
+    ['/app/', 'https://sqlquest.app/app/'],
+    ['/blog/', 'https://sqlquest.app/blog/'],
+    ['/sql-exercises/', 'https://sqlquest.app/sql-exercises/'],
+    ['/questions/second-highest-salary/', 'https://sqlquest.app/questions/second-highest-salary/'],
+    ['/sql-exercises', 'https://sqlquest.app/sql-exercises/'],   // trailing-slash hop on the host first
+    ['/app.js', 'https://sqlquest.app/app.js'],
+    ['/robots.txt', 'https://sqlquest.app/robots.txt'],
+    ['/sitemap.xml', 'https://sqlquest.app/sitemap.xml'],
+  ];
+
+  for (const [host, status] of Object.entries(HOSTS)) {
+    for (const [path, want] of CASES) {
+      it(`${host}${path} → ${want} (${status})`, () => {
+        const got = resolve(host, path);
+        expect(got.location, `${host}${path} was served on that host`).toBe(want);
+        expect(got.status).toBe(status);
+      });
+    }
+    it(`${host}: "/" and "/:path*/" sit ahead of "/:path*"`, () => {
+      const idx = (src) => redirects.findIndex(r => r.source === src && (r.has || []).some(h => h.type === 'host' && h.value === host));
+      expect(idx('/')).toBeGreaterThanOrEqual(0);
+      expect(idx('/:path*/')).toBeGreaterThanOrEqual(0);
+      expect(idx('/:path*')).toBeGreaterThan(Math.max(idx('/'), idx('/:path*/')));
     });
   }
+
+  it('sqlquest.app itself is never redirected by a host rule', () => {
+    for (const p of ['/', '/sql-exercises/', '/app.js']) expect(resolve('sqlquest.app', p)).toEqual({ served: `sqlquest.app${p}` });
+  });
+
+  it('a host rule sets permanent or statusCode, never both (Vercel rejects the config)', () => {
+    for (const r of redirects.filter(r => (r.has || []).some(h => h.type === 'host'))) {
+      expect('permanent' in r && 'statusCode' in r, r.source).toBe(false);
+    }
+  });
 });
 
 describe('the sitemap lists only pages meant to be indexed', () => {

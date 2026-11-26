@@ -50,6 +50,28 @@
   "trailingSlash": true,
   "redirects": [
     {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.sqlquest.app"
+        }
+      ],
+      "destination": "https://sqlquest.app/",
+      "permanent": true
+    },
+    {
+      "source": "/:path*/",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.sqlquest.app"
+        }
+      ],
+      "destination": "https://sqlquest.app/:path*/",
+      "permanent": true
+    },
+    {
       "source": "/:path*",
       "has": [
         {
@@ -61,6 +83,28 @@
       "permanent": true
     },
     {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "sql-quest2.vercel.app"
+        }
+      ],
+      "destination": "https://sqlquest.app/",
+      "statusCode": 301
+    },
+    {
+      "source": "/:path*/",
+      "has": [
+        {
+          "type": "host",
+          "value": "sql-quest2.vercel.app"
+        }
+      ],
+      "destination": "https://sqlquest.app/:path*/",
+      "statusCode": 301
+    },
+    {
       "source": "/:path*",
       "has": [
         {
@@ -69,7 +113,7 @@
         }
       ],
       "destination": "https://sqlquest.app/:path*",
-      "permanent": true
+      "statusCode": 301
     },
     {
       "source": "/coach/",
