@@ -6012,6 +6012,17 @@ thresholds. Defined 2026-11-26, before the code.
 - **Population.** People whose `tournament_assigned.arm =
   'B_single_path'`, by `armVersion`, humans only (as above). t0 = the
   assignment.
+- **Event names as built (arm B's PR, 2026-11-26).** The orchestrator's
+  brief renamed the arm's events; this section reads them as:
+  `ladder_question_resolved` = `tournament_ladder_step` (`q, rung,
+  challengeId, outcome, secs, wrongs, hint, nextRung, trigger`; `trigger`
+  is `wrongs` / `timer` on a B3 step-down, null on a solve — so
+  `path_stepdown_clicked` = the rows with a trigger; a "shown" row is not
+  logged); `path_plan_built` = `tournament_plan_shown`; `path_next_clicked`
+  = `tournament_path_next` (`from: line | verdict | ladder_end`);
+  `path_tabs_revealed` = `tournament_tabs_revealed`; `path_plan_end_shown`
+  = `tournament_plan_end_shown`. `placement_completed {source: 'ladder'}`
+  keeps its name.
 - **Ladder funnel:**
   - share with `ladder_question_resolved` for q = 1, 2, 3, 4;
   - share with `placement_completed {source: 'ladder'}` (the ladder
@@ -6047,6 +6058,11 @@ decides). Plan: `docs/plans/personalized-roadmap-2026-11-26.md` §8. Engine:
 `src/utils/personal-roadmap.js`. Defined 2026-11-26, in the engine's PR,
 **before** any code that logs `path_plan_built` (fleet README rule 6b: the
 engine is not wired, and the arms' PRs that measure it come after).
+**As built (arm B's PR, 2026-11-26): the event is `tournament_plan_shown`**
+(`length, dailyCount, wallAt, planDays, k, planIds, proSteps, recompute,
+profile`; `planIds` are strings, a mock as `mock:<id>`), and each plan step
+solved after it logs `tournament_plan_step_done {challengeId, stepIndex, k,
+n, wallAt, day}`. Read `path_plan_built` below as `tournament_plan_shown`.
 
 - **Population.** People with a `path_plan_built` row whose
   `tournament_assigned.arm` is a plan arm (`B_single_path`,
@@ -6096,7 +6112,7 @@ WITH evp AS (
 -- person: the human filter, copied from scripts/scorecard-weekly.sql
 plan AS (
   SELECT DISTINCT ON (pid) pid, created_at AS t0, m->'planIds' AS ids, (m->>'wallAt')::int AS wall_at
-  FROM evp WHERE event = 'path_plan_built' AND COALESCE(m->>'recompute','false') <> 'true'
+  FROM evp WHERE event = 'tournament_plan_shown' AND COALESCE(m->>'recompute','false') <> 'true'
   ORDER BY pid, created_at
 ),
 asg AS (

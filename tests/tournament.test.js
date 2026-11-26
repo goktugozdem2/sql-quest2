@@ -78,19 +78,21 @@ describe('the registry', () => {
     expect(new Set(slots).size).toBe(slots.length);
   });
 
-  it('PR 1 builds no arm: B and D run control\'s behaviour, nothing supersedes the first-session A/Bs', () => {
-    expect(tournamentArmById('B_single_path').built).toBe(false);
+  it('arm B is built (its PR, 2026-11-26) and runs itself; D is not yet and runs control\'s behaviour', () => {
+    expect(tournamentArmById('B_single_path').built).toBe(true);
     expect(tournamentArmById('D_interview_sprint').built).toBe(false);
-    for (const arm of TOURNAMENT_ARMS) {
-      expect(tournamentBehaviour(arm.id)).toBe(TOURNAMENT_CONTROL_ID);
-      expect(tournamentSupersedes(arm.id)).toBe(false);
+    expect(tournamentBehaviour('B_single_path')).toBe('B_single_path');
+    expect(tournamentSupersedes('B_single_path')).toBe(true);
+    for (const id of ['A_control', 'D_interview_sprint', 'C_proof_first']) {
+      expect(tournamentBehaviour(id)).toBe(TOURNAMENT_CONTROL_ID);
+      expect(tournamentSupersedes(id)).toBe(false);
     }
     expect(tournamentBehaviour(null)).toBe(null);
-    // …and once an arm's PR marks it built, it runs itself and supersedes.
-    const built = TOURNAMENT_ARMS.map(a => (a.id === 'B_single_path' ? { ...a, built: true } : a));
-    expect(tournamentBehaviour('B_single_path', built)).toBe('B_single_path');
-    expect(tournamentSupersedes('B_single_path', built)).toBe(true);
-    expect(tournamentSupersedes('A_control', built)).toBe(false);
+    // …and an unbuilt arm runs control again (the A_control twin, plan §2.4).
+    const unbuilt = TOURNAMENT_ARMS.map(a => (a.id === 'B_single_path' ? { ...a, built: false } : a));
+    expect(tournamentBehaviour('B_single_path', unbuilt)).toBe(TOURNAMENT_CONTROL_ID);
+    expect(tournamentSupersedes('B_single_path', unbuilt)).toBe(false);
+    expect(tournamentSupersedes('A_control')).toBe(false);
   });
 });
 

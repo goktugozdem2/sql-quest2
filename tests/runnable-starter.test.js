@@ -247,7 +247,8 @@ describe('the app wires it the way the test reads', () => {
     expect(iDebug).toBeGreaterThan(-1);
     expect(iRs).toBeGreaterThan(i91);
     expect(iRs).toBeGreaterThan(iDebug);
-    expect(open).toMatch(/if \(rs\.prefill\) \{\s*const text = runnableStarterText\(mainTable, lang\);\s*setChallengeRunnableStarter\(text\);\s*setChallengeQuery\(text\);/);
+    // Tournament arm B (2026-11-26) supersedes the test and runs the starter arm.
+    expect(open).toMatch(/if \(rs\.prefill \|\| pathUi\.starterPrefill\) \{\s*const text = runnableStarterText\(mainTable, lang\);\s*setChallengeRunnableStarter\(text\);\s*setChallengeQuery\(text\);/);
     // Control keeps the placeholder: the hint is set in both arms.
     expect(open).toMatch(/setChallengeStarterHint\(starterHintFor\(mainTable\)\);\s*\/\/ `runnableStarter`/);
     // Reset on every open.

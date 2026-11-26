@@ -329,8 +329,10 @@ describe('the engine writes nothing and depends on nothing but its inputs', () =
     expect(r.steps.filter(s => s.proOnly)).toEqual([]);
   });
 
-  it('is not wired into the app in this PR (arms B and D call it)', () => {
-    expect(appSource.includes('personal-roadmap')).toBe(false);
+  it('is wired only through the tournament arms\' plan builder (arm B, 2026-11-26)', () => {
+    expect(appSource).toContain("import { buildRoadmap } from './utils/personal-roadmap.js';");
+    expect(appSource.match(/buildRoadmap\(/g)).toHaveLength(1);
+    expect(appSource.indexOf('buildRoadmap(')).toBeGreaterThan(appSource.indexOf('const pathBuildPlan = (state, solvedSet) =>'));
   });
 });
 

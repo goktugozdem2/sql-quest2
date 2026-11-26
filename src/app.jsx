@@ -40,7 +40,7 @@ import { buildPracticePlan, PLAN_MIN_SOLVES_FOR_SKILLS } from './utils/practice-
 import { FIRST_SCREEN_STORAGE_KEY, firstScreenDecision } from './utils/first-screen.js';
 import { MOBILE_RUN_BAR_STORAGE_KEY, MOBILE_RUN_BAR_TEST_ID, isNarrowTouch, isShortViewport, mobileRunBarDecision, runBarLabel, keyboardOffset } from './utils/mobile-run-bar.js';
 
-import { MOBILE_ONE_LAYER_STORAGE_KEY, MOBILE_ONE_LAYER_TEST_ID, isNarrowTouch as oneLayerNarrowTouch, mobileOneLayerDecision, oneLayerPick, oneLayerRelease } from './utils/mobile-one-layer.js';
+import { MOBILE_ONE_LAYER_STORAGE_KEY, MOBILE_ONE_LAYER_TEST_ID, ONE_LAYER_EXTRAS, isNarrowTouch as oneLayerNarrowTouch, mobileOneLayerDecision, oneLayerPick, oneLayerRelease } from './utils/mobile-one-layer.js';
 import { INTAKE_KEY, INTAKE_GOALS, INTAKE_ROLES, INTAKE_STEPS, INTAKE_COMPANIES, INTAKE_LEVELS, intakeStepsFor, intakeGoalFor, intakeGoalForIntent, nextIntakeStep, isIntakeStepRequired, isIntakeLevel, isValidIntakeDate, buildIntakeRecord, isIntakeComplete, readIntakeRecord, intakeEventPayload, newCoachGoalState, shouldShowIntake } from './utils/onboarding-intake.js';
 import { shouldArmGoalNoteDateAsk, shouldRenderGoalNoteDateAsk } from './utils/goal-note-date-ask.js';
 import { COMPANY_ASK_KEY, COMPANY_ASK_TEST_ID, COMPANY_ASK_UNDECIDED, companyAskDecision, normalizeCompanyAskRecord, matchCompanies, isCompanyAskAnswer } from './utils/company-ask.js';
@@ -89,6 +89,8 @@ import { getAnonId } from './utils/anon-id.js';
 import { FREE_QUOTA_HOLDOUT_KEY, FREE_QUOTA_HOLDOUT_TEST_ID, freeQuotaEnrolment, hasPriorAppUse, normalizeFreeQuotaRecord, freeQuotaEffective, freeQuotaEventStamp } from './utils/free-quota-holdout.js';
 import { TOURNAMENT_KEY, tournamentEnrolment, tournamentPriorAppUse, normalizeTournamentRecord, adoptAccountRecord, tournamentEffectiveArm, tournamentBehaviour, tournamentSupersedes, tournamentEventStamp, shouldAnnounceTournament, tournamentAssignedPayload, buildVisitorProfile, enrichTournamentProfile } from './utils/tournament.js';
 import { quotaWallArm, quotaWallShowsModal, quotaInlineCopy, QUOTA_WALL_DAY_KEY } from './utils/quota-wall-inline.js';
+import { SINGLE_PATH_KEY, LADDER_LENGTH, TIER_KEYS, isPathArm, emptyPathState, normalizePathState, pathUiFlags, ladderOutcome, ladderStuck, ladderOpen, ladderResolve, pickLadderQuestion, ladderQuestionNumber, roadmapProfileFor, composePathPlan, planProgress, nextPlanStep, planEnded, planShownPayload, logStepDone, pathWhyLines } from './utils/single-path.js';
+import { buildRoadmap } from './utils/personal-roadmap.js';
 import { classifyLandingSrc, LANDING_SRC_KEY } from './utils/landing-src.js';
 import { classifyQueryError } from './utils/query-error.js';
 import { computeSkillTrajectory, topActiveSkills } from './utils/skill-trajectory.js';
@@ -9128,9 +9130,44 @@ function SQLQuest() {
   // or trigger the legacy welcome modal.
   // A person who said they got the job is never a first-run user: the
   // placement quiz is interview-prep's door, not theirs (First 90 Days).
+  // ── Tournament arm B — the single path (2026-11-26) ───────────────────
+  // docs/plans/first-session-tournament-2026-11-26.md §3, pure half in
+  // src/utils/single-path.js. `pathUi` holds EVERY switch the arm flips in
+  // this file; outside a built arm B (control, an unbuilt arm, the flag off,
+  // not enrolled) every switch is false and the product is today's, byte for
+  // byte (tests/single-path.test.js pins each call site). Computed here,
+  // above the first-run shell it extends; the hooks sit above the `showAuth` /
+  // `dbReady` early returns (CLAUDE.md fragile area 1).
+  const pathAccountCreatedAt = useMemo(() => {
+    if (!currentUser || isGuest) return null;
+    try {
+      const blob = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || 'null');
+      return blob && blob.createdAt != null ? blob.createdAt : null;
+    } catch (_) { return null; }
+  }, [currentUser, isGuest, isSessionLoading]);
+  const pathBehaviour = (() => {
+    try {
+      if (window.FF?.feature?.('firstSessionTournament') !== true) return null;
+      const b = tournamentBehaviour(tournamentEffectiveArm({
+        flagOn: true,
+        record: TOURNAMENT_RECORD,
+        signedIn: !!currentUser && !isGuest,
+        accountCreatedAt: pathAccountCreatedAt,
+        intent: getUserIntent(),
+      }));
+      return isPathArm(b) ? b : null;
+    } catch (_) { return null; }
+  })();
+  const [pathState, setPathState] = useState(() => {
+    try { return normalizePathState(JSON.parse(localStorage.getItem(SINGLE_PATH_KEY) || 'null')); } catch (_) { return emptyPathState(); }
+  });
+  const pathStateRef = useRef(pathState);
+  pathStateRef.current = pathState;
+  const pathUi = pathUiFlags({ behaviour: pathBehaviour, state: pathState });
   const isFirstRunUser = !firstRunCompleted && solvedChallenges.size === 0 && !isHired(intentRecord);
   const showFirstRunStart = isFirstRunUser && !currentChallenge && activeTab === 'guide';
-  const showFirstRunSimpleShell = isFirstRunUser;
+  // Arm B keeps the first-run shell until its ladder ends (plan §3.1 B1).
+  const showFirstRunSimpleShell = isFirstRunUser || pathUi.extendShell;
   const activeFoundationsLessonForShell = foundationsRoadmapLessonId
     ? FOUNDATIONS_ROADMAP_LESSONS[String(foundationsRoadmapLessonId)]
     : null;
@@ -9144,7 +9181,8 @@ function SQLQuest() {
     onStartScreen: showFirstRunStart && !showZeroSqlLesson,
     record: intakeRecord,
   });
-  const showPrimaryLearningTabs = true;
+  // Arm B: no tab row until the ladder ends (plan §3.5).
+  const showPrimaryLearningTabs = !pathUi.hideTabs;
   const showLegacyActivityShortcuts = false;
   const showLegacyPrimaryNav = false;
   const showPracticeSubtabs = false;
@@ -9851,6 +9889,9 @@ function SQLQuest() {
           // The first-session tournament's record (src/utils/tournament.js): an
           // enrolled person's arm rides the account, so a second device keeps it.
           ...(TOURNAMENT_RECORD && TOURNAMENT_RECORD.status === 'enrolled' ? { tournament: TOURNAMENT_RECORD } : {}),
+          // Tournament arm B's ladder and plan (src/utils/single-path.js) ride
+          // the account too; nobody outside the arm writes the field.
+          ...(pathUi.active ? { singlePath: pathState } : {}),
           // The countdown / intake target rides the save from STATE, not only
           // from setPrepPreference's direct write: this effect re-reads the
           // record (cloud-first for a guest) and re-spreads it, so a field
@@ -9911,7 +9952,7 @@ function SQLQuest() {
         saveUserData(currentUser, userData);
       })();
     }
-  }, [xp, solvedChallenges, unlockedAchievements, queryCount, aiLessonPhase, currentAiLesson, completedAiLessons, aiLessonCompletions, roadmapLessonCompletions, comprehensionCount, comprehensionCorrect, consecutiveCorrect, comprehensionConsecutive, completedExercises, challengeQueries, completedDailyChallenges, dailyStreak, challengeAttempts, dailyChallengeHistory, weeklyReports, weeklyReportLastSeen, weeklyDigestOptOut, earnedMilestones, coachState, userGoals, intakeRecord, goalProfile, companyAskRecord, prepTarget, goalsPromptDismissedAt, loginCalendar, speedRunHistory, explainHistory, userProStatus, proType, proExpiry, proAutoRenew, interviewHistory, challengeProgress, challengeStartDate, weaknessTracking, skillMastery, lessonSkillStats, errorPatterns, debugStats, retrievalLog, ticketLog, dailyRewardClaimedDate]);
+  }, [xp, solvedChallenges, unlockedAchievements, queryCount, aiLessonPhase, currentAiLesson, completedAiLessons, aiLessonCompletions, roadmapLessonCompletions, comprehensionCount, comprehensionCorrect, consecutiveCorrect, comprehensionConsecutive, completedExercises, challengeQueries, completedDailyChallenges, dailyStreak, challengeAttempts, dailyChallengeHistory, weeklyReports, weeklyReportLastSeen, weeklyDigestOptOut, earnedMilestones, coachState, userGoals, intakeRecord, goalProfile, companyAskRecord, prepTarget, goalsPromptDismissedAt, loginCalendar, speedRunHistory, explainHistory, userProStatus, proType, proExpiry, proAutoRenew, interviewHistory, challengeProgress, challengeStartDate, weaknessTracking, skillMastery, lessonSkillStats, errorPatterns, debugStats, retrievalLog, ticketLog, dailyRewardClaimedDate, pathState]);
 
 
   // True when the URL signals explicit content intent — user clicked a
@@ -12522,6 +12563,191 @@ CRITICAL RULES:
     trackActivationEvent('tournament_assigned', payload);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSessionLoading]);
+
+  // ── Tournament arm B — the ladder and the plan (2026-11-26) ────────────
+  // Plan: docs/plans/first-session-tournament-2026-11-26.md §3; pure half
+  // src/utils/single-path.js; the roadmap is buildRoadmap
+  // (src/utils/personal-roadmap.js). Everything below runs only when
+  // `pathUi.active` (a built arm B, flag on); hooks sit above the `showAuth`
+  // / `dbReady` early returns (CLAUDE.md fragile area 1). Events:
+  // tournament_ladder_step, tournament_plan_shown, tournament_plan_step_done
+  // (metrics.md `plan_steps_done_7d`, `single_path_split`).
+  const [pathTick, setPathTick] = useState(0);
+  const [pathHighlight, setPathHighlight] = useState(false);
+  const [pathLeveled, setPathLeveled] = useState(false);
+  const [pathWhyOpen, setPathWhyOpen] = useState(false);
+  const [pathStepsOpen, setPathStepsOpen] = useState(false);
+  // The layers held on the ladder stay held until the next challenge opens,
+  // then the first shows alone and the rest drop (the mobileOneLayer rule).
+  const [pathHeldRelease, setPathHeldRelease] = useState(false);
+  const pathSave = (next) => {
+    pathStateRef.current = next;
+    setPathState(next);
+    try { localStorage.setItem(SINGLE_PATH_KEY, JSON.stringify(next)); } catch (_) { /* best effort */ }
+  };
+  const pathEvent = (event, payload = {}) => trackActivationEvent(event, { arm: pathUi.arm, ...payload });
+  const pathMocksDone = () => new Set((interviewHistory || []).map(h => h && h.interviewId).filter(Boolean));
+  const pathStepProOnly = (st) => !isPro && !!(st && st.proOnly);
+  const pathCtx = () => ({ solved: solvedChallenges, mocksDone: pathMocksDone(), isProOnly: pathStepProOnly });
+  // The roadmap for this person, frozen as the plan (N stays put).
+  const pathBuildPlan = (state, solvedSet) => {
+    try {
+      const visitor = TOURNAMENT_RECORD && TOURNAMENT_RECORD.profile ? TOURNAMENT_RECORD.profile : null;
+      const roadmap = buildRoadmap(
+        roadmapProfileFor({ visitor, state, solvedIds: solvedSet, isPro, companies: INTAKE_COMPANIES }),
+        challenges,
+        { companyMap: window.challengeCompanies || {}, mocks: mockInterviews, goals: window.coachGoals || [], quotaOn: freeQuotaOn(), companySetGateOn: ftbFlag('companySetGate') },
+      );
+      return composePathPlan({ roadmap, ladder: state.ladder, solved: solvedSet, solvedCount: solvedSet.size, quotaOn: freeQuotaOn() && !isPro, now: Date.now() });
+    } catch (e) {
+      console.warn('single path: plan not built', e);
+      return null;
+    }
+  };
+  // The ladder ends (B4): the tier is a first-run placement (the Coach never
+  // asks again), the plan is built and shown, the tab row comes back.
+  const pathFinishLadder = (state, solvedSet) => {
+    const levelId = state.ladder.levelId || 'brand-new';
+    pathEvent('placement_completed', { source: 'ladder', levelId, tier: PLACEMENT_TIERS[levelId] || null, outcomes: state.ladder.outcomes });
+    try {
+      setFirstRunLevel(levelId);
+      localStorage.setItem(FIRST_RUN_LEVEL_KEY, levelId);
+      suppressLegacyOnboardingForPlacement(levelId, { source: 'first_run_ladder' });
+    } catch (_) { /* the plan still builds */ }
+    const plan = pathBuildPlan(state, solvedSet);
+    const next = { ...state, plan, tabsOpenedAt: Date.now() };
+    pathSave(next);
+    if (plan) {
+      const { k } = planProgress(plan, { solved: solvedSet, mocksDone: pathMocksDone() });
+      pathEvent('tournament_plan_shown', planShownPayload(plan, { arm: pathUi.arm, k }));
+    }
+    const assignedAt = TOURNAMENT_RECORD && TOURNAMENT_RECORD.assignedAt;
+    pathEvent('tournament_tabs_revealed', { solves: solvedSet.size, secsSinceAssigned: assignedAt ? Math.round((Date.now() - assignedAt) / 1000) : null });
+    setPathLeveled(true);
+    setPathHeldRelease(true);
+    setPathHighlight(true);
+    setTimeout(() => setPathHighlight(false), 3000);
+  };
+  const pathOpenChallenge = (c) => {
+    if (!c) return;
+    setActiveTab('quests');
+    setPracticeSubTab('challenges');
+    openChallenge(c, { openedFrom: 'tournament_path' });
+  };
+  // "Next question →": the ladder's next question, in its own order.
+  const pathOpenLadderNext = () => {
+    const state = pathStateRef.current;
+    const pick = pickLadderQuestion(state, challenges, { solved: solvedChallenges, isLocked: c => isContentLocked('challenge', c) });
+    if (pick) { pathOpenChallenge(pick); return; }
+    // Nothing left on any rung: the ladder ends on what it has.
+    pathFinishLadder(normalizePathState({ ...state, ladder: { ...state.ladder, done: true, current: null } }), solvedChallenges);
+  };
+  // "Next →" / "Next in your plan →": the plan's next step that is not Pro.
+  // A quota-gated step is opened, not skipped — that is today's quota wall,
+  // with the plan's line in its slot.
+  const pathOpenNext = (from) => {
+    const plan = pathStateRef.current.plan;
+    if (!plan) return;
+    const hit = nextPlanStep(plan, pathCtx());
+    const { k, n } = planProgress(plan, pathCtx());
+    pathEvent('tournament_path_next', { from, k, n, index: hit ? hit.index + 1 : null, target: hit ? (hit.step.kind === 'mock' ? `mock:${hit.step.mockId}` : hit.step.challengeId) : null });
+    if (!hit) return;
+    if (hit.step.kind === 'mock') {
+      const mock = mockInterviews.find(m => m.id === hit.step.mockId);
+      if (!mock) return;
+      setCurrentChallenge(null);
+      setActiveTab('trials');
+      setTimeout(() => startInterview(mock), 50);
+      return;
+    }
+    pathOpenChallenge(challenges.find(x => x.id === hit.step.challengeId));
+  };
+  // B3: "This one's a step up" — set aside, one rung down.
+  const pathStepDown = (trigger) => {
+    const state = pathStateRef.current;
+    const cur = state.ladder.current;
+    if (!cur) return;
+    const now = Date.now();
+    const { state: next, step } = ladderResolve(state, {
+      challengeId: cur.challengeId, outcome: 'stuck', secs: cur.openedAt ? (now - cur.openedAt) / 1000 : null,
+      wrongs: wrongAttemptCount, hint: !!(showChallengeHint || showChallengeStructure), now,
+    });
+    if (!step) return;
+    pathSave(next);
+    pathEvent('tournament_ladder_step', { ...step, trigger });
+    if (next.ladder.done) {
+      pathFinishLadder(next, solvedChallenges);
+      setTimeout(() => pathOpenNext('ladder_end'), 50);
+      return;
+    }
+    pathOpenLadderNext();
+  };
+  // A first solve on the path (from submitChallenge).
+  const pathOnSolve = (challenge, newSolved, { wrongs = 0, hint = false } = {}) => {
+    const state = pathStateRef.current;
+    const now = Date.now();
+    if (!state.ladder.done) {
+      const cur = state.ladder.current;
+      if (!cur || cur.challengeId !== challenge.id) return;
+      const secs = cur.openedAt ? (now - cur.openedAt) / 1000 : null;
+      const outcome = ladderOutcome({ solved: true, wrongs, hint, secs, rung: cur.rung });
+      const { state: next, step } = ladderResolve(state, { challengeId: challenge.id, outcome, secs, wrongs, hint, now });
+      if (!step) return;
+      pathSave(next);
+      pathEvent('tournament_ladder_step', { ...step, trigger: null });
+      if (next.ladder.done) pathFinishLadder(next, newSolved);
+      return;
+    }
+    const plan = state.plan;
+    if (!plan) return;
+    const index = plan.steps.findIndex(st => st.kind === 'challenge' && st.challengeId === challenge.id);
+    if (index < 0 || state.doneLog.some(d => String(d.id) === String(challenge.id))) return;
+    pathSave(logStepDone(state, { id: challenge.id, day: getTodayString() }));
+    const { k, n } = planProgress(plan, { solved: newSolved, mocksDone: pathMocksDone() });
+    pathEvent('tournament_plan_step_done', { challengeId: challenge.id, stepIndex: index + 1, k, n, wallAt: plan.wallAt, day: getTodayString() });
+  };
+  // The plan-end card's button: today's modal, reason `plan_end` (founder's go, 2026-11-26).
+  const pathSeePro = () => {
+    const { k, n } = planProgress(pathStateRef.current.plan, pathCtx());
+    setProModalReason({ type: 'plan_end', k, n, solvedCount: solvedChallenges.size, arm: pathUi.arm });
+    setShowProModal(true);
+  };
+  // "{k} of {N} done — the rest of your plan is Pro." (the quota wall's line slot, the plan-end card).
+  const pathWallLine = () => {
+    const { k, n } = planProgress(pathStateRef.current.plan, pathCtx());
+    return i18n_t('tournamentPath', 'wall', { k, n });
+  };
+  // Question 1 (and every ladder question after a reload) opens by itself:
+  // no start screen, no menu. A content link's resolver opens question 1
+  // itself (the deep-link rule: start guest mode, return, open next run).
+  useEffect(() => {
+    if (!pathUi.ladderActive || isSessionLoading || !currentUser || !dbReady || currentChallenge) return;
+    const st = pathStateRef.current;
+    if (hasContentDeepLink && !st.ladder.current && !st.ladder.outcomes.length) return;
+    const curId = st.ladder.current ? st.ladder.current.challengeId : null;
+    const cur = curId != null ? challenges.find(c => c.id === curId) : null;
+    if (cur && !solvedChallenges.has(cur.id)) { pathOpenChallenge(cur); return; }
+    pathOpenLadderNext();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathUi.ladderActive, isSessionLoading, currentUser, dbReady, !!currentChallenge]);
+  // B3's timer: re-render every 15 s while a ladder question is open and unsolved.
+  useEffect(() => {
+    if (!pathUi.ladderActive || !currentChallenge || challengeStatus === 'success') return undefined;
+    const t = setInterval(() => setPathTick(x => x + 1), 15000);
+    return () => clearInterval(t);
+  }, [pathUi.ladderActive, currentChallenge?.id, challengeStatus]);
+  // The plan-end card, once per plan.
+  const pathEndShownRef = useRef(false);
+  useEffect(() => {
+    if (!pathUi.showPlanLine || !pathState.plan || pathEndShownRef.current) return;
+    try {
+      if (!planEnded(pathState.plan, pathCtx())) return;
+      pathEndShownRef.current = true;
+      const { k, n } = planProgress(pathState.plan, pathCtx());
+      pathEvent('tournament_plan_end_shown', { k, n });
+    } catch (_) { /* never block the render */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathUi.showPlanLine, pathState.plan, solvedChallenges, interviewHistory, isPro]);
   // Paywall moments (PLAN item 3): the Pro modal's own copy for the reasons
   // that had none (the 30-day path, the daily, a locked mock, the Interview
   // tab) and an honest Hard line. null = the modal's existing chain decides.
@@ -13621,6 +13847,146 @@ CRITICAL RULES:
     // companyAskShowingRef stays set: a skip inside the intent modal's
     // 3-second delay must not let that modal open as a second question.
     setCompanyAsk(null);
+  };
+
+
+  // ── Tournament arm B's screens (plan §3.1 B1–B6) ────────────────────────
+  // Rendered only under `pathUi.*` switches; DESIGN.md tokens; the accent is
+  // on the one primary button only.
+  const renderPathLadderLine = () => {
+    const q = ladderQuestionNumber(pathState);
+    return (
+      <p data-testid="path-ladder-line" className="mb-3 text-sm" style={{ color: '#8A8E99' }}>
+        <span className="hidden sm:inline">{i18n_t('tournamentPath', 'ladderLine', { q, n: LADDER_LENGTH })}</span>
+        <span className="sm:hidden">{i18n_t('tournamentPath', 'ladderLineShort', { q, n: LADDER_LENGTH })}</span>
+      </p>
+    );
+  };
+  const renderPathStepDown = () => {
+    const cur = pathState.ladder.current;
+    if (!currentChallenge || !cur || cur.challengeId !== currentChallenge.id || challengeStatus === 'success') return null;
+    const secs = cur.openedAt ? (Date.now() - cur.openedAt) / 1000 : 0;
+    if (!ladderStuck({ wrongs: wrongAttemptCount, secs, rung: cur.rung })) return null;
+    const trigger = wrongAttemptCount >= 3 ? 'wrongs' : 'timer';
+    return (
+      <button type="button" data-testid="path-step-down" data-tick={pathTick} onClick={() => pathStepDown(trigger)}
+        className="text-sm underline underline-offset-2 text-left" style={{ color: '#8A8E99' }}>
+        {i18n_t('tournamentPath', 'stepDown')}
+      </button>
+    );
+  };
+  const renderPathPlanEnd = () => (
+    <div data-testid="path-plan-end" className="mt-2 flex flex-wrap items-center gap-3">
+      <p className="text-sm font-medium" style={{ color: '#F2F0EA' }}>{pathWallLine()}</p>
+      <button type="button" data-testid="path-see-pro" onClick={pathSeePro}
+        className="px-3 py-1.5 rounded-lg text-xs font-bold" style={{ background: '#FFE34D', color: '#0E0F13' }}>
+        {i18n_t('tournamentPath', 'seePro')}
+      </button>
+    </div>
+  );
+  const pathTierName = (levelId) => i18n_t('tournamentPath', TIER_KEYS[levelId] || 'tierFoundations');
+  // After a solve: ONE button (B2 on the ladder, B5 on the plan).
+  const renderPathVerdictNext = () => {
+    if (!currentChallenge) return null;
+    const st = pathState;
+    if (!st.ladder.done) {
+      return (
+        <div className="mb-3" data-testid="path-verdict-next">
+          <button type="button" data-testid="path-next-question" onClick={pathOpenLadderNext}
+            className="w-full py-2.5 text-sm font-bold rounded-lg" style={{ background: '#FFE34D', color: '#0E0F13' }}>
+            {i18n_t('tournamentPath', 'nextQuestion')}
+          </button>
+        </div>
+      );
+    }
+    if (!st.plan) return null;
+    const last = st.ladder.outcomes[st.ladder.outcomes.length - 1];
+    const justEnded = !!(last && last.challengeId === currentChallenge.id);
+    const ctx = pathCtx();
+    const { k, n } = planProgress(st.plan, ctx);
+    return (
+      <div className="mb-3" data-testid="path-verdict-next">
+        {justEnded && (
+          <div className="mb-3 rounded-lg px-3 py-2" data-testid="path-level-card" style={{ background: '#1F222B', border: '1px solid #2A2E38' }}>
+            <p className="text-sm font-bold" style={{ color: '#F2F0EA' }}>{i18n_t('tournamentPath', 'levelTitle', { tier: pathTierName(st.ladder.levelId) })}</p>
+            <p className="text-xs mt-0.5" style={{ color: '#8A8E99' }}>{i18n_t('tournamentPath', 'levelWhy')} · {i18n_t('tournamentPath', 'planLine', { n, k })}</p>
+          </div>
+        )}
+        {planEnded(st.plan, ctx) ? renderPathPlanEnd() : k >= n ? (
+          <p className="text-sm" style={{ color: '#8A8E99' }}>{i18n_t('tournamentPath', 'planDone', { k, n })}</p>
+        ) : (
+          <button type="button" data-testid="path-next-in-plan" onClick={() => pathOpenNext('verdict')}
+            className="w-full py-2.5 text-sm font-bold rounded-lg" style={{ background: '#FFE34D', color: '#0E0F13' }}>
+            {i18n_t('tournamentPath', 'nextInPlan')}
+          </button>
+        )}
+      </div>
+    );
+  };
+  // B5: the plan line, on every tab, every session.
+  const renderPathPlanLine = () => {
+    const plan = pathState.plan;
+    if (!plan) return null;
+    const ctx = pathCtx();
+    const { k, n } = planProgress(plan, ctx);
+    const ended = planEnded(plan, ctx);
+    const why = pathWhyLines(plan, getCurrentLang());
+    const chip = { background: '#1F222B', border: '1px solid #2A2E38', borderRadius: '6px', color: '#F2F0EA' };
+    return (
+      <div data-testid="path-plan-line" data-highlight={pathHighlight ? 'on' : 'off'} className="mb-3 rounded-lg px-4 py-3 transition-colors"
+        style={{ background: '#16181F', border: `1px solid ${pathHighlight ? '#F2F0EA' : '#2A2E38'}`, color: '#F2F0EA' }}>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          {pathLeveled && pathState.ladder.levelId && (
+            <span className="text-xs" style={{ color: '#8A8E99' }} data-testid="path-plan-level">{i18n_t('tournamentPath', 'levelTitle', { tier: pathTierName(pathState.ladder.levelId) })}</span>
+          )}
+          <span className="text-sm font-medium hidden sm:inline">{i18n_t('tournamentPath', 'planLine', { n, k })}</span>
+          <span className="text-sm font-medium sm:hidden">{i18n_t('tournamentPath', 'planLineShort', { n, k })}</span>
+          {!ended && k < n && (
+            <button type="button" data-testid="path-plan-next" onClick={() => pathOpenNext('line')} className="px-3 py-1.5 text-xs font-semibold" style={chip}>
+              {i18n_t('tournamentPath', 'next')}
+            </button>
+          )}
+          <span className="ml-auto flex items-center gap-3">
+            <button type="button" data-testid="path-why-toggle" onClick={() => setPathWhyOpen(v => !v)} className="text-xs underline underline-offset-2" style={{ color: '#8A8E99' }}>
+              {i18n_t('tournamentPath', 'whyToggle')}
+            </button>
+            <button type="button" data-testid="path-steps-toggle" onClick={() => setPathStepsOpen(v => !v)} className="text-xs underline underline-offset-2" style={{ color: '#8A8E99' }}>
+              {i18n_t('tournamentPath', 'stepsToggle')}
+            </button>
+          </span>
+        </div>
+        {ended && renderPathPlanEnd()}
+        {pathWhyOpen && (
+          <ul className="mt-2 space-y-1 text-xs" style={{ color: '#8A8E99' }} data-testid="path-why">
+            {why.map((w, i) => <li key={i}>{w}</li>)}
+          </ul>
+        )}
+        {pathStepsOpen && (
+          <ol className="mt-3 grid gap-1 sm:grid-cols-2 text-xs" data-testid="path-steps">
+            {plan.steps.map((st, i) => {
+              const isMock = st.kind === 'mock';
+              const c = isMock ? null : challenges.find(x => x.id === st.challengeId);
+              const m = isMock ? mockInterviews.find(x => x.id === st.mockId) : null;
+              const title = isMock ? i18n_t('tournamentPath', 'mockStep', { title: (m && m.title) || st.mockId }) : (c ? c.title : `#${st.challengeId}`);
+              const done = isMock ? ctx.mocksDone.has(st.mockId) : solvedChallenges.has(st.challengeId);
+              return (
+                <li key={`${st.kind}-${st.challengeId || st.mockId}`} className="flex items-center gap-2 min-w-0" data-step-pro={pathStepProOnly(st) ? 'true' : 'false'}>
+                  <span className="tabular-nums w-6 shrink-0 text-right" style={{ color: '#8A8E99' }}>{i + 1}</span>
+                  <span className="truncate" style={{ color: done ? '#8A8E99' : '#F2F0EA', textDecoration: done ? 'line-through' : 'none' }}>{title}</span>
+                  {c && <span className="shrink-0" style={{ color: '#8A8E99' }}>{c.difficulty}</span>}
+                  {pathStepProOnly(st) && (
+                    <span className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold" data-testid="path-step-pro" style={{ border: '1px solid #2A2E38', color: '#8A8E99' }}>
+                      {i18n_t('tournamentPath', 'pro')}
+                    </span>
+                  )}
+                  {done && <span className="shrink-0" style={{ color: '#4ADE80' }}>✓</span>}
+                </li>
+              );
+            })}
+          </ol>
+        )}
+      </div>
+    );
   };
 
   const renderCompanyAsk = () => {
@@ -18080,6 +18446,18 @@ CRITICAL RULES:
           }
         } catch (_) { /* keep this browser's record */ }
       }
+      // Tournament arm B: the account's ladder and plan win over this
+      // browser's (the guest's when the account has none — it rode the merge).
+      if (userData.singlePath && typeof userData.singlePath === 'object') {
+        try {
+          const acct = normalizePathState(userData.singlePath);
+          if (acct.ladder.outcomes.length || acct.ladder.current || acct.plan) {
+            pathStateRef.current = acct;
+            setPathState(acct);
+            localStorage.setItem(SINGLE_PATH_KEY, JSON.stringify(acct));
+          }
+        } catch (_) { /* keep this browser's */ }
+      }
       // Goal gate profile: the newer of the account's and this browser's wins,
       // so a goal set as a guest five minutes ago survives a sign-in and a goal
       // set on another device arrives here.
@@ -18696,7 +19074,23 @@ CRITICAL RULES:
   const oneLayerTop = oneLayerOn
     ? oneLayerPick({ active: oneLayerActive, hold: oneLayerHold, modalOpen: !!(showProModal || showSignupPrompt) })
     : null;
-  const oneLayerOk = (id) => !oneLayerOn || oneLayerTop === id;
+  // Tournament arm B: no achievement / level-up / Skillmap / share / streak
+  // layer until the ladder ends (plan §3.1 B2); the asks keep today's rule.
+  const oneLayerOk = (id) => ((pathUi.holdLayers || pathHeldRelease) && ONE_LAYER_EXTRAS.includes(id) ? false : (!oneLayerOn || oneLayerTop === id));
+  useEffect(() => {
+    if (!currentChallenge || !pathHeldRelease) return;
+    setPathHeldRelease(false);
+    const { drop } = oneLayerRelease([
+      showAchievement && 'achievement', showLevelUp && 'level_up', radarPop && 'radar_pop',
+      milestoneShare && 'milestone_share', streakCardPending && 'streak_card',
+    ].filter(Boolean));
+    if (drop.includes('achievement')) setShowAchievement(null);
+    if (drop.includes('level_up')) setShowLevelUp(null);
+    if (drop.includes('radar_pop')) setRadarPop(null);
+    if (drop.includes('milestone_share')) setMilestoneShare(null);
+    if (drop.includes('streak_card')) setStreakCardPending(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentChallenge?.id]);
   // The next challenge open is the natural pause: release the hold, keep the
   // first held layer, drop the rest for the session. Also re-reads the arm,
   // so a person assigned earlier gets the rule from their next solve on.
@@ -24148,6 +24542,8 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
   // a signed archetype (its mock named) or a tagged set. Stamped on the
   // free_quota reason so the modal and pro_modal_shown read the same thing.
   const quotaWallCompany = () => {
+    // Tournament arm B: the wall speaks to the plan (founder's go, 2026-11-26).
+    if (pathUi.active && pathStateRef.current.plan) return { company: null, kind: 'plan', line: pathWallLine() };
     if (window.FF?.feature?.('quotaWallCompany') !== true) return null;
     try {
       const target = prepTarget?.company ? findPlanTarget(prepTarget.company, challenges, window.challengeCompanies || {}, mockInterviews) : null;
@@ -24645,6 +25041,8 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     setFoundationsRoadmapLessonId(null);
     setFoundationPractice(createFoundationPracticeState(null));
     setCurrentChallenge(challenge);
+    // Tournament arm B: the first open of a ladder question starts its clock.
+    if (pathUi.ladderActive && !solvedChallenges.has(challenge.id)) pathSave(ladderOpen(pathStateRef.current, challenge, Date.now()));
     // Content-quality denominator: without opened-events, "opened but never
     // attempted" (a scary/unclear problem statement) is invisible — we only
     // saw solves and attempts. Open→attempt→solve per challenge is the full
@@ -24690,13 +25088,21 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
       // placeholder. The arm is assigned once, at the first such open on a
       // desktop screen; control keeps the placeholder above.
       const rs = runnableStarterOpen(challenge, savedQuery);
-      if (rs.prefill) {
+      // Tournament arm B supersedes the test and runs the `starter` arm's behaviour.
+      if (rs.prefill || pathUi.starterPrefill) {
         const text = runnableStarterText(mainTable, lang);
         setChallengeRunnableStarter(text);
         setChallengeQuery(text);
       } else {
         setChallengeQuery('');
       }
+    } else if (!savedQuery && pathUi.starterPrefill && !solvedChallenges.has(challenge.id)) {
+      // Tournament arm B: every later ladder and plan question opens on the
+      // runnable starter too (plan §3.1 B1), selected on focus while untouched.
+      const text = runnableStarterText(challenge.tables?.[0] || 'table_name', lang);
+      setChallengeStarterHint(null);
+      setChallengeRunnableStarter(text);
+      setChallengeQuery(text);
     } else {
       setChallengeQuery(savedQuery);
     }
@@ -25173,7 +25579,8 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
       try { localStorage.setItem(MOBILE_RUN_BAR_STORAGE_KEY, JSON.stringify({ arm: decision.arm, at: Date.now() })); } catch (_) { /* ignore */ }
       trackActivationEvent('mobile_run_bar_assigned', { arm: decision.arm, test: MOBILE_RUN_BAR_TEST_ID, challengeId: currentChallenge.id });
     }
-    setMobileRunBarShown(decision.show);
+    // Tournament arm B supersedes the test and runs its `bar` arm on a phone.
+    setMobileRunBarShown(decision.show || (pathUi.fixedRunBar && narrowTouch && !runBarShortViewport));
   }, [currentChallenge?.id, runBarShortViewport]);
   useEffect(() => {
     if (!mobileRunBarShown) { setRunBarKeyboardOffset(0); return undefined; }
@@ -25251,6 +25658,8 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     if (solvedChallenges.has(currentChallenge.id)) return;
     if (showOnboardingTour) return;
     if (hasContentDeepLink) return;
+    // Tournament arm B: four questions in, the plan line says what to do next.
+    if (pathUi.active) return;
     try {
       if (typeof window === 'undefined') return;
       if (localStorage.getItem('sqlquest_onboarding_v1')) return;
@@ -26267,6 +26676,8 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
             // all difficulties (useless for content-quality calibration).
             firstTry: !challengeAttempts.some(a => a.challengeId === currentChallenge.id),
           });
+          // Tournament arm B: the ladder's outcome, or a plan step done.
+          if (pathUi.active) pathOnSolve(currentChallenge, newSolved, { wrongs: wrongAttemptCount, hint: !!(showChallengeHint || showChallengeStructure) });
           if (newSolved.size === 1) {
             trackActivationEvent('first_challenge_solved', {
               challengeId: currentChallenge.id,
@@ -26279,7 +26690,10 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
             // Browser-scoped key on purpose: guest usernames rotate per
             // load, so a user-scoped key would re-fire every session.
             try {
-              if (!localStorage.getItem('sqlquest_intent_asked')) {
+              if (pathUi.suppressAsks) {
+                // Arm B asks nothing until its ladder ends ("seçenek tanımadan").
+                trackActivationEvent('intent_ask_suppressed', { by: 'single_path' });
+              } else if (!localStorage.getItem('sqlquest_intent_asked')) {
                 setTimeout(() => {
                   // The company ask (ask arm) is this solve's one question;
                   // the intent modal would be a second, and it covers the line.
@@ -26995,7 +27409,8 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
         testId: COMPANY_DIRECT_TEST_ID, arm: decision.arm, company: companyFilter, nextId: next ? next.id : null,
       }, { onceKey: 'company_direct_assigned' });
     }
-    if (decision.open && next) {
+    // Tournament arm B supersedes the test and runs its `direct` arm (plan §3.4).
+    if ((decision.open || (pathUi.companyDirect && solvedChallenges.size === 0)) && next) {
       setTimeout(() => openChallenge(next, { openedFrom: 'company_direct' }), 100);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -35589,12 +36004,15 @@ RULES:
           </div>
           {showSimpleLearningShell && (
             <div className="ml-auto flex items-center gap-2">
+              {/* Tournament arm B: no step label; the ladder line says where you are. */}
+              {!pathUi.active && (
               <span className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 text-xs font-bold text-cyan-200">
                 {showFoundationsFocusShell
                   ? activeFoundationsLessonForShell.eyebrow.replace(/^Foundations\s+/i, '').replace(/^lesson/i, 'Lesson')
                   : activeTab === 'quests' ? 'Challenges'
                   : currentChallenge ? 'Step 2 of 2' : 'Step 1 of 2'}
               </span>
+              )}
             </div>
           )}
           
@@ -36057,6 +36475,8 @@ RULES:
           </div>
         )}
 
+        {/* Tournament arm B: the plan line on every tab, every session (B5). */}
+        {pathUi.showPlanLine && renderPathPlanLine()}
         {showPrimaryLearningTabs && (
           <>
             <div
@@ -36180,7 +36600,9 @@ RULES:
             Copy is intentionally still English-only, matching what shipped
             before — translating the first-run shell is its own change with its
             own TR review, and this commit is about the layout. */}
-        {showFirstRunSimpleShell && currentChallenge && (
+        {/* Tournament arm B: one grey line replaces the first-run banner (B1). */}
+        {pathUi.ladderActive && currentChallenge && renderPathLadderLine()}
+        {showFirstRunSimpleShell && currentChallenge && !pathUi.active && (
           <div className="mb-3 rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-4 py-3">
             {/* Label and actions, not label + prose + actions. A flex-1
                 paragraph between two fixed-width items gets crushed into a
@@ -41049,7 +41471,10 @@ RULES:
                               the loop that turns 1 solve into the 3+ that
                               predict activation. Accent (yellow) reserved for
                               the win state per DESIGN.md. */}
+                          {/* Tournament arm B: one button after a solve (B2 / B5). */}
+                          {pathUi.active && renderPathVerdictNext()}
                           {(() => {
+                            if (pathUi.suppressNextStrip) return null;
                             const n = sessionSolvedIds.size;
                             if (n > WARMUP_GOAL) return null;
                             const done = n >= WARMUP_GOAL;
@@ -41087,7 +41512,7 @@ RULES:
                           })()}
                           {/* After the first solve, offer a quick opt-in tour of the
                               rest of the app (Coach, Interview, Board, Profile). */}
-                          {showAppTourBadge && (
+                          {showAppTourBadge && !pathUi.hideTabs && (
                             <div className="mb-3 p-3 rounded-lg border border-yellow-400/60 bg-yellow-400/10 flex items-center gap-3 animate-pulse">
                               <span className="text-2xl">💡</span>
                               <div className="flex-1 min-w-0">
@@ -41117,7 +41542,7 @@ RULES:
                               </button>
                             </div>
                           )}
-                          {renderCompanyAsk()}
+                          {!pathUi.suppressAsks && renderCompanyAsk()}
                           {/* Review ask (2026-09-07). A CARD, not a modal, and
                               it renders HERE — in the post-solve success
                               panel, above "what's next" — for two reasons.
@@ -41168,7 +41593,7 @@ RULES:
                               below it shows one primary "Next quest" action with
                               the reason, and three competing buttons next to it
                               were the choice that stalled people after a win. */}
-                          {!nextChallengeRec && (
+                          {!nextChallengeRec && !pathUi.suppressNextStrip && (
                           <div className="border-t border-green-500/20 pt-3">
                             <p className="text-xs text-gray-500 uppercase font-bold mb-2">{i18n_t('practice', 'whatsNext')}</p>
                             <div className="flex flex-wrap gap-2">
@@ -41231,6 +41656,8 @@ RULES:
                       Fires once per challenge, on the 3rd WRONG answer —
                       syntax errors are excluded by construction, since the
                       'error' status never increments wrongAttemptCount. */}
+                  {/* Tournament arm B: stuck on a ladder question → one rung down (B3). */}
+                  {pathUi.ladderActive && renderPathStepDown()}
                   {challengeStatus === 'wrong' && wrongAttemptCount >= 3 && stuckAsk !== 'dismissed' && (
                     <div className="rounded-xl p-4" style={{ background: '#16181F', border: '1px solid #2A2E38' }}>
                       {stuckAsk === 'answered' ? (
@@ -41740,7 +42167,7 @@ RULES:
                   )}
 
                   {/* Next challenge recommendation after success */}
-                  {challengeStatus === 'success' && nextChallengeRec && (
+                  {challengeStatus === 'success' && nextChallengeRec && !pathUi.suppressNextStrip && (
                     <div className="p-4 rounded-xl border border-teal-500/30 bg-teal-500/8">
                       <p className="text-xs font-bold text-teal-400 uppercase tracking-wider mb-2">⚡ Next quest</p>
                       <div className="flex items-center justify-between gap-3">
