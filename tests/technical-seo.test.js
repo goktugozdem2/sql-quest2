@@ -56,16 +56,32 @@ describe('one host: every other host the project answers on redirects to sqlques
   // 2026-11-25 (G1, R1-3): sql-quest2.vercel.app served a full 200 copy of
   // the site; search engines indexed it and the week's only AI-search
   // citation credited sql-quest2.vercel.app/llms.txt instead of sqlquest.app.
+  //
+  // 2026-11-26 (C1, live QA #413): the first rule, source "/:path*", matched
+  // only file paths (/app.js, /robots.txt) — every page stayed 200. Vercel
+  // compiles a source with path-to-regexp in STRICT mode (@vercel/routing-utils
+  // sourceToRegex, strict: true), so "/:path*" becomes
+  // ^(?:\/((?:[^\/]+?)(?:\/(?:[^\/]+?))*))?$ — which matches neither "/" nor
+  // any path ending in "/", i.e. every page under trailingSlash: true.
+  // "/(.*)" compiles to ^(?:\/(.*))$ and matches every path. Never go back to
+  // ":path*" on a host rule. Status: `permanent` wins over `statusCode` in
+  // Vercel's converter and gives 308; a 301 needs statusCode alone.
   const redirects = JSON.parse(read('vercel.json')).redirects;
-  for (const host of ['www.sqlquest.app', 'sql-quest2.vercel.app']) {
-    it(`${host} → https://sqlquest.app/:path*, permanent`, () => {
-      const rule = redirects.find(r => (r.has || []).some(h => h.type === 'host' && h.value === host));
+  const HOSTS = ['www.sqlquest.app', 'sql-quest2.vercel.app'];
+  const hostOf = (r) => (r.has || []).find(h => h.type === 'host')?.value;
+  for (const host of HOSTS) {
+    it(`${host} → https://sqlquest.app/$1 for every path, 301`, () => {
+      const rule = redirects.find(r => hostOf(r) === host);
       expect(rule, host).toBeTruthy();
-      expect(rule.source).toBe('/:path*');
-      expect(rule.destination).toBe('https://sqlquest.app/:path*');
-      expect(rule.permanent).toBe(true);
+      expect(rule.source).toBe('/(.*)');
+      expect(rule.destination).toBe('https://sqlquest.app/$1');
+      expect(rule.statusCode).toBe(301);
+      expect('permanent' in rule, 'permanent overrides statusCode (308)').toBe(false);
     });
   }
+  it('the host rules come before every path rule (a path rule would fire first on the other host)', () => {
+    expect(redirects.slice(0, HOSTS.length).map(hostOf).sort()).toEqual([...HOSTS].sort());
+  });
 });
 
 describe('the sitemap lists only pages meant to be indexed', () => {
