@@ -1,5 +1,7 @@
 # P1 — Partnerships & B2B (institutions that buy for many people)
 
+> **Cadence reduced 2026-11-25 (investor 90-day plan, A11): weekly, replies first.** 7 sends / 0 human replies — B2B is not proven. No new targets beyond 2 a week; the 2026-12-22 check (≥ 3 `team_interest` rows, today 0) decides whether the lane continues.
+
 **Lane:** organisations that put SQL Quest in front of many learners, or pay
 for seats. That includes bootcamps, university courses and career centres,
 data-career programmes, training companies, corporate L&D, and communities
