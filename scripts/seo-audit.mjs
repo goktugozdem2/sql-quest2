@@ -98,6 +98,10 @@ export function audit() {
 
   for (const file of files) {
     const url = urlOf(file);
+    // A vercel.json redirect runs before the filesystem, so a built page whose
+    // URL is a redirect source is never served (a merged page, e.g.
+    // /learn-sql-for-beginners/ → /learn-sql/; tests/seo-merges.test.js).
+    if (redirectMatches(url, redirects)) continue;
     const html = fs.readFileSync(file, 'utf8');
     const head = html.slice(0, html.indexOf('</head>') > 0 ? html.indexOf('</head>') : 20000);
     const noindex = /<meta[^>]+name=["']robots["'][^>]+content=["'][^"']*noindex/i.test(head);

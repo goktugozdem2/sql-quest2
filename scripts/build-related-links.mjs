@@ -39,13 +39,13 @@ export const DA = '/sql-interview-questions-data-analyst/';
 export const RELATED = {
   'challenges/index.html': { lead: 'Also practise', links: [
     ['/weekly/', 'this week\'s SQL challenge'],
-    ['/learn-sql-for-beginners/', 'SQL for complete beginners'],
+    ['/learn-sql/', 'learn SQL from zero'],
     ['/sql-rollup-interview-questions/', 'ROLLUP and GROUPING SETS interview questions'],
     [DA, 'SQL interview questions for data analysts, by level'],
   ] },
   'sql-quiz.html': { lead: 'Next', links: [
     ['/weekly/', 'try this week\'s SQL challenge'],
-    ['/learn-sql-for-beginners/', 'start from zero with SQL for beginners'],
+    ['/learn-sql/', 'start from zero with SQL'],
     [DA, 'see what a data analyst SQL interview asks'],
   ] },
   'blog/index.html': { lead: 'More to read and practise', links: [
@@ -62,7 +62,7 @@ export const RELATED = {
     [DA, 'SQL interview questions for data analysts'],
   ] },
   'sql-tutorial.html': { lead: 'Where to go from here', links: [
-    ['/learn-sql-for-beginners/', 'SQL for complete beginners'],
+    ['/learn-sql/', 'learn SQL from zero'],
     ['/challenges/string-functions/', 'string function exercises'],
     ['/after-the-sql-course/', 'finished a SQL course? what to practise next'],
     [DA, 'SQL interview questions for data analysts'],

@@ -208,7 +208,6 @@ Each comparison page quotes competitor prices and features from that site's own 
 - SQL Practice Seats for Cohorts | SQLQuest.app — https://sqlquest.app/for-teams/
 - SQL Cheat Sheet — Every Clause, With a Runnable Example | SQLQuest.app — https://sqlquest.app/sql-cheat-sheet/
 - SQL Tutorial — 12 Free Lessons, Each With a Live Challenge | SQLQuest.app — https://sqlquest.app/sql-tutorial/
-- Learn SQL for Beginners — Yes, Even You. Free, in Your Browser | SQLQuest.app — https://sqlquest.app/learn-sql-for-beginners/
 - How to Find Duplicates in SQL — Find, Inspect, and Delete Them | SQLQuest.app — https://sqlquest.app/sql-find-duplicates/
 - CTE vs Subquery vs Temp Table — When Each One Actually Matters | SQLQuest.app — https://sqlquest.app/sql-cte-vs-subquery/
 - SQL Interview Questions for Data Analysts — By Experience Level | SQLQuest.app — https://sqlquest.app/sql-interview-questions-data-analyst/
@@ -595,11 +594,9 @@ Each comparison page quotes competitor prices and features from that site's own 
 - Tesla SQL Interview Questions — Practice Manufacturing & Telemetry SQL | SQLQuest.app — https://sqlquest.app/tesla-sql-interview/
 - Morgan Stanley SQL Interview Questions — Practice Finance & Risk SQL | SQLQuest.app — https://sqlquest.app/morgan-stanley-sql-interview/
 - DoorDash SQL Interview Questions — Orders, Deliveries & the 30-Minute SQL Half | SQLQuest.app — https://sqlquest.app/doordash-sql-interview/
-- Goldman Sachs SQL Interview Questions — Dedup, Latest Record & Running Totals | SQLQuest.app — https://sqlquest.app/goldman-sachs-sql-interview/
 - Walmart SQL Interview Questions — Retail Joins, HAVING & Top-N per Region | SQLQuest.app — https://sqlquest.app/walmart-sql-interview/
 - TikTok SQL Interview Questions — Engagement, Activation & Window Functions | SQLQuest.app — https://sqlquest.app/tiktok-sql-interview/
 - LinkedIn SQL Interview Questions — Joins, HAVING & Signup Funnels | SQLQuest.app — https://sqlquest.app/linkedin-sql-interview/
-- Microsoft SQL Interview Questions for Data Scientists & Analysts | SQLQuest.app — https://sqlquest.app/microsoft-sql-interview/
 - Bloomberg SQL Interview Questions — Prices, Trades & Time Buckets | SQLQuest.app — https://sqlquest.app/bloomberg-sql-interview/
 - PayPal SQL Interview Questions — Payments & Fraud | SQLQuest.app — https://sqlquest.app/paypal-sql-interview/
 - Coinbase SQL Interview Questions — Trades & Retention | SQLQuest.app — https://sqlquest.app/coinbase-sql-interview/
@@ -609,7 +606,6 @@ Each comparison page quotes competitor prices and features from that site's own 
 **Industry tracks and Turkish**
 - Türkçe SQL Öğren — AI Tutor ile Ücretsiz Pratik | SQLQuest.app — https://sqlquest.app/turkce-sql-ogren/
 - Finans & Bankacılık SQL — Gerçek FDIC Verisi ile Pratik | SQLQuest.app — https://sqlquest.app/finans-sql/
-- Gayrimenkul SQL — NYC OpenData ile Real Estate Analytics | SQLQuest.app — https://sqlquest.app/gayrimenkul-sql/
 - Üretim SQL — Predictive Maintenance Benchmark ile | SQLQuest.app — https://sqlquest.app/uretim-sql/
 
 **Challenge topic pages**
@@ -635,10 +631,7 @@ Each comparison page quotes competitor prices and features from that site's own 
 - SQL for Fraud Analytics — 5 Patterns Every Fraud Analyst Writes Weekly | SQLQuest.app — https://sqlquest.app/blog/sql-for-fraud-analytics/
 - SQL GROUP BY Tutorial — Aggregation, HAVING, and the 5 Mistakes Most Analysts Make | SQLQuest.app — https://sqlquest.app/blog/sql-group-by-tutorial/
 - SQL CASE WHEN Tutorial — Conditional Logic, Pivots, and the Common Bugs | SQLQuest.app — https://sqlquest.app/blog/sql-case-when-tutorial/
-- SQL for AI Company Interviews — What OpenAI and Anthropic Actually Ask (2026) | SQLQuest.app — https://sqlquest.app/blog/sql-for-ai-company-interviews/
-- Time-Series SQL for Hardware Interviews — NVIDIA, Tesla and the Ordering Trap (2026) | SQLQuest.app — https://sqlquest.app/blog/time-series-sql-hardware-interviews/
 - LEFT JOIN vs INNER JOIN — The Difference, Shown With Real NULL Rows | SQLQuest.app — https://sqlquest.app/blog/left-join-vs-inner-join/
-- What Is a CTE in SQL? Explained in One Query (With Runnable Examples) | SQLQuest.app — https://sqlquest.app/blog/what-is-a-cte-in-sql/
 - Recursive CTE Explained — Org Chart Example | SQLQuest.app — https://sqlquest.app/blog/recursive-cte-explained/
 - ROW_NUMBER vs RANK vs DENSE_RANK: Ties Explained | SQLQuest.app — https://sqlquest.app/blog/row-number-vs-rank-vs-dense-rank/
 - WHERE vs HAVING in SQL — One Rule, Four Cases, Real Row Counts | SQLQuest.app — https://sqlquest.app/blog/where-vs-having/

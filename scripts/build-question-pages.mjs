@@ -71,13 +71,13 @@ export const primarySkill = c => { const skills = canon(c); return skills.find(s
 export const SKILL_GUIDES = {
   'Joins': [['/blog/left-join-vs-inner-join/', 'LEFT JOIN vs INNER JOIN'], ['/blog/sql-joins-explained/', 'SQL JOINs explained'], ['/blog/sql-anti-join/', 'The anti-join, three ways']],
   'Window Functions': [['/blog/window-functions-tutorial/', 'Window functions tutorial'], ['/blog/row-number-vs-rank-vs-dense-rank/', 'ROW_NUMBER vs RANK vs DENSE_RANK'], ['/blog/sql-running-total/', 'SQL running total']],
-  'Subqueries & CTEs': [['/blog/sql-cte-tutorial/', 'SQL CTE tutorial'], ['/blog/what-is-a-cte-in-sql/', 'What is a CTE?'], ['/blog/recursive-cte-explained/', 'Recursive CTE explained']],
+  'Subqueries & CTEs': [['/blog/sql-cte-tutorial/', 'SQL CTE tutorial'], ['/challenges/cte/', 'CTE exercises'], ['/blog/recursive-cte-explained/', 'Recursive CTE explained']],
   'Aggregation & Grouping': [['/blog/sql-group-by-tutorial/', 'SQL GROUP BY tutorial'], ['/blog/where-vs-having/', 'WHERE vs HAVING'], ['/sql-find-duplicates/', 'How to find duplicates in SQL']],
   'Conditional Logic': [['/blog/sql-case-when-tutorial/', 'SQL CASE WHEN tutorial']],
-  'Date Functions': [['/blog/time-series-sql-hardware-interviews/', 'Time-series SQL: the ordering trap'], ['/blog/sql-running-total/', 'SQL running total']],
+  'Date Functions': [['/blog/sql-running-total/', 'SQL running total'], ['/challenges/date-functions/', 'Date function exercises']],
   'NULL Handling': [['/blog/is-null-vs-equals-null/', 'IS NULL vs = NULL'], ['/blog/null-handling-mistakes/', 'NULL handling mistakes']],
   'String Functions': [['/sql-cheat-sheet/', 'SQL cheat sheet']],
-  'Querying Basics': [['/learn-sql-for-beginners/', 'Learn SQL for beginners'], ['/sql-tutorial/', 'SQL tutorial'], ['/practice-sql-no-setup/', 'Practice SQL with no setup']],
+  'Querying Basics': [['/learn-sql/', 'Learn SQL from zero'], ['/sql-tutorial/', 'SQL tutorial'], ['/practice-sql-no-setup/', 'Practice SQL with no setup']],
 };
 export const guideFor = c => { const g = SKILL_GUIDES[primarySkill(c)] || SKILL_GUIDES['Querying Basics']; return g[c.id % g.length]; };
 

@@ -1,5 +1,17 @@
 {
   "_comment": "SEO prune list (founder's SEO plan P4.25, 2026-09-13). Paths listed under noindex get <meta name=robots content='noindex, follow'> in the built page and are dropped from public/sitemap.xml by scripts/apply-seo-prune.mjs at the end of npm run build. Add a path only through the prune rule in docs/plans/seo-measurement-2026-09-13.md, with the dated read that justified it in notes. Merges are vercel.json redirects, not entries here.",
-  "noindex": [],
-  "notes": {}
+  "noindex": [
+    "/goldman-sachs-sql-interview/",
+    "/microsoft-sql-interview/",
+    "/gayrimenkul-sql/",
+    "/blog/sql-for-ai-company-interviews/",
+    "/blog/time-series-sql-hardware-interviews/"
+  ],
+  "notes": {
+    "/goldman-sachs-sql-interview/": "2026-11-25 read (docs/reads/prune-2026-11-25.md): GSC 20 impressions in 90 days (6 in 28), 0 clicks ever since its first impression on 2026-09-15; Bing 0 impressions; 0 people opened the app or solved from it in 90 days; no backlink. Founder's go to prune, 2026-11-25. Revert if GSC shows clicks we missed.",
+    "/microsoft-sql-interview/": "2026-11-25 read (docs/reads/prune-2026-11-25.md): first in line in the 2026-09-13 plan (SQL Server intent collision). GSC 52 impressions in 90 days at position 26 (33 in the last 28), 0 clicks ever; Bing 0; 0 app opens or solves from it in 90 days; no backlink.",
+    "/gayrimenkul-sql/": "2026-11-25 read (docs/reads/prune-2026-11-25.md): GSC 33 impressions in 90 days (1 in 28), most of them 'site:sqlquest.app'; 0 clicks ever since 2026-05-25; Bing 0; 0 app opens from it in 90 days; no backlink. /finans-sql/ (solves) and /uretim-sql/ (rising impressions) stay indexed.",
+    "/blog/sql-for-ai-company-interviews/": "2026-11-25 read (docs/reads/prune-2026-11-25.md): GSC 27 impressions in 90 days (9 in 28), 0 clicks ever since 2026-09-15; Bing 0; 0 app opens from it in 90 days; no backlink. The OpenAI and Anthropic company pages carry the same intent and earn clicks.",
+    "/blog/time-series-sql-hardware-interviews/": "2026-11-25 read (docs/reads/prune-2026-11-25.md): GSC 2 impressions in 90 days (18 ever since 2026-07-30), 0 clicks ever; Bing 0; 0 app opens from it in 90 days; no backlink. The NVIDIA and Tesla company pages carry the intent."
+  }
 }

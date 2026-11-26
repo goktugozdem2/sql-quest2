@@ -66,6 +66,16 @@
       "permanent": true
     },
     {
+      "source": "/learn-sql-for-beginners/",
+      "destination": "/learn-sql/",
+      "permanent": true
+    },
+    {
+      "source": "/blog/what-is-a-cte-in-sql/",
+      "destination": "/blog/sql-cte-tutorial/",
+      "permanent": true
+    },
+    {
       "source": "/en/",
       "destination": "/",
       "permanent": true

@@ -38,13 +38,6 @@
     <xhtml:link rel="alternate" hreflang="tr" href="https://sqlquest.app/finans-sql/" xmlns:xhtml="http://www.w3.org/1999/xhtml"/>
   </url>
   <url>
-    <loc>https://sqlquest.app/gayrimenkul-sql/</loc>
-    <lastmod>2026-11-24</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
-    <xhtml:link rel="alternate" hreflang="tr" href="https://sqlquest.app/gayrimenkul-sql/" xmlns:xhtml="http://www.w3.org/1999/xhtml"/>
-  </url>
-  <url>
     <loc>https://sqlquest.app/uretim-sql/</loc>
     <lastmod>2026-11-24</lastmod>
     <changefreq>monthly</changefreq>
@@ -297,12 +290,6 @@
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://sqlquest.app/learn-sql-for-beginners/</loc>
-    <lastmod>2026-11-25</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.85</priority>
-  </url>
-  <url>
     <loc>https://sqlquest.app/sql-find-duplicates/</loc>
     <lastmod>2026-11-24</lastmod>
     <changefreq>monthly</changefreq>
@@ -535,25 +522,7 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://sqlquest.app/blog/sql-for-ai-company-interviews/</loc>
-    <lastmod>2026-11-25</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://sqlquest.app/blog/time-series-sql-hardware-interviews/</loc>
-    <lastmod>2026-11-25</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
     <loc>https://sqlquest.app/blog/left-join-vs-inner-join/</loc>
-    <lastmod>2026-11-25</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://sqlquest.app/blog/what-is-a-cte-in-sql/</loc>
     <lastmod>2026-11-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
@@ -602,7 +571,7 @@
   </url>
   <url>
     <loc>https://sqlquest.app/blog/sql-cte-nedir/</loc>
-    <lastmod>2026-11-24</lastmod>
+    <lastmod>2026-11-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -631,12 +600,6 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://sqlquest.app/goldman-sachs-sql-interview/</loc>
-    <lastmod>2026-11-25</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://sqlquest.app/walmart-sql-interview/</loc>
     <lastmod>2026-11-25</lastmod>
     <changefreq>weekly</changefreq>
@@ -650,12 +613,6 @@
   </url>
   <url>
     <loc>https://sqlquest.app/linkedin-sql-interview/</loc>
-    <lastmod>2026-11-25</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://sqlquest.app/microsoft-sql-interview/</loc>
     <lastmod>2026-11-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -839,7 +796,7 @@
   </url>
   <url>
     <loc>https://sqlquest.app/questions/below-department-average/</loc>
-    <lastmod>2026-11-24</lastmod>
+    <lastmod>2026-11-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -911,7 +868,7 @@
   </url>
   <url>
     <loc>https://sqlquest.app/questions/highest-fare-per-port/</loc>
-    <lastmod>2026-11-24</lastmod>
+    <lastmod>2026-11-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -929,7 +886,7 @@
   </url>
   <url>
     <loc>https://sqlquest.app/questions/correlated-subquery-employees-above-department-median/</loc>
-    <lastmod>2026-11-24</lastmod>
+    <lastmod>2026-11-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -1013,13 +970,13 @@
   </url>
   <url>
     <loc>https://sqlquest.app/questions/employee-tenure-bands/</loc>
-    <lastmod>2026-11-24</lastmod>
+    <lastmod>2026-11-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://sqlquest.app/questions/quarterly-hiring-cohort-report/</loc>
-    <lastmod>2026-11-24</lastmod>
+    <lastmod>2026-11-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -1037,7 +994,7 @@
   </url>
   <url>
     <loc>https://sqlquest.app/questions/genres-in-common-intersect/</loc>
-    <lastmod>2026-11-24</lastmod>
+    <lastmod>2026-11-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -1193,13 +1150,13 @@
   </url>
   <url>
     <loc>https://sqlquest.app/questions/monthly-order-trends/</loc>
-    <lastmod>2026-11-24</lastmod>
+    <lastmod>2026-11-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://sqlquest.app/questions/department-budget-analysis/</loc>
-    <lastmod>2026-11-24</lastmod>
+    <lastmod>2026-11-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -1253,7 +1210,7 @@
   </url>
   <url>
     <loc>https://sqlquest.app/questions/island-length-classification/</loc>
-    <lastmod>2026-11-24</lastmod>
+    <lastmod>2026-11-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -1271,7 +1228,7 @@
   </url>
   <url>
     <loc>https://sqlquest.app/questions/customer-retention-cohort/</loc>
-    <lastmod>2026-11-24</lastmod>
+    <lastmod>2026-11-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -1319,7 +1276,7 @@
   </url>
   <url>
     <loc>https://sqlquest.app/questions/the-in-operator/</loc>
-    <lastmod>2026-11-24</lastmod>
+    <lastmod>2026-11-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -1355,7 +1312,7 @@
   </url>
   <url>
     <loc>https://sqlquest.app/questions/pattern-matching-with-like/</loc>
-    <lastmod>2026-11-24</lastmod>
+    <lastmod>2026-11-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -1403,7 +1360,7 @@
   </url>
   <url>
     <loc>https://sqlquest.app/questions/date-functions-how-long-ago/</loc>
-    <lastmod>2026-11-24</lastmod>
+    <lastmod>2026-11-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -1433,7 +1390,7 @@
   </url>
   <url>
     <loc>https://sqlquest.app/questions/subquery-in-from-derived-table/</loc>
-    <lastmod>2026-11-24</lastmod>
+    <lastmod>2026-11-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -1445,13 +1402,13 @@
   </url>
   <url>
     <loc>https://sqlquest.app/questions/recent-hit-movies-2010s/</loc>
-    <lastmod>2026-11-24</lastmod>
+    <lastmod>2026-11-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://sqlquest.app/questions/monthly-order-volume-in-2024/</loc>
-    <lastmod>2026-11-24</lastmod>
+    <lastmod>2026-11-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -1589,7 +1546,7 @@
   </url>
   <url>
     <loc>https://sqlquest.app/questions/passengers-without-mr-or-mrs-not-like/</loc>
-    <lastmod>2026-11-24</lastmod>
+    <lastmod>2026-11-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -1625,7 +1582,7 @@
   </url>
   <url>
     <loc>https://sqlquest.app/questions/january-2024-orders/</loc>
-    <lastmod>2026-11-24</lastmod>
+    <lastmod>2026-11-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -1649,13 +1606,13 @@
   </url>
   <url>
     <loc>https://sqlquest.app/questions/tenure-in-months-date-math/</loc>
-    <lastmod>2026-11-24</lastmod>
+    <lastmod>2026-11-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://sqlquest.app/questions/customer-signup-quarter-date-case/</loc>
-    <lastmod>2026-11-24</lastmod>
+    <lastmod>2026-11-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -1811,7 +1768,7 @@
   </url>
   <url>
     <loc>https://sqlquest.app/questions/a-subquery-that-returns-a-set-in/</loc>
-    <lastmod>2026-11-24</lastmod>
+    <lastmod>2026-11-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -1823,7 +1780,7 @@
   </url>
   <url>
     <loc>https://sqlquest.app/questions/insert-a-new-customer/</loc>
-    <lastmod>2026-11-24</lastmod>
+    <lastmod>2026-11-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -1865,7 +1822,7 @@
   </url>
   <url>
     <loc>https://sqlquest.app/questions/every-film-by-a-director-who-once-hit-8-5/</loc>
-    <lastmod>2026-11-24</lastmod>
+    <lastmod>2026-11-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -1883,7 +1840,7 @@
   </url>
   <url>
     <loc>https://sqlquest.app/questions/who-manages-nobody/</loc>
-    <lastmod>2026-11-24</lastmod>
+    <lastmod>2026-11-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -1895,7 +1852,7 @@
   </url>
   <url>
     <loc>https://sqlquest.app/questions/texas-banks-above-5b/</loc>
-    <lastmod>2026-11-24</lastmod>
+    <lastmod>2026-11-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -1913,7 +1870,7 @@
   </url>
   <url>
     <loc>https://sqlquest.app/questions/distinct-charter-classes/</loc>
-    <lastmod>2026-11-24</lastmod>
+    <lastmod>2026-11-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -1943,7 +1900,7 @@
   </url>
   <url>
     <loc>https://sqlquest.app/questions/pre-1900-banks/</loc>
-    <lastmod>2026-11-24</lastmod>
+    <lastmod>2026-11-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -1997,7 +1954,7 @@
   </url>
   <url>
     <loc>https://sqlquest.app/questions/failed-banks-recent-decade/</loc>
-    <lastmod>2026-11-24</lastmod>
+    <lastmod>2026-11-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -2039,7 +1996,7 @@
   </url>
   <url>
     <loc>https://sqlquest.app/questions/distinct-acris-property-types/</loc>
-    <lastmod>2026-11-24</lastmod>
+    <lastmod>2026-11-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -2057,13 +2014,13 @@
   </url>
   <url>
     <loc>https://sqlquest.app/questions/llc-and-realty-owners/</loc>
-    <lastmod>2026-11-24</lastmod>
+    <lastmod>2026-11-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://sqlquest.app/questions/2025-sales/</loc>
-    <lastmod>2026-11-24</lastmod>
+    <lastmod>2026-11-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -2081,7 +2038,7 @@
   </url>
   <url>
     <loc>https://sqlquest.app/questions/above-average-assess-properties/</loc>
-    <lastmod>2026-11-24</lastmod>
+    <lastmod>2026-11-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -2117,7 +2074,7 @@
   </url>
   <url>
     <loc>https://sqlquest.app/questions/active-properties-with-permits/</loc>
-    <lastmod>2026-11-24</lastmod>
+    <lastmod>2026-11-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -2129,7 +2086,7 @@
   </url>
   <url>
     <loc>https://sqlquest.app/questions/top-10-by-tool-wear/</loc>
-    <lastmod>2026-11-24</lastmod>
+    <lastmod>2026-11-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -2165,7 +2122,7 @@
   </url>
   <url>
     <loc>https://sqlquest.app/questions/all-failure-mode-reference/</loc>
-    <lastmod>2026-11-24</lastmod>
+    <lastmod>2026-11-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -2207,7 +2164,7 @@
   </url>
   <url>
     <loc>https://sqlquest.app/questions/top-failure-mode-by-quality/</loc>
-    <lastmod>2026-11-24</lastmod>
+    <lastmod>2026-11-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -2315,7 +2272,7 @@
   </url>
   <url>
     <loc>https://sqlquest.app/questions/recursive-cte-chargeback-chain-investigation/</loc>
-    <lastmod>2026-11-24</lastmod>
+    <lastmod>2026-11-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -2459,7 +2416,7 @@
   </url>
   <url>
     <loc>https://sqlquest.app/questions/disputed-spend-by-risk-tier-and-category/</loc>
-    <lastmod>2026-11-24</lastmod>
+    <lastmod>2026-11-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -2531,7 +2488,7 @@
   </url>
   <url>
     <loc>https://sqlquest.app/questions/top-3-spending-categories-per-country/</loc>
-    <lastmod>2026-11-24</lastmod>
+    <lastmod>2026-11-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -2585,7 +2542,7 @@
   </url>
   <url>
     <loc>https://sqlquest.app/questions/three-login-days-in-any-7-day-window/</loc>
-    <lastmod>2026-11-24</lastmod>
+    <lastmod>2026-11-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -2603,13 +2560,13 @@
   </url>
   <url>
     <loc>https://sqlquest.app/questions/hires-per-year/</loc>
-    <lastmod>2026-11-24</lastmod>
+    <lastmod>2026-11-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://sqlquest.app/questions/weekend-logins/</loc>
-    <lastmod>2026-11-24</lastmod>
+    <lastmod>2026-11-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
