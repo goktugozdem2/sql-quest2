@@ -1346,6 +1346,14 @@ fingerprints as `botSignals()` (one table, test-bound). From that date a
 landing read filters `->>'bot' is null` like an app read; before it, drop
 `tz = 'Asia/Shanghai'` with no landing source and say the LA no-source rows
 are unreadable (they hold both the crawler and real people).
+**Google's non-search fetchers are stamped from the merge of
+`fix/track-google-fetchers` (2026-11-25, C8 / PR #391).** A landing row
+whose user agent contains `GoogleOther` (incl. -Image / -Video) carries
+`bot = 'google_other'`; `Google-NotebookLM` carries `bot = 'notebooklm'`
+(its own id: a person asked NotebookLM to read the page, so count it as an
+AI-assistant signal, not a reader). Before that date they passed the filter
+(~130–170 a week from mid-October): drop them by hand with
+`((metadata #>> '{}')::jsonb->>'ua') ~* 'googleother|notebooklm'`.
 **Still open:** landing_view carries no window size, so the 1280x1200
 crawler's landing views cannot be told apart — 214 (W1) and 295 (W0)
 landing people are Asia/Shanghai with no source. Read landing people with
