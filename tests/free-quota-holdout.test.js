@@ -19,6 +19,7 @@ import { companyDirectArm } from '../src/utils/company-direct.js';
 import { runSubmitNudgeArm } from '../src/utils/run-submit-nudge.js';
 import { mobileRunBarArm } from '../src/utils/mobile-run-bar.js';
 import { mobileOneLayerArm } from '../src/utils/mobile-one-layer.js';
+import { runnableStarterArm } from '../src/utils/runnable-starter.js';
 import { FREE_QUOTA_HOLDOUT_KEY as SMOKE_FQ_KEY, FREE_QUOTA_OUT_OF_TEST, firstScreenArmPreamble } from '../scripts/smoke/lib.mjs';
 
 const ROOT = path.resolve(new URL('..', import.meta.url).pathname);
@@ -64,6 +65,8 @@ describe('the arm', () => {
     'run/submit nudge': (a) => runSubmitNudgeArm(a) === 'nudge',
     'mobile run bar': (a) => mobileRunBarArm(a) === 'bar',
     'mobile one layer': (a) => mobileOneLayerArm(a) === 'one',
+    // #402, armed on the same new people from 2026-11-26 (A0 decision row).
+    'runnable starter': (a) => runnableStarterArm(a) === 'starter',
   };
   for (const [name, inOther] of Object.entries(others)) {
     it(`is independent of the ${name} test`, () => {
