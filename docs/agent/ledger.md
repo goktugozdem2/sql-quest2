@@ -27,6 +27,50 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### the Metrics & Case Round: the half of the interview that is not SQL (C5/B3)
+
+- **Claimed** 2026-11-22 · **Shipped** on merge (orchestrator's order, under
+  the founder's delegation of 2026-11-22; no flag, no price change) · **Read**
+  2026-12-20.
+- **Change** A twelve-item mock, `metrics-case-round`, on the existing engine
+  (nine multiple choice, three written SQL): define a metric, spot a wrong
+  denominator (twice), retention from signup vs from first transaction,
+  six-month revenue per signup, CAC vs CPA, fraud labelling, a fraud rate
+  read before its chargebacks arrived, a result said to a non-technical
+  reader, then the SQL for three of those metrics. Every number is computed
+  from `finans_neobank` / `finans_fraud` by a query pinned in
+  `tests/metrics-case-round.test.js`; the one given (£1,440 spend in item 5)
+  is stated as a given. First 3 free, the rest Pro (`freeQuestionCount`,
+  `src/utils/case-round.js`): a free run ends on the Pro modal, reason
+  `case_round`. Listed first in the Interview tab's general section, with a
+  "FIRST 3 FREE" badge. One sourced line on the Chime, Coinbase, PayPal and
+  Monzo pages ("Their loop reportedly includes a metrics/case round",
+  citing each page's own sources). **Not on Revolut:** its page's one source
+  (interviewquery, Q3 2026) describes a SQL screen and a live SQL session,
+  no metrics or case round; the line would invent one.
+- **Metric** `case_round_funnel` (metrics.md, defined in this PR), scoped to
+  `interviewId = 'metrics-case-round'`: entry (`interview_started`), free
+  part finished, Pro modal (`pro_modal_shown {reason: 'case_round'}`) →
+  checkout → trial or purchase.
+- **Baseline** not read: the cloud session has no production data. The set
+  is new, so the entry count starts at 0; the comparison baseline is the
+  laptop's read of `pro_modal_shown → pro_trial_started` for reason
+  `interview_locked` over the 30 days to 2026-11-22, written here before
+  merge.
+- **Target** by 2026-12-20: at least 30 people start the set, and the
+  `case_round` modal's modal → trial-or-purchase rate is at or above the
+  `interview_locked` baseline.
+- **Falsification** (written before the data) fewer than 10 people start it
+  in 28 days → the set is not found; move it (Coach step, company-page
+  placement) before writing more items. 10+ start, 0 reach a trial or
+  purchase from the `case_round` modal, and the modal → checkout rate is
+  below `interview_locked`'s → the ask does not sell; keep the free three,
+  rewrite the modal copy once, then reconsider the split.
+- **Confounds** Company-page traffic is single digits per page per week, so
+  the page line alone may read `UNREADABLE`; read the in-app entry (no
+  `linkSrc`) and the page entry (`linkSrc = <slug>-sql-interview`) apart.
+  The PayPal/Coinbase/Monzo/Chime pages are weeks old; any page change in
+  the window confounds the page door.
 ### /sql-interview-questions-data-analyst/ on Google — the /sql-exercises/ link push, next page (C1)
 
 - **Claimed** 2026-11-23 · **Shipped** on merge (static pages, no flag) ·
