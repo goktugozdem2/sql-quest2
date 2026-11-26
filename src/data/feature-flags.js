@@ -653,6 +653,21 @@ window.FEATURE_FLAGS = {
     // orchestrator decides the flip (companyDirectOpen "runs alone").
     // Ledger "Run is not Submit"; read first_solve_10m from assignment by arm.
     runSubmitNudge: false,
+
+    // ── A runnable starter in the editor (desktop A/B, 2026-11-26) ────────
+    // An A/B by aid (runnable_starter_v1, murmur-finalised hash), assigned at
+    // the first challenge open that would show an empty editor (no solve, no
+    // draft, not #91, not a Debug item) on a DESKTOP screen (≥ 1024 wide,
+    // fine pointer) and written once as `runnable_starter_assigned {arm,
+    // challengeId, viewport}`. `starter`: the editor holds a comment line
+    // and `SELECT * FROM <first table> LIMIT 5;` as real text, selected on
+    // focus, plus one grey line "Press Run to see the data first."; `control`
+    // keeps the grey placeholder. Grading unchanged; the untouched starter is
+    // never a solve. Phones are out (their cell is full, orchestrator
+    // 2026-11-24). DARK on merge; the founder approved ON at 50/50 after
+    // merge (chat, 2026-11-26). src/utils/runnable-starter.js; ledger "a
+    // runnable starter in the editor"; metric runnable_starter_split.
+    runnableStarter: false,
   },
 };
 
