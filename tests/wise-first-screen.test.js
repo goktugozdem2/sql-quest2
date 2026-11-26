@@ -99,6 +99,19 @@ describe('the Wise first screen', () => {
     expect(block).toContain(`<a href="/app/?challenge=${FIRST_ID}&amp;src=${DOOR}" data-track="cta_first_question" style="color:#c084fc;">${c.title}</a> (Easy)`);
   });
 
+  // A1 REVISE on ceec172: the "Start with" line handed over #285's solution
+  // path (join before you group, count people and payments apart). Founder's
+  // rule 2026-10-05: say what a question measures, never how. And a page that
+  // cites a dated report must not deny having one (FAQ, both copies).
+  it('the "Start with" line says what #285 measures, never how to solve it', () => {
+    const line = text(block.split('Start with:')[1].split('</p>')[0]);
+    expect(line).toMatch(/joins and aggregation/);
+    expect(line).not.toMatch(/\b(join before|before you group|GROUP BY|COUNT|separately)\b/i);
+  });
+  it('the FAQ no longer denies the dated source the page cites, in both copies', () => {
+    expect(PAGE).not.toMatch(/we have no dated, citable source for them/);
+    expect(PAGE.split('we have one dated report of a debug-a-query question').length).toBe(3);
+  });
   it('the Pro line states the Hard count, the bank and the free tier through the helpers', () => {
     const f = facts(loadBank(), 'Wise');
     const t = text(block);
