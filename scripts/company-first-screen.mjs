@@ -129,7 +129,7 @@ export const FIRST_SCREENS = {
     mock: {
       id: 'faang-sql-interview',
       label: 'the Hard SQL Interview mock',
-      note: '50 minutes, five written questions, including second-highest salary per department and consecutive orders. It is a general mock, not modelled on Amazon; it is the closest we have to the ranking and streak shapes the Amazon reports describe.',
+      note: '50 minutes, five written questions, including the second-highest salary, consecutive orders and the longest-tenured employee per department. It is a general mock, not modelled on Amazon; it is the closest we have to the ranking and streak shapes the Amazon reports describe.',
     },
   },
 };

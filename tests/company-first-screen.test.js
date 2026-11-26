@@ -197,6 +197,18 @@ describe('the Amazon first screen', () => {
     expect(m.questions.map(q => q.title)).toEqual(expect.arrayContaining(['Second highest salary', 'Consecutive Orders']));
     expect(t).toMatch(/the Hard SQL Interview mock \(Pro\) ?, 50 minutes, five written questions/);
     expect(t).toContain('not modelled on Amazon');
+    // A1 REVISE on 3ef5844a: the note described a question the mock does not
+    // have ("second-highest salary per department"). Every question the note
+    // names must be a title in the mock, and "per department" may only follow
+    // the one per-department question.
+    const note = amazon.mock.note;
+    expect(note).toMatch(/the second-highest salary, consecutive orders and the longest-tenured employee per department/);
+    const titles = m.questions.map(q => q.title.toLowerCase());
+    for (const named of ['second highest salary', 'consecutive orders', 'longest-tenured employee per department']) {
+      expect(titles, named).toContain(named);
+    }
+    expect(note).not.toMatch(/salary per department/);
+    expect(m.questions.find(q => q.title === 'Second highest salary').description).not.toMatch(/department/i);
     expect(t).not.toMatch(/\$\d|unlimited|most[- ]asked|Amazon's own (mock|question)/i);
   });
 
@@ -207,6 +219,22 @@ describe('the Amazon first screen', () => {
     expect(html).toContain('href="#src-reported-amzn"');
     expect(read('src/amazon-sql-interview.html')).toContain('id="src-reported-amzn"');
     expect(read('docs/reads/amazon-bie-candidate-report-2026-10-21.md')).toMatch(/COUNT\(\*\) vs COUNT\(column\)/);
+  });
+
+  // A1 REVISE on 3ef5844a: "7 Medium" survived in the plan intro and FAQ #1
+  // (both copies) after the set grew to 10. Every "N Medium" / "N Hard" the
+  // page states for the set must be the live split.
+  it('every Medium/Hard count the page states is the live split', () => {
+    const fx = f();
+    for (const rel of ['src/amazon-sql-interview.html', 'public/amazon-sql-interview/index.html']) {
+      const html = read(rel);
+      const medium = [...html.matchAll(/\b(\d+) Medium\b/g)].map(x => +x[1]);
+      expect(medium.length, rel).toBeGreaterThan(0);
+      for (const n of medium) expect(n, `${rel}: "${n} Medium"`).toBe(fx.medium);
+      for (const n of [...html.matchAll(/\b(\d+) Hard\b(?! previews| questions in this set past)/g)].map(x => +x[1])) {
+        expect([fx.hard, fx.previews], `${rel}: "${n} Hard"`).toContain(n);
+      }
+    }
   });
 
   it('Debug 334 is the same COUNT(*) against COUNT(column) difference', () => {

@@ -956,7 +956,10 @@ of the verifier and must never be rounded to `FLAT`.
   guide re-cited at aced.io; two PracHub reports (dashboard task, a Business
   Analyst screen with three SQL questions). The intro and provenance note now
   say Amazon publishes its stages, not its questions. The FAQ's stale
-  "7 Medium, 27 Hard" (34 of 39) is corrected to 10 / 29.
+  "7 Medium, 27 Hard" (34 of 39) is corrected to 10 / 29, and the two-week
+  plan's two "7 Medium … and the 3 Hard previews" lines (intro and FAQ #1,
+  visible + JSON-LD) now say "pick them from the 10 Medium … or its 3 Hard
+  previews" (A1 REVISE on 3ef5844a).
 - **Why this one:** Amazon is the one company set that produced a payer
   before the quota (CLAUDE.md); the dossier shows real demand at page 4–5
   ("amazon interview questions on sql" and neighbours) and a page that
