@@ -99,9 +99,16 @@ export function quotaWallCompanyLine(target, mockTitle = null) {
  * server has the last word: it answers `trial: false` and Stripe's page then
  * shows the amount due today.
  */
+// A paid plan type on the record means the person has bought before (the
+// webhook writes proType on a purchase; a client trial writes 'trial'). The
+// server has refused them a trial since 2026-11-20 (#66), but the modal still
+// promised "7 days free" and Stripe's page then asked for money today: 3
+// lapsed payers on 2026-11-25. Promising nothing to them is the safe side.
+export const PAID_PLAN_TYPES = ['monthly', 'annual', 'lifetime'];
 export function trialOffered({ sessionsOn, trialOn, userData } = {}) {
   if (sessionsOn !== true || trialOn !== true) return false;
   const d = userData && typeof userData === 'object' ? userData : {};
+  if (PAID_PLAN_TYPES.includes(d.proType)) return false;
   return !(d.proTrial === true || !!d.proTrialEnd);
 }
 

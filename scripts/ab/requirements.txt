@@ -1,0 +1,10 @@
+# GrowthBook's stats engine for scripts/ab/read.py (MIT; PyPI "gbstats",
+# source growthbook/growthbook packages/stats). Python 3.11: gbstats 0.8.0
+# needs pandas < 2, which ships no 3.12 wheels. Install into a venv, never the
+# system site-packages (header of read.py). Pins checked 2026-11-24.
+gbstats==0.8.0
+numpy==1.26.4
+pandas==1.5.3
+scipy==1.17.1
+pydantic==2.14.4
+nbformat==5.11.1

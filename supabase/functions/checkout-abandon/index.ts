@@ -255,11 +255,13 @@ Deno.serve(async (req) => {
         .eq('username', username).gte('created_at', from)
         .order('created_at', { ascending: false }).limit(10)
       const row = latestExpiredForClick(expired || [], clickAt)
-      const { data: used } = await supabase
+      const { data: used, error: usedErr } = await supabase
         .from('pro_events')
         .select('id').eq('reason', 'stripe_webhook').eq('username', username)
         .in('event', ['pro_trial_started', 'pro_purchase_completed']).limit(1)
-      const trialOrPaidBefore = !!(used && used.length > 0)
+      // Fail closed (A3, 2026-11-26): a read that errored (the 8 s statement
+      // timeout on pro_events, 11-23) is "we cannot tell", never "no trial".
+      const trialOrPaidBefore = !!usedErr || !!(used && used.length > 0)
       const worthReading = row && !trialOrPaidBefore && stripeRecoveryUrl(row.recovery_url)
       const session = worthReading ? await readStripeSession(row!.stripe_session_id) : null
       const decision = recoveryDecision({ username, row, session, now, trialOrPaidBefore })
@@ -281,16 +283,18 @@ Deno.serve(async (req) => {
     // The address-only checks the guest path has always made (once per
     // address ever, the captures unsubscribe flag, already paid). Read-only.
     const addressBlocked = async (email: string) => {
-      const { data: prior } = await supabase
+      const { data: prior, error: priorErr } = await supabase
         .from('email_events')
         .select('id').eq('email', email)
         .eq('template', 'checkout_abandon').eq('event', 'sent').limit(1)
-      if (prior && prior.length > 0) return true
-      const { data: cap } = await supabase
+      // Fail closed: once-per-address-ever and the unsubscribe flag cannot be
+      // checked, so the address is treated as blocked.
+      if (priorErr || (prior && prior.length > 0)) return true
+      const { data: cap, error: capErr } = await supabase
         .from('email_captures')
         .select('unsubscribe_token, unsubscribed')
         .eq('email', email).maybeSingle()
-      if (cap?.unsubscribed) return true
+      if (capErr || cap?.unsubscribed) return true
       const { data: paid } = await supabase
         .from('pending_subscriptions')
         .select('id').eq('email', email.toLowerCase()).limit(1)
@@ -504,11 +508,14 @@ Deno.serve(async (req) => {
 
       // Anyone who clicked a plan AT ANY TIME belongs to segment 1's story,
       // not this one — even if the click was outside the 24-72h window.
-      const { data: clickedEver } = await supabase
+      const { data: clickedEver, error: clickedErr } = await supabase
         .from('pro_events')
         .select('id').eq('username', username)
         .in('event', ['pro_plan_clicked', 'pro_checkout_clicked']).limit(1)
-      if (clickedEver && clickedEver.length > 0) { skipped2++; continue }
+      // Fail closed (A3, 2026-11-26): on 11-23 this read hit the 8 s statement
+      // timeout and the error was dropped, so the person read as "never
+      // clicked" and was eligible for the modal-abandon note. Skip instead.
+      if (clickedErr || (clickedEver && clickedEver.length > 0)) { skipped2++; continue }
 
       const { data: userRow } = await supabase
         .from('users').select('username, email, data').eq('username', username).maybeSingle()

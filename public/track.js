@@ -282,6 +282,30 @@
   ];
   // SOFT_FINGERPRINTS:end
 
+  // Google's non-search fetchers (C8, PR #391, 2026-11-25). GoogleOther
+  // (with its -Image / -Video variants) and Google-NotebookLM name
+  // themselves in the user agent but carry no 'bot', so isBot() let them
+  // through and their landing_view rows counted as people: ~130–170 a week
+  // since mid-October. Stamped by agent, never dropped and never served
+  // anything different — NotebookLM fetches a page because a person asked
+  // it to, so it keeps its own id and stays countable as an AI-assistant
+  // signal. First match wins, so NotebookLM is checked first. Lowercase
+  // substrings of navigator.userAgent: [id, substring].
+  var UA_FINGERPRINTS = [
+    ['notebooklm', 'notebooklm'],
+    ['google_other', 'googleother']
+  ];
+
+  function uaFingerprint() {
+    try {
+      var ua = String(navigator.userAgent || '').toLowerCase();
+      for (var i = 0; i < UA_FINGERPRINTS.length; i++) {
+        if (ua.indexOf(UA_FINGERPRINTS[i][1]) !== -1) return UA_FINGERPRINTS[i][0];
+      }
+    } catch (_) {}
+    return null;
+  }
+
   function viewportLabel() {
     try {
       var w = window.innerWidth;
@@ -497,7 +521,8 @@
       if (ctaArm) { meta.ctaArm = ctaArm; meta.ctaTest = CTA_TEST_ID; }
       try { meta.tz = Intl.DateTimeFormat().resolvedOptions().timeZone || null; } catch (_) {}
       meta.viewport = viewportLabel();
-      var fp = softFingerprint(meta.viewport, meta.tz, meta.landingSrc);
+      // A self-named agent outranks a window size: the agent says what it is.
+      var fp = uaFingerprint() || softFingerprint(meta.viewport, meta.tz, meta.landingSrc);
       if (fp) meta.bot = fp;
 
       var user = null;
