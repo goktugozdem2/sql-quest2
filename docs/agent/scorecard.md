@@ -133,3 +133,148 @@ Notes on the 11-22 row:
   their first open. Both stand on their own definitions.
 - The O2 day-0 row, the factor that is short (six-solvers, 4–5×) and the
   12-10 gap are in `docs/agent/objectives.md`.
+
+## The A01 human scorecard (investor plan, from 2026-11-25)
+
+One table on bot-filtered **people**, every Friday (B2), from
+`scripts/scorecard-weekly.sql`; definitions in `docs/agent/metrics.md`
+(`human_visitors`, `scorecard_weekly`). Weeks are complete ISO weeks,
+Monday 00:00 UTC. Each Friday appends a new block with all eight weeks
+re-read — earlier blocks are not edited, and a block read with a changed
+exclusion list says so.
+
+### 2026-11-27 — A01 human scorecard (first)
+
+Read 2026-11-25 (Wednesday) through the read-only MCP, file as committed
+with this block. Weeks W40 (09-28) → W47 (11-16 → 11-22); W48 is not
+complete and is not shown.
+
+**google_ua excluded (C8 11-25).** Re-read the same day on the new rule
+(PR #391): a `landing_view` whose `ua` names GoogleOther or
+Google-NotebookLM, never an `app_opened`. It removes 48–182 "people" a week
+from human visitors (W47: 715 → 569) and changes nothing else: none of
+them ever opened the app, so every opener, solver, modal and money column
+is as first read (W47 `activated_7d` 49 → 50 is the open runway filling).
+
+**Visitors and the product funnel (people).**
+
+| Week | Raw visitors | Human | Not human | App openers | New openers | Activated ≤ 7 d | Solvers | New six-solvers | Day-0 solvers → back ≤ 7 d | Modal | Checkout click |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| W40 09-28 | 2,326 | 663 | 71.5% | 368 | 275 | 103 (37.5%) | 117 | 42 | 98 → 25 (25.5%) | 71 | 5 |
+| W41 10-05 | 1,989 | 795 | 60.0% | 368 | 306 | 92 (30.1%) | 100 | 36 | 87 → 28 (32.2%) | 52 | 8 |
+| W42 10-12 | 1,703 | 826 | 51.5% | 238 | 183 | 73 (39.9%) | 89 | 30 | 71 → 19 (26.8%) | 44 | 3 |
+| W43 10-19 | 1,425 | 587 | 58.8% | 216 | 171 | 59 (34.5%) | 67 | 13 | 55 → 11 (20.0%) | 35 | 4 |
+| W44 10-26 | 1,531 | 512 | 66.6% | 200 | 150 | 54 (36.0%) | 60 | 11 | 52 → 11 (21.2%) | 24 | 4 |
+| W45 11-02 | 2,050 | 504 | 75.4% | 177 | 131 | 46 (35.1%) | 55 | 15 | 45 → 8 (17.8%) | 31 | 1 |
+| W46 11-09 | 1,002 | 510 | 49.1% | 172 | 138 | 49 (35.5%) | 53 | 18 | 43 → 9 (20.9%) | 32 | 5 |
+| **W47 11-16** | **1,199** | **569** | **52.5%** | **188** | **148** | **50 (33.8%)\*** | **59** | **14** | **46 → 7 (15.2%)\*** | **29** | **3** |
+
+\* W47's 7-day window is still open (runway ends 11-29): floors.
+
+**Money (`reason = 'stripe_webhook'` only; trials and payments never added).**
+
+| Week | Trials started | Payments (first charge) | Paid | Renewals | Refunds | Failed charges (invoices) |
+|---|---|---|---|---|---|---|
+| W40 | 0 | 1 | $9 | 1 | 1 | 2 |
+| W41 | 2 | 0 | — | 0 | 0 | 0 |
+| W42 | 1 | 0 | — | 0 | 0 | 1 |
+| W43 | 1 | 1 | $29 | 0 | 0 | 1 |
+| W44 | 1 | 0 | — | 0 | 0 | 2 |
+| W45 | 0 | 1 | $29 (a trial's conversion) | 0 | 0 | 1 |
+| W46 | 3 | 0 | — | 0 | 0 | 1 |
+| **W47** | **1** | **1** | **$99** (a trial's conversion) | 0 | 0 | **1** |
+
+**MRR snapshot (2026-11-25): $49.58** — 4 paying subscribers (1 monthly,
+3 annual) at the price each pays; 1 more inside a free trial; 1 live
+lifetime grant outside MRR. The 11-22 row's fifth subscriber (monthly) went
+`past_due` on 11-23 and its paid period has ended, so it is out. Not the
+Stripe dashboard read (A02).
+
+**Human visitors by source — people (of them solved in the week).**
+
+| Week | search:google | search:bing | ai | direct/home | other |
+|---|---|---|---|---|---|
+| W40 | 171 (32) | 182 (57) | 28 (4) | 192 (4) | 90 (20) |
+| W41 | 227 (38) | 156 (39) | 16 (2) | 319 (8) | 77 (13) |
+| W42 | 190 (30) | 111 (43) | 5 (0) | 460 (9) | 60 (7) |
+| W43 | 192 (26) | 93 (25) | 18 (3) | 232 (6) | 52 (7) |
+| W44 | 190 (25) | 75 (17) | 20 (4) | 182 (7) | 45 (5) |
+| W45 | 173 (21) | 57 (13) | 32 (7) | 207 (7) | 35 (7) |
+| W46 | 198 (24) | 43 (9) | 29 (2) | 214 (10) | 26 (8) |
+| **W47** | **231 (34)** | **38 (10)** | **21 (1)** | **244 (4)** | **35 (9)** |
+
+**By country (zone proxy; top 5 over the eight weeks) — people (solved).**
+
+| Week | IN | US | GB | HK | SG | other |
+|---|---|---|---|---|---|---|
+| W40 | 242 (65) | 125 (17) | 26 (6) | 28 (0) | 26 (0) | 216 (29) |
+| W41 | 239 (51) | 213 (10) | 37 (5) | 43 (0) | 37 (3) | 226 (31) |
+| W42 | 166 (41) | 333 (7) | 27 (7) | 48 (1) | 61 (3) | 191 (30) |
+| W43 | 145 (28) | 172 (8) | 27 (1) | 14 (0) | 29 (1) | 200 (29) |
+| W44 | 118 (16) | 117 (9) | 21 (4) | 47 (0) | 37 (3) | 172 (26) |
+| W45 | 101 (22) | 129 (9) | 24 (2) | 27 (0) | 22 (0) | 201 (22) |
+| W46 | 88 (12) | 157 (10) | 22 (5) | 20 (0) | 20 (0) | 203 (26) |
+| **W47** | **98 (17)** | **143 (8)** | **27 (7)** | **21 (0)** | **31 (0)** | **249 (26)** |
+
+**By first landing page — people (solved).**
+
+| Week | company | /sql-exercises/ | topic / question | blog | home | other | app only |
+|---|---|---|---|---|---|---|---|
+| W40 | 54 (7) | 208 (65) | 102 (10) | 34 (0) | 84 (14) | 81 (13) | 100 (8) |
+| W41 | 82 (8) | 188 (42) | 170 (22) | 44 (5) | 78 (11) | 106 (5) | 127 (7) |
+| W42 | 69 (8) | 142 (46) | 348 (9) | 44 (1) | 54 (5) | 120 (6) | 49 (14) |
+| W43 | 70 (9) | 110 (23) | 121 (11) | 42 (2) | 75 (12) | 127 (6) | 42 (4) |
+| W44 | 87 (10) | 76 (15) | 136 (17) | 48 (1) | 51 (5) | 69 (6) | 45 (4) |
+| W45 | 68 (13) | 68 (14) | 106 (9) | 54 (1) | 57 (6) | 120 (9) | 31 (3) |
+| W46 | 67 (7) | 48 (10) | 105 (13) | 79 (4) | 67 (12) | 114 (6) | 30 (1) |
+| **W47** | **107 (12)** | **39 (8)** | **133 (13)** | **64 (0)** | **60 (10)** | **127 (9)** | **39 (6)** |
+
+**The raw-vs-human gap, by the first rule that removed each person (Query 4).**
+
+| Week | Human | viewport | ref_spam (aocr) | cn_reader | cn_app | utc1280 | app1lang | utc_landing | bot_stamp | google_ua | google_ua:notebooklm | langs2 | rest |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| W40 | 663 | 3 | 0 | 154 | 101 | **1,347** | 0 | 0 | 0 | 31 | 17 | 2 | 8 |
+| W41 | 795 | 569 | 0 | 186 | 359 | 3 | 1 | 0 | 2 | 29 | 23 | 20 | 2 |
+| W42 | 826 | 397 | 0 | 264 | 109 | 0 | 5 | 0 | 4 | 52 | 10 | 33 | 3 |
+| W43 | 587 | 331 | 0 | 355 | 30 | 0 | 1 | 0 | 1 | 91 | 11 | 18 | 0 |
+| W44 | 512 | 210 | 189 | 315 | 114 | 0 | 5 | 0 | 2 | 125 | 15 | 44 | 0 |
+| W45 | 504 | 488 | **627** | 218 | 48 | 0 | 3 | 0 | 4 | 130 | 5 | 23 | 0 |
+| W46 | 510 | 48 | 0 | 188 | 13 | 0 | 49 | 0 | 0 | **172** | 10 | 12 | 0 |
+| W47 | 569 | 48 | 0 | 196 | 28 | 0 | 86 | 72 | 41 | 135 | 11 | 11 | 2 |
+
+"rest" = internal accounts, the LA/1920x1080 pre-stamp shape, `topic1lang`.
+`google_ua` = GoogleOther; `google_ua:notebooklm` = a NotebookLM fetch,
+which a person asked for: an AI-assistant signal, not a visit.
+
+**Notes.**
+
+- **Raw vs human.** 49–75% of the people the site records in a week are
+  not people. Raw visitors swing 1,002 → 2,326 with crawler waves while
+  human visitors stay in a 504–826 band; any raw series (Vercel included)
+  reads crawler weather, not demand. Three waves were new to this read and
+  are now rules (metrics.md shared traps, README rule 2): `utc1280` —
+  1,347 app "openers" with a spoofed `search:google` in W40, which alone
+  would have read as 2,111 human visitors that week — `cn_app`, and
+  `google_ua` (C8 11-25: GoogleOther 29 → 172 a week, all in
+  `direct/home` and the US row).
+- **Human visitors is a ceiling, app openers the firm count.** Still inside
+  "human": HK / SG landing-only readers (HK opened the app once in eight
+  weeks) and US no-source landing rows, which is most of `direct/home`
+  (244 people, 4 solvers in W47; it was 390 before `google_ua`). C8 owns
+  fingerprinting them.
+- **What the table says.** Human visitors fell from ~800 (W41–42) to
+  ~500–570 (W44–47); before `google_ua` the series looked flat because
+  GoogleOther rose as people fell. App openers halved from W40–41 (368)
+  to W45–47 (172–188), and new six-solvers went 42 → 11–18. The loss is
+  the Bing `/sql-exercises/` door (search:bing 182 → 38 people, 57 → 10
+  solvers) while Google held (171 → 231 people). Company pages grew
+  54 → 107 people (not 59 → 186: the rest was GoogleOther) with ~10
+  solvers a week — consistent with the 11-22 funnel read. Activation of
+  new openers held at 33–40%; the day-0 solvers' 7-day return fell from
+  25–32% (W40–41) to 18–21% (W43–46).
+- **Reproduction.** New six-solvers match B1's 11-22 weekly "Solve 6"
+  column in all eight weeks (42, 36, 30, 13, 11, 15, 18, 14); trials and
+  purchases match its webhook columns; modal people are within 4.
+- **Money is tiny and lumpy:** 4 first charges in eight weeks ($166), 9
+  trial starts, 1 refund (W40, a September monthly payer, full), 9 failed
+  invoices. At n = 0–3 a week no money ratio is readable; read the counts.

@@ -101,6 +101,41 @@ And two standing traps:
   reading arrivals; the week-over-week "drop" that follows is the burst
   leaving, not demand falling (weekly read 2026-09-07).
 
+## Reading an A/B with gbstats (2026-11-24)
+
+Our A/Bs are small: a few people per arm per week. From 2026-11-24 a live
+A/B on a yes/no metric is read with GrowthBook's stats engine (`gbstats`,
+MIT, pinned in `scripts/ab/requirements.txt`) as well as by its count.
+- **How:** `node scripts/ab/read-test.mjs <test>` prints the test's
+  read-only SQL (the metric as defined in this file, plus the README step-2
+  filters). Run it through `mcp__supabase__execute_sql`, then pass the rows
+  back: `node scripts/ab/read-test.mjs <test> --counts '<rows>'
+  --python <venv>/bin/python`. `--list` shows the tests it knows
+  (`companyDirectOpen`, `mobileOneLayer`, and `mobileRunBar` with `--since`
+  once it is on). For a test it does not know, run `python3 -I
+  scripts/ab/read.py --control <arm> --arm <arm>:<users>:<conversions> …`
+  on counts from this file's SQL. Python 3.11 in a venv, never the system
+  site-packages.
+- **Report one line per comparison:** n per arm, each arm's rate, the
+  chance to beat control, the absolute difference in points with its 95%
+  credible interval, and the frequentist p-value. Example: `direct 6/17
+  (35%) vs list 3/14 (21%): P(beat) 81%, +13.9 pts [−17, +45], p = 0.52,
+  directional (n < 15)`.
+- **gbstats informs; the claim decides.** The pre-registered rule in the
+  ledger (minimum n, points above control, stop dates) is still the verdict.
+  A chance to beat control of 95% at 6 per arm is not a HIT if the claim
+  says 120 per arm. Never rewrite a claim's falsification rule to a
+  probability after the data is in.
+- **When gbstats declines, say so.** Its tests are normal approximations.
+  An arm at 0% or 100% (zero variance), an empty arm, or a 0% control
+  for the relative uplift return no number (`ZERO_NEGATIVE_VARIANCE`,
+  `NO_UNITS_IN_VARIATION`, `ZERO_NEGATIVE_BASELINE_VARIATION`). Report the
+  counts and "gbstats declined". Never fill the gap with a formula of your
+  own. Under 15 people in an arm the line is marked directional.
+- **Not A/Bs:** `exitReasonAsk` and `day2Ask` have no arms (everyone in
+  scope gets the ask), so there is nothing for gbstats to compare. Read
+  them by their answer counts.
+
 ## `challenge_solve_through`
 
 Of the people who opened a challenge, how many solved it. The content-quality
@@ -143,7 +178,9 @@ The items are challenge ids **331–342** (`type: 'debug'`,
 **t0 → t0 + 28 days**, and the baseline band is read **from the same window**,
 never from an earlier period.
 
-People are `coalesce(aid, username)`. Leave out internal accounts,
+People are `coalesce(aid, username)`, where `aid` is
+`((metadata #>> '{}')::jsonb)->>'aid'` (pro_events has no aid column; the
+short form is shorthand everywhere in this file). Leave out internal accounts,
 `metadata.bot`, and the crawler window sizes and fingerprints at the top of
 docs/reads/funnel-2026-11-22.md.
 
@@ -179,6 +216,8 @@ the prefill moves them by construction.
   - the Practice chip (`debug_filter_on`);
   - the trap pages (`src=pattern-debug-<slug>`);
   - the AI pages (`src=ai-era-debug`, `src=validate-ai-debug`).
+  - the Coach's Debug door (from its deploy, PR #373):
+    `challenge_opened.openedFrom = 'coach_debug_door'`; see `coach_debug_door`.
 
   Split openers by source before reading a change in one of them.
 
@@ -217,6 +256,102 @@ order by case diff when 'Easy' then 0 when 'Medium' then 1 else 2 end;
     12;
   - solve-through more than 20 points below the band → fix the UX before
     adding items.
+
+## `coach_debug_door`
+
+The Coach's Debug door (registered 2026-11-25, in its own PR per rule 6b;
+the product change is PR #373, flag `coachDebugDoor`, ledger "the Coach's
+Debug door"). A funnel of **people**, each step a subset of the one before:
+
+1. **shown**: a `coach_debug_door_shown` row (written once per browser
+   session per UTC day while the card renders);
+2. **clicked**: a `coach_debug_door_clicked` with `target = 'item'` after
+   their first shown. `target = 'see_all'` is counted on its own line, never
+   in this step;
+3. **first run**: a `challenge_first_run` on the `challengeId` they clicked,
+   after the click;
+4. **solved**: a `challenge_solved` on that `challengeId`, after the click.
+
+A person is `((metadata #>> '{}')::jsonb)->>'aid'`; with no aid the row is
+dropped, not counted by username, because a guest can mint a second username
+in the same browser. Steps 3–4 are read on **unlocked** clicks
+(`locked = false`); a locked click meets the wall by design, and its
+`content_lock_reached` / `pro_modal_shown {reason: 'debug_lock'}` rows are
+reported beside the funnel, not in it.
+
+Excluded on top of the shared filters and the fleet's bot filters
+(`docs/agent/fleet/README.md`, Data): aid
+`363dfb2bc1314757acc88c8438c4d2ea` (the 11-25 investigation walk,
+Europe/Istanbul, desktop 1024x768), and any aid with `metadata.bot`.
+
+```sql
+-- :d = the deploy date of PR #373; window d .. d + 28 days
+WITH ev AS (
+  SELECT ((metadata #>> '{}')::jsonb)->>'aid'          AS aid,
+         event, created_at,
+         ((metadata #>> '{}')::jsonb)                  AS m
+  FROM pro_events
+  WHERE event IN ('coach_debug_door_shown', 'coach_debug_door_clicked',
+                  'challenge_first_run', 'challenge_solved')
+    AND created_at >= :d AND created_at < :d + interval '28 days'
+    AND <shared filters>
+    AND coalesce(((metadata #>> '{}')::jsonb)->>'bot', 'false') <> 'true'
+),
+p AS (SELECT * FROM ev WHERE aid IS NOT NULL
+        AND aid <> '363dfb2bc1314757acc88c8438c4d2ea'),
+shown AS (SELECT aid, min(created_at) AS at FROM p
+          WHERE event = 'coach_debug_door_shown' GROUP BY aid),
+clicks AS (
+  SELECT c.aid, c.created_at AS at, (c.m->>'challengeId') AS cid,
+         coalesce((c.m->>'locked')::boolean, false) AS locked
+  FROM p c JOIN shown s ON s.aid = c.aid AND c.created_at >= s.at
+  WHERE c.event = 'coach_debug_door_clicked' AND c.m->>'target' = 'item'
+),
+first_click AS (SELECT DISTINCT ON (aid) * FROM clicks ORDER BY aid, at),
+ran AS (SELECT DISTINCT f.aid FROM first_click f
+        JOIN p r ON r.aid = f.aid AND r.event = 'challenge_first_run'
+         AND r.m->>'challengeId' = f.cid AND r.created_at >= f.at
+        WHERE NOT f.locked),
+won AS (SELECT DISTINCT f.aid FROM first_click f
+        JOIN p r ON r.aid = f.aid AND r.event = 'challenge_solved'
+         AND r.m->>'challengeId' = f.cid AND r.created_at >= f.at
+        WHERE NOT f.locked)
+SELECT
+  (SELECT count(*) FROM shown)                                  AS shown,
+  (SELECT count(*) FROM first_click)                            AS clicked,
+  (SELECT count(*) FROM first_click WHERE NOT locked)           AS clicked_unlocked,
+  (SELECT count(*) FROM first_click WHERE locked)               AS clicked_locked,
+  (SELECT count(*) FROM ran)                                    AS first_run,
+  (SELECT count(*) FROM won)                                    AS solved,
+  (SELECT count(DISTINCT c.aid) FROM p c JOIN shown s ON s.aid = c.aid
+    WHERE c.event = 'coach_debug_door_clicked' AND c.m->>'target' = 'see_all'
+      AND c.created_at >= s.at)                                 AS see_all_people;
+```
+
+Rates: clicked ÷ shown; first_run ÷ clicked_unlocked; solved ÷
+clicked_unlocked. The person's first item click is the one followed. A
+second click on another item does not add a second funnel.
+
+**Confounds, stated in advance.**
+- A Debug item opens with the AI's query prefilled, so `first_run` is
+  inflated by construction (see `debug_solve_through`). Read the solve step,
+  not the run step, as the outcome.
+- `shown` is written per session-day, not per render. A person who reloads
+  the Coach in a new tab on the same day may be written twice. The funnel
+  counts people, so that does not matter.
+- Born on the deploy date of PR #373. Do not read any window before it, and
+  check birth with the shared "5+ rows" rule.
+
+**Thresholds, copied from the ledger claim (written before the data).**
+- **Target** (28 days): ≥ 150 people shown; clicked ÷ shown ≥ 8%; ≥ 40
+  people open a Debug item from the door (`challenge_opened.openedFrom =
+  'coach_debug_door'`); solved ÷ clicked_unlocked ≥ 40%.
+- **Falsification:** with ≥ 150 shown, clicked ÷ shown under 3% → the door
+  does not pull. Under 150 shown → `UNREADABLE`. Solved ÷ clicked_unlocked
+  under 20% → read `challenge_error_pattern` on 331–342 first.
+- **Guardrail:** `first_solve_10m` and `coach_step_started` people per Coach
+  viewer, 28 days before D vs 28 days after. A fall of more than 5 points in
+  either → the card moves under the goal's next-step card.
 
 ## `first_contact_share`
 
@@ -1182,6 +1317,35 @@ by hand (the 10-04 → 10-07 waves: docs/reads/p1-guardrail-bing-2026-10-07.md).
   `landing_engaged` per company/topic page, often with no `landing_view`
   (so it lands in "no source, no landing" buckets). 21 people on 11-22,
   7 on 11-23, none on 11-24; never ran a query. Drop the viewport.
+- **Two app-only crawlers older than the stamps (A01, 2026-11-25).** Both
+  write `app_opened` and never a `landing_view`, so a landing filter never
+  sees them, and both reach back before `langs` existed (2026-10-08), so
+  `app1lang` / `langs2` cannot see their early rows.
+  - **`utc1280`:** first `app_opened` in `tz = 'UTC'` at
+    `desktop:1280x720`, no `landing_view` ever, **whatever its
+    `landingSrc`**. 1,347 "people" in the week of 2026-09-28 carried a
+    spoofed `search:google` (the old pre-stamp rule required an empty
+    source, so it walked past it); of 1,356 ever, 0 ran a query.
+  - **`cn_app`:** first `app_opened` with no `landingSrc` in
+    `Asia/Shanghai`, `Asia/Hong_Kong` or `Asia/Singapore`, no
+    `landing_view` ever. 1,629 people 2026-08-23 → 11-25 (101 in the week
+    of 09-28, 359 in the week of 10-05), 0 ran a query, 1 solve.
+  Both are in `scripts/scorecard-weekly.sql`'s exclusion block and README
+  rule 2. Still unfingerprinted (A01): landing-only readers in
+  `Asia/Hong_Kong` / `Asia/Singapore` — 20–61 "people" a week, 0 app opens
+  in HK in seven of eight weeks.
+
+- **Google's unstamped fetchers (C8, 2026-11-25).** `landing_view.ua`
+  (from 2026-09-13) carries `GoogleOther` (802 people since 10-01) or
+  `Google-NotebookLM` (108). Every one: `tz = America/Los_Angeles`, no
+  `landingSrc`, no window size, one `landing_view`, never `landing_engaged`
+  or `app_opened`, never stamped `bot`/`uaBot`. Drop a person whose
+  `landing_view.ua` matches `(GoogleOther|Google-NotebookLM)` and who
+  never opens the app. GoogleOther rose from ~30 a week (early October)
+  to 172 (week of 11-09), so a "human visitors" series that keeps it
+  climbs with Google's crawl, not with people. NotebookLM fetches are a
+  person putting our page into NotebookLM; read them as an AI-assistant
+  signal (mostly the comparison pages), not as visits.
 
 **Trap: the crawlers change time zone and borrow a landing source
 (2026-10-18, widened 2026-11-12).** Three window sizes have never, over all
@@ -1217,6 +1381,14 @@ fingerprints as `botSignals()` (one table, test-bound). From that date a
 landing read filters `->>'bot' is null` like an app read; before it, drop
 `tz = 'Asia/Shanghai'` with no landing source and say the LA no-source rows
 are unreadable (they hold both the crawler and real people).
+**Google's non-search fetchers are stamped from the merge of
+`fix/track-google-fetchers` (2026-11-25, C8 / PR #391).** A landing row
+whose user agent contains `GoogleOther` (incl. -Image / -Video) carries
+`bot = 'google_other'`; `Google-NotebookLM` carries `bot = 'notebooklm'`
+(its own id: a person asked NotebookLM to read the page, so count it as an
+AI-assistant signal, not a reader). Before that date they passed the filter
+(~130–170 a week from mid-October): drop them by hand with
+`((metadata #>> '{}')::jsonb->>'ua') ~* 'googleother|notebooklm'`.
 **Still open:** landing_view carries no window size, so the 1280x1200
 crawler's landing views cannot be told apart — 214 (W1) and 295 (W0)
 landing people are Asia/Shanghai with no source. Read landing people with
@@ -1245,6 +1417,48 @@ the share with a `challenge_first_run` for the same challenge (born
 existed, 30 days to 09-23: of opens that never became a solve, 92.3% had no
 submit at all (no `challenge_error_pattern`, no `challenge_errored`). Read
 split by `via` and by first-contact vs later opens. Scorecard §1.
+
+## `open_to_run_exit`
+
+Registered 2026-11-24, in the PR that adds its event (rule 6b: the
+definition ships with the event, before any experiment reads it). From
+B1's read `docs/reads/funnel-2026-11-24.md` §4: in the 28 days to 11-24,
+225 of 631 new app openers opened a challenge and never ran it, and 73–80%
+of them left no event after the open. This metric says how those opens
+ended.
+
+- **Event:** `challenge_left {challengeId, ms_on_page, typed, scrolled,
+  hint_opened, device_class, how}` (`src/utils/challenge-left.js`). At most
+  one per challenge open, only for an open with **no run and no submit**
+  (`challenge_first_run` never precedes it in the same open). `how`:
+  `navigate` (the challenge page left the screen inside the app), `hidden`
+  (the browser tab hidden or the page unloaded; sent with a keepalive
+  fetch), `switch` (another challenge opened over it). `typed` counts
+  characters the person inserted in the editor (deletions not subtracted);
+  `scrolled` is the person's own wheel / touch / page-key scroll, never the
+  app's scroll to the editor; `hint_opened` is the hint toggle or the
+  inline Help. No query text, nothing personal. Guests and accounts alike.
+- **Denominator:** person-challenge opens (`challenge_opened`, by
+  `coalesce(aid, username)` and `challengeId`) with no
+  `challenge_first_run` for that challenge in the same session (30-minute
+  gap rule). Rows less than an hour old are left out.
+- **Numerator and splits:** the share of the denominator with a
+  `challenge_left`, then the split of those by `how`, by `typed = 0` vs
+  `> 0`, by `scrolled`, by `hint_opened`, by `device_class`, and the median
+  `ms_on_page`. A **bounce** is `typed = 0`, not scrolled, under 15 s; a
+  **give-up** is `typed > 0` or over 60 s. The remainder of the denominator
+  (no `challenge_left`) is the still-unmeasured share: browsers that never
+  fire `visibilitychange`/`pagehide` before dying, and the bot rows.
+- **Start date:** the deploy of `measure/challenge-left` (the first
+  `challenge_left` row). Never read across it; there is no before.
+- **Traps:** `how = 'hidden'` includes a tab switch the person came back
+  from. A `challenge_first_run` for the same challenge after a
+  `challenge_left` in the same session means they returned and ran: count
+  that open as a return, not an exit. An open never seen on screen (opened
+  from a card while another tab is up) sends nothing. Apply the fleet's bot
+  and internal-account filters (fleet README, Data).
+- No target yet: this is a measurement, read first by B1 two weeks after
+  the start date.
 
 **The mobile band (defined 2026-11-23, before `mobileRunBar` ships).**
 - *Device* is the `viewport` stamp on the `challenge_opened` row itself
@@ -1353,6 +1567,53 @@ Of people whose first `app_opened` falls in the window (and at least seven
 days before the read), the share with another `app_opened` more than one hour
 and at most seven days after it. Crawler filter from `first_solve_10m`.
 Baseline, first opens 2026-08-17 → 09-16: **16.2%** (n = 1,177). Scorecard §4.
+
+**2026-11-25 (B1, `docs/reads/second-session-2026-11-25.md`): the drop to
+6.9–7.9% is real; `app_opened` is not broken.** The share of return days
+that carry an `app_opened` is 82–89% in every week from 08-10 to 11-16, flat
+across #49 (10-08); what halved is the number of return days. Day-0 solvers'
+7-day return stepped from 40–53% to 18–33% with the first opens of
+09-25/26 (the six-flag batch of 09-26), inside the same doors.
+
+- **Restated baseline:** under today's crawler filter (`metadata.bot`, the
+  three viewports `tablet:800x600`, `desktop:1280x1200`, `desktop:1919x992`,
+  a person with any such row dropped whole) the 08-17 → 09-16 cohort reads
+  **18.7%** (n = 1,067). Compare new reads against that, not 16.2%.
+- **Known bias, constant over time:** `app_opened` fires once per browser
+  per UTC day, so a same-day return never counts, and a tab left open across
+  midnight returns without one (likely most of the 11–18% of return days
+  that carry none). Read the cross-check
+  below beside it; do not swap definitions mid-series.
+
+Cross-check — any app event (not `reason='landing'`) on a later UTC day
+within seven days. This query as written, run 2026-11-25: 08-17 → 09-16
+**21.7%** (n 1,061); 10-18 → 10-31 **9.1%** (n 563); 11-01 → 11-14 **9.2%**
+(n 401) — the read's 21.6 / 8.9 / 8.7 differ only by the bot-row window:
+
+```sql
+with e2 as (
+  select created_at, event, reason,
+         coalesce(((metadata #>> '{}')::jsonb)->>'aid', username) pid,
+         (((metadata #>> '{}')::jsonb)->>'bot' is not null
+          or coalesce(((metadata #>> '{}')::jsonb)->>'viewport','')
+             in ('tablet:800x600','desktop:1280x1200','desktop:1919x992')) isbot
+  from pro_events
+  where created_at >= :from - interval '30 days' and created_at < :to + interval '7 days'
+    and coalesce(username,'') !~* '^(test|qa_|fabletest|linktest|internalroutine|sqlquest$|elena$)'
+    and coalesce(((metadata #>> '{}')::jsonb)->>'aid','') <> '363dfb2bc1314757acc88c8438c4d2ea'
+),
+p as (select pid, bool_or(isbot) b, min(created_at) filter (where event='app_opened') f
+      from e2 group by pid),
+c as (select pid, f from p where not b and f >= :from and f < :to)
+select count(*) people,
+  round(100.0*avg((exists (select 1 from e2 x where x.pid=c.pid
+     and x.reason is distinct from 'landing'
+     and x.created_at::date > c.f::date and x.created_at <= c.f + interval '7 days'))::int),1) pct_returned
+from c;
+```
+
+(The 30 days loaded before `:from` keep a person who opened earlier out of
+the cohort; the 11-25 read loaded from 2026-08-01.)
 
 ## `visitor_to_payer`
 
@@ -1804,6 +2065,102 @@ paid. Desktop 19.7% (n = 1,109), mobile 2.6% (n = 196). Page median 20.0%
 Rules (brief): n < 30 never acted on; CONVERTS ≥ 1.5 × the page median;
 DEAD ≥ 100 landers and 0 opens in 28 days; MOVED |z| > 2 for a country or
 device's 7-day rate against its 28-day rate, n7 ≥ 30.
+
+## `human_visitors`
+
+**The investor plan's A01 denominator (2026-11-25):** people who reached the
+site or the app in an ISO week, after every crawler and internal filter —
+kept beside the raw count, never instead of it. Query 1 (`raw_visitors`,
+`human_visitors`, `gap_pct`) and Query 4 (the gap by rule) of
+`scripts/scorecard-weekly.sql`; read every Friday by B2 into
+`docs/agent/scorecard.md`.
+
+- **Visitor:** a person (`COALESCE(aid, username)`) with a `landing_view`,
+  `landing_engaged` or `app_opened` in the week (Monday 00:00 UTC → next
+  Monday). Raw counts every such person.
+- **Human:** a visitor none of whose rows, at any time, matches an
+  exclusion — one row marks the whole browser. The exclusions are fleet
+  README rule 2 plus the two app-only crawlers found by A01 (shared traps):
+  internal usernames; the founder's walk aids (`363dfb2b…`, `e5fcbad1a022…`),
+  11-20 checkout tests and 11-24 walk guests; `metadata.bot` / `wd` /
+  `uaBot`; viewports `tablet:800x600`, `desktop:1280x1200`,
+  `desktop:1919x992`, `desktop:1024x1024`; `ref:aocr.org` and `verify-test`;
+  `app1lang`, `topic1lang`, the LA/1920x1080 pre-stamp shape, `utc1280`,
+  `cn_app`, the UTC landing crawler (from 11-22), the Asia/Shanghai landing
+  reader, `google_ua`, the `langs = 2` no-landing group. Query 4 names the
+  first rule that removed each person, in that order.
+- **`google_ua` (C8, 2026-11-25; PR #391's shared trap):** a person whose
+  `landing_view` carries `ua` (from 2026-09-13; read as
+  `((metadata #>> '{}')::jsonb)->>'ua'`) matching
+  `(GoogleOther|Google-NotebookLM)` and who never writes an `app_opened`.
+  Both fetchers are unstamped, all `tz = America/Los_Angeles`, no
+  `landingSrc`, no window size; no such person has ever opened the app.
+  GoogleOther added 29–172 "people" a week to human visitors (W40 → W47,
+  rising with Google's crawl from mid-October), all in `direct/home` and
+  the US row. **NotebookLM is not a visit but is worth reading:** it is a
+  fetch a person asked for (mostly the comparison pages), so Query 4
+  reports it apart as `google_ua:notebooklm` (5–23 a week) — an
+  AI-assistant signal, never a human visitor.
+- **A new rule changes the whole series.** The query re-reads all eight
+  weeks every run, so a fingerprint added on a Friday rewrites earlier rows:
+  compare a week only with weeks read by the same version of the file, and
+  say in the Friday note when the block changed.
+
+Baseline (read 2026-11-25 with `google_ua`, week 2026-W47 = 11-16 → 11-22):
+**569 human of 1,199 raw (52.5% not human)**; the eight weeks 09-28 → 11-22
+ran 504–826 human against 1,002–2,326 raw. Before `google_ua` the same read
+gave 715 (639–888), and the series looked flat because the crawler rose as
+people fell. The 2026-W40 raw count (2,326) is 1,347 `utc1280` people;
+without the A01 rules it would read 2,111 human.
+
+**Trap: what is still inside "human".** Landing-only readers in
+`Asia/Hong_Kong` and `Asia/Singapore` (20–61 a week; HK opened the app once
+in eight weeks) and the US no-source landing rows (the `none: landed on a
+page` row C8 calls an upper bound) have no fingerprint yet. They sit in the
+`direct/home` source and the HK / SG / US country rows. Read human visitors
+as a ceiling and app openers as the firm count.
+
+## `scorecard_weekly`
+
+**One weekly table on people (A01, 2026-11-25).** `scripts/scorecard-weekly.sql`,
+Queries 1–3; filled every Friday by B2 (`docs/agent/fleet/B2-measurement.md`)
+into `docs/agent/scorecard.md`, "A01 human scorecard". Eight complete ISO
+weeks, oldest first; every person column is human (`human_visitors`).
+
+| Column | Definition |
+|---|---|
+| `app_openers` | people with an `app_opened` in the week |
+| `new_openers` | people whose first `app_opened` ever is in the week |
+| `activated_7d` | of `new_openers`, first `challenge_solved` within 7 days of that first open (activation = ≥ 1 solve) |
+| `solvers` | people with ≥ 1 `challenge_solved` in the week |
+| `new_six_solvers` | people whose **6th distinct** solved challenge (lifetime, first solve of each id) fell in the week — additive across weeks; O2's "six-solvers / 30 d" (`reach_6_rate`, six inside the window) is a different count |
+| `day0_solvers` / `returned_7d` | of `new_openers`, those who solved on the UTC day of the first open; of them, any non-landing event on a later UTC day within 7 days — the 2026-11-25 second-session read's definition (`second_session_7d` notes) |
+| `runway_complete` | false while the week's cohort has under 7 days of follow-up; `activated_7d` and `returned_7d` are floors until it is true |
+| `modal_people` / `checkout_people` | people with `pro_modal_shown` / `pro_checkout_clicked` in the week |
+| `trials` / `payments` / `renewals` / `refunds` | distinct usernames with `pro_trial_started` / `pro_purchase_completed` / `pro_renewal_completed` / `pro_refunded`, **`reason = 'stripe_webhook'` only**, internal usernames out. A trial is never a payment; the columns are never added. |
+| `failed_charges` | distinct invoices with `pro_payment_failed` (webhook); a 3DS retry on one invoice counts once. Includes checkout declines (`billing_reason = subscription_create`) and dunning. |
+| `paid_usd` | sum of `amount_cents` on the week's `pro_purchase_completed` rows (first charges, incl. a trial's conversion; renewals carry no amount) |
+
+Query 2 splits human visitors per week by source (first non-empty
+`landingSrc` on an entry row: `search:google`, `search:bing`, `ai`,
+`direct/home`, `other`), country (`country` if present, else the zone →
+country proxy of `scripts/analytics/daily.sql`; top 5 over the eight weeks)
+and first landing page group (company `*-sql-interview`, `sql-exercises`,
+topic/question, blog, home, other, `(app only)`).
+
+Query 3 is the **MRR snapshot**: `users.data` rows with a live monthly or
+annual plan, a Stripe customer, auto-renew on and not inside a trial, at the
+person's last webhook `amount_cents` (else $29 / $99); annual ÷ 12. It is a
+snapshot, not a series — `users.data` keeps no history — so each Friday's
+row records that Friday. It is not the Stripe dashboard read; a subscription
+in dunning (`past_due`) drops out once `proExpiry` passes.
+
+Baseline (read 2026-11-25, `google_ua` excluded), week 2026-W47: 569 human
+visitors, 188 app openers, 148 new, 50 activated within 7 days (runway
+incomplete), 59
+solvers, 14 new six-solvers, 46 day-0 solvers of whom 7 returned (floor),
+29 shown the modal, 3 checkout clicks, 1 trial, 1 payment ($99), 0 refunds,
+1 failed charge. MRR $49.58 (4 paying: 1 monthly, 3 annual; 1 in trial).
 
 ## `blog_practice_exit`
 
@@ -4120,6 +4477,94 @@ from arm a
 group by a.arm;
 ```
 
+## `runnable_starter_split`
+
+A runnable starter in the editor, desktop A/B (`runnableStarter`, builder
+2026-11-26; ledger "a runnable starter in the editor"). Defined before the
+code ships (fleet README rule 6b). Evidence:
+`docs/reads/open-without-run-2026-11-25.md` §1, §4.
+
+- **Population:** people with a `runnable_starter_assigned` row since the
+  flip, by `arm` (`starter` | `control`), one row per person (the first,
+  by `created_at`). The row fires once per browser, at the person's first
+  challenge open that would show an empty editor (no solve yet, no saved
+  draft, not #91, not a Debug item, the challenge's solution is not the
+  starter itself) on a desktop screen (`innerWidth` ≥ 1024 and a fine
+  pointer). Its metadata carries `challengeId` and `viewport`. People by
+  `coalesce(((metadata #>> '{}')::jsonb)->>'aid', username)`. Filters: the
+  fleet README step 2 bot / internal / walk exclusions. Keep only rows whose
+  `viewport` starts `desktop:`.
+- t0 = the assignment row.
+- **Primary — ran:** share with a `challenge_first_run` for the assigned
+  `challengeId` at or after t0, any `via`. `via` is `run` | `submit` |
+  `starter`: `starter` is a run of the untouched starter, in either arm
+  (control: Run on the empty editor runs the grey placeholder's query;
+  `starter` arm: Run on the starter text as placed). From the code PR on,
+  `challenge_first_run` also carries `starterArm` (the person's arm, null
+  when not in the test). Report the `via` split per arm beside the rate.
+- **Secondary — ran within 10 minutes:** the same, `created_at` ≤ t0 + 10
+  min (the A05 read's 10-minute cut, §5).
+- **Guardrails:**
+  - **first solve in the session:** share with a `challenge_solved` (any
+    challenge) within 30 minutes of t0. The app has no session id; 30
+    minutes after the assignment open is the session proxy. Also report
+    within 24 h.
+  - **`open_to_first_run` on the challenges after:** of the person's
+    `challenge_opened` rows after t0 on other challenges (person-challenge
+    pairs), the share with a `challenge_first_run` for the same pair. The
+    starter arm must not teach people to wait for a prefilled editor.
+  - **untouched-starter submits:** people whose `challenge_first_run` on
+    the assigned challenge has `via = 'submit'` and `starterUntouched =
+    true` (a field the code PR adds), by arm, as a count. The untouched
+    starter graded wrong is a wrong answer the person did not write.
+- **Report n per arm**, always. **Split 2×2 by `companyDirectOpen`'s arm:**
+  join each person's `company_direct_assigned.arm` (`direct` | `list`, or
+  `none` when the person never arrived from a company page) and show the
+  arm rates inside each column; never pool across a flip date of either
+  test. When `runSubmitNudge` flips, split the guardrails by its arm the
+  same way.
+- **Read the 11-22 starter claims inside `control` only.** The 12-20 reads
+  of "Run on an empty editor runs the starter" and the deep-link swap
+  change the same starter; the `starter` arm replaces it.
+- **Sample:** baseline 59% (desktop, `open_to_first_run`, 263 / 449, 28 d
+  to 2026-11-23); ~110 desktop first-contact openers a week, ~55 per arm.
+  +15 points needs ~160 per arm (≈ 3 weeks, **interim read 2026-12-17**);
+  +10 points needs ~360 per arm (≈ 6.5 weeks, **final read 2027-01-07**),
+  two-sided α 0.05, power 0.8. The interim read is for harm only.
+- **Falsification, written before data:** at the final read, if the
+  `starter` arm's ran-rate is not ≥ `control` + 5 points, **or** its first
+  solve in the session is below `control`'s, the flag goes off. At the
+  interim read, `starter` ≥ 10 points below `control` on first solve in
+  the session → off the same day.
+
+```sql
+with ev as (
+  select coalesce(((metadata #>> '{}')::jsonb)->>'aid', username) pid, event, created_at, (metadata #>> '{}')::jsonb m
+  from pro_events
+  where username !~* '^(test|qa_|fabletest|linktest|internalroutine|sqlquest$|elena$)'
+    and created_at >= :flip
+),
+arm as (select distinct on (pid) pid, m->>'arm' arm, (m->>'challengeId')::int cid, created_at t0
+        from ev where event = 'runnable_starter_assigned' and coalesce(m->>'bot','false') <> 'true'
+          and m->>'viewport' like 'desktop:%'
+        order by pid, created_at),
+cd as (select distinct on (pid) pid, m->>'arm' cd_arm from ev
+       where event = 'company_direct_assigned' order by pid, created_at)
+select a.arm, coalesce(cd.cd_arm, 'none') company_direct,
+  count(*) n,
+  round(100.0 * avg((exists (select 1 from ev e where e.pid = a.pid and e.event = 'challenge_first_run'
+    and (e.m->>'challengeId')::int = a.cid and e.created_at >= a.t0))::int), 1) pct_ran,
+  round(100.0 * avg((exists (select 1 from ev e where e.pid = a.pid and e.event = 'challenge_first_run'
+    and (e.m->>'challengeId')::int = a.cid and e.created_at between a.t0 and a.t0 + interval '10 minutes'))::int), 1) pct_ran_10m,
+  round(100.0 * avg((exists (select 1 from ev e where e.pid = a.pid and e.event = 'challenge_solved'
+    and e.created_at between a.t0 and a.t0 + interval '30 minutes'))::int), 1) pct_solve_session,
+  round(100.0 * avg((exists (select 1 from ev e where e.pid = a.pid and e.event = 'challenge_solved'
+    and e.created_at between a.t0 and a.t0 + interval '24 hours'))::int), 1) pct_solve_24h
+from arm a left join cd on cd.pid = a.pid
+group by rollup (a.arm, coalesce(cd.cd_arm, 'none'))
+order by 1, 2;
+```
+
 ## `pattern_to_checkout`
 
 SQL trap page → paid, end to end (2026-09-25). People by `aid` (the landing
@@ -4816,3 +5261,422 @@ Traps:
   if they took ≥ 104 ms (the browser's buffered event-timing floor).
 - The landing pages and /app are measured by the same library but from
   different documents; never blend `app` into a "site" p75.
+
+## `interview_pass_test`
+
+The one-time Interview Pass against today's subscription (investor plan
+A06; design `docs/plans/interview-pass-test-2026-11-25.md`). Registered
+2026-11-25, in its own commit, before any code, flag or Stripe object
+exists (rule 6b). Nothing before the flip can be a pass purchase. Read
+only from the flip date, never across it.
+
+**Who is counted (the denominator).** People are `coalesce(aid, username)`.
+An eligible visitor is a browser with an `interview_pass_arm_assigned` row
+whose `status = 'enrolled'`, written at the browser's first app open inside
+the enrolment window. The arm is fixed at that moment, before anyone sees a
+price, so the treatment cannot change who is counted. Then remove:
+- internal accounts and `metadata.bot`, plus the crawler viewports and
+  fingerprints in the shared filters above and in
+  docs/reads/funnel-2026-11-22.md;
+- people whose `pro_modal_shown` ever carried `priceRegion = 'IN'`. India
+  sees the India control prices in both arms; its own test is a separate,
+  later hypothesis;
+- usernames with a `stripe_webhook` `pro_purchase_completed` or
+  `pro_trial_started` dated before their enrolment (past payers). The app
+  should never enrol them. This filter is a second check, and a non-zero
+  count here is a bug to report.
+
+**The money (the numerator).** Only `reason = 'stripe_webhook'` rows, joined
+to the person through the **username**. Webhook rows carry no `aid` (see
+`purchases`). Each person has a **45-day horizon** that starts at their own
+enrolment. The 45 days cover a trial's day-7 charge, the 7-day money-back
+window after it, a monthly plan's first renewal (day 30, or day 37 after a
+trial) and a week of retries.
+- `pro_purchase_completed`: `+ amount_cents`. This includes a trial's
+  `after_trial` charge and a `plan_type = 'pass_60d'` purchase.
+- `pro_renewal_completed`: `+ amount_cents`. This row has no `amount_cents`
+  on 2026-11-25. The pass code PR adds it. Until then, price it from the
+  plan's price for the person's region and say so in the read.
+- `pro_refunded`: `- amount_refunded_cents`, both full and partial.
+- Disputes: `- (disputed amount + the $15 Stripe dispute fee)`. This is a
+  hand read from Stripe → Disputes until the endpoint sends
+  `charge.dispute.created`.
+- Stripe processing fees are left out in both arms. Amounts are USD, since
+  sessions are created with Adaptive Pricing off. A Payment Link fallback
+  row in another currency is converted at the charge's own
+  `balance_transaction` rate and flagged.
+
+**Primary: net revenue per eligible visitor (NRPV), per arm** =
+sum of the person's net cents in the horizon ÷ eligible visitors in the arm.
+
+**Secondary, per arm (context for the verdict):**
+1. **Payment conversion.** Payers ÷ eligible. A payer has at least one
+   `pro_purchase_completed` in the horizon and no full refund of it. Split
+   by plan (`pass_60d` / `monthly` / `annual`) and by path (direct, or
+   after a trial).
+2. **Refunds.** Full refunds ÷ purchases, by plan. Also days from purchase
+   to refund.
+3. **Usage.** For each payer: distinct active days (`app_opened`) and
+   distinct solves (`challenge_solved`) in days 1–30 and 31–60 after the
+   purchase, by plan. The read runs once the last payer reaches day 60.
+4. **Support load.** `feedback` rows plus support@ threads about billing,
+   refund, renewal or cancelling, per payer, counted by hand. Read the
+   verbatims and do not aggregate them.
+5. **The Stripe page.** `pro_checkout_started` → paid, and
+   `pro_checkout_expired`, by `plan`. Add `pro_payment_failed
+   {at_checkout}` and `pro_card_setup_failed` (3D Secure) by plan.
+6. **Balance and guardrails.** Enrolled per arm, which must be within
+   45–55% by day 2. `pro_modal_shown` people ÷ eligible (the modal's
+   triggers are the same in both arms, so a gap here is a bug). Plan
+   clicks ÷ modal viewers.
+7. **After the pass (descriptive, read at day 120).** Pass holders who buy
+   again, or subscribe, within 30 days of their pass expiring.
+
+```sql
+-- :start / :end = enrolment window. Run on or after :end + 45 days.
+with ev as (
+  select event, reason, username, created_at, (metadata #>> '{}')::jsonb m
+  from pro_events
+  where created_at >= :start - interval '400 days'   -- past-payer lookback
+    and created_at <  :end + interval '45 days'
+),
+bad as (
+  select distinct coalesce(m->>'aid', username) pid from ev
+  where m->>'bot' is not null
+     or m->>'viewport' in ('tablet:800x600','desktop:1280x1200','desktop:1919x992')
+     or m->>'landingSrc' = 'ref:aocr.org'
+     or coalesce(username,'') ~* '^(test|qa_|fabletest|linktest|internalroutine|sqlquest$|elena$)'
+),
+enrolled as (
+  select coalesce(m->>'aid', username) pid, min(m->>'arm') arm, min(created_at) t0
+  from ev
+  where event = 'interview_pass_arm_assigned' and m->>'status' = 'enrolled'
+    and created_at >= :start and created_at < :end
+  group by 1
+),
+india as (
+  select distinct coalesce(m->>'aid', username) pid from ev
+  where event = 'pro_modal_shown' and m->>'priceRegion' = 'IN'
+),
+-- one username per person: the first real username an enrolled aid wrote
+who as (
+  select distinct on (m->>'aid') m->>'aid' pid, username
+  from ev
+  where m->>'aid' is not null and username is not null and username <> 'guest'
+    and m->>'ipArm' is not null
+  order by m->>'aid', created_at
+),
+money as (
+  select username, created_at, event, m->>'plan_type' plan,
+         case when event in ('pro_purchase_completed','pro_renewal_completed')
+                then coalesce((m->>'amount_cents')::int, 0)
+              when event = 'pro_refunded'
+                then -coalesce((m->>'amount_refunded_cents')::int, 0) end cents,
+         (event = 'pro_refunded' and m->>'full' = 'true') full_refund
+  from ev
+  where reason = 'stripe_webhook'
+    and event in ('pro_purchase_completed','pro_renewal_completed','pro_refunded','pro_trial_started')
+),
+past_payer as (
+  select distinct w.pid from enrolled e join who w on w.pid = e.pid
+  join money mo on mo.username = w.username
+  where mo.event in ('pro_purchase_completed','pro_trial_started') and mo.created_at < e.t0
+),
+per_person as (
+  select e.pid, e.arm,
+         coalesce(sum(mo.cents) filter (where mo.event <> 'pro_trial_started'), 0) net_cents,
+         bool_or(mo.event = 'pro_purchase_completed') bought,
+         bool_or(mo.full_refund) refunded,
+         string_agg(distinct mo.plan, ',') filter (where mo.event = 'pro_purchase_completed') plans
+  from enrolled e
+  left join who w on w.pid = e.pid
+  left join money mo on mo.username = w.username
+                    and mo.created_at >= e.t0 and mo.created_at < e.t0 + interval '45 days'
+  where e.pid not in (select pid from bad)
+    and e.pid not in (select pid from india)
+    and e.pid not in (select pid from past_payer)
+  group by 1, 2
+)
+select arm,
+       count(*)                                              eligible,
+       count(*) filter (where bought and not refunded)       payers,
+       count(*) filter (where plans like '%pass_60d%')       pass_buyers,
+       count(*) filter (where plans like '%annual%')         annual_buyers,
+       count(*) filter (where plans like '%monthly%')        monthly_buyers,
+       count(*) filter (where refunded)                      full_refunds,
+       round(sum(net_cents) / 100.0, 2)                      net_usd,
+       round(sum(net_cents) / 100.0 / nullif(count(*), 0), 4) nrpv_usd
+from per_person
+group by arm
+order by arm;
+```
+
+Also run `select count(*) from past_payer`. It should be 0.
+
+**The verdict (written before the data; copied from the plan, which owns
+the reasoning).** Payers will be few. At ~2 payments a month, 12 weeks of
+enrolment gives roughly 3 payers per arm, so read the rows, not a p-value.
+Also report a bootstrap P(NRPV_pass > NRPV_control) over people, 10,000
+resamples, as a number, never as a gate.
+- **ADOPT** (the pass takes the monthly card's place for the default
+  region) only if all four hold: NRPV_pass ≥ 1.2 × NRPV_control;
+  payers_pass ≥ payers_control − 1; full refunds of passes ≤ 20% of pass
+  sales; annual buyers in the pass arm ≥ annual buyers in control − 1.
+- **REVERT** if any one holds: NRPV_pass ≤ 0.8 × NRPV_control;
+  payers_pass ≤ payers_control − 3; annual buyers in the pass arm ≤ annual
+  buyers in control − 2; pass full-refund rate > 30% (with at least 3
+  passes sold).
+- **INCONCLUSIVE** otherwise. Extend enrolment once, by 8 weeks, under the
+  same rules, and do one combined read. If it is still inconclusive, today's
+  plans stay. The test must earn the change.
+- No early winner. The only reads before the end are the safety stops in
+  the plan (§8).
+
+Traps:
+- The client-side duplicate `pro_purchase_completed`
+  (`reason = 'activation_funnel'`, username `guest`) doubles revenue if the
+  reason filter is dropped (see `purchases`).
+- The achievement id `interview_pass` (src/data/config.js, "Hired!") is not
+  this product. The plan type is `pass_60d`. Never filter events on the
+  string `interview_pass`.
+- A pass row whose `plan_type` reads `quarterly` (90 days, auto-renew on)
+  is the webhook's amount fallback: $59 is ≥ $49. Treat it as an access bug
+  and a stop (plan §8), not as a quarterly sale.
+- Read the free-quota holdout (`fqArm`) before this test, never inside it.
+  The test starts after the founder's quota decision. If the free tier
+  changes during enrolment, read the parts before and after the change
+  separately and never pool them.
+- The static pages (homepage pricing, the company pages) show $29 / $99 in
+  both arms. That is a known confound and it is the same in both arms.
+
+## `outcome_ask_answer`
+
+The in-app outcome ask (First 90 Days F1,
+`docs/plans/first-90-days-2026-11-25.md`). Defined 2026-11-25, before the
+code ships (rule 6b). The events it reads do not exist yet; the measure PR
+adds them:
+- `outcome_ask_shown {surface: 'coach'|'interview_tab', trigger: 'date_passed'|'return_21d'}`
+  is written once per person per 30 days when the line is on screen;
+- the answer is the existing `interview_outcome`, with `source='in_app'`
+  and `outcome` ∈ passed | failed | moved ("not yet" is `moved`).
+
+**Primary:** of the people with `outcome_ask_shown` in the window, the share
+with an `interview_outcome {source:'in_app'}` within 7 days, split by
+`outcome`. **Secondary:** of the people who answered `passed`, the share with
+`post_hire_status_set {status:'hired'}` within 7 days (the offer ask's
+take-up). People are `coalesce(aid, username)`. Internal accounts,
+`metadata.bot` and the crawler fingerprints in the fleet README rule 2 are out.
+
+Traps:
+- Read `source='in_app'` apart from `source='link'` (the email). Never sum
+  the two into one answer rate: their denominators differ (shown vs sent).
+- `moved` here means "not yet". The email's `moved` also means "I never had
+  one". Read it as its own line, never as a miss.
+
+```sql
+with ev as (
+  select coalesce(((metadata #>> '{}')::jsonb)->>'aid', username) pid, event, created_at,
+         (metadata #>> '{}')::jsonb m
+  from pro_events
+  where username !~* '^(test|qa_|fabletest|linktest|internalroutine|sqlquest$|elena$)'
+    and coalesce(((metadata #>> '{}')::jsonb)->>'bot', 'false') <> 'true'
+    and created_at >= :from and created_at < :to + interval '7 days'
+    and event in ('outcome_ask_shown', 'interview_outcome', 'post_hire_status_set')
+),
+shown as (select pid, min(created_at) t0 from ev
+          where event = 'outcome_ask_shown' and created_at < :to group by pid),
+ans as (select distinct on (s.pid) s.pid, e.m->>'outcome' outcome, e.created_at ta
+        from shown s join ev e on e.pid = s.pid and e.event = 'interview_outcome'
+          and e.m->>'source' = 'in_app' and e.created_at between s.t0 and s.t0 + interval '7 days'
+        order by s.pid, e.created_at),
+hired as (select distinct a.pid from ans a join ev e on e.pid = a.pid
+          and e.event = 'post_hire_status_set' and e.m->>'status' = 'hired'
+          and e.created_at between a.ta and a.ta + interval '7 days'
+          where a.outcome = 'passed')
+select count(*) shown,
+       count(a.pid) answered_7d,
+       count(*) filter (where a.outcome = 'passed') passed,
+       count(*) filter (where a.outcome = 'failed') failed,
+       count(*) filter (where a.outcome = 'moved')  not_yet,
+       (select count(*) from hired) passed_to_hired
+from shown s left join ans a using (pid);
+```
+
+**Baseline (2026-11-25):** the ask does not exist. `interview_outcome` has 0
+rows ever (the email sender never ran). Eligible population: ~14 interview
+or job-ready people a month come back 14+ days after stating the intent
+(76 in the 120 days to 11-25). **Decision rule:** the plan's §8, F1.
+
+## `ticket_door`
+
+The ticket-1 Coach card for people who look like "first job" (First 90 Days
+F2). Defined 2026-11-25, before the code ships (rule 6b). New event:
+`ticket_card_shown {source: 'analyst_day_one'|'job_ready'|'hired'}`, written
+once per person per day when the card is on screen. The rest are existing
+events: `ticket_opened {ticketId, index, locked}`, `ticket_solved`.
+
+**Primary:** of the people with `ticket_card_shown` in the window, the share
+with an unlocked `ticket_opened` within 7 days, and of those, the share with
+`ticket_solved` for the same `ticketId`. Split by `source`; never one
+blended rate. **Secondary (F3):** locked opens (`locked: true`) → a
+`pro_plan_clicked` within 30 minutes. **Guardrail:** `reach_6_rate` of
+card-shown people against the same goal's people in the 28 days before the
+flip. Same people rule and filters as `outcome_ask_answer`.
+
+```sql
+with ev as (
+  select coalesce(((metadata #>> '{}')::jsonb)->>'aid', username) pid, event, created_at,
+         (metadata #>> '{}')::jsonb m
+  from pro_events
+  where username !~* '^(test|qa_|fabletest|linktest|internalroutine|sqlquest$|elena$)'
+    and coalesce(((metadata #>> '{}')::jsonb)->>'bot', 'false') <> 'true'
+    and created_at >= :from and created_at < :to + interval '7 days'
+    and event in ('ticket_card_shown', 'ticket_opened', 'ticket_solved', 'pro_plan_clicked')
+),
+shown as (select distinct on (pid) pid, m->>'source' src, created_at t0 from ev
+          where event = 'ticket_card_shown' and created_at < :to order by pid, created_at),
+opened as (select distinct s.pid, e.m->>'ticketId' tid from shown s join ev e on e.pid = s.pid
+           and e.event = 'ticket_opened' and coalesce(e.m->>'locked', 'false') <> 'true'
+           and e.created_at between s.t0 and s.t0 + interval '7 days'),
+solved as (select distinct o.pid from opened o join ev e on e.pid = o.pid
+           and e.event = 'ticket_solved' and e.m->>'ticketId' = o.tid),
+locked as (select e.pid, e.created_at tl from ev e where e.event = 'ticket_opened' and e.m->>'locked' = 'true'),
+locked_click as (select distinct l.pid from locked l join ev e on e.pid = l.pid
+                 and e.event = 'pro_plan_clicked' and e.created_at between l.tl and l.tl + interval '30 minutes')
+select s.src, count(distinct s.pid) shown,
+       count(distinct o.pid) opened_7d,
+       count(distinct so.pid) solved,
+       count(distinct l.pid) locked_openers,
+       count(distinct lc.pid) locked_to_plan_click
+from shown s
+left join opened o using (pid) left join solved so using (pid)
+left join locked l using (pid) left join locked_click lc using (pid)
+group by s.src;
+```
+
+**Baseline (2026-11-25):** 0 ticket opens by non-internal people since the
+tickets shipped on 2026-10-04. Audience: 226 job-ready solvers in 90 days;
+28 people chose Analyst Day-One in 90 days. **Decision rule:** the plan's
+§8, F2 and F3.
+
+## `stack_content_reach`
+
+Whether the current-stack content can be reached at all (Moving up U1,
+`docs/plans/moving-up-current-stack-2026-11-25.md`). Defined 2026-11-25. Per
+28-day window, distinct people (`coalesce(aid, username)`, same filters as
+above) with:
+- a `challenge_opened` on the Debug set (ids 331–342);
+- a `challenge_opened` on the DDL/DML items (ids 325–329, 355–359; extend
+  the list when C6 adds items, in its own PR);
+- a `dialect_notes_opened` (any challenge).
+
+Each set is read on its own; never summed into one reach. A person who opens
+both sets counts in both.
+
+```sql
+with ev as (
+  select coalesce(((metadata #>> '{}')::jsonb)->>'aid', username) pid, event,
+         (metadata #>> '{}')::jsonb m
+  from pro_events
+  where username !~* '^(test|qa_|fabletest|linktest|internalroutine|sqlquest$|elena$)'
+    and coalesce(((metadata #>> '{}')::jsonb)->>'bot', 'false') <> 'true'
+    and created_at >= :from and created_at < :from + interval '28 days'
+    and event in ('challenge_opened', 'dialect_notes_opened')
+)
+select
+  count(distinct pid) filter (where event = 'challenge_opened' and m->>'challengeId' ~ '^[0-9]+$'
+                              and (m->>'challengeId')::int between 331 and 342) debug_openers,
+  count(distinct pid) filter (where event = 'challenge_opened' and m->>'challengeId' ~ '^[0-9]+$'
+                              and ((m->>'challengeId')::int between 325 and 329
+                                   or (m->>'challengeId')::int between 355 and 359)) ddl_dml_openers,
+  count(distinct pid) filter (where event = 'dialect_notes_opened') dialect_note_openers
+from ev;
+```
+
+**Baseline (2026-11-25):** Debug 0 and DDL/DML 0. No `challenge_opened`
+above id 321 has been recorded since 2026-11-15, internal traffic included,
+so check reachability before reading anything. Dialect notes: 96 people in
+the 90 days to 11-25. **Decision rule:** the plan's §8, U1.
+
+## `at_work_share`
+
+Who already works with SQL (Moving up U2). Defined 2026-11-25, before the
+code ships (rule 6b). It needs one new value of an existing event:
+`intent_captured {intent: 'at_work'}`.
+
+**Primary:** of the people with an `intent_captured` in the window (their
+latest answer in it), the share whose answer is `at_work`. **Secondary,**
+per intent value: the share reaching 6 distinct solves within 28 days of the
+answer (`reach_6_rate`'s solve definition), and the webhook payers among
+them by username. People, filters and crawler rules as above. Only people
+with at least one `challenge_solved` in the window count; this drops the
+crawlers that answer nothing else.
+
+```sql
+with ev as (
+  select coalesce(((metadata #>> '{}')::jsonb)->>'aid', username) pid, username, event, created_at,
+         (metadata #>> '{}')::jsonb m
+  from pro_events
+  where username !~* '^(test|qa_|fabletest|linktest|internalroutine|sqlquest$|elena$)'
+    and coalesce(((metadata #>> '{}')::jsonb)->>'bot', 'false') <> 'true'
+    and created_at >= :from and created_at < :to + interval '28 days'
+    and event in ('intent_captured', 'challenge_solved')
+),
+answer as (select distinct on (pid) pid, m->>'intent' intent, created_at ta from ev
+           where event = 'intent_captured' and created_at < :to and m->>'intent' is not null
+           order by pid, created_at desc),
+solves as (select a.pid, count(distinct e.m->>'challengeId') n from answer a join ev e on e.pid = a.pid
+           and e.event = 'challenge_solved' and e.created_at between a.ta and a.ta + interval '28 days'
+           group by a.pid),
+payers as (select distinct username from pro_events
+           where reason = 'stripe_webhook' and event = 'pro_purchase_completed' and created_at >= :from),
+usernames as (select distinct pid, username from ev)
+select a.intent, count(distinct a.pid) answered,
+       round(100.0 * count(distinct a.pid) / sum(count(distinct a.pid)) over (), 1) pct_of_answers,
+       count(distinct a.pid) filter (where s.n >= 6) reached_6,
+       count(distinct u.username) filter (where u.username in (select username from payers)) payers
+from answer a join solves s using (pid)
+left join usernames u on u.pid = a.pid
+group by a.intent order by answered desc;
+```
+
+**Baseline (2026-11-25):** the answer does not exist. The intake's role
+field is on 12 rows, so there is no current measure of employed users.
+Volume check (this query, answers 10-01 → 10-29): 241 solvers answered,
+interview 119 (49%), job_ready 62, learning 60; so 10% `at_work` would be
+about 24 people per 28 days, and the window is readable.
+**Decision rule:** the plan's §8, U2. Guardrail: `first_solve_10m`, because
+the intent question is on the first screen.
+
+## `moving_up_goal`
+
+The "Moving up" and "SQL with AI" Coach goals (Moving up U3/U4), if the
+founder approves them. Defined 2026-11-25. It is `coach_goal_to_step`
+restricted to the new goal ids (`moving-up`, `sql-with-ai`; the exact ids
+are fixed in the goal PR and must match here), with the same two sources:
+- **record:** `users.data.coachState.goalId`, and `stepsCompleted` length
+  ≥ 1 and ≥ 5;
+- **events:** `goal_selected {goalId}` → a non-placement `coach_step_started`
+  within 14 days.
+
+Read per goal id beside Analyst Day-One in the same window. Never as one
+"new goals" rate.
+
+```sql
+select data->'coachState'->>'goalId' goal,
+       count(*) holders,
+       count(*) filter (where jsonb_typeof(data->'coachState'->'stepsCompleted') = 'array'
+                        and jsonb_array_length(data->'coachState'->'stepsCompleted') >= 1) one_step,
+       count(*) filter (where jsonb_typeof(data->'coachState'->'stepsCompleted') = 'array'
+                        and jsonb_array_length(data->'coachState'->'stepsCompleted') >= 5) five_steps
+from users
+where jsonb_typeof(data->'coachState') = 'object'
+  and data->'coachState'->>'goalId' in ('moving-up', 'sql-with-ai', 'analyst-day-one')
+  and (data->'coachState'->>'startedAt')::timestamptz >= :flip
+  and username !~* '^(test|qa_|fabletest|linktest|internalroutine|sqlquest$|elena$|demo|admin)'
+group by 1;
+```
+
+**Baseline (2026-11-25, all time, record):** the two goals do not exist.
+Comparison: Analyst Day-One 15 of 64 holders with ≥ 1 step; Fundamentals 9
+of 85; Interview Prep 1 of 67. **Decision rule:** the plan's §8, U3/U4.
