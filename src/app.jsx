@@ -100,7 +100,9 @@ import { FEEDBACK_PROMPT_FLAGS, FBP_SESSION_KEY, FBP_EXIT_DAY_KEY, FBP_STUCK_IDS
 import { t as i18n_t, getCurrentLang, setLang as i18n_setLang, subscribeLang, SUPPORTED_LANGS, localizeChallenge, localizeInterview, localizeQuestion } from './utils/i18n.js';
 import { buildWeeklyReport, detectMilestones } from './utils/weekly-report.js';
 import { isMcqQuestion, scoreMcqAnswer, applyHintPenalty, nextOptionId, findOption, buildInterviewProgress, mockMistakeDiagnosis, weakConceptsFromHistory } from './utils/mock-interview.js';
+import { canStartMock, mockRunFor, previewEndReason, freePreviewCount, canResumeProgress } from './utils/case-round.js';
 import { explainsApproach, approachSubmittedEvent } from './utils/mock-approach.js';
+import { CHALLENGE_LEFT_EVENT, startOpen, noteTyped, noteFlag, leaveHowForView, shouldSendLeft, markSent, challengeLeftPayload } from './utils/challenge-left.js';
 
 // 2026-09-12 (founder's cleanup item 12): the sector deep-link parameter is
 // English on every link — ?sector=finance | real-estate | manufacturing |
@@ -7063,7 +7065,7 @@ function SQLQuest() {
     try { if (window.__SQLQUEST_SMOKE__ === true) return false; } catch (_) {}
     try { return botSignals({ userAgent: navigator.userAgent, webdriver: navigator.webdriver }).hard; } catch (_) { return false; }
   };
-  const writeProEvent = (event, reason, metadata = {}) => {
+  const writeProEvent = (event, reason, metadata = {}, opts = {}) => {
     if (ANALYTICS_MUTED) {
       try { console.debug('[sqlquest] analytics muted on localhost:', event, reason, metadata); } catch (_) {}
       return;
@@ -7074,6 +7076,10 @@ function SQLQuest() {
     try {
       supabaseFetch('pro_events', {
         method: 'POST',
+        // An exit event (challenge_left) is written as the page goes away:
+        // keepalive lets the request outlive it. Not sendBeacon — PostgREST
+        // needs the apikey header, which a beacon cannot set.
+        ...(opts && opts.keepalive === true ? { keepalive: true } : {}),
         headers: { 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
         body: JSON.stringify({
           event,
@@ -7536,7 +7542,7 @@ function SQLQuest() {
       const decision = botDecision(signals);
       if (decision.stamp) payload.bot = decision.stamp;
       if (event === 'app_opened' && signals) Object.assign(payload, { wd: signals.wd, uaBot: signals.uaBot, langs: signals.langs });
-      writeProEvent(event, 'activation_funnel', payload);
+      writeProEvent(event, 'activation_funnel', payload, { keepalive: options.keepalive === true });
     } catch (_) {}
   };
 
@@ -11001,7 +11007,10 @@ function SQLQuest() {
 
   const startInterview = (interview, forceNew = false, opts = {}) => {
     saveLastActivity('interview', `Interview: ${interview.title || interview.company}`, 'trials', null);
-    if (!interview.isFree && !userProStatus) {
+    // A mock with free leading questions (the Metrics & Case Round,
+    // src/utils/case-round.js) starts for everyone; a free person gets the
+    // free questions as their own run, which ends on the Pro modal.
+    if (!canStartMock(interview, userProStatus)) {
       trackLockReached('interview', {
         interviewId: interview.id || null,
         company: interview.company || null,
@@ -11047,13 +11056,15 @@ function SQLQuest() {
       setShowProModal(true);
       return;
     }
+    interview = mockRunFor(interview, userProStatus).interview;
     
     // Check for saved progress (unless forcing new)
-    if (!forceNew && savedInterviewProgress && savedInterviewProgress.interviewId === interview.id) {
+    if (!forceNew && canResumeProgress(savedInterviewProgress, interview)) {
       // Resume from saved progress
       trackActivationEvent('interview_started', {
         interviewId: interview.id, company: interview.company || null,
         difficulty: interview.difficulty || null, isFree: !!interview.isFree, resumed: true,
+        preview: !!interview.previewOf,
       });
       setActiveInterview(interview);
       setInterviewQuestion(savedInterviewProgress.questionIndex);
@@ -11082,6 +11093,7 @@ function SQLQuest() {
     trackActivationEvent('interview_started', {
       interviewId: interview.id, company: interview.company || null,
       difficulty: interview.difficulty || null, isFree: !!interview.isFree, resumed: false,
+      preview: !!interview.previewOf,
     });
     setActiveInterview(interview);
     setInterviewQuestion(0);
@@ -11115,7 +11127,7 @@ function SQLQuest() {
   
   // Start Practice Mode - no timer, unlimited hints, can see solutions
   const startPracticeMode = (interview) => {
-    if (!interview.isFree && !userProStatus) {
+    if (!canStartMock(interview, userProStatus)) {
       trackLockReached('interview', {
         interviewId: interview.id || null,
         company: interview.company || null,
@@ -11128,6 +11140,7 @@ function SQLQuest() {
       setShowProModal(true);
       return;
     }
+    interview = mockRunFor(interview, userProStatus).interview;
     
     setActiveInterview(interview);
     setInterviewQuestion(0);
@@ -11390,6 +11403,9 @@ function SQLQuest() {
       diagnosis: mockMistakeDiagnosis(answer, { diagnose: diagnoseResult, hint: primaryHint, rows: rowDiffSummary }),
       isPracticeMode: practiceMode,
       patternSlug: isCorrect ? null : (PATTERN_FOR_MOCK_QUESTION[currentQ.id] || null),
+      // A written question that carries its reference and grading notes
+      // (the Metrics & Case Round) shows them right after the verdict.
+      gradingNotes: localizeQuestion(currentQ, lang).gradingNotes || currentQ.gradingNotes || null,
       pendingAnswers: newAnswers, // captured here so completeInterview gets the
                                    // right list when the user clicks Finish
     });
@@ -11420,6 +11436,29 @@ function SQLQuest() {
       }
     } else {
       completeInterview(finalAnswers);
+      // The free part of a previewed mock is done: the rest is Pro. The
+      // results stay on screen under the modal, so the score is not lost.
+      const endReason = previewEndReason(activeInterview, { solvedCount: solvedChallenges.size });
+      if (endReason) {
+        trackLockReached('interview', {
+          interviewId: activeInterview.id || null,
+          company: activeInterview.company || null,
+          difficulty: activeInterview.difficulty || null,
+          wall: 'case_round',
+          freeCount: endReason.freeCount,
+          total: endReason.total,
+        });
+        // Never sell before the first solve (tests/paid-wall.test.js): a
+        // person who got all of the free questions wrong meets the
+        // cold-start route instead. A correct answer in THIS run counts —
+        // the history that feeds practiceSolveCount has not re-rendered yet
+        // (the test7 trap: 4/4 on a mock, told "you haven't solved anything").
+        const solvedInRun = finalAnswers.some(a => a && a.correct);
+        if (solvedInRun || !openColdStartInstead()) {
+          setProModalReason(endReason);
+          setShowProModal(true);
+        }
+      }
     }
   };
 
@@ -11436,7 +11475,9 @@ function SQLQuest() {
     
     const totalScore = finalAnswers.reduce((sum, a) => sum + a.score, 0);
     const maxScore = activeInterview.questions.reduce((sum, q) => sum + q.points, 0);
-    const passed = (totalScore / maxScore * 100) >= activeInterview.passingScore;
+    // A preview (the free questions of a mock, src/utils/case-round.js) is
+    // never a pass: the mock was not sat.
+    const passed = !activeInterview.previewOf && (totalScore / maxScore * 100) >= activeInterview.passingScore;
     trackActivationEvent('interview_completed', {
       interviewId: activeInterview.id, company: activeInterview.company || null,
       passed, percentage: maxScore ? Math.round(totalScore / maxScore * 100) : 0,
@@ -11492,7 +11533,8 @@ function SQLQuest() {
       questionsTotal: finalAnswers.length,
       questionResults: finalAnswers,
       mistakes, // Store mistakes for study
-      studiedMistakes: [] // Track which mistakes user has studied
+      studiedMistakes: [], // Track which mistakes user has studied
+      preview: activeInterview.previewOf ? { ...activeInterview.previewOf } : undefined,
     };
     
     setInterviewResults(results);
@@ -11690,9 +11732,7 @@ Reply in 2–3 sentences, plain text, no headings: first whether the approach wo
     try { trackActivationEvent('interview_approach_feedback', { interviewId: activeInterview.id, questionId: q.id, chars: text.length, ok: !!reply }); } catch (_) {}
   };
 
-  const canAccessInterview = (interview) => {
-    return interview.isFree || userProStatus;
-  };
+  const canAccessInterview = (interview) => canStartMock(interview, userProStatus);
   
   // Study a mistake with AI Tutor
   const studyMistakeWithAI = (mistake, resultId) => {
@@ -24123,6 +24163,73 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
   // it; every existing call site is unchanged and sends no key, which the read
   // treats as organic. No new event — a separate hard_preview_opened would
   // duplicate challenge_opened (plan §Measurement).
+  // ── challenge_left (2026-11-24) ─────────────────────────────────────────
+  // One event per challenge open, sent when the person leaves it without a
+  // run or a submit: back to the list or another app tab (`navigate`), the
+  // browser tab hidden or closed (`hidden`), another challenge opened over it
+  // (`switch`). Counts and flags only — never the query text. Rules in
+  // src/utils/challenge-left.js; metric `open_to_run_exit`. Guests and
+  // accounts alike. Hooks sit here, above the `showAuth` / `dbReady` early
+  // returns (CLAUDE.md fragile area 1).
+  const chLeftRef = useRef(null);
+  const chViewRef = useRef(null);
+  const chLeftNote = (flag) => { chLeftRef.current = noteFlag(chLeftRef.current, flag); };
+  const chLeftSend = (how) => {
+    const open = chLeftRef.current;
+    if (!shouldSendLeft(open, how)) return;
+    chLeftRef.current = markSent(open);
+    trackActivationEvent(CHALLENGE_LEFT_EVENT, challengeLeftPayload(open, { how, now: Date.now(), width: typeof window !== 'undefined' ? window.innerWidth : null }), { keepalive: true });
+  };
+  const chLeftSendRef = useRef(chLeftSend);
+  chLeftSendRef.current = chLeftSend;
+  // The challenge page on screen: the Practice tab's Challenges view with a
+  // challenge open. `currentChallenge` alone outlives a switch to another tab.
+  const chLeftView = (currentChallenge && activeTab === 'quests' && practiceSubTab === 'challenges') ? currentChallenge.id : null;
+  chViewRef.current = chLeftView;
+  const chLeftBegin = (id) => {
+    const prev = chLeftRef.current;
+    if (prev && !prev.sent && String(prev.challengeId) === String(id)) return; // the same page, still open
+    if (prev) chLeftSend('switch');
+    let next = startOpen(id, Date.now());
+    if (chViewRef.current != null && String(chViewRef.current) === String(id)) next = noteFlag(next, 'seen');
+    chLeftRef.current = next;
+  };
+  useEffect(() => {
+    const open = chLeftRef.current;
+    if (!open) return;
+    if (chLeftView != null && String(chLeftView) === String(open.challengeId)) { chLeftNote('seen'); return; }
+    const how = leaveHowForView(open, chLeftView);
+    if (how) chLeftSend(how);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chLeftView]);
+  useEffect(() => {
+    const onScreen = () => chViewRef.current != null && !!chLeftRef.current;
+    const onVis = () => { if (document.visibilityState === 'hidden' && onScreen()) chLeftSendRef.current('hidden'); };
+    const onPageHide = () => { if (onScreen()) chLeftSendRef.current('hidden'); };
+    // The person's own scroll (wheel, touch drag, page keys), never the app's
+    // programmatic scroll to the editor.
+    const onScroll = () => { if (onScreen() && !chLeftRef.current.scrolled) chLeftNote('scrolled'); };
+    const onKey = (e) => {
+      if (!['PageDown', 'PageUp', 'Home', 'End', ' '].includes(e.key)) return;
+      const t = e.target;
+      if (t && t.closest && t.closest('.CodeMirror, input, textarea, select, [contenteditable="true"]')) return;
+      onScroll();
+    };
+    document.addEventListener('visibilitychange', onVis);
+    window.addEventListener('pagehide', onPageHide);
+    window.addEventListener('wheel', onScroll, { passive: true });
+    window.addEventListener('touchmove', onScroll, { passive: true });
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('visibilitychange', onVis);
+      window.removeEventListener('pagehide', onPageHide);
+      window.removeEventListener('wheel', onScroll);
+      window.removeEventListener('touchmove', onScroll);
+      window.removeEventListener('keydown', onKey);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const openChallenge = (challenge, opts = {}) => {
     if (isContentLocked('challenge', challenge)) {
       trackLockReached('challenge_hard', {
@@ -24306,6 +24413,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
       // Present only on the three preview surfaces — see the note above.
       ...(opts && opts.openedFrom ? { openedFrom: opts.openedFrom } : {}),
     });
+    chLeftBegin(challenge.id);
     if (solvedChallenges.size === 0 && challengeAttempts.length === 0) {
       trackActivationEvent('first_challenge_started', {
         challengeId: challenge.id,
@@ -25217,6 +25325,7 @@ HINT PROGRESSION (based on conversation length):
     setInlineAiInput('');
     setInlineAiLoading(false);
     setShowInlineAiHelp(true);
+    chLeftNote('hintOpened');
     trackActivationEvent('inline_help_opened', { challengeId: challenge?.id ?? null, opener: dx ? 'diagnosis' : (q ? 'query' : 'empty'), hasDiagnosis: !!dx });
     setTimeout(() => {
       try {
@@ -25341,6 +25450,8 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
   }
   const markChallengeFirstRun = (via) => {
     const id = currentChallenge?.id;
+    // A run or a submit on this open: challenge_left never fires for it.
+    if (chLeftRef.current && id != null && String(chLeftRef.current.challengeId) === String(id)) chLeftNote('ran');
     if (id == null || firstRunSentRef.current.has(id)) return;
     firstRunSentRef.current.add(id);
     const at = challengeOpenedAtRef.current.id === id ? challengeOpenedAtRef.current.at : 0;
@@ -32214,6 +32325,11 @@ RULES:
                 <p className="text-sm text-gray-300 leading-relaxed">{interviewFeedback.explanation}</p>
               </div>
             )}
+            {interviewFeedback.gradingNotes && (
+              <div className="text-left bg-gray-800/60 border border-gray-700 rounded-lg p-3 mb-4" data-testid="interview-grading-notes">
+                <p className="text-sm text-gray-300 leading-relaxed">{interviewFeedback.gradingNotes}</p>
+              </div>
+            )}
             {/* The SQL trap page for this question's trap (2026-09-25). New
                 tab: a timed mock must not be lost to a click. */}
             {!interviewFeedback.correct && interviewFeedback.patternSlug && (
@@ -32244,7 +32360,9 @@ RULES:
                 {interviewResults.passed ? '🎉' : '💪'}
               </div>
               <h2 className={`text-3xl font-bold ${interviewResults.passed ? 'text-green-400' : 'text-yellow-400'}`}>
-                {interviewResults.passed ? 'Interview Passed!' : 'Keep Practicing!'}
+                {interviewResults.preview
+                  ? `The free ${interviewResults.preview.free} are done`
+                  : interviewResults.passed ? 'Interview Passed!' : 'Keep Practicing!'}
               </h2>
               <p className="text-gray-400 mt-2">{activeInterview?.title}</p>
             </div>
@@ -33322,6 +33440,8 @@ RULES:
                       ? 'You\'re cooking.'
                       : proModalReason.type === 'company_set'
                       ? `${proModalReason.topic}'s set: three free, the rest is Pro.`
+                      : proModalReason.type === 'case_round'
+                      ? `${proModalReason.freeCount} free, ${Math.max(0, (proModalReason.total || 0) - (proModalReason.freeCount || 0))} to go.`
                       : proModalReason.type === 'free_quota'
                       ? quotaWallHeadline(proModalReason.quota, trialOfferOn)
                       : proModalReason.type === 'coach_mock'
@@ -33435,6 +33555,17 @@ RULES:
                         The first {proModalReason.freeCount} are free to try. The other {Math.max(0, (proModalReason.setSize || 0) - (proModalReason.freeCount || 0))}
                         {proModalReason.mockTitle ? ` — and the ${proModalReason.mockTitle} — ` : ' '}
                         open with Pro: the set, ranked the way {proModalReason.topic} asks it. Everything you have solved stays yours.
+                      </p>
+                    </div>
+                  ) : proModalReason.type === 'case_round' ? (
+                    // The Metrics & Case Round (2026-11-22): the free
+                    // questions are sat, the rest of the round is Pro.
+                    <div className="mt-3" data-testid="pro-modal-case-round">
+                      <p className="font-medium" style={{ color: '#F2F0EA' }}>
+                        You sat the first {proModalReason.freeCount} of the {proModalReason.topic || 'case round'}.
+                      </p>
+                      <p className="text-sm mt-2" style={{ color: '#8A8E99' }}>
+                        The other {Math.max(0, (proModalReason.total || 0) - (proModalReason.freeCount || 0))} open with Pro: LTV, CAC and CPA, a fraud rate while chargebacks are still arriving, saying a result to someone who does not write SQL, then the SQL for the metrics you defined. Your score on the first {proModalReason.freeCount} stays yours.
                       </p>
                     </div>
                   ) : proModalReason.type === 'free_quota' ? (
@@ -40325,7 +40456,7 @@ RULES:
                             {showChallengeStructure ? `🙈 ${i18n_t('practice', 'hideStructure')}` : `🧩 ${i18n_t('practice', 'showStructure')}`}
                           </button>
                         )}
-                        <button onClick={() => { if (!showChallengeHint && currentChallenge) trackActivationEvent('challenge_hint_opened', { challengeId: currentChallenge.id, difficulty: currentChallenge.difficulty }); setShowChallengeHint(!showChallengeHint); }} className="text-sm text-yellow-400 hover:text-yellow-300">
+                        <button onClick={() => { if (!showChallengeHint) chLeftNote('hintOpened'); if (!showChallengeHint && currentChallenge) trackActivationEvent('challenge_hint_opened', { challengeId: currentChallenge.id, difficulty: currentChallenge.difficulty }); setShowChallengeHint(!showChallengeHint); }} className="text-sm text-yellow-400 hover:text-yellow-300">
                           {showChallengeHint ? `🙈 ${i18n_t('practice', 'hideHint')}` : `💡 ${i18n_t('practice', 'showHint')}`}
                         </button>
                       </div>
@@ -40439,7 +40570,7 @@ RULES:
                     <div data-scroll-target="challenge-editor">
                       <SQLEditor
                         value={challengeQuery}
-                        onChange={val => updateChallengeQuery(val)}
+                        onChange={val => { chLeftRef.current = noteTyped(chLeftRef.current, challengeQuery, val); updateChallengeQuery(val); }}
                         onKeyDown={(e) => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); submitChallenge(); }}}
                         placeholder={challengeStarterHint || i18n_t('practice', 'editorPlaceholder')}
                         height={isDebugChallenge(currentChallenge) ? '18rem' : '14rem'}
@@ -41956,7 +42087,13 @@ RULES:
                     return true;
                 }
               });
-              const orderedMocks = [...shownMocks.filter(i => i.sourced), ...shownMocks.filter(i => !i.sourced)];
+              // A mock with free leading questions (the Metrics & Case Round)
+              // opens the general section: it is the one a free person can start.
+              const orderedMocks = [
+                ...shownMocks.filter(i => i.sourced),
+                ...shownMocks.filter(i => !i.sourced && freePreviewCount(i) > 0),
+                ...shownMocks.filter(i => !i.sourced && freePreviewCount(i) === 0),
+              ];
               return orderedMocks.map((interview, mockIdx) => {
                 const canAccess = canAccessInterview(interview);
                 const completedCount = interviewHistory.filter(h => h.interviewId === interview.id).length;
@@ -42002,6 +42139,11 @@ RULES:
                           {interview.isFree && (
                             <span className="px-2 py-0.5 bg-green-500/20 text-green-400 rounded text-xs font-medium">
                               {i18n_t('interviewList', 'badgeFree')}
+                            </span>
+                          )}
+                          {!interview.isFree && !userProStatus && freePreviewCount(interview) > 0 && (
+                            <span className="px-2 py-0.5 bg-green-500/20 text-green-400 rounded text-xs font-medium" data-testid="mock-badge-first-free">
+                              {i18n_t('interviewList', 'badgeFirstFree', { n: freePreviewCount(interview) })}
                             </span>
                           )}
                           {!interview.isFree && !canAccess && (
