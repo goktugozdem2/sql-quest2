@@ -38,3 +38,6 @@ sqlquest-prod-*.json
 # Lighthouse CI output (scripts/lighthouse/run.mjs, .github/workflows/lighthouse.yml)
 .lighthouseci/
 lhci-reports/
+# Per-page Open Graph cards (scripts/build-og-images.mjs): rendered by every
+# build, production included; never committed.
+public/og/

@@ -1373,6 +1373,19 @@ The weekly report and skill-drill mirrors are gone (app.jsx imports `src/utils/w
 - `vite.config.js` — build config, dev server, data bundle plugin
 - `scripts/smoke-test.js` · `build-og.sh` · `build-ads.sh` — dev tooling
 
+### Per-page share cards (2026-11-24)
+
+- `scripts/build-og-images.mjs` (in `npm run build`, right after
+  `build-static-pages.js`) renders a 1200×630 PNG of the page's own H1 for
+  every company page, trap page and blog post into `public/og/<slug>.png`
+  and points the BUILT copy's og:image / twitter:image at it. src files keep
+  the global `/og-image.png`, as does every other page. The PNGs are
+  gitignored — production renders them at deploy. Satori + resvg via
+  `renderPng` (`api/_og-png.js`), vendored Geist only (a glyph Geist lacks
+  reaches the missing-glyph hook and fails the build; it never fetches a
+  font). Guards: `tests/og-images.test.js`. A new page kind is a line in
+  `ogTargets()`.
+
 ### Search-engine indexing
 **A sitemap entry is discovery, not a crawl signal.** On a domain with this little
 authority, a page with zero internal links does not get crawled — no matter how
