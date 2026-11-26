@@ -141,6 +141,16 @@ of the verifier and must never be rounded to `FLAT`.
   (orchestrator-decisions 2026-11-24), so this is the second and last slot;
   phones are out (their cell is full). Read the 12-20 claims on the 11-22
   starter and the deep-link swap inside `control` only.
+- **Flip** (A0, PR `flags/runnable-starter-on`, opened 2026-11-26): ON at
+  50/50 once the pre-flip walk passes: a fresh desktop profile, through a
+  `/app/?challenge=<id>` deep link on production with
+  `?ff_features_runnableStarter=true`, stores a `runnable_starter_v1` arm
+  and writes one `runnable_starter_assigned` on the first load. The clock
+  starts at the deploy of the flip commit. **Reverse rule:** the
+  Falsification line above (final 2027-01-07, interim harm stop
+  2026-12-17), plus off the same day if `runnable_starter_assigned` rows
+  stop while desktop `challenge_opened` rows continue, or if either arm
+  holds under 45% of assignments at ≥ 100 assigned (broken assignment).
 
 ### /sql-interview-questions-data-analyst/ on Google — the /sql-exercises/ link push, next page (C1)
 

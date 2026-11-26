@@ -667,7 +667,7 @@ window.FEATURE_FLAGS = {
     // 2026-11-24). DARK on merge; the founder approved ON at 50/50 after
     // merge (chat, 2026-11-26). src/utils/runnable-starter.js; ledger "a
     // runnable starter in the editor"; metric runnable_starter_split.
-    runnableStarter: false,
+    runnableStarter: true,
   },
 };
 
