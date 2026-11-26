@@ -1,6 +1,6 @@
 {
   "note": "Written by scripts/sitemap-lastmod.mjs. A page's date moves only when its built bytes change.",
-  "updated": "2026-11-25",
+  "updated": "2026-11-26",
   "pages": {
     "/": {
       "hash": "4db495fe086e41d4",
@@ -183,8 +183,8 @@
       "lastmod": "2026-11-25"
     },
     "/sql-exercises/": {
-      "hash": "1878bf55af23e18e",
-      "lastmod": "2026-11-25"
+      "hash": "3142964bb212e1d8",
+      "lastmod": "2026-11-26"
     },
     "/after-the-sql-course/": {
       "hash": "92fefe1696d884af",
