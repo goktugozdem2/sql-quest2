@@ -71,6 +71,32 @@ of the verifier and must never be rounded to `FLAT`.
   `linkSrc`) and the page entry (`linkSrc = <slug>-sql-interview`) apart.
   The PayPal/Coinbase/Monzo/Chime pages are weeks old; any page change in
   the window confounds the page door.
+### One host: sql-quest2.vercel.app 301s to sqlquest.app (R1-3, G1)
+
+- **Claimed** 2026-11-25 · **Shipped** on merge (vercel.json host redirect,
+  no flag) · **Read** 2026-12-09 (the G1 weekly read of that date).
+- **Metric.** `ai_mention_share` (docs/agent/metrics.md): which host an
+  assistant or its search proxy cites when it names SQL Quest on the G1
+  panel. Not `gsc_ai_queries`, which counts Google clicks and cannot see the
+  cited host.
+- **Baseline.** G1 read 2026-11-25 (docs/reads/geo-weekly-2026-11-25.md):
+  1 of 15 panel prompts cited SQL Quest in the search proxy (#8, the AI
+  tutor prompt), and the cited URL was `sql-quest2.vercel.app/llms.txt`.
+  The vercel.app copy was byte-identical to sqlquest.app (same etag) and
+  indexed; R1's competitor reads of 11-22 → 11-24 found its `/vs-datalemur/`
+  in a DataLemur review search.
+- **Target.** 0 vercel.app URLs cited on the 2026-12-09 G1 read.
+- **Falsified if** any `sql-quest2.vercel.app` URL is still cited on the
+  12-09 read (then check the redirect is live with `curl -sI` and whether
+  the engine caches the old URL; re-read 12-23).
+- **Risks (sized 2026-11-25, not blockers).** Guest progress kept in a
+  vercel.app browser's localStorage does not follow the 301 (another
+  origin): `pro_events` rows naming the vercel.app host in the last 30 days
+  = 6 rows, 3 people. Registered accounts are server-side and unaffected. A
+  reset or verify mail sent from a vercel.app session with PKCE before the
+  deploy loses its code verifier across origins; one retry fixes it. The
+  Supabase Auth Site URL (https://sqlquest.app) is the founder's dashboard
+  setting, not this change.
 ### the Coach's Debug door (`coachDebugDoor`) — **OPEN**
 
 - **Claimed** 2026-11-25 · **Shipped** ON on merge (orchestrator decision,
