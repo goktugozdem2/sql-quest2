@@ -68,6 +68,16 @@ dated `queue-*.md` files are history. The running state of the objective is
      11-22, 7 on 11-23, 0 ever ran a query.
    - the founder's walk guests on 2026-11-24 (`Europe/Istanbul`,
      `mobile:375x812`, 11:00–11:08 UTC).
+   - two app-only crawlers older than the stamps (A01 2026-11-25; metrics.md
+     shared traps): `utc1280` — first `app_opened` in `UTC` at
+     `desktop:1280x720`, no `landing_view` ever, whatever its
+     `landingSrc` (1,347 with a spoofed `search:google` in the week of
+     09-28; 0 of 1,356 ever ran a query); `cn_app` — first `app_opened`
+     with no `landingSrc` in `Asia/Shanghai`, `Asia/Hong_Kong` or
+     `Asia/Singapore`, no `landing_view` ever (1,629 since 08-23, 0 ran).
+     `scripts/scorecard-weekly.sql` carries every rule in this list as
+     one block.
+
    - Google's unstamped fetchers (C8 2026-11-25): a person whose
      `landing_view` has `ua` matching `GoogleOther` or `Google-NotebookLM`
      and who never reaches `app_opened`. All `tz = America/Los_Angeles`,
