@@ -696,6 +696,9 @@ touch them.
   3. In Stripe, open the subscription with the open $9 invoice of 11-24
      19:00 UTC. If it is still unpaid, send the customer the invoice's
      hosted link and restore Pro by hand until it is settled.
+  2026-11-26: steps 1–2 are DONE (#355 merged, v27 deployed 11-25). Step 3
+  is still OPEN. About 35 h later the account still reads `proStatus` false,
+  and no `invoice.paid` has reached the webhook (`errors-2026-11-26.md`).
 - **A3-5. `pro_events` has no index on `username`, so per-person lookups scan
   the table.** On 11-23 at 15:00 the `checkout-abandon` read
   `username = … AND event IN (plan/checkout clicked)` hit the 8 s statement
@@ -706,6 +709,8 @@ touch them.
   `create index concurrently if not exists idx_pro_events_username_event on public.pro_events (username, event);`
   Source half (any lane, small PR in `supabase/functions/checkout-abandon/`):
   skip the person when either read returns an `error`.
+  2026-11-26: the source half is #398, held under 6d. After merge,
+  FOUNDER: `supabase functions deploy checkout-abandon`.
 
 ## Competitor watch — B6, 2026-11-22 (docs/reads/competitors-2026-11-22.md)
 
