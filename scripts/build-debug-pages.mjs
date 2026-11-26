@@ -214,7 +214,10 @@ const LINK_START = '<!-- debug-hub-link:start -->';
 const LINK_END = '<!-- debug-hub-link:end -->';
 const wrapLink = html => `${LINK_START}${html}${LINK_END}`;
 const para = (inner, style = 'margin-top:14px;') => wrapLink(`<p style="${style}">${inner}</p>`);
-const hubA = track => `<a href="${URL_PATH}" data-track="${track}">${LINK_TEXT}</a>`;
+// The link takes its paragraph's colour plus an underline (A4, 2026-11-25): on
+// pages with no global link colour it painted the browser's #0000ee, 2.14:1 on
+// the near-black (/sql-exercises/), and colour alone is no cue in running text.
+const hubA = track => `<a href="${URL_PATH}" data-track="${track}" style="color:inherit;text-decoration:underline;">${LINK_TEXT}</a>`;
 
 /** Every page that links to the hub: file under public/, where, and what. */
 export function linkTargets(n) {

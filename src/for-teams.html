@@ -189,6 +189,8 @@
     details p{color:var(--text-muted);font-size:14px;margin-top:8px;max-width:680px}
 
     footer{padding:32px 0;color:var(--text-muted);font-size:12px}
+    /* The build's partner line paints the dark --text-muted inline; this page has a light theme (2.97:1 there). */
+    footer [data-partner]{color:var(--text-muted)!important}
     @media (prefers-reduced-motion: reduce){*{transition:none!important}}
   </style>
 </head>

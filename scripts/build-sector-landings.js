@@ -360,6 +360,7 @@ function generateLandingHtml(s) {
     <a href="/app/?lang=tr&sector=${s.id}&challenge=${s.sample_challenges[0].id}&ref=lp_${s.id}" class="btn bp" style="font-size:14px;padding:10px 24px;">Hemen Başla →</a>
   </div>
 </div></nav>
+<main>
 
 <!-- ── Hero ──────────────────────────────────────────────────── -->
 <section class="hero"><div class="hbg"></div><div class="ho1"></div><div class="ho2"></div>
@@ -429,6 +430,7 @@ function generateLandingHtml(s) {
 </div></section>
 
 <!-- ── Footer ─────────────────────────────────────────────────── -->
+</main>
 <footer class="ft"><div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:16px;"><div style="width:28px;height:28px;border-radius:8px;background:#7c3aed;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0;"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg></div><span class="fd" style="font-size:16px;font-weight:800;">SQL Quest</span></div>
 <p style="font-size:13px;color:#7f8da1;">Sektörünün gerçek verisiyle SQL pratiği.</p>
 <div class="flk"><a href="/app/?lang=tr&sector=${s.id}&challenge=${s.sample_challenges[0].id}&ref=lp_${s.id}">Hemen Başla</a><a href="/turkce-sql-ogren/">Türkçe ana sayfa</a><a href="/sql-exercises/">SQL Alıştırmaları</a><a href="/best-sql-practice-sites/">SQL Pratik Siteleri</a><a href="/finans-sql/">Finans</a><a href="/gayrimenkul-sql/">Gayrimenkul</a><a href="/uretim-sql/">Üretim</a></div>

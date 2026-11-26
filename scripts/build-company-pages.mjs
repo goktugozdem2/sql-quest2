@@ -405,7 +405,7 @@ ${rows}
     </tbody>
   </table></div>
   <ol style="list-style:none;margin-top:18px;font-size:12px;color:#8b98ab;line-height:1.6;">${list}</ol>
-  <p style="font-size:12px;color:#5b6577;margin-top:10px;">${esc(sentence)} Accessed ${esc(accessed)}.</p>
+  <p style="font-size:12px;color:#8A8E99;margin-top:10px;">${esc(sentence)} Accessed ${esc(accessed)}.</p>
 </div></section>`;
 }
 
@@ -531,6 +531,7 @@ ${ld}
   <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;"><div style="width:34px;height:34px;border-radius:10px;background:#7c3aed;display:flex;align-items:center;justify-content:center;color:#fff;"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg></div><span class="fd" style="font-size:19px;font-weight:800;">SQL Quest</span></a>
   <div class="nl"><a href="#format">Format</a><a href="#topics">Topics</a><a href="#questions">Questions</a><a href="#faq">FAQ</a><a href="/sql-interview-readiness-test/?company=${key}" class="btn bp" style="font-size:13px;padding:9px 18px;">Check readiness</a></div>
 </div></nav>
+<main>
 
 <section class="hero"><div class="sec" style="padding-top:128px;padding-bottom:40px;">
   <p style="font-size:13px;color:#8b98ab;margin-bottom:14px;"><a href="/" style="color:#8b98ab;text-decoration:none;">SQL Quest</a> › <a href="/sql-interview-prep/" style="color:#8b98ab;text-decoration:none;">SQL Interview Prep</a> › ${esc(d.name)}</p>
@@ -589,6 +590,7 @@ ${readinessBlock({ slug: key, name: d.name, src: slug })}
   <a href="/app/?company=${encodeURIComponent(d.name)}&amp;src=${slug}&amp;goal=interview" class="btn bp" data-track="cta_closing">Start the ${esc(d.name)} set — free</a>
 </div></section>
 
+</main>
 <footer class="ft"><p class="fd" style="font-size:16px;font-weight:800;">SQL Quest</p><p style="font-size:13px;color:#7f8da1;margin-top:6px;">Personalized SQL interview practice.</p>
 <div class="flk"><a href="/sql-interview-prep/">SQL Interview Prep</a><a href="/sql-exercises/">SQL Practice Questions</a><a href="/sql-interview-readiness-test/">Readiness Test</a><a href="/best-sql-practice-sites/">Best SQL Practice Sites</a><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><a href="/refund/">Refund Policy</a></div><p style="font-size:12px;color:#79879b;margin-top:20px;">© 2026 SQL Quest</p></footer>
 

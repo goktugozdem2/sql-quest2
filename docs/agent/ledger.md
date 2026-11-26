@@ -1034,6 +1034,32 @@ of the verifier and must never be rounded to `FLAT`.
   - (d) This claim was written by the same model family that will fix and
     review the findings. Correlated blind spots are possible, so (b) is the
     honest test, not the count.
+### Lighthouse a11y: underlined text links, one <main>, AA greys (A4)
+
+- **Claimed** 2026-11-25 · **Shipped** on merge (no flag; CSS, markup and
+  one preconnect, no colour outside the existing palette) · **Read** 2026-12-20.
+- **Change** Unclassed links in running text and bare `footer.ft` links get
+  an underline (one injected rule, `LINK_CUE_STYLE` in
+  scripts/footer-partner-link.mjs); every marketing page gets one `<main>`;
+  the sourced-format note and the legal pages' greys move to `--text-muted`
+  #8A8E99; two link sets that painted the browser's #0000ee get a colour;
+  question pages preconnect to fonts.gstatic.com.
+- **Why** The 11-25 unlighthouse scan (161 pages): link-in-text-block on 92,
+  landmark-one-main on 55, color-contrast on 25. Lighthouse CI (#325) had
+  three template runs on its a11y floor of 90, so one more defect failed
+  every PR. CLS 0.156 on /questions/below-department-average/ (font files
+  started late).
+- **Metric** `uiux_findings` (U6 contrast is part of it); Lighthouse CI's
+  median a11y on its six pages is the guardrail, not a new metric.
+- **Baseline** local Lighthouse, mobile, main 3ffc26f: /challenges/window-functions/
+  90, /sql-exercises/ 93 (desktop 90 in CI), /sql-not-in-null/ 91,
+  /questions/below-department-average/ 92 and CLS 0.156.
+- **Target** every LHCI page ≥ 95 on both presets in the CI run on main
+  after merge; CLS on the question template < 0.1 there.
+- **Falsification, stated in advance:** (a) any LHCI page below 95 on the
+  first main run after merge → **MISS**; (b) a person reports a link or nav
+  that now looks wrong (an underline on a button or a card) → **MISS**,
+  whatever the scores say; (c) same model family wrote and will review it.
 ### the Revolut guide: a sourced blog door for the best fintech page (C5)
 
 - **Claimed** 2026-11-22 · **Shipped** on merge · **Read** 2026-12-20 (28 d) and 2027-01-17 (56 d).

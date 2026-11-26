@@ -37,35 +37,49 @@ export const PARTNER_LINE =
 export const FOOTER_FIT_STYLE =
   '<style data-footer-fit>@media(max-width:600px){.flk{row-gap:0}.flk a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;padding:0 4px}.fnav a{display:flex;align-items:center;min-height:44px;padding:0}}</style>';
 
+// Links in running text (A4, Lighthouse a11y 2026-11-25): axe's
+// link-in-text-block failed on 92 pages. The purple link (#c084fc) sits at
+// 1.03:1 against the grey body text around it, so colour was the only cue.
+// Every unclassed link inside a paragraph, list item or table cell, and every
+// bare link in a `footer.ft` row, gets an underline. Classed links (buttons:
+// .bp, .bo, .btn …) and anything inside <nav> or <header> keep their look; a
+// card or pill link carries an inline `text-decoration:none`, which still
+// wins. No colour changes, so nothing new enters the palette. Same reason as
+// the footer fit for living here: the pages are not one template.
+export const LINK_CUE_STYLE =
+  '<style data-link-cue>:is(p,li,dd,td,blockquote,figcaption)>a:not([class]):not(nav *):not(header *),footer.ft>a:not([class]){text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}</style>';
+
 // The product shell and its legacy alias are not marketing pages.
 const SKIP = new Set(['app.html', 'app/index.html']);
 
-// The fit rule goes in <head>, never in the footer (html-validate, 2026-11-24):
-// a <style> under <footer> is not permitted content in HTML, and it was the
-// one error on 508 of the 515 built pages. Browsers applied it anyway; the
-// rule's text and its place at the END of <head> (after every page style
-// that sets .flk/.fnav) keep the cascade it had.
-const FIT_RE = /<style data-footer-fit>[\s\S]*?<\/style>/g;
+// The page-wide rules go in <head>, never in the footer (html-validate,
+// 2026-11-24): a <style> under <footer> is not permitted content in HTML, and
+// it was the one error on 508 of the 515 built pages. Browsers applied it
+// anyway; the rules' text and their place at the END of <head> (after every
+// page style that sets .flk/.fnav or link decoration) keep the cascade they
+// had. The link cue (A4, 2026-11-25) rides in the same block, before the fit.
+const HEAD_STYLES = LINK_CUE_STYLE + FOOTER_FIT_STYLE;
+const HEAD_STYLE_RE = /<style data-(?:link-cue|footer-fit)>[\s\S]*?<\/style>/g;
 
-function withFitInHead(html) {
+function withStylesInHead(html) {
   const head = html.indexOf('</head>');
   if (head === -1) return html;
-  const inHead = [...html.matchAll(FIT_RE)].find(m => m.index < head);
+  const inHead = [...html.matchAll(HEAD_STYLE_RE)].find(m => m.index < head);
   if (inHead) {
     // Already in the head: keep its place (later build steps append their
-    // own <style> before </head>), refresh its text, drop any body copy.
-    const before = html.slice(0, inHead.index) + FOOTER_FIT_STYLE;
-    return before + html.slice(inHead.index + inHead[0].length).replace(FIT_RE, '');
+    // own <style> before </head>), refresh the block, drop every other copy.
+    const rest = html.slice(inHead.index).replace(HEAD_STYLE_RE, '');
+    return html.slice(0, inHead.index) + HEAD_STYLES + rest;
   }
-  const out = html.replace(FIT_RE, '');
+  const out = html.replace(HEAD_STYLE_RE, '');
   const i = out.indexOf('</head>');
-  return out.slice(0, i) + FOOTER_FIT_STYLE + out.slice(i);
+  return out.slice(0, i) + HEAD_STYLES + out.slice(i);
 }
 
 export function withPartnerLink(html) {
-  // A page built before this version carries an older line (or the fit rule
-  // inside its footer): replace it in place, so a committed public/ page
-  // never keeps it.
+  // A page built before this version carries an older line (or the rules
+  // inside its footer, or no link cue): replace it in place, so a committed
+  // public/ page never keeps it.
   const old = html.match(/<p data-partner="datrick"[\s\S]*?<\/p>/);
   let out;
   if (old) out = old[0] === PARTNER_LINE ? html : html.replace(old[0], PARTNER_LINE);
@@ -74,7 +88,7 @@ export function withPartnerLink(html) {
     if (i === -1) return html;
     out = html.slice(0, i) + PARTNER_LINE + html.slice(i);
   }
-  return withFitInHead(out);
+  return withStylesInHead(out);
 }
 
 function* htmlFiles(dir, rel = '') {
