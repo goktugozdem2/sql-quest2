@@ -278,6 +278,9 @@ export const COMPANY_INTERVIEWS = {
       ['What is not settled', 'The reports span 2023 to 2025, intern to experienced, and different teams; no source states one format for every PayPal data role. Only the intern report says the code was run (against test cases).', []],
     ],
     reportedTopics: ['Conditional aggregation (CASE WHEN inside SUM or COUNT)', 'Aggregates in HAVING', 'Joins, and filters in WHERE vs ON', 'Ranking with ties (average transaction per user)', 'Funnels and conversion rates', 'Transaction-flow and segmentation analysis', 'Anomaly and data-quality checks on transactions'],
+    // The one line on a metrics or case round, from the sources above
+    // (scripts/build-company-pages.mjs, caseRoundLine).
+    caseRound: { note: 'One data scientist report describes onsite rounds on fraud and risk decisions, one of them a fraud-labelling case; another puts a short case inside a phone round.', sources: ['prachub-onsite-pp', 'prachub-phone-pp'] },
     difficulty: 'Reported as medium in a July 2025 onsite and hard, by the candidate\'s own account, in a December 2025 phone round; the 2023 intern report calls the hiring-manager SQL medium to tough.',
     shapes: [
       ['Deposits and withdrawals per account: each account\'s closing balance.', 'datalemur-q-pp'],
@@ -313,6 +316,7 @@ export const COMPANY_INTERVIEWS = {
       ['Where sources differ', 'The guide describes the data science round as a conversation plus a whiteboard part; the March 2025 report names CoderPad. Neither report says whether the SQL was run. A second guide lists more rounds, including an AI-led behavioural screen for some 2025–2026 candidates.', ['aced-cb', 'prachub-sr-cb', 'prachub-guide-cb']],
     ],
     reportedTopics: ['Time-window filters (the last 30 days)', 'COUNT DISTINCT and choosing the denominator', 'Retention and cohort timing (7-day retention)', 'Rates (adoption, transaction rate)', 'Time between events (adoption to first transaction)', 'First event per user, compared with later rows', 'Running and cumulative sums', 'Layered CTEs and window functions'],
+    caseRound: { note: 'Both data scientist reports describe a case next to the SQL, and follow-ups on how a metric such as retention is defined; a prep guide describes a work-trial case presented to a panel.', sources: ['prachub-sr-cb', 'prachub-ds-cb', 'aced-cb'] },
     difficulty: 'Reported as medium by one candidate and hard by another; the medium report says the SQL itself was not especially hard and the interviewer weighed the reasoning.',
     shapes: [
       ['Trades by user, time, volume and asset: the share of users with three or more trades in the last 30 days.', 'prachub-sr-cb'],
@@ -353,6 +357,7 @@ export const COMPANY_INTERVIEWS = {
       ['Environment', 'Monzo\'s analytics run on BigQuery, dbt and Looker. None of the sources we could read says which tool the take-home itself is done in.', ['monzo-ae-2026', 'monzo-joiner-2022']],
     ],
     reportedTopics: ['Turning a stakeholder\'s question into a metric, then into SQL', 'Metrics over a period: counts, rates and ratios with GROUP BY', 'Readable, testable SQL you can defend line by line', 'Experiment and success-metric reasoning on top of the query', 'Data modelling into clean tables (Analytics Engineering)', 'Explaining a result to a non-technical reader'],
+    caseRound: { note: 'Monzo\'s own posts describe an open-ended case study in the final interviews and a review that covers success metrics; a data scientist who joined in 2022 describes a take-home on metric formulation.', sources: ['monzo-ds-2026', 'monzo-joiner-2022'] },
     difficulty: 'No source we could read grades it; Monzo describes the bar as clear, sensible code and sound reasoning rather than trivia, and the 2022 post set no time limit on the take-home.',
     shapes: [
       ['A data request arrives in plain business language: decide what to measure, write the SQL (or Python) that answers it, and present the finding so a non-technical reader can act on it.', 'monzo-ds-2026'],
@@ -390,6 +395,7 @@ export const COMPANY_INTERVIEWS = {
       ['What is not settled', 'All three are single candidate reports from late 2025. None names the coding tool, and none describes a data analyst loop; no source we could read states one format for every Chime data role.', []],
     ],
     reportedTopics: ['Timestamps truncated to a day or month before grouping', 'Layered CTEs', 'Ranking with ties kept', 'Comparing a row with the one before it', 'Rolling sums over a window', 'Defining a retention metric from users and transactions', 'Basic joins and aggregation (the software engineering report)'],
+    caseRound: { note: 'One data scientist report describes an hour of business case on a spreadsheet of metrics next to the SQL hour; another, a retention metric the candidate had to define before writing it.', sources: ['prachub-ts-ch', 'prachub-hm-ch'] },
     difficulty: 'Reported as medium in the October 2025 technical screen and easy in the November 2025 hiring-manager screen, which ended in a rejection; the software engineering report calls its SQL easy.',
     shapes: [
       ['Users and their transactions, the transaction time a full timestamp: metrics per day or month, which means truncating the timestamp first.', 'prachub-ts-ch'],
