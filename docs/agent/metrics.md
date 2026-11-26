@@ -4278,6 +4278,94 @@ from arm a
 group by a.arm;
 ```
 
+## `runnable_starter_split`
+
+A runnable starter in the editor, desktop A/B (`runnableStarter`, builder
+2026-11-26; ledger "a runnable starter in the editor"). Defined before the
+code ships (fleet README rule 6b). Evidence:
+`docs/reads/open-without-run-2026-11-25.md` §1, §4.
+
+- **Population:** people with a `runnable_starter_assigned` row since the
+  flip, by `arm` (`starter` | `control`), one row per person (the first,
+  by `created_at`). The row fires once per browser, at the person's first
+  challenge open that would show an empty editor (no solve yet, no saved
+  draft, not #91, not a Debug item, the challenge's solution is not the
+  starter itself) on a desktop screen (`innerWidth` ≥ 1024 and a fine
+  pointer). Its metadata carries `challengeId` and `viewport`. People by
+  `coalesce(((metadata #>> '{}')::jsonb)->>'aid', username)`. Filters: the
+  fleet README step 2 bot / internal / walk exclusions. Keep only rows whose
+  `viewport` starts `desktop:`.
+- t0 = the assignment row.
+- **Primary — ran:** share with a `challenge_first_run` for the assigned
+  `challengeId` at or after t0, any `via`. `via` is `run` | `submit` |
+  `starter`: `starter` is a run of the untouched starter, in either arm
+  (control: Run on the empty editor runs the grey placeholder's query;
+  `starter` arm: Run on the starter text as placed). From the code PR on,
+  `challenge_first_run` also carries `starterArm` (the person's arm, null
+  when not in the test). Report the `via` split per arm beside the rate.
+- **Secondary — ran within 10 minutes:** the same, `created_at` ≤ t0 + 10
+  min (the A05 read's 10-minute cut, §5).
+- **Guardrails:**
+  - **first solve in the session:** share with a `challenge_solved` (any
+    challenge) within 30 minutes of t0. The app has no session id; 30
+    minutes after the assignment open is the session proxy. Also report
+    within 24 h.
+  - **`open_to_first_run` on the challenges after:** of the person's
+    `challenge_opened` rows after t0 on other challenges (person-challenge
+    pairs), the share with a `challenge_first_run` for the same pair. The
+    starter arm must not teach people to wait for a prefilled editor.
+  - **untouched-starter submits:** people whose `challenge_first_run` on
+    the assigned challenge has `via = 'submit'` and `starterUntouched =
+    true` (a field the code PR adds), by arm, as a count. The untouched
+    starter graded wrong is a wrong answer the person did not write.
+- **Report n per arm**, always. **Split 2×2 by `companyDirectOpen`'s arm:**
+  join each person's `company_direct_assigned.arm` (`direct` | `list`, or
+  `none` when the person never arrived from a company page) and show the
+  arm rates inside each column; never pool across a flip date of either
+  test. When `runSubmitNudge` flips, split the guardrails by its arm the
+  same way.
+- **Read the 11-22 starter claims inside `control` only.** The 12-20 reads
+  of "Run on an empty editor runs the starter" and the deep-link swap
+  change the same starter; the `starter` arm replaces it.
+- **Sample:** baseline 59% (desktop, `open_to_first_run`, 263 / 449, 28 d
+  to 2026-11-23); ~110 desktop first-contact openers a week, ~55 per arm.
+  +15 points needs ~160 per arm (≈ 3 weeks, **interim read 2026-12-17**);
+  +10 points needs ~360 per arm (≈ 6.5 weeks, **final read 2027-01-07**),
+  two-sided α 0.05, power 0.8. The interim read is for harm only.
+- **Falsification, written before data:** at the final read, if the
+  `starter` arm's ran-rate is not ≥ `control` + 5 points, **or** its first
+  solve in the session is below `control`'s, the flag goes off. At the
+  interim read, `starter` ≥ 10 points below `control` on first solve in
+  the session → off the same day.
+
+```sql
+with ev as (
+  select coalesce(((metadata #>> '{}')::jsonb)->>'aid', username) pid, event, created_at, (metadata #>> '{}')::jsonb m
+  from pro_events
+  where username !~* '^(test|qa_|fabletest|linktest|internalroutine|sqlquest$|elena$)'
+    and created_at >= :flip
+),
+arm as (select distinct on (pid) pid, m->>'arm' arm, (m->>'challengeId')::int cid, created_at t0
+        from ev where event = 'runnable_starter_assigned' and coalesce(m->>'bot','false') <> 'true'
+          and m->>'viewport' like 'desktop:%'
+        order by pid, created_at),
+cd as (select distinct on (pid) pid, m->>'arm' cd_arm from ev
+       where event = 'company_direct_assigned' order by pid, created_at)
+select a.arm, coalesce(cd.cd_arm, 'none') company_direct,
+  count(*) n,
+  round(100.0 * avg((exists (select 1 from ev e where e.pid = a.pid and e.event = 'challenge_first_run'
+    and (e.m->>'challengeId')::int = a.cid and e.created_at >= a.t0))::int), 1) pct_ran,
+  round(100.0 * avg((exists (select 1 from ev e where e.pid = a.pid and e.event = 'challenge_first_run'
+    and (e.m->>'challengeId')::int = a.cid and e.created_at between a.t0 and a.t0 + interval '10 minutes'))::int), 1) pct_ran_10m,
+  round(100.0 * avg((exists (select 1 from ev e where e.pid = a.pid and e.event = 'challenge_solved'
+    and e.created_at between a.t0 and a.t0 + interval '30 minutes'))::int), 1) pct_solve_session,
+  round(100.0 * avg((exists (select 1 from ev e where e.pid = a.pid and e.event = 'challenge_solved'
+    and e.created_at between a.t0 and a.t0 + interval '24 hours'))::int), 1) pct_solve_24h
+from arm a left join cd on cd.pid = a.pid
+group by rollup (a.arm, coalesce(cd.cd_arm, 'none'))
+order by 1, 2;
+```
+
 ## `pattern_to_checkout`
 
 SQL trap page → paid, end to end (2026-09-25). People by `aid` (the landing
