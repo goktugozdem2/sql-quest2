@@ -447,7 +447,7 @@ export function caseRoundLine(d, slug, mock) {
   if (!keys.length || keys.some(k => !srcKeys.includes(k))) {
     throw new Error(`[company-pages] ${d.name}: caseRound must cite the page's own sources`);
   }
-  const cite = keys.map(k => `<a href="#src-${k}" style="color:#8b98ab;text-decoration:none;font-size:11px;vertical-align:super;">[${srcKeys.indexOf(k) + 1}]</a>`).join('');
+  const cite = keys.map(k => `<a href="#src-${k}" style="color:#8b98ab;text-decoration:none;font-size:12px;vertical-align:super;">[${srcKeys.indexOf(k) + 1}]</a>`).join('');
   return `<!-- case-round:start -->
   <p data-section="case-round" style="font-size:14px;color:#94a3b8;margin-top:18px;max-width:760px;line-height:1.75;padding:14px 18px;border:1px solid rgba(124,58,237,.22);border-left:3px solid #7c3aed;border-radius:10px;background:rgba(124,58,237,.05);">${esc(d.caseRound.note)}${cite} ${CASE_ROUND_LINE} &mdash; <a href="/app/?interview=${CASE_ROUND_MOCK_ID}&amp;src=${slug}" data-track="cta_case_round" style="color:#c084fc;">practise it here (${esc(free)})</a>.</p>
 <!-- case-round:end -->`;
