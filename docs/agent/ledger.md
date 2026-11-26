@@ -323,9 +323,12 @@ of the verifier and must never be rounded to `FLAT`.
 
 ### Run stays on screen on phones (`mobileRunBar`, rank 1 of the mobile plan)
 
-- **Claimed** 2026-11-23 · **Shipped** dark on merge; ON at 50/50 by the
-  orchestrator's decision row after review · **Read** 2026-12-21 (if the
-  flip lands later, 28 days after the flip).
+- **Claimed** 2026-11-23 · **Shipped** dark on merge; **ON at 50/50
+  2026-11-25** (orchestrator decision row, after an iOS Simulator +
+  production walk; the clock starts at the deploy of the flip commit) ·
+  **Read** 2026-12-23 (28 days after the flip). Exclude the walk guests of
+  2026-11-25 10:24–10:33 UTC (iOS Simulator + Chromium 375×812, stored or
+  overridden arms).
 - **Change** on a narrow touch screen (coarse pointer or width < 768) the
   first challenge open assigns an arm by aid (`mobile_run_bar_v1`, FNV +
   murmur3 finalizer), written once as `mobile_run_bar_assigned {arm}`. In
