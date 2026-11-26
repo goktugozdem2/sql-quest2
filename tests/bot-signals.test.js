@@ -80,7 +80,7 @@ describe('bot signals', () => {
 describe('app.jsx applies it', () => {
   const app = read('src/app.jsx');
   it('the writer drops a hard bot before it writes anything', () => {
-    const w = app.slice(app.indexOf('const writeProEvent = (event, reason, metadata = {}) => {'), app.indexOf("supabaseFetch('pro_events'", app.indexOf('const writeProEvent = (event, reason, metadata = {}) => {')));
+    const w = app.slice(app.indexOf('const writeProEvent = (event, reason, metadata = {}, opts = {}) => {'), app.indexOf("supabaseFetch('pro_events'", app.indexOf('const writeProEvent = (event, reason, metadata = {}, opts = {}) => {')));
     expect(w).toContain('if (hardBotBrowser()) return;');
     expect(w.indexOf('if (ANALYTICS_MUTED)')).toBeLessThan(w.indexOf('if (hardBotBrowser()) return;'));
   });
@@ -95,6 +95,6 @@ describe('app.jsx applies it', () => {
     expect(t).not.toContain('if (!decision.write) return;'); // the drop is the writer's, after the localhost mute
     expect(t).toContain('if (decision.stamp) payload.bot = decision.stamp;');
     expect(t).toMatch(/if \(event === 'app_opened' && signals\) Object\.assign\(payload, \{ wd: signals\.wd, uaBot: signals\.uaBot, langs: signals\.langs \}\);/);
-    expect(t.indexOf('botDecision(signals)')).toBeLessThan(t.indexOf("writeProEvent(event, 'activation_funnel', payload)"));
+    expect(t.indexOf('botDecision(signals)')).toBeLessThan(t.indexOf("writeProEvent(event, 'activation_funnel', payload"));
   });
 });

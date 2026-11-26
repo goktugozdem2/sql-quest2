@@ -8,6 +8,22 @@
 2. For each one, run the claim's own metric query from `docs/agent/metrics.md` over the claim's own window, with bots and founder tests out. Write the verdict under the claim: **HIT** / **MISS — the falsification fired** / **FLAT** / **UNREADABLE (n too small, re-read <date>)**, with numbers. Name any confounds.
 3. If a verdict's pre-written action is a code change (revert, keep, widen), add a BACKLOG line naming the owner lane; B2 doesn't build it.
 4. Update `docs/agent/scorecard.md`'s Friday table.
+4a. **Fill the A01 human scorecard (investor plan, every Friday).** Run the
+   four queries of `scripts/scorecard-weekly.sql` as-is through the
+   read-only MCP (each is self-contained; no edits, no parameters) and
+   append a new block `### <Friday date> — A01 human scorecard` under "The
+   A01 human scorecard" in `docs/agent/scorecard.md`, in the first block's
+   shape: the people table (raw vs human, openers, activated ≤ 7 d,
+   solvers, new six-solvers, day-0 return, modal, checkout), the money
+   table (trials and payments separate, webhook only), the MRR snapshot,
+   source / country / landing-page tables and the gap-by-rule table, then
+   three to five lines of notes. Never edit an earlier block. Mark a week
+   whose `runway_complete` is false as a floor. If C8 added a fingerprint
+   that week, change the exclusion block in all three queries at once
+   (the test pins them identical) in a separate PR before the read, and
+   say in the block that the series was re-read on the new rules.
+   Definitions: `human_visitors`, `scorecard_weekly` in
+   `docs/agent/metrics.md`.
 5. One docs PR, self-merged.
 
 ## The content funnel (2026-11-22)
