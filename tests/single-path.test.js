@@ -10,6 +10,7 @@ import {
   emptyPathState, normalizePathState, pathUiFlags, rungForChallenge, ladderOutcome, nextRung, ladderStuck,
   ladderOpen, ladderResolve, pickLadderQuestion, roadmapProfileFor, composePathPlan, planProgress,
   nextPlanStep, planEnded, planShownPayload, planIdList, logStepDone, pathWhyLines, companyFromSlug,
+  pathTabsOpen, PLAN_FOCUS_STEPS,
 } from '../src/utils/single-path.js';
 import { levelForLadder, FIRST_RUN_PLACEMENT_SOURCES } from '../src/utils/placement.js';
 import { buildRoadmap } from '../src/utils/personal-roadmap.js';
@@ -58,10 +59,32 @@ describe('arm B is built; nothing else changes', () => {
   it('B: tabs hidden and the shell extended while the ladder runs; the plan line once it ends', () => {
     const s = emptyPathState();
     const on = pathUiFlags({ behaviour: SINGLE_PATH_ARM, state: s });
-    expect(on).toMatchObject({ active: true, ladderActive: true, hideTabs: true, extendShell: true, showPlanLine: false, suppressAsks: true, holdLayers: true, fixedRunBar: true });
+    expect(on).toMatchObject({ active: true, ladderActive: true, hideTabs: true, hideGuestBanner: true, extendShell: true, showPlanLine: false, suppressAsks: true, holdLayers: true, fixedRunBar: true, holdSignupAsks: true, suppressTour: true });
     const done = { ...s, ladder: { ...s.ladder, done: true, levelId: 'basics' }, plan: { steps: [{ kind: 'challenge', challengeId: 92 }] } };
     const after = pathUiFlags({ behaviour: SINGLE_PATH_ARM, state: normalizePathState(done) });
-    expect(after).toMatchObject({ active: true, ladderActive: false, hideTabs: false, extendShell: false, showPlanLine: true, suppressAsks: false, suppressNextStrip: true });
+    expect(after).toMatchObject({ active: true, ladderActive: false, showPlanLine: true, suppressAsks: false, suppressNextStrip: true, holdSignupAsks: false, suppressTour: true });
+  });
+  // Walk fix B3 (2026-11-26, plan §3.5): the tab row and the guest banner
+  // stay hidden after the ladder until PLAN_FOCUS_STEPS plan steps are done,
+  // or the reveal is recorded ("All steps", the plan's free steps ran out).
+  it('B3: after the ladder, tabs and the guest banner stay hidden until 3 plan steps (or a recorded reveal)', () => {
+    expect(PLAN_FOCUS_STEPS).toBe(3);
+    const s = emptyPathState();
+    const ended = normalizePathState({ ...s, ladder: { ...s.ladder, done: true, levelId: 'basics' }, plan: { steps: [92, 93, 95, 97].map(id => ({ kind: 'challenge', challengeId: id })) } });
+    const flags = (st) => pathUiFlags({ behaviour: SINGLE_PATH_ARM, state: normalizePathState(st) });
+    expect(flags(ended)).toMatchObject({ showPlanLine: true, hideTabs: true, hideGuestBanner: true, extendShell: true });
+    expect(pathTabsOpen(ended)).toBe(false);
+    let st = ended;
+    for (const [i, id] of [92, 93].entries()) {
+      st = logStepDone(st, { id, day: '2026-11-26' });
+      expect(flags(st).hideTabs, `after ${i + 1} plan steps`).toBe(true);
+    }
+    st = logStepDone(st, { id: 95, day: '2026-11-26' });
+    expect(flags(st)).toMatchObject({ hideTabs: false, hideGuestBanner: false, extendShell: false, showPlanLine: true });
+    // "All steps" / plan end record the reveal: open at once, plan steps or not.
+    expect(flags({ ...ended, tabsOpenedAt: 1 })).toMatchObject({ hideTabs: false, hideGuestBanner: false });
+    // Never on the ladder, whatever is recorded.
+    expect(pathTabsOpen({ ...s, tabsOpenedAt: 1, doneLog: [1, 2, 3].map(id => ({ id, day: '2026-11-26' })) })).toBe(false);
   });
   it('the ladder is a first-run placement the Coach honours', () => {
     expect(FIRST_RUN_PLACEMENT_SOURCES).toContain('first_run_ladder');
@@ -312,6 +335,44 @@ describe('app.jsx — every change sits behind a pathUi switch', () => {
   it('tabs hide and the shell extends only through pathUi', () => {
     expect(APP).toContain('const showPrimaryLearningTabs = !pathUi.hideTabs;');
     expect(APP).toContain('const showFirstRunSimpleShell = isFirstRunUser || pathUi.extendShell;');
+  });
+  it('B3: the guest banner reads the switch; the ladder end does not reveal the tabs; the reveal fires once, by trigger', () => {
+    expect(APP).toContain('{isGuest && !showSimpleLearningShell && !pathUi.hideGuestBanner && (');
+    const finish = APP.slice(APP.indexOf('const pathFinishLadder = ('), APP.indexOf('const pathRevealTabs = ('));
+    expect(finish).not.toContain('tabsOpenedAt');
+    expect(finish).not.toContain('tournament_tabs_revealed');
+    expect(APP).toContain("if (!next.tabsOpenedAt && pathTabsOpen(next, { arm: pathUi.arm })) pathRevealTabs('plan_steps', next, newSolved.size);");
+    expect(APP).toContain("pathRevealTabs('all_steps');");
+    expect(APP).toContain("if (!hit) { pathRevealTabs('plan_end'); return; }");
+    // While the tabs are hidden after the ladder, the plan's next step opens by itself.
+    expect(APP).toContain("if (!pathUi.active || pathUi.ladderActive || !pathUi.hideTabs || !pathState.plan || isSessionLoading || !currentUser || !dbReady || currentChallenge) return;");
+  });
+  // Walk fix B1 (2026-11-26): the guest's sign-up / save prompt interrupted
+  // the ladder at the 3rd solve. Every one is held on the ladder; its end
+  // asks at most one.
+  it('B1: sign-up / save prompts are held on the ladder and at most one is asked when it ends', () => {
+    // The solve path asks only through guestSaveAskAfterSolve, behind the hold.
+    expect(APP).toContain('if (!pathUi.holdSignupAsks) guestSaveAskAfterSolve(solvedTotal);');
+    const helper = APP.slice(APP.indexOf('const guestSaveAskAfterSolve = ('), APP.indexOf('const guestSaveAskAfterSolve = (') + 2000);
+    // Every automatic sign-up / email ask lives in the helper (or the ladder's release).
+    const asks = [...APP.matchAll(/triggerSignupPrompt\(|setShowSoftEmailCapture\(true\)/g)].map(m => m.index);
+    const helperStart = APP.indexOf('const guestSaveAskAfterSolve = (');
+    const helperEnd = helperStart + helper.indexOf('\n  };') + 4;
+    const release = APP.indexOf('if (!guestSaveAskAfterSolve(solvedSet.size) && held) setTimeout(() => triggerSignupPrompt(held), 1500);');
+    expect(release).toBeGreaterThan(0);
+    const definition = APP.indexOf('const triggerSignupPrompt = (');
+    for (const i of asks) {
+      const inHelper = i > helperStart && i < helperEnd;
+      const inRelease = i > release && i < release + 120;
+      const isDef = i === definition + 'const '.length;
+      expect(inHelper || inRelease || isDef, APP.slice(i - 120, i + 40)).toBe(true);
+    }
+    // The tutor's guest-limit prompt is held too.
+    expect(APP).toContain("if (pathUi.holdSignupAsks) pathHeldSignupRef.current = 'ai_limit';");
+  });
+  it('B2: no "Take tour" prompt in arm B', () => {
+    expect(APP).toContain('    // Tournament arm B: no tour prompt in the first session (walk fix B2).\n    if (pathUi.suppressTour) return;');
+    expect(APP).toContain('{showAppTourBadge && !pathUi.suppressTour && (');
   });
   it('every arm-B render call is guarded by a pathUi switch', () => {
     const calls = [...APP.matchAll(/\{([^{}\n]*?)renderPath(LadderLine|PlanLine|StepDown|VerdictNext)\(\)/g)];

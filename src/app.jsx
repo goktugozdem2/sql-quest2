@@ -89,7 +89,7 @@ import { getAnonId } from './utils/anon-id.js';
 import { FREE_QUOTA_HOLDOUT_KEY, FREE_QUOTA_HOLDOUT_TEST_ID, freeQuotaEnrolment, hasPriorAppUse, normalizeFreeQuotaRecord, freeQuotaEffective, freeQuotaEventStamp } from './utils/free-quota-holdout.js';
 import { TOURNAMENT_KEY, tournamentEnrolment, tournamentPriorAppUse, normalizeTournamentRecord, adoptAccountRecord, tournamentEffectiveArm, tournamentBehaviour, tournamentSupersedes, tournamentEventStamp, shouldAnnounceTournament, tournamentAssignedPayload, buildVisitorProfile, enrichTournamentProfile } from './utils/tournament.js';
 import { quotaWallArm, quotaWallShowsModal, quotaInlineCopy, QUOTA_WALL_DAY_KEY } from './utils/quota-wall-inline.js';
-import { SINGLE_PATH_KEY, LADDER_LENGTH, TIER_KEYS, isPathArm, emptyPathState, normalizePathState, pathUiFlags, ladderOutcome, ladderStuck, ladderOpen, ladderResolve, pickLadderQuestion, ladderQuestionNumber, roadmapProfileFor, composePathPlan, planProgress, nextPlanStep, planEnded, planShownPayload, logStepDone, pathWhyLines } from './utils/single-path.js';
+import { SINGLE_PATH_KEY, LADDER_LENGTH, TIER_KEYS, isPathArm, emptyPathState, normalizePathState, pathUiFlags, pathTabsOpen, ladderOutcome, ladderStuck, ladderOpen, ladderResolve, pickLadderQuestion, ladderQuestionNumber, roadmapProfileFor, composePathPlan, planProgress, nextPlanStep, planEnded, planShownPayload, logStepDone, pathWhyLines } from './utils/single-path.js';
 import { buildRoadmap } from './utils/personal-roadmap.js';
 import { classifyLandingSrc, LANDING_SRC_KEY } from './utils/landing-src.js';
 import { classifyQueryError } from './utils/query-error.js';
@@ -12580,6 +12580,9 @@ CRITICAL RULES:
   // The layers held on the ladder stay held until the next challenge opens,
   // then the first shows alone and the rest drop (the mobileOneLayer rule).
   const [pathHeldRelease, setPathHeldRelease] = useState(false);
+  // Walk fix B1: a sign-up prompt that is not the guest ladder's (the tutor's
+  // guest limit) is held here while the ladder runs.
+  const pathHeldSignupRef = useRef(null);
   const pathSave = (next) => {
     pathStateRef.current = next;
     setPathState(next);
@@ -12615,18 +12618,39 @@ CRITICAL RULES:
       suppressLegacyOnboardingForPlacement(levelId, { source: 'first_run_ladder' });
     } catch (_) { /* the plan still builds */ }
     const plan = pathBuildPlan(state, solvedSet);
-    const next = { ...state, plan, tabsOpenedAt: Date.now() };
+    // The tab row does NOT come back here: the plan line stays the only
+    // navigation for the first PLAN_FOCUS_STEPS plan steps (walk fix B3,
+    // pathRevealTabs below).
+    const next = { ...state, plan };
     pathSave(next);
     if (plan) {
       const { k } = planProgress(plan, { solved: solvedSet, mocksDone: pathMocksDone() });
       pathEvent('tournament_plan_shown', planShownPayload(plan, { arm: pathUi.arm, k }));
     }
-    const assignedAt = TOURNAMENT_RECORD && TOURNAMENT_RECORD.assignedAt;
-    pathEvent('tournament_tabs_revealed', { solves: solvedSet.size, secsSinceAssigned: assignedAt ? Math.round((Date.now() - assignedAt) / 1000) : null });
     setPathLeveled(true);
     setPathHeldRelease(true);
     setPathHighlight(true);
     setTimeout(() => setPathHighlight(false), 3000);
+    // Walk fix B1: the sign-up / save prompts held on the ladder — at most ONE
+    // is asked now, by today's guest ladder on the real solve total, else the
+    // one a tutor limit held.
+    if (isGuest) {
+      const held = pathHeldSignupRef.current;
+      pathHeldSignupRef.current = null;
+      if (!guestSaveAskAfterSolve(solvedSet.size) && held) setTimeout(() => triggerSignupPrompt(held), 1500);
+    }
+  };
+  // Walk fix B3: the tab row (and the guest banner) come back once, on the
+  // first of: PLAN_FOCUS_STEPS plan steps done (`plan_steps`), "All steps"
+  // (`all_steps`), or no free step left to open (`plan_end`).
+  const pathRevealTabs = (trigger, state = pathStateRef.current, solves = solvedChallenges.size) => {
+    if (!pathUi.active || state.tabsOpenedAt || !state.ladder.done) return state;
+    const now = Date.now();
+    const next = { ...state, tabsOpenedAt: now };
+    pathSave(next);
+    const assignedAt = TOURNAMENT_RECORD && TOURNAMENT_RECORD.assignedAt;
+    pathEvent('tournament_tabs_revealed', { trigger, solves, secsSinceAssigned: assignedAt ? Math.round((now - assignedAt) / 1000) : null });
+    return next;
   };
   const pathOpenChallenge = (c) => {
     if (!c) return;
@@ -12651,7 +12675,8 @@ CRITICAL RULES:
     const hit = nextPlanStep(plan, pathCtx());
     const { k, n } = planProgress(plan, pathCtx());
     pathEvent('tournament_path_next', { from, k, n, index: hit ? hit.index + 1 : null, target: hit ? (hit.step.kind === 'mock' ? `mock:${hit.step.mockId}` : hit.step.challengeId) : null });
-    if (!hit) return;
+    // Nothing free left to open: the tabs come back (the Practice tab is the road).
+    if (!hit) { pathRevealTabs('plan_end'); return; }
     if (hit.step.kind === 'mock') {
       const mock = mockInterviews.find(m => m.id === hit.step.mockId);
       if (!mock) return;
@@ -12702,9 +12727,12 @@ CRITICAL RULES:
     if (!plan) return;
     const index = plan.steps.findIndex(st => st.kind === 'challenge' && st.challengeId === challenge.id);
     if (index < 0 || state.doneLog.some(d => String(d.id) === String(challenge.id))) return;
-    pathSave(logStepDone(state, { id: challenge.id, day: getTodayString() }));
+    const next = logStepDone(state, { id: challenge.id, day: getTodayString() });
+    pathSave(next);
     const { k, n } = planProgress(plan, { solved: newSolved, mocksDone: pathMocksDone() });
     pathEvent('tournament_plan_step_done', { challengeId: challenge.id, stepIndex: index + 1, k, n, wallAt: plan.wallAt, day: getTodayString() });
+    // Walk fix B3: the tab row comes back at the PLAN_FOCUS_STEPS-th plan step.
+    if (!next.tabsOpenedAt && pathTabsOpen(next, { arm: pathUi.arm })) pathRevealTabs('plan_steps', next, newSolved.size);
   };
   // The plan-end card's button: today's modal, reason `plan_end` (founder's go, 2026-11-26).
   const pathSeePro = () => {
@@ -12730,6 +12758,15 @@ CRITICAL RULES:
     pathOpenLadderNext();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathUi.ladderActive, isSessionLoading, currentUser, dbReady, !!currentChallenge]);
+  // After the ladder, while the tab row is still hidden, the plan's next step
+  // opens by itself — the plan line is the only navigation (walk fix B3).
+  // Never over a mock, which runs on the Interview tab.
+  useEffect(() => {
+    if (!pathUi.active || pathUi.ladderActive || !pathUi.hideTabs || !pathState.plan || isSessionLoading || !currentUser || !dbReady || currentChallenge) return;
+    if (activeTab === 'trials') return;
+    pathOpenNext('resume');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathUi.active, pathUi.ladderActive, pathUi.hideTabs, !!pathState.plan, isSessionLoading, currentUser, dbReady, !!currentChallenge, activeTab]);
   // B3's timer: re-render every 15 s while a ladder question is open and unsolved.
   useEffect(() => {
     if (!pathUi.ladderActive || !currentChallenge || challengeStatus === 'success') return undefined;
@@ -13950,7 +13987,7 @@ CRITICAL RULES:
             <button type="button" data-testid="path-why-toggle" onClick={() => setPathWhyOpen(v => !v)} className="text-xs underline underline-offset-2" style={{ color: '#8A8E99' }}>
               {i18n_t('tournamentPath', 'whyToggle')}
             </button>
-            <button type="button" data-testid="path-steps-toggle" onClick={() => setPathStepsOpen(v => !v)} className="text-xs underline underline-offset-2" style={{ color: '#8A8E99' }}>
+            <button type="button" data-testid="path-steps-toggle" onClick={() => { setPathStepsOpen(v => !v); pathRevealTabs('all_steps'); }} className="text-xs underline underline-offset-2" style={{ color: '#8A8E99' }}>
               {i18n_t('tournamentPath', 'stepsToggle')}
             </button>
           </span>
@@ -21088,6 +21125,36 @@ CRITICAL RULES:
     }
   };
 
+  // The guest ladder's one ask after a solve, on the guest's real total.
+  // Returns true when it asked something. Called from submitChallenge, and
+  // once at the end of tournament arm B's ladder (which holds it until then).
+  const guestSaveAskAfterSolve = (solvedTotal) => {
+    const accountRung = ftbFlag('signupAskAtThree') ? 3 : 10;
+    const asked = readGuestAskLadder();
+    if (solvedTotal >= accountRung && !asked.account) {
+      markGuestAsk('account');
+      setTimeout(() => triggerSignupPrompt(accountRung === 3 ? 'third_solve' : 'first_challenge'), 1500);
+      return true;
+    }
+    if (solvedTotal >= 3 && !softEmailCaptured && !asked.email && !asked.account) {
+      // (2026-11-22) Once the account has been asked for — at 3 with
+      // signupAskAtThree — the email-only ask is the same question
+      // again, one solve later; it is skipped.
+      markGuestAsk('email');
+      setTimeout(() => {
+        if (!softEmailCaptured) setShowSoftEmailCapture(true);
+      }, 1500);
+      return true;
+    }
+    if (solvedTotal >= 10 && solvedTotal > accountRung && asked.account && solvedTotal % 5 === 0) {
+      // Re-asks start at 10 whichever rung asked first, so moving the
+      // rung to 3 does not add a nudge at 5 (2026-11-22).
+      setTimeout(() => triggerSignupPrompt('progress'), 1500);
+      return true;
+    }
+    return false;
+  };
+
   // The guest blob this browser holds, when it holds real progress.
   const readGuestBlob = () => {
     try {
@@ -22486,9 +22553,13 @@ Do NOT force the sector if the user asks a generic question (e.g. "what does GRO
         localStorage.setItem('sqlquest_ai_daily', JSON.stringify({ date: today, used: data.used, plan: data.plan }));
 
         if (data.plan === 'guest') {
-          // Guest hit limit — prompt sign-up for more calls
-          setSignupPromptReason('ai_limit');
-          setShowSignupPrompt(true);
+          // Guest hit limit — prompt sign-up for more calls. Tournament arm B
+          // holds it while the ladder runs (walk fix B1); the message says it.
+          if (pathUi.holdSignupAsks) pathHeldSignupRef.current = 'ai_limit';
+          else {
+            setSignupPromptReason('ai_limit');
+            setShowSignupPrompt(true);
+          }
           return `**AI Limit Reached**\n\nCreate a free account to get ${TUTOR_FREE_DAILY_LIMIT} AI tutor calls per day!`;
         }
         if (data.plan === 'free') {
@@ -25675,6 +25746,8 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
   useEffect(() => {
     if (challengeStatus !== 'success') return;
     if (solvedChallenges.size !== 1) return; // only after the very first solve
+    // Tournament arm B: no tour prompt in the first session (walk fix B2).
+    if (pathUi.suppressTour) return;
     try {
       if (localStorage.getItem('sqlquest_app_tour_v1')) return;
     } catch (_) { return; }
@@ -26811,24 +26884,9 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
           if (isGuest) {
             const solvedTotal = newSolved.size;
             setGuestActionsCount(solvedTotal);
-            const accountRung = ftbFlag('signupAskAtThree') ? 3 : 10;
-            const asked = readGuestAskLadder();
-            if (solvedTotal >= accountRung && !asked.account) {
-              markGuestAsk('account');
-              setTimeout(() => triggerSignupPrompt(accountRung === 3 ? 'third_solve' : 'first_challenge'), 1500);
-            } else if (solvedTotal >= 3 && !softEmailCaptured && !asked.email && !asked.account) {
-              // (2026-11-22) Once the account has been asked for — at 3 with
-              // signupAskAtThree — the email-only ask is the same question
-              // again, one solve later; it is skipped.
-              markGuestAsk('email');
-              setTimeout(() => {
-                if (!softEmailCaptured) setShowSoftEmailCapture(true);
-              }, 1500);
-            } else if (solvedTotal >= 10 && solvedTotal > accountRung && asked.account && solvedTotal % 5 === 0) {
-              // Re-asks start at 10 whichever rung asked first, so moving the
-              // rung to 3 does not add a nudge at 5 (2026-11-22).
-              setTimeout(() => triggerSignupPrompt('progress'), 1500);
-            }
+            // Tournament arm B: nothing is asked on the ladder; the ladder's
+            // end asks at most one (pathFinishLadder, walk fix B1).
+            if (!pathUi.holdSignupAsks) guestSaveAskAfterSolve(solvedTotal);
           }
 
           // Satisfy-first-then-ask: solving the LAST free question in a
@@ -36562,7 +36620,7 @@ RULES:
         )}
 
         {/* Guest Mode Banner */}
-        {isGuest && !showSimpleLearningShell && (
+        {isGuest && !showSimpleLearningShell && !pathUi.hideGuestBanner && (
           <div data-guest-mode-banner="true" className="mb-4 p-3 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/30 rounded-xl flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-yellow-500/20 rounded-lg flex items-center justify-center">
@@ -41512,7 +41570,7 @@ RULES:
                           })()}
                           {/* After the first solve, offer a quick opt-in tour of the
                               rest of the app (Coach, Interview, Board, Profile). */}
-                          {showAppTourBadge && !pathUi.hideTabs && (
+                          {showAppTourBadge && !pathUi.suppressTour && (
                             <div className="mb-3 p-3 rounded-lg border border-yellow-400/60 bg-yellow-400/10 flex items-center gap-3 animate-pulse">
                               <span className="text-2xl">💡</span>
                               <div className="flex-1 min-w-0">

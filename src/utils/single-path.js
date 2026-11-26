@@ -47,6 +47,13 @@ export const LADDER_STUCK_WRONGS = 3;
 export const LADDER_STUCK_SECS = Object.freeze([360, 600, 600]);
 export const LADDER_OUTCOMES = Object.freeze(['fast', 'solved', 'stuck']);
 export const LADDER_ORDER = buildCurriculumOrder(LADDER_RUNGS.map(ids => ({ challengeIds: [...ids] })));
+/**
+ * After the ladder, the plan line stays the only navigation until this many
+ * plan steps are done (or the person opens "All steps", or the plan has no
+ * free step left). Walk fix B3, 2026-11-26: the tab row and the guest banner
+ * coming back with the plan broke the single focus the moment it appeared.
+ */
+export const PLAN_FOCUS_STEPS = 3;
 
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const toSet = (v) => (v && typeof v.has === 'function' ? v : new Set(Array.isArray(v) ? v : []));
@@ -119,19 +126,30 @@ export function pathUiFlags({ behaviour = null, state = null } = {}) {
     arm: null, active: false, ladderActive: false, hideTabs: false, extendShell: false,
     showPlanLine: false, suppressAsks: false, suppressNextStrip: false, sprintSetup: false,
     starterPrefill: false, companyDirect: false, holdLayers: false, fixedRunBar: false,
+    holdSignupAsks: false, hideGuestBanner: false, suppressTour: false,
   };
   if (!isPathArm(behaviour)) return off;
   const s = state && state.v ? state : normalizePathState(state);
   if (behaviour === SINGLE_PATH_ARM) {
     const ladderActive = !s.ladder.done;
+    const tabsOpen = pathTabsOpen(s, { arm: behaviour });
     return {
       ...off,
       arm: behaviour,
       active: true,
       ladderActive,
-      // No tabs and no menu until the ladder ends (plan §3.5).
-      hideTabs: ladderActive,
-      extendShell: ladderActive,
+      // No tabs and no menu on the ladder, nor for the first plan steps
+      // after it: the plan line is the only navigation (plan §3.5).
+      hideTabs: !tabsOpen,
+      hideGuestBanner: !tabsOpen,
+      // The first-run shell (no header stats, no challenge-list buttons) runs
+      // to the same point, so the plan line is the only way on (walk fix B3).
+      extendShell: !tabsOpen,
+      // Sign-up / save prompts are held on the ladder; at most one is asked
+      // when it ends (walk fix B1).
+      holdSignupAsks: ladderActive,
+      // The "Take tour" prompt never shows in B's first session (walk fix B2).
+      suppressTour: true,
       showPlanLine: !ladderActive && !!s.plan,
       // The intent modal and the company ask are questions; "seçenek tanımadan".
       suppressAsks: ladderActive,
@@ -146,6 +164,18 @@ export function pathUiFlags({ behaviour = null, state = null } = {}) {
     };
   }
   return off;
+}
+
+/**
+ * Has the tab row come back? Arm B: never on the ladder; after it, once the
+ * reveal was recorded (`tabsOpenedAt`: "All steps", the plan's free steps ran
+ * out) or PLAN_FOCUS_STEPS plan steps are logged done.
+ */
+export function pathTabsOpen(state, { arm = SINGLE_PATH_ARM } = {}) {
+  const s = state && state.v ? state : normalizePathState(state);
+  if (arm !== SINGLE_PATH_ARM) return false;
+  if (!s.ladder.done) return false;
+  return !!s.tabsOpenedAt || s.doneLog.length >= PLAN_FOCUS_STEPS;
 }
 
 // ───────────────────────────── the ladder ───────────────────────────────────

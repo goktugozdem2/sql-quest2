@@ -415,9 +415,13 @@ Desktop (≥ 1024)                                    Phone (375)
 - One card, in the same place as the line. No radar chart and no tier
   explanation. One sentence: "Set from how you solved the last four."
 - "Next →" opens the plan's next question.
-- **The tab row appears now** (§3.5), with a one-time 3-second highlight on
-  the plan line, not on the tabs. The held layers are released here, one at
-  a time.
+- The plan line gets a one-time 3-second highlight. The held layers are
+  released here, one at a time, and at most one held sign-up / save prompt
+  is asked (§3.5).
+- **The tab row does not appear yet** (walk fix, 2026-11-26): it comes back
+  after 3 plan steps (§3.5). Until then the plan line and "Next in your
+  plan →" are the only navigation, and the plan's next step opens by itself
+  when no question is open. No "Take tour" prompt in B's first session.
 
 **Screen B5 — on the plan (every tab, every session).**
 - The line "Your plan: <name> · N questions · k/N · Next →" sits where the
@@ -576,6 +580,13 @@ loads, never before.
 
 ### 3.5 What hides, and until when
 
+*Amended 2026-11-26 after the orchestrator's walk of #417: the sign-up /
+save prompt interrupted the ladder at the 3rd solve, the "Take tour" prompt
+appeared at the ladder's end, and the tab row and the guest banner all came
+back with the plan, so the single focus was lost the moment the plan
+appeared. The pure rule is `pathUiFlags` / `pathTabsOpen` in
+src/utils/single-path.js; `tests/single-path.test.js` pins it.*
+
 - **Hidden during the ladder:**
   - the tab row (Coach, Practice, Interview Prep, Leaderboard, Profile,
     Speed Mode, Drills);
@@ -587,17 +598,34 @@ loads, never before.
   - the quota counter. Today's first-run shell already hides it before the
     first solve; arm B keeps it hidden until the ladder ends, then it shows
     where it does today. That is an exposure change on a money line, so it
-    is listed in §7.
+    is listed in §7;
+  - every sign-up / save prompt (the guest ladder's `signupAskAtThree` ask,
+    the soft email capture, the tutor's guest-limit prompt). They are held,
+    not dropped: when the ladder ends, **at most one** is asked — today's
+    guest ladder on the real solve total, else the one the tutor held.
+- **Hidden after the ladder, until 3 plan steps are done** (`PLAN_FOCUS_STEPS`):
+  - the tab row;
+  - the "Playing as Guest / Save Progress" banner;
+  - the rest of the first-run shell's hiding: the header's stats (lives,
+    coins, level bar — and so the quota counter), the challenge page's
+    "Back to Challenges / Previous / Next Question" row. The plan line and
+    "Next in your plan →" are the only way on.
+  They come back, once, at the first of: the 3rd plan step done after the
+  ladder (`trigger: plan_steps`), the plan line's "All steps"
+  (`all_steps`), or no free plan step left to open (`plan_end`, so the
+  Practice tab is visible beside the plan-end card).
+  `tournament_tabs_revealed` fires then, not at the ladder's end.
+- **Never in B's first session:** the "Take tour — 60 seconds" prompt (and,
+  as before, the onboarding tour). The tour stays in the profile menu.
 - **Shown at any time:**
-  - log in / sign up, including the `signupAskAtThree` ask: saving progress
-    is not a navigation choice, and an account is what makes a second
-    session possible;
+  - the header's Log in (the person's own click is not a prompt);
   - 💬 feedback;
   - hints, the inline tutor, and the dialect notes;
   - every Pro modal today's rules open (milestone tier 6, the quota wall,
     `?pro=1`).
-- **The threshold is the end of the ladder (4 questions solved or set
-  aside),** not a solve count. Why:
+- **The threshold for the questions and the layers is the end of the
+  ladder (4 questions solved or set aside),** not a solve count; the tab
+  row waits 3 plan steps more. Why:
   - it is the moment the level and the plan exist, so the tabs can open
     under a line that says what to do;
   - it cannot strand a beginner, because B3's step-down always moves the
@@ -664,7 +692,7 @@ loads, never before.
 | `path_stepdown_shown` / `path_stepdown_clicked` | B3 | `q, rung, trigger (wrongs/timer)` |
 | `placement_completed` | the ladder ends | `source: 'ladder', levelId, tier, outcomes` |
 | `path_plan_built` | B4, and on any recompute that changes N | `goalId, goalSource, n, freeN, proN, company, fillN` |
-| `path_tabs_revealed` | B4 | `secsSinceAssigned, solves` |
+| `path_tabs_revealed` | the 3rd plan step after the ladder, "All steps", or no free step left (§3.5) | `trigger (plan_steps/all_steps/plan_end), secsSinceAssigned, solves` |
 | `path_next_clicked` | any "Next →" | `k, n, challengeId, from (line/verdict)` |
 | `path_plan_end_shown` | B6 (holdout or free steps ran out) | `k, n` |
 
@@ -952,7 +980,7 @@ founder's explicit go").
 | B, C | plan-end card (holdout arm, or free steps ran out) | "{k} of {N} done — the rest of your plan is Pro." + button "See Pro" | same + "Pro'yu gör" |
 | B, C | new modal reason `plan_end` | the modal unchanged; a new `reason` value on `pro_modal_shown` | — |
 | B, C, D | plan sheet | a "Pro" label on locked steps | "Pro" |
-| B | quota counter hidden until the ladder ends (exposure change, §3.5) | — | — |
+| B | quota counter hidden until the ladder ends and 3 plan steps after it (exposure change, §3.5; ~7 solves, under the quota of 10) | — | — |
 | D | quota wall line slot | "Day {d} of {D} — the rest of your {Company} sprint is Pro." | "{D} günün {d}. günü — {Company} sprint'inin geri kalanı Pro'da." |
 | D | sprint sheet | "Pro" on locked days' items | "Pro" |
 

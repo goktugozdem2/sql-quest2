@@ -6046,6 +6046,11 @@ thresholds. Defined 2026-11-26, before the code.
 - **Tabs:** `path_tabs_revealed` reach. Of people revealed, the share whose
   next challenge open after the reveal came from `path_next_clicked` (the
   plan) rather than the list.
+  The reveal is NOT the ladder's end (walk fix, 2026-11-26, before any
+  data): it fires at the 3rd plan step after the ladder, "All steps", or
+  no free step left — split by `trigger` (`plan_steps` / `all_steps` /
+  `plan_end`). Sign-up prompts are held on the ladder, so
+  `signup_prompt_shown` for arm B lands at the ladder's end, at most one.
 - **Splits:** segment (interview-target vs other), device band, `fqArm`.
 - **Report n always.** At ~8 arm-B people a day, rung-level rows under 20
   are directional only.
