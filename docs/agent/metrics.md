@@ -101,6 +101,41 @@ And two standing traps:
   reading arrivals; the week-over-week "drop" that follows is the burst
   leaving, not demand falling (weekly read 2026-09-07).
 
+## Reading an A/B with gbstats (2026-11-24)
+
+Our A/Bs are small: a few people per arm per week. From 2026-11-24 a live
+A/B on a yes/no metric is read with GrowthBook's stats engine (`gbstats`,
+MIT, pinned in `scripts/ab/requirements.txt`) as well as by its count.
+- **How:** `node scripts/ab/read-test.mjs <test>` prints the test's
+  read-only SQL (the metric as defined in this file, plus the README step-2
+  filters). Run it through `mcp__supabase__execute_sql`, then pass the rows
+  back: `node scripts/ab/read-test.mjs <test> --counts '<rows>'
+  --python <venv>/bin/python`. `--list` shows the tests it knows
+  (`companyDirectOpen`, `mobileOneLayer`, and `mobileRunBar` with `--since`
+  once it is on). For a test it does not know, run `python3 -I
+  scripts/ab/read.py --control <arm> --arm <arm>:<users>:<conversions> …`
+  on counts from this file's SQL. Python 3.11 in a venv, never the system
+  site-packages.
+- **Report one line per comparison:** n per arm, each arm's rate, the
+  chance to beat control, the absolute difference in points with its 95%
+  credible interval, and the frequentist p-value. Example: `direct 6/17
+  (35%) vs list 3/14 (21%): P(beat) 81%, +13.9 pts [−17, +45], p = 0.52,
+  directional (n < 15)`.
+- **gbstats informs; the claim decides.** The pre-registered rule in the
+  ledger (minimum n, points above control, stop dates) is still the verdict.
+  A chance to beat control of 95% at 6 per arm is not a HIT if the claim
+  says 120 per arm. Never rewrite a claim's falsification rule to a
+  probability after the data is in.
+- **When gbstats declines, say so.** Its tests are normal approximations.
+  An arm at 0% or 100% (zero variance), an empty arm, or a 0% control
+  for the relative uplift return no number (`ZERO_NEGATIVE_VARIANCE`,
+  `NO_UNITS_IN_VARIATION`, `ZERO_NEGATIVE_BASELINE_VARIATION`). Report the
+  counts and "gbstats declined". Never fill the gap with a formula of your
+  own. Under 15 people in an arm the line is marked directional.
+- **Not A/Bs:** `exitReasonAsk` and `day2Ask` have no arms (everyone in
+  scope gets the ask), so there is nothing for gbstats to compare. Read
+  them by their answer counts.
+
 ## `challenge_solve_through`
 
 Of the people who opened a challenge, how many solved it. The content-quality
@@ -1282,6 +1317,24 @@ by hand (the 10-04 → 10-07 waves: docs/reads/p1-guardrail-bing-2026-10-07.md).
   `landing_engaged` per company/topic page, often with no `landing_view`
   (so it lands in "no source, no landing" buckets). 21 people on 11-22,
   7 on 11-23, none on 11-24; never ran a query. Drop the viewport.
+- **Two app-only crawlers older than the stamps (A01, 2026-11-25).** Both
+  write `app_opened` and never a `landing_view`, so a landing filter never
+  sees them, and both reach back before `langs` existed (2026-10-08), so
+  `app1lang` / `langs2` cannot see their early rows.
+  - **`utc1280`:** first `app_opened` in `tz = 'UTC'` at
+    `desktop:1280x720`, no `landing_view` ever, **whatever its
+    `landingSrc`**. 1,347 "people" in the week of 2026-09-28 carried a
+    spoofed `search:google` (the old pre-stamp rule required an empty
+    source, so it walked past it); of 1,356 ever, 0 ran a query.
+  - **`cn_app`:** first `app_opened` with no `landingSrc` in
+    `Asia/Shanghai`, `Asia/Hong_Kong` or `Asia/Singapore`, no
+    `landing_view` ever. 1,629 people 2026-08-23 → 11-25 (101 in the week
+    of 09-28, 359 in the week of 10-05), 0 ran a query, 1 solve.
+  Both are in `scripts/scorecard-weekly.sql`'s exclusion block and README
+  rule 2. Still unfingerprinted (A01): landing-only readers in
+  `Asia/Hong_Kong` / `Asia/Singapore` — 20–61 "people" a week, 0 app opens
+  in HK in seven of eight weeks.
+
 - **Google's unstamped fetchers (C8, 2026-11-25).** `landing_view.ua`
   (from 2026-09-13) carries `GoogleOther` (802 people since 10-01) or
   `Google-NotebookLM` (108). Every one: `tz = America/Los_Angeles`, no
@@ -1328,6 +1381,14 @@ fingerprints as `botSignals()` (one table, test-bound). From that date a
 landing read filters `->>'bot' is null` like an app read; before it, drop
 `tz = 'Asia/Shanghai'` with no landing source and say the LA no-source rows
 are unreadable (they hold both the crawler and real people).
+**Google's non-search fetchers are stamped from the merge of
+`fix/track-google-fetchers` (2026-11-25, C8 / PR #391).** A landing row
+whose user agent contains `GoogleOther` (incl. -Image / -Video) carries
+`bot = 'google_other'`; `Google-NotebookLM` carries `bot = 'notebooklm'`
+(its own id: a person asked NotebookLM to read the page, so count it as an
+AI-assistant signal, not a reader). Before that date they passed the filter
+(~130–170 a week from mid-October): drop them by hand with
+`((metadata #>> '{}')::jsonb->>'ua') ~* 'googleother|notebooklm'`.
 **Still open:** landing_view carries no window size, so the 1280x1200
 crawler's landing views cannot be told apart — 214 (W1) and 295 (W0)
 landing people are Asia/Shanghai with no source. Read landing people with
@@ -1356,6 +1417,48 @@ the share with a `challenge_first_run` for the same challenge (born
 existed, 30 days to 09-23: of opens that never became a solve, 92.3% had no
 submit at all (no `challenge_error_pattern`, no `challenge_errored`). Read
 split by `via` and by first-contact vs later opens. Scorecard §1.
+
+## `open_to_run_exit`
+
+Registered 2026-11-24, in the PR that adds its event (rule 6b: the
+definition ships with the event, before any experiment reads it). From
+B1's read `docs/reads/funnel-2026-11-24.md` §4: in the 28 days to 11-24,
+225 of 631 new app openers opened a challenge and never ran it, and 73–80%
+of them left no event after the open. This metric says how those opens
+ended.
+
+- **Event:** `challenge_left {challengeId, ms_on_page, typed, scrolled,
+  hint_opened, device_class, how}` (`src/utils/challenge-left.js`). At most
+  one per challenge open, only for an open with **no run and no submit**
+  (`challenge_first_run` never precedes it in the same open). `how`:
+  `navigate` (the challenge page left the screen inside the app), `hidden`
+  (the browser tab hidden or the page unloaded; sent with a keepalive
+  fetch), `switch` (another challenge opened over it). `typed` counts
+  characters the person inserted in the editor (deletions not subtracted);
+  `scrolled` is the person's own wheel / touch / page-key scroll, never the
+  app's scroll to the editor; `hint_opened` is the hint toggle or the
+  inline Help. No query text, nothing personal. Guests and accounts alike.
+- **Denominator:** person-challenge opens (`challenge_opened`, by
+  `coalesce(aid, username)` and `challengeId`) with no
+  `challenge_first_run` for that challenge in the same session (30-minute
+  gap rule). Rows less than an hour old are left out.
+- **Numerator and splits:** the share of the denominator with a
+  `challenge_left`, then the split of those by `how`, by `typed = 0` vs
+  `> 0`, by `scrolled`, by `hint_opened`, by `device_class`, and the median
+  `ms_on_page`. A **bounce** is `typed = 0`, not scrolled, under 15 s; a
+  **give-up** is `typed > 0` or over 60 s. The remainder of the denominator
+  (no `challenge_left`) is the still-unmeasured share: browsers that never
+  fire `visibilitychange`/`pagehide` before dying, and the bot rows.
+- **Start date:** the deploy of `measure/challenge-left` (the first
+  `challenge_left` row). Never read across it; there is no before.
+- **Traps:** `how = 'hidden'` includes a tab switch the person came back
+  from. A `challenge_first_run` for the same challenge after a
+  `challenge_left` in the same session means they returned and ran: count
+  that open as a return, not an exit. An open never seen on screen (opened
+  from a card while another tab is up) sends nothing. Apply the fleet's bot
+  and internal-account filters (fleet README, Data).
+- No target yet: this is a measurement, read first by B1 two weeks after
+  the start date.
 
 **The mobile band (defined 2026-11-23, before `mobileRunBar` ships).**
 - *Device* is the `viewport` stamp on the `challenge_opened` row itself
@@ -1962,6 +2065,102 @@ paid. Desktop 19.7% (n = 1,109), mobile 2.6% (n = 196). Page median 20.0%
 Rules (brief): n < 30 never acted on; CONVERTS ≥ 1.5 × the page median;
 DEAD ≥ 100 landers and 0 opens in 28 days; MOVED |z| > 2 for a country or
 device's 7-day rate against its 28-day rate, n7 ≥ 30.
+
+## `human_visitors`
+
+**The investor plan's A01 denominator (2026-11-25):** people who reached the
+site or the app in an ISO week, after every crawler and internal filter —
+kept beside the raw count, never instead of it. Query 1 (`raw_visitors`,
+`human_visitors`, `gap_pct`) and Query 4 (the gap by rule) of
+`scripts/scorecard-weekly.sql`; read every Friday by B2 into
+`docs/agent/scorecard.md`.
+
+- **Visitor:** a person (`COALESCE(aid, username)`) with a `landing_view`,
+  `landing_engaged` or `app_opened` in the week (Monday 00:00 UTC → next
+  Monday). Raw counts every such person.
+- **Human:** a visitor none of whose rows, at any time, matches an
+  exclusion — one row marks the whole browser. The exclusions are fleet
+  README rule 2 plus the two app-only crawlers found by A01 (shared traps):
+  internal usernames; the founder's walk aids (`363dfb2b…`, `e5fcbad1a022…`),
+  11-20 checkout tests and 11-24 walk guests; `metadata.bot` / `wd` /
+  `uaBot`; viewports `tablet:800x600`, `desktop:1280x1200`,
+  `desktop:1919x992`, `desktop:1024x1024`; `ref:aocr.org` and `verify-test`;
+  `app1lang`, `topic1lang`, the LA/1920x1080 pre-stamp shape, `utc1280`,
+  `cn_app`, the UTC landing crawler (from 11-22), the Asia/Shanghai landing
+  reader, `google_ua`, the `langs = 2` no-landing group. Query 4 names the
+  first rule that removed each person, in that order.
+- **`google_ua` (C8, 2026-11-25; PR #391's shared trap):** a person whose
+  `landing_view` carries `ua` (from 2026-09-13; read as
+  `((metadata #>> '{}')::jsonb)->>'ua'`) matching
+  `(GoogleOther|Google-NotebookLM)` and who never writes an `app_opened`.
+  Both fetchers are unstamped, all `tz = America/Los_Angeles`, no
+  `landingSrc`, no window size; no such person has ever opened the app.
+  GoogleOther added 29–172 "people" a week to human visitors (W40 → W47,
+  rising with Google's crawl from mid-October), all in `direct/home` and
+  the US row. **NotebookLM is not a visit but is worth reading:** it is a
+  fetch a person asked for (mostly the comparison pages), so Query 4
+  reports it apart as `google_ua:notebooklm` (5–23 a week) — an
+  AI-assistant signal, never a human visitor.
+- **A new rule changes the whole series.** The query re-reads all eight
+  weeks every run, so a fingerprint added on a Friday rewrites earlier rows:
+  compare a week only with weeks read by the same version of the file, and
+  say in the Friday note when the block changed.
+
+Baseline (read 2026-11-25 with `google_ua`, week 2026-W47 = 11-16 → 11-22):
+**569 human of 1,199 raw (52.5% not human)**; the eight weeks 09-28 → 11-22
+ran 504–826 human against 1,002–2,326 raw. Before `google_ua` the same read
+gave 715 (639–888), and the series looked flat because the crawler rose as
+people fell. The 2026-W40 raw count (2,326) is 1,347 `utc1280` people;
+without the A01 rules it would read 2,111 human.
+
+**Trap: what is still inside "human".** Landing-only readers in
+`Asia/Hong_Kong` and `Asia/Singapore` (20–61 a week; HK opened the app once
+in eight weeks) and the US no-source landing rows (the `none: landed on a
+page` row C8 calls an upper bound) have no fingerprint yet. They sit in the
+`direct/home` source and the HK / SG / US country rows. Read human visitors
+as a ceiling and app openers as the firm count.
+
+## `scorecard_weekly`
+
+**One weekly table on people (A01, 2026-11-25).** `scripts/scorecard-weekly.sql`,
+Queries 1–3; filled every Friday by B2 (`docs/agent/fleet/B2-measurement.md`)
+into `docs/agent/scorecard.md`, "A01 human scorecard". Eight complete ISO
+weeks, oldest first; every person column is human (`human_visitors`).
+
+| Column | Definition |
+|---|---|
+| `app_openers` | people with an `app_opened` in the week |
+| `new_openers` | people whose first `app_opened` ever is in the week |
+| `activated_7d` | of `new_openers`, first `challenge_solved` within 7 days of that first open (activation = ≥ 1 solve) |
+| `solvers` | people with ≥ 1 `challenge_solved` in the week |
+| `new_six_solvers` | people whose **6th distinct** solved challenge (lifetime, first solve of each id) fell in the week — additive across weeks; O2's "six-solvers / 30 d" (`reach_6_rate`, six inside the window) is a different count |
+| `day0_solvers` / `returned_7d` | of `new_openers`, those who solved on the UTC day of the first open; of them, any non-landing event on a later UTC day within 7 days — the 2026-11-25 second-session read's definition (`second_session_7d` notes) |
+| `runway_complete` | false while the week's cohort has under 7 days of follow-up; `activated_7d` and `returned_7d` are floors until it is true |
+| `modal_people` / `checkout_people` | people with `pro_modal_shown` / `pro_checkout_clicked` in the week |
+| `trials` / `payments` / `renewals` / `refunds` | distinct usernames with `pro_trial_started` / `pro_purchase_completed` / `pro_renewal_completed` / `pro_refunded`, **`reason = 'stripe_webhook'` only**, internal usernames out. A trial is never a payment; the columns are never added. |
+| `failed_charges` | distinct invoices with `pro_payment_failed` (webhook); a 3DS retry on one invoice counts once. Includes checkout declines (`billing_reason = subscription_create`) and dunning. |
+| `paid_usd` | sum of `amount_cents` on the week's `pro_purchase_completed` rows (first charges, incl. a trial's conversion; renewals carry no amount) |
+
+Query 2 splits human visitors per week by source (first non-empty
+`landingSrc` on an entry row: `search:google`, `search:bing`, `ai`,
+`direct/home`, `other`), country (`country` if present, else the zone →
+country proxy of `scripts/analytics/daily.sql`; top 5 over the eight weeks)
+and first landing page group (company `*-sql-interview`, `sql-exercises`,
+topic/question, blog, home, other, `(app only)`).
+
+Query 3 is the **MRR snapshot**: `users.data` rows with a live monthly or
+annual plan, a Stripe customer, auto-renew on and not inside a trial, at the
+person's last webhook `amount_cents` (else $29 / $99); annual ÷ 12. It is a
+snapshot, not a series — `users.data` keeps no history — so each Friday's
+row records that Friday. It is not the Stripe dashboard read; a subscription
+in dunning (`past_due`) drops out once `proExpiry` passes.
+
+Baseline (read 2026-11-25, `google_ua` excluded), week 2026-W47: 569 human
+visitors, 188 app openers, 148 new, 50 activated within 7 days (runway
+incomplete), 59
+solvers, 14 new six-solvers, 46 day-0 solvers of whom 7 returned (floor),
+29 shown the modal, 3 checkout clicks, 1 trial, 1 payment ($99), 0 refunds,
+1 failed charge. MRR $49.58 (4 paying: 1 monthly, 3 annual; 1 in trial).
 
 ## `blog_practice_exit`
 
