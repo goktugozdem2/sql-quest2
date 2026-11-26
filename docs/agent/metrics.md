@@ -3951,9 +3951,12 @@ written go 2026-11-25; design: docs/reads/returns-0926-flags-2026-11-25.md
   the data, ledger "the free-quota holdout"): over **every** bot-filtered
   browser with a `free_quota_arm_assigned` row — the query below's `arm`
   CTE, not its `assigned` column, which keeps only browsers 7 days past t0
-  and would hold almost nobody on 12-03 — each arm must hold 45–55% (±5
-  points of 50/50). Needs ≥ 200 assigned; if fewer on 12-03, re-run daily
-  until 200. Outside 45–55 → falsified: pause enrolment the same day (flag
+  and would hold almost nobody on 12-03 — the split must pass a two-sided
+  binomial test against 50/50 at p ≥ 0.01, i.e. each arm within
+  ±2.58·50/√n points (n = 200 → 40.9–59.1%; n = 400 → 43.6–56.4%). A fixed
+  ±5-point band would trip by chance ~16% of the time at n = 200. Needs
+  ≥ 200 assigned; if fewer on 12-03, re-run daily until 200. Fails (p <
+  0.01) → falsified: pause enrolment the same day (flag
   `freeQuotaHoldout` off, which returns everyone to today's quota) and
   report to the founder; investigate the hash (stored arm vs
   `freeQuotaArm(aid)`, and whether one arm loses or bot-flags its
