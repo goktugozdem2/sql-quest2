@@ -70,6 +70,7 @@ import { SQLITE_TUTOR_RULES, mistakeStudyContext, buildMistakeContextBlock, mist
 import { buildUserSkill, pickNextBySkill, toCanonicalSkill, isLegacyMasteryRecord } from './utils/user-skill.js';
 import { classifyErrorPatterns, recordErrorPatterns, describeErrorPatterns, patternCount, emptyErrorStore } from './utils/error-patterns.js';
 import { isDebugChallenge, debugQuestionsOn, brokenQueryFor, debugEditorValue, emptyDebugStats, recordDebugSpot, recordDebugFix, debugStatsSummary, debugBugLine, withDebugLock, proModalReasonLabel, debugLockedAs } from './utils/debug-questions.js';
+import { coachDebugDoorOn, coachDebugDoorModel } from './utils/coach-debug-door.js';
 import { nudgeAllowed, nudgeHeaders, nudgeUsername, personalNudgeLines } from './utils/live-nudge.js';
 import { HIRED_INTENT, isHired, ticketLocked, shouldAskOffer } from './utils/post-hire.js';
 import { gradeTicket, ticketFeedback } from './utils/ticket-grade.js';
@@ -3264,6 +3265,9 @@ const challenges = window.challengesData || [];
 // The Debug items join `challenges` in src/data/debug-challenges.js only when
 // this is true; it also gates the Practice chip and the stats card.
 const DEBUG_QUESTIONS_ON = debugQuestionsOn(window.FEATURE_FLAGS);
+// The Coach's Debug door (orchestrator 2026-11-25): one card under the
+// next-step card. src/utils/coach-debug-door.js; ledger "the Coach's Debug door".
+const COACH_DEBUG_DOOR_ON = coachDebugDoorOn(window.FEATURE_FLAGS);
 
 // Merge company tags (id -> [companies]) from challenge-companies.js onto each challenge.
 // Single source of truth for "which companies ask this pattern" across the app.
@@ -36652,6 +36656,92 @@ RULES:
                 );
               })()}
 
+              {/* ── The Debug door (coachDebugDoor, orchestrator 2026-11-25) ──
+                  One card: "Fix a query an AI wrote". It sits right under
+                  "Your plan" and above the roadmap, NOT under the goal's
+                  next-step card as first specified: that slot measured
+                  2,369-2,752 px down at 1024x900 (below the 1,354 px
+                  roadmap and Focus Tracks), deeper than the Practice chip
+                  that got 0 clicks at ~940 px. Here it is at ~500 px.
+                  The pick is curriculum-ordered and prefers an item the person
+                  may open (the same lock tests openChallenge applies); the
+                  click always goes through openChallenge, so a locked pick
+                  meets the wall exactly as any open does. Hidden for a hired
+                  person (First 90 Days owns their Coach), before the first
+                  solve, and once all Debug items are solved. Secondary
+                  styling: the next-step card holds the Coach's one accent CTA. */}
+              {(() => {
+                const door = coachDebugDoorModel({
+                  doorOn: COACH_DEBUG_DOOR_ON,
+                  debugOn: DEBUG_QUESTIONS_ON,
+                  challenges,
+                  solved: solvedChallenges,
+                  solveCount: solvedChallenges.size,
+                  order: SQL_ROADMAP_CHALLENGE_ORDER,
+                  isLocked: c => isContentLocked('challenge', c) || freeQuotaSpent(),
+                  hired,
+                });
+                if (!door) return null;
+                const doorCh = door.challenge;
+                const doorTitle = localizeChallenge(doorCh, resolveLang()).title;
+                return (
+                  <div
+                    className="rounded-xl p-4 mb-4"
+                    style={{ background: '#16181F', border: '1px solid #2A2E38' }}
+                    data-testid="coach-debug-door"
+                    ref={(el) => {
+                      if (!el) return;
+                      try {
+                        const k = 'sqlquest_debug_door_shown_' + new Date().toISOString().slice(0, 10);
+                        if (sessionStorage.getItem(k)) return;
+                        sessionStorage.setItem(k, '1');
+                        trackActivationEvent('coach_debug_door_shown', { challengeId: doorCh.id, locked: door.locked, solvedInSet: door.solved, setSize: door.total });
+                      } catch (_) {}
+                    }}
+                  >
+                    <p lang={getCurrentLang()} className="text-[11px] uppercase tracking-wider mb-1" style={{ color: '#8A8E99' }}>{i18n_t('coach', 'debugDoorEyebrow')}</p>
+                    <p className="text-base font-bold" style={{ color: '#F2F0EA' }}>{i18n_t('coach', 'debugDoorTitle')}</p>
+                    <p className="text-xs mt-1" style={{ color: '#8A8E99' }}>{i18n_t('coach', 'debugDoorWhy')}</p>
+                    <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                      <p className="text-xs min-w-0" style={{ color: '#8A8E99' }}>
+                        <span style={{ color: '#F2F0EA' }}>{doorTitle}</span>
+                        {' · '}{doorCh.difficulty}
+                        {door.locked ? <span data-testid="coach-debug-door-locked">{' · '}{i18n_t('coach', 'debugDoorLocked')}</span> : null}
+                      </p>
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          data-testid="coach-debug-door-all"
+                          onClick={() => {
+                            trackActivationEvent('coach_debug_door_clicked', { challengeId: null, target: 'see_all' });
+                            setDebugFilter(true);
+                            setActiveTab('quests');
+                            setPracticeSubTab('challenges');
+                          }}
+                          className="text-xs underline"
+                          style={{ color: '#8A8E99' }}
+                        >
+                          {i18n_t('coach', 'debugDoorSeeAll', { n: door.total })}
+                        </button>
+                        <button
+                          type="button"
+                          data-testid="coach-debug-door-open"
+                          onClick={() => {
+                            trackActivationEvent('coach_debug_door_clicked', { challengeId: doorCh.id, target: 'item', locked: door.locked });
+                            setActiveTab('quests');
+                            setPracticeSubTab('challenges');
+                            setTimeout(() => openChallenge(doorCh, { openedFrom: 'coach_debug_door' }), 50);
+                          }}
+                          className="px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap"
+                          style={{ background: '#1F222B', border: '1px solid #2A2E38', color: '#F2F0EA' }}
+                        >
+                          {i18n_t('coach', 'debugDoorCTA')}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
               {renderSqlRoadmap()}
               {renderFoundationsRoadmapLesson()}
 
