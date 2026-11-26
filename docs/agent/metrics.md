@@ -6038,3 +6038,91 @@ thresholds. Defined 2026-11-26, before the code.
 - **Splits:** segment (interview-target vs other), device band, `fqArm`.
 - **Report n always.** At ~8 arm-B people a day, rung-level rows under 20
   are directional only.
+
+## `plan_steps_done_7d`
+
+Did people follow the personal roadmap? It attributes the tournament arms'
+results to the roadmap; it never decides (`first_session_tournament`
+decides). Plan: `docs/plans/personalized-roadmap-2026-11-26.md` §8. Engine:
+`src/utils/personal-roadmap.js`. Defined 2026-11-26, in the engine's PR,
+**before** any code that logs `path_plan_built` (fleet README rule 6b: the
+engine is not wired, and the arms' PRs that measure it come after).
+
+- **Population.** People with a `path_plan_built` row whose
+  `tournament_assigned.arm` is a plan arm (`B_single_path`,
+  `D_interview_sprint`, later `C_proof_first`), by arm **and** armVersion,
+  humans only (the `first_session_tournament` exclusion block). t0 = the
+  person's first `path_plan_built`. Eligible when t0 + 7 d ≤ the read time.
+- **The plan.** `planIds` on that first row: the challenge ids in order. A
+  later row with `recompute: true` replaces the set from its own time on.
+  Ids solved before t0 are not counted.
+- **Per person.**
+  - `done` = distinct `challengeId`s on `challenge_solved` in
+    [t0, t0 + 7 d] that are in the plan;
+  - `all` = distinct `challengeId`s solved in the same window;
+  - adherence = done / all (people with all = 0 count in the zero row,
+    never in the ratio).
+- **Reported per arm × stratum.** The four strata are #409's entry
+  segment (interview-target: the first `app_opened`'s `arrivalSrc` is a
+  company page, `company:<Name>`, `blog-capital-one` or `readiness`; else
+  other) × the device band (desktop, or phone + tablet, from the assignment
+  row's `viewport`). Report:
+  - n;
+  - median `done`;
+  - share with `done ≥ 6`;
+  - share with `done ≥ wallAt` (reached the 10th free solve on the plan);
+  - median adherence.
+- **Personalization slices** (`scope`, `targetKind`, `level`,
+  `levelSource`, `focusSource`, `deadlineSource` from the row's `profile`
+  block) are listed as n only, and directional. At ~8 people per arm a day,
+  a slice is a handful a month. Never decide on one.
+- **How it is read** (written before the data):
+  - **An arm wins or loses on the decision metric with adherence ≥ 60%:**
+    the roadmap is part of the cause.
+  - **The result comes with adherence < 40%:** people did not follow the
+    plan, and the arm's result says nothing about the roadmap's content.
+    The presentation (the arm) is the suspect, not the engine.
+  - **Adherence ≥ 60% and `done ≥ 6` below control's 6+ in 7 days in the
+    same stratum:** following the plan produces fewer solves than the free
+    product. Open the slices of that stratum before the next replacement.
+- **Report n always.** Under 20 per cell is directional only.
+
+```sql
+WITH evp AS (
+  SELECT e.event, e.created_at, x.m, COALESCE(x.m->>'aid', e.username) AS pid
+  FROM public.pro_events e
+  CROSS JOIN LATERAL (SELECT (e.metadata #>> '{}')::jsonb AS m) x
+),
+-- person: the human filter, copied from scripts/scorecard-weekly.sql
+plan AS (
+  SELECT DISTINCT ON (pid) pid, created_at AS t0, m->'planIds' AS ids, (m->>'wallAt')::int AS wall_at
+  FROM evp WHERE event = 'path_plan_built' AND COALESCE(m->>'recompute','false') <> 'true'
+  ORDER BY pid, created_at
+),
+asg AS (
+  SELECT DISTINCT ON (pid) pid, m->>'arm' AS arm, m->>'armVersion' AS v,
+         CASE WHEN m->>'arrivalSrc' ~ '(-sql-interview$|^company:|^blog-capital-one$|^readiness$)' THEN 'interview' ELSE 'other' END AS seg,
+         CASE WHEN split_part(m->>'viewport','x',1)::int >= 1024 THEN 'desktop' ELSE 'phone_tablet' END AS dev
+  FROM evp WHERE event = 'tournament_assigned' ORDER BY pid, created_at
+),
+solves AS (
+  SELECT p.pid,
+         count(DISTINCT e.m->>'challengeId') AS all_n,
+         count(DISTINCT e.m->>'challengeId') FILTER (WHERE p.ids ? (e.m->>'challengeId')) AS done
+  FROM plan p JOIN evp e ON e.pid = p.pid AND e.event = 'challenge_solved'
+   AND e.created_at >= p.t0 AND e.created_at <= p.t0 + interval '7 days'
+  GROUP BY p.pid
+)
+SELECT a.arm, a.v, a.seg, a.dev, count(*) AS n,
+  percentile_cont(0.5) WITHIN GROUP (ORDER BY COALESCE(s.done,0)) AS median_done,
+  avg((COALESCE(s.done,0) >= 6)::int) AS share_done6,
+  avg((COALESCE(s.done,0) >= p.wall_at)::int) AS share_to_wall,
+  percentile_cont(0.5) WITHIN GROUP (ORDER BY s.done::numeric / NULLIF(s.all_n,0)) AS median_adherence
+FROM plan p JOIN asg a USING (pid) LEFT JOIN solves s USING (pid)
+WHERE p.t0 + interval '7 days' <= now()
+GROUP BY 1,2,3,4 ORDER BY 1,2,3,4;
+```
+
+`planIds` must be logged as a JSON array of **strings** for the `?`
+operator above (or the read casts each element); the arm PR that writes
+the event pins the shape in its test.

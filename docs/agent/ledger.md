@@ -65,6 +65,31 @@ of the verifier and must never be rounded to `FLAT`.
 - **Amended 2026-11-26 (founder, chat): profile first, then the group.** "her bir grubu tek tek test et. ben de testi görebileyim. o kişiye o gruba niye atadın o kişinin profilini de çıkar … profile göre gruba almalıyız." The first open now builds a profile (door, company, interview-target, device, country if cached, price region, language, timezone bucket, landing-before, readiness band; no PII), the profile names one of four strata (interview-target × desktop / phone+tablet), and the arm is drawn at random inside the stratum — never picked from the profile, which would confound arm with profile. Every assignment logs `stratum`, `profile`, `weights`, `draw` and a `reason` sentence; `scripts/tournament-people.sql` lists every person with the reason and their progress, for a founder-visible page. Elimination and promotion stay pooled (post-stratified once any stratum is routed). **Routing rule, written before the data:** a stratum goes to an arm only at P(best in stratum) ≥ 0.95 on two consecutive Friday reads with ≥ 100 eligible per arm there, by a decision row, winner ≤ 80% (≥ 20% explores). **Falsification of the stratification itself:** if at the first pooled read (every challenger ≥ 150) no stratum's arm ranking differs from the pool's, routing has nothing to add and the strata stay a reporting split. Expected per arm per week: IT-D ~9, IT-M ~1.6, NI-D ~39, NI-M ~4 — only NI-D can be routed before ~March 2027.
 - **PR 1 (the frame) built 2026-11-26, dark.** Registry `src/data/tournament-arms.js` (A, B, D active; C queued), enrolment and assignment `src/utils/tournament.js`, `tournament_assigned` once per browser, `tArm` / `tArmV` on every row, the record on `userData.tournament`; B and D are `built: false` and run A's behaviour, so a flag-on walk is an A/A of the plumbing. Read `scripts/tournament-read.sql` + `scripts/tournament-posteriors.mjs`. Stacked on #384 (it reuses `hasPriorAppUse` / `PRE_APP_KEYS`).
 
+### the personal roadmap engine (company, sector, level, focus, deadline → a plan; pure, not wired)
+
+- **Claimed** 2026-11-26 (builder lane) · **Ships** as a pure module with no app wiring (`src/utils/personal-roadmap.js`) · **Live** only through the tournament's plan arms (B, D, and later C), in their own PRs, dark until the tournament flips (no earlier than 2026-12-10) · **Read** with the tournament's first read (every challenger ≥ 150 eligible; ~2027-01-08, latest 2027-01-22).
+- **Change.** `buildRoadmap(profile, bank, opts)` turns a profile into ordered steps, a daily count, `wallAt` and 2–3 "why this plan" lines (`docs/plans/personalized-roadmap-2026-11-26.md`).
+  - The profile: the company (archetype or ≥ 5 tagged, else the sector, else the goal's skills), the level (ladder or readiness), the focus (stated, else the weakest scored skill), and the deadline (stated days, else a default sprint by level, 14/14/10/10, **never a date**), plus the goal and the device.
+  - Rules:
+    - the curriculum comparator only;
+    - the level's difficulty ramp;
+    - the scope's skill mix × weakness, with the focus ≥ 30%;
+    - the quota stays the first wall: ≥ 10 free steps, no Pro-only step before the 10th free solve, and the company's free three inside them;
+    - the free mock right after the wall and the Pro mock last;
+    - focus reviews at +3/+7/+14 days.
+- **Why.** Founder, chat, 2026-11-26: "neye hazırlanıyor hangi sektör seviyesi nedir özellikle öğrenmek istediği konu nedir deadline var mı … tamamiyle kişiselleştirilmiş". Personalization is the content (rules, the same in every arm). The tournament tests the capture and the presentation. Slices are too small to A/B (~23 new people a day).
+- **Metric.** `plan_steps_done_7d` (metrics.md, defined in this PR, before the code that logs it; rule 6b). It is per plan arm × the four strata (entry segment × device band). It attributes; `first_session_tournament` decides.
+- **Baseline.** None: no plan exists today. The comparison is control's 6+ distinct solves in 7 days in the same stratum (11.8% overall, desktop 13.0%, phone 0 of 84).
+- **Target.** In each plan arm, at ≥ 150 eligible: median adherence (plan solves / all solves in 7 days) ≥ 60%, **and** the share with ≥ 6 plan steps done ≥ control's 6+ share in the interview-target × desktop stratum.
+- **Falsification, written before the data.**
+  - Adherence < 40% in an arm → people do not follow the roadmap there. The arm's verdict is not evidence about the engine; record UNREADABLE for this claim in that arm.
+  - Adherence ≥ 60% and ≥ 6 plan steps below control's 6+ by ≥ 5 points in a stratum with ≥ 60 per arm → the plan's content holds people back (most likely the 2-a-day floor or the after-wall ramp). Open the slices before the next replacement.
+  - Any production plan with a Pro-only step before `wallAt` → bug; a same-day fix (the invariant is test-pinned, so this would mean a wiring error).
+- **Confounds.**
+  - The arms change both the presentation and who gets a plan.
+  - The freeQuota holdout (2×2) moves `wallAt`'s meaning: in the holdout there is no wall.
+  - Slices are reported as n only.
+
 ### the Metrics & Case Round: the half of the interview that is not SQL (C5/B3)
 
 - **Claimed** 2026-11-22 · **Shipped** on merge (orchestrator's order, under
