@@ -89,7 +89,7 @@ import { getAnonId } from './utils/anon-id.js';
 import { FREE_QUOTA_HOLDOUT_KEY, FREE_QUOTA_HOLDOUT_TEST_ID, freeQuotaEnrolment, hasPriorAppUse, normalizeFreeQuotaRecord, freeQuotaEffective, freeQuotaEventStamp } from './utils/free-quota-holdout.js';
 import { TOURNAMENT_KEY, tournamentEnrolment, tournamentPriorAppUse, normalizeTournamentRecord, adoptAccountRecord, tournamentEffectiveArm, tournamentBehaviour, tournamentSupersedes, tournamentEventStamp, shouldAnnounceTournament, tournamentAssignedPayload, buildVisitorProfile, enrichTournamentProfile } from './utils/tournament.js';
 import { quotaWallArm, quotaWallShowsModal, quotaInlineCopy, QUOTA_WALL_DAY_KEY } from './utils/quota-wall-inline.js';
-import { SINGLE_PATH_KEY, LADDER_LENGTH, TIER_KEYS, isPathArm, emptyPathState, normalizePathState, pathUiFlags, pathTabsOpen, ladderOutcome, ladderStuck, ladderOpen, ladderResolve, pickLadderQuestion, ladderQuestionNumber, roadmapProfileFor, composePathPlan, planProgress, nextPlanStep, planEnded, planShownPayload, logStepDone, pathWhyLines, companyFromSlug, startSprint, sprintDayModel, sprintTabsOpen } from './utils/single-path.js';
+import { SINGLE_PATH_KEY, LADDER_LENGTH, TIER_KEYS, isPathArm, emptyPathState, normalizePathState, pathUiFlags, pathTabsOpen, sprintPlanMarks, sprintProbeRecord, ladderOutcome, ladderStuck, ladderOpen, ladderResolve, pickLadderQuestion, ladderQuestionNumber, roadmapProfileFor, composePathPlan, planProgress, nextPlanStep, planEnded, planShownPayload, logStepDone, pathWhyLines, companyFromSlug, startSprint, sprintDayModel, sprintTabsOpen } from './utils/single-path.js';
 import { buildRoadmap } from './utils/personal-roadmap.js';
 import { classifyLandingSrc, LANDING_SRC_KEY } from './utils/landing-src.js';
 import { classifyQueryError } from './utils/query-error.js';
@@ -12587,6 +12587,8 @@ CRITICAL RULES:
   // Walk fix B1: a sign-up prompt that is not the guest ladder's (the tutor's
   // guest limit) is held here while the ladder runs.
   const pathHeldSignupRef = useRef(null);
+  // Arm D's level probe (walk fix D1): when the open plan step was opened.
+  const pathOpenedRef = useRef(null);
   const pathSave = (next) => {
     pathStateRef.current = next;
     setPathState(next);
@@ -12606,7 +12608,9 @@ CRITICAL RULES:
   };
   const pathCtx = () => ({ solved: solvedChallenges, mocksDone: pathMocksDone(), isProOnly: pathStepProOnly });
   // The roadmap for this person, frozen as the plan (N stays put).
-  const pathBuildPlan = (state, solvedSet) => {
+  // `lead` (arm D): steps that must come first — the company link's opened
+  // question (walk fix D2), then the two the level was read from (D1).
+  const pathBuildPlan = (state, solvedSet, { lead = [] } = {}) => {
     try {
       const visitor = TOURNAMENT_RECORD && TOURNAMENT_RECORD.profile ? TOURNAMENT_RECORD.profile : null;
       const roadmap = buildRoadmap(
@@ -12614,7 +12618,10 @@ CRITICAL RULES:
         challenges,
         { companyMap: window.challengeCompanies || {}, mocks: mockInterviews, goals: window.coachGoals || [], quotaOn: freeQuotaOn(), companySetGateOn: ftbFlag('companySetGate') },
       );
-      return composePathPlan({ roadmap, ladder: state.ladder, solved: solvedSet, solvedCount: solvedSet.size, quotaOn: freeQuotaOn() && !isPro, now: Date.now() });
+      const plan = composePathPlan({ roadmap, ladder: state.ladder, lead, solved: solvedSet, solvedCount: solvedSet.size, quotaOn: freeQuotaOn() && !isPro, now: Date.now() });
+      // Arm D: say where the level came from — assumed (the why-line says so,
+      // the first two steps measure it), the readiness band, or the probe.
+      return pathUi.sprint ? sprintPlanMarks(plan, { visitor, state }) : plan;
     } catch (e) {
       console.warn('single path: plan not built', e);
       return null;
@@ -12741,10 +12748,27 @@ CRITICAL RULES:
     if (!plan) return;
     const index = plan.steps.findIndex(st => st.kind === 'challenge' && st.challengeId === challenge.id);
     if (index < 0 || state.doneLog.some(d => String(d.id) === String(challenge.id))) return;
-    const next = logStepDone(state, { id: challenge.id, day: getTodayString() });
+    let next = logStepDone(state, { id: challenge.id, day: getTodayString() });
+    // Arm D, no readiness band: the first two plan steps solved are read with
+    // the ladder's thresholds; at the second the plan is re-laid from the
+    // measured level, those two leading it (walk fix D1).
+    let replanned = null;
+    if (pathUi.sprint) {
+      const visitor = TOURNAMENT_RECORD && TOURNAMENT_RECORD.profile ? TOURNAMENT_RECORD.profile : null;
+      const opened = pathOpenedRef.current;
+      const secs = opened && opened.id === challenge.id ? (now - opened.at) / 1000 : null;
+      const probed = sprintProbeRecord(next, { visitor, challenge, wrongs, hint, secs });
+      next = probed.state;
+      if (probed.levelId) {
+        replanned = pathBuildPlan(next, newSolved, { lead: next.sprint.probe.map(o => o.challengeId) });
+        if (replanned) next = { ...next, plan: replanned };
+        pathEvent('tournament_sprint_level', { levelId: probed.levelId, outcomes: next.sprint.probe });
+      }
+    }
     pathSave(next);
-    const { k, n } = planProgress(plan, { solved: newSolved, mocksDone: pathMocksDone() });
+    const { k, n } = planProgress(next.plan || plan, { solved: newSolved, mocksDone: pathMocksDone() });
     pathEvent('tournament_plan_step_done', { challengeId: challenge.id, stepIndex: index + 1, k, n, wallAt: plan.wallAt, day: getTodayString() });
+    if (replanned) pathEvent('tournament_plan_shown', { ...planShownPayload(replanned, { arm: pathUi.arm, k, recompute: true }) });
     // The tab row comes back — B: at the PLAN_FOCUS_STEPS-th plan step (walk
     // fix B3); D: once the first day's count is done, or at the first solve
     // of day 2.
@@ -12776,7 +12800,11 @@ CRITICAL RULES:
     if (!sprint) return;
     if (company) setPrepPreference({ company });
     const base = { ...pathStateRef.current, sprint };
-    const plan = pathBuildPlan(base, solvedChallenges);
+    // A company link opens the company's question 1 (the direct arm's
+    // resolver) — it IS the plan's step 1, so the header, the open question
+    // and the plan agree (walk fix D2).
+    const co = companyFilter && company === companyFilter && solvedChallenges.size === 0 ? companyBannerNext() : null;
+    const plan = pathBuildPlan(base, solvedChallenges, { lead: co ? [co.id] : [] });
     pathSave({ ...base, plan });
     pathEvent('tournament_sprint_set', { company: sprint.company, companySource: sprint.companySource, goal: sprint.goal, days: sprint.days, daysSource: sprint.daysSource, planKind: plan && plan.profile ? plan.profile.targetKind || plan.profile.scope : null });
     if (plan) {
@@ -12788,7 +12816,6 @@ CRITICAL RULES:
     // A company link opens the company's question 1 (the direct arm's
     // resolver); everyone else the plan's first step.
     setTimeout(() => {
-      const co = companyFilter && company === companyFilter && solvedChallenges.size === 0 ? companyBannerNext() : null;
       if (co) pathOpenChallenge(co);
       else pathOpenNext('sprint_start');
     }, 50);
@@ -25266,6 +25293,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     setCurrentChallenge(challenge);
     // Tournament arm B: the first open of a ladder question starts its clock.
     if (pathUi.ladderActive && !solvedChallenges.has(challenge.id)) pathSave(ladderOpen(pathStateRef.current, challenge, Date.now()));
+    if (pathUi.sprint && !solvedChallenges.has(challenge.id)) pathOpenedRef.current = { id: challenge.id, at: Date.now() };
     // Content-quality denominator: without opened-events, "opened but never
     // attempted" (a scary/unclear problem statement) is invisible — we only
     // saw solves and attempts. Open→attempt→solve per challenge is the full
@@ -37423,6 +37451,9 @@ RULES:
                   countdown / quota / retrieval flags. Pure half:
                   src/utils/practice-plan.js. */}
               {(() => {
+                // Tournament arm D: the sprint line is this person's plan;
+                // never a second one beside it (walk fix D3).
+                if (pathUi.hideCoachPlan) return null;
                 const bank = window.challengesData || challenges || [];
                 const plan = buildPracticePlan({
                   company: prepTarget.company || companyFilter || null,

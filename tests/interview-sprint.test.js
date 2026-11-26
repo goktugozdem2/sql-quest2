@@ -8,6 +8,7 @@ import path from 'node:path';
 import {
   SPRINT_ARM, SPRINT_LENGTHS, emptyPathState, normalizePathState, pathUiFlags, normalizeSprint, startSprint,
   sprintDay, sprintDayModel, sprintTabsOpen, roadmapProfileFor, composePathPlan, logStepDone, companyFromSlug, nextPlanStep,
+  SINGLE_PATH_ARM, SPRINT_PROBE_STEPS, sprintLevelSource, sprintPlanMarks, sprintProbeRecord, pathWhyLines, planProgress, LADDER_FAST_SECS,
 } from '../src/utils/single-path.js';
 import { buildRoadmap } from '../src/utils/personal-roadmap.js';
 import { buildVisitorProfile, tournamentBehaviour } from '../src/utils/tournament.js';
@@ -15,6 +16,7 @@ import { tournamentArmById } from '../src/data/tournament-arms.js';
 import { INTAKE_COMPANIES } from '../src/utils/onboarding-intake.js';
 import { FREE_SOLVE_QUOTA } from '../src/utils/free-tier-boundary.js';
 import { t, _resetLangCache } from '../src/utils/i18n.js';
+import { levelForLadder } from '../src/utils/placement.js';
 
 const ROOT = path.resolve(new URL('..', import.meta.url).pathname);
 const APP = fs.readFileSync(path.join(ROOT, 'src/app.jsx'), 'utf8');
@@ -37,9 +39,9 @@ beforeAll(async () => {
 
 const TODAY = '2026-12-10';
 const sprintState = (sprint) => normalizePathState({ ...emptyPathState(), sprint });
-const planFor = (state, visitor = { device: 'desktop' }) => {
-  const roadmap = buildRoadmap(roadmapProfileFor({ arm: SPRINT_ARM, visitor, state, solvedIds: new Set(), companies: INTAKE_COMPANIES }), bank, opts);
-  return { roadmap, plan: composePathPlan({ roadmap, ladder: null, solved: new Set(), solvedCount: 0, now: 1 }) };
+const planFor = (state, visitor = { device: 'desktop' }, { lead = [], solved = new Set() } = {}) => {
+  const roadmap = buildRoadmap(roadmapProfileFor({ arm: SPRINT_ARM, visitor, state, solvedIds: solved, companies: INTAKE_COMPANIES }), bank, opts);
+  return { roadmap, plan: composePathPlan({ roadmap, ladder: null, lead, solved, solvedCount: solved.size, now: 1 }) };
 };
 
 describe('arm D is built', () => {
@@ -59,7 +61,7 @@ describe('the sprint — one tap each, its own field, never a date', () => {
   it('7 / 14 / no date; the company or null; a learner\'s goal is learning', () => {
     expect(SPRINT_LENGTHS).toEqual([7, 14]);
     expect(startSprint({ company: 'Stripe', companySource: 'door', days: 7, daysSource: 'tap', today: TODAY, now: 5 }))
-      .toEqual({ company: 'Stripe', companySource: 'door', goal: 'interview', days: 7, daysSource: 'tap', startDay: TODAY, setAt: 5 });
+      .toEqual({ company: 'Stripe', companySource: 'door', goal: 'interview', days: 7, daysSource: 'tap', startDay: TODAY, setAt: 5, probe: [], levelId: null });
     expect(startSprint({ companySource: 'learning', goal: 'learning', daysSource: 'no_date', today: TODAY, now: 5 }))
       .toMatchObject({ company: null, goal: 'learning', days: null });
     expect(normalizeSprint({ days: 30, startDay: TODAY, setAt: 1 }).days).toBe(null);
@@ -178,3 +180,120 @@ describe('the copy and the app wiring', () => {
     for (const ev of ['tournament_sprint_shown', 'tournament_sprint_set', 'tournament_plan_shown', 'tournament_tabs_revealed']) expect(APP).toContain(`pathEvent('${ev}'`);
   });
 });
+
+// ── Walk fixes, 2026-11-26 (the orchestrator's walk of #418, phone, Capital One link) ──
+const coSprint = () => sprintState(startSprint({ company: 'Capital One', companySource: 'door', days: 7, today: TODAY, now: 1 }));
+const byId = (id) => bank.find(c => c.id === id);
+
+describe('D2 — a company link\'s opened question is the plan\'s step 1', () => {
+  it('the link question leads (moved, never duplicated); the header\'s k/N counts it', () => {
+    const { plan: before } = planFor(coSprint());
+    expect(before.steps[0].challengeId).not.toBe(275); // the walk: step 1 was another question
+    const { plan } = planFor(coSprint(), { device: 'desktop' }, { lead: [275] });
+    expect(plan.steps[0]).toMatchObject({ kind: 'challenge', challengeId: 275, part: 'lead' });
+    expect(plan.steps.filter(st => st.challengeId === 275)).toHaveLength(1);
+    expect(plan.length).toBe(before.steps.some(st => st.challengeId === 275) ? before.length : before.length + 1);
+    expect(nextPlanStep(plan, { solved: new Set() }).index).toBe(0);
+    expect(planProgress(plan, { solved: new Set([275]) }).k).toBe(1);
+  });
+  it('app.jsx builds the sprint\'s plan with the link question in front, and opens that same question', () => {
+    const f = APP.slice(APP.indexOf('const pathFinishSprint = ('), APP.indexOf('const pathSprintShownRef'));
+    expect(f).toContain('const plan = pathBuildPlan(base, solvedChallenges, { lead: co ? [co.id] : [] });');
+    expect(f.indexOf('const co = ')).toBeLessThan(f.indexOf('const plan = pathBuildPlan('));
+    expect(f).toContain('if (co) pathOpenChallenge(co);');
+  });
+});
+
+describe('D1 — the level is measured, or said to be assumed', () => {
+  it('no readiness band: the level is assumed and the why-line says so, EN and TR', () => {
+    const st = coSprint();
+    expect(sprintLevelSource({ visitor: { device: 'phone' }, state: st })).toBe('assumed');
+    const { plan } = planFor(st);
+    const marked = sprintPlanMarks(plan, { visitor: { device: 'phone' }, state: st });
+    expect(marked.assumedLevel).toBe(true);
+    const en = pathWhyLines(marked, 'en');
+    expect(en[en.length - 1]).toBe(`7 days, ${plan.dailyCount} a day. We assumed Intermediate; your first two answers will adjust it.`);
+    expect(en.join(' ')).not.toMatch(/for your Intermediate level/);
+    const tr = pathWhyLines(marked, 'tr');
+    expect(tr[tr.length - 1]).toBe(`7 gün, günde ${plan.dailyCount}. Seviyeni Orta varsaydık; ilk iki cevabın bunu düzeltecek.`);
+    expect(en.length).toBeLessThanOrEqual(3);
+  });
+  it('a readiness band sets the level: nothing assumed, no probe', () => {
+    const v = { device: 'phone', readinessBand: 'high' };
+    const st = coSprint();
+    expect(sprintLevelSource({ visitor: v, state: st })).toBe('readiness');
+    const { plan } = planFor(st, v);
+    const marked = sprintPlanMarks(plan, { visitor: v, state: st });
+    expect(marked.assumedLevel).toBe(false);
+    expect(marked.profile).toMatchObject({ level: 'working', levelSource: 'readiness' });
+    expect(pathWhyLines(marked, 'en').join(' ')).not.toMatch(/assumed/);
+    expect(sprintProbeRecord(st, { visitor: v, challenge: byId(275), secs: 10 }).state.sprint.probe).toHaveLength(0);
+  });
+  it('the first two plan steps solved are read with the ladder\'s thresholds; the second sets the level', () => {
+    expect(SPRINT_PROBE_STEPS).toBe(2);
+    const v = { device: 'phone' };
+    let r = sprintProbeRecord(coSprint(), { visitor: v, challenge: byId(275), wrongs: 0, hint: false, secs: 30 });
+    expect(r.levelId).toBeNull();
+    expect(r.state.sprint.probe).toHaveLength(1);
+    // the same step again is not read twice
+    expect(sprintProbeRecord(r.state, { visitor: v, challenge: byId(275), secs: 30 }).state.sprint.probe).toHaveLength(1);
+    const second = sprintProbeRecord(r.state, { visitor: v, challenge: byId(276), wrongs: 0, hint: false, secs: 30 });
+    expect(second.levelId).toBe(levelForLadder(second.state.sprint.probe));
+    expect(second.state.sprint.levelId).toBe(second.levelId);
+    // both fast at their rungs — not "assumed Intermediate" by default any more
+    expect(second.state.sprint.probe.map(o => o.outcome)).toEqual(['fast', 'fast']);
+    // slow, hinted solves on two Easy basics read as Foundations
+    let slow = sprintProbeRecord(coSprint(), { visitor: v, challenge: byId(91), hint: true, secs: LADDER_FAST_SECS[0] + 60 }).state;
+    slow = sprintProbeRecord(slow, { visitor: v, challenge: byId(93), wrongs: 3, secs: null });
+    expect(slow.levelId).toBe('brand-new');
+    // a third solve changes nothing
+    const third = sprintProbeRecord(second.state, { visitor: v, challenge: byId(277), secs: 1 });
+    expect(third.levelId).toBeNull();
+    expect(third.state.sprint.probe).toHaveLength(2);
+    // stored and read back
+    expect(normalizePathState(JSON.parse(JSON.stringify(second.state))).sprint).toMatchObject({ levelId: second.levelId, probe: second.state.sprint.probe });
+  });
+  it('the re-plan: the measured level reaches the roadmap, the two done steps lead, the source is the probe', () => {
+    const v = { device: 'phone' };
+    let st = sprintProbeRecord(coSprint(), { visitor: v, challenge: byId(91), hint: true, secs: 900 }).state;
+    st = sprintProbeRecord(st, { visitor: v, challenge: byId(93), hint: true, secs: 900 }).state;
+    expect(st.sprint.levelId).toBe('brand-new');
+    expect(roadmapProfileFor({ arm: SPRINT_ARM, visitor: v, state: st }).level).toBe('brand-new');
+    const solved = new Set([91, 93]);
+    const { plan } = planFor(st, v, { lead: [91, 93], solved });
+    const marked = sprintPlanMarks(plan, { visitor: v, state: st });
+    expect(marked.steps.slice(0, 2).map(x => x.challengeId)).toEqual([91, 93]);
+    expect(marked.profile).toMatchObject({ level: 'brand-new', levelSource: 'sprint_probe' });
+    expect(marked.assumedLevel).toBe(false);
+    expect(planProgress(marked, { solved }).k).toBe(2);
+  });
+  it('app.jsx: the probe runs on D\'s plan-step solves and re-plans at the second', () => {
+    expect(APP).toContain('const probed = sprintProbeRecord(next, { visitor, challenge, wrongs, hint, secs });');
+    expect(APP).toContain('replanned = pathBuildPlan(next, newSolved, { lead: next.sprint.probe.map(o => o.challengeId) });');
+    expect(APP).toContain('if (replanned) next = { ...next, plan: replanned };');
+    // …and the state that carries the new plan is the one saved.
+    const solve = APP.slice(APP.indexOf('const pathOnSolve = ('), APP.indexOf('const pathSeePro = ('));
+    const at = solve.indexOf('if (replanned) next = { ...next, plan: replanned };');
+    expect(at).toBeGreaterThan(0);
+    expect(solve.indexOf('pathSave(next);', at)).toBeGreaterThan(at);
+    expect(solve.indexOf('pathSave(next);', at) - at).toBeLessThan(400);
+    expect(APP).toContain("pathEvent('tournament_sprint_level', { levelId: probed.levelId, outcomes: next.sprint.probe });");
+    expect(APP).toContain("if (replanned) pathEvent('tournament_plan_shown', { ...planShownPayload(replanned, { arm: pathUi.arm, k, recompute: true }) });");
+    expect(APP).toContain('return pathUi.sprint ? sprintPlanMarks(plan, { visitor, state }) : plan;');
+    expect(APP).toContain('if (pathUi.sprint && !solvedChallenges.has(challenge.id)) pathOpenedRef.current = { id: challenge.id, at: Date.now() };');
+  });
+});
+
+describe('D3 — one plan on screen', () => {
+  it('the Coach\'s company-plan card hides while D\'s sprint line shows; never in B or control', () => {
+    const { plan } = planFor(coSprint());
+    const set = normalizePathState({ ...coSprint(), plan });
+    expect(pathUiFlags({ behaviour: SPRINT_ARM, state: set }).hideCoachPlan).toBe(true);
+    expect(pathUiFlags({ behaviour: SPRINT_ARM, state: emptyPathState() }).hideCoachPlan).toBe(false);
+    expect(pathUiFlags({ behaviour: SINGLE_PATH_ARM, state: set }).hideCoachPlan).toBe(false);
+    expect(pathUiFlags({ behaviour: null, state: set }).hideCoachPlan).toBe(false);
+    const card = APP.indexOf('const plan = buildPracticePlan({', APP.indexOf('Your plan (founder\'s list, 2026-09-14)'));
+    expect(APP.slice(card - 300, card)).toContain('if (pathUi.hideCoachPlan) return null;');
+  });
+});
+

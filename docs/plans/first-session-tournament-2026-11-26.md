@@ -778,6 +778,27 @@ sprint length is set for the person.
    the starter text.
 4. Tabs open after the first day's count is done or at the first solve of
    day 2, whichever comes first.
+5. **Walk fixes (2026-11-26, the orchestrator's walk of #418):**
+   - *The level.* With a readiness band, the plan uses it. Without one the
+     level is **assumed** (the roadmap's interview default, Intermediate)
+     and the why-line says so: "We assumed Intermediate; your first two
+     answers will adjust it." The first two plan steps solved are read with
+     the ladder's thresholds (`ladderOutcome` at each question's rung,
+     `levelForLadder`); at the second the plan is re-laid from that level,
+     those two steps leading it (`tournament_sprint_level`, then
+     `tournament_plan_shown {recompute: true}`). Chosen over a 2-question
+     mini-ladder in front of the sprint: a company link's question must be
+     step 1 (next bullet), a rung-0 question would be exactly the "Counting
+     Rows" that the walk flagged for a Capital One arrival, and D's
+     mechanism is two taps and the plan, with no third screen.
+   - *A company link's question is step 1.* The question the link opens
+     (`companyBannerNext()`) leads the plan (moved to the head if the
+     roadmap already held it), so the header, the open question and the
+     plan agree.
+   - *One plan.* While the sprint line shows, the Coach's own "Your
+     {Company} plan" card is hidden (`pathUi.hideCoachPlan`).
+   - From B's fixes: the guest banner waits with the tabs, and no "Take
+     tour" prompt.
 
 **Reuses.**
 - `interview-prep.js` (`findPlanTarget`, `planToDate`, `daysUntil`);

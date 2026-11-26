@@ -63,6 +63,14 @@ export const PLAN_FOCUS_STEPS = 3;
 /** One tap: 7 days, 14 days, or no date (null — the roadmap's default sprint by level). */
 export const SPRINT_LENGTHS = Object.freeze([7, 14]);
 export const SPRINT_GOALS = Object.freeze(['interview', 'learning']);
+/**
+ * Walk fix D1 (2026-11-26): with no readiness band, D's level is ASSUMED
+ * (the roadmap's interview default, Intermediate) and the why-line says so;
+ * the first SPRINT_PROBE_STEPS plan steps solved are read with the ladder's
+ * own thresholds (ladderOutcome at each question's rung, levelForLadder) and
+ * the plan is re-laid from that level, the two done steps leading it.
+ */
+export const SPRINT_PROBE_STEPS = 2;
 const DAY_MS = 86400000;
 
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
@@ -139,7 +147,7 @@ export function pathUiFlags({ behaviour = null, state = null, hasChallenge = fal
     arm: null, active: false, ladderActive: false, hideTabs: false, extendShell: false,
     showPlanLine: false, suppressAsks: false, suppressNextStrip: false, sprintSetup: false,
     starterPrefill: false, companyDirect: false, holdLayers: false, fixedRunBar: false, sprint: false,
-    holdSignupAsks: false, hideGuestBanner: false, suppressTour: false,
+    holdSignupAsks: false, hideGuestBanner: false, suppressTour: false, hideCoachPlan: false,
   };
   if (!isPathArm(behaviour)) return off;
   const s = state && state.v ? state : normalizePathState(state);
@@ -188,6 +196,9 @@ export function pathUiFlags({ behaviour = null, state = null, hasChallenge = fal
     // The guest banner and the tour wait with the tabs (B's walk fixes, D too).
     hideGuestBanner: !tabsOpen,
     suppressTour: true,
+    // One plan on screen: while the sprint line shows, the Coach's own
+    // "Your {company} plan" card stays away (walk fix D3).
+    hideCoachPlan: setUp && !!s.plan,
     extendShell: !tabsOpen,
     showPlanLine: setUp && !!s.plan,
     suppressAsks: !tabsOpen,
@@ -361,7 +372,10 @@ export function roadmapProfileFor({ arm = null, visitor = null, state = null, so
     if (sp.company) out.company = sp.company;
     out.goal = sp.goal === 'learning' && !sp.company ? 'learning' : 'interview';
     if (isNum(sp.days)) out.deadlineDays = sp.days;
+    // The level: the readiness test's band, else the one the first two plan
+    // steps measured (D1); else none — the roadmap assumes, and says so.
     if (v.readinessBand) out.level = v.readinessBand === 'high' ? 'working' : v.readinessBand === 'mid' ? 'basics' : 'brand-new';
+    else if (sp.levelId) out.level = sp.levelId;
     return out;
   }
   if (s.ladder.levelId) out.level = s.ladder.levelId;
@@ -394,6 +408,7 @@ function normalizePlan(raw) {
     wallAt: Number.isInteger(raw.wallAt) ? raw.wallAt : null,
     why: Array.isArray(raw.why) ? raw.why.filter(w => typeof w === 'string').slice(0, 3).map(w => w.slice(0, 240)) : [],
     profile: raw.profile && typeof raw.profile === 'object' ? raw.profile : null,
+    assumedLevel: raw.assumedLevel === true,
   };
 }
 
@@ -407,12 +422,15 @@ function normalizePlan(raw) {
  * `wallAt` is recomputed over the whole list: the step that is the quota-th
  * solve when the plan is followed (null when there is no quota: Pro, holdout).
  */
-export function composePathPlan({ roadmap, ladder = null, solved = [], solvedCount = null, quota = FREE_SOLVE_QUOTA, quotaOn = true, now = null } = {}) {
+export function composePathPlan({ roadmap, ladder = null, lead = [], solved = [], solvedCount = null, quota = FREE_SOLVE_QUOTA, quotaOn = true, now = null } = {}) {
   if (!roadmap || !Array.isArray(roadmap.steps)) return null;
   const solvedSet = toSet(solved);
   const seen = new Set();
   const steps = [];
   const push = (st) => { const k = stepKey(st); if (seen.has(k)) return; seen.add(k); steps.push(st); };
+  // D: the steps that must lead, solved or not — the company link's opened
+  // question (walk fix D2), then the two the level was read from (D1).
+  for (const id of cleanIds(lead)) push({ kind: 'challenge', challengeId: id, proOnly: false, part: 'lead', day: 1, difficulty: null });
   const asked = ladder && Array.isArray(ladder.outcomes) ? ladder.outcomes : [];
   for (const o of asked) {
     if (o.outcome !== 'stuck' && solvedSet.has(o.challengeId)) push({ kind: 'challenge', challengeId: o.challengeId, proOnly: false, part: 'ladder', day: 1, difficulty: null });
@@ -443,6 +461,7 @@ export function composePathPlan({ roadmap, ladder = null, solved = [], solvedCou
     wallAt,
     why: Array.isArray(roadmap.why) ? roadmap.why.slice(0, 3) : [],
     profile: roadmap.profile || null,
+    assumedLevel: false,
   };
 }
 
@@ -553,7 +572,53 @@ export function normalizeSprint(raw) {
     daysSource: ['tap', 'no_date', 'skipped'].includes(raw.daysSource) ? raw.daysSource : null,
     startDay,
     setAt,
+    probe: Array.isArray(raw.probe) ? raw.probe.filter(o => o && LADDER_OUTCOMES.includes(o.outcome) && Number.isInteger(Number(o.challengeId))).slice(0, SPRINT_PROBE_STEPS).map(o => ({
+      challengeId: Number(o.challengeId),
+      rung: clampRung(Number(o.rung)),
+      outcome: o.outcome,
+      secs: isNum(Number(o.secs)) && o.secs !== null ? Math.max(0, Math.round(Number(o.secs))) : null,
+      wrongs: isNum(Number(o.wrongs)) ? Math.max(0, Math.round(Number(o.wrongs))) : 0,
+      hint: o.hint === true,
+    })) : [],
+    levelId: PLACEMENT_TIERS[raw.levelId] ? raw.levelId : null,
   };
+}
+
+/** Where D's level comes from: the readiness band, the two-step probe, or an assumption. */
+export function sprintLevelSource({ visitor = null, state = null } = {}) {
+  const s = normalizePathState(state);
+  if (visitor && visitor.readinessBand) return 'readiness';
+  if (s.sprint && s.sprint.levelId) return 'sprint_probe';
+  return 'assumed';
+}
+
+/**
+ * Stamp a D plan with where its level came from: `assumedLevel` (the why-line
+ * says it, the probe runs) or the profile's real `levelSource` (the roadmap
+ * calls any level it is handed "stated").
+ */
+export function sprintPlanMarks(plan, { visitor = null, state = null } = {}) {
+  if (!plan) return plan;
+  const source = sprintLevelSource({ visitor, state });
+  if (source === 'assumed') return { ...plan, assumedLevel: true };
+  return { ...plan, assumedLevel: false, profile: plan.profile ? { ...plan.profile, levelSource: source } : plan.profile };
+}
+
+/**
+ * Record a solved plan step toward D's level probe. Returns { state, levelId }:
+ * `levelId` is set on the solve that completes the probe (re-plan then).
+ * A no-op once the level is known (band or probe) or for a step already read.
+ */
+export function sprintProbeRecord(state, { visitor = null, challenge = null, wrongs = 0, hint = false, secs = null } = {}) {
+  const s = normalizePathState(state);
+  if (!s.sprint || !challenge || sprintLevelSource({ visitor, state: s }) !== 'assumed') return { state: s, levelId: null };
+  const id = Number(challenge.id);
+  if (s.sprint.probe.length >= SPRINT_PROBE_STEPS || s.sprint.probe.some(o => o.challengeId === id)) return { state: s, levelId: null };
+  const rung = rungForChallenge(challenge);
+  const outcome = ladderOutcome({ solved: true, wrongs, hint, secs: isNum(secs) ? secs : null, rung });
+  const probe = [...s.sprint.probe, { challengeId: id, rung, outcome, secs: isNum(secs) ? Math.round(secs) : null, wrongs: Number(wrongs) || 0, hint: !!hint }];
+  const levelId = probe.length >= SPRINT_PROBE_STEPS ? levelForLadder(probe) : null;
+  return { state: { ...s, sprint: { ...s.sprint, probe, levelId } }, levelId };
 }
 
 /** The sprint as set on the sprint screen. `days` null = no date. Never a date field. */
@@ -630,6 +695,18 @@ const TR_TIERS = { 'brand-new': 'Temel', basics: 'Orta', working: 'İleri', adva
  */
 export function pathWhyLines(plan, lang = 'en') {
   if (!plan) return [];
+  const lines = pathWhyLinesRaw(plan, lang);
+  if (!plan.assumedLevel || !lines.length) return lines;
+  // D1: the level was not measured — the sizing line says it was assumed.
+  const p = plan.profile || {};
+  const days = p.deadlineDays || plan.planDays;
+  const assumed = lang === 'tr'
+    ? `${days} gün, günde ${plan.dailyCount}. Seviyeni ${TR_TIERS[p.level] || 'Orta'} varsaydık; ilk iki cevabın bunu düzeltecek.`
+    : `${days} days, ${plan.dailyCount} a day. We assumed ${p.tier || 'Intermediate'}; your first two answers will adjust it.`;
+  return [...lines.slice(0, lines.length - 1), assumed];
+}
+
+function pathWhyLinesRaw(plan, lang) {
   if (lang !== 'tr') return (plan.why || []).slice(0, 3);
   const p = plan.profile || {};
   const out = [];
