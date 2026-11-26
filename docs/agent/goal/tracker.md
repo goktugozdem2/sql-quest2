@@ -8,24 +8,24 @@ the "Today" block on every run and appends to the other sections. The brief is
 
 ## Objective: O2, 10 paying customers per 30 days by 2027-02-08
 
-### Today (G0, 2026-11-25, scheduled run)
+### Today (G0, 2026-11-26, scheduled run)
 
-**No money event since 11-23 21:34 UTC** through B1's second pass (data to
-11-24 08:21 UTC): no checkout session, trial, purchase or payment failure.
-The trial's day 7 (11-24) and the failed renewal's retry are not yet read
-(E1, plan row 1).
+**The 11-24 trial converted and then lost Pro by our mistake** (A3,
+`errors-2026-11-25.md`). Its first charge was never attempted (`attempt_count`
+0), the invoice is open, and the old webhook revoked Pro. #355 fixed the
+webhook (v27 live 11-25), but not this person: plan row 1. One new trial
+started 11-25 (day 7 on 12-02).
 
 | | Value | As of | Source |
 |---|---|---|---|
-| Payers / 30 d | **2** (the 11-02 monthly and the 11-21 annual) | 2026-11-24 08:21Z | B1 11-24 §8a |
+| Payers / 30 d | **2** (the 11-02 monthly and the 11-21 annual) | 2026-11-25 07:12Z | A3 11-25 (no purchase) |
 | Six-solvers / 30 d (all users) | **64** | 2026-11-22 | B2 (next like-for-like read 12-03) |
-| Six-solvers, new openers, 28 d | 56 (first open 10-27 → 11-23) | 2026-11-24 | B1 §8a; not comparable with the row above |
-| Trial-or-paid per 1,000 new openers | ≈ 10 (6 of 587, 28 d) | 2026-11-24 | B1 §8a |
-| Paid (trial or purchase) in AN's 28-day window | 5 (6 the day before) | 2026-11-24 | AN `analytics-2026-11.md` |
-| Trial in flight | 1 monthly, day 7 on 11-24; outcome not read | 2026-11-24 | B1, E1 pending |
-| Renewal at risk | 1 monthly, failed 11-23, retry not read | 2026-11-23 | B1 11-24 §3 |
-| Days left | **75** (day 15 of 90) | | |
-| Next checkpoint | **2026-12-10: 4 payers / 30 d**, 15 days away, 3 purchases short | | objectives.md |
+| Converted trial, charge open | 1 ($9/mo India): active 11-24, first charge never attempted, Pro revoked by the old webhook | 2026-11-25 | A3 #356 |
+| Trial in flight | 1, started 11-25, day 7 on 12-02 | 2026-11-25 | A3 |
+| Renewal at risk | 1 ($29/mo), attempt 1 failed 11-23, retry scheduled | 2026-11-23 | A3 |
+| Day-0 solvers back within 7 d | 44.3% before the 09-25 flip → 23.7% after | 2026-11-25 | `returns-0926-flags-2026-11-25.md` |
+| Days left | **74** (day 16 of 90) | | |
+| Next checkpoint | **2026-12-10: 4 payers / 30 d**, 14 days away, 3 purchases short | | objectives.md |
 
 ### The gap
 
@@ -58,6 +58,12 @@ The trial's day 7 (11-24) and the failed renewal's retry are not yet read
   clicks fell. #72's bingbot noindex (read 2027-01-08) is the bet on it.
   11-23: still 1.94 (S1); only 8 of 312 question pages re-crawled since #72.
   C1's rule 1 holds: no new page this week; let the two Bing fixes act.
+- **11-26, returns halved at the 09-25 flag flip.** Day-0 solvers back within
+  7 days: 44% → 24%, on the hour of the six-flag commit. `freeQuota` is the
+  strongest suspect, but 78% of the lost returns never met the wall. #384's
+  50/50 holdout (founder's go 11-25) is the test, read 12-31. A person who
+  does not return does not reach six, so this is L3's biggest open
+  question.
 - **11-25, where the people are lost (B1 §8c, 28 d, new openers).** Opened a
   challenge → first run loses 202 of 457 (44%), the most of any step, but it
   carries six changes already; #287 (`challenge_left`) is its missing
@@ -95,6 +101,8 @@ a read date. G0 closes a bet only on its read.
 | 6 | Exit-reason ask after a closed modal or wall | L4 (learning) | #155 | reasons for ≥ 10 of the next ~20 expired checkouts | E2, 12-20 | **merged; ON 11-23**. Day 1: 1 shown, 1 answer ("price"). The re-ask defect B1 found is fixed (#286). Read on people. |
 | 7 | Company arrival opens question 1, 50/50 | L2 | #156 | company-door `open_to_first_run` up; stop rule in the PR | B5, per PR | **merged; ON 50/50 11-23**. 11-24: 2 vs 5 assigned, ~1% of the harm-check n (B1 §8d). |
 | 8 | No onboarding tour over the Pro modal | L4 | #240 | the modal is read, not covered; modal → plan click off its 10% floor | per PR, 12-20 | **merged 11-24** |
+| 9 | A failed charge Stripe never attempted does not revoke Pro | L5 | #355 | no payer lost to `attempt_count` 0 again | A3, per run | **merged + deployed (v27) 11-25** |
+| 10 | Run is not Submit, after a zero-solve Run | L2 | #243 | first run → solve up for people who ran and never solved | per PR | **merged 11-25; flag still off** (plan row 3) |
 
 ## Closed bets (what each ruled out)
 
@@ -120,6 +128,10 @@ a read date. G0 closes a bet only on its read.
   `goal/2026-11-26` from main. E1's row went unrecorded once and is cut to two
   lines from `stripe_webhook`. #241 sits on one missing orchestrator row; G0
   recommends ON (row 2).
+- **2026-11-26.** The trial outcome came from A3's error read, not from E1:
+  the money path is better watched by the error lane than by the customer
+  lane. The investor 90-day plan is the work order from 11-25; G0's rows now
+  name its A-numbers.
 - **Throughput is not the problem.** 149 PRs merged on 11-22 and 11-23 and
   29 are open, while payers / 30 d has not moved. G0's job is to keep the
   merge order money-first, not to add rows.
@@ -132,6 +144,7 @@ a read date. G0 closes a bet only on its read.
 | 2026-11-23 | 2 (a day old) | 64 (a day old) | L1, with L4 (India checkout) new | 6 | 1 shipped, 2 partial, 2 not started, 1 due 11-24 | `2026-11-24.md` |
 | 2026-11-24 | 2 (to 11-23 21:34Z) | 64 (11-22) | L1 (Bing: wait), L4 (India: founder) | 4 | 2 shipped, 1 pending, 2 dropped, 1 blocked on founder | `2026-11-25.md` |
 | 2026-11-25 | 2 (to 11-24 08:21Z) | 64 (11-22); 56 new-opener 28 d | six-solvers: open → run (44%) and 1 → 6; money path for 12-10 | 5 | 1 not recorded (made smaller), 1 partial, 2 not due | `2026-11-26.md` |
+| 2026-11-26 | 2 (to 11-25 07:12Z) | 64 (11-22) | six-solvers, with returns halved since 09-25 (holdout #384); money: the revoked converted trial | 5 | 2 partial, 1 not done (made smaller), 2 not due | `2026-11-27.md` |
 
 ## Weekly
 
