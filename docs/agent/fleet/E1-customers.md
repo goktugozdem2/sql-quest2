@@ -1,3 +1,15 @@
+---
+id: E1
+name: "Customer satisfaction"
+owner: orchestrator
+runtime: laptop
+status: active
+cadence: "daily"
+metric: [outreach_replies]
+writes_code: false
+version: 1.0.0
+last_changed: 2026-11-26
+---
 # E1 — Customer satisfaction
 
 **Lane:** notes to people who pay or almost pay. Gmail **drafts** only; the founder sends.
@@ -89,3 +101,7 @@ It is step 2 of four:
 **Holdout.** The founder decides. The default is none until he answers. If one is set, the excluded share is chosen by a murmur-finalised hash of the username and logged. Excluded people still get steps 1, 3 and 4.
 
 **Read.** Reply rate, then a trial or purchase within 14 days, compared with interview-goal people who were not drafted in the same weeks. This comparison is confounded unless a holdout exists, and the read must say so.
+
+## Changelog
+
+- 1.0.0 (2026-11-26) — versioned for the skills loop: front-matter added.
