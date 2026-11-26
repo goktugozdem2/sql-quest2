@@ -81,6 +81,7 @@ import { softGateReason, paywallMomentCopy, SOFT_GATE_ACTION_LABEL, SOFT_GATE_TO
 import { botSignals, botDecision } from './utils/bot-signals.js';
 import { bootTiming } from './utils/boot-timing.js';
 import { starterHintFor, starterSqlFromHint } from './utils/starter-query.js';
+import { RUNNABLE_STARTER_KEY, RUNNABLE_STARTER_TEST_ID, isDesktopScreen, isEmptyEditorOpen, normalizeRunnableStarterRecord, runnableStarterDecision, runnableStarterText, isUntouchedStarter } from './utils/runnable-starter.js';
 import { dueRetrievals, pickRetrievalChallenge, recordRetrieval, dailyQuota, MAX_DUE_SHOWN } from './utils/spaced-retrieval.js';
 import { computeRecap, shouldShowRecap } from './utils/session-recap.js';
 import { getAnonId } from './utils/anon-id.js';
@@ -2345,10 +2346,15 @@ const ROADMAP_LESSONS_BY_ID = {
 // (debugQuestions): the gutter shows line numbers and a tap on one is the
 // optional "spot" step (onGutterClick receives the 1-based line); markLines
 // tints the spotted line. Every other editor passes none of them.
-const SQLEditor = ({ value, onChange, onKeyDown, placeholder, height = '10rem', disabled = false, className = '', lineNumbers = false, onGutterClick = null, markLines = null }) => {
+const SQLEditor = ({ value, onChange, onKeyDown, placeholder, height = '10rem', disabled = false, className = '', lineNumbers = false, onGutterClick = null, markLines = null, selectAllWhen = null }) => {
   const containerRef = useRef(null);
   const editorRef = useRef(null);
   const onChangeRef = useRef(onChange);
+  // `runnableStarter` (2026-11-26): while the editor holds exactly this text
+  // (the starter as placed), focusing it selects it all, so the first
+  // keystroke replaces the starter instead of writing beside it.
+  const selectAllWhenRef = useRef(selectAllWhen);
+  selectAllWhenRef.current = selectAllWhen;
   const onKeyDownRef = useRef(onKeyDown);
   const onGutterClickRef = useRef(onGutterClick);
   const isExternalUpdate = useRef(false);
@@ -2384,6 +2390,13 @@ const SQLEditor = ({ value, onChange, onKeyDown, placeholder, height = '10rem', 
 
     cm.on('keydown', (cm, e) => {
       if (onKeyDownRef.current) onKeyDownRef.current(e);
+    });
+
+    cm.on('focus', () => {
+      const t = selectAllWhenRef.current;
+      if (!t || cm.getValue() !== t) return;
+      // After CodeMirror's own mousedown placed the cursor.
+      setTimeout(() => { if (cm.getValue() === t) cm.execCommand('selectAll'); }, 0);
     });
 
     cm.on('gutterClick', (cm, line) => {
@@ -8316,6 +8329,10 @@ function SQLQuest() {
   const [challengeExpected, setChallengeExpected] = useState({ columns: [], rows: [] });
   const [challengeStatus, setChallengeStatus] = useState(null);
   const [challengeStarterHint, setChallengeStarterHint] = useState(null);
+  // `runnableStarter` (desktop A/B, 2026-11-26, src/utils/runnable-starter.js):
+  // the exact text the `starter` arm put in the editor on this open, or null.
+  // Declared here, far above the showAuth / dbReady returns.
+  const [challengeRunnableStarter, setChallengeRunnableStarter] = useState(null);
   // A deep link to a locked Hard swapped for a free Hard preview (2026-11-22,
   // src/utils/paid-wall.js previewSwapMatch): the note above the problem.
   const [deepLinkSwapNote, setDeepLinkSwapNote] = useState(null);
@@ -24119,6 +24136,36 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
   // it; every existing call site is unchanged and sends no key, which the read
   // treats as organic. No new event — a separate hard_preview_opened would
   // duplicate challenge_opened (plan §Measurement).
+  // `runnableStarter` (2026-11-26): decide the arm at an empty-editor open.
+  // Assigns once per browser on a desktop screen and fires
+  // `runnable_starter_assigned`; returns { arm, assign, prefill }.
+  const runnableStarterOpen = (challenge, savedQuery) => {
+    let desktop = false;
+    try {
+      desktop = isDesktopScreen({ width: window.innerWidth, finePointer: !!window.matchMedia?.('(pointer: fine)')?.matches });
+    } catch (_) { desktop = false; }
+    let stored = null;
+    try { stored = JSON.parse(localStorage.getItem(RUNNABLE_STARTER_KEY) || 'null'); } catch (_) { stored = null; }
+    const decision = runnableStarterDecision({
+      flagOn: ftbFlag('runnableStarter'),
+      desktop,
+      emptyOpen: isEmptyEditorOpen({ challenge, savedQuery, solvedCount: solvedChallenges.size, debugItem: false }),
+      stored,
+      aid: getAnonId(),
+    });
+    if (decision.assign) {
+      try { localStorage.setItem(RUNNABLE_STARTER_KEY, JSON.stringify({ arm: decision.arm, at: Date.now() })); } catch (_) { /* ignore */ }
+      let viewport = null;
+      try { viewport = `desktop:${window.innerWidth}x${window.innerHeight}`; } catch (_) { viewport = null; }
+      trackActivationEvent('runnable_starter_assigned', { arm: decision.arm, test: RUNNABLE_STARTER_TEST_ID, challengeId: challenge.id, viewport });
+    }
+    return decision;
+  };
+  // The person's runnableStarter arm while the flag is on, else null.
+  const runnableStarterArmNow = () => {
+    if (!ftbFlag('runnableStarter')) return null;
+    try { return normalizeRunnableStarterRecord(JSON.parse(localStorage.getItem(RUNNABLE_STARTER_KEY) || 'null')).arm; } catch (_) { return null; }
+  };
   const openChallenge = (challenge, opts = {}) => {
     if (isContentLocked('challenge', challenge)) {
       trackLockReached('challenge_hard', {
@@ -24313,6 +24360,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     // For new users with no saved query, show a starter hint
     const savedQuery = challengeQueries[challenge.id] || '';
     setChallengeStarterHint(null);
+    setChallengeRunnableStarter(null);
     if (!(opts && opts.openedFrom === 'deeplink_swap')) setDeepLinkSwapNote(null);
     // A Debug item opens on the AI's query — only when no draft is saved —
     // and never takes the first-run starter branches below.
@@ -24327,7 +24375,19 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
       // it (founder QA 2026-09-19, item 21). It disappears on the first key.
       const mainTable = challenge.tables?.[0] || 'table_name';
       setChallengeStarterHint(starterHintFor(mainTable));
-      setChallengeQuery('');
+      // `runnableStarter` (desktop A/B, 2026-11-26): in the `starter` arm the
+      // editor opens on real, runnable text — a comment line, then
+      // SELECT * FROM <first table> LIMIT 5; — instead of the grey
+      // placeholder. The arm is assigned once, at the first such open on a
+      // desktop screen; control keeps the placeholder above.
+      const rs = runnableStarterOpen(challenge, savedQuery);
+      if (rs.prefill) {
+        const text = runnableStarterText(mainTable, lang);
+        setChallengeRunnableStarter(text);
+        setChallengeQuery(text);
+      } else {
+        setChallengeQuery('');
+      }
     } else {
       setChallengeQuery(savedQuery);
     }
@@ -25335,12 +25395,15 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
   if (currentChallenge && challengeOpenedAtRef.current.id !== currentChallenge.id) {
     challengeOpenedAtRef.current = { id: currentChallenge.id, at: Date.now() };
   }
-  const markChallengeFirstRun = (via) => {
+  // `starterArm` (2026-11-26): the person's `runnableStarter` arm, null when
+  // not in the test. `starterUntouched`: a Submit of the starter text exactly
+  // as placed (the `starter` arm), graded wrong — metric runnable_starter_split.
+  const markChallengeFirstRun = (via, extra = {}) => {
     const id = currentChallenge?.id;
     if (id == null || firstRunSentRef.current.has(id)) return;
     firstRunSentRef.current.add(id);
     const at = challengeOpenedAtRef.current.id === id ? challengeOpenedAtRef.current.at : 0;
-    trackActivationEvent('challenge_first_run', { challengeId: id, via, secondsOpen: at ? Math.round((Date.now() - at) / 1000) : null });
+    trackActivationEvent('challenge_first_run', { challengeId: id, via, secondsOpen: at ? Math.round((Date.now() - at) / 1000) : null, starterArm: runnableStarterArmNow(), ...extra });
   };
 
   // ── Feedback capture points 2-4 (E2, 2026-11-22) ─────────────────────────
@@ -25484,6 +25547,10 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
       sql = starter;
       via = 'starter';
       setChallengeQuery(starter);
+    } else if (isUntouchedStarter(sql, challengeRunnableStarter)) {
+      // The `starter` arm's text, run as placed: the same act as Run on the
+      // control arm's placeholder, so the same `via`.
+      via = 'starter';
     }
     markChallengeFirstRun(via);
     // Track execution time so user gets "Ran in Xms" confirmation.
@@ -25629,7 +25696,10 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
     if (db && currentChallenge && !challengeQuery.trim() && starterSqlFromHint(challengeStarterHint)) { runChallengeQuery(); return; }
     if (!db || !challengeQuery.trim() || !currentChallenge) return;
     setRunSubmitNudge(null);
-    markChallengeFirstRun('submit');
+    // The `starter` arm's text submitted as placed is graded like any query —
+    // and can never be a solve (forced wrong below).
+    const starterUntouched = isUntouchedStarter(challengeQuery, challengeRunnableStarter);
+    markChallengeFirstRun('submit', starterUntouched ? { starterUntouched: true } : {});
     setChallengeSubmitAt(Date.now());
     try {
       // For a SELECT challenge, running the user's query then the solution on
@@ -25671,6 +25741,9 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
           expectedResultData.length ? expectedResultData[0].columns : []
         );
       }
+      // `runnableStarter`: the untouched starter is never a solve, whatever
+      // the rows (tests/runnable-starter.test.js runs it over the bank).
+      if (starterUntouched) isSuccess = false;
       const isFirstTry = !solvedChallenges.has(currentChallenge.id);
       
       // Track this attempt. `topics` fans credit across every skill the
@@ -40352,6 +40425,7 @@ RULES:
                         onChange={val => updateChallengeQuery(val)}
                         onKeyDown={(e) => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); submitChallenge(); }}}
                         placeholder={challengeStarterHint || i18n_t('practice', 'editorPlaceholder')}
+                        selectAllWhen={challengeRunnableStarter}
                         height={isDebugChallenge(currentChallenge) ? '18rem' : '14rem'}
                         lineNumbers={isDebugChallenge(currentChallenge)}
                         className={isDebugChallenge(currentChallenge) ? 'sql-cm-debug' : ''}
@@ -40366,6 +40440,13 @@ RULES:
                         markLines={isDebugChallenge(currentChallenge) && (debugStats.spots || {})[String(currentChallenge.id)] ? [(debugStats.spots || {})[String(currentChallenge.id)].line] : null}
                       />
                     </div>
+                    {/* `runnableStarter` (2026-11-26): one grey line in the
+                        `starter` arm while the editor holds the starter as
+                        placed and nothing has run yet. Body type, no accent
+                        (DESIGN.md). */}
+                    {isUntouchedStarter(challengeQuery, challengeRunnableStarter) && !firstRunSentRef.current.has(currentChallenge.id) && (
+                      <p data-testid="runnable-starter-line" className="mt-2 text-sm text-gray-400">{i18n_t('practice', 'runnableStarterLine')}</p>
+                    )}
                     
                     {/* Sticky on mobile, normal flow from md up.
 
