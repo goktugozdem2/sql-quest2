@@ -621,11 +621,13 @@ window.FEATURE_FLAGS = {
     // `mobile_run_bar_assigned {arm}`. The `bar` arm pins the challenge's
     // Run / Submit bar to the bottom of the viewport below `md` (above the
     // keyboard where visualViewport is supported); `control` keeps today's
-    // sticky bar. Desktop is untouched in both arms. DARK until the
-    // orchestrator's decision row. src/utils/mobile-run-bar.js; ledger "Run
-    // stays on screen on phones"; metric open_to_first_run, mobile band.
+    // sticky bar. Desktop is untouched in both arms. Shipped off; ON at 50/50
+    // 2026-11-25 (orchestrator decision row, after an iOS Simulator +
+    // production walk on the bundle with #299's iOS fixes: PASS).
+    // src/utils/mobile-run-bar.js; ledger "Run stays on screen on phones";
+    // metric open_to_first_run, mobile band.
     // Plan: docs/plans/mobile-acquisition-2026-11-23.md §4.
-    mobileRunBar: false,
+    mobileRunBar: true,
 
     // ── The Debug question type (design PR #248, 2026-11-23) ──────────────
     // "An AI assistant wrote this for the task below. It returns the wrong
@@ -664,6 +666,21 @@ window.FEATURE_FLAGS = {
     // orchestrator decides the flip (companyDirectOpen "runs alone").
     // Ledger "Run is not Submit"; read first_solve_10m from assignment by arm.
     runSubmitNudge: false,
+
+    // ── A runnable starter in the editor (desktop A/B, 2026-11-26) ────────
+    // An A/B by aid (runnable_starter_v1, murmur-finalised hash), assigned at
+    // the first challenge open that would show an empty editor (no solve, no
+    // draft, not #91, not a Debug item) on a DESKTOP screen (≥ 1024 wide,
+    // fine pointer) and written once as `runnable_starter_assigned {arm,
+    // challengeId, viewport}`. `starter`: the editor holds a comment line
+    // and `SELECT * FROM <first table> LIMIT 5;` as real text, selected on
+    // focus, plus one grey line "Press Run to see the data first."; `control`
+    // keeps the grey placeholder. Grading unchanged; the untouched starter is
+    // never a solve. Phones are out (their cell is full, orchestrator
+    // 2026-11-24). DARK on merge; the founder approved ON at 50/50 after
+    // merge (chat, 2026-11-26). src/utils/runnable-starter.js; ledger "a
+    // runnable starter in the editor"; metric runnable_starter_split.
+    runnableStarter: false,
   },
 };
 

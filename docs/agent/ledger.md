@@ -97,6 +97,50 @@ of the verifier and must never be rounded to `FLAT`.
   deploy loses its code verifier across origins; one retry fixes it. The
   Supabase Auth Site URL (https://sqlquest.app) is the founder's dashboard
   setting, not this change.
+### A runnable starter in the editor (`runnableStarter`, desktop A/B, builder 2026-11-26)
+
+- **Claimed** 2026-11-26 · **Shipped** dark on merge; the founder approved
+  ON at 50/50 after merge (chat, 2026-11-26) — the clock starts at the
+  deploy of the flip commit · **Read** interim 2026-12-17 (harm only),
+  final 2027-01-07. If the flip lands later, both move by the same delay.
+- **Why.** `docs/reads/open-without-run-2026-11-25.md`: 54% of human first
+  challenge opens never ran the challenge (48% ran nothing in 24 h), and
+  it is an arrival leak. On the prefilled #91, 63 of 97 runners (65%) ran
+  inside a minute; on an empty editor 22 of 139 (16%). The 11-22 "Run on
+  an empty editor runs the starter" change was used twice in 28 days: the
+  starter is a grey placeholder, so the editor looks empty.
+- **Change.** On a desktop screen (≥ 1024 wide, fine pointer), the first
+  challenge open that would show an empty editor (no solve, no saved
+  draft, not #91, not a Debug item, the solution is not the starter)
+  assigns an arm by aid (`runnable_starter_v1`, FNV + murmur3 finalizer),
+  written once as `runnable_starter_assigned {arm, test, challengeId,
+  viewport}`. `starter`: the editor holds a comment line ("Press Run to
+  see the data first, then replace these lines with your query.") and
+  `SELECT * FROM <first table> LIMIT 5;` as real text, selected on focus
+  while untouched so the first keystroke replaces it, plus one grey line
+  under the editor, "Press Run to see the data first.", until the first
+  run. `control`: today's placeholder. Grading is unchanged; the untouched
+  starter submitted is graded wrong and can never be a solve (forced, and
+  over the live bank no eligible challenge's expected rows equal the
+  starter's). `challenge_first_run` gains `starterArm` (and
+  `starterUntouched` on a Submit of the untouched starter); `via =
+  'starter'` is the untouched starter run in either arm.
+- **Metric** `runnable_starter_split` (docs/agent/metrics.md, PR #401,
+  merged before this code): ran = `challenge_first_run` for the assigned
+  `challengeId`, by arm; n per arm; 2×2 by `companyDirectOpen`'s arm.
+- **Baseline** desktop `open_to_first_run` 59% (263 / 449, 28 days to
+  2026-11-23). ~110 desktop first-contact openers a week, ~55 per arm.
+- **Target** `starter` ≥ `control` + 10 points at the final read (~360 per
+  arm). The interim read (~160 per arm) can show +15.
+- **Falsified if** at the final read the `starter` arm's ran-rate is not
+  ≥ `control` + 5 points, **or** its first solve in the session (30 min
+  from assignment) falls below `control`'s → the flag goes off. Interim
+  2026-12-17: `starter` ≥ 10 points below `control` on first solve in the
+  session → off the same day.
+- **Cell.** Desktop open → first run held only `companyDirectOpen`
+  (orchestrator-decisions 2026-11-24), so this is the second and last slot;
+  phones are out (their cell is full). Read the 12-20 claims on the 11-22
+  starter and the deep-link swap inside `control` only.
 ### the Coach's Debug door (`coachDebugDoor`) — **OPEN**
 
 - **Claimed** 2026-11-25 · **Shipped** ON on merge (orchestrator decision,
@@ -377,9 +421,12 @@ of the verifier and must never be rounded to `FLAT`.
 
 ### Run stays on screen on phones (`mobileRunBar`, rank 1 of the mobile plan)
 
-- **Claimed** 2026-11-23 · **Shipped** dark on merge; ON at 50/50 by the
-  orchestrator's decision row after review · **Read** 2026-12-21 (if the
-  flip lands later, 28 days after the flip).
+- **Claimed** 2026-11-23 · **Shipped** dark on merge; **ON at 50/50
+  2026-11-25** (orchestrator decision row, after an iOS Simulator +
+  production walk; the clock starts at the deploy of the flip commit) ·
+  **Read** 2026-12-23 (28 days after the flip). Exclude the walk guests of
+  2026-11-25 10:24–10:33 UTC (iOS Simulator + Chromium 375×812, stored or
+  overridden arms).
 - **Change** on a narrow touch screen (coarse pointer or width < 768) the
   first challenge open assigns an arm by aid (`mobile_run_bar_v1`, FNV +
   murmur3 finalizer), written once as `mobile_run_bar_assigned {arm}`. In
