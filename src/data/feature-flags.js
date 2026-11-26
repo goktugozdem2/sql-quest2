@@ -632,11 +632,13 @@ window.FEATURE_FLAGS = {
     // `mobile_run_bar_assigned {arm}`. The `bar` arm pins the challenge's
     // Run / Submit bar to the bottom of the viewport below `md` (above the
     // keyboard where visualViewport is supported); `control` keeps today's
-    // sticky bar. Desktop is untouched in both arms. DARK until the
-    // orchestrator's decision row. src/utils/mobile-run-bar.js; ledger "Run
-    // stays on screen on phones"; metric open_to_first_run, mobile band.
+    // sticky bar. Desktop is untouched in both arms. Shipped off; ON at 50/50
+    // 2026-11-25 (orchestrator decision row, after an iOS Simulator +
+    // production walk on the bundle with #299's iOS fixes: PASS).
+    // src/utils/mobile-run-bar.js; ledger "Run stays on screen on phones";
+    // metric open_to_first_run, mobile band.
     // Plan: docs/plans/mobile-acquisition-2026-11-23.md §4.
-    mobileRunBar: false,
+    mobileRunBar: true,
 
     // ── The Debug question type (design PR #248, 2026-11-23) ──────────────
     // "An AI assistant wrote this for the task below. It returns the wrong
@@ -652,6 +654,19 @@ window.FEATURE_FLAGS = {
     // its own decision row. ON 2026-11-23 (orchestrator-decisions.md).
     debugQuestions: true,
 
+    // ── The Coach's Debug door (orchestrator 2026-11-25, decision row in PR #372) ──
+    // One card near the top of the Coach (under "Your plan", above the
+    // roadmap; the goal next-step slot measured ~2,400-2,750 px down), "Fix a query an AI
+    // wrote": its button opens the next unsolved Debug item the person may
+    // open (curriculum order; through openChallenge, so the free quota and
+    // the Pro locks apply exactly), "See all N" opens Practice with the Debug
+    // chip on. Shown only with debugQuestions on, >= 1 solve, an unsolved
+    // Debug item, and not for a hired person (First 90 Days). A door, not a
+    // funnel-step A/B, so it ships ON. src/utils/coach-debug-door.js; events
+    // coach_debug_door_shown / coach_debug_door_clicked; metric
+    // coach_debug_door; ledger "the Coach's Debug door".
+    coachDebugDoor: true,
+
     // Run is not Submit (2026-11-23, src/utils/run-submit-nudge.js): an A/B
     // by aid (run_submit_nudge_v1, murmur-finalised hash). A person with ZERO
     // solves whose Run returns rows on an unsolved challenge is assigned once
@@ -662,6 +677,21 @@ window.FEATURE_FLAGS = {
     // orchestrator decides the flip (companyDirectOpen "runs alone").
     // Ledger "Run is not Submit"; read first_solve_10m from assignment by arm.
     runSubmitNudge: false,
+
+    // ── A runnable starter in the editor (desktop A/B, 2026-11-26) ────────
+    // An A/B by aid (runnable_starter_v1, murmur-finalised hash), assigned at
+    // the first challenge open that would show an empty editor (no solve, no
+    // draft, not #91, not a Debug item) on a DESKTOP screen (≥ 1024 wide,
+    // fine pointer) and written once as `runnable_starter_assigned {arm,
+    // challengeId, viewport}`. `starter`: the editor holds a comment line
+    // and `SELECT * FROM <first table> LIMIT 5;` as real text, selected on
+    // focus, plus one grey line "Press Run to see the data first."; `control`
+    // keeps the grey placeholder. Grading unchanged; the untouched starter is
+    // never a solve. Phones are out (their cell is full, orchestrator
+    // 2026-11-24). DARK on merge; the founder approved ON at 50/50 after
+    // merge (chat, 2026-11-26). src/utils/runnable-starter.js; ledger "a
+    // runnable starter in the editor"; metric runnable_starter_split.
+    runnableStarter: false,
   },
 };
 

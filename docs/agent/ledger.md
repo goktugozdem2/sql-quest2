@@ -39,6 +39,198 @@ of the verifier and must never be rounded to `FLAT`.
 - **Falsification:** fewer than 85 day-0 solvers per arm at 2026-12-31 → UNREADABLE; extend once (as above), never read a smaller n as FLAT. `free_quota_arm_assigned` arms more than 55 / 45 → the assignment is broken; stop and fix before reading anything.
 - **Confounds** the test nests the quota-wall tests: `quotaWallInline` and `modalPlansFirst` (on `free_quota` asks) can only meet `quota`-arm and unenrolled people from now on; read them on `fqArm` not `holdout` and report the 2×2. The static pages still say "10 free challenge solves" to both arms (bound to the flags by tests/site-counts.test.js) — the test measures the in-app quota, not the site copy. A post-window account opened on a second browser gets that browser's arm (read is by aid, intent to treat). The holidays fall inside the window for both arms alike.
 
+### the first-session tournament (`firstSessionTournament`, 3 arms; arm B = the single path)
+
+- **Claimed** 2026-11-26 (planner lane, plan only) · **Ships** dark across four PRs (plan §8) · **Flip** no earlier than **2026-12-10**, after the plan's §2.4 gates and the founder's go on the §7 money strings · **First read** the Friday on which every challenger has ≥ 150 eligible people. At ~23 human openers a day that is ~2027-01-08 with three arms; the hard latest for the first elimination is **2027-01-22** (the 6-week fallback).
+- **Change.** New visitors (first app open; returning browsers, `?interview=` and `?profile=` first opens never enter) are split by aid (FNV + murmur3, `first_session_tournament_v1`) into slots. Slot 0 is `A_control`, today's product, permanent. At launch, slot 1 is `B_single_path` (no menu, a 4-question adaptive ladder sets the level, one plan line, tabs hidden until the ladder ends) and slot 2 is `D_interview_sprint` (one tap for the company, a 14-day sprint set for the person, never a typed date). `C_proof_first` is built and queued. Event `tournament_assigned {arm, armVersion, round}`; `tArm` is stamped on every row. Prices, `FREE_SOLVE_QUOTA` (10), the Hard lock and the company-set gate are unchanged in every arm.
+- **Why.** Founder, chat, 2026-11-26: "seçenek tanımadan … tek birşeye odaklanacak", then "4 tane farklı seçenek … en kötüsünü ele … hep böyle devam etsin". The evidence is in the plan §1:
+  - the quiz at the door lost 15.5% vs 37.2% on `first_solve_10m`;
+  - 48% of first-open non-runners left through another challenge or tab (A05);
+  - 10 of 12 buyers bought at ≥ 6 solves (#409);
+  - interview-target openers give 7 of 12 payers (#409).
+- **Metric.** `first_session_tournament` (metrics.md). Arm B's diagnostics are `single_path_split`, which never decides.
+- **Baseline.** 6+ distinct solves within 7 days of the first app open: **11.8%** (108 / 915 new human openers, 2026-10-05 → 11-18). Guardrails: `first_solve_10m` 23.3%, `second_session_7d` 16.0%.
+- **Target.** A challenger promoted at P(better than control) ≥ 0.95 (on two consecutive Friday reads, if the orchestrator accepts that amendment). For B, that means roughly ≥ 18% against 11.8% at 150–250 per arm.
+- **Falsification, written before the data.**
+  - Any challenger with P(worst among challengers) ≥ 0.80 at ≥ 150 per arm is eliminated. If no challenger reaches that, the lowest posterior mean goes at 6 weeks.
+  - A challenger whose `first_solve_10m` trails control by ≥ 10 points at ≥ 100 per arm is stopped the same day.
+  - A challenger with 0 trial-or-paid while control has ≥ 3 is reported to the founder the same day.
+  - **B specifically is falsified** if it is eliminated, or if at 250 per arm its posterior mean is not above control's, or if its `second_session_7d` trails control by ≥ 8 points at 150 per arm.
+- **Confounds.**
+  - The freeQuota holdout (enrolment 11-26 → 12-23) is orthogonal; every read is a 2×2 by `fqArm`.
+  - `companyDirectOpen`, `runnableStarter` and `mobileRunBar` are superseded for challenger arms. Their reads keep arm A and non-tournament people only.
+  - The late-December traffic dip.
+  - Interview-target people are ~15%, so every read reports that segment separately.
+
+### the Metrics & Case Round: the half of the interview that is not SQL (C5/B3)
+
+- **Claimed** 2026-11-22 · **Shipped** on merge (orchestrator's order, under
+  the founder's delegation of 2026-11-22; no flag, no price change) · **Read**
+  2026-12-20.
+- **Change** A twelve-item mock, `metrics-case-round`, on the existing engine
+  (nine multiple choice, three written SQL): define a metric, spot a wrong
+  denominator (twice), retention from signup vs from first transaction,
+  six-month revenue per signup, CAC vs CPA, fraud labelling, a fraud rate
+  read before its chargebacks arrived, a result said to a non-technical
+  reader, then the SQL for three of those metrics. Every number is computed
+  from `finans_neobank` / `finans_fraud` by a query pinned in
+  `tests/metrics-case-round.test.js`; the one given (£1,440 spend in item 5)
+  is stated as a given. First 3 free, the rest Pro (`freeQuestionCount`,
+  `src/utils/case-round.js`): a free run ends on the Pro modal, reason
+  `case_round`. Listed first in the Interview tab's general section, with a
+  "FIRST 3 FREE" badge. One sourced line on the Chime, Coinbase, PayPal and
+  Monzo pages ("Their loop reportedly includes a metrics/case round",
+  citing each page's own sources). **Not on Revolut:** its page's one source
+  (interviewquery, Q3 2026) describes a SQL screen and a live SQL session,
+  no metrics or case round; the line would invent one.
+- **Metric** `case_round_funnel` (metrics.md, defined in this PR), scoped to
+  `interviewId = 'metrics-case-round'`: entry (`interview_started`), free
+  part finished, Pro modal (`pro_modal_shown {reason: 'case_round'}`) →
+  checkout → trial or purchase.
+- **Baseline** not read: the cloud session has no production data. The set
+  is new, so the entry count starts at 0; the comparison baseline is the
+  laptop's read of `pro_modal_shown → pro_trial_started` for reason
+  `interview_locked` over the 30 days to 2026-11-22, written here before
+  merge.
+- **Target** by 2026-12-20: at least 30 people start the set, and the
+  `case_round` modal's modal → trial-or-purchase rate is at or above the
+  `interview_locked` baseline.
+- **Falsification** (written before the data) fewer than 10 people start it
+  in 28 days → the set is not found; move it (Coach step, company-page
+  placement) before writing more items. 10+ start, 0 reach a trial or
+  purchase from the `case_round` modal, and the modal → checkout rate is
+  below `interview_locked`'s → the ask does not sell; keep the free three,
+  rewrite the modal copy once, then reconsider the split.
+- **Confounds** Company-page traffic is single digits per page per week, so
+  the page line alone may read `UNREADABLE`; read the in-app entry (no
+  `linkSrc`) and the page entry (`linkSrc = <slug>-sql-interview`) apart.
+  The PayPal/Coinbase/Monzo/Chime pages are weeks old; any page change in
+  the window confounds the page door.
+### One host: sql-quest2.vercel.app 301s to sqlquest.app (R1-3, G1)
+
+- **Claimed** 2026-11-25 · **Shipped** on merge (vercel.json host redirect,
+  no flag) · **Read** 2026-12-09 (the G1 weekly read of that date).
+- **Metric.** `ai_mention_share` (docs/agent/metrics.md): which host an
+  assistant or its search proxy cites when it names SQL Quest on the G1
+  panel. Not `gsc_ai_queries`, which counts Google clicks and cannot see the
+  cited host.
+- **Baseline.** G1 read 2026-11-25 (docs/reads/geo-weekly-2026-11-25.md):
+  1 of 15 panel prompts cited SQL Quest in the search proxy (#8, the AI
+  tutor prompt), and the cited URL was `sql-quest2.vercel.app/llms.txt`.
+  The vercel.app copy was byte-identical to sqlquest.app (same etag) and
+  indexed; R1's competitor reads of 11-22 → 11-24 found its `/vs-datalemur/`
+  in a DataLemur review search.
+- **Target.** 0 vercel.app URLs cited on the 2026-12-09 G1 read.
+- **Falsified if** any `sql-quest2.vercel.app` URL is still cited on the
+  12-09 read (then check the redirect is live with `curl -sI` and whether
+  the engine caches the old URL; re-read 12-23).
+- **Risks (sized 2026-11-25, not blockers).** Guest progress kept in a
+  vercel.app browser's localStorage does not follow the 301 (another
+  origin): `pro_events` rows naming the vercel.app host in the last 30 days
+  = 6 rows, 3 people. Registered accounts are server-side and unaffected. A
+  reset or verify mail sent from a vercel.app session with PKCE before the
+  deploy loses its code verifier across origins; one retry fixes it. The
+  Supabase Auth Site URL (https://sqlquest.app) is the founder's dashboard
+  setting, not this change.
+### A runnable starter in the editor (`runnableStarter`, desktop A/B, builder 2026-11-26)
+
+- **Claimed** 2026-11-26 · **Shipped** dark on merge; the founder approved
+  ON at 50/50 after merge (chat, 2026-11-26) — the clock starts at the
+  deploy of the flip commit · **Read** interim 2026-12-17 (harm only),
+  final 2027-01-07. If the flip lands later, both move by the same delay.
+- **Why.** `docs/reads/open-without-run-2026-11-25.md`: 54% of human first
+  challenge opens never ran the challenge (48% ran nothing in 24 h), and
+  it is an arrival leak. On the prefilled #91, 63 of 97 runners (65%) ran
+  inside a minute; on an empty editor 22 of 139 (16%). The 11-22 "Run on
+  an empty editor runs the starter" change was used twice in 28 days: the
+  starter is a grey placeholder, so the editor looks empty.
+- **Change.** On a desktop screen (≥ 1024 wide, fine pointer), the first
+  challenge open that would show an empty editor (no solve, no saved
+  draft, not #91, not a Debug item, the solution is not the starter)
+  assigns an arm by aid (`runnable_starter_v1`, FNV + murmur3 finalizer),
+  written once as `runnable_starter_assigned {arm, test, challengeId,
+  viewport}`. `starter`: the editor holds a comment line ("Press Run to
+  see the data first, then replace these lines with your query.") and
+  `SELECT * FROM <first table> LIMIT 5;` as real text, selected on focus
+  while untouched so the first keystroke replaces it, plus one grey line
+  under the editor, "Press Run to see the data first.", until the first
+  run. `control`: today's placeholder. Grading is unchanged; the untouched
+  starter submitted is graded wrong and can never be a solve (forced, and
+  over the live bank no eligible challenge's expected rows equal the
+  starter's). `challenge_first_run` gains `starterArm` (and
+  `starterUntouched` on a Submit of the untouched starter); `via =
+  'starter'` is the untouched starter run in either arm.
+- **Metric** `runnable_starter_split` (docs/agent/metrics.md, PR #401,
+  merged before this code): ran = `challenge_first_run` for the assigned
+  `challengeId`, by arm; n per arm; 2×2 by `companyDirectOpen`'s arm.
+- **Baseline** desktop `open_to_first_run` 59% (263 / 449, 28 days to
+  2026-11-23). ~110 desktop first-contact openers a week, ~55 per arm.
+- **Target** `starter` ≥ `control` + 10 points at the final read (~360 per
+  arm). The interim read (~160 per arm) can show +15.
+- **Falsified if** at the final read the `starter` arm's ran-rate is not
+  ≥ `control` + 5 points, **or** its first solve in the session (30 min
+  from assignment) falls below `control`'s → the flag goes off. Interim
+  2026-12-17: `starter` ≥ 10 points below `control` on first solve in the
+  session → off the same day.
+- **Cell.** Desktop open → first run held only `companyDirectOpen`
+  (orchestrator-decisions 2026-11-24), so this is the second and last slot;
+  phones are out (their cell is full). Read the 12-20 claims on the 11-22
+  starter and the deep-link swap inside `control` only.
+### the Coach's Debug door (`coachDebugDoor`) — **OPEN**
+
+- **Claimed** 2026-11-25 · **Shipped** ON on merge (orchestrator decision,
+  delegated by the founder; decision row in PR #372: a door, not a
+  funnel-step A/B) · **Read** D + 28 days, where D is this PR's deploy date
+  (the same D that restarts the Debug, DDL/DML 325–329 / 355–359 and Stripe
+  330 clocks below).
+- **Change** One card on the Coach tab, "Fix a query an AI wrote", with one
+  line of why and two actions: **Fix it** opens the next unsolved Debug item
+  (331–342) in curriculum order (`pickNextChallengeWith`, never raw order),
+  preferring one the person may open; it always goes through
+  `openChallenge`, so the free quota and the Hard/Pro lock apply exactly
+  (a locked pick says "opens with Pro" and meets the usual wall, labelled
+  `debug_lock`). **See all 12** opens Practice with the Debug chip on (the
+  count is the bank's). Shown only with `debugQuestions` on, ≥ 1 challenge
+  solve, at least one Debug item unsolved, and never for a hired person
+  (First 90 Days owns their Coach). Secondary styling, no accent.
+  **Placement (deviation, measured):** the decision said "under the
+  next-step card". In a hermetic render at 1024x900 that slot sat at
+  2,369 px (goal) / 2,752 px (no goal) — below the 1,354 px roadmap and
+  Focus Tracks, deeper than the Practice chip that got 0 clicks at ~940 px.
+  The card sits right under "Your plan", above the roadmap, at 511 px.
+- **Why** 11-25 investigation: the Debug set and the other new items got
+  ~0 opens because no door showed them (`coach_tab_viewed` 1,027 people in
+  14 days vs `nav_practice` 21; the chip 0 clicks).
+- **Metric** `coach_debug_door` (`docs/agent/metrics.md`): people shown →
+  clicked (Fix it) → first run on that item → solved it, people by
+  `((metadata #>> '{}')::jsonb)->>'aid'`. Defined in its own docs PR per
+  rule 6b — until it merges the verdict would be `UNDEFINED`. Events
+  `coach_debug_door_shown {challengeId, locked, solvedInSet, setSize}` (once
+  per browser session per UTC day), `coach_debug_door_clicked {challengeId,
+  target: 'item' | 'see_all', locked}`; the open carries
+  `challenge_opened.openedFrom = 'coach_debug_door'`.
+- **Baseline** 0: the door did not exist. Context, not a baseline: Debug
+  openers from every other door were ~0 from the 11-23 flip to 11-25.
+- **Target** In 28 days: ≥ 150 people shown; shown → clicked ≥ 8% of
+  people; ≥ 40 people open a Debug item from the door (the Debug claim's
+  own openers target, reached through this door alone); of door openers
+  on an unlocked item, ≥ 40% solve it.
+- **Falsification, written before the data:** with ≥ 150 people shown,
+  shown → clicked under 3% → a card on the Coach does not pull either: the
+  problem is the item, not the door. Stop adding doors, write it down, and
+  leave the Debug claim's "nobody wants it" branch to decide the set. Under
+  150 shown → `UNREADABLE` (the Coach audience with ≥ 1 solve was smaller
+  than assumed; say so). Door solve-through under 20% on unlocked items →
+  read `challenge_error_pattern` on 331–342 before anything else.
+- **Guardrail** `first_solve_10m` and the next-step card's own
+  `coach_step_started` rate, before vs after D: the door sits above the
+  roadmap and the next-step card and must not take their clicks. A fall of
+  more than 5 points in either → move the door under the next-step card
+  and re-read.
+- **Excluded from every read:** aid `363dfb2bc1314757acc88c8438c4d2ea` (the
+  11-25 investigation walk, Europe/Istanbul, desktop 1024x768). The
+  hermetic render of this PR wrote nothing (all writes intercepted).
+
 ### /sql-interview-questions-data-analyst/ on Google — the /sql-exercises/ link push, next page (C1)
 
 - **Claimed** 2026-11-23 · **Shipped** on merge (static pages, no flag) ·
@@ -264,9 +456,12 @@ of the verifier and must never be rounded to `FLAT`.
 
 ### Run stays on screen on phones (`mobileRunBar`, rank 1 of the mobile plan)
 
-- **Claimed** 2026-11-23 · **Shipped** dark on merge; ON at 50/50 by the
-  orchestrator's decision row after review · **Read** 2026-12-21 (if the
-  flip lands later, 28 days after the flip).
+- **Claimed** 2026-11-23 · **Shipped** dark on merge; **ON at 50/50
+  2026-11-25** (orchestrator decision row, after an iOS Simulator +
+  production walk; the clock starts at the deploy of the flip commit) ·
+  **Read** 2026-12-23 (28 days after the flip). Exclude the walk guests of
+  2026-11-25 10:24–10:33 UTC (iOS Simulator + Chromium 375×812, stored or
+  overridden arms).
 - **Change** on a narrow touch screen (coarse pointer or width < 768) the
   first challenge open assigns an arm by aid (`mobile_run_bar_v1`, FNV +
   murmur3 finalizer), written once as `mobile_run_bar_assigned {arm}`. In
@@ -380,6 +575,19 @@ of the verifier and must never be rounded to `FLAT`.
   days with discovery live → nobody wants it: freeze the set at 12 and write
   it down. Solve-through more than 20 points below the band → the format is
   broken: fix the UX before adding items.
+
+- **Amended 2026-11-25 (orchestrator, decision row in PR #372): the clock
+  restarts.** The 11-25 investigation found ~0 opens on these items because
+  no door showed them, not a bug: deep links and logging work, the Practice
+  list shows only the current learning-path stage, the Debug chip sat ~940 px
+  down (0 clicks in 14 days), and the Coach tab had 1,027 people in 14 days
+  against 21 for `nav_practice`. The clock restarts at the deploy of the
+  Coach's Debug door (PR #373, branch `feat/coach-debug-door`, flag `coachDebugDoor`,
+  claim "the Coach's Debug door"), date **D**. The read moves by the same
+  number of days, D − 2026-11-23 (the flip): **Read = 2026-12-22 + (D −
+  2026-11-23) = D + 29 days**, and every baseline window moves with it.
+  Excluded from every read: aid `363dfb2bc1314757acc88c8438c4d2ea` (the 11-25 investigation walk,
+  Europe/Istanbul, desktop 1024x768).
 
 ### Apple becomes a sourced company page; TikTok, Bloomberg, Tesla, Amazon, Monzo lose their unsourced claims (C2, R1 batch 5)
 
@@ -549,6 +757,19 @@ of the verifier and must never be rounded to `FLAT`.
 - **Confound** 326 and 327 also join the subqueries topic page's scalar/IN
   section, so they get that page's openers too. Read the door beside the rate.
 
+- **Amended 2026-11-25 (orchestrator, decision row in PR #372): the clock
+  restarts.** The 11-25 investigation found ~0 opens on these items because
+  no door showed them, not a bug: deep links and logging work, the Practice
+  list shows only the current learning-path stage, the Debug chip sat ~940 px
+  down (0 clicks in 14 days), and the Coach tab had 1,027 people in 14 days
+  against 21 for `nav_practice`. The clock restarts at the deploy of the
+  Coach's Debug door (PR #373, branch `feat/coach-debug-door`, flag `coachDebugDoor`,
+  claim "the Coach's Debug door"), date **D**. The read moves by the same
+  number of days, D − 2026-11-23 (the merge): **Read = 2026-12-20 + (D −
+  2026-11-23) = D + 27 days**, and every baseline window moves with it.
+  Excluded from every read: aid `363dfb2bc1314757acc88c8438c4d2ea` (the 11-25 investigation walk,
+  Europe/Istanbul, desktop 1024x768).
+
 ### State-graded DML/DDL: the second five (challenges 355-359, C6)
 
 - **Claimed** 2026-11-24 · **Shipped** on merge (no flag) · **Read** 2026-12-22.
@@ -586,6 +807,19 @@ of the verifier and must never be rounded to `FLAT`.
   357-358 in #scalar-and-in) and 359 the advanced page, so they get those
   pages' openers; read the door beside the rate. 325-329's read (12-20) and
   this one overlap by four weeks: read them as two sets, never pooled.
+
+- **Amended 2026-11-25 (orchestrator, decision row in PR #372): the clock
+  restarts.** The 11-25 investigation found ~0 opens on these items because
+  no door showed them, not a bug: deep links and logging work, the Practice
+  list shows only the current learning-path stage, the Debug chip sat ~940 px
+  down (0 clicks in 14 days), and the Coach tab had 1,027 people in 14 days
+  against 21 for `nav_practice`. The clock restarts at the deploy of the
+  Coach's Debug door (PR #373, branch `feat/coach-debug-door`, flag `coachDebugDoor`,
+  claim "the Coach's Debug door"), date **D**. The read moves by the same
+  number of days, D − 2026-11-25 (the merge): **Read = 2026-12-22 + (D −
+  2026-11-25) = D + 27 days**, and every baseline window moves with it.
+  Excluded from every read: aid `363dfb2bc1314757acc88c8438c4d2ea` (the 11-25 investigation walk,
+  Europe/Istanbul, desktop 1024x768).
 
 ### no exclusivity claims about the AI coach, tutor or Skillmap (C2)
 
@@ -1223,6 +1457,19 @@ of the verifier and must never be rounded to `FLAT`.
 - **Confound** It also joins the CTE and subqueries topic pages and
   /challenges/advanced/, so openers arrive from more doors than Stripe's; read
   the door beside the rate.
+
+- **Amended 2026-11-25 (orchestrator, decision row in PR #372): the clock
+  restarts.** The 11-25 investigation found ~0 opens on these items because
+  no door showed them, not a bug: deep links and logging work, the Practice
+  list shows only the current learning-path stage, the Debug chip sat ~940 px
+  down (0 clicks in 14 days), and the Coach tab had 1,027 people in 14 days
+  against 21 for `nav_practice`. The clock restarts at the deploy of the
+  Coach's Debug door (PR #373, branch `feat/coach-debug-door`, flag `coachDebugDoor`,
+  claim "the Coach's Debug door"), date **D**. The read moves by the same
+  number of days, D − 2026-11-24 (the merge): **Read = 2026-12-21 + (D −
+  2026-11-24) = D + 27 days**, and every baseline window moves with it.
+  Excluded from every read: aid `363dfb2bc1314757acc88c8438c4d2ea` (the 11-25 investigation walk,
+  Europe/Istanbul, desktop 1024x768).
 
 ### five Easy on-ramps: Window, Date and NULL (challenges 320-324)
 
