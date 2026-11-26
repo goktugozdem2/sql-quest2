@@ -2079,6 +2079,422 @@ window.mockInterviewsData = [
       }
     ],
     passingScore: 60
+  },
+  {
+    // ============ METRICS & CASE ROUND (2026-11-22, lanes C5/B3) ============
+    // The half of a data interview that is not a query. The company research
+    // our pages cite (docs/reads/company-research-2026-11-20.md and -11-22.md)
+    // reports a metrics or case round next to the SQL at Chime, Coinbase,
+    // PayPal and Monzo; nothing in the product practised it. Same engine as
+    // every other mock: nine multiple-choice items and three written SQL
+    // items, no new question type.
+    //
+    // Every number below is computed from finans_neobank or finans_fraud by a
+    // query pinned in tests/metrics-case-round.test.js — the correct option by
+    // its `verify.sql`, every wrong option by its own query in the test. One
+    // input is a given the case states, not data: the £1,440 acquisition spend
+    // in cr-m5 (no dataset holds ad spend); the test pins the arithmetic on it.
+    //
+    // Free tier: `freeQuestionCount: 3` — a free person sits the first three
+    // (src/utils/case-round.js), then meets the Pro modal, reason 'case_round'.
+    // The company-set gate's shape (first 3 free), not a price change.
+    id: 'metrics-case-round',
+    title: 'Metrics & Case Round',
+    company: 'General',
+    role: 'Data Analyst / Data Scientist',
+    difficulty: 'Medium',
+    totalTime: 60 * 60, // 9 multiple choice × 3 min + written SQL 10 + 10 + 13 min
+    questionsCount: 12,
+    isFree: false,
+    freeQuestionCount: 3,
+    description: 'The half of a data interview that is not a query. Define a metric (numerator, denominator, window, edge cases), catch a wrong denominator, compare retention counted from signup with retention counted from the first transaction, work LTV, CAC and CPA, read a fraud rate while chargebacks are still arriving, say a result plainly to a non-technical reader, then write the SQL for the metric. Every number is computed from the neobank ledger and the card-fraud data. The first 3 are free.',
+    title_tr: 'Metrik ve Vaka Turu',
+    description_tr: 'Veri mülakatının sorgu olmayan yarısı. Bir metriği tanımla (pay, payda, zaman penceresi, uç durumlar), yanlış paydayı yakala, kayıttan sayılan retention ile ilk işlemden sayılanı karşılaştır, LTV, CAC ve CPA hesapla, chargeback\'ler hâlâ gelirken fraud oranını oku, sonucu teknik olmayan birine sade söyle, sonra metriğin SQL\'ini yaz. Her sayı neobank defteri ve kart-fraud verisinden hesaplanır. İlk 3 ücretsiz.',
+    role_tr: 'Data Analyst / Data Scientist',
+    skills: ['Metric Definition', 'Denominators', 'Retention', 'LTV / CAC / CPA', 'Fraud Rates', 'Conditional Aggregation', 'CTEs', 'Date Functions'],
+    questions: [
+      // ---- Free: the first three (freeQuestionCount).
+      {
+        id: 'cr-m1',
+        order: 1,
+        type: 'mcq',
+        title: 'Define the metric: who counts as active',
+        title_tr: 'Metriği tanımla: kim aktif sayılır',
+        description: 'Product asks: **what share of our customers actively used their account in August 2026?** In this ledger, **subscription_fee** rows are plan fees the bank charges and **transfer_in** rows are money someone else sent; neither is something the customer did. Which definition, and which number, answers the question?',
+        description_tr: 'Ürün ekibi soruyor: **Ağustos 2026\'da müşterilerimizin ne kadarı hesabını aktif kullandı?** Bu defterde **subscription_fee** satırları bankanın kestiği plan ücretleri, **transfer_in** satırları başkasının gönderdiği paradır; ikisi de müşterinin yaptığı bir şey değil. Hangi tanım ve hangi sayı soruyu cevaplar?',
+        timeLimit: 3 * 60,
+        difficulty: 'Easy',
+        points: 8,
+        dataset: 'finans_neobank',
+        options: [
+          { id: 'cr1a', text: '117 of 240 = 48.8% — any completed transaction in August, over everyone signed up by 31 August', text_tr: '240\'ta 117 = %48,8 — Ağustos\'ta herhangi bir tamamlanmış işlem, 31 Ağustos\'a kadar kayıt olan herkese bölünmüş', value: '117|240|48.8' },
+          { id: 'cr1b', text: '89 of 240 = 37.1% — a completed card payment, transfer out, bill, ATM withdrawal or FX exchange in August, over everyone signed up by 31 August', text_tr: '240\'ta 89 = %37,1 — Ağustos\'ta tamamlanmış kart ödemesi, giden transfer, fatura, ATM çekimi ya da döviz işlemi, 31 Ağustos\'a kadar kayıt olan herkese bölünmüş', value: '89|240|37.1' },
+          { id: 'cr1c', text: '89 of 228 = 39.0% — the same customer-started transactions, over users who signed up before August', text_tr: '228\'de 89 = %39,0 — aynı müşteri kaynaklı işlemler, Ağustos\'tan önce kayıt olanlara bölünmüş', value: '89|228|39.0' },
+          { id: 'cr1d', text: '117 of 228 = 51.3% — any completed transaction, over users who signed up before August', text_tr: '228\'de 117 = %51,3 — herhangi bir tamamlanmış işlem, Ağustos\'tan önce kayıt olanlara bölünmüş', value: '117|228|51.3' }
+        ],
+        correctOptionId: 'cr1b',
+        explanation: '89 of 240, 37.1%. The numerator is people who did something: a plan fee is charged to a customer who never opened the app, and an incoming transfer is someone else\'s action, so counting any completed row lifts 89 to 117. The denominator is everyone who could have been active in August, which includes the 12 who signed up during it. Say both edge cases out loud: that is what the round grades.',
+        explanation_tr: '240\'ta 89, %37,1. Pay, bir şey yapmış insanlardır: plan ücreti uygulamayı hiç açmamış müşteriye de kesilir, gelen transfer başkasının eylemidir; herhangi bir tamamlanmış satırı saymak 89\'u 117\'ye çıkarır. Payda Ağustos\'ta aktif olabilecek herkestir; Ağustos içinde kayıt olan 12 kişi de dahil. İki uç durumu da yüksek sesle söyle: tur bunu puanlar.',
+        hints: [
+          'Ask of each row type: did the customer do this, or did it happen to them?',
+          'The denominator is everyone who existed during the month, including people who joined in it'
+        ],
+        hints_tr: [
+          'Her satır tipine sor: bunu müşteri mi yaptı, yoksa müşterinin başına mı geldi?',
+          'Payda o ay boyunca var olan herkestir; ay içinde katılanlar da dahil'
+        ],
+        verify: { sql: "SELECT (SELECT COUNT(DISTINCT user_id) FROM transactions WHERE status = 'completed' AND type IN ('card_payment', 'transfer_out', 'bill_payment', 'atm_withdrawal', 'fx_exchange') AND ts >= '2026-08-01' AND ts < '2026-09-01') AS active_users, (SELECT COUNT(*) FROM users WHERE signup_date < '2026-09-01') AS users, ROUND(100.0 * (SELECT COUNT(DISTINCT user_id) FROM transactions WHERE status = 'completed' AND type IN ('card_payment', 'transfer_out', 'bill_payment', 'atm_withdrawal', 'fx_exchange') AND ts >= '2026-08-01' AND ts < '2026-09-01') / (SELECT COUNT(*) FROM users WHERE signup_date < '2026-09-01'), 1) AS active_rate_pct" },
+        concepts: ['Metric Definition', 'Numerator', 'Denominator', 'Edge Cases']
+      },
+      {
+        id: 'cr-m2',
+        order: 2,
+        type: 'mcq',
+        title: 'Spot the wrong denominator: spend per active user',
+        title_tr: 'Yanlış paydayı yakala: aktif kullanıcı başına harcama',
+        description: 'The query below is meant to return **average August 2026 card spend per active card user**. It returns **65.31**. What is the right number?',
+        description_tr: 'Aşağıdaki sorgu **Ağustos 2026\'da aktif kart kullanıcısı başına ortalama kart harcamasını** döndürmek için yazıldı. **65.31** döndürüyor. Doğru sayı nedir?',
+        timeLimit: 3 * 60,
+        difficulty: 'Easy',
+        points: 8,
+        dataset: 'finans_neobank',
+        codeSnippets: [
+          {
+            label: 'The query',
+            label_tr: 'Sorgu',
+            sql: "SELECT ROUND(SUM(amount_gbp) / COUNT(*), 2) AS spend_per_active_user\nFROM transactions\nWHERE type = 'card_payment'\n  AND status = 'completed'\n  AND ts >= '2026-08-01' AND ts < '2026-09-01';"
+          }
+        ],
+        options: [
+          { id: 'cr2a', text: '65.31 — the query is right as written', text_tr: '65.31 — sorgu yazıldığı haliyle doğru', value: '65.31' },
+          { id: 'cr2b', text: '62.59 — the same total over all 240 signed-up users', text_tr: '62.59 — aynı toplam, kayıtlı 240 kullanıcının hepsine bölünmüş', value: '62.59' },
+          { id: 'cr2c', text: '182.54 — every card payment, declined and reversed included, over the users who made them', text_tr: '182.54 — reddedilen ve iade edilenler dahil her kart ödemesi, yapanlara bölünmüş', value: '182.54' },
+          { id: 'cr2d', text: '180.97 — the same total over COUNT(DISTINCT user_id), the 83 people who paid by card', text_tr: '180.97 — aynı toplam, COUNT(DISTINCT user_id) yani kartla ödeyen 83 kişiye bölünmüş', value: '180.97' }
+        ],
+        correctOptionId: 'cr2d',
+        explanation: '180.97. COUNT(*) counts the 230 payments, so the query returns spend per transaction and labels it per user. "Per active user" divides by distinct people who were active: 15,020.88 over 83. Dividing by all 240 users answers a different question (spend per customer), and adding declined and reversed rows counts money that never moved.',
+        explanation_tr: '180.97. COUNT(*) 230 ödemeyi sayar; sorgu işlem başına harcamayı döndürüp kullanıcı başına diye adlandırıyor. "Aktif kullanıcı başına", aktif olan farklı kişilere böler: 15.020,88 / 83. 240 kullanıcının hepsine bölmek başka bir soruyu (müşteri başına harcama) cevaplar; reddedilen ve iade edilen satırları eklemek hiç hareket etmemiş parayı sayar.',
+        hints: [
+          'Read the metric name, then read what the denominator actually counts',
+          'Per user means one per person: COUNT(DISTINCT user_id)'
+        ],
+        hints_tr: [
+          'Metriğin adını oku, sonra paydanın gerçekte neyi saydığını oku',
+          'Kullanıcı başına, kişi başına bir demek: COUNT(DISTINCT user_id)'
+        ],
+        verify: { sql: "SELECT ROUND(SUM(amount_gbp) / COUNT(DISTINCT user_id), 2) AS spend_per_active_user FROM transactions WHERE type = 'card_payment' AND status = 'completed' AND ts >= '2026-08-01' AND ts < '2026-09-01'" },
+        concepts: ['Denominators', 'COUNT DISTINCT', 'Per-user metrics']
+      },
+      {
+        id: 'cr-m3',
+        order: 3,
+        type: 'mcq',
+        title: 'Retention from signup vs from first transaction',
+        title_tr: 'Kayıttan ve ilk işlemden retention',
+        description: 'Cohort: the **87 users who signed up January–June 2026**. A user is **retained** if they made at least one completed card payment, transfer out, bill payment, ATM withdrawal or FX exchange on **days 7–13 after day zero**. The interviewer asks for two numbers: day zero = the **signup date**, and day zero = the date of the user\'s **first** such transaction. (Users who never made one have no first transaction.) Which pair is right?',
+        description_tr: 'Kohort: **Ocak–Haziran 2026\'da kayıt olan 87 kullanıcı**. Bir kullanıcı, **sıfırıncı günden sonraki 7.–13. günlerde** en az bir tamamlanmış kart ödemesi, giden transfer, fatura ödemesi, ATM çekimi ya da döviz işlemi yaptıysa **retained** sayılır. Mülakatçı iki sayı istiyor: sıfırıncı gün = **kayıt tarihi**, ve sıfırıncı gün = kullanıcının bu türdeki **ilk** işleminin tarihi. (Hiç yapmamış kullanıcının ilk işlemi yoktur.) Hangi çift doğru?',
+        timeLimit: 3 * 60,
+        difficulty: 'Medium',
+        points: 10,
+        dataset: 'finans_neobank',
+        options: [
+          { id: 'cr3a', text: 'From signup 14.9% (13 of 87) · from first transaction 20.7% (18 of 87)', text_tr: 'Kayıttan %14,9 (87\'de 13) · ilk işlemden %20,7 (87\'de 18)', value: '13|87|18|87' },
+          { id: 'cr3b', text: 'From signup 18.6% (13 of 70) · from first transaction 25.7% (18 of 70)', text_tr: 'Kayıttan %18,6 (70\'te 13) · ilk işlemden %25,7 (70\'te 18)', value: '13|70|18|70' },
+          { id: 'cr3c', text: 'From signup 14.9% (13 of 87) · from first transaction 25.7% (18 of 70)', text_tr: 'Kayıttan %14,9 (87\'de 13) · ilk işlemden %25,7 (70\'te 18)', value: '13|87|18|70' },
+          { id: 'cr3d', text: 'From signup 25.7% (18 of 70) · from first transaction 14.9% (13 of 87)', text_tr: 'Kayıttan %25,7 (70\'te 18) · ilk işlemden %14,9 (87\'de 13)', value: '18|70|13|87' }
+        ],
+        correctOptionId: 'cr3c',
+        explanation: '14.9% from signup, 25.7% from first transaction. Moving day zero changes two things at once: the window moves to each user\'s own start, and the denominator drops to the 70 who ever transacted, because the 17 who never did have no day zero. The second number is higher partly because it leaves out everyone who never started. Neither is wrong; say which one you report and what it excludes.',
+        explanation_tr: 'Kayıttan %14,9, ilk işlemden %25,7. Sıfırıncı günü kaydırmak iki şeyi birden değiştirir: pencere her kullanıcının kendi başlangıcına kayar, payda da hiç işlem yapmamış 17 kişinin sıfırıncı günü olmadığı için 70\'e düşer. İkinci sayı kısmen hiç başlamayanları dışarıda bıraktığı için yüksek. İkisi de yanlış değil; hangisini raporladığını ve neyi dışarıda bıraktığını söyle.',
+        hints: [
+          'Who is in the denominator when day zero is the first transaction?',
+          'A user with no transaction has a signup date but no first-transaction date'
+        ],
+        hints_tr: [
+          'Sıfırıncı gün ilk işlem olunca paydada kim var?',
+          'İşlemi olmayan kullanıcının kayıt tarihi var ama ilk işlem tarihi yok'
+        ],
+        verify: { sql: "WITH ui AS (SELECT user_id, date(ts) AS d FROM transactions WHERE status = 'completed' AND type IN ('card_payment', 'transfer_out', 'bill_payment', 'atm_withdrawal', 'fx_exchange')), c AS (SELECT u.user_id, u.signup_date, (SELECT MIN(d) FROM ui WHERE ui.user_id = u.user_id) AS first_d FROM users u WHERE u.signup_date >= '2026-01-01' AND u.signup_date < '2026-07-01') SELECT SUM(EXISTS (SELECT 1 FROM ui WHERE ui.user_id = c.user_id AND ui.d BETWEEN date(c.signup_date, '+7 day') AND date(c.signup_date, '+13 day'))) AS retained_signup, COUNT(*) AS cohort, SUM(first_d IS NOT NULL AND EXISTS (SELECT 1 FROM ui WHERE ui.user_id = c.user_id AND ui.d BETWEEN date(c.first_d, '+7 day') AND date(c.first_d, '+13 day'))) AS retained_first, COUNT(first_d) AS activated FROM c" },
+        concepts: ['Retention', 'Cohorts', 'Day zero', 'Denominator']
+      },
+      // ---- Pro from here.
+      {
+        id: 'cr-m4',
+        order: 4,
+        type: 'mcq',
+        title: 'LTV input: six-month revenue per signup',
+        title_tr: 'LTV girdisi: kayıt başına altı aylık gelir',
+        description: 'Revenue in this ledger is **fee_gbp** on completed transactions plus **amount_gbp** on completed **subscription_fee** rows (plan fees). For the **48 users who signed up July–September 2025**, what is the **revenue per signup in each user\'s first six months** (transactions before signup date + 6 months)?',
+        description_tr: 'Bu defterde gelir, tamamlanmış işlemlerdeki **fee_gbp** artı tamamlanmış **subscription_fee** satırlarındaki **amount_gbp**\'dir (plan ücretleri). **Temmuz–Eylül 2025\'te kayıt olan 48 kullanıcı** için, **her kullanıcının ilk altı ayında kayıt başına gelir** nedir (kayıt tarihi + 6 aydan önceki işlemler)?',
+        timeLimit: 3 * 60,
+        difficulty: 'Medium',
+        points: 10,
+        dataset: 'finans_neobank',
+        options: [
+          { id: 'cr4a', text: '£8.41 — 184.95 over the 22 users who paid anything', text_tr: '£8,41 — 184,95, herhangi bir şey ödeyen 22 kullanıcıya bölünmüş', value: '8.41' },
+          { id: 'cr4b', text: '£0.88 — transaction fees only, plan fees left out, over 48', text_tr: '£0,88 — yalnız işlem ücretleri, plan ücretleri hariç, 48\'e bölünmüş', value: '0.88' },
+          { id: 'cr4c', text: '£184.95 — the cohort\'s six-month revenue', text_tr: '£184,95 — kohortun altı aylık geliri', value: '184.95' },
+          { id: 'cr4d', text: '£3.85 — 184.95 over all 48 signups', text_tr: '£3,85 — 184,95, 48 kaydın hepsine bölünmüş', value: '3.85' }
+        ],
+        correctOptionId: 'cr4d',
+        explanation: '£3.85. LTV is compared with what it cost to acquire a signup, so it is per signup: 184.95 over all 48, including the 26 who paid nothing in six months. Dividing by the 22 payers gives revenue per paying user, which is a different metric. Plan fees are most of the revenue here, and dropping them gives 0.88. The six-month window is fixed per user so early and late signups are measured on the same clock.',
+        explanation_tr: '£3,85. LTV bir kaydı edinmenin maliyetiyle karşılaştırılır, o yüzden kayıt başınadır: 184,95 / 48, altı ayda hiçbir şey ödemeyen 26 kişi dahil. 22 ödeyene bölmek ödeyen kullanıcı başına geliri verir; o başka bir metrik. Buradaki gelirin çoğu plan ücretleri; onları atmak 0,88 verir. Altı aylık pencere her kullanıcıya göre sabitlenir ki erken ve geç kayıtlar aynı saatle ölçülsün.',
+        hints: [
+          'LTV gets divided by CAC later, and CAC is per signup',
+          'Two revenue sources: transaction fees and the plan fee rows'
+        ],
+        hints_tr: [
+          'LTV sonra CAC\'ye bölünür ve CAC kayıt başınadır',
+          'İki gelir kaynağı var: işlem ücretleri ve plan ücreti satırları'
+        ],
+        verify: { sql: "WITH c AS (SELECT user_id, signup_date FROM users WHERE signup_date >= '2025-07-01' AND signup_date < '2025-10-01') SELECT ROUND(SUM(CASE WHEN t.status = 'completed' THEN t.fee_gbp + CASE WHEN t.type = 'subscription_fee' THEN t.amount_gbp ELSE 0 END ELSE 0 END) / (SELECT COUNT(*) FROM c), 2) AS revenue_per_signup FROM c LEFT JOIN transactions t ON t.user_id = c.user_id AND t.ts < date(c.signup_date, '+6 months')" },
+        concepts: ['LTV', 'Revenue', 'Cohorts', 'Per-signup metrics']
+      },
+      {
+        id: 'cr-m5',
+        order: 5,
+        type: 'mcq',
+        title: 'CAC or CPA',
+        title_tr: 'CAC mi CPA mi',
+        description: 'The case gives you one number the data does not hold: **£1,440** of acquisition spend for the **48 users who signed up July–September 2025**. The acquisition in CPA is defined as a **first completed card payment within 30 days of signup**. What is the **CPA**?',
+        description_tr: 'Vaka sana verinin tutmadığı bir sayı veriyor: **Temmuz–Eylül 2025\'te kayıt olan 48 kullanıcı** için **£1.440** edinme harcaması. CPA\'daki edinme, **kayıttan sonraki 30 gün içinde ilk tamamlanmış kart ödemesi** olarak tanımlı. **CPA** nedir?',
+        timeLimit: 3 * 60,
+        difficulty: 'Medium',
+        points: 10,
+        dataset: 'finans_neobank',
+        options: [
+          { id: 'cr5a', text: '£30.00 — 1,440 over the 48 signups', text_tr: '£30,00 — 1.440, 48 kayda bölünmüş', value: '30.00' },
+          { id: 'cr5b', text: '£49.66 — 1,440 over the 29 who paid by card within 30 days', text_tr: '£49,66 — 1.440, 30 gün içinde kartla ödeyen 29 kişiye bölünmüş', value: '49.66' },
+          { id: 'cr5c', text: '£34.29 — 1,440 over the 42 who ever paid by card', text_tr: '£34,29 — 1.440, hiç kartla ödemiş 42 kişiye bölünmüş', value: '34.29' },
+          { id: 'cr5d', text: '£65.45 — 1,440 over the 22 who generated revenue', text_tr: '£65,45 — 1.440, gelir üreten 22 kişiye bölünmüş', value: '65.45' }
+        ],
+        correctOptionId: 'cr5b',
+        explanation: '£49.66. CPA divides spend by the action the case defines, and the window is part of the definition: 29 users paid by card within 30 days. £30.00 is CAC, spend per signup. £34.29 drops the 30-day window. Put it next to question 4: six months of revenue per signup is £3.85 against a CAC of £30.00, so six months recover about 13% of what a signup cost. That is the sentence the case round wants.',
+        explanation_tr: '£49,66. CPA harcamayı vakanın tanımladığı eyleme böler ve pencere tanımın parçasıdır: 29 kullanıcı 30 gün içinde kartla ödedi. £30,00 CAC\'dir, kayıt başına harcama. £34,29 30 günlük pencereyi atar. 4. soruyla yan yana koy: kayıt başına altı aylık gelir £3,85, CAC £30,00; altı ay bir kaydın maliyetinin yaklaşık %13\'ünü geri getiriyor. Vaka turunun istediği cümle bu.',
+        hints: [
+          'CAC divides by signups; CPA divides by the action, inside its window',
+          'Count users with a completed card_payment before signup_date + 30 days'
+        ],
+        hints_tr: [
+          'CAC kayda böler; CPA eyleme, kendi penceresi içinde',
+          'signup_date + 30 günden önce tamamlanmış card_payment\'ı olan kullanıcıları say'
+        ],
+        verify: { sql: "SELECT printf('%.2f', 1440.0 / COUNT(*)) AS cpa FROM users u WHERE u.signup_date >= '2025-07-01' AND u.signup_date < '2025-10-01' AND EXISTS (SELECT 1 FROM transactions t WHERE t.user_id = u.user_id AND t.type = 'card_payment' AND t.status = 'completed' AND t.ts < date(u.signup_date, '+30 day'))" },
+        concepts: ['CPA', 'CAC', 'LTV', 'Acquisition window']
+      },
+      {
+        id: 'cr-m6',
+        order: 6,
+        type: 'mcq',
+        title: 'Spot the wrong denominator: a join that drops people',
+        title_tr: 'Yanlış paydayı yakala: insanları düşüren bir join',
+        description: 'The query below reports the **share of July–September 2025 signups who made a completed card payment within 30 days**. It returns **65.9**. What is the right number?',
+        description_tr: 'Aşağıdaki sorgu **Temmuz–Eylül 2025 kayıtlarından 30 gün içinde tamamlanmış kart ödemesi yapanların payını** raporluyor. **65.9** döndürüyor. Doğru sayı nedir?',
+        timeLimit: 3 * 60,
+        difficulty: 'Medium',
+        points: 10,
+        dataset: 'finans_neobank',
+        codeSnippets: [
+          {
+            label: 'The query',
+            label_tr: 'Sorgu',
+            sql: "SELECT ROUND(100.0 * COUNT(DISTINCT CASE\n         WHEN t.type = 'card_payment' AND t.status = 'completed'\n          AND t.ts < date(u.signup_date, '+30 day')\n         THEN u.user_id END)\n       / COUNT(DISTINCT u.user_id), 1) AS activation_pct\nFROM users u\nJOIN transactions t ON t.user_id = u.user_id\nWHERE u.signup_date >= '2025-07-01'\n  AND u.signup_date < '2025-10-01';"
+          }
+        ],
+        options: [
+          { id: 'cr6a', text: '60.4% — 29 of 48', text_tr: '%60,4 — 48\'de 29', value: '60.4' },
+          { id: 'cr6b', text: '65.9% — 29 of 44', text_tr: '%65,9 — 44\'te 29', value: '65.9' },
+          { id: 'cr6c', text: '69.0% — 29 of 42', text_tr: '%69,0 — 42\'de 29', value: '69.0' },
+          { id: 'cr6d', text: '91.7% — 44 of 48', text_tr: '%91,7 — 48\'de 44', value: '91.7' }
+        ],
+        correctOptionId: 'cr6a',
+        explanation: '60.4%, 29 of 48. The inner JOIN keeps only users with at least one transaction row, so the 4 signups who never transacted fall out of COUNT(DISTINCT u.user_id) and the denominator becomes 44. A LEFT JOIN keeps them. 42 is the users who ever paid by card, and 44 of 48 is the share with any transaction at all; neither is the activation the query names.',
+        explanation_tr: '%60,4, 48\'de 29. INNER JOIN yalnızca en az bir işlem satırı olan kullanıcıları tutar; hiç işlem yapmamış 4 kayıt COUNT(DISTINCT u.user_id)\'den düşer ve payda 44 olur. LEFT JOIN onları tutar. 42 hiç kartla ödemiş kullanıcılar; 48\'de 44 ise herhangi bir işlemi olanların payı; ikisi de sorgunun adını verdiği aktivasyon değil.',
+        hints: [
+          'Who is missing from users JOIN transactions?',
+          'A signup with no transactions is still a signup: the denominator must keep them'
+        ],
+        hints_tr: [
+          'users JOIN transactions\'tan kim eksik?',
+          'İşlemi olmayan kayıt yine de kayıttır: payda onu tutmalı'
+        ],
+        verify: { sql: "SELECT ROUND(100.0 * COUNT(DISTINCT CASE WHEN t.type = 'card_payment' AND t.status = 'completed' AND t.ts < date(u.signup_date, '+30 day') THEN u.user_id END) / COUNT(DISTINCT u.user_id), 1) AS activation_pct FROM users u LEFT JOIN transactions t ON t.user_id = u.user_id WHERE u.signup_date >= '2025-07-01' AND u.signup_date < '2025-10-01'" },
+        concepts: ['Denominators', 'LEFT JOIN', 'Activation']
+      },
+      {
+        id: 'cr-m7',
+        order: 7,
+        type: 'mcq',
+        title: 'Label the fraud before you rate it',
+        title_tr: 'Oranlamadan önce fraud\'u etiketle',
+        description: 'Risk asks for **April 2026\'s fraud rate**: fraud chargebacks per transaction, by the month of the **transaction**. **chargebacks.reason_code** is one of fraud_card_present, fraud_card_not_present, duplicate_charge, item_not_as_described, service_not_received. Every chargeback on April transactions has arrived. What is the rate?',
+        description_tr: 'Risk ekibi **Nisan 2026 fraud oranını** istiyor: **işlemin** ayına göre, işlem başına fraud chargeback. **chargebacks.reason_code** şunlardan biri: fraud_card_present, fraud_card_not_present, duplicate_charge, item_not_as_described, service_not_received. Nisan işlemlerine ait her chargeback gelmiş durumda. Oran nedir?',
+        timeLimit: 3 * 60,
+        difficulty: 'Medium',
+        points: 10,
+        dataset: 'finans_fraud',
+        options: [
+          { id: 'cr7a', text: '3.49% — all 39 chargebacks on April transactions over 1,119 transactions', text_tr: '%3,49 — Nisan işlemlerindeki 39 chargeback\'in hepsi, 1.119 işleme bölünmüş', value: '3.49' },
+          { id: 'cr7b', text: '11.0% — 22 fraud chargebacks over the 200 accounts that transacted', text_tr: '%11,0 — 22 fraud chargeback, işlem yapan 200 hesaba bölünmüş', value: '11.0' },
+          { id: 'cr7c', text: '1.97% — 22 fraud-coded chargebacks over 1,119 April transactions', text_tr: '%1,97 — fraud kodlu 22 chargeback, 1.119 Nisan işlemine bölünmüş', value: '1.97' },
+          { id: 'cr7d', text: '2.66% — the value of fraud-charged-back transactions over April\'s transaction value', text_tr: '%2,66 — fraud chargeback\'li işlemlerin tutarı, Nisan işlem tutarına bölünmüş', value: '2.66' }
+        ],
+        correctOptionId: 'cr7c',
+        explanation: '1.97%. A chargeback is a dispute, not a fraud label: duplicate charges and goods not as described are disputes with a real cardholder, so counting all 39 gives a dispute rate. Per transaction means the 1,119 transactions are the denominator, not the 200 accounts. 2.66% is a rate by value, a real metric but a different one; ask which the team means before you pick.',
+        explanation_tr: '%1,97. Chargeback bir itirazdır, fraud etiketi değil: çift çekim ve tarif edildiği gibi gelmeyen ürün gerçek bir kart sahibinin itirazlarıdır; 39\'un hepsini saymak itiraz oranını verir. İşlem başına demek payda 200 hesap değil 1.119 işlem demek. %2,66 tutara göre oran; gerçek bir metrik ama başka bir metrik; seçmeden önce ekibin hangisini kastettiğini sor.',
+        hints: [
+          'Which reason codes are fraud, and which are disputes?',
+          'Per transaction: the denominator is April\'s transactions'
+        ],
+        hints_tr: [
+          'Hangi reason code\'lar fraud, hangileri itiraz?',
+          'İşlem başına: payda Nisan işlemleri'
+        ],
+        verify: { sql: "SELECT ROUND(100.0 * COUNT(c.chargeback_id) / COUNT(*), 2) AS fraud_rate_pct FROM transactions t LEFT JOIN chargebacks c ON c.txn_id = t.txn_id AND c.reason_code IN ('fraud_card_present', 'fraud_card_not_present') WHERE t.txn_at >= '2026-04-01' AND t.txn_at < '2026-05-01'" },
+        concepts: ['Fraud Rates', 'Labelling', 'Denominators']
+      },
+      {
+        id: 'cr-m8',
+        order: 8,
+        type: 'mcq',
+        title: 'The rate that is not finished yet',
+        title_tr: 'Henüz bitmemiş oran',
+        description: 'On the morning of **1 May 2026** you ran the April fraud rate from the last question, counting only chargebacks **opened before 1 May**. How many of April\'s **22** fraud chargebacks were missing from that report?',
+        description_tr: '**1 Mayıs 2026** sabahı önceki sorudaki Nisan fraud oranını, yalnızca **1 Mayıs\'tan önce açılmış** chargeback\'leri sayarak çalıştırdın. Nisan\'ın **22** fraud chargeback\'inden kaçı o raporda eksikti?',
+        timeLimit: 3 * 60,
+        difficulty: 'Medium',
+        points: 10,
+        dataset: 'finans_fraud',
+        options: [
+          { id: 'cr8a', text: '22 — every one: chargebacks on a month are opened after it closes', text_tr: '22 — hepsi: bir ayın chargeback\'leri ay kapandıktan sonra açılır', value: '22' },
+          { id: 'cr8b', text: '6 — opened in May, so the report read 1.43% against a final 1.97%', text_tr: '6 — Mayıs\'ta açıldı; rapor nihai %1,97\'ye karşı %1,43 okudu', value: '6' },
+          { id: 'cr8c', text: '11 — every chargeback opened in May, disputes included', text_tr: '11 — Mayıs\'ta açılan her chargeback, itirazlar dahil', value: '11' },
+          { id: 'cr8d', text: '16 — the fraud chargebacks opened before 1 May', text_tr: '16 — 1 Mayıs\'tan önce açılan fraud chargeback\'ler', value: '16' }
+        ],
+        correctOptionId: 'cr8b',
+        explanation: '6. In this data a chargeback is opened up to 14 days after its transaction, so a transaction on 28 April can be disputed on 12 May. On 1 May the April rate read 1.43%; it settled at 1.97%. A rate built on a lagging label is provisional: report it with its as-of date, or wait until the slowest label has had time to arrive (here, two weeks after month end) before you call the month.',
+        explanation_tr: '6. Bu veride bir chargeback işlemden en fazla 14 gün sonra açılıyor; 28 Nisan\'daki bir işleme 12 Mayıs\'ta itiraz edilebilir. 1 Mayıs\'ta Nisan oranı %1,43 okudu; %1,97\'de oturdu. Geç gelen bir etikete dayanan oran geçicidir: ya hangi tarih itibarıyla olduğunu yazarak raporla, ya da ayı kapatmadan önce en yavaş etiketin gelmesine zaman tanı (burada ay sonundan iki hafta).',
+        hints: [
+          'Compare chargebacks.opened_at with the transaction\'s txn_at',
+          'Count April fraud chargebacks with opened_at on or after 1 May'
+        ],
+        hints_tr: [
+          'chargebacks.opened_at\'i işlemin txn_at\'iyle karşılaştır',
+          'opened_at\'i 1 Mayıs veya sonrası olan Nisan fraud chargeback\'lerini say'
+        ],
+        verify: { sql: "SELECT COUNT(*) AS missing FROM chargebacks c JOIN transactions t ON t.txn_id = c.txn_id WHERE t.txn_at >= '2026-04-01' AND t.txn_at < '2026-05-01' AND c.reason_code IN ('fraud_card_present', 'fraud_card_not_present') AND c.opened_at >= '2026-05-01'" },
+        concepts: ['Fraud Rates', 'Label lag', 'As-of reporting']
+      },
+      {
+        id: 'cr-m9',
+        order: 9,
+        type: 'mcq',
+        title: 'Say it to someone who does not write SQL',
+        title_tr: 'SQL yazmayan birine söyle',
+        description: 'Your head of product does not write SQL and asks what the two retention numbers from question 3 mean. Which sentence is accurate and plain?',
+        description_tr: 'Ürün liderin SQL yazmıyor ve 3. sorudaki iki retention sayısının ne anlama geldiğini soruyor. Hangi cümle doğru ve sade?',
+        timeLimit: 3 * 60,
+        difficulty: 'Medium',
+        points: 10,
+        dataset: 'finans_neobank',
+        options: [
+          { id: 'cr9a', text: 'Week-two retention is 26%, so about a quarter of new customers stick around.', text_tr: 'İkinci hafta retention %26, yani yeni müşterilerin yaklaşık dörtte biri kalıyor.', value: 'quarter' },
+          { id: 'cr9b', text: '85% of new customers churned in their second week.', text_tr: 'Yeni müşterilerin %85\'i ikinci haftalarında churn etti.', value: 'churn' },
+          { id: 'cr9c', text: 'Customers who make a first payment are 26% more likely to be retained, so pushing first payments will lift retention by a quarter.', text_tr: 'İlk ödemeyi yapan müşterilerin retained olma olasılığı %26 daha yüksek, yani ilk ödemeleri artırmak retention\'ı dörtte bir yükseltir.', value: 'causal' },
+          { id: 'cr9d', text: 'Of the 87 people who joined from January to June, 13 (15%) used their account in their second week. Counting from each person\'s first payment instead, 18 of the 70 who made one (26%) were back the week after; the 17 who never made a payment are not in that second number.', text_tr: 'Ocak–Haziran arasında katılan 87 kişiden 13\'ü (%15) ikinci haftasında hesabını kullandı. Her kişinin ilk ödemesinden sayınca, ödeme yapan 70 kişiden 18\'i (%26) bir hafta sonra geri geldi; hiç ödeme yapmayan 17 kişi bu ikinci sayıda yok.', value: 'plain' }
+        ],
+        correctOptionId: 'cr9d',
+        explanation: 'The last one. It gives each number its population and says who is left out, in words a reader can repeat. 26% alone hides the 17 who never started. Not using the account in week two is not churn: they may be back in week three. And 26% is a share of a filtered group, not a lift; nothing in the data says first payments cause retention.',
+        explanation_tr: 'Sonuncusu. Her sayıya kendi popülasyonunu veriyor ve kimin dışarıda kaldığını okuyucunun tekrar edebileceği sözlerle söylüyor. Tek başına %26 hiç başlamayan 17 kişiyi gizler. İkinci hafta hesabı kullanmamak churn değildir: üçüncü hafta dönebilirler. %26 da filtrelenmiş bir grubun payı, bir artış değil; veride ilk ödemenin retention\'a yol açtığını söyleyen bir şey yok.',
+        hints: [
+          'A plain sentence still names who is counted',
+          'Not active this week is not the same as gone'
+        ],
+        hints_tr: [
+          'Sade bir cümle de kimin sayıldığını söyler',
+          'Bu hafta aktif olmamak gitmiş olmakla aynı değil'
+        ],
+        verify: { sql: "WITH ui AS (SELECT user_id, date(ts) AS d FROM transactions WHERE status = 'completed' AND type IN ('card_payment', 'transfer_out', 'bill_payment', 'atm_withdrawal', 'fx_exchange')), c AS (SELECT u.user_id, u.signup_date, (SELECT MIN(d) FROM ui WHERE ui.user_id = u.user_id) AS first_d FROM users u WHERE u.signup_date >= '2026-01-01' AND u.signup_date < '2026-07-01') SELECT COUNT(*) AS cohort, COUNT(*) - COUNT(first_d) AS never_transacted FROM c" },
+        concepts: ['Communicating results', 'Retention', 'Correlation vs causation']
+      },
+      // ---- Written SQL: the metric you just defined, on the same data.
+      // No `explainApproach` here, on purpose (2026-11-22): the box stays
+      // only where a live round grades the reasoning (ledger "Explain your
+      // approach" — MISS); here the grading notes after submit carry it.
+      {
+        id: 'cr-q1',
+        order: 10,
+        title: 'Write the active rate from question 1',
+        title_tr: '1. sorudaki aktif oranı yaz',
+        description: 'Write the metric from question 1 as one query. Return **one row**: **active_users** (distinct users with a **completed** transaction of type card_payment, transfer_out, bill_payment, atm_withdrawal or fx_exchange in **August 2026**), **users** (everyone with **signup_date** on or before 31 August 2026) and **active_rate_pct** (active_users as a percentage of users, rounded to 1 decimal).',
+        description_tr: '1. sorudaki metriği tek sorgu olarak yaz. **Tek satır** döndür: **active_users** (**Ağustos 2026**\'da card_payment, transfer_out, bill_payment, atm_withdrawal ya da fx_exchange tipinde **tamamlanmış** işlemi olan farklı kullanıcılar), **users** (**signup_date**\'i 31 Ağustos 2026 veya öncesi olan herkes) ve **active_rate_pct** (active_users\'ın users içindeki yüzdesi, 1 ondalık).',
+        timeLimit: 10 * 60,
+        difficulty: 'Medium',
+        points: 20,
+        dataset: 'finans_neobank',
+        solution: "WITH active AS (SELECT COUNT(DISTINCT user_id) AS active_users FROM transactions WHERE status = 'completed' AND type IN ('card_payment', 'transfer_out', 'bill_payment', 'atm_withdrawal', 'fx_exchange') AND ts >= '2026-08-01' AND ts < '2026-09-01'), base AS (SELECT COUNT(*) AS users FROM users WHERE signup_date < '2026-09-01') SELECT active_users, users, ROUND(100.0 * active_users / users, 1) AS active_rate_pct FROM active, base",
+        gradingNotes: 'Reference: 89 active users, 240 users, 37.1%. Graded on the row. Full marks need: COUNT(DISTINCT user_id), not COUNT(*); the type list, so plan fees and incoming transfers stay out; a half-open August range on ts (ts < \'2026-09-01\', because ts carries a time); the denominator counted from users, not from transactions; 100.0 so the division is not integer division. Two CTEs or two scalar subqueries both pass.',
+        gradingNotes_tr: 'Referans: 89 aktif kullanıcı, 240 kullanıcı, %37,1. Satır üzerinden puanlanır. Tam puan için: COUNT(*) değil COUNT(DISTINCT user_id); plan ücretleri ve gelen transferler dışarıda kalsın diye tip listesi; ts üzerinde yarı açık Ağustos aralığı (ts saat taşıdığı için ts < \'2026-09-01\'); payda transactions\'tan değil users\'tan sayılır; bölme tam sayı bölmesi olmasın diye 100.0. İki CTE de iki skaler alt sorgu da geçer.',
+        hints: [
+          'Count the numerator and the denominator separately, each from its own table, then divide',
+          'Multiply by 100.0 before dividing; ROUND(…, 1) at the end'
+        ],
+        hints_tr: [
+          'Pay ve paydayı ayrı ayrı, her birini kendi tablosundan say, sonra böl',
+          'Bölmeden önce 100.0 ile çarp; sonda ROUND(…, 1)'
+        ],
+        concepts: ['COUNT DISTINCT', 'CTE', 'Rates', 'Date Filter']
+      },
+      {
+        id: 'cr-q2',
+        order: 11,
+        title: 'Fraud rate by transaction month',
+        title_tr: 'İşlem ayına göre fraud oranı',
+        description: 'For transactions in **March and April 2026**, return one row per **txn_month** (`YYYY-MM` from **txn_at**): **transactions**, **fraud_chargebacks** (chargebacks on those transactions with reason_code **fraud_card_present** or **fraud_card_not_present**) and **fraud_rate_pct** (fraud_chargebacks as a percentage of transactions, rounded to 2 decimals). Order by month. Expected: two rows.',
+        description_tr: '**Mart ve Nisan 2026** işlemleri için her **txn_month** (**txn_at**\'ten `YYYY-MM`) başına bir satır döndür: **transactions**, **fraud_chargebacks** (bu işlemlerde reason_code\'u **fraud_card_present** veya **fraud_card_not_present** olan chargeback\'ler) ve **fraud_rate_pct** (fraud_chargebacks\'in transactions içindeki yüzdesi, 2 ondalık). Aya göre sırala. Beklenen: iki satır.',
+        timeLimit: 10 * 60,
+        difficulty: 'Medium',
+        points: 20,
+        dataset: 'finans_fraud',
+        solution: "SELECT substr(t.txn_at, 1, 7) AS txn_month, COUNT(*) AS transactions, COUNT(c.chargeback_id) AS fraud_chargebacks, ROUND(100.0 * COUNT(c.chargeback_id) / COUNT(*), 2) AS fraud_rate_pct FROM transactions t LEFT JOIN chargebacks c ON c.txn_id = t.txn_id AND c.reason_code IN ('fraud_card_present', 'fraud_card_not_present') WHERE t.txn_at >= '2026-03-01' AND t.txn_at < '2026-05-01' GROUP BY txn_month ORDER BY txn_month",
+        gradingNotes: 'Reference: 2026-03 → 960 transactions, 17 fraud chargebacks, 1.77%; 2026-04 → 1,119, 22, 1.97%. Graded on the rows. The trap: putting the reason_code filter in WHERE turns the LEFT JOIN into an inner one, and transactions drops to the 39 charged-back rows. Keep it in ON, or count with SUM(CASE …) over a LEFT JOIN of all chargebacks. Month comes from the transaction, never from opened_at. Each transaction has at most one chargeback here, so the join does not fan out; say that you checked.',
+        gradingNotes_tr: 'Referans: 2026-03 → 960 işlem, 17 fraud chargeback, %1,77; 2026-04 → 1.119, 22, %1,97. Satırlar üzerinden puanlanır. Tuzak: reason_code filtresini WHERE\'e koymak LEFT JOIN\'i inner\'a çevirir ve transactions chargeback\'li 39 satıra düşer. Filtreyi ON\'da tut ya da tüm chargeback\'lerin LEFT JOIN\'i üzerinde SUM(CASE …) ile say. Ay işlemden gelir, asla opened_at\'ten değil. Burada her işlemin en fazla bir chargeback\'i var, yani join çoğaltmaz; kontrol ettiğini söyle.',
+        hints: [
+          'Every transaction stays in the denominator, charged back or not: LEFT JOIN chargebacks',
+          'A filter on the right table of a LEFT JOIN belongs in ON, not in WHERE'
+        ],
+        hints_tr: [
+          'Chargeback\'li olsun olmasın her işlem paydada kalır: LEFT JOIN chargebacks',
+          'LEFT JOIN\'in sağ tablosundaki filtre WHERE\'e değil ON\'a aittir'
+        ],
+        concepts: ['LEFT JOIN', 'Conditional Aggregation', 'Fraud Rates', 'GROUP BY']
+      },
+      {
+        id: 'cr-q3',
+        order: 12,
+        title: 'Retention from signup and from first transaction, in one query',
+        title_tr: 'Kayıttan ve ilk işlemden retention, tek sorguda',
+        description: 'Write question 3 as SQL. Cohort: users with **signup_date** in **January–June 2026**. Activity: **completed** transactions of type card_payment, transfer_out, bill_payment, atm_withdrawal or fx_exchange, compared by **date(ts)**. Return **one row**: **cohort_users**, **retained_from_signup** (activity on days 7–13 after signup_date), **first_txn_users** (cohort users with any activity) and **retained_from_first** (activity on days 7–13 after their first activity date).',
+        description_tr: '3. soruyu SQL olarak yaz. Kohort: **signup_date**\'i **Ocak–Haziran 2026** olan kullanıcılar. Aktivite: card_payment, transfer_out, bill_payment, atm_withdrawal ya da fx_exchange tipinde **tamamlanmış** işlemler, **date(ts)** ile karşılaştırılır. **Tek satır** döndür: **cohort_users**, **retained_from_signup** (signup_date\'ten sonraki 7.–13. günlerde aktivite), **first_txn_users** (aktivitesi olan kohort kullanıcıları) ve **retained_from_first** (ilk aktivite tarihinden sonraki 7.–13. günlerde aktivite).',
+        timeLimit: 13 * 60,
+        difficulty: 'Hard',
+        points: 24,
+        dataset: 'finans_neobank',
+        solution: "WITH activity AS (SELECT DISTINCT user_id, date(ts) AS d FROM transactions WHERE status = 'completed' AND type IN ('card_payment', 'transfer_out', 'bill_payment', 'atm_withdrawal', 'fx_exchange')), cohort AS (SELECT u.user_id, u.signup_date, MIN(a.d) AS first_d FROM users u LEFT JOIN activity a ON a.user_id = u.user_id WHERE u.signup_date >= '2026-01-01' AND u.signup_date < '2026-07-01' GROUP BY u.user_id, u.signup_date) SELECT COUNT(*) AS cohort_users, SUM(EXISTS (SELECT 1 FROM activity a WHERE a.user_id = c.user_id AND a.d BETWEEN date(c.signup_date, '+7 day') AND date(c.signup_date, '+13 day'))) AS retained_from_signup, COUNT(first_d) AS first_txn_users, SUM(first_d IS NOT NULL AND EXISTS (SELECT 1 FROM activity a WHERE a.user_id = c.user_id AND a.d BETWEEN date(c.first_d, '+7 day') AND date(c.first_d, '+13 day'))) AS retained_from_first FROM cohort c",
+        gradingNotes: 'Reference: 87, 13, 70, 18. Graded on the row. Full marks need: the cohort from users with a LEFT JOIN, so the 17 with no activity stay in cohort_users; MIN(date) per user as day zero; date(ts) on both sides of the window, because ts carries a time and \'2026-03-10 14:00\' is not BETWEEN two bare dates the way you expect; days 7 to 13 inclusive. EXISTS, a join with COUNT(DISTINCT), or MAX(CASE …) per user all pass. In the follow-up, say the second number leaves out the 17.',
+        gradingNotes_tr: 'Referans: 87, 13, 70, 18. Satır üzerinden puanlanır. Tam puan için: kohort users\'tan LEFT JOIN ile, aktivitesi olmayan 17 kişi cohort_users\'ta kalsın; sıfırıncı gün olarak kullanıcı başına MIN(date); pencerenin iki tarafında da date(ts), çünkü ts saat taşır ve \'2026-03-10 14:00\' iki çıplak tarih arasında beklediğin gibi BETWEEN olmaz; 7. ile 13. gün dahil. EXISTS, COUNT(DISTINCT) ile join ya da kullanıcı başına MAX(CASE …) hepsi geçer. Takip sorusunda ikinci sayının 17 kişiyi dışarıda bıraktığını söyle.',
+        hints: [
+          'One CTE of activity days per user, one CTE of the cohort with MIN(activity day) as first_d',
+          'Count each window with EXISTS against the activity CTE; first_d IS NULL means no first transaction'
+        ],
+        hints_tr: [
+          'Kullanıcı başına aktivite günleri için bir CTE, MIN(aktivite günü) first_d olarak kohort için bir CTE',
+          'Her pencereyi aktivite CTE\'sine karşı EXISTS ile say; first_d IS NULL ilk işlem yok demek'
+        ],
+        concepts: ['CTE', 'Retention', 'Date Functions', 'EXISTS', 'LEFT JOIN']
+      }
+    ],
+    passingScore: 60
   }
 ];
 

@@ -169,8 +169,14 @@ async function sendAndLog(supabase: any, apiKey: string, args: {
 // person is asked twice and another never. Change it there, then here.
 function goalOnRecord(userData: any): boolean {
   const d = userData || {}
-  const intent = d.intent || d.userIntent
-  if (intent === 'interview' || intent === 'job_ready' || intent === 'learning') return true
+  // `userData.intent` is the object `{ goal, source, at }` that setUserIntent
+  // in src/app.jsx has written since 2026-09-17; a bare string is the older
+  // shape. Until 2026-11-25 only the string was read, so every answer given
+  // through the app missed here and those people were asked again.
+  // 'exploring' is not a goal; 'hired' is a status the person declared.
+  const raw = d.intent || d.userIntent
+  const intent = raw && typeof raw === 'object' ? raw.goal : raw
+  if (intent === 'interview' || intent === 'job_ready' || intent === 'learning' || intent === 'hired') return true
   if (d.intake && typeof d.intake === 'object' && d.intake.goal) return true
   if (d.coachState && typeof d.coachState === 'object' && d.coachState.goalId) return true
   const t = d.prepTarget && typeof d.prepTarget === 'object' ? d.prepTarget : null

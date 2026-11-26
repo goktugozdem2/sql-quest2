@@ -8,22 +8,24 @@ the "Today" block on every run and appends to the other sections. The brief is
 
 ## Objective: O2, 10 paying customers per 30 days by 2027-02-08
 
-### Today (G0, 2026-11-24, scheduled run)
+### Today (G0, 2026-11-25, scheduled run)
 
-**Still no B2 O2 row after 11-22.** The money side is known to 11-23 21:34
-UTC from B1's Tuesday read (`funnel-2026-11-24.md` §3): **no new trial or
-payer since 11-22**, and a monthly subscriber's renewal failed on 11-23
-(Stripe retries).
+**No money event since 11-23 21:34 UTC** through B1's second pass (data to
+11-24 08:21 UTC): no checkout session, trial, purchase or payment failure.
+The trial's day 7 (11-24) and the failed renewal's retry are not yet read
+(E1, plan row 1).
 
 | | Value | As of | Source |
 |---|---|---|---|
-| Payers / 30 d | **2** (the 11-02 monthly and the 11-21 annual; no new payer since) | 2026-11-23 21:34Z | B2 day-12 row + B1 11-24 §3 |
-| Six-solvers / 30 d | **64** | 2026-11-22 | B2 (not re-read since) |
-| Trials in flight | 1 monthly, day 7 on 11-24; outcome not yet read | 2026-11-23 | B2, B1 |
-| Renewal at risk | 1 monthly, first renewal failed 11-23, Stripe retrying | 2026-11-23 | B1 11-24 §3 |
-| Trial-or-paid per 1,000 app arrivals | ≈ 11 (7 over 631, ~30 days) | 2026-11-23 | B1 11-24 §3 |
-| Days left | **76** (day 14 of 90) | | |
-| Next checkpoint | **2026-12-10: 4 payers / 30 d**, 16 days away, 3 purchases short | | objectives.md |
+| Payers / 30 d | **2** (the 11-02 monthly and the 11-21 annual) | 2026-11-24 08:21Z | B1 11-24 §8a |
+| Six-solvers / 30 d (all users) | **64** | 2026-11-22 | B2 (next like-for-like read 12-03) |
+| Six-solvers, new openers, 28 d | 56 (first open 10-27 → 11-23) | 2026-11-24 | B1 §8a; not comparable with the row above |
+| Trial-or-paid per 1,000 new openers | ≈ 10 (6 of 587, 28 d) | 2026-11-24 | B1 §8a |
+| Paid (trial or purchase) in AN's 28-day window | 5 (6 the day before) | 2026-11-24 | AN `analytics-2026-11.md` |
+| Trial in flight | 1 monthly, day 7 on 11-24; outcome not read | 2026-11-24 | B1, E1 pending |
+| Renewal at risk | 1 monthly, failed 11-23, retry not read | 2026-11-23 | B1 11-24 §3 |
+| Days left | **75** (day 15 of 90) | | |
+| Next checkpoint | **2026-12-10: 4 payers / 30 d**, 15 days away, 3 purchases short | | objectives.md |
 
 ### The gap
 
@@ -56,6 +58,12 @@ payer since 11-22**, and a monthly subscriber's renewal failed on 11-23
   clicks fell. #72's bingbot noindex (read 2027-01-08) is the bet on it.
   11-23: still 1.94 (S1); only 8 of 312 question pages re-crawled since #72.
   C1's rule 1 holds: no new page this week; let the two Bing fixes act.
+- **11-25, where the people are lost (B1 §8c, 28 d, new openers).** Opened a
+  challenge → first run loses 202 of 457 (44%), the most of any step, but it
+  carries six changes already; #287 (`challenge_left`) is its missing
+  instrument and waits on #281. Solve 1 → 6 loses 147 with no experiment on
+  it; B1's "Next question first" is queued behind the 12-13 read. Modal →
+  plan click loses 90%; price and plans are the founder's.
 - **11-24, L3 can't be read before ~12-13.** B1's pre-registered 1 → 6 test
   needs the 11-23 → 12-06 cohorts plus 7 days. Until then nothing new goes on
   the post-solve step (B1's rule), so L3 gets no build rows.
@@ -85,7 +93,8 @@ a read date. G0 closes a bet only on its read.
 | 4 | Related links for 15 thin pages | L1 | #163 | ≥ 12 of 15 crawled by Bing after the deploy | C1, 12-20 | **merged 11-23**. The pre-deploy baseline was never read (two plans in a row). The bet is read on 12-20 without it: crawl dates after the deploy only, and the claim says so. |
 | 5 | Bingbot noindex on `/questions/` | L1 | #72 | Bing's crawl returns to the money pages | C1, 2027-01-08 | merged 11-20 |
 | 6 | Exit-reason ask after a closed modal or wall | L4 (learning) | #155 | reasons for ≥ 10 of the next ~20 expired checkouts | E2, 12-20 | **merged; ON 11-23**. Day 1: 1 shown, 1 answer ("price"). The re-ask defect B1 found is fixed (#286). Read on people. |
-| 7 | Company arrival opens question 1, 50/50 | L2 | #156 | company-door `open_to_first_run` up; stop rule in the PR | B5, per PR | **merged; ON 50/50 11-23**. Day 1: 2 vs 3 assigned, too few to read. |
+| 7 | Company arrival opens question 1, 50/50 | L2 | #156 | company-door `open_to_first_run` up; stop rule in the PR | B5, per PR | **merged; ON 50/50 11-23**. 11-24: 2 vs 5 assigned, ~1% of the harm-check n (B1 §8d). |
+| 8 | No onboarding tour over the Pro modal | L4 | #240 | the modal is read, not covered; modal → plan click off its 10% floor | per PR, 12-20 | **merged 11-24** |
 
 ## Closed bets (what each ruled out)
 
@@ -107,6 +116,10 @@ a read date. G0 closes a bet only on its read.
 - **2026-11-24.** The first scheduled run that worked (03:47 UTC, in the
   session that holds the repository). #176 is still unmerged (A1 REVISE,
   fixed in this run), so the plan goes on #176's branch again.
+- **2026-11-25.** First run after #176 merged; the plan goes on
+  `goal/2026-11-26` from main. E1's row went unrecorded once and is cut to two
+  lines from `stripe_webhook`. #241 sits on one missing orchestrator row; G0
+  recommends ON (row 2).
 - **Throughput is not the problem.** 149 PRs merged on 11-22 and 11-23 and
   29 are open, while payers / 30 d has not moved. G0's job is to keep the
   merge order money-first, not to add rows.
@@ -118,6 +131,7 @@ a read date. G0 closes a bet only on its read.
 | 2026-11-22 | 2 | 64 | L1 (volume), then L3 | 6 | first run | `2026-11-23.md` |
 | 2026-11-23 | 2 (a day old) | 64 (a day old) | L1, with L4 (India checkout) new | 6 | 1 shipped, 2 partial, 2 not started, 1 due 11-24 | `2026-11-24.md` |
 | 2026-11-24 | 2 (to 11-23 21:34Z) | 64 (11-22) | L1 (Bing: wait), L4 (India: founder) | 4 | 2 shipped, 1 pending, 2 dropped, 1 blocked on founder | `2026-11-25.md` |
+| 2026-11-25 | 2 (to 11-24 08:21Z) | 64 (11-22); 56 new-opener 28 d | six-solvers: open → run (44%) and 1 → 6; money path for 12-10 | 5 | 1 not recorded (made smaller), 1 partial, 2 not due | `2026-11-26.md` |
 
 ## Weekly
 
