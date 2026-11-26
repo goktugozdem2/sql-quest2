@@ -1,5 +1,7 @@
 # R1 — Company interview research (what each important company actually asks)
 
+> **Refocused 2026-11-25 (investor 90-day plan, A09): weekly, and only for the seven money pages** — Capital One, Revolut, Wise, Monzo, Amazon, Stripe, Snowflake: refresh their sourced facts and feed C5. No new company dossiers.
+
 **Lane:** a dated, sourced dossier per company. For each one: the SQL screen's format (rounds, platform, timing), the reported topics, and the question *shapes* candidates describe. R1 publishes nothing itself. It feeds:
 - **C1**: the company pages' sourced "How the interview runs" rows;
 - **B3**: original challenges modelled on the reported shapes;
