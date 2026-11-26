@@ -78,12 +78,13 @@ describe('the registry', () => {
     expect(new Set(slots).size).toBe(slots.length);
   });
 
-  it('arm B is built (its PR, 2026-11-26) and runs itself; D is not yet and runs control\'s behaviour', () => {
-    expect(tournamentArmById('B_single_path').built).toBe(true);
-    expect(tournamentArmById('D_interview_sprint').built).toBe(false);
-    expect(tournamentBehaviour('B_single_path')).toBe('B_single_path');
-    expect(tournamentSupersedes('B_single_path')).toBe(true);
-    for (const id of ['A_control', 'D_interview_sprint', 'C_proof_first']) {
+  it('arms B and D are built (their PRs, 2026-11-26) and run themselves; C is queued and runs control\'s behaviour', () => {
+    for (const id of ['B_single_path', 'D_interview_sprint']) {
+      expect(tournamentArmById(id).built).toBe(true);
+      expect(tournamentBehaviour(id)).toBe(id);
+      expect(tournamentSupersedes(id)).toBe(true);
+    }
+    for (const id of ['A_control', 'C_proof_first']) {
       expect(tournamentBehaviour(id)).toBe(TOURNAMENT_CONTROL_ID);
       expect(tournamentSupersedes(id)).toBe(false);
     }

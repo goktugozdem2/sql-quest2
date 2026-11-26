@@ -16,8 +16,11 @@
 //     B's ladder questions in front of it, `k/N`, and Next = the next step
 //     that is not Pro-only (a quota-gated step is NOT skipped: opening it is
 //     today's quota wall, the plan's line in its slot).
-//   - arm D (interview sprint) reuses the plan and adds its sprint in its own
-//     PR (it stays `built: false` until then, so it runs control).
+//   - arm D's sprint: company (one tap, or the door's), length (7 / 14 / no
+//     date), the day count. A learner ("Just learning", or "Not sure yet"
+//     without an interview signal) gets a fundamentals sprint. Its own field —
+//     never prepTarget.date (deadlineOffer and the interview-outcome note read
+//     that one).
 //
 // Pure and side-effect free: storage, clock, bank and locks are passed in.
 
@@ -27,7 +30,8 @@ import { PLACEMENT_TIERS, levelForLadder } from './placement.js';
 import { challengeMatchesSkill } from './skill-drill.js';
 
 export const SINGLE_PATH_ARM = 'B_single_path';
-export const PATH_ARMS = Object.freeze([SINGLE_PATH_ARM]);
+export const SPRINT_ARM = 'D_interview_sprint';
+export const PATH_ARMS = Object.freeze([SINGLE_PATH_ARM, SPRINT_ARM]);
 export const SINGLE_PATH_KEY = 'sqlquest_single_path_v1';
 export const PATH_STATE_VERSION = 1;
 
@@ -48,6 +52,12 @@ export const LADDER_STUCK_SECS = Object.freeze([360, 600, 600]);
 export const LADDER_OUTCOMES = Object.freeze(['fast', 'solved', 'stuck']);
 export const LADDER_ORDER = buildCurriculumOrder(LADDER_RUNGS.map(ids => ({ challengeIds: [...ids] })));
 
+// ── the sprint (arm D, plan §4) ─────────────────────────────────────────────
+/** One tap: 7 days, 14 days, or no date (null — the roadmap's default sprint by level). */
+export const SPRINT_LENGTHS = Object.freeze([7, 14]);
+export const SPRINT_GOALS = Object.freeze(['interview', 'learning']);
+const DAY_MS = 86400000;
+
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const toSet = (v) => (v && typeof v.has === 'function' ? v : new Set(Array.isArray(v) ? v : []));
 
@@ -62,6 +72,7 @@ export function emptyPathState() {
   return {
     v: PATH_STATE_VERSION,
     ladder: { outcomes: [], rung: 0, current: null, setAside: [], done: false, levelId: null, endedAt: null },
+    sprint: null,
     plan: null,
     doneLog: [],
     tabsOpenedAt: null,
@@ -98,6 +109,7 @@ export function normalizePathState(raw) {
     levelId: PLACEMENT_TIERS[l.levelId] ? l.levelId : (done ? levelForLadder(outcomes) : null),
     endedAt: isNum(Number(l.endedAt)) && Number(l.endedAt) > 0 ? Number(l.endedAt) : null,
   };
+  base.sprint = normalizeSprint(raw.sprint);
   base.plan = normalizePlan(raw.plan);
   base.doneLog = Array.isArray(raw.doneLog) ? raw.doneLog.filter(d => d && (Number.isInteger(Number(d.id)) || typeof d.id === 'string') && typeof d.day === 'string').slice(-200).map(d => ({ id: typeof d.id === 'string' && !/^\d+$/.test(d.id) ? d.id : Number(d.id), day: d.day.slice(0, 10) })) : [];
   base.tabsOpenedAt = isNum(Number(raw.tabsOpenedAt)) && Number(raw.tabsOpenedAt) > 0 ? Number(raw.tabsOpenedAt) : null;
@@ -113,12 +125,14 @@ export function normalizePathState(raw) {
  * every switch false (today's product).
  *
  *   state       — normalizePathState(...)
+ *   hasChallenge — a challenge is open (D's sprint screen waits for none)
+ *   today       — the app's day (YYYY-MM-DD), for D's tab rule
  */
-export function pathUiFlags({ behaviour = null, state = null } = {}) {
+export function pathUiFlags({ behaviour = null, state = null, hasChallenge = false, today = null } = {}) {
   const off = {
     arm: null, active: false, ladderActive: false, hideTabs: false, extendShell: false,
     showPlanLine: false, suppressAsks: false, suppressNextStrip: false, sprintSetup: false,
-    starterPrefill: false, companyDirect: false, holdLayers: false, fixedRunBar: false,
+    starterPrefill: false, companyDirect: false, holdLayers: false, fixedRunBar: false, sprint: false,
   };
   if (!isPathArm(behaviour)) return off;
   const s = state && state.v ? state : normalizePathState(state);
@@ -145,7 +159,26 @@ export function pathUiFlags({ behaviour = null, state = null } = {}) {
       fixedRunBar: true,
     };
   }
-  return off;
+  // D — the sprint screen first; tabs after the first day's count or the first solve of day 2.
+  const setUp = !!(s.sprint && s.sprint.setAt);
+  const tabsOpen = setUp && sprintTabsOpen(s, { today });
+  return {
+    ...off,
+    arm: behaviour,
+    active: true,
+    sprint: true,
+    hideTabs: !tabsOpen,
+    extendShell: !tabsOpen,
+    showPlanLine: setUp && !!s.plan,
+    suppressAsks: !tabsOpen,
+    suppressNextStrip: true,
+    sprintSetup: !setUp && !hasChallenge,
+    starterPrefill: true,
+    // The sprint screen comes first; the company's question 1 opens after it.
+    companyDirect: false,
+    holdLayers: !tabsOpen,
+    fixedRunBar: true,
+  };
 }
 
 // ───────────────────────────── the ladder ───────────────────────────────────
@@ -279,14 +312,25 @@ export function companyFromSlug(slug, names = []) {
 
 /**
  * The profile buildRoadmap reads, from the tournament record's profile (the
- * door, the company, the device) and arm B's ladder tier. Never a date.
+ * door, the company, the device), arm B's ladder tier and arm D's sprint.
+ * Never a date: D's length rides as `deadlineDays` (a number).
  */
-export function roadmapProfileFor({ visitor = null, state = null, solvedIds = [], isPro = false, companies = [] } = {}) {
+export function roadmapProfileFor({ arm = null, visitor = null, state = null, solvedIds = [], isPro = false, companies = [] } = {}) {
   const s = normalizePathState(state);
   const v = visitor && typeof visitor === 'object' ? visitor : {};
   const device = v.device === 'phone' ? 'mobile' : v.device === 'tablet' ? 'tablet' : 'desktop';
   const doorCompany = companyFromSlug(v.company, companies);
   const out = { solvedIds: [...toSet(solvedIds)], isPro: !!isPro, device };
+  if (arm === SPRINT_ARM) {
+    // D: the sprint's company and length; a learner's sprint is the
+    // fundamentals goal (goal 'learning'), never a company-only plan.
+    const sp = s.sprint || {};
+    if (sp.company) out.company = sp.company;
+    out.goal = sp.goal === 'learning' && !sp.company ? 'learning' : 'interview';
+    if (isNum(sp.days)) out.deadlineDays = sp.days;
+    if (v.readinessBand) out.level = v.readinessBand === 'high' ? 'working' : v.readinessBand === 'mid' ? 'basics' : 'brand-new';
+    return out;
+  }
   if (s.ladder.levelId) out.level = s.ladder.levelId;
   if (doorCompany) out.company = doorCompany;
   if (v.interviewTarget) out.goal = 'interview';
@@ -457,6 +501,81 @@ export function logStepDone(state, { id, day } = {}) {
   if (id == null || typeof day !== 'string') return s;
   if (s.doneLog.some(d => String(d.id) === String(id))) return s;
   return { ...s, doneLog: [...s.doneLog, { id, day: day.slice(0, 10) }] };
+}
+
+// ───────────────────────────── the sprint (D) ───────────────────────────────
+
+export function normalizeSprint(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const days = SPRINT_LENGTHS.includes(Number(raw.days)) ? Number(raw.days) : null;
+  const company = typeof raw.company === 'string' && raw.company.trim() ? raw.company.trim().slice(0, 60) : null;
+  const startDay = typeof raw.startDay === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.startDay) ? raw.startDay : null;
+  const setAt = isNum(Number(raw.setAt)) && Number(raw.setAt) > 0 ? Number(raw.setAt) : null;
+  if (!setAt || !startDay) return null;
+  return {
+    company,
+    companySource: ['door', 'tap', 'undecided', 'learning', 'skipped'].includes(raw.companySource) ? raw.companySource : null,
+    goal: company ? 'interview' : (SPRINT_GOALS.includes(raw.goal) ? raw.goal : 'learning'),
+    days,
+    daysSource: ['tap', 'no_date', 'skipped'].includes(raw.daysSource) ? raw.daysSource : null,
+    startDay,
+    setAt,
+  };
+}
+
+/** The sprint as set on the sprint screen. `days` null = no date. Never a date field. */
+export function startSprint({ company = null, companySource = null, goal = null, days = null, daysSource = null, today, now } = {}) {
+  return normalizeSprint({ company, companySource, goal, days, daysSource, startDay: today, setAt: now });
+}
+
+const dayNumber = (ymd) => {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(ymd || ''));
+  return m ? Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])) / DAY_MS : null;
+};
+
+/** Day d of the sprint (1 on the start day), by the app's calendar day. */
+export function sprintDay(sprint, today) {
+  const a = dayNumber(sprint && sprint.startDay);
+  const b = dayNumber(today);
+  if (a === null || b === null) return 1;
+  return Math.max(1, b - a + 1);
+}
+
+/** Plan steps done on a calendar day. */
+export function doneOnDay(state, day) {
+  const s = normalizePathState(state);
+  return s.doneLog.filter(d => d.day === day).length;
+}
+
+/**
+ * The day strip's model: "Day d of D · n today". D is the sprint's length,
+ * else the plan's own length in days; n = today's count still to do.
+ */
+export function sprintDayModel(state, { today } = {}) {
+  const s = normalizePathState(state);
+  if (!s.sprint || !s.plan) return null;
+  const d = sprintDay(s.sprint, today);
+  const total = s.sprint.days || s.plan.deadlineDays || s.plan.planDays || 14;
+  const daily = s.plan.dailyCount || 2;
+  const doneToday = doneOnDay(s, today);
+  const days = [];
+  for (let i = 1; i <= total; i++) {
+    const ymdN = dayNumber(s.sprint.startDay) + (i - 1);
+    const ymd = new Date(ymdN * DAY_MS).toISOString().slice(0, 10);
+    const n = s.doneLog.filter(x => x.day === ymd).length;
+    days.push({ day: i, done: n, met: n >= daily, today: i === d, past: i < d });
+  }
+  return { day: Math.min(d, total), total, over: d > total, daily, doneToday, leftToday: Math.max(0, daily - doneToday), days };
+}
+
+/** D's tab rule: open after the first day's count is done, or at the first solve of day 2. */
+export function sprintTabsOpen(state) {
+  const s = state && state.v ? state : normalizePathState(state);
+  if (s.tabsOpenedAt) return true;
+  if (!s.sprint || !s.plan) return false;
+  const daily = s.plan.dailyCount || 2;
+  if (s.doneLog.filter(x => x.day === s.sprint.startDay).length >= daily) return true;
+  return s.doneLog.some(x => x.day !== s.sprint.startDay);
 }
 
 // ───────────────────────────── the words ────────────────────────────────────

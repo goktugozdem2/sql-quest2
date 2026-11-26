@@ -13,7 +13,7 @@ import {
 } from '../src/utils/single-path.js';
 import { levelForLadder, FIRST_RUN_PLACEMENT_SOURCES } from '../src/utils/placement.js';
 import { buildRoadmap } from '../src/utils/personal-roadmap.js';
-import { tournamentArmById, TOURNAMENT_CONTROL_ID } from '../src/data/tournament-arms.js';
+import { tournamentArmById, TOURNAMENT_CONTROL_ID, TOURNAMENT_ARMS } from '../src/data/tournament-arms.js';
 import { tournamentBehaviour } from '../src/utils/tournament.js';
 import { FREE_SOLVE_QUOTA, FREE_MOCK_ID } from '../src/utils/free-tier-boundary.js';
 import { INTAKE_COMPANIES } from '../src/utils/onboarding-intake.js';
@@ -23,6 +23,8 @@ const ROOT = path.resolve(new URL('..', import.meta.url).pathname);
 const read = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
 const APP = read('src/app.jsx');
 const MOD = read('src/utils/single-path.js');
+// The module's code without its comments (the comments explain why prepTarget.date is never written).
+const MOD_CODE = MOD.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
 
 let bank;
 let opts;
@@ -50,7 +52,8 @@ describe('arm B is built; nothing else changes', () => {
     expect(tournamentBehaviour(SINGLE_PATH_ARM)).toBe(SINGLE_PATH_ARM);
   });
   it('control, an unbuilt arm and no arm get every switch OFF (today\'s product)', () => {
-    for (const behaviour of [null, undefined, TOURNAMENT_CONTROL_ID, tournamentBehaviour('D_interview_sprint'), 'C_proof_first']) {
+    const dUnbuilt = TOURNAMENT_ARMS.map(a => (a.id === 'D_interview_sprint' ? { ...a, built: false } : a));
+    for (const behaviour of [null, undefined, TOURNAMENT_CONTROL_ID, tournamentBehaviour('D_interview_sprint', dUnbuilt), tournamentBehaviour('C_proof_first')]) {
       const f = pathUiFlags({ behaviour, state: emptyPathState(), hasChallenge: true });
       for (const [k, v] of Object.entries(f)) expect([k, v]).toEqual([k, k === 'arm' ? null : false]);
     }
@@ -267,9 +270,9 @@ describe('the plan — the roadmap engine, frozen, k/N, Next', () => {
     const s2 = logStepDone(s1, { id: 92, day: '2026-11-27' });
     expect(s2.doneLog).toEqual([{ id: 92, day: '2026-11-26' }]);
   });
-  it('the roadmap never names a date: B writes no prepTarget anywhere', () => {
-    expect(MOD).not.toMatch(/prepTarget/);
-    expect(MOD).not.toMatch(/localStorage|Date\.now\(|Math\.random/);
+  it('the roadmap never names a date: the module writes no prepTarget anywhere', () => {
+    expect(MOD_CODE).not.toMatch(/prepTarget/);
+    expect(MOD_CODE).not.toMatch(/localStorage|Date\.now\(|Math\.random/);
   });
 });
 
