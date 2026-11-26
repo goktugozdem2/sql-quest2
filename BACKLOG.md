@@ -696,6 +696,9 @@ touch them.
   3. In Stripe, open the subscription with the open $9 invoice of 11-24
      19:00 UTC. If it is still unpaid, send the customer the invoice's
      hosted link and restore Pro by hand until it is settled.
+  2026-11-26: steps 1–2 are DONE (#355 merged, v27 deployed 11-25). Step 3
+  is still OPEN. About 35 h later the account still reads `proStatus` false,
+  and no `invoice.paid` has reached the webhook (`errors-2026-11-26.md`).
 - **A3-5. `pro_events` has no index on `username`, so per-person lookups scan
   the table.** On 11-23 at 15:00 the `checkout-abandon` read
   `username = … AND event IN (plan/checkout clicked)` hit the 8 s statement
@@ -706,6 +709,8 @@ touch them.
   `create index concurrently if not exists idx_pro_events_username_event on public.pro_events (username, event);`
   Source half (any lane, small PR in `supabase/functions/checkout-abandon/`):
   skip the person when either read returns an `error`.
+  2026-11-26: the source half is #398, held under 6d. After merge,
+  FOUNDER: `supabase functions deploy checkout-abandon`.
 
 ## Competitor watch — B6, 2026-11-22 (docs/reads/competitors-2026-11-22.md)
 
@@ -1020,8 +1025,11 @@ Every competitor fact cited must come from that read (URL + date).
   tutor ("This box goes to the founder. For this query, the tutor answers
   now."). Measure it with `feedback_submitted` rows that carry a challenge
   id.
-- **IR-3 (founder). A payer's job question,** asked 2026-09-14 and never
-  answered. One honest line, either way.
+- ~~**IR-3 (founder). A payer's job question,** asked 2026-09-14 and never
+  answered. One honest line, either way.~~ **Closed 2026-11-24:** the payer
+  asked again on 11-24 and the founder answered in the same thread that day
+  (no opening promised; he would name her if asked for someone). E1 checked
+  on 11-26: the founder's reply is the last message, so no further draft.
 - **IR-4 (founder). Acknowledge the 09-15 security report** once #223 is
   deployed. The reporter left no contact, so this item is just to close the
   loop in the ledger.

@@ -52,6 +52,22 @@ describe('the app URLs', () => {
   });
 });
 
+describe('one host: every other host the project answers on redirects to sqlquest.app', () => {
+  // 2026-11-25 (G1, R1-3): sql-quest2.vercel.app served a full 200 copy of
+  // the site; search engines indexed it and the week's only AI-search
+  // citation credited sql-quest2.vercel.app/llms.txt instead of sqlquest.app.
+  const redirects = JSON.parse(read('vercel.json')).redirects;
+  for (const host of ['www.sqlquest.app', 'sql-quest2.vercel.app']) {
+    it(`${host} → https://sqlquest.app/:path*, permanent`, () => {
+      const rule = redirects.find(r => (r.has || []).some(h => h.type === 'host' && h.value === host));
+      expect(rule, host).toBeTruthy();
+      expect(rule.source).toBe('/:path*');
+      expect(rule.destination).toBe('https://sqlquest.app/:path*');
+      expect(rule.permanent).toBe(true);
+    });
+  }
+});
+
 describe('the sitemap lists only pages meant to be indexed', () => {
   const locs = [...read('public/sitemap.xml').matchAll(/<loc>([^<]+)<\/loc>/g)].map(m => m[1]);
   const fileFor = (loc) => {
