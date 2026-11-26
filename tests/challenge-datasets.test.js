@@ -130,9 +130,9 @@ describe('the audit: every listed table exists in the plan', () => {
 // Build a database from a plan the way app.jsx loadDataset does: a column's
 // type comes from the first row's value; extras load only their tables.
 const planDbs = new Map();
-function dbForPlan(plan) {
+function dbForPlan(plan, { fresh = false } = {}) {
   const key = JSON.stringify(plan);
-  if (planDbs.has(key)) return planDbs.get(key);
+  if (!fresh && planDbs.has(key)) return planDbs.get(key);
   const db = new Database(':memory:');
   for (const step of plan) {
     for (const [name, t] of Object.entries(datasets[step.dataset].tables)) {
@@ -147,7 +147,7 @@ function dbForPlan(plan) {
       db.transaction(rows => rows.forEach(r => ins.run(r.map(v => (v === undefined ? null : v)))))(t.data);
     }
   }
-  planDbs.set(key, db);
+  if (!fresh) planDbs.set(key, db);
   return db;
 }
 
@@ -167,6 +167,22 @@ function splitStatements(sql) {
   return out;
 }
 function runOnPlan(c) {
+  // A state-graded challenge gets its own fresh database, the way the grader
+  // runs it (a reference may open its own transaction, #358); everything
+  // else shares the plan's cached one inside a savepoint.
+  if (c.grade === 'state') {
+    const db = dbForPlan(challengeTablePlan(c, datasets), { fresh: true });
+    try {
+      let rows = [];
+      for (const s of splitStatements([c.setup || '', c.solution, c.check].join(';\n'))) {
+        const st = db.prepare(s);
+        rows = st.reader ? st.all() : (st.run(), []);
+      }
+      return rows;
+    } finally {
+      db.close();
+    }
+  }
   const db = dbForPlan(challengeTablePlan(c, datasets));
   db.exec('SAVEPOINT run');
   try {

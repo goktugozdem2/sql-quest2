@@ -144,6 +144,19 @@ describe('ledger due — the live ledger', () => {
     expect(metrics.has('bing_citations')).toBe(true);
   });
 
+  it('no metric is defined twice in metrics.md (a claim on a doubled name reads UNDEFINED)', () => {
+    // #174 and #173 both defined `content_funnel` (2026-11-24, A1): one name,
+    // two funnels, and every claim on it ambiguous. The case round's became
+    // `case_round_funnel`; this keeps the next collision out.
+    const text = fs.readFileSync(new URL('../docs/agent/metrics.md', import.meta.url), 'utf8');
+    const seen = new Map();
+    for (const line of text.split('\n')) {
+      const m = line.match(/^#{2,3} `([a-z][a-z0-9_]*)`/);
+      if (m) seen.set(m[1], (seen.get(m[1]) || 0) + 1);
+    }
+    expect([...seen].filter(([, n]) => n > 1).map(([k]) => k)).toEqual([]);
+  });
+
   it('finds open claims, and none of the five closed on 2026-11-23 is still due', () => {
     const claims = openClaims(ledger, { asOf: '2026-11-23', metrics });
     expect(claims.length).toBeGreaterThan(20);
