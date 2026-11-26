@@ -49,6 +49,7 @@ of the verifier and must never be rounded to `FLAT`.
   - `companyDirectOpen`, `runnableStarter` and `mobileRunBar` are superseded for challenger arms. Their reads keep arm A and non-tournament people only.
   - The late-December traffic dip.
   - Interview-target people are ~15%, so every read reports that segment separately.
+- **PR 1 (the frame) built 2026-11-26, dark.** Registry `src/data/tournament-arms.js` (A, B, D active; C queued), enrolment and assignment `src/utils/tournament.js`, `tournament_assigned` once per browser, `tArm` / `tArmV` on every row, the record on `userData.tournament`; B and D are `built: false` and run A's behaviour, so a flag-on walk is an A/A of the plumbing. Read `scripts/tournament-read.sql` + `scripts/tournament-posteriors.mjs`. Stacked on #384 (it reuses `hasPriorAppUse` / `PRE_APP_KEYS`).
 
 ### the Metrics & Case Round: the half of the interview that is not SQL (C5/B3)
 

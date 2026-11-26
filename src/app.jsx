@@ -87,6 +87,7 @@ import { dueRetrievals, pickRetrievalChallenge, recordRetrieval, dailyQuota, MAX
 import { computeRecap, shouldShowRecap } from './utils/session-recap.js';
 import { getAnonId } from './utils/anon-id.js';
 import { FREE_QUOTA_HOLDOUT_KEY, FREE_QUOTA_HOLDOUT_TEST_ID, freeQuotaEnrolment, hasPriorAppUse, normalizeFreeQuotaRecord, freeQuotaEffective, freeQuotaEventStamp } from './utils/free-quota-holdout.js';
+import { TOURNAMENT_KEY, tournamentEnrolment, tournamentPriorAppUse, normalizeTournamentRecord, adoptAccountRecord, tournamentEffectiveArm, tournamentBehaviour, tournamentSupersedes, tournamentEventStamp, shouldAnnounceTournament, tournamentAssignedPayload } from './utils/tournament.js';
 import { quotaWallArm, quotaWallShowsModal, quotaInlineCopy, QUOTA_WALL_DAY_KEY } from './utils/quota-wall-inline.js';
 import { classifyLandingSrc, LANDING_SRC_KEY } from './utils/landing-src.js';
 import { classifyQueryError } from './utils/query-error.js';
@@ -155,6 +156,35 @@ if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
     if (decision.write) localStorage.setItem(FREE_QUOTA_HOLDOUT_KEY, JSON.stringify(decision.write));
     FQ_HOLDOUT_RECORD = decision.record;
   } catch (_) { FQ_HOLDOUT_RECORD = null; }
+}
+
+// The first-session tournament (2026-11-26, src/utils/tournament.js, PR 1
+// of 4): decided HERE, right after the holdout and before anything below
+// writes a key, so "has the app run in this browser before?" reads the keys
+// as the browser brought them (the holdout's own key and this one are
+// ignored). A stored record always wins — nobody is re-armed. The component
+// reads TOURNAMENT_RECORD through tournamentArm() / tournamentBehaviourNow()
+// and writeProEvent; tournament_assigned fires once, after the session loads.
+let TOURNAMENT_RECORD = null;
+if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+  try {
+    let stored = null;
+    try { stored = JSON.parse(localStorage.getItem(TOURNAMENT_KEY) || 'null'); } catch (_) { stored = null; }
+    const keys = [];
+    for (let i = 0; i < localStorage.length; i++) keys.push(localStorage.key(i));
+    const flagOn = window.FF?.feature?.('firstSessionTournament') === true;
+    const decision = tournamentEnrolment({
+      flagOn,
+      record: stored,
+      aid: flagOn && !normalizeTournamentRecord(stored) ? getAnonId() : null,
+      now: Date.now(),
+      priorAppUse: tournamentPriorAppUse(keys),
+      search: window.location.search,
+      pathname: window.location.pathname,
+    });
+    if (decision.write) localStorage.setItem(TOURNAMENT_KEY, JSON.stringify(decision.write));
+    TOURNAMENT_RECORD = decision.record;
+  } catch (_) { TOURNAMENT_RECORD = null; }
 }
 
 // Module-load URL-param capture. Two signals stick to localStorage so they
@@ -7108,6 +7138,15 @@ function SQLQuest() {
   const fqEventStamp = () => {
     try { return freeQuotaEventStamp({ flagOn: window.FF?.feature?.('freeQuotaHoldout') === true, record: FQ_HOLDOUT_RECORD }); } catch (_) { return {}; }
   };
+  // The first-session tournament's stamp (2026-11-26): `tArm` / `tArmV` on
+  // every row from an enrolled browser, the fqArm pattern — so the
+  // challenge_solved, first_challenge_solved, pro_modal_shown,
+  // pro_plan_clicked and pro_checkout_clicked rows the read splits all carry
+  // the arm. The read takes the arm from `tournament_assigned`; these only
+  // cross-check it (metrics.md, first_session_tournament).
+  const tEventStamp = () => {
+    try { return tournamentEventStamp({ flagOn: window.FF?.feature?.('firstSessionTournament') === true, record: TOURNAMENT_RECORD }); } catch (_) { return {}; }
+  };
   const writeProEvent = (event, reason, metadata = {}, opts = {}) => {
     if (ANALYTICS_MUTED) {
       try { console.debug('[sqlquest] analytics muted on localhost:', event, reason, metadata); } catch (_) {}
@@ -7137,7 +7176,7 @@ function SQLQuest() {
           // `fqArm` (2026-11-25): a browser enrolled in the free-quota
           // holdout stamps its arm on EVERY row — the quota, paywall,
           // checkout and trial rows the holdout's guardrails read included.
-          metadata: JSON.stringify({ ...metadata, ...fqEventStamp(), aid: getAnonId() }),
+          metadata: JSON.stringify({ ...metadata, ...fqEventStamp(), ...tEventStamp(), aid: getAnonId() }),
           created_at: new Date().toISOString()
         })
       }).catch(() => {}); // fire and forget
@@ -9772,6 +9811,9 @@ function SQLQuest() {
           ...((companyAskRecord.arm || companyAskRecord.asks) ? { companyAsk: companyAskRecord } : {}),   // the company ask: arm, asks, answer
           intent: intentRecord,     // the declared goal { goal, source, at } — 'exploring' included, so the server can tell asked from never-asked
           readiness: readinessRecord, // the ten-question check / readiness test result, the public page's shape
+          // The first-session tournament's record (src/utils/tournament.js): an
+          // enrolled person's arm rides the account, so a second device keeps it.
+          ...(TOURNAMENT_RECORD && TOURNAMENT_RECORD.status === 'enrolled' ? { tournament: TOURNAMENT_RECORD } : {}),
           // The countdown / intake target rides the save from STATE, not only
           // from setPrepPreference's direct write: this effect re-reads the
           // record (cloud-first for a guest) and re-spreads it, so a field
@@ -12402,6 +12444,44 @@ CRITICAL RULES:
     try { localStorage.setItem(FREE_QUOTA_HOLDOUT_KEY, JSON.stringify(FQ_HOLDOUT_RECORD)); } catch (_) { /* ignore */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  // The first-session tournament (2026-11-26, PR 1 of 4; plan
+  // docs/plans/first-session-tournament-2026-11-26.md). The module-load
+  // block decided the record; these read it.
+  //   tournamentArm()          — the arm this person is IN (null outside:
+  //                              flag off, not enrolled, an account older
+  //                              than this browser's assignment, `hired`).
+  //   tournamentBehaviourNow() — the arm whose behaviour to run. B and D are
+  //                              not built yet, so they run A_control here.
+  //   tournamentSupersedesNow() — a built challenger replaces the four
+  //                              first-session A/Bs (plan §2.3); never in PR 1.
+  // Later arm PRs read tournamentBehaviourNow(). Hooks sit above the
+  // `showAuth` / `dbReady` early returns (CLAUDE.md fragile area 1).
+  const tournamentArm = () => {
+    try {
+      return tournamentEffectiveArm({
+        flagOn: ftbFlag('firstSessionTournament'),
+        record: TOURNAMENT_RECORD,
+        signedIn: !!currentUser && !isGuest,
+        accountCreatedAt: fqAccountCreatedAt,
+        intent: getUserIntent(),
+      });
+    } catch (_) { return null; }
+  };
+  const tournamentBehaviourNow = () => tournamentBehaviour(tournamentArm());
+  const tournamentSupersedesNow = () => tournamentSupersedes(tournamentArm());
+  // `tournament_assigned` — once per browser, after the session settles (so
+  // username and isGuest are right, as app_opened), on the open that
+  // enrolled it. trackActivationEvent adds viewport, landingSrc, arrivalSrc.
+  useEffect(() => {
+    if (isSessionLoading) return;
+    if (!shouldAnnounceTournament({ flagOn: ftbFlag('firstSessionTournament'), record: TOURNAMENT_RECORD })) return;
+    const payload = tournamentAssignedPayload(TOURNAMENT_RECORD);
+    if (!payload) return;
+    TOURNAMENT_RECORD = { ...TOURNAMENT_RECORD, announced: true };
+    try { localStorage.setItem(TOURNAMENT_KEY, JSON.stringify(TOURNAMENT_RECORD)); } catch (_) { /* ignore */ }
+    trackActivationEvent('tournament_assigned', payload);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSessionLoading]);
   // Paywall moments (PLAN item 3): the Pro modal's own copy for the reasons
   // that had none (the 30-day path, the daily, a locked mock, the Interview
   // tab) and an honest Hard line. null = the modal's existing chain decides.
@@ -17948,6 +18028,17 @@ CRITICAL RULES:
           setCompanyAskRecord(merged);
           try { localStorage.setItem(COMPANY_ASK_KEY, JSON.stringify(merged)); } catch (_) {}
         }
+      }
+      // The first-session tournament: the account's own record wins over this
+      // browser's (the person was armed first there; never re-armed).
+      if (userData.tournament) {
+        try {
+          const adopted = adoptAccountRecord({ browserRecord: TOURNAMENT_RECORD, accountRecord: userData.tournament });
+          if (adopted.write && adopted.record) {
+            TOURNAMENT_RECORD = adopted.record;
+            localStorage.setItem(TOURNAMENT_KEY, JSON.stringify(adopted.record));
+          }
+        } catch (_) { /* keep this browser's record */ }
       }
       // Goal gate profile: the newer of the account's and this browser's wins,
       // so a goal set as a guest five minutes ago survives a sign-in and a goal
@@ -24256,7 +24347,8 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     let stored = null;
     try { stored = JSON.parse(localStorage.getItem(RUNNABLE_STARTER_KEY) || 'null'); } catch (_) { stored = null; }
     const decision = runnableStarterDecision({
-      flagOn: ftbFlag('runnableStarter'),
+      // A built tournament challenger replaces this test (plan §2.3).
+      flagOn: ftbFlag('runnableStarter') && !tournamentSupersedesNow(),
       desktop,
       emptyOpen: isEmptyEditorOpen({ challenge, savedQuery, solvedCount: solvedChallenges.size, debugItem: false }),
       stored,
@@ -24969,7 +25061,8 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
       deepLink = ['challenge', 'lesson', 'mock', 'interview', 'goal', 'outcome'].some(k => q.has(k)) || q.get('pro') === '1';
     } catch (_) { /* ignore */ }
     const decision = firstScreenDecision({
-      flagOn: !!window.FF?.feature('firstScreenChallenge'),
+      // A built tournament challenger replaces this test (plan §2.3).
+      flagOn: !!window.FF?.feature('firstScreenChallenge') && !tournamentSupersedesNow(),
       onStartScreen: showFirstRunStart && !deepLink,
       showingOtherStep: showZeroSqlLesson || showIntake || showGoalMeasureOnStart,
       levelChosen: !!firstRunLevel,
@@ -25029,7 +25122,8 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     let stored = null;
     try { stored = JSON.parse(localStorage.getItem(MOBILE_RUN_BAR_STORAGE_KEY) || 'null'); } catch (_) { stored = null; }
     const decision = mobileRunBarDecision({
-      flagOn: ftbFlag('mobileRunBar'),
+      // A built tournament challenger replaces this test (plan §2.3).
+      flagOn: ftbFlag('mobileRunBar') && !tournamentSupersedesNow(),
       narrowTouch,
       stored,
       aid: getAnonId(),
@@ -26847,7 +26941,8 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
     try { record = JSON.parse(localStorage.getItem(COMPANY_DIRECT_KEY) || 'null'); } catch (_) { record = null; }
     const next = companyFilter ? companyBannerNext() : null;
     const decision = companyDirectDecision({
-      flagOn: window.FF?.feature?.('companyDirectOpen') === true,
+      // A built tournament challenger replaces this test (plan §2.3).
+      flagOn: window.FF?.feature?.('companyDirectOpen') === true && !tournamentSupersedesNow(),
       arrival: !!companyFilter,
       aid: getAnonId(),
       record,
