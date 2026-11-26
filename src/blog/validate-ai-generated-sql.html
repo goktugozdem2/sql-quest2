@@ -42,13 +42,14 @@
   <meta property="og:image" content="https://sqlquest.app/og-image.png">
   <meta name="twitter:card" content="summary_large_image">
   <script type="application/ld+json">
-  {"@context":"https://schema.org","@type":"BlogPosting","headline":"How to Validate AI-Generated SQL: 7 Checks Before Production","description":"A seven-check workflow for reviewing AI-generated SQL, worked end to end on a real card-transaction ledger where the plausible query returns 200 rows and the correct one returns 24.","url":"https://sqlquest.app/blog/validate-ai-generated-sql/","datePublished":"2026-09-09","dateModified":"2026-09-09","author":{"@type":"Person","name":"Can Goktug Ozdem","url":"https://sqlquest.app/"},"publisher":{"@type":"Organization","name":"SQL Quest","url":"https://sqlquest.app/","logo":{"@type":"ImageObject","url":"https://sqlquest.app/og-image.png"}},"mainEntityOfPage":"https://sqlquest.app/blog/validate-ai-generated-sql/","keywords":"validate AI generated SQL, check AI SQL query, AI generated SQL accuracy, SQL validation checklist"}
+  {"@context":"https://schema.org","@type":"BlogPosting","headline":"How to Validate AI-Generated SQL: 7 Checks Before Production","description":"A seven-check workflow for reviewing AI-generated SQL, worked end to end on a real card-transaction ledger where the plausible query returns 200 rows and the correct one returns 24.","url":"https://sqlquest.app/blog/validate-ai-generated-sql/","datePublished":"2026-09-09","dateModified":"2026-11-25","author":{"@type":"Person","name":"Can Goktug Ozdem","url":"https://sqlquest.app/"},"publisher":{"@type":"Organization","name":"SQL Quest","url":"https://sqlquest.app/","logo":{"@type":"ImageObject","url":"https://sqlquest.app/og-image.png"}},"mainEntityOfPage":"https://sqlquest.app/blog/validate-ai-generated-sql/","keywords":"validate AI generated SQL, check AI SQL query, AI generated SQL accuracy, SQL validation checklist"}
   </script>
   <script type="application/ld+json">
   {"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://sqlquest.app/"},{"@type":"ListItem","position":2,"name":"Blog","item":"https://sqlquest.app/blog/"},{"@type":"ListItem","position":3,"name":"Validate AI-Generated SQL","item":"https://sqlquest.app/blog/validate-ai-generated-sql/"}]}
   </script>
   <script type="application/ld+json">
   {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+    {"@type":"Question","name":"How do you govern AI-generated SQL before it reaches production?","acceptedAnswer":{"@type":"Answer","text":"Treat it as untrusted code and put a gate in front of it. Write down what the result should be, run the query on a copy of the data, compare row and entity counts with what you expected, check every join for repeated rows and every filter for NULLs and date bounds, make every write safe to run twice, read the plan, and have a person who knows the data approve it before it is scheduled or merged."}},
     {"@type":"Question","name":"Can AI-generated SQL be trusted if it runs without an error?","acceptedAnswer":{"@type":"Answer","text":"No. Execution proves only that the engine accepted the statement. It does not prove the query matches the business definition, returns the right grain, handles missing data, or avoids duplicates. The example on this page executes cleanly and is wrong for all 200 rows it returns."}},
     {"@type":"Question","name":"Why did the wrong query return more rows than the right one?","acceptedAnswer":{"@type":"Answer","text":"Because it filtered rows instead of testing groups. Moving a group-level condition into WHERE deletes the very rows that would have disqualified a group, so more groups survive. A larger result is not a safer one."}},
     {"@type":"Question","name":"What is the fastest way to test an AI-generated SQL query?","acceptedAnswer":{"@type":"Answer","text":"Write down what one output row should represent, compare COUNT(*) with COUNT(DISTINCT entity) on both sides of each join, then verify by hand one row the query included and one it excluded."}},
@@ -124,7 +125,9 @@
   <p style="margin:18px 0 26px;padding:14px 18px;border:1px solid rgba(124,58,237,.3);border-radius:12px;background:rgba(124,58,237,.07);font-size:15px;line-height:1.7;">Skip ahead to practice: <a href="/sql-exercises/" data-track="cta_blog_practice" style="color:#c084fc;font-weight:700;">solve SQL questions in the browser →</a> · or <a href="/sql-interview-readiness-test/" data-track="cta_blog_readiness" style="color:#c084fc;font-weight:700;">check your SQL interview readiness</a> (10 questions, no signup).</p>
   <!-- blog-practice:end -->
   <p class="intro">AI writes syntactically valid SQL in seconds. The dangerous query is not the one that errors. It is the one that runs, returns plausible numbers, and answers a question nobody asked.</p>
-  <p class="article-meta"><span>Published September 9, 2026</span><span>10 min read</span><span>By Can Goktug Ozdem, Founder of SQL Quest</span></p>
+  <p class="article-meta"><span>Published September 9, 2026</span><span>Last reviewed November 25, 2026</span><span>10 min read</span><span>By Can Goktug Ozdem, Founder of SQL Quest</span></p>
+
+  <p><strong>AI-generated SQL</strong> is a query an assistant drafts from a plain-language request. It is untrusted code until someone who knows the data has checked it.</p>
 
   <p><strong>Short answer:</strong> write the result contract first, verify the schema is real, test filters and NULLs, measure join cardinality, confirm the aggregation grain, check known rows by hand, then read the plan. Never approve a query from syntax alone, and never from row count alone &mdash; the wrong query below returns eight times more rows than the right one.</p>
 
@@ -191,7 +194,7 @@
 
   <h2 id="c1">Check 1: write the result contract before you read the query</h2>
 
-  <p>Before reviewing a line of SQL, state four things in plain language. If you cannot, the problem is the request, not the query.</p>
+  <p>A <strong>result contract</strong> is a short, plain-language statement of what one output row represents and which rows belong in the result. Before reviewing a line of SQL, state four things in plain language. If you cannot, the problem is the request, not the query.</p>
 
   <ul>
     <li><strong>What does one output row represent?</strong> One cardholder? One transaction? One cardholder-month?</li>
@@ -233,7 +236,7 @@
 
   <h2 id="c4">Check 4: measure join cardinality before you aggregate</h2>
 
-  <p>Ask what relationship each join represents, then measure it rather than assuming.</p>
+  <p><strong>Join fan-out</strong> is the row multiplication that happens when one row joins to many: every column from the &ldquo;one&rdquo; side is repeated once per match. Ask what relationship each join represents, then measure it rather than assuming.</p>
 
   <div class="code-block">
     <div class="code-label">Rows are not people</div>
@@ -249,7 +252,7 @@
 
   <h2 id="c5">Check 5: confirm the grain and the denominator</h2>
 
-  <p>Fan-out does not announce itself in an aggregate. Sum a per-account value across a joined transaction table and the total is multiplied by each account&rsquo;s transaction count. The result is a number, formatted correctly, and far too large.</p>
+  <p>The <strong>grain</strong> of a result is what one of its rows represents; the <strong>denominator</strong> is what a ratio divides by. Fan-out does not announce itself in an aggregate. Sum a per-account value across a joined transaction table and the total is multiplied by each account&rsquo;s transaction count. The result is a number, formatted correctly, and far too large.</p>
 
   <p>Two questions catch most of it. <strong>What is one row of the input to this aggregate?</strong> And <strong>what is on the bottom of every ratio?</strong> &mdash; <code>COUNT(*)</code> after a one-to-many join counts transactions, while <code>COUNT(DISTINCT account_id)</code> counts cardholders, and a spend-per-customer figure built on the first is not spend per customer.</p>
 
@@ -288,6 +291,20 @@
     <li>The statement is a read, is bounded, and its plan has been looked at.</li>
   </ul>
 
+  <h2 id="before-production">What should you check before AI-written SQL reaches production?</h2>
+  <p>The seven checks above are how you review a query. This is the gate before it is scheduled, merged or shipped: eight questions, each linked to a page that shows the failure on real data.</p>
+  <ol>
+    <li><strong>Does the row count match what you expected?</strong> Write the expected count down before you run it. The <a href="#example">worked example</a> returns 200 rows where the answer is 24, and a <a href="/sql-left-join-where-filter/">LEFT JOIN with a WHERE filter</a> quietly returns fewer.</li>
+    <li><strong>Does any join repeat rows?</strong> Compare <code>COUNT(*)</code> with <code>COUNT(DISTINCT key)</code> before and after each join. <a href="/sql-join-fan-out/">Join fan-out</a> shows SUM and COUNT inflating after a JOIN.</li>
+    <li><strong>How do NULLs behave in every filter and NOT IN?</strong> One NULL in a <code>NOT IN</code> list makes the whole predicate unknown. <a href="/sql-not-in-null/">NOT IN with NULL</a> shows a query returning 0 rows because of it.</li>
+    <li><strong>Are the date bounds right at both ends?</strong> <code>BETWEEN</code> on timestamps drops most of the last day. <a href="/sql-between-timestamp/">BETWEEN on timestamps</a> shows the missing rows and the half-open range that keeps them.</li>
+    <li><strong>Is every ratio divided by the right thing?</strong> An average of per-group averages is not the overall average. <a href="/sql-average-of-averages/">Average of averages</a> shows the gap.</li>
+    <li><strong>Is every write idempotent?</strong> Running it twice must leave the same result as running it once: an upsert (<code>INSERT &hellip; ON CONFLICT DO UPDATE</code>) or a delete-and-insert of one batch inside a transaction. We have no trap page for this one; <a href="/sql-for-the-ai-era/#data-engineer">the data engineer's example</a> shows the upsert form.</li>
+    <li><strong>Has it run on a copy first?</strong> Run it against a copy of the data, or inside <code>BEGIN</code> &hellip; <code>ROLLBACK</code>, then <a href="#c6">check known rows by hand</a> before anything touches the real tables.</li>
+    <li><strong>Has someone read the plan?</strong> Last, not first: the plan tells you cost, never correctness. <a href="#c7">Check 7</a> covers what <code>EXPLAIN QUERY PLAN</code> can and cannot tell you.</li>
+  </ol>
+  <p>Who runs this gate depends on the team: <a href="/sql-for-the-ai-era/#roles">which data roles review AI-written SQL, and what each one checks</a>.</p>
+
   <div class="cta-box">
     <h3>Practice the judgment, not the syntax</h3>
     <p>Reading about validation builds recognition. Catching a wrong query builds judgment, and that only comes from predicting a result, running it, and being wrong in a way you can see. Every query on this page came from the same ledger the exercises use.</p>
@@ -299,6 +316,8 @@
 
   <section class="faq" id="faq">
     <h2>Frequently asked questions</h2>
+    <details><summary>How do you govern AI-generated SQL before it reaches production?</summary>
+      <p>Treat it as untrusted code and put a gate in front of it. Write down what the result should be, run the query on a copy of the data, compare row and entity counts with what you expected, check every join for repeated rows and every filter for NULLs and date bounds, make every write safe to run twice, read the plan, and have a person who knows the data approve it before it is scheduled or merged.</p></details>
     <details><summary>Can AI-generated SQL be trusted if it runs without an error?</summary>
       <p>No. Execution proves only that the engine accepted the statement. It does not prove the query matches the business definition, returns the right grain, handles missing data, or avoids duplicates. The example on this page executes cleanly and is wrong for all 200 rows it returns.</p></details>
     <details><summary>Why did the wrong query return more rows than the right one?</summary>

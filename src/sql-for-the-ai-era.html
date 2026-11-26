@@ -43,10 +43,15 @@
     "name": "Want to work in AI? Learn SQL first.",
     "url": "https://sqlquest.app/sql-for-the-ai-era/",
     "description": "For career changers and AI-curious learners deciding between learning SQL or jumping straight to AI tools. SQL is the foundation that AI engineering, data analytics, and data engineering all build on. Adaptive coach with mastery checks targets your weak spots, including the new skill of validating AI-generated queries.",
-    "isPartOf": { "@type": "WebSite", "name": "SQL Quest", "url": "https://sqlquest.app/" }
+    "isPartOf": { "@type": "WebSite", "name": "SQL Quest", "url": "https://sqlquest.app/" },
+    "lastReviewed": "2026-11-25",
+    "dateModified": "2026-11-25"
   }
   </script>
 
+  <script type="application/ld+json">
+  {"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Should I just learn AI tools instead of SQL?", "acceptedAnswer": {"@type": "Answer", "text": "You can — and you'll plateau as a prompt engineer with no underlying depth. Every AI-augmented data role (analyst, engineer, ML) requires SQL fluency to validate AI output, design data pipelines, and debug edge cases. SQL is the foundation; AI tools are the multiplier on that foundation."}}, {"@type": "Question", "name": "Is SQL required for an AI engineer?", "acceptedAnswer": {"@type": "Answer", "text": "In practice, yes, for the data side of the job. An AI engineer writes less SQL than an analyst, but evaluation results, retrieval metadata and agent logs usually sit in tables, and SQL is how they are filtered, joined and scored. If the product turns a user's question into SQL, the AI engineer is also the person who decides whether that generated SQL can be trusted."}}, {"@type": "Question", "name": "Which data roles need SQL the most?", "acceptedAnswer": {"@type": "Answer", "text": "Data analysts and analytics engineers write SQL most of the day: analysts to answer questions, analytics engineers to build the tables those answers come from. Data engineers write it to load and move data, including writes that must be safe to run twice. Data scientists use it to pull and shape data before modelling, and AI/ML engineers use it around the model, for evaluation results, retrieval metadata and logs. Every one of these roles also reviews SQL that someone else, or an AI assistant, wrote."}}, {"@type": "Question", "name": "If an AI assistant writes the SQL, what do I still need to know?", "acceptedAnswer": {"@type": "Answer", "text": "Enough to tell whether it is right. That means knowing what one output row should represent, how a join can repeat rows, how NULL behaves in a filter or a NOT IN, and where a date range starts and ends. Those are the mistakes that run without an error and return a plausible, wrong number."}}, {"@type": "Question", "name": "Is SQL still relevant in 2026?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Relational databases and data warehouses are still queried in SQL, and the data around AI products (retrieval metadata, evaluation results, agent traces) usually lands in tables too. What has changed is the job: more of the first draft comes from an assistant, so more of the work is reading a query and deciding whether it is right."}}, {"@type": "Question", "name": "How long until I'm employable?", "acceptedAnswer": {"@type": "Answer", "text": "Self-paced, expect 8–14 weeks for entry-level analyst readiness if you practice 4–6 hours per week. The Coach gates advancement on real mastery (not just completion), so the timeline tracks your actual learning, not your video-watching speed."}}, {"@type": "Question", "name": "Does this teach Python or BI tools too?", "acceptedAnswer": {"@type": "Answer", "text": "No — SQL only. We go deep on the one thing that compounds across every data and AI role. Once your SQL is strong, picking up Tableau or Power BI takes weekends, and Python-for-data builds naturally on top. Bootcamps that promise \"Data + AI in 12 weeks\" cover five tools at 60% depth each. We pick one and go to 95%."}}, {"@type": "Question", "name": "Is it really free?", "acceptedAnswer": {"@type": "Answer", "text": "Yes, to start. Your first 10 challenge solves (any Easy or Medium, or a Hard preview), the lessons, the adaptive coach, Skillmap, and 20 AI tutor calls per day are free. No credit card. Pro opens all 300+ challenges, including the Hard set, plus AI tutoring without the free tier's daily cap and the full mock-interview bank if you want it later."}}]}
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -117,6 +122,26 @@
     .faq-item{background:rgba(15,15,30,.5);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:22px 24px;margin-bottom:12px}
     .faq-item h3{font-size:16px;font-weight:700;color:#f1f5f9;margin-bottom:8px}
     .faq-item p{font-size:14px;color:#94a3b8;line-height:1.7}
+
+    /* Roles (2026-11-25): which data roles need SQL, and how much */
+    .roles{padding:72px 0}
+    .roles h2.fd{font-size:32px;font-weight:800;text-align:center;margin-bottom:12px;letter-spacing:-.3px}
+    .roles p.lede{color:#94a3b8;text-align:center;font-size:17px;max-width:680px;margin:0 auto 32px}
+    .roles p.answer{font-size:17px;line-height:1.75;color:#cbd5e1;max-width:700px;margin:0 auto 32px;padding:18px 22px;border-left:3px solid #7c3aed;background:rgba(124,58,237,.06);border-radius:0 12px 12px 0}
+    .roles strong,.gap strong,.principle strong{color:#f1f5f9}
+    .roles-table{width:100%;border-collapse:collapse;margin:0 0 40px;font-size:14px}
+    .roles-table th{text-align:left;font-size:12px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:#8b98ab;padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.08)}
+    .roles-table td{padding:12px;color:#cbd5e1;border-bottom:1px solid rgba(255,255,255,.05);vertical-align:top;line-height:1.6}
+    .roles-table td:first-child{font-weight:700;color:#f1f5f9;white-space:nowrap}
+    .role{background:rgba(15,15,30,.5);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:24px;margin-bottom:16px}
+    .role h3{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:800;color:#f1f5f9;margin-bottom:10px}
+    .role p{font-size:15px;color:#94a3b8;line-height:1.75;margin-bottom:12px}
+    .role pre{background:rgba(10,10,25,.8);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:14px 16px;margin:0 0 12px;overflow-x:auto;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.7;color:#e2e8f0}
+    .role p.practice{font-size:14px;margin-bottom:0}
+    .roles a,.faq a{color:#c084fc}
+    .kw{color:#7CC4FF;font-weight:700}.str{color:#B5E48C}.num{color:#FFB86C}
+    .reviewed{font-size:13px;color:#8b98ab;margin-top:20px}
+    @media(max-width:600px){.roles-table td:first-child{white-space:normal}.role{padding:18px}}
 
     /* Final CTA */
     .final{padding:100px 0;text-align:center;background:radial-gradient(ellipse 60% 50% at 50% 100%,rgba(124,58,237,.12),transparent 70%)}
@@ -194,11 +219,12 @@
     <div>✅ <b>300+ challenges</b> on real datasets</div>
     <div>✅ <b>Free</b> to start</div>
   </div>
+  <p class="reviewed">Last reviewed November 25, 2026 · By Göktuğ, Founder, SQL Quest</p>
 </div></section>
 
 <section class="gap"><div class="wrap">
-  <h2 class="fd">AI raised the bar. It didn't replace it.</h2>
-  <p class="lede">What changes: who writes the first draft. What stays: who's accountable for what gets shipped to production.</p>
+  <h2 class="fd">Does AI replace SQL skills?</h2>
+  <p class="lede">No. AI raised the bar; it didn't replace it. What changes: who writes the first draft. What stays: who's accountable for what gets shipped to production. <strong>AI-generated SQL</strong> is a query an assistant drafts from a plain-language request; someone who knows the data still has to decide whether it answers the question.</p>
   <div class="gap-compare">
     <div class="gap-col left">
       <h3>What AI handles well</h3>
@@ -352,7 +378,7 @@
 </div></section>
 
 <section class="principle"><div class="wrap">
-  <h2 class="fd">The AI pivot, reframed</h2>
+  <h2 class="fd">Do I still need SQL if AI can write it?</h2>
   <p>AI is genuinely useful — but only as good as the human who validates it. Every shipped query, every production decision, every interview screen still demands SQL fluency.</p>
   <p>If an assistant has already written the query, use the <a href="/blog/validate-ai-generated-sql/">seven-check AI SQL validation workflow</a> to test its grain, joins, NULL behavior, denominator, and query plan before the result reaches production.</p>
   <p>The question in 2026 isn't <em>"Do I still need SQL?"</em></p>
@@ -366,19 +392,94 @@
   <p style="margin-top:24px;font-size:15px;color:#94a3b8">SQL Quest and ClaudeQuest are independent Datrick learning products. Each starts with practical, free learning rather than a discount offer.</p>
 </div></section>
 
+<section class="roles" id="roles"><div class="wrap">
+  <h2 class="fd">Which data roles need SQL, and how much?</h2>
+  <p class="answer"><strong>Is SQL required for an AI engineer?</strong> In practice, yes: an AI engineer writes less SQL than an analyst, but evaluation results, retrieval metadata and agent logs usually sit in tables, and SQL is how they are filtered, joined and scored. Every role below also reads SQL it did not write, and more of that SQL now comes from an AI assistant.</p>
+  <table class="roles-table">
+    <thead><tr><th scope="col">Role</th><th scope="col">How much SQL</th><th scope="col">What they review</th></tr></thead>
+    <tbody>
+      <tr><td>Data analyst</td><td>Most of the day; it is the main tool of the job</td><td>A query's grain, its date range, its denominator</td></tr>
+      <tr><td>Analytics engineer</td><td>Most of the day; the SQL becomes tables other people query</td><td>Changes that alter a model's grain or repeat rows</td></tr>
+      <tr><td>Data engineer</td><td>Daily, including writes and table definitions</td><td>Whether a load is safe to run twice; NULL keys</td></tr>
+      <tr><td>Data scientist</td><td>Regularly, to pull and shape data before modelling</td><td>Averages taken at the wrong level; rows lost in a filter</td></tr>
+      <tr><td>AI/ML engineer</td><td>Regularly, around the model rather than inside it</td><td>Eval queries, and SQL that the product's own AI generates</td></tr>
+    </tbody>
+  </table>
+
+  <div class="role" id="data-analyst">
+    <h3>Data analyst</h3>
+    <p>A <strong>data analyst</strong> turns business questions into numbers, and SQL is how the numbers are pulled: filters, GROUP BY, joins, and window functions for rankings and running totals. When an assistant drafts the query, the analyst checks what one output row represents and whether the date range includes the whole last day.</p>
+<pre><span class="kw">SELECT</span> region, <span class="kw">COUNT</span>(<span class="kw">DISTINCT</span> customer_id) <span class="kw">AS</span> buyers
+<span class="kw">FROM</span> orders
+<span class="kw">WHERE</span> order_date &gt;= <span class="str">'2026-10-01'</span> <span class="kw">AND</span> order_date &lt; <span class="str">'2026-11-01'</span>
+<span class="kw">GROUP BY</span> region;</pre>
+    <p class="practice">Practise: <a href="/sql-between-timestamp/">BETWEEN on timestamps</a> (the trap the half-open range avoids) · <a href="/challenges/aggregation/">aggregation exercises</a> · <a href="#fix-the-ai">fix a query an AI wrote</a>.</p>
+  </div>
+
+  <div class="role" id="analytics-engineer">
+    <h3>Analytics engineer</h3>
+    <p>An <strong>analytics engineer</strong> writes the SQL that turns raw tables into clean, tested tables that analysts and dashboards read. The work is CTEs, deduplication and joins at a known grain, and the review is mostly about grain: a join that quietly repeats rows changes every number built on top of it.</p>
+<pre><span class="kw">WITH</span> ranked <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> *, <span class="kw">ROW_NUMBER</span>() <span class="kw">OVER</span> (<span class="kw">PARTITION BY</span> customer_id <span class="kw">ORDER BY</span> updated_at <span class="kw">DESC</span>) <span class="kw">AS</span> rn
+  <span class="kw">FROM</span> customers_raw
+)
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> ranked <span class="kw">WHERE</span> rn = <span class="num">1</span>;</pre>
+    <p class="practice">Practise: <a href="/sql-join-fan-out/">join fan-out</a> · <a href="/challenges/cte/">CTE exercises</a> · <a href="/challenges/window-functions/">window function exercises</a>.</p>
+  </div>
+
+  <div class="role" id="data-engineer">
+    <h3>Data engineer</h3>
+    <p>A <strong>data engineer</strong> builds the pipelines that load and move data, so their SQL includes writes: inserts, upserts, table definitions and the checks that run after a load. Reviewing a generated write means asking whether it is <strong>idempotent</strong> (running it twice leaves the same result as running it once) and what happens to a row whose key is NULL.</p>
+<pre><span class="kw">INSERT INTO</span> daily_sales (sale_date, store_id, revenue)
+<span class="kw">SELECT</span> sale_date, store_id, <span class="kw">SUM</span>(amount) <span class="kw">FROM</span> sales
+<span class="kw">WHERE</span> sale_date = <span class="str">'2026-11-24'</span>
+<span class="kw">GROUP BY</span> sale_date, store_id
+<span class="kw">ON CONFLICT</span> (sale_date, store_id) <span class="kw">DO UPDATE SET</span> revenue = excluded.revenue;</pre>
+    <p class="practice">Practise: <a href="/sql-not-in-null/">NOT IN with NULL</a> · <a href="/challenges/null-handling/">NULL handling exercises</a> · <a href="#fix-the-ai">fix a query an AI wrote</a>.</p>
+  </div>
+
+  <div class="role" id="data-scientist">
+    <h3>Data scientist</h3>
+    <p>A <strong>data scientist</strong> uses SQL to pull and shape data before modelling or testing: cohorts, one row of features per entity, experiment results by variant. The review question is the level an average is taken at, and whether a filter dropped rows that should count.</p>
+<pre><span class="kw">SELECT</span> variant, <span class="kw">COUNT</span>(*) <span class="kw">AS</span> users, <span class="kw">AVG</span>(converted) <span class="kw">AS</span> conversion_rate
+<span class="kw">FROM</span> experiment_users
+<span class="kw">GROUP BY</span> variant;</pre>
+    <p class="practice">Practise: <a href="/sql-average-of-averages/">average of averages</a> · <a href="/sql-left-join-where-filter/">LEFT JOIN with a WHERE filter</a> · <a href="/challenges/aggregation/">aggregation exercises</a>.</p>
+  </div>
+
+  <div class="role" id="ai-engineer">
+    <h3>AI/ML engineer</h3>
+    <p>An <strong>AI engineer</strong> builds products on top of language models, and the SQL sits around the model: metadata filters for retrieval, tables of evaluation results, logs of agent runs. When the product itself turns a user's question into SQL, deciding whether that generated SQL can be trusted becomes part of the engineer's job.</p>
+<pre><span class="kw">SELECT</span> prompt_version, <span class="kw">COUNT</span>(*) <span class="kw">AS</span> cases, <span class="kw">AVG</span>(passed) <span class="kw">AS</span> pass_rate
+<span class="kw">FROM</span> eval_results
+<span class="kw">WHERE</span> run_date &gt;= <span class="str">'2026-11-01'</span>
+<span class="kw">GROUP BY</span> prompt_version
+<span class="kw">ORDER BY</span> pass_rate <span class="kw">DESC</span>;</pre>
+    <p class="practice">Practise: <a href="/blog/validate-ai-generated-sql/">seven checks for AI-generated SQL</a> · <a href="/sql-left-join-where-filter/">LEFT JOIN with a WHERE filter</a> · <a href="#fix-the-ai">fix a query an AI wrote</a>.</p>
+  </div>
+</div></section>
+
 <section class="faq"><div class="wrap">
-  <h2 class="fd">Before you click</h2>
+  <h2 class="fd">Questions about SQL and AI</h2>
   <div class="faq-item">
     <h3>Should I just learn AI tools instead of SQL?</h3>
     <p>You can — and you'll plateau as a prompt engineer with no underlying depth. Every AI-augmented data role (analyst, engineer, ML) requires SQL fluency to validate AI output, design data pipelines, and debug edge cases. SQL is the foundation; AI tools are the multiplier on that foundation.</p>
   </div>
   <div class="faq-item">
-    <h3>Is SQL still relevant in 2026?</h3>
-    <p>92%+ of data analyst job postings still list SQL as required. AI engineering jobs almost always require SQL too — because RAG pipelines, eval harnesses, vector databases, and agent observability all run on SQL. The shift isn't away from SQL; it's toward SQL fluency that includes validating AI-generated queries.</p>
+    <h3>Is SQL required for an AI engineer?</h3>
+    <p>In practice, yes, for the data side of the job. An AI engineer writes less SQL than an analyst, but evaluation results, retrieval metadata and agent logs usually sit in tables, and SQL is how they are filtered, joined and scored. If the product turns a user's question into SQL, the AI engineer is also the person who decides whether that generated SQL can be trusted.</p>
   </div>
   <div class="faq-item">
-    <h3>Do I need SQL for AI engineering specifically?</h3>
-    <p>Yes — more than you'd think. Building production RAG: SQL for retrieval and metadata filtering. Running evals: SQL for scoring and aggregation. Debugging agents: SQL for trace and telemetry analysis. Fine-tuning: SQL for data prep. The "AI engineer" role is roughly 40% software, 30% ML, and 30% data — and that 30% is mostly SQL.</p>
+    <h3>Which data roles need SQL the most?</h3>
+    <p>Data analysts and analytics engineers write SQL most of the day: analysts to answer questions, analytics engineers to build the tables those answers come from. Data engineers write it to load and move data, including writes that must be safe to run twice. Data scientists use it to pull and shape data before modelling, and AI/ML engineers use it around the model, for evaluation results, retrieval metadata and logs. Every one of these roles also reviews SQL that someone else, or an AI assistant, wrote.</p>
+  </div>
+  <div class="faq-item">
+    <h3>If an AI assistant writes the SQL, what do I still need to know?</h3>
+    <p>Enough to tell whether it is right. That means knowing what one output row should represent, how a join can repeat rows, how NULL behaves in a filter or a NOT IN, and where a date range starts and ends. Those are the mistakes that run without an error and return a plausible, wrong number.</p>
+  </div>
+  <div class="faq-item">
+    <h3>Is SQL still relevant in 2026?</h3>
+    <p>Yes. Relational databases and data warehouses are still queried in SQL, and the data around AI products (retrieval metadata, evaluation results, agent traces) usually lands in tables too. What has changed is the job: more of the first draft comes from an assistant, so more of the work is reading a query and deciding whether it is right.</p>
   </div>
   <div class="faq-item">
     <h3>How long until I'm employable?</h3>

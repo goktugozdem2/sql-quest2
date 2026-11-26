@@ -27,6 +27,48 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### the two AI pages become citable: roles section, production gate, matching FAQ (C2/G1)
+
+- **Claimed** 2026-11-25 · **Shipped** on merge (static pages, no flag) ·
+  **Read** 2026-12-23 (window 2026-11-26 → 2026-12-20, ending three days
+  before the read).
+- **Change** `/sql-for-the-ai-era/`: a section "Which data roles need SQL,
+  and how much?" that answers "is SQL required for an AI engineer" in its
+  first sentence, a five-role table, and one card per role (data analyst,
+  analytics engineer, data engineer, data scientist, AI/ML engineer) with
+  what they write and review, one query, and links to a trap page, a topic
+  page or the Debug set; FAQPage JSON-LD for the first time (8 entries,
+  verbatim); two FAQ answers lose unsourced hiring statistics ("92%+ of
+  postings", "40% software / 30% ML / 30% data"); H2s phrased as questions;
+  "Last reviewed" line = `lastReviewed`. `/blog/validate-ai-generated-sql/`:
+  an eight-item "What should you check before AI-written SQL reaches
+  production?" gate, each item linked to the trap page that shows the
+  failure (all five trap pages; idempotency says it has none); the
+  governance question as the first FAQ entry (5, verbatim); bold
+  one-sentence definitions; "Last reviewed" = `dateModified`. Title, H1 and
+  meta unchanged on both.
+- **Metric** `gsc_page_clicks` for the two URLs (page slice), and
+  `gsc_ai_queries` (registered in PR #343, before this claim).
+- **Baseline** 28 days 2026-10-25 → 2026-11-21, read 2026-11-25:
+  validate-ai-generated-sql 474 impressions / 4 clicks / position 3.6;
+  sql-for-the-ai-era 151 / 2 / 6.0; `gsc_ai_queries` 247 / 1 / 3.4.
+- **Target** for the window: the two pages together ≥ 10 clicks (baseline
+  6) with impressions not below 625; `gsc_ai_queries` ≥ 3 clicks with
+  impressions not below 247; and "is sql required for ai engineer" / "sql
+  ai engineer" on /sql-for-the-ai-era/ at a better position than 5.5 / 5.1.
+- **Falsification** (written before the data) clicks on the two pages ≤ 6
+  and `gsc_ai_queries` impressions below 247 → the sections did not make the
+  pages more findable; keep them only for correctness (the removed
+  statistics stay removed). Impressions rising with clicks flat reads
+  `MOVED` on findability only, never `HIT` — chat-turn queries ground
+  without a click (G1), so read Bing Copilot citations by hand beside it.
+- **Confounds** C1's prune (claimed 2026-11-24) and the Debug hub (#256,
+  whose cannibalisation guard reads this blog post's impressions over the
+  same weeks) move the same queries; read the blog page against #256's
+  guard, not alone. The blog post took a snippet change on 2026-11-20
+  (#68) and a JSON-LD fix on 11-24 (#307) — inside the two-week rule's
+  window; the orchestrator assigned this run anyway.
+
 ### /sql-interview-questions-data-analyst/ on Google — the /sql-exercises/ link push, next page (C1)
 
 - **Claimed** 2026-11-23 · **Shipped** on merge (static pages, no flag) ·
