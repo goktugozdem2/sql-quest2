@@ -27,6 +27,29 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### the first-session tournament (`firstSessionTournament`, 3 arms; arm B = the single path)
+
+- **Claimed** 2026-11-26 (planner lane, plan only) · **Ships** dark across four PRs (plan §8) · **Flip** no earlier than **2026-12-10**, after the plan's §2.4 gates and the founder's go on the §7 money strings · **First read** the Friday on which every challenger has ≥ 150 eligible people. At ~23 human openers a day that is ~2027-01-08 with three arms; the hard latest for the first elimination is **2027-01-22** (the 6-week fallback).
+- **Change.** New visitors (first app open; returning browsers, `?interview=` and `?profile=` first opens never enter) are split by aid (FNV + murmur3, `first_session_tournament_v1`) into slots. Slot 0 is `A_control`, today's product, permanent. At launch, slot 1 is `B_single_path` (no menu, a 4-question adaptive ladder sets the level, one plan line, tabs hidden until the ladder ends) and slot 2 is `D_interview_sprint` (one tap for the company, a 14-day sprint set for the person, never a typed date). `C_proof_first` is built and queued. Event `tournament_assigned {arm, armVersion, round}`; `tArm` is stamped on every row. Prices, `FREE_SOLVE_QUOTA` (10), the Hard lock and the company-set gate are unchanged in every arm.
+- **Why.** Founder, chat, 2026-11-26: "seçenek tanımadan … tek birşeye odaklanacak", then "4 tane farklı seçenek … en kötüsünü ele … hep böyle devam etsin". The evidence is in the plan §1:
+  - the quiz at the door lost 15.5% vs 37.2% on `first_solve_10m`;
+  - 48% of first-open non-runners left through another challenge or tab (A05);
+  - 10 of 12 buyers bought at ≥ 6 solves (#409);
+  - interview-target openers give 7 of 12 payers (#409).
+- **Metric.** `first_session_tournament` (metrics.md). Arm B's diagnostics are `single_path_split`, which never decides.
+- **Baseline.** 6+ distinct solves within 7 days of the first app open: **11.8%** (108 / 915 new human openers, 2026-10-05 → 11-18). Guardrails: `first_solve_10m` 23.3%, `second_session_7d` 16.0%.
+- **Target.** A challenger promoted at P(better than control) ≥ 0.95 (on two consecutive Friday reads, if the orchestrator accepts that amendment). For B, that means roughly ≥ 18% against 11.8% at 150–250 per arm.
+- **Falsification, written before the data.**
+  - Any challenger with P(worst among challengers) ≥ 0.80 at ≥ 150 per arm is eliminated. If no challenger reaches that, the lowest posterior mean goes at 6 weeks.
+  - A challenger whose `first_solve_10m` trails control by ≥ 10 points at ≥ 100 per arm is stopped the same day.
+  - A challenger with 0 trial-or-paid while control has ≥ 3 is reported to the founder the same day.
+  - **B specifically is falsified** if it is eliminated, or if at 250 per arm its posterior mean is not above control's, or if its `second_session_7d` trails control by ≥ 8 points at 150 per arm.
+- **Confounds.**
+  - The freeQuota holdout (enrolment 11-26 → 12-23) is orthogonal; every read is a 2×2 by `fqArm`.
+  - `companyDirectOpen`, `runnableStarter` and `mobileRunBar` are superseded for challenger arms. Their reads keep arm A and non-tournament people only.
+  - The late-December traffic dip.
+  - Interview-target people are ~15%, so every read reports that segment separately.
+
 ### the Metrics & Case Round: the half of the interview that is not SQL (C5/B3)
 
 - **Claimed** 2026-11-22 · **Shipped** on merge (orchestrator's order, under
