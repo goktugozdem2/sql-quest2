@@ -3076,6 +3076,7 @@ that needs its own path — the current rule is written down in the handler.
   when it ran. 37 remain reachable now; 70 more enter as their 7-day quiet
   window passes. Read of batch 1: 2026-09-26.
 - **Verdict** **MISS — the falsification fired** (B2, read 2026-11-22; last batch 10-01, read due 10-15): **80 sent** (09-12 40, 10-01 40), 79 delivered, 1 bounce (1.3%). Back within 48 h: **2 of 80**. A plan click within 14 days: 1. Trials or purchases within 14 days: **0** (0 since, either). `pro_modal_shown {reason: 'email_link'}` has **no row at all**, so modal → click cannot be read and the 3.4% half is unchecked — an instrumentation gap of its own. 0–1 purchases → as written: the activated non-payer does not buy on a second ask; **this segment is not mailed again**, the ~56 never reached included (recorded in objectives.md; sending is the founder's call).
+- **Template rebuilt 2026-11-25 (no send, no claim):** the letter is now a React Email template (`emails/activated-note.tsx` → `scripts/build-emails.mjs` → `template.generated.ts`, filled by `letter.ts`), sent as HTML + plain text; guards in tests/activated-note-template.test.js. The verdict above stands: this is the tool, not a decision to mail. Any new batch needs a new claim written before it (a different segment, or the founder reversing the 11-22 rule), and the `email_link` modal row gap fixed first so modal → click can be read.
 
 ### three hand-written founder emails to the checkout abandoners of 09-04 / 09-06 — **HIT**
 
