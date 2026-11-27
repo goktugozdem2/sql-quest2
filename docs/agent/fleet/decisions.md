@@ -235,3 +235,4 @@ the reason in one line, and the risk sentence.
 | 2026-11-27 | #315 | parked | The date ask overlaps tournament arm D (#418); a second ask on the same people would confound the arm read. One comment; left open. | — |
 | 2026-11-27 | #281, #277, #242, #246, #235, #241, #376, #349, #345, #340, #337, #332, #227, #266, #268, #294, #344, #375, #253, #380 | held / parked | Earlier reasons stand; no new commit closes them. | — |
 | 2026-11-27 | (10:45 pass) | budget | Person-visible: #361, #407, #405, #406, #404, #379, #408 = 7 in one batch (the day's first). #396 free. One flip today (`runnableStarter`). | — |
+| 2026-11-27 | (10:45 pass) | smoke | Deploy (production) run 45985534860 green on 982a3211 (the whole batch, flip included). Smoke run 45985534760 on 982a3211: **success**; rollback and alert skipped. No revert. Live curl for #422/#414 not applicable yet (neither merged). | — |
