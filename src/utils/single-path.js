@@ -76,6 +76,10 @@ export function emptyPathState() {
     // The first session (walk fix round 2): the last touch, and when it ended.
     sessionLastAt: null,
     firstSessionEndedAt: null,
+    // The solve count at the last automatic Pro ask of the first session.
+    proAskAt: null,
+    // Spaced asks skipped in the first session: they wait for a later one.
+    proAskSkipped: [],
   };
 }
 
@@ -114,6 +118,8 @@ export function normalizePathState(raw) {
   base.tabsOpenedAt = isNum(Number(raw.tabsOpenedAt)) && Number(raw.tabsOpenedAt) > 0 ? Number(raw.tabsOpenedAt) : null;
   base.sessionLastAt = isNum(Number(raw.sessionLastAt)) && Number(raw.sessionLastAt) > 0 ? Number(raw.sessionLastAt) : null;
   base.firstSessionEndedAt = isNum(Number(raw.firstSessionEndedAt)) && Number(raw.firstSessionEndedAt) > 0 ? Number(raw.firstSessionEndedAt) : null;
+  base.proAskAt = Number.isInteger(raw.proAskAt) && raw.proAskAt >= 0 ? raw.proAskAt : null;
+  base.proAskSkipped = Array.isArray(raw.proAskSkipped) ? raw.proAskSkipped.filter(r => PATH_PRO_ASKS_SPACED.includes(r)) : [];
   return base;
 }
 
@@ -273,6 +279,24 @@ export function pathLayerDecide({ active = [], slot = null, holdExtras = false }
   }
   const top = live[0] || null;
   return { show: top, drop: [...drop, ...live.slice(1)], slot: top ? { ...s, granted: top } : s };
+}
+
+/**
+ * Orchestrator decision (2026-11-27): in the first session, at most ONE
+ * automatic Pro ask in any PATH_PRO_ASK_GAP consecutive solves. The re-walk
+ * met the 6-solve ask and the "set complete" ask on solves 6 and 7. The
+ * spaced asks are the ones a solve raises by itself; the quota wall, the
+ * plan_end card's "See Pro" and every Pro modal the person opens are never
+ * spaced. A dropped ask may come back in a later session.
+ */
+export const PATH_PRO_ASK_GAP = 3;
+export const PATH_PRO_ASKS_SPACED = Object.freeze(['milestone_solves', 'company_set_complete', 'milestone_streak']);
+export function pathProAskAllowed({ reason = null, solves = 0, lastAt = null, skipped = [] } = {}) {
+  if (!PATH_PRO_ASKS_SPACED.includes(reason)) return true;
+  // Skipped once in the first session: it waits for a later session.
+  if (Array.isArray(skipped) && skipped.includes(reason)) return false;
+  if (!Number.isInteger(lastAt)) return true;
+  return Number(solves) - lastAt >= PATH_PRO_ASK_GAP;
 }
 
 /**

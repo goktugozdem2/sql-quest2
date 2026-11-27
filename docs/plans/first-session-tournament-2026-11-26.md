@@ -637,6 +637,13 @@ src/utils/single-path.js; `tests/single-path.test.js` pins it.*
   - the first session ends at the first hour away (the gap
     `second_session_7d` and the feedback prompts use), and the queue with
     it. After that, today's rules.
+  - **one Pro ask in any 3 consecutive solves** (orchestrator decision
+    2026-11-27, `pathProAskAllowed`): the automatic asks a solve raises (the
+    6-solve milestone, "set complete", the streak ask) are spaced; a skipped
+    one waits for a later session (its once-key stays unwritten,
+    `tournament_pro_ask_spaced`). The quota wall, `plan_end` and every Pro
+    modal the person opens are never spaced. The re-walk had met the 6-solve
+    ask and "set complete" on solves 6 and 7.
 - **One plan on screen** (walk fix round 2): once the plan line shows, the
   Coach's own "Your {company} plan" card is hidden (`hideCoachPlan`, as D3
   does for D). The re-walk found "Your Capital One plan" beside B's plan line

@@ -89,7 +89,7 @@ import { getAnonId } from './utils/anon-id.js';
 import { FREE_QUOTA_HOLDOUT_KEY, FREE_QUOTA_HOLDOUT_TEST_ID, freeQuotaEnrolment, hasPriorAppUse, normalizeFreeQuotaRecord, freeQuotaEffective, freeQuotaEventStamp } from './utils/free-quota-holdout.js';
 import { TOURNAMENT_KEY, tournamentEnrolment, tournamentPriorAppUse, normalizeTournamentRecord, adoptAccountRecord, tournamentEffectiveArm, tournamentBehaviour, tournamentSupersedes, tournamentEventStamp, shouldAnnounceTournament, tournamentAssignedPayload, buildVisitorProfile, enrichTournamentProfile } from './utils/tournament.js';
 import { quotaWallArm, quotaWallShowsModal, quotaInlineCopy, QUOTA_WALL_DAY_KEY } from './utils/quota-wall-inline.js';
-import { SINGLE_PATH_KEY, LADDER_LENGTH, TIER_KEYS, isPathArm, emptyPathState, normalizePathState, pathUiFlags, pathTabsOpen, ladderOutcome, ladderStuck, ladderOpen, ladderResolve, pickLadderQuestion, ladderQuestionNumber, roadmapProfileFor, composePathPlan, planProgress, nextPlanStep, planEnded, planShownPayload, logStepDone, pathWhyLines, pathLayerSlot, pathLayerDecide, pathSessionTouch, PATH_LAYER_SETTLE_MS, PATH_USER_SIGNUP_REASONS } from './utils/single-path.js';
+import { SINGLE_PATH_KEY, LADDER_LENGTH, TIER_KEYS, isPathArm, emptyPathState, normalizePathState, pathUiFlags, pathTabsOpen, ladderOutcome, ladderStuck, ladderOpen, ladderResolve, pickLadderQuestion, ladderQuestionNumber, roadmapProfileFor, composePathPlan, planProgress, nextPlanStep, planEnded, planShownPayload, logStepDone, pathWhyLines, pathLayerSlot, pathLayerDecide, pathSessionTouch, PATH_LAYER_SETTLE_MS, PATH_USER_SIGNUP_REASONS, pathProAskAllowed, PATH_PRO_ASKS_SPACED } from './utils/single-path.js';
 import { buildRoadmap } from './utils/personal-roadmap.js';
 import { classifyLandingSrc, LANDING_SRC_KEY } from './utils/landing-src.js';
 import { classifyQueryError } from './utils/query-error.js';
@@ -12590,6 +12590,24 @@ CRITICAL RULES:
     try { localStorage.setItem(SINGLE_PATH_KEY, JSON.stringify(next)); } catch (_) { /* best effort */ }
   };
   const pathEvent = (event, payload = {}) => trackActivationEvent(event, { arm: pathUi.arm, ...payload });
+  // Orchestrator decision (2026-11-27): in the first session, at most one
+  // automatic Pro ask in any 3 consecutive solves (pathProAskAllowed). True →
+  // ask, and it is recorded; false → skipped, and the caller leaves its
+  // once-key unwritten so the ask can come back in a later session. Outside
+  // the arms' first session: always true (today's behaviour).
+  const pathProAskOk = (reason, solves) => {
+    if (!pathUi.layerQueue) return true;
+    const cur = pathStateRef.current;
+    if (!pathProAskAllowed({ reason, solves, lastAt: cur.proAskAt, skipped: cur.proAskSkipped })) {
+      if (!(cur.proAskSkipped || []).includes(reason)) {
+        pathSave({ ...cur, proAskSkipped: [...(cur.proAskSkipped || []), reason] });
+        pathEvent('tournament_pro_ask_spaced', { reason, solves, lastAt: cur.proAskAt });
+      }
+      return false;
+    }
+    if (PATH_PRO_ASKS_SPACED.includes(reason)) pathSave({ ...cur, proAskAt: solves });
+    return true;
+  };
   // The arm's first session (walk fix round 2): touched at load, at every
   // challenge open and solve; it ends at the first hour away
   // (pathSessionTouch), and with it the one-layer queue (`pathUi.layerQueue`).
@@ -24764,7 +24782,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     // skips that tier, which the 25 and 50 tiers recover.
     const guestKey = `sqlquest_promo_${tier}solves_guest`;
     const userKey = `sqlquest_promo_${tier}solves_${currentUser}`;
-    if (!localStorage.getItem(guestKey) && !localStorage.getItem(userKey)) {
+    if (!localStorage.getItem(guestKey) && !localStorage.getItem(userKey) && pathProAskOk('milestone_solves', n)) {
       // 2026-09-12 (free-tier boundary M3, `deadlineOffer`): a person whose
       // date — the intake's, or the countdown card's — is inside 45 days is
       // asked about THAT: the days, and what stands between them and it.
@@ -24812,7 +24830,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     if (quietAskDecision({ flagOn: ftbFlag('quietEarlyAsks'), reason: 'milestone_streak', solvedCount: solvedChallenges.size }) !== 'show') return;
     if (dailyStreak >= 5) {
       const key = `sqlquest_promo_streak5_${currentUser}`;
-      if (!localStorage.getItem(key)) {
+      if (!localStorage.getItem(key) && pathProAskOk('milestone_streak', solvedChallenges.size)) {
         setProModalReason({ type: 'milestone_streak', topic: dailyStreak });
         setShowProModal(true);
         localStorage.setItem(key, '1');
@@ -26988,7 +27006,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
               solvedNow.add(currentChallenge.id);
               const allFreeSolved = free.length > 0 && free.every(c => solvedNow.has(c.id));
               const onceKey = `sqlquest_company_complete_${companyFilter}`;
-              if (allFreeSolved && !localStorage.getItem(onceKey)) {
+              if (allFreeSolved && !localStorage.getItem(onceKey) && pathProAskOk('company_set_complete', solvedNow.size)) {
                 localStorage.setItem(onceKey, '1');
                 setTimeout(() => {
                   setProModalReason({

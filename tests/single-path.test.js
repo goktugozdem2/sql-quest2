@@ -13,6 +13,7 @@ import {
   pathTabsOpen, PLAN_FOCUS_STEPS,
   PATH_LAYER_TIERS, PATH_LAYER_ORDER, PATH_LAYER_HELD_ON_LADDER, PATH_LAYER_SETTLE_MS, PATH_SESSION_GAP_MS, PATH_USER_SIGNUP_REASONS,
   pathLayerSlot, pathLayerDecide, pathSessionTouch, pathInFirstSession,
+  pathProAskAllowed, PATH_PRO_ASK_GAP, PATH_PRO_ASKS_SPACED,
 } from '../src/utils/single-path.js';
 import { levelForLadder, FIRST_RUN_PLACEMENT_SOURCES } from '../src/utils/placement.js';
 import { buildRoadmap } from '../src/utils/personal-roadmap.js';
@@ -569,3 +570,37 @@ describe('one plan on screen in B', () => {
     expect(card - gate).toBeLessThan(2500);
   });
 });
+
+// Orchestrator decision (2026-11-27): in the first session, at most ONE
+// automatic Pro ask in any 3 consecutive solves. The re-walk of D met the
+// 6-solve ask and the "set complete" ask on solves 6 and 7.
+describe('one Pro ask in any 3 consecutive solves (first session)', () => {
+  it('the 6-solve ask showed: the set-complete ask on solves 6–8 is skipped; from 9 a different ask may come', () => {
+    expect(PATH_PRO_ASK_GAP).toBe(3);
+    for (const solves of [6, 7, 8]) expect(pathProAskAllowed({ reason: 'company_set_complete', solves, lastAt: 6 }), String(solves)).toBe(false);
+    expect(pathProAskAllowed({ reason: 'company_set_complete', solves: 9, lastAt: 6 })).toBe(true);
+    expect(pathProAskAllowed({ reason: 'milestone_solves', solves: 6, lastAt: null })).toBe(true);
+  });
+  it('a skipped ask waits for a later session — it does not come back in this one', () => {
+    expect(pathProAskAllowed({ reason: 'company_set_complete', solves: 12, lastAt: 6, skipped: ['company_set_complete'] })).toBe(false);
+    const st = normalizePathState({ ...emptyPathState(), proAskAt: 6, proAskSkipped: ['company_set_complete', 'nonsense'] });
+    expect(st).toMatchObject({ proAskAt: 6, proAskSkipped: ['company_set_complete'] });
+  });
+  it('the quota wall, plan_end and the person\'s own Pro opens are never spaced', () => {
+    expect([...PATH_PRO_ASKS_SPACED].sort()).toEqual(['company_set_complete', 'milestone_solves', 'milestone_streak']);
+    for (const reason of ['free_quota', 'quota', 'plan_end', 'hard_challenge', 'interview_locked', 'pricing_link', 'rate_limit']) {
+      expect(pathProAskAllowed({ reason, solves: 7, lastAt: 6, skipped: [reason] }), reason).toBe(true);
+    }
+  });
+  it('app.jsx: the three automatic asks go through pathProAskOk before their once-keys; only in the arms\' first session', () => {
+    expect(APP).toContain("if (!localStorage.getItem(guestKey) && !localStorage.getItem(userKey) && pathProAskOk('milestone_solves', n)) {");
+    expect(APP).toContain("if (allFreeSolved && !localStorage.getItem(onceKey) && pathProAskOk('company_set_complete', solvedNow.size)) {");
+    expect(APP).toContain("if (!localStorage.getItem(key) && pathProAskOk('milestone_streak', solvedChallenges.size)) {");
+    const fn = APP.slice(APP.indexOf('const pathProAskOk = (reason, solves) => {'), APP.indexOf('const pathProAskOk = (reason, solves) => {') + 900);
+    expect(fn).toContain('if (!pathUi.layerQueue) return true;');
+    expect(fn).toContain('lastAt: cur.proAskAt, skipped: cur.proAskSkipped');
+    const early = Math.min(APP.indexOf('  if (showAuth) {'), APP.indexOf('  if (!dbReady) return ('));
+    expect(APP.indexOf('const pathProAskOk = (reason, solves) => {')).toBeLessThan(early);
+  });
+});
+
