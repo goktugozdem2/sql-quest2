@@ -132,7 +132,7 @@ export function pathUiFlags({ behaviour = null, state = null } = {}) {
     arm: null, active: false, ladderActive: false, hideTabs: false, extendShell: false,
     showPlanLine: false, suppressAsks: false, suppressNextStrip: false, sprintSetup: false,
     starterPrefill: false, companyDirect: false, holdLayers: false, fixedRunBar: false,
-    holdSignupAsks: false, hideGuestBanner: false, suppressTour: false, layerQueue: false,
+    holdSignupAsks: false, hideGuestBanner: false, suppressTour: false, hideCoachPlan: false, layerQueue: false,
   };
   if (!isPathArm(behaviour)) return off;
   const s = state && state.v ? state : normalizePathState(state);
@@ -157,6 +157,9 @@ export function pathUiFlags({ behaviour = null, state = null } = {}) {
       // The "Take tour" prompt never shows in B's first session (walk fix B2).
       suppressTour: true,
       showPlanLine: !ladderActive && !!s.plan,
+      // One plan on screen: once the plan line shows, the Coach's own
+      // "Your {company} plan" card stays away (walk fix round 2, as D3 for D).
+      hideCoachPlan: !ladderActive && !!s.plan,
       // The intent modal and the company ask are questions; "seçenek tanımadan".
       suppressAsks: ladderActive,
       // One button after a solve, on the ladder and on the plan.

@@ -637,6 +637,10 @@ src/utils/single-path.js; `tests/single-path.test.js` pins it.*
   - the first session ends at the first hour away (the gap
     `second_session_7d` and the feedback prompts use), and the queue with
     it. After that, today's rules.
+- **One plan on screen** (walk fix round 2): once the plan line shows, the
+  Coach's own "Your {company} plan" card is hidden (`hideCoachPlan`, as D3
+  does for D). The re-walk found "Your Capital One plan" beside B's plan line
+  on the Learning Path tab once the tabs were back.
 - **Never in B's first session:** the "Take tour — 60 seconds" prompt (and,
   as before, the onboarding tour). The tour stays in the profile menu.
 - **Shown at any time:**

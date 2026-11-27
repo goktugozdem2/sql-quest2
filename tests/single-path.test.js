@@ -551,3 +551,21 @@ describe('the one-layer queue (arms B and D, first session)', () => {
     }
   });
 });
+
+// Walk fix round 2 (2026-11-26): the re-walk reached B's Coach tab once the
+// tabs were back and found "Your Capital One plan" beside the plan line.
+describe('one plan on screen in B', () => {
+  it('the Coach\'s company-plan card hides once B\'s plan line shows (never on the ladder, never outside the arm)', () => {
+    const s = emptyPathState();
+    expect(pathUiFlags({ behaviour: SINGLE_PATH_ARM, state: s }).hideCoachPlan).toBe(false);
+    const ended = normalizePathState({ ...s, ladder: { ...s.ladder, done: true, levelId: 'basics' }, plan: { steps: [{ kind: 'challenge', challengeId: 92 }] } });
+    expect(pathUiFlags({ behaviour: SINGLE_PATH_ARM, state: ended })).toMatchObject({ showPlanLine: true, hideCoachPlan: true });
+    expect(pathUiFlags({ behaviour: null, state: ended }).hideCoachPlan).toBe(false);
+  });
+  it('app.jsx: the practice-plan card reads the switch', () => {
+    const card = APP.indexOf('data-testid="practice-plan"');
+    const gate = APP.lastIndexOf('if (pathUi.hideCoachPlan) return null;', card);
+    expect(gate).toBeGreaterThan(0);
+    expect(card - gate).toBeLessThan(2500);
+  });
+});

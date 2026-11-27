@@ -4566,7 +4566,7 @@ function MilestoneShareBar({ content, onShare, onDismiss, referralUrl, bigTarget
   if (dismissed) return null;
   
   return (
-    <div className="sq-share-bar fixed bottom-4 left-1/2 z-50 w-full max-w-md px-4" style={{
+    <div data-layer="milestone_share" className="sq-share-bar fixed bottom-4 left-1/2 z-50 w-full max-w-md px-4" style={{
       transform: visible ? 'translate(-50%, 0)' : 'translate(-50%, 120%)',
       transition: 'transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1)',
     }}>
@@ -4722,7 +4722,7 @@ function LevelUpBanner({ levelName, onComplete }) {
   }, [onComplete]);
   
   return (
-    <div className="fixed inset-0 z-50 pointer-events-none flex items-center justify-center">
+    <div data-layer="level_up" className="fixed inset-0 z-50 pointer-events-none flex items-center justify-center">
       {/* Flash overlay */}
       <div className="absolute inset-0" style={{
         background: 'radial-gradient(circle, rgba(168,85,247,0.3) 0%, transparent 70%)',
@@ -4768,7 +4768,7 @@ function AchievementPopup({ achievement, onClose, bigTargets = false }) {
   const IconComponent = !isEmoji ? (iconMap[achievement.icon] || getIcon('Star')) : null;
   
   return (
-    <div className={bigTargets
+    <div data-layer="achievement" className={bigTargets
       ? 'fixed top-3 right-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-[#F2F0EA] px-3 py-2 rounded-lg shadow-lg z-50 flex items-center gap-2 text-sm'
       : 'fixed top-3 right-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-[#F2F0EA] px-3 py-2 rounded-lg shadow-lg animate-bounce z-50 flex items-center gap-2 text-sm'}>
       {isEmoji ? (
@@ -5709,6 +5709,7 @@ function RadarPopToast({ pop, onClose, onShare, bigTargets = false }) {
 
   return (
     <div
+      data-layer="radar_pop"
       className="sq-radar-pop fixed bottom-6 right-6 z-50 w-[320px] p-4 rounded-2xl bg-gray-900/95 backdrop-blur border border-yellow-400/30 shadow-2xl"
       style={{ animation: 'radarPopIn 0.4s ease-out' }}
       role="status"
@@ -30482,7 +30483,7 @@ RULES:
           soft email capture. Every answer (including "just exploring") is
           recorded so segmentation has no silent-dismissal blind spot. */}
       {showIntentAsk && !showSoftEmailCapture && oneLayerOk('intent_ask') && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(14,15,19,0.8)' }}>
+        <div data-layer="intent_ask" className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(14,15,19,0.8)' }}>
           <div className="w-full max-w-md p-6" style={{ background: '#16181F', border: '1px solid #2A2E38', borderRadius: '10px' }}>
             <h3 className="text-lg font-semibold mb-1" style={{ color: '#F2F0EA' }}>One quick question</h3>
             <p className="text-sm mb-4" style={{ color: '#8A8E99' }}>What brings you to SQL Quest? Your answer shapes what we recommend next.</p>
@@ -30524,7 +30525,7 @@ RULES:
         </div>
       )}
       {showSoftEmailCapture && oneLayerOk('soft_email') && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-3 sm:p-4" onClick={() => { setShowSoftEmailCapture(false); setSoftEmailCaptured(true); }}>
+        <div data-layer="soft_email" className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-3 sm:p-4" onClick={() => { setShowSoftEmailCapture(false); setSoftEmailCaptured(true); }}>
           <div className="bg-gradient-to-br from-gray-900 to-purple-900 rounded-2xl border border-purple-500/50 p-5 sm:p-6 w-full max-w-md overflow-hidden" onClick={e => e.stopPropagation()}>
             <div className="text-center mb-5">
               <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center mx-auto mb-3 text-2xl sm:text-3xl">
@@ -30605,7 +30606,7 @@ RULES:
 
       {/* Guest Signup Prompt Modal */}
       {showSignupPrompt && pathLayerOk(pathSignupLayer) && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setShowSignupPrompt(false)}>
+        <div data-layer={pathSignupLayer} className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setShowSignupPrompt(false)}>
           <div className="bg-gradient-to-br from-gray-900 to-purple-900 rounded-2xl border border-purple-500/50 p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
             <div className="text-center mb-6">
               <div className="w-16 h-16 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl">
@@ -34060,7 +34061,7 @@ RULES:
 
       {/* Milestone Popup */}
       {milestonePopup && pathLayerOk('milestone_toast') && (
-        <div className={`fixed top-20 left-1/2 -translate-x-1/2 z-50 ${milestonePopup.action ? '' : 'animate-bounce'}`}>
+        <div data-layer="milestone_toast" className={`fixed top-20 left-1/2 -translate-x-1/2 z-50 ${milestonePopup.action ? '' : 'animate-bounce'}`}>
           <div className="bg-gradient-to-r from-yellow-900/90 to-orange-900/90 rounded-xl border-2 border-yellow-500/50 px-6 py-4 shadow-2xl flex items-center gap-4">
             <span className="text-4xl">{milestonePopup.emoji}</span>
             <div>
@@ -34232,6 +34233,7 @@ RULES:
       {renderOfferAsk()}
       {showProModal && (
         <div
+          data-layer="pro_modal"
           className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
           onClick={() => dismissProModal('backdrop')}
           onKeyDown={e => { if (e.key === 'Escape') dismissProModal('escape'); }}
@@ -37347,6 +37349,9 @@ RULES:
                   countdown / quota / retrieval flags. Pure half:
                   src/utils/practice-plan.js. */}
               {(() => {
+                // Tournament arms B / D: the path line is this person's plan;
+                // never a second one beside it (walk fixes D3 and B round 2).
+                if (pathUi.hideCoachPlan) return null;
                 const bank = window.challengesData || challenges || [];
                 const plan = buildPracticePlan({
                   company: prepTarget.company || companyFilter || null,
