@@ -42,6 +42,9 @@ describe('scorecard-weekly.sql — source guards', () => {
     const b = stripComments(base(Q['1']));
     expect(b).toContain("'^(test|qa_|fabletest|linktest|internalroutine|sqlquest$|elena$)'");
     expect(b).toContain("'363dfb2bc1314757acc88c8438c4d2ea'");
+    // A2's live-QA walks (C8 / BACKLOG 11-27): a prefix rule, so every later walk is out too
+    expect(b).toContain("m->>'aid' LIKE 'a2a2%'");
+    expect(b).toContain("'d9fe96e2bdf44aefa9195673a6496888'");
     for (const vp of ['tablet:800x600', 'desktop:1280x1200', 'desktop:1919x992', 'desktop:1024x1024']) {
       expect(b).toContain(`'${vp}'`);
     }
@@ -101,6 +104,10 @@ const ROWS = [
   ev('app_opened', 'activation_funnel', null, 3, { aid: 'd1', langs: 1, arrivalSrc: 'stripe-sql-interview' }),  // app1lang
   ev('app_opened', 'activation_funnel', 'test_e', 3, { aid: 'e1', langs: 3 }),                                   // internal
   ev('landing_view', 'landing', null, 3, { aid: '363dfb2bc1314757acc88c8438c4d2ea', page: 'home' }),             // walk aid
+  // A2's live-QA walks: a fresh guest that opens, runs and solves like a person would
+  ev('app_opened', 'activation_funnel', 'guest_a2', 3, { aid: 'a2a21126000000000000000000000010', langs: 3, landingSrc: 'search:google', tz: 'Europe/Istanbul' }),
+  ev('challenge_solved', 'activation_funnel', 'guest_a2', 3.1, { aid: 'a2a21126000000000000000000000010', challengeId: 91 }),
+  ev('app_opened', 'activation_funnel', 'guest_a2b', 3, { aid: 'd9fe96e2bdf44aefa9195673a6496888', langs: 3, landingSrc: 'search:google', tz: 'Europe/Istanbul' }),
   ev('landing_view', 'landing', null, 3, { aid: 'g1', page: 'blog/x', tz: 'UTC', landingSrc: 'search:bing' }),   // utc_landing:
   // the rule is dated (from 2026-11-22), and one later row marks the whole browser
   `('landing_view', 'landing', null, now() - interval '1 minute', '{"aid":"g1","page":"home","tz":"UTC"}'::jsonb)`,
@@ -154,9 +161,9 @@ describe('scorecard-weekly.sql — runs on Postgres over a hand-computed fixture
 
   it('query 1: raw vs human visitors on the fixture week', async () => {
     const w = (await run('1'))[6];
-    expect(Number(w.raw_visitors)).toBe(13);
+    expect(Number(w.raw_visitors)).toBe(15);
     expect(Number(w.human_visitors)).toBe(3);
-    expect(Number(w.gap_pct)).toBe(76.9);
+    expect(Number(w.gap_pct)).toBe(80.0);
   });
 
   it('query 1: openers, activation, six-solvers and the day-0 return', async () => {
@@ -213,7 +220,7 @@ describe('scorecard-weekly.sql — runs on Postgres over a hand-computed fixture
     const rows = (await run('4')).filter((r) => r.iso_week === wk);
     const by = Object.fromEntries(rows.map((r) => [r.bucket, Number(r.people)]));
     expect(by).toEqual({
-      '(human)': 3, viewport: 1, app1lang: 1, internal: 1, founder: 1, utc_landing: 1, bot_stamp: 1, utc1280: 1, cn_app: 1,
+      '(human)': 3, viewport: 1, app1lang: 1, internal: 1, founder: 3, utc_landing: 1, bot_stamp: 1, utc1280: 1, cn_app: 1,
       google_ua: 1, 'google_ua:notebooklm': 1,
     });
   });
