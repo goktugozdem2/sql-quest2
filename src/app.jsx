@@ -65,7 +65,7 @@ import { getPrimarySkeleton, getAllSkeletons } from './utils/skeletons.js';
 import { diagnoseResult, diagnosisShort, primaryHint, rowDiffSummary } from './utils/diagnose.js';
 import { formatSqlForDisplay } from './utils/sql-format.js';
 import { parseTutorContent } from './utils/tutor-render.js';
-import { sessionLoadingAtBoot, shouldWaitForSession } from './utils/session-boot.js';
+import { sessionLoadingAtBoot, shouldWaitForSession, isGuestSession } from './utils/session-boot.js';
 import { SQLITE_TUTOR_RULES, mistakeStudyContext, buildMistakeContextBlock, mistakeOpeningPrompt, inlineOpenerMessage, diagnosisFixesLine, ladderRequestNumber } from './utils/tutor-context.js';
 import { buildUserSkill, pickNextBySkill, toCanonicalSkill, isLegacyMasteryRecord } from './utils/user-skill.js';
 import { classifyErrorPatterns, recordErrorPatterns, describeErrorPatterns, patternCount, emptyErrorStore } from './utils/error-patterns.js';
@@ -7649,7 +7649,9 @@ function SQLQuest() {
         // resumed when its blob holds progress.
         solvedCount: Number.isFinite(metadata.solvedCount) ? metadata.solvedCount : solvedChallenges.size,
         attemptCount: challengeAttempts.length,
-        isGuest: !!isGuest,
+        // An event that passes its own isGuest keeps it (2026-11-27), as
+        // solvedCount above: app_opened computes it with isGuestSession().
+        isGuest: typeof metadata.isGuest === 'boolean' ? metadata.isGuest : !!isGuest,
       };
       // Bot signals (2026-10-07): a known crawler fingerprint is written and
       // stamped `bot`, so reads can drop it and a false positive is never
@@ -8185,7 +8187,7 @@ function SQLQuest() {
   }, [showProModal]);
 
   // Funnel denominator: one app_opened per browser per day, fired once the
-  // session settles so username/isGuest are accurate. De-dupe key is
+  // session settles so a restored account's username is accurate. De-dupe key is
   // browser-scoped (NOT user-scoped) — guests get a fresh guest_<ts> name
   // every load, so a per-user key would fire on every reload.
   useEffect(() => {
@@ -8194,8 +8196,13 @@ function SQLQuest() {
       const today = new Date().toISOString().slice(0, 10);
       if (localStorage.getItem('sqlquest_app_opened_day') === today) return;
       localStorage.setItem('sqlquest_app_opened_day', today);
+      // isGuest is not the state (2026-11-27): a cold visitor's first render
+      // is settled before startGuestMode() runs, so the state said false on
+      // 11,763 of 11,764 rows. Guest = not signed in to an account
+      // (isGuestSession, src/utils/session-boot.js).
       trackActivationEvent('app_opened', {
         returning: !!localStorage.getItem('sqlquest_user'),
+        isGuest: isGuestSession({ currentUser, isGuest }),
         // Real-user boot timing (src/utils/boot-timing.js, metric app_boot).
         ...bootTiming({ perf: window.performance, nav: navigator, win: window }),
       });
@@ -24599,6 +24606,14 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     const challenge = getTodaysChallenge(difficultyToUse);
     if (!challenge || !db) return;
     setShowDailyChallenge(true);
+    // The daily's own events (2026-11-27, metric daily_challenge_use):
+    // `date` is the daily's own day (11:00 GMT+3 reset), `difficulty` the
+    // tier it opens on, `state` fresh | resumed | done.
+    trackActivationEvent('daily_challenge_opened', {
+      date: todayString,
+      difficulty: difficultyToUse || null,
+      state: isDailyCompleted ? 'done' : savedProgress ? 'resumed' : 'fresh',
+    });
     
     if (isDailyCompleted) {
       // Already completed - show completion screen
@@ -24677,6 +24692,13 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
       );
 
       if (dailyCorrect) {
+        // The core SQL is right (the warm-up and insight steps are not the
+        // solve). `practice`: today's daily was already completed.
+        trackActivationEvent('daily_challenge_solved', {
+          date: todayString,
+          difficulty: activeDailyDifficulty || null,
+          practice: isDailyCompleted || isDailyPracticeMode,
+        });
         setDailyChallengeStatus('success');
         setCoreCompleted(true);
         // Stop timer immediately when correct answer is submitted
