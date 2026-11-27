@@ -41378,15 +41378,19 @@ RULES:
                         )}
                       </div>
 
-                      {/* Input */}
-                      <div className="flex gap-2">
+                      {/* Input. Wraps on a phone (A2, 2026-11-25): an <input>
+                          keeps its ~196 px intrinsic width in a flex row, so
+                          with "Show me the answer" and Send beside it the row
+                          ran to 456 px and a 375 px page scrolled sideways.
+                          The input keeps at least 12rem; the buttons wrap. */}
+                      <div className="flex flex-wrap gap-2" data-testid="inline-tutor-input-row">
                         <input
                           type="text"
                           value={inlineAiInput}
                           onChange={e => setInlineAiInput(e.target.value)}
                           onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendInlineAiMessage(); }}}
                           placeholder="Ask about this challenge..."
-                          className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-sm text-[#F2F0EA] placeholder-gray-500 focus:outline-none focus:border-purple-500"
+                          className="flex-1 min-w-[12rem] px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-sm text-[#F2F0EA] placeholder-gray-500 focus:outline-none focus:border-purple-500"
                           disabled={inlineAiLoading}
                         />
                         {ftbFlag('socraticLadder') && (
