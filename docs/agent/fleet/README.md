@@ -151,7 +151,14 @@ dated `queue-*.md` files are history. The running state of the objective is
 8. **Report.** End with a short Turkish summary for the founder, then one
    machine line the orchestrator logs:
 
-       FLEET-RESULT {"agent":"A2","outcome":"pr|merged|read|drafts|noop|blocked","prs":[123],"value":"one line: what changed for a person or what we learned","founder":["..."]}
+       FLEET-RESULT {"agent":"A2","outcome":"pr|merged|read|drafts|noop|blocked","prs":[123],"value":"one line: what changed for a person or what we learned","founder":["..."],"papercuts":["..."]}
+
+   `papercuts` (2026-11-26) lists the one-line snags the run hit that were
+   not the task: tooling (a stale dependency, a script that lost rows), data
+   (a missing column, a crawler in a read) or the brief (ambiguous, silent,
+   contradicted by another file). Empty list when there were none. No
+   customer data in it. They feed `papercuts.md` and D3 (see "The skills
+   loop").
 
 9. **Leave the lane's state behind.** Update `docs/agent/fleet/state/<ID>.md`
    in the same PR: the last run, the next step and any open threads. It
@@ -204,8 +211,9 @@ dated `queue-*.md` files are history. The running state of the objective is
 
 ## Performance and optimization
 
-- The orchestrator logs each run in `~/.claude/sqlquest-fleet/state.json`,
-  outside the repo: agent, start, duration, tokens, outcome, PRs and value.
+- Every run is logged in the repo run ledger (`runs/<YYYY-MM>.jsonl`, see
+  "Measure" below). The orchestrator's `~/.claude/sqlquest-fleet/state.json`
+  on the laptop stays its scratch copy and is not the record.
 - On Mondays, D2 (retro) writes `docs/agent/fleet-scorecard.md`. Each agent
   gets: runs, PRs merged, PRs rejected by A1, reverts, tokens per merged
   PR, and its own number from the plan. The changes D2 makes:
@@ -214,3 +222,79 @@ dated `queue-*.md` files are history. The running state of the objective is
   - an agent whose brief caused a rejected PR gets its brief tightened in
     this folder;
   - cadence goes up only where merged work moved the agent's number.
+
+## The skills loop (Build → Run → Measure → Evaluate → Improve) (2026-11-26)
+
+Uber Engineering's map of agent skills, applied to this fleet: build a skill
+once, run it at scale, and improve it with every feedback loop. Each step
+has a file:
+
+| Step | What it is here | Files |
+|---|---|---|
+| **01 Build** — SKILL.md, owners & versions, marketplace | A lane brief is a skill. Its YAML front-matter carries `id`, `name`, `owner`, `runtime`, `status`, `cadence`, `metric`, `writes_code`, `version`, `last_changed`, and it ends with a `## Changelog`. The marketplace is the generated index. | `<ID>-*.md`, `SKILLS.md`, `scripts/fleet-skills-index.mjs` (`npm run fleet:index`) |
+| **02 Run** — agents | The orchestrator (laptop) and the cloud sessions start a lane by handing it its brief; the common protocol above applies. | this README |
+| **03 Measure** — usage & retention, cost & latency, errors & traces | One ledger line per lane run: minutes, tokens, outcome, PRs opened and merged, the value line, papercuts. | `runs/<YYYY-MM>.jsonl` |
+| **04 Evaluate** — structure & behavior, with/without skill, regression tests | Structure: a test over every brief and the ledger. Behaviour: D2's with/without read by brief version. | `tests/fleet-skills.test.js`, D2's scorecard |
+| **05 Improve** — papercut reports, trace-based edits, owner-reviewed fixes | Agents report papercuts; D3 turns papercuts and ledger traces into versioned brief edits; the owner reviews them. | `papercuts.md`, `D3-improve.md` |
+
+Real-world feedback → reviewed fixes closes the loop: a papercut or a bad
+trace becomes a brief edit with a version bump and a changelog line, reviewed
+by the brief's owner, and the next runs show whether it helped.
+
+**Front-matter values.** `owner`: `orchestrator` (laptop lanes),
+`cloud-A0` (cloud lanes; A1 reviews their brief edits), `founder` (A0, the
+gate he delegated, and B4, money). Whatever the owner, a brief edit that
+touches a money or outward rule (prices, money flags, sends, the
+session-token cut) goes to the founder. `runtime`: `laptop | cloud |
+actions`. `status`: `active`, `reduced` (cadence cut by the investor 90-day
+plan, 2026-11-25) or `paused` (a run reports `noop: paused`). `metric`: a
+list of names that exist in `docs/agent/metrics.md`, or `undefined` with a
+`# TODO` naming what to register. `version`: semver — patch for wording,
+minor for a new rule or step, major for a changed lane or metric.
+`writes_code: true` marks a lane that changes site or app source; its brief
+carries the code-lane hard rules (dark flag for any funnel-step change, the
+forbidden list), and the test checks it. Only files named `<ID>-<slug>.md`
+with an id like `A2` or `AN` are skills; `SEO-loop.md` is a protocol, not a
+lane.
+
+## Measure — the run ledger (2026-11-26)
+
+**Every lane run appends one line** to `docs/agent/fleet/runs/<YYYY-MM>.jsonl`
+(the month of the run's date):
+
+    {"date":"2026-11-26","lane":"A2","runtime":"laptop","minutes":11,"tokens":215741,"outcome":"pr","prs":[379],"merged":[],"value":"one line, no customer data","papercuts":["..."]}
+
+- **Who writes it.** The orchestrator, for laptop runs, from the run's
+  FLEET-RESULT line (in its docs batch). A cloud lane writes its own line in
+  its PR. A `merged` list is updated when the PR merges, or by the next D2
+  run.
+- **`lane`** is the brief id (`A2`), or the id plus a suffix for a sub-task
+  (`B1-followup`), or a free name for work with no brief (`orchestrator`,
+  `builder-…`). `SKILLS.md` credits the first two to the brief.
+- **`outcome`**: `pr | merged | read | drafts | noop | blocked | deploy |
+  action` (`deploy` only on the founder's go; `action` is an operational
+  step with no PR, such as index requests).
+- **`minutes` / `tokens`**: `null` when unknown. Never estimated.
+- **Privacy.** `value` and `papercuts` carry no username, email, aid, name,
+  customer or outreach-target identifier, and no per-person money. Say "a
+  payer", "a bootcamp", "a data newsletter". The test rejects email-like
+  strings, `guest_<digits>` and long hex ids.
+- The backfill (2026-11-22 → 11-25, 165 runs) came from the laptop's
+  `state.json`, scrubbed by hand; its `papercuts` are empty and its runs are
+  pre-1.0.0 for every brief.
+
+## Evaluate — regression tests and with/without (2026-11-26)
+
+- **Structure** (`tests/fleet-skills.test.js`, in `npm run test:run`): every
+  brief has valid front-matter with every key; `metric` names exist in
+  `metrics.md` unless `undefined`; C6 and C7 are paused; every active
+  `writes_code` brief carries the dark-flag rule and the forbidden list
+  (`git add -A`, `public/weekly/`, `GSTACK_REDACT_PREPUSH=skip`, deploys,
+  money flags); every ledger line parses and carries no email, `guest_` id or
+  long hex id; `SKILLS.md` equals a fresh run of the generator.
+- **With/without.** Compare a lane's merged-PR rate, A1 REVISE rate and
+  minutes per run across brief versions: runs dated before a version's
+  changelog date ran without the change, runs after ran with it. The
+  `version` field and the changelog make the split possible. D2 reports it
+  weekly. With a handful of runs per version it is a signal, not a verdict.
+
