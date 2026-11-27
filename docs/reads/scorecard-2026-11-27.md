@@ -42,7 +42,7 @@ Interview-target = the first `app_opened`'s `arrivalSrc` is a company page
 | `second_session_7d`, cohort 11-13 → 19 | 11.9% (5 / 42) | 12.0% (13 / 108) |
 | `second_session_7d`, cohort 11-06 → 12 | 16.0% (4 / 25) | 14.3% (14 / 98) |
 
-Interview-target people were 22–28% of new human openers in these three
+Interview-target people were 20–28% of new human openers in these three
 weeks (34 / 151, 42 / 150, 25 / 123), above the 15% of the 90-day read.
 
 ## What it says (and does not)
