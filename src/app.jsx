@@ -35862,7 +35862,7 @@ RULES:
             <div
               data-primary-learning-tabs="true"
               data-primary-learning-shell={showFoundationsFocusShell || showLessonAdjacentChallengesShell ? 'lesson-one' : 'default'}
-              className={`mb-4 grid ${showInterviewNav ? 'grid-cols-3' : 'grid-cols-2'} gap-2 rounded-xl border border-slate-700 bg-slate-950/75 p-1.5`}
+              className={`mb-4 grid ${showInterviewNav ? 'grid-cols-[repeat(3,minmax(min-content,1fr))] sm:grid-cols-3' : 'grid-cols-2'} gap-1 sm:gap-2 rounded-xl border border-slate-700 bg-slate-950/75 p-1.5`}
             >
               <button
                 type="button"
@@ -35871,13 +35871,13 @@ RULES:
                   setActiveTab('guide');
                   setCurrentChallenge(null);
                 }}
-                className={`min-h-[54px] rounded-lg px-3 py-2 text-left transition-all ${
+                className={`min-h-[54px] min-w-0 rounded-lg px-2 py-2 text-left sm:px-3 transition-all ${
                   activeTab !== 'quests' && activeTab !== 'trials'
                     ? 'border border-slate-500 bg-slate-800 text-[#F2F0EA]'
                     : 'border border-transparent bg-transparent text-slate-300 hover:border-slate-600 hover:bg-slate-900 hover:text-[#F2F0EA]'
                 }`}
               >
-                <span className="flex items-center justify-between gap-2">
+                <span className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
                   <span className="text-sm font-bold">Learning Path</span>
                   <span className="hidden rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-200 sm:inline">
                     Recommended
@@ -35894,13 +35894,13 @@ RULES:
                   setPracticeSubTab('challenges');
                   setActiveTab('quests');
                 }}
-                className={`min-h-[54px] rounded-lg px-3 py-2 text-left transition-all ${
+                className={`min-h-[54px] min-w-0 rounded-lg px-2 py-2 text-left sm:px-3 transition-all ${
                   activeTab === 'quests'
                     ? 'border border-slate-500 bg-slate-800 text-[#F2F0EA]'
                     : 'border border-transparent bg-transparent text-slate-300 hover:border-slate-600 hover:bg-slate-900 hover:text-[#F2F0EA]'
                 }`}
               >
-                <span className="flex items-center justify-between gap-2">
+                <span className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
                   <span className="text-sm font-bold">Challenges</span>
                   <span className="rounded-full border border-slate-600 bg-slate-900 px-2 py-0.5 text-[10px] font-bold text-slate-300">
                     {challenges.length}
@@ -35917,13 +35917,13 @@ RULES:
                     setCurrentChallenge(null);
                     setActiveTab('trials');
                   }}
-                  className={`min-h-[54px] rounded-lg px-3 py-2 text-left transition-all ${
+                  className={`min-h-[54px] min-w-0 rounded-lg px-2 py-2 text-left sm:px-3 transition-all ${
                     activeTab === 'trials'
                       ? 'border border-slate-500 bg-slate-800 text-[#F2F0EA]'
                       : 'border border-transparent bg-transparent text-slate-300 hover:border-slate-600 hover:bg-slate-900 hover:text-[#F2F0EA]'
                   }`}
                 >
-                  <span className="flex items-center justify-between gap-2">
+                  <span className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
                     <span className="text-sm font-bold">{i18n_t('nav', 'interview')}</span>
                     <span className="rounded-full border border-slate-600 bg-slate-900 px-2 py-0.5 text-[10px] font-bold text-slate-300">
                       {mockInterviews.length}
