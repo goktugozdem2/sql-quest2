@@ -184,6 +184,16 @@ of the verifier and must never be rounded to `FLAT`.
   (orchestrator-decisions 2026-11-24), so this is the second and last slot;
   phones are out (their cell is full). Read the 12-20 claims on the 11-22
   starter and the deep-link swap inside `control` only.
+- **Flip** (A0, PR `flags/runnable-starter-on`, opened 2026-11-26): ON at
+  50/50 once the pre-flip walk passes: a fresh desktop profile, through a
+  `/app/?challenge=<id>` deep link on production with
+  `?ff_features_runnableStarter=true`, stores a `runnable_starter_v1` arm
+  and writes one `runnable_starter_assigned` on the first load. The clock
+  starts at the deploy of the flip commit. **Reverse rule:** the
+  Falsification line above (final 2027-01-07, interim harm stop
+  2026-12-17), plus off the same day if `runnable_starter_assigned` rows
+  stop while desktop `challenge_opened` rows continue, or if either arm
+  holds under 45% of assignments at ≥ 100 assigned (broken assignment).
 ### the Coach's Debug door (`coachDebugDoor`) — **OPEN**
 
 - **Claimed** 2026-11-25 · **Shipped** ON on merge (orchestrator decision,
@@ -848,6 +858,69 @@ of the verifier and must never be rounded to `FLAT`.
 - **Falsification** a page or generator states an exclusivity claim about
   the AI coach, tutor, diagnostic or Skillmap again.
 
+### the Wise page's first screen: the right first question, readiness, the Pro line, one "debug this query" (C5)
+
+- **Claimed** 2026-11-25 · **Shipped** on merge (static page, no flag) · **Read** 2026-12-23 (28 d) and 2027-01-20 (56 d).
+- **Change** `/wise-sql-interview/` gets a "Start here" block right under the
+  hero (hand-written page; same `company-first-screen` markers and click names
+  as the Monzo block in PR #295): **Start with** Card Spend by Country (#285,
+  Easy, Wise-tagged, card ledger: country lives on the cardholder, join before
+  you group, people vs payments) straight into the app; the readiness test
+  with `?company=wise`; one line on what Pro gives for this interview (the 3
+  Hard challenges in the Wise set, the Hard Debug challenges, all 300+ without
+  the 10-solve stop, the full mock bank; no price). Under it, "Debug this
+  query" on the synthetic multi-currency ledger (`finans_neobank`: fees on
+  completed currency exchanges per home currency). The query averages per
+  user, then averages the averages: 4 of 5 currencies come out wrong (PLN 0.65
+  against 1.07). Bug behind a `<details>`, the fix shown, and the same bug in
+  the app as Debug 341 (labelled Hard, Pro). Framed by the one dated, fetched
+  line in the Wise dossier (`docs/reads/companies/wise.md` W11, Dataford's
+  Wise DA guide, updated 2026-10-08, read 2026-11-22): a candidate handed a
+  query and asked what is wrong with it. Stated as one report, not a format.
+  Every new link carries `src=company-wise`. The hero button is unchanged
+  (its text is pinned by `tests/company-hero-cta.test.js` and its series must
+  not move), so the block says "Start with", not "Question 1".
+- **Why this one:** Wise is the consumer-fintech page with the highest
+  measured CTR (27%, C5 brief `docs/agent/fleet/C5-revenue-content.md`;
+  company pages convert best per `monetization-ideas-2026-11-22.md` §1f) and the best-clicking company
+  page after the Capital One blog in the R1 dossier (28 d to 2026-11-21: 206
+  impressions, 53 clicks, position 3.6). B6 (`competitors-2026-11-24.md` P3,
+  `competitors-2026-11-25.md` on PR #354, Q1/N5) routed "link the Debug hub
+  from Wise with one sourced line" to C5, and found Dataford alone among prep
+  sites on "wise data analyst sql interview". Menu item 1 beat item 2 (a
+  sourced Wise guide) because the dossier's only first-party format fact is
+  the take-home case, which names no SQL; a guide would be thin on SQL. The
+  page already lands people; the gap is page → first question.
+- **Metric** `content_funnel`, page `wise-sql-interview`: `trial_or_purchase`
+  per 1,000 `landing_people`, 28-day window, and the step it should move,
+  `app_opened` / `landing_people`. Clicks `cta_first_question`,
+  `cta_first_readiness`, `cta_first_debug`; arrivals with `arrivalSrc`
+  `company-wise`.
+- **Baseline** the page's 28-day `content_funnel` row to 2026-11-25 (laptop
+  read from the Monday/Thursday mail; cloud run, no production data, and
+  per-page numbers never go in the repo). Site-wide prior from
+  `monetization-ideas-2026-11-22.md` §1f: company pages 2.3% of arrivals to
+  trial or purchase, 81% of landers never open the app.
+- **Target** at 28 d: `app_opened` / `landing_people` up ≥ 5 points on the
+  baseline row, and ≥ 10% of landers click one of the three new links. At
+  56 d: `trial_or_purchase` per 1,000 landers at or above the company-page
+  prior (23), with ≥ 1 trial or purchase from a person whose first landing was
+  the page.
+- **Falsification, written now:** under 5% of landers click a new link at
+  ≥ 100 landers → the block is not read; cut it to the first-question line.
+  App opens flat or down at ≥ 100 landers → the block only pushed the page
+  down; remove it. `cta_first_debug` clicks that end on the Pro modal with no
+  plan click → a Hard Pro item is the wrong first debug; link a free Debug item
+  or the hub instead. Under 30 landers in 28 d → noise, read again at 56 d.
+- **Guard** `tests/wise-first-screen.test.js` (both queries run on
+  `finans_neobank`, the fix equals an independent SUM/COUNT truth and the
+  broken query does not, every stated number, Debug 341 is the
+  average-of-averages item and Hard, not a Revolut mock query, links and
+  doors, Pro line from the page facts and `freeSolvesLabel`, the source line
+  is in the dossier); `tests/company-pages.test.js` `OFF_SET_LINKS` /
+  `OFF_SET_NOTE` waive the tag check for 341 only while the page says it is
+  from the Debug set.
+
 ### the Capital One guide's first screen: format, the other test, the mock by its numbers (C5)
 
 - **Claimed** 2026-11-23 · **Shipped** on merge (static page, no flag) · **Read** 2026-12-21 (28 d) and 2027-01-18 (56 d).
@@ -947,6 +1020,86 @@ of the verifier and must never be rounded to `FLAT`.
   non-Hard, links and doors, Pro line from helpers, placement);
   `tests/company-pages.test.js` `OFF_SET_LINKS` / `OFF_SET_NOTE` waive the tag
   check for 336 only while the page says it is from the Debug set.
+
+### the Amazon page's first screen and current sources: "Start with", the set, readiness, the Pro mock, one "debug this query" (C5)
+
+- **Claimed** 2026-11-26 · **Shipped** on merge (static page, no flag) · **Read** 2026-12-24 (28 d) and 2027-01-21 (56 d).
+- **Change** `/amazon-sql-interview/` gets a "Start here" block right under
+  the hero, through the company generator (`scripts/company-first-screen.mjs`,
+  now able to serve an older page from its `SOURCED_FORMATS` entry):
+  "Start with" #131 Above-Department-Average Earners (Medium, free tier,
+  Amazon-tagged), the first shape in the BIE round reported to us; the
+  Amazon-tagged set in the app (39: 10 Medium, 29 Hard, from the page facts);
+  the readiness test with `?company=amazon`; and the Pro line (the 26 Hard
+  past the free preview, 300+ without the 10-solve stop, the mock bank) with
+  the closest Pro mock named honestly: the Hard SQL Interview mock (50 min,
+  five written questions, ranking and a streak), "a general mock, not
+  modelled on Amazon". Under it, "Debug this query": framed by the reported
+  round's COUNT(*) against COUNT(column) follow-up, a 7-line query on the
+  e-commerce sample that answers 2.88 orders per customer when the answer is
+  2.5 (COUNT(*) after a LEFT JOIN counts the 6 customers who never ordered as
+  1), fix behind a `<details>`, and Debug 334 in the app (the same difference
+  on titanic, Easy). Every new app link carries `src=company-amazon`; the hero
+  and nav keep theirs so their series do not move.
+  The sourced format table is rebuilt from the R1 dossier
+  (`docs/reads/companies/amazon.md`, read 2026-11-22, refresh by 2027-01-21):
+  Amazon's own BIE prep page (first-party) for the stages, a new online
+  assessment row (SQL challenge, "Working with SQL", Work Styles, seven days),
+  the 60-minute phone screen and five 55-minute loop interviews; Exponent's
+  guide re-cited at aced.io; two PracHub reports (dashboard task, a Business
+  Analyst screen with three SQL questions). The intro and provenance note now
+  say Amazon publishes its stages, not its questions. The FAQ's stale
+  "7 Medium, 27 Hard" (34 of 39) is corrected to 10 / 29, and the two-week
+  plan's two "7 Medium … and the 3 Hard previews" lines (intro and FAQ #1,
+  visible + JSON-LD) now say "pick them from the 10 Medium … or its 3 Hard
+  previews" (A1 REVISE on 3ef5844a).
+- **Why this one:** Amazon is the one company set that produced a payer
+  before the quota (CLAUDE.md); the dossier shows real demand at page 4–5
+  ("amazon interview questions on sql" and neighbours) and a page that
+  claimed no first-party source while one existed. Menu item 1 (improve a
+  page that lands people) beat item 2 (a sourced guide): the page is the
+  sourced guide already; its gap was page → first question and stale rows.
+- **Metric** `content_funnel`, page `amazon-sql-interview`:
+  `trial_or_purchase` per 1,000 `landing_people`, 28-day window, and the step
+  it should move, `app_opened` / `landing_people`. Clicks
+  `cta_first_question`, `cta_first_set`, `cta_first_readiness`,
+  `cta_first_mock`, `cta_first_debug`; arrivals with `arrivalSrc`
+  `company-amazon`; Pro modals with `linkSrc` `company-amazon` (reason
+  `mock_link`) for the mock line.
+- **Baseline** the page's 28-day `content_funnel` row to 2026-11-26, read by
+  the laptop from the Monday/Thursday mail (cloud run, no production data;
+  per-page numbers never go in the repo). Latest dated read with the page's
+  demand: `docs/reads/companies/amazon.md` (gsc_daily to 2026-11-22). The
+  site-wide prior from `docs/plans/monetization-ideas-2026-11-22.md` §1f:
+  company pages 2.3% of arrivals to trial or purchase, 81% of landers never
+  open the app.
+- **Target** at 28 d: `app_opened` / `landing_people` up by ≥ 5 points on the
+  baseline row, and ≥ 10% of landers click one of the five new links. At
+  56 d: `trial_or_purchase` per 1,000 landers at or above the company-page
+  prior (23), with ≥ 1 trial or purchase from a person whose first landing
+  was the page.
+- **Falsification, written now:** fewer than 5% of landers click a new link
+  at ≥ 100 landers → the block is not read; cut it to the "Start with" line.
+  App opens flat or down at ≥ 100 landers → the block pushed the sourced
+  table down without moving anyone; move it below the table. `cta_first_mock`
+  clicks with 0 plan clicks from `linkSrc` `company-amazon` in 56 d at ≥ 150
+  landers → a general mock is not what Amazon readers want; ask B3 for an
+  Amazon-shaped set (dossier: the targets/bridge-table shape the bank lacks).
+  `cta_first_debug` clicks with no `challenge_first_run` on 334 → the item
+  reads as homework; drop it. Under 30 landers in 28 d → noise, read again
+  at 56 d.
+- **Confound, stated:** the sourced rows and the first screen ship together,
+  so a move in rank (and landers) cannot be split from a move in the page →
+  app step. Read rank from `gsc_daily` apart.
+- **Guard** `tests/company-first-screen.test.js` (both queries run on
+  `ecommerce`, every number, the bug line, not a mock query, the Debug item
+  is live and non-Hard, links and doors, the measures-not-how line, the mock's
+  length and Pro status, placement and idempotency on the older page);
+  `tests/company-pages.test.js` `OFF_SET_LINKS` / `OFF_SET_NOTE` waive the tag
+  check for 334 only while the page says it is from the Debug set. Breaks
+  caught: the fix's COUNT on the left table (fails "amazon: broken answers
+  2.88, the fix 2.5"); a "Start with" line that names the method (fails
+  "says what it measures, not how").
 
 ### a founder-led live mock — would people pay for it? (asked by hand)
 
