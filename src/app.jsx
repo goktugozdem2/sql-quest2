@@ -24773,11 +24773,18 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     if (!companyFilter) return null;
     if (quotaGate({ flagOn: freeQuotaOn(), isPro, solvedCount: solvedChallenges.size, alreadySolved: false }).gated) return null;
     const scoped = companyScopedChallenges();
-    return pickNextChallenge(scoped, c =>
+    const opens = c =>
       !solvedChallenges.has(c.id)
       && !isContentLocked('challenge', c)
-      && !companySetGate({ flagOn: ftbFlag('companySetGate'), isPro, companyFilter, challenge: c, scoped, solved: solvedChallenges }).gated
-    );
+      && !companySetGate({ flagOn: ftbFlag('companySetGate'), isPro, companyFilter, authored: companyHasAuthoredSet(companyFilter), challenge: c, scoped, solved: solvedChallenges }).gated;
+    // Start in the set's first three (difficulty, then id) — the question the
+    // company page's hero button names (companyFirstQuestion). Until
+    // 2026-11-26 the gate walled every set past three, so this was implied;
+    // now a topical set opens past three and the banner carries on into it
+    // once the first three are done, instead of showing no button.
+    const firstThree = ftbFlag('companySetGate') ? companySetFreeIds(scoped) : null;
+    return (firstThree && pickNextChallenge(scoped, c => firstThree.has(c.id) && opens(c)))
+      || pickNextChallenge(scoped, opens);
   };
 
   // The free three of a company's set under `companySetGate`, else null —
@@ -25265,10 +25272,16 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     // `paidWallFor` is not consulted: this wall exists only with a company
     // filter and only for the non-cold — `wall: 'company_set'` is its own
     // value in the series (metrics.md carries the discontinuity note).
+    // Amended 2026-09-20, enforced 2026-11-26: only a set AUTHORED for the
+    // company (Capital One, Revolut) is walled; Stripe's, Amazon's and every
+    // other tagged set stay on the general free quota.
     const setGate = companySetGate({
       flagOn: ftbFlag('companySetGate'),
       isPro,
       companyFilter,
+      // Only a set authored for the company is walled (2026-09-20 decision,
+      // enforced here from 2026-11-26) — a topical set keeps the 10-solve quota.
+      authored: companyHasAuthoredSet(companyFilter),
       challenge,
       scoped: companyScopedChallenges(),
       solved: solvedChallenges,
@@ -41047,9 +41060,10 @@ RULES:
                       const isStarted = !isSolved && startedIds.has(c.id);
                       // Free-tier boundary M1: in a company view under
                       // `companySetGate`, everything past the free three that
-                      // is not already solved wears the same lock as a Hard.
+                      // is not already solved wears the same lock as a Hard —
+                      // in an authored set's view only (Capital One, Revolut).
                       const isLocked = isContentLocked('challenge', c)
-                        || companySetGate({ flagOn: ftbFlag('companySetGate'), isPro, companyFilter, challenge: c, scoped: companyScopedChallenges(), solved: solvedChallenges }).gated;
+                        || companySetGate({ flagOn: ftbFlag('companySetGate'), isPro, companyFilter, authored: companyHasAuthoredSet(companyFilter), challenge: c, scoped: companyScopedChallenges(), solved: solvedChallenges }).gated;
                       // Free quota (`freeQuota`): past ten solves every unsolved row wears the lock too.
                       const isQuotaLocked = quotaGate({ flagOn: freeQuotaOn(), isPro, solvedCount: solvedChallenges.size, alreadySolved: isSolved }).gated;
                       // A free Hard preview, shown to someone it is a preview

@@ -115,6 +115,11 @@ const OPTION_SQL = {
 // "117 of 240 = 48.8% — …" → 117|240|48.8), and compare to the data.
 const RETENTION = (signupDen, firstDen) => `WITH ui AS (SELECT user_id, date(ts) AS d FROM transactions WHERE status = 'completed' AND type IN ${USER_TYPES}), c AS (SELECT u.user_id, u.signup_date, (SELECT MIN(d) FROM ui WHERE ui.user_id = u.user_id) AS first_d FROM users u WHERE u.signup_date >= '2026-01-01' AND u.signup_date < '2026-07-01') SELECT SUM(EXISTS (SELECT 1 FROM ui WHERE ui.user_id = c.user_id AND ui.d BETWEEN date(c.signup_date, '+7 day') AND date(c.signup_date, '+13 day'))) AS rs, ${signupDen} AS ds, SUM(first_d IS NOT NULL AND EXISTS (SELECT 1 FROM ui WHERE ui.user_id = c.user_id AND ui.d BETWEEN date(c.first_d, '+7 day') AND date(c.first_d, '+13 day'))) AS rf, ${firstDen} AS df FROM c`;
 
+// These run real SQLite over every row of the data; at vitest's default 5 s they
+// time out when the machine is loaded (fleet lanes in parallel, load ~18-20).
+// A per-block timeout, not a global one: only the DB-heavy blocks get the room.
+const DB_HEAVY = { timeout: 30_000 };
+
 let win, mock, dbs;
 beforeAll(() => {
   win = loadWindow(['../src/data/neobank-data.js', '../src/data/finans-fraud-data.js', '../src/data/mock-interviews.js']);
@@ -123,7 +128,7 @@ beforeAll(() => {
     finans_neobank: buildDb(win.publicDatasetsData.finans_neobank),
     finans_fraud: buildDb(win.publicDatasetsData.finans_fraud),
   };
-});
+}, DB_HEAVY.timeout);
 
 describe('the set — one mock, the existing engine', () => {
   it('exists with 12 items, 9 MCQ then 3 written, on our two datasets', () => {
@@ -151,7 +156,7 @@ describe('the set — one mock, the existing engine', () => {
 
 // One test per item: the correct option is what the data says, and every
 // wrong option's number is what its own (wrong) definition gives.
-describe('each multiple-choice item, recomputed from the data', () => {
+describe('each multiple-choice item, recomputed from the data', DB_HEAVY, () => {
   const ids = ['cr-m1', 'cr-m2', 'cr-m3', 'cr-m4', 'cr-m5', 'cr-m6', 'cr-m7', 'cr-m8'];
   for (const id of ids) {
     it(`${id}: correct option = verify.sql, every option's number from its own query`, () => {
@@ -219,7 +224,7 @@ describe('each multiple-choice item, recomputed from the data', () => {
   });
 });
 
-describe('each written item: reference, an alternative that passes, the common mistake that fails', () => {
+describe('each written item: reference, an alternative that passes, the common mistake that fails', DB_HEAVY, () => {
   const W = {
     'cr-q1': {
       rows: [[89, 240, 37.1]],
