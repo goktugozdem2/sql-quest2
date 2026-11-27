@@ -21901,6 +21901,8 @@ Do NOT force the sector if the user asks a generic question (e.g. "what does GRO
           // {promptReason:'ai_limit'}`); until 2026-11-27 it opened the modal
           // directly, with no event, under the "You're on fire!" copy — shown
           // to a stuck guest with 0 solves (A3, docs/reads/errors-2026-11-27.md).
+          // The ai_limit title/body is dark behind `aiLimitAskCopy`; for a guest
+          // the modal opens exactly as before, only the event is new.
           triggerSignupPrompt('ai_limit');
           return `**AI Limit Reached**\n\nCreate a free account to get ${TUTOR_FREE_DAILY_LIMIT} AI tutor calls per day!`;
         }
@@ -29864,14 +29866,14 @@ RULES:
                 {signupPromptReason === 'pro_purchase' ? '👑' : signupPromptReason === 'first_challenge' ? '🎉' : '💪'}
               </div>
               <h2 className="text-2xl font-bold text-[#F2F0EA] mb-2">
-                {signupPromptReason === 'pro_purchase' ? i18n_t('pro', 'payGuestSignupTitle') : signupPromptReason === 'first_challenge' ? 'Great job!' : signupPromptReason === 'ai_limit' ? 'More AI help with a free account' : 'You\'re on fire!'}
+                {signupPromptReason === 'pro_purchase' ? i18n_t('pro', 'payGuestSignupTitle') : signupPromptReason === 'first_challenge' ? 'Great job!' : (signupPromptReason === 'ai_limit' && ftbFlag('aiLimitAskCopy')) ? 'More AI help with a free account' : 'You\'re on fire!'}
               </h2>
               <p className="text-gray-300">
                 {signupPromptReason === 'pro_purchase'
                   ? i18n_t('pro', 'payGuestSignupBody')
                   : signupPromptReason === 'first_challenge'
                     ? 'You just solved your first challenge!'
-                    : signupPromptReason === 'ai_limit'
+                    : (signupPromptReason === 'ai_limit' && ftbFlag('aiLimitAskCopy'))
                       ? `Guest AI help is used up for today. A free account gets ${TUTOR_FREE_DAILY_LIMIT} tutor calls a day.`
                       : `You've earned ${xp} XP and solved ${solvedChallenges.size} challenges!`}
               </p>

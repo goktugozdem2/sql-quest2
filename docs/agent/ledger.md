@@ -29,8 +29,13 @@ of the verifier and must never be rounded to `FLAT`.
 
 ### The tutor-limit signup ask is counted and says why (A3, 2026-11-27)
 
-- **Claimed** 2026-11-27 · **Shipped** on merge (no flag: a copy and
-  instrumentation fix inside an existing ask) · **Read** 2026-12-18.
+- **Claimed** 2026-11-27 · **Shipped** on merge: the count (the ask goes
+  through `triggerSignupPrompt`, so `signup_prompt_shown {ai_limit}` is
+  written; a guest sees today's modal). The copy ("More AI help with a free
+  account") is **dark** behind `aiLimitAskCopy` (funnel-step rule, A1
+  2026-11-27) and flips only through its own orchestrator-decisions row ·
+  **Read** 2026-12-18 (coverage); the copy part is read 21 days after its
+  flip.
 - **Metric.** `ai_limit_ask` (docs/agent/metrics.md).
 - **Baseline.** 0 `signup_prompt_shown {ai_limit}` rows ever: the ask
   opened without an event. In the 24 h to 11-27 09:25 UTC, `ai-tutor`
@@ -39,8 +44,8 @@ of the verifier and must never be rounded to `FLAT`.
   "You're on fire! You've earned 0 XP and solved 0 challenges!".
 - **Target.** By 12-18, every guest `ai-tutor` 429 seen in
   `function_edge_logs` through the inline Help or a lesson has a matching
-  `ai_limit` row for that person (coverage ≥ 90%), and no `ai_limit` asker
-  sees the solve-count copy.
+  `ai_limit` row for that person (coverage ≥ 90%); after the
+  `aiLimitAskCopy` flip, no `ai_limit` asker sees the solve-count copy.
 - **Falsified if** guest 429s appear after the deploy with no `ai_limit`
   rows (then `isGuest` in the client disagrees with the server's plan, and
   the ask silently stopped opening: revert to the direct open and re-read).
