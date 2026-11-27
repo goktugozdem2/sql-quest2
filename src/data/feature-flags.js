@@ -547,7 +547,7 @@ window.FEATURE_FLAGS = {
     // the quota. App only: the static pages keep today's wording. Off → nobody
     // is enrolled and holdout browsers get the quota back (the kill switch).
     // src/utils/free-quota-holdout.js; metric `free_quota_holdout`; ledger
-    // "the free-quota holdout"; enrol 2026-11-27 → 12-24, read 2027-01-01.
+    // "the free-quota holdout"; enrol 2026-11-28 → 12-25, read 2027-01-02.
     freeQuotaHoldout: true,
 
     // ── The header's Pro button (M-04, 2026-11-22) ────────────────────────
@@ -691,7 +691,7 @@ window.FEATURE_FLAGS = {
     // 2026-11-24). DARK on merge; the founder approved ON at 50/50 after
     // merge (chat, 2026-11-26). src/utils/runnable-starter.js; ledger "a
     // runnable starter in the editor"; metric runnable_starter_split.
-    runnableStarter: false,
+    runnableStarter: true,
 
     // ── The first-session tournament (2026-11-26, PR 1 of 4: the frame) ───
     // New visitors only (a browser's FIRST app open; returning browsers and

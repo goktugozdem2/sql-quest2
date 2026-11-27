@@ -368,15 +368,24 @@ export function findTopicsProblems(pageSource, facts) {
 // ---------------------------------------------------------------------------
 export const OFF_SET_LINKS = {
   'google-sql-interview': [163, 172, 84],
+  // 2026-11-25 (C5): the Wise first screen's "debug this query" item links to
+  // Debug 341, the same average-of-averages bug (src/wise-sql-interview.html).
+  // It is a Debug item, not Wise-tagged, and the button says so.
+  'wise-sql-interview': [341],
   // 2026-11-24 (C5): the first-screen "debug this query" item links to the
   // app's Debug question with the same bug (scripts/company-first-screen.mjs).
   // It is a Debug item, not Monzo-tagged, and the button says so.
   'monzo-sql-interview': [336],
+  // 2026-11-26 (C5): Amazon's first screen links Debug 334, the same
+  // COUNT(*) against COUNT(column) difference on another dataset.
+  'amazon-sql-interview': [334],
 };
 // What each page says about its off-set links (the waiver holds only while it does).
 export const OFF_SET_NOTE = {
   'google-sql-interview': /-tagged window-function challenges in the set/,
+  'wise-sql-interview': /from our Debug set, not the Wise set/,
   'monzo-sql-interview': /from our Debug set, not the Monzo set/,
+  'amazon-sql-interview': /from our Debug set, not the Amazon set/,
 };
 // The Debug items (src/data/debug-challenges.js) live outside the main bank.
 const debugIds = () => {
@@ -720,7 +729,9 @@ describe('1. no company page pairs a company with an unsourced duration, platfor
   it('is not vacuous — the exempted page does state one, and says where it comes from', () => {
     const cap = pages.find(p => SOURCED_PAGES[p.slug]);
     expect(findFormatClaims(cap.text, cap.name).length, 'the sourced page should still trip the raw rule').toBeGreaterThan(0);
-    expect(cap.text).toMatch(/does not publish the format/);
+    // Either "does not publish the format", or (Amazon from 2026-11-26, a
+    // first-party prep page) the entry's own `publishes` sentence.
+    expect(cap.text).toMatch(/does not publish the format|publishes the stages of its/);
   });
 });
 

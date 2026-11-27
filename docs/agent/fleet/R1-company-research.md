@@ -1,3 +1,15 @@
+---
+id: R1
+name: "Company interview research (what each important company actually asks)"
+owner: orchestrator
+runtime: laptop
+status: reduced
+cadence: "weekly, the seven money pages only, since 2026-11-25"
+metric: undefined  # TODO: register priority companies with a dossier < 60 days; facts cited by C1 or B3 in docs/agent/metrics.md
+writes_code: false
+version: 1.0.0
+last_changed: 2026-11-26
+---
 # R1 — Company interview research (what each important company actually asks)
 
 > **Refocused 2026-11-25 (investor 90-day plan, A09): weekly, and only for the seven money pages** — Capital One, Revolut, Wise, Monzo, Amazon, Stripe, Snowflake: refresh their sourced facts and feed C5. No new company dossiers.
@@ -59,3 +71,7 @@ Founder, 2026-11-22: "bütün önemli şirketlerin interview sorularını araşt
    - B3: a question shape the bank has no challenge for;
    - C1: a company with demand and no page.
 4. Open one docs PR and merge it yourself with `mergeone.sh`. Never skip the redaction hook.
+
+## Changelog
+
+- 1.0.0 (2026-11-26) — versioned for the skills loop: front-matter added.

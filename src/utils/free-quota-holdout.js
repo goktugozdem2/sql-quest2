@@ -42,17 +42,18 @@ export const FREE_QUOTA_ARMS = ['quota', 'holdout'];
 export const FREE_QUOTA_HOLDOUT_KEY = 'sqlquest_free_quota_holdout_v1';
 
 // The enrolment window: four weeks, read on the 7th day after it closes.
-// Fixed constants, not "from deploy": 2026-11-27 is the earliest merge train
-// (moved from 11-26 on 2026-11-26, A1's REVISE on #384). Enrolment is
-// 2026-11-27 → 2026-12-24 inclusive (end below is exclusive), the arm-balance
-// check 2026-12-03, the halfway money read 2026-12-11, the read 2027-01-01.
-// If the merge slips past 11-27, the code is simply not live until it lands —
-// move all three in one commit (and the ledger + metrics.md) to keep four
-// full weeks. A browser whose first app open is outside the window is never
-// enrolled.
-export const FREE_QUOTA_HOLDOUT_START_ISO = '2026-11-27T00:00:00Z';
-export const FREE_QUOTA_HOLDOUT_END_ISO = '2026-12-25T00:00:00Z';   // exclusive
-export const FREE_QUOTA_HOLDOUT_READ_DATE = '2027-01-01';
+// Fixed constants, not "from deploy". Moved twice: from 11-26 on 2026-11-26
+// (A1's REVISE on #384), and from 11-27 on 2026-11-27 (A0: the 11-27 start
+// had already passed before merge). Enrolment is 2026-11-28 → 2026-12-25
+// inclusive (end below is exclusive), the arm-balance check 2026-12-04, the
+// halfway money read 2026-12-12, the read 2027-01-02. If the merge slips past
+// 11-28, the code is simply not live until it lands — move all of them in one
+// commit (and the ledger + metrics.md) to keep four full weeks; the test pins
+// the start so a start already in the past fails loudly. A browser whose
+// first app open is outside the window is never enrolled.
+export const FREE_QUOTA_HOLDOUT_START_ISO = '2026-11-28T00:00:00Z';
+export const FREE_QUOTA_HOLDOUT_END_ISO = '2026-12-26T00:00:00Z';   // exclusive
+export const FREE_QUOTA_HOLDOUT_READ_DATE = '2027-01-02';
 export const FREE_QUOTA_HOLDOUT_START = Date.parse(FREE_QUOTA_HOLDOUT_START_ISO);
 export const FREE_QUOTA_HOLDOUT_END = Date.parse(FREE_QUOTA_HOLDOUT_END_ISO);
 

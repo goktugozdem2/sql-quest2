@@ -1389,6 +1389,14 @@ whose user agent contains `GoogleOther` (incl. -Image / -Video) carries
 AI-assistant signal, not a reader). Before that date they passed the filter
 (~130–170 a week from mid-October): drop them by hand with
 `((metadata #>> '{}')::jsonb->>'ua') ~* 'googleother|notebooklm'`.
+**After the merge, keep that UA filter anyway (C8, 2026-11-27).** #392 went
+live on 2026-11-26 at about 11:00 UTC. In the day that followed, the stamp
+caught NotebookLM 3 of 3 times but GoogleOther only 2 of 16. Every unstamped
+GoogleOther row lacks the `viewport` key that `track.js` has written since
+#79 (11-22), so Google's renderer runs a cached `track.js` from before #79,
+although the file is served `max-age=0, must-revalidate`. A read that
+filters only `->>'bot' IS NULL` still counts about 10–12 GoogleOther
+"people" a day. Never drop the UA rule from a person filter.
 **Still open:** landing_view carries no window size, so the 1280x1200
 crawler's landing views cannot be told apart — 214 (W1) and 295 (W0)
 landing people are Asia/Shanghai with no source. Read landing people with
@@ -3905,9 +3913,10 @@ written go 2026-11-25; design: docs/reads/returns-0926-flags-2026-11-25.md
 
 - *Person* = the `aid`. *Arm* = `free_quota_arm_assigned.arm` (`quota` or
   `holdout`), written once per browser at its first app open inside the
-  enrolment window (2026-11-27 → 2026-12-25 exclusive, i.e. first opens
-  11-27 through 12-24; fixed constants in `src/utils/free-quota-holdout.js`,
-  moved from 11-26 on 2026-11-26 because the earliest merge is 11-27). Only browsers with no
+  enrolment window (2026-11-28 → 2026-12-26 exclusive, i.e. first opens
+  11-28 through 12-25; fixed constants in `src/utils/free-quota-holdout.js`,
+  moved from 11-26 on 2026-11-26 and from 11-27 on 2026-11-27, each time
+  because the start had come before the merge). Only browsers with no
   earlier app state are assigned; every later `pro_events` row from an
   assigned browser carries `fqArm`. Read by assignment (intent to treat):
   a holdout browser that signs into an account created before the window
@@ -3942,20 +3951,20 @@ written go 2026-11-25; design: docs/reads/returns-0926-flags-2026-11-25.md
   trials and purchases the wall brings. Gap ≤ 5 points → it did not; look
   elsewhere (the 09-25 deploy's diff). In between → extend enrolment by 4
   weeks, once.
-- **Money stop (halfway read, 2 weeks into enrolment, 2026-12-11):** the
+- **Money stop (halfway read, 2 weeks into enrolment, 2026-12-12):** the
   holdout arm shows 0 trials while `quota` shows ≥ 3 → report it to the
   founder the same day (he decides whether to stop; the agent does not
   turn the flag off on its own). A dispute or refund tied to the holdout
   arm → report the same day.
-- **Arm-balance check 2026-12-03** (7 days into enrolment; written before
+- **Arm-balance check 2026-12-04** (7 days into enrolment; written before
   the data, ledger "the free-quota holdout"): over **every** bot-filtered
   browser with a `free_quota_arm_assigned` row — the query below's `arm`
   CTE, not its `assigned` column, which keeps only browsers 7 days past t0
-  and would hold almost nobody on 12-03 — the split must pass a two-sided
+  and would hold almost nobody on 12-04 — the split must pass a two-sided
   binomial test against 50/50 at p ≥ 0.01, i.e. each arm within
   ±2.58·50/√n points (n = 200 → 40.9–59.1%; n = 400 → 43.6–56.4%). A fixed
   ±5-point band would trip by chance ~16% of the time at n = 200. Needs
-  ≥ 200 assigned; if fewer on 12-03, re-run daily until 200. Fails (p <
+  ≥ 200 assigned; if fewer on 12-04, re-run daily until 200. Fails (p <
   0.01) → falsified: pause enrolment the same day (flag
   `freeQuotaHoldout` off, which returns everyone to today's quota) and
   report to the founder; investigate the hash (stored arm vs
@@ -3969,7 +3978,7 @@ written go 2026-11-25; design: docs/reads/returns-0926-flags-2026-11-25.md
          round(100.0 * count(*) / sum(count(*)) over (), 1) pct
   from arm group by arm order by arm;
   ```
-- **Read** 2027-01-01, the 7th day after enrolment ends.
+- **Read** 2027-01-02, the 7th day after enrolment ends.
 - **Cells:** the holdout sits on its own cell, first open → 7-day return,
   all devices. It nests the quota-wall tests (`quotaWallInline`,
   `modalPlansFirst` on `free_quota` asks): holdout browsers never meet the
