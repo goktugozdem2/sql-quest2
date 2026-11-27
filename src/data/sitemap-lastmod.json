@@ -1,6 +1,6 @@
 {
   "note": "Written by scripts/sitemap-lastmod.mjs. A page's date moves only when its built bytes change.",
-  "updated": "2026-11-25",
+  "updated": "2026-11-26",
   "pages": {
     "/": {
       "hash": "4db495fe086e41d4",
@@ -31,8 +31,8 @@
       "lastmod": "2026-11-25"
     },
     "/amazon-sql-interview/": {
-      "hash": "db99ba736bcba3ed",
-      "lastmod": "2026-11-25"
+      "hash": "38806be538712699",
+      "lastmod": "2026-11-26"
     },
     "/netflix-sql-interview/": {
       "hash": "c6577f4853098aa9",
@@ -59,8 +59,8 @@
       "lastmod": "2026-11-25"
     },
     "/wise-sql-interview/": {
-      "hash": "1cce32f0773cf713",
-      "lastmod": "2026-11-25"
+      "hash": "ef27e17965f9566f",
+      "lastmod": "2026-11-26"
     },
     "/apple-sql-interview/": {
       "hash": "75db0eeaca9148bd",
@@ -111,32 +111,32 @@
       "lastmod": "2026-11-25"
     },
     "/vs-datalemur/": {
-      "hash": "b0b82f8050913ad2",
-      "lastmod": "2026-11-25"
+      "hash": "cdcf82efaa54dd5e",
+      "lastmod": "2026-11-26"
     },
     "/datalemur-karsilastirma/": {
       "hash": "1bd16058afb9fda1",
       "lastmod": "2026-11-25"
     },
     "/vs-sqlbolt/": {
-      "hash": "ad7f62a8dcbd5f8f",
-      "lastmod": "2026-11-25"
+      "hash": "2c5c386f5fdd5a1c",
+      "lastmod": "2026-11-26"
     },
     "/vs-sqlzoo/": {
-      "hash": "1d46b8d1454dfe89",
-      "lastmod": "2026-11-25"
+      "hash": "211ffdde713db03a",
+      "lastmod": "2026-11-26"
     },
     "/vs-stratascratch/": {
-      "hash": "40883678ea3e7ae3",
-      "lastmod": "2026-11-25"
+      "hash": "736e24491f9e24b0",
+      "lastmod": "2026-11-26"
     },
     "/vs-leetcode-sql/": {
-      "hash": "c5921f3e9564cf7c",
-      "lastmod": "2026-11-25"
+      "hash": "1569b286927a7659",
+      "lastmod": "2026-11-26"
     },
     "/vs-hackerrank-sql/": {
-      "hash": "3f9e1bca008fb59e",
-      "lastmod": "2026-11-25"
+      "hash": "8160db9522905114",
+      "lastmod": "2026-11-26"
     },
     "/sql-practice-comparison/": {
       "hash": "039ed3c091a407cf",
@@ -183,8 +183,8 @@
       "lastmod": "2026-11-25"
     },
     "/sql-exercises/": {
-      "hash": "1878bf55af23e18e",
-      "lastmod": "2026-11-25"
+      "hash": "3142964bb212e1d8",
+      "lastmod": "2026-11-26"
     },
     "/after-the-sql-course/": {
       "hash": "92fefe1696d884af",
