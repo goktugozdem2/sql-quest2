@@ -76,7 +76,7 @@ export const TOURNAMENT_ARMS = Object.freeze([
     endDate: null,
     armVersion: 1,
     round: 1,
-    built: false,
+    built: true,   // 2026-11-26: arm B's PR (src/utils/single-path.js)
   }),
   Object.freeze({
     id: 'D_interview_sprint',

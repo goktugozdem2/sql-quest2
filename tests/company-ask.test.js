@@ -111,7 +111,7 @@ describe('the app wiring (source guards)', () => {
   });
 
   it('is inline in the success panel, not a modal', () => {
-    expect(app).toMatch(/\{renderCompanyAsk\(\)\}\s*\n\s*\{\/\* Review ask/);
+    expect(app).toMatch(/\{!pathUi\.suppressAsks && renderCompanyAsk\(\)\}\s*\n\s*\{\/\* Review ask/);
     expect(block).not.toMatch(/fixed inset-0|role="dialog"|aria-modal/);
   });
 
