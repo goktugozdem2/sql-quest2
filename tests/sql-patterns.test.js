@@ -211,7 +211,10 @@ describe('wiring', () => {
     const slugSet = new Set(SQL_PATTERNS.map(p => p.slug));
     for (const s of Object.values(PATTERN_FOR_MOCK_QUESTION)) expect(slugSet.has(s)).toBe(true);
     for (const id of Object.keys(PATTERN_FOR_MOCK_QUESTION)) expect(mocks.some(m => m.questions.some(q => q.id === id)), id).toBe(true);
-    expect(app).toContain("import { PATTERN_FOR_MOCK_QUESTION, SQL_PATTERNS } from './data/sql-patterns.js';");
+    // The app reads the map through the generated slice of this registry
+    // (2026-11-27, bundle slim); tests/bundle-slim.test.js binds the slice
+    // to PATTERN_FOR_MOCK_QUESTION and SQL_PATTERNS here.
+    expect(app).toContain("import { SOURCED_COMPANY_NAMES, SQL_PATTERN_LINKS as SQL_PATTERNS, PATTERN_FOR_MOCK_QUESTION } from './data/app-data-slices.js';");
     for (const tid of ['interview-pattern-link', 'interview-results-pattern-link', 'study-pattern-link']) expect(app).toContain(`data-testid="${tid}"`);
     expect(app.match(/PATTERN_FOR_MOCK_QUESTION\[currentQ\.id\]/g)).toHaveLength(2);
   });
