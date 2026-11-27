@@ -369,3 +369,31 @@ describe('the re-plan keeps N', () => {
     expect(fit).toBeLessThan(solve.indexOf('if (replanned) next = { ...next, plan: replanned };'));
   });
 });
+
+// Walk fix round 2 (2026-11-26): once the tabs were back, the Learning Path
+// tab stacked "Pick a goal to get started", Focus Tracks and the lesson path
+// under the sprint line.
+describe('one goal on screen in D, and D runs the one-layer queue', () => {
+  it('with a sprint set, the goal picker and Focus Tracks hide; never before the sprint, in B or in control', () => {
+    const { plan } = planFor(coSprint());
+    const set = normalizePathState({ ...coSprint(), plan });
+    expect(pathUiFlags({ behaviour: SPRINT_ARM, state: set }).hideGoalPicker).toBe(true);
+    expect(pathUiFlags({ behaviour: SPRINT_ARM, state: emptyPathState() }).hideGoalPicker).toBe(false);
+    const bDone = normalizePathState({ ...emptyPathState(), ladder: { ...emptyPathState().ladder, done: true, levelId: 'basics' }, plan });
+    expect(pathUiFlags({ behaviour: SINGLE_PATH_ARM, state: bDone }).hideGoalPicker).toBe(false);
+    expect(pathUiFlags({ behaviour: null, state: set }).hideGoalPicker).toBe(false);
+  });
+  it('app.jsx: both blocks read the switch', () => {
+    expect(APP).toContain('{!coachState?.goalId && !pathUi.hideGoalPicker && (');
+    const ft = APP.indexOf("i18n_t('coach', 'focusTracks')");
+    const gate = APP.lastIndexOf('{!pathUi.hideGoalPicker && (', ft);
+    expect(gate).toBeGreaterThan(0);
+    expect(ft - gate).toBeLessThan(600);
+  });
+  it('D: the one-layer queue runs for the first session and ends with it', () => {
+    const { plan } = planFor(coSprint());
+    const set = normalizePathState({ ...coSprint(), plan, sessionLastAt: 1 });
+    expect(pathUiFlags({ behaviour: SPRINT_ARM, state: set }).layerQueue).toBe(true);
+    expect(pathUiFlags({ behaviour: SPRINT_ARM, state: { ...set, firstSessionEndedAt: 1 } }).layerQueue).toBe(false);
+  });
+});

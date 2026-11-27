@@ -153,7 +153,7 @@ export function pathUiFlags({ behaviour = null, state = null, hasChallenge = fal
     arm: null, active: false, ladderActive: false, hideTabs: false, extendShell: false,
     showPlanLine: false, suppressAsks: false, suppressNextStrip: false, sprintSetup: false,
     starterPrefill: false, companyDirect: false, holdLayers: false, fixedRunBar: false, sprint: false,
-    holdSignupAsks: false, hideGuestBanner: false, suppressTour: false, hideCoachPlan: false, layerQueue: false,
+    holdSignupAsks: false, hideGuestBanner: false, suppressTour: false, hideCoachPlan: false, hideGoalPicker: false, layerQueue: false,
   };
   if (!isPathArm(behaviour)) return off;
   const s = state && state.v ? state : normalizePathState(state);
@@ -211,6 +211,9 @@ export function pathUiFlags({ behaviour = null, state = null, hasChallenge = fal
     // One plan on screen: while the sprint line shows, the Coach's own
     // "Your {company} plan" card stays away (walk fix D3).
     hideCoachPlan: setUp && !!s.plan,
+    // The sprint IS the goal: no "Pick a goal" and no Focus Tracks beside it
+    // on the Learning Path tab (walk fix round 2).
+    hideGoalPicker: setUp && !!s.plan,
     extendShell: !tabsOpen,
     showPlanLine: setUp && !!s.plan,
     suppressAsks: !tabsOpen,
