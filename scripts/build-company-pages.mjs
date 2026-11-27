@@ -380,8 +380,8 @@ export function withProvenance(html, { slug, name }) {
 export function formatSection(d, { accessed, role = null, slug = null } = {}) {
   const srcKeys = Object.keys(d.sources);
   const cite = keys => keys.length
-    ? keys.map(k => `<a href="#src-${k}" style="color:#8b98ab;text-decoration:none;font-size:11px;vertical-align:super;">[${srcKeys.indexOf(k) + 1}]</a>`).join('')
-    : '<span style="color:#8b98ab;font-size:11px;"> (no reliable source)</span>';
+    ? keys.map(k => `<a href="#src-${k}" style="color:#8b98ab;text-decoration:none;font-size:12px;vertical-align:super;">[${srcKeys.indexOf(k) + 1}]</a>`).join('')
+    : '<span style="color:#8b98ab;font-size:12px;"> (no reliable source)</span>';
   const rows = d.format.map(r => `      <tr><th scope="row" style="text-align:left;vertical-align:top;padding:14px 16px;color:#e2e8f0;font-weight:700;font-size:14px;white-space:nowrap;border-bottom:1px solid rgba(255,255,255,.06);">${esc(r[0])}</th><td style="padding:14px 16px;color:#94a3b8;font-size:14px;line-height:1.7;border-bottom:1px solid rgba(255,255,255,.06);">${esc(r[1])}${cite(r[2])}</td></tr>`).join('\n');
   const list = srcKeys.map((k, i) => {
     const [label, href, date] = d.sources[k];
@@ -447,7 +447,7 @@ export function caseRoundLine(d, slug, mock) {
   if (!keys.length || keys.some(k => !srcKeys.includes(k))) {
     throw new Error(`[company-pages] ${d.name}: caseRound must cite the page's own sources`);
   }
-  const cite = keys.map(k => `<a href="#src-${k}" style="color:#8b98ab;text-decoration:none;font-size:11px;vertical-align:super;">[${srcKeys.indexOf(k) + 1}]</a>`).join('');
+  const cite = keys.map(k => `<a href="#src-${k}" style="color:#8b98ab;text-decoration:none;font-size:12px;vertical-align:super;">[${srcKeys.indexOf(k) + 1}]</a>`).join('');
   return `<!-- case-round:start -->
   <p data-section="case-round" style="font-size:14px;color:#94a3b8;margin-top:18px;max-width:760px;line-height:1.75;padding:14px 18px;border:1px solid rgba(124,58,237,.22);border-left:3px solid #7c3aed;border-radius:10px;background:rgba(124,58,237,.05);">${esc(d.caseRound.note)}${cite} ${CASE_ROUND_LINE} &mdash; <a href="/app/?interview=${CASE_ROUND_MOCK_ID}&amp;src=${slug}" data-track="cta_case_round" style="color:#c084fc;">practise it here (${esc(free)})</a>.</p>
 <!-- case-round:end -->`;
@@ -499,8 +499,8 @@ export function renderPage(key, d, f) {
   const faqs = faqFor(key, d, f);
   const srcKeys = Object.keys(d.sources);
   const cite = keys => keys.length
-    ? keys.map(k => `<a href="#src-${k}" style="color:#8b98ab;text-decoration:none;font-size:11px;vertical-align:super;">[${srcKeys.indexOf(k) + 1}]</a>`).join('')
-    : '<span style="color:#8b98ab;font-size:11px;"> (no reliable source)</span>';
+    ? keys.map(k => `<a href="#src-${k}" style="color:#8b98ab;text-decoration:none;font-size:12px;vertical-align:super;">[${srcKeys.indexOf(k) + 1}]</a>`).join('')
+    : '<span style="color:#8b98ab;font-size:12px;"> (no reliable source)</span>';
   const shapes = d.shapes.map(s => `      <li style="margin:0 0 12px;line-height:1.7;">${esc(s[0])}${cite([s[1]])}</li>`).join('\n');
   // `topicsLabel` (2026-11-23): an entry whose topics carry no counts, or come
   // from practice guides rather than reports, names what the list is and drops
@@ -641,7 +641,7 @@ ${readinessBlock({ slug: key, name: d.name, src: slug })}
 const TOPICS=[
 ${topicsJs}
 ];
-document.getElementById('topic-cards').innerHTML=TOPICS.map(t=>\`<div class="tc"><p class="fd" style="font-size:28px;font-weight:800;color:\${t[3]}">\${t[0]}</p><p style="font-size:13px;font-weight:700;color:#e2e8f0;margin-top:4px">\${t[1]}</p><p style="font-size:11px;color:#8b98ab;margin-top:6px;line-height:1.5">\${t[2]}</p></div>\`).join('');
+document.getElementById('topic-cards').innerHTML=TOPICS.map(t=>\`<div class="tc"><p class="fd" style="font-size:28px;font-weight:800;color:\${t[3]}">\${t[0]}</p><p style="font-size:13px;font-weight:700;color:#e2e8f0;margin-top:4px">\${t[1]}</p><p style="font-size:12px;color:#8b98ab;margin-top:6px;line-height:1.5">\${t[2]}</p></div>\`).join('');
 
 // GENERATED FROM THE BANK — real SQL Quest challenges tagged ${d.name}, Easy → Hard.
 const FQ=[
