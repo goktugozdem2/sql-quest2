@@ -5860,3 +5860,26 @@ thresholds. Defined 2026-11-26, before the code.
 - **Splits:** segment (interview-target vs other), device band, `fqArm`.
 - **Report n always.** At ~8 arm-B people a day, rung-level rows under 20
   are directional only.
+
+## `ai_limit_ask`
+
+The guest's signup ask when the tutor runs out (`ai-tutor` 429 with
+`plan: 'guest'`, five calls a day). Defined 2026-11-27 with the fix that
+first counts it (A3; `docs/reads/errors-2026-11-27.md`). Before that the
+ask opened with no event, so there is no before: never read across the
+deploy.
+
+- **Event.** `signup_prompt_shown {promptReason: 'ai_limit'}` (sent by
+  `triggerSignupPrompt`; at most one per open of the modal).
+- **Coverage check.** Against `function_edge_logs` for `ai-tutor` with
+  status 429 from a guest: each guest 429 day with a call through the
+  inline Help or a lesson should carry one `ai_limit` row for that person.
+  A 429 with no row means the ask did not open (the modal was already up,
+  or the caller is not a guest in the client).
+- **Conversion.** Share of `ai_limit` askers (by
+  `coalesce(meta->>'aid', username)`) with `signup_completed` within 24 h,
+  humans only (fleet README, Data). n will be tiny: read the people, do
+  not compute a rate under 10.
+- **Traps.** `signup_prompt_shown` also carries `third_solve`,
+  `first_challenge` and other reasons; always filter by `promptReason`.
+  The live nudge's own 429 (`#nudge` bucket) never opens this ask.

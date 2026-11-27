@@ -27,6 +27,25 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### The tutor-limit signup ask is counted and says why (A3, 2026-11-27)
+
+- **Claimed** 2026-11-27 · **Shipped** on merge (no flag: a copy and
+  instrumentation fix inside an existing ask) · **Read** 2026-12-18.
+- **Metric.** `ai_limit_ask` (docs/agent/metrics.md).
+- **Baseline.** 0 `signup_prompt_shown {ai_limit}` rows ever: the ask
+  opened without an event. In the 24 h to 11-27 09:25 UTC, `ai-tutor`
+  answered 429 four times, two of them to a guest at 0 solves after four
+  "show me the full solution" clicks on challenge 108; that guest saw
+  "You're on fire! You've earned 0 XP and solved 0 challenges!".
+- **Target.** By 12-18, every guest `ai-tutor` 429 seen in
+  `function_edge_logs` through the inline Help or a lesson has a matching
+  `ai_limit` row for that person (coverage ≥ 90%), and no `ai_limit` asker
+  sees the solve-count copy.
+- **Falsified if** guest 429s appear after the deploy with no `ai_limit`
+  rows (then `isGuest` in the client disagrees with the server's plan, and
+  the ask silently stopped opening: revert to the direct open and re-read).
+- **Not claimed.** A signup lift. n is a few people a week.
+
 ### the first-session tournament (`firstSessionTournament`, 3 arms; arm B = the single path)
 
 - **Claimed** 2026-11-26 (planner lane, plan only) · **Ships** dark across four PRs (plan §8) · **Flip** no earlier than **2026-12-10**, after the plan's §2.4 gates and the founder's go on the §7 money strings · **First read** the Friday on which every challenger has ≥ 150 eligible people. At ~23 human openers a day that is ~2027-01-08 with three arms; the hard latest for the first elimination is **2027-01-22** (the 6-week fallback).

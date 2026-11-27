@@ -21896,9 +21896,12 @@ Do NOT force the sector if the user asks a generic question (e.g. "what does GRO
         localStorage.setItem('sqlquest_ai_daily', JSON.stringify({ date: today, used: data.used, plan: data.plan }));
 
         if (data.plan === 'guest') {
-          // Guest hit limit — prompt sign-up for more calls
-          setSignupPromptReason('ai_limit');
-          setShowSignupPrompt(true);
+          // Guest hit limit — prompt sign-up for more calls. Through
+          // triggerSignupPrompt so the ask is counted (`signup_prompt_shown
+          // {promptReason:'ai_limit'}`); until 2026-11-27 it opened the modal
+          // directly, with no event, under the "You're on fire!" copy — shown
+          // to a stuck guest with 0 solves (A3, docs/reads/errors-2026-11-27.md).
+          triggerSignupPrompt('ai_limit');
           return `**AI Limit Reached**\n\nCreate a free account to get ${TUTOR_FREE_DAILY_LIMIT} AI tutor calls per day!`;
         }
         if (data.plan === 'free') {
@@ -29861,14 +29864,16 @@ RULES:
                 {signupPromptReason === 'pro_purchase' ? '👑' : signupPromptReason === 'first_challenge' ? '🎉' : '💪'}
               </div>
               <h2 className="text-2xl font-bold text-[#F2F0EA] mb-2">
-                {signupPromptReason === 'pro_purchase' ? i18n_t('pro', 'payGuestSignupTitle') : signupPromptReason === 'first_challenge' ? 'Great job!' : 'You\'re on fire!'}
+                {signupPromptReason === 'pro_purchase' ? i18n_t('pro', 'payGuestSignupTitle') : signupPromptReason === 'first_challenge' ? 'Great job!' : signupPromptReason === 'ai_limit' ? 'More AI help with a free account' : 'You\'re on fire!'}
               </h2>
               <p className="text-gray-300">
                 {signupPromptReason === 'pro_purchase'
                   ? i18n_t('pro', 'payGuestSignupBody')
                   : signupPromptReason === 'first_challenge'
                     ? 'You just solved your first challenge!'
-                    : `You've earned ${xp} XP and solved ${solvedChallenges.size} challenges!`}
+                    : signupPromptReason === 'ai_limit'
+                      ? `Guest AI help is used up for today. A free account gets ${TUTOR_FREE_DAILY_LIMIT} tutor calls a day.`
+                      : `You've earned ${xp} XP and solved ${solvedChallenges.size} challenges!`}
               </p>
             </div>
             
