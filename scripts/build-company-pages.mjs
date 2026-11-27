@@ -39,7 +39,7 @@ import { questionSlugs, loadQuestionBank } from './question-slugs.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
-import { withFirstScreen, FIRST_SCREENS, BLOCK_RE as FIRST_SCREEN_RE } from './company-first-screen.mjs';
+import { withFirstScreen, FIRST_SCREENS, pageData, BLOCK_RE as FIRST_SCREEN_RE } from './company-first-screen.mjs';
 import { COMPANY_INTERVIEWS, NEW_COMPANY_TAGS, SOURCED_FORMATS } from '../src/data/company-interviews.js';
 import { SKILL_TO_RADAR, mapTopicToSkill, CANONICAL_SKILLS } from '../src/utils/skill-calc.js';
 import { isFreePreview } from '../src/utils/challenge-order.js';
@@ -718,80 +718,86 @@ export function withCurrentSourcesPointer(html) {
 // The 23 older company pages keep their copy (several rank and convert); they
 // get the template's readiness/Skillmap block after their question cards and
 // the topic-links strip before the related-companies strip. Idempotent.
-export function injectModules(bank) {
-  const done = [];
-  for (const f of fs.readdirSync(path.join(ROOT, 'src')).filter(x => /-sql-interview\.html$/.test(x))) {
-    const key = f.replace(/-sql-interview\.html$/, '');
-    if (COMPANY_INTERVIEWS[key]) continue;
-    if (SKIP_UNTIL_READ.has(key)) continue;
-    const file = path.join(ROOT, 'src', f);
-    // The first-screen block (if any) comes off first and goes back on last
-    // (main), so withProvenance's "next section after the hero" never lands
-    // inside it.
-    let html = fs.readFileSync(file, 'utf8').replace(FIRST_SCREEN_RE, '');
-    const title = (html.match(/<title>([^<]*)<\/title>/) || [])[1] || '';
-    const name = ((title.match(/^(.+?)\s+SQL\b/) || [])[1] || key).trim();
-    const fx = facts(bank, name);
-    html = html.replace(/<!-- company-readiness:start -->[\s\S]*?<!-- company-readiness:end -->\n*/, '');
-    const faqAnchor = html.indexOf('<section id="faq"');
-    if (faqAnchor < 0) continue;
-    html = html.slice(0, faqAnchor).replace(/\n+$/, '\n\n') + readinessBlock({ slug: key, name, src: `${key}-sql-interview` }) + '\n\n' + html.slice(faqAnchor);
-    html = withTopicPractice(html, { slug: key, name, dist: fx.dist, ordered: fx.ordered, bank: fx.bank });
-    html = withSourcedFormat(html, key);
-    html = withProvenance(html, { slug: key, name });
-    html = withHeroCta(html, { name, first: fx.first });
-    html = withCurrentSourcesPointer(html);
-    fs.writeFileSync(file, html);
-    done.push(key);
-  }
-  return done;
+/** One older page's html after the shared modules, or the same html when it
+ *  has no FAQ section to anchor on (then the file is not written). */
+export function olderPage(raw, key, bank) {
+  // The first-screen block (if any) comes off first and goes back on last
+  // (pageOutputs), so withProvenance's "next section after the hero" never
+  // lands inside it.
+  let html = raw.replace(FIRST_SCREEN_RE, '');
+  const title = (html.match(/<title>([^<]*)<\/title>/) || [])[1] || '';
+  const name = ((title.match(/^(.+?)\s+SQL\b/) || [])[1] || key).trim();
+  const fx = facts(bank, name);
+  html = html.replace(/<!-- company-readiness:start -->[\s\S]*?<!-- company-readiness:end -->\n*/, '');
+  const faqAnchor = html.indexOf('<section id="faq"');
+  if (faqAnchor < 0) return raw;
+  html = html.slice(0, faqAnchor).replace(/\n+$/, '\n\n') + readinessBlock({ slug: key, name, src: `${key}-sql-interview` }) + '\n\n' + html.slice(faqAnchor);
+  html = withTopicPractice(html, { slug: key, name, dist: fx.dist, ordered: fx.ordered, bank: fx.bank });
+  html = withSourcedFormat(html, key);
+  html = withProvenance(html, { slug: key, name });
+  html = withHeroCta(html, { name, first: fx.first });
+  html = withCurrentSourcesPointer(html);
+  return html;
 }
 
-/** The provenance note on the generated pages too — renderPage rewrites them
- *  whole each run, so this has to come after that loop. */
-export function injectProvenance() {
-  const done = [];
+/** The older company pages the run touches (not generated, not skipped). */
+export const olderPageKeys = () => fs.readdirSync(path.join(ROOT, 'src'))
+  .filter(x => /-sql-interview\.html$/.test(x))
+  .map(f => f.replace(/-sql-interview\.html$/, ''))
+  .filter(key => !COMPANY_INTERVIEWS[key] && !SKIP_UNTIL_READ.has(key));
+
+/** One generated page as the run writes it: the template, the committed
+ *  related-companies strip kept (build-company-crosslinks.mjs owns it), then
+ *  the provenance note. The first screen is added by pageOutputs. */
+export function generatedPage(key, d, f, old) {
+  let html = renderPage(key, d, f);
+  if (old != null) {
+    const m = old.match(/<!-- related-companies:start -->[\s\S]*?<!-- related-companies:end -->\n?/);
+    if (m) html = html.replace('<section class="cs"', `${m[0]}<section class="cs"`);
+  }
+  return withProvenance(html, { slug: key, name: d.name });
+}
+
+/**
+ * Every company page this generator owns, as the run would write it, in
+ * memory: Map<key, { file, before, after }>. The first-screen block goes on
+ * last, from FIRST_SCREENS only — a hand-written block is stripped
+ * (olderPage) and comes back only if the map has an entry for that page.
+ * tests/company-template.test.js asserts after === before for every page.
+ */
+export function pageOutputs(bank = loadBank()) {
+  const out = new Map();
   for (const [key, d] of Object.entries(COMPANY_INTERVIEWS)) {
     const file = path.join(ROOT, 'src', `${key}-sql-interview.html`);
-    if (!fs.existsSync(file)) continue;
-    fs.writeFileSync(file, withProvenance(fs.readFileSync(file, 'utf8'), { slug: key, name: d.name }));
-    done.push(key);
+    const before = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : null;
+    const f = facts(bank, d.name);
+    out.set(key, { file, before, after: withFirstScreen(generatedPage(key, d, f, before), key, f) });
   }
-  return done;
+  for (const key of olderPageKeys()) {
+    const file = path.join(ROOT, 'src', `${key}-sql-interview.html`);
+    const before = fs.readFileSync(file, 'utf8');
+    let after = olderPage(before, key, bank);
+    const d = pageData(key);
+    if (FIRST_SCREENS[key] && d) after = withFirstScreen(after, key, facts(bank, d.name));
+    out.set(key, { file, before, after });
+  }
+  return out;
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   const added = mergeTags();
-  const bank = loadBank();
-  for (const [key, d] of Object.entries(COMPANY_INTERVIEWS)) {
-    const f = facts(bank, d.name);
-    const file = path.join(ROOT, 'src', `${key}-sql-interview.html`);
-    let html = renderPage(key, d, f);
-    // Keep an existing related-companies strip (the cross-link generator owns
-    // it and inserts it before <section class="cs">).
-    if (fs.existsSync(file)) {
-      const old = fs.readFileSync(file, 'utf8');
-      const m = old.match(/<!-- related-companies:start -->[\s\S]*?<!-- related-companies:end -->\n?/);
-      if (m) html = html.replace('<section class="cs"', `${m[0]}<section class="cs"`);
-    }
-    fs.writeFileSync(file, html);
-    console.log(`[company-pages] ${key}: ${f.n} tagged (E${f.easy}/M${f.medium}/H${f.hard}, ${f.previews} Hard previews)`);
-  }
   console.log(`[company-pages] ${added} new tags merged`);
-  const injected = injectModules(loadBank());
-  console.log(`[company-pages] shared modules on ${injected.length} older pages`);
-  const prov = injectProvenance();
-  console.log(`[company-pages] provenance note on ${injected.length + prov.length} pages (${SOURCED_SLUGS.size} sourced)`);
-  // The first-screen block (scripts/company-first-screen.mjs), last: it sits
-  // right under the hero, ahead of the provenance note.
-  const fsBank = loadBank();
-  // Older pages with a first screen (Amazon, 2026-11-26) take it the same way.
-  const older = Object.keys(FIRST_SCREENS).filter(k => !COMPANY_INTERVIEWS[k] && SOURCED_FORMATS[k]).map(k => [k, SOURCED_FORMATS[k]]);
-  for (const [key, d] of [...Object.entries(COMPANY_INTERVIEWS), ...older]) {
-    const file = path.join(ROOT, 'src', `${key}-sql-interview.html`);
-    if (!fs.existsSync(file)) continue;
-    const before = fs.readFileSync(file, 'utf8');
-    const after = withFirstScreen(before, key, facts(fsBank, d.name));
-    if (after !== before) { fs.writeFileSync(file, after); console.log(`[company-pages] first screen on ${key}`); }
+  const bank = loadBank();
+  for (const d of Object.values(COMPANY_INTERVIEWS)) {
+    const f = facts(bank, d.name);
+    console.log(`[company-pages] ${d.name}: ${f.n} tagged (E${f.easy}/M${f.medium}/H${f.hard}, ${f.previews} Hard previews)`);
   }
+  let written = 0;
+  for (const [key, { file, before, after }] of pageOutputs(bank)) {
+    if (after === before) continue;
+    fs.writeFileSync(file, after);
+    written++;
+    console.log(`[company-pages] wrote ${key}`);
+  }
+  console.log(`[company-pages] ${written} page(s) changed; first screens: ${Object.keys(FIRST_SCREENS).join(', ')}`);
 }
