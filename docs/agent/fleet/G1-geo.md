@@ -1,3 +1,15 @@
+---
+id: G1
+name: "GEO (generative engine optimization): being found by AI tools"
+owner: orchestrator
+runtime: laptop
+status: active
+cadence: "weekly (Wed); Perplexity monthly via the founder"
+metric: [ai_mention_share, ai_landings_month]
+writes_code: true
+version: 1.0.0
+last_changed: 2026-11-26
+---
 # G1 — GEO (generative engine optimization): being found by AI tools
 
 **Lane:** whether ChatGPT, Gemini, Perplexity, Copilot and Claude name and cite
@@ -97,3 +109,21 @@ Run the same buyer questions every week, in English unless marked:
   scraping loops and no automation around a sign-in or a CAPTCHA. If an
   engine asks for a sign-in or a CAPTCHA, stop on that engine and note it.
 - A `noop` week is fine: report the table and change nothing.
+
+## Hard rules for a code lane (skills loop, 2026-11-26)
+
+- **Funnel-step change ⇒ dark flag.** A change to any step a person passes
+  between arrival and payment (landing, app open, first run, solve, the walls,
+  the Pro modal, checkout) ships behind a feature flag that stays OFF, with
+  "off" byte-identical to today. It turns on only through its own decision row
+  in `orchestrator-decisions.md`; an A/B ships OFF too, and its 50/50 flip is
+  that row. (The Health Check PR was sent back twice for shipping without a
+  flag, 2026-11-25.)
+- **Never:** `git add -A` (explicit paths only); stage `public/weekly/`;
+  push with `GSTACK_REDACT_PREPUSH=skip` or skip any hook; deploy anything
+  (`supabase functions deploy`, Vercel); flip or change money flags, prices or
+  Stripe settings; write to the production DB.
+
+## Changelog
+
+- 1.0.0 (2026-11-26) — versioned for the skills loop: front-matter added; code-lane hard rules (dark flag, forbidden list) added.
