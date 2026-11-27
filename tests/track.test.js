@@ -530,3 +530,59 @@ describe('src/track.js — crawler fingerprints by window size', () => {
     expect(ids.sort()).toEqual(SOFT_FINGERPRINTS.map(f => f.id).filter(id => id !== 'refspam').sort());
   });
 });
+
+// 2026-11-25 (C8, PR #391): Google's non-search fetchers name themselves in
+// the user agent but carry no 'bot', so ~130–170 landing_view rows a week
+// counted as people. They are stamped, never dropped, and NotebookLM keeps
+// its own id so it stays countable as an AI-assistant signal.
+describe('src/track.js — Google\'s non-search fetchers are stamped, not dropped', () => {
+  const GOOGLE_OTHER_UA = 'Mozilla/5.0 (Linux; Android 6.0.1; Nexus 5X Build/MMB29P) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.6778.204 Mobile Safari/537.36 (compatible; GoogleOther)';
+  const GOOGLE_OTHER_IMAGE_UA = 'GoogleOther-Image/1.0';
+  const NOTEBOOKLM_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Google-NotebookLM';
+
+  it('stamps GoogleOther `bot: google_other` and still sends the row', () => {
+    for (const ua of [GOOGLE_OTHER_UA, GOOGLE_OTHER_IMAGE_UA]) {
+      const view = landingViewOf(runTracker({ userAgent: ua }).calls);
+      expect(view, `${ua}: stamped, never dropped`).toBeTruthy();
+      expect(metaOf(view).bot, ua).toBe('google_other');
+      expect(metaOf(view).ua, ua).toBe(ua.slice(0, 160));
+    }
+  });
+
+  it('stamps Google-NotebookLM `bot: notebooklm` — its own id, not google_other', () => {
+    const view = landingViewOf(runTracker({ userAgent: NOTEBOOKLM_UA }).calls);
+    expect(view, 'stamped, never dropped').toBeTruthy();
+    expect(metaOf(view).bot).toBe('notebooklm');
+  });
+
+  it('the agent stamp outranks a window-size fingerprint', () => {
+    const view = landingViewOf(runTracker({ userAgent: GOOGLE_OTHER_UA, innerWidth: 800, innerHeight: 600 }).calls);
+    expect(metaOf(view).bot).toBe('google_other');
+  });
+
+  it('a later event from the same fetcher carries the stamp too', () => {
+    const run = runTracker({ userAgent: NOTEBOOKLM_UA });
+    run.fire('scroll');
+    const engaged = run.calls.find(c => c.body.event === 'landing_engaged');
+    expect(engaged).toBeTruthy();
+    expect(metaOf(engaged).bot).toBe('notebooklm');
+  });
+
+  it('a normal Chrome stays unstamped', () => {
+    for (const ua of [
+      REAL_UA,
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+    ]) {
+      const view = landingViewOf(runTracker({ userAgent: ua }).calls);
+      expect(view, ua).toBeTruthy();
+      expect(metaOf(view), ua).not.toHaveProperty('bot');
+    }
+  });
+
+  it('neither agent is caught by isBot() — they are stamped, not hard-dropped', () => {
+    const m = /return (\/bot\|crawl[^\n]*\/i)\s*\n?\s*\.test\(navigator\.userAgent/.exec(trackSource);
+    expect(m, 'isBot() regex in src/track.js').toBeTruthy();
+    const re = new Function(`return ${m[1]};`)();
+    for (const ua of [GOOGLE_OTHER_UA, GOOGLE_OTHER_IMAGE_UA, NOTEBOOKLM_UA]) expect(re.test(ua), ua).toBe(false);
+  });
+});
