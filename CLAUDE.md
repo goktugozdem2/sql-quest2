@@ -995,6 +995,22 @@ URLs filled, brand icon is the bolt, brand colour #FFE34D.
   metadata. The Stripe endpoint must subscribe to `setup_intent.setup_failed`
   (dashboard, founder).
 
+### The first-session tournament — the frame (2026-11-26, dark)
+
+- Plan `docs/plans/first-session-tournament-2026-11-26.md`; metric
+  `first_session_tournament`. New visitors only, split by aid over the
+  ACTIVE arms of `src/data/tournament-arms.js` (the one registry: app,
+  tests and `scripts/tournament-read.sql` read it). Enrolment runs at
+  module load right after the holdout's (`TOURNAMENT_RECORD`,
+  `sqlquest_tournament_v1`), reusing `hasPriorAppUse`; a stored record
+  always wins. `tournament_assigned` once; `tArm` / `tArmV` on every row.
+- Arm UI reads `tournamentBehaviourNow()` (above the early returns). An arm
+  runs A's behaviour until its registry entry says `built: true`; only then
+  does `tournamentSupersedesNow()` take it out of firstScreen,
+  companyDirect, runnableStarter and mobileRunBar. Retire an arm by status,
+  never by deleting it, and mirror any registry change in the read's
+  `tournament-registry` VALUES (`tests/tournament-read.test.js`).
+
 ### The free quota — the deep-link leak and the road back (2026-10-02)
 
 - A `/app/?challenge=` link used to open the challenge 100 ms after starting

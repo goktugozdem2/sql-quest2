@@ -5881,7 +5881,8 @@ arm changes behaviour.
 
 - **Population.** People with a `tournament_assigned` row, one per person
   (the first, by `created_at`), by `arm` **and** `armVersion`. Never pool
-  across versions, or across a change of `TOURNAMENT_SLOTS`.
+  across versions, or across a change of `TOURNAMENT_SLOTS`; inside a
+  stratum, never across a change of its `weightsVersion`.
   - Person = `coalesce(((metadata #>> '{}')::jsonb)->>'aid', username)`.
   - Humans only: the exclusion block of `scripts/scorecard-weekly.sql`
     (#387), every rule, applied to the person's rows at any time.
@@ -5912,13 +5913,59 @@ arm changes behaviour.
     Baseline 23.3%.
   - **`second_session_7d`:** any non-landing row on a later UTC day than
     t0, within 7 days. Baseline 16.0%.
+- **Strata (2026-11-26, founder: "kişinin profilini anlamadan onu bir
+  gruba alamayız. profile göre gruba almalıyız").** The app reads a
+  profile at the first open (`buildVisitorProfile`, src/utils/tournament.js:
+  door, company, interview-target, device, country if cached, price
+  region, language, timezone bucket, landing-before, readiness band; no
+  PII), the profile puts the person in ONE of four strata, and the arm is
+  drawn at random INSIDE the stratum (FNV + murmur3 over
+  `${aid}:first_session_tournament_v1:${stratum}`, the stratum's weights).
+  The arm is never chosen from the profile — that would make arm and
+  profile one variable. `tournament_assigned` carries `stratum`, `profile`,
+  `weights`, `weightsVersion`, `draw` and `reason` (a sentence: "interview-
+  target (Capital One page) · desktop → stratum IT-D; equal weights A/B/D;
+  hash draw 0.41 → B").
+  - **IT-D / IT-M / NI-D / NI-M**: interview-target (a company page, a
+    `?company=` link, the readiness test or its stored result, the Capital
+    One blog — #409's entry definition, read from the URL before the app
+    stamps `arrivalSrc`) × desktop (or an unreadable device) / phone or
+    tablet. Four only: ~23 new people a day.
+  - **Expected volume** (first app openers 2026-10-05 → 11-22, cheap human
+    filter, scaled to #409's ~161 a week): IT-D ~28 a week, IT-M ~5, NI-D
+    ~116, NI-M ~12. Per arm at three arms: ~9, ~1.6, ~39, ~4 a week.
+  - A row written before the profile existed is placed by its arrival door
+    and viewport band (the read's cohort block).
+- **Per-stratum read** (query 4 of the read file + `tournament-posteriors.mjs
+  --strata`): every stratum × arm, at the stratum's current
+  `weightsVersion`, with P(best in stratum). **Elimination and promotion
+  stay pooled** (no stratum alone reaches 150 per arm in time). Once any
+  stratum is routed, the pool is **post-stratified** (each stratum weighted
+  by its share of eligible people), never the plain pool.
+- **Routing rule (written before the data).** A stratum is routed to an arm
+  only when that arm has **P(best in the stratum) ≥ 0.95 on two
+  consecutive Friday reads** with **≥ 100 eligible per arm in that
+  stratum**. Routing is an orchestrator decision row that adds the stratum
+  to `TOURNAMENT_STRATUM_WEIGHTS` with the winner at **≤ 80%**; every other
+  active arm keeps a share (**≥ 20% explores**, `TOURNAMENT_MIN_EXPLORE`;
+  a table that breaks it is ignored and the test fails). A weights change
+  bumps the stratum's `version` and restarts its per-arm counts. At the
+  volumes above only NI-D can reach 100 per arm within ~3 weeks of launch;
+  IT-D needs ~11 weeks; IT-M and NI-M are explore-only in practice.
+- **People, one row each** (`scripts/tournament-people.sql`): a hashed
+  8-character person, the date, the stratum, the profile fields, the arm,
+  the reason and the progress (first run, first solve, solves in 7 d,
+  quota wall, plan click, trial / paid in 30 d). It feeds a founder-visible
+  page.
 - **Splits on every read:**
-  - **segment.** Interview-target is the entry version of #409's segment A:
-    the first `app_opened`'s `arrivalSrc` is a company page
-    (`*-sql-interview`), `company:<Name>`, `blog-capital-one` or
+  - **segment.** Interview-target is the first half of the logged stratum
+    (above). A row with no stratum falls back to the entry version of
+    #409's segment A: the first `app_opened`'s `arrivalSrc` is a company
+    page (`*-sql-interview`), `company:<Name>`, `blog-capital-one` or
     `readiness`. Everyone else is the other segment.
   - **device band** (`viewport` prefix on the assignment row).
   - **`fqArm`** (2×2 with the freeQuota holdout).
+  - **stratum.**
 - **Posteriors.** Beta(1 + successes, 1 + failures) per arm, uniform prior,
   20,000 Monte-Carlo draws, computed from the query's per-arm counts:
   P(worst among challengers) and P(better than control). The rules,

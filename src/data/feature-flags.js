@@ -692,6 +692,24 @@ window.FEATURE_FLAGS = {
     // merge (chat, 2026-11-26). src/utils/runnable-starter.js; ledger "a
     // runnable starter in the editor"; metric runnable_starter_split.
     runnableStarter: true,
+
+    // ── The first-session tournament (2026-11-26, PR 1 of 4: the frame) ───
+    // New visitors only (a browser's FIRST app open; returning browsers and
+    // `?interview=` / `?profile=` first opens never enter) are split by aid
+    // (first_session_tournament_v1, murmur-finalised hash) across the ACTIVE
+    // arms of src/data/tournament-arms.js, equal weights: A_control (today,
+    // permanent), B_single_path, D_interview_sprint; C_proof_first queued.
+    // Written once (`sqlquest_tournament_v1` + userData.tournament), never
+    // re-armed; `tournament_assigned` once; `tArm` / `tArmV` on every row.
+    // PR 1 builds no arm UI: B and D run A_control's behaviour (`built:
+    // false`), so a flag-on preview is an A/A of the plumbing. DARK; the
+    // flip is a separate PR after the plan's §2.4 gates, on 2026-12-12
+    // (orchestrator 2026-11-27, after the holdout's halfway money read),
+    // with the founder's go on the §7 money strings.
+    // src/utils/tournament.js; metric first_session_tournament; read
+    // scripts/tournament-read.sql. Off = the kill switch: nobody new is
+    // enrolled and enrolled browsers get today's product.
+    firstSessionTournament: false,
   },
 };
 
