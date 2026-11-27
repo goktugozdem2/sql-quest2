@@ -27,6 +27,35 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### the company-set gate walls only authored sets (Capital One, Revolut) — bug fix
+
+- **Claimed** 2026-11-26 (founder's go in chat, "1'i uygula") · **Shipped**
+  on merge, no flag · **Read** 2026-12-10.
+- **Change.** The 2026-09-20 decision (M1 amended: only a set AUTHORED for
+  the company is walled) lived only in the banner's `companyGateFreeIds`.
+  The gate itself (`companySetGate`, three call sites in app.jsx: the
+  banner's next pick, the openChallenge wall, the row lock) never checked
+  it, so since the 09-26 flip a topical set (Snowflake, Wise, Meta, …)
+  walled its fourth question under reason `company_set` while its page and
+  banner promised only the general 10-solve quota. `companySetGate` now
+  takes `authored` and is ungated unless it is `true`; every call passes
+  `companyHasAuthoredSet(companyFilter)`.
+- **Metric** `company_set_wall` (docs/agent/metrics.md), here as a
+  correctness check on `pro_modal_shown {reason: 'company_set'}` by company.
+- **Baseline** 2026-09-26 → 11-26 (read-only, pro_events): the modal fired
+  in Snowflake (6), Wise (4) and Meta (2) views, and also in OpenAI, Amazon,
+  Airbnb and Google views — none of them authored sets.
+- **Target** 0 `company_set` walls or modals outside Capital One and Revolut
+  from the deploy; Capital One / Revolut walls still fire (> 0 if any
+  non-Pro reaches a fourth question there).
+- **Falsified if** any `company_set` row names another company after the
+  deploy (then a call site skips `authored`, or a stale bundle is served).
+- **Confounds.** The 11-22 verdict of "the company set wall" above counted
+  every company's wall; from this deploy only two companies can reach it,
+  so never read that series across 11-26. The freeQuota holdout (#384,
+  enrolment from 11-28) leaves the company gate the same in both arms; this
+  lands on both arms alike (note the merge date in the holdout read).
+
 ### the free-quota holdout: did the quota cost the returns? (`freeQuotaHoldout`, A/B)
 
 - **Claimed** 2026-11-25 · **Shipped** ON on merge (flag `freeQuotaHoldout: true`; `freeQuota` is a money flag and the founder gave the written go for THIS test in chat on 2026-11-25, "Full holdout (Recommended)") · **Enrolment** first app opens 2026-11-28 → 2026-12-25 (four weeks; fixed constants `FREE_QUOTA_HOLDOUT_START/END` in src/utils/free-quota-holdout.js, 11-28 00:00 UTC to 12-26 00:00 UTC exclusive — moved from 11-26 on 2026-11-26, and again from 11-27 on 2026-11-27 because the 11-27 start passed before merge; a test pins the start to no earlier than 11-28) · **Arm-balance check** 2026-12-04 · **Halfway money read** 2026-12-12 · **Read** 2027-01-02 (the 7th day after enrolment ends). If the merge slips past 11-28, move the window, the balance check, the halfway read and the read date together in one commit (constants, this entry, metrics.md).
@@ -881,6 +910,7 @@ of the verifier and must never be rounded to `FLAT`.
 ### the Wise page's first screen: the right first question, readiness, the Pro line, one "debug this query" (C5)
 
 - **Claimed** 2026-11-25 · **Shipped** on merge (static page, no flag) · **Read** 2026-12-23 (28 d) and 2027-01-20 (56 d).
+- **Amended 2026-11-27 (PR `fix/first-screens-in-generator`, live QA note B):** the block moved from after the hero section into the hero, directly after the primary CTA row (the yellow button did not move). Block top, headless, before → after: 1366×800 807 → 708; 375×812 1,051 → 893 (still below the fold: the hero's own CTA row ends at ~800 on a phone). Read clicks on the block's links (`cta_first_*`) from the merge date as a new series; the 28-day read spans the move, so state it as a confound. The block itself is now written by the generator from `FIRST_SCREENS.wise`; the hand-written copy would have been deleted by the next generator run.
 - **Change** `/wise-sql-interview/` gets a "Start here" block right under the
   hero (hand-written page; same `company-first-screen` markers and click names
   as the Monzo block in PR #295): **Start with** Card Spend by Country (#285,
@@ -989,6 +1019,7 @@ of the verifier and must never be rounded to `FLAT`.
 ### the Monzo page's first screen: question 1, readiness, the Pro line, one "debug this query" (C5)
 
 - **Claimed** 2026-11-24 · **Shipped** on merge (static page, no flag) · **Read** 2026-12-22 (28 d) and 2027-01-19 (56 d).
+- **Amended 2026-11-27 (PR `fix/first-screens-in-generator`, live QA note B):** the block moved from after the hero section into the hero, directly after the primary CTA row (the yellow button did not move). Block top, headless, before → after: 1366×800 515 → 468; 375×812 808 → 744. Read clicks on the block's links (`cta_first_*`) from the merge date as a new series; the 28-day read spans the move, so state it as a confound.
 - **Change** `/monzo-sql-interview/` gets a "Start here" block right under the
   hero (`scripts/company-first-screen.mjs`, run by the company generator):
   question 1 straight into the app (challenge 176, the page's own
@@ -1044,6 +1075,7 @@ of the verifier and must never be rounded to `FLAT`.
 ### the Amazon page's first screen and current sources: "Start with", the set, readiness, the Pro mock, one "debug this query" (C5)
 
 - **Claimed** 2026-11-26 · **Shipped** on merge (static page, no flag) · **Read** 2026-12-24 (28 d) and 2027-01-21 (56 d).
+- **Amended 2026-11-27 (PR `fix/first-screens-in-generator`, live QA note B):** the block moved from after the hero section into the hero, directly after the primary CTA row (the yellow button did not move). Block top, headless, before → after: 1366×800 780 → 681; 375×812 991 → 833 (still below the fold on a phone). Read clicks on the block's links (`cta_first_*`) from the merge date as a new series; the 28-day read spans the move, so state it as a confound.
 - **Change** `/amazon-sql-interview/` gets a "Start here" block right under
   the hero, through the company generator (`scripts/company-first-screen.mjs`,
   now able to serve an older page from its `SOURCED_FORMATS` entry):
@@ -1291,6 +1323,7 @@ of the verifier and must never be rounded to `FLAT`.
     - `direct` < `list` − 3 → MISS. Flag off.
   - Fewer than 120 per arm by 2027-02-27 → UNREADABLE. Flag off; do not extend a second time.
 - **Confounds** the banner claim ("a company arrival gets a first question to press", read 12-18) sits on the same arrivals, which is why the flip waits until 12-19. M-02's hero copy (read 12-20) is upstream of assignment and lands in both arms equally. `quotaWallInline` and `modalLayout` are independent arms. #99's first screen never shows on a `?company=` arrival.
+- **Verdict (interim read 2026-11-27, B2): UNREADABLE today — continue to the rule's own read.** Humans only (the `scripts/scorecard-weekly.sql` block): `direct` **2 / 8** (25%) vs `list` **4 / 10** (40%) on first_solve_10m from assignment (p = 0.64, P(beat) ≈ 0.27, direction only); run ≤ 10 min 2/8 vs 5/10; 3 solves ≤ 24 h 2 vs 2; plan clicks 0 vs 1, trial-or-paid 0 vs 1 (14-day windows open). The arm works: 8/8 `direct` opened via `company_direct` within a minute. Neither decision point is reached (harm check 60 per arm, verdict 120 per arm), so the flag stays ON and the desktop open → first-run cell is **not** freed. Volume: ~2.6 human assignments per arm per day → 60/arm ≈ 12-16, 120/arm ≈ 2027-01-08; if the tournament launches 12-10 and this read keeps only arm A / non-tournament people, 120/arm lands ≈ April, after the 02-27 hard stop (→ UNREADABLE, flag off). Trap: 45 of 63 assigned browsers are `app1lang` crawlers, which the metric's SQL in metrics.md does not exclude. Read: `docs/reads/company-direct-open-2026-11-27.md`.
 ### /for-teams/ is published — the seat door's 30-day test starts
 
 - **Claimed** 2026-11-22 · **Shipped** on merge (founder's go in chat: "evet, /for-teams/ yayına al") · **Read** 2026-12-22.
@@ -1950,6 +1983,7 @@ of the verifier and must never be rounded to `FLAT`.
 ### company pages name question 1 in the hero (M-02)
 
 - **Claimed** 2026-11-22 · **Shipped** on merge (static pages; revert by setting `HERO_NAMES_FIRST_QUESTION = false` in scripts/build-company-pages.mjs and rebuilding, or reverting the commit) · **Read** 2026-12-20.
+- **Confound added 2026-11-27:** on the Wise, Amazon and Monzo pages the first-screen block (more `/app/` links) moved into the hero, right under this button, from the merge of `fix/first-screens-in-generator`. The button's position and words are unchanged; at the 12-20 read, report `company_page_door` with and without those three pages.
 - **Change** the hero's primary button on 32 company pages (all but Capital One, whose hero already opens challenge 275) reads "Solve <Company> question 1 now: <title> — free, no sign-up". The title is the question the app's company banner opens for a cold visitor (`companyFirstQuestion`, src/utils/company-first-question.js: curriculum order, Hard locks, the company set gate). The link is unchanged; the 23 older pages' hero button gains `data-track="cta_hero_primary"`. Guards tests/company-hero-cta.test.js.
 - **Why** (docs/plans/monetization-ideas-2026-11-22.md, 1f): company arrivals are the best money door (2.3% trial-or-paid per arrival vs 0.5% for /sql-exercises/), but 81% of company-page landing people never open the app.
 - **Metric** `company_page_door`, page → app step (metrics.md): landing people on `*-sql-interview` pages → `app_opened` (same aid) within 1 h.
