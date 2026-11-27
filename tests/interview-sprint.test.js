@@ -9,7 +9,7 @@ import {
   SPRINT_ARM, SPRINT_LENGTHS, emptyPathState, normalizePathState, pathUiFlags, normalizeSprint, startSprint,
   sprintDay, sprintDayModel, sprintTabsOpen, roadmapProfileFor, composePathPlan, logStepDone, companyFromSlug, nextPlanStep,
   SINGLE_PATH_ARM, SPRINT_PROBE_STEPS, sprintLevelSource, sprintPlanMarks, sprintProbeRecord, pathWhyLines, planProgress, LADDER_FAST_SECS,
-  fitPlanToLength,
+  fitPlanToLength, LADDER_RUNGS,
 } from '../src/utils/single-path.js';
 import { buildRoadmap } from '../src/utils/personal-roadmap.js';
 import { buildVisitorProfile, tournamentBehaviour } from '../src/utils/tournament.js';
@@ -18,6 +18,8 @@ import { INTAKE_COMPANIES } from '../src/utils/onboarding-intake.js';
 import { FREE_SOLVE_QUOTA } from '../src/utils/free-tier-boundary.js';
 import { t, _resetLangCache } from '../src/utils/i18n.js';
 import { levelForLadder } from '../src/utils/placement.js';
+import { challengeMatchesSkill } from '../src/utils/skill-drill.js';
+import { CANONICAL_SKILLS } from '../src/utils/skill-calc.js';
 
 const ROOT = path.resolve(new URL('..', import.meta.url).pathname);
 const APP = fs.readFileSync(path.join(ROOT, 'src/app.jsx'), 'utf8');
@@ -40,8 +42,11 @@ beforeAll(async () => {
 
 const TODAY = '2026-12-10';
 const sprintState = (sprint) => normalizePathState({ ...emptyPathState(), sprint });
-const planFor = (state, visitor = { device: 'desktop' }, { lead = [], solved = new Set() } = {}) => {
-  const roadmap = buildRoadmap(roadmapProfileFor({ arm: SPRINT_ARM, visitor, state, solvedIds: solved, companies: INTAKE_COMPANIES }), bank, opts);
+// Mirrors app.jsx's pathBuildPlan: the lead goes to the roadmap (step 2
+// continues from it) and to composePathPlan (it is step 1). `roadmapLead:
+// false` builds the roadmap as it was before 2026-11-27, for comparison.
+const planFor = (state, visitor = { device: 'desktop' }, { lead = [], solved = new Set(), roadmapLead = true } = {}) => {
+  const roadmap = buildRoadmap(roadmapProfileFor({ arm: SPRINT_ARM, visitor, state, solvedIds: solved, companies: INTAKE_COMPANIES }), bank, roadmapLead ? { ...opts, lead } : opts);
   return { roadmap, plan: composePathPlan({ roadmap, ladder: null, lead, solved, solvedCount: solved.size, now: 1 }) };
 };
 
@@ -396,5 +401,63 @@ describe('one goal on screen in D, and D runs the one-layer queue', () => {
     const set = normalizePathState({ ...coSprint(), plan, sessionLastAt: 1 });
     expect(pathUiFlags({ behaviour: SPRINT_ARM, state: set }).layerQueue).toBe(true);
     expect(pathUiFlags({ behaviour: SPRINT_ARM, state: { ...set, firstSessionEndedAt: 1 } }).layerQueue).toBe(false);
+  });
+});
+
+// Fleet, 2026-11-27 (stacked on #418): on a phone Capital One link, step 2
+// was #98 "Counting Rows" (Easy basics) right after #275, a card-transactions
+// question. The roadmap now continues from the lead step: step 2 is at the
+// lead's difficulty, in the company's set, on a skill the lead carries.
+describe('step 2 continues from the link question (personal-roadmap continueFromLead)', () => {
+  const skillsOf = (c) => CANONICAL_SKILLS.filter(s => challengeMatchesSkill(c, s));
+  const inCapitalOne = (id) => [].concat(globalThis.window.challengeCompanies[id] || []).includes('Capital One');
+  it('phone, Capital One link: step 2 is a Capital One question at #275\'s difficulty and skill, not a rung-0 Easy basics item; N unchanged', () => {
+    const v = { device: 'phone' };
+    const { plan } = planFor(coSprint(), v, { lead: [275] });
+    const { plan: old } = planFor(coSprint(), v, { lead: [275], roadmapLead: false });
+    expect(old.steps[1].challengeId).toBe(98); // what the fleet saw
+    const lead = byId(275);
+    const second = byId(plan.steps[1].challengeId);
+    expect(plan.steps[0]).toMatchObject({ challengeId: 275, part: 'lead' });
+    expect(second.id).not.toBe(98);
+    expect(LADDER_RUNGS[0]).not.toContain(second.id);
+    expect(inCapitalOne(second.id)).toBe(true);
+    expect(second.difficulty).toBe(lead.difficulty);
+    expect(skillsOf(second).some(s => skillsOf(lead).includes(s))).toBe(true);
+    expect(plan.steps[1].proOnly).toBe(false);
+    // Only the order changed: same N, same steps, same wall.
+    expect(plan.length).toBe(old.length);
+    expect(plan.steps.map(x => x.challengeId || x.mockId).sort()).toEqual(old.steps.map(x => x.challengeId || x.mockId).sort());
+    expect(plan.wallAt).toBe(old.wallAt);
+  });
+  it('desktop too; and with no lead the roadmap is exactly what it was', () => {
+    const { plan } = planFor(coSprint(), { device: 'desktop' }, { lead: [275] });
+    const { plan: old } = planFor(coSprint(), { device: 'desktop' }, { lead: [275], roadmapLead: false });
+    expect(inCapitalOne(plan.steps[1].challengeId)).toBe(true);
+    expect(plan.length).toBe(old.length);
+    const none = planFor(coSprint(), { device: 'phone' }).roadmap;
+    const noneOld = planFor(coSprint(), { device: 'phone' }, { roadmapLead: false }).roadmap;
+    expect(none.steps).toEqual(noneOld.steps);
+  });
+  it('the level re-plan after step 2 still applies: its lead is solved, so it is laid by the measured level', () => {
+    const v = { device: 'phone' };
+    const { plan } = planFor(coSprint(), v, { lead: [275] });
+    const second = plan.steps[1].challengeId;
+    let st = sprintProbeRecord(coSprint(), { visitor: v, challenge: byId(275), secs: 30 }).state;
+    st = sprintProbeRecord(st, { visitor: v, challenge: byId(second), secs: 30 }).state;
+    expect(st.sprint.levelId).toBeTruthy();
+    const solved = new Set([275, second]);
+    const re = planFor(st, v, { lead: [275, second], solved });
+    const reOld = planFor(st, v, { lead: [275, second], solved, roadmapLead: false });
+    expect(re.roadmap.profile.level).toBe(st.sprint.levelId);
+    expect(re.roadmap.steps).toEqual(reOld.roadmap.steps);
+    const fit = fitPlanToLength(sprintPlanMarks(re.plan, { visitor: v, state: st }), plan.length, { previous: plan, solved, solvedCount: 2 });
+    expect(fit.length).toBe(plan.length);
+    expect(fit.steps.slice(0, 2).map(x => x.challengeId)).toEqual([275, second]);
+  });
+  it('app.jsx hands the lead to the roadmap as well as to composePathPlan', () => {
+    const f = APP.slice(APP.indexOf('const pathBuildPlan = ('), APP.indexOf('const pathFinishLadder = ('));
+    expect(f).toContain("companySetGateOn: ftbFlag('companySetGate'), lead }");
+    expect(f).toContain('const plan = composePathPlan({ roadmap, ladder: state.ladder, lead,');
   });
 });

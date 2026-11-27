@@ -12649,7 +12649,7 @@ CRITICAL RULES:
       const roadmap = buildRoadmap(
         roadmapProfileFor({ arm: pathUi.arm, visitor, state, solvedIds: solvedSet, isPro, companies: INTAKE_COMPANIES }),
         challenges,
-        { companyMap: window.challengeCompanies || {}, mocks: mockInterviews, goals: window.coachGoals || [], quotaOn: freeQuotaOn(), companySetGateOn: ftbFlag('companySetGate') },
+        { companyMap: window.challengeCompanies || {}, mocks: mockInterviews, goals: window.coachGoals || [], quotaOn: freeQuotaOn(), companySetGateOn: ftbFlag('companySetGate'), lead },
       );
       const plan = composePathPlan({ roadmap, ladder: state.ladder, lead, solved: solvedSet, solvedCount: solvedSet.size, quotaOn: freeQuotaOn() && !isPro, now: Date.now() });
       // Arm D: say where the level came from — assumed (the why-line says so,
