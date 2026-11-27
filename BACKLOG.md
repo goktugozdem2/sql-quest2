@@ -699,6 +699,11 @@ touch them.
   2026-11-26: steps 1–2 are DONE (#355 merged, v27 deployed 11-25). Step 3
   is still OPEN. About 35 h later the account still reads `proStatus` false,
   and no `invoice.paid` has reached the webhook (`errors-2026-11-26.md`).
+  2026-11-27: still OPEN, about 62 h after expiry. A
+  `customer.subscription.updated` reached the webhook at 11-27 03:28 UTC
+  and wrote no row (only cancel/reactivate changes are logged); it may be
+  this subscription moving status on Stripe's retry schedule. Read its
+  status in Stripe (`errors-2026-11-27.md`).
 - **A3-5. `pro_events` has no index on `username`, so per-person lookups scan
   the table.** On 11-23 at 15:00 the `checkout-abandon` read
   `username = … AND event IN (plan/checkout clicked)` hit the 8 s statement
@@ -711,6 +716,14 @@ touch them.
   skip the person when either read returns an `error`.
   2026-11-26: the source half is #398, held under 6d. After merge,
   FOUNDER: `supabase functions deploy checkout-abandon`.
+  2026-11-27: #398 merged 11-26 10:51 UTC, but the deployed function is
+  still v14 (2026-09-17); the 11-26 15:00 run used the old code. The deploy
+  is still due.
+- **A3-6. A failed sign-in leaves no `pro_events` row.** On 11-27 a
+  registered person got four 401s and a 429 lockout from `account-login`,
+  then got in 45 min later; only the function logs show it. Papercut: a
+  `login_failed {error: invalid_credentials | locked}` event (no username
+  typed, no password) would make lockouts countable. Not urgent at n = 1.
 
 ## Competitor watch — B6, 2026-11-22 (docs/reads/competitors-2026-11-22.md)
 
