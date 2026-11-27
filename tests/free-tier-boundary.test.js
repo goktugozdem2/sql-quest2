@@ -242,7 +242,7 @@ describe('the free quota — ten solves, then Pro (founder, 2026-09-12, item 2)'
     expect(block.indexOf('presentQuotaWall(')).toBeGreaterThan(-1);
     expect(block.indexOf('openColdStartInstead(challenge.id)')).toBeLessThan(block.indexOf('presentQuotaWall('));
     expect(block).toMatch(/type: 'free_quota'/);
-    expect(app).toMatch(/const isQuotaLocked = quotaGate\(\{ flagOn: ftbFlag\('freeQuota'\)/);
+    expect(app).toMatch(/const isQuotaLocked = quotaGate\(\{ flagOn: freeQuotaOn\(\)/);
     expect(app).toMatch(/data-testid="free-quota-counter"/);
     expect(app).toMatch(/data-testid="pro-modal-free-quota"/);
     // the quota sits AFTER the Hard gate and the company-set gate in openChallenge
@@ -303,7 +303,7 @@ describe('the free quota — ten solves, then Pro (founder, 2026-09-12, item 2)'
   // banner, the catcher, the Focus Tracks pill, the company banner.
   it('the in-app "free" surfaces read the quota', () => {
     const app = read('../src/app.jsx');
-    expect(app).toMatch(/const freeQuotaSpent = \(\) => quotaGate\(\{ flagOn: ftbFlag\('freeQuota'\), isPro, solvedCount: solvedChallenges\.size \}\)\.gated;/);
+    expect(app).toMatch(/const freeQuotaSpent = \(\) => quotaGate\(\{ flagOn: freeQuotaOn\(\), isPro, solvedCount: solvedChallenges\.size \}\)\.gated;/);
     const catcher = app.indexOf('setPreviewCatcher({ challengeId: challenge.id, at: Date.now() });');
     const spent = app.lastIndexOf('if (freeQuotaSpent()) {', catcher);
     expect(spent).toBeGreaterThan(-1);
@@ -312,7 +312,7 @@ describe('the free quota — ten solves, then Pro (founder, 2026-09-12, item 2)'
     expect(app).toMatch(/&& !\(freeQuotaSpent\(\) && previewCounts\.previewUnsolved > 0\)/);
     expect(app).toMatch(/!isPro && freePreviewCount > 0 && !freeQuotaSpent\(\) &&/);
     expect(app).toMatch(/if \(freeQuotaSpent\(\)\) \{\n\s+const solvedHere/);
-    expect(app).toMatch(/ftbFlag\('freeQuota'\) \? 'coachStripLineQuota' : 'coachStripLine'/);
+    expect(app).toMatch(/freeQuotaOn\(\) \? 'coachStripLineQuota' : 'coachStripLine'/);
   });
 
   it('item 1 (live): the sixth-solve ask waits for the celebration, once-keys written at once', () => {
@@ -394,7 +394,7 @@ describe('source guards — the five flags are wired, and off', () => {
     // untouched there — only tier 10 steps aside, and only with the quota on.
     const ftbSrc = readFileSync(new URL('../src/utils/free-tier-boundary.js', import.meta.url), 'utf8');
     expect(ftbSrc).toMatch(/const tier = n >= 50 \? 50 : n >= 25 \? 25 : n >= 10 \? 10 : n >= 6 \? 6 : 0;/);
-    expect(app).toMatch(/const tier = milestoneTier\(n, \{ quotaOn: ftbFlag\('freeQuota'\) \}\);/);
+    expect(app).toMatch(/const tier = milestoneTier\(n, \{ quotaOn: freeQuotaOn\(\) \}\);/);
     expect(app).toMatch(/case 'challenge': return item\?\.difficulty === 'Hard' && !item\?\.freePreview;/);
   });
 });
@@ -504,6 +504,6 @@ describe('milestoneTier — no tenth-solve ask in front of the quota wall', () =
   });
   it('the app asks through it, with the live quota flag', () => {
     const app = readFileSync(new URL('../src/app.jsx', import.meta.url), 'utf8');
-    expect(app).toMatch(/const tier = milestoneTier\(n, \{ quotaOn: ftbFlag\('freeQuota'\) \}\);/);
+    expect(app).toMatch(/const tier = milestoneTier\(n, \{ quotaOn: freeQuotaOn\(\) \}\);/);
   });
 });

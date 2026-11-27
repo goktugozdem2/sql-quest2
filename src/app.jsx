@@ -86,6 +86,7 @@ import { RUNNABLE_STARTER_KEY, RUNNABLE_STARTER_TEST_ID, isDesktopScreen, isEmpt
 import { dueRetrievals, pickRetrievalChallenge, recordRetrieval, dailyQuota, MAX_DUE_SHOWN } from './utils/spaced-retrieval.js';
 import { computeRecap, shouldShowRecap } from './utils/session-recap.js';
 import { getAnonId } from './utils/anon-id.js';
+import { FREE_QUOTA_HOLDOUT_KEY, FREE_QUOTA_HOLDOUT_TEST_ID, freeQuotaEnrolment, hasPriorAppUse, normalizeFreeQuotaRecord, freeQuotaEffective, freeQuotaEventStamp } from './utils/free-quota-holdout.js';
 import { quotaWallArm, quotaWallShowsModal, quotaInlineCopy, QUOTA_WALL_DAY_KEY } from './utils/quota-wall-inline.js';
 import { classifyLandingSrc, LANDING_SRC_KEY } from './utils/landing-src.js';
 import { classifyQueryError } from './utils/query-error.js';
@@ -128,6 +129,32 @@ function canonicalSectorId(raw) {
   if (!raw) return null;
   const key = String(raw).toLowerCase().trim();
   return SECTOR_PARAM_ALIASES[key] || key;
+}
+
+// The free-quota holdout (2026-11-25, src/utils/free-quota-holdout.js):
+// decided HERE, at module load, before anything below writes a key — the
+// "has the app run in this browser before?" test reads the keys as the
+// browser brought them. A stored decision always wins (nobody is re-armed);
+// a browser with app state keeps the quota as `returning`. The component
+// reads FQ_HOLDOUT_RECORD through freeQuotaOn() and writeProEvent.
+let FQ_HOLDOUT_RECORD = null;
+if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+  try {
+    let stored = null;
+    try { stored = JSON.parse(localStorage.getItem(FREE_QUOTA_HOLDOUT_KEY) || 'null'); } catch (_) { stored = null; }
+    const keys = [];
+    for (let i = 0; i < localStorage.length; i++) keys.push(localStorage.key(i));
+    const flagOn = window.FF?.feature?.('freeQuotaHoldout') === true;
+    const decision = freeQuotaEnrolment({
+      flagOn,
+      record: stored,
+      aid: flagOn && !normalizeFreeQuotaRecord(stored) ? getAnonId() : null,
+      now: Date.now(),
+      priorAppUse: hasPriorAppUse(keys),
+    });
+    if (decision.write) localStorage.setItem(FREE_QUOTA_HOLDOUT_KEY, JSON.stringify(decision.write));
+    FQ_HOLDOUT_RECORD = decision.record;
+  } catch (_) { FQ_HOLDOUT_RECORD = null; }
 }
 
 // Module-load URL-param capture. Two signals stick to localStorage so they
@@ -7078,6 +7105,9 @@ function SQLQuest() {
     try { if (window.__SQLQUEST_SMOKE__ === true) return false; } catch (_) {}
     try { return botSignals({ userAgent: navigator.userAgent, webdriver: navigator.webdriver }).hard; } catch (_) { return false; }
   };
+  const fqEventStamp = () => {
+    try { return freeQuotaEventStamp({ flagOn: window.FF?.feature?.('freeQuotaHoldout') === true, record: FQ_HOLDOUT_RECORD }); } catch (_) { return {}; }
+  };
   const writeProEvent = (event, reason, metadata = {}, opts = {}) => {
     if (ANALYTICS_MUTED) {
       try { console.debug('[sqlquest] analytics muted on localhost:', event, reason, metadata); } catch (_) {}
@@ -7104,7 +7134,10 @@ function SQLQuest() {
           // can still be stitched to the rest of that browser's history.
           // username is deliberately left alone: the Aug 3 read compares
           // against the existing series and must not see a redefinition.
-          metadata: JSON.stringify({ ...metadata, aid: getAnonId() }),
+          // `fqArm` (2026-11-25): a browser enrolled in the free-quota
+          // holdout stamps its arm on EVERY row — the quota, paywall,
+          // checkout and trial rows the holdout's guardrails read included.
+          metadata: JSON.stringify({ ...metadata, ...fqEventStamp(), aid: getAnonId() }),
           created_at: new Date().toISOString()
         })
       }).catch(() => {}); // fire and forget
@@ -12337,6 +12370,38 @@ CRITICAL RULES:
   // that is absent reads OFF here. src/utils/free-tier-boundary.js decides
   // what each one means; this file only decides when.
   const ftbFlag = (name) => window.FF?.feature?.(name) === true;
+  // The free-quota holdout (2026-11-25, founder's written go): a browser
+  // enrolled in `holdout` reads `freeQuota` OFF — no wall, no counter, the
+  // pre-09-26 in-app wording — and everything else stays as it is. EVERY
+  // `freeQuota` read in this file goes through freeQuotaOn(); a bare
+  // freeQuotaOn() would give a holdout person the wall back
+  // (tests/free-quota-holdout.test.js). An account created before the
+  // window keeps the quota on any browser (createdAt from its local blob).
+  const fqAccountCreatedAt = useMemo(() => {
+    if (!currentUser || isGuest) return null;
+    try {
+      const blob = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || 'null');
+      return blob && blob.createdAt != null ? blob.createdAt : null;
+    } catch (_) { return null; }
+  }, [currentUser, isGuest, isSessionLoading]);
+  const freeQuotaOn = () => freeQuotaEffective({
+    quotaFlagOn: ftbFlag('freeQuota'),
+    holdoutFlagOn: ftbFlag('freeQuotaHoldout'),
+    record: FQ_HOLDOUT_RECORD,
+    signedIn: !!currentUser && !isGuest,
+    accountCreatedAt: fqAccountCreatedAt,
+  });
+  // `free_quota_arm_assigned {arm}` — once per browser, on the open that
+  // enrolled it (the module-load block above decided; this only announces).
+  useEffect(() => {
+    const rec = FQ_HOLDOUT_RECORD;
+    if (!rec || rec.status !== 'enrolled' || rec.announced) return;
+    if (!ftbFlag('freeQuotaHoldout')) return;
+    trackActivationEvent('free_quota_arm_assigned', { testId: FREE_QUOTA_HOLDOUT_TEST_ID, arm: rec.arm, firstOpenAt: new Date(rec.firstOpenAt).toISOString() });
+    FQ_HOLDOUT_RECORD = { ...rec, announced: true };
+    try { localStorage.setItem(FREE_QUOTA_HOLDOUT_KEY, JSON.stringify(FQ_HOLDOUT_RECORD)); } catch (_) { /* ignore */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   // Paywall moments (PLAN item 3): the Pro modal's own copy for the reasons
   // that had none (the 30-day path, the daily, a locked mock, the Interview
   // tab) and an honest Hard line. null = the modal's existing chain decides.
@@ -23892,7 +23957,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
   // null when nothing in the set opens — the banner then shows no button.
   const companyBannerNext = () => {
     if (!companyFilter) return null;
-    if (quotaGate({ flagOn: ftbFlag('freeQuota'), isPro, solvedCount: solvedChallenges.size, alreadySolved: false }).gated) return null;
+    if (quotaGate({ flagOn: freeQuotaOn(), isPro, solvedCount: solvedChallenges.size, alreadySolved: false }).gated) return null;
     const scoped = companyScopedChallenges();
     const opens = c =>
       !solvedChallenges.has(c.id)
@@ -23941,7 +24006,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
   // spent the FREE_SOLVE_QUOTA solves. Every surface that says something is
   // "free" to open reads this, so none of them offers a free preview or a
   // "free" set the quota wall will then refuse.
-  const freeQuotaSpent = () => quotaGate({ flagOn: ftbFlag('freeQuota'), isPro, solvedCount: solvedChallenges.size }).gated;
+  const freeQuotaSpent = () => quotaGate({ flagOn: freeQuotaOn(), isPro, solvedCount: solvedChallenges.size }).gated;
 
   // The title of the mock that belongs to a company (via the interview-prep
   // registry), or null. Never invents one: a company without a mock gets no
@@ -24077,7 +24142,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     const n = solvedChallenges.size;
     // Tier 10 steps aside while the free quota is on — the wall one open
     // later is the ask (src/utils/free-tier-boundary.js milestoneTier).
-    const tier = milestoneTier(n, { quotaOn: ftbFlag('freeQuota') });
+    const tier = milestoneTier(n, { quotaOn: freeQuotaOn() });
     if (!tier) return;
     // Guests get a fresh guest_<timestamp> identity on every load, so a
     // user-scoped key never dedupes for them — they'd meet the modal every
@@ -24435,7 +24500,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     // other wall: the lock row, the cold-start diversion (moot at ten solves,
     // kept for the guard), then the ask. `wall: 'free_quota'` is its own
     // value in the series (metrics.md, quota_wall).
-    const quota = quotaGate({ flagOn: ftbFlag('freeQuota'), isPro, solvedCount: solvedChallenges.size, alreadySolved: solvedChallenges.has(challenge.id) });
+    const quota = quotaGate({ flagOn: freeQuotaOn(), isPro, solvedCount: solvedChallenges.size, alreadySolved: solvedChallenges.has(challenge.id) });
     if (quota.gated) {
       const quotaModal = quotaWallModalNow();
       trackLockReached('challenge_quota', {
@@ -27325,7 +27390,7 @@ RULES:
                 <div className={className} data-testid="pro-feature-list" style={{ background: '#1F222B', borderRadius: '6px' }}>
                   <p className="text-xs mb-3 font-medium uppercase tracking-wider" style={{ color: '#8A8E99' }}>What you get with Pro:</p>
                   <div className="grid grid-cols-2 gap-3">
-                    {(ftbFlag('freeQuota') ? [`Keep solving past your ${FREE_SOLVE_QUOTA} free — all ${bankCountLabel(challenges.length) || challenges.length} challenges open`] : []).concat(['learning', 'job_ready'].includes(getUserIntent()) ? [
+                    {(freeQuotaOn() ? [`Keep solving past your ${FREE_SOLVE_QUOTA} free — all ${bankCountLabel(challenges.length) || challenges.length} challenges open`] : []).concat(['learning', 'job_ready'].includes(getUserIntent()) ? [
                       'Get unstuck the moment it happens — the tutor reads your wrong query and stays with you; the daily cap lifted',
                       'Build the 30-day habit — full streak path, no Pro paywall mid-week',
                       '200+ warm-up questions — micro-drills for daily fluency',
@@ -33392,7 +33457,7 @@ RULES:
                   {isLastDay ? 'Pro trial ends today' : `${daysLeft} days left in your Pro trial`}
                 </p>
                 <p className="text-xs opacity-80 mt-0.5 truncate">
-                  {ftbFlag('freeQuota')
+                  {freeQuotaOn()
                     ? `Unsolved challenges past your ${FREE_SOLVE_QUOTA} free solves, the Hard set, mock interviews, and the tutor beyond the free daily cap will lock without Pro.`
                     : 'Hard challenges, sector tracks, mock interviews, and the tutor beyond the free daily cap will lock without Pro.'}
                 </p>
@@ -33624,7 +33689,7 @@ RULES:
                     <div className="mt-3">
                       <p className="font-medium" style={{ color: '#F2F0EA' }}>Welcome back to Free.</p>
                       <p className="text-sm mt-2" style={{ color: '#8A8E99' }}>
-                        {ftbFlag('freeQuota')
+                        {freeQuotaOn()
                           ? `The Coach, Skillmap, daily streak, lessons, warm-ups and every challenge you've solved stay yours. Past ${FREE_SOLVE_QUOTA} free challenge solves, the rest of the bank, the Hard set, mock interviews and the AI tutor without the free tier's daily cap are Pro. Pick up Pro to keep going where you left off.`
                           : 'The Coach, Skillmap, daily streak, and your first ~75 challenges stay yours forever. But Hard challenges, sector tracks, mock interviews, and the AI tutor without the free tier\'s daily cap are now locked. Pick up Pro to keep going where you left off.'}
                       </p>
@@ -35875,7 +35940,7 @@ RULES:
             <div
               data-primary-learning-tabs="true"
               data-primary-learning-shell={showFoundationsFocusShell || showLessonAdjacentChallengesShell ? 'lesson-one' : 'default'}
-              className={`mb-4 grid ${showInterviewNav ? 'grid-cols-3' : 'grid-cols-2'} gap-2 rounded-xl border border-slate-700 bg-slate-950/75 p-1.5`}
+              className={`mb-4 grid ${showInterviewNav ? 'grid-cols-[repeat(3,minmax(min-content,1fr))] sm:grid-cols-3' : 'grid-cols-2'} gap-1 sm:gap-2 rounded-xl border border-slate-700 bg-slate-950/75 p-1.5`}
             >
               <button
                 type="button"
@@ -35884,13 +35949,13 @@ RULES:
                   setActiveTab('guide');
                   setCurrentChallenge(null);
                 }}
-                className={`min-h-[54px] rounded-lg px-3 py-2 text-left transition-all ${
+                className={`min-h-[54px] min-w-0 rounded-lg px-2 py-2 text-left sm:px-3 transition-all ${
                   activeTab !== 'quests' && activeTab !== 'trials'
                     ? 'border border-slate-500 bg-slate-800 text-[#F2F0EA]'
                     : 'border border-transparent bg-transparent text-slate-300 hover:border-slate-600 hover:bg-slate-900 hover:text-[#F2F0EA]'
                 }`}
               >
-                <span className="flex items-center justify-between gap-2">
+                <span className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
                   <span className="text-sm font-bold">Learning Path</span>
                   <span className="hidden rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-200 sm:inline">
                     Recommended
@@ -35907,13 +35972,13 @@ RULES:
                   setPracticeSubTab('challenges');
                   setActiveTab('quests');
                 }}
-                className={`min-h-[54px] rounded-lg px-3 py-2 text-left transition-all ${
+                className={`min-h-[54px] min-w-0 rounded-lg px-2 py-2 text-left sm:px-3 transition-all ${
                   activeTab === 'quests'
                     ? 'border border-slate-500 bg-slate-800 text-[#F2F0EA]'
                     : 'border border-transparent bg-transparent text-slate-300 hover:border-slate-600 hover:bg-slate-900 hover:text-[#F2F0EA]'
                 }`}
               >
-                <span className="flex items-center justify-between gap-2">
+                <span className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
                   <span className="text-sm font-bold">Challenges</span>
                   <span className="rounded-full border border-slate-600 bg-slate-900 px-2 py-0.5 text-[10px] font-bold text-slate-300">
                     {challenges.length}
@@ -35930,13 +35995,13 @@ RULES:
                     setCurrentChallenge(null);
                     setActiveTab('trials');
                   }}
-                  className={`min-h-[54px] rounded-lg px-3 py-2 text-left transition-all ${
+                  className={`min-h-[54px] min-w-0 rounded-lg px-2 py-2 text-left sm:px-3 transition-all ${
                     activeTab === 'trials'
                       ? 'border border-slate-500 bg-slate-800 text-[#F2F0EA]'
                       : 'border border-transparent bg-transparent text-slate-300 hover:border-slate-600 hover:bg-slate-900 hover:text-[#F2F0EA]'
                   }`}
                 >
-                  <span className="flex items-center justify-between gap-2">
+                  <span className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
                     <span className="text-sm font-bold">{i18n_t('nav', 'interview')}</span>
                     <span className="rounded-full border border-slate-600 bg-slate-900 px-2 py-0.5 text-[10px] font-bold text-slate-300">
                       {mockInterviews.length}
@@ -36663,7 +36728,7 @@ RULES:
                       ))}
                     </div>
                     <p className="mt-3 text-xs" style={{ color: '#8A8E99' }} data-testid="plan-remaining">
-                      {i18n_t('plan', ftbFlag('freeQuota') ? 'remainingQuota' : 'remaining', { done: plan.solvedInScope, total: plan.totalInScope })}
+                      {i18n_t('plan', freeQuotaOn() ? 'remainingQuota' : 'remaining', { done: plan.solvedInScope, total: plan.totalInScope })}
                     </p>
                   </div>
                 );
@@ -37668,7 +37733,7 @@ RULES:
                   users never learn Pro exists (5 modal impressions/week). */}
               {!userProStatus && (
                 <div className="flex items-center justify-between gap-3 rounded-lg border border-[#2A2E38] bg-[#16181F] px-4 py-2.5 mb-4">
-                  <p className="text-xs text-gray-400 truncate">{i18n_t('pro', ftbFlag('freeQuota') ? 'coachStripLineQuota' : 'coachStripLine', { quota: FREE_SOLVE_QUOTA })}</p>
+                  <p className="text-xs text-gray-400 truncate">{i18n_t('pro', freeQuotaOn() ? 'coachStripLineQuota' : 'coachStripLine', { quota: FREE_SOLVE_QUOTA })}</p>
                   <button
                     onClick={() => { setProModalReason({ type: ftbFlag('paywallMoments') ? 'coach_strip' : 'generic', topic: null, solvedCount: ftbFlag('paywallMoments') ? solvedChallenges.size : 0 }); setShowProModal(true); }}
                     className="text-xs font-bold text-[#FFE34D] hover:underline whitespace-nowrap"
@@ -39442,7 +39507,7 @@ RULES:
                               if (freeSolved === 0) {
                                 // Under the quota "N free" would promise more than
                                 // FREE_SOLVE_QUOTA solves; say what is open and what the quota is.
-                                if (ftbFlag('freeQuota')) {
+                                if (freeQuotaOn()) {
                                   return `${free.length} open on the free tier + ${proCount} Pro challenges below, ranked by difficulty. Your first ${FREE_SOLVE_QUOTA} challenge solves are free — pick any one to start, no signup required.`;
                                 }
                                 return `${free.length} free + ${proCount} Pro challenges below, ranked by difficulty. Pick any one to start — no signup required.`;
@@ -39509,7 +39574,7 @@ RULES:
                               <span className="text-sm text-gray-400">
                                 {i18n_t('challenges', 'solvedCount', { n: scopeSolved, total: scopeTotal })}
                                 {companyFilter ? ` ${companyFilter}` : ''}
-                                {ftbFlag('freeQuota') && !isPro ? (
+                                {freeQuotaOn() && !isPro ? (
                                   <span data-testid="free-quota-counter"> · {Math.min(solvedChallenges.size, FREE_SOLVE_QUOTA)} of {FREE_SOLVE_QUOTA} free solves used</span>
                                 ) : null}
                               </span>
@@ -40092,7 +40157,7 @@ RULES:
                       const isLocked = isContentLocked('challenge', c)
                         || companySetGate({ flagOn: ftbFlag('companySetGate'), isPro, companyFilter, authored: companyHasAuthoredSet(companyFilter), challenge: c, scoped: companyScopedChallenges(), solved: solvedChallenges }).gated;
                       // Free quota (`freeQuota`): past ten solves every unsolved row wears the lock too.
-                      const isQuotaLocked = quotaGate({ flagOn: ftbFlag('freeQuota'), isPro, solvedCount: solvedChallenges.size, alreadySolved: isSolved }).gated;
+                      const isQuotaLocked = quotaGate({ flagOn: freeQuotaOn(), isPro, solvedCount: solvedChallenges.size, alreadySolved: isSolved }).gated;
                       // A free Hard preview, shown to someone it is a preview
                       // FOR. Pro users never see the tag or the blue border.
                       const isPreview = !isPro && isFreePreview(c) && !isQuotaLocked;
@@ -40834,7 +40899,7 @@ RULES:
                             // Free quota (`freeQuota`): once this solve spends the
                             // quota the other previews are locked — never say "N
                             // more are free" then; the last-one line reads true.
-                            const quotaNowSpent = quotaGate({ flagOn: ftbFlag('freeQuota'), isPro, solvedCount: solvedNow.size }).gated;
+                            const quotaNowSpent = quotaGate({ flagOn: freeQuotaOn(), isPro, solvedCount: solvedNow.size }).gated;
                             const remaining = (counts.previewUnsolved === 0 || quotaNowSpent)
                               ? i18n_t('paywall', 'winRemainingLast')
                               : counts.previewUnsolved === 1
@@ -41392,15 +41457,19 @@ RULES:
                         )}
                       </div>
 
-                      {/* Input */}
-                      <div className="flex gap-2">
+                      {/* Input. Wraps on a phone (A2, 2026-11-25): an <input>
+                          keeps its ~196 px intrinsic width in a flex row, so
+                          with "Show me the answer" and Send beside it the row
+                          ran to 456 px and a 375 px page scrolled sideways.
+                          The input keeps at least 12rem; the buttons wrap. */}
+                      <div className="flex flex-wrap gap-2" data-testid="inline-tutor-input-row">
                         <input
                           type="text"
                           value={inlineAiInput}
                           onChange={e => setInlineAiInput(e.target.value)}
                           onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendInlineAiMessage(); }}}
                           placeholder="Ask about this challenge..."
-                          className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-sm text-[#F2F0EA] placeholder-gray-500 focus:outline-none focus:border-purple-500"
+                          className="flex-1 min-w-[12rem] px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-sm text-[#F2F0EA] placeholder-gray-500 focus:outline-none focus:border-purple-500"
                           disabled={inlineAiLoading}
                         />
                         {ftbFlag('socraticLadder') && (

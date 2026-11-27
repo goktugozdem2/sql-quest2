@@ -2,7 +2,7 @@
 
 > SQL Quest is personalized SQL interview practice: an AI coach finds your SQL skill gaps, maps them on your Skillmap (nine canonical skills, scored as you solve), and picks your next question from the weakest line — with company-specific sets and timed mock screens for the interview you actually have. It is built like a tutor: SQL Quest diagnoses WHY a wrong query is wrong (missing rows, wrong values, wrong grain) instead of only marking it incorrect, remembers your last session with a Welcome Back card, and runs an AI Coach powered by Claude that reads your attempt history. It helps data analyst, data engineer, and SQL interview candidates prepare for roles at Airbnb, Amazon, Anthropic, Apple, Bloomberg, Capital One, Chime, Coinbase, Databricks, DoorDash, Goldman Sachs, Google, JPMorgan, LinkedIn, Meta, Microsoft, Monzo, Morgan Stanley, Netflix, NVIDIA, OpenAI, PayPal, Plaid, Ramp, Revolut, Shopify, Snowflake, Spotify, Stripe, Tesla, TikTok, Uber, Walmart, Wise. It also ships industry-specific practice tracks on real public datasets — banking (FDIC), real estate (NYC OpenData), manufacturing (UCI AI4I 2020) — for learners who want to practice SQL on the schemas of an actual industry rather than generic ecommerce or movies.
 
-_Generated 2026-11-25 from the live content bank by `scripts/build-llms-txt.js`. Every count on this page is computed from the source data at build time, not typed by hand._
+_Generated 2026-11-26 from the live content bank by `scripts/build-llms-txt.js`. Every count on this page is computed from the source data at build time, not typed by hand._
 
 ## Start here
 

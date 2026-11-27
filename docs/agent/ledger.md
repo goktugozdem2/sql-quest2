@@ -53,8 +53,21 @@ of the verifier and must never be rounded to `FLAT`.
 - **Confounds.** The 11-22 verdict of "the company set wall" above counted
   every company's wall; from this deploy only two companies can reach it,
   so never read that series across 11-26. The freeQuota holdout (#384,
-  enrolment from 11-27) leaves the company gate the same in both arms; this
-  lands on both arms alike.
+  enrolment from 11-28) leaves the company gate the same in both arms; this
+  lands on both arms alike (note the merge date in the holdout read).
+
+### the free-quota holdout: did the quota cost the returns? (`freeQuotaHoldout`, A/B)
+
+- **Claimed** 2026-11-25 · **Shipped** ON on merge (flag `freeQuotaHoldout: true`; `freeQuota` is a money flag and the founder gave the written go for THIS test in chat on 2026-11-25, "Full holdout (Recommended)") · **Enrolment** first app opens 2026-11-28 → 2026-12-25 (four weeks; fixed constants `FREE_QUOTA_HOLDOUT_START/END` in src/utils/free-quota-holdout.js, 11-28 00:00 UTC to 12-26 00:00 UTC exclusive — moved from 11-26 on 2026-11-26, and again from 11-27 on 2026-11-27 because the 11-27 start passed before merge; a test pins the start to no earlier than 11-28) · **Arm-balance check** 2026-12-04 · **Halfway money read** 2026-12-12 · **Read** 2027-01-02 (the 7th day after enrolment ends). If the merge slips past 11-28, move the window, the balance check, the halfway read and the read date together in one commit (constants, this entry, metrics.md).
+- **Change** an A/B by aid (`free_quota_holdout_v1`, FNV + murmur3 finalizer, independent of the first-screen, CTA, company-ask, company-direct, quota-wall-inline, modal-layout, run/submit, mobile-run-bar and mobile-one-layer arms). A browser whose **first app open** falls in the window is assigned once (`free_quota_arm_assigned {testId, arm, firstOpenAt}`, both arms; stored in `sqlquest_free_quota_holdout_v1`, never re-armed). `quota`: today. `holdout`: `freeQuota` reads OFF — no quota wall, no "N of 10 free solves used" counter, no row locks past ten, the pre-09-26 in-app wording (Coach strip line, plan line, trial/Pro-features copy, company banner, Hard catcher), and the tenth-solve milestone ask back (it was skipped only because the wall is the ask). Unchanged in both arms: the Hard lock and Pro content, the tutor's daily cap, the company-set gate, prices, the static pages' wording. A browser that already holds app state, or whose first open is outside the window, is not enrolled and keeps the quota; a signed-in account created before the window keeps the quota on any browser. Every `pro_events` row from an enrolled browser carries `fqArm`. Pure half src/utils/free-quota-holdout.js; guards tests/free-quota-holdout.test.js.
+- **Why** (docs/reads/returns-0926-flags-2026-11-25.md, PR #383; PR #382): day-0 solvers' 7-day return fell 44.3% → 23.7% on the deploy that flipped six flags (2026-09-25 22:41 UTC). Four are cleared on the data; `freeQuota` is the strongest suspect and the only one that reaches every free person, but 78% of the ~86 lost returns are 1–9-solve people who never met the wall on day 0. Only a randomised holdout separates the quota from the rest of that deploy.
+- **Metric** `free_quota_holdout` (docs/agent/metrics.md): 7-day return of day-0 solvers by arm, split 1–9 / 10+ day-0 solves; guardrails checkout clicks, trials and purchases per arm (`stripe_webhook` the money truth).
+- **Baseline** (#383): day-0 solver 7-day return 44.3% (n 497, quota off, 08-17 → 09-25) vs 23.7% (n 494, quota on, 09-25 → 11-18); 1–9 solves 39.6% → 23.1%, 10+ 67.5% → 28.6%. Purchases 2 per 30 days before and after; 4 of the 10 trials since 10-01 had touched a `free_quota` ask. The `quota` arm is the contemporaneous control.
+- **Target / decision rule, written before the data:** at ≥ 85 day-0 solvers per arm (planned ~125): `holdout` − `quota` ≥ 12 points (two-sided p < 0.05) → **HIT: the quota cost the returns**; the founder weighs it against the trials and purchases the wall brings (expected price of the test: about half the quota-sourced trials for four weeks, ~1–2 trials, ≤ 1 purchase). Gap ≤ 5 points → **FLAT: the quota did not**; turn the holdout off, keep the quota, and the next read is the 09-25 deploy's diff. Between 5 and 12 → extend enrolment by 4 weeks, once; then decide on the extended n. The 1–9 / 10+ split says which part did it: a gap in 1–9 is the counter and the copy, a gap in 10+ alone is the wall.
+- **Money stop (halfway read 2026-12-12):** `holdout` has 0 trials while `quota` has ≥ 3 → report to the founder the same day; he decides whether to stop (the agent does not turn the flag off on its own). A dispute or refund tied to the holdout arm → report the same day.
+- **Falsification:** fewer than 85 day-0 solvers per arm at 2027-01-02 → UNREADABLE; extend once (as above), never read a smaller n as FLAT. `free_quota_arm_assigned` arms more than 55 / 45 → the assignment is broken; stop and fix before reading anything (dated below).
+- **Arm-balance check 2026-12-04** (7 days into enrolment; rule written before the data): on bot-filtered `free_quota_arm_assigned` rows (the metric's population, **every** assigned browser — not the 7-day-matured `assigned` column of the read query), the split must pass a two-sided binomial test against 50/50 at p ≥ 0.01 (each arm within ±2.58·50/√n points: 40.9–59.1% at n = 200, 43.6–56.4% at n = 400; a fixed ±5-point band would trip by chance ~16% of the time at n = 200). Read it at ≥ 200 assigned; if fewer on 12-04, re-run it daily until 200. p ≥ 0.01 → PASS, the test runs on. p < 0.01 → **falsified: the assignment is broken.** Pause enrolment the same day (flag `freeQuotaHoldout` off — the kill switch, which returns every browser to today's quota, the status-quo direction) and report to the founder; investigate the hash (recompute `freeQuotaArm` for each assigned aid against its stored arm; check whether one arm loses its `free_quota_arm_assigned` row or gets bot-flagged more often), fix, and re-enrol from zero under a new test id (stored records always win, so `_v1` browsers cannot be re-armed). No reading of returns or money before it passes. Query: metrics.md `free_quota_holdout`, "Arm-balance check".
+- **Confounds** the test nests the quota-wall tests: `quotaWallInline` and `modalPlansFirst` (on `free_quota` asks) can only meet `quota`-arm and unenrolled people from now on; read them on `fqArm` not `holdout` and report the 2×2. The static pages still say "10 free challenge solves" to both arms (bound to the flags by tests/site-counts.test.js) — the test measures the in-app quota, not the site copy. A post-window account opened on a second browser gets that browser's arm (read is by aid, intent to treat). The holidays fall inside the window for both arms alike.
 
 ### the first-session tournament (`firstSessionTournament`, 3 arms; arm B = the single path)
 
@@ -74,7 +87,7 @@ of the verifier and must never be rounded to `FLAT`.
   - A challenger with 0 trial-or-paid while control has ≥ 3 is reported to the founder the same day.
   - **B specifically is falsified** if it is eliminated, or if at 250 per arm its posterior mean is not above control's, or if its `second_session_7d` trails control by ≥ 8 points at 150 per arm.
 - **Confounds.**
-  - The freeQuota holdout (enrolment 11-26 → 12-23) is orthogonal; every read is a 2×2 by `fqArm`.
+  - The freeQuota holdout (enrolment 11-28 → 12-25) is orthogonal; every read is a 2×2 by `fqArm`.
   - `companyDirectOpen`, `runnableStarter` and `mobileRunBar` are superseded for challenger arms. Their reads keep arm A and non-tournament people only.
   - The late-December traffic dip.
   - Interview-target people are ~15%, so every read reports that segment separately.
@@ -193,6 +206,16 @@ of the verifier and must never be rounded to `FLAT`.
   (orchestrator-decisions 2026-11-24), so this is the second and last slot;
   phones are out (their cell is full). Read the 12-20 claims on the 11-22
   starter and the deep-link swap inside `control` only.
+- **Flip** (A0, PR `flags/runnable-starter-on`, opened 2026-11-26): ON at
+  50/50 once the pre-flip walk passes: a fresh desktop profile, through a
+  `/app/?challenge=<id>` deep link on production with
+  `?ff_features_runnableStarter=true`, stores a `runnable_starter_v1` arm
+  and writes one `runnable_starter_assigned` on the first load. The clock
+  starts at the deploy of the flip commit. **Reverse rule:** the
+  Falsification line above (final 2027-01-07, interim harm stop
+  2026-12-17), plus off the same day if `runnable_starter_assigned` rows
+  stop while desktop `challenge_opened` rows continue, or if either arm
+  holds under 45% of assignments at ≥ 100 assigned (broken assignment).
 ### the Coach's Debug door (`coachDebugDoor`) — **OPEN**
 
 - **Claimed** 2026-11-25 · **Shipped** ON on merge (orchestrator decision,
@@ -857,6 +880,69 @@ of the verifier and must never be rounded to `FLAT`.
 - **Falsification** a page or generator states an exclusivity claim about
   the AI coach, tutor, diagnostic or Skillmap again.
 
+### the Wise page's first screen: the right first question, readiness, the Pro line, one "debug this query" (C5)
+
+- **Claimed** 2026-11-25 · **Shipped** on merge (static page, no flag) · **Read** 2026-12-23 (28 d) and 2027-01-20 (56 d).
+- **Change** `/wise-sql-interview/` gets a "Start here" block right under the
+  hero (hand-written page; same `company-first-screen` markers and click names
+  as the Monzo block in PR #295): **Start with** Card Spend by Country (#285,
+  Easy, Wise-tagged, card ledger: country lives on the cardholder, join before
+  you group, people vs payments) straight into the app; the readiness test
+  with `?company=wise`; one line on what Pro gives for this interview (the 3
+  Hard challenges in the Wise set, the Hard Debug challenges, all 300+ without
+  the 10-solve stop, the full mock bank; no price). Under it, "Debug this
+  query" on the synthetic multi-currency ledger (`finans_neobank`: fees on
+  completed currency exchanges per home currency). The query averages per
+  user, then averages the averages: 4 of 5 currencies come out wrong (PLN 0.65
+  against 1.07). Bug behind a `<details>`, the fix shown, and the same bug in
+  the app as Debug 341 (labelled Hard, Pro). Framed by the one dated, fetched
+  line in the Wise dossier (`docs/reads/companies/wise.md` W11, Dataford's
+  Wise DA guide, updated 2026-10-08, read 2026-11-22): a candidate handed a
+  query and asked what is wrong with it. Stated as one report, not a format.
+  Every new link carries `src=company-wise`. The hero button is unchanged
+  (its text is pinned by `tests/company-hero-cta.test.js` and its series must
+  not move), so the block says "Start with", not "Question 1".
+- **Why this one:** Wise is the consumer-fintech page with the highest
+  measured CTR (27%, C5 brief `docs/agent/fleet/C5-revenue-content.md`;
+  company pages convert best per `monetization-ideas-2026-11-22.md` §1f) and the best-clicking company
+  page after the Capital One blog in the R1 dossier (28 d to 2026-11-21: 206
+  impressions, 53 clicks, position 3.6). B6 (`competitors-2026-11-24.md` P3,
+  `competitors-2026-11-25.md` on PR #354, Q1/N5) routed "link the Debug hub
+  from Wise with one sourced line" to C5, and found Dataford alone among prep
+  sites on "wise data analyst sql interview". Menu item 1 beat item 2 (a
+  sourced Wise guide) because the dossier's only first-party format fact is
+  the take-home case, which names no SQL; a guide would be thin on SQL. The
+  page already lands people; the gap is page → first question.
+- **Metric** `content_funnel`, page `wise-sql-interview`: `trial_or_purchase`
+  per 1,000 `landing_people`, 28-day window, and the step it should move,
+  `app_opened` / `landing_people`. Clicks `cta_first_question`,
+  `cta_first_readiness`, `cta_first_debug`; arrivals with `arrivalSrc`
+  `company-wise`.
+- **Baseline** the page's 28-day `content_funnel` row to 2026-11-25 (laptop
+  read from the Monday/Thursday mail; cloud run, no production data, and
+  per-page numbers never go in the repo). Site-wide prior from
+  `monetization-ideas-2026-11-22.md` §1f: company pages 2.3% of arrivals to
+  trial or purchase, 81% of landers never open the app.
+- **Target** at 28 d: `app_opened` / `landing_people` up ≥ 5 points on the
+  baseline row, and ≥ 10% of landers click one of the three new links. At
+  56 d: `trial_or_purchase` per 1,000 landers at or above the company-page
+  prior (23), with ≥ 1 trial or purchase from a person whose first landing was
+  the page.
+- **Falsification, written now:** under 5% of landers click a new link at
+  ≥ 100 landers → the block is not read; cut it to the first-question line.
+  App opens flat or down at ≥ 100 landers → the block only pushed the page
+  down; remove it. `cta_first_debug` clicks that end on the Pro modal with no
+  plan click → a Hard Pro item is the wrong first debug; link a free Debug item
+  or the hub instead. Under 30 landers in 28 d → noise, read again at 56 d.
+- **Guard** `tests/wise-first-screen.test.js` (both queries run on
+  `finans_neobank`, the fix equals an independent SUM/COUNT truth and the
+  broken query does not, every stated number, Debug 341 is the
+  average-of-averages item and Hard, not a Revolut mock query, links and
+  doors, Pro line from the page facts and `freeSolvesLabel`, the source line
+  is in the dossier); `tests/company-pages.test.js` `OFF_SET_LINKS` /
+  `OFF_SET_NOTE` waive the tag check for 341 only while the page says it is
+  from the Debug set.
+
 ### the Capital One guide's first screen: format, the other test, the mock by its numbers (C5)
 
 - **Claimed** 2026-11-23 · **Shipped** on merge (static page, no flag) · **Read** 2026-12-21 (28 d) and 2027-01-18 (56 d).
@@ -956,6 +1042,86 @@ of the verifier and must never be rounded to `FLAT`.
   non-Hard, links and doors, Pro line from helpers, placement);
   `tests/company-pages.test.js` `OFF_SET_LINKS` / `OFF_SET_NOTE` waive the tag
   check for 336 only while the page says it is from the Debug set.
+
+### the Amazon page's first screen and current sources: "Start with", the set, readiness, the Pro mock, one "debug this query" (C5)
+
+- **Claimed** 2026-11-26 · **Shipped** on merge (static page, no flag) · **Read** 2026-12-24 (28 d) and 2027-01-21 (56 d).
+- **Change** `/amazon-sql-interview/` gets a "Start here" block right under
+  the hero, through the company generator (`scripts/company-first-screen.mjs`,
+  now able to serve an older page from its `SOURCED_FORMATS` entry):
+  "Start with" #131 Above-Department-Average Earners (Medium, free tier,
+  Amazon-tagged), the first shape in the BIE round reported to us; the
+  Amazon-tagged set in the app (39: 10 Medium, 29 Hard, from the page facts);
+  the readiness test with `?company=amazon`; and the Pro line (the 26 Hard
+  past the free preview, 300+ without the 10-solve stop, the mock bank) with
+  the closest Pro mock named honestly: the Hard SQL Interview mock (50 min,
+  five written questions, ranking and a streak), "a general mock, not
+  modelled on Amazon". Under it, "Debug this query": framed by the reported
+  round's COUNT(*) against COUNT(column) follow-up, a 7-line query on the
+  e-commerce sample that answers 2.88 orders per customer when the answer is
+  2.5 (COUNT(*) after a LEFT JOIN counts the 6 customers who never ordered as
+  1), fix behind a `<details>`, and Debug 334 in the app (the same difference
+  on titanic, Easy). Every new app link carries `src=company-amazon`; the hero
+  and nav keep theirs so their series do not move.
+  The sourced format table is rebuilt from the R1 dossier
+  (`docs/reads/companies/amazon.md`, read 2026-11-22, refresh by 2027-01-21):
+  Amazon's own BIE prep page (first-party) for the stages, a new online
+  assessment row (SQL challenge, "Working with SQL", Work Styles, seven days),
+  the 60-minute phone screen and five 55-minute loop interviews; Exponent's
+  guide re-cited at aced.io; two PracHub reports (dashboard task, a Business
+  Analyst screen with three SQL questions). The intro and provenance note now
+  say Amazon publishes its stages, not its questions. The FAQ's stale
+  "7 Medium, 27 Hard" (34 of 39) is corrected to 10 / 29, and the two-week
+  plan's two "7 Medium … and the 3 Hard previews" lines (intro and FAQ #1,
+  visible + JSON-LD) now say "pick them from the 10 Medium … or its 3 Hard
+  previews" (A1 REVISE on 3ef5844a).
+- **Why this one:** Amazon is the one company set that produced a payer
+  before the quota (CLAUDE.md); the dossier shows real demand at page 4–5
+  ("amazon interview questions on sql" and neighbours) and a page that
+  claimed no first-party source while one existed. Menu item 1 (improve a
+  page that lands people) beat item 2 (a sourced guide): the page is the
+  sourced guide already; its gap was page → first question and stale rows.
+- **Metric** `content_funnel`, page `amazon-sql-interview`:
+  `trial_or_purchase` per 1,000 `landing_people`, 28-day window, and the step
+  it should move, `app_opened` / `landing_people`. Clicks
+  `cta_first_question`, `cta_first_set`, `cta_first_readiness`,
+  `cta_first_mock`, `cta_first_debug`; arrivals with `arrivalSrc`
+  `company-amazon`; Pro modals with `linkSrc` `company-amazon` (reason
+  `mock_link`) for the mock line.
+- **Baseline** the page's 28-day `content_funnel` row to 2026-11-26, read by
+  the laptop from the Monday/Thursday mail (cloud run, no production data;
+  per-page numbers never go in the repo). Latest dated read with the page's
+  demand: `docs/reads/companies/amazon.md` (gsc_daily to 2026-11-22). The
+  site-wide prior from `docs/plans/monetization-ideas-2026-11-22.md` §1f:
+  company pages 2.3% of arrivals to trial or purchase, 81% of landers never
+  open the app.
+- **Target** at 28 d: `app_opened` / `landing_people` up by ≥ 5 points on the
+  baseline row, and ≥ 10% of landers click one of the five new links. At
+  56 d: `trial_or_purchase` per 1,000 landers at or above the company-page
+  prior (23), with ≥ 1 trial or purchase from a person whose first landing
+  was the page.
+- **Falsification, written now:** fewer than 5% of landers click a new link
+  at ≥ 100 landers → the block is not read; cut it to the "Start with" line.
+  App opens flat or down at ≥ 100 landers → the block pushed the sourced
+  table down without moving anyone; move it below the table. `cta_first_mock`
+  clicks with 0 plan clicks from `linkSrc` `company-amazon` in 56 d at ≥ 150
+  landers → a general mock is not what Amazon readers want; ask B3 for an
+  Amazon-shaped set (dossier: the targets/bridge-table shape the bank lacks).
+  `cta_first_debug` clicks with no `challenge_first_run` on 334 → the item
+  reads as homework; drop it. Under 30 landers in 28 d → noise, read again
+  at 56 d.
+- **Confound, stated:** the sourced rows and the first screen ship together,
+  so a move in rank (and landers) cannot be split from a move in the page →
+  app step. Read rank from `gsc_daily` apart.
+- **Guard** `tests/company-first-screen.test.js` (both queries run on
+  `ecommerce`, every number, the bug line, not a mock query, the Debug item
+  is live and non-Hard, links and doors, the measures-not-how line, the mock's
+  length and Pro status, placement and idempotency on the older page);
+  `tests/company-pages.test.js` `OFF_SET_LINKS` / `OFF_SET_NOTE` waive the tag
+  check for 334 only while the page says it is from the Debug set. Breaks
+  caught: the fix's COUNT on the left table (fails "amazon: broken answers
+  2.88, the fix 2.5"); a "Start with" line that names the method (fails
+  "says what it measures, not how").
 
 ### a founder-led live mock — would people pay for it? (asked by hand)
 
