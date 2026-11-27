@@ -199,9 +199,9 @@
       <a href="#questions" class="btn bo">See the Practice Set ↓</a>
     </div>
     <div style="display:flex;gap:28px;margin-top:44px;flex-wrap:wrap;justify-content:center;animation:fadeUp .6s .5s both;">
-      <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">25 Capital One questions, 2 timed mocks</p><p style="font-size:11px;color:#8b98ab;">Free to start</p></div></div>
-      <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">Card ledger</p><p style="font-size:11px;color:#8b98ab;">200 accounts · 2,165 transactions</p></div></div>
-      <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">AI tutor</p><p style="font-size:11px;color:#8b98ab;">Step-by-step hints</p></div></div>
+      <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">25 Capital One questions, 2 timed mocks</p><p style="font-size:12px;color:#8b98ab;">Free to start</p></div></div>
+      <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">Card ledger</p><p style="font-size:12px;color:#8b98ab;">200 accounts · 2,165 transactions</p></div></div>
+      <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">AI tutor</p><p style="font-size:12px;color:#8b98ab;">Step-by-step hints</p></div></div>
     </div>
   </div>
 </section>
@@ -405,7 +405,7 @@ const TOPICS=[
   ['20%','Conditional Logic','5 of the 25 · CASE for row labels, buckets and conditional aggregation','#c084fc'],
   ['8%','NULL Handling','2 of the 25 · IS NULL, COALESCE, NULLIF, and what COUNT skips','#22c55e']
 ];
-document.getElementById('topic-cards').innerHTML=TOPICS.map(t=>`<div class="tc" onmouseenter="this.style.borderColor='${t[3]}44'" onmouseleave="this.style.borderColor='rgba(255,255,255,0.06)'"><p class="fm" style="font-size:32px;font-weight:800;color:${t[3]}">${t[0]}</p><p style="font-size:13px;font-weight:700;color:#e2e8f0;margin-top:4px">${t[1]}</p><p style="font-size:11px;color:#8b98ab;margin-top:6px;line-height:1.5">${t[2]}</p></div>`).join('');
+document.getElementById('topic-cards').innerHTML=TOPICS.map(t=>`<div class="tc" onmouseenter="this.style.borderColor='${t[3]}44'" onmouseleave="this.style.borderColor='rgba(255,255,255,0.06)'"><p class="fm" style="font-size:32px;font-weight:800;color:${t[3]}">${t[0]}</p><p style="font-size:13px;font-weight:700;color:#e2e8f0;margin-top:4px">${t[1]}</p><p style="font-size:12px;color:#8b98ab;margin-top:6px;line-height:1.5">${t[2]}</p></div>`).join('');
 
 // Mirrors the FAQPage JSON-LD in <head>; keep both in sync.
 const FAQS=[

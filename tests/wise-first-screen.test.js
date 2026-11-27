@@ -4,10 +4,11 @@
 // the data, the broken query must give the wrong answer and the fix the right
 // one, and every link the block adds goes where it says.
 //
-// Hand-written page (src/wise-sql-interview.html is not in the company
-// generator), so this test reads the committed block between the
-// `company-first-screen:start/end` markers — the same markers the Monzo
-// block uses (PR #295), so the two can fold into one generator later.
+// The block is written by the company generator from FIRST_SCREENS.wise in
+// scripts/company-first-screen.mjs (moved there 2026-11-27; it was
+// hand-written, and the generator's next run would have deleted it). This
+// test reads the committed block between the `company-first-screen:start/end`
+// markers; tests/company-template.test.js pins that the generator writes it.
 
 import { describe, it, expect, beforeAll } from 'vitest';
 import { readFileSync } from 'node:fs';
@@ -26,6 +27,26 @@ const END = '<!-- company-first-screen:end -->';
 const DOOR = 'company-wise';
 const FIRST_ID = 285;
 const DEBUG_ID = 341;
+
+// Live QA 2026-11-27 (docs/reads/live-qa-2026-11-27.md, note B): after the hero
+// section the block started below the fold, so it now sits INSIDE the hero,
+// directly after the primary CTA row (the yellow button keeps its place).
+// Returns what the placement tests check, from the page's own markup.
+const heroPlacement = (html) => {
+  const START = '<!-- company-first-screen:start -->';
+  const hero = html.indexOf('<section class="hero"');
+  const start = html.indexOf(START);
+  const ctaRowEnd = html.indexOf('</div>', html.indexOf('data-track="cta_hero_primary"', hero)) + '</div>'.length;
+  const heroEnd = html.indexOf('</section>', html.indexOf('<!-- company-first-screen:end -->'));
+  return {
+    once: html.split(START).length === 2,
+    insideHero: hero >= 0 && start > hero && html.slice(hero, start).indexOf('</section>') < 0,
+    rightAfterCtaRow: ctaRowEnd > hero && html.slice(ctaRowEnd, start).trim() === '',
+    // contain:inline-size keeps the <pre> from widening the flex hero on a phone
+    contained: /<div id="start" data-section="first-screen" style="[^"]*contain:inline-size/.test(html),
+    heroEnd,
+  };
+};
 
 const unescape = s => s.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&amp;/g, '&');
 const text = html => unescape(html.replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ');
@@ -71,13 +92,13 @@ const TRUTH = `SELECT u.home_currency AS home_currency,
 const asMap = rows => new Map(rows.map(r => [r.home_currency, r.avg_fee_gbp]));
 
 describe('the Wise first screen', () => {
-  it('sits right under the hero, once, ahead of the provenance note', () => {
+  it('sits in the hero, once, right after the primary CTA row, ahead of the provenance note', () => {
     expect(block, 'no first-screen block on the Wise page').not.toBe('');
-    expect(PAGE.split(START).length).toBe(2);
-    const hero = PAGE.indexOf('<section class="hero"');
-    const heroEnd = PAGE.indexOf('</section>', hero);
-    expect(PAGE.indexOf(START)).toBeGreaterThan(heroEnd);
-    expect(PAGE.indexOf(START)).toBeLessThan(PAGE.indexOf('<!-- company-provenance:start -->'));
+    for (const [rel, html] of [['src', PAGE], ['public', read('../public/wise-sql-interview/index.html')]]) {
+      const p = heroPlacement(html);
+      expect(p, rel).toMatchObject({ once: true, insideHero: true, rightAfterCtaRow: true, contained: true });
+      expect(html.indexOf('<!-- company-provenance:start -->'), rel).toBeGreaterThan(p.heroEnd);
+    }
   });
 
   it('every app link in the block carries src=company-wise, and the readiness link names wise', () => {
