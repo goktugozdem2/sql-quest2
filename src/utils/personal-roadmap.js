@@ -283,6 +283,69 @@ export function resolveProfile(profile = {}, bank = [], opts = {}) {
   };
 }
 
+// ───────────────────────────── the lead step ────────────────────────────────
+
+/**
+ * A lead step (arm D: the company link's opened question, walk fix D2) is the
+ * plan's step 1, so step 2 continues from it instead of restarting the ramp
+ * at rung 0. Before this, a Capital One link's step 2 was #98 "Counting
+ * Rows" (Easy basics) right after a card-transactions question — a weak
+ * second step for an interview candidate (fleet, 2026-11-27).
+ *
+ * The anchor is the first lead id that is still unsolved. The level re-plan
+ * after step 2 passes the two probe steps as its lead, both solved, so it has
+ * no anchor and is laid by the measured level, as before.
+ *
+ * Step 2 is, in order of preference, a free step at the lead's difficulty
+ * (or the nearest one the level allows) that is
+ *   1. in the company's set and shares a canonical skill with the lead,
+ *   2. in the company's set,
+ *   3. on the lead's closest canonical skill (the heaviest skill it carries);
+ * first among the plan's own steps (only the order changes, so N does not),
+ * else a fresh pick that takes the place of the step it displaces. The lead
+ * itself, when the plan holds it, moves to the front (composePathPlan puts it
+ * there anyway). Nothing else moves.
+ */
+function continueFromLead(ordered, { lead, pool, pool0, picked, inScope, proOnly, allowedDiffs, weights, cmp }) {
+  const ids = (Array.isArray(lead) ? lead : []).map(Number).filter(Number.isInteger);
+  if (!ids.length || !ordered.length) return ordered;
+  const unsolved = new Set(pool.map(c => c.id));
+  const anchor = ids.map(id => pool0.find(c => c && c.id === id)).find(c => c && unsolved.has(c.id));
+  if (!anchor || !Object.prototype.hasOwnProperty.call(DIFF_RANK, anchor.difficulty)) return ordered;
+
+  const leadSkills = CANONICAL_SKILLS.filter(s => challengeMatchesSkill(anchor, s));
+  const closest = leadSkills.slice().sort((a, b) => weights[b] - weights[a] || CANONICAL_SKILLS.indexOf(a) - CANONICAL_SKILLS.indexOf(b))[0] || null;
+  const diff = allowedDiffs.includes(anchor.difficulty) ? anchor.difficulty
+    : allowedDiffs.slice().sort((a, b) => Math.abs(DIFF_RANK[a] - DIFF_RANK[anchor.difficulty]) - Math.abs(DIFF_RANK[b] - DIFF_RANK[anchor.difficulty]) || DIFF_RANK[a] - DIFF_RANK[b])[0];
+  const tiers = [
+    c => inScope(c) && leadSkills.some(s => challengeMatchesSkill(c, s)),
+    c => inScope(c),
+    c => !!closest && challengeMatchesSkill(c, closest),
+  ];
+  const fits = (c, tier) => c.id !== anchor.id && !proOnly(c) && c.difficulty === diff && tier(c);
+
+  const leadAt = ordered.findIndex(x => x.c.id === anchor.id);
+  const head = leadAt >= 0 ? [ordered[leadAt]] : [];
+  const rest = ordered.filter((_, i) => i !== leadAt);
+  // The plan's own free steps first — a reorder keeps N.
+  for (const tier of tiers) {
+    const at = rest.findIndex(x => x.phase === 'free' && fits(x.c, tier));
+    if (at >= 0) return [...head, rest[at], ...rest.filter((_, i) => i !== at)];
+  }
+  // Else a fresh pick in place of the step it displaces (the would-be step 2).
+  const displaced = rest.findIndex(x => x.phase === 'free' && !x.setFree);
+  if (displaced < 0) return [...head, ...rest];
+  for (const tier of tiers) {
+    const hit = pool.filter(c => !picked.has(c.id) && fits(c, tier)).sort(cmp)[0];
+    if (!hit) continue;
+    picked.delete(rest[displaced].c.id);
+    picked.add(hit.id);
+    const skill = (leadSkills.find(s => challengeMatchesSkill(hit, s)) || closest);
+    return [...head, { c: hit, skill, phase: 'free' }, ...rest.filter((_, i) => i !== displaced)];
+  }
+  return [...head, ...rest];
+}
+
 // ───────────────────────────── the roadmap ──────────────────────────────────
 
 /**
@@ -297,6 +360,8 @@ export function resolveProfile(profile = {}, bank = [], opts = {}) {
  *   quota             FREE_SOLVE_QUOTA unless a test says otherwise
  *   quotaOn           the freeQuota flag (default true — it is on)
  *   companySetGateOn  the companySetGate flag (default true — it is on)
+ *   lead              ids that lead the plan (arm D: the company link's question);
+ *                     step 2 continues from the first unsolved one (continueFromLead)
  * @returns {{steps:Array, length:number, dailyCount:number, planDays:number,
  *            overrunsDeadline:boolean, wallAt:number|null, why:string[],
  *            summary:string, profile:Object}}
@@ -444,10 +509,11 @@ export function buildRoadmap(profile = {}, bank = [], opts = {}) {
 
   // ── order: the ramp (difficulty), then the curriculum, inside each part ──
   const byRamp = (a, b) => (DIFF_RANK[a.c.difficulty] - DIFF_RANK[b.c.difficulty]) || cmp(a.c, b.c);
-  const ordered = [
+  let ordered = [
     ...coreKept.filter(x => x.phase === 'free').sort(byRamp),
     ...coreKept.filter(x => x.phase !== 'free').sort(byRamp),
   ];
+  ordered = continueFromLead(ordered, { lead: opts.lead, pool, pool0, picked, inScope, proOnly, allowedDiffs, weights, cmp });
 
   const reasonFor = x => {
     if (x.setFree) return 'company_free';
