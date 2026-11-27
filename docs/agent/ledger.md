@@ -27,6 +27,35 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### the company-set gate walls only authored sets (Capital One, Revolut) — bug fix
+
+- **Claimed** 2026-11-26 (founder's go in chat, "1'i uygula") · **Shipped**
+  on merge, no flag · **Read** 2026-12-10.
+- **Change.** The 2026-09-20 decision (M1 amended: only a set AUTHORED for
+  the company is walled) lived only in the banner's `companyGateFreeIds`.
+  The gate itself (`companySetGate`, three call sites in app.jsx: the
+  banner's next pick, the openChallenge wall, the row lock) never checked
+  it, so since the 09-26 flip a topical set (Snowflake, Wise, Meta, …)
+  walled its fourth question under reason `company_set` while its page and
+  banner promised only the general 10-solve quota. `companySetGate` now
+  takes `authored` and is ungated unless it is `true`; every call passes
+  `companyHasAuthoredSet(companyFilter)`.
+- **Metric** `company_set_wall` (docs/agent/metrics.md), here as a
+  correctness check on `pro_modal_shown {reason: 'company_set'}` by company.
+- **Baseline** 2026-09-26 → 11-26 (read-only, pro_events): the modal fired
+  in Snowflake (6), Wise (4) and Meta (2) views, and also in OpenAI, Amazon,
+  Airbnb and Google views — none of them authored sets.
+- **Target** 0 `company_set` walls or modals outside Capital One and Revolut
+  from the deploy; Capital One / Revolut walls still fire (> 0 if any
+  non-Pro reaches a fourth question there).
+- **Falsified if** any `company_set` row names another company after the
+  deploy (then a call site skips `authored`, or a stale bundle is served).
+- **Confounds.** The 11-22 verdict of "the company set wall" above counted
+  every company's wall; from this deploy only two companies can reach it,
+  so never read that series across 11-26. The freeQuota holdout (#384,
+  enrolment from 11-28) leaves the company gate the same in both arms; this
+  lands on both arms alike (note the merge date in the holdout read).
+
 ### the free-quota holdout: did the quota cost the returns? (`freeQuotaHoldout`, A/B)
 
 - **Claimed** 2026-11-25 · **Shipped** ON on merge (flag `freeQuotaHoldout: true`; `freeQuota` is a money flag and the founder gave the written go for THIS test in chat on 2026-11-25, "Full holdout (Recommended)") · **Enrolment** first app opens 2026-11-28 → 2026-12-25 (four weeks; fixed constants `FREE_QUOTA_HOLDOUT_START/END` in src/utils/free-quota-holdout.js, 11-28 00:00 UTC to 12-26 00:00 UTC exclusive — moved from 11-26 on 2026-11-26, and again from 11-27 on 2026-11-27 because the 11-27 start passed before merge; a test pins the start to no earlier than 11-28) · **Arm-balance check** 2026-12-04 · **Halfway money read** 2026-12-12 · **Read** 2027-01-02 (the 7th day after enrolment ends). If the merge slips past 11-28, move the window, the balance check, the halfway read and the read date together in one commit (constants, this entry, metrics.md).
