@@ -308,7 +308,7 @@ describe('the app wiring (source guards)', () => {
     const tryAsk = block.slice(block.indexOf('const tryOutcomeAsk'), block.indexOf('const answerOutcomeAsk'));
     expect(tryAsk).toMatch(/if \(!ok\) return false;[\s\S]*markPromptShown\([\s\S]*writeOutcomeAskRec\(\{ shownAt[\s\S]*outcome_ask_shown/);
     expect(tryAsk).toContain("trackActivationEvent('outcome_ask_shown', { surface, trigger });");
-    expect(tryAsk).toContain('if (!surface || outcomeAsk || fbPrompt) return false;');
+    expect(tryAsk).toContain('if (!surface || outcomeAsk || fbPrompt || interviewAsksBlocked()) return false;');
   });
 
   it('the answer writes the existing interview_outcome from the pure payload, nothing else', () => {
@@ -345,6 +345,20 @@ describe('the app wiring (source guards)', () => {
     expect(app.match(/\{renderInterviewAsks\('interview_tab'\)\}/g) || []).toHaveLength(1);
     const render = block.slice(block.indexOf('const renderInterviewAsks'));
     expect(render).not.toMatch(/FFE34D|fixed inset-0|role="dialog"|aria-modal/i);
+  });
+
+  it('tournament arms B / D: neither ask is tried or rendered in the first-session layer queue', () => {
+    // The survey tier never asks there (PATH_LAYER_NEVER, src/utils/single-path.js).
+    expect(block).toContain('const interviewAsksBlocked = () => !!pathUi.layerQueue;');
+    expect(block).toContain('if (!surface || outcomeAsk || fbPrompt || interviewAsksBlocked()) return false;');
+    expect(block).toContain('if (!interviewCompleted || !interviewResults || fbPrompt || interviewAsksBlocked()) return;');
+    expect(block).toContain("if (asked || activeTab !== 'trials' || fbPrompt || outcomeAsk || interviewAsksBlocked()) return;");
+    expect(block).toContain('if (!pending || !currentUser || !dbReady || isSessionLoading || fbPrompt || interviewAsksBlocked()) return;');
+    expect(block).toMatch(/const renderInterviewAsks = \(surface\) => \{\s*if \(!pathLayerOk\('feedback_prompt'\)\) return null;/);
+    expect(app).toContain("{fbPrompt?.kind === 'least_ready' && fbPrompt.trigger === 'mock_results' && pathLayerOk('feedback_prompt') && (");
+    expect(app).toContain("{promptSlot(fbPrompt) === 'global' && !showProModal && pathLayerOk('feedback_prompt') && (");
+    // The queue counts any non-stuck prompt (least_ready, the debrief) as the survey layer.
+    expect(app).toContain("fbPrompt && fbPrompt.kind !== 'stuck' && 'feedback_prompt',");
   });
 
   it('events carry no date: OUTCOME_ASK_KEY holds timestamps in the browser only', () => {

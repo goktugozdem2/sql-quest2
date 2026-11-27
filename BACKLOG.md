@@ -508,6 +508,26 @@ Read: `docs/reads/seo-sentinel-2026-11.md` (F5, indexing step).
 - **C1 — RED, day 3 (F1), unchanged.** No new Bing data today (last fetch
   11-23 18:40 UTC). The 11-26 `blocked_by_robots` check stands.
 
+## SEO sentinel S1 + traffic C8, 2026-11-27
+
+Reads: `docs/reads/seo-sentinel-2026-11.md` (run 5) and `docs/reads/traffic-2026-11-27.md`.
+
+- **C1 — RED, day 6 (F1): `blocked_by_robots` was still rising at the 11-26
+  check.** It went 833 → 841 → 850 → 853 (11-22 → 11-25), +3 on the last
+  day. `in_index` is 858 against 445 sitemap URLs (1.93).
+  - The live `robots.txt` = main, with the bingbot group present.
+  - Either Bing has not re-read the file, or the counter only ages out.
+  - **FOUNDER:** Bing robots.txt tester, `bingbot`, on
+    `/app/?challenge=91&src=sql-exercises`. "Blocked" means ask Bing to
+    re-fetch robots.txt.
+- **B2 — before the Friday scorecard fill:** add A2's 11-26 walk aids
+  (`a2a21126%`, `d9fe96e2bdf44aefa9195673a6496888`) to the `founder` rule in
+  `scripts/scorecard-weekly.sql`. They are 13 "people" and 1 solver in the
+  week of 11-23. Keep the `google_ua` UA rule: #392's stamp catches only
+  2 of 16 GoogleOther rows (cached `track.js`, metrics.md).
+- **F5 (deploy drops the Debug-hub link) — cleared.** All four pages carry
+  the link live on 11-27. Nothing for C1.
+
 ## Funnel findings — B1, 2026-11-22 (docs/reads/funnel-2026-11-22.md)
 
 Six-solvers 209 → 57 (first solvers 500 → 222, reach-six 41.8% → 25.7%;
@@ -696,6 +716,14 @@ touch them.
   3. In Stripe, open the subscription with the open $9 invoice of 11-24
      19:00 UTC. If it is still unpaid, send the customer the invoice's
      hosted link and restore Pro by hand until it is settled.
+  2026-11-26: steps 1–2 are DONE (#355 merged, v27 deployed 11-25). Step 3
+  is still OPEN. About 35 h later the account still reads `proStatus` false,
+  and no `invoice.paid` has reached the webhook (`errors-2026-11-26.md`).
+  2026-11-27: still OPEN, about 62 h after expiry. A
+  `customer.subscription.updated` reached the webhook at 11-27 03:28 UTC
+  and wrote no row (only cancel/reactivate changes are logged); it may be
+  this subscription moving status on Stripe's retry schedule. Read its
+  status in Stripe (`errors-2026-11-27.md`).
 - **A3-5. `pro_events` has no index on `username`, so per-person lookups scan
   the table.** On 11-23 at 15:00 the `checkout-abandon` read
   `username = … AND event IN (plan/checkout clicked)` hit the 8 s statement
@@ -706,6 +734,16 @@ touch them.
   `create index concurrently if not exists idx_pro_events_username_event on public.pro_events (username, event);`
   Source half (any lane, small PR in `supabase/functions/checkout-abandon/`):
   skip the person when either read returns an `error`.
+  2026-11-26: the source half is #398, held under 6d. After merge,
+  FOUNDER: `supabase functions deploy checkout-abandon`.
+  2026-11-27: #398 merged 11-26 10:51 UTC, but the deployed function is
+  still v14 (2026-09-17); the 11-26 15:00 run used the old code. The deploy
+  is still due.
+- **A3-6. A failed sign-in leaves no `pro_events` row.** On 11-27 a
+  registered person got four 401s and a 429 lockout from `account-login`,
+  then got in 45 min later; only the function logs show it. Papercut: a
+  `login_failed {error: invalid_credentials | locked}` event (no username
+  typed, no password) would make lockouts countable. Not urgent at n = 1.
 
 ## Competitor watch — B6, 2026-11-22 (docs/reads/competitors-2026-11-22.md)
 
@@ -1002,6 +1040,14 @@ Every competitor fact cited must come from that read (URL + date).
     Crypto, ≥ 100k iterations) on the next successful sign-in and marks the
     row's scheme; account-password writes the new scheme. Founder's call —
     it touches every sign-in.
+- **A/B metric SQL in metrics.md reads crawlers as people (B2, 2026-11-27).**
+  `company_direct_split`'s block filters only `metadata.bot` and internal
+  names; 45 of the 63 browsers assigned to `companyDirectOpen` by 11-27 are
+  `app1lang` crawlers (0 runs), so a read as written dilutes both arms about
+  threefold. Swap its filters for the `scripts/scorecard-weekly.sql`
+  exclusion block, and check the other A/B blocks (`runnable_starter_split`,
+  `mobileRunBar`, `mobileOneLayer`) and `scripts/ab/read-test.mjs` the same
+  way. A definition change, so its own PR (README 6b). Owner B2.
 
 ## Inbox review — 2026-11-23 (docs/reads/inbox-review-2026-11-23.md)
 
@@ -1020,8 +1066,11 @@ Every competitor fact cited must come from that read (URL + date).
   tutor ("This box goes to the founder. For this query, the tutor answers
   now."). Measure it with `feedback_submitted` rows that carry a challenge
   id.
-- **IR-3 (founder). A payer's job question,** asked 2026-09-14 and never
-  answered. One honest line, either way.
+- ~~**IR-3 (founder). A payer's job question,** asked 2026-09-14 and never
+  answered. One honest line, either way.~~ **Closed 2026-11-24:** the payer
+  asked again on 11-24 and the founder answered in the same thread that day
+  (no opening promised; he would name her if asked for someone). E1 checked
+  on 11-26: the founder's reply is the last message, so no further draft.
 - **IR-4 (founder). Acknowledge the 09-15 security report** once #223 is
   deployed. The reporter left no contact, so this item is just to close the
   loop in the ledger.

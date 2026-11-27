@@ -558,6 +558,17 @@ window.FEATURE_FLAGS = {
     // this wall for anyone past ten solves. Ledger: "the free quota: ten
     // solves, then Pro".
     freeQuota: true,
+    // The free-quota holdout (2026-11-25, founder's written go in chat:
+    // "Full holdout (Recommended)"). A browser whose FIRST app open falls in
+    // the four-week enrolment window is split 50/50 by a murmur-finalised
+    // hash of its aid: `quota` keeps today's free tier, `holdout` reads
+    // `freeQuota` OFF — no wall, no "N of 10" counter, the pre-09-26 in-app
+    // wording. Returning browsers and accounts created before the window keep
+    // the quota. App only: the static pages keep today's wording. Off → nobody
+    // is enrolled and holdout browsers get the quota back (the kill switch).
+    // src/utils/free-quota-holdout.js; metric `free_quota_holdout`; ledger
+    // "the free-quota holdout"; enrol 2026-11-28 → 12-25, read 2027-01-02.
+    freeQuotaHoldout: true,
 
     // ── The header's Pro button (M-04, 2026-11-22) ────────────────────────
     // "Try Pro free" (or "Pro" when no trial is offered) beside the identity
@@ -641,11 +652,13 @@ window.FEATURE_FLAGS = {
     // `mobile_run_bar_assigned {arm}`. The `bar` arm pins the challenge's
     // Run / Submit bar to the bottom of the viewport below `md` (above the
     // keyboard where visualViewport is supported); `control` keeps today's
-    // sticky bar. Desktop is untouched in both arms. DARK until the
-    // orchestrator's decision row. src/utils/mobile-run-bar.js; ledger "Run
-    // stays on screen on phones"; metric open_to_first_run, mobile band.
+    // sticky bar. Desktop is untouched in both arms. Shipped off; ON at 50/50
+    // 2026-11-25 (orchestrator decision row, after an iOS Simulator +
+    // production walk on the bundle with #299's iOS fixes: PASS).
+    // src/utils/mobile-run-bar.js; ledger "Run stays on screen on phones";
+    // metric open_to_first_run, mobile band.
     // Plan: docs/plans/mobile-acquisition-2026-11-23.md §4.
-    mobileRunBar: false,
+    mobileRunBar: true,
 
     // ── The Debug question type (design PR #248, 2026-11-23) ──────────────
     // "An AI assistant wrote this for the task below. It returns the wrong
@@ -661,6 +674,19 @@ window.FEATURE_FLAGS = {
     // its own decision row. ON 2026-11-23 (orchestrator-decisions.md).
     debugQuestions: true,
 
+    // ── The Coach's Debug door (orchestrator 2026-11-25, decision row in PR #372) ──
+    // One card near the top of the Coach (under "Your plan", above the
+    // roadmap; the goal next-step slot measured ~2,400-2,750 px down), "Fix a query an AI
+    // wrote": its button opens the next unsolved Debug item the person may
+    // open (curriculum order; through openChallenge, so the free quota and
+    // the Pro locks apply exactly), "See all N" opens Practice with the Debug
+    // chip on. Shown only with debugQuestions on, >= 1 solve, an unsolved
+    // Debug item, and not for a hired person (First 90 Days). A door, not a
+    // funnel-step A/B, so it ships ON. src/utils/coach-debug-door.js; events
+    // coach_debug_door_shown / coach_debug_door_clicked; metric
+    // coach_debug_door; ledger "the Coach's Debug door".
+    coachDebugDoor: true,
+
     // Run is not Submit (2026-11-23, src/utils/run-submit-nudge.js): an A/B
     // by aid (run_submit_nudge_v1, murmur-finalised hash). A person with ZERO
     // solves whose Run returns rows on an unsolved challenge is assigned once
@@ -671,6 +697,39 @@ window.FEATURE_FLAGS = {
     // orchestrator decides the flip (companyDirectOpen "runs alone").
     // Ledger "Run is not Submit"; read first_solve_10m from assignment by arm.
     runSubmitNudge: false,
+
+    // ── A runnable starter in the editor (desktop A/B, 2026-11-26) ────────
+    // An A/B by aid (runnable_starter_v1, murmur-finalised hash), assigned at
+    // the first challenge open that would show an empty editor (no solve, no
+    // draft, not #91, not a Debug item) on a DESKTOP screen (≥ 1024 wide,
+    // fine pointer) and written once as `runnable_starter_assigned {arm,
+    // challengeId, viewport}`. `starter`: the editor holds a comment line
+    // and `SELECT * FROM <first table> LIMIT 5;` as real text, selected on
+    // focus, plus one grey line "Press Run to see the data first."; `control`
+    // keeps the grey placeholder. Grading unchanged; the untouched starter is
+    // never a solve. Phones are out (their cell is full, orchestrator
+    // 2026-11-24). DARK on merge; the founder approved ON at 50/50 after
+    // merge (chat, 2026-11-26). src/utils/runnable-starter.js; ledger "a
+    // runnable starter in the editor"; metric runnable_starter_split.
+    runnableStarter: true,
+
+    // ── The first-session tournament (2026-11-26, PR 1 of 4: the frame) ───
+    // New visitors only (a browser's FIRST app open; returning browsers and
+    // `?interview=` / `?profile=` first opens never enter) are split by aid
+    // (first_session_tournament_v1, murmur-finalised hash) across the ACTIVE
+    // arms of src/data/tournament-arms.js, equal weights: A_control (today,
+    // permanent), B_single_path, D_interview_sprint; C_proof_first queued.
+    // Written once (`sqlquest_tournament_v1` + userData.tournament), never
+    // re-armed; `tournament_assigned` once; `tArm` / `tArmV` on every row.
+    // PR 1 builds no arm UI: B and D run A_control's behaviour (`built:
+    // false`), so a flag-on preview is an A/A of the plumbing. DARK; the
+    // flip is a separate PR after the plan's §2.4 gates, on 2026-12-12
+    // (orchestrator 2026-11-27, after the holdout's halfway money read),
+    // with the founder's go on the §7 money strings.
+    // src/utils/tournament.js; metric first_session_tournament; read
+    // scripts/tournament-read.sql. Off = the kill switch: nobody new is
+    // enrolled and enrolled browsers get today's product.
+    firstSessionTournament: false,
   },
 };
 

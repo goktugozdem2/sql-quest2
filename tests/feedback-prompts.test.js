@@ -306,7 +306,9 @@ describe('the app wiring (source guards)', () => {
     expect(app).toMatch(/proModalPlansSeenRef\.current = false;\s*\n\s*proModalPlanClickedRef\.current = false;/);
     expect(hooks).toContain('planClicked: proModalPlanClickedRef.current');
     // The global slot never renders while the modal is up.
-    expect(app).toContain("{promptSlot(fbPrompt) === 'global' && !showProModal && (");
+    // Tournament arms B / D add their own gate (the survey never asks in their
+    // first session — tests/single-path.test.js, walk fix round 2).
+    expect(app).toContain("{promptSlot(fbPrompt) === 'global' && !showProModal && pathLayerOk('feedback_prompt') && (");
   });
 
   it('stuck renders on the challenge page for its own challenge, one card per trigger', () => {

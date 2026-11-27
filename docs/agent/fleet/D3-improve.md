@@ -1,3 +1,15 @@
+---
+id: D3
+name: "Improve the fleet from its results"
+owner: orchestrator
+runtime: laptop
+status: active
+cadence: "weekly (Mon, after D2); monthly meta check"
+metric: [purchases]
+writes_code: false
+version: 1.0.0
+last_changed: 2026-11-26
+---
 # D3 — Improve the fleet from its results
 
 **Lane:** the fleet's own instructions: briefs, menus, cadences, the daily merge slots.
@@ -27,6 +39,15 @@ Founder, 2026-11-23: "Recursive self improvement nasıl yaparsın daha fazla sub
 5. **One PR per week** (`docs/d3-<date>`), docs only. A1 reviews it. A0 merges it unless it removes a guard, a held kind or a hard limit. Those stay with the founder.
 6. **Three lines for the founder:** what earned money, what was cut, what changed in which brief.
 
+## The skills loop, weekly (2026-11-26)
+
+Every brief in this folder is a versioned skill (README, "The skills loop"). Each Monday, after the steps above:
+
+1. Read `docs/agent/fleet/papercuts.md` (open rows) and the last 7 days of the run ledger `docs/agent/fleet/runs/*.jsonl` (`papercuts`, `outcome`, `minutes`, merged vs opened).
+2. For each open papercut and each lane whose runs went `noop`, `blocked` or REVISE twice, propose a brief edit, **as a PR**: bump the brief's `version` (patch for wording, minor for a new rule or step, major for a changed lane or metric), set `last_changed`, add a `## Changelog` line that names the papercut or trace it answers, and mark the papercut row `fixed — #PR` in the same PR.
+3. **Owner-reviewed, never self-merged:** A1 reviews edits to cloud lanes; the orchestrator reviews edits to laptop lanes; the founder reviews any edit that touches a money or outward rule (prices, money flags, sends, the session-token cut), whatever the lane.
+4. Run `npm run fleet:index` and commit `SKILLS.md` with the edit; `tests/fleet-skills.test.js` must pass.
+
 ## Monthly meta check
 
 - Compare O2's 30-day payers against the 4 weeks before the first D3 run, and against the checkpoints in `objectives.md`.
@@ -48,3 +69,7 @@ Founder, 2026-11-23: "Recursive self improvement nasıl yaparsın daha fazla sub
   landing → app open → first solve → 6 solves → modal → checkout → trial → paid.
 - **Hard limits never move through D3:** prices, money flags, sends, production writes, the session-token cut.
 - **No customer-level detail in the repo.** Per-page and per-lane money numbers go in the laptop's mailed report, not in this public repo. The PR carries ranks and directions only.
+
+## Changelog
+
+- 1.0.0 (2026-11-26) — versioned for the skills loop: front-matter added. The weekly skills loop (papercuts + run ledger → versioned brief edits) added.

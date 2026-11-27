@@ -484,3 +484,127 @@ two days ago.
    data-science-interviews PR.
 
 **Next live-link check:** tomorrow. Revarta and UCSD from 2026-12-07.
+
+---
+
+## 2026-11-26 (C3, laptop, Thursday run; cadence Mon + Thu from 11-25)
+
+**Nothing was sent, posted, opened or submitted by this run.** One Gmail
+draft was created. No PR, issue or form went out.
+
+### Gmail: what happened to the earlier notes (searched ~05:45 UTC)
+
+| Note | State |
+|---|---|
+| onjob.io re-route (Pitch N Hire's business inbox), drafted 11-25 | **Scheduled by the founder** for 2026-11-26 07:50 UTC. It no longer sits in Drafts. |
+| Analytics Insight (editorial submissions inbox), drafted 11-25 | **Scheduled by the founder** for 2026-11-26 08:10 UTC. |
+| Data Analysis Journal (no-recipient reply draft), drafted 11-25 | Still a draft. It waits for the founder to subscribe and reply to the next issue. |
+| boot.dev, Data Science Weekly (sent 11-23) | Delivered, no reply after 3 days. |
+| Revarta, UCSD Library (forms, 11-23) | No reply in Gmail. Live check from 2026-12-07, as promised. |
+
+No new bounce and no auto-reply on any C3 route since 11-23. The only
+bounce so far is still onjob.io's support inbox (11-23).
+
+**Stop rule: not applied.** The founder acted on the queue on 11-25 (two
+scheduled sends), so the 7-day clock restarts there.
+
+### Live-link check (curl + GitHub code search, 2026-11-26 ~05:50 UTC)
+
+| Page | HTTP | `sqlquest` in HTML |
+|---|---|---|
+| PavelGrigoryevDS/awesome-data-analysis README | 200 | no |
+| alexeygrigorev/data-science-interviews `awesome.md` | 200 | no |
+| amartinson193/The-Ultimate-List-of-Free-SQL-Resources README | 200 | no |
+| Extremesarova/data-science-resources README | 200 | no |
+| onjob.io/best/sql-practice-sites/ | 200 | no (the re-routed note goes out today) |
+| boot.dev/blog/backend/best-sql-practice-sites | 200 | no |
+| revarta.com/blog/best-interview-prep-app-for-data-analysts-2026 | 200 | no |
+| thequerylab.com/blog/best-sql-practice-websites | 200 | plain-text mention only, no `<a href>` (unchanged) |
+| analyticsinsight.net "Where to Practice SQL in 2026" | 200 | no (the note goes out today) |
+
+The founder has opened no PR or issue outside our repo since 11-20
+(`gh search prs/issues --author goktugozdem2`). `gh search code
+"sqlquest.app"` shows no new link: beyond the two 0-star repos found on 11-25
+it returns only Xcode project files (a bundle id, not a link) and a scraped
+leads CSV. **Links earned in November: still 0.**
+
+### The money pages: where a link to them could come from
+
+The investor plan (A09/A10) puts the seven money company pages first:
+Capital One, Revolut, Wise, Monzo, Amazon, Stripe and Snowflake. Today's
+searches looked for a third-party page about one of those interviews that
+an outsider could get a link onto. About ten searches covered the CodeSignal
+assessment, Revolut/Monzo/Wise analyst prep, Stripe/Snowflake analyst
+guides, Amazon BIE prep, UK careers services and fintech societies.
+
+**Result: no page qualifies, and the reason is structural.** Every page
+ranking for these interviews belongs to a competitor (Interview Query,
+Dataford, Exponent, Prepfully, DataInterview, iGotAnOffer, linkjob.ai) or is
+a candidate thread (Glassdoor, Blind, 1point3acres, LeetCode Discuss). No
+independent editor curates "Capital One SQL prep" links. University career
+pages that mention these companies are reposts of Exponent's guides (CSUN,
+NAU, Puget Sound, Saint Mary's), so they are a vendor's feed. Monzo's own
+"Interviewing for data science at Monzo" posts are the employer's.
+
+So a money page can earn links in only two ways:
+1. an answer in a live candidate thread (queue item 4, Capital One on
+   Blind/Reddit). That is the founder's route, with the reply already
+   written in the queue file;
+2. a general list that links us, so the link passes through
+   `/sql-exercises/` and the company links on it.
+
+Email outreach for money pages specifically has no target today. C3 does
+not invent one.
+
+### Today's new target
+
+| # | Target | Read | Last activity | Route | Odds |
+|---|---|---|---|---|---|
+| 12 | MIT Career Advising & Professional Development, "Ace the data science technical interview" (capd.mit.edu/resources/…) | 2026-11-26 | evergreen resource page, no date shown (images from 2024-11) | CAPD's role inbox, published on the page and on capd.mit.edu/contact-us | low |
+
+- **What it is.** MIT's career office guide to data-science technical
+  interviews. It says students "will likely need to write code in Python or
+  SQL", and it names two practice sites: LeetCode, and DataLemur "for data
+  science students". It names no page where a SQL answer is shown worked
+  through.
+- **Why a link helps the reader.** `/sql-exercises/` has five exercises
+  solved in full (task, tables, query, "why it works"). Each query runs in
+  the browser on the same data, and the page needs no account. Checked on
+  the live page today.
+- **Why not a money page.** The guide is company-agnostic. A Stripe or
+  Amazon page would not fit it, and asking for one would lower the odds.
+- **Draft (Gmail, to the CAPD role inbox):** "SQL Quest's founder here — a
+  free SQL page for 'Ace the data science technical interview'". It names
+  the guide and its two links, gives the page and what it shows, discloses
+  the paid tier in the gates' words, asks one question and promises no
+  follow-up.
+
+### Looked at and skipped today
+
+| Target | Why not |
+|---|---|
+| CSUN / NAU / Puget Sound / Saint Mary's career-center "Data Analyst Interview Prep" pages | Reposts of Exponent's guide. The only links on them are Exponent's. |
+| NC State IAA analytics page (`analytics.ncsu.edu/?p=740`) | The same 2026-04-30 student post skipped on 11-25, under a second URL. |
+| maggieindata.substack.com, "Cracking SQL Interview…" | Published 2024-09-03, no later post visible, and no route for resource suggestions. |
+| SQLBook newsletter (buttondown) | SQLBook sells SQL practice and interview challenges itself. |
+| SourceForge "interview preparation tools that integrate with SQL" | A vendor-submitted directory with two unrelated products and a sponsored sort. Listing would need an account. Not worth it. |
+| Medium, "I tried the 6 data interview prep platforms" | The fetch answered 403, so it could not be read. Not drafted unread. |
+| mgramin/awesome-db-tools (5.4k stars) | Last merge 2026-05-21; outside PRs since then sit open. |
+| andresvourakis/data-scientist-handbook, katiehuangx/Transition-into-Data-Analytics | No outside PR has ever been merged. The second list's author wrote DataLemur's content. |
+| JuanPabloDiaz/freeForGeeks | Free resources only. A freemium product does not belong. |
+| Snowflake-Labs/awesome-snowflake | Last push 2024-04. |
+| The Data School (UK) SQL resources post; hackforla data-science wiki | 2022 posts. The only route is a general company inbox or wiki membership. |
+
+### FOUNDER (today)
+
+1. **MIT CAPD:** read the draft ("SQL Quest's founder here — a free SQL page
+   for …"), then send it or delete it.
+2. **The money pages' only route is item 4:** the Capital One reply in
+   `docs/outreach/queue-2026-11-26.md` § 4, posted by you in a live
+   Blind or r/dataanalysis thread. Its check list is there.
+3. Still open, in this order: the amartinson193 PR, the
+   awesome-data-analysis PR, the Data Analysis Journal reply (subscribe
+   first), the alternativeto.net edit (still "250+").
+
+**Next run:** Monday 2026-11-30: live-link check, including onjob.io and
+Analytics Insight, which go out today. Revarta and UCSD from 2026-12-07.
