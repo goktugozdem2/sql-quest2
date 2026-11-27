@@ -142,7 +142,11 @@ describe('the starter text', () => {
   });
 });
 
-describe('the starter never reveals an answer — over the live bank', () => {
+// These run real SQLite over every row of the data; at vitest's default 5 s they
+// time out when the machine is loaded (fleet lanes in parallel, load ~18-20).
+// A per-block timeout, not a global one: only the DB-heavy blocks get the room.
+const DB_HEAVY = { timeout: 30_000 };
+describe('the starter never reveals an answer — over the live bank', DB_HEAVY, () => {
   it('the bank is loaded (core, sector, Debug)', () => {
     expect(sb.window.challengesData.length).toBeGreaterThan(300);
     expect((sb.window.sectorChallengesData || []).length).toBeGreaterThan(50);
