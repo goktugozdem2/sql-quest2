@@ -8,24 +8,20 @@ the "Today" block on every run and appends to the other sections. The brief is
 
 ## Objective: O2, 10 paying customers per 30 days by 2027-02-08
 
-### Today (G0, 2026-11-26, scheduled run)
+### Today (G0, 2026-11-27, scheduled run)
 
-**The 11-24 trial converted and then lost Pro by our mistake** (A3,
-`errors-2026-11-25.md`). Its first charge was never attempted (`attempt_count`
-0), the invoice is open, and the old webhook revoked Pro. #355 fixed the
-webhook (v27 live 11-25), but not this person: plan row 1. One new trial
-started 11-25 (day 7 on 12-02).
+**The 11-24 converted trial still has no Pro** (A3 11-26, about 35 h later;
+no `invoice.paid`). No purchase, trial or failed charge in A3's 11-26 window.
 
 | | Value | As of | Source |
 |---|---|---|---|
-| Payers / 30 d | **2** (the 11-02 monthly and the 11-21 annual) | 2026-11-25 07:12Z | A3 11-25 (no purchase) |
+| Payers / 30 d | **2** (the 11-02 monthly and the 11-21 annual) | 2026-11-26 | A3 11-26 (no purchase) |
 | Six-solvers / 30 d (all users) | **64** | 2026-11-22 | B2 (next like-for-like read 12-03) |
-| Converted trial, charge open | 1 ($9/mo India): active 11-24, first charge never attempted, Pro revoked by the old webhook | 2026-11-25 | A3 #356 |
+| Converted trial, charge open | 1 ($9/mo India), Pro still off, invoice open | 2026-11-26 | A3 11-26 |
 | Trial in flight | 1, started 11-25, day 7 on 12-02 | 2026-11-25 | A3 |
-| Renewal at risk | 1 ($29/mo), attempt 1 failed 11-23, retry scheduled | 2026-11-23 | A3 |
-| Day-0 solvers back within 7 d | 44.3% before the 09-25 flip → 23.7% after | 2026-11-25 | `returns-0926-flags-2026-11-25.md` |
-| Days left | **74** (day 16 of 90) | | |
-| Next checkpoint | **2026-12-10: 4 payers / 30 d**, 14 days away, 3 purchases short | | objectives.md |
+| Interview-target openers → trial or paid | 2.0 per 100 (n 302) vs 0.35 for the rest (n 1,797), 90 d | 2026-11-26 | `funnel-by-segment-2026-11-26.md` |
+| Days left | **73** (day 17 of 90) | | |
+| Next checkpoint | **2026-12-10: 4 payers / 30 d**, 13 days away, 3 purchases short | | objectives.md |
 
 ### The gap
 
@@ -58,6 +54,13 @@ started 11-25 (day 7 on 12-02).
   clicks fell. #72's bingbot noindex (read 2027-01-08) is the bet on it.
   11-23: still 1.94 (S1); only 8 of 312 question pages re-crawled since #72.
   C1's rule 1 holds: no new page this week; let the two Bing fixes act.
+- **11-27, who buys (B1, 90 days, humans only).** Interview-target openers
+  (company page, `?company=`, readiness test) are 15% of challenge openers
+  and 7 of the 12 payers. They reach trial or paid at about 6× the rate of
+  everyone else. Both groups lose the same share before the price (about
+  45% never run, about 3 in 4 never see a price). The lever is more
+  interview-target people and fewer of them lost before the price, not
+  more people in general.
 - **11-26, returns halved at the 09-25 flag flip.** Day-0 solvers back within
   7 days: 44% → 24%, on the hour of the six-flag commit. `freeQuota` is the
   strongest suspect, but 78% of the lost returns never met the wall. #384's
@@ -102,7 +105,9 @@ a read date. G0 closes a bet only on its read.
 | 7 | Company arrival opens question 1, 50/50 | L2 | #156 | company-door `open_to_first_run` up; stop rule in the PR | B5, per PR | **merged; ON 50/50 11-23**. 11-24: 2 vs 5 assigned, ~1% of the harm-check n (B1 §8d). |
 | 8 | No onboarding tour over the Pro modal | L4 | #240 | the modal is read, not covered; modal → plan click off its 10% floor | per PR, 12-20 | **merged 11-24** |
 | 9 | A failed charge Stripe never attempted does not revoke Pro | L5 | #355 | no payer lost to `attempt_count` 0 again | A3, per run | **merged + deployed (v27) 11-25** |
-| 10 | Run is not Submit, after a zero-solve Run | L2 | #243 | first run → solve up for people who ran and never solved | per PR | **merged 11-25; flag still off** (plan row 3) |
+| 10 | Run is not Submit, after a zero-solve Run | L2 | #243 | first run → solve up for people who ran and never solved | per PR | **merged 11-25; flag still off** (11-28 row 1) |
+| 11 | Never promise the trial to someone who has already bought | L4 | #362 | no buyer sees a trial they cannot have | per PR | **merged 11-26** |
+| 12 | `challenge_left`: how an open with no run ends | L2 (instrument) | #287 | the 45% open → no-run loss gets a reason | B1, after 7 days | **merged 11-26** |
 
 ## Closed bets (what each ruled out)
 
@@ -132,6 +137,11 @@ a read date. G0 closes a bet only on its read.
   the money path is better watched by the error lane than by the customer
   lane. The investor 90-day plan is the work order from 11-25; G0's rows now
   name its A-numbers.
+- **2026-11-27.** #395 (the 11-27 plan) was still open, so this run went on
+  its branch with main merged in, not on a new PR that would conflict in
+  the tracker. Two rows were dropped under the two-day rule (E1's lines,
+  #241). The 11-24 customer's row cannot be made smaller and stays with the
+  founder.
 - **Throughput is not the problem.** 149 PRs merged on 11-22 and 11-23 and
   29 are open, while payers / 30 d has not moved. G0's job is to keep the
   merge order money-first, not to add rows.
@@ -145,6 +155,7 @@ a read date. G0 closes a bet only on its read.
 | 2026-11-24 | 2 (to 11-23 21:34Z) | 64 (11-22) | L1 (Bing: wait), L4 (India: founder) | 4 | 2 shipped, 1 pending, 2 dropped, 1 blocked on founder | `2026-11-25.md` |
 | 2026-11-25 | 2 (to 11-24 08:21Z) | 64 (11-22); 56 new-opener 28 d | six-solvers: open → run (44%) and 1 → 6; money path for 12-10 | 5 | 1 not recorded (made smaller), 1 partial, 2 not due | `2026-11-26.md` |
 | 2026-11-26 | 2 (to 11-25 07:12Z) | 64 (11-22) | six-solvers, with returns halved since 09-25 (holdout #384); money: the revoked converted trial | 5 | 2 partial, 1 not done (made smaller), 2 not due | `2026-11-27.md` |
+| 2026-11-27 | 2 (to 11-26) | 64 (11-22) | interview-target people lost before the price; experiment load on new visitors | 3 | 1 partial, 2 not done (dropped), 1 not done (founder, carried), 1 not due | `2026-11-28.md` |
 
 ## Weekly
 
