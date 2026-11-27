@@ -78,6 +78,27 @@ describe('company template', () => {
     }
   });
 
+  // 2026-11-27: until this date the company generators ran only by hand, so a
+  // fix made in build-company-pages.mjs reached no page until someone
+  // remembered to run it, and a hand edit to a generated page sat in the tree
+  // until the next person did. `npm run build` now runs them, in the order
+  // CLAUDE.md's "Company pages" section gives (pages → cross-link strip →
+  // the rest of the build), before card-skill-blurbs rewrites the card lines
+  // and before build-static-pages copies the pages into public/. The strip
+  // comes second because the template pages are rendered without it.
+  it('npm run build runs the company generators, pages then strip, before the blurbs and the copy to public/', () => {
+    const build = JSON.parse(read('package.json')).scripts.build;
+    const at = s => build.indexOf(`node scripts/${s}`);
+    const pages = at('build-company-pages.mjs');
+    const strip = at('build-company-crosslinks.mjs');
+    expect(pages, 'build-company-pages.mjs is not in the build script').toBeGreaterThan(-1);
+    expect(strip, 'build-company-crosslinks.mjs is not in the build script').toBeGreaterThan(-1);
+    expect(pages, 'build-company-pages must run before build-company-crosslinks').toBeLessThan(strip);
+    expect(strip, 'the company generators must run before build-interview-hub').toBeLessThan(at('build-interview-hub.mjs'));
+    expect(strip, 'the company generators must run before card-skill-blurbs').toBeLessThan(at('card-skill-blurbs.mjs'));
+    expect(strip, 'the company generators must run before build-static-pages').toBeLessThan(at('build-static-pages.js'));
+  });
+
   it('every older company page carries the readiness block and the topic links', () => {
     const pages = fs.readdirSync(path.join(ROOT, 'src')).filter(f => /-sql-interview\.html$/.test(f));
     expect(pages.length).toBeGreaterThanOrEqual(30);
