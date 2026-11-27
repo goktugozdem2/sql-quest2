@@ -1,7 +1,8 @@
 # First-session tournament — new visitors split across first sessions, the worst one replaced (2026-11-26)
 
 **Status:** plan only. No app code in this PR. Flag `firstSessionTournament`
-(dark), launch **no earlier than 2026-12-10**.
+(dark), launch **2026-12-12** (orchestrator 2026-11-27: after the
+holdout's halfway money read; was "no earlier than 2026-12-10").
 
 **Recommendation: start with three arms, not four.** Control, B (single
 path) and D (interview sprint). C (proof first) is built and queued as the
@@ -285,13 +286,13 @@ pooled.
 export const TOURNAMENT_TEST_ID = 'first_session_tournament_v1';
 export const TOURNAMENT_SLOTS = 3;            // slot 0 is control, forever; 4 only by decision row (§2.1)
 export const TOURNAMENT_ARMS = [
-  { id: 'A_control',          slot: 0, version: 1, start: '2026-12-10', status: 'permanent',
+  { id: 'A_control',          slot: 0, version: 1, start: '2026-12-12', status: 'permanent',
     hypothesis: "Today's product; anchors drift and is never eliminated." },
-  { id: 'B_single_path',      slot: 1, version: 1, start: '2026-12-10', status: 'live',
+  { id: 'B_single_path',      slot: 1, version: 1, start: '2026-12-12', status: 'live',
     hypothesis: 'No choices until the level is known: a 4-question adaptive ladder sets the level from solving, then one line says the next step — fewer exits, more solves.' },
   { id: 'C_proof_first',      slot: null, version: 1, start: null,      status: 'queued',   // first replacement
     hypothesis: 'Seeing your own Skillmap first (the readiness test\'s ten questions) creates a reason to follow the plan it builds.' },
-  { id: 'D_interview_sprint', slot: 2, version: 1, start: '2026-12-10', status: 'live',
+  { id: 'D_interview_sprint', slot: 2, version: 1, start: '2026-12-12', status: 'live',
     hypothesis: 'A 14-day sprint for a named company (one tap, the date set for them) turns a vague visit into a daily count to keep.' },
 ];
 // Retired arms stay in the file with status 'eliminated' | 'promoted' and an end date.
@@ -339,7 +340,8 @@ B–D person never writes `first_screen_assigned`,
    while quota has ≥ 3), the tournament waits for the founder's call.
    (Re-dated 2026-11-27: the holdout now enrols from 11-28, so its halfway
    read is 12-12, two days after the 12-10 launch. Open for the
-   orchestrator: launch on 12-12, or read the money stop early on 12-10.)
+   orchestrator: launch on 12-12, or read the money stop early on 12-10.
+   Decided 2026-11-27 (orchestrator-decisions): launch 2026-12-12.)
 3. `companyDirectOpen` has a verdict, or the orchestrator accepts its
    slower read in a decision row.
 4. The founder's go on the money strings in §7.
@@ -1012,7 +1014,7 @@ about 15 weeks.
 | new human openers | ~161 a week, ~23 a day (#409) | same |
 | per arm | **~54 a week (~8 a day)** | ~40 a week (~6 a day) |
 | 150 eligible per arm | 2.8 weeks of enrolment + 7 days | 3.7 weeks + 7 days |
-| launch | Thu 2026-12-10 at the earliest | same |
+| launch | Sat 2026-12-12 (orchestrator 2026-11-27) | same |
 | first read with every arm at 150 | **Fri 2027-01-08**. A late-December dip could make it 01-15. | Fri 2027-01-15 (likely 01-22) |
 | 6-week fallback | 01-21, so **the first elimination falls on Fri 01-22 at the latest**, and most likely on 01-08 or 01-15 | same latest date, less likely earlier |
 | the cadence after that | ~4 weeks per replacement (a new arm needs its own 150). **By the investor review (02-23), expect 2 eliminations.** | ~5 weeks, 1–2 eliminations |
