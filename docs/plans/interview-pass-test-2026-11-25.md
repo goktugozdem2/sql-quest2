@@ -6,7 +6,7 @@ now, launched after the holdout, one price first, rules written before."
 
 **This is a design only. It contains no code, no flag and no Stripe object.**
 The test launches only when two things are true:
-1. The freeQuota holdout (#384, read 2026-12-31) has been read, and the
+1. The freeQuota holdout (#384, read 2027-01-02 since the 11-27 re-date) has been read, and the
    founder has decided the free tier.
 2. The founder has given a written go on the price.
 
@@ -521,7 +521,7 @@ payment are its main risk (`pro_payment_failed {at_checkout}`).
    revert). O2 counts payers, so the founder may want them reversed.
 5. **The freeze:** no other price, plan-card, trial or free-tier change for
    12 weeks plus the read. That holds M-08, M-03 and M-09.
-6. **The order:** the quota decision after 12-31 → M-01 (the self-serve
+6. **The order:** the quota decision after the 2027-01-02 holdout read → M-01 (the self-serve
    card fix) live → the code PR merged dark → the Stripe setup (§9) → two
    deploys (`create-checkout-session`, `stripe-webhook`) → the verification
    purchase and refund → the flip.
@@ -534,7 +534,7 @@ payment are its main risk (`pro_payment_failed {at_checkout}`).
 | 2026-11-25 | this design + metric | orchestrator |
 | by 12-10 | founder reads it; decisions 1–5 | founder |
 | Dec | code PR, dark, money-path review | fleet + A1 |
-| 12-31 | holdout read → quota decision | B1 / founder |
+| 2027-01-02 | holdout read → quota decision (re-dated 11-27; was 12-31) | B1 / founder |
 | early Jan | Stripe objects, secrets, deploys, verification purchase/refund | founder |
 | ≈ 01-07 | flip (decision row; start of enrolment) | founder's go |
 | 01-09 | balance check (S6) | orchestrator |
