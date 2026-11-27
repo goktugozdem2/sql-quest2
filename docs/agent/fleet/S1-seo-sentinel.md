@@ -1,3 +1,15 @@
+---
+id: S1
+name: "SEO sentinel (health and anomalies)"
+owner: orchestrator
+runtime: laptop
+status: active
+cadence: "daily (after 15:00 UTC)"
+metric: undefined  # TODO: register days from anomaly start to flag; false alarms per month in docs/agent/metrics.md
+writes_code: false
+version: 1.0.0
+last_changed: 2026-11-26
+---
 # S1 — SEO sentinel (health and anomalies)
 
 **Lane:** the daily search health check. S1 makes no page changes; it
@@ -104,3 +116,7 @@ This step is the one console action S1 takes (founder's request,
 - Live-site checks use plain GETs. On a 403 or 429, stop that check for the
   day (README 7b, R1 rule).
 - Never route an alert to anyone outside the repo and the founder's report.
+
+## Changelog
+
+- 1.0.0 (2026-11-26) — versioned for the skills loop: front-matter added.
