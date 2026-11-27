@@ -34,8 +34,11 @@ export const PARTNER_LINE =
 // pages — under the 44 px tap target (the homepage sitemap footer, .fnav, too).
 // One rule for every page, here, because
 // the footers are not one template. Phones only; desktop is unchanged.
+// Extended 2026-11-23 (A2 live QA): the homepage's `.flegal` links
+// (Privacy, Terms, Refund) were 17 px tall and the Datrick link on this
+// line 28–35 px on every page; both get the same 44 px box.
 export const FOOTER_FIT_STYLE =
-  '<style data-footer-fit>@media(max-width:600px){.flk{row-gap:0}.flk a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;padding:0 4px}.fnav a{display:flex;align-items:center;min-height:44px;padding:0}}</style>';
+  '<style data-footer-fit>@media(max-width:600px){.flk{row-gap:0}.flk a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;padding:0 4px}.fnav a{display:flex;align-items:center;min-height:44px;padding:0}.flegal a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px}[data-partner] a{display:inline-flex;align-items:center;min-height:44px}}</style>';
 
 // The product shell and its legacy alias are not marketing pages.
 const SKIP = new Set(['app.html', 'app/index.html']);

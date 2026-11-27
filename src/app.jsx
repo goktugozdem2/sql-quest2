@@ -86,6 +86,8 @@ import { RUNNABLE_STARTER_KEY, RUNNABLE_STARTER_TEST_ID, isDesktopScreen, isEmpt
 import { dueRetrievals, pickRetrievalChallenge, recordRetrieval, dailyQuota, MAX_DUE_SHOWN } from './utils/spaced-retrieval.js';
 import { computeRecap, shouldShowRecap } from './utils/session-recap.js';
 import { getAnonId } from './utils/anon-id.js';
+import { FREE_QUOTA_HOLDOUT_KEY, FREE_QUOTA_HOLDOUT_TEST_ID, freeQuotaEnrolment, hasPriorAppUse, normalizeFreeQuotaRecord, freeQuotaEffective, freeQuotaEventStamp } from './utils/free-quota-holdout.js';
+import { TOURNAMENT_KEY, tournamentEnrolment, tournamentPriorAppUse, normalizeTournamentRecord, adoptAccountRecord, tournamentEffectiveArm, tournamentBehaviour, tournamentSupersedes, tournamentEventStamp, shouldAnnounceTournament, tournamentAssignedPayload, buildVisitorProfile, enrichTournamentProfile } from './utils/tournament.js';
 import { quotaWallArm, quotaWallShowsModal, quotaInlineCopy, QUOTA_WALL_DAY_KEY } from './utils/quota-wall-inline.js';
 import { classifyLandingSrc, LANDING_SRC_KEY } from './utils/landing-src.js';
 import { classifyQueryError } from './utils/query-error.js';
@@ -128,6 +130,98 @@ function canonicalSectorId(raw) {
   if (!raw) return null;
   const key = String(raw).toLowerCase().trim();
   return SECTOR_PARAM_ALIASES[key] || key;
+}
+
+// The localStorage keys exactly as the browser brought them, before any
+// module-load block below writes one (the holdout mints the aid). The
+// tournament's profile reads `landingBefore` from it: a landing page's
+// `sqlquest_aid` here means the person saw the site before the app.
+const BOOT_KEYS = (() => {
+  const keys = [];
+  try {
+    if (typeof localStorage !== 'undefined') for (let i = 0; i < localStorage.length; i++) keys.push(localStorage.key(i));
+  } catch (_) { /* storage blocked */ }
+  return keys;
+})();
+
+// The free-quota holdout (2026-11-25, src/utils/free-quota-holdout.js):
+// decided HERE, at module load, before anything below writes a key — the
+// "has the app run in this browser before?" test reads the keys as the
+// browser brought them. A stored decision always wins (nobody is re-armed);
+// a browser with app state keeps the quota as `returning`. The component
+// reads FQ_HOLDOUT_RECORD through freeQuotaOn() and writeProEvent.
+let FQ_HOLDOUT_RECORD = null;
+if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+  try {
+    let stored = null;
+    try { stored = JSON.parse(localStorage.getItem(FREE_QUOTA_HOLDOUT_KEY) || 'null'); } catch (_) { stored = null; }
+    const keys = [];
+    for (let i = 0; i < localStorage.length; i++) keys.push(localStorage.key(i));
+    const flagOn = window.FF?.feature?.('freeQuotaHoldout') === true;
+    const decision = freeQuotaEnrolment({
+      flagOn,
+      record: stored,
+      aid: flagOn && !normalizeFreeQuotaRecord(stored) ? getAnonId() : null,
+      now: Date.now(),
+      priorAppUse: hasPriorAppUse(keys),
+    });
+    if (decision.write) localStorage.setItem(FREE_QUOTA_HOLDOUT_KEY, JSON.stringify(decision.write));
+    FQ_HOLDOUT_RECORD = decision.record;
+  } catch (_) { FQ_HOLDOUT_RECORD = null; }
+}
+
+// The first-session tournament (2026-11-26, src/utils/tournament.js, PR 1
+// of 4): decided HERE, right after the holdout and before anything below
+// writes a key, so "has the app run in this browser before?" reads the keys
+// as the browser brought them (the holdout's own key and this one are
+// ignored). A stored record always wins — nobody is re-armed. The component
+// reads TOURNAMENT_RECORD through tournamentArm() / tournamentBehaviourNow()
+// and writeProEvent; tournament_assigned fires once, after the session loads.
+// Profile first (founder, 2026-11-26): a new browser's profile is read here
+// from what is known before it does anything (buildVisitorProfile), it names
+// the stratum, and the arm is drawn inside the stratum.
+let TOURNAMENT_RECORD = null;
+if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+  try {
+    let stored = null;
+    try { stored = JSON.parse(localStorage.getItem(TOURNAMENT_KEY) || 'null'); } catch (_) { stored = null; }
+    const keys = [];
+    for (let i = 0; i < localStorage.length; i++) keys.push(localStorage.key(i));
+    const flagOn = window.FF?.feature?.('firstSessionTournament') === true;
+    const deciding = flagOn && !normalizeTournamentRecord(stored);
+    let profile = null;
+    if (deciding) {
+      const readLs = (k) => { try { return localStorage.getItem(k); } catch (_) { return null; } };
+      let readinessRecord = null;
+      try { readinessRecord = JSON.parse(readLs('sqlquest_readiness_v1') || 'null'); } catch (_) { readinessRecord = null; }
+      let country = null;
+      try { country = sessionStorage.getItem('sqlquest_geo_country'); } catch (_) { country = null; }
+      profile = buildVisitorProfile({
+        search: window.location.search,
+        referrer: typeof document !== 'undefined' ? document.referrer : '',
+        siteHost: window.location.hostname,
+        landingSrc: readLs(LANDING_SRC_KEY),
+        viewportWidth: window.innerWidth,
+        country,
+        navigatorLanguage: typeof navigator !== 'undefined' ? navigator.language : null,
+        tzOffsetEastMin: -new Date().getTimezoneOffset(),
+        bootKeys: BOOT_KEYS,
+        readinessRecord,
+      });
+    }
+    const decision = tournamentEnrolment({
+      flagOn,
+      record: stored,
+      aid: deciding ? getAnonId() : null,
+      now: Date.now(),
+      priorAppUse: tournamentPriorAppUse(keys),
+      search: window.location.search,
+      pathname: window.location.pathname,
+      profile,
+    });
+    if (decision.write) localStorage.setItem(TOURNAMENT_KEY, JSON.stringify(decision.write));
+    TOURNAMENT_RECORD = decision.record;
+  } catch (_) { TOURNAMENT_RECORD = null; }
 }
 
 // Module-load URL-param capture. Two signals stick to localStorage so they
@@ -7078,6 +7172,18 @@ function SQLQuest() {
     try { if (window.__SQLQUEST_SMOKE__ === true) return false; } catch (_) {}
     try { return botSignals({ userAgent: navigator.userAgent, webdriver: navigator.webdriver }).hard; } catch (_) { return false; }
   };
+  const fqEventStamp = () => {
+    try { return freeQuotaEventStamp({ flagOn: window.FF?.feature?.('freeQuotaHoldout') === true, record: FQ_HOLDOUT_RECORD }); } catch (_) { return {}; }
+  };
+  // The first-session tournament's stamp (2026-11-26): `tArm` / `tArmV` on
+  // every row from an enrolled browser, the fqArm pattern — so the
+  // challenge_solved, first_challenge_solved, pro_modal_shown,
+  // pro_plan_clicked and pro_checkout_clicked rows the read splits all carry
+  // the arm. The read takes the arm from `tournament_assigned`; these only
+  // cross-check it (metrics.md, first_session_tournament).
+  const tEventStamp = () => {
+    try { return tournamentEventStamp({ flagOn: window.FF?.feature?.('firstSessionTournament') === true, record: TOURNAMENT_RECORD }); } catch (_) { return {}; }
+  };
   const writeProEvent = (event, reason, metadata = {}, opts = {}) => {
     if (ANALYTICS_MUTED) {
       try { console.debug('[sqlquest] analytics muted on localhost:', event, reason, metadata); } catch (_) {}
@@ -7104,7 +7210,10 @@ function SQLQuest() {
           // can still be stitched to the rest of that browser's history.
           // username is deliberately left alone: the Aug 3 read compares
           // against the existing series and must not see a redefinition.
-          metadata: JSON.stringify({ ...metadata, aid: getAnonId() }),
+          // `fqArm` (2026-11-25): a browser enrolled in the free-quota
+          // holdout stamps its arm on EVERY row — the quota, paywall,
+          // checkout and trial rows the holdout's guardrails read included.
+          metadata: JSON.stringify({ ...metadata, ...fqEventStamp(), ...tEventStamp(), aid: getAnonId() }),
           created_at: new Date().toISOString()
         })
       }).catch(() => {}); // fire and forget
@@ -9739,6 +9848,9 @@ function SQLQuest() {
           ...((companyAskRecord.arm || companyAskRecord.asks) ? { companyAsk: companyAskRecord } : {}),   // the company ask: arm, asks, answer
           intent: intentRecord,     // the declared goal { goal, source, at } — 'exploring' included, so the server can tell asked from never-asked
           readiness: readinessRecord, // the ten-question check / readiness test result, the public page's shape
+          // The first-session tournament's record (src/utils/tournament.js): an
+          // enrolled person's arm rides the account, so a second device keeps it.
+          ...(TOURNAMENT_RECORD && TOURNAMENT_RECORD.status === 'enrolled' ? { tournament: TOURNAMENT_RECORD } : {}),
           // The countdown / intake target rides the save from STATE, not only
           // from setPrepPreference's direct write: this effect re-reads the
           // record (cloud-first for a guest) and re-spreads it, so a field
@@ -12337,6 +12449,79 @@ CRITICAL RULES:
   // that is absent reads OFF here. src/utils/free-tier-boundary.js decides
   // what each one means; this file only decides when.
   const ftbFlag = (name) => window.FF?.feature?.(name) === true;
+  // The free-quota holdout (2026-11-25, founder's written go): a browser
+  // enrolled in `holdout` reads `freeQuota` OFF — no wall, no counter, the
+  // pre-09-26 in-app wording — and everything else stays as it is. EVERY
+  // `freeQuota` read in this file goes through freeQuotaOn(); a bare
+  // freeQuotaOn() would give a holdout person the wall back
+  // (tests/free-quota-holdout.test.js). An account created before the
+  // window keeps the quota on any browser (createdAt from its local blob).
+  const fqAccountCreatedAt = useMemo(() => {
+    if (!currentUser || isGuest) return null;
+    try {
+      const blob = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || 'null');
+      return blob && blob.createdAt != null ? blob.createdAt : null;
+    } catch (_) { return null; }
+  }, [currentUser, isGuest, isSessionLoading]);
+  const freeQuotaOn = () => freeQuotaEffective({
+    quotaFlagOn: ftbFlag('freeQuota'),
+    holdoutFlagOn: ftbFlag('freeQuotaHoldout'),
+    record: FQ_HOLDOUT_RECORD,
+    signedIn: !!currentUser && !isGuest,
+    accountCreatedAt: fqAccountCreatedAt,
+  });
+  // `free_quota_arm_assigned {arm}` — once per browser, on the open that
+  // enrolled it (the module-load block above decided; this only announces).
+  useEffect(() => {
+    const rec = FQ_HOLDOUT_RECORD;
+    if (!rec || rec.status !== 'enrolled' || rec.announced) return;
+    if (!ftbFlag('freeQuotaHoldout')) return;
+    trackActivationEvent('free_quota_arm_assigned', { testId: FREE_QUOTA_HOLDOUT_TEST_ID, arm: rec.arm, firstOpenAt: new Date(rec.firstOpenAt).toISOString() });
+    FQ_HOLDOUT_RECORD = { ...rec, announced: true };
+    try { localStorage.setItem(FREE_QUOTA_HOLDOUT_KEY, JSON.stringify(FQ_HOLDOUT_RECORD)); } catch (_) { /* ignore */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  // The first-session tournament (2026-11-26, PR 1 of 4; plan
+  // docs/plans/first-session-tournament-2026-11-26.md). The module-load
+  // block decided the record; these read it.
+  //   tournamentArm()          — the arm this person is IN (null outside:
+  //                              flag off, not enrolled, an account older
+  //                              than this browser's assignment, `hired`).
+  //   tournamentBehaviourNow() — the arm whose behaviour to run. B and D are
+  //                              not built yet, so they run A_control here.
+  //   tournamentSupersedesNow() — a built challenger replaces the four
+  //                              first-session A/Bs (plan §2.3); never in PR 1.
+  // Later arm PRs read tournamentBehaviourNow(). Hooks sit above the
+  // `showAuth` / `dbReady` early returns (CLAUDE.md fragile area 1).
+  const tournamentArm = () => {
+    try {
+      return tournamentEffectiveArm({
+        flagOn: ftbFlag('firstSessionTournament'),
+        record: TOURNAMENT_RECORD,
+        signedIn: !!currentUser && !isGuest,
+        accountCreatedAt: fqAccountCreatedAt,
+        intent: getUserIntent(),
+      });
+    } catch (_) { return null; }
+  };
+  const tournamentBehaviourNow = () => tournamentBehaviour(tournamentArm());
+  const tournamentSupersedesNow = () => tournamentSupersedes(tournamentArm());
+  // `tournament_assigned` — once per browser, after the session settles (so
+  // username and isGuest are right, as app_opened), on the open that
+  // enrolled it. trackActivationEvent adds viewport, landingSrc, arrivalSrc.
+  useEffect(() => {
+    if (isSessionLoading) return;
+    if (!shouldAnnounceTournament({ flagOn: ftbFlag('firstSessionTournament'), record: TOURNAMENT_RECORD })) return;
+    // /api/geo/ may have answered by now: fill the profile's country (never
+    // the stratum, which was decided at the first open).
+    try { TOURNAMENT_RECORD = enrichTournamentProfile(TOURNAMENT_RECORD, { country: sessionStorage.getItem('sqlquest_geo_country') }); } catch (_) { /* keep the record */ }
+    const payload = tournamentAssignedPayload(TOURNAMENT_RECORD);
+    if (!payload) return;
+    TOURNAMENT_RECORD = { ...TOURNAMENT_RECORD, announced: true };
+    try { localStorage.setItem(TOURNAMENT_KEY, JSON.stringify(TOURNAMENT_RECORD)); } catch (_) { /* ignore */ }
+    trackActivationEvent('tournament_assigned', payload);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSessionLoading]);
   // Paywall moments (PLAN item 3): the Pro modal's own copy for the reasons
   // that had none (the 30-day path, the daily, a locked mock, the Interview
   // tab) and an honest Hard line. null = the modal's existing chain decides.
@@ -17883,6 +18068,17 @@ CRITICAL RULES:
           setCompanyAskRecord(merged);
           try { localStorage.setItem(COMPANY_ASK_KEY, JSON.stringify(merged)); } catch (_) {}
         }
+      }
+      // The first-session tournament: the account's own record wins over this
+      // browser's (the person was armed first there; never re-armed).
+      if (userData.tournament) {
+        try {
+          const adopted = adoptAccountRecord({ browserRecord: TOURNAMENT_RECORD, accountRecord: userData.tournament });
+          if (adopted.write && adopted.record) {
+            TOURNAMENT_RECORD = adopted.record;
+            localStorage.setItem(TOURNAMENT_KEY, JSON.stringify(adopted.record));
+          }
+        } catch (_) { /* keep this browser's record */ }
       }
       // Goal gate profile: the newer of the account's and this browser's wins,
       // so a goal set as a guest five minutes ago survives a sign-in and a goal
@@ -23892,13 +24088,20 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
   // null when nothing in the set opens — the banner then shows no button.
   const companyBannerNext = () => {
     if (!companyFilter) return null;
-    if (quotaGate({ flagOn: ftbFlag('freeQuota'), isPro, solvedCount: solvedChallenges.size, alreadySolved: false }).gated) return null;
+    if (quotaGate({ flagOn: freeQuotaOn(), isPro, solvedCount: solvedChallenges.size, alreadySolved: false }).gated) return null;
     const scoped = companyScopedChallenges();
-    return pickNextChallenge(scoped, c =>
+    const opens = c =>
       !solvedChallenges.has(c.id)
       && !isContentLocked('challenge', c)
-      && !companySetGate({ flagOn: ftbFlag('companySetGate'), isPro, companyFilter, challenge: c, scoped, solved: solvedChallenges }).gated
-    );
+      && !companySetGate({ flagOn: ftbFlag('companySetGate'), isPro, companyFilter, authored: companyHasAuthoredSet(companyFilter), challenge: c, scoped, solved: solvedChallenges }).gated;
+    // Start in the set's first three (difficulty, then id) — the question the
+    // company page's hero button names (companyFirstQuestion). Until
+    // 2026-11-26 the gate walled every set past three, so this was implied;
+    // now a topical set opens past three and the banner carries on into it
+    // once the first three are done, instead of showing no button.
+    const firstThree = ftbFlag('companySetGate') ? companySetFreeIds(scoped) : null;
+    return (firstThree && pickNextChallenge(scoped, c => firstThree.has(c.id) && opens(c)))
+      || pickNextChallenge(scoped, opens);
   };
 
   // The free three of a company's set under `companySetGate`, else null —
@@ -23934,7 +24137,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
   // spent the FREE_SOLVE_QUOTA solves. Every surface that says something is
   // "free" to open reads this, so none of them offers a free preview or a
   // "free" set the quota wall will then refuse.
-  const freeQuotaSpent = () => quotaGate({ flagOn: ftbFlag('freeQuota'), isPro, solvedCount: solvedChallenges.size }).gated;
+  const freeQuotaSpent = () => quotaGate({ flagOn: freeQuotaOn(), isPro, solvedCount: solvedChallenges.size }).gated;
 
   // The title of the mock that belongs to a company (via the interview-prep
   // registry), or null. Never invents one: a company without a mock gets no
@@ -24070,7 +24273,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     const n = solvedChallenges.size;
     // Tier 10 steps aside while the free quota is on — the wall one open
     // later is the ask (src/utils/free-tier-boundary.js milestoneTier).
-    const tier = milestoneTier(n, { quotaOn: ftbFlag('freeQuota') });
+    const tier = milestoneTier(n, { quotaOn: freeQuotaOn() });
     if (!tier) return;
     // Guests get a fresh guest_<timestamp> identity on every load, so a
     // user-scoped key never dedupes for them — they'd meet the modal every
@@ -24191,7 +24394,8 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     let stored = null;
     try { stored = JSON.parse(localStorage.getItem(RUNNABLE_STARTER_KEY) || 'null'); } catch (_) { stored = null; }
     const decision = runnableStarterDecision({
-      flagOn: ftbFlag('runnableStarter'),
+      // A built tournament challenger replaces this test (plan §2.3).
+      flagOn: ftbFlag('runnableStarter') && !tournamentSupersedesNow(),
       desktop,
       emptyOpen: isEmptyEditorOpen({ challenge, savedQuery, solvedCount: solvedChallenges.size, debugItem: false }),
       stored,
@@ -24383,10 +24587,16 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     // `paidWallFor` is not consulted: this wall exists only with a company
     // filter and only for the non-cold — `wall: 'company_set'` is its own
     // value in the series (metrics.md carries the discontinuity note).
+    // Amended 2026-09-20, enforced 2026-11-26: only a set AUTHORED for the
+    // company (Capital One, Revolut) is walled; Stripe's, Amazon's and every
+    // other tagged set stay on the general free quota.
     const setGate = companySetGate({
       flagOn: ftbFlag('companySetGate'),
       isPro,
       companyFilter,
+      // Only a set authored for the company is walled (2026-09-20 decision,
+      // enforced here from 2026-11-26) — a topical set keeps the 10-solve quota.
+      authored: companyHasAuthoredSet(companyFilter),
       challenge,
       scoped: companyScopedChallenges(),
       solved: solvedChallenges,
@@ -24422,7 +24632,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     // other wall: the lock row, the cold-start diversion (moot at ten solves,
     // kept for the guard), then the ask. `wall: 'free_quota'` is its own
     // value in the series (metrics.md, quota_wall).
-    const quota = quotaGate({ flagOn: ftbFlag('freeQuota'), isPro, solvedCount: solvedChallenges.size, alreadySolved: solvedChallenges.has(challenge.id) });
+    const quota = quotaGate({ flagOn: freeQuotaOn(), isPro, solvedCount: solvedChallenges.size, alreadySolved: solvedChallenges.has(challenge.id) });
     if (quota.gated) {
       const quotaModal = quotaWallModalNow();
       trackLockReached('challenge_quota', {
@@ -24904,7 +25114,8 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
       deepLink = ['challenge', 'lesson', 'mock', 'interview', 'goal', 'outcome'].some(k => q.has(k)) || q.get('pro') === '1';
     } catch (_) { /* ignore */ }
     const decision = firstScreenDecision({
-      flagOn: !!window.FF?.feature('firstScreenChallenge'),
+      // A built tournament challenger replaces this test (plan §2.3).
+      flagOn: !!window.FF?.feature('firstScreenChallenge') && !tournamentSupersedesNow(),
       onStartScreen: showFirstRunStart && !deepLink,
       showingOtherStep: showZeroSqlLesson || showIntake || showGoalMeasureOnStart,
       levelChosen: !!firstRunLevel,
@@ -24964,7 +25175,8 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     let stored = null;
     try { stored = JSON.parse(localStorage.getItem(MOBILE_RUN_BAR_STORAGE_KEY) || 'null'); } catch (_) { stored = null; }
     const decision = mobileRunBarDecision({
-      flagOn: ftbFlag('mobileRunBar'),
+      // A built tournament challenger replaces this test (plan §2.3).
+      flagOn: ftbFlag('mobileRunBar') && !tournamentSupersedesNow(),
       narrowTouch,
       stored,
       aid: getAnonId(),
@@ -26782,7 +26994,8 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
     try { record = JSON.parse(localStorage.getItem(COMPANY_DIRECT_KEY) || 'null'); } catch (_) { record = null; }
     const next = companyFilter ? companyBannerNext() : null;
     const decision = companyDirectDecision({
-      flagOn: window.FF?.feature?.('companyDirectOpen') === true,
+      // A built tournament challenger replaces this test (plan §2.3).
+      flagOn: window.FF?.feature?.('companyDirectOpen') === true && !tournamentSupersedesNow(),
       arrival: !!companyFilter,
       aid: getAnonId(),
       record,
@@ -27312,7 +27525,7 @@ RULES:
                 <div className={className} data-testid="pro-feature-list" style={{ background: '#1F222B', borderRadius: '6px' }}>
                   <p className="text-xs mb-3 font-medium uppercase tracking-wider" style={{ color: '#8A8E99' }}>What you get with Pro:</p>
                   <div className="grid grid-cols-2 gap-3">
-                    {(ftbFlag('freeQuota') ? [`Keep solving past your ${FREE_SOLVE_QUOTA} free — all ${bankCountLabel(challenges.length) || challenges.length} challenges open`] : []).concat(['learning', 'job_ready'].includes(getUserIntent()) ? [
+                    {(freeQuotaOn() ? [`Keep solving past your ${FREE_SOLVE_QUOTA} free — all ${bankCountLabel(challenges.length) || challenges.length} challenges open`] : []).concat(['learning', 'job_ready'].includes(getUserIntent()) ? [
                       'Get unstuck the moment it happens — the tutor reads your wrong query and stays with you; the daily cap lifted',
                       'Build the 30-day habit — full streak path, no Pro paywall mid-week',
                       '200+ warm-up questions — micro-drills for daily fluency',
@@ -33379,7 +33592,7 @@ RULES:
                   {isLastDay ? 'Pro trial ends today' : `${daysLeft} days left in your Pro trial`}
                 </p>
                 <p className="text-xs opacity-80 mt-0.5 truncate">
-                  {ftbFlag('freeQuota')
+                  {freeQuotaOn()
                     ? `Unsolved challenges past your ${FREE_SOLVE_QUOTA} free solves, the Hard set, mock interviews, and the tutor beyond the free daily cap will lock without Pro.`
                     : 'Hard challenges, sector tracks, mock interviews, and the tutor beyond the free daily cap will lock without Pro.'}
                 </p>
@@ -33611,7 +33824,7 @@ RULES:
                     <div className="mt-3">
                       <p className="font-medium" style={{ color: '#F2F0EA' }}>Welcome back to Free.</p>
                       <p className="text-sm mt-2" style={{ color: '#8A8E99' }}>
-                        {ftbFlag('freeQuota')
+                        {freeQuotaOn()
                           ? `The Coach, Skillmap, daily streak, lessons, warm-ups and every challenge you've solved stay yours. Past ${FREE_SOLVE_QUOTA} free challenge solves, the rest of the bank, the Hard set, mock interviews and the AI tutor without the free tier's daily cap are Pro. Pick up Pro to keep going where you left off.`
                           : 'The Coach, Skillmap, daily streak, and your first ~75 challenges stay yours forever. But Hard challenges, sector tracks, mock interviews, and the AI tutor without the free tier\'s daily cap are now locked. Pick up Pro to keep going where you left off.'}
                       </p>
@@ -36650,7 +36863,7 @@ RULES:
                       ))}
                     </div>
                     <p className="mt-3 text-xs" style={{ color: '#8A8E99' }} data-testid="plan-remaining">
-                      {i18n_t('plan', ftbFlag('freeQuota') ? 'remainingQuota' : 'remaining', { done: plan.solvedInScope, total: plan.totalInScope })}
+                      {i18n_t('plan', freeQuotaOn() ? 'remainingQuota' : 'remaining', { done: plan.solvedInScope, total: plan.totalInScope })}
                     </p>
                   </div>
                 );
@@ -37655,7 +37868,7 @@ RULES:
                   users never learn Pro exists (5 modal impressions/week). */}
               {!userProStatus && (
                 <div className="flex items-center justify-between gap-3 rounded-lg border border-[#2A2E38] bg-[#16181F] px-4 py-2.5 mb-4">
-                  <p className="text-xs text-gray-400 truncate">{i18n_t('pro', ftbFlag('freeQuota') ? 'coachStripLineQuota' : 'coachStripLine', { quota: FREE_SOLVE_QUOTA })}</p>
+                  <p className="text-xs text-gray-400 truncate">{i18n_t('pro', freeQuotaOn() ? 'coachStripLineQuota' : 'coachStripLine', { quota: FREE_SOLVE_QUOTA })}</p>
                   <button
                     onClick={() => { setProModalReason({ type: ftbFlag('paywallMoments') ? 'coach_strip' : 'generic', topic: null, solvedCount: ftbFlag('paywallMoments') ? solvedChallenges.size : 0 }); setShowProModal(true); }}
                     className="text-xs font-bold text-[#FFE34D] hover:underline whitespace-nowrap"
@@ -39429,7 +39642,7 @@ RULES:
                               if (freeSolved === 0) {
                                 // Under the quota "N free" would promise more than
                                 // FREE_SOLVE_QUOTA solves; say what is open and what the quota is.
-                                if (ftbFlag('freeQuota')) {
+                                if (freeQuotaOn()) {
                                   return `${free.length} open on the free tier + ${proCount} Pro challenges below, ranked by difficulty. Your first ${FREE_SOLVE_QUOTA} challenge solves are free — pick any one to start, no signup required.`;
                                 }
                                 return `${free.length} free + ${proCount} Pro challenges below, ranked by difficulty. Pick any one to start — no signup required.`;
@@ -39496,7 +39709,7 @@ RULES:
                               <span className="text-sm text-gray-400">
                                 {i18n_t('challenges', 'solvedCount', { n: scopeSolved, total: scopeTotal })}
                                 {companyFilter ? ` ${companyFilter}` : ''}
-                                {ftbFlag('freeQuota') && !isPro ? (
+                                {freeQuotaOn() && !isPro ? (
                                   <span data-testid="free-quota-counter"> · {Math.min(solvedChallenges.size, FREE_SOLVE_QUOTA)} of {FREE_SOLVE_QUOTA} free solves used</span>
                                 ) : null}
                               </span>
@@ -40074,11 +40287,12 @@ RULES:
                       const isStarted = !isSolved && startedIds.has(c.id);
                       // Free-tier boundary M1: in a company view under
                       // `companySetGate`, everything past the free three that
-                      // is not already solved wears the same lock as a Hard.
+                      // is not already solved wears the same lock as a Hard —
+                      // in an authored set's view only (Capital One, Revolut).
                       const isLocked = isContentLocked('challenge', c)
-                        || companySetGate({ flagOn: ftbFlag('companySetGate'), isPro, companyFilter, challenge: c, scoped: companyScopedChallenges(), solved: solvedChallenges }).gated;
+                        || companySetGate({ flagOn: ftbFlag('companySetGate'), isPro, companyFilter, authored: companyHasAuthoredSet(companyFilter), challenge: c, scoped: companyScopedChallenges(), solved: solvedChallenges }).gated;
                       // Free quota (`freeQuota`): past ten solves every unsolved row wears the lock too.
-                      const isQuotaLocked = quotaGate({ flagOn: ftbFlag('freeQuota'), isPro, solvedCount: solvedChallenges.size, alreadySolved: isSolved }).gated;
+                      const isQuotaLocked = quotaGate({ flagOn: freeQuotaOn(), isPro, solvedCount: solvedChallenges.size, alreadySolved: isSolved }).gated;
                       // A free Hard preview, shown to someone it is a preview
                       // FOR. Pro users never see the tag or the blue border.
                       const isPreview = !isPro && isFreePreview(c) && !isQuotaLocked;
@@ -40820,7 +41034,7 @@ RULES:
                             // Free quota (`freeQuota`): once this solve spends the
                             // quota the other previews are locked — never say "N
                             // more are free" then; the last-one line reads true.
-                            const quotaNowSpent = quotaGate({ flagOn: ftbFlag('freeQuota'), isPro, solvedCount: solvedNow.size }).gated;
+                            const quotaNowSpent = quotaGate({ flagOn: freeQuotaOn(), isPro, solvedCount: solvedNow.size }).gated;
                             const remaining = (counts.previewUnsolved === 0 || quotaNowSpent)
                               ? i18n_t('paywall', 'winRemainingLast')
                               : counts.previewUnsolved === 1

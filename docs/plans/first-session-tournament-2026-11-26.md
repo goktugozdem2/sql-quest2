@@ -1,7 +1,8 @@
 # First-session tournament — new visitors split across first sessions, the worst one replaced (2026-11-26)
 
 **Status:** plan only. No app code in this PR. Flag `firstSessionTournament`
-(dark), launch **no earlier than 2026-12-10**.
+(dark), launch **2026-12-12** (orchestrator 2026-11-27: after the
+holdout's halfway money read; was "no earlier than 2026-12-10").
 
 **Recommendation: start with three arms, not four.** Control, B (single
 path) and D (interview sprint). C (proof first) is built and queued as the
@@ -27,8 +28,9 @@ openers a day (§2.1).
 
 **Constraints this plan does not touch** (`docs/plans/investor-90-day-2026-11-25.md`):
 - no price change and no quota change: `FREE_SOLVE_QUOTA` stays 10;
-- the freeQuota holdout (#384) runs orthogonally. It enrols 11-26 → 12-23,
-  with the money read on 12-10 and the full read on 12-31;
+- the freeQuota holdout (#384) runs orthogonally. It enrols 11-28 → 12-25,
+  with the money read on 12-12 and the full read on 2027-01-02 (moved a day
+  on 2026-11-26 and again on 2026-11-27: it starts on merge);
 - money copy needs the founder's go. §7 lists every such string.
 
 Metrics: `first_session_tournament` (the decision metric) and
@@ -179,8 +181,10 @@ find out instead of predicting, and C's harm stop (§5.5) caps the cost.
   assignedAt}`. A stored record always wins, so nobody is re-armed. A slot
   whose arm is replaced keeps its people in the old arm: their record names
   the arm, not the slot.
-- **Hash:** FNV over `${aid}:first_session_tournament_v1`, then the murmur3
-  finalizer (the `companyDirectArm` pattern). The slot is `h % SLOTS`.
+- **Hash:** FNV over `${aid}:first_session_tournament_v1:${stratum}`, then
+  the murmur3 finalizer (the `companyDirectArm` pattern). The draw
+  `u = h / 2^32` falls into the stratum's cumulative weights over the
+  active arms (§2.1a; amended 2026-11-26 — it was `h % SLOTS`).
 - **`SLOTS` is 3 at launch** (control, B, D). It goes to 4 only by an
   orchestrator decision row, once the 4-week average of human new openers
   reaches **30 a day**. That is ~52 per arm a week at four arms, which is
@@ -195,10 +199,83 @@ find out instead of predicting, and C's harm stop (§5.5) caps the cost.
   holdout, runnable-starter) and checks that each slot × holdout-arm cell
   holds an equal share (1/6 at three slots).
 - **Event:** `tournament_assigned {test, slot, arm, armVersion, round,
-  firstOpenAt, door, viewportBand}`, written once. `tArm` and `tArmV` are
+  firstOpenAt, stratum, profile, weights, weightsVersion, draw, reason}`,
+  written once (the door and the viewport band ride every row through
+  `trackActivationEvent`, and the profile holds them too). `tArm` and `tArmV` are
   stamped on **every** `pro_events` row from an enrolled browser, in
   `writeProEvent`, exactly like `fqArm`. Server rows (`stripe_webhook`)
   join by username.
+
+### 2.1a Assignment: profile first, then the stratum, then the draw (amended 2026-11-26)
+
+**Founder, chat, 2026-11-26 (verbatim):** "her bir grubu tek tek test et.
+ben de testi görebileyim. o kişiye o gruba niye atadın o kişinin profilini
+de çıkar. yani kişinin profilini anlamadan onu bir gruba alamayız. profile
+göre gruba almalıyız".
+
+**The design that keeps the experiment valid** (orchestrator): the profile
+decides the person's STRATUM, never their arm. If the arm were picked from
+the profile (say, every Capital One visitor to D), arm and profile would be
+one variable and no read could say which of the two moved the number. So:
+
+1. **Profile** at the first app open, before the person does anything
+   (`buildVisitorProfile`, src/utils/tournament.js). Only signals known at
+   that moment, no PII:
+   - **door**: company page (+ company slug), `?company=` link, readiness
+     test, `/sql-exercises/`, topic (`/challenges/*`, the trap pages),
+     question page, blog, homepage, AI assistant (`landingSrc` `ai:*`),
+     another page, an external referrer, or direct / unknown — read from
+     `?src` / `utm_source` / `?company` / the referrer and the stored
+     `landingSrc`, the rules `arrivalSrc` and #409's door table use;
+   - **interviewTarget** (#409's entry definition): a company page, a
+     `?company=` link, the readiness test or its stored result
+     (`sqlquest_readiness_v1`), the Capital One blog — and which of these;
+   - **device** (desktop / tablet / phone, the landing tracker's bands);
+   - **country** (ISO-2, only if `/api/geo/` is already cached in the tab —
+     at a first open it usually is not; the announce fills it in when it
+     has answered, never the stratum) and **priceRegion** (india / default);
+   - **language** (`?lang=`, else the browser's), a **timezone bucket**
+     (americas / europe_africa / gulf_south_asia / east_asia_oceania — never
+     the zone name), **landingBefore** (a landing page ran first in this
+     browser), the **readiness band** (low / mid / high) if the public test
+     was taken.
+2. **Stratum** = interview-target (IT / NI) × desktop (D; an unreadable
+   device too) / phone+tablet (M): **IT-D, IT-M, NI-D, NI-M**. Four only:
+   at ~23 new people a day every extra cut halves each cell.
+3. **Draw inside the stratum**: the hash above, salted by the stratum, over
+   the stratum's weights — equal across the active arms unless the stratum
+   is routed (`TOURNAMENT_STRATUM_WEIGHTS` in the registry, empty at
+   launch).
+4. **Log** `stratum`, `profile`, `weights`, `weightsVersion`, `draw` and a
+   human `reason` on `tournament_assigned` and in the stored record, e.g.
+   "interview-target (Capital One page) · desktop → stratum IT-D; equal
+   weights A/B/D; hash draw 0.41 → B". `scripts/tournament-people.sql` lists
+   every assigned person (a hashed 8-character id, never the aid) with the
+   profile, the reason and their progress, so the founder can see each
+   group person by person.
+5. **Read per stratum AND pooled** (§5.4). Elimination and promotion stay
+   pooled; a stratum with a proven winner is **routed** to it by weights,
+   keeping ≥ 20% exploration (§5.5 rule 7).
+
+**Expected people per stratum** (first app openers 2026-10-05 → 11-22 by
+door and viewport, read-only MCP 2026-11-26, scaled to #409's ~161 a week):
+
+| Stratum | share | per week | per arm per week (3 arms) | 100 per arm |
+|---|---|---|---|---|
+| IT-D | 17% | ~28 | ~9 | ~11 weeks |
+| IT-M | 3% | ~5 | ~1.6 | > 1 year |
+| NI-D | 72% | ~116 | ~39 | ~2.6 weeks |
+| NI-M | 7% | ~12 | ~4 | ~25 weeks |
+
+Raw counts: IT-D 220, IT-M 39, NI-D 918, NI-M 94 first app openers in 48
+days. Interview-target is 20% here against #409's 15% (this counts app
+openers with a lighter bot filter, #409 counted challenge openers with the
+full one), so read the IT rows as an upper bound.
+
+So routing can only ever happen in NI-D in the first months, and in IT-D
+around March 2027; IT-M and NI-M are explore-only in practice. That is the
+honest price of four strata at this volume, and why the decisions stay
+pooled.
 
 ### 2.2 The registry
 
@@ -209,13 +286,13 @@ find out instead of predicting, and C's harm stop (§5.5) caps the cost.
 export const TOURNAMENT_TEST_ID = 'first_session_tournament_v1';
 export const TOURNAMENT_SLOTS = 3;            // slot 0 is control, forever; 4 only by decision row (§2.1)
 export const TOURNAMENT_ARMS = [
-  { id: 'A_control',          slot: 0, version: 1, start: '2026-12-10', status: 'permanent',
+  { id: 'A_control',          slot: 0, version: 1, start: '2026-12-12', status: 'permanent',
     hypothesis: "Today's product; anchors drift and is never eliminated." },
-  { id: 'B_single_path',      slot: 1, version: 1, start: '2026-12-10', status: 'live',
+  { id: 'B_single_path',      slot: 1, version: 1, start: '2026-12-12', status: 'live',
     hypothesis: 'No choices until the level is known: a 4-question adaptive ladder sets the level from solving, then one line says the next step — fewer exits, more solves.' },
   { id: 'C_proof_first',      slot: null, version: 1, start: null,      status: 'queued',   // first replacement
     hypothesis: 'Seeing your own Skillmap first (the readiness test\'s ten questions) creates a reason to follow the plan it builds.' },
-  { id: 'D_interview_sprint', slot: 2, version: 1, start: '2026-12-10', status: 'live',
+  { id: 'D_interview_sprint', slot: 2, version: 1, start: '2026-12-12', status: 'live',
     hypothesis: 'A 14-day sprint for a named company (one tap, the date set for them) turns a vague visit into a daily count to keep.' },
 ];
 // Retired arms stay in the file with status 'eliminated' | 'promoted' and an end date.
@@ -248,7 +325,7 @@ B–D person never writes `first_screen_assigned`,
 | `companyDirectOpen` (live 50/50 since 11-23) | B and D: a `?company=` arrival opens the company's question 1 directly, using the `direct` arm's resolver `companyBannerNext()`. C: the readiness check first, weighted by that company (`?company=` → `companySkillWeights`). | Its read keeps only people with no `tournament_assigned` or arm A. **Gate:** its 120-per-arm verdict should be in before launch. If it is not, it accrues at a quarter of today's rate after 12-10. |
 | `runnableStarter` (approved to flip after #402) | B–D: the starter text on every first-contact empty editor (`src/utils/runnable-starter.js`, the `starter` arm's behaviour, reused). | Its read keeps only people with no `tournament_assigned` or arm A. Its +15 pp interim read (~160 per arm, 12-17) lands mostly before launch. **Its +10 pp final (360 per arm, 01-07) cannot be reached on a quarter of the traffic.** Read it at the interim, and treat a HIT there as the ship decision (arm A then goes v2). |
 | `mobileRunBar` (dark) | B–D phones: today's sticky bar (the `control` behaviour) until that test is read, then whatever ships. | Its read keeps only people with no `tournament_assigned` or arm A. |
-| `freeQuotaHoldout` (live 11-26 → 12-23) | **Orthogonal, not superseded.** Every arm can be in `quota` or `holdout`. | Both reads report the 2×2. The holdout's 12-31 read gives its primary twice: on all its enrolled people, and on its people outside arms B–D (enrolled before 12-10, or arm A), and says whether they differ. |
+| `freeQuotaHoldout` (live 11-28 → 12-25) | **Orthogonal, not superseded.** Every arm can be in `quota` or `holdout`. | Both reads report the 2×2. The holdout's 2027-01-02 read gives its primary twice: on all its enrolled people, and on its people outside arms B–D (enrolled before 12-10, or arm A), and says whether they differ. |
 | Later-step tests (`runSubmitNudge`, `mobileOneLayer`, `quotaWallInline`, `modalPlansFirst`, `exitReasonAsk`, `day2Ask`) | Run in every arm as today, by their own hash. | Their reads add `tArm` as a split column. A test whose surface an arm removes reports that arm's cell as "not exposed" (B suppresses the post-solve "What's next" strip, for example). |
 
 ### 2.4 Launch gates (the flip PR checks all of them)
@@ -258,9 +335,13 @@ B–D person never writes `first_screen_assigned`,
    only enters as the first replacement. If B or D is late, launch with its
    slot running **arm A again** (`A_control_twin`). That is an A/A check of
    the whole pipeline, and it is worth the delay of one arm.
-2. **Not before 2026-12-10.** The holdout's halfway money read (12-10)
-   must be written first. If it triggers its money stop (holdout 0 trials
+2. **Not before 2026-12-10.** The holdout's halfway money read must be
+   written first. If it triggers its money stop (holdout 0 trials
    while quota has ≥ 3), the tournament waits for the founder's call.
+   (Re-dated 2026-11-27: the holdout now enrols from 11-28, so its halfway
+   read is 12-12, two days after the 12-10 launch. Open for the
+   orchestrator: launch on 12-12, or read the money stop early on 12-10.
+   Decided 2026-11-27 (orchestrator-decisions): launch 2026-12-12.)
 3. `companyDirectOpen` has a verdict, or the orchestrator accepts its
    slower read in a decision row.
 4. The founder's go on the money strings in §7.
@@ -735,9 +816,11 @@ planKind}`, then arm B's `path_*` events with `arm: 'D'`.
   `version`.
 - **Posteriors.** Beta(1 + successes, 1 + failures) per arm, uniform
   prior. Monte-Carlo with 20,000 draws, in the SQL file's companion script.
-- **Every read is split by segment.** Interview-target (entry version of
-  #409's segment A: the arrival door is a company page, `?company=`, or the
-  readiness test, fixed before the person does anything) vs everyone else.
+- **Every read is split by segment and by stratum** (§2.1a; the segment is
+  the stratum's first half — interview-target or not, fixed by the profile
+  before the person does anything). Query 4 of the read is the decision
+  table per stratum; `tournament-posteriors.mjs --strata` gives P(best in
+  stratum), the routing verdict and the post-stratified pool.
   - The decision uses the pooled arm. The segment split is reported beside
     it and never decides on its own: at ~15%, it is ~8 people per arm a
     week.
@@ -777,6 +860,19 @@ planKind}`, then arm B's `path_*` events with `arm: 'D'`.
 6. **Money stop.** If a challenger shows 0 trial-or-paid while control
    shows ≥ 3 in the same weeks, report to the founder the same day. This
    does not eliminate by itself.
+7. **Routing a stratum (added 2026-11-26, §2.1a).** A stratum is routed to
+   an arm only when that arm has **P(best in the stratum) ≥ 0.95 on two
+   consecutive Friday reads with ≥ 100 eligible per arm in that stratum**.
+   Routing is a decision row that adds the stratum to
+   `TOURNAMENT_STRATUM_WEIGHTS` with the winner at ≤ 80%; every other
+   active arm keeps a share, so **≥ 20% always explores** (a table that
+   breaks this is ignored by the app and fails the test). The stratum's
+   `weightsVersion` bumps and its per-arm counts restart. From then on the
+   pooled rules 2–3 read the **post-stratified** pool (each stratum
+   weighted by its share of eligible people), not the plain pool, because
+   the arm mix now differs by stratum. A routed stratum's winner that is
+   later eliminated from the pool, or that loses P(best) ≥ 0.95 on two
+   consecutive reads, goes back to equal weights by the same kind of row.
 
 **What these rules can see** (a 40-line Beta/binomial Monte-Carlo, 400 runs
 per row, rates per read; PR 1 commits it as `scripts/tournament-sim.mjs`).
@@ -822,7 +918,7 @@ about 15 weeks.
 | new human openers | ~161 a week, ~23 a day (#409) | same |
 | per arm | **~54 a week (~8 a day)** | ~40 a week (~6 a day) |
 | 150 eligible per arm | 2.8 weeks of enrolment + 7 days | 3.7 weeks + 7 days |
-| launch | Thu 2026-12-10 at the earliest | same |
+| launch | Sat 2026-12-12 (orchestrator 2026-11-27) | same |
 | first read with every arm at 150 | **Fri 2027-01-08**. A late-December dip could make it 01-15. | Fri 2027-01-15 (likely 01-22) |
 | 6-week fallback | 01-21, so **the first elimination falls on Fri 01-22 at the latest**, and most likely on 01-08 or 01-15 | same latest date, less likely earlier |
 | the cadence after that | ~4 weeks per replacement (a new arm needs its own 150). **By the investor review (02-23), expect 2 eliminations.** | ~5 weeks, 1–2 eliminations |
@@ -961,7 +1057,7 @@ Then **the flip**: one line plus an orchestrator decision row, after the
    - Launching on 12-10 makes half of the holdout's enrolment a 2×2.
      Independent hashes keep both reads unbiased, but an interaction is
      possible: B hides the counter, and D changes who reaches the wall.
-   - **The alternative is a 12-24 launch** (the day after the holdout
+   - **The alternative is a 12-26 launch** (the day after the holdout
      enrolment closes). That gives a clean holdout read, and the first
      elimination moves to ~01-22 → 02-05. The orchestrator picks in the flip's
      decision row. This plan defaults to 12-10, because both reads are
