@@ -577,6 +577,78 @@ of the verifier and must never be rounded to `FLAT`.
   Excluded from every read: aid `363dfb2bc1314757acc88c8438c4d2ea` (the 11-25 investigation walk,
   Europe/Istanbul, desktop 1024x768).
 
+### the Stripe page: sourced rows, a first screen on the reported shape, the closest Pro mock (C5)
+
+- **Claimed** 2026-11-27 · **Shipped** on merge (static page, no flag) · **Read** 2026-12-25 (28 d) and 2027-01-22 (56 d).
+- **Change** `/stripe-sql-interview/` stops saying "we have no dated public
+  source". `SOURCED_FORMATS.stripe` (src/data/company-interviews.js) carries
+  the R1 dossier's high and medium rows (`docs/reads/companies/stripe.md`,
+  read 2026-11-22): SQL written live in the data-scientist and data-analyst
+  loops (three reports), a no-coding hiring-manager first round (four), the
+  metric inside the SQL question (two), the data-scientist take-home, one
+  analyst guide; a "Not stated here" row for tool, length, count and dialect.
+  Left out on purpose: HackerRank and the 45-minute round (one report), the
+  "bug squash" round (snippet only), the reconciliation round reported to us
+  (S11, low, n = 1). The generator now passes `slug` to the older pages'
+  format section, so the case-round line renders under Stripe's rows. A
+  hand-written "Start here" block under the provenance note: **Start with**
+  Chargeback Rate Per Merchant (#280, Medium, free, the payments-joined-to-
+  disputes shape one Q4 2026 analyst report describes); the Stripe set (opens
+  on JOIN with a Filter, the hero's question 1); the readiness test with
+  `?company=stripe`; **closest mock** the Metrics & Case Round (first 3 free,
+  "our mock, not Stripe's"); the Pro line (13 locked Hard, among them #330,
+  the two-partner reconciliation, all 300+, the mock bank; no price). Under
+  it, "Debug this query": April's disputed share on the card ledger with
+  `BETWEEN '2026-04-01' AND '2026-04-30'` on a timestamp (3.51 against 3.49;
+  35 transactions on 30 April drop out), fix shown, link to the trap page.
+  Every new app link carries `src=company-stripe`. Stale counts fixed: the
+  set is 36 since #330 (page said 35; FAQ said 17 Hard, it is 18).
+- **Why this one:** Stripe is one of the seven money pages (A09). Two of the
+  twelve trial-or-paid people in the 90 days to 2026-11-26 first arrived
+  through the `company:Stripe` door, one of them on 11-25
+  (`docs/reads/funnel-by-segment-2026-11-26.md`, P5 and P16). The dossier
+  said the page could become sourced and nobody had done it. #280 beat #330
+  as the first question: #330 is Hard and Pro (a cold visitor meets the
+  modal) and rests on one private report; #280 is free and matches a public,
+  dated one.
+- **Metric** `landing_to_trial` for `stripe-sql-interview` (trials and
+  purchases per 1,000 landing people, `stripe_webhook` rows only), and the
+  step it should move, `company_page_door` page → app (`app_opened` within 1
+  hour). Clicks `cta_first_question`, `cta_first_set`, `cta_first_readiness`,
+  `cta_first_mock`, `cta_first_hard`, `cta_first_trap`, `cta_case_round`;
+  arrivals with `arrivalSrc` `company-stripe`. Mailed per page in
+  `content_funnel`.
+- **Baseline** the page's 28-day `content_funnel` row to 2026-11-27 (laptop
+  read; per-page numbers never go in the repo). Dated priors: company pages
+  2.3% of arrivals to trial or purchase, page → app 19.1% site-wide
+  (`company_page_door`, 10-08 → 11-22); Search Console 69 impressions and 4
+  clicks in the 28 days to 11-21 (dossier). At that volume the 28-day rate
+  will read UNREADABLE (under 300 landers), so the 28-day read is the click
+  and app-open steps.
+- **Target** at 28 d: ≥ 15% of landers click one of the new first-screen
+  links, and page → app at or above 25%. At 56 d: ≥ 1 trial or purchase from
+  a person whose first landing was the page, with `arrivalSrc`
+  `company-stripe` or the page as first landing.
+- **Falsification, written now:** under 5% of landers click a new link at
+  ≥ 100 landers → the block is not read; cut it to the Start-with line.
+  Page → app flat or down at ≥ 100 landers → the block only pushed the page
+  down; move it below the sourced rows. `cta_first_mock` clicks with no plan
+  click in 56 days → the case round is not the mock this buyer wants; point
+  the line at the set instead. Search Console clicks fall by half against
+  the 11-21 dossier window over 28 days → the sourced rewrite cost ranking;
+  re-read the snippet with C1. Under 30 landers in 28 d → noise, read at 56 d.
+- **Guard** `tests/stripe-first-screen.test.js` (both shown queries run on
+  `finans_fraud`, the broken one gives 3.51 and the fix 3.49, only line 4
+  differs, a COUNT(*) wrong answer fails, every stated number, not a mock
+  query; every app link carries the door; #280 is Stripe-tagged and Medium,
+  #330 Stripe-tagged, Hard and not a preview; Pro line from page facts and
+  `freeSolvesLabel`; the mock link names Pro with the mock's own free count;
+  every sourced row cites, and none says HackerRank, a length or the
+  reconciliation round). Breaks that caught it: the broken query's end date
+  set to 05-01 (the 3.51 test failed), "on HackerRank" written into the
+  take-home row (the low-confidence test failed), `src=stripe-sql-interview`
+  on #280's link (the door and question-1 tests failed).
+
 ### Apple becomes a sourced company page; TikTok, Bloomberg, Tesla, Amazon, Monzo lose their unsourced claims (C2, R1 batch 5)
 
 - **Claimed** 2026-11-23 · **Shipped** on merge (static pages, no flag) ·

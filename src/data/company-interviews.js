@@ -588,6 +588,40 @@ export const SOURCED_FORMATS = {
       'prachub-shop-apr26': ['PracHub — Shopify Data Scientist onsite: a data-viz case, a marketplace case and the Life Story (candidate report, interview Apr 2026)', 'https://prachub.com/interview-experiences/shopify-data-scientist-interview-experience-data-viz-case-app-store-marketplace-case-and-life-story', '25 Aug 2026'],
     },
   },
+  // 2026-11-27 (C5): Stripe becomes a sourced page on the R1 dossier
+  // docs/reads/companies/stripe.md (sources read 2026-11-22, refresh by
+  // 2027-01-21). Only the rows it rates high or medium: live SQL in the
+  // data-scientist and data-analyst loops (three reports), a no-coding first
+  // round, the data-scientist take-home, the metric inside the SQL question.
+  // Not stated, as low or single-source: a platform (HackerRank, one report),
+  // a round length, a question count, a dialect, a "bug squash" round
+  // (snippet only), and the reconciliation round reported to us privately
+  // (S11, low, n = 1). S5 is left out: its body is behind a sign-in. S7 is
+  // engineering-only with unverified provenance.
+  stripe: {
+    name: 'Stripe',
+    role: 'Data Scientist and Data Analyst',
+    accessed: '22 Nov 2026',
+    format: [
+      ['Where the SQL sits', 'Three candidate reports put SQL written live in the data loops: a data-scientist technical screen over Zoom (October 2025), a data-scientist metric case with the SQL inside it (October 2025), and a data-analyst round of SQL and metrics questions (Q4 2026).', ['prachub-etl-st', 'prachub-onsite-st', 'iq-da-st']],
+      ['First round', 'Four reports open on a conversation with the hiring manager about experience and goals, with no coding.', ['prachub-onsite-st', 'prachub-terrific-st', 'iq-ds-st', 'iq-da-st']],
+      ['The metric comes first', 'Two reports put the SQL inside a business question, where choosing or defining the metric was the hard part, not the query.', ['prachub-onsite-st', 'iq-da-st']],
+      ['Data scientist take-home', 'Data-scientist candidates describe a take-home after the technical round, presented in a later round. One report gives a week to finish it, with 4 to 6 hours suggested, three questions and SQL or Python allowed; another, a prediction task meant to take under six hours.', ['prachub-takehome-st', 'prachub-onsite-st', 'prachub-terrific-st', 'aced-st']],
+      ['Data analyst', 'One data-analyst guide describes the live round of SQL and metrics questions, from a Q4 2026 candidate report, and an analysis take-home with a written report.', ['iq-da-st']],
+      ['Not stated here', 'The tool the SQL is written in, how long the SQL round runs, how many questions it holds and the SQL dialect: each rests on one report or none, so this page does not state them.', []],
+    ],
+    sources: {
+      'prachub-etl-st': ['PracHub — Stripe Data Scientist: a SQL ETL case study under time pressure (candidate report, interview Oct 2025)', 'https://prachub.com/interview-experiences/stripe-data-scientist-interview-experience-sql-etl-case-study-under-time-pressure', '25 Aug 2026'],
+      'prachub-takehome-st': ['PracHub — Stripe Data Scientist: a phone screen, then a three-question take-home in under a week (candidate report, interview Oct 2025)', 'https://prachub.com/interview-experiences/stripe-data-scientist-interview-experience-phone-screen-then-a-three-question-take-home-under-a-week', '25 Aug 2026'],
+      'prachub-onsite-st': ['PracHub — Stripe Data Scientist: rejected for "not detailed enough" after a full onsite loop (candidate report, interview Oct 2025)', 'https://prachub.com/interview-experiences/stripe-data-scientist-interview-experience-rejected-for-not-detailed-enough-after-a-full-onsite-loop', '25 Aug 2026'],
+      'prachub-terrific-st': ['PracHub — Stripe Data Scientist: "terrific", then a rejection (candidate report, interview Nov 2025)', 'https://prachub.com/interview-experiences/stripe-data-scientist-interview-experience-the-interviewer-kept-calling-it-terrific-then-came-the-rejection', '25 Aug 2026'],
+      'iq-da-st': ['Interview Query — Stripe Data Analyst interview guide, with one candidate report (interviewed Q4 2026)', 'https://www.interviewquery.com/interview-guides/stripe-data-analyst', 'shown as "updated 2 days ago" on 22 Nov 2026'],
+      'iq-ds-st': ['Interview Query — Stripe Data Scientist interview guide, with one candidate report (interviewed Q4 2026)', 'https://www.interviewquery.com/interview-guides/stripe-data-scientist', 'shown as "updated 10 hours ago" on 22 Nov 2026'],
+      'aced-st': ['aced.io (formerly Exponent) — Stripe interview process guide', 'https://www.aced.io/blog/stripe-interview-process', 'shown as "last updated 2 months ago" on 22 Nov 2026'],
+    },
+    // The line under the rows (caseRoundLine): the closest Pro mock, ours.
+    caseRound: { note: 'Two candidate reports put the SQL inside a metric question, one in a data-scientist case round and one in a data-analyst round of SQL and metrics questions.', sources: ['prachub-onsite-st', 'iq-da-st'] },
+  },
 };
 
 // Every company with a dated source for its own process — the two registries

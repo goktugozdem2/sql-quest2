@@ -345,7 +345,9 @@ export function withSourcedFormat(html, slug) {
   let at = out.indexOf('<section id="topics"');
   if (at < 0) at = out.indexOf('<section id="questions"');
   if (at < 0) return out;
-  const block = `<!-- company-format:start -->\n${formatSection(d, { accessed: d.accessed || '14 Sep 2026', role: d.role })}\n<!-- company-format:end -->\n`;
+  // `slug` lets an older page carry the case-round line too, when its entry
+  // has `caseRound` (Stripe, 2026-11-27); an entry without one gets nothing.
+  const block = `<!-- company-format:start -->\n${formatSection(d, { accessed: d.accessed || '14 Sep 2026', role: d.role, slug })}\n<!-- company-format:end -->\n`;
   return out.slice(0, at) + block + out.slice(at);
 }
 
