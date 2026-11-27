@@ -648,6 +648,9 @@ src/utils/single-path.js; `tests/single-path.test.js` pins it.*
   Coach's own "Your {company} plan" card is hidden (`hideCoachPlan`, as D3
   does for D). The re-walk found "Your Capital One plan" beside B's plan line
   on the Learning Path tab once the tabs were back.
+- **One goal on screen** (orchestrator decision 2026-11-27): once the plan
+  shows, B also hides "Pick a goal to get started" and Focus Tracks on the
+  Learning Path tab (`hideGoalPicker`, the switch D uses).
 - **Never in B's first session:** the "Take tour — 60 seconds" prompt (and,
   as before, the onboarding tour). The tour stays in the profile menu.
 - **Shown at any time:**

@@ -604,3 +604,21 @@ describe('one Pro ask in any 3 consecutive solves (first session)', () => {
   });
 });
 
+// Orchestrator decision (2026-11-27): single focus in B too — no goal picker
+// and no Focus Tracks beside B's plan (the switch D uses).
+describe('one goal on screen in B', () => {
+  it('B hides the goal picker and Focus Tracks once the plan shows; never on the ladder or outside the arm', () => {
+    const s = emptyPathState();
+    expect(pathUiFlags({ behaviour: SINGLE_PATH_ARM, state: s }).hideGoalPicker).toBe(false);
+    const ended = normalizePathState({ ...s, ladder: { ...s.ladder, done: true, levelId: 'basics' }, plan: { steps: [{ kind: 'challenge', challengeId: 92 }] } });
+    expect(pathUiFlags({ behaviour: SINGLE_PATH_ARM, state: ended }).hideGoalPicker).toBe(true);
+    expect(pathUiFlags({ behaviour: null, state: ended }).hideGoalPicker).toBe(false);
+  });
+  it('app.jsx: the picker and the Focus Tracks card read the switch', () => {
+    expect(APP).toContain('{!coachState?.goalId && !pathUi.hideGoalPicker && (');
+    const ft = APP.indexOf("i18n_t('coach', 'focusTracks')");
+    const gate = APP.lastIndexOf('{!pathUi.hideGoalPicker && (', ft);
+    expect(gate).toBeGreaterThan(0);
+    expect(ft - gate).toBeLessThan(600);
+  });
+});

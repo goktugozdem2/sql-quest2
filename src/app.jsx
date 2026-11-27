@@ -37526,7 +37526,8 @@ RULES:
               {renderSqlRoadmap()}
               {renderFoundationsRoadmapLesson()}
 
-              {!coachState?.goalId && (
+              {/* Tournament arms B / D: the plan is the goal — no picker beside it (walk fix round 2). */}
+              {!coachState?.goalId && !pathUi.hideGoalPicker && (
                 <div ref={(el) => {
                   // The picker actually rendered — the moment the funnel's
                   // middle step becomes observable. Ref callback rather than
@@ -37603,7 +37604,9 @@ RULES:
                   Added 2026-04-22 at Elena's request: she wanted to master
                   these skills before going Pro. Tracks expose free-preview
                   Hard challenges (freePreview flag) so non-Pro users get a
-                  real taste of advanced content. */}
+                  real taste of advanced content. Tournament arms B / D:
+                  hidden beside the plan (walk fix round 2). */}
+              {!pathUi.hideGoalPicker && (
               <div className="bg-black/30 rounded-xl border border-gray-700 p-5 mb-4">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-2xl">🎯</span>
@@ -37730,6 +37733,7 @@ RULES:
                   );
                 })}
               </div>
+              )}
 
               {activeGoal && (
                 <div className="bg-gradient-to-br from-purple-500/10 to-cyan-500/10 rounded-xl border border-purple-500/30 p-5 mb-4">
