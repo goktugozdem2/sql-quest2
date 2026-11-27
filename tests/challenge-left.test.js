@@ -138,7 +138,7 @@ describe('the app wiring (source guards)', () => {
   });
 
   it('every run and submit path marks the open as run', () => {
-    const mark = app.slice(app.indexOf('const markChallengeFirstRun = (via) => {'), app.indexOf('const markChallengeFirstRun = (via) => {') + 400);
+    const mark = app.slice(app.indexOf('const markChallengeFirstRun = (via'), app.indexOf('const markChallengeFirstRun = (via') + 400);
     expect(mark.indexOf("chLeftNote('ran')")).toBeGreaterThan(0);
     expect(mark.indexOf("chLeftNote('ran')")).toBeLessThan(mark.indexOf('firstRunSentRef.current.has(id)) return;'));
   });
