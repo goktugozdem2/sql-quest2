@@ -39,7 +39,7 @@ import { questionSlugs, loadQuestionBank } from './question-slugs.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
-import { withFirstScreen } from './company-first-screen.mjs';
+import { withFirstScreen, FIRST_SCREENS, BLOCK_RE as FIRST_SCREEN_RE } from './company-first-screen.mjs';
 import { COMPANY_INTERVIEWS, NEW_COMPANY_TAGS, SOURCED_FORMATS } from '../src/data/company-interviews.js';
 import { SKILL_TO_RADAR, mapTopicToSkill, CANONICAL_SKILLS } from '../src/utils/skill-calc.js';
 import { isFreePreview } from '../src/utils/challenge-order.js';
@@ -725,7 +725,10 @@ export function injectModules(bank) {
     if (COMPANY_INTERVIEWS[key]) continue;
     if (SKIP_UNTIL_READ.has(key)) continue;
     const file = path.join(ROOT, 'src', f);
-    let html = fs.readFileSync(file, 'utf8');
+    // The first-screen block (if any) comes off first and goes back on last
+    // (main), so withProvenance's "next section after the hero" never lands
+    // inside it.
+    let html = fs.readFileSync(file, 'utf8').replace(FIRST_SCREEN_RE, '');
     const title = (html.match(/<title>([^<]*)<\/title>/) || [])[1] || '';
     const name = ((title.match(/^(.+?)\s+SQL\b/) || [])[1] || key).trim();
     const fx = facts(bank, name);
@@ -782,7 +785,9 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   // The first-screen block (scripts/company-first-screen.mjs), last: it sits
   // right under the hero, ahead of the provenance note.
   const fsBank = loadBank();
-  for (const [key, d] of Object.entries(COMPANY_INTERVIEWS)) {
+  // Older pages with a first screen (Amazon, 2026-11-26) take it the same way.
+  const older = Object.keys(FIRST_SCREENS).filter(k => !COMPANY_INTERVIEWS[k] && SOURCED_FORMATS[k]).map(k => [k, SOURCED_FORMATS[k]]);
+  for (const [key, d] of [...Object.entries(COMPANY_INTERVIEWS), ...older]) {
     const file = path.join(ROOT, 'src', `${key}-sql-interview.html`);
     if (!fs.existsSync(file)) continue;
     const before = fs.readFileSync(file, 'utf8');

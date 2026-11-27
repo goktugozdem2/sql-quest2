@@ -1,3 +1,15 @@
+---
+id: B4
+name: "Money"
+owner: founder
+runtime: laptop
+status: active
+cadence: "monthly (1st) or on the founder's ask"
+metric: undefined  # TODO: register plan ideas shipped and hit in docs/agent/metrics.md
+writes_code: false
+version: 1.0.0
+last_changed: 2026-11-26
+---
 # B4 — Money
 
 **Lane:** the monetization plan.
@@ -13,3 +25,7 @@
 
    AGENT-NOW ideas go to B1's queue as BACKLOG lines.
 4. One docs PR, self-merged.
+
+## Changelog
+
+- 1.0.0 (2026-11-26) — versioned for the skills loop: front-matter added.
