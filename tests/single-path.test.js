@@ -11,6 +11,8 @@ import {
   ladderOpen, ladderResolve, pickLadderQuestion, roadmapProfileFor, composePathPlan, planProgress,
   nextPlanStep, planEnded, planShownPayload, planIdList, logStepDone, pathWhyLines, companyFromSlug,
   pathTabsOpen, PLAN_FOCUS_STEPS,
+  PATH_LAYER_TIERS, PATH_LAYER_ORDER, PATH_LAYER_HELD_ON_LADDER, PATH_LAYER_SETTLE_MS, PATH_SESSION_GAP_MS, PATH_USER_SIGNUP_REASONS,
+  pathLayerSlot, pathLayerDecide, pathSessionTouch, pathInFirstSession,
 } from '../src/utils/single-path.js';
 import { levelForLadder, FIRST_RUN_PLACEMENT_SOURCES } from '../src/utils/placement.js';
 import { buildRoadmap } from '../src/utils/personal-roadmap.js';
@@ -406,5 +408,146 @@ describe('app.jsx — every change sits behind a pathUi switch', () => {
   it('the state rides the account only for people in the arm', () => {
     expect(APP).toContain('...(pathUi.active ? { singlePath: pathState } : {}),');
     expect(SINGLE_PATH_KEY).toBe('sqlquest_single_path_v1');
+  });
+});
+
+// ─────────────── one layer at a time, the first session (round 2) ─────────────
+// Walk fix round 2 (2026-11-26): at B's 7th solve the 6-solve Pro modal, an
+// achievement toast with its share card and the exit survey opened at once,
+// and from the first plan step on the archetype card and an achievement toast
+// showed together. One queue for the whole first session.
+
+describe('the one-layer queue (arms B and D, first session)', () => {
+  const settle = () => pathLayerSlot('settle');
+  const pick = () => ({ ...pathLayerSlot('settle'), phase: 'pick' });
+  it('priority: Pro / plan_end ask > save / sign-up > achievement > archetype > survey', () => {
+    expect(PATH_LAYER_TIERS.map(t => [...t])).toEqual([
+      ['pro_modal', 'user_modal'],
+      ['signup_prompt', 'soft_email', 'intent_ask'],
+      ['achievement', 'level_up', 'milestone_toast', 'milestone_share', 'streak_card'],
+      ['radar_pop'],
+      ['feedback_prompt'],
+    ]);
+    const all = [...PATH_LAYER_TIERS.flat()].reverse();
+    const d = pathLayerDecide({ active: all, slot: pick() });
+    expect(d.show).toBe('pro_modal');
+    expect(d.drop.sort()).toEqual(all.filter(id => !['pro_modal', 'user_modal'].includes(id)).sort());
+  });
+  it('the walk\'s 7th solve: the Pro ask alone — the achievement, its share card and the survey are dropped', () => {
+    let d = pathLayerDecide({ active: ['achievement', 'milestone_share', 'milestone_toast'], slot: settle() });
+    expect(d).toMatchObject({ show: null, drop: [] });
+    d = pathLayerDecide({ active: ['achievement', 'milestone_share', 'milestone_toast', 'pro_modal'], slot: d.slot });
+    expect(d.show).toBe('pro_modal');
+    expect(d.drop.sort()).toEqual(['achievement', 'milestone_share', 'milestone_toast']);
+    // The modal closes; the survey it would raise and any later toast are dropped.
+    d = pathLayerDecide({ active: ['feedback_prompt', 'radar_pop'], slot: { ...d.slot, phase: 'pick' } });
+    expect(d.show).toBe(null);
+    expect(d.drop.sort()).toEqual(['feedback_prompt', 'radar_pop']);
+  });
+  it('a plan step: the archetype card and an achievement never show together — the first by priority, the other dropped', () => {
+    const d = pathLayerDecide({ active: ['radar_pop', 'achievement'], slot: pick() });
+    expect(d.show).toBe('achievement');
+    expect(d.drop).toEqual(['radar_pop']);
+  });
+  it('at most one per solve: once the granted layer closes, the rest of that solve is dropped', () => {
+    let d = pathLayerDecide({ active: ['signup_prompt', 'achievement'], slot: pick() });
+    expect(d).toMatchObject({ show: 'signup_prompt', drop: ['achievement'] });
+    d = pathLayerDecide({ active: [], slot: d.slot });
+    expect(d.slot.consumed).toBe(true);
+    d = pathLayerDecide({ active: ['level_up'], slot: d.slot });
+    expect(d).toMatchObject({ show: null, drop: ['level_up'] });
+    // The next challenge open is a fresh slot.
+    d = pathLayerDecide({ active: ['level_up'], slot: pathLayerSlot('open') });
+    expect(d.show).toBe('level_up');
+  });
+  it('a toast never sits on a modal: the solve waits for its asks, and a later Pro ask takes the slot', () => {
+    // In the settle window only the Pro ask (or the person's own modal) shows.
+    expect(pathLayerDecide({ active: ['achievement', 'signup_prompt'], slot: settle() }).show).toBe(null);
+    expect(pathLayerDecide({ active: ['achievement', 'user_modal'], slot: settle() })).toMatchObject({ show: 'user_modal', drop: ['achievement'] });
+    // A toast granted first gives way to the Pro ask, which is never dropped.
+    const d = pathLayerDecide({ active: ['achievement'], slot: pick() });
+    const d2 = pathLayerDecide({ active: ['achievement', 'pro_modal'], slot: d.slot });
+    expect(d2).toMatchObject({ show: 'pro_modal', drop: ['achievement'] });
+    expect(PATH_LAYER_SETTLE_MS).toBeGreaterThan(1800); // the milestone / set-complete asks land at 1.8 s
+  });
+  it('never two at once, whatever is up (every subset of the layers)', () => {
+    const ids = PATH_LAYER_TIERS.flat();
+    for (let mask = 1; mask < (1 << ids.length); mask += 7) {
+      const active = ids.filter((_, i) => mask & (1 << i));
+      for (const slot of [pathLayerSlot('open'), settle(), pick()]) {
+        for (const holdExtras of [false, true]) {
+          const d = pathLayerDecide({ active, slot, holdExtras });
+          expect(d.drop).not.toContain(d.show);
+          expect(d.drop).not.toContain('pro_modal');
+          expect(d.drop).not.toContain('user_modal');
+          if (active.includes('feedback_prompt')) expect(d.drop).toContain('feedback_prompt');
+          const held = holdExtras ? active.filter(id => PATH_LAYER_HELD_ON_LADDER.includes(id)) : [];
+          // A second never-dropped modal (the Pro ask and the person's own) waits its turn.
+          const waits = active.filter(id => ['pro_modal', 'user_modal'].includes(id) && id !== d.show);
+          const accounted = new Set([...d.drop, ...held, ...waits, ...(d.show ? [d.show] : [])]);
+          // Everything up is shown, dropped, held on the ladder, or waits out the settle window.
+          if (slot.phase !== 'settle' || active.some(id => ['pro_modal', 'user_modal'].includes(id))) {
+            expect([...accounted].sort()).toEqual([...new Set(active)].sort());
+          }
+        }
+      }
+    }
+  });
+  it('B\'s ladder holds the achievement / archetype layers (neither shown nor dropped); the asks keep the queue', () => {
+    const d = pathLayerDecide({ active: ['achievement', 'radar_pop', 'signup_prompt'], slot: pick(), holdExtras: true });
+    expect(d).toMatchObject({ show: 'signup_prompt', drop: [] });
+    // At the ladder's end they compete: one shows, the rest go.
+    const e = pathLayerDecide({ active: ['achievement', 'radar_pop', 'signup_prompt'], slot: pick(), holdExtras: false });
+    expect(e).toMatchObject({ show: 'signup_prompt' });
+    expect(e.drop.sort()).toEqual(['achievement', 'radar_pop']);
+  });
+  it('the person\'s own sign-up opens are never queued away', () => {
+    expect([...PATH_USER_SIGNUP_REASONS].sort()).toEqual(['ai_limit', 'banner', 'pro_purchase', 'profile']);
+    for (const auto of ['third_solve', 'first_challenge', 'progress']) expect(PATH_USER_SIGNUP_REASONS).not.toContain(auto);
+  });
+  it('the first session ends at the first hour away, for good — and the queue with it', () => {
+    const H = PATH_SESSION_GAP_MS;
+    expect(H).toBe(60 * 60 * 1000);
+    let s = pathSessionTouch(emptyPathState(), 1000);
+    expect(s).toMatchObject({ sessionLastAt: 1000, firstSessionEndedAt: null });
+    s = pathSessionTouch(s, 1000 + H - 1);
+    expect(pathInFirstSession(s)).toBe(true);
+    const ended = pathSessionTouch(s, 1000 + 2 * H);
+    expect(ended.firstSessionEndedAt).toBe(1000 + H - 1);
+    expect(pathInFirstSession(ended)).toBe(false);
+    expect(pathSessionTouch(ended, 1000 + 2 * H + 5)).toEqual(ended);
+    // It survives the store.
+    expect(normalizePathState(JSON.parse(JSON.stringify(ended)))).toMatchObject({ sessionLastAt: ended.sessionLastAt, firstSessionEndedAt: ended.firstSessionEndedAt });
+    expect(pathUiFlags({ behaviour: SINGLE_PATH_ARM, state: s }).layerQueue).toBe(true);
+    expect(pathUiFlags({ behaviour: SINGLE_PATH_ARM, state: ended }).layerQueue).toBe(false);
+  });
+  it('app.jsx: every layer renders through the queue; the solve opens a slot; the survey never asks', () => {
+    for (const g of [
+      "!interviewFirstOn('achievement_toast') && oneLayerOk('achievement') && <AchievementPopup",
+      "{showLevelUp && oneLayerOk('level_up') && <LevelUpBanner",
+      "{radarPop && oneLayerOk('radar_pop') && <RadarPopToast",
+      "{milestoneShare && oneLayerOk('milestone_share') && (() => {",
+      "{showIntentAsk && !showSoftEmailCapture && oneLayerOk('intent_ask') && (",
+      "{showSoftEmailCapture && oneLayerOk('soft_email') && (",
+      '{showSignupPrompt && pathLayerOk(pathSignupLayer) && (',
+      "{milestonePopup && pathLayerOk('milestone_toast') && (",
+      "{streakCardOpen && currentUser && !isGuest && (streakCardOpen !== 'auto' || pathLayerOk('streak_card')) && (",
+      "{fbPrompt && fbPrompt.kind !== 'stuck' && !showProModal && pathLayerOk('feedback_prompt') && (",
+    ]) expect(APP, g).toContain(g);
+    expect(APP).toContain('const oneLayerOk = (id) => (pathUi.layerQueue ? pathLayerOk(id) :');
+    expect(APP).toContain('const pathLayer = pathUi.layerQueue ? pathLayerDecide({ active: pathLayerActive, slot: pathLayerSlotNow, holdExtras: pathUi.holdLayers }) : null;');
+    expect(APP).toContain('        armOneLayerAtSolve(currentChallenge.id);\n        pathLayerAtSolve();\n');
+    expect(APP).toContain('    // Tournament arms B / D: never in the first session (walk fix round 2).\n    if (pathUi.layerQueue) return;');
+    // Each droppable layer has its clear; the Pro modal has none.
+    const eff = APP.slice(APP.indexOf('const pathLayerKey = '), APP.indexOf("trackActivationEvent('tournament_layer_dropped'"));
+    for (const id of PATH_LAYER_ORDER.filter(x => !['pro_modal', 'user_modal'].includes(x))) expect(eff, id).toContain(`d.includes('${id}')`);
+    expect(eff).not.toContain('setShowProModal');
+    // Hooks above the early returns (fragile area 1).
+    const early = Math.min(APP.indexOf('  if (showAuth) {'), APP.indexOf('  if (!dbReady) return ('));
+    for (const h of ['const [pathLayerSlotNow, setPathLayerSlotNow] = useState(', 'const pathLayerKey = ', 'const next = pathSessionTouch(cur, Date.now());']) {
+      const i = APP.indexOf(h);
+      expect(i, h).toBeGreaterThan(0);
+      expect(i, h).toBeLessThan(early);
+    }
   });
 });

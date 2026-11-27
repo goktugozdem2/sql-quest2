@@ -183,10 +183,11 @@ describe('app.jsx — the gates, the targets, desktop and the flag', () => {
     expect(app).toMatch(/if \(oneLayerOn && oneLayerTop !== 'streak_card'\) return undefined;/);
   });
   it('flag off, control and desktop: oneLayerOn stays false, so every gate passes (today’s render)', () => {
-    // Tournament arm B (2026-11-26) holds the extras on its ladder; outside
-    // the arm both switches are false (tests/single-path.test.js) and the gate
-    // is today's.
-    expect(app).toContain('const oneLayerOk = (id) => ((pathUi.holdLayers || pathHeldRelease) && ONE_LAYER_EXTRAS.includes(id) ? false : (!oneLayerOn || oneLayerTop === id));');
+    // Tournament arm B (2026-11-26) holds the extras on its ladder, and arms
+    // B / D run their own one-layer queue in the first session (walk fix
+    // round 2); outside the arms every switch is false
+    // (tests/single-path.test.js) and the gate is today's.
+    expect(app).toContain('const oneLayerOk = (id) => (pathUi.layerQueue ? pathLayerOk(id) : ((pathUi.holdLayers || pathHeldRelease) && ONE_LAYER_EXTRAS.includes(id) ? false : (!oneLayerOn || oneLayerTop === id)));');
     // oneLayerOn is only ever set from a decision's `show`, which is false
     // with the flag off, in control, and off a narrow touch screen.
     const sets = app.match(/setOneLayerOn\(([^)]*)\)/g);
