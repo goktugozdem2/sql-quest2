@@ -33,13 +33,13 @@
 -- Runs as-is in the read-only Supabase MCP `execute_sql` or psql.
 
 WITH params AS (
-  SELECT now() AS t, timestamptz '2026-12-10 00:00+00' AS since
+  SELECT now() AS t, timestamptz '2026-12-12 00:00+00' AS since
 ),
 registry (arm, arm_v, start_date, is_control, is_active) AS (VALUES
   -- tournament-registry:begin (mirrors src/data/tournament-arms.js; test-bound)
-  ('A_control', 1, timestamptz '2026-12-10 00:00+00', true, true),
-  ('B_single_path', 1, timestamptz '2026-12-10 00:00+00', false, true),
-  ('D_interview_sprint', 1, timestamptz '2026-12-10 00:00+00', false, true)
+  ('A_control', 1, timestamptz '2026-12-12 00:00+00', true, true),
+  ('B_single_path', 1, timestamptz '2026-12-12 00:00+00', false, true),
+  ('D_interview_sprint', 1, timestamptz '2026-12-12 00:00+00', false, true)
   -- tournament-registry:end
 ),
 -- humans:begin  (scripts/scorecard-weekly.sql's block; tests/tournament-read.test.js pins it)

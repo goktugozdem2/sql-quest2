@@ -43,11 +43,11 @@
 // 1/3 to 1/4) — never pool across it.
 //
 // Orchestrator decisions 2026-11-26: three arms at launch (A, B, D); C is
-// queued as the first replacement; launch 2026-12-10, inside the freeQuota
+// queued as the first replacement; launch 2026-12-12 (orchestrator 2026-11-27), inside the freeQuota
 // holdout's enrolment, so every read is 2×2 with `fqArm`.
 
 export const TOURNAMENT_TEST_ID = 'first_session_tournament_v1';
-export const TOURNAMENT_LAUNCH_DATE = '2026-12-10';
+export const TOURNAMENT_LAUNCH_DATE = '2026-12-12';
 export const TOURNAMENT_CONTROL_ID = 'A_control';
 export const TOURNAMENT_STATUSES = Object.freeze(['active', 'queued', 'eliminated', 'promoted']);
 

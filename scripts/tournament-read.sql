@@ -95,13 +95,13 @@
 -- ===== Query 1: the decision table =======================================
 -- One row per arm × armVersion. alpha / beta feed the companion script.
 WITH params AS (
-  SELECT now() AS t, timestamptz '2026-12-10 00:00+00' AS since
+  SELECT now() AS t, timestamptz '2026-12-12 00:00+00' AS since
 ),
 registry (arm, arm_v, start_date, is_control, is_active) AS (VALUES
   -- tournament-registry:begin (mirrors src/data/tournament-arms.js; test-bound)
-  ('A_control', 1, timestamptz '2026-12-10 00:00+00', true, true),
-  ('B_single_path', 1, timestamptz '2026-12-10 00:00+00', false, true),
-  ('D_interview_sprint', 1, timestamptz '2026-12-10 00:00+00', false, true)
+  ('A_control', 1, timestamptz '2026-12-12 00:00+00', true, true),
+  ('B_single_path', 1, timestamptz '2026-12-12 00:00+00', false, true),
+  ('D_interview_sprint', 1, timestamptz '2026-12-12 00:00+00', false, true)
   -- tournament-registry:end
 ),
 -- humans:begin  (scripts/scorecard-weekly.sql's block; tests/tournament-read.test.js pins it)
@@ -292,13 +292,13 @@ ORDER BY r.is_control DESC, r.arm, r.arm_v;
 -- by ≥ 10 points inside interview_target at ≥ 60 per arm waits for the
 -- founder.
 WITH params AS (
-  SELECT now() AS t, timestamptz '2026-12-10 00:00+00' AS since
+  SELECT now() AS t, timestamptz '2026-12-12 00:00+00' AS since
 ),
 registry (arm, arm_v, start_date, is_control, is_active) AS (VALUES
   -- tournament-registry:begin (mirrors src/data/tournament-arms.js; test-bound)
-  ('A_control', 1, timestamptz '2026-12-10 00:00+00', true, true),
-  ('B_single_path', 1, timestamptz '2026-12-10 00:00+00', false, true),
-  ('D_interview_sprint', 1, timestamptz '2026-12-10 00:00+00', false, true)
+  ('A_control', 1, timestamptz '2026-12-12 00:00+00', true, true),
+  ('B_single_path', 1, timestamptz '2026-12-12 00:00+00', false, true),
+  ('D_interview_sprint', 1, timestamptz '2026-12-12 00:00+00', false, true)
   -- tournament-registry:end
 ),
 -- humans:begin  (scripts/scorecard-weekly.sql's block; tests/tournament-read.test.js pins it)
@@ -482,13 +482,13 @@ ORDER BY split, value, arm, arm_v;
 -- second device; cross-check only), and rows naming an arm or version the
 -- registry does not know (should be 0).
 WITH params AS (
-  SELECT now() AS t, timestamptz '2026-12-10 00:00+00' AS since
+  SELECT now() AS t, timestamptz '2026-12-12 00:00+00' AS since
 ),
 registry (arm, arm_v, start_date, is_control, is_active) AS (VALUES
   -- tournament-registry:begin (mirrors src/data/tournament-arms.js; test-bound)
-  ('A_control', 1, timestamptz '2026-12-10 00:00+00', true, true),
-  ('B_single_path', 1, timestamptz '2026-12-10 00:00+00', false, true),
-  ('D_interview_sprint', 1, timestamptz '2026-12-10 00:00+00', false, true)
+  ('A_control', 1, timestamptz '2026-12-12 00:00+00', true, true),
+  ('B_single_path', 1, timestamptz '2026-12-12 00:00+00', false, true),
+  ('D_interview_sprint', 1, timestamptz '2026-12-12 00:00+00', false, true)
   -- tournament-registry:end
 ),
 -- humans:begin  (scripts/scorecard-weekly.sql's block; tests/tournament-read.test.js pins it)
@@ -592,13 +592,13 @@ ORDER BY 1, 2;
 -- post-stratified pool. `expected_share_pct` is the mean weight the
 -- stratum's assignment rows logged for the arm; `share_pct` what it got.
 WITH params AS (
-  SELECT now() AS t, timestamptz '2026-12-10 00:00+00' AS since
+  SELECT now() AS t, timestamptz '2026-12-12 00:00+00' AS since
 ),
 registry (arm, arm_v, start_date, is_control, is_active) AS (VALUES
   -- tournament-registry:begin (mirrors src/data/tournament-arms.js; test-bound)
-  ('A_control', 1, timestamptz '2026-12-10 00:00+00', true, true),
-  ('B_single_path', 1, timestamptz '2026-12-10 00:00+00', false, true),
-  ('D_interview_sprint', 1, timestamptz '2026-12-10 00:00+00', false, true)
+  ('A_control', 1, timestamptz '2026-12-12 00:00+00', true, true),
+  ('B_single_path', 1, timestamptz '2026-12-12 00:00+00', false, true),
+  ('D_interview_sprint', 1, timestamptz '2026-12-12 00:00+00', false, true)
   -- tournament-registry:end
 ),
 -- humans:begin  (scripts/scorecard-weekly.sql's block; tests/tournament-read.test.js pins it)
