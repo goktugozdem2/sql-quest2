@@ -828,6 +828,69 @@ of the verifier and must never be rounded to `FLAT`.
 - **Falsification** a page or generator states an exclusivity claim about
   the AI coach, tutor, diagnostic or Skillmap again.
 
+### the Wise page's first screen: the right first question, readiness, the Pro line, one "debug this query" (C5)
+
+- **Claimed** 2026-11-25 · **Shipped** on merge (static page, no flag) · **Read** 2026-12-23 (28 d) and 2027-01-20 (56 d).
+- **Change** `/wise-sql-interview/` gets a "Start here" block right under the
+  hero (hand-written page; same `company-first-screen` markers and click names
+  as the Monzo block in PR #295): **Start with** Card Spend by Country (#285,
+  Easy, Wise-tagged, card ledger: country lives on the cardholder, join before
+  you group, people vs payments) straight into the app; the readiness test
+  with `?company=wise`; one line on what Pro gives for this interview (the 3
+  Hard challenges in the Wise set, the Hard Debug challenges, all 300+ without
+  the 10-solve stop, the full mock bank; no price). Under it, "Debug this
+  query" on the synthetic multi-currency ledger (`finans_neobank`: fees on
+  completed currency exchanges per home currency). The query averages per
+  user, then averages the averages: 4 of 5 currencies come out wrong (PLN 0.65
+  against 1.07). Bug behind a `<details>`, the fix shown, and the same bug in
+  the app as Debug 341 (labelled Hard, Pro). Framed by the one dated, fetched
+  line in the Wise dossier (`docs/reads/companies/wise.md` W11, Dataford's
+  Wise DA guide, updated 2026-10-08, read 2026-11-22): a candidate handed a
+  query and asked what is wrong with it. Stated as one report, not a format.
+  Every new link carries `src=company-wise`. The hero button is unchanged
+  (its text is pinned by `tests/company-hero-cta.test.js` and its series must
+  not move), so the block says "Start with", not "Question 1".
+- **Why this one:** Wise is the consumer-fintech page with the highest
+  measured CTR (27%, C5 brief `docs/agent/fleet/C5-revenue-content.md`;
+  company pages convert best per `monetization-ideas-2026-11-22.md` §1f) and the best-clicking company
+  page after the Capital One blog in the R1 dossier (28 d to 2026-11-21: 206
+  impressions, 53 clicks, position 3.6). B6 (`competitors-2026-11-24.md` P3,
+  `competitors-2026-11-25.md` on PR #354, Q1/N5) routed "link the Debug hub
+  from Wise with one sourced line" to C5, and found Dataford alone among prep
+  sites on "wise data analyst sql interview". Menu item 1 beat item 2 (a
+  sourced Wise guide) because the dossier's only first-party format fact is
+  the take-home case, which names no SQL; a guide would be thin on SQL. The
+  page already lands people; the gap is page → first question.
+- **Metric** `content_funnel`, page `wise-sql-interview`: `trial_or_purchase`
+  per 1,000 `landing_people`, 28-day window, and the step it should move,
+  `app_opened` / `landing_people`. Clicks `cta_first_question`,
+  `cta_first_readiness`, `cta_first_debug`; arrivals with `arrivalSrc`
+  `company-wise`.
+- **Baseline** the page's 28-day `content_funnel` row to 2026-11-25 (laptop
+  read from the Monday/Thursday mail; cloud run, no production data, and
+  per-page numbers never go in the repo). Site-wide prior from
+  `monetization-ideas-2026-11-22.md` §1f: company pages 2.3% of arrivals to
+  trial or purchase, 81% of landers never open the app.
+- **Target** at 28 d: `app_opened` / `landing_people` up ≥ 5 points on the
+  baseline row, and ≥ 10% of landers click one of the three new links. At
+  56 d: `trial_or_purchase` per 1,000 landers at or above the company-page
+  prior (23), with ≥ 1 trial or purchase from a person whose first landing was
+  the page.
+- **Falsification, written now:** under 5% of landers click a new link at
+  ≥ 100 landers → the block is not read; cut it to the first-question line.
+  App opens flat or down at ≥ 100 landers → the block only pushed the page
+  down; remove it. `cta_first_debug` clicks that end on the Pro modal with no
+  plan click → a Hard Pro item is the wrong first debug; link a free Debug item
+  or the hub instead. Under 30 landers in 28 d → noise, read again at 56 d.
+- **Guard** `tests/wise-first-screen.test.js` (both queries run on
+  `finans_neobank`, the fix equals an independent SUM/COUNT truth and the
+  broken query does not, every stated number, Debug 341 is the
+  average-of-averages item and Hard, not a Revolut mock query, links and
+  doors, Pro line from the page facts and `freeSolvesLabel`, the source line
+  is in the dossier); `tests/company-pages.test.js` `OFF_SET_LINKS` /
+  `OFF_SET_NOTE` waive the tag check for 341 only while the page says it is
+  from the Debug set.
+
 ### the Capital One guide's first screen: format, the other test, the mock by its numbers (C5)
 
 - **Claimed** 2026-11-23 · **Shipped** on merge (static page, no flag) · **Read** 2026-12-21 (28 d) and 2027-01-18 (56 d).

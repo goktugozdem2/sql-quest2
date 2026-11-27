@@ -368,6 +368,10 @@ export function findTopicsProblems(pageSource, facts) {
 // ---------------------------------------------------------------------------
 export const OFF_SET_LINKS = {
   'google-sql-interview': [163, 172, 84],
+  // 2026-11-25 (C5): the Wise first screen's "debug this query" item links to
+  // Debug 341, the same average-of-averages bug (src/wise-sql-interview.html).
+  // It is a Debug item, not Wise-tagged, and the button says so.
+  'wise-sql-interview': [341],
   // 2026-11-24 (C5): the first-screen "debug this query" item links to the
   // app's Debug question with the same bug (scripts/company-first-screen.mjs).
   // It is a Debug item, not Monzo-tagged, and the button says so.
@@ -376,6 +380,7 @@ export const OFF_SET_LINKS = {
 // What each page says about its off-set links (the waiver holds only while it does).
 export const OFF_SET_NOTE = {
   'google-sql-interview': /-tagged window-function challenges in the set/,
+  'wise-sql-interview': /from our Debug set, not the Wise set/,
   'monzo-sql-interview': /from our Debug set, not the Monzo set/,
 };
 // The Debug items (src/data/debug-challenges.js) live outside the main bank.
