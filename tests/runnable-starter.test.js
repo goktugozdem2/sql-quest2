@@ -233,8 +233,8 @@ describe('the app wires it the way the test reads', () => {
   const submit = sliceFrom('const submitChallenge = () => {', 'const isFirstTry = !solvedChallenges.has(currentChallenge.id);');
   const firstRun = sliceFrom('const markChallengeFirstRun = (via, extra = {}) => {', '\n  };');
 
-  it('the flag ships dark', () => {
-    expect(flags).toMatch(/\n\s*runnableStarter: false,\n/);
+  it('the flag is an explicit boolean (ON at 50/50 from the flip, orchestrator row 2026-11-26)', () => {
+    expect(flags).toMatch(/\n\s*runnableStarter: (true|false),\n/);
   });
   it('the starter goes in only in the empty-editor branch, after #91 and Debug, as real text', () => {
     const i91 = open.indexOf('challenge.id === 91');

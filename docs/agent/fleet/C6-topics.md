@@ -1,3 +1,15 @@
+---
+id: C6
+name: "Topics: research, content and the question funnel"
+owner: cloud-A0
+runtime: cloud
+status: paused
+cadence: "paused 2026-11-25 until the 2027-02-23 review (A09)"
+metric: [topic_funnel, content_funnel]
+writes_code: true
+version: 1.0.0
+last_changed: 2026-11-26
+---
 # C6 — Topics: research, content and the question funnel
 
 > **PAUSED 2026-11-25 (investor 90-day plan, A09).** No new topic pages, question pages or bulk challenge sets until the 2027-02-23 review: 298 question pages earned 88 clicks in 90 days. A run reports `noop: paused`. Exception: a fix to an existing page that a test or A2 flags.
@@ -88,3 +100,21 @@ Rank by interview relevance (analyst and data engineer), search demand (web rese
 - Every new test is proven by a deliberate break.
 - One PR per run. A1 reviews and A0 decides. Product-code PRs (the engine) are reviewed with the fragile areas in mind: hooks above early returns, and never the shared `db` for a state challenge.
 - **Cloud runs have no production data.** Research comes from the web and the repo, and the GSC demand read is left to the laptop.
+
+## Hard rules for a code lane (skills loop, 2026-11-26)
+
+- **Funnel-step change ⇒ dark flag.** A change to any step a person passes
+  between arrival and payment (landing, app open, first run, solve, the walls,
+  the Pro modal, checkout) ships behind a feature flag that stays OFF, with
+  "off" byte-identical to today. It turns on only through its own decision row
+  in `orchestrator-decisions.md`; an A/B ships OFF too, and its 50/50 flip is
+  that row. (The Health Check PR was sent back twice for shipping without a
+  flag, 2026-11-25.)
+- **Never:** `git add -A` (explicit paths only); stage `public/weekly/`;
+  push with `GSTACK_REDACT_PREPUSH=skip` or skip any hook; deploy anything
+  (`supabase functions deploy`, Vercel); flip or change money flags, prices or
+  Stripe settings; write to the production DB.
+
+## Changelog
+
+- 1.0.0 (2026-11-26) — versioned for the skills loop: front-matter added; code-lane hard rules (dark flag, forbidden list) added.

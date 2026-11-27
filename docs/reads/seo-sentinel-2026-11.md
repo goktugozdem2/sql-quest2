@@ -140,6 +140,7 @@ the README rule-2 exclusions.
 - 2026-11-22 | **RED** (Bing index; known, see F1) | G 171 (11-15→21; prev 163) / B 32 (11-14→20; prev 37) | G 416/429 = 0.97 (sitemap URLs inspected 11-16) / B 833/429 = **1.94** | Bing errors 0, 4xx 0, 5xx 0; top 20 all 200, `index, follow`, self-canonical, ≤ 1 hop | first snapshot, no yesterday to diff; robots = main (bingbot group live), sitemap 429 URLs = main's URL set, lastmods behind main (F2) | G 8 of 20 comparable queries moved > 3, 2 of them down (F3); B 0 of 5
 - 2026-11-23 | **RED** (Bing index, F1; Google GREEN) | G 172 (11-16→22; prev 174) / B 38 (11-15→21; prev 35) | G 421/431 = 0.98 (all 431 sitemap URLs inspected 11-23: 421 indexed, 10 unknown to Google) / B 838/431 = **1.94** | Bing errors 0, 4xx 0, 5xx 0 (11-22); top 20 all 200, `index, follow`, self-canonical, ≤ 1 hop (www → bare, the standing 308) | robots unchanged from 11-22 and = main; sitemap 431 URLs (+2: `/for-teams/`, `/blog/revolut-data-analyst-sql-screen/`; none dropped), byte-equal to main (F2 cleared) | G 5 of 21 comparable moved > 3, all **up** (CTE/GROUP BY tail, `sqlbolt` 11.3 → 7.7); weighted mean 9.2 → 8.3; B 0 of 5 (bucket 11-20)
 - 2026-11-24 | **RED** (Bing index, F1, no new Bing data; Google GREEN) + **AMBER** (F5) | G 181 (11-17→23; prev 178) / B 38 (11-15→21; prev 35; no Bing fetch since 11-23 18:40 UTC, so the same rows as yesterday) | G 421/440 = 0.96 (`gsc_index_status` unchanged since the 11-23 inspection; the 9 URLs added since have no row yet) / B 838/440 = **1.90** (the 11-22 row; same count over a larger sitemap, not a fall) | Bing errors 0, 4xx 0, 5xx 0 (11-22); top 20 all 200, `index, follow`, self-canonical, ≤ 1 hop (www → bare, the standing 308) | robots unchanged from 11-23 and = main; sitemap 440 URLs (+9: `/sql-debugging-practice/`, `/sql-interview-prep-plan/`, `/sql-mock-interview/` and six `/questions/` pages; none dropped), byte-equal to main | G 7 of 22 comparable moved > 3, all **up** (`rollup interview questions` 9.2 → 3.4, `sqlbolt` 10.7 → 7.3, the CTE/JOIN/GROUP BY tail); weighted mean 9.5 → 7.5; B 0 of 5 (bucket 11-20)
+- 2026-11-27 | **RED** (Bing index, F1, `blocked_by_robots` still rising past the 11-26 check; Google GREEN); F5 cleared | G 183 (11-19→25; prev 179) / B 52 (11-18→24; prev 28) | G 421/445 = 0.95 (`gsc_index_status` unchanged since the 11-23 inspection; the 14 URLs added since have no row) / B 858/445 = **1.93** (the 11-25 row) | Bing errors 0, 4xx 0, 5xx 0 (11-25); top 20 plus Monzo, Amazon and Stripe all 200, `index, follow`, self-canonical, 0 hops; `sql-quest2.vercel.app` still answers 200 on HTML paths (canonical → sqlquest.app; `/robots.txt` and `/sitemap.xml` 308), and no vercel.app URL appears in `gsc_daily`, `gsc_index_status`, `bing_url_status` or `bing_stats` | robots unchanged since 11-24 and = main; sitemap 445 URLs (+5 `/questions/` pages; none dropped), byte-equal to main | G 5 of 22 comparable moved > 3, all **up** (`cte sql` 40.8 → 28.8, `rollup interview questions` 9.8 → 1.7, `ctes`, `sql interview preparation course`, `sql cte`); 0 down; B no new bucket (still 11-20)
 
 ## Findings
 
@@ -355,6 +356,96 @@ The live site carries 7 (plain GETs, 2026-11-24 ~16:55 UTC):
   a site-wide lastmod day is held as "only a site-wide change". The six
   new `/questions/` pages are held that way until Monday's inspection gives
   them a row. They are T5, so nothing is lost.
+
+### Run 5, 2026-11-27 (combined with C8; the 11-25 and 11-26 runs were missed)
+
+**F1 update — RED, day 6: `blocked_by_robots` was still rising at the
+11-26 check, so the finding goes to C1.**
+
+| `bing_crawl_daily` | 11-22 | 11-23 | 11-24 | **11-25** |
+|---|---|---|---|---|
+| `in_index` | 838 | 840 | 847 | **858** |
+| `blocked_by_robots` | 833 | 841 | 850 | **853** |
+| `in_index − blocked_by_robots` | 5 | −1 | −3 | **5** |
+| `code_2xx` | 416 | 413 | 422 | **440** |
+| sitemap URLs (live) | 431 | 431 | 440 | **445** |
+| ratio | 1.94 | 1.95 | 1.93 | **1.93** |
+
+- **F1's rule.** It said: if `blocked_by_robots` is still rising on 11-26,
+  that goes to C1. It rose +8, +9 and +3 over the three days after #138 went
+  live (11-22 12:15 UTC). The last step is smaller, but not a stop.
+- **What is ruled out.**
+  - The live `robots.txt` is byte-equal to main.
+  - It carries the `User-agent: bingbot` group, which has `Allow: /` and no
+    `/app/?` rule.
+  - Nothing in `vercel.json`, `public/robots.txt` or `src/data/seo-prune.json`
+    changed since 11-22.
+- **What is left.**
+  - Bing has not re-read `robots.txt` yet. Or
+  - its counter is cumulative and falls only as the blocked URLs age out.
+
+  Neither can be told apart from the API.
+- **FOUNDER (one check, Bing UI):** run the robots.txt tester for `bingbot`
+  on `https://sqlquest.app/app/?challenge=91&src=sql-exercises`. "Allowed"
+  means Bing has the new file, so wait for the counter. "Blocked" means it
+  is still reading the old one, so ask Bing to re-fetch robots.txt.
+- **#72 (bingbot `noindex` on the question pages).**
+  - 32 of the 324 question pages have been crawled since 11-20 (8 on 11-22).
+  - `in_index − blocked_by_robots` is back at 5, and `code_2xx` follows the
+    sitemap's size, so #72 does not show yet. Read it on those two numbers,
+    as F4 says.
+- **Clicks.** Bing 52 in the week to 11-24 against 28, nearly all from the
+  one-day 17 of 11-22. Bing is still under 50 a week, so the clicks rule
+  stays blind.
+
+**F5 — cleared.** The live `/sql-exercises/`, `/sql-for-the-ai-era/`,
+`/tiktok-sql-interview/` and `/shopify-sql-interview/` all carry the
+`/sql-debugging-practice/` link (checked 09:30 UTC). The indexing queue opened
+the gates for `/` and `/sql-exercises/` on its own `--live` check.
+
+**Host check (#414 not merged).** `sql-quest2.vercel.app` still answers 200
+on HTML paths, with a canonical pointing to `sqlquest.app/…`. Only file paths
+get the 308. Neither engine has picked the host up:
+
+- `gsc_daily` (all time) has no `vercel.app` page.
+- `gsc_index_status` and `bing_url_status` have no `vercel.app` URL.
+- `bing_stats` has none either. Its only non-canonical host is the standing
+  `www.sqlquest.app` (last bucket 11-20).
+
+Nothing to act on before #414; re-check after it merges.
+
+**Google.**
+- Clicks are flat: 183 against 179.
+- The impression rise is still `rollup interview questions` (~840 a day,
+  position 1.3–1.4, 0 clicks).
+- Two requests show their first rows on 11-25:
+  - the Debug hub, 3 impressions at position 6.0 (requested 11-23);
+  - `/monzo-sql-interview/`, 10 impressions at position 11.8 (requested
+    11-24).
+
+### Indexing step, 2026-11-27
+
+- `node scripts/index-queue.mjs --live --engine gsc --status <snapshot>`
+  (index status from the MCP, unchanged since 11-23: 421 indexed,
+  10 unknown, 431 rows). The last request was 2026-11-25 23:46 UTC, so the
+  rolling window is open.
+- **Day-1 GSC list (8 of cap 8).** The script's order, except that the one
+  money page moves to the top (orchestrator's rule). The other six money
+  pages were requested on 11-24 and 11-25 and are in the 14-day cooldown.
+  1. `/capital-one-sql-interview/` (T1, changed 11-25, never requested)
+  2. `/` (T1, #256 hub link, now live)
+  3. `/sql-exercises/` (T1, #256 hub link, now live)
+  4. `/coinbase-sql-interview/` (T2, #76)
+  5. `/chime-sql-interview/` (T2, #134)
+  6. `/challenges/window-functions/` (T2, #260, `topic-learn` now live)
+  7. `/challenges/cte/` (T2, #260, `topic-learn` now live)
+  8. `/blog/` (T3, changed 11-25)
+- No browser in this run, so the list goes to the orchestrator. Nothing was
+  requested, so no row was added to `docs/agent/index-requests.json`, and
+  `tests/index-queue.test.js` passes (28/28).
+- **Bing by hand: 0.** No T1 page changed today.
+- `docs/agent/index-queue.md` was regenerated for 11-27 → 12-03. Days 2–4
+  are the 11-25 sitewide-lastmod T3 pages (blog posts, learn pages).
 
 ### Standing notes (not findings)
 

@@ -1,3 +1,15 @@
+---
+id: C8
+name: "Traffic sources (where people come from)"
+owner: orchestrator
+runtime: laptop
+status: active
+cadence: "daily (after 15:00 UTC); fuller read on Mondays"
+metric: undefined  # TODO: register share of arrivals with a known source; bots found before a read in docs/agent/metrics.md
+writes_code: false
+version: 1.0.0
+last_changed: 2026-11-26
+---
 # C8 — Traffic sources (where people come from)
 
 **Lane:** read-only. The daily mix of where real people arrive from, and the
@@ -71,3 +83,7 @@ reads our own first-party events, which carry more than Vercel does.
 - Vercel's dashboard is the founder's. If he pastes Vercel numbers, compare
   them with ours and explain any gap. Vercel counts bots and in-app views
   differently.
+
+## Changelog
+
+- 1.0.0 (2026-11-26) — versioned for the skills loop: front-matter added.

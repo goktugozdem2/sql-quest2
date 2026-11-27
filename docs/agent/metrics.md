@@ -1389,6 +1389,14 @@ whose user agent contains `GoogleOther` (incl. -Image / -Video) carries
 AI-assistant signal, not a reader). Before that date they passed the filter
 (~130–170 a week from mid-October): drop them by hand with
 `((metadata #>> '{}')::jsonb->>'ua') ~* 'googleother|notebooklm'`.
+**After the merge, keep that UA filter anyway (C8, 2026-11-27).** #392 went
+live on 2026-11-26 at about 11:00 UTC. In the day that followed, the stamp
+caught NotebookLM 3 of 3 times but GoogleOther only 2 of 16. Every unstamped
+GoogleOther row lacks the `viewport` key that `track.js` has written since
+#79 (11-22), so Google's renderer runs a cached `track.js` from before #79,
+although the file is served `max-age=0, must-revalidate`. A read that
+filters only `->>'bot' IS NULL` still counts about 10–12 GoogleOther
+"people" a day. Never drop the UA rule from a person filter.
 **Still open:** landing_view carries no window size, so the 1280x1200
 crawler's landing views cannot be told apart — 214 (W1) and 295 (W0)
 landing people are Asia/Shanghai with no source. Read landing people with
