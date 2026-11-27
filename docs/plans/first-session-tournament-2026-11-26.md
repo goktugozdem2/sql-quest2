@@ -825,6 +825,17 @@ sprint length is set for the person.
      {Company} plan" card is hidden (`pathUi.hideCoachPlan`).
    - From B's fixes: the guest banner waits with the tabs, and no "Take
      tour" prompt.
+6. **Walk fixes, round 2 (2026-11-26, the re-walk of #418):**
+   - *N stays put.* The level re-plan grew the plan (header `2/14` →
+     `2/16`). The re-laid plan is now fitted to the N the person was shown
+     (`fitPlanToLength`): steps come off its tail (never a lead step, a
+     solved one or the mock), or the old plan's unsolved steps fill it before
+     the part past the wall. Only if N truly cannot be kept does it change,
+     and the why-line says "Plan updated for your level: N steps."
+   - *One goal.* With a sprint set, the Learning Path tab hides "Pick a goal
+     to get started" and Focus Tracks (`pathUi.hideGoalPicker`): the sprint
+     is the goal.
+   - *One layer at a time* for the whole first session, as in B (§3.5).
 
 **Reuses.**
 - `interview-prep.js` (`findPlanTarget`, `planToDate`, `daysUntil`);

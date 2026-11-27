@@ -9,6 +9,7 @@ import {
   SPRINT_ARM, SPRINT_LENGTHS, emptyPathState, normalizePathState, pathUiFlags, normalizeSprint, startSprint,
   sprintDay, sprintDayModel, sprintTabsOpen, roadmapProfileFor, composePathPlan, logStepDone, companyFromSlug, nextPlanStep,
   SINGLE_PATH_ARM, SPRINT_PROBE_STEPS, sprintLevelSource, sprintPlanMarks, sprintProbeRecord, pathWhyLines, planProgress, LADDER_FAST_SECS,
+  fitPlanToLength,
 } from '../src/utils/single-path.js';
 import { buildRoadmap } from '../src/utils/personal-roadmap.js';
 import { buildVisitorProfile, tournamentBehaviour } from '../src/utils/tournament.js';
@@ -306,5 +307,65 @@ describe('the sprint steps\' company-set gate passes `authored` (#420)', () => {
     const fn = APP.slice(APP.indexOf('const pathStepProOnly = (st) => {'), APP.indexOf('const pathCtx = () =>'));
     expect(fn).toContain('companySetGate({');
     expect(fn).toMatch(/\bauthored:\s*companyHasAuthoredSet\(companyFilter\)/);
+  });
+});
+
+// Walk fix round 2 (2026-11-26): the re-plan after step 2 changed the plan's
+// length — the header jumped 2/14 → 2/16 on a phone Capital One link.
+describe('the re-plan keeps N', () => {
+  const ch = (id, extra = {}) => ({ kind: 'challenge', challengeId: id, proOnly: false, part: 'free', day: 1, difficulty: null, ...extra });
+  it('the walk\'s case: phone, Capital One link, two fast steps — the re-laid plan grows, the fitted one keeps N', () => {
+    const v = { device: 'phone' };
+    const { plan } = planFor(coSprint(), v, { lead: [275] });
+    const second = plan.steps[1].challengeId;
+    let st = sprintProbeRecord(coSprint(), { visitor: v, challenge: byId(275), secs: 30 }).state;
+    st = sprintProbeRecord(st, { visitor: v, challenge: byId(second), secs: 30 }).state;
+    expect(st.sprint.levelId).toBeTruthy();
+    const solved = new Set([275, second]);
+    const re = sprintPlanMarks(planFor(st, v, { lead: [275, second], solved }).plan, { visitor: v, state: st });
+    expect(re.length).not.toBe(plan.length); // what the walk saw (14 → 16)
+    const fit = fitPlanToLength(re, plan.length, { previous: plan, solved, solvedCount: 2 });
+    expect(fit.length).toBe(plan.length);
+    expect(fit.steps).toHaveLength(plan.length);
+    expect(fit.resizedFrom).toBeNull();
+    expect(fit.steps.slice(0, 2).map(x => x.challengeId)).toEqual([275, second]);
+    expect(fit.profile).toMatchObject({ levelSource: 'sprint_probe' });
+    expect(planProgress(fit, { solved }).k).toBe(2);
+    // No step twice; the Pro mock (if any) survives.
+    const keys = fit.steps.map(x => (x.kind === 'mock' ? `m:${x.mockId}` : `c:${x.challengeId}`));
+    expect(new Set(keys).size).toBe(keys.length);
+    expect(fit.steps.filter(x => x.kind === 'mock').length).toBe(re.steps.filter(x => x.kind === 'mock').length);
+    expect(pathWhyLines(fit, 'en').join(' ')).not.toMatch(/Plan updated/);
+  });
+  it('longer: the tail goes — never a lead step, a solved one or the mock', () => {
+    const re = { steps: [ch(1, { part: 'lead' }), ch(2, { part: 'lead' }), ch(3), ch(4), { kind: 'mock', mockId: 'm', proOnly: true, part: 'mock', day: 2 }, ch(5, { part: 'after_wall', proOnly: true }), ch(6, { part: 'after_wall', proOnly: true })], length: 7, why: [] };
+    const fit = fitPlanToLength(re, 4, { solved: [1, 2] });
+    expect(fit.steps.map(x => x.challengeId || x.mockId)).toEqual([1, 2, 3, 'm']);
+    expect(fit.length).toBe(4);
+    // An unsolved lead step (the link's question before it is answered) stays even when N cannot be reached.
+    const tight = fitPlanToLength(re, 2, { solved: [1] });
+    expect(tight.steps.map(x => x.challengeId || x.mockId)).toEqual([1, 2, 'm']);
+    expect(tight.resizedFrom).toBe(2);
+  });
+  it('shorter: the previous plan\'s unsolved steps fill it, before the part past the wall', () => {
+    const prev = { steps: [ch(1, { part: 'lead' }), ch(7), ch(8), ch(9)], length: 4 };
+    const re = { steps: [ch(1, { part: 'lead' }), ch(2, { part: 'lead' }), ch(3, { part: 'after_wall', proOnly: true })], length: 3, why: [] };
+    const fit = fitPlanToLength(re, 5, { previous: prev, solved: [1, 2] });
+    expect(fit.steps.map(x => x.challengeId)).toEqual([1, 2, 7, 8, 3]);
+    expect(fit.resizedFrom).toBeNull();
+  });
+  it('when it cannot keep N it says so: "Plan updated for your level: N steps" (EN and TR)', () => {
+    const re = { steps: [ch(1, { part: 'lead' }), ch(2, { part: 'lead' })], length: 2, why: ['Built for you.'], profile: { level: 'working' }, dailyCount: 2, planDays: 1 };
+    const fit = fitPlanToLength(re, 5, { previous: { steps: [ch(1), ch(2)] }, solved: [1, 2] });
+    expect(fit).toMatchObject({ length: 2, resizedFrom: 5 });
+    expect(pathWhyLines(fit, 'en')).toContain('Plan updated for your level: 2 steps.');
+    expect(pathWhyLines(fit, 'tr')).toContain('Plan seviyene göre güncellendi: 2 adım.');
+    expect(normalizePathState({ ...emptyPathState(), plan: fit }).plan.resizedFrom).toBe(5);
+  });
+  it('app.jsx: the level re-plan is fitted to the old N before it is saved', () => {
+    const solve = APP.slice(APP.indexOf('const pathOnSolve = ('), APP.indexOf('const pathSeePro = ('));
+    const fit = solve.indexOf('if (replanned) replanned = fitPlanToLength(replanned, plan.length, { previous: plan, solved: newSolved, solvedCount: newSolved.size, quotaOn: freeQuotaOn() && !isPro });');
+    expect(fit).toBeGreaterThan(0);
+    expect(fit).toBeLessThan(solve.indexOf('if (replanned) next = { ...next, plan: replanned };'));
   });
 });

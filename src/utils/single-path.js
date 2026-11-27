@@ -527,6 +527,7 @@ function normalizePlan(raw) {
     why: Array.isArray(raw.why) ? raw.why.filter(w => typeof w === 'string').slice(0, 3).map(w => w.slice(0, 240)) : [],
     profile: raw.profile && typeof raw.profile === 'object' ? raw.profile : null,
     assumedLevel: raw.assumedLevel === true,
+    resizedFrom: Number.isInteger(raw.resizedFrom) && raw.resizedFrom > 0 ? raw.resizedFrom : null,
   };
 }
 
@@ -597,6 +598,40 @@ export function planWallAt(steps, { solved = [], solvedCount = null, quota = FRE
     if (n >= quota) return i + 1;
   }
   return null;
+}
+
+/**
+ * Walk fix round 2 (D): a re-plan keeps the plan's length. The person was
+ * told N ("0/14"); D's level re-plan after step 2 grew it to 16 and the header
+ * jumped 2/14 → 2/16. The re-laid plan is fitted to `n`:
+ *   - longer: steps are taken off its tail — never a lead step (the link's
+ *     question, the two the level was read from), never a solved one, never
+ *     the mock;
+ *   - shorter: the previous plan's steps it no longer holds (unsolved, in
+ *     their old order) fill it, before the part past the wall.
+ * Only if it still cannot reach `n` does the length change, and the plan
+ * says so (`resizedFrom`, the why-line "Plan updated for your level: N steps").
+ */
+export function fitPlanToLength(plan, n, { previous = null, solved = [], solvedCount = null, quota = FREE_SOLVE_QUOTA, quotaOn = true } = {}) {
+  if (!plan || !Array.isArray(plan.steps) || !(Number.isInteger(n) && n > 0)) return plan;
+  if (plan.steps.length === n) return { ...plan, resizedFrom: null };
+  const solvedSet = toSet(solved);
+  const steps = plan.steps.slice();
+  const fixed = (st) => st.part === 'lead' || st.kind === 'mock' || (st.kind === 'challenge' && solvedSet.has(st.challengeId));
+  for (let i = steps.length - 1; i >= 0 && steps.length > n; i--) {
+    if (!fixed(steps[i])) steps.splice(i, 1);
+  }
+  if (steps.length < n && previous && Array.isArray(previous.steps)) {
+    const have = new Set(steps.map(stepKey));
+    const back = previous.steps.filter(st => !have.has(stepKey(st)) && !(st.kind === 'challenge' && solvedSet.has(st.challengeId)));
+    let at = steps.findIndex(st => st.part === 'after_wall');
+    if (at < 0) at = steps.findIndex(st => st.kind === 'mock' && st.proOnly);
+    if (at < 0) at = steps.length;
+    const ins = back.slice(0, n - steps.length);
+    steps.splice(at, 0, ...ins);
+  }
+  const wallAt = planWallAt(steps, { solved: solvedSet, solvedCount, quota, quotaOn });
+  return { ...plan, steps, length: steps.length, wallAt, resizedFrom: steps.length === n ? null : n };
 }
 
 /** Is a step done? A challenge solved, a mock sat. */
@@ -814,6 +849,11 @@ const TR_TIERS = { 'brand-new': 'Temel', basics: 'Orta', working: 'İleri', adva
 export function pathWhyLines(plan, lang = 'en') {
   if (!plan) return [];
   const lines = pathWhyLinesRaw(plan, lang);
+  if (plan.resizedFrom) {
+    // Round 2: the re-plan could not keep N — say so, with the new length.
+    const n = plan.length || (plan.steps || []).length;
+    lines.push(lang === 'tr' ? `Plan seviyene göre güncellendi: ${n} adım.` : `Plan updated for your level: ${n} steps.`);
+  }
   if (!plan.assumedLevel || !lines.length) return lines;
   // D1: the level was not measured — the sizing line says it was assumed.
   const p = plan.profile || {};

@@ -89,7 +89,7 @@ import { getAnonId } from './utils/anon-id.js';
 import { FREE_QUOTA_HOLDOUT_KEY, FREE_QUOTA_HOLDOUT_TEST_ID, freeQuotaEnrolment, hasPriorAppUse, normalizeFreeQuotaRecord, freeQuotaEffective, freeQuotaEventStamp } from './utils/free-quota-holdout.js';
 import { TOURNAMENT_KEY, tournamentEnrolment, tournamentPriorAppUse, normalizeTournamentRecord, adoptAccountRecord, tournamentEffectiveArm, tournamentBehaviour, tournamentSupersedes, tournamentEventStamp, shouldAnnounceTournament, tournamentAssignedPayload, buildVisitorProfile, enrichTournamentProfile } from './utils/tournament.js';
 import { quotaWallArm, quotaWallShowsModal, quotaInlineCopy, QUOTA_WALL_DAY_KEY } from './utils/quota-wall-inline.js';
-import { SINGLE_PATH_KEY, LADDER_LENGTH, TIER_KEYS, isPathArm, emptyPathState, normalizePathState, pathUiFlags, pathTabsOpen, sprintPlanMarks, sprintProbeRecord, ladderOutcome, ladderStuck, ladderOpen, ladderResolve, pickLadderQuestion, ladderQuestionNumber, roadmapProfileFor, composePathPlan, planProgress, nextPlanStep, planEnded, planShownPayload, logStepDone, pathWhyLines, companyFromSlug, startSprint, sprintDayModel, sprintTabsOpen, pathLayerSlot, pathLayerDecide, pathSessionTouch, PATH_LAYER_SETTLE_MS, PATH_USER_SIGNUP_REASONS } from './utils/single-path.js';
+import { SINGLE_PATH_KEY, LADDER_LENGTH, TIER_KEYS, isPathArm, emptyPathState, normalizePathState, pathUiFlags, pathTabsOpen, sprintPlanMarks, sprintProbeRecord, ladderOutcome, ladderStuck, ladderOpen, ladderResolve, pickLadderQuestion, ladderQuestionNumber, roadmapProfileFor, composePathPlan, planProgress, nextPlanStep, planEnded, planShownPayload, logStepDone, pathWhyLines, companyFromSlug, startSprint, sprintDayModel, sprintTabsOpen, pathLayerSlot, pathLayerDecide, pathSessionTouch, PATH_LAYER_SETTLE_MS, PATH_USER_SIGNUP_REASONS, fitPlanToLength } from './utils/single-path.js';
 import { buildRoadmap } from './utils/personal-roadmap.js';
 import { classifyLandingSrc, LANDING_SRC_KEY } from './utils/landing-src.js';
 import { classifyQueryError } from './utils/query-error.js';
@@ -12776,6 +12776,10 @@ CRITICAL RULES:
       next = probed.state;
       if (probed.levelId) {
         replanned = pathBuildPlan(next, newSolved, { lead: next.sprint.probe.map(o => o.challengeId) });
+        // N stays what the header said (round 2): re-ordered and re-levelled
+        // within the same length; only if that is impossible does it change,
+        // and the why-line says so.
+        if (replanned) replanned = fitPlanToLength(replanned, plan.length, { previous: plan, solved: newSolved, solvedCount: newSolved.size, quotaOn: freeQuotaOn() && !isPro });
         if (replanned) next = { ...next, plan: replanned };
         pathEvent('tournament_sprint_level', { levelId: probed.levelId, outcomes: next.sprint.probe });
       }
