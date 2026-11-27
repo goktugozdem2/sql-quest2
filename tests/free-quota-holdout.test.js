@@ -103,6 +103,28 @@ describe('the window', () => {
     expect(Date.parse(`${FREE_QUOTA_HOLDOUT_READ_DATE}T00:00:00Z`) - FREE_QUOTA_HOLDOUT_END).toBe(7 * 86400000);
     expect(FREE_QUOTA_HOLDOUT_END_ISO).toMatch(/^\d{4}-\d\d-\d\dT00:00:00Z$/);
   });
+
+  // The window started before the merge twice (11-26, then 11-27): a start
+  // already in the past shortens the four weeks without anyone noticing. The
+  // floor is the re-date of 2026-11-27 (A0 decision row); a later re-date
+  // raises it, never lowers it.
+  const START_FLOOR_ISO = '2026-11-28T00:00:00Z';
+  it(`starts no earlier than ${START_FLOOR_ISO.slice(0, 10)} (re-dated 2026-11-27)`, () => {
+    expect(FREE_QUOTA_HOLDOUT_START_ISO).toMatch(/^\d{4}-\d\d-\d\dT00:00:00Z$/);
+    expect(FREE_QUOTA_HOLDOUT_START).toBeGreaterThanOrEqual(Date.parse(START_FLOOR_ISO));
+  });
+
+  it('the ledger, metrics.md and the flag comment state the same window', () => {
+    const day = (ms) => new Date(ms).toISOString().slice(0, 10);
+    const first = day(FREE_QUOTA_HOLDOUT_START);
+    const last = day(FREE_QUOTA_HOLDOUT_END - 86400000);
+    const ledger = read('docs/agent/ledger.md');
+    const metrics = read('docs/agent/metrics.md');
+    expect(ledger).toContain(`**Enrolment** first app opens ${first} → ${last}`);
+    expect(ledger).toContain(`**Read** ${FREE_QUOTA_HOLDOUT_READ_DATE}`);
+    expect(metrics).toContain(`- **Read** ${FREE_QUOTA_HOLDOUT_READ_DATE}, the 7th day after enrolment ends.`);
+    expect(FLAGS).toContain(`enrol ${first} → ${last.slice(5)}, read ${FREE_QUOTA_HOLDOUT_READ_DATE}.`);
+  });
 });
 
 describe('who has been here before', () => {

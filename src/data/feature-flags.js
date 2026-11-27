@@ -547,7 +547,7 @@ window.FEATURE_FLAGS = {
     // the quota. App only: the static pages keep today's wording. Off → nobody
     // is enrolled and holdout browsers get the quota back (the kill switch).
     // src/utils/free-quota-holdout.js; metric `free_quota_holdout`; ledger
-    // "the free-quota holdout"; enrol 2026-11-27 → 12-24, read 2027-01-01.
+    // "the free-quota holdout"; enrol 2026-11-28 → 12-25, read 2027-01-02.
     freeQuotaHoldout: true,
 
     // ── The header's Pro button (M-04, 2026-11-22) ────────────────────────
