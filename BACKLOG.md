@@ -508,6 +508,26 @@ Read: `docs/reads/seo-sentinel-2026-11.md` (F5, indexing step).
 - **C1 — RED, day 3 (F1), unchanged.** No new Bing data today (last fetch
   11-23 18:40 UTC). The 11-26 `blocked_by_robots` check stands.
 
+## SEO sentinel S1 + traffic C8, 2026-11-27
+
+Reads: `docs/reads/seo-sentinel-2026-11.md` (run 5) and `docs/reads/traffic-2026-11-27.md`.
+
+- **C1 — RED, day 6 (F1): `blocked_by_robots` was still rising at the 11-26
+  check.** It went 833 → 841 → 850 → 853 (11-22 → 11-25), +3 on the last
+  day. `in_index` is 858 against 445 sitemap URLs (1.93).
+  - The live `robots.txt` = main, with the bingbot group present.
+  - Either Bing has not re-read the file, or the counter only ages out.
+  - **FOUNDER:** Bing robots.txt tester, `bingbot`, on
+    `/app/?challenge=91&src=sql-exercises`. "Blocked" means ask Bing to
+    re-fetch robots.txt.
+- **B2 — before the Friday scorecard fill:** add A2's 11-26 walk aids
+  (`a2a21126%`, `d9fe96e2bdf44aefa9195673a6496888`) to the `founder` rule in
+  `scripts/scorecard-weekly.sql`. They are 13 "people" and 1 solver in the
+  week of 11-23. Keep the `google_ua` UA rule: #392's stamp catches only
+  2 of 16 GoogleOther rows (cached `track.js`, metrics.md).
+- **F5 (deploy drops the Debug-hub link) — cleared.** All four pages carry
+  the link live on 11-27. Nothing for C1.
+
 ## Funnel findings — B1, 2026-11-22 (docs/reads/funnel-2026-11-22.md)
 
 Six-solvers 209 → 57 (first solvers 500 → 222, reach-six 41.8% → 25.7%;
