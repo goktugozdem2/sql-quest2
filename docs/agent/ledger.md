@@ -27,6 +27,35 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### the company-set gate walls only authored sets (Capital One, Revolut) — bug fix
+
+- **Claimed** 2026-11-26 (founder's go in chat, "1'i uygula") · **Shipped**
+  on merge, no flag · **Read** 2026-12-10.
+- **Change.** The 2026-09-20 decision (M1 amended: only a set AUTHORED for
+  the company is walled) lived only in the banner's `companyGateFreeIds`.
+  The gate itself (`companySetGate`, three call sites in app.jsx: the
+  banner's next pick, the openChallenge wall, the row lock) never checked
+  it, so since the 09-26 flip a topical set (Snowflake, Wise, Meta, …)
+  walled its fourth question under reason `company_set` while its page and
+  banner promised only the general 10-solve quota. `companySetGate` now
+  takes `authored` and is ungated unless it is `true`; every call passes
+  `companyHasAuthoredSet(companyFilter)`.
+- **Metric** `company_set_wall` (docs/agent/metrics.md), here as a
+  correctness check on `pro_modal_shown {reason: 'company_set'}` by company.
+- **Baseline** 2026-09-26 → 11-26 (read-only, pro_events): the modal fired
+  in Snowflake (6), Wise (4) and Meta (2) views, and also in OpenAI, Amazon,
+  Airbnb and Google views — none of them authored sets.
+- **Target** 0 `company_set` walls or modals outside Capital One and Revolut
+  from the deploy; Capital One / Revolut walls still fire (> 0 if any
+  non-Pro reaches a fourth question there).
+- **Falsified if** any `company_set` row names another company after the
+  deploy (then a call site skips `authored`, or a stale bundle is served).
+- **Confounds.** The 11-22 verdict of "the company set wall" above counted
+  every company's wall; from this deploy only two companies can reach it,
+  so never read that series across 11-26. The freeQuota holdout (#384,
+  enrolment from 11-28) leaves the company gate the same in both arms; this
+  lands on both arms alike (note the merge date in the holdout read).
+
 ### the free-quota holdout: did the quota cost the returns? (`freeQuotaHoldout`, A/B)
 
 - **Claimed** 2026-11-25 · **Shipped** ON on merge (flag `freeQuotaHoldout: true`; `freeQuota` is a money flag and the founder gave the written go for THIS test in chat on 2026-11-25, "Full holdout (Recommended)") · **Enrolment** first app opens 2026-11-28 → 2026-12-25 (four weeks; fixed constants `FREE_QUOTA_HOLDOUT_START/END` in src/utils/free-quota-holdout.js, 11-28 00:00 UTC to 12-26 00:00 UTC exclusive — moved from 11-26 on 2026-11-26, and again from 11-27 on 2026-11-27 because the 11-27 start passed before merge; a test pins the start to no earlier than 11-28) · **Arm-balance check** 2026-12-04 · **Halfway money read** 2026-12-12 · **Read** 2027-01-02 (the 7th day after enrolment ends). If the merge slips past 11-28, move the window, the balance check, the halfway read and the read date together in one commit (constants, this entry, metrics.md).
@@ -1266,6 +1295,7 @@ of the verifier and must never be rounded to `FLAT`.
     - `direct` < `list` − 3 → MISS. Flag off.
   - Fewer than 120 per arm by 2027-02-27 → UNREADABLE. Flag off; do not extend a second time.
 - **Confounds** the banner claim ("a company arrival gets a first question to press", read 12-18) sits on the same arrivals, which is why the flip waits until 12-19. M-02's hero copy (read 12-20) is upstream of assignment and lands in both arms equally. `quotaWallInline` and `modalLayout` are independent arms. #99's first screen never shows on a `?company=` arrival.
+- **Verdict (interim read 2026-11-27, B2): UNREADABLE today — continue to the rule's own read.** Humans only (the `scripts/scorecard-weekly.sql` block): `direct` **2 / 8** (25%) vs `list` **4 / 10** (40%) on first_solve_10m from assignment (p = 0.64, P(beat) ≈ 0.27, direction only); run ≤ 10 min 2/8 vs 5/10; 3 solves ≤ 24 h 2 vs 2; plan clicks 0 vs 1, trial-or-paid 0 vs 1 (14-day windows open). The arm works: 8/8 `direct` opened via `company_direct` within a minute. Neither decision point is reached (harm check 60 per arm, verdict 120 per arm), so the flag stays ON and the desktop open → first-run cell is **not** freed. Volume: ~2.6 human assignments per arm per day → 60/arm ≈ 12-16, 120/arm ≈ 2027-01-08; if the tournament launches 12-10 and this read keeps only arm A / non-tournament people, 120/arm lands ≈ April, after the 02-27 hard stop (→ UNREADABLE, flag off). Trap: 45 of 63 assigned browsers are `app1lang` crawlers, which the metric's SQL in metrics.md does not exclude. Read: `docs/reads/company-direct-open-2026-11-27.md`.
 ### /for-teams/ is published — the seat door's 30-day test starts
 
 - **Claimed** 2026-11-22 · **Shipped** on merge (founder's go in chat: "evet, /for-teams/ yayına al") · **Read** 2026-12-22.

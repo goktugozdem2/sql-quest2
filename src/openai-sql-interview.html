@@ -154,9 +154,9 @@
       <a href="#questions" class="btn bo">See Sample Questions ↓</a>
     </div>
     <div style="display:flex;gap:28px;margin-top:44px;flex-wrap:wrap;justify-content:center;animation:fadeUp .6s .5s both;">
-      <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">21 challenges</p><p style="font-size:11px;color:#8b98ab;">OpenAI-pattern set</p></div></div>
-      <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">Real datasets</p><p style="font-size:11px;color:#8b98ab;">Usage-event tables</p></div></div>
-      <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">AI tutor</p><p style="font-size:11px;color:#8b98ab;">Step-by-step hints</p></div></div>
+      <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">21 challenges</p><p style="font-size:12px;color:#8b98ab;">OpenAI-pattern set</p></div></div>
+      <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">Real datasets</p><p style="font-size:12px;color:#8b98ab;">Usage-event tables</p></div></div>
+      <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">AI tutor</p><p style="font-size:12px;color:#8b98ab;">Step-by-step hints</p></div></div>
     </div>
   </div>
 </section>
@@ -301,9 +301,9 @@ const TOPICS=[
   ['14%','Joins','3 of the 21 · INNER and LEFT JOIN, self-joins, and the fan-out they cause','#22d3ee'],
   ['10%','Conditional Logic','2 of the 21 · CASE for row labels, buckets and conditional aggregation','#c084fc']
 ];
-document.getElementById('topic-cards').innerHTML=TOPICS.map(t=>`<div class="tc" onmouseenter="this.style.borderColor='${t[3]}44'" onmouseleave="this.style.borderColor='rgba(255,255,255,0.06)'"><p class="fd" style="font-size:32px;font-weight:800;color:${t[3]}">${t[0]}</p><p style="font-size:13px;font-weight:700;color:#e2e8f0;margin-top:4px">${t[1]}</p><p style="font-size:11px;color:#8b98ab;margin-top:6px;line-height:1.5">${t[2]}</p></div>`).join('');
+document.getElementById('topic-cards').innerHTML=TOPICS.map(t=>`<div class="tc" onmouseenter="this.style.borderColor='${t[3]}44'" onmouseleave="this.style.borderColor='rgba(255,255,255,0.06)'"><p class="fd" style="font-size:32px;font-weight:800;color:${t[3]}">${t[0]}</p><p style="font-size:13px;font-weight:700;color:#e2e8f0;margin-top:4px">${t[1]}</p><p style="font-size:12px;color:#8b98ab;margin-top:6px;line-height:1.5">${t[2]}</p></div>`).join('');
 
-const STR='<span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:6px;background:#10a37f22;color:#10a37f;font-size:11px;font-weight:800;font-family:\'Space Grotesk\',sans-serif;">O</span>';
+const STR='<span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:6px;background:#10a37f22;color:#10a37f;font-size:12px;font-weight:800;font-family:\'Space Grotesk\',sans-serif;">O</span>';
 // GENERATED FROM THE BANK — do not hand-edit. Every entry is a real SQL Quest
 // challenge carrying the "OpenAI" tag in src/data/challenge-companies.js,
 // listed Easy -> Medium -> Hard (free previews before Pro inside Hard), never

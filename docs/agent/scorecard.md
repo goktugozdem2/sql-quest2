@@ -115,6 +115,7 @@ out. The O2 columns are defined in `docs/agent/objectives.md`.
 |---|---|---|---|---|---|---|---|
 | 2026-09-23 (the frame) | 15.5% (first opens 30 d) | 0.05% (2 ÷ 3,864) | 88.7% (pairs, any later solve) | 16.2% (first opens 08-17 → 09-16) | 3 (Stripe) | 2 | — |
 | **2026-11-22 — Sunday extra read (B2), not a Friday** | **14.8%** (first opens 11-08 → 11-21, n 379; 11.6% the two weeks before, n 558) | **0.05%** (2 ÷ 3,970, 10-24 → 11-22; a floor — landing views still hold unfingerprinted crawlers) | **80.3%** (367 / 457 wrong submits → that challenge solved within 60 min, 10-24 → 11-22 — the 60-minute form the 11-22 P1 verdicts use, 84.9% for 09-30 → 11-20) | **6.9%** (first opens 11-01 → 11-14, n 390; 7.9% the two weeks before, n 559) | **5** (3 annual, 2 monthly; `users.data` + webhook rows, not Stripe) | **3** at 09:29Z (2 from 16:37Z) | **64** (day 0, 11-10: 72) |
+| **2026-11-27 — Friday, first on the human block (B2)** | **23.8%** (36 / 151 new human openers 11-20 → 26; 15.3%, 23 / 150, the week before; p 0.08) | **0.10%** (2 ÷ 2,090 human visitors, 30 d to 11-26; 6 trials, not added; 0.09%, 2 ÷ 2,110, 30 d to 11-19) | **73.3%** (77 / 105 person-challenges, 49 people, 11-20 → 26, wrong submit → solved ≤ 60 min; 82.3%, 116 / 141, the week before) | **12.0%** (18 / 150, cohort 11-13 → 19; 14.6%, 18 / 123, cohort 11-06 → 12) | **4** (1 monthly, 3 annual; MRR $49.58; 1 in trial; Query 3) | — | — |
 
 Notes on the 11-22 row:
 
@@ -133,6 +134,24 @@ Notes on the 11-22 row:
   their first open. Both stand on their own definitions.
 - The O2 day-0 row, the factor that is short (six-solvers, 4–5×) and the
   12-10 gap are in `docs/agent/objectives.md`.
+
+Notes on the 11-27 row (`docs/reads/scorecard-2026-11-27.md`):
+
+- **A new series from here.** Every number is on the person-level
+  exclusion block of `scripts/scorecard-weekly.sql` (plus A2's walk aids,
+  this read), so the 11-22 row's rates are not on it. Read week over week
+  from this row.
+- **6+ distinct solves in 7 days** (the tournament's decision metric):
+  **11.3%** (17 / 150, cohort 11-13 → 19) vs 12.2% (15 / 123, 11-06 →
+  12); the plan's baseline 11.8% holds.
+- **Interview-target vs everyone else** (#409, entry version):
+  first_solve_10m 23.5% (8 / 34) vs 23.9% (28 / 117) this week, 7.1%
+  (3 / 42) vs 18.5% (20 / 108) the week before; 6+ in 7 d 9.5% (4 / 42)
+  vs 12.0% (13 / 108); second_session_7d 11.9% (5 / 42) vs 12.0%
+  (13 / 108).
+- No change is beyond noise at n ≈ 150 (largest: first_solve_10m, p 0.08,
+  carried by the interview-target segment in the week `companyDirectOpen`
+  went live — whose own read does not show `direct` ahead).
 
 ## The A01 human scorecard (investor plan, from 2026-11-25)
 
@@ -278,3 +297,18 @@ which a person asked for: an AI-assistant signal, not a visit.
 - **Money is tiny and lumpy:** 4 first charges in eight weeks ($166), 9
   trial starts, 1 refund (W40, a September monthly payer, full), 9 failed
   invoices. At n = 0–3 a week no money ratio is readable; read the counts.
+
+### 2026-11-27 (Friday) — A01 human scorecard, re-read on the A2 rule
+
+Read 2026-11-27 ~12:45 UTC, file as committed with this block: the
+exclusion block now also drops A2's live-QA walk aids (every `aid`
+starting `a2a2`, plus `d9fe96e2…`; README rule 2). **Query 1 reproduced
+the 11-25 block's W40–W47 table exactly, in every column** — the A2 aids
+all fall in W48 (11-26), which is not complete — and Query 3 reads the
+same snapshot (4 paying, MRR $49.58, 1 in trial, 1 lifetime). Queries 2
+and 4 were not re-run: their W40–W47 inputs are the same rows under the
+same rules. W47's `activated_7d` (50) and `returned_7d` (7) are still
+floors; its runway closes 11-30. The first week to carry the A2 rule is
+W48, in the 12-04 block. The five numbers of this Friday are in the
+Friday table above (`docs/reads/scorecard-2026-11-27.md`).
+
