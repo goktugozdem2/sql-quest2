@@ -68,6 +68,13 @@ dated `queue-*.md` files are history. The running state of the objective is
      11-22, 7 on 11-23, 0 ever ran a query.
    - the founder's walk guests on 2026-11-24 (`Europe/Istanbul`,
      `mobile:375x812`, 11:00–11:08 UTC).
+   - A2's live-QA walk aids (B2 2026-11-27, BACKLOG C8 11-27): **every
+     `aid` starting `a2a2`** — a prefix rule, so a later walk A2 stamps
+     the same way is out with no new edit (11-26: `a2a21126…0001` →
+     `…0013`, no `…0004`; 12 browsers, 11:38–11:45 UTC, 0 such aids
+     before 11-26) — plus `d9fe96e2bdf44aefa9195673a6496888`, the same
+     walk's one random aid (11:40 UTC). A2 stamps every walk aid
+     `a2a2<MMDD>…`; a walk that cannot must list its aid here.
    - two app-only crawlers older than the stamps (A01 2026-11-25; metrics.md
      shared traps): `utc1280` — first `app_opened` in `UTC` at
      `desktop:1280x720`, no `landing_view` ever, whatever its

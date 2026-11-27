@@ -1007,6 +1007,14 @@ Every competitor fact cited must come from that read (URL + date).
     Crypto, ≥ 100k iterations) on the next successful sign-in and marks the
     row's scheme; account-password writes the new scheme. Founder's call —
     it touches every sign-in.
+- **A/B metric SQL in metrics.md reads crawlers as people (B2, 2026-11-27).**
+  `company_direct_split`'s block filters only `metadata.bot` and internal
+  names; 45 of the 63 browsers assigned to `companyDirectOpen` by 11-27 are
+  `app1lang` crawlers (0 runs), so a read as written dilutes both arms about
+  threefold. Swap its filters for the `scripts/scorecard-weekly.sql`
+  exclusion block, and check the other A/B blocks (`runnable_starter_split`,
+  `mobileRunBar`, `mobileOneLayer`) and `scripts/ab/read-test.mjs` the same
+  way. A definition change, so its own PR (README 6b). Owner B2.
 
 ## Inbox review — 2026-11-23 (docs/reads/inbox-review-2026-11-23.md)
 
