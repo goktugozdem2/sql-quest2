@@ -296,10 +296,14 @@ describe('app.jsx: the profile is read at the first open, before any key is writ
     const tour = APP.indexOf('let TOURNAMENT_RECORD = null;');
     const urlBlock = APP.indexOf('// Module-load URL-param capture.');
     const block = APP.slice(tour, urlBlock);
-    expect(block).toMatch(/profile = buildVisitorProfile\(\{/);
-    expect(block).toMatch(/bootKeys: BOOT_KEYS,/);
-    expect(block).toMatch(/viewportWidth: window\.innerWidth,/);
-    expect(block).toMatch(/sessionStorage\.getItem\('sqlquest_geo_country'\)/);
+    // The reader is shared with the canonical segment (2026-11-27): one
+    // function builds this open's profile, the enrolment calls it.
+    const reader = APP.slice(APP.indexOf('function readBootProfile() {'), tour);
+    expect(reader).toMatch(/return buildVisitorProfile\(\{/);
+    expect(reader).toMatch(/bootKeys: BOOT_KEYS,/);
+    expect(reader).toMatch(/viewportWidth: window\.innerWidth,/);
+    expect(reader).toMatch(/sessionStorage\.getItem\('sqlquest_geo_country'\)/);
+    expect(block).toMatch(/const profile = deciding \? readBootProfile\(\) : null;/);
     expect(block).toMatch(/\n {6}profile,\n {4}\}\);/);
     const at = APP.indexOf("trackActivationEvent('tournament_assigned'");
     const effect = APP.slice(APP.lastIndexOf('useEffect(() => {', at), at);

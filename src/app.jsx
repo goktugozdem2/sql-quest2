@@ -87,7 +87,8 @@ import { dueRetrievals, pickRetrievalChallenge, recordRetrieval, dailyQuota, MAX
 import { computeRecap, shouldShowRecap } from './utils/session-recap.js';
 import { getAnonId } from './utils/anon-id.js';
 import { FREE_QUOTA_HOLDOUT_KEY, FREE_QUOTA_HOLDOUT_TEST_ID, freeQuotaEnrolment, hasPriorAppUse, normalizeFreeQuotaRecord, freeQuotaEffective, freeQuotaEventStamp } from './utils/free-quota-holdout.js';
-import { TOURNAMENT_KEY, tournamentEnrolment, tournamentPriorAppUse, normalizeTournamentRecord, adoptAccountRecord, tournamentEffectiveArm, tournamentBehaviour, tournamentSupersedes, tournamentEventStamp, shouldAnnounceTournament, tournamentAssignedPayload, buildVisitorProfile, enrichTournamentProfile } from './utils/tournament.js';
+import { TOURNAMENT_KEY, tournamentEnrolment, tournamentPriorAppUse, normalizeTournamentRecord, adoptAccountRecord, tournamentEffectiveArm, tournamentBehaviour, tournamentSupersedes, tournamentEventStamp, shouldAnnounceTournament, tournamentAssignedPayload, buildVisitorProfile, enrichTournamentProfile, normalizeVisitorProfile } from './utils/tournament.js';
+import { segmentOf, segmentEventStamp, nextSegmentRecord, pickSegmentProfile, SEGMENTS, SEGMENT_KEY, SEGMENT_PROFILE_KEY } from './utils/segment.js';
 import { quotaWallArm, quotaWallShowsModal, quotaInlineCopy, QUOTA_WALL_DAY_KEY } from './utils/quota-wall-inline.js';
 import { SINGLE_PATH_KEY, LADDER_LENGTH, TIER_KEYS, isPathArm, emptyPathState, normalizePathState, pathUiFlags, pathTabsOpen, sprintPlanMarks, sprintProbeRecord, ladderOutcome, ladderStuck, ladderOpen, ladderResolve, pickLadderQuestion, ladderQuestionNumber, roadmapProfileFor, composePathPlan, planProgress, nextPlanStep, planEnded, planShownPayload, logStepDone, pathWhyLines, companyFromSlug, startSprint, sprintDayModel, sprintTabsOpen, pathLayerSlot, pathLayerDecide, pathSessionTouch, PATH_LAYER_SETTLE_MS, PATH_USER_SIGNUP_REASONS, fitPlanToLength, pathProAskAllowed, PATH_PRO_ASKS_SPACED } from './utils/single-path.js';
 import { buildRoadmap } from './utils/personal-roadmap.js';
@@ -182,6 +183,27 @@ if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
 // Profile first (founder, 2026-11-26): a new browser's profile is read here
 // from what is known before it does anything (buildVisitorProfile), it names
 // the stratum, and the arm is drawn inside the stratum.
+// This open's profile, from what is known before the person does anything
+// (the tournament's and the segment's one reader).
+function readBootProfile() {
+  const readLs = (k) => { try { return localStorage.getItem(k); } catch (_) { return null; } };
+  let readinessRecord = null;
+  try { readinessRecord = JSON.parse(readLs('sqlquest_readiness_v1') || 'null'); } catch (_) { readinessRecord = null; }
+  let country = null;
+  try { country = sessionStorage.getItem('sqlquest_geo_country'); } catch (_) { country = null; }
+  return buildVisitorProfile({
+    search: window.location.search,
+    referrer: typeof document !== 'undefined' ? document.referrer : '',
+    siteHost: window.location.hostname,
+    landingSrc: readLs(LANDING_SRC_KEY),
+    viewportWidth: window.innerWidth,
+    country,
+    navigatorLanguage: typeof navigator !== 'undefined' ? navigator.language : null,
+    tzOffsetEastMin: -new Date().getTimezoneOffset(),
+    bootKeys: BOOT_KEYS,
+    readinessRecord,
+  });
+}
 let TOURNAMENT_RECORD = null;
 if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
   try {
@@ -191,26 +213,7 @@ if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
     for (let i = 0; i < localStorage.length; i++) keys.push(localStorage.key(i));
     const flagOn = window.FF?.feature?.('firstSessionTournament') === true;
     const deciding = flagOn && !normalizeTournamentRecord(stored);
-    let profile = null;
-    if (deciding) {
-      const readLs = (k) => { try { return localStorage.getItem(k); } catch (_) { return null; } };
-      let readinessRecord = null;
-      try { readinessRecord = JSON.parse(readLs('sqlquest_readiness_v1') || 'null'); } catch (_) { readinessRecord = null; }
-      let country = null;
-      try { country = sessionStorage.getItem('sqlquest_geo_country'); } catch (_) { country = null; }
-      profile = buildVisitorProfile({
-        search: window.location.search,
-        referrer: typeof document !== 'undefined' ? document.referrer : '',
-        siteHost: window.location.hostname,
-        landingSrc: readLs(LANDING_SRC_KEY),
-        viewportWidth: window.innerWidth,
-        country,
-        navigatorLanguage: typeof navigator !== 'undefined' ? navigator.language : null,
-        tzOffsetEastMin: -new Date().getTimezoneOffset(),
-        bootKeys: BOOT_KEYS,
-        readinessRecord,
-      });
-    }
+    const profile = deciding ? readBootProfile() : null;
     const decision = tournamentEnrolment({
       flagOn,
       record: stored,
@@ -224,6 +227,33 @@ if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
     if (decision.write) localStorage.setItem(TOURNAMENT_KEY, JSON.stringify(decision.write));
     TOURNAMENT_RECORD = decision.record;
   } catch (_) { TOURNAMENT_RECORD = null; }
+}
+
+// The canonical segment (2026-11-27, src/utils/segment.js): a measurement,
+// on for everyone, whatever the tournament flag says. The first-open profile
+// is the tournament's when it stored one, else this module's own (stored
+// once, upgraded when a later open comes through an interview door). The
+// label is read here so the load's first event (app_opened) carries it; the
+// component recomputes it on every intent / prepTarget / goal change and
+// writeProEvent stamps SEGMENT_SEG on every row.
+let SEGMENT_PROFILE = null;
+let SEGMENT_SEG = null;
+if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+  try {
+    const tp = TOURNAMENT_RECORD && TOURNAMENT_RECORD.profile ? TOURNAMENT_RECORD.profile : null;
+    let stored = null;
+    try { stored = normalizeVisitorProfile(JSON.parse(localStorage.getItem(SEGMENT_PROFILE_KEY) || 'null')); } catch (_) { stored = null; }
+    const pick = pickSegmentProfile({ tournamentProfile: tp, stored, current: tp ? null : readBootProfile() });
+    if (pick.write) localStorage.setItem(SEGMENT_PROFILE_KEY, JSON.stringify(pick.write));
+    SEGMENT_PROFILE = pick.profile;
+    let prep = null;
+    try { prep = JSON.parse(localStorage.getItem('sqlquest_prep_target_v1') || 'null'); } catch (_) { prep = null; }
+    SEGMENT_SEG = segmentOf({ profile: SEGMENT_PROFILE, intent: localStorage.getItem('sqlquest_user_intent'), prepTarget: prep }).seg;
+    // The Coach goal and the account's answers load later: until they do, a
+    // browser that was already placed keeps its last label.
+    const last = localStorage.getItem(SEGMENT_KEY);
+    if (SEGMENT_SEG === 'unknown' && SEGMENTS.includes(last)) SEGMENT_SEG = last;
+  } catch (_) { SEGMENT_SEG = null; }
 }
 
 // Module-load URL-param capture. Two signals stick to localStorage so they
@@ -7216,7 +7246,9 @@ function SQLQuest() {
           // `fqArm` (2026-11-25): a browser enrolled in the free-quota
           // holdout stamps its arm on EVERY row — the quota, paywall,
           // checkout and trial rows the holdout's guardrails read included.
-          metadata: JSON.stringify({ ...metadata, ...fqEventStamp(), ...tEventStamp(), aid: getAnonId() }),
+          // `seg` / `segV` (2026-11-27): the canonical segment's LABEL on
+          // every row (src/utils/segment.js) — never its company or date.
+          metadata: JSON.stringify({ ...metadata, ...fqEventStamp(), ...tEventStamp(), ...segmentEventStamp(SEGMENT_SEG), aid: getAnonId() }),
           created_at: new Date().toISOString()
         })
       }).catch(() => {}); // fire and forget
@@ -9832,6 +9864,26 @@ function SQLQuest() {
     }
   }, [currentUser, isGuest, isSessionLoading]);
 
+  // The canonical segment (src/utils/segment.js, 2026-11-27): recomputed at
+  // open and on every intent / prepTarget / Coach-goal change. These hooks
+  // sit above the `if (showAuth)` / `if (!dbReady) return` early returns
+  // (CLAUDE.md fragile area 1). SEGMENT_SEG feeds writeProEvent's stamp; the
+  // record rides the save as `userData.segment = { seg, at, v }`.
+  const [segmentRecord, setSegmentRecord] = useState(null);
+  useEffect(() => {
+    let seg;
+    try {
+      seg = segmentOf({
+        profile: SEGMENT_PROFILE, intent: intentRecord?.goal || null, prepTarget,
+        goal: coachState?.goalId || null, solves: solvedChallenges.size, mastery: skillMastery,
+        proStatus: userProStatus, priceRegion, level: firstRunLevel || null,
+      }).seg;
+    } catch (_) { return; }
+    SEGMENT_SEG = seg;
+    try { localStorage.setItem(SEGMENT_KEY, seg); } catch (_) {}
+    setSegmentRecord(prev => nextSegmentRecord(prev, seg));
+  }, [currentUser, intentRecord?.goal, prepTarget.company, prepTarget.date, coachState?.goalId]);
+
   // Save user progress whenever key stats change.
   // Guests are NOT excluded. They used to be (`!isGuest`), which combined
   // with cloud-first loadUserData into a progress shredder: the guest's
@@ -9886,6 +9938,9 @@ function SQLQuest() {
           ...(goalProfile ? { goalProfile } : {}),   // the goal gate's answers (goal, deadline, target level, industry)
           ...((companyAskRecord.arm || companyAskRecord.asks) ? { companyAsk: companyAskRecord } : {}),   // the company ask: arm, asks, answer
           intent: intentRecord,     // the declared goal { goal, source, at } — 'exploring' included, so the server can tell asked from never-asked
+          // The canonical segment's label (src/utils/segment.js); `at` is
+          // when it last CHANGED, so the stored one is kept while it holds.
+          ...(segmentRecord ? { segment: nextSegmentRecord(existingData?.segment || null, segmentRecord.seg) } : {}),
           readiness: readinessRecord, // the ten-question check / readiness test result, the public page's shape
           // The first-session tournament's record (src/utils/tournament.js): an
           // enrolled person's arm rides the account, so a second device keeps it.
@@ -9953,7 +10008,7 @@ function SQLQuest() {
         saveUserData(currentUser, userData);
       })();
     }
-  }, [xp, solvedChallenges, unlockedAchievements, queryCount, aiLessonPhase, currentAiLesson, completedAiLessons, aiLessonCompletions, roadmapLessonCompletions, comprehensionCount, comprehensionCorrect, consecutiveCorrect, comprehensionConsecutive, completedExercises, challengeQueries, completedDailyChallenges, dailyStreak, challengeAttempts, dailyChallengeHistory, weeklyReports, weeklyReportLastSeen, weeklyDigestOptOut, earnedMilestones, coachState, userGoals, intakeRecord, goalProfile, companyAskRecord, prepTarget, goalsPromptDismissedAt, loginCalendar, speedRunHistory, explainHistory, userProStatus, proType, proExpiry, proAutoRenew, interviewHistory, challengeProgress, challengeStartDate, weaknessTracking, skillMastery, lessonSkillStats, errorPatterns, debugStats, retrievalLog, ticketLog, dailyRewardClaimedDate, pathState]);
+  }, [xp, solvedChallenges, unlockedAchievements, queryCount, aiLessonPhase, currentAiLesson, completedAiLessons, aiLessonCompletions, roadmapLessonCompletions, comprehensionCount, comprehensionCorrect, consecutiveCorrect, comprehensionConsecutive, completedExercises, challengeQueries, completedDailyChallenges, dailyStreak, challengeAttempts, dailyChallengeHistory, weeklyReports, weeklyReportLastSeen, weeklyDigestOptOut, earnedMilestones, coachState, userGoals, intakeRecord, goalProfile, companyAskRecord, prepTarget, goalsPromptDismissedAt, loginCalendar, speedRunHistory, explainHistory, userProStatus, proType, proExpiry, proAutoRenew, interviewHistory, challengeProgress, challengeStartDate, weaknessTracking, skillMastery, lessonSkillStats, errorPatterns, debugStats, retrievalLog, ticketLog, dailyRewardClaimedDate, pathState, segmentRecord]);
 
 
   // True when the URL signals explicit content intent — user clicked a
