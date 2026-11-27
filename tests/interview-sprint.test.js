@@ -147,7 +147,7 @@ describe('doors (plan §3.4 / orchestrator notes 2026-11-26)', () => {
     const g = APP.indexOf('const pathStepProOnly = (st) => {');
     const gate = APP.slice(g, APP.indexOf('\n  };\n', g));
     expect(gate).toMatch(/if \(st\.proOnly\) return true;\n\s+if \(st\.kind !== 'challenge' \|\| !companyFilter\) return false;\n\s+const c = /);
-    expect(APP).toContain('return !!c && companySetGate({ flagOn: ftbFlag(\'companySetGate\'), isPro, companyFilter, challenge: c, scoped: companyScopedChallenges(), solved: solvedChallenges }).gated;');
+    expect(APP).toContain('return !!c && companySetGate({ flagOn: ftbFlag(\'companySetGate\'), isPro, companyFilter, authored: companyHasAuthoredSet(companyFilter), challenge: c, scoped: companyScopedChallenges(), solved: solvedChallenges }).gated;');
     expect(APP).toMatch(/challengeGuestStartedRef\.current = true;\n\s+startGuestMode\(\);\n\s+\}\n\s+return;/);
   });
 });
@@ -297,3 +297,14 @@ describe('D3 — one plan on screen', () => {
   });
 });
 
+
+// #420 (fix/company-gate-signed-only, founder's go): companySetGate walls only
+// a set authored for the company, and every call passes `authored:`. D's live
+// gate check on sprint steps is the call #420 could not see.
+describe('the sprint steps\' company-set gate passes `authored` (#420)', () => {
+  it('pathStepProOnly hands companySetGate the authored flag of the company view', () => {
+    const fn = APP.slice(APP.indexOf('const pathStepProOnly = (st) => {'), APP.indexOf('const pathCtx = () =>'));
+    expect(fn).toContain('companySetGate({');
+    expect(fn).toMatch(/\bauthored:\s*companyHasAuthoredSet\(companyFilter\)/);
+  });
+});

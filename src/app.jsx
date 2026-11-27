@@ -12617,7 +12617,9 @@ CRITICAL RULES:
     if (st.proOnly) return true;
     if (st.kind !== 'challenge' || !companyFilter) return false;
     const c = challenges.find(x => x.id === st.challengeId);
-    return !!c && companySetGate({ flagOn: ftbFlag('companySetGate'), isPro, companyFilter, challenge: c, scoped: companyScopedChallenges(), solved: solvedChallenges }).gated;
+    // Only a set authored for the company is walled (#420): the key rides
+    // along now so either merge order stays green.
+    return !!c && companySetGate({ flagOn: ftbFlag('companySetGate'), isPro, companyFilter, authored: companyHasAuthoredSet(companyFilter), challenge: c, scoped: companyScopedChallenges(), solved: solvedChallenges }).gated;
   };
   const pathCtx = () => ({ solved: solvedChallenges, mocksDone: pathMocksDone(), isProOnly: pathStepProOnly });
   // The roadmap for this person, frozen as the plan (N stays put).
