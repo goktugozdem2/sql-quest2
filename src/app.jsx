@@ -89,7 +89,7 @@ import { getAnonId } from './utils/anon-id.js';
 import { FREE_QUOTA_HOLDOUT_KEY, FREE_QUOTA_HOLDOUT_TEST_ID, freeQuotaEnrolment, hasPriorAppUse, normalizeFreeQuotaRecord, freeQuotaEffective, freeQuotaEventStamp } from './utils/free-quota-holdout.js';
 import { TOURNAMENT_KEY, tournamentEnrolment, tournamentPriorAppUse, normalizeTournamentRecord, adoptAccountRecord, tournamentEffectiveArm, tournamentBehaviour, tournamentSupersedes, tournamentEventStamp, shouldAnnounceTournament, tournamentAssignedPayload, buildVisitorProfile, enrichTournamentProfile } from './utils/tournament.js';
 import { quotaWallArm, quotaWallShowsModal, quotaInlineCopy, QUOTA_WALL_DAY_KEY } from './utils/quota-wall-inline.js';
-import { SINGLE_PATH_KEY, LADDER_LENGTH, TIER_KEYS, isPathArm, emptyPathState, normalizePathState, pathUiFlags, pathTabsOpen, sprintPlanMarks, sprintProbeRecord, ladderOutcome, ladderStuck, ladderOpen, ladderResolve, pickLadderQuestion, ladderQuestionNumber, roadmapProfileFor, composePathPlan, planProgress, nextPlanStep, planEnded, planShownPayload, logStepDone, pathWhyLines, companyFromSlug, startSprint, sprintDayModel, sprintTabsOpen } from './utils/single-path.js';
+import { SINGLE_PATH_KEY, LADDER_LENGTH, TIER_KEYS, isPathArm, emptyPathState, normalizePathState, pathUiFlags, pathTabsOpen, sprintPlanMarks, sprintProbeRecord, ladderOutcome, ladderStuck, ladderOpen, ladderResolve, pickLadderQuestion, ladderQuestionNumber, roadmapProfileFor, composePathPlan, planProgress, nextPlanStep, planEnded, planShownPayload, logStepDone, pathWhyLines, companyFromSlug, startSprint, sprintDayModel, sprintTabsOpen, pathLayerSlot, pathLayerDecide, pathSessionTouch, PATH_LAYER_SETTLE_MS, PATH_USER_SIGNUP_REASONS } from './utils/single-path.js';
 import { buildRoadmap } from './utils/personal-roadmap.js';
 import { classifyLandingSrc, LANDING_SRC_KEY } from './utils/landing-src.js';
 import { classifyQueryError } from './utils/query-error.js';
@@ -4566,7 +4566,7 @@ function MilestoneShareBar({ content, onShare, onDismiss, referralUrl, bigTarget
   if (dismissed) return null;
   
   return (
-    <div className="sq-share-bar fixed bottom-4 left-1/2 z-50 w-full max-w-md px-4" style={{
+    <div data-layer="milestone_share" className="sq-share-bar fixed bottom-4 left-1/2 z-50 w-full max-w-md px-4" style={{
       transform: visible ? 'translate(-50%, 0)' : 'translate(-50%, 120%)',
       transition: 'transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1)',
     }}>
@@ -4722,7 +4722,7 @@ function LevelUpBanner({ levelName, onComplete }) {
   }, [onComplete]);
   
   return (
-    <div className="fixed inset-0 z-50 pointer-events-none flex items-center justify-center">
+    <div data-layer="level_up" className="fixed inset-0 z-50 pointer-events-none flex items-center justify-center">
       {/* Flash overlay */}
       <div className="absolute inset-0" style={{
         background: 'radial-gradient(circle, rgba(168,85,247,0.3) 0%, transparent 70%)',
@@ -4768,7 +4768,7 @@ function AchievementPopup({ achievement, onClose, bigTargets = false }) {
   const IconComponent = !isEmoji ? (iconMap[achievement.icon] || getIcon('Star')) : null;
   
   return (
-    <div className={bigTargets
+    <div data-layer="achievement" className={bigTargets
       ? 'fixed top-3 right-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-[#F2F0EA] px-3 py-2 rounded-lg shadow-lg z-50 flex items-center gap-2 text-sm'
       : 'fixed top-3 right-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-[#F2F0EA] px-3 py-2 rounded-lg shadow-lg animate-bounce z-50 flex items-center gap-2 text-sm'}>
       {isEmoji ? (
@@ -5709,6 +5709,7 @@ function RadarPopToast({ pop, onClose, onShare, bigTargets = false }) {
 
   return (
     <div
+      data-layer="radar_pop"
       className="sq-radar-pop fixed bottom-6 right-6 z-50 w-[320px] p-4 rounded-2xl bg-gray-900/95 backdrop-blur border border-yellow-400/30 shadow-2xl"
       style={{ animation: 'radarPopIn 0.4s ease-out' }}
       role="status"
@@ -12595,6 +12596,18 @@ CRITICAL RULES:
     try { localStorage.setItem(SINGLE_PATH_KEY, JSON.stringify(next)); } catch (_) { /* best effort */ }
   };
   const pathEvent = (event, payload = {}) => trackActivationEvent(event, { arm: pathUi.arm, ...payload });
+  // The arm's first session (walk fix round 2): touched at load, at every
+  // challenge open and solve; it ends at the first hour away
+  // (pathSessionTouch), and with it the one-layer queue (`pathUi.layerQueue`).
+  useEffect(() => {
+    if (!pathUi.active || isSessionLoading || !currentUser || !dbReady) return;
+    const cur = pathStateRef.current;
+    const next = pathSessionTouch(cur, Date.now());
+    if (next.sessionLastAt !== cur.sessionLastAt || next.firstSessionEndedAt !== cur.firstSessionEndedAt) {
+      pathSave({ ...cur, sessionLastAt: next.sessionLastAt, firstSessionEndedAt: next.firstSessionEndedAt });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathUi.active, isSessionLoading, currentUser, dbReady, currentChallenge?.id, solvedChallenges.size]);
   const pathMocksDone = () => new Set((interviewHistory || []).map(h => h && h.interviewId).filter(Boolean));
   // Pro-only for this person now: the roadmap's own mark, or the company-set
   // gate of the company view they are in (a `?company=` arrival walls the
@@ -19292,7 +19305,9 @@ CRITICAL RULES:
     : null;
   // Tournament arm B: no achievement / level-up / Skillmap / share / streak
   // layer until the ladder ends (plan §3.1 B2); the asks keep today's rule.
-  const oneLayerOk = (id) => ((pathUi.holdLayers || pathHeldRelease) && ONE_LAYER_EXTRAS.includes(id) ? false : (!oneLayerOn || oneLayerTop === id));
+  // Tournament arms B / D, first session: the path queue decides instead
+  // (pathLayerOk below; walk fix round 2).
+  const oneLayerOk = (id) => (pathUi.layerQueue ? pathLayerOk(id) : ((pathUi.holdLayers || pathHeldRelease) && ONE_LAYER_EXTRAS.includes(id) ? false : (!oneLayerOn || oneLayerTop === id)));
   useEffect(() => {
     if (!currentChallenge || !pathHeldRelease) return;
     setPathHeldRelease(false);
@@ -26446,6 +26461,8 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
   // 2 — exit_reason: called by dismissProModal after the plans have closed.
   const maybeAskExitReason = (via, checkoutPending) => {
     if (fbPrompt) return;
+    // Tournament arms B / D: never in the first session (walk fix round 2).
+    if (pathUi.layerQueue) return;
     const ok = canShowExitReason({
       flagOn: fbFlag('exit_reason'), closedVia: via, planClicked: proModalPlanClickedRef.current,
       checkoutPending: !!checkoutPending, solvedCount: solvedChallenges.size, inTimedMock: fbInTimedMock(),
@@ -26489,6 +26506,67 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
     if (trig) fbTryStuck(trig);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wrongAttemptCount, challengeStatus]);
+  // ── Tournament arms B / D: ONE layer at a time for the whole first session ──
+  // (walk fix round 2, 2026-11-26; pure half pathLayerDecide in
+  // src/utils/single-path.js). Priority: the Pro / plan_end ask (and a modal
+  // the person opened) > the save / sign-up ask > achievement > the archetype
+  // card > the survey (never). One per solve; the rest that solve raises are
+  // dropped, never stacked. Off for everyone else (`pathUi.layerQueue`).
+  // These hooks sit above the `showAuth` / `dbReady` early returns.
+  const [pathLayerSlotNow, setPathLayerSlotNow] = useState(() => pathLayerSlot('open'));
+  const pathLayerSettleRef = useRef(null);
+  const pathSignupLayer = PATH_USER_SIGNUP_REASONS.includes(signupPromptReason) ? 'user_modal' : 'signup_prompt';
+  const pathLayerActive = pathUi.layerQueue ? [
+    showProModal && 'pro_modal',
+    showSignupPrompt && pathSignupLayer,
+    showSoftEmailCapture && 'soft_email',
+    showIntentAsk && 'intent_ask',
+    showAchievement && 'achievement',
+    showLevelUp && 'level_up',
+    milestonePopup && 'milestone_toast',
+    milestoneShare && 'milestone_share',
+    (streakCardPending || streakCardOpen === 'auto') && 'streak_card',
+    radarPop && 'radar_pop',
+    fbPrompt && fbPrompt.kind !== 'stuck' && 'feedback_prompt',
+  ].filter(Boolean) : [];
+  const pathLayer = pathUi.layerQueue ? pathLayerDecide({ active: pathLayerActive, slot: pathLayerSlotNow, holdExtras: pathUi.holdLayers }) : null;
+  const pathLayerOk = (id) => !pathLayer || pathLayer.show === id;
+  // A correct submit opens the solve's slot: nothing but the Pro ask until the
+  // solve's asks have landed (they fire 1.5–1.8 s after it).
+  const pathLayerAtSolve = () => {
+    if (!pathUi.layerQueue) return;
+    setPathLayerSlotNow(pathLayerSlot('settle'));
+    if (pathLayerSettleRef.current) clearTimeout(pathLayerSettleRef.current);
+    pathLayerSettleRef.current = setTimeout(() => setPathLayerSlotNow(sl => (sl.phase === 'settle' ? { ...sl, phase: 'pick' } : sl)), PATH_LAYER_SETTLE_MS);
+  };
+  // A challenge open is a new moment: a fresh slot.
+  useEffect(() => {
+    if (!pathUi.layerQueue || !currentChallenge) return;
+    if (pathLayerSettleRef.current) clearTimeout(pathLayerSettleRef.current);
+    setPathLayerSlotNow(pathLayerSlot('open'));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentChallenge?.id]);
+  // Keep the slot, and drop what lost it (the Pro ask and a modal the person
+  // opened are never in `drop`).
+  const pathLayerKey = pathLayer ? `${pathLayerActive.join(',')}|${pathLayer.drop.join(',')}` : '';
+  useEffect(() => {
+    if (!pathLayer) return;
+    if (pathLayer.slot !== pathLayerSlotNow) setPathLayerSlotNow(pathLayer.slot);
+    const d = pathLayer.drop;
+    if (!d.length) return;
+    if (d.includes('signup_prompt')) setShowSignupPrompt(false);
+    if (d.includes('soft_email')) setShowSoftEmailCapture(false);
+    if (d.includes('intent_ask')) setShowIntentAsk(false);
+    if (d.includes('achievement')) setShowAchievement(null);
+    if (d.includes('level_up')) setShowLevelUp(null);
+    if (d.includes('milestone_toast')) setMilestonePopup(null);
+    if (d.includes('milestone_share')) setMilestoneShare(null);
+    if (d.includes('streak_card')) { setStreakCardPending(false); setStreakCardOpen(o => (o === 'auto' ? null : o)); }
+    if (d.includes('radar_pop')) setRadarPop(null);
+    if (d.includes('feedback_prompt')) setFbPrompt(null);
+    trackActivationEvent('tournament_layer_dropped', { arm: pathUi.arm, dropped: d, shown: pathLayer.show, solves: solvedChallenges.size });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathLayerKey, pathLayerSlotNow]);
   // 4 — day2: the second session's first screen, once ever, one attempt per load.
   const fbDay2TriedRef = useRef(false);
   useEffect(() => {
@@ -26774,6 +26852,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
         setStuckAsk(null);
         setShowAiNudge(false);
         armOneLayerAtSolve(currentChallenge.id);
+        pathLayerAtSolve();
         addToHistory(challengeQuery, true, `challenge #${currentChallenge.id} ✓`);
         // First-session warm-up momentum: count distinct challenges solved
         // this session (re-solves don't inflate the goal). Fire an event the
@@ -28992,7 +29071,7 @@ RULES:
       {/* Capture points 2 and 4 (exit_reason, day2): a card above the 💬
           button, never a modal and never over the plans. Stuck renders on the
           challenge page instead. */}
-      {fbPrompt && fbPrompt.kind !== 'stuck' && !showProModal && (
+      {fbPrompt && fbPrompt.kind !== 'stuck' && !showProModal && pathLayerOk('feedback_prompt') && (
         <div className="fixed left-4 right-4 bottom-20 z-40 sm:left-auto sm:right-4 sm:w-[380px] shadow-lg" data-feedback-prompt-slot="global">
           <FeedbackPromptCard key={`${fbPrompt.kind}-${fbPrompt.trigger}`} kind={fbPrompt.kind} answered={!!fbPrompt.answered} onSend={fbSendPrompt} onSkip={fbSkipPrompt} />
         </div>
@@ -29062,7 +29141,7 @@ RULES:
           first solve. Style follows DESIGN.md: surface #16181F, 1px #2A2E38,
           radius lg (10), Fraunces for the one line of display type, the
           accent only on the claim button and the XP, and 🔥 the only emoji. */}
-      {streakCardOpen && currentUser && !isGuest && (
+      {streakCardOpen && currentUser && !isGuest && (streakCardOpen !== 'auto' || pathLayerOk('streak_card')) && (
         <div
           data-testid="streak-card"
           role="dialog"
@@ -30584,7 +30663,7 @@ RULES:
           soft email capture. Every answer (including "just exploring") is
           recorded so segmentation has no silent-dismissal blind spot. */}
       {showIntentAsk && !showSoftEmailCapture && oneLayerOk('intent_ask') && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(14,15,19,0.8)' }}>
+        <div data-layer="intent_ask" className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(14,15,19,0.8)' }}>
           <div className="w-full max-w-md p-6" style={{ background: '#16181F', border: '1px solid #2A2E38', borderRadius: '10px' }}>
             <h3 className="text-lg font-semibold mb-1" style={{ color: '#F2F0EA' }}>One quick question</h3>
             <p className="text-sm mb-4" style={{ color: '#8A8E99' }}>What brings you to SQL Quest? Your answer shapes what we recommend next.</p>
@@ -30626,7 +30705,7 @@ RULES:
         </div>
       )}
       {showSoftEmailCapture && oneLayerOk('soft_email') && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-3 sm:p-4" onClick={() => { setShowSoftEmailCapture(false); setSoftEmailCaptured(true); }}>
+        <div data-layer="soft_email" className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-3 sm:p-4" onClick={() => { setShowSoftEmailCapture(false); setSoftEmailCaptured(true); }}>
           <div className="bg-gradient-to-br from-gray-900 to-purple-900 rounded-2xl border border-purple-500/50 p-5 sm:p-6 w-full max-w-md overflow-hidden" onClick={e => e.stopPropagation()}>
             <div className="text-center mb-5">
               <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center mx-auto mb-3 text-2xl sm:text-3xl">
@@ -30706,8 +30785,8 @@ RULES:
       {paymentSuccessModal}
 
       {/* Guest Signup Prompt Modal */}
-      {showSignupPrompt && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setShowSignupPrompt(false)}>
+      {showSignupPrompt && pathLayerOk(pathSignupLayer) && (
+        <div data-layer={pathSignupLayer} className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setShowSignupPrompt(false)}>
           <div className="bg-gradient-to-br from-gray-900 to-purple-900 rounded-2xl border border-purple-500/50 p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
             <div className="text-center mb-6">
               <div className="w-16 h-16 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl">
@@ -34161,8 +34240,8 @@ RULES:
           new tour, creating three overlapping onboarding UIs at once. */}
 
       {/* Milestone Popup */}
-      {milestonePopup && (
-        <div className={`fixed top-20 left-1/2 -translate-x-1/2 z-50 ${milestonePopup.action ? '' : 'animate-bounce'}`}>
+      {milestonePopup && pathLayerOk('milestone_toast') && (
+        <div data-layer="milestone_toast" className={`fixed top-20 left-1/2 -translate-x-1/2 z-50 ${milestonePopup.action ? '' : 'animate-bounce'}`}>
           <div className="bg-gradient-to-r from-yellow-900/90 to-orange-900/90 rounded-xl border-2 border-yellow-500/50 px-6 py-4 shadow-2xl flex items-center gap-4">
             <span className="text-4xl">{milestonePopup.emoji}</span>
             <div>
@@ -34334,6 +34413,7 @@ RULES:
       {renderOfferAsk()}
       {showProModal && (
         <div
+          data-layer="pro_modal"
           className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
           onClick={() => dismissProModal('backdrop')}
           onKeyDown={e => { if (e.key === 'Escape') dismissProModal('escape'); }}
@@ -37451,8 +37531,8 @@ RULES:
                   countdown / quota / retrieval flags. Pure half:
                   src/utils/practice-plan.js. */}
               {(() => {
-                // Tournament arm D: the sprint line is this person's plan;
-                // never a second one beside it (walk fix D3).
+                // Tournament arms B / D: the path line is this person's plan;
+                // never a second one beside it (walk fixes D3 and B round 2).
                 if (pathUi.hideCoachPlan) return null;
                 const bank = window.challengesData || challenges || [];
                 const plan = buildPracticePlan({

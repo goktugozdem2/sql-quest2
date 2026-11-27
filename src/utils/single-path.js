@@ -28,6 +28,7 @@ import { buildCurriculumOrder, pickNextChallengeWith } from './challenge-order.j
 import { FREE_SOLVE_QUOTA } from './free-tier-boundary.js';
 import { PLACEMENT_TIERS, levelForLadder } from './placement.js';
 import { challengeMatchesSkill } from './skill-drill.js';
+import { SESSION_GAP_MS } from './feedback-prompts.js';
 
 export const SINGLE_PATH_ARM = 'B_single_path';
 export const SPRINT_ARM = 'D_interview_sprint';
@@ -91,6 +92,9 @@ export function emptyPathState() {
     plan: null,
     doneLog: [],
     tabsOpenedAt: null,
+    // The first session (walk fix round 2): the last touch, and when it ended.
+    sessionLastAt: null,
+    firstSessionEndedAt: null,
   };
 }
 
@@ -128,6 +132,8 @@ export function normalizePathState(raw) {
   base.plan = normalizePlan(raw.plan);
   base.doneLog = Array.isArray(raw.doneLog) ? raw.doneLog.filter(d => d && (Number.isInteger(Number(d.id)) || typeof d.id === 'string') && typeof d.day === 'string').slice(-200).map(d => ({ id: typeof d.id === 'string' && !/^\d+$/.test(d.id) ? d.id : Number(d.id), day: d.day.slice(0, 10) })) : [];
   base.tabsOpenedAt = isNum(Number(raw.tabsOpenedAt)) && Number(raw.tabsOpenedAt) > 0 ? Number(raw.tabsOpenedAt) : null;
+  base.sessionLastAt = isNum(Number(raw.sessionLastAt)) && Number(raw.sessionLastAt) > 0 ? Number(raw.sessionLastAt) : null;
+  base.firstSessionEndedAt = isNum(Number(raw.firstSessionEndedAt)) && Number(raw.firstSessionEndedAt) > 0 ? Number(raw.firstSessionEndedAt) : null;
   return base;
 }
 
@@ -147,7 +153,7 @@ export function pathUiFlags({ behaviour = null, state = null, hasChallenge = fal
     arm: null, active: false, ladderActive: false, hideTabs: false, extendShell: false,
     showPlanLine: false, suppressAsks: false, suppressNextStrip: false, sprintSetup: false,
     starterPrefill: false, companyDirect: false, holdLayers: false, fixedRunBar: false, sprint: false,
-    holdSignupAsks: false, hideGuestBanner: false, suppressTour: false, hideCoachPlan: false,
+    holdSignupAsks: false, hideGuestBanner: false, suppressTour: false, hideCoachPlan: false, layerQueue: false,
   };
   if (!isPathArm(behaviour)) return off;
   const s = state && state.v ? state : normalizePathState(state);
@@ -172,6 +178,9 @@ export function pathUiFlags({ behaviour = null, state = null, hasChallenge = fal
       // The "Take tour" prompt never shows in B's first session (walk fix B2).
       suppressTour: true,
       showPlanLine: !ladderActive && !!s.plan,
+      // One plan on screen: once the plan line shows, the Coach's own
+      // "Your {company} plan" card stays away (walk fix round 2, as D3 for D).
+      hideCoachPlan: !ladderActive && !!s.plan,
       // The intent modal and the company ask are questions; "seçenek tanımadan".
       suppressAsks: ladderActive,
       // One button after a solve, on the ladder and on the plan.
@@ -179,6 +188,9 @@ export function pathUiFlags({ behaviour = null, state = null, hasChallenge = fal
       starterPrefill: true,
       companyDirect: true,
       holdLayers: ladderActive,
+      // One layer at a time, one per solve, for the whole first session
+      // (pathLayerDecide; walk fix round 2).
+      layerQueue: pathInFirstSession(s),
       // Phones keep Run / Submit fixed at the bottom (the `bar` arm's
       // behaviour, today's first screen for half of phones) — one bar, never two.
       fixedRunBar: true,
@@ -208,6 +220,9 @@ export function pathUiFlags({ behaviour = null, state = null, hasChallenge = fal
     // The sprint screen comes first; the company's question 1 opens after it.
     companyDirect: false,
     holdLayers: !tabsOpen,
+    // One layer at a time, one per solve, for the whole first session
+    // (pathLayerDecide; walk fix round 2).
+    layerQueue: pathInFirstSession(s),
     fixedRunBar: true,
   };
 }
@@ -223,6 +238,109 @@ export function pathTabsOpen(state, { arm = SINGLE_PATH_ARM } = {}) {
   if (arm !== SINGLE_PATH_ARM) return false;
   if (!s.ladder.done) return false;
   return !!s.tabsOpenedAt || s.doneLog.length >= PLAN_FOCUS_STEPS;
+}
+
+// ─────────────────── one layer at a time, the first session ─────────────────
+//
+// Walk fix round 2 (2026-11-26): at B's 7th solve the 6-solve Pro modal, an
+// achievement toast with its share card and the "What held you back?" survey
+// opened at once; from the first plan step on the archetype card and an
+// achievement toast showed together. For arms B and D, the WHOLE first
+// session runs one queue:
+//   - priority: the Pro / plan_end ask > save / sign-up > achievement >
+//     archetype (the Skillmap card) > survey;
+//   - at most one layer per solve: the first granted shows, everything else
+//     that solve raises is dropped (state cleared), never stacked or queued
+//     for later;
+//   - a toast never sits on a modal; the exit survey never shows;
+//   - the solve's asks land 1.5–1.8 s after it, so the solve's slot waits
+//     PATH_LAYER_SETTLE_MS before it grants anything but the Pro ask;
+//   - the Pro ask is never dropped (it is the money ask, and the quota wall is
+//     a gate), nor is a modal the person opened themselves: either takes the
+//     slot whenever it opens, and whatever else is up is dropped.
+// A new challenge open starts a fresh slot. On B's ladder the achievement /
+// archetype layers are held (neither shown nor dropped) and compete at the
+// ladder's end.
+
+/** The session gap — the one `second_session_7d` and the feedback prompts use. */
+export const PATH_SESSION_GAP_MS = SESSION_GAP_MS;
+/** The layers, by tier, highest first. */
+export const PATH_LAYER_TIERS = Object.freeze([
+  // The Pro / plan_end ask, and a modal the person opened themselves (Save
+  // Progress, the profile's save, the account after a purchase): never dropped.
+  Object.freeze(['pro_modal', 'user_modal']),
+  // The automatic save / sign-up asks (and the intent question, an ask too).
+  Object.freeze(['signup_prompt', 'soft_email', 'intent_ask']),
+  Object.freeze(['achievement', 'level_up', 'milestone_toast', 'milestone_share', 'streak_card']),
+  Object.freeze(['radar_pop']),
+  Object.freeze(['feedback_prompt']),
+]);
+export const PATH_LAYER_ORDER = Object.freeze(PATH_LAYER_TIERS.flat());
+/**
+ * The sign-up prompt's reasons that are the person's own doing (Save
+ * Progress, the profile's save, the account after a purchase, the tutor's
+ * guest limit on a question they asked): a `user_modal`, never dropped.
+ * Every other reason is an automatic ask (`signup_prompt`).
+ */
+export const PATH_USER_SIGNUP_REASONS = Object.freeze(['banner', 'profile', 'pro_purchase', 'ai_limit']);
+/** Held, not shown and not dropped, while B's ladder runs. */
+export const PATH_LAYER_HELD_ON_LADDER = Object.freeze([...PATH_LAYER_TIERS[2], ...PATH_LAYER_TIERS[3]]);
+/** Never dropped: when one is up it is the layer, and the rest are dropped. */
+export const PATH_LAYER_KEEP = Object.freeze([...PATH_LAYER_TIERS[0]]);
+/** Never in the first session. */
+export const PATH_LAYER_NEVER = Object.freeze([...PATH_LAYER_TIERS[4]]);
+/** After a solve, nothing but the Pro ask is granted before this (the asks fire at 1.5–1.8 s). */
+export const PATH_LAYER_SETTLE_MS = 2400;
+
+/** A fresh slot: at a solve (`settle`) or at a challenge open (`open`). */
+export function pathLayerSlot(phase = 'open') {
+  return { phase: phase === 'settle' ? 'settle' : 'open', granted: null, consumed: false };
+}
+
+const layerRank = (id) => PATH_LAYER_ORDER.indexOf(id);
+
+/**
+ * The one layer to render now, the layers to drop, and the slot after.
+ *   active      — ids of the layers whose state is set
+ *   slot        — pathLayerSlot(...) as updated by earlier calls
+ *   holdExtras  — B's ladder: achievement / archetype layers wait
+ */
+export function pathLayerDecide({ active = [], slot = null, holdExtras = false } = {}) {
+  const s = slot && typeof slot === 'object' ? slot : pathLayerSlot('open');
+  const known = [...new Set(active)].filter(id => layerRank(id) >= 0).sort((a, b) => layerRank(a) - layerRank(b));
+  const drop = known.filter(id => PATH_LAYER_NEVER.includes(id));
+  const live = known.filter(id => !PATH_LAYER_NEVER.includes(id) && !(holdExtras && PATH_LAYER_HELD_ON_LADDER.includes(id)));
+  const keep = live.find(id => PATH_LAYER_KEEP.includes(id));
+  if (keep) {
+    return { show: keep, drop: [...drop, ...live.filter(id => !PATH_LAYER_KEEP.includes(id))], slot: s.granted === keep ? s : { ...s, granted: keep } };
+  }
+  if (s.phase === 'settle') return { show: null, drop, slot: s };
+  if (s.granted) {
+    // The granted layer has closed: the slot is spent until the next solve or open.
+    const spent = s.consumed || !live.includes(s.granted);
+    const show = spent ? null : s.granted;
+    return { show, drop: [...drop, ...live.filter(id => id !== show)], slot: spent && !s.consumed ? { ...s, consumed: true } : s };
+  }
+  const top = live[0] || null;
+  return { show: top, drop: [...drop, ...live.slice(1)], slot: top ? { ...s, granted: top } : s };
+}
+
+/**
+ * Advance the first-session record at a touch (load, challenge open, submit).
+ * The first session ends at the first gap of PATH_SESSION_GAP_MS; it never
+ * comes back.
+ */
+export function pathSessionTouch(state, now) {
+  const s = normalizePathState(state);
+  if (!isNum(now) || s.firstSessionEndedAt) return s;
+  if (s.sessionLastAt && now - s.sessionLastAt > PATH_SESSION_GAP_MS) return { ...s, firstSessionEndedAt: s.sessionLastAt };
+  return { ...s, sessionLastAt: now };
+}
+
+/** Still in the arm's first session? */
+export function pathInFirstSession(state) {
+  const s = state && state.v ? state : normalizePathState(state);
+  return !s.firstSessionEndedAt;
 }
 
 // ───────────────────────────── the ladder ───────────────────────────────────

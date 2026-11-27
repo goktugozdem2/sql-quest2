@@ -615,6 +615,32 @@ src/utils/single-path.js; `tests/single-path.test.js` pins it.*
   (`all_steps`), or no free plan step left to open (`plan_end`, so the
   Practice tab is visible beside the plan-end card).
   `tournament_tabs_revealed` fires then, not at the ladder's end.
+- **One layer at a time, the whole first session** (walk fix round 2,
+  2026-11-26, arms B and D; `pathLayerDecide` in src/utils/single-path.js).
+  The re-walk found the 6-solve Pro modal, an achievement toast with its
+  share card and the "What held you back?" survey open at once at B's 7th
+  solve, and the archetype card beside an achievement toast from the first
+  plan step on. Now one queue:
+  - priority: the Pro / `plan_end` ask (and a modal the person opened
+    themselves) > the save / sign-up ask > achievement (level-up, milestone
+    toast, share bar, streak card) > the archetype (Skillmap) card > the
+    survey;
+  - at most one per solve: the first granted layer shows; everything else
+    that solve raises is dropped (cleared, `tournament_layer_dropped`), not
+    held for later. A toast never sits on a modal. A new challenge open is a
+    fresh slot;
+  - the solve's slot grants nothing but the Pro ask for 2.4 s, because the
+    asks land 1.5–1.8 s after the solve; the Pro ask is never dropped;
+  - the exit survey never asks in the first session;
+  - on B's ladder the achievement / archetype layers are held (§3.1 B2) and
+    compete with the ladder-end ask: one shows, the rest are dropped;
+  - the first session ends at the first hour away (the gap
+    `second_session_7d` and the feedback prompts use), and the queue with
+    it. After that, today's rules.
+- **One plan on screen** (walk fix round 2): once the plan line shows, the
+  Coach's own "Your {company} plan" card is hidden (`hideCoachPlan`, as D3
+  does for D). The re-walk found "Your Capital One plan" beside B's plan line
+  on the Learning Path tab once the tabs were back.
 - **Never in B's first session:** the "Take tour — 60 seconds" prompt (and,
   as before, the onboarding tour). The tour stays in the profile menu.
 - **Shown at any time:**
