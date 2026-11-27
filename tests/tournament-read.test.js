@@ -101,9 +101,9 @@ describe('tournament-read.sql — source guards', () => {
 });
 
 // ── execution ────────────────────────────────────────────────────────────────
-// The registry's start (2026-12-10) is after today in the fixture's clock, so
+// The registry's start (2026-12-12) is after today in the fixture's clock, so
 // the test moves `since` and the start dates 60 days back.
-const LAUNCH = "timestamptz '2026-12-10 00:00+00'";
+const LAUNCH = "timestamptz '2026-12-12 00:00+00'";
 const runnable = (q) => q.split(LAUNCH).join("(now() - interval '60 days')");
 const T0 = 40 * 24; // hours ago: every eligible person's t0
 const at = (hAfterT0, t0 = T0) => `now() - interval '${t0 - hAfterT0} hours'`;
