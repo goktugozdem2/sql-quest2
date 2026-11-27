@@ -22,6 +22,7 @@ import { mobileOneLayerArm } from '../src/utils/mobile-one-layer.js';
 import { runSubmitNudgeArm } from '../src/utils/run-submit-nudge.js';
 import { modalLayoutHashArm } from '../src/utils/modal-layout.js';
 import { quotaWallHashArm } from '../src/utils/quota-wall-inline.js';
+import { freeQuotaArm } from '../src/utils/free-quota-holdout.js';
 import { challengeTablePlan } from '../src/utils/challenge-datasets.js';
 import { resultsMatch } from '../src/utils/grade.js';
 
@@ -69,6 +70,8 @@ describe('the arm — 50/50 by aid, murmur-finalised, independent of every other
     runSubmitNudgeArm: (a) => runSubmitNudgeArm(a) === 'nudge',
     modalLayoutHashArm: (a) => modalLayoutHashArm(a) === 'plans_first',
     quotaWallHashArm: (a) => quotaWallHashArm(a) === 'inline',
+    // #384, the free-quota holdout, armed on the same new people (A1 on #384).
+    freeQuotaArm: (a) => freeQuotaArm(a) === 'holdout',
   };
   for (const [name, isFirst] of Object.entries(others)) {
     it(`is independent of ${name} (agreement within 50 ± 3%)`, () => {
@@ -142,7 +145,11 @@ describe('the starter text', () => {
   });
 });
 
-describe('the starter never reveals an answer — over the live bank', () => {
+// These run real SQLite over every row of the data; at vitest's default 5 s they
+// time out when the machine is loaded (fleet lanes in parallel, load ~18-20).
+// A per-block timeout, not a global one: only the DB-heavy blocks get the room.
+const DB_HEAVY = { timeout: 30_000 };
+describe('the starter never reveals an answer — over the live bank', DB_HEAVY, () => {
   it('the bank is loaded (core, sector, Debug)', () => {
     expect(sb.window.challengesData.length).toBeGreaterThan(300);
     expect((sb.window.sectorChallengesData || []).length).toBeGreaterThan(50);
@@ -233,8 +240,8 @@ describe('the app wires it the way the test reads', () => {
   const submit = sliceFrom('const submitChallenge = () => {', 'const isFirstTry = !solvedChallenges.has(currentChallenge.id);');
   const firstRun = sliceFrom('const markChallengeFirstRun = (via, extra = {}) => {', '\n  };');
 
-  it('the flag ships dark', () => {
-    expect(flags).toMatch(/\n\s*runnableStarter: false,\n/);
+  it('the flag is an explicit boolean (ON at 50/50 from the flip, orchestrator row 2026-11-26)', () => {
+    expect(flags).toMatch(/\n\s*runnableStarter: (true|false),\n/);
   });
   it('the starter goes in only in the empty-editor branch, after #91 and Debug, as real text', () => {
     const i91 = open.indexOf('challenge.id === 91');
@@ -244,7 +251,8 @@ describe('the app wires it the way the test reads', () => {
     expect(iDebug).toBeGreaterThan(-1);
     expect(iRs).toBeGreaterThan(i91);
     expect(iRs).toBeGreaterThan(iDebug);
-    expect(open).toMatch(/if \(rs\.prefill\) \{\s*const text = runnableStarterText\(mainTable, lang\);\s*setChallengeRunnableStarter\(text\);\s*setChallengeQuery\(text\);/);
+    // Tournament arm B (2026-11-26) supersedes the test and runs the starter arm.
+    expect(open).toMatch(/if \(rs\.prefill \|\| pathUi\.starterPrefill\) \{\s*const text = runnableStarterText\(mainTable, lang\);\s*setChallengeRunnableStarter\(text\);\s*setChallengeQuery\(text\);/);
     // Control keeps the placeholder: the hint is set in both arms.
     expect(open).toMatch(/setChallengeStarterHint\(starterHintFor\(mainTable\)\);\s*\/\/ `runnableStarter`/);
     // Reset on every open.

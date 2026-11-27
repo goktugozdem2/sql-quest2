@@ -995,6 +995,22 @@ URLs filled, brand icon is the bolt, brand colour #FFE34D.
   metadata. The Stripe endpoint must subscribe to `setup_intent.setup_failed`
   (dashboard, founder).
 
+### The first-session tournament — the frame (2026-11-26, dark)
+
+- Plan `docs/plans/first-session-tournament-2026-11-26.md`; metric
+  `first_session_tournament`. New visitors only, split by aid over the
+  ACTIVE arms of `src/data/tournament-arms.js` (the one registry: app,
+  tests and `scripts/tournament-read.sql` read it). Enrolment runs at
+  module load right after the holdout's (`TOURNAMENT_RECORD`,
+  `sqlquest_tournament_v1`), reusing `hasPriorAppUse`; a stored record
+  always wins. `tournament_assigned` once; `tArm` / `tArmV` on every row.
+- Arm UI reads `tournamentBehaviourNow()` (above the early returns). An arm
+  runs A's behaviour until its registry entry says `built: true`; only then
+  does `tournamentSupersedesNow()` take it out of firstScreen,
+  companyDirect, runnableStarter and mobileRunBar. Retire an arm by status,
+  never by deleting it, and mirror any registry change in the read's
+  `tournament-registry` VALUES (`tests/tournament-read.test.js`).
+
 ### The free quota — the deep-link leak and the road back (2026-10-02)
 
 - A `/app/?challenge=` link used to open the challenge 100 ms after starting
@@ -1010,6 +1026,16 @@ URLs filled, brand icon is the bolt, brand colour #FFE34D.
 - The pre-registered 10-09 rule (ledger, "the free quota"): fewer than 3
   people who met the wall then started a trial or paid by 10-09 → the quota
   moves to 20, with the founder's Go.
+- **The quota is under a 50/50 holdout (2026-11-25, founder's written go,
+  flag `freeQuotaHoldout`).** A browser whose first app open falls in
+  2026-11-28 → 12-25 is split by `freeQuotaArm(aid)`; the `holdout` arm reads
+  `freeQuota` OFF (no wall, no counter, the pre-09-26 in-app wording),
+  returning browsers and pre-window accounts keep the quota. Every
+  `freeQuota` read in app.jsx goes through `freeQuotaOn()`, never a bare
+  `ftbFlag('freeQuota')` (test-bound); the static pages keep today's wording.
+  Arm-balance check 2026-12-04, halfway money read 12-12, read 2027-01-02
+  (ledger "the free-quota holdout", metric `free_quota_holdout`).
+  src/utils/free-quota-holdout.js.
 
 ### Testing
 - **Rule (founder, 2026-09-25): a new test is proven by at least one

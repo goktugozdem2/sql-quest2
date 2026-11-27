@@ -22,11 +22,17 @@ import path from 'node:path';
 const ROOT = path.resolve(import.meta.dirname, '..');
 const app = fs.readFileSync(path.join(ROOT, 'src/app.jsx'), 'utf8');
 const flags = fs.readFileSync(path.join(ROOT, 'src/data/feature-flags.js'), 'utf8');
-const ladder = app.slice(app.indexOf('// Guest conversion ladder'), app.indexOf('// Satisfy-first-then-ask'));
+// The rungs live in `guestSaveAskAfterSolve` since 2026-11-26 (tournament
+// arm B holds them on its ladder and asks at most one when it ends); the
+// solve path calls it. Read both, so every guard below still sees the rungs.
+const askHelper = app.slice(app.indexOf('const guestSaveAskAfterSolve = ('), app.indexOf('return false;\n  };', app.indexOf('const guestSaveAskAfterSolve = (')));
+const ladder = app.slice(app.indexOf('// Guest conversion ladder'), app.indexOf('// Satisfy-first-then-ask')) + askHelper;
 
 describe('the ladder counts solves, not this session', () => {
   it('reads the real solved total', () => {
     expect(ladder).toContain('const solvedTotal = newSolved.size');
+    expect(ladder).toContain('guestSaveAskAfterSolve(solvedTotal)');
+    expect(askHelper.length).toBeGreaterThan(500);
   });
 
   it('no longer derives a rung from the session counter', () => {

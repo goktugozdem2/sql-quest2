@@ -168,7 +168,7 @@ describe('the app wiring (source guards)', () => {
   });
   it('fires mobile_run_bar_assigned {arm} only on assignment, after storing the arm', () => {
     const a = app.indexOf('const decision = mobileRunBarDecision({');
-    const block = app.slice(a, app.indexOf('setMobileRunBarShown(decision.show);', a));
+    const block = app.slice(a, app.indexOf('setMobileRunBarShown(decision.show', a));
     expect(block).toMatch(/if \(decision\.assign\) \{[\s\S]*MOBILE_RUN_BAR_STORAGE_KEY[\s\S]*trackActivationEvent\('mobile_run_bar_assigned', \{ arm: decision\.arm/);
     expect(app.match(/'mobile_run_bar_assigned'/g)).toHaveLength(1);
     expect(MOBILE_RUN_BAR_STORAGE_KEY).toBe('sqlquest_mobile_run_bar_v1');
@@ -339,7 +339,7 @@ describe('iOS walk 2026-11-24 — focus zoom, the radar toast, landscape', () =>
 
   it('the app re-decides on rotation with the live viewport, above the early returns', () => {
     const a = app.indexOf('const decision = mobileRunBarDecision({');
-    const effectEnd = app.indexOf('}, [', app.indexOf('setMobileRunBarShown(decision.show);', a));
+    const effectEnd = app.indexOf('}, [', app.indexOf('setMobileRunBarShown(decision.show', a));
     const deps = app.slice(effectEnd, app.indexOf(']);', effectEnd));
     expect(app.slice(a, effectEnd)).toContain('shortViewport: runBarShortViewport,');
     expect(deps).toContain('runBarShortViewport');
