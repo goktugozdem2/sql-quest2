@@ -841,6 +841,7 @@ of the verifier and must never be rounded to `FLAT`.
 ### the Wise page's first screen: the right first question, readiness, the Pro line, one "debug this query" (C5)
 
 - **Claimed** 2026-11-25 · **Shipped** on merge (static page, no flag) · **Read** 2026-12-23 (28 d) and 2027-01-20 (56 d).
+- **Amended 2026-11-27 (PR `fix/first-screens-in-generator`, live QA note B):** the block moved from after the hero section into the hero, directly after the primary CTA row (the yellow button did not move). Block top, headless, before → after: 1366×800 807 → 708; 375×812 1,051 → 893 (still below the fold: the hero's own CTA row ends at ~800 on a phone). Read clicks on the block's links (`cta_first_*`) from the merge date as a new series; the 28-day read spans the move, so state it as a confound. The block itself is now written by the generator from `FIRST_SCREENS.wise`; the hand-written copy would have been deleted by the next generator run.
 - **Change** `/wise-sql-interview/` gets a "Start here" block right under the
   hero (hand-written page; same `company-first-screen` markers and click names
   as the Monzo block in PR #295): **Start with** Card Spend by Country (#285,
@@ -949,6 +950,7 @@ of the verifier and must never be rounded to `FLAT`.
 ### the Monzo page's first screen: question 1, readiness, the Pro line, one "debug this query" (C5)
 
 - **Claimed** 2026-11-24 · **Shipped** on merge (static page, no flag) · **Read** 2026-12-22 (28 d) and 2027-01-19 (56 d).
+- **Amended 2026-11-27 (PR `fix/first-screens-in-generator`, live QA note B):** the block moved from after the hero section into the hero, directly after the primary CTA row (the yellow button did not move). Block top, headless, before → after: 1366×800 515 → 468; 375×812 808 → 744. Read clicks on the block's links (`cta_first_*`) from the merge date as a new series; the 28-day read spans the move, so state it as a confound.
 - **Change** `/monzo-sql-interview/` gets a "Start here" block right under the
   hero (`scripts/company-first-screen.mjs`, run by the company generator):
   question 1 straight into the app (challenge 176, the page's own
@@ -1004,6 +1006,7 @@ of the verifier and must never be rounded to `FLAT`.
 ### the Amazon page's first screen and current sources: "Start with", the set, readiness, the Pro mock, one "debug this query" (C5)
 
 - **Claimed** 2026-11-26 · **Shipped** on merge (static page, no flag) · **Read** 2026-12-24 (28 d) and 2027-01-21 (56 d).
+- **Amended 2026-11-27 (PR `fix/first-screens-in-generator`, live QA note B):** the block moved from after the hero section into the hero, directly after the primary CTA row (the yellow button did not move). Block top, headless, before → after: 1366×800 780 → 681; 375×812 991 → 833 (still below the fold on a phone). Read clicks on the block's links (`cta_first_*`) from the merge date as a new series; the 28-day read spans the move, so state it as a confound.
 - **Change** `/amazon-sql-interview/` gets a "Start here" block right under
   the hero, through the company generator (`scripts/company-first-screen.mjs`,
   now able to serve an older page from its `SOURCED_FORMATS` entry):
@@ -1910,6 +1913,7 @@ of the verifier and must never be rounded to `FLAT`.
 ### company pages name question 1 in the hero (M-02)
 
 - **Claimed** 2026-11-22 · **Shipped** on merge (static pages; revert by setting `HERO_NAMES_FIRST_QUESTION = false` in scripts/build-company-pages.mjs and rebuilding, or reverting the commit) · **Read** 2026-12-20.
+- **Confound added 2026-11-27:** on the Wise, Amazon and Monzo pages the first-screen block (more `/app/` links) moved into the hero, right under this button, from the merge of `fix/first-screens-in-generator`. The button's position and words are unchanged; at the 12-20 read, report `company_page_door` with and without those three pages.
 - **Change** the hero's primary button on 32 company pages (all but Capital One, whose hero already opens challenge 275) reads "Solve <Company> question 1 now: <title> — free, no sign-up". The title is the question the app's company banner opens for a cold visitor (`companyFirstQuestion`, src/utils/company-first-question.js: curriculum order, Hard locks, the company set gate). The link is unchanged; the 23 older pages' hero button gains `data-track="cta_hero_primary"`. Guards tests/company-hero-cta.test.js.
 - **Why** (docs/plans/monetization-ideas-2026-11-22.md, 1f): company arrivals are the best money door (2.3% trial-or-paid per arrival vs 0.5% for /sql-exercises/), but 81% of company-page landing people never open the app.
 - **Metric** `company_page_door`, page → app step (metrics.md): landing people on `*-sql-interview` pages → `app_opened` (same aid) within 1 h.
