@@ -5729,3 +5729,134 @@ group by 1;
 **Baseline (2026-11-25, all time, record):** the two goals do not exist.
 Comparison: Analyst Day-One 15 of 64 holders with ≥ 1 step; Fundamentals 9
 of 85; Interview Prep 1 of 67. **Decision rule:** the plan's §8, U3/U4.
+
+## `first_session_tournament`
+
+The first-session tournament's decision metric. Plan:
+`docs/plans/first-session-tournament-2026-11-26.md` §5. Defined 2026-11-26,
+before any code (fleet README rule 6b). The read query is
+`scripts/tournament-read.sql`, shipped in the tournament's PR 1, before any
+arm changes behaviour.
+
+- **Population.** People with a `tournament_assigned` row, one per person
+  (the first, by `created_at`), by `arm` **and** `armVersion`. Never pool
+  across versions, or across a change of `TOURNAMENT_SLOTS`.
+  - Person = `coalesce(((metadata #>> '{}')::jsonb)->>'aid', username)`.
+  - Humans only: the exclusion block of `scripts/scorecard-weekly.sql`
+    (#387), every rule, applied to the person's rows at any time.
+  - t0 = the assignment row's `created_at`. A person counts only when
+    t0 + 7 days ≤ the read time (eligible).
+  - Every client row of an enrolled browser carries `tArm` / `tArmV`. Use
+    them only to cross-check the assignment row, never in place of it.
+- **Decision metric.** The share of eligible people with **6 or more
+  distinct `challengeId`s** on `challenge_solved` rows in [t0, t0 + 7 d].
+  Mock answers do not count.
+  - Baseline 11.8%: new human app openers 2026-10-05 → 11-18, 108 of 915;
+    desktop 13.0%, mobile 0 of 84.
+- **Secondary (reported, never decisive).**
+  - **quota wall in 7 d:** a `content_lock_reached` with `wall =
+    'free_quota'` or a `pro_modal_shown` with `reason = 'free_quota'` in
+    [t0, t0 + 7 d]. Read only where the person's `fqArm` is not `holdout`.
+    Baseline 5.2%.
+  - **plan click in 7 d:** `pro_plan_clicked` or `pro_checkout_clicked`.
+    Baseline 1.5%.
+  - **trial / paid in 30 d:** `reason = 'stripe_webhook'` rows
+    `pro_trial_started` / `pro_purchase_completed`, joined through any
+    non-guest username the person's rows carry. Each webhook username is
+    credited to one person (the earliest t0), as in
+    `docs/reads/funnel-by-segment-2026-11-26.md`. Trials and payments are
+    separate columns, never summed into "revenue". Baseline 4 + 3 in 915.
+- **Guardrails.**
+  - **`first_solve_10m`:** a `challenge_solved` in [t0, t0 + 10 min].
+    Baseline 23.3%.
+  - **`second_session_7d`:** any non-landing row on a later UTC day than
+    t0, within 7 days. Baseline 16.0%.
+- **Splits on every read:**
+  - **segment.** Interview-target is the entry version of #409's segment A:
+    the first `app_opened`'s `arrivalSrc` is a company page
+    (`*-sql-interview`), `company:<Name>`, `blog-capital-one` or
+    `readiness`. Everyone else is the other segment.
+  - **device band** (`viewport` prefix on the assignment row).
+  - **`fqArm`** (2×2 with the freeQuota holdout).
+- **Posteriors.** Beta(1 + successes, 1 + failures) per arm, uniform prior,
+  20,000 Monte-Carlo draws, computed from the query's per-arm counts:
+  P(worst among challengers) and P(better than control). The rules,
+  written before the data, are in the plan §5.5. In short:
+  - nothing is decided until every challenger has 150 eligible;
+  - eliminate at P(worst) ≥ 0.80, or the lowest posterior mean 6 weeks
+    after a challenger's start;
+  - promote at P(better than control) ≥ 0.95 (two consecutive Friday reads
+    if the orchestrator accepts the amendment);
+  - harm stop: `first_solve_10m` ≥ 10 points below control at 100 per arm;
+  - control is never eliminated.
+- **Report n per arm, always.**
+
+Core SQL (the decision metric; the read file adds the secondaries, the
+guardrails and the splits). `human` is the `person` CTE of
+scorecard-weekly.sql with `excl IS NULL`:
+
+```sql
+WITH evp AS (
+  SELECT e.event, e.reason, e.username, e.created_at, x.m,
+         COALESCE(x.m->>'aid', e.username) AS pid
+  FROM public.pro_events e
+  CROSS JOIN LATERAL (SELECT (e.metadata #>> '{}')::jsonb AS m) x
+),
+-- facts / person: copied verbatim from scripts/scorecard-weekly.sql base:begin..base:end
+asg AS (
+  SELECT DISTINCT ON (e.pid) e.pid, e.created_at AS t0,
+         e.m->>'arm' AS arm, e.m->>'armVersion' AS v, e.m->>'arrivalSrc' AS door
+  FROM evp e JOIN person p ON p.pid = e.pid AND p.excl IS NULL
+  WHERE e.event = 'tournament_assigned'
+  ORDER BY e.pid, e.created_at
+)
+SELECT a.arm, a.v,
+  count(*) AS eligible,
+  count(*) FILTER (WHERE s.n >= 6) AS six_in_7d
+FROM asg a
+LEFT JOIN LATERAL (
+  SELECT count(DISTINCT e.m->>'challengeId') AS n
+  FROM evp e
+  WHERE e.pid = a.pid AND e.event = 'challenge_solved'
+    AND e.created_at >= a.t0 AND e.created_at <= a.t0 + interval '7 days'
+) s ON true
+WHERE a.t0 + interval '7 days' <= now()
+GROUP BY 1, 2 ORDER BY 1, 2;
+```
+
+## `single_path_split`
+
+Arm B's diagnostics inside the tournament (`B_single_path`; plan §3).
+**It never decides anything**: `first_session_tournament` decides. It
+explains why arm B won or lost, and it re-measures the ladder's
+thresholds. Defined 2026-11-26, before the code.
+
+- **Population.** People whose `tournament_assigned.arm =
+  'B_single_path'`, by `armVersion`, humans only (as above). t0 = the
+  assignment.
+- **Ladder funnel:**
+  - share with `ladder_question_resolved` for q = 1, 2, 3, 4;
+  - share with `placement_completed {source: 'ladder'}` (the ladder
+    ended);
+  - the median minutes from t0 to the ladder's end.
+- **Tier mix:** `placement_completed.levelId` among ladder-enders. Compare
+  with `placement_mix`'s quiz tiers.
+- **Stuck rate per rung:**
+  - share of `ladder_question_resolved` with `outcome = 'stuck'`, by
+    `rung` and `challengeId`;
+  - `path_stepdown_clicked / path_stepdown_shown`, by `trigger`.
+- **Threshold check:** the p50 / p75 of `secs` for `solved` + `fast`
+  outcomes per `challengeId`, against T0 = 150 s, T1 = 300 s, T2 = 420 s.
+  Re-set the thresholds once (with a version bump) if a rung's `fast`
+  share is outside 25–60%.
+- **Plan uptake:** of people with `path_plan_built`:
+  - share with ≥ 1 `path_next_clicked`;
+  - median `k` at 7 days;
+  - share reaching `path_plan_end_shown`.
+  Split by `goalId` and by whether `fillN > 0`.
+- **Tabs:** `path_tabs_revealed` reach. Of people revealed, the share whose
+  next challenge open after the reveal came from `path_next_clicked` (the
+  plan) rather than the list.
+- **Splits:** segment (interview-target vs other), device band, `fqArm`.
+- **Report n always.** At ~8 arm-B people a day, rung-level rows under 20
+  are directional only.

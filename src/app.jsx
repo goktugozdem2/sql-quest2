@@ -70,6 +70,7 @@ import { SQLITE_TUTOR_RULES, mistakeStudyContext, buildMistakeContextBlock, mist
 import { buildUserSkill, pickNextBySkill, toCanonicalSkill, isLegacyMasteryRecord } from './utils/user-skill.js';
 import { classifyErrorPatterns, recordErrorPatterns, describeErrorPatterns, patternCount, emptyErrorStore } from './utils/error-patterns.js';
 import { isDebugChallenge, debugQuestionsOn, brokenQueryFor, debugEditorValue, emptyDebugStats, recordDebugSpot, recordDebugFix, debugStatsSummary, debugBugLine, withDebugLock, proModalReasonLabel, debugLockedAs } from './utils/debug-questions.js';
+import { coachDebugDoorOn, coachDebugDoorModel } from './utils/coach-debug-door.js';
 import { nudgeAllowed, nudgeHeaders, nudgeUsername, personalNudgeLines } from './utils/live-nudge.js';
 import { HIRED_INTENT, isHired, ticketLocked, shouldAskOffer } from './utils/post-hire.js';
 import { gradeTicket, ticketFeedback } from './utils/ticket-grade.js';
@@ -81,6 +82,7 @@ import { softGateReason, paywallMomentCopy, SOFT_GATE_ACTION_LABEL, SOFT_GATE_TO
 import { botSignals, botDecision } from './utils/bot-signals.js';
 import { bootTiming } from './utils/boot-timing.js';
 import { starterHintFor, starterSqlFromHint } from './utils/starter-query.js';
+import { RUNNABLE_STARTER_KEY, RUNNABLE_STARTER_TEST_ID, isDesktopScreen, isEmptyEditorOpen, normalizeRunnableStarterRecord, runnableStarterDecision, runnableStarterText, isUntouchedStarter } from './utils/runnable-starter.js';
 import { dueRetrievals, pickRetrievalChallenge, recordRetrieval, dailyQuota, MAX_DUE_SHOWN } from './utils/spaced-retrieval.js';
 import { computeRecap, shouldShowRecap } from './utils/session-recap.js';
 import { getAnonId } from './utils/anon-id.js';
@@ -2347,10 +2349,15 @@ const ROADMAP_LESSONS_BY_ID = {
 // (debugQuestions): the gutter shows line numbers and a tap on one is the
 // optional "spot" step (onGutterClick receives the 1-based line); markLines
 // tints the spotted line. Every other editor passes none of them.
-const SQLEditor = ({ value, onChange, onKeyDown, placeholder, height = '10rem', disabled = false, className = '', lineNumbers = false, onGutterClick = null, markLines = null }) => {
+const SQLEditor = ({ value, onChange, onKeyDown, placeholder, height = '10rem', disabled = false, className = '', lineNumbers = false, onGutterClick = null, markLines = null, selectAllWhen = null }) => {
   const containerRef = useRef(null);
   const editorRef = useRef(null);
   const onChangeRef = useRef(onChange);
+  // `runnableStarter` (2026-11-26): while the editor holds exactly this text
+  // (the starter as placed), focusing it selects it all, so the first
+  // keystroke replaces the starter instead of writing beside it.
+  const selectAllWhenRef = useRef(selectAllWhen);
+  selectAllWhenRef.current = selectAllWhen;
   const onKeyDownRef = useRef(onKeyDown);
   const onGutterClickRef = useRef(onGutterClick);
   const isExternalUpdate = useRef(false);
@@ -2386,6 +2393,13 @@ const SQLEditor = ({ value, onChange, onKeyDown, placeholder, height = '10rem', 
 
     cm.on('keydown', (cm, e) => {
       if (onKeyDownRef.current) onKeyDownRef.current(e);
+    });
+
+    cm.on('focus', () => {
+      const t = selectAllWhenRef.current;
+      if (!t || cm.getValue() !== t) return;
+      // After CodeMirror's own mousedown placed the cursor.
+      setTimeout(() => { if (cm.getValue() === t) cm.execCommand('selectAll'); }, 0);
     });
 
     cm.on('gutterClick', (cm, line) => {
@@ -3251,6 +3265,9 @@ const challenges = window.challengesData || [];
 // The Debug items join `challenges` in src/data/debug-challenges.js only when
 // this is true; it also gates the Practice chip and the stats card.
 const DEBUG_QUESTIONS_ON = debugQuestionsOn(window.FEATURE_FLAGS);
+// The Coach's Debug door (orchestrator 2026-11-25): one card under the
+// next-step card. src/utils/coach-debug-door.js; ledger "the Coach's Debug door".
+const COACH_DEBUG_DOOR_ON = coachDebugDoorOn(window.FEATURE_FLAGS);
 
 // Merge company tags (id -> [companies]) from challenge-companies.js onto each challenge.
 // Single source of truth for "which companies ask this pattern" across the app.
@@ -8322,6 +8339,10 @@ function SQLQuest() {
   const [challengeExpected, setChallengeExpected] = useState({ columns: [], rows: [] });
   const [challengeStatus, setChallengeStatus] = useState(null);
   const [challengeStarterHint, setChallengeStarterHint] = useState(null);
+  // `runnableStarter` (desktop A/B, 2026-11-26, src/utils/runnable-starter.js):
+  // the exact text the `starter` arm put in the editor on this open, or null.
+  // Declared here, far above the showAuth / dbReady returns.
+  const [challengeRunnableStarter, setChallengeRunnableStarter] = useState(null);
   // A deep link to a locked Hard swapped for a free Hard preview (2026-11-22,
   // src/utils/paid-wall.js previewSwapMatch): the note above the problem.
   const [deepLinkSwapNote, setDeepLinkSwapNote] = useState(null);
@@ -19537,7 +19558,7 @@ CRITICAL RULES:
         <meta charset="UTF-8">
         <meta property="og:title" content="My SQL Quest Progress">
         <meta property="og:description" content="I've completed ${completedDays}/30 days of the SQL Master Challenge!">
-        <meta property="og:image" content="https://sql-quest2.vercel.app/og-progress.png">
+        <meta property="og:image" content="https://sqlquest.app/og-progress.png">
         <style>
           @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
           * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -19684,7 +19705,7 @@ CRITICAL RULES:
           
           <div class="footer">
             <div class="cta">Join me in learning SQL! 🚀</div>
-            <div class="url">sql-quest2.vercel.app</div>
+            <div class="url">sqlquest.app</div>
           </div>
         </div>
       </body>
@@ -20144,7 +20165,7 @@ CRITICAL RULES:
           
           <div class="footer">
             <div class="cta">Join me in learning SQL! 🚀</div>
-            <div class="hashtags">sql-quest2.vercel.app | #SQLQuest #${streak}DayStreak</div>
+            <div class="hashtags">sqlquest.app | #SQLQuest #${streak}DayStreak</div>
           </div>
         </div>
       </body>
@@ -24159,6 +24180,36 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
   // it; every existing call site is unchanged and sends no key, which the read
   // treats as organic. No new event — a separate hard_preview_opened would
   // duplicate challenge_opened (plan §Measurement).
+  // `runnableStarter` (2026-11-26): decide the arm at an empty-editor open.
+  // Assigns once per browser on a desktop screen and fires
+  // `runnable_starter_assigned`; returns { arm, assign, prefill }.
+  const runnableStarterOpen = (challenge, savedQuery) => {
+    let desktop = false;
+    try {
+      desktop = isDesktopScreen({ width: window.innerWidth, finePointer: !!window.matchMedia?.('(pointer: fine)')?.matches });
+    } catch (_) { desktop = false; }
+    let stored = null;
+    try { stored = JSON.parse(localStorage.getItem(RUNNABLE_STARTER_KEY) || 'null'); } catch (_) { stored = null; }
+    const decision = runnableStarterDecision({
+      flagOn: ftbFlag('runnableStarter'),
+      desktop,
+      emptyOpen: isEmptyEditorOpen({ challenge, savedQuery, solvedCount: solvedChallenges.size, debugItem: false }),
+      stored,
+      aid: getAnonId(),
+    });
+    if (decision.assign) {
+      try { localStorage.setItem(RUNNABLE_STARTER_KEY, JSON.stringify({ arm: decision.arm, at: Date.now() })); } catch (_) { /* ignore */ }
+      let viewport = null;
+      try { viewport = `desktop:${window.innerWidth}x${window.innerHeight}`; } catch (_) { viewport = null; }
+      trackActivationEvent('runnable_starter_assigned', { arm: decision.arm, test: RUNNABLE_STARTER_TEST_ID, challengeId: challenge.id, viewport });
+    }
+    return decision;
+  };
+  // The person's runnableStarter arm while the flag is on, else null.
+  const runnableStarterArmNow = () => {
+    if (!ftbFlag('runnableStarter')) return null;
+    try { return normalizeRunnableStarterRecord(JSON.parse(localStorage.getItem(RUNNABLE_STARTER_KEY) || 'null')).arm; } catch (_) { return null; }
+  };
   // ── challenge_left (2026-11-24) ─────────────────────────────────────────
   // One event per challenge open, sent when the person leaves it without a
   // run or a submit: back to the list or another app tab (`navigate`), the
@@ -24421,6 +24472,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     // For new users with no saved query, show a starter hint
     const savedQuery = challengeQueries[challenge.id] || '';
     setChallengeStarterHint(null);
+    setChallengeRunnableStarter(null);
     if (!(opts && opts.openedFrom === 'deeplink_swap')) setDeepLinkSwapNote(null);
     // A Debug item opens on the AI's query — only when no draft is saved —
     // and never takes the first-run starter branches below.
@@ -24435,7 +24487,19 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
       // it (founder QA 2026-09-19, item 21). It disappears on the first key.
       const mainTable = challenge.tables?.[0] || 'table_name';
       setChallengeStarterHint(starterHintFor(mainTable));
-      setChallengeQuery('');
+      // `runnableStarter` (desktop A/B, 2026-11-26): in the `starter` arm the
+      // editor opens on real, runnable text — a comment line, then
+      // SELECT * FROM <first table> LIMIT 5; — instead of the grey
+      // placeholder. The arm is assigned once, at the first such open on a
+      // desktop screen; control keeps the placeholder above.
+      const rs = runnableStarterOpen(challenge, savedQuery);
+      if (rs.prefill) {
+        const text = runnableStarterText(mainTable, lang);
+        setChallengeRunnableStarter(text);
+        setChallengeQuery(text);
+      } else {
+        setChallengeQuery('');
+      }
     } else {
       setChallengeQuery(savedQuery);
     }
@@ -25444,14 +25508,17 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
   if (currentChallenge && challengeOpenedAtRef.current.id !== currentChallenge.id) {
     challengeOpenedAtRef.current = { id: currentChallenge.id, at: Date.now() };
   }
-  const markChallengeFirstRun = (via) => {
+  // `starterArm` (2026-11-26): the person's `runnableStarter` arm, null when
+  // not in the test. `starterUntouched`: a Submit of the starter text exactly
+  // as placed (the `starter` arm), graded wrong — metric runnable_starter_split.
+  const markChallengeFirstRun = (via, extra = {}) => {
     const id = currentChallenge?.id;
     // A run or a submit on this open: challenge_left never fires for it.
     if (chLeftRef.current && id != null && String(chLeftRef.current.challengeId) === String(id)) chLeftNote('ran');
     if (id == null || firstRunSentRef.current.has(id)) return;
     firstRunSentRef.current.add(id);
     const at = challengeOpenedAtRef.current.id === id ? challengeOpenedAtRef.current.at : 0;
-    trackActivationEvent('challenge_first_run', { challengeId: id, via, secondsOpen: at ? Math.round((Date.now() - at) / 1000) : null });
+    trackActivationEvent('challenge_first_run', { challengeId: id, via, secondsOpen: at ? Math.round((Date.now() - at) / 1000) : null, starterArm: runnableStarterArmNow(), ...extra });
   };
 
   // ── Feedback capture points 2-4 (E2, 2026-11-22) ─────────────────────────
@@ -25595,6 +25662,10 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
       sql = starter;
       via = 'starter';
       setChallengeQuery(starter);
+    } else if (isUntouchedStarter(sql, challengeRunnableStarter)) {
+      // The `starter` arm's text, run as placed: the same act as Run on the
+      // control arm's placeholder, so the same `via`.
+      via = 'starter';
     }
     markChallengeFirstRun(via);
     // Track execution time so user gets "Ran in Xms" confirmation.
@@ -25740,7 +25811,10 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
     if (db && currentChallenge && !challengeQuery.trim() && starterSqlFromHint(challengeStarterHint)) { runChallengeQuery(); return; }
     if (!db || !challengeQuery.trim() || !currentChallenge) return;
     setRunSubmitNudge(null);
-    markChallengeFirstRun('submit');
+    // The `starter` arm's text submitted as placed is graded like any query —
+    // and can never be a solve (forced wrong below).
+    const starterUntouched = isUntouchedStarter(challengeQuery, challengeRunnableStarter);
+    markChallengeFirstRun('submit', starterUntouched ? { starterUntouched: true } : {});
     setChallengeSubmitAt(Date.now());
     try {
       // For a SELECT challenge, running the user's query then the solution on
@@ -25782,6 +25856,9 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
           expectedResultData.length ? expectedResultData[0].columns : []
         );
       }
+      // `runnableStarter`: the untouched starter is never a solve, whatever
+      // the rows (tests/runnable-starter.test.js runs it over the bank).
+      if (starterUntouched) isSuccess = false;
       const isFirstTry = !solvedChallenges.has(currentChallenge.id);
       
       // Track this attempt. `topics` fans credit across every skill the
@@ -35785,7 +35862,7 @@ RULES:
             <div
               data-primary-learning-tabs="true"
               data-primary-learning-shell={showFoundationsFocusShell || showLessonAdjacentChallengesShell ? 'lesson-one' : 'default'}
-              className={`mb-4 grid ${showInterviewNav ? 'grid-cols-3' : 'grid-cols-2'} gap-2 rounded-xl border border-slate-700 bg-slate-950/75 p-1.5`}
+              className={`mb-4 grid ${showInterviewNav ? 'grid-cols-[repeat(3,minmax(min-content,1fr))] sm:grid-cols-3' : 'grid-cols-2'} gap-1 sm:gap-2 rounded-xl border border-slate-700 bg-slate-950/75 p-1.5`}
             >
               <button
                 type="button"
@@ -35794,13 +35871,13 @@ RULES:
                   setActiveTab('guide');
                   setCurrentChallenge(null);
                 }}
-                className={`min-h-[54px] rounded-lg px-3 py-2 text-left transition-all ${
+                className={`min-h-[54px] min-w-0 rounded-lg px-2 py-2 text-left sm:px-3 transition-all ${
                   activeTab !== 'quests' && activeTab !== 'trials'
                     ? 'border border-slate-500 bg-slate-800 text-[#F2F0EA]'
                     : 'border border-transparent bg-transparent text-slate-300 hover:border-slate-600 hover:bg-slate-900 hover:text-[#F2F0EA]'
                 }`}
               >
-                <span className="flex items-center justify-between gap-2">
+                <span className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
                   <span className="text-sm font-bold">Learning Path</span>
                   <span className="hidden rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-200 sm:inline">
                     Recommended
@@ -35817,13 +35894,13 @@ RULES:
                   setPracticeSubTab('challenges');
                   setActiveTab('quests');
                 }}
-                className={`min-h-[54px] rounded-lg px-3 py-2 text-left transition-all ${
+                className={`min-h-[54px] min-w-0 rounded-lg px-2 py-2 text-left sm:px-3 transition-all ${
                   activeTab === 'quests'
                     ? 'border border-slate-500 bg-slate-800 text-[#F2F0EA]'
                     : 'border border-transparent bg-transparent text-slate-300 hover:border-slate-600 hover:bg-slate-900 hover:text-[#F2F0EA]'
                 }`}
               >
-                <span className="flex items-center justify-between gap-2">
+                <span className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
                   <span className="text-sm font-bold">Challenges</span>
                   <span className="rounded-full border border-slate-600 bg-slate-900 px-2 py-0.5 text-[10px] font-bold text-slate-300">
                     {challenges.length}
@@ -35840,13 +35917,13 @@ RULES:
                     setCurrentChallenge(null);
                     setActiveTab('trials');
                   }}
-                  className={`min-h-[54px] rounded-lg px-3 py-2 text-left transition-all ${
+                  className={`min-h-[54px] min-w-0 rounded-lg px-2 py-2 text-left sm:px-3 transition-all ${
                     activeTab === 'trials'
                       ? 'border border-slate-500 bg-slate-800 text-[#F2F0EA]'
                       : 'border border-transparent bg-transparent text-slate-300 hover:border-slate-600 hover:bg-slate-900 hover:text-[#F2F0EA]'
                   }`}
                 >
-                  <span className="flex items-center justify-between gap-2">
+                  <span className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
                     <span className="text-sm font-bold">{i18n_t('nav', 'interview')}</span>
                     <span className="rounded-full border border-slate-600 bg-slate-900 px-2 py-0.5 text-[10px] font-bold text-slate-300">
                       {mockInterviews.length}
@@ -36579,6 +36656,92 @@ RULES:
                 );
               })()}
 
+              {/* ── The Debug door (coachDebugDoor, orchestrator 2026-11-25) ──
+                  One card: "Fix a query an AI wrote". It sits right under
+                  "Your plan" and above the roadmap, NOT under the goal's
+                  next-step card as first specified: that slot measured
+                  2,369-2,752 px down at 1024x900 (below the 1,354 px
+                  roadmap and Focus Tracks), deeper than the Practice chip
+                  that got 0 clicks at ~940 px. Here it is at ~500 px.
+                  The pick is curriculum-ordered and prefers an item the person
+                  may open (the same lock tests openChallenge applies); the
+                  click always goes through openChallenge, so a locked pick
+                  meets the wall exactly as any open does. Hidden for a hired
+                  person (First 90 Days owns their Coach), before the first
+                  solve, and once all Debug items are solved. Secondary
+                  styling: the next-step card holds the Coach's one accent CTA. */}
+              {(() => {
+                const door = coachDebugDoorModel({
+                  doorOn: COACH_DEBUG_DOOR_ON,
+                  debugOn: DEBUG_QUESTIONS_ON,
+                  challenges,
+                  solved: solvedChallenges,
+                  solveCount: solvedChallenges.size,
+                  order: SQL_ROADMAP_CHALLENGE_ORDER,
+                  isLocked: c => isContentLocked('challenge', c) || freeQuotaSpent(),
+                  hired,
+                });
+                if (!door) return null;
+                const doorCh = door.challenge;
+                const doorTitle = localizeChallenge(doorCh, resolveLang()).title;
+                return (
+                  <div
+                    className="rounded-xl p-4 mb-4"
+                    style={{ background: '#16181F', border: '1px solid #2A2E38' }}
+                    data-testid="coach-debug-door"
+                    ref={(el) => {
+                      if (!el) return;
+                      try {
+                        const k = 'sqlquest_debug_door_shown_' + new Date().toISOString().slice(0, 10);
+                        if (sessionStorage.getItem(k)) return;
+                        sessionStorage.setItem(k, '1');
+                        trackActivationEvent('coach_debug_door_shown', { challengeId: doorCh.id, locked: door.locked, solvedInSet: door.solved, setSize: door.total });
+                      } catch (_) {}
+                    }}
+                  >
+                    <p lang={getCurrentLang()} className="text-[11px] uppercase tracking-wider mb-1" style={{ color: '#8A8E99' }}>{i18n_t('coach', 'debugDoorEyebrow')}</p>
+                    <p className="text-base font-bold" style={{ color: '#F2F0EA' }}>{i18n_t('coach', 'debugDoorTitle')}</p>
+                    <p className="text-xs mt-1" style={{ color: '#8A8E99' }}>{i18n_t('coach', 'debugDoorWhy')}</p>
+                    <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                      <p className="text-xs min-w-0" style={{ color: '#8A8E99' }}>
+                        <span style={{ color: '#F2F0EA' }}>{doorTitle}</span>
+                        {' · '}{doorCh.difficulty}
+                        {door.locked ? <span data-testid="coach-debug-door-locked">{' · '}{i18n_t('coach', 'debugDoorLocked')}</span> : null}
+                      </p>
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          data-testid="coach-debug-door-all"
+                          onClick={() => {
+                            trackActivationEvent('coach_debug_door_clicked', { challengeId: null, target: 'see_all' });
+                            setDebugFilter(true);
+                            setActiveTab('quests');
+                            setPracticeSubTab('challenges');
+                          }}
+                          className="text-xs underline"
+                          style={{ color: '#8A8E99' }}
+                        >
+                          {i18n_t('coach', 'debugDoorSeeAll', { n: door.total })}
+                        </button>
+                        <button
+                          type="button"
+                          data-testid="coach-debug-door-open"
+                          onClick={() => {
+                            trackActivationEvent('coach_debug_door_clicked', { challengeId: doorCh.id, target: 'item', locked: door.locked });
+                            setActiveTab('quests');
+                            setPracticeSubTab('challenges');
+                            setTimeout(() => openChallenge(doorCh, { openedFrom: 'coach_debug_door' }), 50);
+                          }}
+                          className="px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap"
+                          style={{ background: '#1F222B', border: '1px solid #2A2E38', color: '#F2F0EA' }}
+                        >
+                          {i18n_t('coach', 'debugDoorCTA')}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
               {renderSqlRoadmap()}
               {renderFoundationsRoadmapLesson()}
 
@@ -40483,6 +40646,7 @@ RULES:
                         onChange={val => { chLeftRef.current = noteTyped(chLeftRef.current, challengeQuery, val); updateChallengeQuery(val); }}
                         onKeyDown={(e) => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); submitChallenge(); }}}
                         placeholder={challengeStarterHint || i18n_t('practice', 'editorPlaceholder')}
+                        selectAllWhen={challengeRunnableStarter}
                         height={isDebugChallenge(currentChallenge) ? '18rem' : '14rem'}
                         lineNumbers={isDebugChallenge(currentChallenge)}
                         className={isDebugChallenge(currentChallenge) ? 'sql-cm-debug' : ''}
@@ -40497,6 +40661,13 @@ RULES:
                         markLines={isDebugChallenge(currentChallenge) && (debugStats.spots || {})[String(currentChallenge.id)] ? [(debugStats.spots || {})[String(currentChallenge.id)].line] : null}
                       />
                     </div>
+                    {/* `runnableStarter` (2026-11-26): one grey line in the
+                        `starter` arm while the editor holds the starter as
+                        placed and nothing has run yet. Body type, no accent
+                        (DESIGN.md). */}
+                    {isUntouchedStarter(challengeQuery, challengeRunnableStarter) && !firstRunSentRef.current.has(currentChallenge.id) && (
+                      <p data-testid="runnable-starter-line" className="mt-2 text-sm text-gray-400">{i18n_t('practice', 'runnableStarterLine')}</p>
+                    )}
                     
                     {/* Sticky on mobile, normal flow from md up.
 
@@ -41207,15 +41378,19 @@ RULES:
                         )}
                       </div>
 
-                      {/* Input */}
-                      <div className="flex gap-2">
+                      {/* Input. Wraps on a phone (A2, 2026-11-25): an <input>
+                          keeps its ~196 px intrinsic width in a flex row, so
+                          with "Show me the answer" and Send beside it the row
+                          ran to 456 px and a 375 px page scrolled sideways.
+                          The input keeps at least 12rem; the buttons wrap. */}
+                      <div className="flex flex-wrap gap-2" data-testid="inline-tutor-input-row">
                         <input
                           type="text"
                           value={inlineAiInput}
                           onChange={e => setInlineAiInput(e.target.value)}
                           onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendInlineAiMessage(); }}}
                           placeholder="Ask about this challenge..."
-                          className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-sm text-[#F2F0EA] placeholder-gray-500 focus:outline-none focus:border-purple-500"
+                          className="flex-1 min-w-[12rem] px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-sm text-[#F2F0EA] placeholder-gray-500 focus:outline-none focus:border-purple-500"
                           disabled={inlineAiLoading}
                         />
                         {ftbFlag('socraticLadder') && (

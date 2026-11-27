@@ -177,6 +177,7 @@ const TRANSLATIONS = {
       editorPlaceholder: 'Write your SQL solution here...',
       // The line above Run in the `mobileRunBar` bar arm (src/utils/mobile-run-bar.js).
       runBarFirstHint: 'Tap Run to see the table',
+      runnableStarterLine: 'Press Run to see the data first.',
       expectedOutput: 'Expected Output ({n} rows)',
       expectedOutputOne: 'Expected Output (1 row)',
       // Header / guest banner
@@ -333,6 +334,13 @@ const TRANSLATIONS = {
       retrievalDueSub: 'Weak skills come back at 3, 7 and 14 days. One challenge each, at the level you have shown.',
       retrievalSince: '{n} days since you practised this',
       retrievalStart: 'Retrieve',
+      // The Coach's Debug door (coachDebugDoor, 2026-11-25).
+      debugDoorEyebrow: 'Debug practice',
+      debugDoorTitle: 'Fix a query an AI wrote',
+      debugDoorWhy: 'Some interviews now include fixing a query someone else wrote, and at work that query is often an AI’s. Each one here returns the wrong answer: find the bug and fix it.',
+      debugDoorCTA: 'Fix it',
+      debugDoorSeeAll: 'See all {n}',
+      debugDoorLocked: 'opens with Pro',
       perDay: '{n} a day',
       streakDays: '{n}-day streak',
       solvesCount: '{n} solved',
@@ -1350,6 +1358,7 @@ const TRANSLATIONS = {
       editorPlaceholder: 'SQL çözümünü buraya yaz...',
       // The Turkish button reads "Çalıştır", so the line names that, not "Run".
       runBarFirstHint: 'Tabloyu görmek için Çalıştır\'a dokun',
+      runnableStarterLine: 'Önce veriyi görmek için Çalıştır\'a bas.',
       expectedOutput: 'Beklenen Çıktı ({n} satır)',
       logIn: 'Giriş Yap',
       logInTooltip: 'Hesabın var mı? Giriş yap, buradaki ilerlemen seninle gelir.',
@@ -1484,6 +1493,12 @@ const TRANSLATIONS = {
       retrievalDueSub: 'Zayıf beceriler 3, 7 ve 14 gün sonra geri gelir. Her biri için, gösterdiğin seviyede bir soru.',
       retrievalSince: '{n} gündür çalışmadın',
       retrievalStart: 'Hatırla',
+      debugDoorEyebrow: 'Hata ayıklama pratiği',
+      debugDoorTitle: 'Yapay zekânın yazdığı bir sorguyu düzelt',
+      debugDoorWhy: 'Bazı mülakatlarda artık başkasının yazdığı bir sorguyu düzeltmek isteniyor; işte o sorgu çoğu zaman bir yapay zekânın. Buradakilerin her biri yanlış cevap döndürüyor: hatayı bul ve düzelt.',
+      debugDoorCTA: 'Düzelt',
+      debugDoorSeeAll: '{n} tanesini gör',
+      debugDoorLocked: 'Pro ile açılır',
       perDay: 'günde {n}',
       streakDays: '{n} günlük seri',
       solvesCount: '{n} çözüldü',
