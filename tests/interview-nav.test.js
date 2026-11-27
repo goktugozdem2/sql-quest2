@@ -59,8 +59,9 @@ describe('source guards — the entry, the events, the copy', () => {
     expect(app).toMatch(/const showInterviewNav = shouldShowInterviewNav\(\{/);
     expect(app).toMatch(/flagOn: !!window\.FF\?\.feature\('intentRouting'\)/);
     expect(app).toMatch(/data-onboarding="nav-trials"/);
-    // the grid grows to three columns only when the tab is there
-    expect(app).toMatch(/showInterviewNav \? 'grid-cols-3' : 'grid-cols-2'/);
+    // the grid grows to three columns only when the tab is there (below sm
+    // the three tracks are content-sized: tests/uiux-app-tabs-320.test.js)
+    expect(app).toMatch(/showInterviewNav \? 'grid-cols-\[repeat\(3,[^']*sm:grid-cols-3' : 'grid-cols-2'/);
     // Learning Path must not light up while the Interview tab is active
     expect(app).toMatch(/activeTab !== 'quests' && activeTab !== 'trials'/);
   });
