@@ -390,6 +390,55 @@
     } catch (_) {}
   }
 
+  // ── Country (2026-11-23, the analytics lane AN) ─────────────────────
+  // The landing rows had no country; reads mapped `tz` to a country, which
+  // is a proxy (a VPN, a traveller, `UTC`). /api/geo/ already echoes
+  // Vercel's x-vercel-ip-country for the Turkish banner and the regional
+  // price, so this asks the same endpoint ONCE per tab and keeps the answer
+  // in sessionStorage under the key the app's regional price already reads
+  // (`sqlquest_geo_country`), so /app does not ask again either. On the
+  // homepage the banner's request is shared through window.sqGeo, so the
+  // page still makes one request, not two.
+  //
+  // landing_view is never held back waiting for it: a delayed row would lose
+  // the fastest bounces and change the landing series. So the country rides
+  // on every row sent after the answer is known: landing_view from the
+  // second page of a tab on, and landing_engaged (the human denominator,
+  // `landing_people`) and every [data-track] click on the first page. A
+  // failed or empty answer stamps nothing — never a guess from tz or
+  // language. Metric note: docs/agent/metrics.md, shared traps, "country".
+  var GEO_KEY = 'sqlquest_geo_country';
+  var geoCountry = null;
+
+  function cleanCountry(v) {
+    var c = String(v == null ? '' : v).toUpperCase();
+    return /^[A-Z]{2}$/.test(c) ? c : null;
+  }
+
+  function cachedCountry() {
+    try { return cleanCountry(sessionStorage.getItem(GEO_KEY)); } catch (_) { return null; }
+  }
+
+  function askCountry() {
+    try {
+      geoCountry = cachedCountry();
+      if (geoCountry) return;
+      var p = window.sqGeo;
+      if (!p || typeof p.then !== 'function') {
+        p = fetch('/api/geo/', { cache: 'no-store' })
+          .then(function (r) { return r && r.ok ? r.json() : null; })
+          .then(function (g) { return g && g.country ? g.country : null; });
+        window.sqGeo = p;
+      }
+      p.then(function (c) {
+        var clean = cleanCountry(c);
+        if (!clean) return;
+        geoCountry = clean;
+        try { sessionStorage.setItem(GEO_KEY, clean); } catch (_) {}
+      }, function () {});
+    } catch (_) {}
+  }
+
   function send(event, props) {
     try {
       if (isBot()) return;
@@ -418,6 +467,7 @@
       if (ctaArm) { meta.ctaArm = ctaArm; meta.ctaTest = CTA_TEST_ID; }
       try { meta.tz = Intl.DateTimeFormat().resolvedOptions().timeZone || null; } catch (_) {}
       meta.viewport = viewportLabel();
+      if (geoCountry) meta.country = geoCountry;
       // A self-named agent outranks a window size: the agent says what it is.
       var fp = uaFingerprint() || softFingerprint(meta.viewport, meta.tz, meta.landingSrc);
       if (fp) meta.bot = fp;
@@ -453,6 +503,10 @@
 
   persistLandingSrc();
   applyCtaTest();
+  // Same gate as send(): a bot or a local run does not ask for its country.
+  try {
+    if (!isBot() && !/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname)) askCountry();
+  } catch (_) {}
   // `ua` rides on landing_view only, capped. The 2026-09-13 burst — 313
   // question-page views in 13 minutes, one aid each, tz America/Los_Angeles,
   // no referrer, nothing after — passed isBot() and could not be named,

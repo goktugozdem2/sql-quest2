@@ -396,7 +396,7 @@
     .proc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(280px,100%),1fr));gap:16px}
     .proc-card{background:rgba(124,58,237,.05);border:1px solid rgba(124,58,237,.2);border-radius:14px;padding:24px 22px;display:flex;flex-direction:column;gap:12px}
     .proc-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-    .proc-day{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#c084fc;background:rgba(124,58,237,.12);padding:4px 10px;border-radius:100px;border:1px solid rgba(124,58,237,.25)}
+    .proc-day{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#c084fc;background:rgba(124,58,237,.12);padding:4px 10px;border-radius:100px;border:1px solid rgba(124,58,237,.25)}
     .proc-src{font-size:12px;color:#8b98ab;font-weight:500}
     .proc-title{font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:800;color:#f1f5f9;line-height:1.3}
     .proc-desc{font-size:13px;color:#94a3b8;line-height:1.6;border-left:2px solid rgba(124,58,237,.4);padding-left:12px;margin:0}
@@ -595,7 +595,7 @@
     <div class="hr" style="animation:fadeUp .8s .3s both;">
       <div class="ed"><div class="ec"><div class="edt" style="background:rgba(255,255,255,.14)"></div><div class="edt" style="background:rgba(255,255,255,.14)"></div><div class="edt" style="background:rgba(255,255,255,.14)"></div><span class="fm" style="margin-left:8px;font-size:12px;color:#8b98ab;">neobank_screen.sql</span></div>
         <div class="eb"><div class="eln fm"><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div></div><div id="ta" class="fm stx" style="flex:1;font-size:14px;line-height:1.6;white-space:nowrap;overflow-x:auto;"><span class="sk">SELECT</span> plan,<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="sk">COUNT</span>(*) <span class="sk">AS</span> users,<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="sk">ROUND</span>(100.0 * <span class="sk">SUM</span>(declined) / <span class="sk">COUNT</span>(*), 1) <span class="sk">AS</span> decline_rate<br><span class="sk">FROM</span> transactions<br><span class="sk">GROUP BY</span> plan<br><span class="sk">ORDER BY</span> users <span class="sk">DESC</span>;</div></div>
-        <div class="er"><p class="fm" style="font-size:11px;color:#22c55e;margin-bottom:8px;">✓ 3 rows returned (0.002s)</p>
+        <div class="er"><p class="fm" style="font-size:12px;color:#22c55e;margin-bottom:8px;">✓ 3 rows returned (0.002s)</p>
           <div style="display:grid;grid-template-columns:1.2fr .6fr .8fr;gap:6px 16px;font-size:12px;" class="fm">
             <span style="color:#7c3aed;font-weight:700;border-bottom:1px solid rgba(124,58,237,.2);padding-bottom:4px;">plan</span><span style="color:#7c3aed;font-weight:700;border-bottom:1px solid rgba(124,58,237,.2);padding-bottom:4px;">users</span><span style="color:#7c3aed;font-weight:700;border-bottom:1px solid rgba(124,58,237,.2);padding-bottom:4px;">decline_rate</span>
             <span style="color:#94a3b8">Standard</span><span style="color:#94a3b8">1,204</span><span style="color:#e2e8f0">4.1</span>
@@ -755,7 +755,7 @@
   </div>
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;max-width:620px;margin:0 auto;">
     <a href="/app/?src=home&amp;pro=1&amp;plan=annual" data-track="cta_plan_annual" style="display:block;text-decoration:none;color:inherit;background:rgba(10,10,25,.6);border:2px solid rgba(192,132,252,.6);border-radius:14px;padding:24px 20px;text-align:center;position:relative;transition:border-color .15s ease-out;" onmouseenter="this.style.borderColor='#c084fc'" onmouseleave="this.style.borderColor='rgba(192,132,252,.6)'">
-      <div style="position:absolute;top:-11px;left:50%;transform:translateX(-50%);font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;background:#7c3aed;color:#fff;border-radius:4px;padding:3px 8px;">Save 72%</div>
+      <div style="position:absolute;top:-11px;left:50%;transform:translateX(-50%);font-size:12px;font-weight:800;letter-spacing:1px;text-transform:uppercase;background:#7c3aed;color:#fff;border-radius:4px;padding:3px 8px;">Save 72%</div>
       <div class="fd" style="font-size:36px;font-weight:800;color:#f1f5f9;">$99</div>
       <div style="font-size:14px;font-weight:700;color:#e2e8f0;">a year</div>
       <div style="font-size:12px;color:#94a3b8;margin-top:6px;">$8.25 a month, billed yearly</div>

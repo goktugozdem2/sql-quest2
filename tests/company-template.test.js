@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import { COMPANY_INTERVIEWS, NEW_COMPANY_TAGS } from '../src/data/company-interviews.js';
-import { loadBank, facts, renderPage, withProvenance } from '../scripts/build-company-pages.mjs';
-import { withFirstScreen } from '../scripts/company-first-screen.mjs';
+import { loadBank, facts, renderPage, withProvenance, pageOutputs, SKIP_UNTIL_READ } from '../scripts/build-company-pages.mjs';
+import { withFirstScreen, FIRST_SCREENS } from '../scripts/company-first-screen.mjs';
 import { QUESTIONS, buildData, render } from '../scripts/build-readiness-test.mjs';
 import { CANONICAL_SKILLS } from '../src/utils/skill-calc.js';
 
@@ -51,6 +51,52 @@ describe('company template', () => {
       const generated = withFirstScreen(withProvenance(renderPage(key, d, f), { slug: key, name: d.name }), key, f);
       expect(committed, `${key}: re-run node scripts/build-company-pages.mjs`).toBe(stripStrip(generated));
     }
+  });
+
+  // 2026-11-27: the check above covered only the template pages. The older
+  // pages are rewritten by the same run (olderPage strips the first-screen
+  // block and puts back only what FIRST_SCREENS holds), and Wise's
+  // hand-written first screen (#361) would have been deleted by the next run
+  // without any test noticing. This runs the whole generator in memory over
+  // the committed sources and asks for every company page, byte for byte.
+  // Proven by removing FIRST_SCREENS.wise: fails naming wise-sql-interview.html.
+  it('running the generator over the committed sources changes no company page, byte for byte', () => {
+    const outputs = pageOutputs(bank);
+    const pages = fs.readdirSync(path.join(ROOT, 'src')).filter(f => /-sql-interview\.html$/.test(f))
+      .filter(f => !SKIP_UNTIL_READ.has(f.replace(/-sql-interview\.html$/, '')));
+    expect([...outputs.keys()].map(k => `${k}-sql-interview.html`).sort()).toEqual(pages.sort());
+    for (const [key, { before, after }] of outputs) {
+      expect(after === before, `${key}-sql-interview.html: node scripts/build-company-pages.mjs would rewrite it (a hand edit the generator does not own?)`).toBe(true);
+    }
+  });
+
+  it('a first-screen block appears only on a page FIRST_SCREENS configures', () => {
+    for (const f of fs.readdirSync(path.join(ROOT, 'src')).filter(x => /-sql-interview\.html$/.test(x))) {
+      const key = f.replace(/-sql-interview\.html$/, '');
+      expect(read(`src/${f}`).includes('<!-- company-first-screen:start -->'), `${f}: block without a FIRST_SCREENS entry, or entry without a block`)
+        .toBe(Boolean(FIRST_SCREENS[key]));
+    }
+  });
+
+  // 2026-11-27: until this date the company generators ran only by hand, so a
+  // fix made in build-company-pages.mjs reached no page until someone
+  // remembered to run it, and a hand edit to a generated page sat in the tree
+  // until the next person did. `npm run build` now runs them, in the order
+  // CLAUDE.md's "Company pages" section gives (pages → cross-link strip →
+  // the rest of the build), before card-skill-blurbs rewrites the card lines
+  // and before build-static-pages copies the pages into public/. The strip
+  // comes second because the template pages are rendered without it.
+  it('npm run build runs the company generators, pages then strip, before the blurbs and the copy to public/', () => {
+    const build = JSON.parse(read('package.json')).scripts.build;
+    const at = s => build.indexOf(`node scripts/${s}`);
+    const pages = at('build-company-pages.mjs');
+    const strip = at('build-company-crosslinks.mjs');
+    expect(pages, 'build-company-pages.mjs is not in the build script').toBeGreaterThan(-1);
+    expect(strip, 'build-company-crosslinks.mjs is not in the build script').toBeGreaterThan(-1);
+    expect(pages, 'build-company-pages must run before build-company-crosslinks').toBeLessThan(strip);
+    expect(strip, 'the company generators must run before build-interview-hub').toBeLessThan(at('build-interview-hub.mjs'));
+    expect(strip, 'the company generators must run before card-skill-blurbs').toBeLessThan(at('card-skill-blurbs.mjs'));
+    expect(strip, 'the company generators must run before build-static-pages').toBeLessThan(at('build-static-pages.js'));
   });
 
   it('every older company page carries the readiness block and the topic links', () => {

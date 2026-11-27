@@ -110,6 +110,31 @@ export function placementEventPayload(result, source = 'quiz') {
   };
 }
 
+// ── The ladder IS a placement (2026-11-26, tournament arm B) ─────────────
+// Arm B (docs/plans/first-session-tournament-2026-11-26.md §3.2) sets the
+// level from four questions SOLVED, not recognised: rung 0 basics, rung 1
+// joins / grouping, rung 2 window functions / CTEs. Each question resolves
+// `fast` (solved, ≤ 1 wrong, no hint, inside the rung's time), `solved` or
+// `stuck` (set aside). The 08-14 rule holds and is stronger here:
+// Interview-ready needs two PRODUCED rung-2 queries, one of them fast.
+//   advanced  — a `fast` at rung 2 AND a second rung-2 solve with ≤ 1 wrong, no hint
+//   working   — any rung-2 solve, or two rung-1 solves with one `fast`
+//   basics    — any rung-1 solve, or two `fast` at rung 0
+//   brand-new — anything else
+export function levelForLadder(outcomes) {
+  const list = Array.isArray(outcomes) ? outcomes.filter(o => o && typeof o === 'object') : [];
+  const solved = (o) => o.outcome === 'fast' || o.outcome === 'solved';
+  const clean = (o) => solved(o) && (Number(o.wrongs) || 0) <= 1 && !o.hint;
+  const at = (r) => list.filter(o => Number(o.rung) === r && solved(o));
+  const r2 = at(2);
+  const r1 = at(1);
+  const r0 = at(0);
+  if (r2.some(o => o.outcome === 'fast') && r2.filter(clean).length >= 2) return 'advanced';
+  if (r2.length >= 1 || (r1.length >= 2 && r1.some(o => o.outcome === 'fast'))) return 'working';
+  if (r1.length >= 1 || r0.filter(o => o.outcome === 'fast').length >= 2) return 'basics';
+  return 'brand-new';
+}
+
 // ── The readiness test IS a placement (2026-09-14) ────────────────────────
 // Someone who took /sql-interview-readiness-test/ answered ten questions
 // across nine skills — strictly more evidence than the four recognition
@@ -192,6 +217,9 @@ export const FIRST_RUN_PLACEMENT_SOURCES = Object.freeze([
   'first_run_goal_measure',
   'first_run_manual_or_recommendation',
   'first_run_completed',
+  // 2026-11-26: tournament arm B's four-question ladder — a level from
+  // solving, stronger evidence than recognition (levelForLadder above).
+  'first_run_ladder',
 ]);
 
 export const COACH_SEED_FLOORS = Object.freeze({

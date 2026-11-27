@@ -1,3 +1,15 @@
+---
+id: C3
+name: "Backlinks & distribution"
+owner: orchestrator
+runtime: laptop
+status: reduced
+cadence: "twice a week (Mon, Thu) since 2026-11-25"
+metric: [external_links]
+writes_code: false
+version: 1.0.0
+last_changed: 2026-11-26
+---
 # C3 — Backlinks & distribution
 
 > **Cadence 2026-11-25 (investor 90-day plan, A10): twice a week (Mon, Thu)**, aimed at the lists assistants cite and data newsletters; live-link check each run.
@@ -24,3 +36,7 @@
 4. GitHub list PRs are outward posts. Leave them under FOUNDER with the ready text; don't open them.
 5. Check last month's queue: which links went live (search for them), and mark them in the file.
 6. Docs PR, self-merged.
+
+## Changelog
+
+- 1.0.0 (2026-11-26) — versioned for the skills loop: front-matter added.
