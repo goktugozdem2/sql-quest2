@@ -165,8 +165,8 @@ describe('"How the interview runs (sourced)" — only where sources exist', () =
   it('is not vacuous — both kinds of page exist', () => {
     expect(LIVE.filter(p => SOURCED_SLUGS.has(p.key)).length).toBeGreaterThanOrEqual(10);
     // 19 → 18 on 2026-11-23: Shopify became a sourced page; 18 → 17 the same
-    // day: Apple did (R1 batch 5).
-    expect(LIVE.filter(p => !SOURCED_SLUGS.has(p.key)).length).toBeGreaterThanOrEqual(17);
+    // day: Apple did (R1 batch 5); 17 → 16 on 2026-11-27: Stripe did (C5).
+    expect(LIVE.filter(p => !SOURCED_SLUGS.has(p.key)).length).toBeGreaterThanOrEqual(16);
   });
 });
 

@@ -105,6 +105,8 @@ export const SOURCED_PAGES = {
   'monzo-sql-interview': "Monzo's own hiring posts: Data Science (27 Apr 2026), Analytics Engineering (25 May 2026), data hiring (21 Mar 2022), a 2022 joiner's account",
   // 2026-11-22: docs/reads/company-research-2026-11-22.md.
   'chime-sql-interview': 'PracHub candidate reports: DS technical screen (interview Oct 2025), DS hiring-manager screen (Nov 2025), SWE (Oct 2025); no tool or analyst loop sourced and the page says so',
+  // 2026-11-27 (C5): docs/reads/companies/stripe.md — the high and medium rows only.
+  'stripe-sql-interview': 'PracHub DS candidate reports (interviews Oct - Nov 2025), Interview Query DA and DS guides with Q4 2026 reports, aced.io guide (Nov 2026); no tool, length, count or dialect sourced and the page says so',
 };
 
 // ---------------------------------------------------------------------------

@@ -32,7 +32,9 @@ describe('format cards: the link is readable on every brand colour', () => {
     expect(offenders(/style="color:inherit;text-decoration:underline">Capital One CodeSignal page/).length).toBeGreaterThan(15);
   });
   it('a built page carries it', () => {
-    const built = fs.readFileSync(path.join(ROOT, 'public/stripe-sql-interview/index.html'), 'utf8');
+    // Plaid, a general page (Stripe was the sample until it became a sourced
+    // page on 2026-11-27 and its card stopped pointing at Capital One).
+    const built = fs.readFileSync(path.join(ROOT, 'public/plaid-sql-interview/index.html'), 'utf8');
     expect(built).toContain('style="color:inherit;text-decoration:underline">Capital One CodeSignal page');
     expect(built).toContain('.db{font-size:12px');
   });
