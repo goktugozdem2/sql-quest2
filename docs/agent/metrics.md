@@ -6078,6 +6078,21 @@ engine is not wired, and the arms' PRs that measure it come after).
 profile`; `planIds` are strings, a mock as `mock:<id>`), and each plan step
 solved after it logs `tournament_plan_step_done {challengeId, stepIndex, k,
 n, wallAt, day}`. Read `path_plan_built` below as `tournament_plan_shown`.
+Arm D (its PR, 2026-11-26) logs the same two, after
+`tournament_sprint_shown {doorCompany}` and `tournament_sprint_set {company,
+companySource: door | tap | undecided | learning | skipped, goal: interview |
+learning, days: 7 | 14 | null, daysSource: tap | no_date | skipped,
+planKind}`; its `tournament_tabs_revealed` fires when the first day's count
+is done or at the first solve of day 2. Split D's read on `goal` — a
+learner's fundamentals sprint and a company sprint are different plans.
+Walk fixes (2026-11-26, before any data): a company link's opened question
+is the plan's step 1 (`planIds[0]`, part `lead`); with no readiness band the
+level is assumed (`profile.levelSource` = `default` on the first
+`tournament_plan_shown`), the first two plan steps solved are read with the
+ladder's thresholds, `tournament_sprint_level {levelId, outcomes}` fires at
+the second, and a `tournament_plan_shown {recompute: true}` follows with
+`profile.levelSource = 'sprint_probe'` (or `readiness` when the band set
+it). Read N, `wallAt` and the level from the LAST `tournament_plan_shown`.
 
 - **Population.** People with a `path_plan_built` row whose
   `tournament_assigned.arm` is a plan arm (`B_single_path`,

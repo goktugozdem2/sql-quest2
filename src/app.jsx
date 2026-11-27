@@ -89,7 +89,7 @@ import { getAnonId } from './utils/anon-id.js';
 import { FREE_QUOTA_HOLDOUT_KEY, FREE_QUOTA_HOLDOUT_TEST_ID, freeQuotaEnrolment, hasPriorAppUse, normalizeFreeQuotaRecord, freeQuotaEffective, freeQuotaEventStamp } from './utils/free-quota-holdout.js';
 import { TOURNAMENT_KEY, tournamentEnrolment, tournamentPriorAppUse, normalizeTournamentRecord, adoptAccountRecord, tournamentEffectiveArm, tournamentBehaviour, tournamentSupersedes, tournamentEventStamp, shouldAnnounceTournament, tournamentAssignedPayload, buildVisitorProfile, enrichTournamentProfile } from './utils/tournament.js';
 import { quotaWallArm, quotaWallShowsModal, quotaInlineCopy, QUOTA_WALL_DAY_KEY } from './utils/quota-wall-inline.js';
-import { SINGLE_PATH_KEY, LADDER_LENGTH, TIER_KEYS, isPathArm, emptyPathState, normalizePathState, pathUiFlags, pathTabsOpen, ladderOutcome, ladderStuck, ladderOpen, ladderResolve, pickLadderQuestion, ladderQuestionNumber, roadmapProfileFor, composePathPlan, planProgress, nextPlanStep, planEnded, planShownPayload, logStepDone, pathWhyLines, pathLayerSlot, pathLayerDecide, pathSessionTouch, PATH_LAYER_SETTLE_MS, PATH_USER_SIGNUP_REASONS, pathProAskAllowed, PATH_PRO_ASKS_SPACED } from './utils/single-path.js';
+import { SINGLE_PATH_KEY, LADDER_LENGTH, TIER_KEYS, isPathArm, emptyPathState, normalizePathState, pathUiFlags, pathTabsOpen, sprintPlanMarks, sprintProbeRecord, ladderOutcome, ladderStuck, ladderOpen, ladderResolve, pickLadderQuestion, ladderQuestionNumber, roadmapProfileFor, composePathPlan, planProgress, nextPlanStep, planEnded, planShownPayload, logStepDone, pathWhyLines, companyFromSlug, startSprint, sprintDayModel, sprintTabsOpen, pathLayerSlot, pathLayerDecide, pathSessionTouch, PATH_LAYER_SETTLE_MS, PATH_USER_SIGNUP_REASONS, fitPlanToLength, pathProAskAllowed, PATH_PRO_ASKS_SPACED } from './utils/single-path.js';
 import { buildRoadmap } from './utils/personal-roadmap.js';
 import { classifyLandingSrc, LANDING_SRC_KEY } from './utils/landing-src.js';
 import { classifyQueryError } from './utils/query-error.js';
@@ -9164,7 +9164,7 @@ function SQLQuest() {
   });
   const pathStateRef = useRef(pathState);
   pathStateRef.current = pathState;
-  const pathUi = pathUiFlags({ behaviour: pathBehaviour, state: pathState });
+  const pathUi = pathUiFlags({ behaviour: pathBehaviour, state: pathState, hasChallenge: !!currentChallenge });
   const isFirstRunUser = !firstRunCompleted && solvedChallenges.size === 0 && !isHired(intentRecord);
   const showFirstRunStart = isFirstRunUser && !currentChallenge && activeTab === 'guide';
   // Arm B keeps the first-run shell until its ladder ends (plan §3.1 B1).
@@ -12581,9 +12581,15 @@ CRITICAL RULES:
   // The layers held on the ladder stay held until the next challenge opens,
   // then the first shows alone and the rest drop (the mobileOneLayer rule).
   const [pathHeldRelease, setPathHeldRelease] = useState(false);
+  // Arm D's sprint screen: the company pick (or null = ask) and the search.
+  const [pathSprintPick, setPathSprintPick] = useState(null);
+  const [pathSprintAsk, setPathSprintAsk] = useState(false);
+  const [pathSprintQuery, setPathSprintQuery] = useState('');
   // Walk fix B1: a sign-up prompt that is not the guest ladder's (the tutor's
   // guest limit) is held here while the ladder runs.
   const pathHeldSignupRef = useRef(null);
+  // Arm D's level probe (walk fix D1): when the open plan step was opened.
+  const pathOpenedRef = useRef(null);
   const pathSave = (next) => {
     pathStateRef.current = next;
     setPathState(next);
@@ -12621,18 +12627,34 @@ CRITICAL RULES:
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathUi.active, isSessionLoading, currentUser, dbReady, currentChallenge?.id, solvedChallenges.size]);
   const pathMocksDone = () => new Set((interviewHistory || []).map(h => h && h.interviewId).filter(Boolean));
-  const pathStepProOnly = (st) => !isPro && !!(st && st.proOnly);
+  // Pro-only for this person now: the roadmap's own mark, or the company-set
+  // gate of the company view they are in (a `?company=` arrival walls the
+  // set's fourth question even where the roadmap counted a tagged set free).
+  const pathStepProOnly = (st) => {
+    if (isPro || !st) return false;
+    if (st.proOnly) return true;
+    if (st.kind !== 'challenge' || !companyFilter) return false;
+    const c = challenges.find(x => x.id === st.challengeId);
+    // Only a set authored for the company is walled (#420): the key rides
+    // along now so either merge order stays green.
+    return !!c && companySetGate({ flagOn: ftbFlag('companySetGate'), isPro, companyFilter, authored: companyHasAuthoredSet(companyFilter), challenge: c, scoped: companyScopedChallenges(), solved: solvedChallenges }).gated;
+  };
   const pathCtx = () => ({ solved: solvedChallenges, mocksDone: pathMocksDone(), isProOnly: pathStepProOnly });
   // The roadmap for this person, frozen as the plan (N stays put).
-  const pathBuildPlan = (state, solvedSet) => {
+  // `lead` (arm D): steps that must come first — the company link's opened
+  // question (walk fix D2), then the two the level was read from (D1).
+  const pathBuildPlan = (state, solvedSet, { lead = [] } = {}) => {
     try {
       const visitor = TOURNAMENT_RECORD && TOURNAMENT_RECORD.profile ? TOURNAMENT_RECORD.profile : null;
       const roadmap = buildRoadmap(
-        roadmapProfileFor({ visitor, state, solvedIds: solvedSet, isPro, companies: INTAKE_COMPANIES }),
+        roadmapProfileFor({ arm: pathUi.arm, visitor, state, solvedIds: solvedSet, isPro, companies: INTAKE_COMPANIES }),
         challenges,
         { companyMap: window.challengeCompanies || {}, mocks: mockInterviews, goals: window.coachGoals || [], quotaOn: freeQuotaOn(), companySetGateOn: ftbFlag('companySetGate') },
       );
-      return composePathPlan({ roadmap, ladder: state.ladder, solved: solvedSet, solvedCount: solvedSet.size, quotaOn: freeQuotaOn() && !isPro, now: Date.now() });
+      const plan = composePathPlan({ roadmap, ladder: state.ladder, lead, solved: solvedSet, solvedCount: solvedSet.size, quotaOn: freeQuotaOn() && !isPro, now: Date.now() });
+      // Arm D: say where the level came from — assumed (the why-line says so,
+      // the first two steps measure it), the readiness band, or the probe.
+      return pathUi.sprint ? sprintPlanMarks(plan, { visitor, state }) : plan;
     } catch (e) {
       console.warn('single path: plan not built', e);
       return null;
@@ -12675,7 +12697,8 @@ CRITICAL RULES:
   // first of: PLAN_FOCUS_STEPS plan steps done (`plan_steps`), "All steps"
   // (`all_steps`), or no free step left to open (`plan_end`).
   const pathRevealTabs = (trigger, state = pathStateRef.current, solves = solvedChallenges.size) => {
-    if (!pathUi.active || state.tabsOpenedAt || !state.ladder.done) return state;
+    // B reveals only after its ladder; D (no ladder) once its sprint is set.
+    if (!pathUi.active || state.tabsOpenedAt || (pathUi.sprint ? !state.sprint : !state.ladder.done)) return state;
     const now = Date.now();
     const next = { ...state, tabsOpenedAt: now };
     pathSave(next);
@@ -12742,7 +12765,7 @@ CRITICAL RULES:
   const pathOnSolve = (challenge, newSolved, { wrongs = 0, hint = false } = {}) => {
     const state = pathStateRef.current;
     const now = Date.now();
-    if (!state.ladder.done) {
+    if (pathUi.ladderActive) {
       const cur = state.ladder.current;
       if (!cur || cur.challengeId !== challenge.id) return;
       const secs = cur.openedAt ? (now - cur.openedAt) / 1000 : null;
@@ -12758,12 +12781,35 @@ CRITICAL RULES:
     if (!plan) return;
     const index = plan.steps.findIndex(st => st.kind === 'challenge' && st.challengeId === challenge.id);
     if (index < 0 || state.doneLog.some(d => String(d.id) === String(challenge.id))) return;
-    const next = logStepDone(state, { id: challenge.id, day: getTodayString() });
+    let next = logStepDone(state, { id: challenge.id, day: getTodayString() });
+    // Arm D, no readiness band: the first two plan steps solved are read with
+    // the ladder's thresholds; at the second the plan is re-laid from the
+    // measured level, those two leading it (walk fix D1).
+    let replanned = null;
+    if (pathUi.sprint) {
+      const visitor = TOURNAMENT_RECORD && TOURNAMENT_RECORD.profile ? TOURNAMENT_RECORD.profile : null;
+      const opened = pathOpenedRef.current;
+      const secs = opened && opened.id === challenge.id ? (now - opened.at) / 1000 : null;
+      const probed = sprintProbeRecord(next, { visitor, challenge, wrongs, hint, secs });
+      next = probed.state;
+      if (probed.levelId) {
+        replanned = pathBuildPlan(next, newSolved, { lead: next.sprint.probe.map(o => o.challengeId) });
+        // N stays what the header said (round 2): re-ordered and re-levelled
+        // within the same length; only if that is impossible does it change,
+        // and the why-line says so.
+        if (replanned) replanned = fitPlanToLength(replanned, plan.length, { previous: plan, solved: newSolved, solvedCount: newSolved.size, quotaOn: freeQuotaOn() && !isPro });
+        if (replanned) next = { ...next, plan: replanned };
+        pathEvent('tournament_sprint_level', { levelId: probed.levelId, outcomes: next.sprint.probe });
+      }
+    }
     pathSave(next);
-    const { k, n } = planProgress(plan, { solved: newSolved, mocksDone: pathMocksDone() });
+    const { k, n } = planProgress(next.plan || plan, { solved: newSolved, mocksDone: pathMocksDone() });
     pathEvent('tournament_plan_step_done', { challengeId: challenge.id, stepIndex: index + 1, k, n, wallAt: plan.wallAt, day: getTodayString() });
-    // Walk fix B3: the tab row comes back at the PLAN_FOCUS_STEPS-th plan step.
-    if (!next.tabsOpenedAt && pathTabsOpen(next, { arm: pathUi.arm })) pathRevealTabs('plan_steps', next, newSolved.size);
+    if (replanned) pathEvent('tournament_plan_shown', { ...planShownPayload(replanned, { arm: pathUi.arm, k, recompute: true }) });
+    // The tab row comes back — B: at the PLAN_FOCUS_STEPS-th plan step (walk
+    // fix B3); D: once the first day's count is done, or at the first solve
+    // of day 2.
+    if (!next.tabsOpenedAt && pathTabsOpen(next, { arm: pathUi.arm })) pathRevealTabs(pathUi.sprint ? 'sprint_day' : 'plan_steps', next, newSolved.size);
   };
   // The plan-end card's button: today's modal, reason `plan_end` (founder's go, 2026-11-26).
   const pathSeePro = () => {
@@ -12773,9 +12819,51 @@ CRITICAL RULES:
   };
   // "{k} of {N} done — the rest of your plan is Pro." (the quota wall's line slot, the plan-end card).
   const pathWallLine = () => {
-    const { k, n } = planProgress(pathStateRef.current.plan, pathCtx());
+    const st = pathStateRef.current;
+    const { k, n } = planProgress(st.plan, pathCtx());
+    // Arm D with a company: the sprint's version (founder's go, 2026-11-26).
+    const day = pathUi.sprint && st.sprint && st.sprint.company ? sprintDayModel(st, { today: getTodayString() }) : null;
+    if (day) return i18n_t('tournamentPath', 'sprintWall', { d: day.day, D: day.total, company: st.sprint.company });
     return i18n_t('tournamentPath', 'wall', { k, n });
   };
+  // Arm D: the sprint is set (two taps, each skippable). The company goes to
+  // prepTarget.company through its writer; the length stays in the sprint's
+  // own field — never prepTarget.date (deadlineOffer would lead the
+  // milestone modal with "N days to your interview", and the outcome note
+  // would ask about an interview nobody named).
+  const pathFinishSprint = ({ company = null, companySource = null, goal = null, days = null, daysSource = null } = {}) => {
+    const now = Date.now();
+    const sprint = startSprint({ company, companySource, goal, days, daysSource, today: getTodayString(), now });
+    if (!sprint) return;
+    if (company) setPrepPreference({ company });
+    const base = { ...pathStateRef.current, sprint };
+    // A company link opens the company's question 1 (the direct arm's
+    // resolver) — it IS the plan's step 1, so the header, the open question
+    // and the plan agree (walk fix D2).
+    const co = companyFilter && company === companyFilter && solvedChallenges.size === 0 ? companyBannerNext() : null;
+    const plan = pathBuildPlan(base, solvedChallenges, { lead: co ? [co.id] : [] });
+    pathSave({ ...base, plan });
+    pathEvent('tournament_sprint_set', { company: sprint.company, companySource: sprint.companySource, goal: sprint.goal, days: sprint.days, daysSource: sprint.daysSource, planKind: plan && plan.profile ? plan.profile.targetKind || plan.profile.scope : null });
+    if (plan) {
+      const { k } = planProgress(plan, { solved: solvedChallenges, mocksDone: pathMocksDone() });
+      pathEvent('tournament_plan_shown', planShownPayload(plan, { arm: pathUi.arm, k }));
+    }
+    setPathSprintPick(null);
+    setPathSprintAsk(false);
+    // A company link opens the company's question 1 (the direct arm's
+    // resolver); everyone else the plan's first step.
+    setTimeout(() => {
+      if (co) pathOpenChallenge(co);
+      else pathOpenNext('sprint_start');
+    }, 50);
+  };
+  const pathSprintShownRef = useRef(false);
+  useEffect(() => {
+    if (!pathUi.sprintSetup || pathSprintShownRef.current) return;
+    pathSprintShownRef.current = true;
+    pathEvent('tournament_sprint_shown', { doorCompany: (TOURNAMENT_RECORD && TOURNAMENT_RECORD.profile && TOURNAMENT_RECORD.profile.company) || null });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathUi.sprintSetup]);
   // Question 1 (and every ladder question after a reload) opens by itself:
   // no start screen, no menu. A content link's resolver opens question 1
   // itself (the deep-link rule: start guest mode, return, open next run).
@@ -13952,12 +14040,91 @@ CRITICAL RULES:
       </button>
     </div>
   );
+  // Arm D's sprint screen (plan §4): company in one tap (or the door's),
+  // then the length in one tap; each skippable. A full screen over the app,
+  // under the feedback button; Log in stays reachable.
+  const renderPathSprintSetup = () => {
+    const visitor = TOURNAMENT_RECORD && TOURNAMENT_RECORD.profile ? TOURNAMENT_RECORD.profile : null;
+    const door = companyFromSlug(visitor && visitor.company, INTAKE_COMPANIES)
+      || (companyFilter && INTAKE_COMPANIES.includes(companyFilter) ? companyFilter : null);
+    const pick = pathSprintPick || (!pathSprintAsk && door ? { company: door, companySource: 'door', goal: 'interview' } : null);
+    const notSureGoal = visitor && visitor.interviewTarget ? 'interview' : 'learning';
+    const chip = { background: '#1F222B', border: '1px solid #2A2E38', borderRadius: '6px', color: '#F2F0EA' };
+    const muted = { color: '#8A8E99' };
+    const matches = matchCompanies(pathSprintQuery);
+    const choose = (company, companySource, goal) => setPathSprintPick({ company, companySource, goal });
+    const finish = (days, daysSource) => pathFinishSprint({ ...pick, days, daysSource });
+    return (
+      <div data-testid="path-sprint-screen" className="fixed inset-0 overflow-y-auto" style={{ zIndex: 9000, background: '#0E0F13', color: '#F2F0EA' }}>
+        <div className="max-w-xl mx-auto px-4 py-4">
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white" style={{ background: '#7c3aed' }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+              </div>
+              <span className="font-bold text-sm">SQL Quest</span>
+            </div>
+            {isGuest && <a href="/app/?signin=1" className="px-3 py-1.5 rounded-lg text-xs font-bold" style={chip}>{i18n_t('practice', 'logIn')}</a>}
+          </div>
+          <p className="text-xs font-bold uppercase tracking-wider" style={muted}>{i18n_t('tournamentPath', 'sprintEyebrow')}</p>
+          <p className="text-sm mt-1 mb-6" style={muted}>{i18n_t('tournamentPath', 'sprintSub')}</p>
+          {!pick ? (
+            <div data-testid="path-sprint-company">
+              <label htmlFor="path-sprint-input" className="block text-lg font-bold">{i18n_t('companyAsk', 'question')}</label>
+              <input id="path-sprint-input" type="text" autoComplete="off" value={pathSprintQuery} placeholder={i18n_t('companyAsk', 'placeholder')}
+                onChange={e => setPathSprintQuery(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter' && pathSprintQuery.trim() && matches[0]) { e.preventDefault(); choose(matches[0], 'tap', 'interview'); } }}
+                className="mt-3 w-full px-3 py-2.5 text-sm" style={chip} />
+              {pathSprintQuery.trim() && (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {matches.length ? matches.map(c => (
+                    <button key={c} type="button" data-sprint-company={c} onClick={() => choose(c, 'tap', 'interview')} className="px-3 py-1.5 text-sm font-semibold" style={chip}>{c}</button>
+                  )) : <span className="text-xs" style={muted}>{i18n_t('companyAsk', 'noMatch')}</span>}
+                </div>
+              )}
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                <button type="button" data-testid="path-sprint-undecided" onClick={() => choose(null, 'undecided', notSureGoal)} className="px-3 py-2 text-sm font-semibold" style={chip}>{i18n_t('companyAsk', 'undecided')}</button>
+                <button type="button" data-testid="path-sprint-learning" onClick={() => choose(null, 'learning', 'learning')} className="px-3 py-2 text-sm font-semibold" style={chip}>{i18n_t('tournamentPath', 'sprintLearning')}</button>
+                <button type="button" data-testid="path-sprint-skip-company" onClick={() => choose(null, 'skipped', notSureGoal)} className="px-2 py-2 text-xs underline" style={muted}>{i18n_t('tournamentPath', 'sprintSkip')}</button>
+              </div>
+            </div>
+          ) : (
+            <div data-testid="path-sprint-length">
+              <p className="text-lg font-bold">{pick.company ? i18n_t('tournamentPath', 'sprintLengthQCompany', { company: pick.company }) : i18n_t('tournamentPath', 'sprintLengthQ')}</p>
+              {pick.company && (
+                <button type="button" data-testid="path-sprint-change" onClick={() => { setPathSprintPick(null); setPathSprintAsk(true); }} className="mt-1 text-xs underline" style={muted}>
+                  {i18n_t('tournamentPath', 'sprintChange')}
+                </button>
+              )}
+              <div className="mt-4 grid grid-cols-3 gap-2">
+                <button type="button" data-testid="path-sprint-7" onClick={() => finish(7, 'tap')} className="px-3 py-3 text-sm font-semibold" style={chip}>{i18n_t('tournamentPath', 'sprint7')}</button>
+                <button type="button" data-testid="path-sprint-14" onClick={() => finish(14, 'tap')} className="px-3 py-3 text-sm font-semibold" style={chip}>{i18n_t('tournamentPath', 'sprint14')}</button>
+                <button type="button" data-testid="path-sprint-nodate" onClick={() => finish(null, 'no_date')} className="px-3 py-3 text-sm font-semibold" style={chip}>{i18n_t('tournamentPath', 'sprintNoDate')}</button>
+              </div>
+              <button type="button" data-testid="path-sprint-skip-length" onClick={() => finish(null, 'skipped')} className="mt-3 px-2 py-2 text-xs underline" style={muted}>{i18n_t('tournamentPath', 'sprintSkip')}</button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
   const pathTierName = (levelId) => i18n_t('tournamentPath', TIER_KEYS[levelId] || 'tierFoundations');
   // After a solve: ONE button (B2 on the ladder, B5 on the plan).
   const renderPathVerdictNext = () => {
     if (!currentChallenge) return null;
     const st = pathState;
-    if (!st.ladder.done) {
+    if (pathUi.sprint && !st.sprint) {
+      // Arm D after a link's question: the sprint comes next.
+      return (
+        <div className="mb-3" data-testid="path-verdict-next">
+          <button type="button" data-testid="path-sprint-set-up" onClick={() => { setCurrentChallenge(null); setActiveTab('guide'); }}
+            className="w-full py-2.5 text-sm font-bold rounded-lg" style={{ background: '#FFE34D', color: '#0E0F13' }}>
+            {i18n_t('tournamentPath', 'sprintSetUp')}
+          </button>
+        </div>
+      );
+    }
+    if (pathUi.ladderActive) {
       return (
         <div className="mb-3" data-testid="path-verdict-next">
           <button type="button" data-testid="path-next-question" onClick={pathOpenLadderNext}
@@ -14000,6 +14167,8 @@ CRITICAL RULES:
     const ended = planEnded(plan, ctx);
     const why = pathWhyLines(plan, getCurrentLang());
     const chip = { background: '#1F222B', border: '1px solid #2A2E38', borderRadius: '6px', color: '#F2F0EA' };
+    // Arm D: "Day d of D · n today" and the day-by-day strip.
+    const day = pathUi.sprint && pathState.sprint ? sprintDayModel(pathState, { today: getTodayString() }) : null;
     return (
       <div data-testid="path-plan-line" data-highlight={pathHighlight ? 'on' : 'off'} className="mb-3 rounded-lg px-4 py-3 transition-colors"
         style={{ background: '#16181F', border: `1px solid ${pathHighlight ? '#F2F0EA' : '#2A2E38'}`, color: '#F2F0EA' }}>
@@ -14007,8 +14176,16 @@ CRITICAL RULES:
           {pathLeveled && pathState.ladder.levelId && (
             <span className="text-xs" style={{ color: '#8A8E99' }} data-testid="path-plan-level">{i18n_t('tournamentPath', 'levelTitle', { tier: pathTierName(pathState.ladder.levelId) })}</span>
           )}
+          {day ? (
+            <span className="text-sm font-medium" data-testid="path-sprint-line">
+              {i18n_t('tournamentPath', day.leftToday === 0 ? 'sprintLineDone' : (pathState.sprint.company ? 'sprintLineCompany' : 'sprintLine'),
+                { d: day.day, D: day.total, n: day.leftToday === 0 ? day.daily : day.leftToday, company: pathState.sprint.company })}
+              <span className="ml-2 text-xs" style={{ color: '#8A8E99' }}>{k}/{n}</span>
+            </span>
+          ) : (<>
           <span className="text-sm font-medium hidden sm:inline">{i18n_t('tournamentPath', 'planLine', { n, k })}</span>
           <span className="text-sm font-medium sm:hidden">{i18n_t('tournamentPath', 'planLineShort', { n, k })}</span>
+          </>)}
           {!ended && k < n && (
             <button type="button" data-testid="path-plan-next" onClick={() => pathOpenNext('line')} className="px-3 py-1.5 text-xs font-semibold" style={chip}>
               {i18n_t('tournamentPath', 'next')}
@@ -14018,11 +14195,19 @@ CRITICAL RULES:
             <button type="button" data-testid="path-why-toggle" onClick={() => setPathWhyOpen(v => !v)} className="text-xs underline underline-offset-2" style={{ color: '#8A8E99' }}>
               {i18n_t('tournamentPath', 'whyToggle')}
             </button>
-            <button type="button" data-testid="path-steps-toggle" onClick={() => { setPathStepsOpen(v => !v); pathRevealTabs('all_steps'); }} className="text-xs underline underline-offset-2" style={{ color: '#8A8E99' }}>
+            <button type="button" data-testid="path-steps-toggle" onClick={() => { setPathStepsOpen(v => !v); if (!pathUi.sprint) pathRevealTabs('all_steps'); }} className="text-xs underline underline-offset-2" style={{ color: '#8A8E99' }}>
               {i18n_t('tournamentPath', 'stepsToggle')}
             </button>
           </span>
         </div>
+        {day && (
+          <div className="mt-2 flex gap-1" data-testid="path-day-strip" aria-hidden="true">
+            {day.days.map(x => (
+              <span key={x.day} className="h-1.5 flex-1 rounded-full" title={`${x.day}`}
+                style={{ background: x.met ? '#4ADE80' : x.today ? '#F2F0EA' : '#2A2E38', opacity: x.past && !x.met ? 0.5 : 1 }} />
+            ))}
+          </div>
+        )}
         {ended && renderPathPlanEnd()}
         {pathWhyOpen && (
           <ul className="mt-2 space-y-1 text-xs" style={{ color: '#8A8E99' }} data-testid="path-why">
@@ -25160,6 +25345,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     setCurrentChallenge(challenge);
     // Tournament arm B: the first open of a ladder question starts its clock.
     if (pathUi.ladderActive && !solvedChallenges.has(challenge.id)) pathSave(ladderOpen(pathStateRef.current, challenge, Date.now()));
+    if (pathUi.sprint && !solvedChallenges.has(challenge.id)) pathOpenedRef.current = { id: challenge.id, at: Date.now() };
     // Content-quality denominator: without opened-events, "opened but never
     // attempted" (a scary/unclear problem statement) is invisible — we only
     // saw solves and attempts. Open→attempt→solve per challenge is the full
@@ -36646,6 +36832,8 @@ RULES:
 
         {/* Tournament arm B: the plan line on every tab, every session (B5). */}
         {pathUi.showPlanLine && renderPathPlanLine()}
+        {/* Tournament arm D: the sprint screen first (plan §4). */}
+        {pathUi.sprintSetup && renderPathSprintSetup()}
         {showPrimaryLearningTabs && (
           <>
             <div
