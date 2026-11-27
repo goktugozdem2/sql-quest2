@@ -2090,7 +2090,8 @@ kept beside the raw count, never instead of it. Query 1 (`raw_visitors`,
   exclusion — one row marks the whole browser. The exclusions are fleet
   README rule 2 plus the two app-only crawlers found by A01 (shared traps):
   internal usernames; the founder's walk aids (`363dfb2b…`, `e5fcbad1a022…`),
-  11-20 checkout tests and 11-24 walk guests; `metadata.bot` / `wd` /
+  11-20 checkout tests and 11-24 walk guests; A2's live-QA walk aids (every
+  `aid` starting `a2a2`, plus `d9fe96e2…` of 11-26; B2 2026-11-27); `metadata.bot` / `wd` /
   `uaBot`; viewports `tablet:800x600`, `desktop:1280x1200`,
   `desktop:1919x992`, `desktop:1024x1024`; `ref:aocr.org` and `verify-test`;
   `app1lang`, `topic1lang`, the LA/1920x1080 pre-stamp shape, `utc1280`,

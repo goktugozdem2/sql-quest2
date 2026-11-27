@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import { COMPANY_INTERVIEWS, NEW_COMPANY_TAGS } from '../src/data/company-interviews.js';
-import { loadBank, facts, renderPage, withProvenance } from '../scripts/build-company-pages.mjs';
-import { withFirstScreen } from '../scripts/company-first-screen.mjs';
+import { loadBank, facts, renderPage, withProvenance, pageOutputs, SKIP_UNTIL_READ } from '../scripts/build-company-pages.mjs';
+import { withFirstScreen, FIRST_SCREENS } from '../scripts/company-first-screen.mjs';
 import { QUESTIONS, buildData, render } from '../scripts/build-readiness-test.mjs';
 import { CANONICAL_SKILLS } from '../src/utils/skill-calc.js';
 
@@ -50,6 +50,31 @@ describe('company template', () => {
       const f = facts(bank, d.name);
       const generated = withFirstScreen(withProvenance(renderPage(key, d, f), { slug: key, name: d.name }), key, f);
       expect(committed, `${key}: re-run node scripts/build-company-pages.mjs`).toBe(stripStrip(generated));
+    }
+  });
+
+  // 2026-11-27: the check above covered only the template pages. The older
+  // pages are rewritten by the same run (olderPage strips the first-screen
+  // block and puts back only what FIRST_SCREENS holds), and Wise's
+  // hand-written first screen (#361) would have been deleted by the next run
+  // without any test noticing. This runs the whole generator in memory over
+  // the committed sources and asks for every company page, byte for byte.
+  // Proven by removing FIRST_SCREENS.wise: fails naming wise-sql-interview.html.
+  it('running the generator over the committed sources changes no company page, byte for byte', () => {
+    const outputs = pageOutputs(bank);
+    const pages = fs.readdirSync(path.join(ROOT, 'src')).filter(f => /-sql-interview\.html$/.test(f))
+      .filter(f => !SKIP_UNTIL_READ.has(f.replace(/-sql-interview\.html$/, '')));
+    expect([...outputs.keys()].map(k => `${k}-sql-interview.html`).sort()).toEqual(pages.sort());
+    for (const [key, { before, after }] of outputs) {
+      expect(after === before, `${key}-sql-interview.html: node scripts/build-company-pages.mjs would rewrite it (a hand edit the generator does not own?)`).toBe(true);
+    }
+  });
+
+  it('a first-screen block appears only on a page FIRST_SCREENS configures', () => {
+    for (const f of fs.readdirSync(path.join(ROOT, 'src')).filter(x => /-sql-interview\.html$/.test(x))) {
+      const key = f.replace(/-sql-interview\.html$/, '');
+      expect(read(`src/${f}`).includes('<!-- company-first-screen:start -->'), `${f}: block without a FIRST_SCREENS entry, or entry without a block`)
+        .toBe(Boolean(FIRST_SCREENS[key]));
     }
   });
 
