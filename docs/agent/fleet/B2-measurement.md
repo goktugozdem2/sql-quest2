@@ -7,8 +7,8 @@ status: active
 cadence: "weekly (Fri) + the A01 human scorecard"
 metric: undefined  # TODO: register ledger claims past their read date without a verdict in docs/agent/metrics.md
 writes_code: true
-version: 1.0.0
-last_changed: 2026-11-26
+version: 1.1.0
+last_changed: 2026-11-28
 ---
 # B2 — Measurement
 
@@ -31,11 +31,12 @@ last_changed: 2026-11-26
    source / country / landing-page tables and the gap-by-rule table, then
    three to five lines of notes. Never edit an earlier block. Mark a week
    whose `runway_complete` is false as a floor. If C8 added a fingerprint
-   that week, change the exclusion block in all three queries at once
-   (the test pins them identical) in a separate PR before the read, and
+   that week, change the exclusion block in all three queries and in
+   `scripts/usage-line.sql` at once (the tests pin them identical) in a separate PR before the read, and
    say in the block that the series was re-read on the new rules.
    Definitions: `human_visitors`, `scorecard_weekly` in
    `docs/agent/metrics.md`.
+4b. **Refresh the homepage usage line (every Friday).** Re-run `scripts/usage-line.sql` (read-only MCP), write `docs/reads/usage-line-<date>.md` (the `accepted_solutions:` / `people_30d:` lines), and put both numbers and the date into `src/index.html`'s `data-testid="usage-line"` (title and "as of"); honest numbers even when they read worse. `tests/usage-line.test.js` fails a line more than 21 days older than the newest read. This one is a page change: its own PR with the built `public/index.html` and `src/data/sitemap-lastmod.json`, not the self-merged docs PR.
 5. One docs PR, self-merged.
 
 ## The content funnel (2026-11-22)
@@ -68,4 +69,5 @@ last_changed: 2026-11-26
 
 ## Changelog
 
+- 1.1.0 (2026-11-28) — step 4b: the homepage usage line, re-measured with `scripts/usage-line.sql` every Friday (A2's 11-28 finding: eight weeks stale under "refreshed every Friday").
 - 1.0.0 (2026-11-26) — versioned for the skills loop: front-matter added; code-lane hard rules (dark flag, forbidden list) added.
