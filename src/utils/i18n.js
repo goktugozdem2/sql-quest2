@@ -177,6 +177,7 @@ const TRANSLATIONS = {
       editorPlaceholder: 'Write your SQL solution here...',
       // The line above Run in the `mobileRunBar` bar arm (src/utils/mobile-run-bar.js).
       runBarFirstHint: 'Tap Run to see the table',
+      runnableStarterLine: 'Press Run to see the data first.',
       expectedOutput: 'Expected Output ({n} rows)',
       expectedOutputOne: 'Expected Output (1 row)',
       // Header / guest banner
@@ -333,6 +334,13 @@ const TRANSLATIONS = {
       retrievalDueSub: 'Weak skills come back at 3, 7 and 14 days. One challenge each, at the level you have shown.',
       retrievalSince: '{n} days since you practised this',
       retrievalStart: 'Retrieve',
+      // The Coach's Debug door (coachDebugDoor, 2026-11-25).
+      debugDoorEyebrow: 'Debug practice',
+      debugDoorTitle: 'Fix a query an AI wrote',
+      debugDoorWhy: 'Some interviews now include fixing a query someone else wrote, and at work that query is often an AI’s. Each one here returns the wrong answer: find the bug and fix it.',
+      debugDoorCTA: 'Fix it',
+      debugDoorSeeAll: 'See all {n}',
+      debugDoorLocked: 'opens with Pro',
       perDay: '{n} a day',
       streakDays: '{n}-day streak',
       solvesCount: '{n} solved',
@@ -939,6 +947,7 @@ const TRANSLATIONS = {
       filterSolved: 'Solved',
       filterUnsolved: 'Unsolved',
       badgeFree: 'FREE',
+      badgeFirstFree: 'FIRST {n} FREE',
       badgePro: 'PRO',
       meta: '{min} min · {q} questions · Pass: {pct}%',
       minutesLabel: '{n} min',
@@ -1032,6 +1041,48 @@ const TRANSLATIONS = {
       noteDateSub: 'Pick the day and we count down to it.',
       noteDateSave: 'Save date',
       noteDateSkip: 'Skip',
+    },
+    tournamentPath: {
+      // Tournament arm B (single path) — docs/plans/first-session-tournament-2026-11-26.md §3.
+      // The wall and plan-end lines, the "Pro" label and `plan_end` are money
+      // copy: founder's go, orchestrator-decisions 2026-11-26.
+      ladderLine: 'Finding your level · question {q} of {n}',
+      ladderLineShort: 'Your level · {q} of {n}',
+      nextQuestion: 'Next question →',
+      stepDown: "This one's a step up — try a closer one →",
+      levelTitle: 'Your level: {tier}',
+      levelWhy: 'Set from how you solved the last four.',
+      planLine: 'Your plan: {n} questions · {k}/{n}',
+      planLineShort: 'Plan · {k}/{n}',
+      next: 'Next →',
+      nextInPlan: 'Next in your plan →',
+      whyToggle: 'Why this plan',
+      stepsToggle: 'All steps',
+      pro: 'Pro',
+      wall: '{k} of {n} done — the rest of your plan is Pro.',
+      seePro: 'See Pro',
+      planDone: 'Plan done: {k} of {n}.',
+      mockStep: 'Mock: {title}',
+      tierFoundations: 'Foundations',
+      tierIntermediate: 'Intermediate',
+      tierAdvanced: 'Advanced',
+      tierReady: 'Interview-ready',
+      // Arm D (interview sprint) — plan §4; the wall line is money copy (founder's go 2026-11-26).
+      sprintEyebrow: 'Your sprint',
+      sprintSub: 'Two taps. We plan the days for you.',
+      sprintLearning: 'Just learning SQL',
+      sprintLengthQ: 'How long is your sprint?',
+      sprintLengthQCompany: 'Your {company} sprint: how long?',
+      sprint7: '7 days',
+      sprint14: '14 days',
+      sprintNoDate: 'No date',
+      sprintSkip: 'Skip',
+      sprintChange: 'Change',
+      sprintLine: 'Day {d} of {D} · {n} today',
+      sprintLineCompany: 'Day {d} of {D} · {company} sprint · {n} today',
+      sprintLineDone: "Day {d} of {D} · today's {n} done",
+      sprintSetUp: 'Set up your sprint →',
+      sprintWall: 'Day {d} of {D} — the rest of your {company} sprint is Pro.',
     },
     companyAsk: {
       question: 'Which company are you preparing for?',
@@ -1365,6 +1416,7 @@ const TRANSLATIONS = {
       editorPlaceholder: 'SQL çözümünü buraya yaz...',
       // The Turkish button reads "Çalıştır", so the line names that, not "Run".
       runBarFirstHint: 'Tabloyu görmek için Çalıştır\'a dokun',
+      runnableStarterLine: 'Önce veriyi görmek için Çalıştır\'a bas.',
       expectedOutput: 'Beklenen Çıktı ({n} satır)',
       logIn: 'Giriş Yap',
       logInTooltip: 'Hesabın var mı? Giriş yap, buradaki ilerlemen seninle gelir.',
@@ -1499,6 +1551,12 @@ const TRANSLATIONS = {
       retrievalDueSub: 'Zayıf beceriler 3, 7 ve 14 gün sonra geri gelir. Her biri için, gösterdiğin seviyede bir soru.',
       retrievalSince: '{n} gündür çalışmadın',
       retrievalStart: 'Hatırla',
+      debugDoorEyebrow: 'Hata ayıklama pratiği',
+      debugDoorTitle: 'Yapay zekânın yazdığı bir sorguyu düzelt',
+      debugDoorWhy: 'Bazı mülakatlarda artık başkasının yazdığı bir sorguyu düzeltmek isteniyor; işte o sorgu çoğu zaman bir yapay zekânın. Buradakilerin her biri yanlış cevap döndürüyor: hatayı bul ve düzelt.',
+      debugDoorCTA: 'Düzelt',
+      debugDoorSeeAll: '{n} tanesini gör',
+      debugDoorLocked: 'Pro ile açılır',
       perDay: 'günde {n}',
       streakDays: '{n} günlük seri',
       solvesCount: '{n} çözüldü',
@@ -2010,6 +2068,7 @@ const TRANSLATIONS = {
       filterSolved: 'Çözülen',
       filterUnsolved: 'Çözülmeyen',
       badgeFree: 'ÜCRETSİZ',
+      badgeFirstFree: 'İLK {n} ÜCRETSİZ',
       badgePro: 'PRO',
       meta: '{min} dk · {q} soru · Geçme: %{pct}',
       minutesLabel: '{n} dk',
@@ -2092,6 +2151,44 @@ const TRANSLATIONS = {
       noteDateSub: 'Günü seç, geri sayımı biz tutalım.',
       noteDateSave: 'Tarihi kaydet',
       noteDateSkip: 'Geç',
+    },
+    tournamentPath: {
+      ladderLine: 'Seviyeni buluyoruz · soru {q}/{n}',
+      ladderLineShort: 'Seviyen · {q}/{n}',
+      nextQuestion: 'Sonraki soru →',
+      stepDown: 'Bu bir adım ileri — daha yakın bir soru dene →',
+      levelTitle: 'Seviyen: {tier}',
+      levelWhy: 'Son dört soruyu nasıl çözdüğüne göre belirlendi.',
+      planLine: 'Planın: {n} soru · {k}/{n}',
+      planLineShort: 'Plan · {k}/{n}',
+      next: 'Sonraki →',
+      nextInPlan: 'Planındaki sonraki →',
+      whyToggle: 'Bu plan neden böyle',
+      stepsToggle: 'Tüm adımlar',
+      pro: 'Pro',
+      wall: "{n} sorunun {k} tanesi tamam — planının geri kalanı Pro'da.",
+      seePro: "Pro'yu gör",
+      planDone: 'Plan tamam: {k}/{n}.',
+      mockStep: 'Mülakat: {title}',
+      tierFoundations: 'Temel',
+      tierIntermediate: 'Orta',
+      tierAdvanced: 'İleri',
+      tierReady: 'Mülakata hazır',
+      sprintEyebrow: 'Sprintin',
+      sprintSub: 'İki dokunuş. Günleri senin için planlıyoruz.',
+      sprintLearning: 'Sadece SQL öğreniyorum',
+      sprintLengthQ: 'Sprintin ne kadar sürsün?',
+      sprintLengthQCompany: '{company} sprintin ne kadar sürsün?',
+      sprint7: '7 gün',
+      sprint14: '14 gün',
+      sprintNoDate: 'Tarih yok',
+      sprintSkip: 'Geç',
+      sprintChange: 'Değiştir',
+      sprintLine: '{D} günün {d}. günü · bugün {n}',
+      sprintLineCompany: '{D} günün {d}. günü · {company} sprinti · bugün {n}',
+      sprintLineDone: '{D} günün {d}. günü · bugünün {n} sorusu tamam',
+      sprintSetUp: 'Sprintini kur →',
+      sprintWall: "{D} günün {d}. günü — {company} sprint'inin geri kalanı Pro'da.",
     },
     companyAsk: {
       question: 'Hangi şirkete hazırlanıyorsun?',
@@ -2471,7 +2568,7 @@ export function localizeQuestion(q, lang = getCurrentLang()) {
   // is never translated, only its label.
   const hasOptionTr = Array.isArray(q.options) && q.options.some(o => o && o[`text_${lang}`]);
   const hasSnippetTr = Array.isArray(q.codeSnippets) && q.codeSnippets.some(c => c && c[`label_${lang}`]);
-  if (!q[titleK] && !q[descK] && !q[hintsK] && !q[explK] && !hasOptionTr && !hasSnippetTr && !q[`practiceTitle_${lang}`] && !q[`practiceNote_${lang}`]) return q;
+  if (!q[titleK] && !q[descK] && !q[hintsK] && !q[explK] && !hasOptionTr && !hasSnippetTr && !q[`practiceTitle_${lang}`] && !q[`practiceNote_${lang}`] && !q[`gradingNotes_${lang}`]) return q;
   const out = {
     ...q,
     title: q[titleK] || q.title,
@@ -2483,6 +2580,9 @@ export function localizeQuestion(q, lang = getCurrentLang()) {
   // method named in the title, which a timed screen does not give.
   if (q[`practiceTitle_${lang}`]) out.practiceTitle = q[`practiceTitle_${lang}`];
   if (q[`practiceNote_${lang}`]) out.practiceNote = q[`practiceNote_${lang}`];
+  // A written question's reference answer and grading notes (the Metrics &
+  // Case Round, 2026-11-22), shown after the answer is submitted.
+  if (q[`gradingNotes_${lang}`]) out.gradingNotes = q[`gradingNotes_${lang}`];
   if (Array.isArray(q.options)) {
     out.options = q.options.map(o => (o ? { ...o, text: o[`text_${lang}`] || o.text } : o));
   }

@@ -1,3 +1,15 @@
+---
+id: AN
+name: "Analytics (who arrives, on what, and where they fall out)"
+owner: orchestrator
+runtime: laptop
+status: active
+cadence: "daily after the GSC fetch; weekly on Mondays"
+metric: undefined  # TODO: register signal rows landed same day; gap to Vercel explained in docs/agent/metrics.md
+writes_code: false
+version: 1.0.0
+last_changed: 2026-11-26
+---
 # AN — Analytics (who arrives, on what, and where they fall out)
 
 **Lane:** read-only. The daily breakdowns that decisions rest on: country,
@@ -151,3 +163,7 @@ audience lists). If one is wanted, name it first and scope GA4 to it.
 - No source mix (C8). No search positions (S1 / C1).
 - No writes to production, no email, no contact with any site.
 - No pruning: a dead page is a signal, the founder decides.
+
+## Changelog
+
+- 1.0.0 (2026-11-26) — versioned for the skills loop: front-matter added.

@@ -1,3 +1,15 @@
+---
+id: A2
+name: "Live QA"
+owner: orchestrator
+runtime: laptop
+status: active
+cadence: "daily, and after every deploy"
+metric: undefined  # TODO: register person-reported production bugs A2 missed; smoke green in docs/agent/metrics.md
+writes_code: true
+version: 1.0.0
+last_changed: 2026-11-26
+---
 # A2 — Live QA
 
 **Lane:** what a person sees on https://sqlquest.app. Fixes go in the smallest PR that solves them.
@@ -25,3 +37,21 @@
 
    If the fix needs the founder (deploy, Stripe), list it under FOUNDER with a screenshot path.
 6. Keep screenshots in the scratchpad only. If nothing is wrong, report `noop` with the list of paths checked.
+
+## Hard rules for a code lane (skills loop, 2026-11-26)
+
+- **Funnel-step change ⇒ dark flag.** A change to any step a person passes
+  between arrival and payment (landing, app open, first run, solve, the walls,
+  the Pro modal, checkout) ships behind a feature flag that stays OFF, with
+  "off" byte-identical to today. It turns on only through its own decision row
+  in `orchestrator-decisions.md`; an A/B ships OFF too, and its 50/50 flip is
+  that row. (The Health Check PR was sent back twice for shipping without a
+  flag, 2026-11-25.)
+- **Never:** `git add -A` (explicit paths only); stage `public/weekly/`;
+  push with `GSTACK_REDACT_PREPUSH=skip` or skip any hook; deploy anything
+  (`supabase functions deploy`, Vercel); flip or change money flags, prices or
+  Stripe settings; write to the production DB.
+
+## Changelog
+
+- 1.0.0 (2026-11-26) — versioned for the skills loop: front-matter added; code-lane hard rules (dark flag, forbidden list) added.
