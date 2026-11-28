@@ -601,15 +601,18 @@ window.FEATURE_FLAGS = {
     // gets a self-serve fix", metric failed_charge_recovery.
     billingIssueLine: true,
 
-    // ── PostgreSQL mode — spike, dark (2026-11-22) ───────────────────────
-    // A "SQLite / PostgreSQL" toggle on the challenge page. PostgreSQL runs
-    // in PGlite (PostgreSQL 18.6 as WASM, ~5.4 MB gzipped), fetched from
-    // jsDelivr with SRI only when the person picks it; each challenge gets
-    // its own instance, graded with the same comparator, on the allow-list
-    // src/data/postgres-allowlist.json (301 of 312). The verdict is shown,
-    // never recorded — no solve, XP or quota. Preview:
-    // /app/?ff_features_postgresMode=true. Plan and recommendation:
-    // docs/plans/postgres-mode-2026-11-22.md.
+    // ── PostgreSQL mode — opt-in switch, dark (2026-11-22, ready 11-25) ──
+    // A "SQLite / PostgreSQL" switch on the challenge page; SQLite stays the
+    // default. PostgreSQL runs in PGlite (PostgreSQL 18.6 as WASM, ~5.4 MB
+    // gzipped), fetched from jsDelivr with SRI only when the person picks
+    // it; ONE instance per session, a schema per challenge, graded with the
+    // same comparator, on the allow-list src/data/postgres-allowlist.json
+    // (302 of 323). Shown only at 768 px+ with a fine pointer (no phones or
+    // touch tablets yet). The verdict is shown, never recorded — no solve,
+    // XP or quota. Not a money flag, not an A/B. Preview:
+    // /app/?ff_features_postgresMode=true. The flip, its walk and its revert
+    // rule: docs/plans/postgres-mode-flip-2026-11-25.md (metric
+    // postgres_mode_use).
     postgresMode: false,
 
     // ── A company-page arrival opens question 1 (B5, 2026-11-22) ──────────

@@ -269,6 +269,100 @@ order by case diff when 'Easy' then 0 when 'Medium' then 1 else 2 end;
   - solve-through more than 20 points below the band → fix the UX before
     adding items.
 
+## `postgres_mode_use`
+
+PostgreSQL mode, the opt-in engine switch on the challenge page (flag
+`postgresMode`; plan and flip rule `docs/plans/postgres-mode-flip-2026-11-25.md`,
+ledger "PostgreSQL mode — the opt-in switch"). Registered 2026-11-25, before
+the flip and before any event existed in production, so nothing here was fit
+to data. **t0 = the flip date**; the window is **t0 → t0 + 28 days**. The
+switch renders only at 768 px and up with a fine pointer (not on a
+touch-first device, and not on one reporting under 4 GB), so every row is a
+mouse-or-trackpad tablet/desktop viewport by construction; a `mobile:`
+viewport on any of these events is a bug, not a person.
+
+People are `coalesce(aid, username)`. Same exclusions as `debug_solve_through`
+(internal usernames, `metadata.bot`, the crawler fingerprints at the top of
+docs/reads/funnel-2026-11-22.md). All events are written with reason
+`activation_funnel`.
+
+Events (`PG_MODE_EVENTS` in `src/utils/postgres-mode-gate.js`):
+- `postgres_mode_toggle_shown` — once per page load, the first challenge the
+  switch rendered on. The denominator.
+- `postgres_mode_picked` — the person moved the switch to PostgreSQL.
+- `postgres_mode_ready` `{challengeId, loadMs, cold}` — PostgreSQL answered on
+  that challenge; `cold` is the first time on that page load (engine + PGlite
+  fetch + boot + tables), later ones are a challenge switch (tables only).
+- `postgres_mode_unavailable` `{challengeId}` — off the allow-list.
+- `postgres_mode_failed` `{challengeId, error, ms}` — the engine or PGlite did
+  not load; `error` is a short reason (`integrity`, `HTTP 403`, `network`,
+  `memory`, `engine_script`, `other`), never the message or a query.
+- `postgres_mode_submitted` `{challengeId, verdict}` — `correct | wrong | error`.
+  Never a solve: it writes no `challenge_*` event, attempt, XP or quota.
+- `postgres_mode_left` — back to SQLite.
+
+- **Primary: pick rate.** People with `postgres_mode_picked` ÷ people with
+  `postgres_mode_toggle_shown`, in the window.
+- **Depth: submit rate.** Pickers with at least one `postgres_mode_submitted`
+  ÷ pickers. Correct share of those submits is descriptive.
+- **Load health (the stop line).** Pickers with no `postgres_mode_ready` and
+  at least one `postgres_mode_failed` ÷ pickers; and the median `loadMs` of
+  `cold = true` ready rows, by viewport band.
+- **Guardrail:** `first_solve_10m` and `open_to_first_run` on tablet/desktop
+  viewports, the 28 days after t0 against the 28 days before. Not an A/B (the
+  switch is opt-in and SQLite stays the default), so this is a before/after
+  read and confounded by whatever else ships; it only flags a drop large
+  enough to look for.
+
+```sql
+with ev as (
+  select coalesce(((metadata #>> '{}')::jsonb)->>'aid', username) pid, event, created_at,
+         (metadata #>> '{}')::jsonb m
+  from pro_events
+  where username !~* '^(test|qa_|fabletest|linktest|internalroutine|sqlquest$|elena$)'
+    and coalesce(((metadata #>> '{}')::jsonb)->>'bot', 'false') <> 'true'
+    and created_at >= :flip and created_at < :flip + interval '28 days'
+    and event like 'postgres\_mode\_%'
+),
+p as (
+  select pid,
+    bool_or(event = 'postgres_mode_toggle_shown') shown,
+    bool_or(event = 'postgres_mode_picked')       picked,
+    bool_or(event = 'postgres_mode_ready')        ready,
+    bool_or(event = 'postgres_mode_failed')       failed,
+    bool_or(event = 'postgres_mode_submitted')    submitted,
+    count(*) filter (where event = 'postgres_mode_submitted' and m->>'verdict' = 'correct') correct_submits,
+    count(*) filter (where event = 'postgres_mode_submitted') submits
+  from ev group by pid
+)
+select
+  count(*) filter (where shown)                                              shown_people,
+  count(*) filter (where picked)                                             pickers,
+  round(100.0 * count(*) filter (where picked) / nullif(count(*) filter (where shown), 0), 1)            pick_rate,
+  round(100.0 * count(*) filter (where picked and submitted) / nullif(count(*) filter (where picked), 0), 1) submit_rate,
+  round(100.0 * count(*) filter (where picked and failed and not ready) / nullif(count(*) filter (where picked), 0), 1) failed_only_rate,
+  sum(correct_submits) correct_submits, sum(submits) submits,
+  (select percentile_cont(0.5) within group (order by (m->>'loadMs')::int)
+     from ev where event = 'postgres_mode_ready' and m->>'cold' = 'true') cold_load_ms_median
+from p;
+-- failures by reason: select m->>'error', count(*) from ev where event = 'postgres_mode_failed' group by 1;
+```
+
+**Thresholds, copied from the ledger claim (written before the data).**
+- **Target:** pick rate ≥ 5% of shown people, with ≥ 15 pickers in 28 days,
+  and a submit rate ≥ 40% of pickers.
+- **Stop (the same day):** failed-only rate > 10% of pickers once there are
+  ≥ 10 pickers, any `postgres_mode_failed` with `error = 'memory'` from a
+  desktop viewport cluster (≥ 3 people), or a person-reported tab crash on a
+  challenge in PostgreSQL mode → flag off.
+- **Falsification:** pick rate < 2% of shown people with ≥ 300 shown, or
+  fewer than 5 pickers in 28 days → the switch is not what interview-bound
+  people reach for; keep it dark, and do not build phones, recorded solves or
+  a Pro gate on top of it.
+- **n:** about 50 real new people a week arrive in late November, most on
+  phones; the shown denominator will be small. Below 100 shown people the
+  read is `UNREADABLE`, not `FLAT`; read the rows.
+
 ## `coach_debug_door`
 
 The Coach's Debug door (registered 2026-11-25, in its own PR per rule 6b;

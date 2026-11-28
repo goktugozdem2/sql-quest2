@@ -6,6 +6,8 @@
 // At 375x812 and 1366x768:
 //   0. flag off  → no toggle, no request for /pg-mode.js or PGlite;
 //      flag on, toggle untouched → the same: nothing loads until it is picked;
+//      at 375 (2026-11-25) the toggle does not render at all with the flag on
+//      (pgModeFits: 768 px and up), so steps 1-4 run at 1366 only;
 //   1-3. three challenges: pick PostgreSQL, Run a Postgres-native query,
 //      Submit it (must be correct), and on the first one Run a SQLite-only
 //      query (must error the way Postgres does) and Submit a wrong answer;
@@ -76,6 +78,8 @@ async function context(browser, vp) {
   await ctx.route(/unpkg\.com|cdnjs\.cloudflare\.com|cdn\.jsdelivr\.net\/npm\/@supabase/, r => {
     const f = VENDOR && vendorFile(r.request().url(), VENDOR);
     if (f && fs.existsSync(f)) return r.fulfill({ path: f, headers: { 'access-control-allow-origin': '*' } });
+    // No vendor dir (a laptop that reaches the CDNs, 2026-11-25): the real file.
+    if (!VENDOR) return r.continue();
     return r.abort();
   });
   await ctx.route(u => u.origin === BASE && (u.pathname.endsWith('/') || u.pathname.endsWith('.html')), async r => {
@@ -134,9 +138,11 @@ try {
       const key = flag ? 'flagOnUntouched' : 'flagOff';
       out[key] = { toggles, pgRequests: pgReqs.length, hasSQLQuestPg: await page.evaluate(() => !!window.SQLQuestPg) };
       expect(pgReqs.length === 0, `${vp.name} ${key}: PGlite/pg-mode requested: ${pgReqs.join(', ')}`);
-      expect(flag ? toggles === 1 : toggles === 0, `${vp.name} ${key}: ${toggles} toggles`);
+      const wantToggles = flag && !vp.phone ? 1 : 0;
+      expect(toggles === wantToggles, `${vp.name} ${key}: ${toggles} toggles (want ${wantToggles})`);
       await ctx.close();
     }
+    if (vp.phone) continue; // the switch is not offered under 768 px
 
     // 1-4. one context: the cold start on the first challenge, warm after.
     const ctx = await context(browser, vp);

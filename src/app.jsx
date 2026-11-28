@@ -36,6 +36,7 @@ import { interviewFirstReason } from './utils/interview-first.js';
 import { interviewStatusModel, STATUS_CHECK_FRESH_DAYS } from './utils/interview-first.js';
 import { mergeProgress, hasProgress, isResumableGuest, GUEST_USER_KEY } from './utils/progress-merge.js';
 import { companySetMatch } from './utils/company-set-match.js';
+import { pgModeFits, pgFailReason, PG_MODE_EVENTS } from './utils/postgres-mode-gate.js';
 import { buildPracticePlan, PLAN_MIN_SOLVES_FOR_SKILLS } from './utils/practice-plan.js';
 import { FIRST_SCREEN_STORAGE_KEY, firstScreenDecision } from './utils/first-screen.js';
 import { MOBILE_RUN_BAR_STORAGE_KEY, MOBILE_RUN_BAR_TEST_ID, isNarrowTouch, isShortViewport, mobileRunBarDecision, runBarLabel, keyboardOffset } from './utils/mobile-run-bar.js';
@@ -8470,13 +8471,24 @@ function SQLQuest() {
   const [dataError, setDataError] = useState(null);
   
   const [currentChallenge, setCurrentChallenge] = useState(null);
-  // PostgreSQL mode (spike, flag postgresMode, 2026-11-22): the engine the
-  // challenge page runs on and PGlite's state. Hooks sit above the early
-  // returns. Flag off: the toggle never renders and nothing below loads.
-  const postgresModeOn = window.FF?.feature?.('postgresMode') === true;
+  // PostgreSQL mode (flag postgresMode; spike 2026-11-22, opt-in shape
+  // 2026-11-25): the engine the challenge page runs on and PGlite's state.
+  // Hooks sit above the early returns. Flag off, or a window under 768 px /
+  // a device under 4 GB / a touch-first device (pgModeFits): the switch never
+  // renders and nothing below loads. SQLite stays the default for everyone.
+  const postgresModeOn = window.FF?.feature?.('postgresMode') === true
+    && pgModeFits({ width: window.innerWidth, deviceMemory: navigator.deviceMemory, coarsePointer: !!window.matchMedia?.('(pointer: coarse)')?.matches });
   const [sqlEngine, setSqlEngine] = useState('sqlite');
   const [pgMode, setPgMode] = useState(null); // { phase: loading|ready|unavailable|error, loadMs, verdict, error }
   const pgBundleRef = useRef(null);
+  const pgSeenRef = useRef({ shown: false, ready: false });
+  // postgres_mode_toggle_shown: once per page load, the denominator of
+  // postgres_mode_use (docs/agent/metrics.md).
+  useEffect(() => {
+    if (!postgresModeOn || !currentChallenge || pgSeenRef.current.shown) return;
+    pgSeenRef.current.shown = true;
+    trackActivationEvent(PG_MODE_EVENTS.shown, { challengeId: currentChallenge.id });
+  }, [currentChallenge?.id, postgresModeOn]); // eslint-disable-line react-hooks/exhaustive-deps
   // i18n view of the active challenge — title/description/hint/example
   // swapped to the user's language when *_<lang> fields exist on the
   // challenge object. Render code reads `displayChallenge`; AI Tutor /
@@ -26833,11 +26845,13 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
     trackActivationEvent('run_submit_nudge_shown', { testId: RUN_SUBMIT_NUDGE_TEST_ID, kind, challengeId: cid });
   };
 
-  // ── PostgreSQL mode (spike) ─────────────────────────────────────────────
+  // ── PostgreSQL mode ─────────────────────────────────────────────────────
   // /pg-mode.js (src/pg-mode/entry.js) is injected only when a person picks
   // PostgreSQL; it fetches PGlite from jsDelivr with SRI (src/utils/pg-cdn.js)
-  // and keeps one instance per challenge — never the shared `db`. The verdict
-  // is shown, never recorded: no attempt, solve, XP or quota moves.
+  // and keeps ONE instance per session, a schema per challenge
+  // (src/pg-mode/session.js) — never the shared `db`. The verdict is shown,
+  // never recorded: no attempt, solve, XP or quota moves. Events
+  // postgres_mode_* (PG_MODE_EVENTS) feed postgres_mode_use.
   const loadPgBundle = () => {
     if (window.SQLQuestPg) return Promise.resolve(window.SQLQuestPg);
     if (pgBundleRef.current) return pgBundleRef.current;
@@ -26852,23 +26866,35 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
     return pgBundleRef.current;
   };
   const pickSqlEngine = async (engine) => {
+    const challengeId = currentChallenge?.id ?? null;
+    if (engine === 'postgres' && sqlEngine !== 'postgres') trackActivationEvent(PG_MODE_EVENTS.picked, { challengeId });
+    if (engine !== 'postgres' && sqlEngine === 'postgres') trackActivationEvent(PG_MODE_EVENTS.left, { challengeId });
     setSqlEngine(engine);
     if (engine !== 'postgres' || !currentChallenge) { setPgMode(null); return; }
     const forId = currentChallenge.id;
     setPgMode({ phase: 'loading' });
+    const t0 = performance.now();
     try {
       const pgApi = await loadPgBundle();
-      if (!pgApi.available(currentChallenge)) { setPgMode({ phase: 'unavailable', forId }); return; }
-      const t0 = performance.now();
+      if (!pgApi.available(currentChallenge)) {
+        setPgMode({ phase: 'unavailable', forId });
+        trackActivationEvent(PG_MODE_EVENTS.unavailable, { challengeId: forId });
+        return;
+      }
       const warm = await pgApi.run(currentChallenge, 'SELECT 1');
       if (warm.error) throw new Error(warm.error);
-      setPgMode({ phase: 'ready', forId, loadMs: Math.round(performance.now() - t0) });
+      const loadMs = Math.round(performance.now() - t0);
+      const cold = !pgSeenRef.current.ready;
+      pgSeenRef.current.ready = true;
+      setPgMode({ phase: 'ready', forId, loadMs });
+      trackActivationEvent(PG_MODE_EVENTS.ready, { challengeId: forId, loadMs, cold });
     } catch (err) {
       setPgMode({ phase: 'error', forId, error: err.message });
+      trackActivationEvent(PG_MODE_EVENTS.failed, { challengeId: forId, error: pgFailReason(err.message), ms: Math.round(performance.now() - t0) });
     }
   };
-  // A new challenge on PostgreSQL gets its own instance (and its own check
-  // against the allow-list).
+  // A new challenge on PostgreSQL gets its own schema in the session's one
+  // instance (and its own check against the allow-list).
   useEffect(() => {
     if (postgresModeOn && sqlEngine === 'postgres' && currentChallenge && pgMode?.forId !== currentChallenge.id) pickSqlEngine('postgres');
   }, [currentChallenge?.id]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -26888,7 +26914,9 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
     const r = await window.SQLQuestPg.submit(currentChallenge, challengeQuery);
     if (r.user) setChallengeResult({ columns: r.user.columns, rows: r.user.rows, error: r.user.error });
     setChallengeRunAt(Date.now());
-    setPgMode(p => ({ ...p, verdict: r.error ? 'error' : r.correct ? 'correct' : 'wrong', error: r.error || null }));
+    const verdict = r.error ? 'error' : r.correct ? 'correct' : 'wrong';
+    setPgMode(p => ({ ...p, verdict, error: r.error || null }));
+    trackActivationEvent(PG_MODE_EVENTS.submitted, { challengeId: currentChallenge.id, verdict });
   };
 
   const submitChallenge = () => {

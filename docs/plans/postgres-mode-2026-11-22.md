@@ -3,6 +3,8 @@
 Flag `postgresMode`, dark. Branch `feat/postgres-mode-spike`.
 Per-challenge coverage table (generated): [postgres-mode-coverage-2026-11-22.md](postgres-mode-coverage-2026-11-22.md).
 
+**Superseded for the ship decision (2026-11-25):** [postgres-mode-flip-2026-11-25.md](postgres-mode-flip-2026-11-25.md) — the opt-in shape (all plans, desktop, no Pro gate), the one-instance session, the events and metric, the walk and the flip/revert rule.
+
 ## Why
 
 Every query in SQL Quest runs on SQLite (sql.js). Our buyers sit screens on other engines:
