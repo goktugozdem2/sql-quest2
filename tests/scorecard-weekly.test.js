@@ -29,13 +29,22 @@ const base = (q) => {
 };
 
 describe('scorecard-weekly.sql — source guards', () => {
-  it('has the four queries', () => {
-    expect(Object.keys(Q)).toEqual(['1', '2', '3', '4']);
+  it('has the five queries', () => {
+    expect(Object.keys(Q)).toEqual(['1', '2', '3', '4', '5']);
   });
 
-  it('queries 1, 2 and 4 carry the identical exclusion block', () => {
+  it('queries 1, 2, 4 and 5 carry the identical exclusion block', () => {
     expect(base(Q['2'])).toBe(base(Q['1']));
     expect(base(Q['4'])).toBe(base(Q['1']));
+    expect(base(Q['5'])).toBe(base(Q['1']));
+  });
+
+  it('query 5: segments from the `seg` stamp, money from the webhook through the #409 bridge', () => {
+    const q = stripComments(Q['5']);
+    expect(q).toMatch(/m->>'seg' AS seg0/);
+    expect(q).toMatch(/e\.reason = 'stripe_webhook'/);
+    expect(q).toMatch(/DISTINCT ON \(k\.username\)[\s\S]*ORDER BY k\.username, c\.fo/);
+    expect(q).toMatch(/AS trial,\s+count\(\*\) FILTER \(WHERE p\.paid\)\s+AS paid/);
   });
 
   it('the exclusion block holds every README rule 2 filter', () => {
@@ -66,7 +75,7 @@ describe('scorecard-weekly.sql — source guards', () => {
   });
 
   it('no query selects an identifier (the repo is public; aggregates only)', () => {
-    for (const k of ['1', '2', '4']) {
+    for (const k of ['1', '2', '4', '5']) {
       const last = stripComments(Q[k]).split(/\)\s*SELECT/i).pop();
       expect(last).not.toMatch(/\b(username|pid|aid|email)\b\s*(,|$|AS)/im);
     }
@@ -86,15 +95,16 @@ const ev = (event, reason, username, h, meta) =>
 const ROWS = [
   // A — human: Google → company page → app → six solves on day 0 → returns day 2
   ev('landing_view', 'landing', null, 0, { aid: 'a1', page: 'wise-sql-interview', landingSrc: 'search:google', tz: 'Asia/Kolkata' }),
-  ev('app_opened', 'activation_funnel', 'alice', 0.1, { aid: 'a1', landingSrc: 'search:google', langs: 3, tz: 'Asia/Kolkata' }),
+  ev('app_opened', 'activation_funnel', 'alice', 0.1, { aid: 'a1', landingSrc: 'search:google', langs: 3, tz: 'Asia/Kolkata', seg: 'interview_company', segV: 1 }),
   ...[1, 2, 3, 4, 5, 6].map((c) => ev('challenge_solved', 'activation_funnel', 'alice', 0.2 + c / 100, { aid: 'a1', challengeId: c })),
   ev('challenge_solved', 'activation_funnel', 'alice', 0.3, { aid: 'a1', challengeId: 1 }), // a re-solve is not depth
   ev('pro_modal_shown', 'activation_funnel', 'alice', 0.4, { aid: 'a1' }),
+  ev('pro_plan_clicked', 'activation_funnel', 'alice', 0.45, { aid: 'a1', seg: 'interview_dated', segV: 1 }), // set a date: latest seg moves
   ev('pro_checkout_clicked', 'activation_funnel', 'alice', 0.5, { aid: 'a1' }),
   ev('app_opened', 'activation_funnel', 'alice', 48, { aid: 'a1', landingSrc: 'search:google', langs: 3 }),
   // B — human: typed the homepage, opened the app, never solved
   ev('landing_view', 'landing', null, 1, { aid: 'b1', page: 'home', tz: 'America/New_York' }),
-  ev('app_opened', 'activation_funnel', null, 1.1, { aid: 'b1', langs: 2, arrivalSrc: 'home', tz: 'America/New_York' }),
+  ev('app_opened', 'activation_funnel', null, 1.1, { aid: 'b1', langs: 2, arrivalSrc: 'home', tz: 'America/New_York', seg: 'unknown', segV: 1 }),
   // H — human: ChatGPT → blog → one solve on day 0, never back
   ev('landing_view', 'landing', null, 2, { aid: 'h1', page: 'blog/sql-joins-explained', landingSrc: 'ai:chatgpt', tz: 'Europe/London' }),
   ev('app_opened', 'activation_funnel', null, 2.1, { aid: 'h1', landingSrc: 'ai:chatgpt', langs: 2 }),
@@ -213,6 +223,21 @@ describe('scorecard-weekly.sql — runs on Postgres over a hand-computed fixture
     expect(Number(r.mrr_usd)).toBe(37.25); // 29 (webhook amount) + 99 / 12 (list price)
     expect(Number(r.in_trial)).toBe(1);
     expect(Number(r.other_live_pro)).toBe(1);
+  });
+
+  it('query 5: the fixture week by segment — entry and latest, solve, depth, plan, money', async () => {
+    const wk = (await run('1'))[6].iso_week;
+    const rows = (await run('5')).filter((r) => r.iso_week === wk);
+    const get = (kind, seg) => {
+      const r = rows.find((x) => x.seg_kind === kind && x.seg === seg);
+      return r && ['new_openers', 'first_solve_10m', 'six_in_7d', 'plan_click_7d', 'trial', 'paid'].map((c) => Number(r[c]));
+    };
+    expect(rows).toHaveLength(6); // 3 people × 2 kinds; humans only
+    expect(get('entry', 'interview_company')).toEqual([1, 1, 1, 1, 1, 1]); // alice: trial in W-2, paid in W-1, both credited
+    expect(get('entry', 'unknown')).toEqual([1, 0, 0, 0, 0, 0]);
+    expect(get('entry', 'unstamped')).toEqual([1, 1, 0, 0, 0, 0]);     // h1: a row before the stamp
+    expect(get('latest', 'interview_dated')).toEqual([1, 1, 1, 1, 1, 1]);
+    expect(get('latest', 'interview_company')).toBeUndefined();
   });
 
   it('query 4: every excluded person is named by the rule that removed them', async () => {

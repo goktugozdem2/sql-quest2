@@ -341,7 +341,7 @@ describe('app.jsx wiring', () => {
   });
 
   it('writeProEvent stamps tArm on every row — challenge_solved, first_challenge_solved and the three money events included', () => {
-    expect(APP).toMatch(/metadata: JSON\.stringify\(\{ \.\.\.metadata, \.\.\.fqEventStamp\(\), \.\.\.tEventStamp\(\), aid: getAnonId\(\) \}\)/);
+    expect(APP).toMatch(/metadata: JSON\.stringify\(\{ \.\.\.metadata, \.\.\.fqEventStamp\(\), \.\.\.tEventStamp\(\), (\.\.\.segmentEventStamp\(SEGMENT_SEG\), )?aid: getAnonId\(\) \}\)/);
     expect((APP.match(/supabaseFetch\('pro_events'/g) || [])).toHaveLength(1);
     for (const ev of ['challenge_solved', 'first_challenge_solved', 'pro_modal_shown', 'pro_plan_clicked', 'pro_checkout_clicked']) {
       expect(APP).toContain(`trackActivationEvent('${ev}'`);

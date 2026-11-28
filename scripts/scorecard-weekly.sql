@@ -3,7 +3,8 @@
 --
 -- Plan: docs/plans/investor-90-day-2026-11-25.md (A01). Filled every Friday
 -- by B2 (docs/agent/fleet/B2-measurement.md) into docs/agent/scorecard.md.
--- Metrics: `human_visitors`, `scorecard_weekly` (docs/agent/metrics.md).
+-- Metrics: `human_visitors`, `scorecard_weekly`, `segment_mix` (Query 5)
+-- (docs/agent/metrics.md).
 --
 -- Each query runs as-is in the Supabase MCP `execute_sql` (read-only) or in
 -- psql as metrics_reader: no parameters, no temp tables, no writes.
@@ -583,3 +584,172 @@ gap AS (
 SELECT to_char(g.ws AT TIME ZONE 'UTC', 'IYYY-"W"IW') AS iso_week, g.bucket, g.people
 FROM gap g
 ORDER BY g.ws, g.people DESC;
+
+-- ===== Query 5: the funnel by canonical segment (`seg`, 2026-11-27) =====
+-- The canonical segment (src/utils/segment.js; metric `segment_mix`) rides
+-- every client row as `seg` from 2026-11-27. One row per (week, seg_kind,
+-- seg) over the week's NEW human openers (first app_opened ever in the week):
+--   seg_kind entry    the `seg` on the person's first app_opened: fixed
+--                     before they do anything, fair at every step
+--            latest   the last `seg` any of their rows carried: read it from
+--                     the plan click on only (intent is asked after the first
+--                     solve, so a stated segment is selected on solving; #409)
+--   seg      one of interview_dated, interview_company, interview_general,
+--            job_ready, at_work, learner, unknown; 'unstamped' = no `seg` on
+--            the row (every row before 2026-11-27, or a cached old bundle)
+--   first_solve_10m  first challenge_solved within 10 minutes of the first open
+--   six_in_7d        6+ distinct challenges solved within 7 days of it
+--   plan_click_7d    a pro_plan_clicked within 7 days of it
+--   trial / paid     a stripe_webhook pro_trial_started / pro_purchase_completed
+--                    on any username the person's client rows carried (the
+--                    #409 bridge), each webhook username credited to ONE
+--                    person: the earliest first open. Any time up to now, so
+--                    the last weeks are floors. Never added together.
+
+WITH params AS (
+  SELECT now() AS t,
+         date_trunc('week', now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC' AS anchor
+),
+-- base:begin  (identical in every query; tests/scorecard-weekly.test.js pins it)
+weeks AS (
+  SELECT p.anchor - make_interval(weeks => g)     AS ws,
+         p.anchor - make_interval(weeks => g - 1) AS we
+  FROM params p, generate_series(1, 8) AS g
+),
+evp AS (
+  SELECT e.event, e.reason, e.username, e.created_at, x.m,
+         COALESCE(x.m->>'aid', e.username) AS pid
+  FROM public.pro_events e
+  CROSS JOIN LATERAL (SELECT (e.metadata #>> '{}')::jsonb AS m) x
+  WHERE e.created_at <= (SELECT t FROM params)
+),
+facts AS (   -- one pass over every row a person ever wrote
+  SELECT pid,
+    bool_or(COALESCE(username, '') ~* '^(test|qa_|fabletest|linktest|internalroutine|sqlquest$|elena$)') AS f_internal,
+    bool_or(m->>'aid' IN ('363dfb2bc1314757acc88c8438c4d2ea')
+            OR m->>'aid' LIKE 'e5fcbad1a022%'
+            OR m->>'aid' LIKE 'a2a2%'   -- A2's live-QA walk aids, 2026-11-26 on (prefix rule)
+            OR m->>'aid' = 'd9fe96e2bdf44aefa9195673a6496888'   -- A2's 11-26 walk, one random aid
+            OR (event = 'pro_modal_shown' AND m->>'reason' = 'email_link'
+                AND created_at >= '2026-11-20' AND created_at < '2026-11-21'
+                AND username ILIKE 'guest%' AND COALESCE(m->>'solvedCount', '0') = '0')
+            OR (m->>'tz' = 'Europe/Istanbul' AND m->>'viewport' = 'mobile:375x812'
+                AND created_at >= '2026-11-24 11:00+00' AND created_at < '2026-11-24 11:08+00')) AS f_founder,
+    bool_or(COALESCE(m->>'bot', '') NOT IN ('', 'false')
+            OR m->>'wd' = 'true' OR m->>'uaBot' = 'true')                    AS f_stamp,
+    bool_or(m->>'viewport' IN ('tablet:800x600', 'desktop:1280x1200',
+                               'desktop:1919x992', 'desktop:1024x1024'))      AS f_viewport,
+    bool_or(COALESCE(m->>'landingSrc', '') ~* '^ref:(.+\.)?aocr\.org$'
+            OR COALESCE(m->>'arrivalSrc', '') ~* 'aocr\.org'
+            OR m->>'arrivalSrc' = 'verify-test')                              AS f_ref,
+    bool_or(event = 'app_opened')                                             AS any_open,
+    bool_or(event = 'landing_view')                                           AS any_landing,
+    bool_or(event = 'landing_view' AND m->>'tz' = 'UTC'
+            AND created_at >= '2026-11-22')                                   AS utc_landing,
+    bool_or(reason = 'landing' AND m->>'tz' = 'Asia/Shanghai')                AS cn_landing,
+    bool_or(event = 'app_opened' AND m->>'langs' = '2'
+            AND COALESCE(m->>'landingSrc', '') = '')                          AS langs2_open,
+    bool_or(event = 'landing_view' AND m->>'ua' ~ '(GoogleOther|Google-NotebookLM)') AS google_ua,
+    bool_or(event = 'landing_view' AND m->>'ua' ~ 'Google-NotebookLM')        AS notebooklm,
+    (array_agg(m ORDER BY created_at) FILTER (WHERE event = 'app_opened'))[1] AS fo
+  FROM evp WHERE pid IS NOT NULL GROUP BY pid
+),
+person AS (   -- excl IS NULL = human
+  SELECT pid, CASE
+    WHEN f_internal   THEN 'internal'
+    WHEN f_founder    THEN 'founder'
+    WHEN f_stamp      THEN 'bot_stamp'
+    WHEN f_viewport   THEN 'viewport'
+    WHEN f_ref        THEN 'ref_spam'
+    WHEN COALESCE(fo->>'landingSrc', '') = '' AND fo->>'langs' = '1'
+         AND NOT any_landing                                   THEN 'app1lang'
+    WHEN COALESCE(fo->>'landingSrc', '') = '' AND fo->>'langs' = '1'
+         AND fo->>'arrivalSrc' LIKE 'challenges-%'             THEN 'topic1lang'
+    WHEN COALESCE(fo->>'landingSrc', '') = '' AND fo->>'tz' = 'America/Los_Angeles'
+         AND fo->>'viewport' = 'desktop:1920x1080'             THEN 'prestamp_fp'
+    WHEN fo->>'tz' = 'UTC' AND fo->>'viewport' = 'desktop:1280x720'
+         AND NOT any_landing                                   THEN 'utc1280'
+    WHEN COALESCE(fo->>'landingSrc', '') = '' AND NOT any_landing
+         AND fo->>'tz' IN ('Asia/Shanghai', 'Asia/Hong_Kong', 'Asia/Singapore') THEN 'cn_app'
+    WHEN utc_landing AND NOT any_open                          THEN 'utc_landing'
+    WHEN cn_landing AND NOT any_open                           THEN 'cn_reader'
+    WHEN google_ua AND NOT any_open AND notebooklm             THEN 'google_ua:notebooklm'
+    WHEN google_ua AND NOT any_open                            THEN 'google_ua'
+    WHEN langs2_open AND NOT any_landing                       THEN 'langs2'
+  END AS excl
+  FROM facts
+),
+clean AS (
+  SELECT e.* FROM evp e JOIN person p ON p.pid = e.pid WHERE p.excl IS NULL
+),
+visits AS (   -- (week, person) for every entry row, raw
+  SELECT DISTINCT w.ws, e.pid, p.excl
+  FROM evp e
+  JOIN person p ON p.pid = e.pid
+  JOIN weeks w ON e.created_at >= w.ws AND e.created_at < w.we
+  WHERE e.event IN ('landing_view', 'landing_engaged', 'app_opened')
+),
+-- base:end
+first_open AS (
+  SELECT DISTINCT ON (pid) pid, created_at AS fo, m->>'seg' AS seg0
+  FROM clean WHERE event = 'app_opened' ORDER BY pid, created_at
+),
+last_seg AS (
+  SELECT DISTINCT ON (pid) pid, m->>'seg' AS seg
+  FROM clean WHERE m ? 'seg' ORDER BY pid, created_at DESC
+),
+cohort AS (
+  SELECT o.pid, o.fo, w.ws,
+         COALESCE(o.seg0, 'unstamped') AS seg_entry,
+         COALESCE(l.seg, 'unstamped')  AS seg_latest
+  FROM first_open o
+  JOIN weeks w ON o.fo >= w.ws AND o.fo < w.we
+  LEFT JOIN last_seg l ON l.pid = o.pid
+),
+solves AS (   -- first solve of each distinct challenge
+  SELECT pid, m->>'challengeId' AS cid, min(created_at) AS at
+  FROM clean WHERE event = 'challenge_solved' AND m->>'challengeId' IS NOT NULL
+  GROUP BY 1, 2
+),
+unames AS (   -- every username the person's rows carried: the #409 bridge
+  SELECT DISTINCT pid, username FROM clean WHERE username IS NOT NULL AND username <> 'guest'
+),
+webhook AS (   -- stripe_webhook is the only money truth
+  SELECT e.username,
+         bool_or(e.event = 'pro_trial_started')      AS trial,
+         bool_or(e.event = 'pro_purchase_completed') AS paid
+  FROM evp e
+  WHERE e.reason = 'stripe_webhook' AND e.event IN ('pro_trial_started', 'pro_purchase_completed')
+    AND COALESCE(e.username, '') !~* '^(test|qa_|fabletest|linktest|internalroutine|sqlquest$|elena$)'
+  GROUP BY e.username
+),
+credit AS (   -- one person per webhook username: the earliest first open
+  SELECT DISTINCT ON (k.username) k.username, c.pid, k.trial, k.paid
+  FROM webhook k JOIN unames u ON u.username = k.username JOIN cohort c ON c.pid = u.pid
+  ORDER BY k.username, c.fo
+),
+per AS (
+  SELECT c.pid, c.ws, c.seg_entry, c.seg_latest,
+    COALESCE((SELECT min(s.at) FROM solves s WHERE s.pid = c.pid AND s.at >= c.fo)
+             <= c.fo + interval '10 minutes', false)                                   AS solve10,
+    (SELECT count(*) FROM solves s WHERE s.pid = c.pid AND s.at <= c.fo + interval '7 days') >= 6 AS six7,
+    EXISTS (SELECT 1 FROM clean x WHERE x.pid = c.pid AND x.event = 'pro_plan_clicked'
+            AND x.created_at >= c.fo AND x.created_at <= c.fo + interval '7 days')     AS plan7,
+    EXISTS (SELECT 1 FROM credit r WHERE r.pid = c.pid AND r.trial)                    AS trial,
+    EXISTS (SELECT 1 FROM credit r WHERE r.pid = c.pid AND r.paid)                     AS paid
+  FROM cohort c
+)
+SELECT to_char(p.ws AT TIME ZONE 'UTC', 'IYYY-"W"IW') AS iso_week,
+       k.seg_kind, k.seg,
+       count(*)                          AS new_openers,
+       count(*) FILTER (WHERE p.solve10) AS first_solve_10m,
+       count(*) FILTER (WHERE p.six7)    AS six_in_7d,
+       count(*) FILTER (WHERE p.plan7)   AS plan_click_7d,
+       count(*) FILTER (WHERE p.trial)   AS trial,
+       count(*) FILTER (WHERE p.paid)    AS paid,
+       round(100.0 * avg(p.solve10::int), 1) AS first_solve_10m_pct,
+       round(100.0 * avg(p.six7::int), 1)    AS six_in_7d_pct
+FROM per p
+CROSS JOIN LATERAL (VALUES ('entry', p.seg_entry), ('latest', p.seg_latest)) AS k(seg_kind, seg)
+GROUP BY p.ws, k.seg_kind, k.seg
+ORDER BY p.ws, k.seg_kind, new_openers DESC, k.seg;
