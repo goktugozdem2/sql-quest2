@@ -1007,6 +1007,15 @@ URLs filled, brand icon is the bolt, brand colour #FFE34D.
   `pro_checkout_expired` carries `trial` / `region` from the session's own
   metadata. The Stripe endpoint must subscribe to `setup_intent.setup_failed`
   (dashboard, founder).
+- **A webhook row under username `unknown` is a lost mapping (2026-11-28).**
+  Every Checkout Session makes a new Stripe customer and the checkout
+  overwrites `stripeCustomerId`, so a second subscription orphaned the
+  first one's events (one person was very likely charged on both; the paid invoice left
+  no row). `resolveSubscriber` (stripe-webhook `attribution.ts`) now names
+  the person from the subscription's metadata or its Checkout Session; only
+  the customer-id row is ever written. Failure rows carry the decline code
+  and 3D Secure facts (`decline.ts`). Guards:
+  `tests/stripe-webhook-attribution.test.js`.
 
 ### The first-session tournament (2026-11-26, dark; launch 2026-12-12)
 
