@@ -142,9 +142,52 @@ export const HERMETIC_PREAMBLE = `(() => {
 // tests/smoke-workflow.test.js binds the key and the arm names to the module.
 export const FIRST_SCREEN_KEY = 'sqlquest_first_screen_v1';
 export const FIRST_SCREEN_ARMS = Object.freeze(['quiz', 'challenge']);
+// The same preamble keeps the battery out of the free-quota holdout
+// (src/utils/free-quota-holdout.js, 2026-11-25): a fresh profile would
+// otherwise be enrolled at its first open and, half the time, lose the quota
+// wall the battery checks. A stored `returning` record is the app's own
+// "not in the test" (today's quota), written before any app code runs.
+export const FREE_QUOTA_HOLDOUT_KEY = 'sqlquest_free_quota_holdout_v1';
+export const FREE_QUOTA_OUT_OF_TEST = Object.freeze({ status: 'returning', arm: null, firstOpenAt: null, announced: false });
+// And out of the first-session tournament (src/utils/tournament.js,
+// 2026-11-26): once its flag is on, a fresh profile would be split across
+// arms whose first sessions differ. `returning` is the app's own "not in the
+// tournament" (today's product); tests/tournament.test.js binds it.
+export const TOURNAMENT_KEY = 'sqlquest_tournament_v1';
+export const TOURNAMENT_OUT_OF_TEST = Object.freeze({ status: 'returning' });
 export function firstScreenArmPreamble(arm) {
   if (!FIRST_SCREEN_ARMS.includes(arm)) throw new Error(`unknown first-screen arm: ${arm}`);
-  return `(() => { try { localStorage.setItem(${JSON.stringify(FIRST_SCREEN_KEY)}, JSON.stringify({ arm: ${JSON.stringify(arm)}, at: Date.now() })); } catch (_) {} })();`;
+  return `(() => { try { localStorage.setItem(${JSON.stringify(FIRST_SCREEN_KEY)}, JSON.stringify({ arm: ${JSON.stringify(arm)}, at: Date.now() })); localStorage.setItem(${JSON.stringify(FREE_QUOTA_HOLDOUT_KEY)}, ${JSON.stringify(JSON.stringify(FREE_QUOTA_OUT_OF_TEST))}); localStorage.setItem(${JSON.stringify(TOURNAMENT_KEY)}, ${JSON.stringify(JSON.stringify(TOURNAMENT_OUT_OF_TEST))}); } catch (_) {} })();`;
+}
+
+// Which port did OUR Chrome open (2026-11-23, A2)? The battery used to pass a
+// fixed --remote-debugging-port=9222 and then read http://127.0.0.1:9222/json.
+// On the founder's laptop an earlier run's headless Chrome, orphaned when that
+// run was killed mid-way, still held 127.0.0.1:9222; the new Chrome could only
+// bind [::1]:9222, so the battery drove YESTERDAY's browser, whose storage
+// still held the last step's guest at 3 solves. No first-run screen → the ten
+// first-run / placement / foundations checks failed (21/31) while CI, on a
+// clean runner, passed 31/31. With --remote-debugging-port=0 Chrome picks a
+// free port and writes it to <user-data-dir>/DevToolsActivePort: a port read
+// from our own profile directory can only belong to our own browser.
+export const DEVTOOLS_ACTIVE_PORT_FILE = 'DevToolsActivePort';
+export function parseDevToolsActivePort(text) {
+  const first = String(text || '').split('\n')[0].trim();
+  if (!/^\d+$/.test(first)) return null;
+  const port = Number(first);
+  return port > 0 && port < 65536 ? port : null;
+}
+export async function waitForDevToolsPort(userDataDir, { deadlineMs = CHROME_PAGE_DEADLINE_MS, intervalMs = 100, readFile = (p) => fs.readFileSync(p, 'utf8'), now = () => Date.now(), sleep = (ms) => new Promise(r => setTimeout(r, ms)) } = {}) {
+  const file = path.join(userDataDir, DEVTOOLS_ACTIVE_PORT_FILE);
+  const start = now();
+  while (now() - start < deadlineMs) {
+    let text = null;
+    try { text = readFile(file); } catch (_) { /* not written yet */ }
+    const port = parseDevToolsActivePort(text);
+    if (port) return port;
+    await sleep(intervalMs);
+  }
+  return null;
 }
 
 export function getJSON(url) {

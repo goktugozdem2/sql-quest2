@@ -1,0 +1,20 @@
+[
+  {
+    "name": "app.js",
+    "path": "public/app.js",
+    "gzip": true,
+    "limit": "442.18 kB"
+  },
+  {
+    "name": "data.js",
+    "path": "public/data.js",
+    "gzip": true,
+    "limit": "678.03 kB"
+  },
+  {
+    "name": "styles.css",
+    "path": "public/styles.css",
+    "gzip": true,
+    "limit": "14.11 kB"
+  }
+]

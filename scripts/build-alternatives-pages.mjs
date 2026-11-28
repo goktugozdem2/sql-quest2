@@ -188,6 +188,7 @@ a{color:#c084fc;text-decoration:none}a:hover{text-decoration:underline}.fd{font-
 .wrap{max-width:960px;margin:0 auto;padding:36px 24px 64px}.crumb{font-size:13px;color:#8b98ab;margin-bottom:14px}.crumb a{color:#8b98ab}
 h1{font-size:clamp(30px,4.4vw,46px);font-weight:800;line-height:1.12;margin-bottom:14px}h2{font-size:23px;font-weight:800;margin:44px 0 12px}h3{font-size:18px;font-weight:800;margin-bottom:6px}
 p{color:#94a3b8;font-size:16px}.lede{font-size:17px;max-width:760px}
+@media(min-width:480px){.af-cta{white-space:nowrap}}
 .disc{margin:18px 0;padding:14px 18px;border:1px solid rgba(124,196,255,.25);background:rgba(124,196,255,.06);border-radius:12px;font-size:14px;color:#cbd5e1}
 .tw{overflow-x:auto;border:1px solid rgba(255,255,255,.08);border-radius:12px}table{border-collapse:collapse;width:100%;min-width:820px;font-size:13.5px}
 th,td{padding:10px 12px;text-align:left;vertical-align:top;border-bottom:1px solid rgba(255,255,255,.06)}th{color:#e2e8f0;font-weight:700;background:rgba(255,255,255,.03)}td{color:#94a3b8}td:first-child{color:#e2e8f0;font-weight:700;white-space:nowrap}
@@ -260,7 +261,7 @@ ${ld.map(o => `  <script type="application/ld+json">${JSON.stringify(o)}</script
 <main class="wrap">
   <p class="crumb"><a href="/">SQL Quest</a> › <a href="/sql-practice-comparison/">Comparisons</a> › ${esc(pg.h1)}</p>
   <h1 class="fd">${esc(pg.h1)}: SQL interview practice sites compared</h1>
-  ${pg.answer ? `<p class="answer" data-testid="answer-first" style="margin:14px 0 6px;padding:14px 18px;border-left:3px solid #7c3aed;background:rgba(124,58,237,.08);border-radius:0 12px 12px 0;font-size:17px;color:#e2e8f0;max-width:760px;">${pg.answer(T)} <a href="/app/?src=${slug}" data-track="cta_answer_first_${pg.subject}" style="font-weight:700;white-space:nowrap;">Practise a SQL interview question free</a></p>` : ''}
+  ${pg.answer ? `<p class="answer" data-testid="answer-first" style="margin:14px 0 6px;padding:14px 18px;border-left:3px solid #7c3aed;background:rgba(124,58,237,.08);border-radius:0 12px 12px 0;font-size:17px;color:#e2e8f0;max-width:760px;">${pg.answer(T)} <a href="/app/?src=${slug}" data-track="cta_answer_first_${pg.subject}" class="af-cta" style="font-weight:700;">Practise a SQL interview question free</a></p>` : ''}
   <p class="lede">${esc(pg.why)}</p>
   <p class="disc"><strong>Who wrote this:</strong> the team that builds SQL Quest, which is one of the alternatives below. Every price, free tier and question count for another site was read off that site's own page and is linked beside it with the date it was checked. Where a site did not state something, this page says so rather than guessing.</p>
 

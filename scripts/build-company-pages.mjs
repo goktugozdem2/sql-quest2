@@ -39,6 +39,7 @@ import { questionSlugs, loadQuestionBank } from './question-slugs.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
+import { withFirstScreen, FIRST_SCREENS, pageData, BLOCK_RE as FIRST_SCREEN_RE } from './company-first-screen.mjs';
 import { COMPANY_INTERVIEWS, NEW_COMPANY_TAGS, SOURCED_FORMATS } from '../src/data/company-interviews.js';
 import { SKILL_TO_RADAR, mapTopicToSkill, CANONICAL_SKILLS } from '../src/utils/skill-calc.js';
 import { isFreePreview } from '../src/utils/challenge-order.js';
@@ -47,6 +48,7 @@ import { archetypeForCompany } from '../src/data/interview-archetypes.js';
 import { t as i18nT, setLang } from '../src/utils/i18n.js';
 import { companyFirstQuestion, companyHeroCtaText } from '../src/utils/company-first-question.js';
 import { SQL_ROADMAP_CHALLENGE_ORDER } from '../src/data/roadmap-stages.js';
+import { CASE_ROUND_MOCK_ID, freePreviewLabel } from '../src/utils/case-round.js';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const SITE = 'https://sqlquest.app';
@@ -375,11 +377,11 @@ export function withProvenance(html, { slug, name }) {
  * @param opts  {accessed, role} — `role` narrows the heading when the sources
  *              only cover one job family.
  */
-export function formatSection(d, { accessed, role = null } = {}) {
+export function formatSection(d, { accessed, role = null, slug = null } = {}) {
   const srcKeys = Object.keys(d.sources);
   const cite = keys => keys.length
-    ? keys.map(k => `<a href="#src-${k}" style="color:#8b98ab;text-decoration:none;font-size:11px;vertical-align:super;">[${srcKeys.indexOf(k) + 1}]</a>`).join('')
-    : '<span style="color:#8b98ab;font-size:11px;"> (no reliable source)</span>';
+    ? keys.map(k => `<a href="#src-${k}" style="color:#8b98ab;text-decoration:none;font-size:12px;vertical-align:super;">[${srcKeys.indexOf(k) + 1}]</a>`).join('')
+    : '<span style="color:#8b98ab;font-size:12px;"> (no reliable source)</span>';
   const rows = d.format.map(r => `      <tr><th scope="row" style="text-align:left;vertical-align:top;padding:14px 16px;color:#e2e8f0;font-weight:700;font-size:14px;white-space:nowrap;border-bottom:1px solid rgba(255,255,255,.06);">${esc(r[0])}</th><td style="padding:14px 16px;color:#94a3b8;font-size:14px;line-height:1.7;border-bottom:1px solid rgba(255,255,255,.06);">${esc(r[1])}${cite(r[2])}</td></tr>`).join('\n');
   const list = srcKeys.map((k, i) => {
     const [label, href, date] = d.sources[k];
@@ -388,20 +390,67 @@ export function formatSection(d, { accessed, role = null } = {}) {
   }).join('');
   const sentence = `Sources: ${srcKeys.map(k => `${d.sources[k][0]} (${d.sources[k][2]})`).join('; ')}.`;
   const direct = srcKeys.some(k => d.sources[k][3] === 'direct');
+  // The table scrolls inside its own wrapper (inline, not a page .tbl rule):
+  // this block is injected into hand-written pages that carry no .tbl CSS, and
+  // its nowrap row headers ran /shopify-sql-interview/ 61 px past a 320 px
+  // phone (A4, issue #308).
   // "(sourced)" in the heading itself: this section exists only on a page in
   // SOURCED_SLUGS, and the label says why (docs/plans/company-sourced-vs-topical-2026-09-21.md).
   return `<section id="format" data-section="format-sourced" style="border-top:1px solid rgba(255,255,255,.04);"><div class="sec">
   <span class="sl">How the interview runs (sourced)</span>
   <h2 class="st fd">The ${esc(d.name)} SQL interview, as candidates report it</h2>
   <p style="font-size:15px;color:#94a3b8;margin:14px 0 22px;max-width:760px;line-height:1.75;">${d.publishes ? esc(d.publishes) : `${esc(d.name)} does not publish the format.`} Each row is what ${d.publishes ? `${esc(d.name)}, candidates and prep guides have` : 'candidates and prep guides have'} described ${direct ? '— publicly, or to us directly —' : 'publicly,'} with its source; where sources disagree, the row says so.${direct ? ' A source marked as told to us is one candidate&#39;s account, by email; their name is withheld at their request.' : ''} Formats change — treat every specific as reported, not official.${role ? ` The sources below describe ${esc(role)}; other teams at ${esc(d.name)} may run a different loop.` : ''}</p>
-  <div class="tbl"><table>
+  <div class="tbl" style="overflow-x:auto;-webkit-overflow-scrolling:touch;"><table>
     <tbody>
 ${rows}
     </tbody>
   </table></div>
   <ol style="list-style:none;margin-top:18px;font-size:12px;color:#8b98ab;line-height:1.6;">${list}</ol>
-  <p style="font-size:12px;color:#5b6577;margin-top:10px;">${esc(sentence)} Accessed ${esc(accessed)}.</p>
+  <p style="font-size:12px;color:#5b6577;margin-top:10px;">${esc(sentence)} Accessed ${esc(accessed)}.</p>${slug && d.caseRound ? `\n${caseRoundLine(d, slug)}` : ''}
 </div></section>`;
+}
+
+/**
+ * One line under the sourced format rows, only where the page's own dated
+ * sources report a metrics or case round (2026-11-22, the Metrics & Case
+ * Round mock, lanes C5/B3). `d.caseRound = { note, sources }`: `note` says
+ * what the sources describe, `sources` are keys of `d.sources` and must be
+ * cited. A page without `caseRound` gets nothing: never invent a round.
+ * The link names Pro (tests/founder-review-2026-10-05.test.js, item 6).
+ */
+export const CASE_ROUND_LINE = 'Their loop reportedly includes a metrics/case round';
+
+/** The case-round mock as the app ships it (src/data/mock-interviews.js). */
+export function loadCaseRoundMock() {
+  const ctx = { window: {}, console: { log() {}, warn() {} } };
+  vm.createContext(ctx);
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/data/mock-interviews.js'), 'utf8'), ctx);
+  const mock = (ctx.window.mockInterviewsData || []).find(i => i.id === CASE_ROUND_MOCK_ID);
+  if (!mock) throw new Error(`[company-pages] mock ${CASE_ROUND_MOCK_ID} not found in src/data/mock-interviews.js`);
+  return mock;
+}
+let caseRoundMock;
+
+/**
+ * The free count in the link is the mock's own `freeQuestionCount`, through
+ * `freePreviewLabel` (src/utils/case-round.js) — never a literal. `mock` is
+ * a parameter so the test can render the line for another count.
+ */
+export function caseRoundLine(d, slug, mock) {
+  if (!d || !d.caseRound) return '';
+  const free = freePreviewLabel(mock || (caseRoundMock ||= loadCaseRoundMock()));
+  if (!free) {
+    throw new Error(`[company-pages] ${d.name}: the ${CASE_ROUND_MOCK_ID} mock has no free questions, so the line would offer what is not there`);
+  }
+  const srcKeys = Object.keys(d.sources);
+  const keys = d.caseRound.sources || [];
+  if (!keys.length || keys.some(k => !srcKeys.includes(k))) {
+    throw new Error(`[company-pages] ${d.name}: caseRound must cite the page's own sources`);
+  }
+  const cite = keys.map(k => `<a href="#src-${k}" style="color:#8b98ab;text-decoration:none;font-size:12px;vertical-align:super;">[${srcKeys.indexOf(k) + 1}]</a>`).join('');
+  return `<!-- case-round:start -->
+  <p data-section="case-round" style="font-size:14px;color:#94a3b8;margin-top:18px;max-width:760px;line-height:1.75;padding:14px 18px;border:1px solid rgba(124,58,237,.22);border-left:3px solid #7c3aed;border-radius:10px;background:rgba(124,58,237,.05);">${esc(d.caseRound.note)}${cite} ${CASE_ROUND_LINE} &mdash; <a href="/app/?interview=${CASE_ROUND_MOCK_ID}&amp;src=${slug}" data-track="cta_case_round" style="color:#c084fc;">practise it here (${esc(free)})</a>.</p>
+<!-- case-round:end -->`;
 }
 
 export function breadcrumbLd(slug, name) {
@@ -436,8 +485,8 @@ function faqFor(key, d, f) {
   const newest = src.map(s => s[2]).filter(x => /20\d\d/.test(x)).map(x => Number(x.match(/20\d\d/)[0])).sort().pop();
   const top = f.dist.slice(0, 4).map(x => `${x.skill} (${x.count})`).join(', ');
   return [
-    [`How does the ${d.name} SQL interview work?`, `${d.name} does not publish the format, so everything on this page is what candidates and prep guides have described publicly, with the source and date beside each fact. In short: ${d.format.map(r => r[1]).join(' ')} Sources are dated up to ${newest}; formats change, so treat every specific as reported, not official.`],
-    [`What SQL topics come up in ${d.name} interviews?`, `Reported most often: ${d.reportedTopics.slice(0, 5).join('; ')}. ${d.difficulty}`],
+    [`How does the ${d.name} SQL interview work?`, `${d.publishes ? `${d.publishes} Every fact on this page carries its public source and the date beside it.` : `${d.name} does not publish the format, so everything on this page is what candidates and prep guides have described publicly, with the source and date beside each fact.`} In short: ${d.format.map(r => r[1]).join(' ')} Sources are dated up to ${newest}; formats change, so treat every specific as reported, not official.`],
+    [`What SQL topics come up in ${d.name} interviews?`, `${d.topicsLabel || 'Reported most often'}: ${d.reportedTopics.slice(0, 5).join('; ')}. ${d.difficulty}`],
     [`Are these the real ${d.name} interview questions?`, `No. The question shapes on this page are paraphrased from the public sources cited beside them, and the practice set is ${f.n} SQL Quest challenges chosen because their SQL matches those reported patterns — not questions ${d.name} has asked. By skill, the set leans on ${top}.`],
     [`Is the ${d.name} practice set free?`, freeSetAnswer(d, f)],
   ];
@@ -450,10 +499,13 @@ export function renderPage(key, d, f) {
   const faqs = faqFor(key, d, f);
   const srcKeys = Object.keys(d.sources);
   const cite = keys => keys.length
-    ? keys.map(k => `<a href="#src-${k}" style="color:#8b98ab;text-decoration:none;font-size:11px;vertical-align:super;">[${srcKeys.indexOf(k) + 1}]</a>`).join('')
-    : '<span style="color:#8b98ab;font-size:11px;"> (no reliable source)</span>';
+    ? keys.map(k => `<a href="#src-${k}" style="color:#8b98ab;text-decoration:none;font-size:12px;vertical-align:super;">[${srcKeys.indexOf(k) + 1}]</a>`).join('')
+    : '<span style="color:#8b98ab;font-size:12px;"> (no reliable source)</span>';
   const shapes = d.shapes.map(s => `      <li style="margin:0 0 12px;line-height:1.7;">${esc(s[0])}${cite([s[1]])}</li>`).join('\n');
-  const reported = d.reportedTopics.map((t, i) => `<li style="margin:0 0 8px;"><span class="fm" style="color:#8b98ab;margin-right:8px;">${i + 1}</span>${esc(t)}</li>`).join('');
+  // `topicsLabel` (2026-11-23): an entry whose topics carry no counts, or come
+  // from practice guides rather than reports, names what the list is and drops
+  // the rank numbers — "Reported most often, in order" is a frequency claim.
+  const reported = d.reportedTopics.map((t, i) => `<li style="margin:0 0 8px;">${d.topicsLabel ? '' : `<span class="fm" style="color:#8b98ab;margin-right:8px;">${i + 1}</span>`}${esc(t)}</li>`).join('');
   const topicsJs = f.dist.map((x, i) => `  ['${x.share}%','${jsq(x.skill)}','${x.count} of the ${f.n} · ${jsq(SKILL_SUB[x.skill] || '')}','${['#c084fc', '#a78bfa', '#7c3aed', '#c084fc'][i % 4]}']`).join(',\n');
   const fq = f.ordered.slice(0, 6);
   const fqJs = fq.map(c => `  {id:${c.id},q:'${jsq(c.title)}',d:'${c.difficulty}',free:${playableFree(c)},t:[${(c.skills || []).slice(0, 3).map(t => `'${jsq(t)}'`).join(',')}]}`).join(',\n');
@@ -507,7 +559,7 @@ ${ld}
     .nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(6,6,15,.92);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06)}.ni{max-width:1200px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}.nl{display:flex;align-items:center;gap:22px}.nl a:not(.btn):not(.bp){color:#94a3b8;text-decoration:none;font-size:14px;font-weight:500}.nl a:not(.btn):not(.bp):hover{color:#e2e8f0}
     .btn{display:inline-flex;align-items:center;gap:8px;border-radius:12px;font-weight:700;cursor:pointer;text-decoration:none;border:none;transition:transform .15s ease-out}.bp{padding:13px 28px;font-size:15px;background:#FFE34D;color:#0E0F13}.bp:hover{transform:translateY(-1px)}.bo{padding:12px 24px;font-size:14px;background:transparent;color:#c084fc;border:1px solid rgba(124,58,237,.4)}
     .sec{max-width:1100px;margin:0 auto;padding:56px 24px}.sl{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#8b98ab}.st{font-size:clamp(26px,3.2vw,40px);font-weight:800;margin-top:10px;line-height:1.15}
-    .qg{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}.qc{background:rgba(10,10,25,.5);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:18px}.qc:hover{border-color:rgba(192,132,252,.35)}
+    .qg{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:14px}.qc{background:rgba(10,10,25,.5);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:18px}.qc:hover{border-color:rgba(192,132,252,.35)}
     .db{font-size:12px;font-weight:700;padding:3px 10px;border-radius:100px}.dh{background:rgba(192,132,252,.14);color:#c084fc}.dm{background:rgba(255,227,77,.12);color:#FFE34D}.de{background:rgba(34,197,94,.15);color:#22c55e}.dp{background:rgba(255,255,255,.08);color:#94a3b8}.tt{font-size:12px;padding:3px 10px;border-radius:100px;background:rgba(124,58,237,.1);color:#a78bfa;font-weight:600}
     .tg{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}.tc{background:rgba(10,10,25,.6);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:20px 18px}
     .tbl{overflow-x:auto;border:1px solid rgba(255,255,255,.08);border-radius:14px;background:rgba(10,10,25,.55)}.tbl table{width:100%;border-collapse:collapse;min-width:560px}
@@ -535,14 +587,14 @@ ${ld}
   <p style="font-size:13px;color:#8b98ab;margin-top:18px;">${f.n} practice challenges · ${f.easy} Easy / ${f.medium} Medium / ${f.hard} Hard · your first ${FREE_SOLVE_QUOTA} solves free · runs in the browser</p>
 </div></section>
 
-${formatSection(d, { accessed: d.accessed || '13 Sep 2026' })}
+${formatSection(d, { accessed: d.accessed || '13 Sep 2026', slug })}
 
 <section id="topics" style="border-top:1px solid rgba(255,255,255,.04);"><div class="sec">
   <span class="sl">The SQL that comes up</span>
   <h2 class="st fd">What ${esc(d.name)} SQL questions test</h2>
-  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:28px;margin-top:22px;">
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:28px;margin-top:22px;">
     <div>
-      <p style="font-size:14px;color:#e2e8f0;font-weight:700;margin-bottom:12px;">Reported most often, in order</p>
+      <p style="font-size:14px;color:#e2e8f0;font-weight:700;margin-bottom:12px;">${esc(d.topicsLabel || 'Reported most often, in order')}</p>
       <ul style="list-style:none;font-size:15px;color:#94a3b8;line-height:1.6;">${reported}</ul>
       <p style="font-size:14px;color:#94a3b8;margin-top:16px;line-height:1.7;"><strong style="color:#e2e8f0;">Difficulty:</strong> ${esc(d.difficulty)} The data is ${esc(d.dataShape)}.</p>
     </div>
@@ -589,7 +641,7 @@ ${readinessBlock({ slug: key, name: d.name, src: slug })}
 const TOPICS=[
 ${topicsJs}
 ];
-document.getElementById('topic-cards').innerHTML=TOPICS.map(t=>\`<div class="tc"><p class="fd" style="font-size:28px;font-weight:800;color:\${t[3]}">\${t[0]}</p><p style="font-size:13px;font-weight:700;color:#e2e8f0;margin-top:4px">\${t[1]}</p><p style="font-size:11px;color:#8b98ab;margin-top:6px;line-height:1.5">\${t[2]}</p></div>\`).join('');
+document.getElementById('topic-cards').innerHTML=TOPICS.map(t=>\`<div class="tc"><p class="fd" style="font-size:28px;font-weight:800;color:\${t[3]}">\${t[0]}</p><p style="font-size:13px;font-weight:700;color:#e2e8f0;margin-top:4px">\${t[1]}</p><p style="font-size:12px;color:#8b98ab;margin-top:6px;line-height:1.5">\${t[2]}</p></div>\`).join('');
 
 // GENERATED FROM THE BANK — real SQL Quest challenges tagged ${d.name}, Easy → Hard.
 const FQ=[
@@ -634,68 +686,118 @@ export function withHeroCta(html, { name, first, original = null }) {
   return html.slice(0, at) + next + html.slice(end);
 }
 
+// ── 4b. the "only Capital One has sources" sentence, retired (2026-11-23) ──
+//
+// The older pages' FAQ ("Does this page know what SQL questions X asks?") and
+// their general-guidance card ended on "The one page on this site that does
+// carry dated public sources for a company's screen is the Capital One page."
+// True in September; by November sixteen pages carried a sourced section, so
+// it was false on every page that said it (R1 dossiers tesla.md, apple.md).
+// The sentence was hand-copied into each page, so it is rewritten here, in
+// one place, on every run — and tests/company-pages.test.js fails on the old
+// wording anywhere under src/ or public/. The new wording is the one #209
+// gave Google and Databricks. A general page must not name the "How the
+// interview runs (sourced)" heading (tests/company-sections.test.js).
+export const STALE_SOURCES_POINTER = [
+  // FAQ, JSON-LD copy and the visible array's single-quoted copy
+  ["The one page on this site that does carry dated public sources for a company's screen is the Capital One page.",
+    "Pages that do carry dated public sources for a company's screen, such as the Capital One page, list them on the page with their dates."],
+  ["The one page on this site that does carry dated public sources for a company\\'s screen is the Capital One page.",
+    "Pages that do carry dated public sources for a company\\'s screen, such as the Capital One page, list them on the page with their dates."],
+  // the general-guidance card
+  [/The one page on this site with dated public sources for a company’s screen is the (<a href="\/capital-one-sql-interview\/"[^>]*>Capital One CodeSignal page<\/a>)\./g,
+    'Pages that do have dated public sources for a company’s screen, such as the $1, list them.'],
+];
+export function withCurrentSourcesPointer(html) {
+  let out = html;
+  for (const [from, to] of STALE_SOURCES_POINTER) out = typeof from === 'string' ? out.split(from).join(to) : out.replace(from, to);
+  return out;
+}
+
 // ── 5. shared modules for the pages that predate the template ─────────────
 // The 23 older company pages keep their copy (several rank and convert); they
 // get the template's readiness/Skillmap block after their question cards and
 // the topic-links strip before the related-companies strip. Idempotent.
-export function injectModules(bank) {
-  const done = [];
-  for (const f of fs.readdirSync(path.join(ROOT, 'src')).filter(x => /-sql-interview\.html$/.test(x))) {
-    const key = f.replace(/-sql-interview\.html$/, '');
-    if (COMPANY_INTERVIEWS[key]) continue;
-    if (SKIP_UNTIL_READ.has(key)) continue;
-    const file = path.join(ROOT, 'src', f);
-    let html = fs.readFileSync(file, 'utf8');
-    const title = (html.match(/<title>([^<]*)<\/title>/) || [])[1] || '';
-    const name = ((title.match(/^(.+?)\s+SQL\b/) || [])[1] || key).trim();
-    const fx = facts(bank, name);
-    html = html.replace(/<!-- company-readiness:start -->[\s\S]*?<!-- company-readiness:end -->\n*/, '');
-    const faqAnchor = html.indexOf('<section id="faq"');
-    if (faqAnchor < 0) continue;
-    html = html.slice(0, faqAnchor).replace(/\n+$/, '\n\n') + readinessBlock({ slug: key, name, src: `${key}-sql-interview` }) + '\n\n' + html.slice(faqAnchor);
-    html = withTopicPractice(html, { slug: key, name, dist: fx.dist, ordered: fx.ordered, bank: fx.bank });
-    html = withSourcedFormat(html, key);
-    html = withProvenance(html, { slug: key, name });
-    html = withHeroCta(html, { name, first: fx.first });
-    fs.writeFileSync(file, html);
-    done.push(key);
-  }
-  return done;
+/** One older page's html after the shared modules, or the same html when it
+ *  has no FAQ section to anchor on (then the file is not written). */
+export function olderPage(raw, key, bank) {
+  // The first-screen block (if any) comes off first and goes back on last
+  // (pageOutputs), so withProvenance's "next section after the hero" never
+  // lands inside it.
+  let html = raw.replace(FIRST_SCREEN_RE, '');
+  const title = (html.match(/<title>([^<]*)<\/title>/) || [])[1] || '';
+  const name = ((title.match(/^(.+?)\s+SQL\b/) || [])[1] || key).trim();
+  const fx = facts(bank, name);
+  html = html.replace(/<!-- company-readiness:start -->[\s\S]*?<!-- company-readiness:end -->\n*/, '');
+  const faqAnchor = html.indexOf('<section id="faq"');
+  if (faqAnchor < 0) return raw;
+  html = html.slice(0, faqAnchor).replace(/\n+$/, '\n\n') + readinessBlock({ slug: key, name, src: `${key}-sql-interview` }) + '\n\n' + html.slice(faqAnchor);
+  html = withTopicPractice(html, { slug: key, name, dist: fx.dist, ordered: fx.ordered, bank: fx.bank });
+  html = withSourcedFormat(html, key);
+  html = withProvenance(html, { slug: key, name });
+  html = withHeroCta(html, { name, first: fx.first });
+  html = withCurrentSourcesPointer(html);
+  return html;
 }
 
-/** The provenance note on the generated pages too — renderPage rewrites them
- *  whole each run, so this has to come after that loop. */
-export function injectProvenance() {
-  const done = [];
+/** The older company pages the run touches (not generated, not skipped). */
+export const olderPageKeys = () => fs.readdirSync(path.join(ROOT, 'src'))
+  .filter(x => /-sql-interview\.html$/.test(x))
+  .map(f => f.replace(/-sql-interview\.html$/, ''))
+  .filter(key => !COMPANY_INTERVIEWS[key] && !SKIP_UNTIL_READ.has(key));
+
+/** One generated page as the run writes it: the template, the committed
+ *  related-companies strip kept (build-company-crosslinks.mjs owns it), then
+ *  the provenance note. The first screen is added by pageOutputs. */
+export function generatedPage(key, d, f, old) {
+  let html = renderPage(key, d, f);
+  if (old != null) {
+    const m = old.match(/<!-- related-companies:start -->[\s\S]*?<!-- related-companies:end -->\n?/);
+    if (m) html = html.replace('<section class="cs"', `${m[0]}<section class="cs"`);
+  }
+  return withProvenance(html, { slug: key, name: d.name });
+}
+
+/**
+ * Every company page this generator owns, as the run would write it, in
+ * memory: Map<key, { file, before, after }>. The first-screen block goes on
+ * last, from FIRST_SCREENS only — a hand-written block is stripped
+ * (olderPage) and comes back only if the map has an entry for that page.
+ * tests/company-template.test.js asserts after === before for every page.
+ */
+export function pageOutputs(bank = loadBank()) {
+  const out = new Map();
   for (const [key, d] of Object.entries(COMPANY_INTERVIEWS)) {
     const file = path.join(ROOT, 'src', `${key}-sql-interview.html`);
-    if (!fs.existsSync(file)) continue;
-    fs.writeFileSync(file, withProvenance(fs.readFileSync(file, 'utf8'), { slug: key, name: d.name }));
-    done.push(key);
+    const before = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : null;
+    const f = facts(bank, d.name);
+    out.set(key, { file, before, after: withFirstScreen(generatedPage(key, d, f, before), key, f) });
   }
-  return done;
+  for (const key of olderPageKeys()) {
+    const file = path.join(ROOT, 'src', `${key}-sql-interview.html`);
+    const before = fs.readFileSync(file, 'utf8');
+    let after = olderPage(before, key, bank);
+    const d = pageData(key);
+    if (FIRST_SCREENS[key] && d) after = withFirstScreen(after, key, facts(bank, d.name));
+    out.set(key, { file, before, after });
+  }
+  return out;
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   const added = mergeTags();
-  const bank = loadBank();
-  for (const [key, d] of Object.entries(COMPANY_INTERVIEWS)) {
-    const f = facts(bank, d.name);
-    const file = path.join(ROOT, 'src', `${key}-sql-interview.html`);
-    let html = renderPage(key, d, f);
-    // Keep an existing related-companies strip (the cross-link generator owns
-    // it and inserts it before <section class="cs">).
-    if (fs.existsSync(file)) {
-      const old = fs.readFileSync(file, 'utf8');
-      const m = old.match(/<!-- related-companies:start -->[\s\S]*?<!-- related-companies:end -->\n?/);
-      if (m) html = html.replace('<section class="cs"', `${m[0]}<section class="cs"`);
-    }
-    fs.writeFileSync(file, html);
-    console.log(`[company-pages] ${key}: ${f.n} tagged (E${f.easy}/M${f.medium}/H${f.hard}, ${f.previews} Hard previews)`);
-  }
   console.log(`[company-pages] ${added} new tags merged`);
-  const injected = injectModules(loadBank());
-  console.log(`[company-pages] shared modules on ${injected.length} older pages`);
-  const prov = injectProvenance();
-  console.log(`[company-pages] provenance note on ${injected.length + prov.length} pages (${SOURCED_SLUGS.size} sourced)`);
+  const bank = loadBank();
+  for (const d of Object.values(COMPANY_INTERVIEWS)) {
+    const f = facts(bank, d.name);
+    console.log(`[company-pages] ${d.name}: ${f.n} tagged (E${f.easy}/M${f.medium}/H${f.hard}, ${f.previews} Hard previews)`);
+  }
+  let written = 0;
+  for (const [key, { file, before, after }] of pageOutputs(bank)) {
+    if (after === before) continue;
+    fs.writeFileSync(file, after);
+    written++;
+    console.log(`[company-pages] wrote ${key}`);
+  }
+  console.log(`[company-pages] ${written} page(s) changed; first screens: ${Object.keys(FIRST_SCREENS).join(', ')}`);
 }

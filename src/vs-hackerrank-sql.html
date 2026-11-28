@@ -142,7 +142,7 @@
     .ctbl-cell.lose{color:#94a3b8}
     .ctbl-cell.neutral{color:#cbd5e1}
 
-    .dfg{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+    .dfg{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(280px,100%),1fr));gap:16px}
     .dfc{background:rgba(15,15,30,.5);border:1px solid rgba(255,255,255,.05);border-radius:16px;padding:26px;transition:border-color .3s,transform .3s}.dfc:hover{border-color:rgba(124,58,237,.3);transform:translateY(-2px)}
     .dfc-num{display:inline-block;width:32px;height:32px;line-height:32px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;font-weight:800;text-align:center;margin-bottom:14px}
     .dfc-h{font-size:18px;font-weight:800;color:#e2e8f0;margin-bottom:10px}
@@ -156,7 +156,7 @@
 
     .hon{max-width:760px;margin:0 auto;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:32px}
     .hon-h{font-size:18px;font-weight:800;color:#e2e8f0;margin-bottom:14px;display:flex;align-items:center;gap:10px}
-    .hon-li{padding:10px 0;font-size:14px;color:#cbd5e1;line-height:1.7;display:flex;gap:10px}.hon-li::before{content:"•";color:#c084fc;font-weight:700;flex-shrink:0}
+    .hon-li{padding:10px 0 10px 16px;font-size:14px;color:#cbd5e1;line-height:1.7;position:relative}.hon-li::before{content:"•";color:#c084fc;font-weight:700;position:absolute;left:0}
 
     .fi{border-bottom:1px solid rgba(255,255,255,.06);padding:20px 0;cursor:pointer}.fh{display:flex;justify-content:space-between;align-items:center}.ftg{color:#c084fc;font-size:22px;transition:transform .3s;flex-shrink:0}.fa{max-height:0;overflow:hidden;transition:max-height .4s ease}.fi.o .fa{max-height:600px}.fi.o .ftg{transform:rotate(45deg)}
 
@@ -319,7 +319,7 @@
       </div>
       <div style="margin-top:20px;">
         <p style="font-size:12px;font-weight:700;color:#c084fc;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Pro adds:</p>
-        <p class="prc-li">All 300+ challenges, including the 82 Hard</p>
+        <p class="prc-li">All 300+ challenges, including the 86 Hard</p>
         <p class="prc-li">AI Tutor without the free tier's daily cap</p>
         <p class="prc-li">Full Mock Interview bank, all Daily difficulties, 30-Day Challenge</p>
       </div>

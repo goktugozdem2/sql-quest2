@@ -36,6 +36,9 @@ export const FBP_SESSION_KEY = 'sqlquest_fbp_session_v1';   // { count, lastAt, 
 export const FBP_EXIT_DAY_KEY = 'sqlquest_fbp_exit_day';     // 'YYYY-MM-DD' (local)
 export const FBP_STUCK_IDS_KEY = 'sqlquest_fbp_stuck_ids';   // JSON array of challenge ids
 export const FBP_DAY2_KEY = 'sqlquest_fbp_day2_at';          // ISO, once ever
+// exit_reason answered or skipped: never asked again in this browser
+// (2026-11-24, B1's read: one person answered the same card three times).
+export const FBP_EXIT_DONE_KEY = 'sqlquest_fbp_exit_done_at'; // ISO
 
 // A new session starts after an hour away — the same gap `second_session_7d`
 // counts (docs/agent/metrics.md), so "the second session" means one thing.
@@ -44,6 +47,8 @@ export const STUCK_NO_RUN_MS = 3 * 60 * 1000;
 export const STUCK_WRONG_SUBMITS = 3;
 export const DAY2_SESSION = 2;
 export const FREE_TEXT_MAX = 300;
+// How long the "thanks" line stays before the card is cleared.
+export const PROMPT_THANKS_MS = 4000;
 
 // Fixed answer lists. Ids are the data; labels are i18n keys under `feedback`.
 export const EXIT_REASONS = Object.freeze([
@@ -114,10 +119,13 @@ function commonGate({ kind, flagOn, sessionRec, inTimedMock, solvedCount }) {
 }
 
 // exit_reason: only after a CLOSE of the plans with no plan click, once a
-// local day. `closedVia` is dismissProModal's `via`; a free-path pick is an
-// answer already (the person chose to keep practising), so it is not asked.
-export function canShowExitReason({ flagOn, closedVia, planClicked, checkoutPending, solvedCount, inTimedMock, sessionRec, lastExitDay, now = Date.now() }) {
+// local day, and never again once answered or skipped (`doneAt`, read from
+// FBP_EXIT_DONE_KEY). `closedVia` is dismissProModal's `via`; a free-path
+// pick is an answer already (the person chose to keep practising), so it is
+// not asked.
+export function canShowExitReason({ flagOn, closedVia, planClicked, checkoutPending, solvedCount, inTimedMock, sessionRec, lastExitDay, doneAt = null, now = Date.now() }) {
   if (!commonGate({ kind: 'exit_reason', flagOn, sessionRec, inTimedMock, solvedCount })) return false;
+  if (doneAt) return false;
   if (planClicked || checkoutPending) return false;
   if (typeof closedVia !== 'string' || !closedVia || closedVia.startsWith('free_path')) return false;
   if (lastExitDay && lastExitDay === localDay(now)) return false;
@@ -148,6 +156,34 @@ export function canShowDay2({ flagOn, sessionRec, askedAt, solvedCount, inTimedM
   if (!sessionRec || sessionRec.count !== DAY2_SESSION) return false;
   if (challengeOpen || overlayOpen) return false;
   return true;
+}
+
+// ── After an answer or a skip ───────────────────────────────────────────────
+//
+// The defect of 2026-11-23 (docs/reads/funnel-2026-11-24.md §1): the card's
+// "thanks" lived only in the card's own state. The global slot hides the card
+// while a Pro modal is up and re-mounts it after the close, so the card came
+// back as a fresh question, and each answer wrote another row with no new
+// `feedback_prompt_shown`. The answer now lives on the prompt itself, the
+// card is cleared after the thanks, and the browser remembers it.
+
+// The localStorage key that, once written, keeps a kind from ever being asked
+// again in this browser. `stuck` is remembered per challenge at show time
+// (FBP_STUCK_IDS_KEY), so it has none here.
+export function promptDoneKey(kind) {
+  if (kind === 'exit_reason') return FBP_EXIT_DONE_KEY;
+  if (kind === 'day2') return FBP_DAY2_KEY;
+  return null;
+}
+
+// One answer per show: a prompt already answered records nothing more.
+export function mayRecordAnswer(prompt) {
+  return !!prompt && FEEDBACK_PROMPT_KINDS.includes(prompt.kind) && prompt.answered !== true;
+}
+
+export function markPromptAnswered(prompt, now = Date.now()) {
+  if (!prompt) return prompt;
+  return { ...prompt, answered: true, answeredAt: now };
 }
 
 // ── What is written ─────────────────────────────────────────────────────────

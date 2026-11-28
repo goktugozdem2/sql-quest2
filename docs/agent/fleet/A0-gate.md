@@ -1,3 +1,15 @@
+---
+id: A0
+name: "Gate (decides the go in the founder's place)"
+owner: founder
+runtime: cloud
+status: active
+cadence: "after every A1 verdict; a pass every 3 h; merges in two trains a day"
+metric: undefined  # TODO: register reverts of merged PRs, incidents traced to a merge, hours A1 MERGE → merge in docs/agent/metrics.md
+writes_code: false
+version: 1.0.0
+last_changed: 2026-11-26
+---
 # A0 — Gate (decides the go in the founder's place)
 
 **Founder's delegation, 2026-11-22, in chat:** "Benden go bekleme asla. Go için
@@ -20,8 +32,8 @@ Before each pass, read `docs/agent/fleet/orchestrator-decisions.md`. A flag that
 ## What A0 may decide
 
 A0 decides **merge, hold or reject** on any open PR from a fleet branch:
-`content/`, `qa/`, `seo/`, `docs/`, `feat/`, `fix/`, `ci/`, `chore/` and the
-orchestrator's `claude/` branch. It may also merge `origin/main` into a branch,
+`content/`, `qa/`, `seo/`, `docs/`, `feat/`, `fix/`, `ci/`, `chore/`, G0's
+`goal/` (docs-only) and the orchestrator's `claude/` branch. It may also merge `origin/main` into a branch,
 rebuild, re-test and push, to clear a conflict in build output.
 
 ## What A0 never decides, even with an A1 MERGE
@@ -72,3 +84,7 @@ Then **merge** (squash, using the PR title), or **hold** with the one blocking r
 ## Reporting
 
 A short Turkish line per PR to the founder. Say what was merged, held or reverted, and why. This is a report, not a request: A0 does not wait for an answer.
+
+## Changelog
+
+- 1.0.0 (2026-11-26) — versioned for the skills loop: front-matter added.

@@ -17,7 +17,9 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # 22, as deploy-prod.yml builds production: html-validate 11 needs
+          # Node ^22.22 || >=24.8 (Node 20 reached end of life 2026-04-30).
+          node-version: 22
           cache: npm
 
       - name: Install dependencies
@@ -34,3 +36,31 @@ jobs:
 
       - name: Validate build artifacts
         run: npm run build:validate
+
+      # Gzip budgets for public/app.js, data.js and styles.css, measured on
+      # the fresh build above (.size-limit.json; set 2026-11-24 at +3%).
+      # A PR that grows a bundle past its limit fails here.
+      - name: Bundle size budget
+        run: npm run size
+
+  # scripts/ab/read.py reads A/Bs with GrowthBook's stats engine (gbstats).
+  # Its tests need Python + the pinned engine, so they run here, not in vitest.
+  ab-stats:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: scripts/ab/requirements.txt
+
+      - name: Install gbstats
+        run: python -m pip install -r scripts/ab/requirements.txt
+
+      - name: Test the A/B reader
+        run: python -I scripts/ab/test_read.py

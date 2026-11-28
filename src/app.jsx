@@ -38,14 +38,18 @@ import { mergeProgress, hasProgress, isResumableGuest, GUEST_USER_KEY } from './
 import { companySetMatch } from './utils/company-set-match.js';
 import { buildPracticePlan, PLAN_MIN_SOLVES_FOR_SKILLS } from './utils/practice-plan.js';
 import { FIRST_SCREEN_STORAGE_KEY, firstScreenDecision } from './utils/first-screen.js';
+import { MOBILE_RUN_BAR_STORAGE_KEY, MOBILE_RUN_BAR_TEST_ID, isNarrowTouch, isShortViewport, mobileRunBarDecision, runBarLabel, keyboardOffset } from './utils/mobile-run-bar.js';
+
+import { MOBILE_ONE_LAYER_STORAGE_KEY, MOBILE_ONE_LAYER_TEST_ID, ONE_LAYER_EXTRAS, isNarrowTouch as oneLayerNarrowTouch, mobileOneLayerDecision, oneLayerPick, oneLayerRelease } from './utils/mobile-one-layer.js';
 import { INTAKE_KEY, INTAKE_GOALS, INTAKE_ROLES, INTAKE_STEPS, INTAKE_COMPANIES, INTAKE_LEVELS, intakeStepsFor, intakeGoalFor, intakeGoalForIntent, nextIntakeStep, isIntakeStepRequired, isIntakeLevel, isValidIntakeDate, buildIntakeRecord, isIntakeComplete, readIntakeRecord, intakeEventPayload, newCoachGoalState, shouldShowIntake } from './utils/onboarding-intake.js';
 import { shouldArmGoalNoteDateAsk, shouldRenderGoalNoteDateAsk } from './utils/goal-note-date-ask.js';
 import { COMPANY_ASK_KEY, COMPANY_ASK_TEST_ID, COMPANY_ASK_UNDECIDED, companyAskDecision, normalizeCompanyAskRecord, matchCompanies, isCompanyAskAnswer } from './utils/company-ask.js';
 import { COMPANY_DIRECT_KEY, COMPANY_DIRECT_TEST_ID, companyDirectDecision, isCompanyListArrival } from './utils/company-direct.js';
+import { RUN_SUBMIT_NUDGE_COPY, RUN_SUBMIT_NUDGE_KEY, RUN_SUBMIT_NUDGE_TEST_ID, runSubmitNudgeDecision, runSubmitNudgeEligible, runSubmitNudgeKind } from './utils/run-submit-nudge.js';
 import { GOAL_PROFILE_KEY, GOAL_GATE_RECHECK_MS, GOAL_GATE_GOALS, TARGET_LEVELS, INDUSTRIES, DEADLINE_PRESETS, industryFor, isoDateInDays, isValidDeadline, missingFields, buildGoalProfile, goalProfileStatus, shouldShowGoalGate, prefillDraft, goalGateEventPayload, readGoalProfile, GOAL_GATE_MAX_DAYS_OUT } from './utils/goal-gate.js';
 import { PLACEMENT_TIERS, placementResult, placementEventPayload, readFirstRunPlacement, seedFloorsFor, seedFloorsFromReadiness, levelForReadiness, placementFromReadiness } from './utils/placement.js';
 import { QUESTIONS as READINESS_QUESTIONS, READINESS_SKILLS, READINESS_RECORD_KEY, companySkillWeights, scoreReadiness, summarizeScores, weakestSkills, readinessRecordFrom, readReadinessRecord } from './data/readiness-questions.js';
-import { paidWallFor, isColdStart, practiceSolves, previewSwapFor } from './utils/paid-wall.js';
+import { paidWallFor, isColdStart, practiceSolves, previewSwapMatch } from './utils/paid-wall.js';
 import { priceRegionFor, planPrices, checkoutLinkFor } from './utils/regional-price.js';
 import { trialEndingLine } from './utils/trial-ending.js';
 import { billingIssueLine, billingIssueDays } from './utils/billing-issue.js';
@@ -65,6 +69,8 @@ import { sessionLoadingAtBoot, shouldWaitForSession } from './utils/session-boot
 import { SQLITE_TUTOR_RULES, mistakeStudyContext, buildMistakeContextBlock, mistakeOpeningPrompt, inlineOpenerMessage, diagnosisFixesLine, ladderRequestNumber } from './utils/tutor-context.js';
 import { buildUserSkill, pickNextBySkill, toCanonicalSkill, isLegacyMasteryRecord } from './utils/user-skill.js';
 import { classifyErrorPatterns, recordErrorPatterns, describeErrorPatterns, patternCount, emptyErrorStore } from './utils/error-patterns.js';
+import { isDebugChallenge, debugQuestionsOn, brokenQueryFor, debugEditorValue, emptyDebugStats, recordDebugSpot, recordDebugFix, debugStatsSummary, debugBugLine, withDebugLock, proModalReasonLabel, debugLockedAs } from './utils/debug-questions.js';
+import { coachDebugDoorOn, coachDebugDoorModel } from './utils/coach-debug-door.js';
 import { nudgeAllowed, nudgeHeaders, nudgeUsername, personalNudgeLines } from './utils/live-nudge.js';
 import { HIRED_INTENT, isHired, ticketLocked, shouldAskOffer } from './utils/post-hire.js';
 import { gradeTicket, ticketFeedback } from './utils/ticket-grade.js';
@@ -77,10 +83,15 @@ import { botSignals, botDecision } from './utils/bot-signals.js';
 import { crawlerSignature, PRIOR_AID_AT_LOAD } from './utils/bot-signals.js';
 import { bootTiming } from './utils/boot-timing.js';
 import { starterHintFor, starterSqlFromHint } from './utils/starter-query.js';
+import { RUNNABLE_STARTER_KEY, RUNNABLE_STARTER_TEST_ID, isDesktopScreen, isEmptyEditorOpen, normalizeRunnableStarterRecord, runnableStarterDecision, runnableStarterText, isUntouchedStarter } from './utils/runnable-starter.js';
 import { dueRetrievals, pickRetrievalChallenge, recordRetrieval, dailyQuota, MAX_DUE_SHOWN } from './utils/spaced-retrieval.js';
 import { computeRecap, shouldShowRecap } from './utils/session-recap.js';
 import { getAnonId } from './utils/anon-id.js';
+import { FREE_QUOTA_HOLDOUT_KEY, FREE_QUOTA_HOLDOUT_TEST_ID, freeQuotaEnrolment, hasPriorAppUse, normalizeFreeQuotaRecord, freeQuotaEffective, freeQuotaEventStamp } from './utils/free-quota-holdout.js';
+import { TOURNAMENT_KEY, tournamentEnrolment, tournamentPriorAppUse, normalizeTournamentRecord, adoptAccountRecord, tournamentEffectiveArm, tournamentBehaviour, tournamentSupersedes, tournamentEventStamp, shouldAnnounceTournament, tournamentAssignedPayload, buildVisitorProfile, enrichTournamentProfile } from './utils/tournament.js';
 import { quotaWallArm, quotaWallShowsModal, quotaInlineCopy, QUOTA_WALL_DAY_KEY } from './utils/quota-wall-inline.js';
+import { SINGLE_PATH_KEY, LADDER_LENGTH, TIER_KEYS, isPathArm, emptyPathState, normalizePathState, pathUiFlags, pathTabsOpen, sprintPlanMarks, sprintProbeRecord, ladderOutcome, ladderStuck, ladderOpen, ladderResolve, pickLadderQuestion, ladderQuestionNumber, roadmapProfileFor, composePathPlan, planProgress, nextPlanStep, planEnded, planShownPayload, logStepDone, pathWhyLines, companyFromSlug, startSprint, sprintDayModel, sprintTabsOpen, pathLayerSlot, pathLayerDecide, pathSessionTouch, PATH_LAYER_SETTLE_MS, PATH_USER_SIGNUP_REASONS, fitPlanToLength, pathProAskAllowed, PATH_PRO_ASKS_SPACED } from './utils/single-path.js';
+import { buildRoadmap } from './utils/personal-roadmap.js';
 import { classifyLandingSrc, LANDING_SRC_KEY } from './utils/landing-src.js';
 import { classifyQueryError } from './utils/query-error.js';
 import { computeSkillTrajectory, topActiveSkills } from './utils/skill-trajectory.js';
@@ -90,11 +101,14 @@ import { DRILL_SIZE, DRILL_TARGET, buildDrillQueue, challengeMatchesSkill, prior
 import { lintSQL } from './utils/sql-lint.js';
 import { resultsMatch, solutionRequiresOrder, sortRowsCanonical } from './utils/grade.js';
 import { normalizeAiMessages } from './utils/ai-tutor-client.js';
-import { FEEDBACK_PROMPT_FLAGS, FBP_SESSION_KEY, FBP_EXIT_DAY_KEY, FBP_STUCK_IDS_KEY, FBP_DAY2_KEY, STUCK_NO_RUN_MS, EXIT_REASONS, nextSessionRecord, markPromptShown, canShowExitReason, stuckTrigger, canShowStuck, canShowDay2, buildPromptSubmission, localDay } from './utils/feedback-prompts.js';
+import { buildFeedbackChallengeContext, feedbackEventContext } from './utils/feedback-context.js';
+import { FEEDBACK_PROMPT_FLAGS, FBP_SESSION_KEY, FBP_EXIT_DAY_KEY, FBP_STUCK_IDS_KEY, FBP_DAY2_KEY, FBP_EXIT_DONE_KEY, STUCK_NO_RUN_MS, PROMPT_THANKS_MS, EXIT_REASONS, promptDoneKey, mayRecordAnswer, markPromptAnswered, nextSessionRecord, markPromptShown, canShowExitReason, stuckTrigger, canShowStuck, canShowDay2, buildPromptSubmission, localDay } from './utils/feedback-prompts.js';
 import { t as i18n_t, getCurrentLang, setLang as i18n_setLang, subscribeLang, SUPPORTED_LANGS, localizeChallenge, localizeInterview, localizeQuestion } from './utils/i18n.js';
 import { buildWeeklyReport, detectMilestones } from './utils/weekly-report.js';
 import { isMcqQuestion, scoreMcqAnswer, applyHintPenalty, nextOptionId, findOption, buildInterviewProgress, mockMistakeDiagnosis, weakConceptsFromHistory } from './utils/mock-interview.js';
+import { canStartMock, mockRunFor, previewEndReason, freePreviewCount, canResumeProgress } from './utils/case-round.js';
 import { explainsApproach, approachSubmittedEvent } from './utils/mock-approach.js';
+import { CHALLENGE_LEFT_EVENT, startOpen, noteTyped, noteFlag, leaveHowForView, shouldSendLeft, markSent, challengeLeftPayload } from './utils/challenge-left.js';
 
 // 2026-09-12 (founder's cleanup item 12): the sector deep-link parameter is
 // English on every link — ?sector=finance | real-estate | manufacturing |
@@ -119,6 +133,98 @@ function canonicalSectorId(raw) {
   if (!raw) return null;
   const key = String(raw).toLowerCase().trim();
   return SECTOR_PARAM_ALIASES[key] || key;
+}
+
+// The localStorage keys exactly as the browser brought them, before any
+// module-load block below writes one (the holdout mints the aid). The
+// tournament's profile reads `landingBefore` from it: a landing page's
+// `sqlquest_aid` here means the person saw the site before the app.
+const BOOT_KEYS = (() => {
+  const keys = [];
+  try {
+    if (typeof localStorage !== 'undefined') for (let i = 0; i < localStorage.length; i++) keys.push(localStorage.key(i));
+  } catch (_) { /* storage blocked */ }
+  return keys;
+})();
+
+// The free-quota holdout (2026-11-25, src/utils/free-quota-holdout.js):
+// decided HERE, at module load, before anything below writes a key — the
+// "has the app run in this browser before?" test reads the keys as the
+// browser brought them. A stored decision always wins (nobody is re-armed);
+// a browser with app state keeps the quota as `returning`. The component
+// reads FQ_HOLDOUT_RECORD through freeQuotaOn() and writeProEvent.
+let FQ_HOLDOUT_RECORD = null;
+if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+  try {
+    let stored = null;
+    try { stored = JSON.parse(localStorage.getItem(FREE_QUOTA_HOLDOUT_KEY) || 'null'); } catch (_) { stored = null; }
+    const keys = [];
+    for (let i = 0; i < localStorage.length; i++) keys.push(localStorage.key(i));
+    const flagOn = window.FF?.feature?.('freeQuotaHoldout') === true;
+    const decision = freeQuotaEnrolment({
+      flagOn,
+      record: stored,
+      aid: flagOn && !normalizeFreeQuotaRecord(stored) ? getAnonId() : null,
+      now: Date.now(),
+      priorAppUse: hasPriorAppUse(keys),
+    });
+    if (decision.write) localStorage.setItem(FREE_QUOTA_HOLDOUT_KEY, JSON.stringify(decision.write));
+    FQ_HOLDOUT_RECORD = decision.record;
+  } catch (_) { FQ_HOLDOUT_RECORD = null; }
+}
+
+// The first-session tournament (2026-11-26, src/utils/tournament.js, PR 1
+// of 4): decided HERE, right after the holdout and before anything below
+// writes a key, so "has the app run in this browser before?" reads the keys
+// as the browser brought them (the holdout's own key and this one are
+// ignored). A stored record always wins — nobody is re-armed. The component
+// reads TOURNAMENT_RECORD through tournamentArm() / tournamentBehaviourNow()
+// and writeProEvent; tournament_assigned fires once, after the session loads.
+// Profile first (founder, 2026-11-26): a new browser's profile is read here
+// from what is known before it does anything (buildVisitorProfile), it names
+// the stratum, and the arm is drawn inside the stratum.
+let TOURNAMENT_RECORD = null;
+if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+  try {
+    let stored = null;
+    try { stored = JSON.parse(localStorage.getItem(TOURNAMENT_KEY) || 'null'); } catch (_) { stored = null; }
+    const keys = [];
+    for (let i = 0; i < localStorage.length; i++) keys.push(localStorage.key(i));
+    const flagOn = window.FF?.feature?.('firstSessionTournament') === true;
+    const deciding = flagOn && !normalizeTournamentRecord(stored);
+    let profile = null;
+    if (deciding) {
+      const readLs = (k) => { try { return localStorage.getItem(k); } catch (_) { return null; } };
+      let readinessRecord = null;
+      try { readinessRecord = JSON.parse(readLs('sqlquest_readiness_v1') || 'null'); } catch (_) { readinessRecord = null; }
+      let country = null;
+      try { country = sessionStorage.getItem('sqlquest_geo_country'); } catch (_) { country = null; }
+      profile = buildVisitorProfile({
+        search: window.location.search,
+        referrer: typeof document !== 'undefined' ? document.referrer : '',
+        siteHost: window.location.hostname,
+        landingSrc: readLs(LANDING_SRC_KEY),
+        viewportWidth: window.innerWidth,
+        country,
+        navigatorLanguage: typeof navigator !== 'undefined' ? navigator.language : null,
+        tzOffsetEastMin: -new Date().getTimezoneOffset(),
+        bootKeys: BOOT_KEYS,
+        readinessRecord,
+      });
+    }
+    const decision = tournamentEnrolment({
+      flagOn,
+      record: stored,
+      aid: deciding ? getAnonId() : null,
+      now: Date.now(),
+      priorAppUse: tournamentPriorAppUse(keys),
+      search: window.location.search,
+      pathname: window.location.pathname,
+      profile,
+    });
+    if (decision.write) localStorage.setItem(TOURNAMENT_KEY, JSON.stringify(decision.write));
+    TOURNAMENT_RECORD = decision.record;
+  } catch (_) { TOURNAMENT_RECORD = null; }
 }
 
 // Module-load URL-param capture. Two signals stick to localStorage so they
@@ -2336,15 +2442,26 @@ const ROADMAP_LESSONS_BY_ID = {
 };
 
 // Reusable SQL editor powered by CodeMirror 5
-const SQLEditor = ({ value, onChange, onKeyDown, placeholder, height = '10rem', disabled = false, className = '' }) => {
+// lineNumbers / onGutterClick / markLines exist for the Debug items
+// (debugQuestions): the gutter shows line numbers and a tap on one is the
+// optional "spot" step (onGutterClick receives the 1-based line); markLines
+// tints the spotted line. Every other editor passes none of them.
+const SQLEditor = ({ value, onChange, onKeyDown, placeholder, height = '10rem', disabled = false, className = '', lineNumbers = false, onGutterClick = null, markLines = null, selectAllWhen = null }) => {
   const containerRef = useRef(null);
   const editorRef = useRef(null);
   const onChangeRef = useRef(onChange);
+  // `runnableStarter` (2026-11-26): while the editor holds exactly this text
+  // (the starter as placed), focusing it selects it all, so the first
+  // keystroke replaces the starter instead of writing beside it.
+  const selectAllWhenRef = useRef(selectAllWhen);
+  selectAllWhenRef.current = selectAllWhen;
   const onKeyDownRef = useRef(onKeyDown);
+  const onGutterClickRef = useRef(onGutterClick);
   const isExternalUpdate = useRef(false);
 
   onChangeRef.current = onChange;
   onKeyDownRef.current = onKeyDown;
+  onGutterClickRef.current = onGutterClick;
 
   useEffect(() => {
     if (!containerRef.current || !window.CodeMirror) return;
@@ -2352,7 +2469,7 @@ const SQLEditor = ({ value, onChange, onKeyDown, placeholder, height = '10rem', 
       value: value || '',
       mode: 'text/x-sql',
       theme: 'material-darker',
-      lineNumbers: false,
+      lineNumbers: !!lineNumbers,
       matchBrackets: true,
       autoCloseBrackets: true,
       placeholder: placeholder || '',
@@ -2375,8 +2492,33 @@ const SQLEditor = ({ value, onChange, onKeyDown, placeholder, height = '10rem', 
       if (onKeyDownRef.current) onKeyDownRef.current(e);
     });
 
+    cm.on('focus', () => {
+      const t = selectAllWhenRef.current;
+      if (!t || cm.getValue() !== t) return;
+      // After CodeMirror's own mousedown placed the cursor.
+      setTimeout(() => { if (cm.getValue() === t) cm.execCommand('selectAll'); }, 0);
+    });
+
+    cm.on('gutterClick', (cm, line) => {
+      if (onGutterClickRef.current) onGutterClickRef.current(line + 1);
+    });
+
     return () => { cm.toTextArea && cm.toTextArea(); };
   }, []);
+
+  useEffect(() => {
+    if (editorRef.current) editorRef.current.setOption('lineNumbers', !!lineNumbers);
+  }, [lineNumbers]);
+
+  // The spotted line, tinted (1-based in, 0-based for CodeMirror).
+  const markKey = Array.isArray(markLines) ? markLines.join(',') : '';
+  useEffect(() => {
+    const cm = editorRef.current;
+    if (!cm) return undefined;
+    const lines = markKey ? markKey.split(',').map(Number).filter(n => n >= 1 && n <= cm.lineCount()) : [];
+    lines.forEach(n => cm.addLineClass(n - 1, 'background', 'cm-debug-spot'));
+    return () => { lines.forEach(n => { try { cm.removeLineClass(n - 1, 'background', 'cm-debug-spot'); } catch (_) {} }); };
+  }, [markKey, value]);
 
   // Sync external value changes into CodeMirror
   useEffect(() => {
@@ -3217,6 +3359,12 @@ const loadUserData = async (username, allowLocalFallback = true, options = {}) =
 // Data is loaded from separate files in /data folder
 const publicDatasets = window.publicDatasetsData || {};
 const challenges = window.challengesData || [];
+// The Debug items join `challenges` in src/data/debug-challenges.js only when
+// this is true; it also gates the Practice chip and the stats card.
+const DEBUG_QUESTIONS_ON = debugQuestionsOn(window.FEATURE_FLAGS);
+// The Coach's Debug door (orchestrator 2026-11-25): one card under the
+// next-step card. src/utils/coach-debug-door.js; ledger "the Coach's Debug door".
+const COACH_DEBUG_DOOR_ON = coachDebugDoorOn(window.FEATURE_FLAGS);
 
 // Merge company tags (id -> [companies]) from challenge-companies.js onto each challenge.
 // Single source of truth for "which companies ask this pattern" across the app.
@@ -4406,7 +4554,7 @@ function XPBar({ current, max, level }) {
 
 // Floating XP Gain Animation
 // Milestone Share Bar - Auto-appears after key moments
-function MilestoneShareBar({ content, onShare, onDismiss, referralUrl }) {
+function MilestoneShareBar({ content, onShare, onDismiss, referralUrl, bigTargets = false }) {
   const [visible, setVisible] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   
@@ -4419,7 +4567,7 @@ function MilestoneShareBar({ content, onShare, onDismiss, referralUrl }) {
   if (dismissed) return null;
   
   return (
-    <div className="fixed bottom-4 left-1/2 z-50 w-full max-w-md px-4" style={{
+    <div data-layer="milestone_share" className="sq-share-bar fixed bottom-4 left-1/2 z-50 w-full max-w-md px-4" style={{
       transform: visible ? 'translate(-50%, 0)' : 'translate(-50%, 120%)',
       transition: 'transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1)',
     }}>
@@ -4440,19 +4588,19 @@ function MilestoneShareBar({ content, onShare, onDismiss, referralUrl }) {
               <p className="text-xs text-gray-400">{i18n_t('shareToast', 'shareYourProgress')}</p>
             </div>
           </div>
-          <button onClick={() => { setDismissed(true); onDismiss(); }} className="text-gray-500 hover:text-gray-300 text-lg">✕</button>
+          <button onClick={() => { setDismissed(true); onDismiss(); }} aria-label="Dismiss" className={`text-gray-500 hover:text-gray-300 text-lg${bigTargets ? ' min-w-[44px] min-h-[44px] -mr-2 flex items-center justify-center' : ''}`}>✕</button>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => onShare('twitter')} className="flex-1 py-2 bg-[#1DA1F2] hover:bg-[#1a8cd8] rounded-lg font-bold text-xs flex items-center justify-center gap-1">
+          <button onClick={() => onShare('twitter')} className={`flex-1 py-2 bg-[#1DA1F2] hover:bg-[#1a8cd8] rounded-lg font-bold text-xs flex items-center justify-center gap-1${bigTargets ? ' min-h-[44px]' : ''}`}>
             {i18n_t('shareToast', 'btnTwitter')}
           </button>
-          <button onClick={() => onShare('linkedin')} className="flex-1 py-2 bg-[#0A66C2] hover:bg-[#094d92] rounded-lg font-bold text-xs flex items-center justify-center gap-1">
+          <button onClick={() => onShare('linkedin')} className={`flex-1 py-2 bg-[#0A66C2] hover:bg-[#094d92] rounded-lg font-bold text-xs flex items-center justify-center gap-1${bigTargets ? ' min-h-[44px]' : ''}`}>
             {i18n_t('shareToast', 'btnLinkedin')}
           </button>
-          <button onClick={() => onShare('reddit')} className="flex-1 py-2 bg-[#FF4500] hover:bg-[#e03d00] rounded-lg font-bold text-xs flex items-center justify-center gap-1">
+          <button onClick={() => onShare('reddit')} className={`flex-1 py-2 bg-[#FF4500] hover:bg-[#e03d00] rounded-lg font-bold text-xs flex items-center justify-center gap-1${bigTargets ? ' min-h-[44px]' : ''}`}>
             {i18n_t('shareToast', 'btnReddit')}
           </button>
-          <button onClick={() => onShare('copy')} className="flex-1 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-bold text-xs flex items-center justify-center gap-1">
+          <button onClick={() => onShare('copy')} className={`flex-1 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-bold text-xs flex items-center justify-center gap-1${bigTargets ? ' min-h-[44px]' : ''}`}>
             {i18n_t('shareToast', 'btnCopy')}
           </button>
         </div>
@@ -4575,7 +4723,7 @@ function LevelUpBanner({ levelName, onComplete }) {
   }, [onComplete]);
   
   return (
-    <div className="fixed inset-0 z-50 pointer-events-none flex items-center justify-center">
+    <div data-layer="level_up" className="fixed inset-0 z-50 pointer-events-none flex items-center justify-center">
       {/* Flash overlay */}
       <div className="absolute inset-0" style={{
         background: 'radial-gradient(circle, rgba(168,85,247,0.3) 0%, transparent 70%)',
@@ -4603,7 +4751,7 @@ function LevelUpBanner({ levelName, onComplete }) {
   );
 }
 
-function AchievementPopup({ achievement, onClose }) {
+function AchievementPopup({ achievement, onClose, bigTargets = false }) {
   useEffect(() => { const t = setTimeout(onClose, 3000); return () => clearTimeout(t); }, [onClose]);
   
   // Check if icon is emoji (starts with non-letter) or Lucide name
@@ -4621,13 +4769,20 @@ function AchievementPopup({ achievement, onClose }) {
   const IconComponent = !isEmoji ? (iconMap[achievement.icon] || getIcon('Star')) : null;
   
   return (
-    <div className="fixed top-3 right-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-[#F2F0EA] px-3 py-2 rounded-lg shadow-lg animate-bounce z-50 flex items-center gap-2 text-sm">
+    <div data-layer="achievement" className={bigTargets
+      ? 'fixed top-3 right-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-[#F2F0EA] px-3 py-2 rounded-lg shadow-lg z-50 flex items-center gap-2 text-sm'
+      : 'fixed top-3 right-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-[#F2F0EA] px-3 py-2 rounded-lg shadow-lg animate-bounce z-50 flex items-center gap-2 text-sm'}>
       {isEmoji ? (
         <span className="text-2xl">{achievement.icon}</span>
       ) : (
         <IconComponent size={18} />
       )}
       <div><p className="text-xs opacity-80">{i18n_t('practice', 'achievementBadge')}</p><p className="font-semibold text-sm">{achievement.name}</p></div>
+      {/* mobileOneLayer: a toast that is the one layer on a phone gets a
+          close target a thumb can hit (44×44); everyone else, unchanged. */}
+      {bigTargets && (
+        <button type="button" onClick={onClose} aria-label="Dismiss" className="min-w-[44px] min-h-[44px] -my-2 -mr-3 flex items-center justify-center text-base">✕</button>
+      )}
     </div>
   );
 }
@@ -4759,10 +4914,12 @@ const FEEDBACK_TOPICS = [
  * `stuck` and `day2` (one line). Rules live in src/utils/feedback-prompts.js.
  * Neutral surface colours only; the accent is never used here (DESIGN.md).
  */
-function FeedbackPromptCard({ kind, onSend, onSkip, compact = false }) {
+function FeedbackPromptCard({ kind, onSend, onSkip, compact = false, answered = false }) {
   const [text, setText] = React.useState('');
   const [picked, setPicked] = React.useState(null);
-  const [status, setStatus] = React.useState('idle'); // idle | sending | done | error
+  // `answered` comes from the prompt, not this card: a card re-mounted after a
+  // Pro modal closes must open on the thanks, never on the question again.
+  const [status, setStatus] = React.useState(answered ? 'done' : 'idle'); // idle | sending | done | error
   const tt = (k) => i18n_t('feedback', k);
   const btn = 'min-h-[44px] px-3 rounded-md text-sm transition';
   const neutral = { background: '#1F222B', border: '1px solid #2A2E38', color: '#F2F0EA' };
@@ -4823,7 +4980,7 @@ function FeedbackPromptCard({ kind, onSend, onSkip, compact = false }) {
   );
 }
 
-function FeedbackWidget({ open, onOpen, onClose, onSubmit, onTopicPick, screen, initialTopic = null }) {
+function FeedbackWidget({ open, onOpen, onClose, onSubmit, onTopicPick, screen, initialTopic = null, tutorLine = false, onTutor = null }) {
   const [message, setMessage] = React.useState('');
   const [contact, setContact] = React.useState('');
   const [topic, setTopic] = React.useState(null);
@@ -4949,6 +5106,22 @@ function FeedbackWidget({ open, onOpen, onClose, onSubmit, onTopicPick, screen, 
                 );
               })}
             </div>
+            {/* IR-2 (flag feedbackContext): on a challenge, say where this box
+                goes and where help is. Muted text, the link in body text —
+                never the accent, which stays on Send (DESIGN.md). */}
+            {tutorLine && onTutor && (
+              <p className="text-xs mb-2" style={{ color: '#8A8E99' }} data-testid="feedback-tutor-line">
+                {i18n_t('feedback', 'tutorLineBefore')}
+                <button
+                  type="button"
+                  onClick={onTutor}
+                  className="underline font-semibold"
+                  style={{ color: '#F2F0EA' }}
+                  data-testid="feedback-tutor-link"
+                >{i18n_t('feedback', 'tutorLineLink')}</button>
+                {i18n_t('feedback', 'tutorLineAfter')}
+              </p>
+            )}
             <textarea
               ref={taRef}
               value={message}
@@ -5526,7 +5699,7 @@ function InterviewStatusStrip({ model, onCell }) {
  * an onClose callback. Auto-dismiss is owned by the parent (useEffect timer).
  * Shows the archetype + the axes that went up, with yellow pulse rings.
  */
-function RadarPopToast({ pop, onClose, onShare }) {
+function RadarPopToast({ pop, onClose, onShare, bigTargets = false }) {
   if (!pop) return null;
   const deltaEntries = Object.entries(pop.deltas || {}).filter(([, v]) => v > 0);
   const deltaText = deltaEntries.map(([s, v]) => {
@@ -5537,17 +5710,20 @@ function RadarPopToast({ pop, onClose, onShare }) {
 
   return (
     <div
-      className="fixed bottom-6 right-6 z-50 w-[320px] p-4 rounded-2xl bg-gray-900/95 backdrop-blur border border-yellow-400/30 shadow-2xl"
+      data-layer="radar_pop"
+      className="sq-radar-pop fixed bottom-6 right-6 z-50 w-[320px] p-4 rounded-2xl bg-gray-900/95 backdrop-blur border border-yellow-400/30 shadow-2xl"
       style={{ animation: 'radarPopIn 0.4s ease-out' }}
       role="status"
       aria-live="polite"
     >
       <button
         onClick={onClose}
-        className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center text-gray-500 hover:text-gray-200 text-base rounded-full hover:bg-white/5"
+        className={bigTargets
+          ? 'absolute top-0 right-0 w-11 h-11 flex items-center justify-center text-gray-500 hover:text-gray-200 text-base rounded-full hover:bg-white/5'
+          : 'absolute top-2 right-2 w-6 h-6 flex items-center justify-center text-gray-500 hover:text-gray-200 text-base rounded-full hover:bg-white/5'}
         aria-label="Dismiss"
       >×</button>
-      <div className="flex items-center gap-3 mb-2 pr-6">
+      <div className={bigTargets ? 'flex items-center gap-3 mb-2 pr-10' : 'flex items-center gap-3 mb-2 pr-6'}>
         <span className="text-2xl flex-shrink-0">{archetype.emoji}</span>
         <div className="min-w-0">
           <p className="text-sm font-bold text-[#F2F0EA] truncate">{archetype.name}</p>
@@ -5568,12 +5744,12 @@ function RadarPopToast({ pop, onClose, onShare }) {
       <div className="mt-2 flex gap-2">
         <button
           onClick={onClose}
-          className="flex-1 text-xs py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 font-semibold transition"
+          className={`flex-1 text-xs py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 font-semibold transition${bigTargets ? ' min-h-[44px]' : ''}`}
         >Dismiss</button>
         {onShare && (
           <button
             onClick={onShare}
-            className="flex-1 text-xs py-2 rounded-lg bg-yellow-400/90 hover:bg-yellow-400 text-gray-900 font-bold transition"
+            className={`flex-1 text-xs py-2 rounded-lg bg-yellow-400/90 hover:bg-yellow-400 text-gray-900 font-bold transition${bigTargets ? ' min-h-[44px]' : ''}`}
           >Share →</button>
         )}
       </div>
@@ -6304,6 +6480,15 @@ function SQLQuest() {
     } catch (_) { return emptyErrorStore(); }
   });
   const lastErrorPatternsRef = useRef([]);
+  // Debug items (debugQuestions): spots correct ÷ attempted, fixes solved ÷
+  // attempted — src/utils/debug-questions.js. Never a gate, never a radar axis.
+  const [debugStats, setDebugStats] = useState(() => {
+    try {
+      const saved = localStorage.getItem('sqlquest_debug_stats');
+      const parsed = saved ? JSON.parse(saved) : null;
+      return parsed && typeof parsed === 'object' && parsed.spots ? parsed : emptyDebugStats();
+    } catch (_) { return emptyDebugStats(); }
+  });
   // What the "Next quest" strip picked and why (P1 picker, `weakSkillNext`).
   const [nextChallengeRecMeta, setNextChallengeRecMeta] = useState(null);
   // Spaced retrieval (P2): reviews done per weak skill — the 3/7/14 clock
@@ -6991,7 +7176,19 @@ function SQLQuest() {
     try { if (window.__SQLQUEST_SMOKE__ === true) return false; } catch (_) {}
     try { return botSignals({ userAgent: navigator.userAgent, webdriver: navigator.webdriver }).hard; } catch (_) { return false; }
   };
-  const writeProEvent = (event, reason, metadata = {}) => {
+  const fqEventStamp = () => {
+    try { return freeQuotaEventStamp({ flagOn: window.FF?.feature?.('freeQuotaHoldout') === true, record: FQ_HOLDOUT_RECORD }); } catch (_) { return {}; }
+  };
+  // The first-session tournament's stamp (2026-11-26): `tArm` / `tArmV` on
+  // every row from an enrolled browser, the fqArm pattern — so the
+  // challenge_solved, first_challenge_solved, pro_modal_shown,
+  // pro_plan_clicked and pro_checkout_clicked rows the read splits all carry
+  // the arm. The read takes the arm from `tournament_assigned`; these only
+  // cross-check it (metrics.md, first_session_tournament).
+  const tEventStamp = () => {
+    try { return tournamentEventStamp({ flagOn: window.FF?.feature?.('firstSessionTournament') === true, record: TOURNAMENT_RECORD }); } catch (_) { return {}; }
+  };
+  const writeProEvent = (event, reason, metadata = {}, opts = {}) => {
     if (ANALYTICS_MUTED) {
       try { console.debug('[sqlquest] analytics muted on localhost:', event, reason, metadata); } catch (_) {}
       return;
@@ -7002,6 +7199,10 @@ function SQLQuest() {
     try {
       supabaseFetch('pro_events', {
         method: 'POST',
+        // An exit event (challenge_left) is written as the page goes away:
+        // keepalive lets the request outlive it. Not sendBeacon — PostgREST
+        // needs the apikey header, which a beacon cannot set.
+        ...(opts && opts.keepalive === true ? { keepalive: true } : {}),
         headers: { 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
         body: JSON.stringify({
           event,
@@ -7013,7 +7214,10 @@ function SQLQuest() {
           // can still be stitched to the rest of that browser's history.
           // username is deliberately left alone: the Aug 3 read compares
           // against the existing series and must not see a redefinition.
-          metadata: JSON.stringify({ ...metadata, aid: getAnonId() }),
+          // `fqArm` (2026-11-25): a browser enrolled in the free-quota
+          // holdout stamps its arm on EVERY row — the quota, paywall,
+          // checkout and trial rows the holdout's guardrails read included.
+          metadata: JSON.stringify({ ...metadata, ...fqEventStamp(), ...tEventStamp(), aid: getAnonId() }),
           created_at: new Date().toISOString()
         })
       }).catch(() => {}); // fire and forget
@@ -7255,7 +7459,7 @@ function SQLQuest() {
     const sessionsOn = !opts.linkFallback && window.FF?.feature?.('checkoutSessions') === true;
     const trial = wantsTrial({ sessionsOn, trialOn: window.FF?.feature?.('checkoutTrial') === true, plan });
     if (!opts.linkFallback) {
-      trackActivationEvent('pro_checkout_clicked', { plan, email: email || null, modalReason: proModalReason?.type || null, patternSlug: proModalReason?.patternSlug || null, linkSrc: proModalReason?.linkSrc || null, priceRegion, via: sessionsOn ? 'session' : 'link', trial });
+      trackActivationEvent('pro_checkout_clicked', { plan, email: email || null, modalReason: proModalReasonLabel(proModalReason), patternSlug: proModalReason?.patternSlug || null, linkSrc: proModalReason?.linkSrc || null, priceRegion, via: sessionsOn ? 'session' : 'link', trial });
     }
     // Leave a breadcrumb so the next app load can tell WHY a click didn't
     // become a purchase. Until now the funnel went silent between the click
@@ -7374,7 +7578,8 @@ function SQLQuest() {
       modalLayout,
       // Which ask this click answered, and the trap page behind it
       // (2026-09-25) — so a pattern page → checkout funnel joins by aid.
-      modalReason: proModalReason?.type || null,
+      // `debug_lock` for a locked Debug item (proModalReasonLabel).
+      modalReason: proModalReasonLabel(proModalReason),
       patternSlug: proModalReason?.patternSlug || null,
       linkSrc: proModalReason?.linkSrc || null,
       priceRegion,
@@ -7476,7 +7681,7 @@ function SQLQuest() {
         } catch (_) {}
       }
       if (event === 'app_opened' && signals) Object.assign(payload, { wd: signals.wd, uaBot: signals.uaBot, langs: signals.langs });
-      writeProEvent(event, 'activation_funnel', payload);
+      writeProEvent(event, 'activation_funnel', payload, { keepalive: options.keepalive === true });
     } catch (_) {}
   };
 
@@ -7840,7 +8045,26 @@ function SQLQuest() {
   // show a real error instead of pretending it sent — the entire point of this
   // channel is that a message doesn't silently disappear, which is exactly
   // what the support@sqlquest.app mailto has been doing (no MX on the domain).
+  // IR-2 (E2, 2026-11-23, flag `feedbackContext`): the challenge the widget
+  // was opened on — id, the last query (cut to ~1,000 characters) and the last
+  // diagnosis kind — or null off a challenge screen. A plain function, not a
+  // hook: it reads state at the moment it is called (open, render, submit).
+  // src/utils/feedback-context.js holds the rules.
+  const feedbackChallengeCtxNow = () => buildFeedbackChallengeContext({
+    flagOn: ftbFlag('feedbackContext'),
+    activeTab,
+    practiceSubTab,
+    challenge: currentChallenge,
+    inMock: !!activeInterview,
+    query: challengeQuery,
+    diagnosis: challengeDiagnosis,
+    status: challengeStatus,
+  });
+
   const submitFeedback = async ({ message, contact, topic, quoteConsent, quoteName, quoteConsentAt, kind = 'open', trigger = null, promptContext = null }) => {
+    // Only the widget itself ('open') carries the challenge context; the
+    // asked prompts bring their own promptContext.
+    const fbChallengeCtx = (kind || 'open') === 'open' ? feedbackChallengeCtxNow() : null;
     const payload = {
       username: currentUser || 'guest',
       message,
@@ -7863,6 +8087,7 @@ function SQLQuest() {
         kind: kind || 'open',
         trigger: trigger || null,
         ...(promptContext || {}),
+        ...(fbChallengeCtx || {}),
         solvedCount: solvedChallenges.size,
         isGuest: !!isGuest,
         isPro: !!isPro,
@@ -7907,6 +8132,9 @@ function SQLQuest() {
         // pro_events is a behavioural table; the quotable content stays in
         // the feedback table, which anon cannot read back out.
         quoteConsent: quoteConsent === true,
+        // IR-2: the challenge id and diagnosis kind, never the query — the
+        // query stays in the feedback row, which anon cannot read back.
+        ...feedbackEventContext(fbChallengeCtx),
       });
       return true;
     } catch (e) {
@@ -7920,7 +8148,7 @@ function SQLQuest() {
 
   // Pro modal analytics — fire-and-forget
   const trackProEvent = (event, metadata = {}) => {
-    writeProEvent(event, proModalReason?.type || 'unknown', metadata);
+    writeProEvent(event, proModalReasonLabel(proModalReason) || 'unknown', metadata);
   };
 
   // Track Pro modal shown
@@ -7935,8 +8163,10 @@ function SQLQuest() {
       if (window.FF?.feature?.('checkoutSessions') === true) {
         warmCheckoutSession({ fetchImpl: window.fetch.bind(window), endpoint: `${window.SUPABASE_URL}/functions/v1/create-checkout-session`, anonKey: window.SUPABASE_ANON_KEY });
       }
+      // `debug_lock` for a locked Debug item (proModalReasonLabel).
+      const shownReason = proModalReasonLabel(proModalReason) || 'unknown';
       trackActivationEvent('pro_modal_shown', {
-        reason: proModalReason?.type || 'unknown',
+        reason: shownReason,
         // True when the prompt only fired because the offer gate stopped
         // trusting a stale proStatus flag. Lets the read separate newly
         // unblocked users from the ones who were always going to be asked.
@@ -7961,6 +8191,9 @@ function SQLQuest() {
         modalLayout,
         // Free-tier boundary M3: did this ask lead with a date, and how far.
         ...deadlineEventMeta(proModalReason),
+        // A locked Debug item reads reason `debug_lock`; this keeps the wall
+        // underneath it (free_quota, hard_challenge, …), null otherwise.
+        lockedAs: debugLockedAs(proModalReason),
       });
     }
   }, [showProModal]);
@@ -8225,11 +8458,19 @@ function SQLQuest() {
   const [challengeResult, setChallengeResult] = useState({ columns: [], rows: [], error: null });
   const [challengeRunAt, setChallengeRunAt] = useState(null); // Timestamp of last Run click — used as React key to retrigger flash animation
   const [challengeRunMs, setChallengeRunMs] = useState(null); // Query duration in ms — shown to user as "Ran in Xms" confirmation
+  // Run is not Submit (src/utils/run-submit-nudge.js, flag `runSubmitNudge`):
+  // { challengeId, kind: 'match' | 'check' } after a zero-solve person's Run in
+  // the `nudge` arm. Declared here, far above the showAuth / dbReady returns.
+  const [runSubmitNudge, setRunSubmitNudge] = useState(null);
   const [challengeExpected, setChallengeExpected] = useState({ columns: [], rows: [] });
   const [challengeStatus, setChallengeStatus] = useState(null);
   const [challengeStarterHint, setChallengeStarterHint] = useState(null);
+  // `runnableStarter` (desktop A/B, 2026-11-26, src/utils/runnable-starter.js):
+  // the exact text the `starter` arm put in the editor on this open, or null.
+  // Declared here, far above the showAuth / dbReady returns.
+  const [challengeRunnableStarter, setChallengeRunnableStarter] = useState(null);
   // A deep link to a locked Hard swapped for a free Hard preview (2026-11-22,
-  // src/utils/paid-wall.js previewSwapFor): the note above the editor.
+  // src/utils/paid-wall.js previewSwapMatch): the note above the problem.
   const [deepLinkSwapNote, setDeepLinkSwapNote] = useState(null);
   // After Run or Submit, bring the result into view if it landed below the
   // fold — the verdict now sits right under the editor, but on a short
@@ -8370,6 +8611,8 @@ function SQLQuest() {
   // null. Session-only on purpose — a sticky skill filter would silently
   // narrow the list on the next visit the way the path filter once did.
   const [skillFilter, setSkillFilter] = useState(null);
+  // The Practice "Debug" chip (debugQuestions): session-only, like the skill filter.
+  const [debugFilter, setDebugFilter] = useState(false);
   const [sectorFilter, setSectorFilter] = useState(() => {
     if (typeof window === 'undefined') return null;
     try {
@@ -8902,9 +9145,44 @@ function SQLQuest() {
   // or trigger the legacy welcome modal.
   // A person who said they got the job is never a first-run user: the
   // placement quiz is interview-prep's door, not theirs (First 90 Days).
+  // ── Tournament arm B — the single path (2026-11-26) ───────────────────
+  // docs/plans/first-session-tournament-2026-11-26.md §3, pure half in
+  // src/utils/single-path.js. `pathUi` holds EVERY switch the arm flips in
+  // this file; outside a built arm B (control, an unbuilt arm, the flag off,
+  // not enrolled) every switch is false and the product is today's, byte for
+  // byte (tests/single-path.test.js pins each call site). Computed here,
+  // above the first-run shell it extends; the hooks sit above the `showAuth` /
+  // `dbReady` early returns (CLAUDE.md fragile area 1).
+  const pathAccountCreatedAt = useMemo(() => {
+    if (!currentUser || isGuest) return null;
+    try {
+      const blob = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || 'null');
+      return blob && blob.createdAt != null ? blob.createdAt : null;
+    } catch (_) { return null; }
+  }, [currentUser, isGuest, isSessionLoading]);
+  const pathBehaviour = (() => {
+    try {
+      if (window.FF?.feature?.('firstSessionTournament') !== true) return null;
+      const b = tournamentBehaviour(tournamentEffectiveArm({
+        flagOn: true,
+        record: TOURNAMENT_RECORD,
+        signedIn: !!currentUser && !isGuest,
+        accountCreatedAt: pathAccountCreatedAt,
+        intent: getUserIntent(),
+      }));
+      return isPathArm(b) ? b : null;
+    } catch (_) { return null; }
+  })();
+  const [pathState, setPathState] = useState(() => {
+    try { return normalizePathState(JSON.parse(localStorage.getItem(SINGLE_PATH_KEY) || 'null')); } catch (_) { return emptyPathState(); }
+  });
+  const pathStateRef = useRef(pathState);
+  pathStateRef.current = pathState;
+  const pathUi = pathUiFlags({ behaviour: pathBehaviour, state: pathState, hasChallenge: !!currentChallenge });
   const isFirstRunUser = !firstRunCompleted && solvedChallenges.size === 0 && !isHired(intentRecord);
   const showFirstRunStart = isFirstRunUser && !currentChallenge && activeTab === 'guide';
-  const showFirstRunSimpleShell = isFirstRunUser;
+  // Arm B keeps the first-run shell until its ladder ends (plan §3.1 B1).
+  const showFirstRunSimpleShell = isFirstRunUser || pathUi.extendShell;
   const activeFoundationsLessonForShell = foundationsRoadmapLessonId
     ? FOUNDATIONS_ROADMAP_LESSONS[String(foundationsRoadmapLessonId)]
     : null;
@@ -8918,7 +9196,8 @@ function SQLQuest() {
     onStartScreen: showFirstRunStart && !showZeroSqlLesson,
     record: intakeRecord,
   });
-  const showPrimaryLearningTabs = true;
+  // Arm B: no tab row until the ladder ends (plan §3.5).
+  const showPrimaryLearningTabs = !pathUi.hideTabs;
   const showLegacyActivityShortcuts = false;
   const showLegacyPrimaryNav = false;
   const showPracticeSubtabs = false;
@@ -9622,6 +9901,12 @@ function SQLQuest() {
           ...((companyAskRecord.arm || companyAskRecord.asks) ? { companyAsk: companyAskRecord } : {}),   // the company ask: arm, asks, answer
           intent: intentRecord,     // the declared goal { goal, source, at } — 'exploring' included, so the server can tell asked from never-asked
           readiness: readinessRecord, // the ten-question check / readiness test result, the public page's shape
+          // The first-session tournament's record (src/utils/tournament.js): an
+          // enrolled person's arm rides the account, so a second device keeps it.
+          ...(TOURNAMENT_RECORD && TOURNAMENT_RECORD.status === 'enrolled' ? { tournament: TOURNAMENT_RECORD } : {}),
+          // Tournament arm B's ladder and plan (src/utils/single-path.js) ride
+          // the account too; nobody outside the arm writes the field.
+          ...(pathUi.active ? { singlePath: pathState } : {}),
           // The countdown / intake target rides the save from STATE, not only
           // from setPrepPreference's direct write: this effect re-reads the
           // record (cloud-first for a guest) and re-spreads it, so a field
@@ -9651,6 +9936,7 @@ function SQLQuest() {
           skillMastery: skillMastery,
           lessonSkillStats: lessonSkillStats,
           errorPatterns: errorPatterns,
+          debugStats: debugStats,
           retrievalLog: retrievalLog,
           ticketLog: ticketLog,
           // (defeatedBosses + workoutStreak + lastWorkoutDate removed —
@@ -9681,7 +9967,7 @@ function SQLQuest() {
         saveUserData(currentUser, userData);
       })();
     }
-  }, [xp, solvedChallenges, unlockedAchievements, queryCount, aiLessonPhase, currentAiLesson, completedAiLessons, aiLessonCompletions, roadmapLessonCompletions, comprehensionCount, comprehensionCorrect, consecutiveCorrect, comprehensionConsecutive, completedExercises, challengeQueries, completedDailyChallenges, dailyStreak, challengeAttempts, dailyChallengeHistory, weeklyReports, weeklyReportLastSeen, weeklyDigestOptOut, earnedMilestones, coachState, userGoals, intakeRecord, goalProfile, companyAskRecord, prepTarget, goalsPromptDismissedAt, loginCalendar, speedRunHistory, explainHistory, userProStatus, proType, proExpiry, proAutoRenew, interviewHistory, challengeProgress, challengeStartDate, weaknessTracking, skillMastery, lessonSkillStats, errorPatterns, retrievalLog, ticketLog, dailyRewardClaimedDate]);
+  }, [xp, solvedChallenges, unlockedAchievements, queryCount, aiLessonPhase, currentAiLesson, completedAiLessons, aiLessonCompletions, roadmapLessonCompletions, comprehensionCount, comprehensionCorrect, consecutiveCorrect, comprehensionConsecutive, completedExercises, challengeQueries, completedDailyChallenges, dailyStreak, challengeAttempts, dailyChallengeHistory, weeklyReports, weeklyReportLastSeen, weeklyDigestOptOut, earnedMilestones, coachState, userGoals, intakeRecord, goalProfile, companyAskRecord, prepTarget, goalsPromptDismissedAt, loginCalendar, speedRunHistory, explainHistory, userProStatus, proType, proExpiry, proAutoRenew, interviewHistory, challengeProgress, challengeStartDate, weaknessTracking, skillMastery, lessonSkillStats, errorPatterns, debugStats, retrievalLog, ticketLog, dailyRewardClaimedDate, pathState]);
 
 
   // True when the URL signals explicit content intent — user clicked a
@@ -9836,16 +10122,20 @@ function SQLQuest() {
     }
 
     // Try to pick from target difficulty first
-    let available = challenges.filter(c => !isStateGraded(c) && !usedIds.has(c.id) && c.difficulty === targetDiff);
+    // Debug items need their broken query and the spot step; Speed Mode has
+    // neither (empty editor), so they never enter its pools (A1 on #249). A
+    // state-graded (DDL/DML) challenge never does either (#172).
+    const speedPool = challenges.filter(c => !isDebugChallenge(c)).filter(c => !isStateGraded(c));
+    let available = speedPool.filter(c => !usedIds.has(c.id) && c.difficulty === targetDiff);
 
     // Fallback: if no target-difficulty questions left, pick from any unused
     if (available.length === 0) {
-      available = challenges.filter(c => !isStateGraded(c) && !usedIds.has(c.id) && (diff === 'all' || c.difficulty === diff));
+      available = speedPool.filter(c => !usedIds.has(c.id) && (diff === 'all' || c.difficulty === diff));
     }
 
     // Final fallback: allow repeats
     if (available.length === 0) {
-      const all = challenges.filter(c => !isStateGraded(c) && (diff === 'all' || c.difficulty === diff));
+      const all = speedPool.filter(c => diff === 'all' || c.difficulty === diff);
       if (all.length > 0) {
         available = [all[Math.floor(Math.random() * all.length)]];
       } else return;
@@ -10902,7 +11192,10 @@ function SQLQuest() {
 
   const startInterview = (interview, forceNew = false, opts = {}) => {
     saveLastActivity('interview', `Interview: ${interview.title || interview.company}`, 'trials', null);
-    if (!interview.isFree && !userProStatus) {
+    // A mock with free leading questions (the Metrics & Case Round,
+    // src/utils/case-round.js) starts for everyone; a free person gets the
+    // free questions as their own run, which ends on the Pro modal.
+    if (!canStartMock(interview, userProStatus)) {
       trackLockReached('interview', {
         interviewId: interview.id || null,
         company: interview.company || null,
@@ -10948,13 +11241,15 @@ function SQLQuest() {
       setShowProModal(true);
       return;
     }
+    interview = mockRunFor(interview, userProStatus).interview;
     
     // Check for saved progress (unless forcing new)
-    if (!forceNew && savedInterviewProgress && savedInterviewProgress.interviewId === interview.id) {
+    if (!forceNew && canResumeProgress(savedInterviewProgress, interview)) {
       // Resume from saved progress
       trackActivationEvent('interview_started', {
         interviewId: interview.id, company: interview.company || null,
         difficulty: interview.difficulty || null, isFree: !!interview.isFree, resumed: true,
+        preview: !!interview.previewOf,
       });
       setActiveInterview(interview);
       setInterviewQuestion(savedInterviewProgress.questionIndex);
@@ -10983,6 +11278,7 @@ function SQLQuest() {
     trackActivationEvent('interview_started', {
       interviewId: interview.id, company: interview.company || null,
       difficulty: interview.difficulty || null, isFree: !!interview.isFree, resumed: false,
+      preview: !!interview.previewOf,
     });
     setActiveInterview(interview);
     setInterviewQuestion(0);
@@ -11016,7 +11312,7 @@ function SQLQuest() {
   
   // Start Practice Mode - no timer, unlimited hints, can see solutions
   const startPracticeMode = (interview) => {
-    if (!interview.isFree && !userProStatus) {
+    if (!canStartMock(interview, userProStatus)) {
       trackLockReached('interview', {
         interviewId: interview.id || null,
         company: interview.company || null,
@@ -11029,6 +11325,7 @@ function SQLQuest() {
       setShowProModal(true);
       return;
     }
+    interview = mockRunFor(interview, userProStatus).interview;
     
     setActiveInterview(interview);
     setInterviewQuestion(0);
@@ -11291,6 +11588,9 @@ function SQLQuest() {
       diagnosis: mockMistakeDiagnosis(answer, { diagnose: diagnoseResult, hint: primaryHint, rows: rowDiffSummary }),
       isPracticeMode: practiceMode,
       patternSlug: isCorrect ? null : (PATTERN_FOR_MOCK_QUESTION[currentQ.id] || null),
+      // A written question that carries its reference and grading notes
+      // (the Metrics & Case Round) shows them right after the verdict.
+      gradingNotes: localizeQuestion(currentQ, lang).gradingNotes || currentQ.gradingNotes || null,
       pendingAnswers: newAnswers, // captured here so completeInterview gets the
                                    // right list when the user clicks Finish
     });
@@ -11321,6 +11621,29 @@ function SQLQuest() {
       }
     } else {
       completeInterview(finalAnswers);
+      // The free part of a previewed mock is done: the rest is Pro. The
+      // results stay on screen under the modal, so the score is not lost.
+      const endReason = previewEndReason(activeInterview, { solvedCount: solvedChallenges.size });
+      if (endReason) {
+        trackLockReached('interview', {
+          interviewId: activeInterview.id || null,
+          company: activeInterview.company || null,
+          difficulty: activeInterview.difficulty || null,
+          wall: 'case_round',
+          freeCount: endReason.freeCount,
+          total: endReason.total,
+        });
+        // Never sell before the first solve (tests/paid-wall.test.js): a
+        // person who got all of the free questions wrong meets the
+        // cold-start route instead. A correct answer in THIS run counts —
+        // the history that feeds practiceSolveCount has not re-rendered yet
+        // (the test7 trap: 4/4 on a mock, told "you haven't solved anything").
+        const solvedInRun = finalAnswers.some(a => a && a.correct);
+        if (solvedInRun || !openColdStartInstead()) {
+          setProModalReason(endReason);
+          setShowProModal(true);
+        }
+      }
     }
   };
 
@@ -11337,7 +11660,9 @@ function SQLQuest() {
     
     const totalScore = finalAnswers.reduce((sum, a) => sum + a.score, 0);
     const maxScore = activeInterview.questions.reduce((sum, q) => sum + q.points, 0);
-    const passed = (totalScore / maxScore * 100) >= activeInterview.passingScore;
+    // A preview (the free questions of a mock, src/utils/case-round.js) is
+    // never a pass: the mock was not sat.
+    const passed = !activeInterview.previewOf && (totalScore / maxScore * 100) >= activeInterview.passingScore;
     trackActivationEvent('interview_completed', {
       interviewId: activeInterview.id, company: activeInterview.company || null,
       passed, percentage: maxScore ? Math.round(totalScore / maxScore * 100) : 0,
@@ -11393,7 +11718,8 @@ function SQLQuest() {
       questionsTotal: finalAnswers.length,
       questionResults: finalAnswers,
       mistakes, // Store mistakes for study
-      studiedMistakes: [] // Track which mistakes user has studied
+      studiedMistakes: [], // Track which mistakes user has studied
+      preview: activeInterview.previewOf ? { ...activeInterview.previewOf } : undefined,
     };
     
     setInterviewResults(results);
@@ -11591,9 +11917,7 @@ Reply in 2–3 sentences, plain text, no headings: first whether the approach wo
     try { trackActivationEvent('interview_approach_feedback', { interviewId: activeInterview.id, questionId: q.id, chars: text.length, ok: !!reply }); } catch (_) {}
   };
 
-  const canAccessInterview = (interview) => {
-    return interview.isFree || userProStatus;
-  };
+  const canAccessInterview = (interview) => canStartMock(interview, userProStatus);
   
   // Study a mistake with AI Tutor
   const studyMistakeWithAI = (mistake, resultId) => {
@@ -12181,6 +12505,419 @@ CRITICAL RULES:
   // that is absent reads OFF here. src/utils/free-tier-boundary.js decides
   // what each one means; this file only decides when.
   const ftbFlag = (name) => window.FF?.feature?.(name) === true;
+  // The free-quota holdout (2026-11-25, founder's written go): a browser
+  // enrolled in `holdout` reads `freeQuota` OFF — no wall, no counter, the
+  // pre-09-26 in-app wording — and everything else stays as it is. EVERY
+  // `freeQuota` read in this file goes through freeQuotaOn(); a bare
+  // freeQuotaOn() would give a holdout person the wall back
+  // (tests/free-quota-holdout.test.js). An account created before the
+  // window keeps the quota on any browser (createdAt from its local blob).
+  const fqAccountCreatedAt = useMemo(() => {
+    if (!currentUser || isGuest) return null;
+    try {
+      const blob = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || 'null');
+      return blob && blob.createdAt != null ? blob.createdAt : null;
+    } catch (_) { return null; }
+  }, [currentUser, isGuest, isSessionLoading]);
+  const freeQuotaOn = () => freeQuotaEffective({
+    quotaFlagOn: ftbFlag('freeQuota'),
+    holdoutFlagOn: ftbFlag('freeQuotaHoldout'),
+    record: FQ_HOLDOUT_RECORD,
+    signedIn: !!currentUser && !isGuest,
+    accountCreatedAt: fqAccountCreatedAt,
+  });
+  // `free_quota_arm_assigned {arm}` — once per browser, on the open that
+  // enrolled it (the module-load block above decided; this only announces).
+  useEffect(() => {
+    const rec = FQ_HOLDOUT_RECORD;
+    if (!rec || rec.status !== 'enrolled' || rec.announced) return;
+    if (!ftbFlag('freeQuotaHoldout')) return;
+    trackActivationEvent('free_quota_arm_assigned', { testId: FREE_QUOTA_HOLDOUT_TEST_ID, arm: rec.arm, firstOpenAt: new Date(rec.firstOpenAt).toISOString() });
+    FQ_HOLDOUT_RECORD = { ...rec, announced: true };
+    try { localStorage.setItem(FREE_QUOTA_HOLDOUT_KEY, JSON.stringify(FQ_HOLDOUT_RECORD)); } catch (_) { /* ignore */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  // The first-session tournament (2026-11-26, PR 1 of 4; plan
+  // docs/plans/first-session-tournament-2026-11-26.md). The module-load
+  // block decided the record; these read it.
+  //   tournamentArm()          — the arm this person is IN (null outside:
+  //                              flag off, not enrolled, an account older
+  //                              than this browser's assignment, `hired`).
+  //   tournamentBehaviourNow() — the arm whose behaviour to run. B and D are
+  //                              not built yet, so they run A_control here.
+  //   tournamentSupersedesNow() — a built challenger replaces the four
+  //                              first-session A/Bs (plan §2.3); never in PR 1.
+  // Later arm PRs read tournamentBehaviourNow(). Hooks sit above the
+  // `showAuth` / `dbReady` early returns (CLAUDE.md fragile area 1).
+  const tournamentArm = () => {
+    try {
+      return tournamentEffectiveArm({
+        flagOn: ftbFlag('firstSessionTournament'),
+        record: TOURNAMENT_RECORD,
+        signedIn: !!currentUser && !isGuest,
+        accountCreatedAt: fqAccountCreatedAt,
+        intent: getUserIntent(),
+      });
+    } catch (_) { return null; }
+  };
+  const tournamentBehaviourNow = () => tournamentBehaviour(tournamentArm());
+  const tournamentSupersedesNow = () => tournamentSupersedes(tournamentArm());
+  // `tournament_assigned` — once per browser, after the session settles (so
+  // username and isGuest are right, as app_opened), on the open that
+  // enrolled it. trackActivationEvent adds viewport, landingSrc, arrivalSrc.
+  useEffect(() => {
+    if (isSessionLoading) return;
+    if (!shouldAnnounceTournament({ flagOn: ftbFlag('firstSessionTournament'), record: TOURNAMENT_RECORD })) return;
+    // /api/geo/ may have answered by now: fill the profile's country (never
+    // the stratum, which was decided at the first open).
+    try { TOURNAMENT_RECORD = enrichTournamentProfile(TOURNAMENT_RECORD, { country: sessionStorage.getItem('sqlquest_geo_country') }); } catch (_) { /* keep the record */ }
+    const payload = tournamentAssignedPayload(TOURNAMENT_RECORD);
+    if (!payload) return;
+    TOURNAMENT_RECORD = { ...TOURNAMENT_RECORD, announced: true };
+    try { localStorage.setItem(TOURNAMENT_KEY, JSON.stringify(TOURNAMENT_RECORD)); } catch (_) { /* ignore */ }
+    trackActivationEvent('tournament_assigned', payload);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSessionLoading]);
+
+  // ── Tournament arm B — the ladder and the plan (2026-11-26) ────────────
+  // Plan: docs/plans/first-session-tournament-2026-11-26.md §3; pure half
+  // src/utils/single-path.js; the roadmap is buildRoadmap
+  // (src/utils/personal-roadmap.js). Everything below runs only when
+  // `pathUi.active` (a built arm B, flag on); hooks sit above the `showAuth`
+  // / `dbReady` early returns (CLAUDE.md fragile area 1). Events:
+  // tournament_ladder_step, tournament_plan_shown, tournament_plan_step_done
+  // (metrics.md `plan_steps_done_7d`, `single_path_split`).
+  const [pathTick, setPathTick] = useState(0);
+  const [pathHighlight, setPathHighlight] = useState(false);
+  const [pathLeveled, setPathLeveled] = useState(false);
+  const [pathWhyOpen, setPathWhyOpen] = useState(false);
+  const [pathStepsOpen, setPathStepsOpen] = useState(false);
+  // The layers held on the ladder stay held until the next challenge opens,
+  // then the first shows alone and the rest drop (the mobileOneLayer rule).
+  const [pathHeldRelease, setPathHeldRelease] = useState(false);
+  // Arm D's sprint screen: the company pick (or null = ask) and the search.
+  const [pathSprintPick, setPathSprintPick] = useState(null);
+  const [pathSprintAsk, setPathSprintAsk] = useState(false);
+  const [pathSprintQuery, setPathSprintQuery] = useState('');
+  // Walk fix B1: a sign-up prompt that is not the guest ladder's (the tutor's
+  // guest limit) is held here while the ladder runs.
+  const pathHeldSignupRef = useRef(null);
+  // Arm D's level probe (walk fix D1): when the open plan step was opened.
+  const pathOpenedRef = useRef(null);
+  const pathSave = (next) => {
+    pathStateRef.current = next;
+    setPathState(next);
+    try { localStorage.setItem(SINGLE_PATH_KEY, JSON.stringify(next)); } catch (_) { /* best effort */ }
+  };
+  const pathEvent = (event, payload = {}) => trackActivationEvent(event, { arm: pathUi.arm, ...payload });
+  // Orchestrator decision (2026-11-27): in the first session, at most one
+  // automatic Pro ask in any 3 consecutive solves (pathProAskAllowed). True →
+  // ask, and it is recorded; false → skipped, and the caller leaves its
+  // once-key unwritten so the ask can come back in a later session. Outside
+  // the arms' first session: always true (today's behaviour).
+  const pathProAskOk = (reason, solves) => {
+    if (!pathUi.layerQueue) return true;
+    const cur = pathStateRef.current;
+    if (!pathProAskAllowed({ reason, solves, lastAt: cur.proAskAt, skipped: cur.proAskSkipped })) {
+      if (!(cur.proAskSkipped || []).includes(reason)) {
+        pathSave({ ...cur, proAskSkipped: [...(cur.proAskSkipped || []), reason] });
+        pathEvent('tournament_pro_ask_spaced', { reason, solves, lastAt: cur.proAskAt });
+      }
+      return false;
+    }
+    if (PATH_PRO_ASKS_SPACED.includes(reason)) pathSave({ ...cur, proAskAt: solves });
+    return true;
+  };
+  // The arm's first session (walk fix round 2): touched at load, at every
+  // challenge open and solve; it ends at the first hour away
+  // (pathSessionTouch), and with it the one-layer queue (`pathUi.layerQueue`).
+  useEffect(() => {
+    if (!pathUi.active || isSessionLoading || !currentUser || !dbReady) return;
+    const cur = pathStateRef.current;
+    const next = pathSessionTouch(cur, Date.now());
+    if (next.sessionLastAt !== cur.sessionLastAt || next.firstSessionEndedAt !== cur.firstSessionEndedAt) {
+      pathSave({ ...cur, sessionLastAt: next.sessionLastAt, firstSessionEndedAt: next.firstSessionEndedAt });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathUi.active, isSessionLoading, currentUser, dbReady, currentChallenge?.id, solvedChallenges.size]);
+  const pathMocksDone = () => new Set((interviewHistory || []).map(h => h && h.interviewId).filter(Boolean));
+  // Pro-only for this person now: the roadmap's own mark, or the company-set
+  // gate of the company view they are in (a `?company=` arrival walls the
+  // set's fourth question even where the roadmap counted a tagged set free).
+  const pathStepProOnly = (st) => {
+    if (isPro || !st) return false;
+    if (st.proOnly) return true;
+    if (st.kind !== 'challenge' || !companyFilter) return false;
+    const c = challenges.find(x => x.id === st.challengeId);
+    // Only a set authored for the company is walled (#420): the key rides
+    // along now so either merge order stays green.
+    return !!c && companySetGate({ flagOn: ftbFlag('companySetGate'), isPro, companyFilter, authored: companyHasAuthoredSet(companyFilter), challenge: c, scoped: companyScopedChallenges(), solved: solvedChallenges }).gated;
+  };
+  const pathCtx = () => ({ solved: solvedChallenges, mocksDone: pathMocksDone(), isProOnly: pathStepProOnly });
+  // The roadmap for this person, frozen as the plan (N stays put).
+  // `lead` (arm D): steps that must come first — the company link's opened
+  // question (walk fix D2), then the two the level was read from (D1).
+  const pathBuildPlan = (state, solvedSet, { lead = [] } = {}) => {
+    try {
+      const visitor = TOURNAMENT_RECORD && TOURNAMENT_RECORD.profile ? TOURNAMENT_RECORD.profile : null;
+      const roadmap = buildRoadmap(
+        roadmapProfileFor({ arm: pathUi.arm, visitor, state, solvedIds: solvedSet, isPro, companies: INTAKE_COMPANIES }),
+        challenges,
+        { companyMap: window.challengeCompanies || {}, mocks: mockInterviews, goals: window.coachGoals || [], quotaOn: freeQuotaOn(), companySetGateOn: ftbFlag('companySetGate'), lead },
+      );
+      const plan = composePathPlan({ roadmap, ladder: state.ladder, lead, solved: solvedSet, solvedCount: solvedSet.size, quotaOn: freeQuotaOn() && !isPro, now: Date.now() });
+      // Arm D: say where the level came from — assumed (the why-line says so,
+      // the first two steps measure it), the readiness band, or the probe.
+      return pathUi.sprint ? sprintPlanMarks(plan, { visitor, state }) : plan;
+    } catch (e) {
+      console.warn('single path: plan not built', e);
+      return null;
+    }
+  };
+  // The ladder ends (B4): the tier is a first-run placement (the Coach never
+  // asks again), the plan is built and shown, the tab row comes back.
+  const pathFinishLadder = (state, solvedSet) => {
+    const levelId = state.ladder.levelId || 'brand-new';
+    pathEvent('placement_completed', { source: 'ladder', levelId, tier: PLACEMENT_TIERS[levelId] || null, outcomes: state.ladder.outcomes });
+    try {
+      setFirstRunLevel(levelId);
+      localStorage.setItem(FIRST_RUN_LEVEL_KEY, levelId);
+      suppressLegacyOnboardingForPlacement(levelId, { source: 'first_run_ladder' });
+    } catch (_) { /* the plan still builds */ }
+    const plan = pathBuildPlan(state, solvedSet);
+    // The tab row does NOT come back here: the plan line stays the only
+    // navigation for the first PLAN_FOCUS_STEPS plan steps (walk fix B3,
+    // pathRevealTabs below).
+    const next = { ...state, plan };
+    pathSave(next);
+    if (plan) {
+      const { k } = planProgress(plan, { solved: solvedSet, mocksDone: pathMocksDone() });
+      pathEvent('tournament_plan_shown', planShownPayload(plan, { arm: pathUi.arm, k }));
+    }
+    setPathLeveled(true);
+    setPathHeldRelease(true);
+    setPathHighlight(true);
+    setTimeout(() => setPathHighlight(false), 3000);
+    // Walk fix B1: the sign-up / save prompts held on the ladder — at most ONE
+    // is asked now, by today's guest ladder on the real solve total, else the
+    // one a tutor limit held.
+    if (isGuest) {
+      const held = pathHeldSignupRef.current;
+      pathHeldSignupRef.current = null;
+      if (!guestSaveAskAfterSolve(solvedSet.size) && held) setTimeout(() => triggerSignupPrompt(held), 1500);
+    }
+  };
+  // Walk fix B3: the tab row (and the guest banner) come back once, on the
+  // first of: PLAN_FOCUS_STEPS plan steps done (`plan_steps`), "All steps"
+  // (`all_steps`), or no free step left to open (`plan_end`).
+  const pathRevealTabs = (trigger, state = pathStateRef.current, solves = solvedChallenges.size) => {
+    // B reveals only after its ladder; D (no ladder) once its sprint is set.
+    if (!pathUi.active || state.tabsOpenedAt || (pathUi.sprint ? !state.sprint : !state.ladder.done)) return state;
+    const now = Date.now();
+    const next = { ...state, tabsOpenedAt: now };
+    pathSave(next);
+    const assignedAt = TOURNAMENT_RECORD && TOURNAMENT_RECORD.assignedAt;
+    pathEvent('tournament_tabs_revealed', { trigger, solves, secsSinceAssigned: assignedAt ? Math.round((now - assignedAt) / 1000) : null });
+    return next;
+  };
+  const pathOpenChallenge = (c) => {
+    if (!c) return;
+    setActiveTab('quests');
+    setPracticeSubTab('challenges');
+    openChallenge(c, { openedFrom: 'tournament_path' });
+  };
+  // "Next question →": the ladder's next question, in its own order.
+  const pathOpenLadderNext = () => {
+    const state = pathStateRef.current;
+    const pick = pickLadderQuestion(state, challenges, { solved: solvedChallenges, isLocked: c => isContentLocked('challenge', c) });
+    if (pick) { pathOpenChallenge(pick); return; }
+    // Nothing left on any rung: the ladder ends on what it has.
+    pathFinishLadder(normalizePathState({ ...state, ladder: { ...state.ladder, done: true, current: null } }), solvedChallenges);
+  };
+  // "Next →" / "Next in your plan →": the plan's next step that is not Pro.
+  // A quota-gated step is opened, not skipped — that is today's quota wall,
+  // with the plan's line in its slot.
+  const pathOpenNext = (from) => {
+    const plan = pathStateRef.current.plan;
+    if (!plan) return;
+    const hit = nextPlanStep(plan, pathCtx());
+    const { k, n } = planProgress(plan, pathCtx());
+    pathEvent('tournament_path_next', { from, k, n, index: hit ? hit.index + 1 : null, target: hit ? (hit.step.kind === 'mock' ? `mock:${hit.step.mockId}` : hit.step.challengeId) : null });
+    // Nothing free left to open: the tabs come back (the Practice tab is the road).
+    if (!hit) { pathRevealTabs('plan_end'); return; }
+    if (hit.step.kind === 'mock') {
+      const mock = mockInterviews.find(m => m.id === hit.step.mockId);
+      if (!mock) return;
+      setCurrentChallenge(null);
+      setActiveTab('trials');
+      setTimeout(() => startInterview(mock), 50);
+      return;
+    }
+    pathOpenChallenge(challenges.find(x => x.id === hit.step.challengeId));
+  };
+  // B3: "This one's a step up" — set aside, one rung down.
+  const pathStepDown = (trigger) => {
+    const state = pathStateRef.current;
+    const cur = state.ladder.current;
+    if (!cur) return;
+    const now = Date.now();
+    const { state: next, step } = ladderResolve(state, {
+      challengeId: cur.challengeId, outcome: 'stuck', secs: cur.openedAt ? (now - cur.openedAt) / 1000 : null,
+      wrongs: wrongAttemptCount, hint: !!(showChallengeHint || showChallengeStructure), now,
+    });
+    if (!step) return;
+    pathSave(next);
+    pathEvent('tournament_ladder_step', { ...step, trigger });
+    if (next.ladder.done) {
+      pathFinishLadder(next, solvedChallenges);
+      setTimeout(() => pathOpenNext('ladder_end'), 50);
+      return;
+    }
+    pathOpenLadderNext();
+  };
+  // A first solve on the path (from submitChallenge).
+  const pathOnSolve = (challenge, newSolved, { wrongs = 0, hint = false } = {}) => {
+    const state = pathStateRef.current;
+    const now = Date.now();
+    if (pathUi.ladderActive) {
+      const cur = state.ladder.current;
+      if (!cur || cur.challengeId !== challenge.id) return;
+      const secs = cur.openedAt ? (now - cur.openedAt) / 1000 : null;
+      const outcome = ladderOutcome({ solved: true, wrongs, hint, secs, rung: cur.rung });
+      const { state: next, step } = ladderResolve(state, { challengeId: challenge.id, outcome, secs, wrongs, hint, now });
+      if (!step) return;
+      pathSave(next);
+      pathEvent('tournament_ladder_step', { ...step, trigger: null });
+      if (next.ladder.done) pathFinishLadder(next, newSolved);
+      return;
+    }
+    const plan = state.plan;
+    if (!plan) return;
+    const index = plan.steps.findIndex(st => st.kind === 'challenge' && st.challengeId === challenge.id);
+    if (index < 0 || state.doneLog.some(d => String(d.id) === String(challenge.id))) return;
+    let next = logStepDone(state, { id: challenge.id, day: getTodayString() });
+    // Arm D, no readiness band: the first two plan steps solved are read with
+    // the ladder's thresholds; at the second the plan is re-laid from the
+    // measured level, those two leading it (walk fix D1).
+    let replanned = null;
+    if (pathUi.sprint) {
+      const visitor = TOURNAMENT_RECORD && TOURNAMENT_RECORD.profile ? TOURNAMENT_RECORD.profile : null;
+      const opened = pathOpenedRef.current;
+      const secs = opened && opened.id === challenge.id ? (now - opened.at) / 1000 : null;
+      const probed = sprintProbeRecord(next, { visitor, challenge, wrongs, hint, secs });
+      next = probed.state;
+      if (probed.levelId) {
+        replanned = pathBuildPlan(next, newSolved, { lead: next.sprint.probe.map(o => o.challengeId) });
+        // N stays what the header said (round 2): re-ordered and re-levelled
+        // within the same length; only if that is impossible does it change,
+        // and the why-line says so.
+        if (replanned) replanned = fitPlanToLength(replanned, plan.length, { previous: plan, solved: newSolved, solvedCount: newSolved.size, quotaOn: freeQuotaOn() && !isPro });
+        if (replanned) next = { ...next, plan: replanned };
+        pathEvent('tournament_sprint_level', { levelId: probed.levelId, outcomes: next.sprint.probe });
+      }
+    }
+    pathSave(next);
+    const { k, n } = planProgress(next.plan || plan, { solved: newSolved, mocksDone: pathMocksDone() });
+    pathEvent('tournament_plan_step_done', { challengeId: challenge.id, stepIndex: index + 1, k, n, wallAt: plan.wallAt, day: getTodayString() });
+    if (replanned) pathEvent('tournament_plan_shown', { ...planShownPayload(replanned, { arm: pathUi.arm, k, recompute: true }) });
+    // The tab row comes back — B: at the PLAN_FOCUS_STEPS-th plan step (walk
+    // fix B3); D: once the first day's count is done, or at the first solve
+    // of day 2.
+    if (!next.tabsOpenedAt && pathTabsOpen(next, { arm: pathUi.arm })) pathRevealTabs(pathUi.sprint ? 'sprint_day' : 'plan_steps', next, newSolved.size);
+  };
+  // The plan-end card's button: today's modal, reason `plan_end` (founder's go, 2026-11-26).
+  const pathSeePro = () => {
+    const { k, n } = planProgress(pathStateRef.current.plan, pathCtx());
+    setProModalReason({ type: 'plan_end', k, n, solvedCount: solvedChallenges.size, arm: pathUi.arm });
+    setShowProModal(true);
+  };
+  // "{k} of {N} done — the rest of your plan is Pro." (the quota wall's line slot, the plan-end card).
+  const pathWallLine = () => {
+    const st = pathStateRef.current;
+    const { k, n } = planProgress(st.plan, pathCtx());
+    // Arm D with a company: the sprint's version (founder's go, 2026-11-26).
+    const day = pathUi.sprint && st.sprint && st.sprint.company ? sprintDayModel(st, { today: getTodayString() }) : null;
+    if (day) return i18n_t('tournamentPath', 'sprintWall', { d: day.day, D: day.total, company: st.sprint.company });
+    return i18n_t('tournamentPath', 'wall', { k, n });
+  };
+  // Arm D: the sprint is set (two taps, each skippable). The company goes to
+  // prepTarget.company through its writer; the length stays in the sprint's
+  // own field — never prepTarget.date (deadlineOffer would lead the
+  // milestone modal with "N days to your interview", and the outcome note
+  // would ask about an interview nobody named).
+  const pathFinishSprint = ({ company = null, companySource = null, goal = null, days = null, daysSource = null } = {}) => {
+    const now = Date.now();
+    const sprint = startSprint({ company, companySource, goal, days, daysSource, today: getTodayString(), now });
+    if (!sprint) return;
+    if (company) setPrepPreference({ company });
+    const base = { ...pathStateRef.current, sprint };
+    // A company link opens the company's question 1 (the direct arm's
+    // resolver) — it IS the plan's step 1, so the header, the open question
+    // and the plan agree (walk fix D2).
+    const co = companyFilter && company === companyFilter && solvedChallenges.size === 0 ? companyBannerNext() : null;
+    const plan = pathBuildPlan(base, solvedChallenges, { lead: co ? [co.id] : [] });
+    pathSave({ ...base, plan });
+    pathEvent('tournament_sprint_set', { company: sprint.company, companySource: sprint.companySource, goal: sprint.goal, days: sprint.days, daysSource: sprint.daysSource, planKind: plan && plan.profile ? plan.profile.targetKind || plan.profile.scope : null });
+    if (plan) {
+      const { k } = planProgress(plan, { solved: solvedChallenges, mocksDone: pathMocksDone() });
+      pathEvent('tournament_plan_shown', planShownPayload(plan, { arm: pathUi.arm, k }));
+    }
+    setPathSprintPick(null);
+    setPathSprintAsk(false);
+    // A company link opens the company's question 1 (the direct arm's
+    // resolver); everyone else the plan's first step.
+    setTimeout(() => {
+      if (co) pathOpenChallenge(co);
+      else pathOpenNext('sprint_start');
+    }, 50);
+  };
+  const pathSprintShownRef = useRef(false);
+  useEffect(() => {
+    if (!pathUi.sprintSetup || pathSprintShownRef.current) return;
+    pathSprintShownRef.current = true;
+    pathEvent('tournament_sprint_shown', { doorCompany: (TOURNAMENT_RECORD && TOURNAMENT_RECORD.profile && TOURNAMENT_RECORD.profile.company) || null });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathUi.sprintSetup]);
+  // Question 1 (and every ladder question after a reload) opens by itself:
+  // no start screen, no menu. A content link's resolver opens question 1
+  // itself (the deep-link rule: start guest mode, return, open next run).
+  useEffect(() => {
+    if (!pathUi.ladderActive || isSessionLoading || !currentUser || !dbReady || currentChallenge) return;
+    const st = pathStateRef.current;
+    if (hasContentDeepLink && !st.ladder.current && !st.ladder.outcomes.length) return;
+    const curId = st.ladder.current ? st.ladder.current.challengeId : null;
+    const cur = curId != null ? challenges.find(c => c.id === curId) : null;
+    if (cur && !solvedChallenges.has(cur.id)) { pathOpenChallenge(cur); return; }
+    pathOpenLadderNext();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathUi.ladderActive, isSessionLoading, currentUser, dbReady, !!currentChallenge]);
+  // After the ladder, while the tab row is still hidden, the plan's next step
+  // opens by itself — the plan line is the only navigation (walk fix B3).
+  // Never over a mock, which runs on the Interview tab.
+  useEffect(() => {
+    if (!pathUi.active || pathUi.ladderActive || !pathUi.hideTabs || !pathState.plan || isSessionLoading || !currentUser || !dbReady || currentChallenge) return;
+    if (activeTab === 'trials') return;
+    pathOpenNext('resume');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathUi.active, pathUi.ladderActive, pathUi.hideTabs, !!pathState.plan, isSessionLoading, currentUser, dbReady, !!currentChallenge, activeTab]);
+  // B3's timer: re-render every 15 s while a ladder question is open and unsolved.
+  useEffect(() => {
+    if (!pathUi.ladderActive || !currentChallenge || challengeStatus === 'success') return undefined;
+    const t = setInterval(() => setPathTick(x => x + 1), 15000);
+    return () => clearInterval(t);
+  }, [pathUi.ladderActive, currentChallenge?.id, challengeStatus]);
+  // The plan-end card, once per plan.
+  const pathEndShownRef = useRef(false);
+  useEffect(() => {
+    if (!pathUi.showPlanLine || !pathState.plan || pathEndShownRef.current) return;
+    try {
+      if (!planEnded(pathState.plan, pathCtx())) return;
+      pathEndShownRef.current = true;
+      const { k, n } = planProgress(pathState.plan, pathCtx());
+      pathEvent('tournament_plan_end_shown', { k, n });
+    } catch (_) { /* never block the render */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathUi.showPlanLine, pathState.plan, solvedChallenges, interviewHistory, isPro]);
   // Paywall moments (PLAN item 3): the Pro modal's own copy for the reasons
   // that had none (the 30-day path, the daily, a locked mock, the Interview
   // tab) and an honest Hard line. null = the modal's existing chain decides.
@@ -13280,6 +14017,243 @@ CRITICAL RULES:
     // companyAskShowingRef stays set: a skip inside the intent modal's
     // 3-second delay must not let that modal open as a second question.
     setCompanyAsk(null);
+  };
+
+
+  // ── Tournament arm B's screens (plan §3.1 B1–B6) ────────────────────────
+  // Rendered only under `pathUi.*` switches; DESIGN.md tokens; the accent is
+  // on the one primary button only.
+  const renderPathLadderLine = () => {
+    const q = ladderQuestionNumber(pathState);
+    return (
+      <p data-testid="path-ladder-line" className="mb-3 text-sm" style={{ color: '#8A8E99' }}>
+        <span className="hidden sm:inline">{i18n_t('tournamentPath', 'ladderLine', { q, n: LADDER_LENGTH })}</span>
+        <span className="sm:hidden">{i18n_t('tournamentPath', 'ladderLineShort', { q, n: LADDER_LENGTH })}</span>
+      </p>
+    );
+  };
+  const renderPathStepDown = () => {
+    const cur = pathState.ladder.current;
+    if (!currentChallenge || !cur || cur.challengeId !== currentChallenge.id || challengeStatus === 'success') return null;
+    const secs = cur.openedAt ? (Date.now() - cur.openedAt) / 1000 : 0;
+    if (!ladderStuck({ wrongs: wrongAttemptCount, secs, rung: cur.rung })) return null;
+    const trigger = wrongAttemptCount >= 3 ? 'wrongs' : 'timer';
+    return (
+      <button type="button" data-testid="path-step-down" data-tick={pathTick} onClick={() => pathStepDown(trigger)}
+        className="text-sm underline underline-offset-2 text-left" style={{ color: '#8A8E99' }}>
+        {i18n_t('tournamentPath', 'stepDown')}
+      </button>
+    );
+  };
+  const renderPathPlanEnd = () => (
+    <div data-testid="path-plan-end" className="mt-2 flex flex-wrap items-center gap-3">
+      <p className="text-sm font-medium" style={{ color: '#F2F0EA' }}>{pathWallLine()}</p>
+      <button type="button" data-testid="path-see-pro" onClick={pathSeePro}
+        className="px-3 py-1.5 rounded-lg text-xs font-bold" style={{ background: '#FFE34D', color: '#0E0F13' }}>
+        {i18n_t('tournamentPath', 'seePro')}
+      </button>
+    </div>
+  );
+  // Arm D's sprint screen (plan §4): company in one tap (or the door's),
+  // then the length in one tap; each skippable. A full screen over the app,
+  // under the feedback button; Log in stays reachable.
+  const renderPathSprintSetup = () => {
+    const visitor = TOURNAMENT_RECORD && TOURNAMENT_RECORD.profile ? TOURNAMENT_RECORD.profile : null;
+    const door = companyFromSlug(visitor && visitor.company, INTAKE_COMPANIES)
+      || (companyFilter && INTAKE_COMPANIES.includes(companyFilter) ? companyFilter : null);
+    const pick = pathSprintPick || (!pathSprintAsk && door ? { company: door, companySource: 'door', goal: 'interview' } : null);
+    const notSureGoal = visitor && visitor.interviewTarget ? 'interview' : 'learning';
+    const chip = { background: '#1F222B', border: '1px solid #2A2E38', borderRadius: '6px', color: '#F2F0EA' };
+    const muted = { color: '#8A8E99' };
+    const matches = matchCompanies(pathSprintQuery);
+    const choose = (company, companySource, goal) => setPathSprintPick({ company, companySource, goal });
+    const finish = (days, daysSource) => pathFinishSprint({ ...pick, days, daysSource });
+    return (
+      <div data-testid="path-sprint-screen" className="fixed inset-0 overflow-y-auto" style={{ zIndex: 9000, background: '#0E0F13', color: '#F2F0EA' }}>
+        <div className="max-w-xl mx-auto px-4 py-4">
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white" style={{ background: '#7c3aed' }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+              </div>
+              <span className="font-bold text-sm">SQL Quest</span>
+            </div>
+            {isGuest && <a href="/app/?signin=1" className="px-3 py-1.5 rounded-lg text-xs font-bold" style={chip}>{i18n_t('practice', 'logIn')}</a>}
+          </div>
+          <p className="text-xs font-bold uppercase tracking-wider" style={muted}>{i18n_t('tournamentPath', 'sprintEyebrow')}</p>
+          <p className="text-sm mt-1 mb-6" style={muted}>{i18n_t('tournamentPath', 'sprintSub')}</p>
+          {!pick ? (
+            <div data-testid="path-sprint-company">
+              <label htmlFor="path-sprint-input" className="block text-lg font-bold">{i18n_t('companyAsk', 'question')}</label>
+              <input id="path-sprint-input" type="text" autoComplete="off" value={pathSprintQuery} placeholder={i18n_t('companyAsk', 'placeholder')}
+                onChange={e => setPathSprintQuery(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter' && pathSprintQuery.trim() && matches[0]) { e.preventDefault(); choose(matches[0], 'tap', 'interview'); } }}
+                className="mt-3 w-full px-3 py-2.5 text-sm" style={chip} />
+              {pathSprintQuery.trim() && (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {matches.length ? matches.map(c => (
+                    <button key={c} type="button" data-sprint-company={c} onClick={() => choose(c, 'tap', 'interview')} className="px-3 py-1.5 text-sm font-semibold" style={chip}>{c}</button>
+                  )) : <span className="text-xs" style={muted}>{i18n_t('companyAsk', 'noMatch')}</span>}
+                </div>
+              )}
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                <button type="button" data-testid="path-sprint-undecided" onClick={() => choose(null, 'undecided', notSureGoal)} className="px-3 py-2 text-sm font-semibold" style={chip}>{i18n_t('companyAsk', 'undecided')}</button>
+                <button type="button" data-testid="path-sprint-learning" onClick={() => choose(null, 'learning', 'learning')} className="px-3 py-2 text-sm font-semibold" style={chip}>{i18n_t('tournamentPath', 'sprintLearning')}</button>
+                <button type="button" data-testid="path-sprint-skip-company" onClick={() => choose(null, 'skipped', notSureGoal)} className="px-2 py-2 text-xs underline" style={muted}>{i18n_t('tournamentPath', 'sprintSkip')}</button>
+              </div>
+            </div>
+          ) : (
+            <div data-testid="path-sprint-length">
+              <p className="text-lg font-bold">{pick.company ? i18n_t('tournamentPath', 'sprintLengthQCompany', { company: pick.company }) : i18n_t('tournamentPath', 'sprintLengthQ')}</p>
+              {pick.company && (
+                <button type="button" data-testid="path-sprint-change" onClick={() => { setPathSprintPick(null); setPathSprintAsk(true); }} className="mt-1 text-xs underline" style={muted}>
+                  {i18n_t('tournamentPath', 'sprintChange')}
+                </button>
+              )}
+              <div className="mt-4 grid grid-cols-3 gap-2">
+                <button type="button" data-testid="path-sprint-7" onClick={() => finish(7, 'tap')} className="px-3 py-3 text-sm font-semibold" style={chip}>{i18n_t('tournamentPath', 'sprint7')}</button>
+                <button type="button" data-testid="path-sprint-14" onClick={() => finish(14, 'tap')} className="px-3 py-3 text-sm font-semibold" style={chip}>{i18n_t('tournamentPath', 'sprint14')}</button>
+                <button type="button" data-testid="path-sprint-nodate" onClick={() => finish(null, 'no_date')} className="px-3 py-3 text-sm font-semibold" style={chip}>{i18n_t('tournamentPath', 'sprintNoDate')}</button>
+              </div>
+              <button type="button" data-testid="path-sprint-skip-length" onClick={() => finish(null, 'skipped')} className="mt-3 px-2 py-2 text-xs underline" style={muted}>{i18n_t('tournamentPath', 'sprintSkip')}</button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+  const pathTierName = (levelId) => i18n_t('tournamentPath', TIER_KEYS[levelId] || 'tierFoundations');
+  // After a solve: ONE button (B2 on the ladder, B5 on the plan).
+  const renderPathVerdictNext = () => {
+    if (!currentChallenge) return null;
+    const st = pathState;
+    if (pathUi.sprint && !st.sprint) {
+      // Arm D after a link's question: the sprint comes next.
+      return (
+        <div className="mb-3" data-testid="path-verdict-next">
+          <button type="button" data-testid="path-sprint-set-up" onClick={() => { setCurrentChallenge(null); setActiveTab('guide'); }}
+            className="w-full py-2.5 text-sm font-bold rounded-lg" style={{ background: '#FFE34D', color: '#0E0F13' }}>
+            {i18n_t('tournamentPath', 'sprintSetUp')}
+          </button>
+        </div>
+      );
+    }
+    if (pathUi.ladderActive) {
+      return (
+        <div className="mb-3" data-testid="path-verdict-next">
+          <button type="button" data-testid="path-next-question" onClick={pathOpenLadderNext}
+            className="w-full py-2.5 text-sm font-bold rounded-lg" style={{ background: '#FFE34D', color: '#0E0F13' }}>
+            {i18n_t('tournamentPath', 'nextQuestion')}
+          </button>
+        </div>
+      );
+    }
+    if (!st.plan) return null;
+    const last = st.ladder.outcomes[st.ladder.outcomes.length - 1];
+    const justEnded = !!(last && last.challengeId === currentChallenge.id);
+    const ctx = pathCtx();
+    const { k, n } = planProgress(st.plan, ctx);
+    return (
+      <div className="mb-3" data-testid="path-verdict-next">
+        {justEnded && (
+          <div className="mb-3 rounded-lg px-3 py-2" data-testid="path-level-card" style={{ background: '#1F222B', border: '1px solid #2A2E38' }}>
+            <p className="text-sm font-bold" style={{ color: '#F2F0EA' }}>{i18n_t('tournamentPath', 'levelTitle', { tier: pathTierName(st.ladder.levelId) })}</p>
+            <p className="text-xs mt-0.5" style={{ color: '#8A8E99' }}>{i18n_t('tournamentPath', 'levelWhy')} · {i18n_t('tournamentPath', 'planLine', { n, k })}</p>
+          </div>
+        )}
+        {planEnded(st.plan, ctx) ? renderPathPlanEnd() : k >= n ? (
+          <p className="text-sm" style={{ color: '#8A8E99' }}>{i18n_t('tournamentPath', 'planDone', { k, n })}</p>
+        ) : (
+          <button type="button" data-testid="path-next-in-plan" onClick={() => pathOpenNext('verdict')}
+            className="w-full py-2.5 text-sm font-bold rounded-lg" style={{ background: '#FFE34D', color: '#0E0F13' }}>
+            {i18n_t('tournamentPath', 'nextInPlan')}
+          </button>
+        )}
+      </div>
+    );
+  };
+  // B5: the plan line, on every tab, every session.
+  const renderPathPlanLine = () => {
+    const plan = pathState.plan;
+    if (!plan) return null;
+    const ctx = pathCtx();
+    const { k, n } = planProgress(plan, ctx);
+    const ended = planEnded(plan, ctx);
+    const why = pathWhyLines(plan, getCurrentLang());
+    const chip = { background: '#1F222B', border: '1px solid #2A2E38', borderRadius: '6px', color: '#F2F0EA' };
+    // Arm D: "Day d of D · n today" and the day-by-day strip.
+    const day = pathUi.sprint && pathState.sprint ? sprintDayModel(pathState, { today: getTodayString() }) : null;
+    return (
+      <div data-testid="path-plan-line" data-highlight={pathHighlight ? 'on' : 'off'} className="mb-3 rounded-lg px-4 py-3 transition-colors"
+        style={{ background: '#16181F', border: `1px solid ${pathHighlight ? '#F2F0EA' : '#2A2E38'}`, color: '#F2F0EA' }}>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          {pathLeveled && pathState.ladder.levelId && (
+            <span className="text-xs" style={{ color: '#8A8E99' }} data-testid="path-plan-level">{i18n_t('tournamentPath', 'levelTitle', { tier: pathTierName(pathState.ladder.levelId) })}</span>
+          )}
+          {day ? (
+            <span className="text-sm font-medium" data-testid="path-sprint-line">
+              {i18n_t('tournamentPath', day.leftToday === 0 ? 'sprintLineDone' : (pathState.sprint.company ? 'sprintLineCompany' : 'sprintLine'),
+                { d: day.day, D: day.total, n: day.leftToday === 0 ? day.daily : day.leftToday, company: pathState.sprint.company })}
+              <span className="ml-2 text-xs" style={{ color: '#8A8E99' }}>{k}/{n}</span>
+            </span>
+          ) : (<>
+          <span className="text-sm font-medium hidden sm:inline">{i18n_t('tournamentPath', 'planLine', { n, k })}</span>
+          <span className="text-sm font-medium sm:hidden">{i18n_t('tournamentPath', 'planLineShort', { n, k })}</span>
+          </>)}
+          {!ended && k < n && (
+            <button type="button" data-testid="path-plan-next" onClick={() => pathOpenNext('line')} className="px-3 py-1.5 text-xs font-semibold" style={chip}>
+              {i18n_t('tournamentPath', 'next')}
+            </button>
+          )}
+          <span className="ml-auto flex items-center gap-3">
+            <button type="button" data-testid="path-why-toggle" onClick={() => setPathWhyOpen(v => !v)} className="text-xs underline underline-offset-2" style={{ color: '#8A8E99' }}>
+              {i18n_t('tournamentPath', 'whyToggle')}
+            </button>
+            <button type="button" data-testid="path-steps-toggle" onClick={() => { setPathStepsOpen(v => !v); if (!pathUi.sprint) pathRevealTabs('all_steps'); }} className="text-xs underline underline-offset-2" style={{ color: '#8A8E99' }}>
+              {i18n_t('tournamentPath', 'stepsToggle')}
+            </button>
+          </span>
+        </div>
+        {day && (
+          <div className="mt-2 flex gap-1" data-testid="path-day-strip" aria-hidden="true">
+            {day.days.map(x => (
+              <span key={x.day} className="h-1.5 flex-1 rounded-full" title={`${x.day}`}
+                style={{ background: x.met ? '#4ADE80' : x.today ? '#F2F0EA' : '#2A2E38', opacity: x.past && !x.met ? 0.5 : 1 }} />
+            ))}
+          </div>
+        )}
+        {ended && renderPathPlanEnd()}
+        {pathWhyOpen && (
+          <ul className="mt-2 space-y-1 text-xs" style={{ color: '#8A8E99' }} data-testid="path-why">
+            {why.map((w, i) => <li key={i}>{w}</li>)}
+          </ul>
+        )}
+        {pathStepsOpen && (
+          <ol className="mt-3 grid gap-1 sm:grid-cols-2 text-xs" data-testid="path-steps">
+            {plan.steps.map((st, i) => {
+              const isMock = st.kind === 'mock';
+              const c = isMock ? null : challenges.find(x => x.id === st.challengeId);
+              const m = isMock ? mockInterviews.find(x => x.id === st.mockId) : null;
+              const title = isMock ? i18n_t('tournamentPath', 'mockStep', { title: (m && m.title) || st.mockId }) : (c ? c.title : `#${st.challengeId}`);
+              const done = isMock ? ctx.mocksDone.has(st.mockId) : solvedChallenges.has(st.challengeId);
+              return (
+                <li key={`${st.kind}-${st.challengeId || st.mockId}`} className="flex items-center gap-2 min-w-0" data-step-pro={pathStepProOnly(st) ? 'true' : 'false'}>
+                  <span className="tabular-nums w-6 shrink-0 text-right" style={{ color: '#8A8E99' }}>{i + 1}</span>
+                  <span className="truncate" style={{ color: done ? '#8A8E99' : '#F2F0EA', textDecoration: done ? 'line-through' : 'none' }}>{title}</span>
+                  {c && <span className="shrink-0" style={{ color: '#8A8E99' }}>{c.difficulty}</span>}
+                  {pathStepProOnly(st) && (
+                    <span className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold" data-testid="path-step-pro" style={{ border: '1px solid #2A2E38', color: '#8A8E99' }}>
+                      {i18n_t('tournamentPath', 'pro')}
+                    </span>
+                  )}
+                  {done && <span className="shrink-0" style={{ color: '#4ADE80' }}>✓</span>}
+                </li>
+              );
+            })}
+          </ol>
+        )}
+      </div>
+    );
   };
 
   const renderCompanyAsk = () => {
@@ -17728,6 +18702,29 @@ CRITICAL RULES:
           try { localStorage.setItem(COMPANY_ASK_KEY, JSON.stringify(merged)); } catch (_) {}
         }
       }
+      // The first-session tournament: the account's own record wins over this
+      // browser's (the person was armed first there; never re-armed).
+      if (userData.tournament) {
+        try {
+          const adopted = adoptAccountRecord({ browserRecord: TOURNAMENT_RECORD, accountRecord: userData.tournament });
+          if (adopted.write && adopted.record) {
+            TOURNAMENT_RECORD = adopted.record;
+            localStorage.setItem(TOURNAMENT_KEY, JSON.stringify(adopted.record));
+          }
+        } catch (_) { /* keep this browser's record */ }
+      }
+      // Tournament arm B: the account's ladder and plan win over this
+      // browser's (the guest's when the account has none — it rode the merge).
+      if (userData.singlePath && typeof userData.singlePath === 'object') {
+        try {
+          const acct = normalizePathState(userData.singlePath);
+          if (acct.ladder.outcomes.length || acct.ladder.current || acct.plan) {
+            pathStateRef.current = acct;
+            setPathState(acct);
+            localStorage.setItem(SINGLE_PATH_KEY, JSON.stringify(acct));
+          }
+        } catch (_) { /* keep this browser's */ }
+      }
       // Goal gate profile: the newer of the account's and this browser's wins,
       // so a goal set as a guest five minutes ago survives a sign-in and a goal
       // set on another device arrives here.
@@ -17932,6 +18929,10 @@ CRITICAL RULES:
       if (userData.errorPatterns && typeof userData.errorPatterns === 'object' && userData.errorPatterns.counts) {
         setErrorPatterns(userData.errorPatterns);
         try { localStorage.setItem('sqlquest_error_patterns', JSON.stringify(userData.errorPatterns)); } catch (_) {}
+      }
+      if (userData.debugStats && typeof userData.debugStats === 'object' && userData.debugStats.spots) {
+        setDebugStats(userData.debugStats);
+        try { localStorage.setItem('sqlquest_debug_stats', JSON.stringify(userData.debugStats)); } catch (_) {}
       }
       if (userData.retrievalLog && typeof userData.retrievalLog === 'object') {
         setRetrievalLog(userData.retrievalLog);
@@ -18285,6 +19286,103 @@ CRITICAL RULES:
     return { ...model, today, dots: weekDots({ today, practiced: practiceDays(challengeAttempts), frozen }) };
   })();
   const streakChipPulse = !!(currentUser && !isGuest && streakCardNow.pulse && !streakCardOpen);
+  // One layer at a time after a solve on phones (src/utils/mobile-one-layer.js,
+  // flag `mobileOneLayer`, ledger "One layer at a time after a solve on
+  // phones"). The walk at 390×844 found five layers open at once after the
+  // first solve. In the `one` arm, on a narrow touch screen only: the ask
+  // (soft email, then intent) is the one layer in the solve moment; the
+  // achievement / level-up / Skillmap / share / streak layers are held until
+  // the next challenge opens, where the first still pending shows alone and
+  // the rest are dropped. `control`, desktop and the flag off: unchanged
+  // (`oneLayerOn` stays false, every `oneLayerOk(...)` is true). These hooks
+  // sit above the `if (showAuth)` / `if (!dbReady) return` early returns
+  // (CLAUDE.md fragile area 1).
+  const [oneLayerOn, setOneLayerOn] = useState(false);
+  const [oneLayerHold, setOneLayerHold] = useState(false);
+  const oneLayerNarrow = () => {
+    try {
+      return oneLayerNarrowTouch({
+        coarse: !!window.matchMedia?.('(pointer: coarse)')?.matches,
+        width: window.innerWidth,
+      });
+    } catch (_) { return false; }
+  };
+  const oneLayerStored = () => {
+    try { return JSON.parse(localStorage.getItem(MOBILE_ONE_LAYER_STORAGE_KEY) || 'null'); } catch (_) { return null; }
+  };
+  // At a correct submit: assign once (mobile_one_layer_assigned), and in the
+  // `one` arm hold tier 3 until the next challenge opens. Called from
+  // submitChallenge before any celebration state is set, so the hold lands in
+  // the same render batch as the layers it holds.
+  const armOneLayerAtSolve = (challengeId) => {
+    const decision = mobileOneLayerDecision({
+      flagOn: ftbFlag('mobileOneLayer'),
+      narrowTouch: oneLayerNarrow(),
+      stored: oneLayerStored(),
+      aid: getAnonId(),
+      atSolve: true,
+    });
+    if (decision.assign) {
+      try { localStorage.setItem(MOBILE_ONE_LAYER_STORAGE_KEY, JSON.stringify({ arm: decision.arm, at: Date.now() })); } catch (_) { /* ignore */ }
+      trackActivationEvent('mobile_one_layer_assigned', { arm: decision.arm, test: MOBILE_ONE_LAYER_TEST_ID, challengeId: challengeId ?? null });
+    }
+    setOneLayerOn(decision.show);
+    if (decision.show) setOneLayerHold(true);
+  };
+  const oneLayerActive = oneLayerOn ? [
+    showSoftEmailCapture && 'soft_email',
+    showIntentAsk && 'intent_ask',
+    showAchievement && 'achievement',
+    showLevelUp && 'level_up',
+    radarPop && 'radar_pop',
+    milestoneShare && 'milestone_share',
+    (streakCardPending || streakCardOpen === 'auto') && 'streak_card',
+  ].filter(Boolean) : [];
+  const oneLayerTop = oneLayerOn
+    ? oneLayerPick({ active: oneLayerActive, hold: oneLayerHold, modalOpen: !!(showProModal || showSignupPrompt) })
+    : null;
+  // Tournament arm B: no achievement / level-up / Skillmap / share / streak
+  // layer until the ladder ends (plan §3.1 B2); the asks keep today's rule.
+  // Tournament arms B / D, first session: the path queue decides instead
+  // (pathLayerOk below; walk fix round 2).
+  const oneLayerOk = (id) => (pathUi.layerQueue ? pathLayerOk(id) : ((pathUi.holdLayers || pathHeldRelease) && ONE_LAYER_EXTRAS.includes(id) ? false : (!oneLayerOn || oneLayerTop === id)));
+  useEffect(() => {
+    if (!currentChallenge || !pathHeldRelease) return;
+    setPathHeldRelease(false);
+    const { drop } = oneLayerRelease([
+      showAchievement && 'achievement', showLevelUp && 'level_up', radarPop && 'radar_pop',
+      milestoneShare && 'milestone_share', streakCardPending && 'streak_card',
+    ].filter(Boolean));
+    if (drop.includes('achievement')) setShowAchievement(null);
+    if (drop.includes('level_up')) setShowLevelUp(null);
+    if (drop.includes('radar_pop')) setRadarPop(null);
+    if (drop.includes('milestone_share')) setMilestoneShare(null);
+    if (drop.includes('streak_card')) setStreakCardPending(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentChallenge?.id]);
+  // The next challenge open is the natural pause: release the hold, keep the
+  // first held layer, drop the rest for the session. Also re-reads the arm,
+  // so a person assigned earlier gets the rule from their next solve on.
+  useEffect(() => {
+    if (!currentChallenge) return;
+    const decision = mobileOneLayerDecision({
+      flagOn: ftbFlag('mobileOneLayer'),
+      narrowTouch: oneLayerNarrow(),
+      stored: oneLayerStored(),
+      aid: getAnonId(),
+      atSolve: false,
+    });
+    setOneLayerOn(decision.show);
+    if (!oneLayerHold) return;
+    setOneLayerHold(false);
+    const { drop } = oneLayerRelease(oneLayerActive);
+    if (drop.includes('achievement')) setShowAchievement(null);
+    if (drop.includes('level_up')) setShowLevelUp(null);
+    if (drop.includes('radar_pop')) setRadarPop(null);
+    if (drop.includes('milestone_share')) setMilestoneShare(null);
+    if (drop.includes('streak_card')) setStreakCardPending(false);
+  }, [currentChallenge?.id]);
+
   // The day's first solve sets the card pending; it opens once the moment is
   // clear. The skill-radar toast, the achievement toast and the Pro modal all
   // fire on the same solve, and three things arriving at once read as noise —
@@ -18292,13 +19390,14 @@ CRITICAL RULES:
   useEffect(() => {
     if (!streakCardPending) return undefined;
     if (radarPop || showAchievement || showProModal) return undefined;
+    if (oneLayerOn && oneLayerTop !== 'streak_card') return undefined;
     const t = setTimeout(() => {
       setStreakCardPending(false);
       setStreakCardOpen(prev => prev || 'auto');
       trackActivationEvent('streak_card_opened', { source: 'auto', streak: dailyStreak });
     }, 900);
     return () => clearTimeout(t);
-  }, [streakCardPending, radarPop, showAchievement, showProModal]);
+  }, [streakCardPending, radarPop, showAchievement, showProModal, oneLayerOn, oneLayerTop]);
 
   // "Solve one now" opens ONE question, not the list (founder QA 2026-09-21:
   // the list asked the person to choose again, and the button promised one).
@@ -19318,7 +20417,7 @@ CRITICAL RULES:
         <meta charset="UTF-8">
         <meta property="og:title" content="My SQL Quest Progress">
         <meta property="og:description" content="I've completed ${completedDays}/30 days of the SQL Master Challenge!">
-        <meta property="og:image" content="https://sql-quest2.vercel.app/og-progress.png">
+        <meta property="og:image" content="https://sqlquest.app/og-progress.png">
         <style>
           @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
           * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -19465,7 +20564,7 @@ CRITICAL RULES:
           
           <div class="footer">
             <div class="cta">Join me in learning SQL! 🚀</div>
-            <div class="url">sql-quest2.vercel.app</div>
+            <div class="url">sqlquest.app</div>
           </div>
         </div>
       </body>
@@ -19925,7 +21024,7 @@ CRITICAL RULES:
           
           <div class="footer">
             <div class="cta">Join me in learning SQL! 🚀</div>
-            <div class="hashtags">sql-quest2.vercel.app | #SQLQuest #${streak}DayStreak</div>
+            <div class="hashtags">sqlquest.app | #SQLQuest #${streak}DayStreak</div>
           </div>
         </div>
       </body>
@@ -20256,6 +21355,36 @@ CRITICAL RULES:
       // gives it a denominator.
       trackActivationEvent('signup_prompt_shown', { promptReason: reason });
     }
+  };
+
+  // The guest ladder's one ask after a solve, on the guest's real total.
+  // Returns true when it asked something. Called from submitChallenge, and
+  // once at the end of tournament arm B's ladder (which holds it until then).
+  const guestSaveAskAfterSolve = (solvedTotal) => {
+    const accountRung = ftbFlag('signupAskAtThree') ? 3 : 10;
+    const asked = readGuestAskLadder();
+    if (solvedTotal >= accountRung && !asked.account) {
+      markGuestAsk('account');
+      setTimeout(() => triggerSignupPrompt(accountRung === 3 ? 'third_solve' : 'first_challenge'), 1500);
+      return true;
+    }
+    if (solvedTotal >= 3 && !softEmailCaptured && !asked.email && !asked.account) {
+      // (2026-11-22) Once the account has been asked for — at 3 with
+      // signupAskAtThree — the email-only ask is the same question
+      // again, one solve later; it is skipped.
+      markGuestAsk('email');
+      setTimeout(() => {
+        if (!softEmailCaptured) setShowSoftEmailCapture(true);
+      }, 1500);
+      return true;
+    }
+    if (solvedTotal >= 10 && solvedTotal > accountRung && asked.account && solvedTotal % 5 === 0) {
+      // Re-asks start at 10 whichever rung asked first, so moving the
+      // rung to 3 does not add a nudge at 5 (2026-11-22).
+      setTimeout(() => triggerSignupPrompt('progress'), 1500);
+      return true;
+    }
+    return false;
   };
 
   // The guest blob this browser holds, when it holds real progress.
@@ -21550,6 +22679,9 @@ Adapt based on this student's level — but ALWAYS stay direct and code-first:`;
     try { localStorage.setItem('sqlquest_error_patterns', JSON.stringify(errorPatterns)); } catch (_) {}
   }, [errorPatterns]);
   useEffect(() => {
+    try { localStorage.setItem('sqlquest_debug_stats', JSON.stringify(debugStats)); } catch (_) {}
+  }, [debugStats]);
+  useEffect(() => {
     try { localStorage.setItem('sqlquest_retrieval_log', JSON.stringify(retrievalLog)); } catch (_) {}
   }, [retrievalLog]);
   useEffect(() => {
@@ -21653,9 +22785,13 @@ Do NOT force the sector if the user asks a generic question (e.g. "what does GRO
         localStorage.setItem('sqlquest_ai_daily', JSON.stringify({ date: today, used: data.used, plan: data.plan }));
 
         if (data.plan === 'guest') {
-          // Guest hit limit — prompt sign-up for more calls
-          setSignupPromptReason('ai_limit');
-          setShowSignupPrompt(true);
+          // Guest hit limit — prompt sign-up for more calls. Tournament arm B
+          // holds it while the ladder runs (walk fix B1); the message says it.
+          if (pathUi.holdSignupAsks) pathHeldSignupRef.current = 'ai_limit';
+          else {
+            setSignupPromptReason('ai_limit');
+            setShowSignupPrompt(true);
+          }
           return `**AI Limit Reached**\n\nCreate a free account to get ${TUTOR_FREE_DAILY_LIMIT} AI tutor calls per day!`;
         }
         if (data.plan === 'free') {
@@ -23649,13 +24785,20 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
   // null when nothing in the set opens — the banner then shows no button.
   const companyBannerNext = () => {
     if (!companyFilter) return null;
-    if (quotaGate({ flagOn: ftbFlag('freeQuota'), isPro, solvedCount: solvedChallenges.size, alreadySolved: false }).gated) return null;
+    if (quotaGate({ flagOn: freeQuotaOn(), isPro, solvedCount: solvedChallenges.size, alreadySolved: false }).gated) return null;
     const scoped = companyScopedChallenges();
-    return pickNextChallenge(scoped, c =>
+    const opens = c =>
       !solvedChallenges.has(c.id)
       && !isContentLocked('challenge', c)
-      && !companySetGate({ flagOn: ftbFlag('companySetGate'), isPro, companyFilter, challenge: c, scoped, solved: solvedChallenges }).gated
-    );
+      && !companySetGate({ flagOn: ftbFlag('companySetGate'), isPro, companyFilter, authored: companyHasAuthoredSet(companyFilter), challenge: c, scoped, solved: solvedChallenges }).gated;
+    // Start in the set's first three (difficulty, then id) — the question the
+    // company page's hero button names (companyFirstQuestion). Until
+    // 2026-11-26 the gate walled every set past three, so this was implied;
+    // now a topical set opens past three and the banner carries on into it
+    // once the first three are done, instead of showing no button.
+    const firstThree = ftbFlag('companySetGate') ? companySetFreeIds(scoped) : null;
+    return (firstThree && pickNextChallenge(scoped, c => firstThree.has(c.id) && opens(c)))
+      || pickNextChallenge(scoped, opens);
   };
 
   // The free three of a company's set under `companySetGate`, else null —
@@ -23691,7 +24834,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
   // spent the FREE_SOLVE_QUOTA solves. Every surface that says something is
   // "free" to open reads this, so none of them offers a free preview or a
   // "free" set the quota wall will then refuse.
-  const freeQuotaSpent = () => quotaGate({ flagOn: ftbFlag('freeQuota'), isPro, solvedCount: solvedChallenges.size }).gated;
+  const freeQuotaSpent = () => quotaGate({ flagOn: freeQuotaOn(), isPro, solvedCount: solvedChallenges.size }).gated;
 
   // The title of the mock that belongs to a company (via the interview-prep
   // registry), or null. Never invents one: a company without a mock gets no
@@ -23709,6 +24852,8 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
   // a signed archetype (its mock named) or a tagged set. Stamped on the
   // free_quota reason so the modal and pro_modal_shown read the same thing.
   const quotaWallCompany = () => {
+    // Tournament arm B: the wall speaks to the plan (founder's go, 2026-11-26).
+    if (pathUi.active && pathStateRef.current.plan) return { company: null, kind: 'plan', line: pathWallLine() };
     if (window.FF?.feature?.('quotaWallCompany') !== true) return null;
     try {
       const target = prepTarget?.company ? findPlanTarget(prepTarget.company, challenges, window.challengeCompanies || {}, mockInterviews) : null;
@@ -23827,7 +24972,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     const n = solvedChallenges.size;
     // Tier 10 steps aside while the free quota is on — the wall one open
     // later is the ask (src/utils/free-tier-boundary.js milestoneTier).
-    const tier = milestoneTier(n, { quotaOn: ftbFlag('freeQuota') });
+    const tier = milestoneTier(n, { quotaOn: freeQuotaOn() });
     if (!tier) return;
     // Guests get a fresh guest_<timestamp> identity on every load, so a
     // user-scoped key never dedupes for them — they'd meet the modal every
@@ -23843,7 +24988,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     // skips that tier, which the 25 and 50 tiers recover.
     const guestKey = `sqlquest_promo_${tier}solves_guest`;
     const userKey = `sqlquest_promo_${tier}solves_${currentUser}`;
-    if (!localStorage.getItem(guestKey) && !localStorage.getItem(userKey)) {
+    if (!localStorage.getItem(guestKey) && !localStorage.getItem(userKey) && pathProAskOk('milestone_solves', n)) {
       // 2026-09-12 (free-tier boundary M3, `deadlineOffer`): a person whose
       // date — the intake's, or the countdown card's — is inside 45 days is
       // asked about THAT: the days, and what stands between them and it.
@@ -23891,7 +25036,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     if (quietAskDecision({ flagOn: ftbFlag('quietEarlyAsks'), reason: 'milestone_streak', solvedCount: solvedChallenges.size }) !== 'show') return;
     if (dailyStreak >= 5) {
       const key = `sqlquest_promo_streak5_${currentUser}`;
-      if (!localStorage.getItem(key)) {
+      if (!localStorage.getItem(key) && pathProAskOk('milestone_streak', solvedChallenges.size)) {
         setProModalReason({ type: 'milestone_streak', topic: dailyStreak });
         setShowProModal(true);
         localStorage.setItem(key, '1');
@@ -23937,6 +25082,104 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
   // it; every existing call site is unchanged and sends no key, which the read
   // treats as organic. No new event — a separate hard_preview_opened would
   // duplicate challenge_opened (plan §Measurement).
+  // `runnableStarter` (2026-11-26): decide the arm at an empty-editor open.
+  // Assigns once per browser on a desktop screen and fires
+  // `runnable_starter_assigned`; returns { arm, assign, prefill }.
+  const runnableStarterOpen = (challenge, savedQuery) => {
+    let desktop = false;
+    try {
+      desktop = isDesktopScreen({ width: window.innerWidth, finePointer: !!window.matchMedia?.('(pointer: fine)')?.matches });
+    } catch (_) { desktop = false; }
+    let stored = null;
+    try { stored = JSON.parse(localStorage.getItem(RUNNABLE_STARTER_KEY) || 'null'); } catch (_) { stored = null; }
+    const decision = runnableStarterDecision({
+      // A built tournament challenger replaces this test (plan §2.3).
+      flagOn: ftbFlag('runnableStarter') && !tournamentSupersedesNow(),
+      desktop,
+      emptyOpen: isEmptyEditorOpen({ challenge, savedQuery, solvedCount: solvedChallenges.size, debugItem: false }),
+      stored,
+      aid: getAnonId(),
+    });
+    if (decision.assign) {
+      try { localStorage.setItem(RUNNABLE_STARTER_KEY, JSON.stringify({ arm: decision.arm, at: Date.now() })); } catch (_) { /* ignore */ }
+      let viewport = null;
+      try { viewport = `desktop:${window.innerWidth}x${window.innerHeight}`; } catch (_) { viewport = null; }
+      trackActivationEvent('runnable_starter_assigned', { arm: decision.arm, test: RUNNABLE_STARTER_TEST_ID, challengeId: challenge.id, viewport });
+    }
+    return decision;
+  };
+  // The person's runnableStarter arm while the flag is on, else null.
+  const runnableStarterArmNow = () => {
+    if (!ftbFlag('runnableStarter')) return null;
+    try { return normalizeRunnableStarterRecord(JSON.parse(localStorage.getItem(RUNNABLE_STARTER_KEY) || 'null')).arm; } catch (_) { return null; }
+  };
+  // ── challenge_left (2026-11-24) ─────────────────────────────────────────
+  // One event per challenge open, sent when the person leaves it without a
+  // run or a submit: back to the list or another app tab (`navigate`), the
+  // browser tab hidden or closed (`hidden`), another challenge opened over it
+  // (`switch`). Counts and flags only — never the query text. Rules in
+  // src/utils/challenge-left.js; metric `open_to_run_exit`. Guests and
+  // accounts alike. Hooks sit here, above the `showAuth` / `dbReady` early
+  // returns (CLAUDE.md fragile area 1).
+  const chLeftRef = useRef(null);
+  const chViewRef = useRef(null);
+  const chLeftNote = (flag) => { chLeftRef.current = noteFlag(chLeftRef.current, flag); };
+  const chLeftSend = (how) => {
+    const open = chLeftRef.current;
+    if (!shouldSendLeft(open, how)) return;
+    chLeftRef.current = markSent(open);
+    trackActivationEvent(CHALLENGE_LEFT_EVENT, challengeLeftPayload(open, { how, now: Date.now(), width: typeof window !== 'undefined' ? window.innerWidth : null }), { keepalive: true });
+  };
+  const chLeftSendRef = useRef(chLeftSend);
+  chLeftSendRef.current = chLeftSend;
+  // The challenge page on screen: the Practice tab's Challenges view with a
+  // challenge open. `currentChallenge` alone outlives a switch to another tab.
+  const chLeftView = (currentChallenge && activeTab === 'quests' && practiceSubTab === 'challenges') ? currentChallenge.id : null;
+  chViewRef.current = chLeftView;
+  const chLeftBegin = (id) => {
+    const prev = chLeftRef.current;
+    if (prev && !prev.sent && String(prev.challengeId) === String(id)) return; // the same page, still open
+    if (prev) chLeftSend('switch');
+    let next = startOpen(id, Date.now());
+    if (chViewRef.current != null && String(chViewRef.current) === String(id)) next = noteFlag(next, 'seen');
+    chLeftRef.current = next;
+  };
+  useEffect(() => {
+    const open = chLeftRef.current;
+    if (!open) return;
+    if (chLeftView != null && String(chLeftView) === String(open.challengeId)) { chLeftNote('seen'); return; }
+    const how = leaveHowForView(open, chLeftView);
+    if (how) chLeftSend(how);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chLeftView]);
+  useEffect(() => {
+    const onScreen = () => chViewRef.current != null && !!chLeftRef.current;
+    const onVis = () => { if (document.visibilityState === 'hidden' && onScreen()) chLeftSendRef.current('hidden'); };
+    const onPageHide = () => { if (onScreen()) chLeftSendRef.current('hidden'); };
+    // The person's own scroll (wheel, touch drag, page keys), never the app's
+    // programmatic scroll to the editor.
+    const onScroll = () => { if (onScreen() && !chLeftRef.current.scrolled) chLeftNote('scrolled'); };
+    const onKey = (e) => {
+      if (!['PageDown', 'PageUp', 'Home', 'End', ' '].includes(e.key)) return;
+      const t = e.target;
+      if (t && t.closest && t.closest('.CodeMirror, input, textarea, select, [contenteditable="true"]')) return;
+      onScroll();
+    };
+    document.addEventListener('visibilitychange', onVis);
+    window.addEventListener('pagehide', onPageHide);
+    window.addEventListener('wheel', onScroll, { passive: true });
+    window.addEventListener('touchmove', onScroll, { passive: true });
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('visibilitychange', onVis);
+      window.removeEventListener('pagehide', onPageHide);
+      window.removeEventListener('wheel', onScroll);
+      window.removeEventListener('touchmove', onScroll);
+      window.removeEventListener('keydown', onKey);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const openChallenge = (challenge, opts = {}) => {
     if (isContentLocked('challenge', challenge)) {
       trackLockReached('challenge_hard', {
@@ -23966,11 +25209,14 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
       // the visitor has solved nothing: open a free Hard preview of the same
       // kind instead of the cold-start dialog's Easy starter (2026-11-22).
       if (opts && opts.fromDeepLink && challenge.difficulty === 'Hard' && isColdStart(practiceSolveCount)) {
-        const swap = previewSwapFor(challenge, challenges, solvedChallenges);
+        // sameKind only when a defining tag is shared (QA 2026-11-23, D2);
+        // otherwise the note says it is a different question.
+        const match = previewSwapMatch(challenge, challenges, solvedChallenges);
+        const swap = match && match.swap;
         if (swap && !isContentLocked('challenge', swap)) {
-          trackActivationEvent('deeplink_preview_swap', { from: challenge.id, to: swap.id });
+          trackActivationEvent('deeplink_preview_swap', { from: challenge.id, to: swap.id, sameKind: match.sameKind });
           openChallenge(swap, { openedFrom: 'deeplink_swap' });
-          setDeepLinkSwapNote({ fromTitle: challenge.title, toId: swap.id });
+          setDeepLinkSwapNote({ fromTitle: challenge.title, toId: swap.id, sameKind: match.sameKind, shared: match.shared.slice(0, 2) });
           return;
         }
       }
@@ -23991,12 +25237,12 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
       if (companyFilter && quietAskDecision({ flagOn: ftbFlag('quietEarlyAsks'), reason: 'company_hard', solvedCount: solvedChallenges.size }) === 'show') {
         const scoped = challenges.filter(c => (c.companies || []).includes(companyFilter));
         const hardCount = scoped.filter(c => c.difficulty === 'Hard').length;
-        setProModalReason({
+        setProModalReason(withDebugLock({
           type: 'company_hard',
           topic: companyFilter,
           hardCount,
           totalCount: scoped.length,
-        });
+        }, challenge));
         setShowProModal(true);
         return;
       }
@@ -24023,7 +25269,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
       // previews as "free", and the quota wall would refuse them. Say the
       // true thing instead — the lock row above is already written.
       if (freeQuotaSpent()) {
-        presentQuotaWall({ type: 'free_quota', used: solvedChallenges.size, quota: FREE_SOLVE_QUOTA, solvedCount: solvedChallenges.size, topic: null, wallCompany: quotaWallCompany() });
+        presentQuotaWall(withDebugLock({ type: 'free_quota', used: solvedChallenges.size, quota: FREE_SOLVE_QUOTA, solvedCount: solvedChallenges.size, topic: null, wallCompany: quotaWallCompany() }, challenge));
         return;
       }
       setPreviewCatcher({ challengeId: challenge.id, at: Date.now() });
@@ -24040,10 +25286,16 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     // `paidWallFor` is not consulted: this wall exists only with a company
     // filter and only for the non-cold — `wall: 'company_set'` is its own
     // value in the series (metrics.md carries the discontinuity note).
+    // Amended 2026-09-20, enforced 2026-11-26: only a set AUTHORED for the
+    // company (Capital One, Revolut) is walled; Stripe's, Amazon's and every
+    // other tagged set stay on the general free quota.
     const setGate = companySetGate({
       flagOn: ftbFlag('companySetGate'),
       isPro,
       companyFilter,
+      // Only a set authored for the company is walled (2026-09-20 decision,
+      // enforced here from 2026-11-26) — a topical set keeps the 10-solve quota.
+      authored: companyHasAuthoredSet(companyFilter),
       challenge,
       scoped: companyScopedChallenges(),
       solved: solvedChallenges,
@@ -24060,7 +25312,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
         solvedInSet: setGate.solvedInSet,
       });
       if (openColdStartInstead(challenge.id)) return;
-      setProModalReason({
+      setProModalReason(withDebugLock({
         type: 'company_set',
         topic: companyFilter,
         freeCount: setGate.freeCount,
@@ -24068,7 +25320,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
         solvedInSet: setGate.solvedInSet,
         // M5: the wall names the company's mock when one exists.
         mockTitle: companyMockTitle(companyFilter),
-      });
+      }, challenge));
       setShowProModal(true);
       return;
     }
@@ -24079,7 +25331,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     // other wall: the lock row, the cold-start diversion (moot at ten solves,
     // kept for the guard), then the ask. `wall: 'free_quota'` is its own
     // value in the series (metrics.md, quota_wall).
-    const quota = quotaGate({ flagOn: ftbFlag('freeQuota'), isPro, solvedCount: solvedChallenges.size, alreadySolved: solvedChallenges.has(challenge.id) });
+    const quota = quotaGate({ flagOn: freeQuotaOn(), isPro, solvedCount: solvedChallenges.size, alreadySolved: solvedChallenges.has(challenge.id) });
     if (quota.gated) {
       const quotaModal = quotaWallModalNow();
       trackLockReached('challenge_quota', {
@@ -24094,7 +25346,9 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
         quotaWallArm: quotaWallArmNow,
       });
       if (openColdStartInstead(challenge.id)) return;
-      presentQuotaWall({ type: 'free_quota', used: quota.used, quota: quota.quota, solvedCount: solvedChallenges.size, topic: null, wallCompany: quotaWallCompany() }, quotaModal);
+      // A Debug item past the quota meets the same wall; only the label the
+      // events carry is `debug_lock` (withDebugLock, founder 2026-11-23).
+      presentQuotaWall(withDebugLock({ type: 'free_quota', used: quota.used, quota: quota.quota, solvedCount: solvedChallenges.size, topic: null, wallCompany: quotaWallCompany() }, challenge), quotaModal);
       return;
     }
     if (foundationPractice?.lessonId) {
@@ -24103,6 +25357,9 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     setFoundationsRoadmapLessonId(null);
     setFoundationPractice(createFoundationPracticeState(null));
     setCurrentChallenge(challenge);
+    // Tournament arm B: the first open of a ladder question starts its clock.
+    if (pathUi.ladderActive && !solvedChallenges.has(challenge.id)) pathSave(ladderOpen(pathStateRef.current, challenge, Date.now()));
+    if (pathUi.sprint && !solvedChallenges.has(challenge.id)) pathOpenedRef.current = { id: challenge.id, at: Date.now() };
     // Content-quality denominator: without opened-events, "opened but never
     // attempted" (a scary/unclear problem statement) is invisible — we only
     // saw solves and attempts. Open→attempt→solve per challenge is the full
@@ -24115,6 +25372,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
       // Present only on the three preview surfaces — see the note above.
       ...(opts && opts.openedFrom ? { openedFrom: opts.openedFrom } : {}),
     });
+    chLeftBegin(challenge.id);
     if (solvedChallenges.size === 0 && challengeAttempts.length === 0) {
       trackActivationEvent('first_challenge_started', {
         challengeId: challenge.id,
@@ -24126,8 +25384,14 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     // For new users with no saved query, show a starter hint
     const savedQuery = challengeQueries[challenge.id] || '';
     setChallengeStarterHint(null);
+    setChallengeRunnableStarter(null);
     if (!(opts && opts.openedFrom === 'deeplink_swap')) setDeepLinkSwapNote(null);
-    if (!savedQuery && solvedChallenges.size === 0 && challenge.id === 91) {
+    // A Debug item opens on the AI's query — only when no draft is saved —
+    // and never takes the first-run starter branches below.
+    const debugValue = debugEditorValue(challenge, savedQuery, lang);
+    if (debugValue !== null) {
+      setChallengeQuery(debugValue);
+    } else if (!savedQuery && solvedChallenges.size === 0 && challenge.id === 91) {
       setChallengeQuery(`${ZERO_SQL_FIRST_QUERY};`);
     } else if (!savedQuery && solvedChallenges.size === 0) {
       // The starter line is a placeholder now, not text in the editor: as a
@@ -24135,7 +25399,27 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
       // it (founder QA 2026-09-19, item 21). It disappears on the first key.
       const mainTable = challenge.tables?.[0] || 'table_name';
       setChallengeStarterHint(starterHintFor(mainTable));
-      setChallengeQuery('');
+      // `runnableStarter` (desktop A/B, 2026-11-26): in the `starter` arm the
+      // editor opens on real, runnable text — a comment line, then
+      // SELECT * FROM <first table> LIMIT 5; — instead of the grey
+      // placeholder. The arm is assigned once, at the first such open on a
+      // desktop screen; control keeps the placeholder above.
+      const rs = runnableStarterOpen(challenge, savedQuery);
+      // Tournament arm B supersedes the test and runs the `starter` arm's behaviour.
+      if (rs.prefill || pathUi.starterPrefill) {
+        const text = runnableStarterText(mainTable, lang);
+        setChallengeRunnableStarter(text);
+        setChallengeQuery(text);
+      } else {
+        setChallengeQuery('');
+      }
+    } else if (!savedQuery && pathUi.starterPrefill && !solvedChallenges.has(challenge.id)) {
+      // Tournament arm B: every later ladder and plan question opens on the
+      // runnable starter too (plan §3.1 B1), selected on focus while untouched.
+      const text = runnableStarterText(challenge.tables?.[0] || 'table_name', lang);
+      setChallengeStarterHint(null);
+      setChallengeRunnableStarter(text);
+      setChallengeQuery(text);
     } else {
       setChallengeQuery(savedQuery);
     }
@@ -24240,17 +25524,22 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
   // 09-29 cold-start read can tell an insisting buyer from a sold-to one:
   // this modal was asked for, never offered.
   const openProFromColdStart = () => {
+    // A guest with 0 solves who taps a Hard Debug item meets this gate, not
+    // the catcher: its Pro path labels the ask `debug_lock` too (QA 2026-11-23).
+    const lockedItem = previewCatcher ? challenges.find(c => c.id === previewCatcher.challengeId) : null;
     setPreviewCatcher(null);
     previewCatcherReturnFocusRef.current = null;
     trackActivationEvent('cold_start_pro_anyway', { solvedCount: solvedChallenges.size });
-    setProModalReason({ type: 'cold_start_anyway', topic: null, solvedCount: solvedChallenges.size });
+    setProModalReason(withDebugLock({ type: 'cold_start_anyway', topic: null, solvedCount: solvedChallenges.size }, lockedItem));
     setShowProModal(true);
   };
 
   const openProFromPreviewCatcher = () => {
+    // The Hard the person clicked: a Debug item labels the ask `debug_lock`.
+    const lockedItem = previewCatcher ? challenges.find(c => c.id === previewCatcher.challengeId) : null;
     setPreviewCatcher(null);
     previewCatcherReturnFocusRef.current = null;
-    setProModalReason({ type: 'hard_challenge', topic: null, solvedCount: solvedChallenges.size });
+    setProModalReason(withDebugLock({ type: 'hard_challenge', topic: null, solvedCount: solvedChallenges.size }, lockedItem));
     setShowProModal(true);
   };
 
@@ -24535,7 +25824,8 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
       deepLink = ['challenge', 'lesson', 'mock', 'interview', 'goal', 'outcome'].some(k => q.has(k)) || q.get('pro') === '1';
     } catch (_) { /* ignore */ }
     const decision = firstScreenDecision({
-      flagOn: !!window.FF?.feature('firstScreenChallenge'),
+      // A built tournament challenger replaces this test (plan §2.3).
+      flagOn: !!window.FF?.feature('firstScreenChallenge') && !tournamentSupersedesNow(),
       onStartScreen: showFirstRunStart && !deepLink,
       showingOtherStep: showZeroSqlLesson || showIntake || showGoalMeasureOnStart,
       levelChosen: !!firstRunLevel,
@@ -24550,6 +25840,94 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     }
     if (decision.act) startFirstRunPath('zero', 'brand-new', { skipLesson: true, source: 'first_screen_test' });
   }, [currentUser, showFirstRunStart, showZeroSqlLesson, showIntake, showGoalMeasureOnStart, firstRunLevel]);
+
+  // Run stays on screen on phones (src/utils/mobile-run-bar.js, flag
+  // `mobileRunBar`, ledger "Run stays on screen on phones"). At a challenge
+  // open on a narrow touch screen a person is assigned an arm once
+  // (`mobile_run_bar_assigned`); the `bar` arm pins the challenge's Run /
+  // Submit bar to the bottom of the viewport below `md` and lifts it above
+  // the on-screen keyboard where visualViewport says where that is. These
+  // hooks sit above the `if (showAuth)` / `if (!dbReady) return` early
+  // returns (CLAUDE.md fragile area 1). Nothing here focuses the editor.
+  const [mobileRunBarShown, setMobileRunBarShown] = useState(false);
+  const [runBarKeyboardOffset, setRunBarKeyboardOffset] = useState(0);
+  // A short landscape viewport (isShortViewport) keeps today's sticky bar in
+  // the bar arm: the fixed bar took ~88 of ~165 pt with the keyboard up and
+  // hid the line being typed (iOS Simulator walk, 2026-11-24). Re-read on
+  // resize / rotation while a challenge is open; the arm never changes.
+  const [runBarShortViewport, setRunBarShortViewport] = useState(() => {
+    try { return isShortViewport({ innerWidth: window.innerWidth, innerHeight: window.innerHeight }); } catch (_) { return false; }
+  });
+  useEffect(() => {
+    if (!currentChallenge) return undefined;
+    const update = () => {
+      try {
+        setRunBarShortViewport(isShortViewport({ innerWidth: window.innerWidth, innerHeight: window.innerHeight }));
+      } catch (_) { /* ignore */ }
+    };
+    update();
+    window.addEventListener('resize', update);
+    window.addEventListener('orientationchange', update);
+    return () => {
+      window.removeEventListener('resize', update);
+      window.removeEventListener('orientationchange', update);
+    };
+  }, [currentChallenge?.id]);
+  useEffect(() => {
+    if (!currentChallenge) return;
+    let narrowTouch = false;
+    try {
+      narrowTouch = isNarrowTouch({
+        coarse: !!window.matchMedia?.('(pointer: coarse)')?.matches,
+        width: window.innerWidth,
+      });
+    } catch (_) { narrowTouch = false; }
+    let stored = null;
+    try { stored = JSON.parse(localStorage.getItem(MOBILE_RUN_BAR_STORAGE_KEY) || 'null'); } catch (_) { stored = null; }
+    const decision = mobileRunBarDecision({
+      // A built tournament challenger replaces this test (plan §2.3).
+      flagOn: ftbFlag('mobileRunBar') && !tournamentSupersedesNow(),
+      narrowTouch,
+      stored,
+      aid: getAnonId(),
+      shortViewport: runBarShortViewport,
+    });
+    if (decision.assign) {
+      try { localStorage.setItem(MOBILE_RUN_BAR_STORAGE_KEY, JSON.stringify({ arm: decision.arm, at: Date.now() })); } catch (_) { /* ignore */ }
+      trackActivationEvent('mobile_run_bar_assigned', { arm: decision.arm, test: MOBILE_RUN_BAR_TEST_ID, challengeId: currentChallenge.id });
+    }
+    // Tournament arm B supersedes the test and runs its `bar` arm on a phone.
+    setMobileRunBarShown(decision.show || (pathUi.fixedRunBar && narrowTouch && !runBarShortViewport));
+  }, [currentChallenge?.id, runBarShortViewport]);
+  useEffect(() => {
+    if (!mobileRunBarShown) { setRunBarKeyboardOffset(0); return undefined; }
+    const vv = typeof window !== 'undefined' ? window.visualViewport : null;
+    if (!vv) return undefined; // unsupported: the bar stays at the bottom
+    const update = () => {
+      setRunBarKeyboardOffset(keyboardOffset({
+        innerWidth: window.innerWidth,
+        innerHeight: window.innerHeight,
+        vvHeight: vv.height,
+        vvOffsetTop: vv.offsetTop,
+      }));
+    };
+    update();
+    vv.addEventListener('resize', update);
+    vv.addEventListener('scroll', update);
+    return () => {
+      vv.removeEventListener('resize', update);
+      vv.removeEventListener('scroll', update);
+    };
+  }, [mobileRunBarShown]);
+  // body[data-run-bar="fixed"] while the fixed bar is mounted: input.css
+  // pads the page by the bar's height and lifts the feedback bubble and the
+  // prompt-card slot above it (phone widths only).
+  const mobileRunBarRef = useCallback((node) => {
+    try {
+      if (node) document.body.setAttribute('data-run-bar', 'fixed');
+      else document.body.removeAttribute('data-run-bar');
+    } catch (_) { /* ignore */ }
+  }, []);
 
   // Recompute Expected Output when db finishes loading AFTER a challenge was
   // opened. Otherwise a guest who lands on a challenge while sql.js is still
@@ -24597,6 +25975,8 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     if (solvedChallenges.has(currentChallenge.id)) return;
     if (showOnboardingTour) return;
     if (hasContentDeepLink) return;
+    // Tournament arm B: four questions in, the plan line says what to do next.
+    if (pathUi.active) return;
     try {
       if (typeof window === 'undefined') return;
       if (localStorage.getItem('sqlquest_onboarding_v1')) return;
@@ -24612,6 +25992,8 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
   useEffect(() => {
     if (challengeStatus !== 'success') return;
     if (solvedChallenges.size !== 1) return; // only after the very first solve
+    // Tournament arm B: no tour prompt in the first session (walk fix B2).
+    if (pathUi.suppressTour) return;
     try {
       if (localStorage.getItem('sqlquest_app_tour_v1')) return;
     } catch (_) { return; }
@@ -24930,6 +26312,7 @@ HINT PROGRESSION (based on conversation length):
     setInlineAiInput('');
     setInlineAiLoading(false);
     setShowInlineAiHelp(true);
+    chLeftNote('hintOpened');
     trackActivationEvent('inline_help_opened', { challengeId: challenge?.id ?? null, opener: dx ? 'diagnosis' : (q ? 'query' : 'empty'), hasDiagnosis: !!dx });
     setTimeout(() => {
       try {
@@ -24944,6 +26327,31 @@ HINT PROGRESSION (based on conversation length):
       // HAVING clause (found 2026-10-03, challenge 107). inlineOpenerMessage.
       setTimeout(() => sendInlineAiMessage(inlineOpenerMessage(ftbFlag('socraticLadder')), { silent: true }), 0);
     }
+  };
+
+  // IR-2: the 💬 widget's "tutor" link. Closes the widget and opens the same
+  // inline Help the challenge page's Help button opens; if Help is already
+  // open it only scrolls there, so a conversation in progress is not reset.
+  const openTutorFromFeedback = () => {
+    const ctx = feedbackChallengeCtxNow();
+    trackActivationEvent('feedback_tutor_redirect', {
+      ...feedbackEventContext(ctx),
+      challengeStatus: ctx ? ctx.challengeStatus : null,
+      helpWasOpen: !!showInlineAiHelp,
+    });
+    setShowFeedback(false);
+    setReviewFeedbackTopic(null);
+    if (!ctx || !currentChallenge) return;
+    if (showInlineAiHelp) {
+      setTimeout(() => {
+        try {
+          const el = document.querySelector('[data-testid="inline-ai-help"]');
+          if (el) window.scrollTo(0, Math.max(0, Math.round(window.scrollY + el.getBoundingClientRect().top - 80)));
+        } catch (_) {}
+      }, 60);
+      return;
+    }
+    openInlineAiHelp(currentChallenge, challengeQuery);
   };
 
   // Send a follow-up message in the inline AI help panel
@@ -25027,12 +26435,17 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
   if (currentChallenge && challengeOpenedAtRef.current.id !== currentChallenge.id) {
     challengeOpenedAtRef.current = { id: currentChallenge.id, at: Date.now() };
   }
-  const markChallengeFirstRun = (via) => {
+  // `starterArm` (2026-11-26): the person's `runnableStarter` arm, null when
+  // not in the test. `starterUntouched`: a Submit of the starter text exactly
+  // as placed (the `starter` arm), graded wrong — metric runnable_starter_split.
+  const markChallengeFirstRun = (via, extra = {}) => {
     const id = currentChallenge?.id;
+    // A run or a submit on this open: challenge_left never fires for it.
+    if (chLeftRef.current && id != null && String(chLeftRef.current.challengeId) === String(id)) chLeftNote('ran');
     if (id == null || firstRunSentRef.current.has(id)) return;
     firstRunSentRef.current.add(id);
     const at = challengeOpenedAtRef.current.id === id ? challengeOpenedAtRef.current.at : 0;
-    trackActivationEvent('challenge_first_run', { challengeId: id, via, secondsOpen: at ? Math.round((Date.now() - at) / 1000) : null });
+    trackActivationEvent('challenge_first_run', { challengeId: id, via, secondsOpen: at ? Math.round((Date.now() - at) / 1000) : null, starterArm: runnableStarterArmNow(), ...extra });
   };
 
   // ── Feedback capture points 2-4 (E2, 2026-11-22) ─────────────────────────
@@ -25067,23 +26480,45 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
     setFbPrompt({ kind, trigger, challengeId });
     trackActivationEvent('feedback_prompt_shown', { kind, trigger, challengeId, solves: solvedChallenges.size });
   };
+  // Answered or skipped: this browser never sees that kind again
+  // (promptDoneKey; 2026-11-24, one person answered one card three times).
+  const fbMarkDone = (kind) => {
+    const key = promptDoneKey(kind);
+    if (!key) return;
+    try { if (!localStorage.getItem(key)) localStorage.setItem(key, new Date().toISOString()); } catch (_) {}
+  };
   const fbSkipPrompt = () => {
-    if (fbPrompt) trackActivationEvent('feedback_prompt_skipped', { kind: fbPrompt.kind, trigger: fbPrompt.trigger });
+    if (fbPrompt && !fbPrompt.answered) trackActivationEvent('feedback_prompt_skipped', { kind: fbPrompt.kind, trigger: fbPrompt.trigger });
+    if (fbPrompt) fbMarkDone(fbPrompt.kind);
     setFbPrompt(null);
   };
+  // The prompt being answered, set synchronously so a second send from a
+  // re-mounted card cannot slip in before React re-renders.
+  const fbAnsweredRef = useRef(null);
   const fbSendPrompt = async (answerId, text) => {
-    if (!fbPrompt) return false;
-    const sub = buildPromptSubmission({ kind: fbPrompt.kind, trigger: fbPrompt.trigger, answerId, text, challengeId: fbPrompt.challengeId });
+    const prompt = fbPrompt;
+    if (!mayRecordAnswer(prompt) || fbAnsweredRef.current === prompt) return !!prompt;
+    const sub = buildPromptSubmission({ kind: prompt.kind, trigger: prompt.trigger, answerId, text, challengeId: prompt.challengeId });
     if (!sub) return false;
-    return submitFeedback({ message: sub.message, contact: null, topic: sub.topic, kind: fbPrompt.kind, trigger: fbPrompt.trigger, promptContext: sub.context });
+    fbAnsweredRef.current = prompt;
+    const ok = await submitFeedback({ message: sub.message, contact: null, topic: sub.topic, kind: prompt.kind, trigger: prompt.trigger, promptContext: sub.context });
+    if (!ok) { fbAnsweredRef.current = null; return false; }
+    fbMarkDone(prompt.kind);
+    setFbPrompt(p => (p && p.kind === prompt.kind && p.trigger === prompt.trigger && p.challengeId === prompt.challengeId ? markPromptAnswered(p) : p));
+    // The thanks stays a moment, then the card goes for good.
+    setTimeout(() => setFbPrompt(p => (p && p.answered && p.kind === prompt.kind && p.challengeId === prompt.challengeId ? null : p)), PROMPT_THANKS_MS);
+    return true;
   };
   // 2 — exit_reason: called by dismissProModal after the plans have closed.
   const maybeAskExitReason = (via, checkoutPending) => {
     if (fbPrompt) return;
+    // Tournament arms B / D: never in the first session (walk fix round 2).
+    if (pathUi.layerQueue) return;
     const ok = canShowExitReason({
       flagOn: fbFlag('exit_reason'), closedVia: via, planClicked: proModalPlanClickedRef.current,
       checkoutPending: !!checkoutPending, solvedCount: solvedChallenges.size, inTimedMock: fbInTimedMock(),
       sessionRec: fbSessionRef.current, lastExitDay: (() => { try { return localStorage.getItem(FBP_EXIT_DAY_KEY); } catch (_) { return null; } })(),
+      doneAt: (() => { try { return localStorage.getItem(FBP_EXIT_DONE_KEY); } catch (_) { return 'unreadable'; } })(),
     });
     if (!ok) return;
     try { localStorage.setItem(FBP_EXIT_DAY_KEY, localDay()); } catch (_) {}
@@ -25122,6 +26557,67 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
     if (trig) fbTryStuck(trig);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wrongAttemptCount, challengeStatus]);
+  // ── Tournament arms B / D: ONE layer at a time for the whole first session ──
+  // (walk fix round 2, 2026-11-26; pure half pathLayerDecide in
+  // src/utils/single-path.js). Priority: the Pro / plan_end ask (and a modal
+  // the person opened) > the save / sign-up ask > achievement > the archetype
+  // card > the survey (never). One per solve; the rest that solve raises are
+  // dropped, never stacked. Off for everyone else (`pathUi.layerQueue`).
+  // These hooks sit above the `showAuth` / `dbReady` early returns.
+  const [pathLayerSlotNow, setPathLayerSlotNow] = useState(() => pathLayerSlot('open'));
+  const pathLayerSettleRef = useRef(null);
+  const pathSignupLayer = PATH_USER_SIGNUP_REASONS.includes(signupPromptReason) ? 'user_modal' : 'signup_prompt';
+  const pathLayerActive = pathUi.layerQueue ? [
+    showProModal && 'pro_modal',
+    showSignupPrompt && pathSignupLayer,
+    showSoftEmailCapture && 'soft_email',
+    showIntentAsk && 'intent_ask',
+    showAchievement && 'achievement',
+    showLevelUp && 'level_up',
+    milestonePopup && 'milestone_toast',
+    milestoneShare && 'milestone_share',
+    (streakCardPending || streakCardOpen === 'auto') && 'streak_card',
+    radarPop && 'radar_pop',
+    fbPrompt && fbPrompt.kind !== 'stuck' && 'feedback_prompt',
+  ].filter(Boolean) : [];
+  const pathLayer = pathUi.layerQueue ? pathLayerDecide({ active: pathLayerActive, slot: pathLayerSlotNow, holdExtras: pathUi.holdLayers }) : null;
+  const pathLayerOk = (id) => !pathLayer || pathLayer.show === id;
+  // A correct submit opens the solve's slot: nothing but the Pro ask until the
+  // solve's asks have landed (they fire 1.5–1.8 s after it).
+  const pathLayerAtSolve = () => {
+    if (!pathUi.layerQueue) return;
+    setPathLayerSlotNow(pathLayerSlot('settle'));
+    if (pathLayerSettleRef.current) clearTimeout(pathLayerSettleRef.current);
+    pathLayerSettleRef.current = setTimeout(() => setPathLayerSlotNow(sl => (sl.phase === 'settle' ? { ...sl, phase: 'pick' } : sl)), PATH_LAYER_SETTLE_MS);
+  };
+  // A challenge open is a new moment: a fresh slot.
+  useEffect(() => {
+    if (!pathUi.layerQueue || !currentChallenge) return;
+    if (pathLayerSettleRef.current) clearTimeout(pathLayerSettleRef.current);
+    setPathLayerSlotNow(pathLayerSlot('open'));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentChallenge?.id]);
+  // Keep the slot, and drop what lost it (the Pro ask and a modal the person
+  // opened are never in `drop`).
+  const pathLayerKey = pathLayer ? `${pathLayerActive.join(',')}|${pathLayer.drop.join(',')}` : '';
+  useEffect(() => {
+    if (!pathLayer) return;
+    if (pathLayer.slot !== pathLayerSlotNow) setPathLayerSlotNow(pathLayer.slot);
+    const d = pathLayer.drop;
+    if (!d.length) return;
+    if (d.includes('signup_prompt')) setShowSignupPrompt(false);
+    if (d.includes('soft_email')) setShowSoftEmailCapture(false);
+    if (d.includes('intent_ask')) setShowIntentAsk(false);
+    if (d.includes('achievement')) setShowAchievement(null);
+    if (d.includes('level_up')) setShowLevelUp(null);
+    if (d.includes('milestone_toast')) setMilestonePopup(null);
+    if (d.includes('milestone_share')) setMilestoneShare(null);
+    if (d.includes('streak_card')) { setStreakCardPending(false); setStreakCardOpen(o => (o === 'auto' ? null : o)); }
+    if (d.includes('radar_pop')) setRadarPop(null);
+    if (d.includes('feedback_prompt')) setFbPrompt(null);
+    trackActivationEvent('tournament_layer_dropped', { arm: pathUi.arm, dropped: d, shown: pathLayer.show, solves: solvedChallenges.size });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathLayerKey, pathLayerSlotNow]);
   // 4 — day2: the second session's first screen, once ever, one attempt per load.
   const fbDay2TriedRef = useRef(false);
   useEffect(() => {
@@ -25156,6 +26652,10 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
       sql = starter;
       via = 'starter';
       setChallengeQuery(starter);
+    } else if (isUntouchedStarter(sql, challengeRunnableStarter)) {
+      // The `starter` arm's text, run as placed: the same act as Run on the
+      // control arm's placeholder, so the same `via`.
+      via = 'starter';
     }
     markChallengeFirstRun(via);
     // Track execution time so user gets "Ran in Xms" confirmation.
@@ -25189,13 +26689,50 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
       setChallengeRunMs(duration);
       setChallengeStatus(null);
       addToHistory(sql, true, 'challenge');
+      noteRunSubmitNudge(result.length > 0 ? result[0].values : [], null);
     } catch (err) {
       setChallengeResult({ columns: [], rows: [], error: err.message });
       setChallengeRunAt(Date.now());
       setChallengeRunMs(Math.round(performance.now() - startTime));
       setChallengeStatus(null);
       addToHistory(sql, false, 'challenge');
+      noteRunSubmitNudge([], err.message);
     }
+  };
+
+  // Run is not Submit (2026-11-23, ledger "Run is not Submit"). After a Run
+  // that returned rows, for a person with zero solves on a challenge they
+  // have not solved: assign the arm once (both arms, so the read has a
+  // denominator) and, in the `nudge` arm, put one line in the output panel
+  // saying Submit is what completes it. Compared with the same grader as
+  // Submit (resultsMatch); the shown line never grades anything itself.
+  const noteRunSubmitNudge = (rows, error) => {
+    const cid = currentChallenge?.id ?? null;
+    const eligible = runSubmitNudgeEligible({
+      flagOn: window.FF?.feature?.('runSubmitNudge') === true,
+      solvedCount: solvedChallenges.size,
+      challengeSolved: cid != null && solvedChallenges.has(cid),
+      hasRows: Array.isArray(rows) && rows.length > 0,
+      error,
+      mutates: !!currentChallenge?.mutates,
+    });
+    if (!eligible) { setRunSubmitNudge(null); return; }
+    let stored = null;
+    try { stored = JSON.parse(localStorage.getItem(RUN_SUBMIT_NUDGE_KEY) || 'null'); } catch (_) { stored = null; }
+    const decision = runSubmitNudgeDecision({ eligible, stored, aid: getAnonId() });
+    if (!decision.arm) { setRunSubmitNudge(null); return; }
+    if (decision.assign) {
+      try { localStorage.setItem(RUN_SUBMIT_NUDGE_KEY, JSON.stringify({ arm: decision.arm, at: Date.now() })); } catch (_) { /* ignore */ }
+      trackActivationEvent('run_submit_nudge_assigned', { testId: RUN_SUBMIT_NUDGE_TEST_ID, arm: decision.arm, challengeId: cid });
+    }
+    if (!decision.show) { setRunSubmitNudge(null); return; }
+    let matches = false;
+    try {
+      matches = challengeExpected.rows.length > 0 && resultsMatch(rows, challengeExpected.rows, currentChallenge.solution, challengeExpected.columns);
+    } catch (_) { matches = false; }
+    const kind = runSubmitNudgeKind(matches);
+    setRunSubmitNudge({ challengeId: cid, kind });
+    trackActivationEvent('run_submit_nudge_shown', { testId: RUN_SUBMIT_NUDGE_TEST_ID, kind, challengeId: cid });
   };
 
   // ── PostgreSQL mode (spike) ─────────────────────────────────────────────
@@ -25263,7 +26800,11 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
     // before the person has written a line). 2026-11-22.
     if (db && currentChallenge && !challengeQuery.trim() && starterSqlFromHint(challengeStarterHint)) { runChallengeQuery(); return; }
     if (!db || !challengeQuery.trim() || !currentChallenge) return;
-    markChallengeFirstRun('submit');
+    setRunSubmitNudge(null);
+    // The `starter` arm's text submitted as placed is graded like any query —
+    // and can never be a solve (forced wrong below).
+    const starterUntouched = isUntouchedStarter(challengeQuery, challengeRunnableStarter);
+    markChallengeFirstRun('submit', starterUntouched ? { starterUntouched: true } : {});
     setChallengeSubmitAt(Date.now());
     try {
       // For a SELECT challenge, running the user's query then the solution on
@@ -25305,6 +26846,9 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
           expectedResultData.length ? expectedResultData[0].columns : []
         );
       }
+      // `runnableStarter`: the untouched starter is never a solve, whatever
+      // the rows (tests/runnable-starter.test.js runs it over the bank).
+      if (starterUntouched) isSuccess = false;
       const isFirstTry = !solvedChallenges.has(currentChallenge.id);
       
       // Track this attempt. `topics` fans credit across every skill the
@@ -25343,6 +26887,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
         ...(drillTagApplies ? { source: 'drill' } : {}),
       };
       setChallengeAttempts(prev => [...prev, attempt]);
+      if (isDebugChallenge(currentChallenge)) setDebugStats(prev => recordDebugFix(prev, currentChallenge, isSuccess));
       
       // Update recommended difficulty after tracking
       if (isSuccess && isFirstTry) {
@@ -25357,6 +26902,8 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
         setWrongAttemptCount(0);
         setStuckAsk(null);
         setShowAiNudge(false);
+        armOneLayerAtSolve(currentChallenge.id);
+        pathLayerAtSolve();
         addToHistory(challengeQuery, true, `challenge #${currentChallenge.id} ✓`);
         // First-session warm-up momentum: count distinct challenges solved
         // this session (re-solves don't inflate the goal). Fire an event the
@@ -25512,6 +27059,8 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
             // all difficulties (useless for content-quality calibration).
             firstTry: !challengeAttempts.some(a => a.challengeId === currentChallenge.id),
           });
+          // Tournament arm B: the ladder's outcome, or a plan step done.
+          if (pathUi.active) pathOnSolve(currentChallenge, newSolved, { wrongs: wrongAttemptCount, hint: !!(showChallengeHint || showChallengeStructure) });
           if (newSolved.size === 1) {
             trackActivationEvent('first_challenge_solved', {
               challengeId: currentChallenge.id,
@@ -25524,7 +27073,10 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
             // Browser-scoped key on purpose: guest usernames rotate per
             // load, so a user-scoped key would re-fire every session.
             try {
-              if (!localStorage.getItem('sqlquest_intent_asked')) {
+              if (pathUi.suppressAsks) {
+                // Arm B asks nothing until its ladder ends ("seçenek tanımadan").
+                trackActivationEvent('intent_ask_suppressed', { by: 'single_path' });
+              } else if (!localStorage.getItem('sqlquest_intent_asked')) {
                 setTimeout(() => {
                   // The company ask (ask arm) is this solve's one question;
                   // the intent modal would be a second, and it covers the line.
@@ -25642,24 +27194,9 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
           if (isGuest) {
             const solvedTotal = newSolved.size;
             setGuestActionsCount(solvedTotal);
-            const accountRung = ftbFlag('signupAskAtThree') ? 3 : 10;
-            const asked = readGuestAskLadder();
-            if (solvedTotal >= accountRung && !asked.account) {
-              markGuestAsk('account');
-              setTimeout(() => triggerSignupPrompt(accountRung === 3 ? 'third_solve' : 'first_challenge'), 1500);
-            } else if (solvedTotal >= 3 && !softEmailCaptured && !asked.email && !asked.account) {
-              // (2026-11-22) Once the account has been asked for — at 3 with
-              // signupAskAtThree — the email-only ask is the same question
-              // again, one solve later; it is skipped.
-              markGuestAsk('email');
-              setTimeout(() => {
-                if (!softEmailCaptured) setShowSoftEmailCapture(true);
-              }, 1500);
-            } else if (solvedTotal >= 10 && solvedTotal > accountRung && asked.account && solvedTotal % 5 === 0) {
-              // Re-asks start at 10 whichever rung asked first, so moving the
-              // rung to 3 does not add a nudge at 5 (2026-11-22).
-              setTimeout(() => triggerSignupPrompt('progress'), 1500);
-            }
+            // Tournament arm B: nothing is asked on the ladder; the ladder's
+            // end asks at most one (pathFinishLadder, walk fix B1).
+            if (!pathUi.holdSignupAsks) guestSaveAskAfterSolve(solvedTotal);
           }
 
           // Satisfy-first-then-ask: solving the LAST free question in a
@@ -25682,7 +27219,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
               solvedNow.add(currentChallenge.id);
               const allFreeSolved = free.length > 0 && free.every(c => solvedNow.has(c.id));
               const onceKey = `sqlquest_company_complete_${companyFilter}`;
-              if (allFreeSolved && !localStorage.getItem(onceKey)) {
+              if (allFreeSolved && !localStorage.getItem(onceKey) && pathProAskOk('company_set_complete', solvedNow.size)) {
                 localStorage.setItem(onceKey, '1');
                 setTimeout(() => {
                   setProModalReason({
@@ -25842,6 +27379,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
       // graded "Wrong", streak zeroed. The behavioural half of that fix waited
       // for the Aug 3 reads (P6); those are done, so it ships now.
       setChallengeStatus('error');
+      if (isDebugChallenge(currentChallenge)) setDebugStats(prev => recordDebugFix(prev, currentChallenge, false));
       // Surface the SQL error through the diagnostic layer so users get
       // translated, actionable guidance instead of raw SQLite error text.
       try {
@@ -25906,7 +27444,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
     const searchActive = !!(challengeSearch || '').trim();
     return challenges
       .filter(c => {
-        if (searchActive) return true;
+        if (searchActive || debugFilter) return true;
         if (selectedPathStageId === 'all') return true;
         const selectedStage = activeRoadmapStages.find(stage => stage.id === selectedPathStageId);
         if (!selectedStage) return true;
@@ -25949,6 +27487,9 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
       // Skill filter (2026-09-12, P1): one of the nine canonical skills,
       // resolved through the same tag mapping the radar and the drills use.
       .filter(c => !skillFilter || challengeMatchesSkill(c, skillFilter))
+      // The Debug chip: only the AI-wrote-it items (and, like search, across
+      // every path stage).
+      .filter(c => !debugFilter || isDebugChallenge(c))
       .filter(c => {
         // Free-text search — case-insensitive, matches id, title, description,
         // skills, category. Whitespace-trimmed; empty string disables filter.
@@ -26222,7 +27763,8 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
     try { record = JSON.parse(localStorage.getItem(COMPANY_DIRECT_KEY) || 'null'); } catch (_) { record = null; }
     const next = companyFilter ? companyBannerNext() : null;
     const decision = companyDirectDecision({
-      flagOn: window.FF?.feature?.('companyDirectOpen') === true,
+      // A built tournament challenger replaces this test (plan §2.3).
+      flagOn: window.FF?.feature?.('companyDirectOpen') === true && !tournamentSupersedesNow(),
       arrival: !!companyFilter,
       aid: getAnonId(),
       record,
@@ -26235,7 +27777,8 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
         testId: COMPANY_DIRECT_TEST_ID, arm: decision.arm, company: companyFilter, nextId: next ? next.id : null,
       }, { onceKey: 'company_direct_assigned' });
     }
-    if (decision.open && next) {
+    // Tournament arm B supersedes the test and runs its `direct` arm (plan §3.4).
+    if ((decision.open || (pathUi.companyDirect && solvedChallenges.size === 0)) && next) {
       setTimeout(() => openChallenge(next, { openedFrom: 'company_direct' }), 100);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -26752,7 +28295,7 @@ RULES:
                 <div className={className} data-testid="pro-feature-list" style={{ background: '#1F222B', borderRadius: '6px' }}>
                   <p className="text-xs mb-3 font-medium uppercase tracking-wider" style={{ color: '#8A8E99' }}>What you get with Pro:</p>
                   <div className="grid grid-cols-2 gap-3">
-                    {(ftbFlag('freeQuota') ? [`Keep solving past your ${FREE_SOLVE_QUOTA} free — all ${bankCountLabel(challenges.length) || challenges.length} challenges open`] : []).concat(['learning', 'job_ready'].includes(getUserIntent()) ? [
+                    {(freeQuotaOn() ? [`Keep solving past your ${FREE_SOLVE_QUOTA} free — all ${bankCountLabel(challenges.length) || challenges.length} challenges open`] : []).concat(['learning', 'job_ready'].includes(getUserIntent()) ? [
                       'Get unstuck the moment it happens — the tutor reads your wrong query and stays with you; the daily cap lifted',
                       'Build the 30-day habit — full streak path, no Pro paywall mid-week',
                       '200+ warm-up questions — micro-drills for daily fluency',
@@ -26770,7 +28313,7 @@ RULES:
                       'Build the 30-day habit — full streak path, no Pro paywall mid-week',
                       '200+ warm-up questions — micro-drills for daily fluency',
                       'Direct support — questions answered by the person who built it',
-                    ]).map(feat => (
+                    ]).concat(DEBUG_QUESTIONS_ON ? [i18n_t('pro', 'debugFeature')] : []).map(feat => (
                       <div key={feat} className="flex items-start gap-2">
                         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="flex-shrink-0 mt-0.5">
                           <path d="M13.5 4.5L6 12L2.5 8.5" stroke="#8A8E99" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -27559,13 +29102,14 @@ RULES:
       {/* Interview-first: the toast does not render for an interview person.
           unlockAchievement still awards, saves and scores it — hide, never
           withhold. */}
-      {showAchievement && !showSoftEmailCapture && !interviewFirstOn('achievement_toast') && <AchievementPopup achievement={showAchievement} onClose={() => setShowAchievement(null)} />}
+      {showAchievement && !showSoftEmailCapture && !interviewFirstOn('achievement_toast') && oneLayerOk('achievement') && <AchievementPopup achievement={showAchievement} onClose={() => setShowAchievement(null)} bigTargets={oneLayerOn} />}
       {showConfetti && <ConfettiAnimation onComplete={() => setShowConfetti(false)} soundEnabled={soundEnabled} />}
       {floatingXP && <FloatingXP key={floatingXP.id} amount={floatingXP.amount} onComplete={() => setFloatingXP(null)} />}
-      {showLevelUp && <LevelUpBanner levelName={showLevelUp} onComplete={() => setShowLevelUp(null)} />}
-      {milestoneShare && (() => {
+      {showLevelUp && oneLayerOk('level_up') && <LevelUpBanner levelName={showLevelUp} onComplete={() => setShowLevelUp(null)} />}
+      {milestoneShare && oneLayerOk('milestone_share') && (() => {
         const content = getShareContent(milestoneShare.type, milestoneShare.data);
         return <MilestoneShareBar
+          bigTargets={oneLayerOn}
           content={content}
           referralUrl={getAppUrl()}
           onShare={(platform) => { shareToplatform(platform, milestoneShare.type, milestoneShare.data); setMilestoneShare(null); }}
@@ -27578,9 +29122,9 @@ RULES:
       {/* Capture points 2 and 4 (exit_reason, day2): a card above the 💬
           button, never a modal and never over the plans. Stuck renders on the
           challenge page instead. */}
-      {fbPrompt && fbPrompt.kind !== 'stuck' && !showProModal && (
+      {fbPrompt && fbPrompt.kind !== 'stuck' && !showProModal && pathLayerOk('feedback_prompt') && (
         <div className="fixed left-4 right-4 bottom-20 z-40 sm:left-auto sm:right-4 sm:w-[380px] shadow-lg" data-feedback-prompt-slot="global">
-          <FeedbackPromptCard key={`${fbPrompt.kind}-${fbPrompt.trigger}`} kind={fbPrompt.kind} onSend={fbSendPrompt} onSkip={fbSkipPrompt} />
+          <FeedbackPromptCard key={`${fbPrompt.kind}-${fbPrompt.trigger}`} kind={fbPrompt.kind} answered={!!fbPrompt.answered} onSend={fbSendPrompt} onSkip={fbSkipPrompt} />
         </div>
       )}
       <FeedbackWidget
@@ -27597,8 +29141,13 @@ RULES:
         initialTopic={reviewFeedbackTopic}
         onClose={() => { setShowFeedback(false); setReviewFeedbackTopic(null); }}
         onSubmit={submitFeedback}
+        // IR-2: the "goes to the founder / the tutor answers now" line, only
+        // when the widget is open on a challenge screen (feedbackContext).
+        tutorLine={showFeedback && !!feedbackChallengeCtxNow()}
+        onTutor={openTutorFromFeedback}
       />
-      {radarPop && <RadarPopToast
+      {radarPop && oneLayerOk('radar_pop') && <RadarPopToast
+        bigTargets={oneLayerOn}
         pop={radarPop}
         onClose={() => setRadarPop(null)}
         onShare={async () => {
@@ -27643,7 +29192,7 @@ RULES:
           first solve. Style follows DESIGN.md: surface #16181F, 1px #2A2E38,
           radius lg (10), Fraunces for the one line of display type, the
           accent only on the claim button and the XP, and 🔥 the only emoji. */}
-      {streakCardOpen && currentUser && !isGuest && (
+      {streakCardOpen && currentUser && !isGuest && (streakCardOpen !== 'auto' || pathLayerOk('streak_card')) && (
         <div
           data-testid="streak-card"
           role="dialog"
@@ -27660,7 +29209,7 @@ RULES:
               type="button"
               onClick={() => setStreakCardOpen(null)}
               aria-label={i18n_t('streakCard', 'close')}
-              className="text-sm leading-none px-1"
+              className={`text-sm leading-none px-1${oneLayerOn ? ' min-w-[44px] min-h-[44px] flex items-center justify-center' : ''}`}
               style={{ color: '#8A8E99' }}
             >✕</button>
           </div>
@@ -29164,8 +30713,8 @@ RULES:
       {/* One-question intent ask — after first solve, sequenced behind the
           soft email capture. Every answer (including "just exploring") is
           recorded so segmentation has no silent-dismissal blind spot. */}
-      {showIntentAsk && !showSoftEmailCapture && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(14,15,19,0.8)' }}>
+      {showIntentAsk && !showSoftEmailCapture && oneLayerOk('intent_ask') && (
+        <div data-layer="intent_ask" className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(14,15,19,0.8)' }}>
           <div className="w-full max-w-md p-6" style={{ background: '#16181F', border: '1px solid #2A2E38', borderRadius: '10px' }}>
             <h3 className="text-lg font-semibold mb-1" style={{ color: '#F2F0EA' }}>One quick question</h3>
             <p className="text-sm mb-4" style={{ color: '#8A8E99' }}>What brings you to SQL Quest? Your answer shapes what we recommend next.</p>
@@ -29183,7 +30732,7 @@ RULES:
                     setShowIntentAsk(false);
                     applyIntentRouting(key);
                   }}
-                  className="w-full text-left p-3 transition-colors"
+                  className={`w-full text-left p-3 transition-colors${oneLayerOn ? ' min-h-[44px]' : ''}`}
                   style={{ background: '#1F222B', border: '1px solid #2A2E38', borderRadius: '6px', color: '#F2F0EA' }}
                   onMouseEnter={e => { e.currentTarget.style.borderColor = '#8A8E99'; }}
                   onMouseLeave={e => { e.currentTarget.style.borderColor = '#2A2E38'; }}
@@ -29198,7 +30747,7 @@ RULES:
                 trackActivationEvent('intent_captured', { intent: 'exploring', source: 'ask' });
                 setShowIntentAsk(false);
               }}
-              className="w-full text-center text-xs mt-3 underline"
+              className={`w-full text-center text-xs mt-3 underline${oneLayerOn ? ' min-h-[44px]' : ''}`}
               style={{ color: '#8A8E99' }}
             >
               Just exploring
@@ -29206,8 +30755,8 @@ RULES:
           </div>
         </div>
       )}
-      {showSoftEmailCapture && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-3 sm:p-4" onClick={() => { setShowSoftEmailCapture(false); setSoftEmailCaptured(true); }}>
+      {showSoftEmailCapture && oneLayerOk('soft_email') && (
+        <div data-layer="soft_email" className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-3 sm:p-4" onClick={() => { setShowSoftEmailCapture(false); setSoftEmailCaptured(true); }}>
           <div className="bg-gradient-to-br from-gray-900 to-purple-900 rounded-2xl border border-purple-500/50 p-5 sm:p-6 w-full max-w-md overflow-hidden" onClick={e => e.stopPropagation()}>
             <div className="text-center mb-5">
               <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center mx-auto mb-3 text-2xl sm:text-3xl">
@@ -29273,7 +30822,7 @@ RULES:
 
             <button
               onClick={() => { setShowSoftEmailCapture(false); setSoftEmailCaptured(true); }}
-              className="w-full mt-3 py-2 text-gray-400 hover:text-[#F2F0EA] text-sm transition-all"
+              className={`w-full mt-3 py-2 text-gray-400 hover:text-[#F2F0EA] text-sm transition-all${oneLayerOn ? ' min-h-[44px]' : ''}`}
             >
               Not now — keep playing
             </button>
@@ -29287,8 +30836,8 @@ RULES:
       {paymentSuccessModal}
 
       {/* Guest Signup Prompt Modal */}
-      {showSignupPrompt && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setShowSignupPrompt(false)}>
+      {showSignupPrompt && pathLayerOk(pathSignupLayer) && (
+        <div data-layer={pathSignupLayer} className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setShowSignupPrompt(false)}>
           <div className="bg-gradient-to-br from-gray-900 to-purple-900 rounded-2xl border border-purple-500/50 p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
             <div className="text-center mb-6">
               <div className="w-16 h-16 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl">
@@ -31832,6 +33381,11 @@ RULES:
                 <p className="text-sm text-gray-300 leading-relaxed">{interviewFeedback.explanation}</p>
               </div>
             )}
+            {interviewFeedback.gradingNotes && (
+              <div className="text-left bg-gray-800/60 border border-gray-700 rounded-lg p-3 mb-4" data-testid="interview-grading-notes">
+                <p className="text-sm text-gray-300 leading-relaxed">{interviewFeedback.gradingNotes}</p>
+              </div>
+            )}
             {/* The SQL trap page for this question's trap (2026-09-25). New
                 tab: a timed mock must not be lost to a click. */}
             {!interviewFeedback.correct && interviewFeedback.patternSlug && (
@@ -31862,7 +33416,9 @@ RULES:
                 {interviewResults.passed ? '🎉' : '💪'}
               </div>
               <h2 className={`text-3xl font-bold ${interviewResults.passed ? 'text-green-400' : 'text-yellow-400'}`}>
-                {interviewResults.passed ? 'Interview Passed!' : 'Keep Practicing!'}
+                {interviewResults.preview
+                  ? `The free ${interviewResults.preview.free} are done`
+                  : interviewResults.passed ? 'Interview Passed!' : 'Keep Practicing!'}
               </h2>
               <p className="text-gray-400 mt-2">{activeInterview?.title}</p>
             </div>
@@ -32735,8 +34291,8 @@ RULES:
           new tour, creating three overlapping onboarding UIs at once. */}
 
       {/* Milestone Popup */}
-      {milestonePopup && (
-        <div className={`fixed top-20 left-1/2 -translate-x-1/2 z-50 ${milestonePopup.action ? '' : 'animate-bounce'}`}>
+      {milestonePopup && pathLayerOk('milestone_toast') && (
+        <div data-layer="milestone_toast" className={`fixed top-20 left-1/2 -translate-x-1/2 z-50 ${milestonePopup.action ? '' : 'animate-bounce'}`}>
           <div className="bg-gradient-to-r from-yellow-900/90 to-orange-900/90 rounded-xl border-2 border-yellow-500/50 px-6 py-4 shadow-2xl flex items-center gap-4">
             <span className="text-4xl">{milestonePopup.emoji}</span>
             <div>
@@ -32806,7 +34362,7 @@ RULES:
                   {isLastDay ? 'Pro trial ends today' : `${daysLeft} days left in your Pro trial`}
                 </p>
                 <p className="text-xs opacity-80 mt-0.5 truncate">
-                  {ftbFlag('freeQuota')
+                  {freeQuotaOn()
                     ? `Unsolved challenges past your ${FREE_SOLVE_QUOTA} free solves, the Hard set, mock interviews, and the tutor beyond the free daily cap will lock without Pro.`
                     : 'Hard challenges, sector tracks, mock interviews, and the tutor beyond the free daily cap will lock without Pro.'}
                 </p>
@@ -32835,10 +34391,16 @@ RULES:
       })()}
 
       {/* First-challenge onboarding tour (Murat lesson — UI opaque to first-timers) */}
+      {/* 2026-11-23 (payment test): no tour renders while the Pro modal is
+          open. The Challenges tour's tooltip (z 9999) sat over the plans and
+          the trial terms — pinned across the bottom of a phone — whenever a
+          person opened a locked Hard or the header's Pro button before
+          finishing it. The tour waits; it comes back when the modal closes.
+          tests/tour-over-pro-modal.test.js. */}
       {/* 2026-09-14: tours wait for the first solve. Practice is the first
           thing a visitor should do; a spotlight over the start screen was an
           interruption before anything had been earned. */}
-      {showFirstEntryTour && solvedChallenges.size >= 1 && showFirstRunStart && !showIntake && !currentChallenge && !showOnboardingTour && !showAppTour && (
+      {showFirstEntryTour && solvedChallenges.size >= 1 && showFirstRunStart && !showIntake && !currentChallenge && !showOnboardingTour && !showAppTour && !showProModal && (
         <OnboardingTour
           steps={FIRST_ENTRY_ONBOARDING_STEPS}
           onComplete={() => {
@@ -32852,7 +34414,7 @@ RULES:
         />
       )}
 
-      {showChallengesEntryTour && solvedChallenges.size >= 1 && activeTab === 'quests' && !currentChallenge && !(showFirstEntryTour && showFirstRunStart) && !showOnboardingTour && !showAppTour && (
+      {showChallengesEntryTour && solvedChallenges.size >= 1 && activeTab === 'quests' && !currentChallenge && !(showFirstEntryTour && showFirstRunStart) && !showOnboardingTour && !showAppTour && !showProModal && (
         <OnboardingTour
           steps={CHALLENGES_ENTRY_ONBOARDING_STEPS}
           onComplete={() => {
@@ -32866,7 +34428,7 @@ RULES:
         />
       )}
 
-      {showOnboardingTour && currentChallenge && !showFirstRunSimpleShell && (
+      {showOnboardingTour && currentChallenge && !showFirstRunSimpleShell && !showProModal && (
         <OnboardingTour
           steps={CHALLENGE_ONBOARDING_STEPS}
           onComplete={() => {
@@ -32884,7 +34446,7 @@ RULES:
           Mutually exclusive with the challenge tour — if both happened to be
           active at once we'd show two tooltips and two spotlights on top of
           each other. Challenge tour wins since it's the active task. */}
-      {showAppTour && !showOnboardingTour && (
+      {showAppTour && !showOnboardingTour && !showProModal && (
         <OnboardingTour
           steps={APP_ONBOARDING_STEPS}
           onComplete={() => {
@@ -32902,6 +34464,7 @@ RULES:
       {renderOfferAsk()}
       {showProModal && (
         <div
+          data-layer="pro_modal"
           className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
           onClick={() => dismissProModal('backdrop')}
           onKeyDown={e => { if (e.key === 'Escape') dismissProModal('escape'); }}
@@ -32934,6 +34497,8 @@ RULES:
                       ? 'You\'re cooking.'
                       : proModalReason.type === 'company_set'
                       ? `${proModalReason.topic}'s set: three free, the rest is Pro.`
+                      : proModalReason.type === 'case_round'
+                      ? `${proModalReason.freeCount} free, ${Math.max(0, (proModalReason.total || 0) - (proModalReason.freeCount || 0))} to go.`
                       : proModalReason.type === 'free_quota'
                       ? quotaWallHeadline(proModalReason.quota, trialOfferOn)
                       : proModalReason.type === 'coach_mock'
@@ -33030,7 +34595,7 @@ RULES:
                     <div className="mt-3">
                       <p className="font-medium" style={{ color: '#F2F0EA' }}>Welcome back to Free.</p>
                       <p className="text-sm mt-2" style={{ color: '#8A8E99' }}>
-                        {ftbFlag('freeQuota')
+                        {freeQuotaOn()
                           ? `The Coach, Skillmap, daily streak, lessons, warm-ups and every challenge you've solved stay yours. Past ${FREE_SOLVE_QUOTA} free challenge solves, the rest of the bank, the Hard set, mock interviews and the AI tutor without the free tier's daily cap are Pro. Pick up Pro to keep going where you left off.`
                           : 'The Coach, Skillmap, daily streak, and your first ~75 challenges stay yours forever. But Hard challenges, sector tracks, mock interviews, and the AI tutor without the free tier\'s daily cap are now locked. Pick up Pro to keep going where you left off.'}
                       </p>
@@ -33047,6 +34612,17 @@ RULES:
                         The first {proModalReason.freeCount} are free to try. The other {Math.max(0, (proModalReason.setSize || 0) - (proModalReason.freeCount || 0))}
                         {proModalReason.mockTitle ? ` — and the ${proModalReason.mockTitle} — ` : ' '}
                         open with Pro: the set, ranked the way {proModalReason.topic} asks it. Everything you have solved stays yours.
+                      </p>
+                    </div>
+                  ) : proModalReason.type === 'case_round' ? (
+                    // The Metrics & Case Round (2026-11-22): the free
+                    // questions are sat, the rest of the round is Pro.
+                    <div className="mt-3" data-testid="pro-modal-case-round">
+                      <p className="font-medium" style={{ color: '#F2F0EA' }}>
+                        You sat the first {proModalReason.freeCount} of the {proModalReason.topic || 'case round'}.
+                      </p>
+                      <p className="text-sm mt-2" style={{ color: '#8A8E99' }}>
+                        The other {Math.max(0, (proModalReason.total || 0) - (proModalReason.freeCount || 0))} open with Pro: LTV, CAC and CPA, a fraud rate while chargebacks are still arriving, saying a result to someone who does not write SQL, then the SQL for the metrics you defined. Your score on the first {proModalReason.freeCount} stays yours.
                       </p>
                     </div>
                   ) : proModalReason.type === 'free_quota' ? (
@@ -34387,6 +35963,19 @@ RULES:
                         </dd>
                       </div>
                     )}
+                    {DEBUG_QUESTIONS_ON && (() => {
+                      const ds = debugStatsSummary(debugStats);
+                      if (ds.fixesAttempted === 0 && ds.spotsAttempted === 0) return null;
+                      return (
+                        <div className="flex justify-between gap-3" data-testid="profile-debug">
+                          <dt style={{ color: '#8A8E99' }}>{i18n_t('practice', 'debugStatsTitle')}</dt>
+                          <dd className="text-right" style={{ color: '#F2F0EA' }}>
+                            {i18n_t('practice', 'debugStatsFixes', { solved: ds.fixesSolved, n: ds.fixesAttempted })}
+                            {ds.spotsAttempted > 0 ? ` · ${i18n_t('practice', 'debugStatsSpots', { correct: ds.spotsCorrect, n: ds.spotsAttempted })}` : ''}
+                          </dd>
+                        </div>
+                      );
+                    })()}
                     <div className="flex justify-between"><dt style={{ color: '#8A8E99' }}>Streak</dt><dd style={{ color: '#F2F0EA' }}>{streak} {streak === 1 ? 'day' : 'days'}</dd></div>
                     {lastDay && (
                       <div className="flex justify-between"><dt style={{ color: '#8A8E99' }}>Last login</dt><dd style={{ color: '#F2F0EA' }}>{fmt(lastDay)}</dd></div>
@@ -34784,12 +36373,15 @@ RULES:
           </div>
           {showSimpleLearningShell && (
             <div className="ml-auto flex items-center gap-2">
+              {/* Tournament arm B: no step label; the ladder line says where you are. */}
+              {!pathUi.active && (
               <span className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 text-xs font-bold text-cyan-200">
                 {showFoundationsFocusShell
                   ? activeFoundationsLessonForShell.eyebrow.replace(/^Foundations\s+/i, '').replace(/^lesson/i, 'Lesson')
                   : activeTab === 'quests' ? 'Challenges'
                   : currentChallenge ? 'Step 2 of 2' : 'Step 1 of 2'}
               </span>
+              )}
             </div>
           )}
           
@@ -35252,12 +36844,16 @@ RULES:
           </div>
         )}
 
+        {/* Tournament arm B: the plan line on every tab, every session (B5). */}
+        {pathUi.showPlanLine && renderPathPlanLine()}
+        {/* Tournament arm D: the sprint screen first (plan §4). */}
+        {pathUi.sprintSetup && renderPathSprintSetup()}
         {showPrimaryLearningTabs && (
           <>
             <div
               data-primary-learning-tabs="true"
               data-primary-learning-shell={showFoundationsFocusShell || showLessonAdjacentChallengesShell ? 'lesson-one' : 'default'}
-              className={`mb-4 grid ${showInterviewNav ? 'grid-cols-3' : 'grid-cols-2'} gap-2 rounded-xl border border-slate-700 bg-slate-950/75 p-1.5`}
+              className={`mb-4 grid ${showInterviewNav ? 'grid-cols-[repeat(3,minmax(min-content,1fr))] sm:grid-cols-3' : 'grid-cols-2'} gap-1 sm:gap-2 rounded-xl border border-slate-700 bg-slate-950/75 p-1.5`}
             >
               <button
                 type="button"
@@ -35266,13 +36862,13 @@ RULES:
                   setActiveTab('guide');
                   setCurrentChallenge(null);
                 }}
-                className={`min-h-[54px] rounded-lg px-3 py-2 text-left transition-all ${
+                className={`min-h-[54px] min-w-0 rounded-lg px-2 py-2 text-left sm:px-3 transition-all ${
                   activeTab !== 'quests' && activeTab !== 'trials'
                     ? 'border border-slate-500 bg-slate-800 text-[#F2F0EA]'
                     : 'border border-transparent bg-transparent text-slate-300 hover:border-slate-600 hover:bg-slate-900 hover:text-[#F2F0EA]'
                 }`}
               >
-                <span className="flex items-center justify-between gap-2">
+                <span className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
                   <span className="text-sm font-bold">Learning Path</span>
                   <span className="hidden rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-200 sm:inline">
                     Recommended
@@ -35289,13 +36885,13 @@ RULES:
                   setPracticeSubTab('challenges');
                   setActiveTab('quests');
                 }}
-                className={`min-h-[54px] rounded-lg px-3 py-2 text-left transition-all ${
+                className={`min-h-[54px] min-w-0 rounded-lg px-2 py-2 text-left sm:px-3 transition-all ${
                   activeTab === 'quests'
                     ? 'border border-slate-500 bg-slate-800 text-[#F2F0EA]'
                     : 'border border-transparent bg-transparent text-slate-300 hover:border-slate-600 hover:bg-slate-900 hover:text-[#F2F0EA]'
                 }`}
               >
-                <span className="flex items-center justify-between gap-2">
+                <span className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
                   <span className="text-sm font-bold">Challenges</span>
                   <span className="rounded-full border border-slate-600 bg-slate-900 px-2 py-0.5 text-[10px] font-bold text-slate-300">
                     {challenges.length}
@@ -35312,13 +36908,13 @@ RULES:
                     setCurrentChallenge(null);
                     setActiveTab('trials');
                   }}
-                  className={`min-h-[54px] rounded-lg px-3 py-2 text-left transition-all ${
+                  className={`min-h-[54px] min-w-0 rounded-lg px-2 py-2 text-left sm:px-3 transition-all ${
                     activeTab === 'trials'
                       ? 'border border-slate-500 bg-slate-800 text-[#F2F0EA]'
                       : 'border border-transparent bg-transparent text-slate-300 hover:border-slate-600 hover:bg-slate-900 hover:text-[#F2F0EA]'
                   }`}
                 >
-                  <span className="flex items-center justify-between gap-2">
+                  <span className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
                     <span className="text-sm font-bold">{i18n_t('nav', 'interview')}</span>
                     <span className="rounded-full border border-slate-600 bg-slate-900 px-2 py-0.5 text-[10px] font-bold text-slate-300">
                       {mockInterviews.length}
@@ -35337,7 +36933,7 @@ RULES:
         )}
 
         {/* Guest Mode Banner */}
-        {isGuest && !showSimpleLearningShell && (
+        {isGuest && !showSimpleLearningShell && !pathUi.hideGuestBanner && (
           <div data-guest-mode-banner="true" className="mb-4 p-3 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/30 rounded-xl flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-yellow-500/20 rounded-lg flex items-center justify-center">
@@ -35375,7 +36971,9 @@ RULES:
             Copy is intentionally still English-only, matching what shipped
             before — translating the first-run shell is its own change with its
             own TR review, and this commit is about the layout. */}
-        {showFirstRunSimpleShell && currentChallenge && (
+        {/* Tournament arm B: one grey line replaces the first-run banner (B1). */}
+        {pathUi.ladderActive && currentChallenge && renderPathLadderLine()}
+        {showFirstRunSimpleShell && currentChallenge && !pathUi.active && (
           <div className="mb-3 rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-4 py-3">
             {/* Label and actions, not label + prose + actions. A flex-1
                 paragraph between two fixed-width items gets crushed into a
@@ -35984,6 +37582,9 @@ RULES:
                   countdown / quota / retrieval flags. Pure half:
                   src/utils/practice-plan.js. */}
               {(() => {
+                // Tournament arms B / D: the path line is this person's plan;
+                // never a second one beside it (walk fixes D3 and B round 2).
+                if (pathUi.hideCoachPlan) return null;
                 const bank = window.challengesData || challenges || [];
                 const plan = buildPracticePlan({
                   company: prepTarget.company || companyFilter || null,
@@ -36045,16 +37646,103 @@ RULES:
                       ))}
                     </div>
                     <p className="mt-3 text-xs" style={{ color: '#8A8E99' }} data-testid="plan-remaining">
-                      {i18n_t('plan', ftbFlag('freeQuota') ? 'remainingQuota' : 'remaining', { done: plan.solvedInScope, total: plan.totalInScope })}
+                      {i18n_t('plan', freeQuotaOn() ? 'remainingQuota' : 'remaining', { done: plan.solvedInScope, total: plan.totalInScope })}
                     </p>
                   </div>
                 );
               })()}
 
+              {/* ── The Debug door (coachDebugDoor, orchestrator 2026-11-25) ──
+                  One card: "Fix a query an AI wrote". It sits right under
+                  "Your plan" and above the roadmap, NOT under the goal's
+                  next-step card as first specified: that slot measured
+                  2,369-2,752 px down at 1024x900 (below the 1,354 px
+                  roadmap and Focus Tracks), deeper than the Practice chip
+                  that got 0 clicks at ~940 px. Here it is at ~500 px.
+                  The pick is curriculum-ordered and prefers an item the person
+                  may open (the same lock tests openChallenge applies); the
+                  click always goes through openChallenge, so a locked pick
+                  meets the wall exactly as any open does. Hidden for a hired
+                  person (First 90 Days owns their Coach), before the first
+                  solve, and once all Debug items are solved. Secondary
+                  styling: the next-step card holds the Coach's one accent CTA. */}
+              {(() => {
+                const door = coachDebugDoorModel({
+                  doorOn: COACH_DEBUG_DOOR_ON,
+                  debugOn: DEBUG_QUESTIONS_ON,
+                  challenges,
+                  solved: solvedChallenges,
+                  solveCount: solvedChallenges.size,
+                  order: SQL_ROADMAP_CHALLENGE_ORDER,
+                  isLocked: c => isContentLocked('challenge', c) || freeQuotaSpent(),
+                  hired,
+                });
+                if (!door) return null;
+                const doorCh = door.challenge;
+                const doorTitle = localizeChallenge(doorCh, resolveLang()).title;
+                return (
+                  <div
+                    className="rounded-xl p-4 mb-4"
+                    style={{ background: '#16181F', border: '1px solid #2A2E38' }}
+                    data-testid="coach-debug-door"
+                    ref={(el) => {
+                      if (!el) return;
+                      try {
+                        const k = 'sqlquest_debug_door_shown_' + new Date().toISOString().slice(0, 10);
+                        if (sessionStorage.getItem(k)) return;
+                        sessionStorage.setItem(k, '1');
+                        trackActivationEvent('coach_debug_door_shown', { challengeId: doorCh.id, locked: door.locked, solvedInSet: door.solved, setSize: door.total });
+                      } catch (_) {}
+                    }}
+                  >
+                    <p lang={getCurrentLang()} className="text-[11px] uppercase tracking-wider mb-1" style={{ color: '#8A8E99' }}>{i18n_t('coach', 'debugDoorEyebrow')}</p>
+                    <p className="text-base font-bold" style={{ color: '#F2F0EA' }}>{i18n_t('coach', 'debugDoorTitle')}</p>
+                    <p className="text-xs mt-1" style={{ color: '#8A8E99' }}>{i18n_t('coach', 'debugDoorWhy')}</p>
+                    <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                      <p className="text-xs min-w-0" style={{ color: '#8A8E99' }}>
+                        <span style={{ color: '#F2F0EA' }}>{doorTitle}</span>
+                        {' · '}{doorCh.difficulty}
+                        {door.locked ? <span data-testid="coach-debug-door-locked">{' · '}{i18n_t('coach', 'debugDoorLocked')}</span> : null}
+                      </p>
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          data-testid="coach-debug-door-all"
+                          onClick={() => {
+                            trackActivationEvent('coach_debug_door_clicked', { challengeId: null, target: 'see_all' });
+                            setDebugFilter(true);
+                            setActiveTab('quests');
+                            setPracticeSubTab('challenges');
+                          }}
+                          className="text-xs underline"
+                          style={{ color: '#8A8E99' }}
+                        >
+                          {i18n_t('coach', 'debugDoorSeeAll', { n: door.total })}
+                        </button>
+                        <button
+                          type="button"
+                          data-testid="coach-debug-door-open"
+                          onClick={() => {
+                            trackActivationEvent('coach_debug_door_clicked', { challengeId: doorCh.id, target: 'item', locked: door.locked });
+                            setActiveTab('quests');
+                            setPracticeSubTab('challenges');
+                            setTimeout(() => openChallenge(doorCh, { openedFrom: 'coach_debug_door' }), 50);
+                          }}
+                          className="px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap"
+                          style={{ background: '#1F222B', border: '1px solid #2A2E38', color: '#F2F0EA' }}
+                        >
+                          {i18n_t('coach', 'debugDoorCTA')}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
               {renderSqlRoadmap()}
               {renderFoundationsRoadmapLesson()}
 
-              {!coachState?.goalId && (
+              {/* Tournament arms B / D: the plan is the goal — no picker beside it (walk fix round 2). */}
+              {!coachState?.goalId && !pathUi.hideGoalPicker && (
                 <div ref={(el) => {
                   // The picker actually rendered — the moment the funnel's
                   // middle step becomes observable. Ref callback rather than
@@ -36131,7 +37819,9 @@ RULES:
                   Added 2026-04-22 at Elena's request: she wanted to master
                   these skills before going Pro. Tracks expose free-preview
                   Hard challenges (freePreview flag) so non-Pro users get a
-                  real taste of advanced content. */}
+                  real taste of advanced content. Tournament arms B / D:
+                  hidden beside the plan (walk fix round 2). */}
+              {!pathUi.hideGoalPicker && (
               <div className="bg-black/30 rounded-xl border border-gray-700 p-5 mb-4">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-2xl">🎯</span>
@@ -36258,6 +37948,7 @@ RULES:
                   );
                 })}
               </div>
+              )}
 
               {activeGoal && (
                 <div className="bg-gradient-to-br from-purple-500/10 to-cyan-500/10 rounded-xl border border-purple-500/30 p-5 mb-4">
@@ -36784,6 +38475,22 @@ RULES:
                   </div>
                 );
               })()}
+              {/* ── Debug practice (debugQuestions, design PR #248) ── the two
+                  rates from debugStats, once the person has tried an item.
+                  Its own stat, not a Skillmap axis (decision 2026-11-22). */}
+              {DEBUG_QUESTIONS_ON && (() => {
+                const ds = debugStatsSummary(debugStats);
+                if (ds.fixesAttempted === 0 && ds.spotsAttempted === 0) return null;
+                return (
+                  <div className="bg-gray-900/60 rounded-xl border border-gray-700 p-4 mb-4" data-testid="coach-debug-stats">
+                    <p lang={getCurrentLang()} className="text-xs uppercase tracking-wide mb-2" style={{ color: '#8A8E99' }}>{i18n_t('practice', 'debugStatsTitle')}</p>
+                    <p className="text-sm" style={{ color: '#F2F0EA' }}>{i18n_t('practice', 'debugStatsFixes', { solved: ds.fixesSolved, n: ds.fixesAttempted })}</p>
+                    {ds.spotsAttempted > 0 && (
+                      <p className="text-sm mt-1" style={{ color: '#F2F0EA' }}>{i18n_t('practice', 'debugStatsSpots', { correct: ds.spotsCorrect, n: ds.spotsAttempted })}</p>
+                    )}
+                  </div>
+                );
+              })()}
               {/* ── Due today · spaced retrieval (P2, 2026-09-12, `spacedRetrievalCard`) ──
                   Weak canonical skills come back 3, 7 and 14 days after they
                   were last practised (src/utils/spaced-retrieval.js), each with
@@ -36948,7 +38655,7 @@ RULES:
                   users never learn Pro exists (5 modal impressions/week). */}
               {!userProStatus && (
                 <div className="flex items-center justify-between gap-3 rounded-lg border border-[#2A2E38] bg-[#16181F] px-4 py-2.5 mb-4">
-                  <p className="text-xs text-gray-400 truncate">{i18n_t('pro', ftbFlag('freeQuota') ? 'coachStripLineQuota' : 'coachStripLine', { quota: FREE_SOLVE_QUOTA })}</p>
+                  <p className="text-xs text-gray-400 truncate">{i18n_t('pro', freeQuotaOn() ? 'coachStripLineQuota' : 'coachStripLine', { quota: FREE_SOLVE_QUOTA })}</p>
                   <button
                     onClick={() => { setProModalReason({ type: ftbFlag('paywallMoments') ? 'coach_strip' : 'generic', topic: null, solvedCount: ftbFlag('paywallMoments') ? solvedChallenges.size : 0 }); setShowProModal(true); }}
                     className="text-xs font-bold text-[#FFE34D] hover:underline whitespace-nowrap"
@@ -38722,7 +40429,7 @@ RULES:
                               if (freeSolved === 0) {
                                 // Under the quota "N free" would promise more than
                                 // FREE_SOLVE_QUOTA solves; say what is open and what the quota is.
-                                if (ftbFlag('freeQuota')) {
+                                if (freeQuotaOn()) {
                                   return `${free.length} open on the free tier + ${proCount} Pro challenges below, ranked by difficulty. Your first ${FREE_SOLVE_QUOTA} challenge solves are free — pick any one to start, no signup required.`;
                                 }
                                 return `${free.length} free + ${proCount} Pro challenges below, ranked by difficulty. Pick any one to start — no signup required.`;
@@ -38789,7 +40496,7 @@ RULES:
                               <span className="text-sm text-gray-400">
                                 {i18n_t('challenges', 'solvedCount', { n: scopeSolved, total: scopeTotal })}
                                 {companyFilter ? ` ${companyFilter}` : ''}
-                                {ftbFlag('freeQuota') && !isPro ? (
+                                {freeQuotaOn() && !isPro ? (
                                   <span data-testid="free-quota-counter"> · {Math.min(solvedChallenges.size, FREE_SOLVE_QUOTA)} of {FREE_SOLVE_QUOTA} free solves used</span>
                                 ) : null}
                               </span>
@@ -38953,6 +40660,27 @@ RULES:
                             </button>
                           ))}
                         </div>
+
+                        {/* The Debug chip (debugQuestions, design PR #248): the
+                            "an AI wrote this query, fix it" items only. */}
+                        {DEBUG_QUESTIONS_ON && (
+                          <div className="flex flex-wrap gap-2 mt-2 items-center">
+                            <span className="text-xs text-gray-500 self-center mr-1 w-16">{tPractice('type')}:</span>
+                            <button
+                              type="button"
+                              data-testid="practice-debug-chip"
+                              aria-pressed={debugFilter}
+                              onClick={() => {
+                                const next = !debugFilter;
+                                setDebugFilter(next);
+                                if (next) trackActivationEvent('debug_filter_on', {});
+                              }}
+                              className={`px-3 py-1 rounded-lg text-sm font-medium transition-all ${debugFilter ? 'bg-orange-500 text-[#F2F0EA]' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
+                            >
+                              {i18n_t('practice', 'debugFilter')}
+                            </button>
+                          </div>
+                        )}
 
                         {/* Tier 3: More filters expander (Company + Sector) */}
                         <div className="mt-3">
@@ -39199,7 +40927,7 @@ RULES:
                             and Serge lost an evening to it on 2026-07-26. Search now
                             escapes the filter on its own; this is the browse-path
                             escape hatch. */}
-                        {challengePathFilter === 'recommended' && !(challengeSearch || '').trim() && (() => {
+                        {challengePathFilter === 'recommended' && !(challengeSearch || '').trim() && !debugFilter && (() => {
                           const total = challenges.length;
                           const filtered = getFilteredChallenges().length;
                           if (filtered >= total) return null;
@@ -39346,11 +41074,12 @@ RULES:
                       const isStarted = !isSolved && startedIds.has(c.id);
                       // Free-tier boundary M1: in a company view under
                       // `companySetGate`, everything past the free three that
-                      // is not already solved wears the same lock as a Hard.
+                      // is not already solved wears the same lock as a Hard —
+                      // in an authored set's view only (Capital One, Revolut).
                       const isLocked = isContentLocked('challenge', c)
-                        || companySetGate({ flagOn: ftbFlag('companySetGate'), isPro, companyFilter, challenge: c, scoped: companyScopedChallenges(), solved: solvedChallenges }).gated;
+                        || companySetGate({ flagOn: ftbFlag('companySetGate'), isPro, companyFilter, authored: companyHasAuthoredSet(companyFilter), challenge: c, scoped: companyScopedChallenges(), solved: solvedChallenges }).gated;
                       // Free quota (`freeQuota`): past ten solves every unsolved row wears the lock too.
-                      const isQuotaLocked = quotaGate({ flagOn: ftbFlag('freeQuota'), isPro, solvedCount: solvedChallenges.size, alreadySolved: isSolved }).gated;
+                      const isQuotaLocked = quotaGate({ flagOn: freeQuotaOn(), isPro, solvedCount: solvedChallenges.size, alreadySolved: isSolved }).gated;
                       // A free Hard preview, shown to someone it is a preview
                       // FOR. Pro users never see the tag or the blue border.
                       const isPreview = !isPro && isFreePreview(c) && !isQuotaLocked;
@@ -39403,6 +41132,11 @@ RULES:
                               {isStarted && (
                                 <span className="text-xs font-bold text-orange-400 bg-orange-500/15 px-2 py-0.5 rounded" title="You started this but haven't finished yet">
                                   {i18n_t('practice', 'startedTag')}
+                                </span>
+                              )}
+                              {isDebugChallenge(c) && (
+                                <span className="text-xs font-bold text-purple-300 bg-purple-500/15 px-2 py-0.5 rounded" data-testid="debug-badge">
+                                  {i18n_t('practice', 'debugBadge')}
                                 </span>
                               )}
                               <span className={`text-xs font-bold ${diffColor}`}>{c.difficulty === 'Easy' || c.difficulty === 'Medium' || c.difficulty === 'Hard' ? i18n_t('practice', c.difficulty.toLowerCase()) : c.difficulty}</span>
@@ -39653,6 +41387,21 @@ RULES:
                   </div>
                   )}
                   
+                  {/* The deep-link swap note sits ABOVE the problem (QA 2026-11-23,
+                      D2): below the editor, a phone visitor read a different
+                      question before learning why it was not the one linked.
+                      "Same kind" only when previewSwapMatch found a defining
+                      tag in common; otherwise it says plainly it is different. */}
+                  {deepLinkSwapNote && currentChallenge && currentChallenge.id === deepLinkSwapNote.toId && (
+                    <div className="p-3 rounded-lg" style={{ background: 'rgba(124,58,237,.08)', border: '1px solid rgba(124,58,237,.3)' }} data-testid="deeplink-swap-note" data-same-kind={deepLinkSwapNote.sameKind ? 'true' : 'false'}>
+                      <p className="text-sm" style={{ color: '#E2E8F0' }}>
+                        {deepLinkSwapNote.sameKind
+                          ? `“${deepLinkSwapNote.fromTitle}” is part of Pro. This free Hard question also uses ${deepLinkSwapNote.shared.join(' and ')} — a good first one.`
+                          : `“${deepLinkSwapNote.fromTitle}” is part of Pro. This is a different question, a free Hard one, to start with.`}
+                      </p>
+                    </div>
+                  )}
+
                   {/* Problem Description */}
                   <div className="bg-black/30 rounded-xl border border-gray-700 p-4" data-onboarding="problem">
                     {/* The grading engine used to be invisible, and blurbs
@@ -39781,7 +41530,7 @@ RULES:
                             {showChallengeStructure ? `🙈 ${i18n_t('practice', 'hideStructure')}` : `🧩 ${i18n_t('practice', 'showStructure')}`}
                           </button>
                         )}
-                        <button onClick={() => { if (!showChallengeHint && currentChallenge) trackActivationEvent('challenge_hint_opened', { challengeId: currentChallenge.id, difficulty: currentChallenge.difficulty }); setShowChallengeHint(!showChallengeHint); }} className="text-sm text-yellow-400 hover:text-yellow-300">
+                        <button onClick={() => { if (!showChallengeHint) chLeftNote('hintOpened'); if (!showChallengeHint && currentChallenge) trackActivationEvent('challenge_hint_opened', { challengeId: currentChallenge.id, difficulty: currentChallenge.difficulty }); setShowChallengeHint(!showChallengeHint); }} className="text-sm text-yellow-400 hover:text-yellow-300">
                           {showChallengeHint ? `🙈 ${i18n_t('practice', 'hideHint')}` : `💡 ${i18n_t('practice', 'showHint')}`}
                         </button>
                       </div>
@@ -39830,12 +41579,36 @@ RULES:
                       </div>
                     )}
 
-                    {deepLinkSwapNote && currentChallenge && currentChallenge.id === deepLinkSwapNote.toId && (
-                      <div className="mb-3 p-2 rounded-lg" style={{ background: 'rgba(124,58,237,.08)', border: '1px solid rgba(124,58,237,.3)' }} data-testid="deeplink-swap-note">
-                        <p className="text-sm" style={{ color: '#E2E8F0' }}>“{deepLinkSwapNote.fromTitle}” is part of Pro. This is a free Hard question of the same kind — a good first one.</p>
-                      </div>
-                    )}
-
+                    {/* A Debug item (debugQuestions): the framing, the optional
+                        spot step (a tap on a line number, scored only in
+                        debugStats — never a gate) and the way back to the
+                        AI's query. */}
+                    {isDebugChallenge(currentChallenge) && (() => {
+                      const spot = (debugStats.spots || {})[String(currentChallenge.id)] || null;
+                      return (
+                        <div className="mb-3 p-3 rounded-lg" style={{ background: 'rgba(124,58,237,.08)', border: '1px solid rgba(124,58,237,.3)' }} data-testid="debug-framing">
+                          <p className="text-sm font-medium" style={{ color: '#E2E8F0' }}>{i18n_t('practice', 'debugFraming')}</p>
+                          <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                            <p className="text-xs" style={{ color: spot ? (spot.correct ? '#4ADE80' : '#8A8E99') : '#8A8E99' }} data-testid="debug-spot-line">
+                              {spot
+                                ? i18n_t('practice', spot.correct ? 'debugSpotRight' : 'debugSpotWrong', { line: spot.line })
+                                : i18n_t('practice', 'debugSpotPrompt')}
+                            </p>
+                            <button
+                              type="button"
+                              data-testid="debug-reset"
+                              onClick={() => {
+                                updateChallengeQuery(brokenQueryFor(currentChallenge, lang));
+                                trackActivationEvent('debug_reset', { challengeId: currentChallenge.id });
+                              }}
+                              className="text-xs font-medium text-purple-300 hover:text-purple-200 underline underline-offset-2"
+                            >
+                              {i18n_t('practice', 'debugReset')}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })()}
                     {postgresModeOn && (
                       <div className="mb-2" data-testid="sql-engine-toggle">
                         <div className="flex items-center gap-2 flex-wrap text-xs">
@@ -39871,12 +41644,31 @@ RULES:
                     <div data-scroll-target="challenge-editor">
                       <SQLEditor
                         value={challengeQuery}
-                        onChange={val => updateChallengeQuery(val)}
+                        onChange={val => { chLeftRef.current = noteTyped(chLeftRef.current, challengeQuery, val); updateChallengeQuery(val); }}
                         onKeyDown={(e) => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); submitChallenge(); }}}
                         placeholder={challengeStarterHint || i18n_t('practice', 'editorPlaceholder')}
-                        height="14rem"
+                        selectAllWhen={challengeRunnableStarter}
+                        height={isDebugChallenge(currentChallenge) ? '18rem' : '14rem'}
+                        lineNumbers={isDebugChallenge(currentChallenge)}
+                        className={isDebugChallenge(currentChallenge) ? 'sql-cm-debug' : ''}
+                        onGutterClick={isDebugChallenge(currentChallenge) ? (line) => {
+                          const already = !!(debugStats.spots || {})[String(currentChallenge.id)];
+                          if (already) return;
+                          const next = recordDebugSpot(debugStats, currentChallenge, line);
+                          setDebugStats(next);
+                          const rec = next.spots[String(currentChallenge.id)];
+                          trackActivationEvent('debug_spot', { challengeId: currentChallenge.id, line, correct: !!(rec && rec.correct), bugKind: currentChallenge.bugKind });
+                        } : null}
+                        markLines={isDebugChallenge(currentChallenge) && (debugStats.spots || {})[String(currentChallenge.id)] ? [(debugStats.spots || {})[String(currentChallenge.id)].line] : null}
                       />
                     </div>
+                    {/* `runnableStarter` (2026-11-26): one grey line in the
+                        `starter` arm while the editor holds the starter as
+                        placed and nothing has run yet. Body type, no accent
+                        (DESIGN.md). */}
+                    {isUntouchedStarter(challengeQuery, challengeRunnableStarter) && !firstRunSentRef.current.has(currentChallenge.id) && (
+                      <p data-testid="runnable-starter-line" className="mt-2 text-sm text-gray-400">{i18n_t('practice', 'runnableStarterLine')}</p>
+                    )}
                     
                     {/* Sticky on mobile, normal flow from md up.
 
@@ -39889,12 +41681,42 @@ RULES:
                         Surface + hairline per DESIGN.md (--surface #16181F,
                         --border #2A2E38). Submit keeps the accent because it is
                         a primary CTA, which is one of the five places yellow is
-                        allowed. No new accent surface is introduced. */}
-                    <div className="sticky bottom-0 z-20 flex gap-2 mt-3 border-t border-[#2A2E38] bg-[#16181F] py-3 md:static md:border-0 md:bg-transparent md:py-0">
-                      <button onClick={runChallengeQuery} data-onboarding="run" className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium flex items-center justify-center gap-2">
+                        allowed. No new accent surface is introduced.
+
+                        `mobileRunBar` (2026-11-23): sticky only holds inside
+                        this card, which starts below the fold, so on a phone
+                        Run was still off the first screen and fully under the
+                        keyboard. In the `bar` arm, below `md` only, the bar is
+                        fixed to the viewport (safe-area padded) and lifted
+                        above the keyboard by visualViewport; body[data-run-bar]
+                        pads the page so nothing sits under it. The control arm
+                        keeps the class string below; `md:` and up is the same
+                        static row in both arms.
+
+                        Run and Submit are at least 44 px tall below `md` in
+                        both arms (QA D3, 2026-11-23: they were 40 px). */}
+                    <div
+                      ref={mobileRunBarShown ? mobileRunBarRef : undefined}
+                      data-run-bar-arm={mobileRunBarShown ? 'bar' : undefined}
+                      style={mobileRunBarShown && runBarKeyboardOffset > 0 ? { transform: `translateY(-${runBarKeyboardOffset}px)` } : undefined}
+                      className={mobileRunBarShown
+                        ? 'fixed inset-x-0 bottom-0 z-30 flex flex-wrap gap-2 mt-3 border-t border-[#2A2E38] bg-[#16181F] px-4 pt-3 pb-[max(12px,env(safe-area-inset-bottom))] md:static md:z-20 md:flex-nowrap md:border-0 md:bg-transparent md:px-0 md:py-0'
+                        : 'sticky bottom-0 z-20 flex gap-2 mt-3 border-t border-[#2A2E38] bg-[#16181F] py-3 md:static md:border-0 md:bg-transparent md:py-0'}
+                    >
+                      {mobileRunBarShown && (() => {
+                        const labelKey = runBarLabel({
+                          solvedCount: solvedChallenges.size,
+                          editorEmpty: !challengeQuery.trim(),
+                          starterSql: starterSqlFromHint(challengeStarterHint),
+                        });
+                        return labelKey ? (
+                          <p data-testid="run-bar-label" className="basis-full text-xs text-gray-400 md:hidden">{i18n_t('practice', labelKey)}</p>
+                        ) : null;
+                      })()}
+                      <button onClick={runChallengeQuery} data-onboarding="run" className="flex-1 min-h-[44px] md:min-h-0 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium flex items-center justify-center gap-2">
                         <Play size={16} /> {i18n_t('practice', 'run')}
                       </button>
-                      <button onClick={submitChallenge} data-onboarding="submit" className="flex-1 px-4 py-2 bg-yellow-400 hover:bg-yellow-300 text-[#0E0F13] rounded-lg font-bold flex items-center justify-center gap-2">
+                      <button onClick={submitChallenge} data-onboarding="submit" className="flex-1 min-h-[44px] md:min-h-0 px-4 py-2 bg-yellow-400 hover:bg-yellow-300 text-[#0E0F13] rounded-lg font-bold flex items-center justify-center gap-2">
                         <CheckCircle size={16} /> {i18n_t('practice', 'submit')}
                       </button>
                       {/* Always-visible Help button — was gated by currentUser
@@ -39927,8 +41749,30 @@ RULES:
                       minutes open, no run. The wrong-submit trigger sits inside
                       the third-try card below, so it is one card, not two. */}
                   {fbPrompt?.kind === 'stuck' && fbPrompt.trigger === 'no_run_3m' && fbPrompt.challengeId === currentChallenge.id && (
-                    <FeedbackPromptCard key={`stuck-${currentChallenge.id}`} kind="stuck" onSend={fbSendPrompt} onSkip={fbSkipPrompt} />
+                    <FeedbackPromptCard key={`stuck-${currentChallenge.id}`} kind="stuck" answered={!!fbPrompt.answered} onSend={fbSendPrompt} onSkip={fbSkipPrompt} />
                   )}
+                  {/* A Debug solve: one line naming the bug, and its trap page
+                      where one exists. */}
+                  {challengeStatus === 'success' && isDebugChallenge(currentChallenge) && (() => {
+                    const bug = debugBugLine(currentChallenge, lang);
+                    if (!bug) return null;
+                    return (
+                      <div className="p-3 rounded-lg" style={{ background: '#16181F', border: '1px solid #2A2E38' }} data-testid="debug-bug-line">
+                        <p className="text-sm" style={{ color: '#E2E8F0' }}>
+                          <span className="font-bold">{i18n_t('practice', 'debugBugWas')}</span> {bug.text}
+                          {bug.trapHref && (
+                            <>
+                              {' '}
+                              <a href={bug.trapHref} target="_blank" rel="noopener" className="text-purple-300 underline underline-offset-2 hover:text-purple-200"
+                                onClick={() => trackActivationEvent('debug_trap_clicked', { challengeId: currentChallenge.id, trap: currentChallenge.trap })}>
+                                {i18n_t('practice', 'debugTrapLink')}
+                              </a>
+                            </>
+                          )}
+                        </p>
+                      </div>
+                    );
+                  })()}
                   {/* Result Status */}
                   {challengeStatus && (
                     <div className={`p-4 rounded-xl border ${challengeStatus === 'success' ? 'bg-green-500/10 border-green-500/50' : challengeStatus === 'error' ? 'bg-amber-500/10 border-amber-500/50' : 'bg-red-500/10 border-red-500/50'}`}>
@@ -39977,7 +41821,7 @@ RULES:
                             // Free quota (`freeQuota`): once this solve spends the
                             // quota the other previews are locked — never say "N
                             // more are free" then; the last-one line reads true.
-                            const quotaNowSpent = quotaGate({ flagOn: ftbFlag('freeQuota'), isPro, solvedCount: solvedNow.size }).gated;
+                            const quotaNowSpent = quotaGate({ flagOn: freeQuotaOn(), isPro, solvedCount: solvedNow.size }).gated;
                             const remaining = (counts.previewUnsolved === 0 || quotaNowSpent)
                               ? i18n_t('paywall', 'winRemainingLast')
                               : counts.previewUnsolved === 1
@@ -40006,7 +41850,10 @@ RULES:
                               the loop that turns 1 solve into the 3+ that
                               predict activation. Accent (yellow) reserved for
                               the win state per DESIGN.md. */}
+                          {/* Tournament arm B: one button after a solve (B2 / B5). */}
+                          {pathUi.active && renderPathVerdictNext()}
                           {(() => {
+                            if (pathUi.suppressNextStrip) return null;
                             const n = sessionSolvedIds.size;
                             if (n > WARMUP_GOAL) return null;
                             const done = n >= WARMUP_GOAL;
@@ -40044,7 +41891,7 @@ RULES:
                           })()}
                           {/* After the first solve, offer a quick opt-in tour of the
                               rest of the app (Coach, Interview, Board, Profile). */}
-                          {showAppTourBadge && (
+                          {showAppTourBadge && !pathUi.suppressTour && (
                             <div className="mb-3 p-3 rounded-lg border border-yellow-400/60 bg-yellow-400/10 flex items-center gap-3 animate-pulse">
                               <span className="text-2xl">💡</span>
                               <div className="flex-1 min-w-0">
@@ -40074,7 +41921,7 @@ RULES:
                               </button>
                             </div>
                           )}
-                          {renderCompanyAsk()}
+                          {!pathUi.suppressAsks && renderCompanyAsk()}
                           {/* Review ask (2026-09-07). A CARD, not a modal, and
                               it renders HERE — in the post-solve success
                               panel, above "what's next" — for two reasons.
@@ -40125,7 +41972,7 @@ RULES:
                               below it shows one primary "Next quest" action with
                               the reason, and three competing buttons next to it
                               were the choice that stalled people after a win. */}
-                          {!nextChallengeRec && (
+                          {!nextChallengeRec && !pathUi.suppressNextStrip && (
                           <div className="border-t border-green-500/20 pt-3">
                             <p className="text-xs text-gray-500 uppercase font-bold mb-2">{i18n_t('practice', 'whatsNext')}</p>
                             <div className="flex flex-wrap gap-2">
@@ -40188,6 +42035,8 @@ RULES:
                       Fires once per challenge, on the 3rd WRONG answer —
                       syntax errors are excluded by construction, since the
                       'error' status never increments wrongAttemptCount. */}
+                  {/* Tournament arm B: stuck on a ladder question → one rung down (B3). */}
+                  {pathUi.ladderActive && renderPathStepDown()}
                   {challengeStatus === 'wrong' && wrongAttemptCount >= 3 && stuckAsk !== 'dismissed' && (
                     <div className="rounded-xl p-4" style={{ background: '#16181F', border: '1px solid #2A2E38' }}>
                       {stuckAsk === 'answered' ? (
@@ -40244,7 +42093,7 @@ RULES:
                       )}
                       {/* Capture point 3, the wrong-submit trigger (`stuckAsk`). */}
                       {fbPrompt?.kind === 'stuck' && fbPrompt.trigger === 'wrong_3' && fbPrompt.challengeId === currentChallenge.id && (
-                        <FeedbackPromptCard key={`stuck-${currentChallenge.id}`} kind="stuck" compact onSend={fbSendPrompt} onSkip={fbSkipPrompt} />
+                        <FeedbackPromptCard key={`stuck-${currentChallenge.id}`} kind="stuck" compact answered={!!fbPrompt.answered} onSend={fbSendPrompt} onSkip={fbSkipPrompt} />
                       )}
                     </div>
                   )}
@@ -40535,15 +42384,19 @@ RULES:
                         )}
                       </div>
 
-                      {/* Input */}
-                      <div className="flex gap-2">
+                      {/* Input. Wraps on a phone (A2, 2026-11-25): an <input>
+                          keeps its ~196 px intrinsic width in a flex row, so
+                          with "Show me the answer" and Send beside it the row
+                          ran to 456 px and a 375 px page scrolled sideways.
+                          The input keeps at least 12rem; the buttons wrap. */}
+                      <div className="flex flex-wrap gap-2" data-testid="inline-tutor-input-row">
                         <input
                           type="text"
                           value={inlineAiInput}
                           onChange={e => setInlineAiInput(e.target.value)}
                           onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendInlineAiMessage(); }}}
                           placeholder="Ask about this challenge..."
-                          className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-sm text-[#F2F0EA] placeholder-gray-500 focus:outline-none focus:border-purple-500"
+                          className="flex-1 min-w-[12rem] px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-sm text-[#F2F0EA] placeholder-gray-500 focus:outline-none focus:border-purple-500"
                           disabled={inlineAiLoading}
                         />
                         {ftbFlag('socraticLadder') && (
@@ -40583,6 +42436,12 @@ RULES:
                           <span className="text-xs text-gray-400 whitespace-nowrap">✓ Ran in {challengeRunMs}ms</span>
                         )}
                       </div>
+                      {/* Run is not Submit — the `nudge` arm only (ledger "Run is not Submit"). */}
+                      {runSubmitNudge && runSubmitNudge.challengeId === currentChallenge?.id && !challengeStatus && !challengeResult.error && (
+                        <p data-testid="run-submit-nudge" className={`mb-3 pb-3 border-b border-[#2A2E38] text-sm ${runSubmitNudge.kind === 'match' ? 'text-green-300' : 'text-gray-300'}`}>
+                          {RUN_SUBMIT_NUDGE_COPY[runSubmitNudge.kind]}
+                        </p>
+                      )}
                       <ResultsTable columns={challengeResult.columns} rows={challengeResult.rows} error={challengeResult.error} />
                     </div>
                   )}
@@ -40691,7 +42550,7 @@ RULES:
                   )}
 
                   {/* Next challenge recommendation after success */}
-                  {challengeStatus === 'success' && nextChallengeRec && (
+                  {challengeStatus === 'success' && nextChallengeRec && !pathUi.suppressNextStrip && (
                     <div className="p-4 rounded-xl border border-teal-500/30 bg-teal-500/8">
                       <p className="text-xs font-bold text-teal-400 uppercase tracking-wider mb-2">⚡ Next quest</p>
                       <div className="flex items-center justify-between gap-3">
@@ -41319,7 +43178,13 @@ RULES:
                     return true;
                 }
               });
-              const orderedMocks = [...shownMocks.filter(i => i.sourced), ...shownMocks.filter(i => !i.sourced)];
+              // A mock with free leading questions (the Metrics & Case Round)
+              // opens the general section: it is the one a free person can start.
+              const orderedMocks = [
+                ...shownMocks.filter(i => i.sourced),
+                ...shownMocks.filter(i => !i.sourced && freePreviewCount(i) > 0),
+                ...shownMocks.filter(i => !i.sourced && freePreviewCount(i) === 0),
+              ];
               return orderedMocks.map((interview, mockIdx) => {
                 const canAccess = canAccessInterview(interview);
                 const completedCount = interviewHistory.filter(h => h.interviewId === interview.id).length;
@@ -41365,6 +43230,11 @@ RULES:
                           {interview.isFree && (
                             <span className="px-2 py-0.5 bg-green-500/20 text-green-400 rounded text-xs font-medium">
                               {i18n_t('interviewList', 'badgeFree')}
+                            </span>
+                          )}
+                          {!interview.isFree && !userProStatus && freePreviewCount(interview) > 0 && (
+                            <span className="px-2 py-0.5 bg-green-500/20 text-green-400 rounded text-xs font-medium" data-testid="mock-badge-first-free">
+                              {i18n_t('interviewList', 'badgeFirstFree', { n: freePreviewCount(interview) })}
                             </span>
                           )}
                           {!interview.isFree && !canAccess && (

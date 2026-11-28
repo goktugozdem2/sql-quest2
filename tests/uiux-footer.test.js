@@ -36,9 +36,21 @@ describe('footer links are 44 px tap targets on a phone', () => {
     expect(FOOTER_FIT_STYLE).toMatch(/\.flk a\{[^}]*min-height:44px[^}]*min-width:44px/);
     expect(FOOTER_FIT_STYLE).toMatch(/\.fnav a\{[^}]*min-height:44px/);
   });
-  it('a built company page carries it', () => {
+  it('a built company page carries it — the rule in <head>, the line in the footer', () => {
     const built = fs.readFileSync(path.join(ROOT, 'public/wise-sql-interview/index.html'), 'utf8');
-    expect(built).toContain(FOOTER_FIT_STYLE + PARTNER_LINE);
+    const head = built.indexOf('</head>');
+    expect(built.indexOf(FOOTER_FIT_STYLE)).toBeGreaterThan(-1);
+    expect(built.indexOf(FOOTER_FIT_STYLE), 'a <style> under <footer> is not permitted content (html-validate)').toBeLessThan(head);
+    expect(built.split('data-footer-fit').length - 1).toBe(1);
+    expect(built.lastIndexOf(PARTNER_LINE)).toBeGreaterThan(built.lastIndexOf('<footer'));
+  });
+  it('moves a fit rule from an older footer into <head>, once, and is idempotent', () => {
+    const old = `<html><head><style>.flk a{color:red}</style></head><body><footer>x${FOOTER_FIT_STYLE}${PARTNER_LINE}</footer></body></html>`;
+    const out = withPartnerLink(old);
+    expect(out).toBe(`<html><head><style>.flk a{color:red}</style>${FOOTER_FIT_STYLE}</head><body><footer>x${PARTNER_LINE}</footer></body></html>`);
+    // a later build step appends its own style before </head>: the rule keeps its place
+    const later = out.replace('</head>', '<style data-phone-fit>p{}</style></head>');
+    expect(withPartnerLink(later)).toBe(later);
   });
 });
 
@@ -60,5 +72,56 @@ describe('no footer text under 12 px in a source page or generator', () => {
   });
   it('the homepage sitemap footer headings are 12 px', () => {
     expect(fs.readFileSync(path.join(ROOT, 'src/index.html'), 'utf8')).toContain('.fnav h3{font-size:12px');
+  });
+});
+
+// A2 live QA, 2026-11-23 (docs/reads/live-qa-2026-11-23.md), measured at
+// 375 px: the homepage `.flegal` links were 17 px tall, the /for-teams/
+// footer links 16 px, the Datrick link 28–35 px on every page; company-page
+// hero and topic captions, /sql-exercises/ pills and labels (71 elements)
+// and /vs-sqlzoo/ table notes were 11 px, under DESIGN.md's 12 px floor.
+describe('the rest of the footer links are 44 px tall on a phone (2026-11-23)', () => {
+  it('the shared rule covers the homepage .flegal links and the Datrick link', () => {
+    expect(FOOTER_FIT_STYLE).toMatch(/\.flegal a\{[^}]*min-height:44px[^}]*min-width:44px/);
+    expect(FOOTER_FIT_STYLE).toMatch(/\[data-partner\] a\{[^}]*display:inline-flex[^}]*min-height:44px/);
+  });
+  it('the built homepage carries the rule and still has its .flegal links', () => {
+    const built = fs.readFileSync(path.join(ROOT, 'public/index.html'), 'utf8');
+    // Since #333 (html-validate) the fit rule sits at the end of <head>, not
+    // in the footer next to the partner line.
+    expect(built).toContain(FOOTER_FIT_STYLE);
+    expect(built.indexOf(FOOTER_FIT_STYLE)).toBeLessThan(built.indexOf('</head>'));
+    expect(built).toContain(PARTNER_LINE);
+    expect(built).toMatch(/<div class="flegal"><a href="\/privacy\/">/);
+  });
+  it('/for-teams/ gives its own footer links a 44 px box under 600 px', () => {
+    const src = fs.readFileSync(path.join(ROOT, 'src/for-teams.html'), 'utf8');
+    expect(src).toMatch(/@media \(max-width:600px\)\{footer a\{[^}]*min-height:44px[^}]*min-width:44px/);
+    expect(fs.readFileSync(path.join(ROOT, 'public/for-teams/index.html'), 'utf8')).toContain(FOOTER_FIT_STYLE);
+  });
+});
+
+describe('no text under 12 px on the pages fixed 2026-11-23', () => {
+  const UNDER_12 = /font-size:\s*(?:[0-9]|1[01])(?:\.\d+)?px/g;
+  const under12 = (rel) => (fs.readFileSync(path.join(ROOT, rel), 'utf8').match(UNDER_12) || []).length;
+  const companies = fs.readdirSync(path.join(ROOT, 'src')).filter(f => /-sql-interview\.html$/.test(f));
+  it('finds the company pages', () => expect(companies.length).toBeGreaterThanOrEqual(30));
+  it('company pages (source, generator and built), /sql-exercises/ and /vs-sqlzoo/ state 12 px or more', () => {
+    const files = [
+      ...companies.map(f => `src/${f}`),
+      ...companies.map(f => `public/${f.replace(/\.html$/, '')}/index.html`),
+      'scripts/build-company-pages.mjs',
+      'src/sql-exercises.html', 'public/sql-exercises/index.html',
+      'src/vs-sqlzoo.html', 'public/vs-sqlzoo/index.html',
+    ];
+    const bad = files.filter(f => under12(f) > 0).map(f => `${f}: ${under12(f)}`);
+    expect(bad).toEqual([]);
+  });
+  it('the homepage hero result line, pricing badge and process labels are 12 px (the Coach mock, at zoom:.85, is exempt)', () => {
+    const src = fs.readFileSync(path.join(ROOT, 'src/index.html'), 'utf8');
+    expect(src).toContain('.proc-day{font-size:12px');
+    expect(src).toMatch(/<p class="fm" style="font-size:12px;[^"]*">✓ 3 rows returned/);
+    expect(src).toMatch(/font-size:12px;[^"]*">Save \d+%<\/div>/);
+    expect(src).toContain('.cm-wrap{zoom:.85}');
   });
 });

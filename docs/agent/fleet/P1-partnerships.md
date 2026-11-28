@@ -1,4 +1,18 @@
+---
+id: P1
+name: "Partnerships & B2B (institutions that buy for many people)"
+owner: orchestrator
+runtime: laptop
+status: reduced
+cadence: "weekly, replies first, since 2026-11-25; 2026-12-22 check decides"
+metric: [team_interest, outreach_replies]
+writes_code: false
+version: 1.0.0
+last_changed: 2026-11-26
+---
 # P1 — Partnerships & B2B (institutions that buy for many people)
+
+> **Cadence reduced 2026-11-25 (investor 90-day plan, A11): weekly, replies first.** 7 sends / 0 human replies — B2B is not proven. No new targets beyond 2 a week; the 2026-12-22 check (≥ 3 `team_interest` rows, today 0) decides whether the lane continues.
 
 **Lane:** organisations that put SQL Quest in front of many learners, or pay
 for seats. That includes bootcamps, university courses and career centres,
@@ -96,3 +110,7 @@ pilot → paid / partner live → lost (with why)`.
   bottleneck is sends, not targets.
 - Docs PRs are self-merged. Code goes to the owning lane through BACKLOG,
   never from P1.
+
+## Changelog
+
+- 1.0.0 (2026-11-26) — versioned for the skills loop: front-matter added.

@@ -50,15 +50,26 @@
   "trailingSlash": true,
   "redirects": [
     {
-      "source": "/:path*",
+      "source": "/(.*)",
       "has": [
         {
           "type": "host",
           "value": "www.sqlquest.app"
         }
       ],
-      "destination": "https://sqlquest.app/:path*",
-      "permanent": true
+      "destination": "https://sqlquest.app/$1",
+      "statusCode": 301
+    },
+    {
+      "source": "/(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "sql-quest2.vercel.app"
+        }
+      ],
+      "destination": "https://sqlquest.app/$1",
+      "statusCode": 301
     },
     {
       "source": "/coach/",
@@ -194,7 +205,7 @@
       "includeFiles": "public/app.html"
     },
     "api/og-card.js": {
-      "includeFiles": "assets/fonts/**"
+      "includeFiles": "{assets/fonts/**,node_modules/harfbuzzjs/hb.wasm,node_modules/@resvg/resvg-wasm/index_bg.wasm}"
     }
   },
   "headers": [

@@ -28,7 +28,8 @@ const SET = [
   { id: 105, difficulty: 'Easy' },
   { id: 47, difficulty: 'Hard' },
 ];
-const ON = { flagOn: true, isPro: false, companyFilter: 'Stripe', scoped: SET, solved: new Set() };
+// An authored set (a signed archetype member) — the only kind the gate walls.
+const ON = { flagOn: true, isPro: false, companyFilter: 'Capital One', authored: true, scoped: SET, solved: new Set() };
 
 describe('M1 · the company set — first three free, then the wall', () => {
   it('orders the set the way the company view lists it: difficulty, then id', () => {
@@ -241,7 +242,7 @@ describe('the free quota — ten solves, then Pro (founder, 2026-09-12, item 2)'
     expect(block.indexOf('presentQuotaWall(')).toBeGreaterThan(-1);
     expect(block.indexOf('openColdStartInstead(challenge.id)')).toBeLessThan(block.indexOf('presentQuotaWall('));
     expect(block).toMatch(/type: 'free_quota'/);
-    expect(app).toMatch(/const isQuotaLocked = quotaGate\(\{ flagOn: ftbFlag\('freeQuota'\)/);
+    expect(app).toMatch(/const isQuotaLocked = quotaGate\(\{ flagOn: freeQuotaOn\(\)/);
     expect(app).toMatch(/data-testid="free-quota-counter"/);
     expect(app).toMatch(/data-testid="pro-modal-free-quota"/);
     // the quota sits AFTER the Hard gate and the company-set gate in openChallenge
@@ -302,7 +303,7 @@ describe('the free quota — ten solves, then Pro (founder, 2026-09-12, item 2)'
   // banner, the catcher, the Focus Tracks pill, the company banner.
   it('the in-app "free" surfaces read the quota', () => {
     const app = read('../src/app.jsx');
-    expect(app).toMatch(/const freeQuotaSpent = \(\) => quotaGate\(\{ flagOn: ftbFlag\('freeQuota'\), isPro, solvedCount: solvedChallenges\.size \}\)\.gated;/);
+    expect(app).toMatch(/const freeQuotaSpent = \(\) => quotaGate\(\{ flagOn: freeQuotaOn\(\), isPro, solvedCount: solvedChallenges\.size \}\)\.gated;/);
     const catcher = app.indexOf('setPreviewCatcher({ challengeId: challenge.id, at: Date.now() });');
     const spent = app.lastIndexOf('if (freeQuotaSpent()) {', catcher);
     expect(spent).toBeGreaterThan(-1);
@@ -311,7 +312,7 @@ describe('the free quota — ten solves, then Pro (founder, 2026-09-12, item 2)'
     expect(app).toMatch(/&& !\(freeQuotaSpent\(\) && previewCounts\.previewUnsolved > 0\)/);
     expect(app).toMatch(/!isPro && freePreviewCount > 0 && !freeQuotaSpent\(\) &&/);
     expect(app).toMatch(/if \(freeQuotaSpent\(\)\) \{\n\s+const solvedHere/);
-    expect(app).toMatch(/ftbFlag\('freeQuota'\) \? 'coachStripLineQuota' : 'coachStripLine'/);
+    expect(app).toMatch(/freeQuotaOn\(\) \? 'coachStripLineQuota' : 'coachStripLine'/);
   });
 
   it('item 1 (live): the sixth-solve ask waits for the celebration, once-keys written at once', () => {
@@ -393,7 +394,7 @@ describe('source guards — the five flags are wired, and off', () => {
     // untouched there — only tier 10 steps aside, and only with the quota on.
     const ftbSrc = readFileSync(new URL('../src/utils/free-tier-boundary.js', import.meta.url), 'utf8');
     expect(ftbSrc).toMatch(/const tier = n >= 50 \? 50 : n >= 25 \? 25 : n >= 10 \? 10 : n >= 6 \? 6 : 0;/);
-    expect(app).toMatch(/const tier = milestoneTier\(n, \{ quotaOn: ftbFlag\('freeQuota'\) \}\);/);
+    expect(app).toMatch(/const tier = milestoneTier\(n, \{ quotaOn: freeQuotaOn\(\) \}\);/);
     expect(app).toMatch(/case 'challenge': return item\?\.difficulty === 'Hard' && !item\?\.freePreview;/);
   });
 });
@@ -407,6 +408,41 @@ describe('companySetGate applies to authored sets only', () => {
     const app = fs.readFileSync(new URL('../src/app.jsx', import.meta.url), 'utf8');
     expect(app).toContain('const companyHasAuthoredSet = (company) =>');
     expect(app).toMatch(/ftbFlag\('companySetGate'\) && companyFilter && !isPro && companyHasAuthoredSet\(companyFilter\)/);
+  });
+  // 2026-11-26 (founder's go): the 09-20 rule lived only in the banner's
+  // `companyGateFreeIds`; the gate itself walled Snowflake's, Wise's, Meta's …
+  // topical sets (pro_modal_shown {reason:'company_set'} from 09-26).
+  it('the pure gate never walls a set that was not authored for the company', () => {
+    for (const authored of [false, undefined, null, 'yes', 1]) {
+      for (const id of [91, 6, 7, 20, 47, 50]) {
+        expect(companySetGate({ ...ON, companyFilter: 'Snowflake', authored, challenge: { id } }).gated).toBe(false);
+      }
+    }
+    const { authored: _drop, ...noArg } = ON;
+    expect(companySetGate({ ...noArg, challenge: { id: 7 } }).gated).toBe(false);
+  });
+  it('an authored set keeps the wall exactly as before: first three free, the fourth walled', () => {
+    expect(companySetGate({ ...ON, challenge: { id: 6 } }).gated).toBe(false);
+    expect(companySetGate({ ...ON, challenge: { id: 7 } })).toMatchObject({ gated: true, position: 4, freeCount: 3, setSize: 7 });
+  });
+  it('every companySetGate( call in app.jsx passes authored: companyHasAuthoredSet(companyFilter)', () => {
+    const app = read('../src/app.jsx');
+    const calls = [];
+    const re = /\bcompanySetGate\(/g;
+    let m;
+    while ((m = re.exec(app))) {
+      // the argument object: from the call to its matching close paren
+      let depth = 0, i = m.index + m[0].length - 1, end = -1;
+      for (; i < app.length; i++) {
+        if (app[i] === '(') depth++;
+        else if (app[i] === ')') { depth--; if (depth === 0) { end = i; break; } }
+      }
+      calls.push({ at: app.slice(0, m.index).split('\n').length, args: app.slice(m.index, end + 1) });
+    }
+    // the import line names it without calling it, so every match is a call
+    expect(calls.length).toBeGreaterThanOrEqual(3);
+    const missing = calls.filter(c => !/\bauthored:\s*companyHasAuthoredSet\(companyFilter\)/.test(c.args)).map(c => `app.jsx:${c.at}`);
+    expect(missing).toEqual([]);
   });
   it('the signed members are the gated ones', async () => {
     const { archetypeForCompany, archetypeMemberCompanies } = await import('../src/data/interview-archetypes.js');
@@ -434,7 +470,7 @@ describe('the cold-start gate has a door for a buyer', () => {
     const app = fs.readFileSync(new URL('../src/app.jsx', import.meta.url), 'utf8');
     expect(app).toContain('data-testid="cold-start-pro-anyway"');
     expect(app).toContain('const openProFromColdStart = () => {');
-    expect(app).toMatch(/setProModalReason\(\{ type: 'cold_start_anyway'/);
+    expect(app).toMatch(/setProModalReason\((withDebugLock\()?\{ type: 'cold_start_anyway'/);
     expect(app).toMatch(/trackActivationEvent\('cold_start_pro_anyway'/);
     // The starter stays the primary action: the Pro button is not the one
     // carrying data-catcher-primary.
@@ -468,6 +504,6 @@ describe('milestoneTier — no tenth-solve ask in front of the quota wall', () =
   });
   it('the app asks through it, with the live quota flag', () => {
     const app = readFileSync(new URL('../src/app.jsx', import.meta.url), 'utf8');
-    expect(app).toMatch(/const tier = milestoneTier\(n, \{ quotaOn: ftbFlag\('freeQuota'\) \}\);/);
+    expect(app).toMatch(/const tier = milestoneTier\(n, \{ quotaOn: freeQuotaOn\(\) \}\);/);
   });
 });

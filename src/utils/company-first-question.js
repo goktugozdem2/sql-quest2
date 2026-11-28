@@ -12,9 +12,10 @@
 // visitor (src/app.jsx `companyBannerNext`, 2026-11-20): the set's first
 // unsolved challenge in CURRICULUM order (pickNextChallengeWith — never raw
 // order, src/utils/challenge-order.js), behind the same locks — a Hard that
-// is not a free preview is Pro, and under `companySetGate` only the first
-// three of the set in the set's own order (companySetFreeIds) open from the
-// company view. A cold visitor has solved nothing and is under the free
+// is not a free preview is Pro, and under `companySetGate` the banner starts
+// in the first three of the set in the set's own order (companySetFreeIds) —
+// for an authored set (Capital One, Revolut) they are the only ones that open
+// from the company view; a topical set opens past them (2026-11-26). A cold visitor has solved nothing and is under the free
 // quota, so those are the only two locks that apply.
 //
 // Pure: no window, no DOM. The page generator (scripts/build-company-pages.mjs)

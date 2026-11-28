@@ -9,6 +9,8 @@ import {
   nextSessionRecord, sessionHasRoom, markPromptShown,
   canShowExitReason, stuckTrigger, canShowStuck, canShowDay2,
   buildPromptSubmission, suggestTheme, localDay,
+  FBP_EXIT_DAY_KEY, FBP_EXIT_DONE_KEY, FBP_DAY2_KEY, PROMPT_THANKS_MS,
+  promptDoneKey, mayRecordAnswer, markPromptAnswered,
 } from '../src/utils/feedback-prompts.js';
 import { t, setLang } from '../src/utils/i18n.js';
 
@@ -65,6 +67,102 @@ describe('exit_reason', () => {
   it('the fixed five answers, Other takes text, none names a price', () => {
     expect(EXIT_REASONS.map(r => r.id)).toEqual(['too_expensive', 'not_ready', 'more_free', 'not_what_i_need', 'other']);
     expect(EXIT_REASONS.filter(r => r.text).map(r => r.id)).toEqual(['other']);
+  });
+});
+
+// 2026-11-24 (docs/reads/funnel-2026-11-24.md §1): one feedback_prompt_shown,
+// three exit answers. The card came back after every Pro modal close and
+// asked again. These pin "once answered or skipped, never again in this
+// browser" and "one show records one answer".
+describe('exit_reason: answered or skipped is the end of it', () => {
+  const base = { flagOn: true, closedVia: 'button', planClicked: false, checkoutPending: false, solvedCount: 6, inTimedMock: false, sessionRec: fresh(), lastExitDay: null, now: T0 };
+  const DAY = 86400000;
+
+  // A browser: localStorage, the rows written to `feedback`, the shown events,
+  // and the prompt on screen — driven only through the pure rules app.jsx uses.
+  function browser() {
+    const store = new Map();
+    const rows = [];
+    const shown = [];
+    let prompt = null;
+    let session = fresh();
+    return {
+      store, rows, shown,
+      get prompt() { return prompt; },
+      newSession(now) { session = nextSessionRecord(session, now); },
+      closeModal(now) {
+        if (prompt) return false; // a card already up is the same show
+        const ok = canShowExitReason({ ...base, sessionRec: session, now,
+          lastExitDay: store.get(FBP_EXIT_DAY_KEY) || null, doneAt: store.get(FBP_EXIT_DONE_KEY) || null });
+        if (!ok) return false;
+        store.set(FBP_EXIT_DAY_KEY, localDay(now));
+        session = markPromptShown(session);
+        prompt = { kind: 'exit_reason', trigger: 'pro_modal_closed', challengeId: null };
+        shown.push(now);
+        return true;
+      },
+      answer(id) {
+        if (!mayRecordAnswer(prompt)) return false;
+        rows.push(buildPromptSubmission({ kind: prompt.kind, trigger: prompt.trigger, answerId: id }));
+        store.set(promptDoneKey(prompt.kind), 'answered');
+        prompt = markPromptAnswered(prompt, T0);
+        return true;
+      },
+      skip() { if (prompt) store.set(promptDoneKey(prompt.kind), 'skipped'); prompt = null; },
+      clearAfterThanks() { if (prompt && prompt.answered) prompt = null; },
+    };
+  }
+
+  it('answered: never shown again, the next day or the next session', () => {
+    const b = browser();
+    expect(b.closeModal(T0)).toBe(true);
+    expect(b.answer('too_expensive')).toBe(true);
+    b.clearAfterThanks();
+    for (let d = 1; d <= 30; d++) {
+      b.newSession(T0 + d * DAY);
+      expect(b.closeModal(T0 + d * DAY), `day ${d}`).toBe(false);
+    }
+    expect(b.shown).toHaveLength(1);
+  });
+
+  it('skipped: never shown again either', () => {
+    const b = browser();
+    expect(b.closeModal(T0)).toBe(true);
+    b.skip();
+    b.newSession(T0 + 2 * DAY);
+    expect(b.closeModal(T0 + 2 * DAY)).toBe(false);
+    expect(b.store.get(FBP_EXIT_DONE_KEY)).toBe('skipped');
+  });
+
+  it('the rule itself: a done record blocks the ask on any later day', () => {
+    expect(canShowExitReason({ ...base, doneAt: '2026-11-23T10:00:00.000Z' })).toBe(false);
+    expect(canShowExitReason({ ...base, doneAt: '2026-11-23T10:00:00.000Z', lastExitDay: localDay(T0 - 7 * DAY) })).toBe(false);
+    expect(canShowExitReason({ ...base, doneAt: null })).toBe(true);
+  });
+
+  it('one show records one answer, however often the card comes back', () => {
+    // The person of 11-23: answered, met two more modals (the card re-mounts
+    // after each close), answered again twice.
+    const b = browser();
+    b.closeModal(T0);
+    expect(b.answer('too_expensive')).toBe(true);
+    expect(b.closeModal(T0 + 60000)).toBe(false);
+    expect(b.answer('too_expensive')).toBe(false);
+    expect(b.answer('other')).toBe(false);
+    expect(b.rows).toHaveLength(1);
+    expect(b.shown).toHaveLength(1);
+    expect(mayRecordAnswer(null)).toBe(false);
+    expect(mayRecordAnswer({ kind: 'nope' })).toBe(false);
+    expect(mayRecordAnswer({ kind: 'day2' })).toBe(true);
+    expect(mayRecordAnswer(markPromptAnswered({ kind: 'day2' }))).toBe(false);
+  });
+
+  it('day2 is remembered under its own once-ever key; stuck per challenge at show', () => {
+    expect(promptDoneKey('exit_reason')).toBe(FBP_EXIT_DONE_KEY);
+    expect(promptDoneKey('day2')).toBe(FBP_DAY2_KEY);
+    expect(promptDoneKey('stuck')).toBe(null);
+    expect(FBP_EXIT_DONE_KEY).not.toBe(FBP_EXIT_DAY_KEY);
+    expect(PROMPT_THANKS_MS).toBeGreaterThan(0);
   });
 });
 
@@ -207,7 +305,9 @@ describe('the app wiring (source guards)', () => {
     expect(app).toMatch(/proModalPlansSeenRef\.current = false;\s*\n\s*proModalPlanClickedRef\.current = false;/);
     expect(hooks).toContain('planClicked: proModalPlanClickedRef.current');
     // The global slot never renders while the modal is up.
-    expect(app).toContain("{fbPrompt && fbPrompt.kind !== 'stuck' && !showProModal && (");
+    // Tournament arms B / D add their own gate (the survey never asks in their
+    // first session — tests/single-path.test.js, walk fix round 2).
+    expect(app).toContain("{fbPrompt && fbPrompt.kind !== 'stuck' && !showProModal && pathLayerOk('feedback_prompt') && (");
   });
 
   it('stuck renders on the challenge page for its own challenge, one card per trigger', () => {
@@ -232,10 +332,32 @@ describe('the app wiring (source guards)', () => {
   });
 
   it('rows go through the widget insert into `feedback` with kind and trigger, nothing else', () => {
-    expect(hooks).toMatch(/return submitFeedback\(\{[^}]*kind: fbPrompt\.kind, trigger: fbPrompt\.trigger/);
+    expect(hooks).toMatch(/await submitFeedback\(\{[^}]*kind: prompt\.kind, trigger: prompt\.trigger/);
     expect(hooks).not.toMatch(/rest\/v1\/|supabaseFetch|rpc\//);
     expect(app).toMatch(/context: \{\s*\n\s*topic: topic \|\| null,[\s\S]{0,300}kind: kind \|\| 'open',\s*\n\s*trigger: trigger \|\| null,/);
     expect(app).toMatch(/trackActivationEvent\('feedback_submitted', \{[\s\S]{0,200}kind: kind \|\| 'open',\s*\n\s*trigger: trigger \|\| null,/);
+  });
+
+  // 2026-11-24: the card re-mounted after a Pro modal close came back as a
+  // fresh question and wrote a second (and third) answer row.
+  it('an answer is recorded once, then the card shows thanks and is cleared', () => {
+    const send = hooks.slice(hooks.indexOf('const fbSendPrompt = async'), hooks.indexOf('// 2 — exit_reason'));
+    expect(send.indexOf('mayRecordAnswer(prompt)')).toBeGreaterThan(0);
+    expect(send.indexOf('mayRecordAnswer(prompt)')).toBeLessThan(send.indexOf('await submitFeedback('));
+    expect(send.indexOf('fbAnsweredRef.current = prompt;')).toBeLessThan(send.indexOf('await submitFeedback('));
+    expect(send).toMatch(/if \(!ok\)[\s\S]*?fbMarkDone\(prompt\.kind\);[\s\S]*?markPromptAnswered\(p\)[\s\S]*?PROMPT_THANKS_MS/);
+    // Every slot hands the prompt's answered state to the card, and the card
+    // opens on the thanks when it is set.
+    expect(app.match(/<FeedbackPromptCard [^>]*answered=\{!!fbPrompt\.answered\}/g) || []).toHaveLength(3);
+    expect(app.match(/<FeedbackPromptCard /g) || []).toHaveLength(3);
+    expect(card).toContain("React.useState(answered ? 'done' : 'idle')");
+  });
+
+  it('answered or skipped is remembered in the browser, and the exit gate reads it', () => {
+    const skip = hooks.slice(hooks.indexOf('const fbSkipPrompt = () => {'), hooks.indexOf('const fbAnsweredRef'));
+    expect(skip).toContain('fbMarkDone(fbPrompt.kind)');
+    expect(hooks).toMatch(/const fbMarkDone = \(kind\) => \{\s*\n\s*const key = promptDoneKey\(kind\);/);
+    expect(hooks).toContain('doneAt: (() => { try { return localStorage.getItem(FBP_EXIT_DONE_KEY); }');
   });
 
   it('the card is not a modal and never uses the accent', () => {

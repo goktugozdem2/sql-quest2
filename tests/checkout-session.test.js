@@ -299,7 +299,13 @@ describe('launchCheckout wiring', () => {
   it('the trial is offered only with both flags on and no trial on the record', async () => {
     const { trialOffered } = await import('../src/utils/checkout-session.js');
     expect(trialOffered({ sessionsOn: true, trialOn: true, userData: null })).toBe(true);
-    expect(trialOffered({ sessionsOn: true, trialOn: true, userData: { proType: 'monthly' } })).toBe(true);
+    // 2026-11-25: someone who has bought before (a paid proType) is never
+    // promised the trial — the server refuses it (#66), so the promise lied.
+    expect(trialOffered({ sessionsOn: true, trialOn: true, userData: { proType: 'monthly' } })).toBe(false);
+    expect(trialOffered({ sessionsOn: true, trialOn: true, userData: { proType: 'annual' } })).toBe(false);
+    expect(trialOffered({ sessionsOn: true, trialOn: true, userData: { proType: 'lifetime' } })).toBe(false);
+    expect(trialOffered({ sessionsOn: true, trialOn: true, userData: { proType: 'trial', proTrial: false } })).toBe(true);
+    expect(trialOffered({ sessionsOn: true, trialOn: true, userData: { proStatus: false } })).toBe(true);
     expect(trialOffered({ sessionsOn: false, trialOn: true })).toBe(false);   // a Payment Link carries no trial
     expect(trialOffered({ sessionsOn: true, trialOn: false })).toBe(false);
     expect(trialOffered({ sessionsOn: true, trialOn: true, userData: { proTrial: true } })).toBe(false);
@@ -489,8 +495,8 @@ describe('the quota wall names the person\'s company', () => {
     expect(fn).toContain('findPlanTarget(prepTarget.company');
     expect(fn).toContain('target.kind === TARGET_KIND.ARCHETYPE ? companyMockTitle(target.company) : null');
     // M-07 routes both free_quota reasons through presentQuotaWall.
-    expect((app.match(/presentQuotaWall\(\{ type: 'free_quota'[^}]*wallCompany: quotaWallCompany\(\) \}/g) || []).length).toBe(2);
-    expect((app.match(/(setProModalReason|presentQuotaWall)\(\{ type: 'free_quota'/g) || []).length).toBe(2);
+    expect((app.match(/presentQuotaWall\((?:withDebugLock\()?\{ type: 'free_quota'[^}]*wallCompany: quotaWallCompany\(\) \}/g) || []).length).toBe(2);
+    expect((app.match(/(setProModalReason|presentQuotaWall)\((?:withDebugLock\()?\{ type: 'free_quota'/g) || []).length).toBe(2);
     expect(app).toContain('data-testid="quota-wall-company"');
     expect(app).toContain('wallCompany: proModalReason?.wallCompany?.company || null,');
     expect(app, 'the headline is #95\'s and stays').toMatch(/proModalReason\.type === 'free_quota'\s*\?\s*quotaWallHeadline\(proModalReason\.quota, trialOfferOn\)/);
