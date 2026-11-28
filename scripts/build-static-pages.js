@@ -155,6 +155,24 @@ for (const slug of blogPosts) {
 }
 
 copyFile('src/track.js', 'public/track.js');
+
+// Real-user page speed (metric web_vitals, 2026-11-24): Google's web-vitals,
+// the attribution-free IIFE (defines window.webVitals), served from our own
+// origin as /web-vitals.js. track.js and the /app shell load it lazily. The
+// installed version must equal the exact pin in package.json, which
+// tests/web-vitals.test.js binds to VITALS_LIB in track.js and the module.
+{
+  const pkgDir = path.join(rootDir, 'node_modules', 'web-vitals');
+  const pinned = JSON.parse(fs.readFileSync(path.join(rootDir, 'package.json'), 'utf8')).dependencies['web-vitals'];
+  const installed = JSON.parse(fs.readFileSync(path.join(pkgDir, 'package.json'), 'utf8')).version;
+  if (installed !== pinned) {
+    throw new Error(`web-vitals ${installed} installed, package.json pins ${pinned} — run npm ci`);
+  }
+  const iife = fs.readFileSync(path.join(pkgDir, 'dist', 'web-vitals.iife.js'), 'utf8')
+    .replace(/\n?\/\/# sourceMappingURL=\S+\s*$/, '\n');
+  fs.writeFileSync(path.join(rootDir, 'public', 'web-vitals.js'),
+    `/*! web-vitals ${installed} | Apache-2.0 | (c) Google LLC | github.com/GoogleChrome/web-vitals */\n` + iife);
+}
 copyFile('src/blog-quiz.js', 'public/blog-quiz.js');
 
 console.log(`[build-static-pages] copied ${rootPages.length} root pages, ${challengePages.length} challenge topic pages (+ the /challenges/ hub) and ${blogPosts.length} blog posts`);

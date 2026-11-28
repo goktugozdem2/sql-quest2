@@ -367,11 +367,15 @@ describe('app.jsx — every change sits behind a pathUi switch', () => {
     const release = APP.indexOf('if (!guestSaveAskAfterSolve(solvedSet.size) && held) setTimeout(() => triggerSignupPrompt(held), 1500);');
     expect(release).toBeGreaterThan(0);
     const definition = APP.indexOf('const triggerSignupPrompt = (');
+    // The tutor's guest-limit ask goes through triggerSignupPrompt so it is
+    // counted (PR #426), but only on the `else` of the arm-B hold.
+    const heldAiLimit = "if (pathUi.holdSignupAsks) pathHeldSignupRef.current = 'ai_limit';\n          else ";
     for (const i of asks) {
       const inHelper = i > helperStart && i < helperEnd;
       const inRelease = i > release && i < release + 120;
       const isDef = i === definition + 'const '.length;
-      expect(inHelper || inRelease || isDef, APP.slice(i - 120, i + 40)).toBe(true);
+      const isHeldAiLimit = APP.slice(i - heldAiLimit.length, i) === heldAiLimit;
+      expect(inHelper || inRelease || isDef || isHeldAiLimit, APP.slice(i - 120, i + 40)).toBe(true);
     }
     // The tutor's guest-limit prompt is held too.
     expect(APP).toContain("if (pathUi.holdSignupAsks) pathHeldSignupRef.current = 'ai_limit';");

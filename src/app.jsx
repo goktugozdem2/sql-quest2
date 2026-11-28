@@ -65,7 +65,7 @@ import { getPrimarySkeleton, getAllSkeletons } from './utils/skeletons.js';
 import { diagnoseResult, diagnosisShort, primaryHint, rowDiffSummary } from './utils/diagnose.js';
 import { formatSqlForDisplay } from './utils/sql-format.js';
 import { parseTutorContent } from './utils/tutor-render.js';
-import { sessionLoadingAtBoot, shouldWaitForSession } from './utils/session-boot.js';
+import { sessionLoadingAtBoot, shouldWaitForSession, isGuestSession } from './utils/session-boot.js';
 import { SQLITE_TUTOR_RULES, mistakeStudyContext, buildMistakeContextBlock, mistakeOpeningPrompt, inlineOpenerMessage, diagnosisFixesLine, ladderRequestNumber } from './utils/tutor-context.js';
 import { buildUserSkill, pickNextBySkill, toCanonicalSkill, isLegacyMasteryRecord } from './utils/user-skill.js';
 import { classifyErrorPatterns, recordErrorPatterns, describeErrorPatterns, patternCount, emptyErrorStore } from './utils/error-patterns.js';
@@ -81,6 +81,7 @@ import { modalLayoutArm, plansFirst } from './utils/modal-layout.js';
 import { softGateReason, paywallMomentCopy, SOFT_GATE_ACTION_LABEL, SOFT_GATE_TOAST_MS, headerProCta } from './utils/paywall-moments.js';
 import { botSignals, botDecision } from './utils/bot-signals.js';
 import { bootTiming } from './utils/boot-timing.js';
+import { armWebVitals, isInternalUser } from './utils/web-vitals-report.js';
 import { starterHintFor, starterSqlFromHint } from './utils/starter-query.js';
 import { RUNNABLE_STARTER_KEY, RUNNABLE_STARTER_TEST_ID, isDesktopScreen, isEmptyEditorOpen, normalizeRunnableStarterRecord, runnableStarterDecision, runnableStarterText, isUntouchedStarter } from './utils/runnable-starter.js';
 import { dueRetrievals, pickRetrievalChallenge, recordRetrieval, dailyQuota, MAX_DUE_SHOWN } from './utils/spaced-retrieval.js';
@@ -7649,7 +7650,9 @@ function SQLQuest() {
         // resumed when its blob holds progress.
         solvedCount: Number.isFinite(metadata.solvedCount) ? metadata.solvedCount : solvedChallenges.size,
         attemptCount: challengeAttempts.length,
-        isGuest: !!isGuest,
+        // An event that passes its own isGuest keeps it (2026-11-27), as
+        // solvedCount above: app_opened computes it with isGuestSession().
+        isGuest: typeof metadata.isGuest === 'boolean' ? metadata.isGuest : !!isGuest,
       };
       // Bot signals (2026-10-07): a known crawler fingerprint is written and
       // stamped `bot`, so reads can drop it and a false positive is never
@@ -8185,7 +8188,7 @@ function SQLQuest() {
   }, [showProModal]);
 
   // Funnel denominator: one app_opened per browser per day, fired once the
-  // session settles so username/isGuest are accurate. De-dupe key is
+  // session settles so a restored account's username is accurate. De-dupe key is
   // browser-scoped (NOT user-scoped) — guests get a fresh guest_<ts> name
   // every load, so a per-user key would fire on every reload.
   useEffect(() => {
@@ -8194,10 +8197,45 @@ function SQLQuest() {
       const today = new Date().toISOString().slice(0, 10);
       if (localStorage.getItem('sqlquest_app_opened_day') === today) return;
       localStorage.setItem('sqlquest_app_opened_day', today);
+      // isGuest is not the state (2026-11-27): a cold visitor's first render
+      // is settled before startGuestMode() runs, so the state said false on
+      // 11,763 of 11,764 rows. Guest = not signed in to an account
+      // (isGuestSession, src/utils/session-boot.js).
       trackActivationEvent('app_opened', {
         returning: !!localStorage.getItem('sqlquest_user'),
+        isGuest: isGuestSession({ currentUser, isGuest }),
         // Real-user boot timing (src/utils/boot-timing.js, metric app_boot).
         ...bootTiming({ perf: window.performance, nav: navigator, win: window }),
+      });
+    } catch (_) {}
+  }, [isSessionLoading]);
+
+  // Real-user page speed (metric web_vitals, src/utils/web-vitals-report.js):
+  // once the session has settled, load /web-vitals.js at the first idle
+  // moment and write one web_vital per metric for this document. Bots (hard
+  // or soft signal), localhost and internal accounts load nothing. The ref
+  // keeps a report that lands minutes later (LCP/CLS wait for a page hide)
+  // on the current trackActivationEvent, not the first render's closure.
+  const trackActivationEventRef = useRef(null);
+  trackActivationEventRef.current = trackActivationEvent;
+  useEffect(() => {
+    if (isSessionLoading) return;
+    try {
+      const w = window.innerWidth;
+      const viewport = w ? `${w < 768 ? 'mobile' : w < 1024 ? 'tablet' : 'desktop'}:${w}x${window.innerHeight}` : null;
+      let landingSrc = null;
+      try { landingSrc = localStorage.getItem(LANDING_SRC_KEY) || null; } catch (_) {}
+      let tz = null;
+      try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || null; } catch (_) {}
+      const decision = botDecision(botSignals({
+        userAgent: navigator.userAgent, webdriver: navigator.webdriver, languages: navigator.languages,
+        viewport, landingSrc, tz,
+      }));
+      armWebVitals({
+        win: window,
+        doc: document,
+        blocked: ANALYTICS_MUTED || hardBotBrowser() || !decision.write || !!decision.stamp || isInternalUser(currentUser),
+        send: payload => { try { trackActivationEventRef.current('web_vital', { ...payload, page: 'app' }); } catch (_) {} },
       });
     } catch (_) {}
   }, [isSessionLoading]);
@@ -22771,13 +22809,17 @@ Do NOT force the sector if the user asks a generic question (e.g. "what does GRO
         localStorage.setItem('sqlquest_ai_daily', JSON.stringify({ date: today, used: data.used, plan: data.plan }));
 
         if (data.plan === 'guest') {
-          // Guest hit limit — prompt sign-up for more calls. Tournament arm B
-          // holds it while the ladder runs (walk fix B1); the message says it.
+          // Guest hit limit — prompt sign-up for more calls. Through
+          // triggerSignupPrompt so the ask is counted (`signup_prompt_shown
+          // {promptReason:'ai_limit'}`); until 2026-11-27 it opened the modal
+          // directly, with no event, under the "You're on fire!" copy — shown
+          // to a stuck guest with 0 solves (A3, docs/reads/errors-2026-11-27.md).
+          // The ai_limit title/body is dark behind `aiLimitAskCopy`; for a guest
+          // the modal opens exactly as before, only the event is new.
+          // Tournament arm B holds it while the ladder runs (walk fix B1); the
+          // held ask is released through triggerSignupPrompt too.
           if (pathUi.holdSignupAsks) pathHeldSignupRef.current = 'ai_limit';
-          else {
-            setSignupPromptReason('ai_limit');
-            setShowSignupPrompt(true);
-          }
+          else triggerSignupPrompt('ai_limit');
           return `**AI Limit Reached**\n\nCreate a free account to get ${TUTOR_FREE_DAILY_LIMIT} AI tutor calls per day!`;
         }
         if (data.plan === 'free') {
@@ -24599,6 +24641,14 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     const challenge = getTodaysChallenge(difficultyToUse);
     if (!challenge || !db) return;
     setShowDailyChallenge(true);
+    // The daily's own events (2026-11-27, metric daily_challenge_use):
+    // `date` is the daily's own day (11:00 GMT+3 reset), `difficulty` the
+    // tier it opens on, `state` fresh | resumed | done.
+    trackActivationEvent('daily_challenge_opened', {
+      date: todayString,
+      difficulty: difficultyToUse || null,
+      state: isDailyCompleted ? 'done' : savedProgress ? 'resumed' : 'fresh',
+    });
     
     if (isDailyCompleted) {
       // Already completed - show completion screen
@@ -24677,6 +24727,13 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
       );
 
       if (dailyCorrect) {
+        // The core SQL is right (the warm-up and insight steps are not the
+        // solve). `practice`: today's daily was already completed.
+        trackActivationEvent('daily_challenge_solved', {
+          date: todayString,
+          difficulty: activeDailyDifficulty || null,
+          practice: isDailyCompleted || isDailyPracticeMode,
+        });
         setDailyChallengeStatus('success');
         setCoreCompleted(true);
         // Stop timer immediately when correct answer is submitted
@@ -30830,14 +30887,16 @@ RULES:
                 {signupPromptReason === 'pro_purchase' ? '👑' : signupPromptReason === 'first_challenge' ? '🎉' : '💪'}
               </div>
               <h2 className="text-2xl font-bold text-[#F2F0EA] mb-2">
-                {signupPromptReason === 'pro_purchase' ? i18n_t('pro', 'payGuestSignupTitle') : signupPromptReason === 'first_challenge' ? 'Great job!' : 'You\'re on fire!'}
+                {signupPromptReason === 'pro_purchase' ? i18n_t('pro', 'payGuestSignupTitle') : signupPromptReason === 'first_challenge' ? 'Great job!' : (signupPromptReason === 'ai_limit' && ftbFlag('aiLimitAskCopy')) ? 'More AI help with a free account' : 'You\'re on fire!'}
               </h2>
               <p className="text-gray-300">
                 {signupPromptReason === 'pro_purchase'
                   ? i18n_t('pro', 'payGuestSignupBody')
                   : signupPromptReason === 'first_challenge'
                     ? 'You just solved your first challenge!'
-                    : `You've earned ${xp} XP and solved ${solvedChallenges.size} challenges!`}
+                    : (signupPromptReason === 'ai_limit' && ftbFlag('aiLimitAskCopy'))
+                      ? `Guest AI help is used up for today. A free account gets ${TUTOR_FREE_DAILY_LIMIT} tutor calls a day.`
+                      : `You've earned ${xp} XP and solved ${solvedChallenges.size} challenges!`}
               </p>
             </div>
             

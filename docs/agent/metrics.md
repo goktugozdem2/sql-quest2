@@ -46,6 +46,18 @@ And two standing traps:
   of `aid` reads 03-11 the same way, and so would a door's. Key the same
   query by `aid` presence or by door when that is what you are dating. A
   metric that jumped because the event shipped mid-window is not a result.
+- **`isGuest` on `app_opened` (noted 2026-11-27):** isGuest on app_opened is unreliable before the deploy of fix/app-opened-isguest (2026-11-27 or later: date it as the first day with 5+ `app_opened` rows whose `isGuest` is `'true'`); use username LIKE 'guest_%' instead.
+  Until then the event stamped the `isGuest` state, which a cold visitor's
+  first render reads as false before guest mode starts — 11,763 of 11,764
+  rows since 08-01 said `'false'`
+  (docs/reads/retention-drivers-2026-11-27.md). From the fix it is
+  `isGuestSession()` (src/utils/session-boot.js): true unless a non-guest
+  account is signed in, so a pre-login visitor is a guest. On the deploy
+  day itself both kinds of row exist; skip that day. An `app_opened` row
+  written before guest mode starts still carries username `guest`
+  (unchanged on purpose), so the `guest_%` fallback misses those rows:
+  join them by `aid` to the browser's later `guest_<ts>` rows. The shared
+  `isGuest` on other /app events is unchanged (it reads the state).
 - **Local traffic before 2026-09-03 is in the data.** Until the localhost
   guard shipped (`ANALYTICS_MUTED` in app.jsx, the same test in track.js),
   smoke runs and browser QA against localhost wrote real rows with a fresh
@@ -2819,7 +2831,7 @@ instrumentation, not behaviour.
 | event | question it answers |
 |---|---|
 | `leaderboard_tab_viewed` | how many people are ever on the only screen the invite button lives on (one per user per day, same shape as `coach_tab_viewed`) |
-| `referral_modal_opened` | of those, how many press 🎁 — carries `hasCode`, `isGuest` |
+| `referral_modal_opened` | of those, how many press 🎁 — carries `hasCode`, `isGuest` (the state at the press; the `app_opened` caveat in Shared filters is about an event fired before guest mode starts) |
 | `referral_link_copied` | how many take the link away |
 | `share_clicked` | which platform, and whether it came from the invite modal (`fromReferralModal`) or the general share button — carries `platform`, `shareKind`, `hasCode` |
 | `referrals.event_type='click'` on an 8-char code | someone on the other end actually arrived |
@@ -5376,7 +5388,8 @@ Plus what each door already stamps: on static pages (`reason = 'landing'`,
 `src/track.js`) `aid`, `page`, `variant`, `utm`, `landingSrc`, `tz`,
 `viewport`, `ctaArm`; on /app (`reason = 'activation_funnel'`,
 `trackActivationEvent`) `aid`, `arrivalSrc`, `landingSrc`, `intent`, `tz`,
-`viewport`, `solvedCount`, `isGuest`.
+`viewport`, `solvedCount`, `isGuest`. (2026-11-27: isGuest on app_opened is unreliable before the deploy of fix/app-opened-isguest (2026-11-27 or later: date it as the first day with 5+ `app_opened` rows whose `isGuest` is `'true'`); use username LIKE 'guest_%' instead.
+See Shared filters.)
 
 **Never on the row:** the referrer (`ref`, which can carry another site's
 query string — dropped for this event only), the user agent, any URL or
@@ -6082,6 +6095,29 @@ thresholds. Defined 2026-11-26, before the code.
 - **Report n always.** At ~8 arm-B people a day, rung-level rows under 20
   are directional only.
 
+## `ai_limit_ask`
+
+The guest's signup ask when the tutor runs out (`ai-tutor` 429 with
+`plan: 'guest'`, five calls a day). Defined 2026-11-27 with the fix that
+first counts it (A3; `docs/reads/errors-2026-11-27.md`). Before that the
+ask opened with no event, so there is no before: never read across the
+deploy.
+
+- **Event.** `signup_prompt_shown {promptReason: 'ai_limit'}` (sent by
+  `triggerSignupPrompt`; at most one per open of the modal).
+- **Coverage check.** Against `function_edge_logs` for `ai-tutor` with
+  status 429 from a guest: each guest 429 day with a call through the
+  inline Help or a lesson should carry one `ai_limit` row for that person.
+  A 429 with no row means the ask did not open (the modal was already up,
+  or the caller is not a guest in the client).
+- **Conversion.** Share of `ai_limit` askers (by
+  `coalesce(meta->>'aid', username)`) with `signup_completed` within 24 h,
+  humans only (fleet README, Data). n will be tiny: read the people, do
+  not compute a rate under 10.
+- **Traps.** `signup_prompt_shown` also carries `third_solve`,
+  `first_challenge` and other reasons; always filter by `promptReason`.
+  The live nudge's own 429 (`#nudge` bucket) never opens this ask.
+
 ## `plan_steps_done_7d`
 
 Did people follow the personal roadmap? It attributes the tournament arms'
@@ -6189,3 +6225,46 @@ GROUP BY 1,2,3,4 ORDER BY 1,2,3,4;
 `planIds` must be logged as a JSON array of **strings** for the `?`
 operator above (or the read casts each element); the arm PR that writes
 the event pins the shape in its test.
+
+## `daily_challenge_use`
+
+Defined 2026-11-27, in the PR that adds its two events, before any read
+(rule 6b). From B1's read `docs/reads/retention-drivers-2026-11-27.md`: the
+daily challenge is one of the few free things left after the quota, and
+"did the daily in session 1" could not be read because it had no event.
+
+- **Events** (`reason = 'activation_funnel'`, so they carry the shared /app
+  stamps: `aid`, `arrivalSrc`, `landingSrc`, `tz`, `viewport`, `isGuest`):
+  - `daily_challenge_opened {date, difficulty, state}` — the daily modal was
+    shown (`openDailyChallenge`, after its no-challenge / no-database
+    return; it is the only place that shows the daily, so every door into
+    it — the notifications, the quota wall's free path — goes through it).
+    `date` is the daily's own day string (`YYYY-MM-DD`, reset 11:00 GMT+3,
+    the key of `completedDailyChallenges`), never the person's local date.
+    `difficulty` is the tier it opens on (the saved one, else the selected
+    or recommended tier: `Easy` | `Medium` | `Hard`). `state`: `fresh`,
+    `resumed` (saved progress) or `done` (already completed today — the
+    completion screen).
+  - `daily_challenge_solved {date, difficulty, practice}` — the core SQL
+    step was submitted and matched the expected result
+    (`submitDailyChallenge`). Not the warm-up or the insight step, and not
+    the "Complete Challenge" click that awards XP. `difficulty` is the tier
+    of the challenge that was solved. `practice` is true when today's daily
+    was already completed or is in practice mode.
+- **Definition:** of people (`coalesce(aid, username)`) with an
+  `app_opened` in the window, the share with a `daily_challenge_opened`,
+  and of those, the share with a `daily_challenge_solved` with
+  `practice = false` for the same `date`. Count distinct person-`date`
+  pairs, never rows: a resubmit of a correct query writes a second
+  `daily_challenge_solved`, and every reopen writes another
+  `daily_challenge_opened`. Split by `isGuest`, by first session vs later,
+  by `difficulty`.
+- **Start date:** the deploy of fix/app-opened-isguest (the first day with
+  5+ `daily_challenge_opened` rows). There is no before; the
+  `completedDailyChallenges` map in `users.data` covers synced accounts only
+  and is not this series.
+- **Traps:** a daily done before the deploy and reopened after writes
+  `state = 'done'` with no `solved` row — count it as an open, not a solve.
+  Apply the bot and internal filters (Shared filters; fleet README, Data).
+- No target: this is a measurement, read first by B1 two weeks after the
+  start date.

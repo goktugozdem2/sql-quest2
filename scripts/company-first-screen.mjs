@@ -188,6 +188,59 @@ export const FIRST_SCREENS = {
     askText: () => 'the average fee, in GBP, on a completed currency exchange, for each customer\'s home currency. The query below runs on our synthetic multi-currency ledger (240 users, 12 currencies) and returns a plausible number for every currency. Four of the five are wrong. Find the lines.',
     bugText: () => 'Lines 4 and 8: the inner query averages per user, and line 2 then averages those averages. A user with one exchange weighs as much as a user with ten, so the answer is an average per customer, not per exchange. PLN users made 30 completed exchanges: the query says 0.65, the real average fee is 1.07. Average the exchanges directly:',
   },
+
+  // Snowflake (C5, 2026-11-28). An older, general page: no sourced format, so
+  // no sourceKey; the frame cites the two dated reports in
+  // docs/reads/companies/snowflake.md (S3, S4), pinned by its own test. The
+  // dossier read no analyst-round source, so the page still states no format.
+  // "Start with" is #23, a free Hard preview: a rank inside each department,
+  // the step before the nth-highest-salary shape both reports name. The hero
+  // button keeps #117 (its series is pinned by the hero CTA test).
+  snowflake: {
+    name: 'Snowflake',
+    ownTest: 'tests/snowflake-first-screen.test.js',
+    src: 'company-snowflake',
+    dataset: 'employees',
+    firstId: 23,
+    firstLabel: 'Start with',
+    firstMeasures: 'a rank inside each department. The nth-highest salary is the one shape both readable Snowflake reports name (cited below), and this is the step before it. A Hard preview, so it opens inside the free tier.',
+    // The app's Debug item on the same join duplication, on another dataset
+    // (ecommerce). A Hard, so Pro: the button says so.
+    debugId: 340,
+    debugNote: '(Hard, Pro)',
+    proText: (f, name) => `the ${f.hard - f.previews} Hard challenges in the ${name} set past its Hard previews, the Hard Debug challenges like the one below, all ${esc(f.bank)} challenges without the stop at ${esc(freeSolvesLabel())}, and the full mock interview bank, timed and scored.`,
+    debugSameBug: 'the same join that repeats rows, on orders and reviews',
+    trapSlug: 'sql-join-fan-out',
+    dataLabel: 'our employees sample data',
+    ask: 'How many employees manage at least one person?',
+    broken: [
+      'SELECT COUNT(*) AS managers',
+      'FROM employees m',
+      'JOIN employees e ON e.manager_id = m.emp_id;',
+    ].join('\n'),
+    bugLine: 3,
+    fix: [
+      'SELECT COUNT(*) AS managers',
+      'FROM employees m',
+      'WHERE EXISTS (',
+      '  SELECT 1 FROM employees e',
+      '  WHERE e.manager_id = m.emp_id',
+      ');',
+    ].join('\n'),
+    brokenAnswer: 43,
+    fixAnswer: 6,
+    facts: [
+      { text: '50 employees', sql: "SELECT COUNT(*) || ' employees' FROM employees", expect: '50 employees' },
+      { text: '7 with no manager', sql: "SELECT COUNT(*) || ' with no manager' FROM employees WHERE manager_id IS NULL", expect: '7 with no manager' },
+    ],
+    mock: {
+      id: 'faang-sql-interview',
+      label: 'the Hard SQL Interview mock',
+      note: '50 minutes, five written questions, including the second-highest salary and customers who ordered on consecutive days. It is a general mock, not modelled on Snowflake; it is the closest we have to the ranking and consecutive-day shapes the reports describe.',
+    },
+    frame: () => 'Snowflake does not publish its SQL questions, and we could not read any report of its analyst round. Two dated reports from its data-engineering interviews name the shapes: an employee who earns more than their manager, a self-join on the manager id (<a href="https://datadriven.io/companies/snowflake/interview" rel="nofollow noopener" target="_blank" style="color:#94a3b8;">DataDriven\'s Snowflake data engineer guide</a>, updated 23 Sep 2026, read 22 Nov 2026), and the employees on at least one project, without listing anyone twice (<a href="https://www.geeksforgeeks.org/?p=1054489" rel="nofollow noopener" target="_blank" style="color:#94a3b8;">a 2023 campus report on GeeksforGeeks</a>, updated 31 Aug 2023, read 22 Nov 2026). Two reports are not a format. Both shapes meet at one trap: a join that repeats a row, and a count that believes it.',
+    bugText: cfg => `Line ${cfg.bugLine}: the join makes one row per report, not one per manager. The data has 50 employees and 7 with no manager, so the other 43 are reports, and COUNT(*) counts every one of them. ${cfg.brokenAnswer} is the number of people who have a manager. The answer is ${cfg.fixAnswer}. Ask whether a person has at least one report, which never repeats a row:`,
+  },
 };
 
 const esc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
