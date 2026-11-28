@@ -66,6 +66,7 @@ import { diagnoseResult, diagnosisShort, primaryHint, rowDiffSummary } from './u
 import { formatSqlForDisplay } from './utils/sql-format.js';
 import { parseTutorContent } from './utils/tutor-render.js';
 import { sessionLoadingAtBoot, shouldWaitForSession, isGuestSession } from './utils/session-boot.js';
+import { TUTOR_FREE_DAILY_LIMIT, TUTOR_PRO_DISPLAY_LIMIT, tutorDisplayLimit } from './utils/tutor-limits.js';
 import { SQLITE_TUTOR_RULES, mistakeStudyContext, buildMistakeContextBlock, mistakeOpeningPrompt, inlineOpenerMessage, diagnosisFixesLine, ladderRequestNumber } from './utils/tutor-context.js';
 import { buildUserSkill, pickNextBySkill, toCanonicalSkill, isLegacyMasteryRecord } from './utils/user-skill.js';
 import { classifyErrorPatterns, recordErrorPatterns, describeErrorPatterns, patternCount, emptyErrorStore } from './utils/error-patterns.js';
@@ -119,12 +120,11 @@ import { CHALLENGE_LEFT_EVENT, startOpen, noteTyped, noteFlag, leaveHowForView, 
 // parameter goes through canonicalSectorId, so the old spellings still
 // resolve here, and vercel.json 301s the three legacy links to the English
 // ones. tests/sector-param.test.js pins both halves.
-// The AI tutor's free-plan daily cap, as the server sets it
-// (supabase/functions/ai-tutor DAILY_LIMITS.free; tests/tutor-limit-claims.test.js
-// binds the two). Before 2026-11-22 the guest limit message read a
-// `DAILY_LIMITS` that exists only on the server: a ReferenceError at the
-// moment a guest met the cap.
-const TUTOR_FREE_DAILY_LIMIT = 20;
+// The AI tutor's daily caps (TUTOR_FREE_DAILY_LIMIT etc.) come from
+// src/utils/tutor-limits.js, bound to supabase/functions/ai-tutor
+// DAILY_LIMITS by tests/tutor-limit-claims.test.js. Before 2026-11-22 the
+// guest limit message read a `DAILY_LIMITS` that exists only on the server:
+// a ReferenceError at the moment a guest met the cap.
 
 const SECTOR_PARAM_ALIASES = {
   finance: 'finans', 'real-estate': 'gayrimenkul', realestate: 'gayrimenkul',
@@ -7193,8 +7193,8 @@ function SQLQuest() {
   // proExpiry, so the trial-ended UX can tell a lapsed trial from a stranger.
   // Kept under its old name because five call sites read it.
   const proLiveForOffer = userProStatus;
-  const AI_LIMIT_FREE = 20;
-  const AI_LIMIT_PRO = 50; // matches backend monthly tier; actual limit syncs from API response
+  const AI_LIMIT_FREE = TUTOR_FREE_DAILY_LIMIT;
+  const AI_LIMIT_PRO = TUTOR_PRO_DISPLAY_LIMIT; // backend monthly tier; actual limit syncs from API response
   const aiLimit = isPro ? AI_LIMIT_PRO : AI_LIMIT_FREE;
   const WARMUP_FREE_LIMIT = 15;
   const THIRTY_DAY_FREE_LIMIT = 10;
@@ -8290,13 +8290,16 @@ function SQLQuest() {
     } catch (_) {}
   }, [currentUser]);
 
-  // Sync AI daily limit when pro status changes
+  // Sync the shown AI daily limit with the plan, and with guest vs account
+  // (2026-11-28): a guest is capped at 5 by the server, not 20
+  // (src/utils/tutor-limits.js). The server's `usage` replaces it on answer.
+  const aiDisplayLimit = tutorDisplayLimit({ pro: isPro, currentUser, isGuest, isSessionLoading });
   useEffect(() => {
     setAiDailyUsage(prev => {
-      const newLimit = isPro ? AI_LIMIT_PRO : AI_LIMIT_FREE;
+      const newLimit = aiDisplayLimit;
       return { ...prev, limit: newLimit, remaining: Math.max(0, newLimit - prev.used) };
     });
-  }, [isPro]);
+  }, [aiDisplayLimit]);
   const [interviewHistory, setInterviewHistory] = useState(() => {
     if (!currentUser) return [];
     const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
