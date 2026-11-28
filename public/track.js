@@ -390,7 +390,106 @@
     } catch (_) {}
   }
 
-  function send(event, props) {
+  // ── Real-user page speed (metric web_vitals, 2026-11-24) ──────────────
+  // ES5 copy of vitalDevice / vitalPayload / isInternalUser in
+  // src/utils/web-vitals-report.js (this file cannot import);
+  // tests/web-vitals.test.js runs both over the same inputs. The payload is
+  // an allowlist: never the library's `entries` (DOM nodes), never a URL.
+  // WEB_VITALS:begin
+  var VITALS_LIB = '6.2.3';
+  var VITALS_SRC = '/web-vitals.js';
+  var VITAL_NAMES = ['LCP', 'INP', 'CLS', 'FCP', 'TTFB'];
+  var VITAL_RATINGS = ['good', 'needs-improvement', 'poor'];
+  var VITAL_NAV_TYPES = ['navigate', 'reload', 'back-forward', 'back-forward-cache', 'prerender', 'restore'];
+
+  function vitalDevice(width) {
+    var w = Number(width);
+    if (!isFinite(w) || w <= 0) return null;
+    return w < 768 ? 'mobile' : 'desktop';
+  }
+
+  function vitalPayload(metric, width) {
+    if (!metric || VITAL_NAMES.indexOf(metric.name) < 0) return null;
+    var v = Number(metric.value);
+    if (!isFinite(v) || v < 0) return null;
+    return {
+      name: metric.name,
+      value: metric.name === 'CLS' ? Math.round(v * 10000) / 10000 : Math.round(v),
+      rating: VITAL_RATINGS.indexOf(metric.rating) >= 0 ? metric.rating : null,
+      device: vitalDevice(width),
+      navType: VITAL_NAV_TYPES.indexOf(metric.navigationType) >= 0 ? metric.navigationType : null,
+      lib: VITALS_LIB
+    };
+  }
+
+  // isInternalAccount (src/utils/leagues.js) for a signed-in name; guests never.
+  function isInternalUser(username) {
+    var u = String(username || '').toLowerCase();
+    if (!u || u === 'guest' || /^guest_/.test(u)) return false;
+    return /^(test|demo|admin|qa)\d*$/.test(u) || u === 'sqlquest' ||
+      u.indexOf('fabletest') >= 0 || /^linktest/.test(u) || /^internalroutine/.test(u);
+  }
+  // WEB_VITALS:end
+
+  function tzName() {
+    try { return Intl.DateTimeFormat().resolvedOptions().timeZone || null; } catch (_) { return null; }
+  }
+
+  function isLocalhost() {
+    return /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+  }
+
+  // Load web-vitals at the first idle moment after `load`, and send one
+  // web_vital per metric per page load (the first report wins). Nothing is
+  // loaded for a bot, a soft crawler fingerprint, localhost or an internal
+  // account — the same people send() drops or stamps.
+  function measureVitals() {
+    try {
+      if (isBot() || isLocalhost()) return;
+      if (softFingerprint(viewportLabel(), tzName(), landingSrc())) return;
+      var user = null;
+      try { user = localStorage.getItem('sqlquest_user'); } catch (_) {}
+      if (isInternalUser(user)) return;
+      if (window.__sqVitalsArmed) return;
+      window.__sqVitalsArmed = true;
+
+      var sent = {};
+      var report = function (metric) {
+        try {
+          var p = vitalPayload(metric, window.innerWidth);
+          if (!p || sent[p.name]) return;
+          sent[p.name] = true;
+          send('web_vital', p, { noRef: true });
+        } catch (_) {}
+      };
+      var wire = function () {
+        var wv = window.webVitals;
+        if (!wv) return;
+        var fns = ['onLCP', 'onINP', 'onCLS', 'onFCP', 'onTTFB'];
+        for (var i = 0; i < fns.length; i++) {
+          try { if (typeof wv[fns[i]] === 'function') wv[fns[i]](report); } catch (_) {}
+        }
+      };
+      var inject = function () {
+        try {
+          if (window.webVitals) { wire(); return; }
+          var s = document.createElement('script');
+          s.src = VITALS_SRC;
+          s.async = true;
+          s.onload = wire;
+          (document.head || document.body || document.documentElement).appendChild(s);
+        } catch (_) {}
+      };
+      var idle = function () {
+        if (typeof window.requestIdleCallback === 'function') window.requestIdleCallback(inject, { timeout: 3000 });
+        else setTimeout(inject, 1);
+      };
+      if (document.readyState === 'complete') idle();
+      else window.addEventListener('load', idle);
+    } catch (_) {}
+  }
+
+  function send(event, props, opts) {
     try {
       if (isBot()) return;
       // Local dev and headless smoke runs must not write production analytics —
@@ -408,7 +507,11 @@
       // three variant pages declare it at all.
       try { meta.variant = (typeof LANDING_VARIANT === 'string') ? LANDING_VARIANT : null; }
       catch (_) { meta.variant = null; }
-      try { meta.ref = document.referrer ? document.referrer.slice(0, 200) : null; } catch (_) {}
+      // web_vital rows carry no referrer: it can hold another site's query
+      // string, and the speed read does not need it (metric web_vitals).
+      if (!(opts && opts.noRef)) {
+        try { meta.ref = document.referrer ? document.referrer.slice(0, 200) : null; } catch (_) {}
+      }
       // utm = this view's utm_source, cleaned to a hostname-shaped label;
       // landingSrc = the browser's first-touch classification (see the
       // landing-source block above).
@@ -453,6 +556,7 @@
 
   persistLandingSrc();
   applyCtaTest();
+  measureVitals();
   // `ua` rides on landing_view only, capped. The 2026-09-13 burst — 313
   // question-page views in 13 minutes, one aid each, tz America/Los_Angeles,
   // no referrer, nothing after — passed isBot() and could not be named,
