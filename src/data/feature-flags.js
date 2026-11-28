@@ -488,6 +488,13 @@ window.FEATURE_FLAGS = {
     exitReasonAsk: true,
     stuckAsk: false,
     day2Ask: true,
+    // purchase_reason (E2, 2026-11-23; src/utils/feedback-prompts.js): after
+    // the checkout return, once the app SEES Pro or a trial start, one card
+    // "What made you decide today?" — once ever, never before payment, never
+    // on the Pro modal or the payment-success modal. Default ON: post-purchase
+    // only, so not paywall logic, but it rides the ?payment=success return
+    // path — A0 decides. Event feedback_prompt_shown {kind: purchase_reason}.
+    purchaseReasonAsk: true,
     // IR-2 (E2, 2026-11-23; src/utils/feedback-context.js): the 💬 widget,
     // opened on a challenge, writes the challenge id, the last query (cut to
     // ~1,000 chars) and the last diagnosis kind into the row's `context`, and

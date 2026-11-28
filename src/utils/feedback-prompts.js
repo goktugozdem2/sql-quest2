@@ -13,12 +13,18 @@
 //                submits. Once per challenge. The only ask allowed before
 //                the first solve.
 //   day2         the second session's first screen. Once ever.
+//   purchase_reason  (2026-11-23) after the checkout return, once the app
+//                has SEEN the person become Pro or start a trial: "What made
+//                you decide today?". Once ever. Never before payment, never
+//                on the Pro modal or the payment-success modal.
 //
 // Rules for all three (brief docs/agent/fleet/E2-voice.md):
 //   - one question, skippable, never a modal over a modal;
 //   - never more than one prompt per session;
 //   - never during a timed mock;
-//   - never before the first solve, except `stuck`.
+//   - never before the first solve, except `stuck` and `purchase_reason`
+//     (a payment is its own reason; a buyer can arrive from a page with
+//     nothing solved).
 //
 // Pure: no React, no storage. app.jsx reads/writes the records and asks
 // these functions whether a prompt may show.
@@ -27,6 +33,7 @@ export const FEEDBACK_PROMPT_FLAGS = Object.freeze({
   exit_reason: 'exitReasonAsk',
   stuck: 'stuckAsk',
   day2: 'day2Ask',
+  purchase_reason: 'purchaseReasonAsk',
 });
 
 export const FEEDBACK_PROMPT_KINDS = Object.freeze(Object.keys(FEEDBACK_PROMPT_FLAGS));
@@ -36,6 +43,11 @@ export const FBP_SESSION_KEY = 'sqlquest_fbp_session_v1';   // { count, lastAt, 
 export const FBP_EXIT_DAY_KEY = 'sqlquest_fbp_exit_day';     // 'YYYY-MM-DD' (local)
 export const FBP_STUCK_IDS_KEY = 'sqlquest_fbp_stuck_ids';   // JSON array of challenge ids
 export const FBP_DAY2_KEY = 'sqlquest_fbp_day2_at';          // ISO, once ever
+export const FBP_PURCHASE_KEY = 'sqlquest_fbp_purchase_at';  // ISO, once ever
+// { at, trigger } — written when the checkout return SEES Pro or a trial; the
+// ask waits for a free moment (no modal up, a session with room) and dies
+// after PURCHASE_PENDING_MAX_MS, when "today" no longer means anything.
+export const FBP_PURCHASE_PENDING_KEY = 'sqlquest_fbp_purchase_pending';
 // exit_reason answered or skipped: never asked again in this browser
 // (2026-11-24, B1's read: one person answered the same card three times).
 export const FBP_EXIT_DONE_KEY = 'sqlquest_fbp_exit_done_at'; // ISO
@@ -47,6 +59,9 @@ export const STUCK_NO_RUN_MS = 3 * 60 * 1000;
 export const STUCK_WRONG_SUBMITS = 3;
 export const DAY2_SESSION = 2;
 export const FREE_TEXT_MAX = 300;
+export const PURCHASE_PENDING_MAX_MS = 7 * 24 * 60 * 60 * 1000;
+// What the checkout return saw. Nothing else may arm the ask.
+export const PURCHASE_TRIGGERS = Object.freeze(['purchase_completed', 'trial_started']);
 // How long the "thanks" line stays before the card is cleared.
 export const PROMPT_THANKS_MS = 4000;
 
@@ -57,6 +72,15 @@ export const EXIT_REASONS = Object.freeze([
   { id: 'more_free', label: 'exitMoreFree', theme: 'free tier' },
   { id: 'not_what_i_need', label: 'exitNotWhatINeed', theme: 'other' },
   { id: 'other', label: 'exitOther', theme: 'other', text: true },
+]);
+
+// purchase_reason answers. The ids are the data the 12-21 read counts.
+export const PURCHASE_REASONS = Object.freeze([
+  { id: 'interview_soon', label: 'purchaseInterview' },
+  { id: 'company_sets', label: 'purchaseCompanySets' },
+  { id: 'tutor', label: 'purchaseTutor' },
+  { id: 'mock_interviews', label: 'purchaseMocks' },
+  { id: 'other', label: 'purchaseOther', text: true },
 ]);
 
 // The daily read's fixed theme list (brief, step 2). Extend only on purpose.
@@ -71,6 +95,8 @@ export const FEEDBACK_PROMPT_I18N_KEYS = Object.freeze([
   'exitOtherPlaceholder',
   'stuckPromptQ', 'stuckPromptPlaceholder',
   'day2Q', 'day2Placeholder',
+  'purchaseQ', 'purchaseInterview', 'purchaseCompanySets', 'purchaseTutor', 'purchaseMocks',
+  'purchaseOther', 'purchaseOtherPlaceholder',
   'promptSkip', 'promptSend', 'promptThanks',
 ]);
 
@@ -114,7 +140,7 @@ function commonGate({ kind, flagOn, sessionRec, inTimedMock, solvedCount }) {
   if (flagOn !== true) return false;
   if (inTimedMock) return false;
   if (!sessionHasRoom(sessionRec)) return false;
-  if (kind !== 'stuck' && !(solvedCount >= 1)) return false;
+  if (kind !== 'stuck' && kind !== 'purchase_reason' && !(solvedCount >= 1)) return false;
   return true;
 }
 
@@ -158,6 +184,27 @@ export function canShowDay2({ flagOn, sessionRec, askedAt, solvedCount, inTimedM
   return true;
 }
 
+// purchase_reason: the checkout return armed it (`pending`, a valid trigger,
+// not older than a week), the person is Pro NOW (a trial counts — the app
+// sets Pro on a trial start), never asked before, and nothing is open over
+// or in front of it (the Pro modal, the payment-success modal, the signup
+// prompt, the 💬 widget, another prompt). No solve needed.
+export function isPurchasePending(pending, now = Date.now()) {
+  if (!pending || typeof pending !== 'object') return false;
+  if (!PURCHASE_TRIGGERS.includes(pending.trigger)) return false;
+  if (!Number.isFinite(pending.at) || pending.at > now) return false;
+  return now - pending.at <= PURCHASE_PENDING_MAX_MS;
+}
+
+export function canShowPurchaseReason({ flagOn, isPro, pending, askedAt, inTimedMock, sessionRec, overlayOpen, now = Date.now() }) {
+  if (!commonGate({ kind: 'purchase_reason', flagOn, sessionRec, inTimedMock, solvedCount: 0 })) return false;
+  if (isPro !== true) return false;
+  if (askedAt) return false;
+  if (!isPurchasePending(pending, now)) return false;
+  if (overlayOpen) return false;
+  return true;
+}
+
 // ── After an answer or a skip ───────────────────────────────────────────────
 //
 // The defect of 2026-11-23 (docs/reads/funnel-2026-11-24.md §1): the card's
@@ -173,6 +220,10 @@ export function canShowDay2({ flagOn, sessionRec, askedAt, solvedCount, inTimedM
 export function promptDoneKey(kind) {
   if (kind === 'exit_reason') return FBP_EXIT_DONE_KEY;
   if (kind === 'day2') return FBP_DAY2_KEY;
+  // purchase_reason: its once-ever key is already written at show (before
+  // the card mounts), so this is belt and braces — an answer or a skip can
+  // never leave it unset, and the show effect reads that key first.
+  if (kind === 'purchase_reason') return FBP_PURCHASE_KEY;
   return null;
 }
 
@@ -206,8 +257,9 @@ export function buildPromptSubmission({ kind, trigger, answerId = null, text = '
   if (!FEEDBACK_PROMPT_KINDS.includes(kind)) return null;
   const t = cleanText(text);
   let message;
-  if (kind === 'exit_reason') {
-    if (!EXIT_REASONS.some(r => r.id === answerId)) return null;
+  if (kind === 'exit_reason' || kind === 'purchase_reason') {
+    const list = kind === 'exit_reason' ? EXIT_REASONS : PURCHASE_REASONS;
+    if (!list.some(r => r.id === answerId)) return null;
     message = t ? `${answerId}: ${t}` : answerId;
   } else {
     if (!t) return null;

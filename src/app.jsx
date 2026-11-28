@@ -101,7 +101,8 @@ import { lintSQL } from './utils/sql-lint.js';
 import { resultsMatch, solutionRequiresOrder, sortRowsCanonical } from './utils/grade.js';
 import { normalizeAiMessages } from './utils/ai-tutor-client.js';
 import { buildFeedbackChallengeContext, feedbackEventContext } from './utils/feedback-context.js';
-import { FEEDBACK_PROMPT_FLAGS, FBP_SESSION_KEY, FBP_EXIT_DAY_KEY, FBP_STUCK_IDS_KEY, FBP_DAY2_KEY, FBP_EXIT_DONE_KEY, STUCK_NO_RUN_MS, PROMPT_THANKS_MS, EXIT_REASONS, promptDoneKey, mayRecordAnswer, markPromptAnswered, nextSessionRecord, markPromptShown, canShowExitReason, stuckTrigger, canShowStuck, canShowDay2, buildPromptSubmission, localDay } from './utils/feedback-prompts.js';
+import { FEEDBACK_PROMPT_FLAGS, FBP_SESSION_KEY, FBP_EXIT_DAY_KEY, FBP_STUCK_IDS_KEY, FBP_DAY2_KEY, FBP_EXIT_DONE_KEY, STUCK_NO_RUN_MS, PROMPT_THANKS_MS, EXIT_REASONS, promptDoneKey, mayRecordAnswer, markPromptAnswered, nextSessionRecord, markPromptShown, canShowExitReason, stuckTrigger, canShowStuck, canShowDay2, buildPromptSubmission, localDay, FBP_PURCHASE_KEY, FBP_PURCHASE_PENDING_KEY, PURCHASE_REASONS, canShowPurchaseReason } from './utils/feedback-prompts.js';
+import { showReplyHint, sentConfirmationKind, looksLikeQuestion } from './utils/feedback-reply.js';
 import { t as i18n_t, getCurrentLang, setLang as i18n_setLang, subscribeLang, SUPPORTED_LANGS, localizeChallenge, localizeInterview, localizeQuestion } from './utils/i18n.js';
 import { buildWeeklyReport, detectMilestones } from './utils/weekly-report.js';
 import { isMcqQuestion, scoreMcqAnswer, applyHintPenalty, nextOptionId, findOption, buildInterviewProgress, mockMistakeDiagnosis, weakConceptsFromHistory } from './utils/mock-interview.js';
@@ -4928,9 +4929,12 @@ function FeedbackPromptCard({ kind, onSend, onSkip, compact = false, answered = 
     const ok = await onSend(answerId, line);
     setStatus(ok ? 'done' : 'error');
   };
-  const question = kind === 'exit_reason' ? tt('exitQ') : kind === 'stuck' ? tt('stuckPromptQ') : tt('day2Q');
-  const placeholder = kind === 'exit_reason' ? tt('exitOtherPlaceholder') : kind === 'stuck' ? tt('stuckPromptPlaceholder') : tt('day2Placeholder');
-  const showLine = kind !== 'exit_reason' || picked === 'other';
+  // exit_reason and purchase_reason are one-tap lists whose last answer
+  // opens a line; stuck and day2 are a line only.
+  const choices = kind === 'exit_reason' ? EXIT_REASONS : kind === 'purchase_reason' ? PURCHASE_REASONS : null;
+  const question = kind === 'exit_reason' ? tt('exitQ') : kind === 'purchase_reason' ? tt('purchaseQ') : kind === 'stuck' ? tt('stuckPromptQ') : tt('day2Q');
+  const placeholder = kind === 'exit_reason' ? tt('exitOtherPlaceholder') : kind === 'purchase_reason' ? tt('purchaseOtherPlaceholder') : kind === 'stuck' ? tt('stuckPromptPlaceholder') : tt('day2Placeholder');
+  const showLine = !choices || picked === 'other';
   if (status === 'done') {
     return (
       <div data-testid={`feedback-prompt-${kind}`} data-state="done" className={compact ? 'mt-3' : 'rounded-lg p-3'} style={compact ? undefined : { background: '#16181F', border: '1px solid #2A2E38' }}>
@@ -4946,9 +4950,9 @@ function FeedbackPromptCard({ kind, onSend, onSkip, compact = false, answered = 
           <button onClick={onSkip} className="min-h-[44px] min-w-[44px] -mt-3 -mr-2 text-sm shrink-0" style={{ color: '#8A8E99' }} data-testid="feedback-prompt-skip">{tt('promptSkip')}</button>
         )}
       </div>
-      {kind === 'exit_reason' && (
+      {choices && (
         <div className="flex flex-wrap gap-2 mb-2">
-          {EXIT_REASONS.map(r => (
+          {choices.map(r => (
             <button
               key={r.id}
               data-answer={r.id}
@@ -4961,7 +4965,7 @@ function FeedbackPromptCard({ kind, onSend, onSkip, compact = false, answered = 
         </div>
       )}
       {showLine && (
-        <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); const line = text.trim(); if (kind === 'exit_reason') send('other', line); else if (line) send(null, line); }}>
+        <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); const line = text.trim(); if (choices) send('other', line); else if (line) send(null, line); }}>
           <input
             value={text}
             onChange={(e) => setText(e.target.value)}
@@ -4971,7 +4975,7 @@ function FeedbackPromptCard({ kind, onSend, onSkip, compact = false, answered = 
             className="flex-1 min-w-0 min-h-[44px] px-3 rounded-md text-sm"
             style={{ background: '#0E0F13', border: '1px solid #2A2E38', color: '#F2F0EA' }}
           />
-          <button type="submit" disabled={status === 'sending' || (kind !== 'exit_reason' && !text.trim())} className={btn} style={neutral}>{tt('promptSend')}</button>
+          <button type="submit" disabled={status === 'sending' || (!choices && !text.trim())} className={btn} style={neutral}>{tt('promptSend')}</button>
         </form>
       )}
       {status === 'error' && <p className="text-xs mt-2" style={{ color: '#FF6B6B' }}>{tt('error')}</p>}
@@ -4990,6 +4994,9 @@ function FeedbackWidget({ open, onOpen, onClose, onSubmit, onTopicPick, screen, 
   const [quoteName, setQuoteName] = React.useState('');
   const [quoteConsentAt, setQuoteConsentAt] = React.useState(null);
   const [state, setState] = React.useState('idle'); // idle | sending | sent | error
+  // Which thank-you the sent state shows (src/utils/feedback-reply.js): the
+  // "any reply goes to your email" line only when the message went with one.
+  const [sentKind, setSentKind] = React.useState('default');
   const taRef = React.useRef(null);
 
   React.useEffect(() => {
@@ -5030,10 +5037,15 @@ function FeedbackWidget({ open, onOpen, onClose, onSubmit, onTopicPick, screen, 
     const body = message.trim();
     if (!body || state === 'sending') return;
     setState('sending');
+    const replyKind = sentConfirmationKind({ contact });
     const ok = await onSubmit({
       message: body,
       contact: contact.trim() || null,
       topic,
+      // Reply expectation (2026-11-23): whether this read as a question and
+      // whether the "Want a reply?" line was on screen at Send.
+      questionLike: looksLikeQuestion(body),
+      replyHintShown: showReplyHint({ message: body, contact }),
       // Only ever sent when the box is actually ticked. An unticked box sends
       // `false` and a NULL name/timestamp, never a partial consent.
       quoteConsent,
@@ -5041,10 +5053,12 @@ function FeedbackWidget({ open, onOpen, onClose, onSubmit, onTopicPick, screen, 
       quoteConsentAt: quoteConsent ? quoteConsentAt : null,
     });
     if (ok) {
+      setSentKind(replyKind);
       setState('sent');
       setMessage(''); setContact(''); setTopic(null);
       setQuoteConsent(false); setQuoteName(''); setQuoteConsentAt(null);
-      setTimeout(onClose, 1600);
+      // The reply line is a sentence worth reading; give it a second more.
+      setTimeout(onClose, replyKind === 'reply_by_email' ? 2800 : 1600);
     } else {
       setState('error');
     }
@@ -5073,8 +5087,14 @@ function FeedbackWidget({ open, onOpen, onClose, onSubmit, onTopicPick, screen, 
         {state === 'sent' ? (
           <div className="py-6 text-center">
             <div className="text-3xl mb-2">✅</div>
-            <p className="text-sm font-semibold" style={{ color: '#F2F0EA' }}>{i18n_t('feedback', 'thanks')}</p>
-            <p className="text-xs mt-1" style={{ color: '#8A8E99' }}>{i18n_t('feedback', 'thanksBody')}</p>
+            {sentKind === 'reply_by_email' ? (
+              <p className="text-sm font-semibold" style={{ color: '#F2F0EA' }} data-testid="feedback-thanks-reply">{i18n_t('feedback', 'thanksReply')}</p>
+            ) : (
+              <>
+                <p className="text-sm font-semibold" style={{ color: '#F2F0EA' }}>{i18n_t('feedback', 'thanks')}</p>
+                <p className="text-xs mt-1" style={{ color: '#8A8E99' }}>{i18n_t('feedback', 'thanksBody')}</p>
+              </>
+            )}
           </div>
         ) : (
           <>
@@ -5140,6 +5160,13 @@ function FeedbackWidget({ open, onOpen, onClose, onSubmit, onTopicPick, screen, 
               className="w-full rounded-xl p-3 text-sm mt-2 outline-none"
               style={{ background: '#0E0F13', border: '1px solid #2A2E38', color: '#F2F0EA' }}
             />
+            {/* Reply expectation (2026-11-23): a question with no email gets
+                one muted line under the textarea and the email field it
+                points at. Information only — Send is never disabled by it,
+                and it never uses the accent (DESIGN.md). */}
+            {showReplyHint({ message, contact }) && (
+              <p className="text-xs mt-1.5" style={{ color: '#8A8E99' }} data-testid="feedback-reply-hint">{i18n_t('feedback', 'replyHint')}</p>
+            )}
             {/* Quote consent — explicit, separate, default OFF.
                 Nothing is offered in exchange for ticking this. It is not a
                 condition of sending, it grants no XP, no Pro days and no
@@ -8047,7 +8074,7 @@ function SQLQuest() {
     status: challengeStatus,
   });
 
-  const submitFeedback = async ({ message, contact, topic, quoteConsent, quoteName, quoteConsentAt, kind = 'open', trigger = null, promptContext = null }) => {
+  const submitFeedback = async ({ message, contact, topic, quoteConsent, quoteName, quoteConsentAt, kind = 'open', trigger = null, promptContext = null, questionLike = null, replyHintShown = null }) => {
     // Only the widget itself ('open') carries the challenge context; the
     // asked prompts bring their own promptContext.
     const fbChallengeCtx = (kind || 'open') === 'open' ? feedbackChallengeCtxNow() : null;
@@ -8073,6 +8100,10 @@ function SQLQuest() {
         kind: kind || 'open',
         trigger: trigger || null,
         ...(promptContext || {}),
+        // Reply expectation (2026-11-23): set by the widget only; null on
+        // the asked prompts, which carry no contact field.
+        questionLike: typeof questionLike === 'boolean' ? questionLike : null,
+        replyHintShown: typeof replyHintShown === 'boolean' ? replyHintShown : null,
         ...(fbChallengeCtx || {}),
         solvedCount: solvedChallenges.size,
         isGuest: !!isGuest,
@@ -8118,6 +8149,10 @@ function SQLQuest() {
         // pro_events is a behavioural table; the quotable content stays in
         // the feedback table, which anon cannot read back out.
         quoteConsent: quoteConsent === true,
+        // The 12-21 read: the share of question-like widget messages that
+        // carry contact (gaveContact above).
+        questionLike: typeof questionLike === 'boolean' ? questionLike : null,
+        replyHintShown: typeof replyHintShown === 'boolean' ? replyHintShown : null,
         // IR-2: the challenge id and diagnosis kind, never the query — the
         // query stays in the feedback row, which anon cannot read back.
         ...feedbackEventContext(fbChallengeCtx),
@@ -26543,6 +26578,19 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
     if (trig) fbTryStuck(trig);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wrongAttemptCount, challengeStatus]);
+  // 5 — purchase_reason (2026-11-23): the checkout return ARMS it here, only
+  // once the app has seen Pro or a trial (the ?payment=success resolver and
+  // the pending-screen recovery call this). The card itself waits for a free
+  // moment in the effect right after that resolver — never on a modal.
+  const fbIsCheckoutReturn = () => { try { return new URLSearchParams(window.location.search).get('payment') === 'success'; } catch (_) { return false; } };
+  const fbArmPurchaseReason = (trigger) => {
+    if (!fbFlag('purchase_reason')) return;
+    try {
+      if (localStorage.getItem(FBP_PURCHASE_KEY)) return; // once ever
+      localStorage.setItem(FBP_PURCHASE_PENDING_KEY, JSON.stringify({ at: Date.now(), trigger }));
+    } catch (_) { /* no storage, no ask */ }
+  };
+
   // ── Tournament arms B / D: ONE layer at a time for the whole first session ──
   // (walk fix round 2, 2026-11-26; pure half pathLayerDecide in
   // src/utils/single-path.js). Priority: the Pro / plan_end ask (and a modal
@@ -26613,7 +26661,9 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
       flagOn: fbFlag('day2'), sessionRec: fbSessionRef.current,
       askedAt: (() => { try { return localStorage.getItem(FBP_DAY2_KEY); } catch (_) { return 'unreadable'; } })(),
       solvedCount: solvedChallenges.size, inTimedMock: fbInTimedMock(), challengeOpen: !!currentChallenge,
-      overlayOpen: !!(fbPrompt || showProModal || showFeedback || goalAsk || showIntake),
+      // A checkout return is not a first screen: day2 must not spend the
+      // session's one ask in front of purchase_reason (2026-11-23).
+      overlayOpen: !!(fbPrompt || showProModal || showFeedback || goalAsk || showIntake || fbIsCheckoutReturn()),
     });
     if (!ok) return;
     try { localStorage.setItem(FBP_DAY2_KEY, new Date().toISOString()); } catch (_) {}
@@ -27801,6 +27851,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
         setProExpiry(userData.proExpiry);
         setProAutoRenew(userData.proAutoRenew);
         trackActivationEvent('pro_purchase_completed', { plan: userData.proType || 'unknown', source: 'existing_user_data' });
+        fbArmPurchaseReason(userData.proTrial === true ? 'trial_started' : 'purchase_completed');
         setVerifyState('done');
         setPaymentSuccessState('activated');
         return;
@@ -27820,6 +27871,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
           setProExpiry(sub.expiry);
           setProAutoRenew(sub.plan_type !== 'lifetime');
           trackActivationEvent('pro_purchase_completed', { plan: sub.plan_type || 'unknown', source: 'pending_subscription' });
+          fbArmPurchaseReason('purchase_completed');
           await supabaseFetch(`pending_subscriptions?id=eq.${sub.id}`, {
             method: 'PATCH',
             body: JSON.stringify({ claimed: true, claimed_by: currentUser, claimed_at: new Date().toISOString() })
@@ -27872,6 +27924,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
           try { playSound('levelup'); setShowConfetti(true); } catch (_) { /* ignore */ }
           try { localStorage.removeItem('sqlquest_purchase_user'); } catch (_) { /* ignore */ }
           trackActivationEvent(fresh.proTrial === true ? 'pro_trial_started' : 'pro_purchase_completed', { plan: fresh.proType || 'unknown', source: 'redirect_return' });
+          fbArmPurchaseReason(fresh.proTrial === true ? 'trial_started' : 'purchase_completed');
           return;
         }
       } catch (_) { /* transient fetch failure — keep polling */ }
@@ -27881,6 +27934,36 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
     poll();
     return () => { cancelled = true; };
   }, [isSessionLoading, currentUser]);
+
+  // ── purchase_reason: show (E2, 2026-11-23, flag purchaseReasonAsk) ──────
+  // Armed by fbArmPurchaseReason above, only after the return SAW Pro or a
+  // trial. Shown once ever, as the global FeedbackPromptCard, when nothing
+  // is over it: not on the payment-success modal, not on the Pro modal, not
+  // behind the guest buyer's signup prompt or the auth screen. Above the
+  // showAuth / dbReady early returns (CLAUDE.md fragile area 1).
+  useEffect(() => {
+    if (isSessionLoading || fbPrompt) return;
+    if (!fbFlag('purchase_reason')) return;
+    const pending = fbReadJson(FBP_PURCHASE_PENDING_KEY, null);
+    if (!pending) return;
+    const askedAt = (() => { try { return localStorage.getItem(FBP_PURCHASE_KEY); } catch (_) { return 'unreadable'; } })();
+    const ok = canShowPurchaseReason({
+      flagOn: fbFlag('purchase_reason'),
+      isPro: userProStatus === true,
+      pending,
+      askedAt,
+      inTimedMock: fbInTimedMock(),
+      sessionRec: fbSessionRef.current,
+      overlayOpen: !!(paymentSuccessState || showProModal || showSignupPrompt || showFeedback || showAuth),
+    });
+    if (!ok) return;
+    try {
+      localStorage.setItem(FBP_PURCHASE_KEY, new Date().toISOString());
+      localStorage.removeItem(FBP_PURCHASE_PENDING_KEY);
+    } catch (_) { return; }
+    fbShowPrompt('purchase_reason', pending.trigger);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSessionLoading, paymentSuccessState, showProModal, showSignupPrompt, showFeedback, showAuth, userProStatus, fbPrompt]);
 
   // Resolve the checkout breadcrumb left by launchCheckout. Runs once the
   // session is known, so "they came back already Pro" isn't misread as an

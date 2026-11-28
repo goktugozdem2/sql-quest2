@@ -1265,6 +1265,59 @@ of the verifier and must never be rounded to `FLAT`.
 - **Target** answered ÷ shown ≥ 10% and ≥ 10 lines in the 28 days.
 - **Falsification** answered ÷ shown under 3%, or solves in the second
   session per person shown more than 20% below the 28 days before → off.
+### buyers say why, and the widget says where a reply goes (`purchaseReasonAsk`, reply expectation) — **OPEN**
+
+- **Claimed** 2026-11-23 (E2) · **Shipped** ON (default; post-purchase only,
+  not paywall logic, but it rides the `?payment=success` return path — A0
+  decides) · **Read** 2026-12-21 (move to merge + 28 days if it merges later).
+- **Change** (1) `purchase_reason`: when the checkout return SEES Pro or a
+  trial start (the `?payment=success` resolver's success branch, or the
+  pending-screen recovery), the app arms one FeedbackPromptCard, shown once
+  ever after the payment-success modal, the Pro modal and the guest signup
+  prompt are closed: "What made you decide today?" — Interview coming up ·
+  The company sets · The tutor · The mock interviews · Something else (a
+  line) · Skip. Rows go to `feedback` with `context.kind='purchase_reason'`,
+  `trigger` `purchase_completed` | `trial_started`; event
+  `feedback_prompt_shown {kind: 'purchase_reason'}`. (2) The 💬 widget: a
+  message sent with an email gets "Thanks — we read every message. Any
+  reply goes to the email you left." (no reply time, not signed by a
+  person — A1 REVISE 2026-11-24 replaced "I reply within one working day.
+  — Göktuğ", a promise in the founder's name nobody had agreed to); a
+  question-like message (a "?", or opening how/why/what/nasıl/
+  neden) with no email shows "Want a reply? Add your email above." under
+  the email field, never blocking Send. `feedback_submitted` gains
+  `questionLike` and `replyHintShown`. src/utils/feedback-prompts.js,
+  src/utils/feedback-reply.js; tests/feedback-prompts.test.js,
+  tests/feedback-reply.test.js.
+- **Why** cancellation and purchase reasons are captured nowhere; the asked
+  prompts went live with `contact: null`; nobody is told when a reply comes.
+- **Metric** (defined in metrics.md by #291, its own PR per rule 6b; until
+  #291 merges the verdict is UNDEFINED): (a) `feedback_capture`, kind
+  `purchase_reason` — people answered ÷ people shown, plus its zero-row
+  arm check; (b) `feedback_reply_hint` — question-like widget rows whose
+  `contact` holds an email ÷ question-like widget rows, from
+  `public.feedback` (not `gaveContact`, which is true for any contact).
+- **Baseline** (read 2026-11-23 from `public.feedback`, internal accounts
+  excluded, since 2026-07-01): (a) 0 — the ask did not exist; no purchase
+  reason on record anywhere. (b) 8 widget rows, 1 question-like by this
+  rule, 0 of them with an email (3 of the 8 carried any contact).
+- **Target** (a) ≥ 50% of buyers shown it answer (n will be small: every
+  answer is read, not aggregated); (b) ≥ 50% of question-like widget
+  messages carry an email.
+- **Falsification** (written before the data) (a) fewer than 1 in 4 buyers
+  shown the card answer by 12-21, with ≥ 4 shown → the moment is wrong (move
+  it to the next session) or the list is wrong; or any `feedback_prompt_shown
+  {kind: 'purchase_reason'}` from a person without a `pro_purchase_completed`
+  / `pro_trial_started` (client or webhook) that day → the arm is broken,
+  turn the flag off the same day. (b) with ≥ 5 question-like messages, the
+  share with an email is still 0 → the hint is not read; rewrite or move it.
+- **Confound** n is tiny on both: a handful of purchases a month, 1
+  question-like widget row in five months. Read people and verbatims, never
+  a rate on fewer than 5. #234 (`feedbackContext`, still open; this PR no
+  longer carries it) changes the same widget; if it merges inside the
+  window, its tutor line may route questions away from the box — read (b)
+  before and after its merge date separately.
+
 
 ### a feedback row says which challenge (`feedbackContext`, IR-2) — **OPEN**
 

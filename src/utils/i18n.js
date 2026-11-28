@@ -412,6 +412,22 @@ const TRANSLATIONS = {
       promptSkip: 'Skip',
       promptSend: 'Send',
       promptThanks: 'Thanks. A person reads this.',
+      // purchase_reason (2026-11-23, src/utils/feedback-prompts.js): after
+      // the checkout return, once ever. No price named.
+      purchaseQ: 'What made you decide today?',
+      purchaseInterview: 'Interview coming up',
+      purchaseCompanySets: 'The company sets',
+      purchaseTutor: 'The tutor',
+      purchaseMocks: 'The mock interviews',
+      purchaseOther: 'Something else',
+      purchaseOtherPlaceholder: 'In a few words (optional)',
+      // Reply expectation (src/utils/feedback-reply.js). thanksReply only
+      // when the contact field holds an email; replyHint only for a
+      // question with no email, never blocking Send. thanksReply promises
+      // no reply and no reply time, and is not signed by a person (A1
+      // REVISE on #241, 2026-11-24): it says where a reply would go.
+      thanksReply: 'Thanks — we read every message. Any reply goes to the email you left.',
+      replyHint: 'Want a reply? Add your email above.',
       // IR-2 (src/utils/feedback-context.js): on a challenge, one line above
       // the textarea. Three pieces so "tutor" can be the button.
       tutorLineBefore: 'This box goes to the founder. For help with this query, the ',
@@ -1597,6 +1613,15 @@ const TRANSLATIONS = {
       promptSkip: 'Geç',
       promptSend: 'Gönder',
       promptThanks: 'Teşekkürler. Bunu bir insan okuyor.',
+      purchaseQ: 'Bugün karar vermeni ne sağladı?',
+      purchaseInterview: 'Yaklaşan bir mülakat',
+      purchaseCompanySets: 'Şirket setleri',
+      purchaseTutor: 'Yapay zekâ eğitmeni',
+      purchaseMocks: 'Mülakat simülasyonları',
+      purchaseOther: 'Başka bir şey',
+      purchaseOtherPlaceholder: 'Birkaç kelimeyle (isteğe bağlı)',
+      thanksReply: 'Teşekkürler — her mesajı okuyoruz. Bir cevap olursa bıraktığın e-postaya gelir.',
+      replyHint: 'Cevap ister misin? E-postanı yukarıya ekle.',
       tutorLineBefore: 'Bu kutu kurucuya gider. Bu sorguyla ilgili yardım için ',
       tutorLineLink: 'tutor',
       tutorLineAfter: ' hemen cevap verir.',
