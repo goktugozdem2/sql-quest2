@@ -1,7 +1,8 @@
 # First-session tournament — new visitors split across first sessions, the worst one replaced (2026-11-26)
 
 **Status:** plan only. No app code in this PR. Flag `firstSessionTournament`
-(dark), launch **no earlier than 2026-12-10**.
+(dark), launch **2026-12-12** (orchestrator 2026-11-27: after the
+holdout's halfway money read; was "no earlier than 2026-12-10").
 
 **Recommendation: start with three arms, not four.** Control, B (single
 path) and D (interview sprint). C (proof first) is built and queued as the
@@ -180,8 +181,10 @@ find out instead of predicting, and C's harm stop (§5.5) caps the cost.
   assignedAt}`. A stored record always wins, so nobody is re-armed. A slot
   whose arm is replaced keeps its people in the old arm: their record names
   the arm, not the slot.
-- **Hash:** FNV over `${aid}:first_session_tournament_v1`, then the murmur3
-  finalizer (the `companyDirectArm` pattern). The slot is `h % SLOTS`.
+- **Hash:** FNV over `${aid}:first_session_tournament_v1:${stratum}`, then
+  the murmur3 finalizer (the `companyDirectArm` pattern). The draw
+  `u = h / 2^32` falls into the stratum's cumulative weights over the
+  active arms (§2.1a; amended 2026-11-26 — it was `h % SLOTS`).
 - **`SLOTS` is 3 at launch** (control, B, D). It goes to 4 only by an
   orchestrator decision row, once the 4-week average of human new openers
   reaches **30 a day**. That is ~52 per arm a week at four arms, which is
@@ -196,10 +199,83 @@ find out instead of predicting, and C's harm stop (§5.5) caps the cost.
   holdout, runnable-starter) and checks that each slot × holdout-arm cell
   holds an equal share (1/6 at three slots).
 - **Event:** `tournament_assigned {test, slot, arm, armVersion, round,
-  firstOpenAt, door, viewportBand}`, written once. `tArm` and `tArmV` are
+  firstOpenAt, stratum, profile, weights, weightsVersion, draw, reason}`,
+  written once (the door and the viewport band ride every row through
+  `trackActivationEvent`, and the profile holds them too). `tArm` and `tArmV` are
   stamped on **every** `pro_events` row from an enrolled browser, in
   `writeProEvent`, exactly like `fqArm`. Server rows (`stripe_webhook`)
   join by username.
+
+### 2.1a Assignment: profile first, then the stratum, then the draw (amended 2026-11-26)
+
+**Founder, chat, 2026-11-26 (verbatim):** "her bir grubu tek tek test et.
+ben de testi görebileyim. o kişiye o gruba niye atadın o kişinin profilini
+de çıkar. yani kişinin profilini anlamadan onu bir gruba alamayız. profile
+göre gruba almalıyız".
+
+**The design that keeps the experiment valid** (orchestrator): the profile
+decides the person's STRATUM, never their arm. If the arm were picked from
+the profile (say, every Capital One visitor to D), arm and profile would be
+one variable and no read could say which of the two moved the number. So:
+
+1. **Profile** at the first app open, before the person does anything
+   (`buildVisitorProfile`, src/utils/tournament.js). Only signals known at
+   that moment, no PII:
+   - **door**: company page (+ company slug), `?company=` link, readiness
+     test, `/sql-exercises/`, topic (`/challenges/*`, the trap pages),
+     question page, blog, homepage, AI assistant (`landingSrc` `ai:*`),
+     another page, an external referrer, or direct / unknown — read from
+     `?src` / `utm_source` / `?company` / the referrer and the stored
+     `landingSrc`, the rules `arrivalSrc` and #409's door table use;
+   - **interviewTarget** (#409's entry definition): a company page, a
+     `?company=` link, the readiness test or its stored result
+     (`sqlquest_readiness_v1`), the Capital One blog — and which of these;
+   - **device** (desktop / tablet / phone, the landing tracker's bands);
+   - **country** (ISO-2, only if `/api/geo/` is already cached in the tab —
+     at a first open it usually is not; the announce fills it in when it
+     has answered, never the stratum) and **priceRegion** (india / default);
+   - **language** (`?lang=`, else the browser's), a **timezone bucket**
+     (americas / europe_africa / gulf_south_asia / east_asia_oceania — never
+     the zone name), **landingBefore** (a landing page ran first in this
+     browser), the **readiness band** (low / mid / high) if the public test
+     was taken.
+2. **Stratum** = interview-target (IT / NI) × desktop (D; an unreadable
+   device too) / phone+tablet (M): **IT-D, IT-M, NI-D, NI-M**. Four only:
+   at ~23 new people a day every extra cut halves each cell.
+3. **Draw inside the stratum**: the hash above, salted by the stratum, over
+   the stratum's weights — equal across the active arms unless the stratum
+   is routed (`TOURNAMENT_STRATUM_WEIGHTS` in the registry, empty at
+   launch).
+4. **Log** `stratum`, `profile`, `weights`, `weightsVersion`, `draw` and a
+   human `reason` on `tournament_assigned` and in the stored record, e.g.
+   "interview-target (Capital One page) · desktop → stratum IT-D; equal
+   weights A/B/D; hash draw 0.41 → B". `scripts/tournament-people.sql` lists
+   every assigned person (a hashed 8-character id, never the aid) with the
+   profile, the reason and their progress, so the founder can see each
+   group person by person.
+5. **Read per stratum AND pooled** (§5.4). Elimination and promotion stay
+   pooled; a stratum with a proven winner is **routed** to it by weights,
+   keeping ≥ 20% exploration (§5.5 rule 7).
+
+**Expected people per stratum** (first app openers 2026-10-05 → 11-22 by
+door and viewport, read-only MCP 2026-11-26, scaled to #409's ~161 a week):
+
+| Stratum | share | per week | per arm per week (3 arms) | 100 per arm |
+|---|---|---|---|---|
+| IT-D | 17% | ~28 | ~9 | ~11 weeks |
+| IT-M | 3% | ~5 | ~1.6 | > 1 year |
+| NI-D | 72% | ~116 | ~39 | ~2.6 weeks |
+| NI-M | 7% | ~12 | ~4 | ~25 weeks |
+
+Raw counts: IT-D 220, IT-M 39, NI-D 918, NI-M 94 first app openers in 48
+days. Interview-target is 20% here against #409's 15% (this counts app
+openers with a lighter bot filter, #409 counted challenge openers with the
+full one), so read the IT rows as an upper bound.
+
+So routing can only ever happen in NI-D in the first months, and in IT-D
+around March 2027; IT-M and NI-M are explore-only in practice. That is the
+honest price of four strata at this volume, and why the decisions stay
+pooled.
 
 ### 2.2 The registry
 
@@ -210,13 +286,13 @@ find out instead of predicting, and C's harm stop (§5.5) caps the cost.
 export const TOURNAMENT_TEST_ID = 'first_session_tournament_v1';
 export const TOURNAMENT_SLOTS = 3;            // slot 0 is control, forever; 4 only by decision row (§2.1)
 export const TOURNAMENT_ARMS = [
-  { id: 'A_control',          slot: 0, version: 1, start: '2026-12-10', status: 'permanent',
+  { id: 'A_control',          slot: 0, version: 1, start: '2026-12-12', status: 'permanent',
     hypothesis: "Today's product; anchors drift and is never eliminated." },
-  { id: 'B_single_path',      slot: 1, version: 1, start: '2026-12-10', status: 'live',
+  { id: 'B_single_path',      slot: 1, version: 1, start: '2026-12-12', status: 'live',
     hypothesis: 'No choices until the level is known: a 4-question adaptive ladder sets the level from solving, then one line says the next step — fewer exits, more solves.' },
   { id: 'C_proof_first',      slot: null, version: 1, start: null,      status: 'queued',   // first replacement
     hypothesis: 'Seeing your own Skillmap first (the readiness test\'s ten questions) creates a reason to follow the plan it builds.' },
-  { id: 'D_interview_sprint', slot: 2, version: 1, start: '2026-12-10', status: 'live',
+  { id: 'D_interview_sprint', slot: 2, version: 1, start: '2026-12-12', status: 'live',
     hypothesis: 'A 14-day sprint for a named company (one tap, the date set for them) turns a vague visit into a daily count to keep.' },
 ];
 // Retired arms stay in the file with status 'eliminated' | 'promoted' and an end date.
@@ -264,7 +340,8 @@ B–D person never writes `first_screen_assigned`,
    while quota has ≥ 3), the tournament waits for the founder's call.
    (Re-dated 2026-11-27: the holdout now enrols from 11-28, so its halfway
    read is 12-12, two days after the 12-10 launch. Open for the
-   orchestrator: launch on 12-12, or read the money stop early on 12-10.)
+   orchestrator: launch on 12-12, or read the money stop early on 12-10.
+   Decided 2026-11-27 (orchestrator-decisions): launch 2026-12-12.)
 3. `companyDirectOpen` has a verdict, or the orchestrator accepts its
    slower read in a decision row.
 4. The founder's go on the money strings in §7.
@@ -343,9 +420,13 @@ Desktop (≥ 1024)                                    Phone (375)
 - One card, in the same place as the line. No radar chart and no tier
   explanation. One sentence: "Set from how you solved the last four."
 - "Next →" opens the plan's next question.
-- **The tab row appears now** (§3.5), with a one-time 3-second highlight on
-  the plan line, not on the tabs. The held layers are released here, one at
-  a time.
+- The plan line gets a one-time 3-second highlight. The held layers are
+  released here, one at a time, and at most one held sign-up / save prompt
+  is asked (§3.5).
+- **The tab row does not appear yet** (walk fix, 2026-11-26): it comes back
+  after 3 plan steps (§3.5). Until then the plan line and "Next in your
+  plan →" are the only navigation, and the plan's next step opens by itself
+  when no question is open. No "Take tour" prompt in B's first session.
 
 **Screen B5 — on the plan (every tab, every session).**
 - The line "Your plan: <name> · N questions · k/N · Next →" sits where the
@@ -504,6 +585,13 @@ loads, never before.
 
 ### 3.5 What hides, and until when
 
+*Amended 2026-11-26 after the orchestrator's walk of #417: the sign-up /
+save prompt interrupted the ladder at the 3rd solve, the "Take tour" prompt
+appeared at the ladder's end, and the tab row and the guest banner all came
+back with the plan, so the single focus was lost the moment the plan
+appeared. The pure rule is `pathUiFlags` / `pathTabsOpen` in
+src/utils/single-path.js; `tests/single-path.test.js` pins it.*
+
 - **Hidden during the ladder:**
   - the tab row (Coach, Practice, Interview Prep, Leaderboard, Profile,
     Speed Mode, Drills);
@@ -515,17 +603,70 @@ loads, never before.
   - the quota counter. Today's first-run shell already hides it before the
     first solve; arm B keeps it hidden until the ladder ends, then it shows
     where it does today. That is an exposure change on a money line, so it
-    is listed in §7.
+    is listed in §7;
+  - every sign-up / save prompt (the guest ladder's `signupAskAtThree` ask,
+    the soft email capture, the tutor's guest-limit prompt). They are held,
+    not dropped: when the ladder ends, **at most one** is asked — today's
+    guest ladder on the real solve total, else the one the tutor held.
+- **Hidden after the ladder, until 3 plan steps are done** (`PLAN_FOCUS_STEPS`):
+  - the tab row;
+  - the "Playing as Guest / Save Progress" banner;
+  - the rest of the first-run shell's hiding: the header's stats (lives,
+    coins, level bar — and so the quota counter), the challenge page's
+    "Back to Challenges / Previous / Next Question" row. The plan line and
+    "Next in your plan →" are the only way on.
+  They come back, once, at the first of: the 3rd plan step done after the
+  ladder (`trigger: plan_steps`), the plan line's "All steps"
+  (`all_steps`), or no free plan step left to open (`plan_end`, so the
+  Practice tab is visible beside the plan-end card).
+  `tournament_tabs_revealed` fires then, not at the ladder's end.
+- **One layer at a time, the whole first session** (walk fix round 2,
+  2026-11-26, arms B and D; `pathLayerDecide` in src/utils/single-path.js).
+  The re-walk found the 6-solve Pro modal, an achievement toast with its
+  share card and the "What held you back?" survey open at once at B's 7th
+  solve, and the archetype card beside an achievement toast from the first
+  plan step on. Now one queue:
+  - priority: the Pro / `plan_end` ask (and a modal the person opened
+    themselves) > the save / sign-up ask > achievement (level-up, milestone
+    toast, share bar, streak card) > the archetype (Skillmap) card > the
+    survey;
+  - at most one per solve: the first granted layer shows; everything else
+    that solve raises is dropped (cleared, `tournament_layer_dropped`), not
+    held for later. A toast never sits on a modal. A new challenge open is a
+    fresh slot;
+  - the solve's slot grants nothing but the Pro ask for 2.4 s, because the
+    asks land 1.5–1.8 s after the solve; the Pro ask is never dropped;
+  - the exit survey never asks in the first session;
+  - on B's ladder the achievement / archetype layers are held (§3.1 B2) and
+    compete with the ladder-end ask: one shows, the rest are dropped;
+  - the first session ends at the first hour away (the gap
+    `second_session_7d` and the feedback prompts use), and the queue with
+    it. After that, today's rules.
+  - **one Pro ask in any 3 consecutive solves** (orchestrator decision
+    2026-11-27, `pathProAskAllowed`): the automatic asks a solve raises (the
+    6-solve milestone, "set complete", the streak ask) are spaced; a skipped
+    one waits for a later session (its once-key stays unwritten,
+    `tournament_pro_ask_spaced`). The quota wall, `plan_end` and every Pro
+    modal the person opens are never spaced. The re-walk had met the 6-solve
+    ask and "set complete" on solves 6 and 7.
+- **One plan on screen** (walk fix round 2): once the plan line shows, the
+  Coach's own "Your {company} plan" card is hidden (`hideCoachPlan`, as D3
+  does for D). The re-walk found "Your Capital One plan" beside B's plan line
+  on the Learning Path tab once the tabs were back.
+- **One goal on screen** (orchestrator decision 2026-11-27): once the plan
+  shows, B also hides "Pick a goal to get started" and Focus Tracks on the
+  Learning Path tab (`hideGoalPicker`, the switch D uses).
+- **Never in B's first session:** the "Take tour — 60 seconds" prompt (and,
+  as before, the onboarding tour). The tour stays in the profile menu.
 - **Shown at any time:**
-  - log in / sign up, including the `signupAskAtThree` ask: saving progress
-    is not a navigation choice, and an account is what makes a second
-    session possible;
+  - the header's Log in (the person's own click is not a prompt);
   - 💬 feedback;
   - hints, the inline tutor, and the dialect notes;
   - every Pro modal today's rules open (milestone tier 6, the quota wall,
     `?pro=1`).
-- **The threshold is the end of the ladder (4 questions solved or set
-  aside),** not a solve count. Why:
+- **The threshold for the questions and the layers is the end of the
+  ladder (4 questions solved or set aside),** not a solve count; the tab
+  row waits 3 plan steps more. Why:
   - it is the moment the level and the plan exist, so the tabs can open
     under a line that says what to do;
   - it cannot strand a beginner, because B3's step-down always moves the
@@ -592,7 +733,7 @@ loads, never before.
 | `path_stepdown_shown` / `path_stepdown_clicked` | B3 | `q, rung, trigger (wrongs/timer)` |
 | `placement_completed` | the ladder ends | `source: 'ladder', levelId, tier, outcomes` |
 | `path_plan_built` | B4, and on any recompute that changes N | `goalId, goalSource, n, freeN, proN, company, fillN` |
-| `path_tabs_revealed` | B4 | `secsSinceAssigned, solves` |
+| `path_tabs_revealed` | the 3rd plan step after the ladder, "All steps", or no free step left (§3.5) | `trigger (plan_steps/all_steps/plan_end), secsSinceAssigned, solves` |
 | `path_next_clicked` | any "Next →" | `k, n, challengeId, from (line/verdict)` |
 | `path_plan_end_shown` | B6 (holdout or free steps ran out) | `k, n` |
 
@@ -678,6 +819,38 @@ sprint length is set for the person.
    the starter text.
 4. Tabs open after the first day's count is done or at the first solve of
    day 2, whichever comes first.
+5. **Walk fixes (2026-11-26, the orchestrator's walk of #418):**
+   - *The level.* With a readiness band, the plan uses it. Without one the
+     level is **assumed** (the roadmap's interview default, Intermediate)
+     and the why-line says so: "We assumed Intermediate; your first two
+     answers will adjust it." The first two plan steps solved are read with
+     the ladder's thresholds (`ladderOutcome` at each question's rung,
+     `levelForLadder`); at the second the plan is re-laid from that level,
+     those two steps leading it (`tournament_sprint_level`, then
+     `tournament_plan_shown {recompute: true}`). Chosen over a 2-question
+     mini-ladder in front of the sprint: a company link's question must be
+     step 1 (next bullet), a rung-0 question would be exactly the "Counting
+     Rows" that the walk flagged for a Capital One arrival, and D's
+     mechanism is two taps and the plan, with no third screen.
+   - *A company link's question is step 1.* The question the link opens
+     (`companyBannerNext()`) leads the plan (moved to the head if the
+     roadmap already held it), so the header, the open question and the
+     plan agree.
+   - *One plan.* While the sprint line shows, the Coach's own "Your
+     {Company} plan" card is hidden (`pathUi.hideCoachPlan`).
+   - From B's fixes: the guest banner waits with the tabs, and no "Take
+     tour" prompt.
+6. **Walk fixes, round 2 (2026-11-26, the re-walk of #418):**
+   - *N stays put.* The level re-plan grew the plan (header `2/14` →
+     `2/16`). The re-laid plan is now fitted to the N the person was shown
+     (`fitPlanToLength`): steps come off its tail (never a lead step, a
+     solved one or the mock), or the old plan's unsolved steps fill it before
+     the part past the wall. Only if N truly cannot be kept does it change,
+     and the why-line says "Plan updated for your level: N steps."
+   - *One goal.* With a sprint set, the Learning Path tab hides "Pick a goal
+     to get started" and Focus Tracks (`pathUi.hideGoalPicker`): the sprint
+     is the goal.
+   - *One layer at a time* for the whole first session, as in B (§3.5).
 
 **Reuses.**
 - `interview-prep.js` (`findPlanTarget`, `planToDate`, `daysUntil`);
@@ -739,9 +912,11 @@ planKind}`, then arm B's `path_*` events with `arm: 'D'`.
   `version`.
 - **Posteriors.** Beta(1 + successes, 1 + failures) per arm, uniform
   prior. Monte-Carlo with 20,000 draws, in the SQL file's companion script.
-- **Every read is split by segment.** Interview-target (entry version of
-  #409's segment A: the arrival door is a company page, `?company=`, or the
-  readiness test, fixed before the person does anything) vs everyone else.
+- **Every read is split by segment and by stratum** (§2.1a; the segment is
+  the stratum's first half — interview-target or not, fixed by the profile
+  before the person does anything). Query 4 of the read is the decision
+  table per stratum; `tournament-posteriors.mjs --strata` gives P(best in
+  stratum), the routing verdict and the post-stratified pool.
   - The decision uses the pooled arm. The segment split is reported beside
     it and never decides on its own: at ~15%, it is ~8 people per arm a
     week.
@@ -781,6 +956,19 @@ planKind}`, then arm B's `path_*` events with `arm: 'D'`.
 6. **Money stop.** If a challenger shows 0 trial-or-paid while control
    shows ≥ 3 in the same weeks, report to the founder the same day. This
    does not eliminate by itself.
+7. **Routing a stratum (added 2026-11-26, §2.1a).** A stratum is routed to
+   an arm only when that arm has **P(best in the stratum) ≥ 0.95 on two
+   consecutive Friday reads with ≥ 100 eligible per arm in that stratum**.
+   Routing is a decision row that adds the stratum to
+   `TOURNAMENT_STRATUM_WEIGHTS` with the winner at ≤ 80%; every other
+   active arm keeps a share, so **≥ 20% always explores** (a table that
+   breaks this is ignored by the app and fails the test). The stratum's
+   `weightsVersion` bumps and its per-arm counts restart. From then on the
+   pooled rules 2–3 read the **post-stratified** pool (each stratum
+   weighted by its share of eligible people), not the plain pool, because
+   the arm mix now differs by stratum. A routed stratum's winner that is
+   later eliminated from the pool, or that loses P(best) ≥ 0.95 on two
+   consecutive reads, goes back to equal weights by the same kind of row.
 
 **What these rules can see** (a 40-line Beta/binomial Monte-Carlo, 400 runs
 per row, rates per read; PR 1 commits it as `scripts/tournament-sim.mjs`).
@@ -826,7 +1014,7 @@ about 15 weeks.
 | new human openers | ~161 a week, ~23 a day (#409) | same |
 | per arm | **~54 a week (~8 a day)** | ~40 a week (~6 a day) |
 | 150 eligible per arm | 2.8 weeks of enrolment + 7 days | 3.7 weeks + 7 days |
-| launch | Thu 2026-12-10 at the earliest | same |
+| launch | Sat 2026-12-12 (orchestrator 2026-11-27) | same |
 | first read with every arm at 150 | **Fri 2027-01-08**. A late-December dip could make it 01-15. | Fri 2027-01-15 (likely 01-22) |
 | 6-week fallback | 01-21, so **the first elimination falls on Fri 01-22 at the latest**, and most likely on 01-08 or 01-15 | same latest date, less likely earlier |
 | the cadence after that | ~4 weeks per replacement (a new arm needs its own 150). **By the investor review (02-23), expect 2 eliminations.** | ~5 weeks, 1–2 eliminations |
@@ -849,6 +1037,14 @@ sentence and evidence from our own reads.
 | H4 | **Mock first for interview doors** | Company and interview arrivals start in the free mock (`sql-fundamentals-free`): a timed, scored sitting is the thing they came for. | Interview-shaped doors (company, interview, readiness pages) were 13–32% of new humans a week from 10-05; mocks were reached by 3 people a month; payers 3 / 3 interview-shaped. |
 | H5 | **Tutor-led first question** | The inline tutor opens beside question 1 with a Socratic first line, so help is seen before someone gives up. | 9 of 275 non-runners opened a hint and 1 the tutor (A05 §2): help exists but is not seen. Cost: billed tutor calls under the `#nudge` budget. Needs the tutor budget check. |
 | H6 | **A daily target at the first solve** | One tap, "how many a day?" (1 / 3 / 5), sets a count that the line, the streak reminder and the weekly digest repeat. | `second_session_7d` 16% (§1a), and the 11-25 read says it fell for real; `streak-reminder` already sends by local time. |
+| H7 | **Quiet counter** (B1 retention read, 2026-11-27) | The quota and the wall stay the same. The "N of 10 used" counter and the Coach strip's quota line stay hidden until the 8th solve, so session 1 reads as practice, not as spending a trial. Expected effect: if framing explains half of the 1–9 gap, solver return +8 pts, `second_session_7d` +2 pts, 6+ solves in 7 d +1–2 pts. **Gates:** run it only if the holdout's 1–9 split recovers (read 2027-01-02). It changes exposure on a money surface, so it needs the founder's go. | `docs/reads/retention-drivers-2026-11-27.md` §3. Post-quota, 2–5 solves in session 1 carry OR 0.37 (0.15–0.91) for a return at equal session length; pre-quota the OR was 1.94. 1–9 solvers' return fell from 39.6% to 22.7%. |
+| H8 | **Tomorrow's question at the wall and at the end of session 1** (B1, 2026-11-27) | When a session with at least one solve ends, and always at the quota wall, the person sees one named free step for tomorrow: the daily challenge plus one spaced-retrieval review on the weakest skill, with a one-tap browser reminder. The quota does not change. Expected effect: return of 10+-solve sessions ~10% → ~30%, solver return +5 pts, `second_session_7d` +1.5 pts. **Gates:** the wall line is money copy (§7). The wall group is ~4 people a week, too few to read alone, so read the end-of-session part. | Same read. Session-1 10+ solvers returned 68% before the quota (n 56) and 10% after (n 29; interaction OR 0.07, 0.02–0.27). That is 1 trial and 0 payments in 30 d from 27 wall-hitters. Returns are self-initiated: 1 of 188 week-1 returns came through an email link. |
+| H9 | **Save your progress at the third solve** (B1, 2026-11-27) | An inline, one-step "Save your 3 solves" signup, not a modal, at the warm-up's third solve. It never shows in the same session as the company ask. Expected effect: session-1 signups ~8% → ~14%. If a third of the association is causal, `second_session_7d` +0.5–1 pt. This is the weakest of the three and mostly selection until an arm shows otherwise. | Same read. A session-1 signup carries OR 1.74 (1.04–2.90) for a return with solves and length held, and 2.04 (1.20–3.45) on the metrics.md definition. Session-1 signups fell from 12.8% to 7.8% across the flip. Email is not the path (above). |
+
+Evidence notes from the same read (2026-11-27), not new arms:
+- H4 (mock first) gains support: starting a mock in session 1 carries OR 2.24 (1.05–4.78) post-quota and 3.75 (1.09–12.85) pre-quota, n 36 / 14.
+- Arm D's population, people who state an interview goal, had the steepest return fall of any goal: 37.6% → 14.7%.
+- Hints, the inline tutor, the tutor nudge, lesson 1, the Coach tab, the India timezone band and the hour of day predict nothing once solves and session length are held. Do not build an arm on them from this evidence.
 
 ---
 
@@ -865,7 +1061,7 @@ founder's explicit go").
 | B, C | plan-end card (holdout arm, or free steps ran out) | "{k} of {N} done — the rest of your plan is Pro." + button "See Pro" | same + "Pro'yu gör" |
 | B, C | new modal reason `plan_end` | the modal unchanged; a new `reason` value on `pro_modal_shown` | — |
 | B, C, D | plan sheet | a "Pro" label on locked steps | "Pro" |
-| B | quota counter hidden until the ladder ends (exposure change, §3.5) | — | — |
+| B | quota counter hidden until the ladder ends and 3 plan steps after it (exposure change, §3.5; ~7 solves, under the quota of 10) | — | — |
 | D | quota wall line slot | "Day {d} of {D} — the rest of your {Company} sprint is Pro." | "{D} günün {d}. günü — {Company} sprint'inin geri kalanı Pro'da." |
 | D | sprint sheet | "Pro" on locked days' items | "Pro" |
 

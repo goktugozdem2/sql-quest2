@@ -41,11 +41,39 @@ beforeAll(() => {
   }
   bank = loadBank();
 });
+// Live QA 2026-11-27 (docs/reads/live-qa-2026-11-27.md, note B): after the hero
+// section the block started below the fold, so it now sits INSIDE the hero,
+// directly after the primary CTA row (the yellow button keeps its place).
+// Returns what the placement tests check, from the page's own markup.
+const heroPlacement = (html) => {
+  const START = '<!-- company-first-screen:start -->';
+  const hero = html.indexOf('<section class="hero"');
+  const start = html.indexOf(START);
+  const ctaRowEnd = html.indexOf('</div>', html.indexOf('data-track="cta_hero_primary"', hero)) + '</div>'.length;
+  const heroEnd = html.indexOf('</section>', html.indexOf('<!-- company-first-screen:end -->'));
+  return {
+    once: html.split(START).length === 2,
+    insideHero: hero >= 0 && start > hero && html.slice(hero, start).indexOf('</section>') < 0,
+    rightAfterCtaRow: ctaRowEnd > hero && html.slice(ctaRowEnd, start).trim() === '',
+    // contain:inline-size keeps the <pre> from widening the flex hero on a phone
+    contained: /<div id="start" data-section="first-screen" style="[^"]*contain:inline-size/.test(html),
+    heroEnd,
+  };
+};
+
 const one = (db, sql) => db.prepare(sql.replace(/;\s*$/, '')).raw(true).all()[0][0];
 const amazon = FIRST_SCREENS.amazon;
 
 describe('the debug item: every shown query runs, and the broken one is wrong', () => {
-  for (const [key, cfg] of Object.entries(FIRST_SCREENS)) {
+  // An entry whose query returns a table, not one number (Wise), is checked
+  // by its own test, which must exist.
+  it('every entry this loop skips names a test file that exists', () => {
+    for (const [key, cfg] of Object.entries(FIRST_SCREENS).filter(([, c]) => c.ownTest)) {
+      expect(fs.existsSync(new URL(`../${cfg.ownTest}`, import.meta.url)), `${key}: ${cfg.ownTest}`).toBe(true);
+      expect(read(cfg.ownTest), `${key}: ${cfg.ownTest} reads the ${key} page`).toContain(`${key}-sql-interview.html`);
+    }
+  });
+  for (const [key, cfg] of Object.entries(FIRST_SCREENS).filter(([, c]) => !c.ownTest)) {
     it(`${key}: broken answers ${cfg.brokenAnswer}, the fix ${cfg.fixAnswer}, and they differ`, () => {
       const db = dbs[cfg.dataset];
       expect(db, cfg.dataset).toBeTruthy();
@@ -87,14 +115,12 @@ describe('the debug item: every shown query runs, and the broken one is wrong', 
 });
 
 describe('the block on the page', () => {
-  it('sits right under the hero on the committed and built Monzo page', () => {
+  it('sits in the hero, right after the primary CTA row, on the committed and built Monzo page', () => {
     for (const rel of ['src/monzo-sql-interview.html', 'public/monzo-sql-interview/index.html']) {
       const html = read(rel);
-      const heroEnd = html.indexOf('</section>', html.indexOf('<section class="hero"'));
-      const start = html.indexOf('<!-- company-first-screen:start -->');
-      expect(start, rel).toBeGreaterThan(heroEnd);
-      expect(html.slice(heroEnd, start).replace(/<\/section>/, '').trim(), rel).toBe('');
-      expect(html.indexOf('<section id="format"'), rel).toBeGreaterThan(start);
+      const p = heroPlacement(html);
+      expect(p, rel).toMatchObject({ once: true, insideHero: true, rightAfterCtaRow: true, contained: true });
+      expect(html.indexOf('<section id="format"'), rel).toBeGreaterThan(p.heroEnd);
     }
   });
 
@@ -142,15 +168,13 @@ describe('the block on the page', () => {
 // round reported to us; the hero keeps #19 (its series is pinned).
 describe('the Amazon first screen', () => {
   const f = () => facts(bank, 'Amazon');
-  it('sits right under the hero on the committed and built page, ahead of the provenance note and the sourced format', () => {
+  it('sits in the hero, right after the primary CTA row, ahead of the provenance note and the sourced format', () => {
     for (const rel of ['src/amazon-sql-interview.html', 'public/amazon-sql-interview/index.html']) {
       const html = read(rel);
-      const heroEnd = html.indexOf('</section>', html.indexOf('<section class="hero"'));
-      const start = html.indexOf('<!-- company-first-screen:start -->');
-      expect(start, rel).toBeGreaterThan(heroEnd);
-      expect(html.split('<!-- company-first-screen:start -->').length, rel).toBe(2);
-      expect(html.indexOf('<!-- company-provenance:start -->'), rel).toBeGreaterThan(html.indexOf('<!-- company-first-screen:end -->'));
-      expect(html.indexOf('<section id="format"'), rel).toBeGreaterThan(start);
+      const p = heroPlacement(html);
+      expect(p, rel).toMatchObject({ once: true, insideHero: true, rightAfterCtaRow: true, contained: true });
+      expect(html.indexOf('<!-- company-provenance:start -->'), rel).toBeGreaterThan(p.heroEnd);
+      expect(html.indexOf('<section id="format"'), rel).toBeGreaterThan(p.heroEnd);
     }
   });
 

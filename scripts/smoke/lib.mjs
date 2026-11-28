@@ -149,9 +149,15 @@ export const FIRST_SCREEN_ARMS = Object.freeze(['quiz', 'challenge']);
 // "not in the test" (today's quota), written before any app code runs.
 export const FREE_QUOTA_HOLDOUT_KEY = 'sqlquest_free_quota_holdout_v1';
 export const FREE_QUOTA_OUT_OF_TEST = Object.freeze({ status: 'returning', arm: null, firstOpenAt: null, announced: false });
+// And out of the first-session tournament (src/utils/tournament.js,
+// 2026-11-26): once its flag is on, a fresh profile would be split across
+// arms whose first sessions differ. `returning` is the app's own "not in the
+// tournament" (today's product); tests/tournament.test.js binds it.
+export const TOURNAMENT_KEY = 'sqlquest_tournament_v1';
+export const TOURNAMENT_OUT_OF_TEST = Object.freeze({ status: 'returning' });
 export function firstScreenArmPreamble(arm) {
   if (!FIRST_SCREEN_ARMS.includes(arm)) throw new Error(`unknown first-screen arm: ${arm}`);
-  return `(() => { try { localStorage.setItem(${JSON.stringify(FIRST_SCREEN_KEY)}, JSON.stringify({ arm: ${JSON.stringify(arm)}, at: Date.now() })); localStorage.setItem(${JSON.stringify(FREE_QUOTA_HOLDOUT_KEY)}, ${JSON.stringify(JSON.stringify(FREE_QUOTA_OUT_OF_TEST))}); } catch (_) {} })();`;
+  return `(() => { try { localStorage.setItem(${JSON.stringify(FIRST_SCREEN_KEY)}, JSON.stringify({ arm: ${JSON.stringify(arm)}, at: Date.now() })); localStorage.setItem(${JSON.stringify(FREE_QUOTA_HOLDOUT_KEY)}, ${JSON.stringify(JSON.stringify(FREE_QUOTA_OUT_OF_TEST))}); localStorage.setItem(${JSON.stringify(TOURNAMENT_KEY)}, ${JSON.stringify(JSON.stringify(TOURNAMENT_OUT_OF_TEST))}); } catch (_) {} })();`;
 }
 
 // Which port did OUR Chrome open (2026-11-23, A2)? The battery used to pass a

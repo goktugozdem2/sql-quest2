@@ -692,6 +692,8 @@ touch them.
   (it fails before the index and passes after; rollback file beside it).
   Separately (auth, 6d): decide whether a timeout there should let the
   sign-up continue to the server's own check, instead of failing the form.
+  2026-11-28: the index is still not in `pg_indexes` (no timeout in the
+  window, 2 sign-ups).
 - **A3-3. `my-referral-stats` was never deployed (it has been in the repo
   since 05-02).** RESOLVED 2026-11-23 13:21 UTC (deployed; 5 POSTs answered
   200 on 11-24). The profile and the referral modal call it. The preflight
@@ -724,6 +726,8 @@ touch them.
   and wrote no row (only cancel/reactivate changes are logged); it may be
   this subscription moving status on Stripe's retry schedule. Read its
   status in Stripe (`errors-2026-11-27.md`).
+  2026-11-28: still OPEN, about 82 h after expiry; still `proStatus` false,
+  no `invoice.paid`, not back since 11-25 (`errors-2026-11-28.md`).
 - **A3-5. `pro_events` has no index on `username`, so per-person lookups scan
   the table.** On 11-23 at 15:00 the `checkout-abandon` read
   `username = … AND event IN (plan/checkout clicked)` hit the 8 s statement
@@ -739,6 +743,7 @@ touch them.
   2026-11-27: #398 merged 11-26 10:51 UTC, but the deployed function is
   still v14 (2026-09-17); the 11-26 15:00 run used the old code. The deploy
   is still due.
+  2026-11-28: still v14; the 11-27 15:00 run used the old code again.
 - **A3-6. A failed sign-in leaves no `pro_events` row.** On 11-27 a
   registered person got four 401s and a 429 lockout from `account-login`,
   then got in 45 min later; only the function logs show it. Papercut: a
