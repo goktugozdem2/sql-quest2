@@ -12,6 +12,12 @@
     "limit": "678.03 kB"
   },
   {
+    "name": "sector datasets (lazy, all five)",
+    "path": "public/data/*.js",
+    "gzip": true,
+    "limit": "341.6 kB"
+  },
+  {
     "name": "styles.css",
     "path": "public/styles.css",
     "gzip": true,

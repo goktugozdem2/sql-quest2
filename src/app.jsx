@@ -1,5 +1,6 @@
 import { roundDownCount, bankCountLabel, companySetCount } from './utils/display-count.js';
 import { challengeTablePlan, challengeTableData } from './utils/challenge-datasets.js';
+import { createDatasetLoader, missingLazyKeys, injectScript } from './utils/lazy-datasets.js';
 import { SOURCED_COMPANY_NAMES } from './data/company-interviews.js';
 import { withLocalAccountKeys as withLocalAccountKeysPure, isMissingServerSide, accountFunctionStatus } from './utils/account-access.js';
 import { tokenForUsername, writeSessionToken, clearSessionToken, ensureGuestSecret, clearGuestSecret, withToken, withCarry, endSessionBody, isGuestUsername, rpcBodyFallbacks, isSessionTokenRequired, sessionRefusalAction, RELOGIN_MESSAGE, markReloginPending, isReloginPending, clearReloginPending } from './utils/session-token.js';
@@ -4417,6 +4418,26 @@ Object.keys(publicDatasets).forEach(key => {
   }
 });
 
+// Sector datasets on demand (flag lazySectorData, src/utils/lazy-datasets.js).
+// The manifest exists only in a data.js built with the flag on; without it
+// every dataset is already in publicDatasets and nothing below loads anything.
+// A lazy file adds its key to the SAME window.publicDatasetsData object, so
+// `publicDatasets[key]` sees it once it arrives; its icon is converted here,
+// as the loop above does for the rest.
+const LAZY_DATASET_MANIFEST = window.LAZY_DATASETS || null;
+const sectorDatasetLoader = createDatasetLoader({
+  manifest: LAZY_DATASET_MANIFEST,
+  getDatasets: () => publicDatasets,
+  loadScript: (src) => injectScript(document, src),
+  onLoaded: (key) => {
+    const ds = publicDatasets[key];
+    if (ds && typeof ds.icon === 'string') ds.icon = getIconForData(ds.icon);
+  },
+});
+// The lazy dataset keys an item (challenge, mock question, ticket, a bare
+// { dataset }) needs that have not arrived. Always [] with the flag off.
+const lazyKeysFor = (item) => missingLazyKeys(item, publicDatasets, LAZY_DATASET_MANIFEST);
+
 // Process achievements to convert icon strings to components
 achievements.forEach(a => {
   if (typeof a.icon === 'string') {
@@ -8311,6 +8332,13 @@ function SQLQuest() {
   const sqlCtorRef = useRef(null);
   const [dbReady, setDbReady] = useState(false);
   const [currentDataset, setCurrentDataset] = useState('titanic');
+  // Sector datasets on demand: a tick that re-renders (and re-runs the
+  // expected-output backfill) when one arrives, the loading line's state, and
+  // the table builds waiting for one ({ database, keys, run }).
+  const [lazyDatasetTick, setLazyDatasetTick] = useState(0);
+  const [lazyDatasetStatus, setLazyDatasetStatus] = useState(null);
+  const lazyLoadsRef = useRef([]);
+  const lazyFailedRef = useRef(new Set());
   const [customTables, setCustomTables] = useState({});
   const [query, setQuery] = useState('');
   const [results, setResults] = useState({ columns: [], rows: [], error: null });
@@ -10250,6 +10278,7 @@ function SQLQuest() {
 
   const runSpeedRunQuery = () => {
     if (!db || !speedRunQuery.trim()) return;
+    if (lazyDatasetsBusy(lazyKeysFor(speedRunCurrentChallenge))) return;
     try {
       const result = db.exec(speedRunQuery);
       if (result.length > 0) {
@@ -10264,6 +10293,7 @@ function SQLQuest() {
 
   const submitSpeedRunAnswer = () => {
     if (!db || !speedRunCurrentChallenge || !speedRunQuery.trim()) return;
+    if (lazyDatasetsBusy(lazyKeysFor(speedRunCurrentChallenge))) return;
     try {
       const userResult = db.exec(speedRunQuery);
       const expectedResult = db.exec(speedRunCurrentChallenge.solution);
@@ -11479,6 +11509,7 @@ function SQLQuest() {
 
   const runInterviewQuery = () => {
     if (!db || !interviewQuery.trim() || !activeInterview) return;
+    if (lazyDatasetsBusy(lazyKeysFor(activeInterview.questions[interviewQuestion]))) return;
     setInterviewRunAt(Date.now());
     try {
       const result = db.exec(interviewQuery);
@@ -11503,6 +11534,9 @@ function SQLQuest() {
     const unanswered = timedOut || skipped;
     
     const currentQ = activeInterview.questions[interviewQuestion];
+    // A SQL answer is graded on the shared database: hold an answered submit
+    // until its sector dataset is in. A time-out or a skip is never held.
+    if (!unanswered && !isMcqQuestion(currentQ) && lazyDatasetsBusy(lazyKeysFor(currentQ))) return;
     let isCorrect = false;
     let score = 0;
     let expectedOutput = { columns: [], rows: [] };
@@ -16170,6 +16204,9 @@ CRITICAL RULES:
       return;
     }
 
+    // A sector preview (Finance, Real Estate, Manufacturing) waits for its
+    // dataset; the loading line shows meanwhile.
+    if (lazyDatasetsBusy(lazyKeysFor({ dataset: runtime.datasetKey || 'titanic' }))) return;
     try {
       loadDataset(db, runtime.datasetKey || 'titanic');
       const userResult = toFoundationSqlResult(db.exec(queryText));
@@ -20118,6 +20155,7 @@ CRITICAL RULES:
   
   const runDayQuery = () => {
     if (!db || !dayQuery.trim()) return;
+    if (lazyDatasetsBusy()) return;
     try {
       const result = db.exec(dayQuery);
       if (result.length > 0) {
@@ -23739,6 +23777,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
 
   const runAiQuery = () => {
     if (!query.trim() || !db) return;
+    if (lazyDatasetsBusy()) return;
 
     // Only allow read-only queries
     if (!isReadOnlySQL(query)) {
@@ -23766,6 +23805,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
 
   const runSandboxQuery = () => {
     if (!sandboxQuery.trim() || !db) return;
+    if (lazyDatasetsBusy(lazyKeysFor(studyMistake))) return;
 
     if (!isReadOnlySQL(sandboxQuery)) {
       setSandboxResult({ columns: [], rows: [], error: 'Only SELECT queries are allowed. Try: SELECT * FROM table_name' });
@@ -23805,6 +23845,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
 
   const submitAiQuery = async () => {
     if (!query.trim() || !db) return;
+    if (lazyDatasetsBusy()) return;
 
     if (!isReadOnlySQL(query)) {
       setResults({ columns: [], rows: [], error: 'Only SELECT queries are allowed. Try: SELECT * FROM table_name' });
@@ -23986,6 +24027,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
   // Submit exercise answer
   const submitExercise = () => {
     if (!query.trim() || !db) return;
+    if (lazyDatasetsBusy()) return;
     
     const lesson = aiLessons[currentAiLesson];
     const currentExercise = lesson.exercises[exerciseIndex];
@@ -24132,7 +24174,77 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
 
   // onlyTables: load just these tables of the dataset (an extra dataset a
   // challenge borrows a table from — never the whole of it).
+  // ── Sector datasets on demand (flag lazySectorData) ────────────────────
+  // Every table build goes through loadDataset / loadChallengeDatasets; when
+  // a sector dataset they need has not arrived, the build waits (deferLazy-
+  // Load) and runs again, into the same database, the moment it does. Runs
+  // are held meanwhile (lazyDatasetsBusy) and the loading line shows. With
+  // the flag off LAZY_DATASET_MANIFEST is null and none of this does anything.
+  const refreshLazyDatasetStatus = () => {
+    const loading = sectorDatasetLoader.inFlight();
+    const failed = [...lazyFailedRef.current];
+    setLazyDatasetStatus(loading.length ? { state: 'loading', keys: loading } : failed.length ? { state: 'failed', keys: failed } : null);
+  };
+  const flushLazyLoads = () => {
+    const ready = lazyLoadsRef.current.filter(e => e.keys.every(k => !sectorDatasetLoader.needsLoad(k)));
+    lazyLoadsRef.current = lazyLoadsRef.current.filter(e => !ready.includes(e));
+    ready.forEach(e => { try { e.run(); } catch (err) { console.error('[lazy-datasets] deferred load failed:', err); } });
+  };
+  const requestLazyDatasets = (keys) => {
+    const need = [...new Set((keys || []).filter(k => sectorDatasetLoader.needsLoad(k)))];
+    if (!need.length) return false;
+    need.forEach(k => lazyFailedRef.current.delete(k));
+    sectorDatasetLoader.ensureDatasets(need).then(() => {
+      flushLazyLoads();
+      setLazyDatasetTick(t => t + 1);
+      refreshLazyDatasetStatus();
+    }, (err) => {
+      console.error('[lazy-datasets]', err);
+      need.filter(k => sectorDatasetLoader.needsLoad(k)).forEach(k => lazyFailedRef.current.add(k));
+      flushLazyLoads();
+      setLazyDatasetTick(t => t + 1);
+      refreshLazyDatasetStatus();
+    });
+    refreshLazyDatasetStatus();
+    return true;
+  };
+  // A build that waits for `keys`. A later wait for OTHER sector data on the
+  // same database replaces it: two sector datasets share a table name
+  // (transactions), and the one asked for last must be the one standing.
+  // (No sector table shares a name with a core dataset's.)
+  const deferLazyLoad = (database, keys, run) => {
+    lazyLoadsRef.current = lazyLoadsRef.current.filter(e => e.database !== database || keys.some(k => e.keys.includes(k)));
+    lazyLoadsRef.current.push({ database, keys, run });
+    requestLazyDatasets(keys);
+  };
+  // True while a run must wait: a dataset it needs (`keys`) has not arrived
+  // (asked for again here, so a failed load is retried by pressing Run), or
+  // any sector dataset is still on its way. Never a broken query.
+  const lazyDatasetsBusy = (keys = []) => {
+    if (!LAZY_DATASET_MANIFEST) return false;
+    const need = (keys || []).filter(k => sectorDatasetLoader.needsLoad(k));
+    if (need.length) requestLazyDatasets(need);
+    return need.length > 0 || sectorDatasetLoader.inFlight().length > 0 || lazyLoadsRef.current.length > 0;
+  };
+  const retryLazyDatasets = () => {
+    requestLazyDatasets([...lazyFailedRef.current, ...lazyLoadsRef.current.flatMap(e => e.keys)]);
+  };
+  const dismissLazyDatasets = () => {
+    lazyFailedRef.current.clear();
+    lazyLoadsRef.current = lazyLoadsRef.current.filter(e => e.keys.every(k => !sectorDatasetLoader.needsLoad(k)));
+    refreshLazyDatasetStatus();
+  };
+
   const loadDataset = (database, key, onlyTables = null) => {
+    if (database && sectorDatasetLoader.needsLoad(key)) {
+      deferLazyLoad(database, [key], () => loadDataset(database, key, onlyTables));
+      return;
+    }
+    // A sector dataset built now (it is in) cancels a wait for another one on
+    // the same database, which would otherwise land later over a shared name.
+    if (database && LAZY_DATASET_MANIFEST && LAZY_DATASET_MANIFEST[key] && lazyLoadsRef.current.length) {
+      lazyLoadsRef.current = lazyLoadsRef.current.filter(e => e.database !== database || e.keys.includes(key));
+    }
     if (!database || !publicDatasets[key]) return;
     Object.entries(publicDatasets[key].tables).forEach(([tableName, tableData]) => {
       if (onlyTables && !onlyTables.includes(tableName)) return;
@@ -24156,6 +24268,11 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
   // Own dataset first, then only the missing tables (src/utils/challenge-datasets.js).
   const loadChallengeDatasets = (database, challenge) => {
     if (!database || !challenge) return;
+    const lazyKeys = lazyKeysFor(challenge);
+    if (lazyKeys.length) {
+      deferLazyLoad(database, lazyKeys, () => loadChallengeDatasets(database, challenge));
+      return;
+    }
     challengeTablePlan(challenge, publicDatasets).forEach(step => loadDataset(database, step.dataset, step.tables));
   };
 
@@ -24554,6 +24671,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
   const runQuery = (customQuery, context = 'practice') => {
     const q = customQuery || query;
     if (!db || !q.trim()) return null;
+    if (lazyDatasetsBusy([...lazyKeysFor(currentChallenge), ...lazyKeysFor({ dataset: currentDataset })])) return null;
     try {
       // Challenges whose ANSWER mutates data (INSERT/UPDATE/DELETE) must start
       // from a clean dataset on every run. loadDataset only runs when a
@@ -24755,6 +24873,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
   
   const runDailyChallengeQuery = () => {
     if (!db || !dailyChallengeQuery.trim()) return;
+    if (lazyDatasetsBusy(lazyKeysFor(todaysChallenge && todaysChallenge.core))) return;
     try {
       const result = db.exec(dailyChallengeQuery);
       if (result.length > 0) {
@@ -24770,6 +24889,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
   
   const submitDailyChallenge = () => {
     if (!db || !dailyChallengeQuery.trim() || !todaysChallenge) return;
+    if (lazyDatasetsBusy(lazyKeysFor(todaysChallenge.core))) return;
     try {
       const userResult = db.exec(dailyChallengeQuery);
       const expectedResult = db.exec(todaysChallenge.core.solution);
@@ -25561,6 +25681,9 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     // Load the appropriate dataset
     if (db && challenge.dataset) {
       loadChallengeDatasets(db, challenge);
+      // A sector dataset still on its way: the backfill effect below computes
+      // the expected output when it arrives (lazyDatasetTick).
+      if (lazyKeysFor(challenge).length) { setChallengeExpected({ columns: [], rows: [] }); return; }
       
       // Calculate expected result
       try {
@@ -26035,6 +26158,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
   useEffect(() => {
     if (!db || !currentChallenge?.dataset || !currentChallenge?.solution) return;
     if (challengeExpected.rows.length > 0) return; // already computed
+    if (lazyKeysFor(currentChallenge).length) return; // re-runs on lazyDatasetTick
     try {
       if (isStateGraded(currentChallenge)) {
         const out = runStateAttempt({ makeDb: () => stateChallengeDb(currentChallenge), challenge: currentChallenge, sql: currentChallenge.solution, loadedTables: stateLoadedTables(currentChallenge) });
@@ -26049,7 +26173,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     } catch (err) {
       console.error('Error backfilling expected output after db load:', err);
     }
-  }, [db, currentChallenge]);
+  }, [db, currentChallenge, lazyDatasetTick]);
 
   // Fire the 6-step onboarding tour when a user opens their first challenge.
   // Gated on: placement modal dismissed (showOnboarding=false), Goals Mentor
@@ -26736,6 +26860,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
   const runChallengeQuery = () => {
     if (pgActive) { runChallengeQueryPg(false); return; }
     if (!db) return;
+    if (lazyDatasetsBusy(lazyKeysFor(currentChallenge))) return;
     // An empty editor with a starter shown (a first-time opener sees "Start
     // here: SELECT * FROM t LIMIT 5;" as the placeholder) used to make Run do
     // nothing at all — the first click on the product's main button was dead.
@@ -26875,6 +27000,8 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
   const pgActive = postgresModeOn && sqlEngine === 'postgres' && pgMode?.phase === 'ready' && pgMode.forId === currentChallenge?.id;
   const runChallengeQueryPg = async (submit) => {
     if (!pgActive || !window.SQLQuestPg || !challengeQuery.trim()) return;
+    // PostgreSQL mode seeds its own instance from window.publicDatasetsData.
+    if (lazyDatasetsBusy(lazyKeysFor(currentChallenge))) return;
     markChallengeFirstRun(submit ? 'submit' : 'run');
     setChallengeStatus(null);
     if (!submit) {
@@ -26893,6 +27020,7 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
 
   const submitChallenge = () => {
     if (pgActive) { runChallengeQueryPg(true); return; }
+    if (lazyDatasetsBusy(lazyKeysFor(currentChallenge))) return;
     // Submit on the empty editor of a first-time opener runs the starter the
     // way Run does — shown, not graded (a SELECT * would be marked wrong
     // before the person has written a line). 2026-11-22.
@@ -28278,6 +28406,22 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
   const [ticketReply, setTicketReply] = useState('');
   const [ticketReplyFeedback, setTicketReplyFeedback] = useState('');
   const [ticketReplyLoading, setTicketReplyLoading] = useState(false);
+
+  // Sector datasets on demand: fetch what the open screen will read — the
+  // challenge, every question of a running mock, the open ticket, the
+  // first-run sector preview, a study session's mistake — as soon as it opens,
+  // not at the first Run. A no-op with the flag off (lazyKeysFor → []).
+  useEffect(() => {
+    if (!LAZY_DATASET_MANIFEST) return;
+    const foundationKey = (FOUNDATION_DATASET_CONFIGS[foundationDatasetId] || {}).datasetKey;
+    requestLazyDatasets([
+      ...lazyKeysFor(currentChallenge),
+      ...((activeInterview && activeInterview.questions) || []).flatMap(q => lazyKeysFor(q)),
+      ...lazyKeysFor(TICKETS.find(t => t.id === activeTicketId)),
+      ...lazyKeysFor(foundationKey ? { dataset: foundationKey } : null),
+      ...lazyKeysFor(studyMistake),
+    ]);
+  }, [currentChallenge, activeInterview, activeTicketId, foundationDatasetId, studyMistake]);
   const [offerAskOpen, setOfferAskOpen] = useState(false);
   const ticketDbsRef = useRef({});
   const hired = isHired(intentRecord);
@@ -28322,6 +28466,9 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
   const runTicket = (submit) => {
     const ticket = TICKETS.find(t => t.id === activeTicketId);
     if (!ticket || !ticketQuery.trim()) return;
+    // Its own Database, built once and cached: never build it before the
+    // sector dataset is in, or the cache would keep an empty one.
+    if (lazyDatasetsBusy(lazyKeysFor(ticket))) return;
     const tdb = ticketDbFor(ticket.dataset);
     if (!tdb) { setTicketResult({ columns: [], rows: [], error: 'The database is still loading. Try again in a moment.' }); return; }
     let res;
@@ -34561,6 +34708,24 @@ RULES:
       )}
 
       {renderTicketOverlay()}
+      {lazyDatasetStatus && (
+        <div data-testid="lazy-dataset-status" role="status" aria-live="polite"
+          className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-3 px-4 py-2 text-sm max-w-[calc(100vw-32px)]"
+          style={{ background: '#16181F', border: '1px solid #2A2E38', borderRadius: '10px', color: '#F2F0EA' }}>
+          {lazyDatasetStatus.state === 'loading' ? (
+            <>
+              <div className="w-3 h-3 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
+              <span>{i18n_t('practice', 'lazyDatasetLoading')}</span>
+            </>
+          ) : (
+            <>
+              <span>{i18n_t('practice', 'lazyDatasetFailed')}</span>
+              <button type="button" className="underline text-purple-300" onClick={retryLazyDatasets}>{i18n_t('practice', 'lazyDatasetRetry')}</button>
+              <button type="button" className="text-gray-400" aria-label={i18n_t('practice', 'lazyDatasetDismiss')} onClick={dismissLazyDatasets}>×</button>
+            </>
+          )}
+        </div>
+      )}
       {renderOfferAsk()}
       {showProModal && (
         <div
