@@ -4952,6 +4952,10 @@ and the widget, counted per person and per kind. Registered with flags
 `exitReasonAsk`, `stuckAsk`, `day2Ask`.
 
 - **shown** — people with `feedback_prompt_shown {kind, trigger}`.
+  From the follow-up to #155 the event fires when half the card is on
+  screen (IntersectionObserver), not when it renders; the session's one ask
+  and the stuck card's once-per-challenge mark are spent at the same moment.
+  A card that rendered below the fold and was never scrolled to is not shown.
 - **answered** — people with `feedback_submitted` whose `kind` is the same
   (from 2026-11-22 every `feedback_submitted` carries `kind`; the widget is
   `open`). Rate = answered ÷ shown, per kind. `feedback_prompt_skipped` is

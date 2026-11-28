@@ -4913,8 +4913,24 @@ const FEEDBACK_TOPICS = [
  * `stuck` and `day2` (one line). Rules live in src/utils/feedback-prompts.js.
  * Neutral surface colours only; the accent is never used here (DESIGN.md).
  */
-function FeedbackPromptCard({ kind, onSend, onSkip, compact = false, answered = false }) {
+function FeedbackPromptCard({ kind, onSend, onSkip, onSeen, compact = false, answered = false }) {
   const [text, setText] = React.useState('');
+  // Counted as shown only once half of it is on screen (A1 on #155: the
+  // no-run stuck card renders below the fold, so a render-time count would
+  // read the answer rate against cards nobody saw).
+  const rootRef = React.useRef(null);
+  React.useEffect(() => {
+    const el = rootRef.current;
+    // A card re-mounted on the thanks (answered) was already seen: no second `shown`.
+    if (!el || !onSeen || answered) return;
+    if (typeof IntersectionObserver === 'undefined') { onSeen(); return; }
+    const obs = new IntersectionObserver((entries) => {
+      if (entries.some(e => e.isIntersecting)) { obs.disconnect(); onSeen(); }
+    }, { threshold: 0.5 });
+    obs.observe(el);
+    return () => obs.disconnect();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [picked, setPicked] = React.useState(null);
   // `answered` comes from the prompt, not this card: a card re-mounted after a
   // Pro modal closes must open on the thanks, never on the question again.
@@ -4939,7 +4955,7 @@ function FeedbackPromptCard({ kind, onSend, onSkip, compact = false, answered = 
     );
   }
   return (
-    <div data-testid={`feedback-prompt-${kind}`} className={compact ? 'mt-3' : 'rounded-lg p-3'} style={compact ? undefined : { background: '#16181F', border: '1px solid #2A2E38' }}>
+    <div ref={rootRef} data-testid={`feedback-prompt-${kind}`} className={compact ? 'mt-3' : 'rounded-lg p-3'} style={compact ? undefined : { background: '#16181F', border: '1px solid #2A2E38' }}>
       <div className="flex items-start justify-between gap-2 mb-2">
         <p className="text-sm font-semibold" style={{ color: '#F2F0EA' }}>{question}</p>
         {!compact && (
@@ -26459,12 +26475,28 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const fbInTimedMock = () => !!activeInterview && !interviewCompleted;
+  // Render first; spend the session's ask and count `shown` only when the
+  // card is on screen (fbMarkSeen, called by the card's IntersectionObserver).
+  // An unseen card still blocks other prompts while it is mounted (fbPrompt).
+  const fbSeenRef = useRef(null);
   const fbShowPrompt = (kind, trigger, challengeId = null) => {
+    fbSeenRef.current = null;
+    setFbPrompt({ kind, trigger, challengeId });
+  };
+  const fbMarkSeen = () => {
+    const p = fbPrompt;
+    if (!p || p.answered) return;
+    const key = `${p.kind}|${p.trigger}|${p.challengeId}`;
+    if (fbSeenRef.current === key) return;
+    fbSeenRef.current = key;
     const rec = markPromptShown(fbSessionRef.current || fbTouchSession());
     fbSessionRef.current = rec;
     try { localStorage.setItem(FBP_SESSION_KEY, JSON.stringify(rec)); } catch (_) {}
-    setFbPrompt({ kind, trigger, challengeId });
-    trackActivationEvent('feedback_prompt_shown', { kind, trigger, challengeId, solves: solvedChallenges.size });
+    if (p.kind === 'stuck' && p.challengeId != null) {
+      const askedIds = fbReadJson(FBP_STUCK_IDS_KEY, []);
+      try { localStorage.setItem(FBP_STUCK_IDS_KEY, JSON.stringify([...askedIds, p.challengeId].slice(-500))); } catch (_) {}
+    }
+    trackActivationEvent('feedback_prompt_shown', { kind: p.kind, trigger: p.trigger, challengeId: p.challengeId, solves: solvedChallenges.size });
   };
   // Answered or skipped: this browser never sees that kind again
   // (promptDoneKey; 2026-11-24, one person answered one card three times).
@@ -26517,7 +26549,6 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
     const askedIds = fbReadJson(FBP_STUCK_IDS_KEY, []);
     const ok = canShowStuck({ flagOn: fbFlag('stuck'), challengeId: id, askedIds, trigger, solved: solvedChallenges.has(id), inTimedMock: fbInTimedMock(), sessionRec: fbSessionRef.current });
     if (!ok) return;
-    try { localStorage.setItem(FBP_STUCK_IDS_KEY, JSON.stringify([...askedIds, id].slice(-500))); } catch (_) {}
     fbShowPrompt('stuck', trigger, id);
   };
   useEffect(() => {
@@ -29110,7 +29141,7 @@ RULES:
           challenge page instead. */}
       {fbPrompt && fbPrompt.kind !== 'stuck' && !showProModal && pathLayerOk('feedback_prompt') && (
         <div className="fixed left-4 right-4 bottom-20 z-40 sm:left-auto sm:right-4 sm:w-[380px] shadow-lg" data-feedback-prompt-slot="global">
-          <FeedbackPromptCard key={`${fbPrompt.kind}-${fbPrompt.trigger}`} kind={fbPrompt.kind} answered={!!fbPrompt.answered} onSend={fbSendPrompt} onSkip={fbSkipPrompt} />
+          <FeedbackPromptCard key={`${fbPrompt.kind}-${fbPrompt.trigger}`} kind={fbPrompt.kind} answered={!!fbPrompt.answered} onSend={fbSendPrompt} onSkip={fbSkipPrompt} onSeen={fbMarkSeen} />
         </div>
       )}
       <FeedbackWidget
@@ -41735,7 +41766,7 @@ RULES:
                       minutes open, no run. The wrong-submit trigger sits inside
                       the third-try card below, so it is one card, not two. */}
                   {fbPrompt?.kind === 'stuck' && fbPrompt.trigger === 'no_run_3m' && fbPrompt.challengeId === currentChallenge.id && (
-                    <FeedbackPromptCard key={`stuck-${currentChallenge.id}`} kind="stuck" answered={!!fbPrompt.answered} onSend={fbSendPrompt} onSkip={fbSkipPrompt} />
+                    <FeedbackPromptCard key={`stuck-${currentChallenge.id}`} kind="stuck" answered={!!fbPrompt.answered} onSend={fbSendPrompt} onSkip={fbSkipPrompt} onSeen={fbMarkSeen} />
                   )}
                   {/* A Debug solve: one line naming the bug, and its trap page
                       where one exists. */}
@@ -42079,7 +42110,7 @@ RULES:
                       )}
                       {/* Capture point 3, the wrong-submit trigger (`stuckAsk`). */}
                       {fbPrompt?.kind === 'stuck' && fbPrompt.trigger === 'wrong_3' && fbPrompt.challengeId === currentChallenge.id && (
-                        <FeedbackPromptCard key={`stuck-${currentChallenge.id}`} kind="stuck" compact answered={!!fbPrompt.answered} onSend={fbSendPrompt} onSkip={fbSkipPrompt} />
+                        <FeedbackPromptCard key={`stuck-${currentChallenge.id}`} kind="stuck" compact answered={!!fbPrompt.answered} onSend={fbSendPrompt} onSkip={fbSkipPrompt} onSeen={fbMarkSeen} />
                       )}
                     </div>
                   )}
