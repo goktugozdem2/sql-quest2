@@ -48,6 +48,8 @@ the careers home); their snippets named HireVue and CodeVue.
 | Data scientist (experienced): recruiter → HM project deep-dive → panel; ML and optimisation; no SQL, no take-home in one report. | J6 | low |
 | How much SQL: one analyst said SQL, Excel and Python came up only briefly; another got Python, Excel formulas and reconciliation. "SQL is always tested" appears only in prep guides. | J5 vs J7, J10, J11 | conflicting — do not state |
 
+Note (re-read 2026-11-24, Q1 on #266): the reconciliation line is in J5's editorial summary of its 21 reports ("another candidate, who accepted an offer…"), not in the expanded "Analyst · Interviewed Q2 2025" report, which covers only the route above. The one accepted-offer card in J5's list is stamped **Interviewed Q1 2025**. Cite reconciliation to the guide's summary, never under the Q2 2025 stamp. The guide read "Updated Nov 20, 2026" on 2026-11-24.
+
 ## Topics reported
 
 M = 11 sources read.

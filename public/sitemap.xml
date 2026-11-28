@@ -613,6 +613,24 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://sqlquest.app/blog/banking-sql-interview-questions/</loc>
+    <lastmod>2026-11-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://sqlquest.app/blog/payments-sql-interview-questions/</loc>
+    <lastmod>2026-11-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://sqlquest.app/blog/ecommerce-sql-interview-questions/</loc>
+    <lastmod>2026-11-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://sqlquest.app/blog/revolut-data-analyst-sql-screen/</loc>
     <lastmod>2026-11-27</lastmod>
     <changefreq>monthly</changefreq>

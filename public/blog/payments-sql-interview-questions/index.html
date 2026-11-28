@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- 2026-11-23 (sector articles, the founder's ask): payments / fintech analyst SQL. Keywords and SERP read:
+       docs/reads/sector-articles-keywords-2026-11-23.md. Every query runs on the synthetic finans_neobank ledger and is
+       re-run by tests/sector-articles.test.js against the table printed under it. No Revolut mock question (MAU, top
+       10%, decline rate by plan) and no bank challenge solution. Company lines cite dated reads in docs/reads/companies/.
+       No frequency claim, no bank count. -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payments SQL Interview Questions: Auth, FX | SQLQuest.app</title>
+  <meta name="description" content="Payments and fintech SQL interview questions, worked on a multi-currency ledger: approval and reversal rates, mixed currencies, two-leg reconciliation.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://sqlquest.app/blog/payments-sql-interview-questions/">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://sqlquest.app/blog/payments-sql-interview-questions/">
+  <meta property="og:title" content="Payments SQL Interview Questions: Auth, FX">
+  <meta property="og:description" content="Payments and fintech SQL interview questions, worked on a multi-currency ledger: approval and reversal rates, mixed currencies, two-leg reconciliation.">
+  <meta property="og:image" content="https://sqlquest.app/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"Article","headline":"Payments SQL Interview Questions: Authorisation, Reversals, Currencies and Reconciliation","description":"Payments and fintech SQL interview questions, worked on a multi-currency ledger: approval and reversal rates, mixed currencies, two-leg reconciliation.","url":"https://sqlquest.app/blog/payments-sql-interview-questions/","datePublished":"2026-11-23","dateModified":"2026-11-23","author":{"@type":"Organization","name":"SQL Quest"},"publisher":{"@type":"Organization","name":"SQL Quest","url":"https://sqlquest.app/"},"mainEntityOfPage":"https://sqlquest.app/blog/payments-sql-interview-questions/"}
+  </script>
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What SQL questions do fintech and payments companies ask?","acceptedAnswer":{"@type":"Answer","text":"Public candidate reports and prep guides describe approval and decline shares from a payments table, chargeback or dispute rates per merchant over a recent window, money sent between users, account balances from deposits and withdrawals, and reconciling records between two sources. Companies do not publish their questions, so treat any list as reported, not official."}},{"@type":"Question","name":"What is the difference between authorised and settled in payments SQL?","acceptedAnswer":{"@type":"Answer","text":"An authorised payment is one the issuer approved; a settled one actually moved money. A payment can be authorised and later reversed, so it never settles. In SQL that usually means three statuses and three counts: attempts, authorised (everything not declined) and settled (completed), with the reversal rate computed over authorised payments, not over attempts."}},{"@type":"Question","name":"How do you sum money across currencies in SQL?","acceptedAnswer":{"@type":"Answer","text":"Never sum the charged amount across currencies. Use a converted column if the table has one, or join a rates table on the currency code and multiply, and decide whether the rate is the one on the day of the payment or a single rate for the report."}},{"@type":"Question","name":"Where can I practice payments SQL for an interview?","acceptedAnswer":{"@type":"Answer","text":"SQL Quest runs payments questions on a synthetic multi-currency ledger and a card ledger, in the browser with no signup. The Stripe, PayPal, Revolut and Wise pages each carry a practice set and the reported format with sources. A free account gets 10 free challenge solves, plus the lessons, warm-ups and the daily challenge."}}]}
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}body{background:#06060f;color:#e2e8f0;font-family:'DM Sans',sans-serif;overflow-x:hidden}
+    .fd{font-family:'Space Grotesk',sans-serif}.fm{font-family:'JetBrains Mono','Fira Code',monospace}
+    a{color:#c084fc;text-decoration:none}a:hover{text-decoration:underline}
+    .nav{background:rgba(6,6,15,.95);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06);position:fixed;top:0;left:0;right:0;z-index:100}
+    .ni{max-width:1100px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+    .bp{padding:10px 24px;font-size:14px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-radius:12px;font-weight:700;display:inline-block;text-decoration:none;transition:all .3s}.bp:hover{transform:translateY(-2px);text-decoration:none}
+    .article{max-width:740px;margin:0 auto;padding:120px 24px 80px}
+    .breadcrumb{font-size:13px;color:#8b98ab;margin-bottom:28px}.breadcrumb a{color:#8b98ab}.breadcrumb a:hover{color:#c084fc}
+    .article-meta{font-size:13px;color:#8b98ab;margin-bottom:32px;display:flex;gap:16px;flex-wrap:wrap}
+    h1{font-size:clamp(28px,4vw,44px);font-weight:800;line-height:1.12;margin-bottom:20px}
+    .intro{font-size:17px;line-height:1.8;color:#94a3b8;border-left:3px solid #10b981;padding-left:20px;margin-bottom:40px}
+    .toc{background:rgba(15,15,30,.7);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:24px 28px;margin-bottom:48px}
+    .toc-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#8b98ab;margin-bottom:14px}
+    .toc ol{padding-left:20px}.toc li{font-size:14px;line-height:1.8;color:#94a3b8}.toc a{color:#c084fc}
+    h2{font-size:clamp(20px,2.5vw,28px);font-weight:800;margin:48px 0 16px;padding-top:8px;border-top:1px solid rgba(255,255,255,.05)}
+    h3{font-size:18px;font-weight:700;color:#f1f5f9;margin:28px 0 12px}
+    p{font-size:15px;line-height:1.8;color:#94a3b8;margin-bottom:16px}
+    ul,ol{padding-left:22px;margin-bottom:20px}li{font-size:15px;line-height:1.8;color:#94a3b8;margin-bottom:6px}
+    li strong{color:#e2e8f0}
+    code{background:rgba(16,185,129,.12);color:#10b981;padding:2px 7px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:13px}
+    .code-block{background:rgba(10,10,25,.8);border:1px solid rgba(255,255,255,.08);border-radius:12px;overflow:hidden;margin:24px 0}
+    .code-label{padding:10px 16px;background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.06);font-size:12px;color:#8b98ab;font-family:'JetBrains Mono',monospace}
+    .code-block pre{padding:20px;margin:0;overflow-x:auto}.code-block code{background:none;padding:0;color:#e2e8f0;font-size:14px;line-height:1.7}
+    .kw{color:#7CC4FF;font-weight:700}.str{color:#B5E48C}.num{color:#FFB86C}.cmt{color:#8b98ab;font-style:italic}
+    .callout{background:rgba(16,185,129,.08);border-left:3px solid #10b981;border-radius:0 12px 12px 0;padding:16px 20px;margin:24px 0}
+    .callout p{margin:0;font-size:14px;color:#a7f3d0}.callout strong{color:#d1fae5}
+    .warn{background:rgba(239,68,68,.06);border-left:3px solid #ef4444;border-radius:0 12px 12px 0;padding:16px 20px;margin:24px 0}
+    .warn p{margin:0;font-size:14px;color:#fecaca}.warn strong{color:#fee2e2}
+    table{width:100%;border-collapse:collapse;margin:24px 0;font-size:14px}
+    th{text-align:left;padding:10px 14px;background:rgba(16,185,129,.1);color:#10b981;font-weight:700;border-bottom:1px solid rgba(16,185,129,.2);font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.05em}
+    td{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.05);color:#cbd5e1;font-family:'JetBrains Mono',monospace;font-size:13px}
+    tr:last-child td{border-bottom:none}
+    .practice-link{display:inline-flex;align-items:center;gap:6px;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.25);border-radius:8px;padding:8px 16px;font-size:13px;color:#10b981;text-decoration:none;margin:8px 0;transition:all .2s}.practice-link:hover{background:rgba(16,185,129,.18);text-decoration:none}
+    .cta-box{background:linear-gradient(135deg,rgba(16,185,129,.12),rgba(124,58,237,.08));border:1px solid rgba(16,185,129,.25);border-radius:20px;padding:40px;text-align:center;margin:48px 0}
+    .cta-box h3{font-size:24px;margin-bottom:12px;color:#f1f5f9;font-family:'Space Grotesk',sans-serif}.cta-box p{max-width:480px;margin:0 auto 28px}
+    .cta-main{padding:14px 36px;font-size:16px;background:linear-gradient(135deg,#10b981,#7c3aed);color:#fff;border-radius:12px;font-weight:700;display:inline-flex;align-items:center;transition:all .3s;text-decoration:none}.cta-main:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(16,185,129,.35);text-decoration:none}
+    .ft{border-top:1px solid rgba(255,255,255,.06);padding:40px 24px;text-align:center}.ft p{font-size:13px;color:#7f8da1}.ft a{color:#8b98ab}.ft a:hover{color:#c084fc}
+    .related{background:rgba(15,15,30,.5);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:24px 28px;margin:40px 0}
+    .related h4{font-size:13px;font-weight:700;color:#8b98ab;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px}
+    .related ul{margin-bottom:0;padding-left:20px}.related li{font-size:14px;line-height:1.8}
+    .sources{font-size:13px;color:#8b98ab;line-height:1.8}.sources li{font-size:13px;color:#8b98ab;margin-bottom:4px}
+    .faq details{border-bottom:1px solid rgba(255,255,255,.06);padding:14px 0}.faq summary{font-size:16px;font-weight:700;color:#e2e8f0;cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center}.faq summary::after{content:'+';color:#3b82f6;font-size:22px;flex-shrink:0;margin-left:16px}.faq details[open] summary::after{content:'−'}.faq details p{margin:12px 0 0;font-size:14px}
+  
+    /* Phone fit (A4 UI/UX audit, 2026-11-22): a table wider than the screen scrolls inside itself instead of widening the page. */
+    @media(max-width:600px){table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}}
+    .practice-list li{margin-bottom:8px}.pl-meta{color:#8b98ab;font-size:13px}
+  </style>
+  <!-- Microsoft Clarity behavioral analytics. Project wovalt3jwh.
+       Password/email inputs auto-masked. Privacy policy: /privacy.html -->
+  <script type="text/javascript">
+    (function(c,l,a,r,i,t,y){
+      c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+      t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+      y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+    })(window, document, "clarity", "script", "wovalt3jwh");
+  </script>
+<style data-footer-fit>@media(max-width:600px){.flk{row-gap:0}.flk a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;padding:0 4px}.fnav a{display:flex;align-items:center;min-height:44px;padding:0}.flegal a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px}[data-partner] a{display:inline-flex;align-items:center;min-height:44px}}</style><style data-phone-fit>.btn.bo{min-height:44px}@media(max-width:600px){.ni a,.ni .bp,.nl .btn{min-height:44px}}</style></head>
+<body>
+<nav class="nav"><div class="ni">
+  <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;">
+    <div style="width:32px;height:32px;border-radius:8px;background:#7c3aed;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
+    <span class="fd" style="font-size:18px;font-weight:800;">SQL Quest</span>
+  </a>
+  <a data-track="cta_blog" href="/app/?company=Stripe&amp;goal=interview&amp;src=blog-payments-sql-interview-questions" class="bp">Practice Free →</a>
+</div></nav>
+
+<article class="article">
+  <p class="breadcrumb"><a href="/">Home</a> › <a href="/blog/">Blog</a> › Payments SQL Interview Questions</p>
+  <h1 class="fd">Payments SQL Interview Questions: Authorisation Rates, Reversals, Currencies and Reconciliation, Worked</h1>
+  <div class="article-meta">
+    <span>Published November 2026</span>
+    <span>·</span>
+    <span>10 min read</span>
+    <span>·</span>
+    <span>Interview Prep</span>
+  </div>
+  <!-- blog-practice:start -->
+  <p style="margin:18px 0 26px;padding:14px 18px;border:1px solid rgba(124,58,237,.3);border-radius:12px;background:rgba(124,58,237,.07);font-size:15px;line-height:1.7;">Skip ahead to practice: <a href="/app/?challenge=300&amp;src=blog-payments-sql-interview-questions" data-track="cta_blog_practice" style="color:#c084fc;font-weight:700;">sum card spend by category on a payments ledger, free →</a> · or <a href="/sql-interview-readiness-test/?company=stripe" data-track="cta_blog_readiness" style="color:#c084fc;font-weight:700;">check your readiness for a fintech screen</a> (10 questions, no signup).</p>
+  <!-- blog-practice:end -->
+
+  <p class="intro">Payments interviews ask SQL about money in motion: a card authorisation that may or may not settle, a refund or reversal that undoes it, an amount in one of a dozen currencies, and two systems that should agree about the same transfer. Each of those has a plausible wrong answer that runs without an error. This guide works four of them on a synthetic multi-currency ledger, with every query run and its result shown.</p>
+
+  <div class="toc">
+    <p class="toc-title">On this page</p>
+    <ol>
+      <li><a href="#what">What payments SQL questions look like</a></li>
+      <li><a href="#data">The ledger used below</a></li>
+      <li><a href="#auth">Question 1: authorised, settled, reversed</a></li>
+      <li><a href="#fx">Question 2: one total across twelve currencies</a></li>
+      <li><a href="#reconcile">Question 3: reconcile the two legs of a transfer</a></li>
+      <li><a href="#practice">Practice on the same ledger</a></li>
+      <li><a href="#faq">FAQ</a></li>
+      <li><a href="#sources">Sources</a></li>
+    </ol>
+  </div>
+
+  <h2 id="what">What payments SQL questions look like</h2>
+  <p>A payments company's core table is a list of attempts: who paid whom, how much, in what currency, and what happened. Questions start from it and move to ratios, money in a common currency, and checks between two sources. The public material we have read describes these shapes, paraphrased:</p>
+  <ul>
+    <li><strong>Approval and decline shares.</strong> A candidate report in Interview Query's Stripe data analyst guide (stamped Interviewed Q4 2026, read 22 November 2026) describes each day's approval share and decline share from a payments table, and merchants ranked by chargeback rate over the last 30 days.</li>
+    <li><strong>Money between users.</strong> DataLemur's PayPal set (7 January 2025) includes pairs of users who have sent money in both directions, and each account's closing balance from deposits and withdrawals.</li>
+    <li><strong>Reconciliation.</strong> The Stripe data engineer guide on the same site (report stamped Interviewed Q4 2026, read 22 November 2026) describes finding and explaining the records that do not match between two sources.</li>
+  </ul>
+  <p>These are shapes from dated public sources, not questions any company has confirmed, and nothing here says how often they come up. The three questions below are our own, on our own data.</p>
+
+  <h2 id="data">The ledger used below</h2>
+  <p>A synthetic consumer payments app: 240 users in 12 countries, 3,433 transactions from June 2025 to August 2026 in 12 currencies. <code>transactions</code> has txn_id, user_id, ts, type (card_payment, transfer_out, transfer_in, fx_exchange, atm_withdrawal, bill_payment, subscription_fee), amount and currency as charged, <code>amount_gbp</code> converted, fee_gbp, merchant_country, counterparty_user_id, and <code>status</code>: completed, declined or reversed. <code>users</code> carries each user's country. It is the same ledger as our <a href="/blog/revolut-data-analyst-sql-screen/">Revolut guide</a>, with different questions. Every query runs on SQLite, as in the browser.</p>
+
+  <h2 id="auth">Question 1: authorised, settled, reversed</h2>
+  <p>Question: <em>for card payments, compare domestic and cross-border spend: attempts, how many were authorised, how many settled, and the reversal rate.</em> The words matter. An <em>authorised</em> payment is one the issuer approved; it may still be <em>reversed</em> later (a refund or a cancelled authorisation), so it never settles. A declined payment was never authorised. Three statuses, three different numbers:</p>
+<div class="code-block" data-dataset="finans_neobank"><div class="code-label">one row per corridor, three outcomes, two rates</div><pre><code><span class="kw">SELECT</span> <span class="kw">CASE</span> <span class="kw">WHEN</span> t.merchant_country = u.country <span class="kw">THEN</span> <span class="str">'domestic'</span>
+            <span class="kw">ELSE</span> <span class="str">'cross_border'</span> <span class="kw">END</span> <span class="kw">AS</span> corridor,
+       <span class="kw">COUNT</span>(*) <span class="kw">AS</span> attempts,
+       <span class="kw">SUM</span>(t.status &lt;&gt; <span class="str">'declined'</span>) <span class="kw">AS</span> authorised,
+       <span class="kw">SUM</span>(t.status = <span class="str">'completed'</span>) <span class="kw">AS</span> settled,
+       <span class="kw">SUM</span>(t.status = <span class="str">'reversed'</span>) <span class="kw">AS</span> reversed,
+       <span class="kw">ROUND</span>(<span class="num">100.0</span> * <span class="kw">SUM</span>(t.status &lt;&gt; <span class="str">'declined'</span>) / <span class="kw">COUNT</span>(*), <span class="num">1</span>) <span class="kw">AS</span> auth_rate_pct,
+       <span class="kw">ROUND</span>(<span class="num">100.0</span> * <span class="kw">SUM</span>(t.status = <span class="str">'reversed'</span>) / <span class="kw">SUM</span>(t.status &lt;&gt; <span class="str">'declined'</span>), <span class="num">1</span>) <span class="kw">AS</span> reversal_rate_pct
+<span class="kw">FROM</span> transactions t
+<span class="kw">JOIN</span> users u <span class="kw">ON</span> u.user_id = t.user_id
+<span class="kw">WHERE</span> t.type = <span class="str">'card_payment'</span>
+<span class="kw">GROUP BY</span> corridor
+<span class="kw">ORDER BY</span> corridor;</code></pre></div>
+  <table><thead><tr><th>corridor</th><th>attempts</th><th>authorised</th><th>settled</th><th>reversed</th><th>auth_rate_pct</th><th>reversal_rate_pct</th></tr></thead><tbody>
+    <tr><td>cross_border</td><td>255</td><td>249</td><td>247</td><td>2</td><td>97.6</td><td>0.8</td></tr>
+    <tr><td>domestic</td><td>1536</td><td>1498</td><td>1478</td><td>20</td><td>97.5</td><td>1.3</td></tr>
+  </tbody></table>
+  <p>Each rate has its own denominator, and that is what the interviewer is checking. The authorisation rate is over attempts. The reversal rate is over authorised payments, because a declined payment cannot be reversed; divide by attempts and the rate looks lower than it is. Filter <code>type = 'card_payment'</code> before any of it: a <code>transfer_in</code> is never declined, so leaving it in would push every approval rate up. And note <code>100.0</code>: with <code>100</code>, SQLite divides integers and the rate rounds down to a whole number.</p>
+  <p>On this ledger the two corridors authorise at almost the same rate, 97.6% and 97.5%. Say that out loud too: a question built to find a difference is also allowed to find none.</p>
+
+  <h2 id="fx">Question 2: one total across twelve currencies</h2>
+  <p>Question: <em>what was total settled card spend?</em> Card payments here are charged in euros, pounds, złoty, forints, yen and more. <code>amount</code> is in the currency of the charge, so summing it adds 1,000 forints to 1,000 pounds:</p>
+<div class="code-block" data-dataset="finans_neobank"><div class="code-label">wrong: summing amounts in twelve currencies</div><pre><code><span class="kw">SELECT</span> <span class="kw">ROUND</span>(<span class="kw">SUM</span>(amount), <span class="num">2</span>) <span class="kw">AS</span> card_spend
+<span class="kw">FROM</span> transactions
+<span class="kw">WHERE</span> type = <span class="str">'card_payment'</span> <span class="kw">AND</span> status = <span class="str">'completed'</span>;</code></pre></div>
+  <p>That returns <strong>878208.96</strong>.</p>
+<div class="code-block" data-dataset="finans_neobank"><div class="code-label">right: one currency, settled only</div><pre><code><span class="kw">SELECT</span> <span class="kw">ROUND</span>(<span class="kw">SUM</span>(amount_gbp), <span class="num">2</span>) <span class="kw">AS</span> card_spend_gbp
+<span class="kw">FROM</span> transactions
+<span class="kw">WHERE</span> type = <span class="str">'card_payment'</span> <span class="kw">AND</span> status = <span class="str">'completed'</span>;</code></pre></div>
+  <p>That returns <strong>106444.06</strong>.</p>
+  <p>The wrong total is about eight times the right one, almost all of it from currencies with small units. If a table has no converted column, join a rates table on the currency code and multiply, and ask which rate is meant: the rate on the day of the payment or one rate for the whole report. Both are defensible; picking one silently is not.</p>
+
+  <h2 id="reconcile">Question 3: reconcile the two legs of a transfer</h2>
+  <p>Question: <em>every completed transfer between two users should appear twice: a transfer_out on the sender and a transfer_in on the receiver. Find the outgoing transfers with no matching incoming leg.</em> This is reconciliation in miniature, and the trap is the matching key. A user paying in pounds can send to a user whose account is in euros, so the two legs carry different <code>amount</code> values for the same money:</p>
+<div class="code-block" data-dataset="finans_neobank"><div class="code-label">match on the charged amount, then on the converted amount</div><pre><code><span class="kw">SELECT</span> o.status,
+       <span class="kw">COUNT</span>(*) <span class="kw">AS</span> transfers_out,
+       <span class="kw">SUM</span>(<span class="kw">NOT</span> <span class="kw">EXISTS</span> (<span class="kw">SELECT</span> <span class="num">1</span> <span class="kw">FROM</span> transactions i
+                       <span class="kw">WHERE</span> i.type = <span class="str">'transfer_in'</span>
+                         <span class="kw">AND</span> i.user_id = o.counterparty_user_id
+                         <span class="kw">AND</span> i.counterparty_user_id = o.user_id
+                         <span class="kw">AND</span> i.ts = o.ts
+                         <span class="kw">AND</span> i.amount = o.amount)) <span class="kw">AS</span> unmatched_on_amount,
+       <span class="kw">SUM</span>(<span class="kw">NOT</span> <span class="kw">EXISTS</span> (<span class="kw">SELECT</span> <span class="num">1</span> <span class="kw">FROM</span> transactions i
+                       <span class="kw">WHERE</span> i.type = <span class="str">'transfer_in'</span>
+                         <span class="kw">AND</span> i.user_id = o.counterparty_user_id
+                         <span class="kw">AND</span> i.counterparty_user_id = o.user_id
+                         <span class="kw">AND</span> i.ts = o.ts
+                         <span class="kw">AND</span> i.amount_gbp = o.amount_gbp)) <span class="kw">AS</span> unmatched_on_gbp
+<span class="kw">FROM</span> transactions o
+<span class="kw">WHERE</span> o.type = <span class="str">'transfer_out'</span>
+<span class="kw">GROUP BY</span> o.status
+<span class="kw">ORDER BY</span> transfers_out <span class="kw">DESC</span>;</code></pre></div>
+  <table><thead><tr><th>status</th><th>transfers_out</th><th>unmatched_on_amount</th><th>unmatched_on_gbp</th></tr></thead><tbody>
+    <tr><td>completed</td><td>345</td><td>209</td><td>0</td></tr>
+    <tr><td>declined</td><td>7</td><td>7</td><td>7</td></tr>
+    <tr><td>reversed</td><td>1</td><td>1</td><td>1</td></tr>
+  </tbody></table>
+  <p>Matched on the charged amount, 209 completed transfers look broken, out of 345. Matched on the converted amount, none are, and every unmatched row is a transfer that was declined or reversed, which is exactly what should have no incoming leg. A good reconciliation answer has that shape: the exceptions are few, and each one has a reason you can name. When the match rate looks terrible, suspect the key before the data.</p>
+  <p><code>NOT EXISTS</code> keeps one row per outgoing transfer, so the counts cannot fan out the way a <code>LEFT JOIN</code> to a leg with duplicate rows would. To check both directions (incoming legs with no outgoing one), run the mirror query. For the pattern in general, see <a href="/blog/sql-anti-join/">the SQL anti-join</a>.</p>
+  <div class="callout"><p><strong>Fraud and disputes are their own interview.</strong> Velocity rules, duplicate swipes and chargeback chains are covered in <a href="/blog/sql-for-fraud-analytics/">SQL for fraud analytics</a> and the <a href="/fraud-analytics-sql/">fraud analytics practice set</a>; credit buckets and dispute timing in <a href="/blog/banking-sql-interview-questions/">banking SQL interview questions</a>.</p></div>
+
+  <h2 id="practice">Practice on the same ledger</h2>
+  <p>These run on payments ledgers in the browser. Hard ones are marked Pro; the rest count toward a free account's 10 free challenge solves.</p>
+  <ul class="practice-list" data-practice="payments-sql-interview-questions">
+    <li><a href="/app/?challenge=300&amp;src=blog-payments-sql-interview-questions" data-track="cta_blog_challenge">Card Spend by Category, August 2026</a> <span class="pl-meta">· Easy</span> — settled spend in one currency</li>
+    <li><a href="/app/?challenge=304&amp;src=blog-payments-sql-interview-questions" data-track="cta_blog_challenge">Top-up Methods by Plan</a> <span class="pl-meta">· Medium</span> — money in, grouped and filtered</li>
+    <li><a href="/app/?challenge=306&amp;src=blog-payments-sql-interview-questions" data-track="cta_blog_challenge">Users Who Never Sent Money</a> <span class="pl-meta">· Medium</span> — an anti-join on a ledger</li>
+    <li><a href="/app/?challenge=280&amp;src=blog-payments-sql-interview-questions" data-track="cta_blog_challenge">Chargeback Rate Per Merchant</a> <span class="pl-meta">· Medium</span> — a rate with the right denominator</li>
+    <li><a href="/app/?challenge=305&amp;src=blog-payments-sql-interview-questions" data-track="cta_blog_challenge">Card Decline Rate by Plan</a> <span class="pl-meta">· Hard · Pro</span> — conditional aggregation on statuses</li>
+    <li><a href="/app/?challenge=307&amp;src=blog-payments-sql-interview-questions" data-track="cta_blog_challenge">FX Fee Take Rate by Currency</a> <span class="pl-meta">· Hard · Pro</span> — fees over volume, per currency</li>
+    <li><a href="/app/?challenge=297&amp;src=blog-payments-sql-interview-questions" data-track="cta_blog_challenge">Two Swipes at the Same Merchant Inside a Day</a> <span class="pl-meta">· Hard · Pro</span> — duplicate-payment detection with a self-join</li>
+    <li><a href="/app/?challenge=308&amp;src=blog-payments-sql-interview-questions" data-track="cta_blog_challenge">Month-over-Month Volume Growth</a> <span class="pl-meta">· Hard · Pro</span> — LAG on monthly volume</li>
+    <!-- niche-343:links -->
+  </ul>
+  <p>Preparing for a named company? Each page carries a practice set, the reported format with its sources, and a readiness check: <a href="/stripe-sql-interview/" data-track="cta_blog_company">Stripe</a>, <a href="/paypal-sql-interview/" data-track="cta_blog_company">PayPal</a>, <a href="/revolut-sql-interview/" data-track="cta_blog_company">Revolut</a> (with a 60-minute timed mock), <a href="/wise-sql-interview/" data-track="cta_blog_company">Wise</a>, <a href="/monzo-sql-interview/" data-track="cta_blog_company">Monzo</a> and <a href="/chime-sql-interview/" data-track="cta_blog_company">Chime</a>.</p>
+
+  <div class="cta-box">
+    <h3 class="fd">Find your weakest skill before the screen</h3>
+    <p>Ten questions, no signup: the readiness test scores you on the nine skills these questions lean on and points to the first one to fix. A free account gets 10 free challenge solves, plus the lessons, warm-ups and the daily challenge. In the app's Revolut set the first 3 are free to try; Pro opens every challenge and the timed mocks.</p>
+    <a href="/sql-interview-readiness-test/?company=stripe" class="cta-main" data-track="cta_blog_readiness_end">Take the readiness test →</a>
+    <p style="margin:20px auto 0;font-size:13px"><a href="/app/?company=Revolut&amp;goal=interview&amp;src=blog-payments-sql-interview-questions" data-track="cta_blog_company_end">or start the Revolut set on this ledger →</a></p>
+  </div>
+
+  <h2 id="faq">FAQ</h2>
+  <!-- Mirrors the FAQPage JSON-LD in <head>; keep both in sync (tests/sector-articles.test.js). -->
+  <div class="faq">
+    <details>
+      <summary>What SQL questions do fintech and payments companies ask?</summary>
+      <p>Public candidate reports and prep guides describe approval and decline shares from a payments table, chargeback or dispute rates per merchant over a recent window, money sent between users, account balances from deposits and withdrawals, and reconciling records between two sources. Companies do not publish their questions, so treat any list as reported, not official.</p>
+    </details>
+    <details>
+      <summary>What is the difference between authorised and settled in payments SQL?</summary>
+      <p>An authorised payment is one the issuer approved; a settled one actually moved money. A payment can be authorised and later reversed, so it never settles. In SQL that usually means three statuses and three counts: attempts, authorised (everything not declined) and settled (completed), with the reversal rate computed over authorised payments, not over attempts.</p>
+    </details>
+    <details>
+      <summary>How do you sum money across currencies in SQL?</summary>
+      <p>Never sum the charged amount across currencies. Use a converted column if the table has one, or join a rates table on the currency code and multiply, and decide whether the rate is the one on the day of the payment or a single rate for the report.</p>
+    </details>
+    <details>
+      <summary>Where can I practice payments SQL for an interview?</summary>
+      <p>SQL Quest runs payments questions on a synthetic multi-currency ledger and a card ledger, in the browser with no signup. The Stripe, PayPal, Revolut and Wise pages each carry a practice set and the reported format with sources. A free account gets 10 free challenge solves, plus the lessons, warm-ups and the daily challenge.</p>
+    </details>
+  </div>
+
+  <h2 id="sources">Sources</h2>
+  <p>No company published the shapes above. Each line is what a prep guide or a candidate report said, with the date it carried; our reads that recorded them are in the repository under docs/reads/companies/ (22 November 2026).</p>
+  <ul class="sources">
+    <li>Interview Query — <a href="https://www.interviewquery.com/interview-guides/stripe-data-analyst">Stripe data analyst guide</a>, one candidate report stamped "Data Analyst · Interviewed Q4 2026", read 22 November 2026 (daily approval and decline shares; merchants by chargeback rate over 30 days).</li>
+    <li>Interview Query — <a href="https://www.interviewquery.com/guides/stripe-data-engineer">Stripe data engineer guide</a>, report stamped Interviewed Q4 2026, read 22 November 2026 (records that do not match between two sources).</li>
+    <li>DataLemur — <a href="https://datalemur.com/blog/paypal-sql-interview-questions">PayPal SQL interview questions</a>, 7 January 2025 (users who sent money in both directions; closing balance per account).</li>
+  </ul>
+
+  <div class="related">
+    <h4>Related reading</h4>
+    <ul>
+      <li><a href="/blog/revolut-data-analyst-sql-screen/">Revolut data analyst SQL interview</a> — both rounds, sourced, on the same ledger</li>
+      <li><a href="/blog/banking-sql-interview-questions/">Banking SQL interview questions</a> — risk buckets, roll rates, dispute windows</li>
+      <li><a href="/blog/sql-for-fraud-analytics/">SQL for fraud analytics</a> · <a href="/fraud-analytics-sql/">fraud analytics practice</a></li>
+      <li><a href="/sql-interview-prep/">SQL Interview Prep Hub</a> — every company page</li>
+      <li><a href="/sql-join-fan-out/">The join fan-out trap</a> · <a href="/blog/sql-anti-join/">SQL anti-join</a></li>
+    </ul>
+  </div>
+</article>
+
+<footer class="ft">
+  <p>© 2026 SQL Quest · <a href="/">Home</a> · <a href="/blog/">Blog</a> · <a data-track="cta_blog" href="/app/?company=Stripe&amp;goal=interview&amp;src=blog-payments-sql-interview-questions">Practice Free</a> · <a href="/sql-exercises/">SQL Practice Questions</a> · <a href="/best-sql-practice-sites/">Best SQL Practice Sites</a></p>
+<p data-partner="datrick" style="margin:18px auto 0;max-width:1000px;padding:0 24px;font-size:12px;color:#8A8E99;text-align:center;">SQL Quest is built by Datrick, Inc. · <a href="https://datrick.com/sql-server-to-postgresql-migration" style="color:inherit;text-decoration:underline;">SQL Server to PostgreSQL migration</a></p></footer>
+  <script defer src="/track.js"></script>
+</body>
+</html>

@@ -31,7 +31,7 @@
       "lastmod": "2026-11-27"
     },
     "/amazon-sql-interview/": {
-      "hash": "3d929c7d8e5c7c91",
+      "hash": "4df854eae74cd46c",
       "lastmod": "2026-11-27"
     },
     "/netflix-sql-interview/": {
@@ -39,7 +39,7 @@
       "lastmod": "2026-11-27"
     },
     "/stripe-sql-interview/": {
-      "hash": "a26b81cfb01cf8ca",
+      "hash": "12ab04112a37660e",
       "lastmod": "2026-11-27"
     },
     "/plaid-sql-interview/": {
@@ -51,15 +51,15 @@
       "lastmod": "2026-11-27"
     },
     "/revolut-sql-interview/": {
-      "hash": "b2d68946f1221a42",
+      "hash": "cca436d1e673b7bd",
       "lastmod": "2026-11-27"
     },
     "/capital-one-sql-interview/": {
-      "hash": "e67c02cdd0db7cc0",
+      "hash": "bcae1266daa04ab1",
       "lastmod": "2026-11-27"
     },
     "/wise-sql-interview/": {
-      "hash": "9fa417e1d7f23d26",
+      "hash": "a6b52443cb4cd2a2",
       "lastmod": "2026-11-27"
     },
     "/apple-sql-interview/": {
@@ -79,7 +79,7 @@
       "lastmod": "2026-11-27"
     },
     "/shopify-sql-interview/": {
-      "hash": "665217ae6284ef1b",
+      "hash": "0b8931927e84ff53",
       "lastmod": "2026-11-27"
     },
     "/spotify-sql-interview/": {
@@ -87,7 +87,7 @@
       "lastmod": "2026-11-27"
     },
     "/jpmorgan-sql-interview/": {
-      "hash": "86124eb94e4caecd",
+      "hash": "628b5f8a5bcb561c",
       "lastmod": "2026-11-27"
     },
     "/snowflake-sql-interview/": {
@@ -107,7 +107,7 @@
       "lastmod": "2026-11-21"
     },
     "/fraud-analytics-sql/": {
-      "hash": "10c077acee1d421f",
+      "hash": "a18b6d0d2a2789ee",
       "lastmod": "2026-11-27"
     },
     "/vs-datalemur/": {
@@ -147,7 +147,7 @@
       "lastmod": "2026-11-27"
     },
     "/sql-interview-prep/": {
-      "hash": "418b0ebe43451e5b",
+      "hash": "7bc43d98859a47d2",
       "lastmod": "2026-11-27"
     },
     "/learn-sql/": {
@@ -247,7 +247,7 @@
       "lastmod": "2026-11-27"
     },
     "/blog/": {
-      "hash": "96a47468853d6653",
+      "hash": "14f943da5ddf6b1a",
       "lastmod": "2026-11-27"
     },
     "/blog/faang-sql-interview-guide/": {
@@ -271,7 +271,7 @@
       "lastmod": "2026-11-27"
     },
     "/blog/sql-for-fraud-analytics/": {
-      "hash": "56ca8f4561602acb",
+      "hash": "8f3d113e3280cb98",
       "lastmod": "2026-11-27"
     },
     "/blog/sql-group-by-tutorial/": {
@@ -311,7 +311,7 @@
       "lastmod": "2026-11-27"
     },
     "/morgan-stanley-sql-interview/": {
-      "hash": "aa2a6750af6dd657",
+      "hash": "25bd9ab2cc9487f9",
       "lastmod": "2026-11-27"
     },
     "/blog/sql-for-ai-company-interviews/": {
@@ -366,6 +366,18 @@
       "hash": "fe9156191d55f1ae",
       "lastmod": "2026-11-27"
     },
+    "/blog/banking-sql-interview-questions/": {
+      "hash": "e897b50df19c03b8",
+      "lastmod": "2026-11-27"
+    },
+    "/blog/payments-sql-interview-questions/": {
+      "hash": "26a74ac256cd99e3",
+      "lastmod": "2026-11-27"
+    },
+    "/blog/ecommerce-sql-interview-questions/": {
+      "hash": "f013e0c7fca69aa4",
+      "lastmod": "2026-11-27"
+    },
     "/blog/revolut-data-analyst-sql-screen/": {
       "hash": "13046bbba1076b61",
       "lastmod": "2026-11-27"
@@ -379,11 +391,11 @@
       "lastmod": "2026-11-27"
     },
     "/goldman-sachs-sql-interview/": {
-      "hash": "546bd6f9a2f13478",
+      "hash": "b1498dc4980556b2",
       "lastmod": "2026-11-27"
     },
     "/walmart-sql-interview/": {
-      "hash": "0f40444594b12714",
+      "hash": "bffee75e9ebc01f4",
       "lastmod": "2026-11-27"
     },
     "/tiktok-sql-interview/": {
@@ -403,7 +415,7 @@
       "lastmod": "2026-11-27"
     },
     "/paypal-sql-interview/": {
-      "hash": "56367c2f40771acd",
+      "hash": "3d8c2701507c20b7",
       "lastmod": "2026-11-27"
     },
     "/coinbase-sql-interview/": {
@@ -411,11 +423,11 @@
       "lastmod": "2026-11-27"
     },
     "/monzo-sql-interview/": {
-      "hash": "d42ee1c59ce8ee71",
+      "hash": "236a6ae3b80104a0",
       "lastmod": "2026-11-27"
     },
     "/chime-sql-interview/": {
-      "hash": "5df83727880f8b08",
+      "hash": "af5bd6314843db9b",
       "lastmod": "2026-11-27"
     },
     "/sql-interview-readiness-test/": {

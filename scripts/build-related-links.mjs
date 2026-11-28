@@ -99,6 +99,9 @@ export const RELATED = {
     ['/coinbase-sql-interview/', 'Coinbase'],
     ['/chime-sql-interview/', 'Chime'],
     ['/monzo-sql-interview/', 'Monzo'],
+    // 2026-11-23: the two finance sector guides (docs/reads/sector-articles-keywords-2026-11-23.md).
+    ['/blog/payments-sql-interview-questions/', 'payments SQL interview questions'],
+    ['/blog/banking-sql-interview-questions/', 'banking SQL interview questions'],
     [DA, 'SQL interview questions for data analysts'],
   ] },
   'blog/sql-for-fraud-analytics.html': { lead: 'Practise it for a fintech interview', links: [
@@ -107,6 +110,9 @@ export const RELATED = {
     ['/coinbase-sql-interview/', 'Coinbase'],
     ['/chime-sql-interview/', 'Chime'],
     ['/monzo-sql-interview/', 'Monzo'],
+    // 2026-11-23: the two finance sector guides (docs/reads/sector-articles-keywords-2026-11-23.md).
+    ['/blog/payments-sql-interview-questions/', 'payments SQL interview questions'],
+    ['/blog/banking-sql-interview-questions/', 'banking SQL interview questions'],
     [DA, 'SQL interview questions for data analysts'],
   ] },
   'turkce-sql-ogren.html': { lead: 'Karşılaştırma', links: [

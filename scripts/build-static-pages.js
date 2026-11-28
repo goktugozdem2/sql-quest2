@@ -66,6 +66,10 @@ const blogPosts = [
   'time-series-sql-hardware-interviews',
   'capital-one-codesignal-data-analyst-assessment',
   'revolut-data-analyst-sql-screen',
+  // 2026-11-23: the three sector posts (docs/reads/sector-articles-keywords-2026-11-23.md).
+  'banking-sql-interview-questions',
+  'payments-sql-interview-questions',
+  'ecommerce-sql-interview-questions',
 ];
 
 // First-party landing analytics. Injected here rather than pasted into each
