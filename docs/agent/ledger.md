@@ -1177,6 +1177,85 @@ of the verifier and must never be rounded to `FLAT`.
   2.88, the fix 2.5"); a "Start with" line that names the method (fails
   "says what it measures, not how").
 
+### the Snowflake page's first screen: "Start with", readiness, the closest Pro mock, one "debug this query" (C5)
+
+- **Claimed** 2026-11-28 · **Shipped** on merge (static page, no flag) · **Read** 2026-12-26 (28 d) and 2027-01-23 (56 d).
+- **Change** `/snowflake-sql-interview/` gets the "Start here" block inside
+  the hero, after the primary CTA row, from `FIRST_SCREENS.snowflake` in
+  `scripts/company-first-screen.mjs` (the generator is its only home):
+  "Start with" #23 Salary Rank Within Department (Hard preview, inside the
+  free tier, Snowflake-tagged), the step before the nth-highest-salary shape
+  both readable reports name (dossier S3, S4: "2 of 2"); the readiness test
+  with `?company=snowflake` (the test page's `<select>` holds the slug; a
+  capitalised `Snowflake` would not select anything); the Pro line through
+  the page facts and `freeSolvesLabel` (the 42 Hard past the 6 previews, 300+
+  without the 10-solve stop), and the closest Pro mock named by what it
+  holds: the Hard SQL Interview mock, 50 minutes, five written questions,
+  including the second-highest salary and consecutive-day orders, "a general
+  mock, not modelled on Snowflake". Under it, "Debug this query": framed by
+  the two dated data-engineering reports in `docs/reads/companies/snowflake.md`
+  (DataDriven, updated 2026-09-23; GeeksforGeeks 2023 campus report; both
+  read 2026-11-22) and their shared trap, a join that repeats a row. "How many
+  employees manage at least one person?" on the employees sample: the
+  self-join answers 43 (the people who have a manager), the EXISTS fix 6. The
+  button opens Debug 340 (the same duplication on orders and reviews, Hard,
+  Pro) and the fan-out trap page. Every new app link carries
+  `src=company-snowflake`; the hero button keeps #117 and its own series.
+  Two copy fixes on the same page: the hero's unsourced "Practice the SQL
+  patterns Snowflake interviews actually test … 90% of what you'll be asked
+  is standard SQL" is gone, and the FAQ's "we have no dated, citable source"
+  (both copies) now says the page cites two dated reports of question shapes
+  and states no analyst-round format. No sourced section: the dossier read no
+  analyst or analytics-engineer report, so none is claimed.
+- **Why this one:** last of the seven A09 money pages in the C5 rotation.
+  Snowflake's clicks come from dialect queries ("snowflake sql practice",
+  position 2.0, dossier gsc read 2026-11-22), so the reader already wants to
+  practise; the page had no door to a first question beyond the hero's movie
+  challenge, and carried a frequency claim the sourcing rules forbid.
+- **Metric** `content_funnel`, page `snowflake-sql-interview`:
+  `trial_or_purchase` per 1,000 `landing_people`, 28-day window, and the step
+  it should move, `app_opened` / `landing_people`. Clicks
+  `cta_first_question`, `cta_first_readiness`, `cta_first_mock`,
+  `cta_first_debug`; arrivals with `arrivalSrc` `company-snowflake`; Pro
+  modals with `linkSrc` `company-snowflake` (reason `mock_link`).
+- **Baseline** the page's 28-day `content_funnel` row to 2026-11-28, read by
+  the laptop from the Monday/Thursday mail (cloud run, no production data;
+  per-page numbers never go in the repo). Site-wide prior,
+  `docs/plans/monetization-ideas-2026-11-22.md` §1f: company pages 2.3% of
+  arrivals to trial or purchase, 81% of landers never open the app.
+- **Target** at 28 d: `app_opened` / `landing_people` up by ≥ 5 points on the
+  baseline row, and ≥ 10% of landers click one of the four new links. At
+  56 d: `trial_or_purchase` per 1,000 landers at or above the company-page
+  prior (23).
+- **Falsification, written now:** fewer than 5% of landers click a new link
+  at ≥ 100 landers → the block is not read; cut it to the "Start with" line.
+  App opens flat or down at ≥ 100 landers → the block cost the hero its
+  focus; move it below the provenance note. `cta_first_question` clicks with
+  under 30% `challenge_first_run` on #23 → a Hard opener is too steep for a
+  dialect reader; swap to a Medium (#18, the group-then-top shape, S4).
+  `cta_first_debug` clicks with no `challenge_first_run` on 340 → the item
+  reads as homework, or the Pro wall on 340 stops it; drop the button. Under
+  30 landers in 28 d → noise, read again at 56 d.
+- **Confound, stated:** the hero line and FAQ change ship with the block, so a
+  rank move cannot be split from the page → app step; read rank from
+  `gsc_daily` apart. The open → first-run A/Bs (`runnableStarter`,
+  `companyDirectOpen`) and the free-quota holdout meet the same people: split
+  by their arms.
+- **Guard** `tests/snowflake-first-screen.test.js` (both queries run on
+  `employees` against an independent truth, every number, the bug line, the
+  first question tagged + Hard preview + said by what it measures, the Pro
+  line through the helpers and no price, the mock's length / Pro / five
+  written questions / the two named shapes, no Hard solution or mock question
+  given away, the frame's two sources pinned in the dossier, no format words,
+  hero and FAQ in both copies, placement in the hero, doors);
+  `tests/company-pages.test.js` `OFF_SET_LINKS` / `OFF_SET_NOTE` waive the tag
+  check for 340 only while the page says it is from the Debug set;
+  `tests/company-template.test.js` pins the generator. Breaks caught: the
+  fix's self-join reversed (`e.emp_id = m.manager_id`) fails "the broken query
+  runs and answers what the page says; the fix runs and equals the truth";
+  the "90%" hero line put back fails "the hero and FAQ make no unsourced
+  claim about what Snowflake asks, in every copy".
+
 ### a founder-led live mock — would people pay for it? (asked by hand)
 
 - **Claimed** 2026-11-22 · **Shipped** as 3 Gmail drafts, written by E1 at
