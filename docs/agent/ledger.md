@@ -27,6 +27,20 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### A guest is shown the guest tutor cap, 0/5, not 0/20 (display fix, 2026-11-28)
+
+- **Claimed** 2026-11-28 · **Shipped** on merge, no flag (a number shown
+  before the first tutor answer; registered free and Pro unchanged, by
+  test) · **Read** none: this is a correctness fix, not a bet.
+- **Change.** The AI tutor tab showed every non-Pro person "Daily AI Calls
+  0/20" until the server's first answer; the server caps a guest at 5 (A2,
+  docs/reads/live-qa-2026-11-28.md). The caps the app shows now come from
+  `src/utils/tutor-limits.js`, bound to the server's `DAILY_LIMITS` by
+  `tests/tutor-limit-claims.test.js`.
+- **Metric** none claimed. If a read of the guest `ai_limit` signup ask
+  (A3's 11-27 entry above) spans 11-28, note that the shown cap changed on
+  merge.
+
 ### the company-set gate walls only authored sets (Capital One, Revolut) — bug fix
 
 - **Claimed** 2026-11-26 (founder's go in chat, "1'i uygula") · **Shipped**
