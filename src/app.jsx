@@ -80,6 +80,7 @@ import { DIALECTS, DIALECT_ROWS } from './utils/dialect-notes.js';
 import { modalLayoutArm, plansFirst } from './utils/modal-layout.js';
 import { softGateReason, paywallMomentCopy, SOFT_GATE_ACTION_LABEL, SOFT_GATE_TOAST_MS, headerProCta } from './utils/paywall-moments.js';
 import { botSignals, botDecision } from './utils/bot-signals.js';
+import { crawlerSignature, PRIOR_AID_AT_LOAD } from './utils/bot-signals.js';
 import { bootTiming } from './utils/boot-timing.js';
 import { starterHintFor, starterSqlFromHint } from './utils/starter-query.js';
 import { RUNNABLE_STARTER_KEY, RUNNABLE_STARTER_TEST_ID, isDesktopScreen, isEmptyEditorOpen, normalizeRunnableStarterRecord, runnableStarterDecision, runnableStarterText, isUntouchedStarter } from './utils/runnable-starter.js';
@@ -7666,6 +7667,19 @@ function SQLQuest() {
       // the smoke test still reads its lines); here only the stamp.
       const decision = botDecision(signals);
       if (decision.stamp) payload.bot = decision.stamp;
+      // Crawler signatures (2026-11-23, src/utils/bot-signals.js): the stale
+      // or phone-on-desktop user agent, the 1600x1200 window, and the langs = 2
+      // cluster that opens /app/?src=<page> without ever loading the page.
+      // Stamped like the fingerprints above, never dropped.
+      if (!payload.bot && decision.write) {
+        try {
+          const sig = crawlerSignature({
+            userAgent: navigator.userAgent, viewport: payload.viewport, languages: navigator.languages,
+            landingSrc: payload.landingSrc, arrivalSrc: payload.arrivalSrc, tz: payload.tz, priorAid: PRIOR_AID_AT_LOAD,
+          }, 'app');
+          if (sig) payload.bot = sig;
+        } catch (_) {}
+      }
       if (event === 'app_opened' && signals) Object.assign(payload, { wd: signals.wd, uaBot: signals.uaBot, langs: signals.langs });
       writeProEvent(event, 'activation_funnel', payload, { keepalive: options.keepalive === true });
     } catch (_) {}

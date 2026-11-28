@@ -82,3 +82,108 @@ export function botDecision(signals) {
   if (signals.hard) return { write: false, stamp: null };
   return { write: true, stamp: signals.soft };
 }
+
+// ── Crawler signatures, 2026-11-23 (B2; docs/agent/metrics.md, "Trap: three
+// crawlers stamped at the source") ────────────────────────────────────────
+// A second table, beside SOFT_FINGERPRINTS rather than inside it, because
+// these read the browser's own words (the user agent) and, for the app, its
+// arrival: things the window-size table never needed. Same tier: soft, the
+// row is written and stamped `bot: '<id>'`, never dropped. The landing
+// tracker (src/track.js) carries the `landing` rows in ES5 between the
+// CRAWLER_SIGNATURES markers; tests/bot-signals.test.js runs both over the
+// same inputs. Measured read-only on pro_events, 2026-11-23:
+//
+// vp1600x1200 — a landing window never seen in the app, over all time. 30
+//   landing people from 2026-11-22 (the UTC wave, spoofed bing.com
+//   referrer), 0 ran, solved, signed up or saw the Pro modal.
+// staleua     — a user agent older than any person who has ever acted:
+//   Chrome < 126, Firefox < 110 (a real solver used 112), iOS < 13, or
+//   Android < 7 (the Nexus 5 / MRA58N emulation string carries Chrome 143 on
+//   Android 6, which no Chrome after 106 runs on). Landing rows carry `ua`
+//   from 2026-09-15: 1,337 people in 120 days match, 1 opened the app, 0 ran,
+//   solved, signed up, saw the modal or clicked checkout (of 9,393 people
+//   with a `ua`, 980 of whom did). It is most of the UTC wave (Chrome 117 /
+//   125, Firefox 109, Nexus 5) and 446 of ~900 Asia/Shanghai no-source
+//   landers (Chrome 103-124, iOS 10-12).
+// uamismatch  — a phone's user agent in a desktop-band window (>= 1024 wide):
+//   an iPhone agent at 1920x1080, a Nexus 5 at 1920x1080. A phone asking for
+//   the desktop site sends a desktop agent, not the reverse. 19 landing
+//   people from 2026-11-22, 0 acted.
+// langs2nolv  — app only: the langs = 2 cluster (docs/plans/
+//   mobile-acquisition-2026-11-23.md §1a). It opens /app/?src=<page> as a
+//   first visit — no aid in this browser before the app loaded, i.e. it
+//   never loaded the page it claims to come from — with no landing source,
+//   two browser languages and one of six rotating time zones, often at a
+//   landscape phone size. 28 days to 2026-11-23: 206 people (32 mobile, 167
+//   desktop, 7 tablet), 0 ran, solved or signed up; 1 saw the Pro modal,
+//   which a trap-page mock link opens by itself (reason pattern_mock). Over
+//   all time (`langs` from 2026-10-07; first seen 10-08): 537 people beyond
+//   the window-size fingerprints, 0 ran, solved, signed up or clicked
+//   checkout.
+//   The time-zone clause is the trade-off: without it the rule also takes
+//   2 real solvers in 28 days (America/Chicago, Asia/Calcutta). A wave that
+//   moves zone walks around it; the read-side view (crawler_people) keeps
+//   the behavioural rule for that.
+
+export const STALE_UA_FLOORS = { chrome: 126, firefox: 110, ios: 13, android: 7 };
+
+function majorOf(ua, re) {
+  const m = re.exec(ua);
+  return m ? parseInt(m[1], 10) : null;
+}
+
+export function staleUserAgent(userAgent) {
+  const ua = String(userAgent || '');
+  if (!ua) return false;
+  const chrome = majorOf(ua, /Chrome\/(\d+)/);
+  if (chrome !== null && chrome < STALE_UA_FLOORS.chrome) return true;
+  const firefox = majorOf(ua, /Firefox\/(\d+)/);
+  if (firefox !== null && firefox < STALE_UA_FLOORS.firefox) return true;
+  const ios = majorOf(ua, /iPhone OS (\d+)_/);
+  if (ios !== null && ios < STALE_UA_FLOORS.ios) return true;
+  const android = majorOf(ua, /Android (\d+)/);
+  if (android !== null && android < STALE_UA_FLOORS.android) return true;
+  return false;
+}
+
+export function phoneAgentOnDesktop(userAgent, viewport) {
+  const ua = String(userAgent || '');
+  if (!/^desktop:/.test(String(viewport || ''))) return false;
+  if (/iPad/.test(ua)) return false;
+  return /iPhone|iPod/.test(ua) || (/Android/.test(ua) && /Mobile/.test(ua));
+}
+
+export const LANGS2_ZONES = ['Asia/Hong_Kong', 'Asia/Shanghai', 'Asia/Singapore', 'America/Los_Angeles', 'America/Mexico_City', 'Etc/Unknown'];
+
+export const CRAWLER_SIGNATURES = [
+  { id: 'vp1600x1200', since: '2026-11-22', match: ({ viewport }) => viewport === 'desktop:1600x1200' },
+  { id: 'staleua', since: '2026-09-15', match: ({ userAgent }) => staleUserAgent(userAgent) },
+  { id: 'uamismatch', since: '2026-11-22', match: ({ userAgent, viewport }) => phoneAgentOnDesktop(userAgent, viewport) },
+  { id: 'langs2nolv', since: '2026-10-08', appOnly: true,
+    match: ({ languages, landingSrc, arrivalSrc, tz, priorAid }) =>
+      Array.isArray(languages) && languages.length === 2
+      && !landingSrc
+      && !!arrivalSrc && arrivalSrc !== 'home'
+      && priorAid === false
+      && LANGS2_ZONES.includes(tz) },
+];
+
+// The signature id, or null. `surface` 'landing' skips the app-only rows.
+export function crawlerSignature(ctx = {}, surface = 'app') {
+  const f = CRAWLER_SIGNATURES.find(s => (surface === 'app' || !s.appOnly) && s.match(ctx));
+  return f ? f.id : null;
+}
+
+// Was there an aid in this browser before the app's own code ran? Read once,
+// when this module is evaluated — before getAnonId() can mint one. The
+// landing tracker mints the aid on a page's first event, so false means this
+// browser never sent a landing event: whatever `?src=` says, it did not come
+// from that page. null when storage cannot be read (never a signal).
+export function readPriorAid(storage) {
+  try {
+    const s = storage !== undefined ? storage : (typeof localStorage !== 'undefined' ? localStorage : null);
+    if (!s) return null;
+    return /^[0-9a-f]{32}$/.test(String(s.getItem('sqlquest_aid') || ''));
+  } catch (_) { return null; }
+}
+export const PRIOR_AID_AT_LOAD = readPriorAid();

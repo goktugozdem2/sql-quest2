@@ -14,7 +14,7 @@ import {
 const ROOT = path.resolve(import.meta.dirname, '..');
 const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
 const SQL_FILE = 'scripts/content-funnel.sql';
-const MIGRATION = 'supabase/migrations/20261122160000_content_funnel_view.sql';
+const MIGRATION = 'supabase/migrations/20261123180100_content_funnel_crawlers.sql';
 const WORKFLOW = '.github/workflows/content-funnel.yml';
 const REPORT = 'scripts/content-funnel-report.mjs';
 
