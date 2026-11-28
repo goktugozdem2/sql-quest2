@@ -22771,13 +22771,17 @@ Do NOT force the sector if the user asks a generic question (e.g. "what does GRO
         localStorage.setItem('sqlquest_ai_daily', JSON.stringify({ date: today, used: data.used, plan: data.plan }));
 
         if (data.plan === 'guest') {
-          // Guest hit limit — prompt sign-up for more calls. Tournament arm B
-          // holds it while the ladder runs (walk fix B1); the message says it.
+          // Guest hit limit — prompt sign-up for more calls. Through
+          // triggerSignupPrompt so the ask is counted (`signup_prompt_shown
+          // {promptReason:'ai_limit'}`); until 2026-11-27 it opened the modal
+          // directly, with no event, under the "You're on fire!" copy — shown
+          // to a stuck guest with 0 solves (A3, docs/reads/errors-2026-11-27.md).
+          // The ai_limit title/body is dark behind `aiLimitAskCopy`; for a guest
+          // the modal opens exactly as before, only the event is new.
+          // Tournament arm B holds it while the ladder runs (walk fix B1); the
+          // held ask is released through triggerSignupPrompt too.
           if (pathUi.holdSignupAsks) pathHeldSignupRef.current = 'ai_limit';
-          else {
-            setSignupPromptReason('ai_limit');
-            setShowSignupPrompt(true);
-          }
+          else triggerSignupPrompt('ai_limit');
           return `**AI Limit Reached**\n\nCreate a free account to get ${TUTOR_FREE_DAILY_LIMIT} AI tutor calls per day!`;
         }
         if (data.plan === 'free') {
@@ -30830,14 +30834,16 @@ RULES:
                 {signupPromptReason === 'pro_purchase' ? '👑' : signupPromptReason === 'first_challenge' ? '🎉' : '💪'}
               </div>
               <h2 className="text-2xl font-bold text-[#F2F0EA] mb-2">
-                {signupPromptReason === 'pro_purchase' ? i18n_t('pro', 'payGuestSignupTitle') : signupPromptReason === 'first_challenge' ? 'Great job!' : 'You\'re on fire!'}
+                {signupPromptReason === 'pro_purchase' ? i18n_t('pro', 'payGuestSignupTitle') : signupPromptReason === 'first_challenge' ? 'Great job!' : (signupPromptReason === 'ai_limit' && ftbFlag('aiLimitAskCopy')) ? 'More AI help with a free account' : 'You\'re on fire!'}
               </h2>
               <p className="text-gray-300">
                 {signupPromptReason === 'pro_purchase'
                   ? i18n_t('pro', 'payGuestSignupBody')
                   : signupPromptReason === 'first_challenge'
                     ? 'You just solved your first challenge!'
-                    : `You've earned ${xp} XP and solved ${solvedChallenges.size} challenges!`}
+                    : (signupPromptReason === 'ai_limit' && ftbFlag('aiLimitAskCopy'))
+                      ? `Guest AI help is used up for today. A free account gets ${TUTOR_FREE_DAILY_LIMIT} tutor calls a day.`
+                      : `You've earned ${xp} XP and solved ${solvedChallenges.size} challenges!`}
               </p>
             </div>
             

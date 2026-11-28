@@ -56,6 +56,30 @@ of the verifier and must never be rounded to `FLAT`.
   enrolment from 11-28) leaves the company gate the same in both arms; this
   lands on both arms alike (note the merge date in the holdout read).
 
+### The tutor-limit signup ask is counted and says why (A3, 2026-11-27)
+
+- **Claimed** 2026-11-27 · **Shipped** on merge: the count (the ask goes
+  through `triggerSignupPrompt`, so `signup_prompt_shown {ai_limit}` is
+  written; a guest sees today's modal). The copy ("More AI help with a free
+  account") is **dark** behind `aiLimitAskCopy` (funnel-step rule, A1
+  2026-11-27) and flips only through its own orchestrator-decisions row ·
+  **Read** 2026-12-18 (coverage); the copy part is read 21 days after its
+  flip.
+- **Metric.** `ai_limit_ask` (docs/agent/metrics.md).
+- **Baseline.** 0 `signup_prompt_shown {ai_limit}` rows ever: the ask
+  opened without an event. In the 24 h to 11-27 09:25 UTC, `ai-tutor`
+  answered 429 four times, two of them to a guest at 0 solves after four
+  "show me the full solution" clicks on challenge 108; that guest saw
+  "You're on fire! You've earned 0 XP and solved 0 challenges!".
+- **Target.** By 12-18, every guest `ai-tutor` 429 seen in
+  `function_edge_logs` through the inline Help or a lesson has a matching
+  `ai_limit` row for that person (coverage ≥ 90%); after the
+  `aiLimitAskCopy` flip, no `ai_limit` asker sees the solve-count copy.
+- **Falsified if** guest 429s appear after the deploy with no `ai_limit`
+  rows (then `isGuest` in the client disagrees with the server's plan, and
+  the ask silently stopped opening: revert to the direct open and re-read).
+- **Not claimed.** A signup lift. n is a few people a week.
+
 ### the free-quota holdout: did the quota cost the returns? (`freeQuotaHoldout`, A/B)
 
 - **Claimed** 2026-11-25 · **Shipped** ON on merge (flag `freeQuotaHoldout: true`; `freeQuota` is a money flag and the founder gave the written go for THIS test in chat on 2026-11-25, "Full holdout (Recommended)") · **Enrolment** first app opens 2026-11-28 → 2026-12-25 (four weeks; fixed constants `FREE_QUOTA_HOLDOUT_START/END` in src/utils/free-quota-holdout.js, 11-28 00:00 UTC to 12-26 00:00 UTC exclusive — moved from 11-26 on 2026-11-26, and again from 11-27 on 2026-11-27 because the 11-27 start passed before merge; a test pins the start to no earlier than 11-28) · **Arm-balance check** 2026-12-04 · **Halfway money read** 2026-12-12 · **Read** 2027-01-02 (the 7th day after enrolment ends). If the merge slips past 11-28, move the window, the balance check, the halfway read and the read date together in one commit (constants, this entry, metrics.md).

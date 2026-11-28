@@ -692,6 +692,15 @@ window.FEATURE_FLAGS = {
     // merge (chat, 2026-11-26). src/utils/runnable-starter.js; ledger "a
     // runnable starter in the editor"; metric runnable_starter_split.
     runnableStarter: true,
+    // ── The tutor-limit signup ask says why (A3, 2026-11-27) ──────────────
+    // When a guest's tutor calls run out (ai-tutor 429, plan 'guest'), the
+    // signup modal shows "More AI help with a free account" / "Guest AI help
+    // is used up for today…" instead of the solve-count praise. The ask is
+    // counted (`signup_prompt_shown {ai_limit}`) whatever this flag says.
+    // DARK on merge (funnel-step rule); flips only through its own row in
+    // orchestrator-decisions.md. Ledger "the tutor-limit signup ask is
+    // counted and says why"; metric ai_limit_ask.
+    aiLimitAskCopy: false,
 
     // ── The first-session tournament (2026-11-26, PR 1 of 4: the frame) ───
     // New visitors only (a browser's FIRST app open; returning browsers and
