@@ -27,6 +27,71 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### the SQL Interview Health Check: goal first, a roadmap back, company pages as the door
+
+- **Claimed** 2026-11-25 · **Shipped** **dark** — build-time flag
+  `healthCheck` (src/data/feature-flags.js), `false` on merge; **flips by an
+  orchestrator row on a fixed deploy date** (flag-queue row 19) · **Deploy
+  date 2026-12-02** (Wednesday): the day A0 merges the flip PR. Both halves
+  go live in that one deploy: the flip PR sets the flag, re-runs
+  `scripts/build-company-pages.mjs` and `scripts/build-readiness-test.mjs`
+  (the static half — they are not in `npm run build`) and `npm run build`
+  (`public/data.js` carries `feature-flags.js`, so the app's `?goal=` door,
+  gated by `ftbFlag('healthCheck')`, turns on in the same deploy). The app
+  code itself may reach production earlier with any app build; off, it does
+  nothing. If the flip slips, the read moves with it · **Read** flip merge
+  + **56 days** = **2027-01-27** (window set now, before any data; longer
+  than the usual 28 because of the n below).
+- **Off (until the flip):** `/sql-interview-readiness-test/` and every
+  company page are origin/main's pages byte for byte
+  (`scripts/readiness-test-legacy.mjs`; `tests/health-check-flag.test.js`
+  compares against origin/main's committed output).
+- **Change (on)** the readiness test becomes the SQL Interview Health Check
+  ("Free · 10 minutes · no signup"). It asks the goal first (an interview at
+  a company + optional date, a first data job, moving up, SQL with AI tools,
+  learning SQL) and the role (analyst, analytics engineer, data engineer,
+  data scientist, AI/ML engineer); the ten items follow the goal and role;
+  the result is a 3–5 week (or day) roadmap of named challenges in
+  curriculum order, topic and trap pages, and a Pro mock for an interview.
+  The company-weighted number only for a signed archetype company. Every
+  company page's readiness block opens it with `src=company-<slug>`. The plan
+  link lands in the app with the chosen goal, date and role filled in
+  (intake through the `?goal=` link door).
+- **Metric** `readiness_funnel` (definition PR #346, people by
+  `metadata->>'aid'`).
+- **Baseline** (90 days to 2026-11-24): company-page landing people 1,705 →
+  12 started the test (**0.70 per 100**); test-page landers 212 → started 41
+  → completed 10 (**24%** of starters) → plan clicked 5 (**50%** of
+  completers) → arrived 5.
+- **Expected n, written now (A1/Q1 REVISE item 3).** Scaled from the 90-day
+  baseline: 28 days ≈ 530 company-page landing people → **3.7** company-door
+  starters at baseline, **10.6** at target (a), plus ≈ 12.8 page starters —
+  under every floor below, so a 28-day read would be UNREADABLE by
+  construction. **56 days** ≈ 1,061 company-page landing people → **7.4**
+  company-door starters at baseline, **21.2** at target (a) (10.6 at the
+  1.0 falsification line); ≈ 25.5 page starters; so ≈ 33 starters at the
+  baseline rate, ≈ 47 at target → ≈ 8 completers at 24%, ≈ 14 at 30% →
+  ≈ 7 plan clicks at 50%.
+- **Target** (56 days after the flip): (a) starters with `src=company-*` ≥
+  2.0 per 100 company-page landing people; (b) completion ≥ 30% of starters;
+  (c) plan click ≥ 50% of completers, with arrival ≥ 80% of clickers.
+- **Floors (restated):** (a) is read on its denominator — at least **800**
+  company-page landing people in the window (bots out, per the fleet
+  README); (b) needs at least **20 starters**; (c) at least **10
+  completers**. Under a floor → that part is **UNREADABLE** and extends 28
+  days once (to flip + 84); the other parts are read on the date.
+- **Falsification, written now:** (a) under 1.0 per 100 → the company door
+  did not work; set `healthCheck` back to false (the off pages are today's)
+  or revert the block's copy, and look at the button, not the test. (b)
+  completion under 20% → the goal questions in front cost more than they
+  gave; cut the start card to goal only. (c) plan click under 35% → the
+  roadmap displaced the ask; put the plan button above the roadmap.
+- **Confounds:** the goal questions now sit before item 1, so a starter is
+  someone who answered the goal — read completion against the pre-release
+  41/10, not against later weeks; Google re-snippets the new title; any
+  company-page change that lands inside the 56 days (C-lane snippets, new
+  company pages) moves the (a) denominator — name it in the read.
+
 ### the company-set gate walls only authored sets (Capital One, Revolut) — bug fix
 
 - **Claimed** 2026-11-26 (founder's go in chat, "1'i uygula") · **Shipped**

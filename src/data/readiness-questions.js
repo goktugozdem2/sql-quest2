@@ -42,7 +42,7 @@ export const QUESTIONS = [
     sql: 'SELECT SUM(o.amount)\nFROM orders o\nJOIN order_items i ON i.order_id = o.id;',
     options: ['150', '250', '300', 'An error'],
     answer: 1,
-    why: 'The join repeats order 1 once per item, so its 100 is summed twice: 100 + 100 + 50 = 250. This fan-out is a classic wrong answer in analytics rounds; aggregate before joining.',
+    why: 'The join repeats order 1 once per item, so its 100 is summed twice: 100 + 100 + 50 = 250. That is join fan-out: aggregate before joining, or the totals inflate.',
   },
   {
     skill: 'Window Functions',
@@ -260,4 +260,219 @@ export function readReadinessRecord(storage, { now = Date.now(), maxAgeDays = GO
     scores: { ...rec.scores },
     ageDays: Math.floor(ageDays),
   };
+}
+
+// ── The SQL Interview Health Check (2026-11-25) ─────────────────────────────
+//
+// Founder, 2026-11-25: the check exists to learn the person's real goal and
+// hand back a roadmap that fits it; the score alone is not the product. So:
+//   1. GOAL FIRST — what they prepare for (HEALTH_GOALS), the role
+//      (READINESS_ROLES), optionally the date or the weeks they have.
+//   2. THE ITEMS FOLLOW THE GOAL — `selectQuestions` swaps items of the core
+//      ten for the goal and role (a fundamentals item for a first job or
+//      general learning; a "find the bug in this AI-written query" item for
+//      SQL-with-AI or an AI/ML engineer). Always ten items.
+//   3. THE RESULT IS A ROADMAP — `buildHealthRoadmap`: weeks (days when the
+//      date is close), each naming the skill to work on and the SQL Quest
+//      challenges for it in curriculum order, the topic and trap pages, and a
+//      mock at the end of an interview roadmap; Pro items marked as Pro.
+//   4. THE NUMBER — a company-weighted readiness number only for a signed
+//      archetype company (`isArchetypeSlug`), the rule interview-prep.js keeps;
+//      every other company gets the roadmap and the skill picture, with the
+//      plain SQL score, never a company score.
+//
+// The goal maps onto the app's own goal stores: `intent` is the value
+// setUserIntent writes and the `?goal=` link door reads; `intakeGoal` is the
+// onboarding intake's goal id (and through it the Coach goal); `intakeRole`
+// is an INTAKE_ROLES id for userGoals.role. tests/health-check.test.js binds
+// all three to src/utils/onboarding-intake.js.
+//
+// A role MULTIPLIES the base weights (a company's tagged-set shares, or equal
+// weights) — it never creates a weight the company's set does not have. The
+// leans are our editorial emphasis for the work each role does, not a
+// measurement of any interview, and the page says so. No frequency claims.
+//
+// The functions marked INLINED are copied into the public page with
+// Function#toString (scripts/build-readiness-test.mjs), so they stay
+// self-contained: no imports, no outer references — everything comes in as
+// arguments. tests/health-check.test.js pins that.
+
+export const HEALTH_GOALS = [
+  { id: 'interview', label: 'An interview at a specific company', intent: 'interview', intakeGoal: 'interview' },
+  { id: 'first-job', label: 'Landing my first data job', intent: 'job_ready', intakeGoal: 'job' },
+  { id: 'move-up', label: 'Moving up in a data role', intent: 'job_ready', intakeGoal: 'job' },
+  { id: 'ai-sql', label: 'Using SQL with AI tools at work', intent: 'job_ready', intakeGoal: 'job' },
+  { id: 'learn', label: 'Learning SQL in general', intent: 'learning', intakeGoal: 'general' },
+];
+
+export const READINESS_ROLES = [
+  { id: 'data-analyst', code: 'da', label: 'Data analyst', intakeRole: 'analyst', lean: { 'Aggregation & Grouping': 1.5, Joins: 1.25, 'Conditional Logic': 1.25, 'Date Functions': 1.25 } },
+  { id: 'analytics-engineer', code: 'ae', label: 'Analytics engineer', intakeRole: 'engineer', lean: { 'Subqueries & CTEs': 1.5, Joins: 1.5, 'Window Functions': 1.25, 'NULL Handling': 1.25 } },
+  { id: 'data-engineer', code: 'de', label: 'Data engineer', intakeRole: 'engineer', lean: { Joins: 1.5, 'NULL Handling': 1.5, 'Date Functions': 1.25, 'Subqueries & CTEs': 1.25 } },
+  { id: 'data-scientist', code: 'ds', label: 'Data scientist', intakeRole: 'data_scientist', lean: { 'Window Functions': 1.5, 'Aggregation & Grouping': 1.25, 'Subqueries & CTEs': 1.25, 'Conditional Logic': 1.25 } },
+  { id: 'ai-ml-engineer', code: 'ai', label: 'AI/ML engineer', intakeRole: 'engineer', lean: { 'NULL Handling': 1.5, Joins: 1.5, 'Aggregation & Grouping': 1.25, 'Subqueries & CTEs': 1.25 } },
+];
+
+/**
+ * Items outside the core ten, swapped in by goal and role. Each answer was
+ * worked by hand and the SQL ones are run in tests/health-check.test.js.
+ * `replaces` is the index in QUESTIONS the item takes the place of — chosen
+ * so the skill coverage of the remaining nine stays the same.
+ */
+export const EXTRA_QUESTIONS = [
+  {
+    id: 'basics-top-n',
+    skill: 'Querying Basics',
+    replaces: 3, // the LAG item: Window Functions keeps the DENSE_RANK one
+    when: { goals: ['first-job', 'learn'] },
+    q: 'products(name, price) has no ties on price. Which query returns the three most expensive products?',
+    sql: null,
+    options: ['SELECT name, price FROM products ORDER BY price DESC LIMIT 3', 'SELECT name, price FROM products ORDER BY price LIMIT 3', 'SELECT name, MAX(price) FROM products LIMIT 3', 'SELECT name, price FROM products WHERE price = MAX(price) LIMIT 3'],
+    answer: 0,
+    why: 'Sort high to low, then keep three rows. Ascending order returns the cheapest three, MAX(price) collapses the table to one row, and an aggregate cannot sit in WHERE.',
+  },
+  {
+    id: 'debug-ai-left-join',
+    skill: 'Joins',
+    kind: 'debug',
+    replaces: 1, // the fan-out item: Joins keeps two items
+    when: { goals: ['ai-sql'], roles: ['ai-ml-engineer'] },
+    q: 'An AI assistant wrote this to count each customer\'s paid orders, customers with none included as 0. Customers with no paid orders are missing from the result. Which fix is right?',
+    sql: "SELECT c.id, c.name, COUNT(*) AS paid_orders\nFROM customers c\nLEFT JOIN orders o ON o.customer_id = c.id\nWHERE o.status = 'paid'\nGROUP BY c.id, c.name;",
+    options: [
+      "Move o.status = 'paid' into the ON clause and count o.id instead of *",
+      'Change the LEFT JOIN to an INNER JOIN',
+      "Move o.status = 'paid' into the ON clause and keep COUNT(*)",
+      'Group by c.name only',
+    ],
+    answer: 0,
+    why: 'A WHERE on the right-hand table drops the NULL rows the LEFT JOIN kept, so it acts as an inner join. In the ON clause the filter keeps every customer, and COUNT(o.id) gives 0 where COUNT(*) would count the NULL row as 1.',
+  },
+];
+
+/** INLINED. The ten items for a goal and role: the core ten with the matching extras swapped in. */
+export function selectQuestions({ goal, role } = {}, core, extras) {
+  const out = (core || []).slice();
+  for (const x of extras || []) {
+    const w = x.when || {};
+    const hit = (w.goals || []).indexOf(goal) >= 0 || (w.roles || []).indexOf(role) >= 0;
+    if (hit && x.replaces >= 0 && x.replaces < out.length) out[x.replaces] = x;
+  }
+  return out;
+}
+
+/**
+ * INLINED. Base weights leaned by a role. An unknown or empty role returns a
+ * copy of the base unchanged. A base weight of 0 stays 0.
+ */
+export function applyRoleWeights(base, roleId, roles) {
+  const out = {};
+  const b = base && typeof base === 'object' ? base : {};
+  const role = (roles || []).find(r => r.id === roleId) || null;
+  for (const s of Object.keys(b)) {
+    const w = Number(b[s]) || 0;
+    const m = role && role.lean[s] ? role.lean[s] : 1;
+    out[s] = Math.round(w * m * 100) / 100;
+  }
+  return out;
+}
+
+/** Every skill a share code can carry, in code order: the core seven, then the extras' own. */
+export const SHARE_SKILLS = [...READINESS_SKILLS, ...EXTRA_QUESTIONS.map(x => x.skill).filter(s => !READINESS_SKILLS.includes(s))];
+
+/**
+ * INLINED. The share code for `?r=`: one character per skill in `skills`
+ * order — the score in tens (0–9, `a` = 100, `-` = not asked) — then
+ * `_<company slug>` and `_<role code>`, each empty when absent. Scores,
+ * company and role only: no answers, no name, no date, no aid.
+ */
+export function encodeShareCode({ scores, company, role }, skills, roles) {
+  const s = scores && typeof scores === 'object' ? scores : {};
+  const digits = skills.map(k => {
+    if (!(k in s)) return '-';
+    const v = Math.max(0, Math.min(100, Math.round((Number(s[k]) || 0) / 10) * 10));
+    return v === 100 ? 'a' : String(v / 10);
+  }).join('');
+  const co = typeof company === 'string' && /^[a-z0-9-]{1,40}$/.test(company) ? company : '';
+  const r = (roles || []).find(x => x.id === role);
+  return digits + '_' + co + '_' + (r ? r.code : '');
+}
+
+/**
+ * INLINED. Decode `?r=`; null for anything malformed. The company is kept
+ * only when `knownCompanies` (keyed by slug) has it; an unknown role code is
+ * dropped; scores are 0–100 by construction.
+ */
+export function decodeShareCode(raw, skills, roles, knownCompanies) {
+  if (typeof raw !== 'string' || raw.length > 80) return null;
+  const parts = raw.split('_');
+  if (parts.length !== 3) return null;
+  const digits = parts[0];
+  const co = parts[1];
+  const rc = parts[2];
+  if (digits.length !== skills.length || !/^[0-9a-]+$/.test(digits) || !/[0-9a]/.test(digits)) return null;
+  const scores = {};
+  skills.forEach((k, i) => { if (digits[i] !== '-') scores[k] = digits[i] === 'a' ? 100 : Number(digits[i]) * 10; });
+  const company = /^[a-z0-9-]{1,40}$/.test(co) && knownCompanies && Object.prototype.hasOwnProperty.call(knownCompanies, co) ? co : null;
+  const r = (roles || []).find(x => x.code === rc);
+  return { scores, company, role: r ? r.id : null };
+}
+
+/** Whole days from today (UTC) to an ISO yyyy-mm-dd date; null when malformed. INLINED. */
+export function healthDaysOut(iso, now) {
+  if (typeof iso !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return null;
+  const t = Date.parse(iso + 'T00:00:00Z');
+  if (!Number.isFinite(t)) return null;
+  const d = new Date(Number(now));
+  const today = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+  return Math.round((t - today) / 86400000);
+}
+
+/**
+ * INLINED. The roadmap the check hands back.
+ *
+ * - `scores` per skill (0–100) and `weights` (company × role, already leaned)
+ *   rank the skills by need = (100 − score) × (weight + 1); a perfect skill
+ *   goes last.
+ * - The unit is DAYS when `daysOut` is 0–14 (one step a day, at most 5),
+ *   otherwise WEEKS: `floor(daysOut / 7)` clamped to 3–5, or 4 with no date.
+ * - Step i works on the i-th neediest skill (cycling when there are more steps
+ *   than skills that need work). Its items are the next unused challenges of
+ *   `pools[skill]` — already in curriculum order, the company's set first —
+ *   three a week or two a day; a skill scored 50+ skips Easy items.
+ * - `pages[skill]` / `traps[skill]` ([href, label]) ride along when present.
+ * - `mock` ({ href, label }) closes an interview roadmap; it is Pro.
+ * Every item keeps its own `pro` flag; `freeItems` counts the rest.
+ */
+export function buildHealthRoadmap({ goal, scores, weights, daysOut, pools, pages, traps, mock } = {}) {
+  const s = scores || {};
+  const w = weights || {};
+  const skills = Object.keys(s);
+  if (skills.length === 0) return { unit: 'week', steps: [], mock: null, freeItems: 0 };
+  const need = k => (100 - Number(s[k])) * ((Number(w[k]) || 0) + 1);
+  const ranked = skills.slice().sort((a, b) => need(b) - need(a) || Number(s[a]) - Number(s[b]));
+  const weak = ranked.filter(k => Number(s[k]) < 100);
+  const order = weak.length ? weak : ranked;
+  const dayMode = typeof daysOut === 'number' && daysOut >= 0 && daysOut <= 14;
+  const n = dayMode ? Math.max(1, Math.min(5, daysOut || 1))
+    : (typeof daysOut === 'number' && daysOut > 14 ? Math.max(3, Math.min(5, Math.floor(daysOut / 7))) : 4);
+  const per = dayMode ? 2 : 3;
+  const used = {};
+  const steps = [];
+  for (let i = 0; i < n; i++) {
+    const skill = order[i % order.length];
+    const pool = ((pools || {})[skill] || []).filter(c => !(Number(s[skill]) >= 50 && c.difficulty === 'Easy'));
+    const items = [];
+    for (const c of pool) {
+      if (items.length >= per) break;
+      if (used[c.id]) continue;
+      used[c.id] = true;
+      items.push(c);
+    }
+    steps.push({ n: i + 1, skill, score: Number(s[skill]), items, page: (pages || {})[skill] || null, trap: (traps || {})[skill] || null });
+  }
+  const withMock = goal === 'interview' && mock ? { href: mock.href, label: mock.label, pro: true } : null;
+  let freeItems = 0;
+  steps.forEach(st => st.items.forEach(c => { if (!c.pro) freeItems++; }));
+  return { unit: dayMode ? 'day' : 'week', steps, mock: withMock, freeItems };
 }
