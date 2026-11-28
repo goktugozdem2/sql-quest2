@@ -27,6 +27,26 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### twelve niche sector challenges (343–354) from dated candidate reports
+
+- **Claimed** 2026-11-23 · **Shipped** when the PR merges · **Read** 2026-12-28.
+- **Change** Twelve new cards: banking (system NPL ratio), payments (dispute
+  rate by payment month, customer funds from a ledger, a timed KYC funnel,
+  largest top-up per method), retail (real decline vs mix, new vs returning
+  spenders, like-for-like growth, cross-shopping pairs) and product (growth
+  accounting, DAU/MAU with quiet days, early habits vs retention). 5 Medium,
+  7 Hard. No company tags, no gate change.
+- **Why** The founder asked for niche, hard-to-find sector questions; sources
+  and what was dropped as covered: `docs/reads/niche-sector-questions-2026-11-23.md`.
+- **Metric** `challenge_solve_through` for ids 343–354, read per difficulty band.
+- **Baseline** no production read in this session; the read takes each band's
+  median over the same window.
+- **Target** the twelve, pooled per band, at or above that band's median, with
+  10+ openers per card counted.
+- **Falsification, stated in advance:** a card 15+ points under its band's
+  median with 10+ openers is rewritten or removed. Under 10 openers the card
+  is `UNREADABLE`, not a miss.
+
 ### the company-set gate walls only authored sets (Capital One, Revolut) — bug fix
 
 - **Claimed** 2026-11-26 (founder's go in chat, "1'i uygula") · **Shipped**

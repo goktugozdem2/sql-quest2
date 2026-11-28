@@ -4128,6 +4128,25 @@ ORDER BY total_orders DESC;`,
     example_tr: { input: "24 beklenen işlem (ortak başına 12), A'nın raporunda 11, B'ninkinde 13 satır", output: "7 satır — 4 missing, 3 unexpected" },
     dataset: "ecommerce"
   },
+  {
+    id: 343,
+    slug: "which-markets-really-declined",
+    title: "Which Markets Really Declined?",
+    difficulty: "Medium",
+    category: "Conditional Logic",
+    skills: ["SELECT", "CASE", "SUM", "GROUP BY", "CTE"],
+    xpReward: 50,
+    description: "February revenue fell in three countries, and the regional lead wants to know which of those are a **real decline** and which are a change in what people bought. A market really declined when **both revenue and units** fell by **more than 5%** from January to February 2024. Revenue down while units go up means people bought cheaper items, not fewer of them.\n\nUse completed orders only. Show **exactly these 8 columns**: `country`, `jan_revenue` and `feb_revenue` (sum of `total`, rounded to 2 decimals), `revenue_change_pct` (rounded to 1 decimal), `jan_units` and `feb_units` (sum of `quantity`), `units_change_pct` (1 decimal) and `real_decline` (1 or 0). Order by `country`.",
+    tables: ["orders"],
+    example: { input: "37 completed orders in 7 countries, January and February 2024", output: "7 rows — UK: revenue 639.98 → 49.99 (−92.2%), units 2 → 1 (−50.0%), real_decline 1; USA: revenue −41.9% but units +83.3%, real_decline 0" },
+    hint: "Put a country's two months side by side on one row first, with the month test inside each sum. The change is (February − January) / January × 100; multiply by 100.0 rather than 100, or whole-number units divide down to 0. A real decline needs both changes below −5%.",
+    solution: "WITH m AS (SELECT country, SUM(CASE WHEN order_date < '2024-02-01' THEN total ELSE 0 END) AS jan_revenue, SUM(CASE WHEN order_date >= '2024-02-01' THEN total ELSE 0 END) AS feb_revenue, SUM(CASE WHEN order_date < '2024-02-01' THEN quantity ELSE 0 END) AS jan_units, SUM(CASE WHEN order_date >= '2024-02-01' THEN quantity ELSE 0 END) AS feb_units FROM orders WHERE status = 'completed' AND order_date >= '2024-01-01' AND order_date < '2024-03-01' GROUP BY country) SELECT country, ROUND(jan_revenue, 2) AS jan_revenue, ROUND(feb_revenue, 2) AS feb_revenue, ROUND(100.0 * (feb_revenue - jan_revenue) / jan_revenue, 1) AS revenue_change_pct, jan_units, feb_units, ROUND(100.0 * (feb_units - jan_units) / jan_units, 1) AS units_change_pct, CASE WHEN feb_revenue < jan_revenue * 0.95 AND feb_units < jan_units * 0.95 THEN 1 ELSE 0 END AS real_decline FROM m ORDER BY country",
+    title_tr: "Hangi Pazarlar Gerçekten Geriledi?",
+    description_tr: "Şubat gelirleri üç ülkede düştü; bölge sorumlusu bunlardan hangisinin **gerçek bir gerileme**, hangisinin satın alınan ürün karışımındaki bir değişim olduğunu bilmek istiyor. Bir pazar, Ocak'tan Şubat 2024'e **hem gelir hem adet** **%5'ten fazla** düştüyse gerçekten gerilemiştir. Gelir düşerken adet artıyorsa insanlar daha az değil, daha ucuz ürün almıştır.\n\nSadece tamamlanmış siparişleri kullan. **Tam olarak şu 8 kolonu** göster: `country`, `jan_revenue` ve `feb_revenue` (`total` toplamı, 2 ondalık), `revenue_change_pct` (1 ondalık), `jan_units` ve `feb_units` (`quantity` toplamı), `units_change_pct` (1 ondalık) ve `real_decline` (1 ya da 0). `country`'ye göre sırala.",
+    hint_tr: "Önce bir ülkenin iki ayını tek satırda yan yana koy; ay koşulunu her toplamın içine yaz. Değişim (Şubat − Ocak) / Ocak × 100'dür; 100 yerine 100.0 ile çarp, yoksa tam sayı adetler 0'a bölünür. Gerçek gerileme için iki değişimin de −%5'in altında olması gerekir.",
+    example_tr: { input: "7 ülkede 37 tamamlanmış sipariş, Ocak ve Şubat 2024", output: "7 satır — UK: gelir 639.98 → 49.99 (−%92.2), adet 2 → 1 (−%50.0), real_decline 1; USA: gelir −%41.9 ama adet +%83.3, real_decline 0" },
+    dataset: "ecommerce"
+  },
   // 355-359 (C6, 2026-11-24): the second state-graded set. Ids skip 330-354
   // (#236 holds 330, the Debug set 331-342, #268 holds 343-354). Same rules
   // as 325-329: fresh copy per attempt, tag DDL/DML unmapped on the radar.

@@ -18,6 +18,11 @@
 //                   has something to spread. sectorTags finans +
 //                   card_analytics; 8 Easy / 11 Medium / 6 Hard)
 //
+//   344-354  finans_neobank, finans_fraud, finans_banking (niche sector
+//                   shapes from dated candidate reports, 2026-11-23; 343 is
+//                   the core-bank ecommerce card of the same batch, in
+//                   challenges.js). 312-342 belong to other files and PRs.
+//
 //   300-311  finans_neobank  (Revolut-shaped analyst set, 12 challenges,
 //                   2026-09-12 — the tasks candidates report from the
 //                   live SQL round: MAU with completed transactions, top
@@ -2084,6 +2089,234 @@ window.sectorChallengesData = [
     example_tr: { input: "LEFT JOIN + COALESCE ile kullanıcı başına ilk ay harcaması, sonra source ile gruplanmış", output: "source=referred, users=41, avg_first_month_gbp=287.04, never_transacted=11; source=organic, ..." },
     dataset: "finans_neobank",
     sectorTags: ["finans", "neobank"],
+  },
+
+  // ═══════════════════════════════════════════════════════════════════
+  // NICHE SECTOR SHAPES (344-354, 2026-11-23) — banking, payments, retail
+  // and product shapes from dated public candidate reports; sources and
+  // dates in docs/reads/niche-sector-questions-2026-11-23.md. Run and pinned
+  // by tests/challenges-343-354.test.js. Deliberately no company tags and
+  // no card_analytics / neobank sectorTag: these are not part of the signed
+  // Capital One or Revolut sets.
+  // ═══════════════════════════════════════════════════════════════════
+  {
+    id: 344,
+    title: "New vs Returning Card Spenders by Month",
+    difficulty: "Medium",
+    category: "Conditional Logic",
+    skills: ["SELECT", "CTE", "CASE", "COUNT DISTINCT", "SUM", "MIN", "GROUP BY", "JOIN"],
+    xpReward: 60,
+    description: "Card spend grew every month of 2026. The question behind the chart: is it **new spenders**, or the people who were already spending? A user is **new** in the month of their **first completed card payment ever** — across the whole ledger, which starts in June 2025 — and **returning** in every later month.\n\nUse completed card payments only (`type = 'card_payment'`, `status = 'completed'`). For each month from **2026-01 to 2026-08**, show **exactly these 5 columns**: `month` (`YYYY-MM`), `new_spenders`, `new_spend_gbp`, `returning_spenders` and `returning_spend_gbp` (spend in `amount_gbp`, rounded to 2 decimals). Order by `month`.\n\nSomeone whose first card payment was in December 2025 is returning in January 2026, not new.",
+    tables: ["transactions"],
+    example: { input: "1,725 completed card payments, June 2025 to August 2026", output: "8 rows — 2026-01: 13 new spenders (1958.02), 36 returning (4065.43); 2026-08: 13 new (2550.83), 70 returning (12470.05)" },
+    hint: "Find each user's first spending month over the full ledger in its own step, and only then keep 2026. If you keep 2026 first, everyone who already spent in 2025 looks new in January.",
+    solution: "WITH spend AS (SELECT user_id, substr(ts, 1, 7) AS month, amount_gbp FROM transactions WHERE type = 'card_payment' AND status = 'completed'), firsts AS (SELECT user_id, MIN(month) AS first_month FROM spend GROUP BY user_id) SELECT s.month, COUNT(DISTINCT CASE WHEN s.month = f.first_month THEN s.user_id END) AS new_spenders, ROUND(SUM(CASE WHEN s.month = f.first_month THEN s.amount_gbp ELSE 0 END), 2) AS new_spend_gbp, COUNT(DISTINCT CASE WHEN s.month > f.first_month THEN s.user_id END) AS returning_spenders, ROUND(SUM(CASE WHEN s.month > f.first_month THEN s.amount_gbp ELSE 0 END), 2) AS returning_spend_gbp FROM spend s JOIN firsts f ON f.user_id = s.user_id WHERE s.month >= '2026-01' GROUP BY s.month ORDER BY s.month",
+    title_tr: "Aylara Göre Yeni ve Geri Dönen Kart Kullanıcıları",
+    description_tr: "Kart harcaması 2026'nın her ayında arttı. Grafiğin arkasındaki soru: bu artış **yeni harcayanlardan** mı, yoksa zaten harcayan kişilerden mi geliyor? Bir kullanıcı, **ilk tamamlanmış kart ödemesini** yaptığı ayda **yeni** sayılır — Haziran 2025'te başlayan defterin tamamına bakarak — ve sonraki her ayda **geri dönen** sayılır.\n\nSadece tamamlanmış kart ödemelerini kullan (`type = 'card_payment'`, `status = 'completed'`). **2026-01'den 2026-08'e** her ay için **tam olarak şu 5 kolonu** göster: `month` (`YYYY-MM`), `new_spenders`, `new_spend_gbp`, `returning_spenders` ve `returning_spend_gbp` (`amount_gbp` cinsinden harcama, 2 ondalık). `month`'a göre sırala.\n\nİlk kart ödemesi Aralık 2025'te olan biri Ocak 2026'da yeni değil, geri dönendir.",
+    hint_tr: "Her kullanıcının ilk harcama ayını önce defterin tamamı üzerinden ayrı bir adımda bul, 2026'yı ancak ondan sonra ayır. Önce 2026'yı ayırırsan 2025'te harcamış herkes Ocak'ta yeni görünür.",
+    example_tr: { input: "Haziran 2025 - Ağustos 2026 arasında 1.725 tamamlanmış kart ödemesi", output: "8 satır — 2026-01: 13 yeni (1958.02), 36 geri dönen (4065.43); 2026-08: 13 yeni (2550.83), 70 geri dönen (12470.05)" },
+    dataset: "finans_neobank",
+    sectorTags: ["finans"]
+  },
+
+  {
+    id: 345,
+    title: "Dispute Rate by the Month of the Payment",
+    difficulty: "Medium",
+    category: "Joins",
+    skills: ["SELECT", "CTE", "JOIN", "LEFT JOIN", "COUNT DISTINCT", "COALESCE", "GROUP BY"],
+    xpReward: 60,
+    description: "A dispute is opened days after the payment it disputes, so a month's dispute rate can be dated two ways and only one of them is a rate. Risk wants each month's rate **attributed to the month the payment was made**: of the payments made in March, what share were later disputed, whenever the dispute was opened. Next to it, show the count dated the other way, by the month each dispute was opened, so the gap is visible.\n\nShow **exactly these 5 columns**: `payment_month` (`YYYY-MM` of `txn_at`), `payments` (transactions made that month), `disputed_payments` (how many of those payments have a chargeback; a payment counts once even if it has two), `dispute_rate_pct` (`disputed_payments` / `payments` × 100, rounded to 2 decimals) and `disputes_filed_that_month` (chargebacks whose `opened_at` falls in that month). Order by `payment_month`.\n\nA payment month keeps collecting disputes after it ends, so read the newest month with care.",
+    tables: ["transactions", "chargebacks"],
+    example: { input: "2,165 transactions (March to early May 2026) and 76 chargebacks", output: "3 rows — 2026-03: 960 payments, 32 disputed (3.33%), but only 23 disputes opened in March" },
+    hint: "Build three counts keyed by month in separate steps: payments by their own month, disputed payments by the month of the payment they point to, and filings by the chargeback's own month. Then join the three on the month, keeping every payment month.",
+    solution: "WITH pay AS (SELECT substr(txn_at, 1, 7) AS month, COUNT(*) AS payments FROM transactions GROUP BY 1), by_payment AS (SELECT substr(t.txn_at, 1, 7) AS month, COUNT(DISTINCT c.txn_id) AS disputed_payments FROM chargebacks c JOIN transactions t ON t.txn_id = c.txn_id GROUP BY 1), by_filing AS (SELECT substr(opened_at, 1, 7) AS month, COUNT(*) AS disputes_filed FROM chargebacks GROUP BY 1) SELECT p.month AS payment_month, p.payments, COALESCE(b.disputed_payments, 0) AS disputed_payments, ROUND(100.0 * COALESCE(b.disputed_payments, 0) / p.payments, 2) AS dispute_rate_pct, COALESCE(f.disputes_filed, 0) AS disputes_filed_that_month FROM pay p LEFT JOIN by_payment b ON b.month = p.month LEFT JOIN by_filing f ON f.month = p.month ORDER BY p.month",
+    title_tr: "Ödeme Ayına Göre İtiraz Oranı",
+    description_tr: "Bir itiraz, itiraz ettiği ödemeden günler sonra açılır; bu yüzden bir ayın itiraz oranı iki türlü tarihlenebilir ve bunlardan yalnızca biri gerçek bir orandır. Risk ekibi her ayın oranının **ödemenin yapıldığı aya** yazılmasını istiyor: Mart'ta yapılan ödemelerin ne kadarına, itiraz ne zaman açılmış olursa olsun, sonradan itiraz edildi? Yanına, aradaki fark görünsün diye diğer türlü, yani itirazın açıldığı aya göre sayılmış adedi koy.\n\n**Tam olarak şu 5 kolonu** göster: `payment_month` (`txn_at`'in `YYYY-MM` hali), `payments` (o ay yapılan işlemler), `disputed_payments` (bu ödemelerden kaçının chargeback kaydı var; iki kaydı olan ödeme bir kez sayılır), `dispute_rate_pct` (`disputed_payments` / `payments` × 100, 2 ondalık) ve `disputes_filed_that_month` (`opened_at`'i o aya düşen chargeback'ler). `payment_month`'a göre sırala.\n\nBir ödeme ayı bittikten sonra da itiraz toplamaya devam eder; en yeni ayı dikkatle oku.",
+    hint_tr: "Ayı anahtar alan üç sayımı ayrı adımlarda kur: ödemeler kendi aylarına göre, itiraz edilen ödemeler işaret ettikleri ödemenin ayına göre, itiraz açılışları chargeback'in kendi ayına göre. Sonra üçünü ay üzerinden birleştir ve her ödeme ayını koru.",
+    example_tr: { input: "2.165 işlem (Mart - Mayıs başı 2026) ve 76 chargeback", output: "3 satır — 2026-03: 960 ödeme, 32'sine itiraz (%3.33), ama Mart'ta açılan itiraz sadece 23" },
+    dataset: "finans_fraud",
+    sectorTags: ["finans"]
+  },
+
+  {
+    id: 346,
+    title: "System NPL Ratio: Weighted, Not Averaged",
+    difficulty: "Medium",
+    category: "Aggregation",
+    skills: ["SELECT", "SUM", "AVG", "COUNT", "GROUP BY", "WHERE"],
+    xpReward: 60,
+    description: "`npl_ratio` is a bank's non-performing loans as a percentage of its loans. A regulator's dashboard shows the **system-wide** ratio for each quarter, and whoever built it took the plain average of the banks' ratios — which gives a community bank the same say as one of the largest banks in the country. The system ratio is all non-performing loans divided by all loans: each bank's ratio counted in proportion to its loans (`net_loans`).\n\nUse the rows that have an `npl_ratio` and `net_loans` above 0. Show **exactly these 4 columns**: `period_end`, `banks`, `avg_bank_npl_pct` (the plain average, rounded to 3 decimals) and `system_npl_pct` (the loan-weighted ratio, 3 decimals). Order by `period_end`.",
+    tables: ["financials"],
+    example: { input: "763 quarterly call-report rows for the largest US banks, 2025", output: "4 rows — 20250331: 186 banks, plain average 0.669, system ratio 0.602" },
+    hint: "A bank's non-performing loans in money are its ratio times its loans. Add those up across the banks of a quarter and divide by the quarter's total loans; then the largest banks count in proportion to their size.",
+    solution: "SELECT period_end, COUNT(*) AS banks, ROUND(AVG(npl_ratio), 3) AS avg_bank_npl_pct, ROUND(SUM(npl_ratio * net_loans) / SUM(net_loans), 3) AS system_npl_pct FROM financials WHERE npl_ratio IS NOT NULL AND net_loans > 0 GROUP BY period_end ORDER BY period_end",
+    title_tr: "Sistem Takipteki Kredi Oranı: Ortalama Değil, Ağırlıklı",
+    description_tr: "`npl_ratio`, bir bankanın takipteki kredilerinin kredilerine oranıdır (yüzde olarak). Bir düzenleyicinin panosu her çeyrek için **sistem geneli** oranı gösteriyor ve panoyu kuran kişi bankaların oranlarının düz ortalamasını almış — bu da küçük bir yerel bankaya ülkenin en büyük bankalarından biriyle aynı ağırlığı veriyor. Sistem oranı, tüm takipteki kredilerin tüm kredilere oranıdır: her bankanın oranı kredi büyüklüğü (`net_loans`) kadar sayılır.\n\n`npl_ratio` değeri olan ve `net_loans` değeri 0'dan büyük satırları kullan. **Tam olarak şu 4 kolonu** göster: `period_end`, `banks`, `avg_bank_npl_pct` (düz ortalama, 3 ondalık) ve `system_npl_pct` (kredi ağırlıklı oran, 3 ondalık). `period_end`'e göre sırala.",
+    hint_tr: "Bir bankanın takipteki kredisinin para karşılığı, oranı çarpı kredileridir. Bir çeyreğin bankaları için bunları topla ve çeyreğin toplam kredisine böl; böylece büyük bankalar büyüklükleri oranında sayılır.",
+    example_tr: { input: "ABD'nin en büyük bankaları için 2025'e ait 763 çeyreklik rapor satırı", output: "4 satır — 20250331: 186 banka, düz ortalama 0.669, sistem oranı 0.602" },
+    dataset: "finans_banking",
+    sectorTags: ["finans"]
+  },
+
+  {
+    id: 347,
+    title: "Each User's Largest Top-Up, Summed by Method",
+    difficulty: "Medium",
+    category: "Subqueries & CTEs",
+    skills: ["SELECT", "CTE", "MAX", "SUM", "COUNT", "GROUP BY"],
+    xpReward: 60,
+    description: "Treasury wants to know which funding method brings in the biggest single deposits. For every user and every top-up method they have used, take that user's **largest** top-up with that method (`amount_gbp`). Then, per method, add those largest amounts up and count the users behind them.\n\nShow **exactly these 3 columns**: `method`, `users` (users who used the method at least once) and `sum_of_largest_gbp` (rounded to 2 decimals). Order by `sum_of_largest_gbp` from largest, then `method`.\n\nA user who topped up five times by bank transfer counts once for bank transfer, with their biggest one.",
+    tables: ["top_ups"],
+    example: { input: "1,153 top-ups by 4 methods", output: "4 rows — bank_transfer: 145 users, 113788; card: 163 users, 38500" },
+    hint: "Two levels: first reduce the top-ups to one row per user and method holding the maximum, then aggregate those rows per method. Summing every top-up, or taking a single maximum per method, answers a different question.",
+    solution: "WITH largest AS (SELECT user_id, method, MAX(amount_gbp) AS largest_gbp FROM top_ups GROUP BY user_id, method) SELECT method, COUNT(*) AS users, ROUND(SUM(largest_gbp), 2) AS sum_of_largest_gbp FROM largest GROUP BY method ORDER BY sum_of_largest_gbp DESC, method",
+    title_tr: "Kullanıcının En Büyük Yüklemesi, Yönteme Göre Toplam",
+    description_tr: "Hazine ekibi en büyük tekil yatırımları hangi yükleme yönteminin getirdiğini bilmek istiyor. Her kullanıcı ve kullandığı her yükleme yöntemi için o kullanıcının o yöntemle yaptığı **en büyük** yüklemeyi (`amount_gbp`) al. Sonra her yöntem için bu en büyük tutarları topla ve arkalarındaki kullanıcıları say.\n\n**Tam olarak şu 3 kolonu** göster: `method`, `users` (yöntemi en az bir kez kullanan kullanıcılar) ve `sum_of_largest_gbp` (2 ondalık). Önce `sum_of_largest_gbp` büyükten küçüğe, sonra `method`'a göre sırala.\n\nBanka havalesiyle beş kez yükleme yapan bir kullanıcı banka havalesi için bir kez, en büyüğüyle sayılır.",
+    hint_tr: "İki seviye: önce yüklemeleri, en büyüğü tutan kullanıcı ve yöntem başına tek satıra indir; sonra bu satırları yönteme göre topla. Tüm yüklemeleri toplamak ya da yöntem başına tek bir en büyüğü almak başka bir soruyu cevaplar.",
+    example_tr: { input: "4 yöntemle 1.153 yükleme", output: "4 satır — bank_transfer: 145 kullanıcı, 113788; card: 163 kullanıcı, 38500" },
+    dataset: "finans_neobank",
+    sectorTags: ["finans"]
+  },
+
+  {
+    id: 348,
+    title: "Customer Funds at the End of June 2026",
+    difficulty: "Hard",
+    category: "Conditional Logic",
+    skills: ["SELECT", "CTE", "UNION ALL", "CASE", "COALESCE", "SUM", "MAX", "COUNT", "GROUP BY"],
+    xpReward: 95,
+    description: "The ledger stores movements, not balances. For a safeguarding report, Finance needs every user's GBP balance **at the end of 30 June 2026**, rebuilt from the movements, and then four figures across all of them.\n\nThe rules, all in `amount_gbp`:\n- every top-up adds its amount;\n- a completed `transfer_in` adds its amount;\n- a completed `card_payment`, `atm_withdrawal`, `bill_payment`, `transfer_out` or `subscription_fee` takes its amount away;\n- a completed `fx_exchange` moves money between currencies inside the same account, so it changes nothing except its fee;\n- every completed transaction's `fee_gbp` is taken away (an empty fee means no fee);\n- declined and reversed transactions never touched the balance.\n\n`ts` is a full timestamp (`2026-06-30 18:20:00`), and movements during 30 June count. Return **one row** with **exactly these 4 columns**: `accounts` (users with at least one movement by then), `customer_funds_gbp` (all their balances added up, rounded to 2 decimals), `largest_balance_gbp` (2 decimals) and `accounts_under_50_gbp` (balances below £50).",
+    tables: ["top_ups", "transactions"],
+    example: { input: "1,153 top-ups and 3,433 transactions, June 2025 to August 2026", output: "1 row — 189 accounts holding 481085.44 in all; the largest balance 23765.34; 20 accounts under £50" },
+    hint: "Stack the two sources into one list of signed amounts per user; they have different shapes, so give both the same two columns. Decide the sign per transaction type, subtract the fee separately, then add up per user, and only then summarise across users. Cut both sources before the start of 1 July: a cut at '2026-06-30' would drop everything that happened during the 30th.",
+    solution: "WITH ledger AS (SELECT user_id, amount_gbp AS delta FROM top_ups WHERE ts < '2026-07-01' UNION ALL SELECT user_id, CASE WHEN type = 'transfer_in' THEN amount_gbp WHEN type = 'fx_exchange' THEN 0 ELSE -amount_gbp END - COALESCE(fee_gbp, 0) AS delta FROM transactions WHERE status = 'completed' AND ts < '2026-07-01'), balances AS (SELECT user_id, SUM(delta) AS balance FROM ledger GROUP BY user_id) SELECT COUNT(*) AS accounts, ROUND(SUM(balance), 2) AS customer_funds_gbp, ROUND(MAX(balance), 2) AS largest_balance_gbp, SUM(CASE WHEN balance < 50 THEN 1 ELSE 0 END) AS accounts_under_50_gbp FROM balances",
+    title_tr: "Haziran 2026 Sonunda Müşteri Fonları",
+    description_tr: "Defter bakiyeleri değil, hareketleri saklıyor. Finans ekibi bir müşteri fonlarını koruma (safeguarding) raporu için her kullanıcının **30 Haziran 2026 sonundaki** GBP bakiyesini hareketlerden yeniden kurmak ve sonra hepsi üzerinden dört rakam görmek istiyor.\n\nKurallar, hepsi `amount_gbp` cinsinden:\n- her yükleme (top-up) tutarını ekler;\n- tamamlanmış bir `transfer_in` tutarını ekler;\n- tamamlanmış bir `card_payment`, `atm_withdrawal`, `bill_payment`, `transfer_out` ya da `subscription_fee` tutarını düşer;\n- tamamlanmış bir `fx_exchange` parayı aynı hesap içinde para birimleri arasında taşır, bu yüzden ücreti dışında hiçbir şeyi değiştirmez;\n- her tamamlanmış işlemin `fee_gbp` ücreti düşülür (boş ücret, ücret yok demektir);\n- reddedilen ve iade edilen işlemler bakiyeye hiç dokunmadı.\n\n`ts` tam bir zaman damgasıdır (`2026-06-30 18:20:00`) ve 30 Haziran içindeki hareketler sayılır. **Tek satır** döndür, **tam olarak şu 4 kolonla**: `accounts` (o ana kadar en az bir hareketi olan kullanıcılar), `customer_funds_gbp` (bakiyelerinin toplamı, 2 ondalık), `largest_balance_gbp` (2 ondalık) ve `accounts_under_50_gbp` (50 £'un altındaki bakiyeler).",
+    hint_tr: "İki kaynağı kullanıcı başına işaretli tutarlardan oluşan tek bir listede alt alta koy; şekilleri farklı olduğu için ikisine de aynı iki kolonu ver. İşareti işlem türüne göre belirle, ücreti ayrıca düş, sonra kullanıcı başına topla ve ancak ondan sonra tüm kullanıcılar üzerinden özetle. İki kaynağı da 1 Temmuz başlamadan kes: '2026-06-30'da kesmek 30'unda olan her şeyi düşürür.",
+    example_tr: { input: "Haziran 2025 - Ağustos 2026 arasında 1.153 yükleme ve 3.433 işlem", output: "1 satır — toplam 481085.44 tutan 189 hesap; en büyük bakiye 23765.34; 50 £ altında 20 hesap" },
+    dataset: "finans_neobank",
+    sectorTags: ["finans"]
+  },
+
+  {
+    id: 349,
+    title: "Signup to KYC to First Payment, Each Step on a Clock",
+    difficulty: "Hard",
+    category: "Date Functions",
+    skills: ["SELECT", "CTE", "LEFT JOIN", "CASE", "Date Functions", "julianday", "MIN", "SUM", "GROUP BY"],
+    xpReward: 95,
+    description: "Onboarding wants a funnel for each 2026 signup month in which every step has a deadline counted **from the step before it**:\n1. **KYC in 3 days**: `kyc_verified_at` no more than 3 days after `signup_date`;\n2. **paid in 21 days**: the user's **first** completed card payment happens on or after their KYC time and no more than 21 days after it. Only users who passed step 1 can pass step 2.\n\nThe ledger ends on 2026-08-31, so someone who signed up in mid-August has not had their 24 days yet and would drag the newest month down. Keep only users who signed up from 2026-01-01 up to 24 days before the ledger's last day.\n\nShow **exactly these 4 columns**: `signup_month` (`YYYY-MM`), `signups`, `kyc_3d` and `paid_21d`. Order by `signup_month`. Measure a gap as the difference between the two moments in days; fractions of a day count.",
+    tables: ["users", "transactions"],
+    example: { input: "240 users and 3,433 transactions; 2026 signups up to 2026-08-07", output: "8 rows — 2026-01: 14 signups, 8 KYC-verified in 3 days, 4 paid within 21 days of KYC" },
+    hint: "Find each user's first completed card payment in its own step and attach it with a join that keeps users who never paid. Turn each step into a 1/0 flag; step 2 only counts when step 1 is 1, so multiply the flags. The last signup date is the ledger's last day minus 24 days.",
+    solution: "WITH first_pay AS (SELECT user_id, MIN(ts) AS ts FROM transactions WHERE type = 'card_payment' AND status = 'completed' GROUP BY user_id), steps AS (SELECT substr(u.signup_date, 1, 7) AS signup_month, CASE WHEN julianday(u.kyc_verified_at) - julianday(u.signup_date) <= 3 THEN 1 ELSE 0 END AS kyc_ok, CASE WHEN p.ts >= u.kyc_verified_at AND julianday(p.ts) - julianday(u.kyc_verified_at) <= 21 THEN 1 ELSE 0 END AS pay_ok FROM users u LEFT JOIN first_pay p ON p.user_id = u.user_id WHERE u.signup_date >= '2026-01-01' AND u.signup_date <= date('2026-08-31', '-24 days')) SELECT signup_month, COUNT(*) AS signups, SUM(kyc_ok) AS kyc_3d, SUM(kyc_ok * pay_ok) AS paid_21d FROM steps GROUP BY signup_month ORDER BY signup_month",
+    title_tr: "Kayıt, KYC ve İlk Ödeme: Her Adım Süreli",
+    description_tr: "Onboarding ekibi 2026'nın her kayıt ayı için, her adımın süresinin **bir önceki adımdan** sayıldığı bir huni istiyor:\n1. **3 günde KYC**: `kyc_verified_at`, `signup_date`'ten en fazla 3 gün sonra;\n2. **21 günde ödeme**: kullanıcının **ilk** tamamlanmış kart ödemesi KYC anında ya da sonrasında ve ondan en fazla 21 gün sonra. 2. adımı sadece 1. adımı geçen kullanıcılar geçebilir.\n\nDefter 2026-08-31'de bitiyor; Ağustos ortasında kaydolan biri henüz 24 gününü doldurmadı ve en yeni ayı aşağı çeker. Sadece 2026-01-01'den defterin son gününden 24 gün öncesine kadar kaydolan kullanıcıları tut.\n\n**Tam olarak şu 4 kolonu** göster: `signup_month` (`YYYY-MM`), `signups`, `kyc_3d` ve `paid_21d`. `signup_month`'a göre sırala. Bir aralığı iki an arasındaki gün farkı olarak ölç; günün kesirleri de sayılır.",
+    hint_tr: "Her kullanıcının ilk tamamlanmış kart ödemesini ayrı bir adımda bul ve hiç ödeme yapmamış kullanıcıları da tutan bir birleştirmeyle kullanıcıya ekle. Her adımı 1/0 bayrağına çevir; 2. adım sadece 1. adım 1 olduğunda sayılır, yani bayrakları çarp. Son kayıt tarihi, defterin son günü eksi 24 gündür.",
+    example_tr: { input: "240 kullanıcı ve 3.433 işlem; 2026-08-07'ye kadarki 2026 kayıtları", output: "8 satır — 2026-01: 14 kayıt, 3 günde KYC olan 8, KYC'den sonraki 21 günde ödeme yapan 4" },
+    dataset: "finans_neobank",
+    sectorTags: ["finans"]
+  },
+
+  {
+    id: 350,
+    title: "Like-for-Like Card Spend, July vs July",
+    difficulty: "Hard",
+    category: "Conditional Logic",
+    skills: ["SELECT", "CTE", "CASE", "SUM", "GROUP BY", "Date Functions"],
+    xpReward: 95,
+    description: "Card spend abroad grew enormously from July 2025 to July 2026 — but most of the markets that saw spend in July 2026 had none a year earlier, so the headline mixes growth with expansion. Retailers report **like-for-like** (same-store) growth for exactly this reason: only the units that traded in **both** periods.\n\nTreat each `merchant_country` as a market. Using completed card payments (`amount_gbp`) in July 2025 and July 2026, return **one row** with **exactly these 3 columns**: `comparable_markets` (markets with spend in both Julys), `all_markets_growth_pct` (growth of total spend in all markets) and `like_for_like_growth_pct` (growth in the comparable markets only), both rounded to 1 decimal. Growth is (2026 − 2025) / 2025 × 100.",
+    tables: ["transactions"],
+    example: { input: "completed card payments in 19 merchant countries", output: "1 row — 8 comparable markets; headline growth far above like-for-like growth" },
+    hint: "First one row per market with its July 2025 and July 2026 spend side by side. A market is comparable when both are above zero. The like-for-like totals add up only those markets, for both years, before the growth is taken; averaging each market's own growth is a different number.",
+    solution: "WITH m AS (SELECT merchant_country, SUM(CASE WHEN ts >= '2025-07-01' AND ts < '2025-08-01' THEN amount_gbp ELSE 0 END) AS jul_2025, SUM(CASE WHEN ts >= '2026-07-01' AND ts < '2026-08-01' THEN amount_gbp ELSE 0 END) AS jul_2026 FROM transactions WHERE type = 'card_payment' AND status = 'completed' GROUP BY merchant_country) SELECT SUM(CASE WHEN jul_2025 > 0 AND jul_2026 > 0 THEN 1 ELSE 0 END) AS comparable_markets, ROUND(100.0 * (SUM(jul_2026) - SUM(jul_2025)) / SUM(jul_2025), 1) AS all_markets_growth_pct, ROUND(100.0 * (SUM(CASE WHEN jul_2025 > 0 AND jul_2026 > 0 THEN jul_2026 ELSE 0 END) - SUM(CASE WHEN jul_2025 > 0 AND jul_2026 > 0 THEN jul_2025 ELSE 0 END)) / SUM(CASE WHEN jul_2025 > 0 AND jul_2026 > 0 THEN jul_2025 ELSE 0 END), 1) AS like_for_like_growth_pct FROM m",
+    title_tr: "Benzer Mağaza Bazında Kart Harcaması: Temmuz ve Temmuz",
+    description_tr: "Yurt dışı kart harcaması Temmuz 2025'ten Temmuz 2026'ya muazzam büyüdü — ama Temmuz 2026'da harcama görülen pazarların çoğunda bir yıl önce hiç harcama yoktu; yani manşet büyüme ile genişlemeyi karıştırıyor. Perakendeciler tam bu yüzden **benzer mağaza (like-for-like)** büyümesini raporlar: sadece **iki dönemde de** satış yapan birimler.\n\nHer `merchant_country`'yi bir pazar say. Temmuz 2025 ve Temmuz 2026'daki tamamlanmış kart ödemelerini (`amount_gbp`) kullanarak **tek satır** döndür, **tam olarak şu 3 kolonla**: `comparable_markets` (iki Temmuz'da da harcaması olan pazarlar), `all_markets_growth_pct` (tüm pazarlarda toplam harcamanın büyümesi) ve `like_for_like_growth_pct` (sadece karşılaştırılabilir pazarlarda büyüme), ikisi de 1 ondalık. Büyüme (2026 − 2025) / 2025 × 100'dür.",
+    hint_tr: "Önce her pazar için, Temmuz 2025 ve Temmuz 2026 harcaması yan yana duran bir satır kur. İkisi de sıfırdan büyükse pazar karşılaştırılabilirdir. Benzer mağaza toplamları büyüme alınmadan önce, iki yıl için de sadece bu pazarları toplar; her pazarın kendi büyümesinin ortalaması başka bir sayıdır.",
+    example_tr: { input: "19 işyeri ülkesinde tamamlanmış kart ödemeleri", output: "1 satır — 8 karşılaştırılabilir pazar; manşet büyüme benzer mağaza büyümesinin çok üstünde" },
+    dataset: "finans_neobank",
+    sectorTags: ["finans"]
+  },
+
+  {
+    id: 351,
+    title: "Which Store Categories Share Shoppers?",
+    difficulty: "Hard",
+    category: "Joins",
+    skills: ["SELECT", "CTE", "DISTINCT", "Self-Join", "JOIN", "COUNT", "GROUP BY", "ORDER BY", "LIMIT"],
+    xpReward: 95,
+    description: "Merchandising wants cross-shopping pairs: which two merchant categories have the most cardholders in common, and how strong the pull is. For every pair of different categories, count the **accounts that made at least one transaction in both**. List each pair once, with the alphabetically smaller category first.\n\nFor the pull, add the share of category A's accounts that also shopped in category B. Show **exactly these 4 columns**: `category_a`, `category_b`, `accounts_both` and `pct_of_a_also_b` (`accounts_both` / accounts that shopped in `category_a` × 100, rounded to 1 decimal). Keep the **top 5** by `accounts_both`, from most; break ties by `category_a`, then `category_b`.",
+    tables: ["transactions", "merchants"],
+    example: { input: "2,165 transactions by 200 accounts at 25 merchants in 9 categories", output: "5 rows — Clothing & Travel: 152 accounts in both, 85.4% of Clothing shoppers" },
+    hint: "Reduce the transactions to one row per account and category first; otherwise an account with twenty clothing purchases makes twenty pairs. Then pair that table with itself on the account, keeping only pairs where the first category sorts before the second.",
+    solution: "WITH cats AS (SELECT DISTINCT t.account_id, m.category FROM transactions t JOIN merchants m ON m.merchant_id = t.merchant_id), size AS (SELECT category, COUNT(*) AS accounts FROM cats GROUP BY category), pairs AS (SELECT a.category AS category_a, b.category AS category_b, COUNT(*) AS accounts_both FROM cats a JOIN cats b ON b.account_id = a.account_id AND a.category < b.category GROUP BY a.category, b.category) SELECT p.category_a, p.category_b, p.accounts_both, ROUND(100.0 * p.accounts_both / s.accounts, 1) AS pct_of_a_also_b FROM pairs p JOIN size s ON s.category = p.category_a ORDER BY p.accounts_both DESC, p.category_a, p.category_b LIMIT 5",
+    title_tr: "Hangi Mağaza Kategorileri Aynı Müşterileri Paylaşıyor?",
+    description_tr: "Mağazacılık ekibi çapraz alışveriş çiftlerini istiyor: hangi iki işyeri kategorisi en çok ortak kart sahibine sahip ve çekim ne kadar güçlü? Farklı kategorilerden oluşan her çift için **ikisinde de en az bir işlem yapmış hesapları** say. Her çifti bir kez, alfabetik olarak küçük kategori önde olacak şekilde listele.\n\nÇekim için, A kategorisinin hesaplarından B kategorisinde de alışveriş yapanların payını ekle. **Tam olarak şu 4 kolonu** göster: `category_a`, `category_b`, `accounts_both` ve `pct_of_a_also_b` (`accounts_both` / `category_a`'da alışveriş yapan hesaplar × 100, 1 ondalık). `accounts_both`'a göre çoktan aza **ilk 5**'i tut; eşitlikte önce `category_a`, sonra `category_b`'ye göre sırala.",
+    hint_tr: "Önce işlemleri hesap ve kategori başına tek satıra indir; yoksa yirmi giyim alışverişi olan bir hesap yirmi çift üretir. Sonra bu tabloyu hesap üzerinden kendisiyle eşle ve sadece ilk kategorinin ikinciden önce sıralandığı çiftleri tut.",
+    example_tr: { input: "9 kategorideki 25 işyerinde 200 hesabın 2.165 işlemi", output: "5 satır — Clothing & Travel: ikisinde de 152 hesap, Clothing müşterilerinin %85.4'ü" },
+    dataset: "finans_fraud",
+    sectorTags: ["finans"]
+  },
+
+  {
+    id: 352,
+    title: "Growth Accounting: New, Retained, Resurrected, Churned",
+    difficulty: "Hard",
+    category: "Subqueries & CTEs",
+    skills: ["SELECT", "CTE", "EXISTS", "NOT EXISTS", "CASE", "LEFT JOIN", "Date Functions", "GROUP BY"],
+    xpReward: 95,
+    description: "Monthly active users hide four flows. A user is **active** in a month when they have at least one completed transaction (any type) that month. For each month, sort that month's active users into:\n- **new**: it is their first active month ever;\n- **retained**: they were active the calendar month before too;\n- **resurrected**: active at some point before, but not the month before;\n\nand count **churned**: users who were active the month before and are not active this month.\n\nShow **exactly these 6 columns**: `month` (`YYYY-MM`), `active_users`, `new_users`, `retained_users`, `resurrected_users` and `churned_users`, for every month from **2025-07** to 2026-08 (the ledger's first month, 2025-06, has no month before it). Order by `month`. New + retained + resurrected always equals active.",
+    tables: ["transactions"],
+    example: { input: "3,433 transactions by 240 users, June 2025 to August 2026", output: "14 rows — 2026-03: 96 active = 12 new + 63 retained + 21 resurrected; 12 churned" },
+    hint: "Start from one row per user per active month. The month before a 'YYYY-MM' label can be computed by taking its first day and stepping back one month with the date function. A user's first month is their earliest. Then ask, for each user-month, whether a row exists for the month before; churn asks the same question in the other direction.",
+    solution: "WITH active AS (SELECT DISTINCT user_id, substr(ts, 1, 7) AS month FROM transactions WHERE status = 'completed'), firsts AS (SELECT user_id, MIN(month) AS first_month FROM active GROUP BY user_id), flagged AS (SELECT a.month, a.user_id, f.first_month, CASE WHEN EXISTS (SELECT 1 FROM active p WHERE p.user_id = a.user_id AND p.month = substr(date(a.month || '-01', '-1 month'), 1, 7)) THEN 1 ELSE 0 END AS was_active FROM active a JOIN firsts f ON f.user_id = a.user_id), churn AS (SELECT substr(date(p.month || '-01', '+1 month'), 1, 7) AS month, COUNT(*) AS churned_users FROM active p WHERE NOT EXISTS (SELECT 1 FROM active c WHERE c.user_id = p.user_id AND c.month = substr(date(p.month || '-01', '+1 month'), 1, 7)) GROUP BY 1) SELECT f.month, COUNT(*) AS active_users, SUM(CASE WHEN f.month = f.first_month THEN 1 ELSE 0 END) AS new_users, SUM(f.was_active) AS retained_users, SUM(CASE WHEN f.month > f.first_month AND f.was_active = 0 THEN 1 ELSE 0 END) AS resurrected_users, COALESCE(c.churned_users, 0) AS churned_users FROM flagged f LEFT JOIN churn c ON c.month = f.month WHERE f.month >= '2025-07' GROUP BY f.month, c.churned_users ORDER BY f.month",
+    title_tr: "Büyüme Muhasebesi: Yeni, Kalan, Geri Gelen, Kaybedilen",
+    description_tr: "Aylık aktif kullanıcı sayısı dört akışı gizler. Bir kullanıcı, o ay en az bir tamamlanmış işlemi (herhangi bir türde) varsa o ay **aktiftir**. Her ay için o ayın aktif kullanıcılarını şöyle ayır:\n- **yeni**: ilk aktif ayı;\n- **kalan**: bir önceki takvim ayında da aktifti;\n- **geri gelen**: daha önce bir ara aktifti ama bir önceki ay değildi;\n\nve **kaybedilenleri** say: bir önceki ay aktif olup bu ay aktif olmayan kullanıcılar.\n\n**2025-07**'den 2026-08'e her ay için **tam olarak şu 6 kolonu** göster: `month` (`YYYY-MM`), `active_users`, `new_users`, `retained_users`, `resurrected_users` ve `churned_users` (defterin ilk ayı 2025-06'nın öncesi yok). `month`'a göre sırala. Yeni + kalan + geri gelen her zaman aktife eşittir.",
+    hint_tr: "Kullanıcı ve aktif ay başına tek satırla başla. 'YYYY-MM' etiketinin bir önceki ayı, ayın ilk gününü alıp tarih fonksiyonuyla bir ay geri giderek bulunur. Kullanıcının ilk ayı en erken ayıdır. Sonra her kullanıcı-ay için bir önceki ayda satır olup olmadığını sor; kaybedilenler aynı soruyu ters yönde sorar.",
+    example_tr: { input: "Haziran 2025 - Ağustos 2026 arasında 240 kullanıcının 3.433 işlemi", output: "14 satır — 2026-03: 96 aktif = 12 yeni + 63 kalan + 21 geri gelen; 12 kaybedilen" },
+    dataset: "finans_neobank",
+    sectorTags: ["finans"]
+  },
+
+  {
+    id: 353,
+    title: "DAU/MAU Stickiness, Quiet Days Included",
+    difficulty: "Hard",
+    category: "Date Functions",
+    skills: ["SELECT", "Recursive CTE", "CTE", "LEFT JOIN", "COALESCE", "COUNT DISTINCT", "AVG", "Date Functions", "GROUP BY"],
+    xpReward: 95,
+    description: "Stickiness is average daily actives divided by monthly actives. A user is active on a day when they have a completed transaction that day. In the ledger's early months some days have nobody active at all, and a day with nobody active is a day with **0** actives: it still belongs in the month's average.\n\nFor every month from 2025-06 to 2026-08, show **exactly these 4 columns**: `month` (`YYYY-MM`), `mau` (distinct users active that month), `avg_dau` (the average across **every calendar day** of the month, rounded to 2 decimals) and `stickiness_pct` (the **unrounded** average daily actives / `mau` × 100, then rounded to 1 decimal). Order by `month`.",
+    tables: ["transactions"],
+    example: { input: "3,433 transactions, 2025-06-01 to 2026-08-31; June 2025 had activity on 13 of its 30 days", output: "15 rows — 2025-06: mau 10, avg_dau 0.77, stickiness 7.7" },
+    hint: "The transactions only have rows for days on which something happened, so a calendar of every day from 2025-06-01 to 2026-08-31 has to be generated: a recursive common table expression can count it out one day at a time. Join the daily counts onto the calendar and treat a missing day as 0 before averaging.",
+    solution: "WITH RECURSIVE days(d) AS (SELECT '2025-06-01' UNION ALL SELECT date(d, '+1 day') FROM days WHERE d < '2026-08-31'), daily AS (SELECT substr(ts, 1, 10) AS d, COUNT(DISTINCT user_id) AS dau FROM transactions WHERE status = 'completed' GROUP BY 1), filled AS (SELECT substr(days.d, 1, 7) AS month, COALESCE(daily.dau, 0) AS dau FROM days LEFT JOIN daily ON daily.d = days.d), mau AS (SELECT substr(ts, 1, 7) AS month, COUNT(DISTINCT user_id) AS mau FROM transactions WHERE status = 'completed' GROUP BY 1) SELECT f.month, m.mau, ROUND(AVG(f.dau), 2) AS avg_dau, ROUND(100.0 * AVG(f.dau) / m.mau, 1) AS stickiness_pct FROM filled f JOIN mau m ON m.month = f.month GROUP BY f.month, m.mau ORDER BY f.month",
+    title_tr: "DAU/MAU Yapışkanlığı, Sessiz Günler Dahil",
+    description_tr: "Yapışkanlık (stickiness), ortalama günlük aktif kullanıcının aylık aktif kullanıcıya oranıdır. Bir kullanıcı, o gün tamamlanmış bir işlemi varsa o gün aktiftir. Defterin ilk aylarında bazı günlerde hiç kimse aktif değil; kimsenin aktif olmadığı gün **0** aktifli bir gündür ve yine de ayın ortalamasına girer.\n\n2025-06'dan 2026-08'e her ay için **tam olarak şu 4 kolonu** göster: `month` (`YYYY-MM`), `mau` (o ay aktif olan farklı kullanıcılar), `avg_dau` (ayın **her takvim günü** üzerinden ortalama, 2 ondalık) ve `stickiness_pct` (**yuvarlanmamış** ortalama günlük aktif / `mau` × 100, sonra 1 ondalığa yuvarlanmış). `month`'a göre sırala.",
+    hint_tr: "İşlemler sadece bir şey olan günler için satır içerir; bu yüzden 2025-06-01'den 2026-08-31'e her günü içeren bir takvim üretilmeli: özyinelemeli (recursive) bir ortak tablo ifadesi bunu gün gün sayabilir. Günlük sayıları takvime birleştir ve ortalamadan önce eksik günü 0 say.",
+    example_tr: { input: "2025-06-01 - 2026-08-31 arası 3.433 işlem; Haziran 2025'in 30 gününün 13'ünde hareket var", output: "15 satır — 2025-06: mau 10, avg_dau 0.77, yapışkanlık 7.7" },
+    dataset: "finans_neobank",
+    sectorTags: ["finans"]
+  },
+
+  {
+    id: 354,
+    title: "Do Early Habits Predict Retention?",
+    difficulty: "Hard",
+    category: "Conditional Logic",
+    skills: ["SELECT", "CTE", "LEFT JOIN", "CASE", "COUNT DISTINCT", "COALESCE", "Date Functions", "julianday", "GROUP BY"],
+    xpReward: 95,
+    description: "Growth wants to know whether people who use the account on more days in their **first two weeks** are more likely to still be using it later. For each user, count the **distinct dates** with a completed transaction in days **0–13** after `signup_date` (day 0 is the signup day; use the date part of `ts`). Call the user **retained** when they have any completed transaction in days **14–59**.\n\nThe ledger ends on 2026-08-31, so keep only users whose day 59 has already happened: signed up on or before 59 days before that. Every such user counts, including users who never made a transaction.\n\nShow **exactly these 4 columns**: `first_two_weeks_days` (`'0'`, `'1'`, `'2'` or `'3+'`, as text), `users`, `retained_users` and `retention_pct` (1 decimal). Order by `first_two_weeks_days`.",
+    tables: ["users", "transactions"],
+    example: { input: "240 users; those who signed up by 2026-07-03", output: "4 rows — 0 active days: 117 users, 75.2% retained; 2 days: 19 users, 84.2%" },
+    hint: "Keep every eligible user, also the ones with no transactions, with a join that does not drop them, and put the completed-status test in the join condition rather than after it. Per user, count distinct dates whose day offset is between 0 and 13 and set a 1/0 flag for any offset between 14 and 59; then bucket and add up.",
+    solution: "WITH eligible AS (SELECT user_id, signup_date FROM users WHERE signup_date <= date('2026-08-31', '-59 days')), act AS (SELECT e.user_id, COUNT(DISTINCT CASE WHEN julianday(substr(t.ts, 1, 10)) - julianday(e.signup_date) BETWEEN 0 AND 13 THEN substr(t.ts, 1, 10) END) AS early_days, MAX(CASE WHEN julianday(substr(t.ts, 1, 10)) - julianday(e.signup_date) BETWEEN 14 AND 59 THEN 1 ELSE 0 END) AS retained FROM eligible e LEFT JOIN transactions t ON t.user_id = e.user_id AND t.status = 'completed' GROUP BY e.user_id) SELECT CASE WHEN early_days >= 3 THEN '3+' ELSE CAST(early_days AS TEXT) END AS first_two_weeks_days, COUNT(*) AS users, SUM(COALESCE(retained, 0)) AS retained_users, ROUND(100.0 * SUM(COALESCE(retained, 0)) / COUNT(*), 1) AS retention_pct FROM act GROUP BY 1 ORDER BY 1",
+    title_tr: "Erken Alışkanlıklar Elde Tutmayı Gösteriyor mu?",
+    description_tr: "Büyüme ekibi, hesabı **ilk iki haftasında** daha çok gün kullananların sonradan da kullanmaya devam etme ihtimalinin daha yüksek olup olmadığını bilmek istiyor. Her kullanıcı için `signup_date`'ten sonraki **0-13.** günlerde tamamlanmış işlem olan **farklı tarihleri** say (0. gün kayıt günüdür; `ts`'nin tarih kısmını kullan). Kullanıcının **14-59.** günlerde herhangi bir tamamlanmış işlemi varsa onu **elde tutulmuş** say.\n\nDefter 2026-08-31'de bitiyor; sadece 59. günü gelmiş kullanıcıları tut: o tarihten 59 gün önce ya da daha önce kaydolanlar. Bu kullanıcıların hepsi sayılır, hiç işlem yapmamış olanlar da.\n\n**Tam olarak şu 4 kolonu** göster: `first_two_weeks_days` (metin olarak `'0'`, `'1'`, `'2'` ya da `'3+'`), `users`, `retained_users` ve `retention_pct` (1 ondalık). `first_two_weeks_days`'e göre sırala.",
+    hint_tr: "Uygun her kullanıcıyı, işlemi olmayanlar da dahil, onları düşürmeyen bir birleştirmeyle tut ve tamamlanmış durum koşulunu birleştirmeden sonra değil, birleştirme koşulunun içine yaz. Kullanıcı başına gün farkı 0 ile 13 arasında olan farklı tarihleri say ve 14 ile 59 arasındaki herhangi bir fark için 1/0 bayrağı koy; sonra grupla ve topla.",
+    example_tr: { input: "240 kullanıcı; 2026-07-03'e kadar kaydolanlar", output: "4 satır — 0 aktif gün: 117 kullanıcı, %75.2 elde tutuldu; 2 gün: 19 kullanıcı, %84.2" },
+    dataset: "finans_neobank",
+    sectorTags: ["finans"]
   },
 ];
 

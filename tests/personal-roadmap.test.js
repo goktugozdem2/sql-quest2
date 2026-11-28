@@ -84,7 +84,8 @@ export const PERSONAS = {
   },
   untaggedToSector: {
     profile: { company: 'American Express', sector: 'finans', level: 'basics' },
-    ids: [168, 177, 200, 201, 202, 203, 207, 208, 276, 277, 'sql-fundamentals-free', 210, 211, 212, 213, 214, 218, 278, 279, 216, 260, 'top-10-most-asked'],
+    // Re-derived 2026-11-27 after #268 added ids 343–354 (the finance skill mix moved).
+    ids: [177, 200, 201, 202, 203, 207, 208, 209, 276, 277, 'sql-fundamentals-free', 210, 211, 212, 213, 214, 215, 278, 279, 271, 296, 'top-10-most-asked'],
     length: 22, daily: 2, planDays: 10, wallAt: 10,
   },
   indiaPhoneBeginner: {
@@ -303,7 +304,27 @@ describe('the engine writes nothing and depends on nothing but its inputs', () =
   });
 
   it('never raw bank order: a reversed bank gives the same plan (fragile area 4)', () => {
+    // Compared with the forward run, not only the pins: a bank change moves the
+    // pins (the persona tests say so by name); only order dependence fails here.
     const reversed = bank.slice().reverse();
+    const shuffled = bank.slice();
+    for (let i = shuffled.length - 1, seed = 7; i > 0; i--) {
+      seed = (seed * 1103515245 + 12345) % 2147483648;
+      const j = seed % (i + 1);
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    const profiles = [
+      ...Object.values(PERSONAS).map(w => [w.profile, {}]),
+      [{ sector: 'finans', level: 'advanced' }, {}],
+      [{ sector: 'uretim', level: 'working', focus: 'Window Functions' }, {}],
+      [{ company: 'Capital One', level: 'working' }, { lead: [275] }],
+      [{ company: 'Revolut', level: 'basics', solvedIds: [98, 99] }, { lead: [300] }],
+    ];
+    for (const [profile, extra] of profiles) {
+      const forward = ids(buildRoadmap(profile, bank, { ...opts, ...extra }));
+      expect(ids(buildRoadmap(profile, reversed, { ...opts, ...extra })), JSON.stringify(profile)).toEqual(forward);
+      expect(ids(buildRoadmap(profile, shuffled, { ...opts, ...extra })), JSON.stringify(profile)).toEqual(forward);
+    }
     for (const want of Object.values(PERSONAS)) {
       expect(ids(buildRoadmap(want.profile, reversed, opts))).toEqual(want.ids);
     }

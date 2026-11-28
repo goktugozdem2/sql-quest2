@@ -79,7 +79,7 @@ describe('the five cards', () => {
   });
 
   it('were appended after the old top id, never re-numbering', () => {
-    // ids after 324 are later batches (325-329, the state-graded set, 2026-11-22)
+    // ids after 324 are later batches (325-329, the state-graded set, 2026-11-22; 343-354, the niche sector set, 2026-11-23)
     const before = bank.filter(c => !IDS.includes(c.id) && c.id < IDS[0]);
     expect(Math.max(...before.map(c => c.id))).toBe(319);
     const at = bank.findIndex(c => c.id === IDS[0]);

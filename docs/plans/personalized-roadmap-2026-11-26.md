@@ -261,14 +261,19 @@ number = `wallAt` (the 10th free solve).
 - Profile: `{company: 'American Express', sector: 'finans', level:
   'basics'}`. American Express has 0 tagged, so `findPlanTarget` returns
   null, and the sector came in through `?sector=finance`.
-- Result: **22 steps, 2 a day, 10 days, wall at 10, 90% finance
+- Result: **22 steps, 2 a day, 10 days, wall at 10, 95% finance
   datasets.**
 - Steps:
-  - Free part: 168E · 177E · 200E · 201E · 202E · 203E · 207E · 208E · 276E ·
+  - Free part: 177E · 200E · 201E · 202E · 203E · 207E · 208E · 209E · 276E ·
     **277E**
   - Free mock: `sql-fundamentals-free`
-  - After the wall: 210M · 211M · 212M · 213M · 214M · 218M · 278M · 279M ·
-    216H P · 260H P
+  - After the wall: 210M · 211M · 212M · 213M · 214M · 215M · 278M · 279M ·
+    271H P · 296H P
+- Re-derived 2026-11-27 after #268 added ids 343–354: the eleven new finance
+  challenges reweight the sector's skill mix (Subqueries & CTEs 24 → 34,
+  Date Functions 12 → 17, NULL Handling 7 → 11), so the slots moved
+  (168 → 209, 218 → 215, 216/260 → 271/296); none of 343–354 is picked,
+  because earlier finance items sort first in curriculum order.
   - Last: `top-10-most-asked` P
 - #276–279 sit on the card ledger (Capital One's set). Outside the Capital
   One company view the gate does not apply, so they are free here.
@@ -290,7 +295,7 @@ number = `wallAt` (the 10th free solve).
 | Revolut, no date, Intermediate | 22 | 2 | 10 | 10 | 60% | 11 |
 | Learner, no company | 15 | 2 | 8 | 10 | — | 0 |
 | Meta (tagged 22) | 27 | 3 | 9 | 10 | 84% | 15 |
-| American Express → finance | 22 | 2 | 10 | 10 | 90% | 3 |
+| American Express → finance | 22 | 2 | 10 | 10 | 95% | 3 |
 | India, phone, beginner | 12 | 2 | 6 | 10 | — | 0 |
 
 ---
