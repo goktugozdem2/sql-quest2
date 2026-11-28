@@ -37,3 +37,26 @@ export function shouldWaitForSession({ isSessionLoading, currentUser, storage })
   if (currentUser) return false;
   return savedAccountName(storage) !== null;
 }
+
+/**
+ * Is this browser a guest at the moment an event is written? (2026-11-27)
+ *
+ * `app_opened` used to stamp the `isGuest` state, which is false until
+ * startGuestMode() runs. A cold visitor (no saved account) has
+ * isSessionLoading false from the first render, so app_opened fired on that
+ * render — before the mount effect's setTimeout started guest mode — and
+ * wrote `isGuest: false` on 11,763 of 11,764 rows from 08-01 to 11-27
+ * (docs/reads/retention-drivers-2026-11-27.md, papercuts).
+ *
+ * Guest = not signed in to an account: a `guest_*` session, or no session
+ * yet (a pre-login visitor, including someone on the sign-in screen). Only a
+ * signed-in, non-guest account is false.
+ *
+ * @param {{ currentUser: string|null, isGuest: boolean }} s
+ * @returns {boolean}
+ */
+export function isGuestSession({ currentUser, isGuest }) {
+  if (isGuest === true) return true;
+  if (typeof currentUser !== 'string' || !currentUser) return true;
+  return currentUser.startsWith('guest_');
+}
