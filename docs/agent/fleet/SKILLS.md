@@ -21,7 +21,7 @@ Papercuts: 5 open, 5 fixed.
 | [A4](A4-uiux.md) | UI/UX across mobile and desktop | active | actions | daily (uiux-daily.yml, 05:40 UTC); full audit after a shared-layout PR | orchestrator | 1.0.0 | `uiux_findings` | 2026-11-25 | 3 | 2 | 0 |
 | [AN](AN-analytics.md) | Analytics (who arrives, on what, and where they fall out) | active | laptop | daily after the GSC fetch; weekly on Mondays | orchestrator | 1.0.0 | undefined | 2026-11-24 | 2 | 2 | 0 |
 | [B1](B1-funnel.md) | Funnel | active | laptop | weekly (Tue) + when a stop rule fires | orchestrator | 1.0.0 | `visitor_to_payer`, `trial_funnel` | 2026-11-25 | 9 | 8 | 0 |
-| [B2](B2-measurement.md) | Measurement | active | laptop | weekly (Fri) + the A01 human scorecard | orchestrator | 1.0.0 | undefined | 2026-11-23 | 3 | 1 | 0 |
+| [B2](B2-measurement.md) | Measurement | active | laptop | weekly (Fri) + the A01 human scorecard | orchestrator | 1.1.0 | undefined | 2026-11-23 | 3 | 1 | 0 |
 | [B3](B3-content.md) | Content | active | cloud | weekly (Sat) | cloud-A0 | 1.0.0 | `challenge_solve_through` | 2026-11-23 | 1 | 1 | 0 |
 | [B4](B4-money.md) | Money | active | laptop | monthly (1st) or on the founder's ask | founder | 1.0.0 | undefined | — | 0 | 0 | 0 |
 | [B5](B5-onboarding.md) | Onboarding (arrival → first run → first solve → day 2) | active | laptop | weekly (Thu), one experiment at a time | orchestrator | 1.0.0 | `open_to_first_run`, `first_solve_10m`, `second_session_7d` | 2026-11-23 | 2 | 3 | 0 |

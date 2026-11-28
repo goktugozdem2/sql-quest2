@@ -27,6 +27,29 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### The homepage usage line states its date and its source (fact correction, 2026-11-28)
+
+- **Claimed** 2026-11-28 · **Shipped** on merge, no flag (a number and a
+  date in existing copy; no behaviour changes) · **Read** 2026-12-18, the
+  third Friday after merge.
+- **Change.** The hero line said "8,860 accepted solutions · 1,498 people
+  last 30 days" under a title promising "refreshed every Friday"; it had
+  not been refreshed since 10-02 (A2, docs/reads/live-qa-2026-11-28.md §8).
+  Now "11,297 accepted solutions · 735 people last 30 days · as of Nov 28,
+  2026", measured by `scripts/usage-line.sql` (the scorecard's human
+  filter) and recorded in docs/reads/usage-line-2026-11-28.md. On the same
+  filter, 30-day people fell 1,423 → 735 since 10-02; the line says so.
+  `tests/usage-line.test.js` binds the line to the newest dated read; B2
+  refreshes it on Fridays (step 4b).
+- **Metric** `home_door` (docs/agent/metrics.md). Not a bet: the change
+  corrects a false fact and is expected to move nothing.
+- **Falsification.** If home→app over 11-28 → 12-18 falls more than 3
+  points below the 21 days before 11-28 on the same definition, the
+  smaller number may be costing clicks. The fix then is the wording
+  (e.g. drop the 30-day window), never an old or rounded-up number.
+- **Second check on the read date:** the line's "as of" date is no older
+  than 12-11 (B2 ran step 4b at least twice).
+
 ### the company-set gate walls only authored sets (Capital One, Revolut) — bug fix
 
 - **Claimed** 2026-11-26 (founder's go in chat, "1'i uygula") · **Shipped**
