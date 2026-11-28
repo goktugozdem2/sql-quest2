@@ -50,6 +50,20 @@ export const INTAKE_GOALS = [
   { id: 'general', intent: 'learning', coachGoalId: 'fundamentals', emoji: '📚' },
 ];
 
+// "I use SQL at work" (Moving up U2, 2026-11-25, flag `intentAtWork`,
+// src/utils/intent-at-work.js). NOT in INTAKE_GOALS: the list the goal gate,
+// the `?goal=` link door (intakeGoalForIntent) and every existing reader see
+// stays the three. It is offered only through intakeGoalChoices({ atWork })
+// while the flag is on, and intakeGoalFor knows it so an answer given there
+// builds a record. Routed like `learning` (the Fundamentals goal) until a
+// Moving-up goal exists (U3).
+export const INTAKE_AT_WORK_GOAL = { id: 'work', intent: 'at_work', coachGoalId: 'fundamentals', emoji: '📈' };
+
+/** The goal choices the intake and the returning ask render: the three, plus `work` last with the flag on. */
+export function intakeGoalChoices({ atWork = false } = {}) {
+  return atWork ? [...INTAKE_GOALS, INTAKE_AT_WORK_GOAL] : INTAKE_GOALS;
+}
+
 export const INTAKE_ROLES = ['analyst', 'data_scientist', 'engineer', 'product', 'student', 'other'];
 
 // Interview goal only (SEO plan P3.20, 2026-09-13): which company and what
@@ -80,7 +94,7 @@ export function intakeStepsFor(goal) {
 }
 
 export function intakeGoalFor(id) {
-  return INTAKE_GOALS.find(g => g.id === id) || null;
+  return INTAKE_GOALS.find(g => g.id === id) || (id === INTAKE_AT_WORK_GOAL.id ? INTAKE_AT_WORK_GOAL : null);
 }
 
 export function isIntakeRole(id) {

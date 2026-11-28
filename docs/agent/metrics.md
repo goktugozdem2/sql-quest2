@@ -5794,6 +5794,8 @@ Who already works with SQL (Moving up U2). Defined 2026-11-25, before the
 code ships (rule 6b). It needs one new value of an existing event:
 `intent_captured {intent: 'at_work'}`.
 
+_Implementation note (PR #376): from the post-solve ask, `intent_captured` carries `atWorkOffered: true` while `intentAtWork` is on (the "Just exploring" answer too), so a window can be kept to answers given with the fifth answer on screen. The intake and the returning ask also offer it, but they write `intake_answered {step:'goal', value:'work'}`, never `intent_captured` (both are dark today); read them apart._
+
 **Primary:** of the people with an `intent_captured` in the window (their
 latest answer in it), the share whose answer is `at_work`. **Secondary,**
 per intent value: the share reaching 6 distinct solves within 28 days of the

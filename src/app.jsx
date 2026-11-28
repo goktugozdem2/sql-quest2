@@ -41,7 +41,7 @@ import { FIRST_SCREEN_STORAGE_KEY, firstScreenDecision } from './utils/first-scr
 import { MOBILE_RUN_BAR_STORAGE_KEY, MOBILE_RUN_BAR_TEST_ID, isNarrowTouch, isShortViewport, mobileRunBarDecision, runBarLabel, keyboardOffset } from './utils/mobile-run-bar.js';
 
 import { MOBILE_ONE_LAYER_STORAGE_KEY, MOBILE_ONE_LAYER_TEST_ID, ONE_LAYER_EXTRAS, isNarrowTouch as oneLayerNarrowTouch, mobileOneLayerDecision, oneLayerPick, oneLayerRelease } from './utils/mobile-one-layer.js';
-import { INTAKE_KEY, INTAKE_GOALS, INTAKE_ROLES, INTAKE_STEPS, INTAKE_COMPANIES, INTAKE_LEVELS, intakeStepsFor, intakeGoalFor, intakeGoalForIntent, nextIntakeStep, isIntakeStepRequired, isIntakeLevel, isValidIntakeDate, buildIntakeRecord, isIntakeComplete, readIntakeRecord, intakeEventPayload, newCoachGoalState, shouldShowIntake } from './utils/onboarding-intake.js';
+import { INTAKE_KEY, intakeGoalChoices, INTAKE_ROLES, INTAKE_STEPS, INTAKE_COMPANIES, INTAKE_LEVELS, intakeStepsFor, intakeGoalFor, intakeGoalForIntent, nextIntakeStep, isIntakeStepRequired, isIntakeLevel, isValidIntakeDate, buildIntakeRecord, isIntakeComplete, readIntakeRecord, intakeEventPayload, newCoachGoalState, shouldShowIntake } from './utils/onboarding-intake.js';
 import { shouldArmGoalNoteDateAsk, shouldRenderGoalNoteDateAsk } from './utils/goal-note-date-ask.js';
 import { COMPANY_ASK_KEY, COMPANY_ASK_TEST_ID, COMPANY_ASK_UNDECIDED, companyAskDecision, normalizeCompanyAskRecord, matchCompanies, isCompanyAskAnswer } from './utils/company-ask.js';
 import { COMPANY_DIRECT_KEY, COMPANY_DIRECT_TEST_ID, companyDirectDecision, isCompanyListArrival } from './utils/company-direct.js';
@@ -76,6 +76,7 @@ import { HIRED_INTENT, isHired, ticketLocked, shouldAskOffer } from './utils/pos
 import { gradeTicket, ticketFeedback } from './utils/ticket-grade.js';
 import { isStateGraded, gradeStateChallenge, runStateAttempt } from './utils/state-grade.js';
 import { TICKETS } from './data/tickets.js';
+import { INTENT_AT_WORK_FLAG, intentAskChoices, intentCapturedPayload } from './utils/intent-at-work.js';
 import { DIALECTS, DIALECT_ROWS } from './utils/dialect-notes.js';
 import { modalLayoutArm, plansFirst } from './utils/modal-layout.js';
 import { softGateReason, paywallMomentCopy, SOFT_GATE_ACTION_LABEL, SOFT_GATE_TOAST_MS, headerProCta } from './utils/paywall-moments.js';
@@ -14428,10 +14429,12 @@ CRITICAL RULES:
 
   // The three goal buttons — the intake's goal step and the returning ask
   // (2026-09-17) render the same choices through this one function.
+  // `intentAtWork` (U2, 2026-11-25) adds "I use SQL at work" last — the same
+  // render for the intake and the returning ask, so the two cannot disagree.
   const renderIntakeGoalChoices = (onPick) => {
     const optionStyle = { background: '#1F222B', border: '1px solid #2A2E38', borderRadius: '6px', color: '#F2F0EA' };
-    const goalKey = { interview: 'goalInterview', job: 'goalJob', general: 'goalGeneral' };
-    return INTAKE_GOALS.map(g => (
+    const goalKey = { interview: 'goalInterview', job: 'goalJob', general: 'goalGeneral', work: 'goalWork' };
+    return intakeGoalChoices({ atWork: ftbFlag(INTENT_AT_WORK_FLAG) }).map(g => (
       <button
         key={g.id}
         type="button"
@@ -30705,16 +30708,17 @@ RULES:
             <h3 className="text-lg font-semibold mb-1" style={{ color: '#F2F0EA' }}>One quick question</h3>
             <p className="text-sm mb-4" style={{ color: '#8A8E99' }}>What brings you to SQL Quest? Your answer shapes what we recommend next.</p>
             <div className="space-y-2">
-              {[
-                ['interview', '🎯', "I'm preparing for an interview at a specific company"],
-                ['job_ready', '💼', 'Getting job-ready or switching careers'],
-                ['learning', '📚', 'Learning SQL for my job or school'],
-              ].map(([key, emoji, label]) => (
+              {/* `intentAtWork` (U2, 2026-11-25, src/utils/intent-at-work.js):
+                  a fifth answer, `at_work`, last; stored through setUserIntent
+                  like the others and routed like `learning`. Flag off: the
+                  three answers and the event exactly as before. */}
+              {intentAskChoices({ atWork: ftbFlag(INTENT_AT_WORK_FLAG) }).map(([key, emoji, label]) => (
                 <button
                   key={key}
+                  data-intent-choice={key}
                   onClick={() => {
                     setUserIntent(key, 'ask');
-                    trackActivationEvent('intent_captured', { intent: key, source: 'ask' });
+                    trackActivationEvent('intent_captured', intentCapturedPayload(key, 'ask', { atWork: ftbFlag(INTENT_AT_WORK_FLAG) }));
                     setShowIntentAsk(false);
                     applyIntentRouting(key);
                   }}
@@ -30730,7 +30734,7 @@ RULES:
             <button
               onClick={() => {
                 setUserIntent('exploring', 'ask');
-                trackActivationEvent('intent_captured', { intent: 'exploring', source: 'ask' });
+                trackActivationEvent('intent_captured', intentCapturedPayload('exploring', 'ask', { atWork: ftbFlag(INTENT_AT_WORK_FLAG) }));
                 setShowIntentAsk(false);
               }}
               className={`w-full text-center text-xs mt-3 underline${oneLayerOn ? ' min-h-[44px]' : ''}`}

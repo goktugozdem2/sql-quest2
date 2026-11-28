@@ -678,6 +678,21 @@ window.FEATURE_FLAGS = {
     // Ledger "Run is not Submit"; read first_solve_10m from assignment by arm.
     runSubmitNudge: false,
 
+    // ── "I use SQL at work" — the `at_work` intent answer (U2) ────────────
+    // Moving up U2 (docs/plans/moving-up-current-stack-2026-11-25.md;
+    // orchestrator decision 6 of 2026-11-25, PR #372). A fifth answer on the
+    // intent questions that exist — the post-solve ask (last, under the three)
+    // and the intake / returning-ask goal choices — "I use SQL at work and
+    // want to move up", stored as intent `at_work` through setUserIntent.
+    // Not a hiring intent (HIRING_INTENTS unchanged); routed like `learning`
+    // until a Moving-up goal exists (U3). No new screen. `intent_captured`
+    // from the ask carries `atWorkOffered: true` while this is on.
+    // SHIPPED OFF 2026-11-25: flips only in an orchestrator decision row,
+    // after a walk; first-screen change, so `first_solve_10m` is its
+    // guardrail. src/utils/intent-at-work.js, tests/intent-at-work.test.js;
+    // ledger "who already works with SQL"; metric at_work_share.
+    intentAtWork: false,
+
     // ── A runnable starter in the editor (desktop A/B, 2026-11-26) ────────
     // An A/B by aid (runnable_starter_v1, murmur-finalised hash), assigned at
     // the first challenge open that would show an empty editor (no solve, no

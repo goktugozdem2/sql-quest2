@@ -27,6 +27,18 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### who already works with SQL — the `at_work` intent answer (`intentAtWork`, Moving up U2)
+
+- **Claimed** 2026-11-25 · **Shipped** dark (flag `intentAtWork: false`); flips only in an orchestrator decision row after a walk (decision 6 of 2026-11-25, PR #372) · **Read** 28 days after the deploy of the flip commit (2027-01-01 if it flips by 2026-12-04); n rule below.
+- **Change** a fifth answer on the intent questions that exist, never a new screen: the post-solve ask shows "I use SQL at work and want to move up" last, under the three; the intake and the returning ask (one shared goal render) show "I use SQL at work" last. Stored as intent `at_work` through `setUserIntent`, like the others (`userData.intent`, the browser key, every event's `intent` stamp). Not a hiring intent (`HIRING_INTENTS` unchanged: no Interview tab, not an interview person); `applyIntentRouting` acts on interview / job_ready only, so it routes like `learning` (the intake maps it to the Fundamentals goal, like `learning`). `intent_captured` from the ask carries `atWorkOffered: true` while the flag is on. The `?goal=` link door and the (off) goal gate keep their three. src/utils/intent-at-work.js; tests/intent-at-work.test.js.
+- **Why** docs/plans/moving-up-current-stack-2026-11-25.md §1–2: no question asks who already works with SQL; the intake's role field is on 12 rows. Every later Moving-up step (the U3 goal) depends on that number.
+- **Metric** `at_work_share` (docs/agent/metrics.md; defined in PR #369 before this code, rule 6b; copied here because #369 is not on main). Answers from the post-solve ask, people with at least one `challenge_solved` in the window.
+- **Baseline** the answer does not exist. Volume (10-01 → 10-29): 241 solvers answered the intent question — interview 119 (49%), job_ready 62, learning 60.
+- **Target** ≥ 10% of intent answers are `at_work`, and their reach-6 ≥ the `interview` group's → U3 (the "Moving up" goal) may be built, with the founder's approval.
+- **Guardrail** `first_solve_10m` must not fall (a fifth option on a question every new solver sees).
+- **Falsified if** `at_work` < 5% of answers at the read → the Moving-up track stops at U1 and U2; no Moving-up goal is built and we write down that our audience is pre-job. 5–10% → read again at 56 days. Fewer than 100 intent answers in the window → UNREADABLE; extend once.
+- **Confounds** `at_work` and `learning` ("Learning SQL for my job or school") overlap in wording; read the `learning` share before and after the flip beside `at_work`, and treat a `learning` drop of the same size as a relabel, not new people. The intake / returning ask (both dark) write `intake_answered`, not `intent_captured`; if either flips inside the window, the post-solve ask's volume drops (an intake answer marks the intent asked). Server side, `goalOnRecord` in `weekly-digest` (scheduled) and `goal-note` compares `userData.intent` to three strings, but `intent` has been an object `{goal, source, at}` since 2026-09-17, so no intent answer counts as a goal there today: `at_work` is read exactly like `interview` (both depend on the intake record, a Coach goal or a prep target). Not changed here (supabase/, rule 6d); noted for the founder.
+
 ### the company-set gate walls only authored sets (Capital One, Revolut) — bug fix
 
 - **Claimed** 2026-11-26 (founder's go in chat, "1'i uygula") · **Shipped**

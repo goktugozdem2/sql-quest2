@@ -8,6 +8,7 @@
 // that give other funnels their meaning (goal_selected, prep_target_set,
 // intent_captured).
 import { describe, it, expect } from 'vitest';
+import { INTENT_ASK_CHOICES } from '../src/utils/intent-at-work.js';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import {
@@ -57,8 +58,10 @@ describe('intake — the three steps and what each answer maps to', () => {
       expect(intents.has(g.intent), `${g.id}: intent ${g.intent}`).toBe(true);
       expect(goals, `${g.id}: coach goal ${g.coachGoalId} missing from goals.js`).toMatch(new RegExp(`id: '${g.coachGoalId}'`));
       // the modal's own value list, so the two doors cannot drift apart
-      expect(app).toMatch(new RegExp(`\\['${g.intent}', '`));
+      // (since 2026-11-25 the list lives in src/utils/intent-at-work.js)
+      expect(INTENT_ASK_CHOICES.map(c => c[0])).toContain(g.intent);
     }
+    expect(app).toContain('intentAskChoices({ atWork: ftbFlag(INTENT_AT_WORK_FLAG) }).map(([key, emoji, label]) => (');
     expect(intakeGoalFor('interview').coachGoalId).toBe('interview-prep');
     expect(intakeGoalFor('job').coachGoalId).toBe('analyst-day-one');
     expect(intakeGoalFor('general').coachGoalId).toBe('fundamentals');
@@ -207,7 +210,7 @@ describe('source guards — app.jsx keeps the intake optional, early, and quiet'
   it('every optional step can be skipped; the goal is one tap and has no skip (2026-09-17)', () => {
     expect(block).toMatch(/data-intake-skip="true"/);
     expect(block).toMatch(/onClick=\{\(\) => answerIntake\(intakeStep, null\)\}/);
-    expect(block).toMatch(/INTAKE_GOALS\.map\(g => \(/);
+    expect(block).toMatch(/intakeGoalChoices\(\{ atWork: ftbFlag\(INTENT_AT_WORK_FLAG\) \}\)\.map\(g => \(/);
     expect(block).toMatch(/INTAKE_ROLES\.map\(r => \(/);
     // the goal choices are one shared render (the returning ask uses it too)
     expect(block).toMatch(/renderIntakeGoalChoices\(\(id\) => answerIntake\('goal', id\)\)/);
