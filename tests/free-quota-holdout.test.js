@@ -310,7 +310,7 @@ describe('the wiring in app.jsx', () => {
 
   it('writeProEvent stamps fqArm on every row, and the assignment is announced once', () => {
     // (the tournament's tArm stamp rides beside it from 2026-11-26)
-    expect(APP).toMatch(/metadata: JSON\.stringify\(\{ \.\.\.metadata, \.\.\.fqEventStamp\(\),( \.\.\.tEventStamp\(\),)? aid: getAnonId\(\) \}\)/);
+    expect(APP).toMatch(/metadata: JSON\.stringify\(\{ \.\.\.metadata, \.\.\.fqEventStamp\(\),( \.\.\.tEventStamp\(\),)?( \.\.\.segmentEventStamp\(SEGMENT_SEG\),)? aid: getAnonId\(\) \}\)/);
     expect(APP).toMatch(/trackActivationEvent\('free_quota_arm_assigned', \{ testId: FREE_QUOTA_HOLDOUT_TEST_ID, arm: rec\.arm,/);
     expect(APP).toMatch(/if \(!rec \|\| rec\.status !== 'enrolled' \|\| rec\.announced\) return;/);
   });

@@ -6209,6 +6209,52 @@ GROUP BY 1,2,3,4 ORDER BY 1,2,3,4;
 operator above (or the read casts each element); the arm PR that writes
 the event pins the shape in its test.
 
+## `segment_mix`
+
+**What share of people are in each canonical segment, and how each converts.**
+Defined 2026-11-27 in the PR that adds the `seg` stamp (fleet README rule
+6b: the stamp is a measurement and changes no funnel step, so nothing this
+metric reads is graded by the same PR). Segment: `segmentOf` in
+`src/utils/segment.js` — interview_dated, interview_company,
+interview_general, job_ready, at_work, learner, unknown, first match wins,
+the #409 table's order (`docs/reads/funnel-by-segment-2026-11-26.md`).
+
+- **Stamp.** Every client `pro_events` row carries `seg` (the label) and
+  `segV` (rule version) from 2026-11-27; never the company, the date or the
+  profile. The signed-in account keeps `users.data.segment = {seg, at, v}`
+  (`at` = when the label last changed). Never pool across `segV`.
+- **Primary.** Of the week's new human openers (first `app_opened` ever in
+  the week; scorecard-weekly's human filter), the share per `seg`:
+  - **entry** = the `seg` on the first `app_opened` (fair at every step);
+  - **latest** = the last `seg` on any row (read from the plan click on:
+    intent is asked after the first solve, so it is selected on solving).
+- **Secondary, per seg** (scripts/scorecard-weekly.sql Query 5):
+  `first_solve_10m`, six distinct solves in 7 days, a plan click in 7 days,
+  trial and paid from `stripe_webhook` through the #409 bridge (each webhook
+  username credited to one person, the earliest first open). n per cell
+  always; under 20 is directional.
+- **`unstamped`** = a row without `seg` (before 2026-11-27, or a cached old
+  bundle). It should fall to ~0 within a week of the deploy; if it does not,
+  the stamp is broken, not the segment.
+- **Baseline (approximate, re-derived 2026-11-27).**
+  `scripts/segment-mix-baseline.sql` re-derives the segment from events that
+  existed before the stamp, for the 637 humans with an `app_opened`
+  2026-10-28 → 11-27 (ever version: any signal up to 11-27):
+  unknown 51.5% (328) · interview_company 25.7% (164) · job_ready 8.0% (51) ·
+  learner 8.0% (51) · interview_general 6.8% (43) · interview_dated 0 ·
+  at_work 0. Approximate: the first-open profile is read from `arrivalSrc`,
+  the Coach goal from `users.data` and `goal_selected`; `at_work` is not an
+  answer anyone can give yet (#376, dark), and a future `prepTarget.date` is
+  set on almost no account (#409: 7 in all of `users`).
+- **How it is read** (written before the stamped data):
+  - The first stamped week's `latest` mix more than 10 points off this
+    baseline in any segment → check the stamp (a module-load profile that
+    does not match `arrivalSrc`) before reading any rate.
+  - `unknown` is the size of "left before anyone asked"; a change there is
+    the intent ask's reach, not the traffic mix.
+  - Senders switch to `users.data.segment` only after two stamped weeks agree
+    with this re-derivation (`docs/plans/segment-adoption-2026-11-27.md`).
+
 ## `daily_challenge_use`
 
 Defined 2026-11-27, in the PR that adds its two events, before any read
