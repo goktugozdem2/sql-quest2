@@ -59,14 +59,22 @@ function runTracker({
   innerWidth = 1440,
   innerHeight = 900,
   tz = 'Europe/London',
+  geo = null,              // what /api/geo/ answers: a code, null, or 'fail' (network error)
+  session = new Map(),     // sessionStorage
+  sqGeo,                   // a request already in flight from the page (the homepage banner)
 } = {}) {
   const calls = [];
+  const geoCalls = [];
   const listeners = {};
   const ctx = {
     localStorage: {
       getItem: k => (store.has(k) ? store.get(k) : null),
       setItem: (k, v) => { store.set(k, String(v)); },
       removeItem: k => { store.delete(k); },
+    },
+    sessionStorage: {
+      getItem: k => (session.has(k) ? session.get(k) : null),
+      setItem: (k, v) => { session.set(k, String(v)); },
     },
     location: { hostname, pathname, search, href: `https://${hostname}${pathname}${search}` },
     document: {
@@ -80,15 +88,21 @@ function runTracker({
     innerHeight,
     Intl: { DateTimeFormat: () => ({ resolvedOptions: () => ({ timeZone: tz }) }) },
     fetch: (url, opts) => {
+      if (url === '/api/geo/') {
+        geoCalls.push(opts);
+        if (geo === 'fail') return Promise.reject(new Error('offline'));
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ country: geo }) });
+      }
       calls.push({ url, body: JSON.parse(opts.body), headers: opts.headers });
       return Promise.resolve({ ok: true });
     },
   };
+  if (sqGeo) ctx.sqGeo = sqGeo;
   ctx.window = ctx;
   vm.createContext(ctx);
   vm.runInContext(trackSource, ctx, { filename: 'track.js' });
   const fire = type => (listeners[type] || []).slice().forEach(fn => fn({ type, target: {} }));
-  return { store, calls, ctx, fire };
+  return { store, session, calls, geoCalls, ctx, fire };
 }
 
 const landingViewOf = calls => calls.find(c => c.body.event === 'landing_view');
@@ -528,6 +542,63 @@ describe('src/track.js — crawler fingerprints by window size', () => {
     expect(m, 'track.js must carry the table between the markers').toBeTruthy();
     const ids = JSON.parse(m[1].replace(/'/g, '"')).map(r => r[0]);
     expect(ids.sort()).toEqual(SOFT_FINGERPRINTS.map(f => f.id).filter(id => id !== 'refspam').sort());
+  });
+});
+
+// ── Country on the landing rows (2026-11-23, AN) ─────────────────────────
+// The reads mapped tz to a country, a proxy. /api/geo/ echoes Vercel's
+// country header; track.js asks it once per tab, caches it under the key the
+// app's regional price reads, and stamps it on every row sent after the
+// answer. landing_view is never held back for it.
+describe('src/track.js — country from /api/geo/ (2026-11-23)', () => {
+  const settle = () => new Promise(r => setTimeout(r, 0));
+  const engagedMeta = calls => metaOf(calls.find(c => c.body.event === 'landing_engaged'));
+
+  it('stamps the answer on landing_engaged and caches it, without holding landing_view back', async () => {
+    const { calls, geoCalls, session, fire } = runTracker({ geo: 'in' });
+    expect(geoCalls).toHaveLength(1);
+    // landing_view went out at once, before the answer: no country, no delay.
+    expect(metaOf(landingViewOf(calls)).country).toBeUndefined();
+    await settle();
+    fire('scroll');
+    expect(engagedMeta(calls).country).toBe('IN');
+    expect(session.get('sqlquest_geo_country')).toBe('IN');
+  });
+
+  it('a cached country rides on landing_view itself and asks nothing', () => {
+    const session = new Map([['sqlquest_geo_country', 'TR']]);
+    const { calls, geoCalls } = runTracker({ session, geo: 'US' });
+    expect(geoCalls).toHaveLength(0);
+    expect(metaOf(landingViewOf(calls)).country).toBe('TR');
+  });
+
+  it("reuses the homepage banner's request (window.sqGeo) instead of a second one", async () => {
+    const { calls, geoCalls, fire } = runTracker({ sqGeo: Promise.resolve('GB') });
+    expect(geoCalls).toHaveLength(0);
+    await settle();
+    fire('pointerdown');
+    expect(engagedMeta(calls).country).toBe('GB');
+  });
+
+  it('a failed, empty or junk answer stamps nothing and stores nothing', async () => {
+    for (const geo of ['fail', null, 'XYZ', '1A']) {
+      const { calls, session, fire } = runTracker({ geo });
+      await settle();
+      fire('scroll');
+      expect(engagedMeta(calls).country, String(geo)).toBeUndefined();
+      expect(session.has('sqlquest_geo_country'), String(geo)).toBe(false);
+    }
+  });
+
+  it('a bot or a local run never asks', () => {
+    expect(runTracker({ userAgent: 'python-requests/2.32.3', geo: 'US' }).geoCalls).toHaveLength(0);
+    expect(runTracker({ hostname: 'localhost', geo: 'US' }).geoCalls).toHaveLength(0);
+  });
+
+  it('the homepage banner shares its request through window.sqGeo', () => {
+    const home = readFileSync(path.resolve(__dirname, '../src/index.html'), 'utf8');
+    expect(home).toMatch(/const geo=window\.sqGeo\|\|\(window\.sqGeo=fetch\('\/api\/geo\/'/);
+    expect(home.match(/fetch\('\/api\/geo\/'/g)).toHaveLength(1);
   });
 });
 

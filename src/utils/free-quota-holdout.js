@@ -70,6 +70,11 @@ export const PRE_APP_KEYS = Object.freeze([
   'sqlquest_quiz_state_v1',
   'sqlquest_readiness_v1',
   'sqlquest_team_interest_v1',
+  // The landing tracker's country cache (2026-11-27, PR #277). It lives in
+  // sessionStorage only (track.js and the app's regional price alike), so it
+  // never reaches hasPriorAppUse's localStorage keys; listed because a page
+  // writes it, which is what this list records.
+  'sqlquest_geo_country',
 ]);
 
 const STATUSES = ['enrolled', 'returning', 'outside_window'];

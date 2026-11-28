@@ -94,6 +94,23 @@ And two standing traps:
 
 ---
 
+- **`country` on the landing rows is born on the deploy of
+  `measure/landing-country` (2026-11-23 or later; date it with the birth
+  query keyed on `metadata ? 'country'`, first day with 5+ rows).** It is
+  Vercel's `x-vercel-ip-country`, read once per tab from `/api/geo/` by
+  `src/track.js` and cached in `sessionStorage.sqlquest_geo_country` (the
+  key the regional price already reads). `landing_view` is never held back
+  for it, so the FIRST page of a tab usually carries no country on
+  `landing_view`; it is on `landing_engaged` and every `[data-track]` click
+  after the answer, and on `landing_view` from the second page on. Read a
+  person's country as the first non-null `country` on any of their
+  `reason='landing'` rows, never from `landing_view` alone. A missing value
+  means the call failed or Vercel had no header: report it as `(unknown)`,
+  never fill it from `tz`. Before the birth date, and for app-only arrivals
+  (`app.html` carries no tracker), the analytics lane maps `tz` to a country
+  (`scripts/analytics/daily.sql`, `tz_country`) and says it is a proxy;
+  drop the proxy for windows that start after the birth date.
+
 - **`users.created_at` is the last save, not the signup.** 317 of 338
   accounts carry a `created_at` equal to their `lastActive` (weekly read
   2026-09-07): the client upserts the whole row on every save. Count signups

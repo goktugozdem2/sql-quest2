@@ -1079,9 +1079,13 @@ function dismissTrBanner(){const b=document.getElementById('trBanner');if(b){b.c
   if(forced&&/^[A-Z]{2}$/.test(forced)){if(forced==='TR')show();return;}
   const ctl=typeof AbortController==='function'?new AbortController():null;
   const timer=setTimeout(()=>{try{ctl&&ctl.abort();}catch(_){}},1500);
-  fetch('/api/geo/',{cache:'no-store',signal:ctl?ctl.signal:undefined})
+  // window.sqGeo: the one in-flight request, shared with /track.js (which
+  // stamps the country on the landing rows), so the page asks once.
+  const geo=window.sqGeo||(window.sqGeo=fetch('/api/geo/',{cache:'no-store',signal:ctl?ctl.signal:undefined})
     .then(r=>r.ok?r.json():Promise.reject(new Error('geo '+r.status)))
-    .then(g=>{clearTimeout(timer);if(g&&g.country==='TR')show();})
+    .then(g=>(g&&g.country)?g.country:null));
+  geo
+    .then(c=>{clearTimeout(timer);if(c==='TR')show();})
     .catch(()=>{clearTimeout(timer);if(byLanguage())show();});
 })();
 
