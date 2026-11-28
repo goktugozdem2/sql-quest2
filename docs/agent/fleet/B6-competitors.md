@@ -1,4 +1,18 @@
+---
+id: B6
+name: "Competitor and market watch"
+owner: orchestrator
+runtime: laptop
+status: reduced
+cadence: "weekly (Mon) since 2026-11-25; pricing deep read monthly"
+metric: [content_funnel]
+writes_code: false
+version: 1.0.0
+last_changed: 2026-11-26
+---
 # B6 — Competitor and market watch
+
+> **Cadence reduced 2026-11-25 (investor 90-day plan): weekly (Mondays), not daily.** Competitor facts still only from dated reads.
 
 **Lane:** the companies that serve the same person we do: someone preparing for a data or analytics SQL interview, or practising SQL. B6 watches:
 - what they ship: features, content, company pages, pricing, trials and guarantees;
@@ -48,3 +62,7 @@ Founder's order, 2026-11-22: "Benzer hizmet veren şirketleri araştıran bir ag
 - **Never fake anything.** No reviews, no accounts, no posts, no sign-ups to gather data behind a login, and no scraping that a site's terms or robots rules forbid. Public pages only.
 - **No disparagement.** A complaint pattern can shape what we build and how we describe ourselves ("every question has an explanation"). It never becomes "X is bad" on our site.
 - **Cloud runs have no production data.** Per-page money reads come from B2's `content_funnel` mail on the laptop.
+
+## Changelog
+
+- 1.0.0 (2026-11-26) — versioned for the skills loop: front-matter added.

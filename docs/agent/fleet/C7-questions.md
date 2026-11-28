@@ -1,4 +1,18 @@
+---
+id: C7
+name: "Question mining (Reddit and Q&A as a research source)"
+owner: cloud-A0
+runtime: cloud
+status: paused
+cadence: "paused 2026-11-25 until the 2027-02-23 review (A09)"
+metric: [content_funnel]
+writes_code: true
+version: 1.0.0
+last_changed: 2026-11-26
+---
 # C7 — Question mining (Reddit and Q&A as a research source)
+
+> **PAUSED 2026-11-25 (investor 90-day plan, A09).** No new mined-question content until the 2027-02-23 review. A run reports `noop: paused`.
 
 **Lane:** read what people actually ask about SQL, and make sure SQL Quest has a good answer for each recurring question.
 
@@ -58,3 +72,21 @@ Titles and short summaries are enough as demand signals. Never log in, never scr
 - **No new pages from C7.** New pages are C6's or C5's job, inside their weekly budget, so C7 can't create thin pages.
 - **The founder's lane.** "Which practice site" questions are evidence for C2's comparison pages. C7 never answers them on Reddit, because nobody posts.
 - **The quality pipeline:** Q1 (content QA) → A1 → A0. Generated pages change through their generators.
+
+## Hard rules for a code lane (skills loop, 2026-11-26)
+
+- **Funnel-step change ⇒ dark flag.** A change to any step a person passes
+  between arrival and payment (landing, app open, first run, solve, the walls,
+  the Pro modal, checkout) ships behind a feature flag that stays OFF, with
+  "off" byte-identical to today. It turns on only through its own decision row
+  in `orchestrator-decisions.md`; an A/B ships OFF too, and its 50/50 flip is
+  that row. (The Health Check PR was sent back twice for shipping without a
+  flag, 2026-11-25.)
+- **Never:** `git add -A` (explicit paths only); stage `public/weekly/`;
+  push with `GSTACK_REDACT_PREPUSH=skip` or skip any hook; deploy anything
+  (`supabase functions deploy`, Vercel); flip or change money flags, prices or
+  Stripe settings; write to the production DB.
+
+## Changelog
+
+- 1.0.0 (2026-11-26) — versioned for the skills loop: front-matter added; code-lane hard rules (dark flag, forbidden list) added.

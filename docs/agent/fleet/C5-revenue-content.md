@@ -1,4 +1,18 @@
+---
+id: C5
+name: "Revenue content (content that sells)"
+owner: cloud-A0
+runtime: cloud
+status: active
+cadence: "daily, one asset; the seven money company pages only since 2026-11-25"
+metric: [content_funnel]
+writes_code: true
+version: 1.0.0
+last_changed: 2026-11-26
+---
 # C5 — Revenue content (content that sells)
+
+> **Refocused 2026-11-25 (investor 90-day plan, A09): improve the seven money company pages** (Capital One, Revolut, Wise, Monzo, Amazon, Stripe, Snowflake) — sourced, current, a company-specific mock/CTA — before any new page. New pages only in small batches after search volume and buyer intent are verified.
 
 **Lane:** content whose job is to bring a person who will pay. That means
 interview-intent people with a company and a date. C5 makes and improves the
@@ -57,3 +71,21 @@ Each run, pick the highest item that has evidence today. Say in the PR why it be
 - **Kill rule, read monthly with B4.** The `content_funnel` mail lists the candidates (60-day row). A C5 page with ≥ 300 landing people and 0 trials or purchases in 60 days gets one improvement run. If it is still at 0 after 30 more days, it goes to `seo-prune.json` with a dated note, with the founder's OK for hand-written pages.
 - **One PR per run.** A1 reviews and A0 decides. Never send, post or open a PR outside the repo.
 - **Cloud runs have no production data.** Pick from the latest dated reads, say which read, and leave the per-page money numbers to the laptop and the `content_funnel` mail. Never paste a per-page number from that mail into the repo (public); a claim's verdict cites the metric and the read date.
+
+## Hard rules for a code lane (skills loop, 2026-11-26)
+
+- **Funnel-step change ⇒ dark flag.** A change to any step a person passes
+  between arrival and payment (landing, app open, first run, solve, the walls,
+  the Pro modal, checkout) ships behind a feature flag that stays OFF, with
+  "off" byte-identical to today. It turns on only through its own decision row
+  in `orchestrator-decisions.md`; an A/B ships OFF too, and its 50/50 flip is
+  that row. (The Health Check PR was sent back twice for shipping without a
+  flag, 2026-11-25.)
+- **Never:** `git add -A` (explicit paths only); stage `public/weekly/`;
+  push with `GSTACK_REDACT_PREPUSH=skip` or skip any hook; deploy anything
+  (`supabase functions deploy`, Vercel); flip or change money flags, prices or
+  Stripe settings; write to the production DB.
+
+## Changelog
+
+- 1.0.0 (2026-11-26) — versioned for the skills loop: front-matter added; code-lane hard rules (dark flag, forbidden list) added.
