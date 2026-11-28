@@ -6,10 +6,20 @@
 // docs/plans/monetization-2026-09-24.md, item 4.
 import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
+import {
+  TUTOR_GUEST_DAILY_LIMIT, TUTOR_FREE_DAILY_LIMIT, TUTOR_PRO_DISPLAY_LIMIT, tutorDisplayLimit,
+} from '../src/utils/tutor-limits.js';
 
 const read = (p) => fs.readFileSync(new URL(`../${p}`, import.meta.url), 'utf8');
 const tutor = read('supabase/functions/ai-tutor/index.ts');
-const freeLimit = Number(tutor.match(/free:\s*(\d+)/)[1]);
+const serverLimit = (plan) => {
+  const table = tutor.match(/const DAILY_LIMITS[^=]*=\s*\{([\s\S]*?)\};/);
+  if (!table) throw new Error('DAILY_LIMITS table not found in ai-tutor');
+  const m = table[1].match(new RegExp(`\\b${plan}:\\s*(\\d+)`));
+  if (!m) throw new Error(`DAILY_LIMITS.${plan} not found`);
+  return Number(m[1]);
+};
+const freeLimit = serverLimit('free');
 
 const SURFACES = [
   'src/app.jsx',
@@ -21,10 +31,33 @@ const SURFACES = [
 const stripComments = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 
 describe('AI tutor limit claims', () => {
-  it("the app's TUTOR_FREE_DAILY_LIMIT is the server's free cap", () => {
-    const m = read('src/app.jsx').match(/^const TUTOR_FREE_DAILY_LIMIT = (\d+);/m);
-    expect(m, 'src/app.jsx declares TUTOR_FREE_DAILY_LIMIT at top level').toBeTruthy();
-    expect(Number(m[1])).toBe(freeLimit);
+  it("the app's tutor caps are the server's (src/utils/tutor-limits.js ↔ ai-tutor DAILY_LIMITS)", () => {
+    expect(TUTOR_GUEST_DAILY_LIMIT).toBe(serverLimit('guest'));
+    expect(TUTOR_FREE_DAILY_LIMIT).toBe(serverLimit('free'));
+    expect(TUTOR_PRO_DISPLAY_LIMIT).toBe(serverLimit('monthly'));
+  });
+
+  it('the shown cap before the first answer: guest 5, account 20, Pro 50 (2026-11-28)', () => {
+    const g = TUTOR_GUEST_DAILY_LIMIT, f = TUTOR_FREE_DAILY_LIMIT, p = TUTOR_PRO_DISPLAY_LIMIT;
+    // the server's "guest": no username, or a guest_… one
+    expect(tutorDisplayLimit({ pro: false, currentUser: 'guest_1732790000000', isGuest: true })).toBe(g);
+    expect(tutorDisplayLimit({ pro: false, currentUser: null, isGuest: false })).toBe(g);
+    // a saved account still being restored is not called a guest: free, as before
+    expect(tutorDisplayLimit({ pro: false, currentUser: null, isGuest: false, isSessionLoading: true })).toBe(f);
+    // registered free and Pro: unchanged
+    expect(tutorDisplayLimit({ pro: false, currentUser: 'maria', isGuest: false })).toBe(f);
+    expect(tutorDisplayLimit({ pro: true, currentUser: 'maria', isGuest: false })).toBe(p);
+    expect(tutorDisplayLimit({ pro: true, currentUser: 'guest_1', isGuest: true })).toBe(p);
+  });
+
+  it('app.jsx takes its tutor caps from the module, never a literal', () => {
+    const app = stripComments(read('src/app.jsx'));
+    expect(app).toMatch(/from '\.\/utils\/tutor-limits\.js'/);
+    expect(app).not.toMatch(/const (TUTOR_\w+_DAILY_LIMIT|AI_LIMIT_\w+)\s*=\s*\d/);
+    // the limit-sync effect reads the guest-aware helper
+    expect(app).toMatch(/const aiDisplayLimit = tutorDisplayLimit\(\{ pro: isPro, currentUser, isGuest, isSessionLoading \}\);/);
+    expect(app).toMatch(/const newLimit = aiDisplayLimit;/);
+    expect(app).not.toMatch(/const newLimit = isPro \? AI_LIMIT_PRO : AI_LIMIT_FREE;/);
   });
 
   it('Pro is never called unlimited next to the tutor or the AI limit', () => {
