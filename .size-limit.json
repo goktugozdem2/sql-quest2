@@ -3,7 +3,7 @@
     "name": "app.js",
     "path": "public/app.js",
     "gzip": true,
-    "limit": "442.18 kB"
+    "limit": "428.05 kB"
   },
   {
     "name": "data.js",

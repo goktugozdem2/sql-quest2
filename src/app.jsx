@@ -1,6 +1,6 @@
 import { roundDownCount, bankCountLabel, companySetCount } from './utils/display-count.js';
 import { challengeTablePlan, challengeTableData } from './utils/challenge-datasets.js';
-import { SOURCED_COMPANY_NAMES } from './data/company-interviews.js';
+import { SOURCED_COMPANY_NAMES, SQL_PATTERN_LINKS as SQL_PATTERNS, PATTERN_FOR_MOCK_QUESTION } from './data/app-data-slices.js';
 import { withLocalAccountKeys as withLocalAccountKeysPure, isMissingServerSide, accountFunctionStatus } from './utils/account-access.js';
 import { tokenForUsername, writeSessionToken, clearSessionToken, ensureGuestSecret, clearGuestSecret, withToken, withCarry, endSessionBody, isGuestUsername, rpcBodyFallbacks, isSessionTokenRequired, sessionRefusalAction, RELOGIN_MESSAGE, markReloginPending, isReloginPending, clearReloginPending } from './utils/session-token.js';
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
@@ -60,7 +60,6 @@ import { shouldEmitLockEvent, lockEventKey } from './utils/lock-events.js';
 import { shouldAskForReview, enabledReviewPlatforms, REVIEW_ASK_REASONS } from './utils/review-ask.js';
 import { eligibleTargets, findTarget, planTargets, findPlanTarget, companyReadiness, planToDate, daysUntil, readinessBucket, MIN_EVIDENCE_SOLVES, MIN_TAGGED_CHALLENGES, PREP_PLAN_STATUS, TARGET_KIND } from './utils/interview-prep.js';
 import { archetypeForCompany } from './data/interview-archetypes.js';
-import { PATTERN_FOR_MOCK_QUESTION, SQL_PATTERNS } from './data/sql-patterns.js';
 import { getPrimarySkeleton, getAllSkeletons } from './utils/skeletons.js';
 import { diagnoseResult, diagnosisShort, primaryHint, rowDiffSummary } from './utils/diagnose.js';
 import { formatSqlForDisplay } from './utils/sql-format.js';
@@ -103,7 +102,7 @@ import { normalizeAiMessages } from './utils/ai-tutor-client.js';
 import { buildFeedbackChallengeContext, feedbackEventContext } from './utils/feedback-context.js';
 import { FEEDBACK_PROMPT_FLAGS, FBP_SESSION_KEY, FBP_EXIT_DAY_KEY, FBP_STUCK_IDS_KEY, FBP_DAY2_KEY, FBP_EXIT_DONE_KEY, STUCK_NO_RUN_MS, PROMPT_THANKS_MS, EXIT_REASONS, promptDoneKey, mayRecordAnswer, markPromptAnswered, nextSessionRecord, markPromptShown, canShowExitReason, stuckTrigger, canShowStuck, canShowDay2, buildPromptSubmission, localDay } from './utils/feedback-prompts.js';
 import { t as i18n_t, getCurrentLang, setLang as i18n_setLang, subscribeLang, SUPPORTED_LANGS, localizeChallenge, localizeInterview, localizeQuestion } from './utils/i18n.js';
-import { buildWeeklyReport, detectMilestones } from './utils/weekly-report.js';
+import { buildWeeklyReport, detectMilestones, getIsoWeekStart, formatDate as formatWeekDate, entryTs as weekEntryTs } from './utils/weekly-report.js';
 import { isMcqQuestion, scoreMcqAnswer, applyHintPenalty, nextOptionId, findOption, buildInterviewProgress, mockMistakeDiagnosis, weakConceptsFromHistory } from './utils/mock-interview.js';
 import { canStartMock, mockRunFor, previewEndReason, freePreviewCount, canResumeProgress } from './utils/case-round.js';
 import { explainsApproach, approachSubmittedEvent } from './utils/mock-approach.js';
@@ -357,33 +356,19 @@ const Zap = getIcon('Zap');
 const Target = getIcon('Target');
 const AlertTriangle = getIcon('AlertTriangle');
 const Award = getIcon('Award');
-const Heart = getIcon('Heart');
 const Flame = getIcon('Flame');
 const Lock = getIcon('Lock');
-const Gift = getIcon('Gift');
 const Upload = getIcon('Upload');
 const Ship = getIcon('Ship');
 const Film = getIcon('Film');
-const Flower2 = getIcon('Flower2');
 const ShoppingCart = getIcon('ShoppingCart');
 const Users = getIcon('Users');
-const Table = getIcon('Table');
 const BarChart3 = getIcon('BarChart3');
-const User = getIcon('User');
 const LogOut = getIcon('LogOut');
-const Save = getIcon('Save');
-const History = getIcon('History');
-const Crown = getIcon('Crown');
-const Medal = getIcon('Medal');
 const Calendar = getIcon('Calendar');
 const Clock = getIcon('Clock');
-const Sun = getIcon('Sun');
 const Bell = getIcon('Bell');
-const Mail = getIcon('Mail');
-const MessageCircle = getIcon('MessageCircle');
 const Link = getIcon('Link');
-const Copy = getIcon('Copy');
-const Settings = getIcon('Settings');
 const AlertCircle = getIcon('AlertCircle');
 const Shield = getIcon('Shield');
 
@@ -536,17 +521,6 @@ const CheckoutOpeningLine = () => (
   </div>
 );
 
-const SQLHighlight = ({ code, className = '' }) => {
-  if (!code) return null;
-  return (
-    <pre className={`language-sql m-0 p-0 bg-transparent ${className}`}>
-      <code 
-        className="language-sql"
-        dangerouslySetInnerHTML={{ __html: highlightSQL(code) }} 
-      />
-    </pre>
-  );
-};
 
 // ============================================================================
 // Onboarding Tour — 6-step spotlight walkthrough for a user's first challenge.
@@ -974,32 +948,6 @@ const getAlternateFoundationTableName = (tableName) => (
   FOUNDATION_DATASET_OPTIONS.find(option => option.tableName !== tableName)?.tableName || 'orders'
 );
 
-const FIRST_RUN_GOALS = [
-  {
-    id: 'zero',
-    icon: '🌱',
-    title: 'Learn SQL from zero',
-    description: 'Start with one safe SELECT query.',
-  },
-  {
-    id: 'interview',
-    icon: '💼',
-    title: 'Prepare for interviews',
-    description: 'Build toward practical question patterns.',
-  },
-  {
-    id: 'business',
-    icon: '📊',
-    title: 'Practice business SQL',
-    description: 'Use SQL to answer product and data questions.',
-  },
-  {
-    id: 'weak-spots',
-    icon: '🎯',
-    title: 'Find weak spots',
-    description: 'Get a first signal for your Skillmap.',
-  },
-];
 
 const FIRST_RUN_LEVELS = [
   {
@@ -2747,24 +2695,6 @@ const updatePasswordWithToken = async (newPassword) => {
   return data;
 };
 
-// Resend verification email
-const resendVerificationEmail = async (email) => {
-  const client = getSupabaseClient();
-  if (!client) {
-    throw new Error('Supabase not configured');
-  }
-  
-  const { data, error } = await client.auth.resend({
-    type: 'signup',
-    email: email,
-    options: {
-      emailRedirectTo: window.location.origin + window.location.pathname + '?verified=true'
-    }
-  });
-  
-  if (error) throw error;
-  return data;
-};
 
 // Check if this is an email verification callback.
 // Supabase puts `type=signup|email` in different places depending on the
@@ -3374,12 +3304,10 @@ const COACH_DEBUG_DOOR_ON = coachDebugDoorOn(window.FEATURE_FLAGS);
     c.companies = map[c.id] || [];
   }
 })();
-const skillTracks = window.skillTracksData || [];
 const levels = window.gameLevels || [{ name: 'Novice', minXP: 0 }];
 const achievements = window.gameAchievements || [];
 const dailyChallenges = window.dailyChallengesData || [];
 const mockInterviews = window.mockInterviewsData || [];
-const interviewCategories = window.interviewCategories || [];
 
 // ============ STATIC TOPIC EXPLANATIONS ============
 // Pre-written explanations for SQL concepts - shown instantly without AI call
@@ -4197,12 +4125,6 @@ const detectAllSqlConcepts = (sql) => {
   return [...new Set(concepts)]; // Remove duplicates
 };
 
-// Map difficulty strings to numeric values for comparison
-const difficultyOrder = {
-  'Easy': 1,
-  'Medium': 3,
-  'Hard': 5
-};
 
 // ---------------------------------------------------------------------------
 // Skill drill XP bonus — only constant not exported by src/utils/skill-drill.js
@@ -4274,63 +4196,7 @@ const checkIfStruggling = (dailyHistory) => {
   return { struggling: false };
 };
 
-// Get topic performance stats for weekly report
-const getTopicStats = (challengeAttempts, solvedChallenges, allChallenges) => {
-  const topicStats = {};
-  
-  // Initialize from all challenges
-  allChallenges.forEach(c => {
-    const topic = c.topic || detectSqlTopic(c.solution);
-    if (!topicStats[topic]) {
-      topicStats[topic] = { attempts: 0, successes: 0, challenges: [], solved: 0, total: 0 };
-    }
-    topicStats[topic].total++;
-    if (solvedChallenges.has(c.id)) {
-      topicStats[topic].solved++;
-    }
-  });
-  
-  // Add attempt data
-  challengeAttempts.forEach(a => {
-    const topic = a.topic;
-    if (!topicStats[topic]) {
-      topicStats[topic] = { attempts: 0, successes: 0, challenges: [], solved: 0, total: 0 };
-    }
-    topicStats[topic].attempts++;
-    if (a.success) topicStats[topic].successes++;
-  });
-  
-  // Calculate rates and sort
-  return Object.entries(topicStats)
-    .map(([topic, stats]) => ({
-      topic,
-      ...stats,
-      successRate: stats.attempts > 0 ? Math.round((stats.successes / stats.attempts) * 100) : (stats.solved > 0 ? 100 : 0),
-      coverage: stats.total > 0 ? Math.round((stats.solved / stats.total) * 100) : 0
-    }))
-    .sort((a, b) => b.successRate - a.successRate);
-};
 
-// Map topic to AI Tutor lesson index
-const getAiLessonForTopic = (topic) => {
-  const topicToLesson = {
-    'SELECT': 0,
-    'WHERE': 1,
-    'ORDER BY': 2,
-    'DISTINCT': 2,
-    'Aggregation': 3,
-    'GROUP BY': 4,
-    'GROUP BY & HAVING': 4,
-    'JOIN': 5,
-    'LEFT JOIN': 6,
-    'RIGHT JOIN': 6,
-    'FULL JOIN': 6,
-    'Subqueries': 7,
-    'CASE': 8,
-    'Window Functions': 9
-  };
-  return topicToLesson[topic] ?? 0;
-};
 
 // Generate Google Calendar link for daily reminder at 11:00 GMT+3
 const getGoogleCalendarLink = () => {
@@ -4511,45 +4377,6 @@ function PixelFlame({ active = true, size = 18 }) {
   );
 }
 
-// 8-bit Pixel XP Bar
-function XPBar({ current, max, level }) {
-  const pct = Math.min(((current - level.minXP) / (max - level.minXP)) * 100, 100);
-  const segments = 16;
-  const filledSegments = Math.round((pct / 100) * segments);
-  return (
-    <div className="w-full">
-      <div className="flex justify-between items-center text-xs mb-1">
-        <span className="font-bold text-purple-300" style={{ fontSize: '9px' }}>{level.name}</span>
-        <div className="flex items-center gap-1">
-          <PixelCoin size={12} />
-          <span className="text-yellow-300 font-bold" style={{ fontSize: '9px' }}>{current}</span>
-        </div>
-      </div>
-      <div style={{
-        height: '10px',
-        background: '#111827',
-        border: '2px solid #4b5563',
-        borderTopColor: '#6b7280',
-        borderLeftColor: '#6b7280',
-        borderRightColor: '#1f2937',
-        borderBottomColor: '#1f2937',
-        imageRendering: 'pixelated',
-        display: 'flex',
-      }}>
-        {Array.from({ length: segments }).map((_, i) => (
-          <div key={i} style={{
-            flex: 1,
-            height: '100%',
-            background: i < filledSegments
-              ? (i < filledSegments * 0.4 ? '#7c3aed' : i < filledSegments * 0.75 ? '#a855f7' : '#c084fc')
-              : 'transparent',
-            borderRight: i < segments - 1 ? '1px solid #111827' : 'none',
-          }} />
-        ))}
-      </div>
-    </div>
-  );
-}
 
 // Floating XP Gain Animation
 // Milestone Share Bar - Auto-appears after key moments
@@ -6312,11 +6139,6 @@ function SQLQuest() {
   const [showResetPassword, setShowResetPassword] = useState(false); // For password reset form after clicking email link
   const [newResetPassword, setNewResetPassword] = useState('');
   const [confirmResetPassword, setConfirmResetPassword] = useState('');
-  // Email verification state
-  const [showVerificationPending, setShowVerificationPending] = useState(false);
-  const [verificationEmail, setVerificationEmail] = useState('');
-  const [resendingVerification, setResendingVerification] = useState(false);
-  const [verificationResent, setVerificationResent] = useState(false);
   const [showSignupPrompt, setShowSignupPrompt] = useState(false);
   const [signupPromptReason, setSignupPromptReason] = useState('');
   const [guestActionsCount, setGuestActionsCount] = useState(0);
@@ -6428,11 +6250,7 @@ function SQLQuest() {
   // Admin password (change this to your desired admin password)
   const ADMIN_PASSWORD = 'adminadmin';
   
-  // API Key state
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem('sqlquest_api_key') || '');
-  const [aiProvider, setAiProvider] = useState(() => localStorage.getItem('sqlquest_ai_provider') || 'claude'); // 'claude' or 'openai'
   const [showApiKeyModal, setShowApiKeyModal] = useState(false);
-  const [useAI, setUseAI] = useState(true); // AI always available via proxy
   const [aiDailyUsage, setAiDailyUsage] = useState(() => {
     try {
       const saved = JSON.parse(localStorage.getItem('sqlquest_ai_daily') || '{}');
@@ -6504,8 +6322,6 @@ function SQLQuest() {
     try { const s = localStorage.getItem('sqlquest_ticket_log'); return s ? JSON.parse(s) : {}; } catch (_) { return {}; }
   });
   
-  // Mock Interview state
-  const [showInterviews, setShowInterviews] = useState(false);
   const [activeInterview, setActiveInterview] = useState(null);
   const [interviewQuestion, setInterviewQuestion] = useState(0);
   const [interviewQuery, setInterviewQuery] = useState('');
@@ -8240,8 +8056,6 @@ function SQLQuest() {
   const [db, setDb] = useState(null);
   const sqlCtorRef = useRef(null);
   const [dbReady, setDbReady] = useState(false);
-  const [currentDataset, setCurrentDataset] = useState('titanic');
-  const [customTables, setCustomTables] = useState({});
   const [query, setQuery] = useState('');
   const [results, setResults] = useState({ columns: [], rows: [], error: null });
   // Default tab: 'guide' (Coach). Switched from 'quests' (Practice list)
@@ -8610,7 +8424,6 @@ function SQLQuest() {
       return validIds.includes(raw) ? raw : null;
     } catch { return null; }
   });
-  const fileInputRef = useRef(null);
 
   // Persist filter state across refreshes — paired with the useState
   // initializers above. Cheap writes; localStorage is sync but tiny.
@@ -8918,7 +8731,6 @@ function SQLQuest() {
   const [warmupResult, setWarmupResult] = useState(null); // null, 'correct', 'wrong'
   const [insightAnswer, setInsightAnswer] = useState(null);
   const [insightResult, setInsightResult] = useState(null);
-  const [showExplanation, setShowExplanation] = useState(false);
   const [coreCompleted, setCoreCompleted] = useState(false);
   const [completedDailyChallenges, setCompletedDailyChallenges] = useState({}); // { "2024-01-17": true }
   const [dailyStreak, setDailyStreak] = useState(0);
@@ -8969,7 +8781,6 @@ function SQLQuest() {
   const [dailyAnswerShown, setDailyAnswerShown] = useState(false);
   const [dailySolveTime, setDailySolveTime] = useState(null); // final solve time
   const [showWeeklyReport, setShowWeeklyReport] = useState(false);
-  const [weakTopicForTutor, setWeakTopicForTutor] = useState(null); // Topic to practice in AI Tutor
   const [studyingTopic, setStudyingTopic] = useState(null); // Currently studying a specific topic (from interview review)
   // The mock mistake a study session is about (src/utils/tutor-context.js):
   // query, reference solution, diagnosis, the rows lost or added, dataset.
@@ -9055,7 +8866,6 @@ function SQLQuest() {
   const [roadmapLessonCompletions, setRoadmapLessonCompletions] = useState(new Set());
   const [foundationPractice, setFoundationPractice] = useState(() => loadSavedFoundationPracticeState() || createFoundationPracticeState(null));
   const foundationAwardedRef = useRef(new Set());
-  const [showSqlSandbox, setShowSqlSandbox] = useState(true);
   const [sandboxQuery, setSandboxQuery] = useState('');
   const [sandboxResult, setSandboxResult] = useState({ columns: [], rows: [], error: null });
   const [comprehensionCount, setComprehensionCount] = useState(0);
@@ -9114,7 +8924,6 @@ function SQLQuest() {
   }, [selectedExerciseLesson]);
   const [exerciseQuery, setExerciseQuery] = useState('');
   const [exerciseResult, setExerciseResult] = useState({ columns: [], rows: [], error: null });
-  const [exerciseExpectedResult, setExerciseExpectedResult] = useState({ columns: [], rows: [] });
   const [showExerciseResult, setShowExerciseResult] = useState(false);
   const [completedExercises, setCompletedExercises] = useState(new Set()); // format: "lessonId-exerciseIndex"
 
@@ -10780,7 +10589,6 @@ function SQLQuest() {
     if (!currentUser || isGuest) return;
     const notifs = [];
     const now = new Date();
-    const today = getTodayString();
 
     // 1. Streak ending warning — highest priority when active
     if (streak > 2 && !isDailyCompleted && now.getHours() >= 18) {
@@ -11905,50 +11713,6 @@ Reply in 2–3 sentences, plain text, no headings: first whether the approach wo
 
   const canAccessInterview = (interview) => canStartMock(interview, userProStatus);
   
-  // Study a mistake with AI Tutor
-  const studyMistakeWithAI = (mistake, resultId) => {
-    // One path for studying a mock mistake (2026-09-19): the session that
-    // opens on the query and keeps it in context. The studied-mark below
-    // still records which result the mistake came from.
-    // Mark mistake as studied
-    if (currentUser && resultId) {
-      const userData = JSON.parse(localStorage.getItem(`sqlquest_user_${currentUser}`) || '{}');
-      const history = userData.interviewHistory || [];
-      const resultIndex = history.findIndex(r => r.id === resultId);
-      if (resultIndex >= 0) {
-        if (!history[resultIndex].studiedMistakes) {
-          history[resultIndex].studiedMistakes = [];
-        }
-        if (!history[resultIndex].studiedMistakes.includes(mistake.questionTitle)) {
-          history[resultIndex].studiedMistakes.push(mistake.questionTitle);
-        }
-        userData.interviewHistory = history;
-        saveUserData(currentUser, userData);
-        setInterviewHistory(history);
-      }
-    }
-    
-    // Navigate to AI Tutor with the mistake
-    setShowInterviewReview(null);
-    if (mistake && mistake.questionType !== 'mcq') { studyTopicWithAI(mistake.questionTitle, mistake); return; }
-    setActiveTab('guide');
-
-    // Find relevant lesson based on concepts
-    const concept = mistake.concepts?.[0] || 'SELECT';
-    const lessonIndex = getAiLessonForTopic(concept);
-    setCurrentAiLesson(lessonIndex);
-    setAiLessonPhase('intro');
-    // MCQ mistakes are prose, not SQL — wrapping an option in a ```sql fence
-    // makes the tutor reason about syntax that was never there.
-    const isMcqMistake = mistake.questionType === 'mcq';
-    const fence = (text) => (isMcqMistake ? text : `\`\`\`sql\n${text}\n\`\`\``);
-    setAiMessages([{
-      role: 'assistant',
-      content: isMcqMistake
-        ? `**You missed this one — let's fix that.**\n\n**Question:** ${mistake.questionTitle}\n\n${mistake.questionDescription?.replace(/\*\*(.*?)\*\*/g, '**$1**')}\n\n**You picked:** ${mistake.userQuery || '(No answer submitted)'}\n\n**Correct answer:** ${mistake.correctSolution}\n\n${mistake.explanation || ''}\n\nThis one is about ${mistake.concepts?.join(', ')}. **Before I go further** — can you say, in your own words, what made the option you picked wrong? Then I'll fill in the gaps.`
-        : `**You missed this one — let's fix that.**\n\n**Question:** ${mistake.questionTitle}\n\n${mistake.questionDescription?.replace(/\*\*(.*?)\*\*/g, '**$1**')}\n\n**Your answer:**\n${fence(mistake.userQuery || '(No answer submitted)')}\n\n**Correct solution:**\n${fence(formatSqlForDisplay(mistake.correctSolution))}\n\n**What went wrong:**\n${(() => { const dx = mistake.diagnosis || mockMistakeDiagnosis({ ...mistake, correct: false }, { diagnose: diagnoseResult, hint: primaryHint, rows: rowDiffSummary }); return mistake.userQuery ? `${dx?.sentence || 'Your result did not match the expected output.'}${dx?.hint ? ` ${dx.hint}` : ''} Compare your answer to the solution — can you spot where they part?` : `You didn't submit an answer. No worries — let's break the solution down so you own this concept.`; })()}\n\nThe solution uses ${mistake.concepts?.join(', ')}. ${mistake.hints?.[0] || ''}\n\n**Before I explain further** — look at the correct solution above. Can you describe in your own words why each part is needed? Give it a try, then I'll fill in the gaps.`
-    }]);
-  };
 
   // Study a topic/concept with AI tutor (for clickable topic badges)
   // Uses a multi-step interactive flow for fast responses and high engagement
@@ -12291,37 +12055,6 @@ CRITICAL RULES:
           : null,
       }
     );
-  };
-
-  // --- Tiny date helpers used by backfillWeeklyReports + a few render
-  // sites that decide week boundaries. Kept local so the inline mirror
-  // cleanup didn't take them down with the rest of the body. Same
-  // semantics as src/utils/weekly-report.js's getIsoWeekStart / formatDate
-  // / entryTs but private here. Don't grow this — if a fourth caller
-  // appears, factor up to a util.
-  const _wrGetWeekStart = (date) => {
-    const d = new Date(date);
-    d.setHours(0, 0, 0, 0);
-    const day = d.getDay();
-    const mondayOffset = day === 0 ? -6 : 1 - day;
-    d.setDate(d.getDate() + mondayOffset);
-    return d;
-  };
-  const _wrGetWeekEnd = (date) => {
-    const start = _wrGetWeekStart(date);
-    const end = new Date(start);
-    end.setDate(end.getDate() + 7);
-    return end;
-  };
-  const _wrFormatDate = (d) => {
-    const dd = new Date(d);
-    return `${dd.getFullYear()}-${String(dd.getMonth() + 1).padStart(2, '0')}-${String(dd.getDate()).padStart(2, '0')}`;
-  };
-  const _wrEntryTs = (e) => {
-    if (!e) return 0;
-    if (e.timestamp) return typeof e.timestamp === 'number' ? e.timestamp : new Date(e.timestamp).getTime();
-    if (e.date) { const d = new Date(e.date); return isNaN(d.getTime()) ? 0 : d.getTime(); }
-    return 0;
   };
 
   // --- Weekly Report (thin closure wrappers around src/utils/weekly-report.js) ---
@@ -14459,7 +14192,6 @@ CRITICAL RULES:
     const optionStyle = { background: '#1F222B', border: '1px solid #2A2E38', borderRadius: '6px', color: '#F2F0EA' };
     const hoverOn = e => { e.currentTarget.style.borderColor = '#8A8E99'; };
     const hoverOff = e => { e.currentTarget.style.borderColor = '#2A2E38'; };
-    const goalKey = { interview: 'goalInterview', job: 'goalJob', general: 'goalGeneral' };
     const roleKey = { analyst: 'roleAnalyst', data_scientist: 'roleDataScientist', engineer: 'roleEngineer', product: 'roleProduct', student: 'roleStudent', other: 'roleOther' };
     return (
       <div data-onboarding="first-run-intake" data-intake-step={intakeStep}>
@@ -17751,13 +17483,13 @@ CRITICAL RULES:
   // already in weeklyReports. Idempotent. Safe to call repeatedly on load.
   const backfillWeeklyReports = () => {
     const allTs = [
-      ...(dailyChallengeHistory || []).map(_wrEntryTs),
-      ...(challengeAttempts || []).map(_wrEntryTs),
-      ...(interviewHistory || []).map(_wrEntryTs),
+      ...(dailyChallengeHistory || []).map(weekEntryTs),
+      ...(challengeAttempts || []).map(weekEntryTs),
+      ...(interviewHistory || []).map(weekEntryTs),
     ].filter(t => t > 0);
     if (allTs.length === 0) return;
 
-    const currentWeekStart = _wrGetWeekStart(new Date());
+    const currentWeekStart = getIsoWeekStart(new Date());
     const stored = new Set((weeklyReports || []).map(r => r.weekStart));
     const updated = [...(weeklyReports || [])];
 
@@ -17780,9 +17512,9 @@ CRITICAL RULES:
       milestoneHarvest.push(...ms);
     }
 
-    let cursor = _wrGetWeekStart(new Date(Math.min(...allTs)));
+    let cursor = getIsoWeekStart(new Date(Math.min(...allTs)));
     while (cursor.getTime() < currentWeekStart.getTime()) {
-      const weekStartStr = _wrFormatDate(cursor);
+      const weekStartStr = formatWeekDate(cursor);
       if (!stored.has(weekStartStr)) {
         const prior = updated
           .slice()
@@ -18147,7 +17879,6 @@ CRITICAL RULES:
     
     // Analyze completed interviews
     const completedIds = new Set(interviewHistory.map(h => h.interviewId));
-    const passedIds = new Set(interviewHistory.filter(h => h.passed).map(h => h.interviewId));
     const failedInterviews = interviewHistory.filter(h => !h.passed);
     
     // Focus areas: attempted misses net of correct answers, per concept
@@ -19644,12 +19375,6 @@ CRITICAL RULES:
     playSound('click');
   };
   
-  const generateShareText = (result) => {
-    return getShareContent('interview', result).text;
-  };
-  const shareToTwitter = (result) => shareToplatform('twitter', 'interview', result);
-  const shareToLinkedIn = (result) => shareToplatform('linkedin', 'interview', result);
-  const copyShareLink = (result) => shareToplatform('copy', 'interview', result);
 
   // ============ CERTIFICATES ============
   const openCertificateModal = (result) => {
@@ -20390,751 +20115,11 @@ CRITICAL RULES:
   // ============ SHAREABLE ASSETS FUNCTIONS ============
   // Note: showShareModal state is declared at the top with other state variables
   
-  // Generate Progress Card HTML (for social sharing)
-  const generateProgressCardHTML = () => {
-    const completedDays = Object.values(challengeProgress).filter(p => p?.completed).length;
-    const totalScore = Object.values(challengeProgress).reduce((sum, p) => sum + (p?.score || 0), 0);
-    const progressPercent = Math.round((completedDays / 30) * 100);
-    
-    return `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="UTF-8">
-        <meta property="og:title" content="My SQL Quest Progress">
-        <meta property="og:description" content="I've completed ${completedDays}/30 days of the SQL Master Challenge!">
-        <meta property="og:image" content="https://sqlquest.app/og-progress.png">
-        <style>
-          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
-          * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { 
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-          }
-          .card {
-            width: 600px;
-            background: linear-gradient(145deg, #1e1e3f 0%, #2d2d5a 100%);
-            border-radius: 24px;
-            padding: 40px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-            border: 2px solid rgba(147, 51, 234, 0.3);
-          }
-          .header {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            margin-bottom: 30px;
-          }
-          .logo { font-size: 48px; }
-          .title { color: #fff; font-size: 28px; font-weight: 800; }
-          .subtitle { color: #9ca3af; font-size: 14px; }
-          .user-section {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            margin-bottom: 30px;
-            padding: 20px;
-            background: rgba(147, 51, 234, 0.1);
-            border-radius: 16px;
-            border: 1px solid rgba(147, 51, 234, 0.2);
-          }
-          .avatar {
-            width: 60px;
-            height: 60px;
-            background: linear-gradient(135deg, #9333ea 0%, #c026d3 100%);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            color: white;
-            font-weight: bold;
-          }
-          .user-info { flex: 1; }
-          .username { color: #fff; font-size: 24px; font-weight: 700; }
-          .level { color: #a855f7; font-size: 14px; }
-          .progress-section { margin-bottom: 30px; }
-          .progress-header {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 12px;
-          }
-          .progress-label { color: #9ca3af; font-size: 14px; }
-          .progress-value { color: #a855f7; font-size: 14px; font-weight: 600; }
-          .progress-bar {
-            height: 12px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 6px;
-            overflow: hidden;
-          }
-          .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #9333ea 0%, #c026d3 50%, #f472b6 100%);
-            border-radius: 6px;
-            width: ${progressPercent}%;
-          }
-          .stats {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 16px;
-            margin-bottom: 30px;
-          }
-          .stat {
-            background: rgba(255,255,255,0.05);
-            padding: 20px;
-            border-radius: 16px;
-            text-align: center;
-          }
-          .stat-icon { font-size: 24px; margin-bottom: 8px; }
-          .stat-value { color: #fff; font-size: 28px; font-weight: 800; }
-          .stat-label { color: #9ca3af; font-size: 12px; }
-          .footer {
-            text-align: center;
-            padding-top: 20px;
-            border-top: 1px solid rgba(255,255,255,0.1);
-          }
-          .cta { color: #a855f7; font-size: 16px; font-weight: 600; }
-          .url { color: #6b7280; font-size: 14px; margin-top: 8px; }
-        </style>
-      </head>
-      <body>
-        <div class="card">
-          <div class="header">
-            <div class="logo"><svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="#7c3aed" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
-            <div>
-              <div class="title">SQL Quest</div>
-              <div class="subtitle">30-Day SQL Master Challenge</div>
-            </div>
-          </div>
-          
-          <div class="user-section">
-            <div class="avatar">${(currentUser || 'U')[0].toUpperCase()}</div>
-            <div class="user-info">
-              <div class="username">${currentUser || 'SQL Learner'}</div>
-              <div class="level">Level ${Math.floor(xp / 100) + 1} SQL Developer</div>
-            </div>
-          </div>
-          
-          <div class="progress-section">
-            <div class="progress-header">
-              <span class="progress-label">Challenge Progress</span>
-              <span class="progress-value">${completedDays}/30 Days (${progressPercent}%)</span>
-            </div>
-            <div class="progress-bar">
-              <div class="progress-fill"></div>
-            </div>
-          </div>
-          
-          <div class="stats">
-            <div class="stat">
-              <div class="stat-icon">🔥</div>
-              <div class="stat-value">${streak}</div>
-              <div class="stat-label">Day Streak</div>
-            </div>
-            <div class="stat">
-              <div class="stat-icon">⚡</div>
-              <div class="stat-value">${totalScore}</div>
-              <div class="stat-label">Total XP</div>
-            </div>
-            <div class="stat">
-              <div class="stat-icon">✅</div>
-              <div class="stat-value">${completedDays * 5}</div>
-              <div class="stat-label">Questions Solved</div>
-            </div>
-          </div>
-          
-          <div class="footer">
-            <div class="cta">Join me in learning SQL! 🚀</div>
-            <div class="url">sqlquest.app</div>
-          </div>
-        </div>
-      </body>
-      </html>
-    `;
-  };
 
-  // Generate Day Completion Card
-  const generateDayCompletionCardHTML = (dayNumber) => {
-    const dayData = thirtyDayData.days?.find(d => d.day === dayNumber);
-    const dayProgress = challengeProgress[`day${dayNumber}`];
-    
-    return `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <style>
-          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
-          * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { 
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-          }
-          .card {
-            width: 500px;
-            background: linear-gradient(145deg, #1e1e3f 0%, #2d2d5a 100%);
-            border-radius: 24px;
-            padding: 40px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-            text-align: center;
-            border: 2px solid rgba(34, 197, 94, 0.3);
-          }
-          .celebration { font-size: 64px; margin-bottom: 20px; }
-          .title { color: #22c55e; font-size: 32px; font-weight: 800; margin-bottom: 8px; }
-          .day-title { color: #fff; font-size: 24px; font-weight: 600; margin-bottom: 20px; }
-          .concepts {
-            display: flex;
-            justify-content: center;
-            gap: 8px;
-            flex-wrap: wrap;
-            margin-bottom: 30px;
-          }
-          .concept {
-            background: rgba(147, 51, 234, 0.2);
-            color: #a855f7;
-            padding: 6px 16px;
-            border-radius: 20px;
-            font-size: 14px;
-          }
-          .score-box {
-            background: rgba(34, 197, 94, 0.1);
-            border: 1px solid rgba(34, 197, 94, 0.3);
-            border-radius: 16px;
-            padding: 24px;
-            margin-bottom: 30px;
-          }
-          .score-value { color: #22c55e; font-size: 48px; font-weight: 800; }
-          .score-label { color: #9ca3af; font-size: 14px; }
-          .user {
-            color: #fff;
-            font-size: 18px;
-            margin-bottom: 8px;
-          }
-          .footer {
-            color: #6b7280;
-            font-size: 14px;
-          }
-          .brand { color: #a855f7; font-weight: 600; }
-        </style>
-      </head>
-      <body>
-        <div class="card">
-          <div class="celebration">🎉</div>
-          <div class="title">Day ${dayNumber} Complete!</div>
-          <div class="day-title">${dayData?.title || 'SQL Challenge'}</div>
-          <div class="concepts">
-            ${(dayData?.concepts || ['SQL']).map(c => `<span class="concept">${c}</span>`).join('')}
-          </div>
-          <div class="score-box">
-            <div class="score-value">+${dayProgress?.score || 0} XP</div>
-            <div class="score-label">Points Earned</div>
-          </div>
-          <div class="user">${currentUser || 'SQL Learner'}</div>
-          <div class="footer">Learning SQL with <span class="brand">SQL Quest</span></div>
-        </div>
-      </body>
-      </html>
-    `;
-  };
 
-  // Generate Streak Badge
-  const generateStreakBadgeHTML = () => {
-    // Dynamic theming based on streak level
-    const streakTier = streak >= 100 ? 'legendary' : streak >= 30 ? 'master' : streak >= 14 ? 'expert' : streak >= 7 ? 'rising' : 'starter';
-    
-    const themes = {
-      legendary: {
-        emoji: '👑',
-        title: 'LEGENDARY',
-        gradient: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%)',
-        glow: '#fbbf24',
-        particles: '🌟',
-        bgGradient: 'linear-gradient(135deg, #1a1a2e 0%, #2d1f0f 50%, #1a1a2e 100%)'
-      },
-      master: {
-        emoji: '🏆',
-        title: 'MASTER',
-        gradient: 'linear-gradient(135deg, #a855f7 0%, #9333ea 50%, #7c3aed 100%)',
-        glow: '#a855f7',
-        particles: '✨',
-        bgGradient: 'linear-gradient(135deg, #1a1a2e 0%, #1e1040 50%, #1a1a2e 100%)'
-      },
-      expert: {
-        emoji: '🔥',
-        title: 'ON FIRE',
-        gradient: 'linear-gradient(135deg, #f87171 0%, #ef4444 50%, #dc2626 100%)',
-        glow: '#ef4444',
-        particles: '🔥',
-        bgGradient: 'linear-gradient(135deg, #1a1a2e 0%, #2d1a1a 50%, #1a1a2e 100%)'
-      },
-      rising: {
-        emoji: '⚡',
-        title: 'RISING STAR',
-        gradient: 'linear-gradient(135deg, #60a5fa 0%, #3b82f6 50%, #2563eb 100%)',
-        glow: '#3b82f6',
-        particles: '⚡',
-        bgGradient: 'linear-gradient(135deg, #1a1a2e 0%, #1a2540 50%, #1a1a2e 100%)'
-      },
-      starter: {
-        emoji: '✨',
-        title: 'GETTING STARTED',
-        gradient: 'linear-gradient(135deg, #34d399 0%, #10b981 50%, #059669 100%)',
-        glow: '#10b981',
-        particles: '💫',
-        bgGradient: 'linear-gradient(135deg, #1a1a2e 0%, #1a2e2a 50%, #1a1a2e 100%)'
-      }
-    };
-    
-    const theme = themes[streakTier];
-    const completedDays = Object.values(challengeProgress).filter(p => p?.completed).length;
-    
-    return `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="UTF-8">
-        <meta property="og:title" content="${streak} Day Streak on SQL Quest!">
-        <meta property="og:description" content="${currentUser || 'A learner'} is on a ${streak} day streak learning SQL!">
-        <style>
-          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
-          
-          * { margin: 0; padding: 0; box-sizing: border-box; }
-          
-          body { 
-            font-family: 'Inter', sans-serif;
-            background: ${theme.bgGradient};
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-          }
-          
-          /* Animated background particles */
-          .particles {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            overflow: hidden;
-          }
-          
-          .particle {
-            position: absolute;
-            font-size: 24px;
-            animation: float 6s ease-in-out infinite;
-            opacity: 0.6;
-          }
-          
-          @keyframes float {
-            0%, 100% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
-            10% { opacity: 0.6; }
-            90% { opacity: 0.6; }
-            100% { transform: translateY(-100px) rotate(360deg); opacity: 0; }
-          }
-          
-          .card {
-            width: 500px;
-            background: linear-gradient(145deg, rgba(30, 30, 63, 0.95) 0%, rgba(45, 45, 90, 0.95) 100%);
-            border-radius: 32px;
-            padding: 48px;
-            box-shadow: 
-              0 0 0 2px rgba(255,255,255,0.1),
-              0 25px 80px rgba(0,0,0,0.5),
-              0 0 100px ${theme.glow}40;
-            text-align: center;
-            position: relative;
-            backdrop-filter: blur(20px);
-          }
-          
-          /* Animated border glow */
-          .card::before {
-            content: '';
-            position: absolute;
-            top: -3px;
-            left: -3px;
-            right: -3px;
-            bottom: -3px;
-            background: ${theme.gradient};
-            border-radius: 34px;
-            z-index: -1;
-            animation: borderGlow 3s ease-in-out infinite;
-          }
-          
-          @keyframes borderGlow {
-            0%, 100% { opacity: 0.7; filter: blur(2px); }
-            50% { opacity: 1; filter: blur(4px); }
-          }
-          
-          .header {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            margin-bottom: 32px;
-          }
-          
-          .logo { font-size: 32px; }
-          .brand { 
-            font-size: 20px; 
-            font-weight: 700; 
-            color: #fff;
-            letter-spacing: -0.5px;
-          }
-          
-          .badge-container {
-            position: relative;
-            width: 200px;
-            height: 200px;
-            margin: 0 auto 32px;
-          }
-          
-          /* Rotating ring */
-          .ring {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            border: 4px solid transparent;
-            border-top-color: ${theme.glow};
-            border-right-color: ${theme.glow}80;
-            animation: spin 3s linear infinite;
-          }
-          
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-          
-          .badge {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            width: calc(100% - 20px);
-            height: calc(100% - 20px);
-            background: linear-gradient(145deg, #1a1a3a 0%, #252550 100%);
-            border-radius: 50%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 
-              inset 0 4px 20px rgba(0,0,0,0.3),
-              0 0 40px ${theme.glow}30;
-          }
-          
-          .emoji { 
-            font-size: 48px; 
-            margin-bottom: 4px;
-            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
-            animation: bounce 2s ease-in-out infinite;
-          }
-          
-          @keyframes bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-8px); }
-          }
-          
-          .streak-value { 
-            background: ${theme.gradient};
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            font-size: 56px; 
-            font-weight: 900;
-            line-height: 1;
-            text-shadow: 0 4px 20px ${theme.glow}40;
-          }
-          
-          .streak-label { 
-            color: #9ca3af; 
-            font-size: 14px; 
-            font-weight: 700; 
-            letter-spacing: 3px;
-            margin-top: 4px;
-          }
-          
-          .tier-badge {
-            display: inline-block;
-            background: ${theme.gradient};
-            color: white;
-            padding: 8px 24px;
-            border-radius: 50px;
-            font-size: 14px;
-            font-weight: 800;
-            letter-spacing: 2px;
-            margin-bottom: 24px;
-            box-shadow: 0 4px 20px ${theme.glow}40;
-          }
-          
-          .user-section {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 16px;
-            padding: 20px;
-            background: rgba(255,255,255,0.03);
-            border-radius: 16px;
-            margin-bottom: 24px;
-          }
-          
-          .avatar {
-            width: 48px;
-            height: 48px;
-            background: ${theme.gradient};
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            font-weight: 800;
-            color: white;
-          }
-          
-          .user-info { text-align: left; }
-          .username { color: #fff; font-size: 18px; font-weight: 700; }
-          .user-subtitle { color: #6b7280; font-size: 13px; }
-          
-          .stats {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-            margin-bottom: 24px;
-          }
-          
-          .stat {
-            background: rgba(255,255,255,0.03);
-            padding: 16px 8px;
-            border-radius: 12px;
-          }
-          
-          .stat-value { 
-            color: #fff; 
-            font-size: 24px; 
-            font-weight: 800; 
-          }
-          .stat-label { 
-            color: #6b7280; 
-            font-size: 11px; 
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-          }
-          
-          .footer {
-            padding-top: 20px;
-            border-top: 1px solid rgba(255,255,255,0.1);
-          }
-          
-          .cta { 
-            color: ${theme.glow}; 
-            font-size: 16px; 
-            font-weight: 700;
-            margin-bottom: 8px;
-          }
-          
-          .hashtags { 
-            color: #6b7280; 
-            font-size: 13px; 
-          }
-        </style>
-      </head>
-      <body>
-        <!-- Floating particles -->
-        <div class="particles">
-          <div class="particle" style="left: 8%; animation-delay: 0s; animation-duration: 5s;">${theme.particles}</div>
-          <div class="particle" style="left: 16%; animation-delay: 1s; animation-duration: 6s;">${theme.particles}</div>
-          <div class="particle" style="left: 25%; animation-delay: 2s; animation-duration: 4.5s;">${theme.particles}</div>
-          <div class="particle" style="left: 33%; animation-delay: 0.5s; animation-duration: 5.5s;">${theme.particles}</div>
-          <div class="particle" style="left: 42%; animation-delay: 3s; animation-duration: 7s;">${theme.particles}</div>
-          <div class="particle" style="left: 50%; animation-delay: 1.5s; animation-duration: 4s;">${theme.particles}</div>
-          <div class="particle" style="left: 58%; animation-delay: 2.5s; animation-duration: 6.5s;">${theme.particles}</div>
-          <div class="particle" style="left: 67%; animation-delay: 0.8s; animation-duration: 5.2s;">${theme.particles}</div>
-          <div class="particle" style="left: 75%; animation-delay: 3.5s; animation-duration: 4.8s;">${theme.particles}</div>
-          <div class="particle" style="left: 83%; animation-delay: 1.2s; animation-duration: 6.2s;">${theme.particles}</div>
-          <div class="particle" style="left: 92%; animation-delay: 2.2s; animation-duration: 5.8s;">${theme.particles}</div>
-          <div class="particle" style="left: 100%; animation-delay: 4s; animation-duration: 7.5s;">${theme.particles}</div>
-        </div>
-        
-        <div class="card">
-          <div class="header">
-            <div class="logo"><svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="#7c3aed" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
-            <div class="brand">SQL Quest</div>
-          </div>
-          
-          <div class="badge-container">
-            <div class="ring"></div>
-            <div class="badge">
-              <div class="emoji">${theme.emoji}</div>
-              <div class="streak-value">${streak}</div>
-              <div class="streak-label">DAY STREAK</div>
-            </div>
-          </div>
-          
-          <div class="tier-badge">${theme.title}</div>
-          
-          <div class="user-section">
-            <div class="avatar">${(currentUser || 'U')[0].toUpperCase()}</div>
-            <div class="user-info">
-              <div class="username">${currentUser || 'SQL Learner'}</div>
-              <div class="user-subtitle">Level ${Math.floor(xp / 100) + 1} SQL Developer</div>
-            </div>
-          </div>
-          
-          <div class="stats">
-            <div class="stat">
-              <div class="stat-value">${xp.toLocaleString()}</div>
-              <div class="stat-label">Total XP</div>
-            </div>
-            <div class="stat">
-              <div class="stat-value">${completedDays}</div>
-              <div class="stat-label">Days Done</div>
-            </div>
-            <div class="stat">
-              <div class="stat-value">${solvedChallenges.size}</div>
-              <div class="stat-label">Solved</div>
-            </div>
-          </div>
-          
-          <div class="footer">
-            <div class="cta">Join me in learning SQL! 🚀</div>
-            <div class="hashtags">sqlquest.app | #SQLQuest #${streak}DayStreak</div>
-          </div>
-        </div>
-      </body>
-      </html>
-    `;
-  };
 
-  // Generate Achievement Badge
-  const generateAchievementBadgeHTML = (achievementId) => {
-    const achievements = {
-      'first_query': { icon: '🎯', name: 'First Query', desc: 'Ran your first SQL query' },
-      'perfect_10': { icon: '💯', name: 'Perfect 10', desc: 'Completed 10 challenges' },
-      'week_warrior': { icon: '⚔️', name: 'Week Warrior', desc: '7-day streak achieved' },
-      'sql_master_30': { icon: '🏆', name: 'SQL Master', desc: 'Completed 30-Day Challenge' },
-      'speed_demon': { icon: '⚡', name: 'Speed Demon', desc: 'Solved in under 30 seconds' },
-      'hint_free': { icon: '🧠', name: 'No Hints Needed', desc: 'Perfect score without hints' },
-    };
-    const achievement = achievements[achievementId] || { icon: '🏅', name: 'Achievement', desc: 'Unlocked!' };
-    
-    return `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <style>
-          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@600;700;800&display=swap');
-          * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { 
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-          }
-          .badge-card {
-            width: 400px;
-            background: linear-gradient(145deg, #1e1e3f 0%, #2d2d5a 100%);
-            border-radius: 24px;
-            padding: 40px;
-            text-align: center;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-            border: 2px solid rgba(245, 158, 11, 0.4);
-          }
-          .icon { font-size: 80px; margin-bottom: 16px; }
-          .name { color: #f59e0b; font-size: 28px; font-weight: 800; margin-bottom: 8px; }
-          .desc { color: #9ca3af; font-size: 16px; margin-bottom: 24px; }
-          .unlocked {
-            background: rgba(245, 158, 11, 0.1);
-            border: 1px solid rgba(245, 158, 11, 0.3);
-            border-radius: 12px;
-            padding: 12px 24px;
-            color: #f59e0b;
-            font-weight: 600;
-            display: inline-block;
-          }
-          .user { color: #fff; font-size: 18px; margin-top: 20px; }
-          .brand { color: #6b7280; font-size: 14px; margin-top: 8px; }
-        </style>
-      </head>
-      <body>
-        <div class="badge-card">
-          <div class="icon">${achievement.icon}</div>
-          <div class="name">${achievement.name}</div>
-          <div class="desc">${achievement.desc}</div>
-          <div class="unlocked">✓ Achievement Unlocked</div>
-          <div class="user">${currentUser || 'SQL Learner'}</div>
-          <div class="brand">SQL Quest</div>
-        </div>
-      </body>
-      </html>
-    `;
-  };
 
-  // Download shareable card as HTML
-  const downloadShareCard = (type, data = null) => {
-    let html, filename;
-    
-    switch(type) {
-      case 'progress':
-        html = generateProgressCardHTML();
-        filename = 'SQL_Quest_Progress.html';
-        break;
-      case 'day':
-        html = generateDayCompletionCardHTML(data || currentChallengeDay?.day || 1);
-        filename = `SQL_Quest_Day_${data || currentChallengeDay?.day || 1}_Complete.html`;
-        break;
-      case 'streak':
-        html = generateStreakBadgeHTML();
-        filename = `SQL_Quest_${streak}_Day_Streak.html`;
-        break;
-      case 'achievement':
-        html = generateAchievementBadgeHTML(data || 'first_query');
-        filename = `SQL_Quest_Achievement_${data || 'badge'}.html`;
-        break;
-      case 'certificate':
-        html = generate30DayCertificateHTML();
-        filename = 'SQL_Quest_30_Day_Certificate.html';
-        break;
-      default:
-        html = generateProgressCardHTML();
-        filename = 'SQL_Quest_Share.html';
-    }
-    
-    const blob = new Blob([html], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    playSound('success');
-  };
 
-  // Copy share text to clipboard
-  const copyShareText = (type) => {
-    const content = getShareContent(type === 'progress' ? 'general' : type, 
-      type === 'day' ? { day: currentChallengeDay?.day, title: currentChallengeDay?.concepts?.join(', ') } : null
-    );
-    navigator.clipboard.writeText(content.text);
-    playSound('click');
-    alert('Share text copied to clipboard!');
-  };
 
   // ============ GUEST MODE FUNCTIONS ============
   // Which guest identity this browser already holds, if it is worth resuming:
@@ -22674,21 +21659,6 @@ Adapt based on this student's level — but ALWAYS stay direct and code-first:`;
     try { localStorage.setItem('sqlquest_ticket_log', JSON.stringify(ticketLog)); } catch (_) {}
   }, [ticketLog]);
   
-  // Get skill level for a topic (for display)
-  const getSkillLevel = (skillName) => {
-    const skill = skillMastery[skillName];
-    if (!skill) return { level: 1, stars: '⭐', label: 'Novice' };
-    
-    const labels = ['Novice', 'Beginner', 'Intermediate', 'Advanced', 'Master'];
-    const stars = '⭐'.repeat(skill.level);
-    
-    return {
-      level: skill.level,
-      stars,
-      label: labels[skill.level - 1] || 'Novice',
-      successRate: skill.totalAttempts > 0 ? Math.round((skill.correctCount / skill.totalAttempts) * 100) : 0
-    };
-  };
 
   const callAI = async (messages, systemPrompt, phase = null) => {
     // AI is available for both logged-in users and guests
@@ -22820,27 +21790,6 @@ Do NOT force the sector if the user asks a generic question (e.g. "what does GRO
     }
   };
 
-  // Save API key handler
-  const saveApiKey = (key, provider = null) => {
-    if (key && (key.startsWith('sk-ant-') || key.startsWith('sk-'))) {
-      // Auto-detect provider from key format
-      const detectedProvider = key.startsWith('sk-ant-') ? 'claude' : 'openai';
-      const finalProvider = provider || detectedProvider;
-      
-      setApiKey(key);
-      setAiProvider(finalProvider);
-      setUseAI(true);
-      localStorage.setItem('sqlquest_api_key', key);
-      localStorage.setItem('sqlquest_ai_provider', finalProvider);
-      setShowApiKeyModal(false);
-    } else if (key === '') {
-      setApiKey('');
-      setUseAI(false);
-      localStorage.removeItem('sqlquest_api_key');
-      localStorage.removeItem('sqlquest_ai_provider');
-      setShowApiKeyModal(false);
-    }
-  };
 
 
   // Load pre-written lesson content from external file
@@ -23280,10 +22229,6 @@ If correct: confirm the key insight in 1 sentence. If wrong: explain the core id
   };
 
   const generateStudyResponse = async (userMessage, topic) => {
-    // Get the initial explanation that was shown to the user
-    const initialExplanation = aiMessages.length > 0 && aiMessages[0].role === 'assistant' 
-      ? aiMessages[0].content 
-      : '';
     
     // Build the system prompt for study mode — keep responses SHORT for fast interaction
     const studySystemPrompt = `You are a sharp, direct SQL tutor helping a student master "${topic}".
@@ -23553,11 +22498,6 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
       }
       // Mastery fallback: count user messages in mastery phase. If 2+ attempts without [RESULT:mastery], auto-complete
       if (newPhase === 'mastery' && !isResultMastery) {
-        const masteryUserMsgs = aiMessages.filter((m, i) => {
-          // Count user messages that came after the mastery phase started
-          // We check messages after the last phase transition to mastery
-          return m.role === 'user';
-        });
         // Find how many user messages occurred during mastery by checking from the end
         let masteryAttempts = 0;
         for (let i = aiMessages.length - 1; i >= 0; i--) {
@@ -23886,75 +22826,6 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     }
   };
 
-  // Submit exercise answer
-  const submitExercise = () => {
-    if (!query.trim() || !db) return;
-    
-    const lesson = aiLessons[currentAiLesson];
-    const currentExercise = lesson.exercises[exerciseIndex];
-    
-    try {
-      // Run user's query
-      const userResult = db.exec(query);
-
-      // Run expected query
-      const expectedResult = db.exec(currentExercise.sql);
-
-      // Compare results (order counts only if the solution has ORDER BY)
-      const isCorrect = resultsMatch(
-        userResult.length > 0 ? userResult[0].values : [],
-        expectedResult.length > 0 ? expectedResult[0].values : [],
-        currentExercise.sql,
-        expectedResult.length > 0 ? expectedResult[0].columns : []
-      );
-      
-      setAiUserResult(userResult.length > 0 
-        ? { columns: userResult[0].columns, rows: userResult[0].values, error: null }
-        : { columns: [], rows: [], error: null });
-      setResults(userResult.length > 0 
-        ? { columns: userResult[0].columns, rows: userResult[0].values, error: null }
-        : { columns: [], rows: [], error: null });
-      setShowAiComparison(true);
-      setExerciseAttempted(true);
-      
-      if (isCorrect) {
-        const newCorrect = exerciseCorrect + 1;
-        setExerciseCorrect(newCorrect);
-        addToHistory(query, true, 'ai-exercise');
-        
-        // Check if all exercises complete
-        if (exerciseIndex >= 4) {
-          // All 5 exercises done!
-          setXP(prev => prev + 250);
-          setCompletedAiLessons(prev => new Set([...prev, lesson.id]));
-          setAiLessonCompletions(prev => ({ ...prev, [lesson.id]: new Date().toISOString() }));
-          addToHistory(`Completed AI Lesson: ${lesson.title}`, true, 'ai-learning');
-          setAiLessonPhase('complete');
-          
-          // Add congratulation message
-          setAiMessages(prev => [...prev, { 
-            role: "assistant", 
-            content: `🎉 CONGRATULATIONS! You've completed all 5 exercises perfectly!\n\nYou've mastered "${lesson.title}" and earned 250 XP!\n\n${currentAiLesson < aiLessons.length - 1 ? "Ready for the next lesson? Click 'Next Lesson' to continue your SQL journey!" : "Amazing! You've completed all lessons in SQL Quest!"}`
-          }]);
-        } else {
-          // Move to next exercise
-          setExerciseIndex(prev => prev + 1);
-          setExerciseAttempted(false);
-          setQuery('');
-          setAiUserResult({ columns: [], rows: [], error: null });
-          setResults({ columns: [], rows: [], error: null });
-          setShowAiComparison(false);
-        }
-      } else {
-        addToHistory(query, false, 'ai-exercise');
-      }
-    } catch (err) {
-      setResults({ columns: [], rows: [], error: err.message });
-      setAiUserResult({ columns: [], rows: [], error: err.message });
-      setShowAiComparison(true);
-      addToHistory(query, false, 'ai-exercise');
-    }
-  };
 
   useEffect(() => {
     const initSQL = async () => {
@@ -24077,16 +22948,6 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
   const stateLoadedTables = (challenge) => challengeTablePlan(challenge, publicDatasets)
     .flatMap(step => step.tables || Object.keys(publicDatasets[step.dataset]?.tables || {}));
 
-  const selectDataset = (key) => {
-    setCurrentDataset(key);
-    if (db) {
-      loadDataset(db, key);
-      const newUsed = new Set([...datasetsUsed, key]);
-      setDatasetsUsed(newUsed);
-      if (newUsed.size >= 3 && !unlockedAchievements.has('data_explorer')) unlockAchievement('data_explorer');
-    }
-    setQuery(''); setResults({ columns: [], rows: [], error: null });
-  };
 
   const unlockAchievement = (id) => {
     if (unlockedAchievements.has(id)) return;
@@ -24259,7 +23120,6 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
 
     // Weekend warrior (check if practiced on both Sat and Sun this week)
     const today = new Date();
-    const dayOfWeek = today.getDay();
     if (loginCalendar && !unlockedAchievements.has('weekend_warrior')) {
       // Check last 7 days for both Saturday (6) and Sunday (0)
       const lastWeekDates = [];
@@ -24454,142 +23314,7 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     };
   };
 
-  const runQuery = (customQuery, context = 'practice') => {
-    const q = customQuery || query;
-    if (!db || !q.trim()) return null;
-    try {
-      // Challenges whose ANSWER mutates data (INSERT/UPDATE/DELETE) must start
-      // from a clean dataset on every run. loadDataset only runs when a
-      // challenge is opened, so without this a correct UPDATE grades right the
-      // first time and wrong the second: the rows it targeted no longer match.
-      // Verified in the live engine — `UPDATE ... RETURNING id` returned [1,2]
-      // then [] on an immediate re-run. Opt-in per challenge so the free
-      // sandbox keeps its build-up-state behaviour.
-      if (currentChallenge?.mutates && currentChallenge?.dataset) {
-        loadChallengeDatasets(db, currentChallenge);
-      }
-      const result = db.exec(q);
-      setResults(result.length ? { columns: result[0].columns, rows: result[0].values, error: null, smartError: null } : { columns: [], rows: [], error: null, smartError: null });
-      setQueryCount(prev => {
-        const newCount = prev + 1;
-        if (!unlockedAchievements.has('first_query')) unlockAchievement('first_query');
-        if (newCount >= 50 && !unlockedAchievements.has('query_50')) unlockAchievement('query_50');
-        if (newCount >= 100 && !unlockedAchievements.has('query_100')) unlockAchievement('query_100');
-        if (newCount >= 250 && !unlockedAchievements.has('query_250')) unlockAchievement('query_250');
-        if (newCount >= 500 && !unlockedAchievements.has('query_500')) unlockAchievement('query_500');
-        return newCount;
-      });
-      if (q.toLowerCase().includes('group by') && q.toLowerCase().includes('having') && !unlockedAchievements.has('analyst')) unlockAchievement('analyst');
 
-      // Track JOIN usage for join_master achievement
-      const qLower = q.toLowerCase();
-      if (qLower.includes(' join ')) {
-        const joinCount = (parseInt(localStorage.getItem('sqlquest_join_count') || '0')) + 1;
-        localStorage.setItem('sqlquest_join_count', joinCount.toString());
-        if (joinCount >= 20 && !unlockedAchievements.has('join_master')) unlockAchievement('join_master');
-      }
-
-      // Track subquery usage for subquery_ninja achievement
-      if (qLower.includes('select') && (qLower.match(/select/g) || []).length >= 2) {
-        const subqueryCount = (parseInt(localStorage.getItem('sqlquest_subquery_count') || '0')) + 1;
-        localStorage.setItem('sqlquest_subquery_count', subqueryCount.toString());
-        if (subqueryCount >= 10 && !unlockedAchievements.has('subquery_ninja')) unlockAchievement('subquery_ninja');
-      }
-
-      // === SQL Mastery achievements (inline) ===
-      // Track aggregate functions used
-      const aggFuncs = ['count(', 'sum(', 'avg(', 'min(', 'max('];
-      const usedAggs = JSON.parse(localStorage.getItem('sqlquest_agg_funcs') || '[]');
-      aggFuncs.forEach(fn => { if (qLower.includes(fn) && !usedAggs.includes(fn)) usedAggs.push(fn); });
-      localStorage.setItem('sqlquest_agg_funcs', JSON.stringify(usedAggs));
-      if (usedAggs.length >= 5 && !unlockedAchievements.has('aggregate_ace')) unlockAchievement('aggregate_ace');
-
-      // Window function
-      if (qLower.includes(' over(') || qLower.includes(' over (')) {
-        if (!unlockedAchievements.has('window_watcher')) unlockAchievement('window_watcher');
-      }
-
-      // CTE
-      if (qLower.trimStart().startsWith('with ') && qLower.includes(' as ') && qLower.includes('select')) {
-        if (!unlockedAchievements.has('cte_craftsman')) unlockAchievement('cte_craftsman');
-      }
-
-      // CASE WHEN
-      if (qLower.includes('case') && qLower.includes('when') && qLower.includes('then')) {
-        if (!unlockedAchievements.has('case_closed')) unlockAchievement('case_closed');
-      }
-
-      // UNION
-      if (qLower.includes(' union ')) {
-        if (!unlockedAchievements.has('union_builder')) unlockAchievement('union_builder');
-      }
-
-      // Nested queries (3+ SELECT levels)
-      if ((qLower.match(/select/g) || []).length >= 4) {
-        if (!unlockedAchievements.has('nested_master')) unlockAchievement('nested_master');
-      }
-
-      // Multi-join (3+ JOINs in one query)
-      const joinMatches = qLower.match(/\bjoin\b/g) || [];
-      if (joinMatches.length >= 3 && !unlockedAchievements.has('multi_join')) unlockAchievement('multi_join');
-
-      // Schema inspection
-      if (qLower.includes('.tables') || qLower.includes('pragma table_info') || qLower.includes('pragma_table_info') || qLower.includes('sqlite_master')) {
-        if (!unlockedAchievements.has('schema_sleuth')) unlockAchievement('schema_sleuth');
-      }
-
-      // Track tables queried for table_tourist
-      const tableMatches = qLower.match(/\bfrom\s+(\w+)/g) || [];
-      const queriedTables = JSON.parse(localStorage.getItem('sqlquest_queried_tables') || '[]');
-      tableMatches.forEach(m => { const t = m.replace(/^from\s+/, '').trim(); if (!queriedTables.includes(t)) queriedTables.push(t); });
-      localStorage.setItem('sqlquest_queried_tables', JSON.stringify(queriedTables));
-      if (queriedTables.length >= 10 && !unlockedAchievements.has('table_tourist')) unlockAchievement('table_tourist');
-
-      // Midnight grinder (midnight to 5am)
-      const runHour = new Date().getHours();
-      if (runHour >= 0 && runHour < 5 && !unlockedAchievements.has('midnight_grind')) unlockAchievement('midnight_grind');
-
-      // Marathon session tracking
-      if (!window._sqlquestSessionStart) window._sqlquestSessionStart = Date.now();
-      const sessionMinutes = (Date.now() - window._sqlquestSessionStart) / 60000;
-      if (sessionMinutes >= 60 && !unlockedAchievements.has('marathon_session')) unlockAchievement('marathon_session');
-      
-      addToHistory(q, true, context);
-      return { success: true, result };
-    } catch (err) {
-      const smartError = analyzeQueryError(err.message, q);
-      setResults({ columns: [], rows: [], error: err.message, smartError });
-      addToHistory(q, false, context);
-      // Track error count for battle_scarred achievement
-      const errorCount = (parseInt(localStorage.getItem('sqlquest_error_count') || '0')) + 1;
-      localStorage.setItem('sqlquest_error_count', errorCount.toString());
-      if (errorCount >= 50 && !unlockedAchievements.has('error_50')) unlockAchievement('error_50');
-      return { success: false, error: err.message, smartError };
-    }
-  };
-
-  const handleCSVUpload = (e) => {
-    const file = e.target.files?.[0];
-    if (!file || !db) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      try {
-        const lines = ev.target.result.split('\n').filter(l => l.trim());
-        const headers = lines[0].split(',').map(h => h.trim().replace(/[^a-zA-Z0-9_]/g, '_').toLowerCase());
-        const data = lines.slice(1).map(line => { const vals = []; let cur = '', inQ = false; for (const c of line) { if (c === '"') inQ = !inQ; else if (c === ',' && !inQ) { vals.push(cur.trim()); cur = ''; } else cur += c; } vals.push(cur.trim()); return vals; });
-        const tableName = file.name.replace(/\.csv$/i, '').replace(/[^a-zA-Z0-9_]/g, '_').toLowerCase();
-        db.run(`DROP TABLE IF EXISTS ${tableName}`);
-        db.run(`CREATE TABLE ${tableName} (${headers.map(h => `${h} TEXT`).join(', ')})`);
-        const ph = headers.map(() => '?').join(', ');
-        data.forEach(row => { if (row.length === headers.length) db.run(`INSERT INTO ${tableName} VALUES (${ph})`, row); });
-        setCustomTables(prev => ({ ...prev, [tableName]: { columns: headers, rowCount: data.length } }));
-        setQuery(`SELECT * FROM ${tableName} LIMIT 10`);
-        if (!unlockedAchievements.has('csv_master')) unlockAchievement('csv_master');
-        alert(`✅ Uploaded "${tableName}" with ${data.length} rows!`);
-      } catch (err) { alert('CSV Error: ' + err.message); }
-    };
-    reader.readAsText(file);
-  };
 
   // Daily Challenge functions
   const openDailyChallenge = () => {
@@ -25568,15 +24293,6 @@ Use SQLite syntax (strftime for dates, || for concatenation). No filler. Code-fi
     openChallenge(starter);
   };
 
-  const selectFirstRunGoal = (goalId) => {
-    setFirstRunGoal(goalId);
-    const track = firstRunLevel ? getFirstRunTrack(goalId, firstRunLevel) : null;
-    if (track) setFirstRunTrack(track.trackId);
-    try {
-      localStorage.setItem(FIRST_RUN_GOAL_KEY, goalId);
-      if (track) localStorage.setItem(FIRST_RUN_TRACK_KEY, track.trackId);
-    } catch (_) { /* ignore */ }
-  };
 
   const getFirstRunTrack = (goalId = firstRunGoal || 'zero', levelId = firstRunLevel || 'brand-new') => {
     const normalizedGoal = FIRST_RUN_PATHS[goalId] ? goalId : 'zero';
@@ -27956,7 +26672,6 @@ ${inlineCtx.ladderOn ? inlineLadderRules(inlineCtx) : `RULES:
     // when the restored XP is 0 or lands in the same level as before.
     xpRestoreRef.current = false;
   }, [currentLevel.name, xp, isSessionLoading]);
-  const dataset = publicDatasets[currentDataset];
 
   // Payment Success Modal — landing spot for the Stripe payment-link redirect.
   // Hoisted to a const because it must render on BOTH the auth-screen early
@@ -31287,15 +30002,6 @@ RULES:
                 // and displayed +50 XP even though the user actually received 0.
                 const xpEarned = todayHistory.xpEarned ?? 50;
                 
-                // Calculate score breakdown
-                const scoreBreakdown = {
-                  warmup: warmupCorrect ? 10 : 0,
-                  core: wasAnswerShown ? 0 : (wasHintUsed ? 30 : 40),
-                  insight: insightCorrect === true ? 10 : (insightCorrect === false ? 0 : 0),
-                  speed: wasFast ? 5 : 0
-                };
-                const totalPossible = 65;
-                const scorePercent = Math.round((xpEarned / totalPossible) * 100);
                 
                 // Concepts to study (based on the challenge topic)
                 const relatedConcepts = {
@@ -32175,8 +30881,8 @@ RULES:
 
                   // Within-week concept breakdown (not covered by the pure function; local compute).
                   const recentDaily = (dailyChallengeHistory || []).filter(d => {
-                    const ts = _wrEntryTs(d);
-                    const startMs = _wrGetWeekStart(new Date()).getTime();
+                    const ts = weekEntryTs(d);
+                    const startMs = getIsoWeekStart(new Date()).getTime();
                     const endMs = startMs + 7 * 24 * 60 * 60 * 1000;
                     return ts >= startMs && ts < endMs;
                   });
@@ -43147,7 +41853,6 @@ RULES:
               {(() => { const shownMocks = mockInterviews.filter(interview => {
                 if (interviewTarget.mock && interview.id === interviewTarget.mock.id) return false; // pinned above
                 const hasPassed = interviewHistory.some(h => h.interviewId === interview.id && h.passed);
-                const hasAttempted = interviewHistory.some(h => h.interviewId === interview.id);
                 
                 switch (interviewFilter) {
                   case 'easy':

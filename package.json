@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build:css": "npx tailwindcss -i src/input.css -o public/styles.css --minify",
-    "build:jsx": "vite build && vite build --config vite.pg-mode.config.js",
+    "build:jsx": "node scripts/build-app-data-slices.mjs && vite build && vite build --config vite.pg-mode.config.js",
     "build:jsx:babel": "npx babel src/app.jsx --out-file public/app.js --presets=@babel/preset-react --source-type module --source-maps --minified && printf '\\nwindow.SQLQuest = SQLQuest;\\n' >> public/app.js",
     "build:data": "node scripts/bundle-data.js",
     "build:weekly": "node scripts/build-weekly.js && node scripts/stamp-app-src.mjs --weekly && node scripts/footer-partner-link.mjs && node scripts/phone-fit.mjs --weekly && node scripts/cachebust.js && node scripts/sitemap-lastmod.mjs && node scripts/build-llms-txt.js",

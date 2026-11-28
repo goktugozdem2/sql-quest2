@@ -53,8 +53,9 @@ export function toCanonicalSkill(raw) {
 // --- Timestamp extraction ---
 
 // Activity entries carry either a numeric `.timestamp` (ms) or an ISO/plain-date `.date`.
-// Returns ms since epoch, or 0 if neither field is present.
-function entryTs(entry) {
+// Returns ms since epoch, or 0 if neither field is present. Exported for
+// app.jsx's week-boundary render sites (its inline copy was removed 2026-11-27).
+export function entryTs(entry) {
   if (!entry) return 0;
   if (entry.timestamp) {
     return typeof entry.timestamp === 'number' ? entry.timestamp : new Date(entry.timestamp).getTime();
