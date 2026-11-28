@@ -41,6 +41,17 @@ describe('the company banner button', () => {
     expect(fn).toContain('quotaGate(');
   });
 
+  // 2026-11-26: the gate walls an authored set only, so a topical set opens
+  // past three. The banner still STARTS in the set's first three — the
+  // question the company page's hero names (companyFirstQuestion, which the
+  // page generator calls with the flag) — and carries on past them after.
+  it('starts in the set\'s first three under the flag, then carries on into the set', () => {
+    expect(fn).toContain("const firstThree = ftbFlag('companySetGate') ? companySetFreeIds(scoped) : null;");
+    expect(fn).toContain('pickNextChallenge(scoped, c => firstThree.has(c.id) && opens(c))');
+    expect(fn).toContain('|| pickNextChallenge(scoped, opens)');
+    expect(fn).toContain('authored: companyHasAuthoredSet(companyFilter)');
+  });
+
   it('renders inside the company banner and opens the pick, stamped company_banner', () => {
     const banner = app.slice(app.indexOf("You're practicing {companyFilter} SQL questions."), app.indexOf('{/* Header & Filters */}'));
     expect(banner).toContain('data-testid="company-banner-start"');

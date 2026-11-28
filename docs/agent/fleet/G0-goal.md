@@ -1,3 +1,15 @@
+---
+id: G0
+name: "Goal owner"
+owner: cloud-A0
+runtime: cloud
+status: active
+cadence: "daily (06:47 Europe/Istanbul)"
+metric: [purchases]
+writes_code: false
+version: 1.0.0
+last_changed: 2026-11-26
+---
 # G0 — Goal owner
 
 **Created 2026-11-22.** The founder asked for this agent: "Hedefleri yakalamakla
@@ -180,3 +192,7 @@ lever that read names as short.** On 2026-11-22 that is six-solvers:
 - start more than 2 code sessions, or start a session on a surface an open PR
   owns;
 - everything in the common protocol's "Never" list (README §7).
+
+## Changelog
+
+- 1.0.0 (2026-11-26) — versioned for the skills loop: front-matter added.
