@@ -159,7 +159,7 @@
   <!-- Warehouse-specific page (Snowflake — extends beyond company pages) -->
   <url>
     <loc>https://sqlquest.app/snowflake-sql-interview/</loc>
-    <lastmod>2026-11-27</lastmod>
+    <lastmod>2026-11-28</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>

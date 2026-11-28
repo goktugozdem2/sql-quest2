@@ -372,6 +372,10 @@ export const OFF_SET_LINKS = {
   // Debug 341, the same average-of-averages bug (src/wise-sql-interview.html).
   // It is a Debug item, not Wise-tagged, and the button says so.
   'wise-sql-interview': [341],
+  // 2026-11-28 (C5): the Snowflake first screen's debug item links to Debug
+  // 340, the same join that repeats rows (src/snowflake-sql-interview.html).
+  // It is a Debug item, not Snowflake-tagged, and the button line says so.
+  'snowflake-sql-interview': [340],
   // 2026-11-24 (C5): the first-screen "debug this query" item links to the
   // app's Debug question with the same bug (scripts/company-first-screen.mjs).
   // It is a Debug item, not Monzo-tagged, and the button says so.
@@ -386,6 +390,7 @@ export const OFF_SET_NOTE = {
   'wise-sql-interview': /from our Debug set, not the Wise set/,
   'monzo-sql-interview': /from our Debug set, not the Monzo set/,
   'amazon-sql-interview': /from our Debug set, not the Amazon set/,
+  'snowflake-sql-interview': /from our Debug set, not the Snowflake set/,
 };
 // The Debug items (src/data/debug-challenges.js) live outside the main bank.
 const debugIds = () => {

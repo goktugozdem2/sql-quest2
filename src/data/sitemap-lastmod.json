@@ -1,6 +1,6 @@
 {
   "note": "Written by scripts/sitemap-lastmod.mjs. A page's date moves only when its built bytes change.",
-  "updated": "2026-11-27",
+  "updated": "2026-11-28",
   "pages": {
     "/": {
       "hash": "c42d91d910e4ca27",
@@ -91,8 +91,8 @@
       "lastmod": "2026-11-27"
     },
     "/snowflake-sql-interview/": {
-      "hash": "6dfb65e51c2db7a0",
-      "lastmod": "2026-11-27"
+      "hash": "2cc9b9b186a5b4a9",
+      "lastmod": "2026-11-28"
     },
     "/practice-sql-no-setup/": {
       "hash": "02808d0e54195ae1",

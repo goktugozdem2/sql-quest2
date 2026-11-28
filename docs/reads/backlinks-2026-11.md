@@ -608,3 +608,128 @@ not invent one.
 
 **Next run:** Monday 2026-11-30: live-link check, including onjob.io and
 Analytics Insight, which go out today. Revarta and UCSD from 2026-12-07.
+
+---
+
+## 2026-11-28 (C3, laptop, Saturday run started by the orchestrator)
+
+**Nothing was sent, posted, opened or submitted by this run.** One Gmail
+draft was created.
+
+### Gmail (searched ~07:15 UTC)
+
+| Note | State |
+|---|---|
+| MIT CAPD (item 12), drafted 11-26 | **Sent by the founder 11-26.** CAPD's only answer is a holiday auto-reply ("office closed… will respond"). |
+| onjob.io via Pitch N Hire (7b), Analytics Insight (10) | Went out 11-26 as scheduled. No reply, no bounce. |
+| Data Analysis Journal (11) | Still a draft (needs a subscription). |
+| boot.dev, Data Science Weekly (11-23) | No reply after 5 days. |
+
+**Stop rule: not applied.** The founder sent item 12 on 11-26 (and P1's
+educator notes on 11-26/27), so the 7-day clock runs from 11-26.
+
+### Live-link check (curl + GitHub code search + web search, ~07:20 UTC)
+
+| Page | HTTP | `sqlquest` in HTML |
+|---|---|---|
+| PavelGrigoryevDS/awesome-data-analysis README | 200 | no |
+| alexeygrigorev/data-science-interviews `awesome.md` | 200 | no |
+| amartinson193/The-Ultimate-List-of-Free-SQL-Resources README | 200 | no |
+| Extremesarova/data-science-resources README | 200 | no |
+| onjob.io/best/sql-practice-sites/ | 200 | no |
+| boot.dev/blog/backend/best-sql-practice-sites | 200 | no |
+| revarta.com/blog/best-interview-prep-app-for-data-analysts-2026 | 200 | no |
+| thequerylab.com/blog/best-sql-practice-websites | 200 | plain-text mention only (unchanged) |
+| analyticsinsight.net "Where to Practice SQL in 2026" | 200 | no |
+| capd.mit.edu "Ace the data science technical interview" | 200 | no |
+
+`gh search code "sqlquest.app"`: nothing new (the two 0-star repos of 11-25,
+Xcode bundle ids, a scraped leads CSV). A web search for `"sqlquest.app"`
+returns our own dev.to post, the alternativeto listing, our Vercel mirror and
+unrelated apps. **Links earned in November: still 0.**
+
+**Found on the way (FOUNDER):** the founder's own dev.to post of 2026-04-23
+("I built a browser-only SQL practice tool…") is the first result for
+`"sqlquest.app"`, and it still says Pro is "$19/month for unlimited AI
+tutor". Both are wrong today ($29 / $99, and "unlimited" is never claimed),
+and assistants read this page. Edit the post's price line; it is the
+founder's account, so the agent does not.
+
+### Today's new target
+
+| # | Target | Read | Last activity | Route | Odds |
+|---|---|---|---|---|---|
+| 13 | Northwestern IT Research Computing and Data Services, "SQL Resource Guide" (rcdsdocs.it.northwestern.edu/guides/other/sql.html) | 2026-11-28 | "Last updated: 2025-07-24" | the RCDS consulting role inbox, published on Northwestern IT's research-computing page | low |
+
+- **What it is.** A university IT guide to learning SQL: Getting Started
+  (Select Star SQL, GeeksforGeeks, Khan Academy, W3Schools), Practice
+  (W3Schools exercises, w3resource, DataLemur, Knight Lab's SQL Murder
+  Mystery) and further reading. It is maintained (dated last update) and
+  carries no sponsored links.
+- **Why it is not a repeat.** The 11-22 run skipped "Northwestern SQL
+  guides" only because that sandbox could not open them. P1's partners row
+  30 is a different unit (McCormick MS MLDS, not contacted).
+- **Why a link helps the reader.** The guide itself says the syntax
+  exercises check single pieces of SQL, while DataLemur asks for problems
+  solved with SQL. Nothing on it shows a problem solved in full.
+  `/sql-exercises/` has five, with tables, query and "why it works",
+  runnable in the browser, no account (checked live today).
+- **Draft (Gmail, to the RCDS role inbox):** "From SQL Quest's founder — a
+  practice link for your SQL Resource Guide". It names the guide's own
+  distinction, gives the page, discloses the paid tier in the gates' words,
+  asks one question and promises no follow-up.
+- **Side note.** w3resource's exercises link on the guide answered a
+  Cloudflare 522 twice today. One outage is not a dead link; do not pitch a
+  replacement on it.
+
+### Looked at and skipped today
+
+| Target | Why not |
+|---|---|
+| Illinois Library "Commons Knowledge" blog (learn-sql tag) | One 2022 post; the archive stops in 2023; no role inbox. |
+| KDnuggets "SQL Interviews Preparations Material Resources" | Published 2023-02-21, never updated; no submission route. |
+| Dataquest newsletter SQL-interview issues | Dataquest sells SQL courses: a competitor's own list. |
+| Trinity College career event page (SQL interview tips with DataLemur's author) | Now redirects to the career office's home page; nothing left to link from. |
+| washu / rochester career blogs, "Top 25 SQL … interview questions" | Reposts of Exponent's posts (the same pattern as 11-26). |
+| "Dead SQL practice site" replacement (broken-link outreach) | Probed 30 well-known practice sites: all answer 200 (Mode's tutorial now redirects to ThoughtSpot, still live). No broken link to replace. |
+| New GitHub lists (`gh search repos` "sql interview", "awesome sql", sorted by update) | Nothing new with ≥ 15 stars beyond the lists already logged or skipped. |
+
+### The money-pages-first rule: third run with no email target
+
+Said plainly: **for the seven money company pages, email outreach has no
+target, and three runs (11-24, 11-26, 11-28) have not found one.** Every page
+about those interviews is a competitor's or a candidate thread. C3 does not
+invent a target to fill the row.
+
+What would work instead (a proposal for the founder and the orchestrator;
+this run changes no rule):
+1. **Educators who already teach the exact pitfall a trap page shows.** P1's
+   notes of 11-26/27 (the BETWEEN trap to a date-in-SQL video channel, the
+   NOT IN trap to a "SQL Tricks" series) are this type, and they were sent
+   the same day. Each trap page is free content with every number backed by
+   a query, so it is a link an educator can give without endorsing a
+   product. Make this C3's first target type, and let the link reach the
+   money pages through the trap pages' own company links.
+2. **Maintained university guides with a role inbox** (MIT CAPD, this
+   Northwestern guide): evergreen, dated, no ad links, and the founder sends
+   them. Low odds each, but they don't decay like a newsletter issue.
+3. **A linkable asset for the money pages** (for B3/founder, not C3): a
+   public, documented card-transactions practice dataset (the kind the
+   Capital One page practises on) on GitHub/Kaggle, linking back to the
+   page. People cite datasets; nobody curates "Capital One SQL prep" links.
+   It would need its own plan and must never carry the mock's questions or
+   answers.
+
+### FOUNDER (today)
+
+1. **Northwestern RCDS:** read the draft ("From SQL Quest's founder — a
+   practice link for your SQL Resource Guide"), then send it or delete it.
+2. **dev.to post:** change "$19/month for unlimited AI tutor" to the current
+   price and wording ($29/mo or $99/yr; no "unlimited").
+3. Still open: the amartinson193 PR, the awesome-data-analysis PR, the Data
+   Analysis Journal reply, the alternativeto.net edit (still "250+"), the
+   Capital One thread answer (queue item 4).
+4. Decide on the target-type proposal above.
+
+**Next run:** Monday 2026-11-30: live-link check, replies to the 11-26
+sends. Revarta and UCSD from 2026-12-07.

@@ -56,6 +56,30 @@ of the verifier and must never be rounded to `FLAT`.
   enrolment from 11-28) leaves the company gate the same in both arms; this
   lands on both arms alike (note the merge date in the holdout read).
 
+### The tutor-limit signup ask is counted and says why (A3, 2026-11-27)
+
+- **Claimed** 2026-11-27 · **Shipped** on merge: the count (the ask goes
+  through `triggerSignupPrompt`, so `signup_prompt_shown {ai_limit}` is
+  written; a guest sees today's modal). The copy ("More AI help with a free
+  account") is **dark** behind `aiLimitAskCopy` (funnel-step rule, A1
+  2026-11-27) and flips only through its own orchestrator-decisions row ·
+  **Read** 2026-12-18 (coverage); the copy part is read 21 days after its
+  flip.
+- **Metric.** `ai_limit_ask` (docs/agent/metrics.md).
+- **Baseline.** 0 `signup_prompt_shown {ai_limit}` rows ever: the ask
+  opened without an event. In the 24 h to 11-27 09:25 UTC, `ai-tutor`
+  answered 429 four times, two of them to a guest at 0 solves after four
+  "show me the full solution" clicks on challenge 108; that guest saw
+  "You're on fire! You've earned 0 XP and solved 0 challenges!".
+- **Target.** By 12-18, every guest `ai-tutor` 429 seen in
+  `function_edge_logs` through the inline Help or a lesson has a matching
+  `ai_limit` row for that person (coverage ≥ 90%); after the
+  `aiLimitAskCopy` flip, no `ai_limit` asker sees the solve-count copy.
+- **Falsified if** guest 429s appear after the deploy with no `ai_limit`
+  rows (then `isGuest` in the client disagrees with the server's plan, and
+  the ask silently stopped opening: revert to the direct open and re-read).
+- **Not claimed.** A signup lift. n is a few people a week.
+
 ### the free-quota holdout: did the quota cost the returns? (`freeQuotaHoldout`, A/B)
 
 - **Claimed** 2026-11-25 · **Shipped** ON on merge (flag `freeQuotaHoldout: true`; `freeQuota` is a money flag and the founder gave the written go for THIS test in chat on 2026-11-25, "Full holdout (Recommended)") · **Enrolment** first app opens 2026-11-28 → 2026-12-25 (four weeks; fixed constants `FREE_QUOTA_HOLDOUT_START/END` in src/utils/free-quota-holdout.js, 11-28 00:00 UTC to 12-26 00:00 UTC exclusive — moved from 11-26 on 2026-11-26, and again from 11-27 on 2026-11-27 because the 11-27 start passed before merge; a test pins the start to no earlier than 11-28) · **Arm-balance check** 2026-12-04 · **Halfway money read** 2026-12-12 · **Read** 2027-01-02 (the 7th day after enrolment ends). If the merge slips past 11-28, move the window, the balance check, the halfway read and the read date together in one commit (constants, this entry, metrics.md).
@@ -1152,6 +1176,85 @@ of the verifier and must never be rounded to `FLAT`.
   caught: the fix's COUNT on the left table (fails "amazon: broken answers
   2.88, the fix 2.5"); a "Start with" line that names the method (fails
   "says what it measures, not how").
+
+### the Snowflake page's first screen: "Start with", readiness, the closest Pro mock, one "debug this query" (C5)
+
+- **Claimed** 2026-11-28 · **Shipped** on merge (static page, no flag) · **Read** 2026-12-26 (28 d) and 2027-01-23 (56 d).
+- **Change** `/snowflake-sql-interview/` gets the "Start here" block inside
+  the hero, after the primary CTA row, from `FIRST_SCREENS.snowflake` in
+  `scripts/company-first-screen.mjs` (the generator is its only home):
+  "Start with" #23 Salary Rank Within Department (Hard preview, inside the
+  free tier, Snowflake-tagged), the step before the nth-highest-salary shape
+  both readable reports name (dossier S3, S4: "2 of 2"); the readiness test
+  with `?company=snowflake` (the test page's `<select>` holds the slug; a
+  capitalised `Snowflake` would not select anything); the Pro line through
+  the page facts and `freeSolvesLabel` (the 42 Hard past the 6 previews, 300+
+  without the 10-solve stop), and the closest Pro mock named by what it
+  holds: the Hard SQL Interview mock, 50 minutes, five written questions,
+  including the second-highest salary and consecutive-day orders, "a general
+  mock, not modelled on Snowflake". Under it, "Debug this query": framed by
+  the two dated data-engineering reports in `docs/reads/companies/snowflake.md`
+  (DataDriven, updated 2026-09-23; GeeksforGeeks 2023 campus report; both
+  read 2026-11-22) and their shared trap, a join that repeats a row. "How many
+  employees manage at least one person?" on the employees sample: the
+  self-join answers 43 (the people who have a manager), the EXISTS fix 6. The
+  button opens Debug 340 (the same duplication on orders and reviews, Hard,
+  Pro) and the fan-out trap page. Every new app link carries
+  `src=company-snowflake`; the hero button keeps #117 and its own series.
+  Two copy fixes on the same page: the hero's unsourced "Practice the SQL
+  patterns Snowflake interviews actually test … 90% of what you'll be asked
+  is standard SQL" is gone, and the FAQ's "we have no dated, citable source"
+  (both copies) now says the page cites two dated reports of question shapes
+  and states no analyst-round format. No sourced section: the dossier read no
+  analyst or analytics-engineer report, so none is claimed.
+- **Why this one:** last of the seven A09 money pages in the C5 rotation.
+  Snowflake's clicks come from dialect queries ("snowflake sql practice",
+  position 2.0, dossier gsc read 2026-11-22), so the reader already wants to
+  practise; the page had no door to a first question beyond the hero's movie
+  challenge, and carried a frequency claim the sourcing rules forbid.
+- **Metric** `content_funnel`, page `snowflake-sql-interview`:
+  `trial_or_purchase` per 1,000 `landing_people`, 28-day window, and the step
+  it should move, `app_opened` / `landing_people`. Clicks
+  `cta_first_question`, `cta_first_readiness`, `cta_first_mock`,
+  `cta_first_debug`; arrivals with `arrivalSrc` `company-snowflake`; Pro
+  modals with `linkSrc` `company-snowflake` (reason `mock_link`).
+- **Baseline** the page's 28-day `content_funnel` row to 2026-11-28, read by
+  the laptop from the Monday/Thursday mail (cloud run, no production data;
+  per-page numbers never go in the repo). Site-wide prior,
+  `docs/plans/monetization-ideas-2026-11-22.md` §1f: company pages 2.3% of
+  arrivals to trial or purchase, 81% of landers never open the app.
+- **Target** at 28 d: `app_opened` / `landing_people` up by ≥ 5 points on the
+  baseline row, and ≥ 10% of landers click one of the four new links. At
+  56 d: `trial_or_purchase` per 1,000 landers at or above the company-page
+  prior (23).
+- **Falsification, written now:** fewer than 5% of landers click a new link
+  at ≥ 100 landers → the block is not read; cut it to the "Start with" line.
+  App opens flat or down at ≥ 100 landers → the block cost the hero its
+  focus; move it below the provenance note. `cta_first_question` clicks with
+  under 30% `challenge_first_run` on #23 → a Hard opener is too steep for a
+  dialect reader; swap to a Medium (#18, the group-then-top shape, S4).
+  `cta_first_debug` clicks with no `challenge_first_run` on 340 → the item
+  reads as homework, or the Pro wall on 340 stops it; drop the button. Under
+  30 landers in 28 d → noise, read again at 56 d.
+- **Confound, stated:** the hero line and FAQ change ship with the block, so a
+  rank move cannot be split from the page → app step; read rank from
+  `gsc_daily` apart. The open → first-run A/Bs (`runnableStarter`,
+  `companyDirectOpen`) and the free-quota holdout meet the same people: split
+  by their arms.
+- **Guard** `tests/snowflake-first-screen.test.js` (both queries run on
+  `employees` against an independent truth, every number, the bug line, the
+  first question tagged + Hard preview + said by what it measures, the Pro
+  line through the helpers and no price, the mock's length / Pro / five
+  written questions / the two named shapes, no Hard solution or mock question
+  given away, the frame's two sources pinned in the dossier, no format words,
+  hero and FAQ in both copies, placement in the hero, doors);
+  `tests/company-pages.test.js` `OFF_SET_LINKS` / `OFF_SET_NOTE` waive the tag
+  check for 340 only while the page says it is from the Debug set;
+  `tests/company-template.test.js` pins the generator. Breaks caught: the
+  fix's self-join reversed (`e.emp_id = m.manager_id`) fails "the broken query
+  runs and answers what the page says; the fix runs and equals the truth";
+  the "90%" hero line put back fails "the hero and FAQ make no unsourced
+  claim about what Snowflake asks, in every copy".
 
 ### a founder-led live mock — would people pay for it? (asked by hand)
 

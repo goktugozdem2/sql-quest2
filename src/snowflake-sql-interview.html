@@ -65,7 +65,7 @@
         "name": "Does this page know what SQL questions Snowflake asks?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "No, and it does not claim to. Snowflake does not publish its interview questions, and we have no dated, citable source for them — so this page states no round length, no tool and no process. What it has instead is the 95 challenges tagged Snowflake in the SQL Quest bank (2 Easy, 45 Medium, 48 Hard), chosen because their SQL matches the analytics work, with the reference solution shown once you solve one. Pages that do carry dated public sources for a company's screen, such as the Capital One page, list them on the page with their dates."
+          "text": "No, and it does not claim to. Snowflake does not publish its interview questions; we cite two dated reports of question shapes from its data-engineering interviews (in the debug note on this page), and we have no source for the length, tool or process of an analyst round, so this page states none. What it has instead is the 95 challenges tagged Snowflake in the SQL Quest bank (2 Easy, 45 Medium, 48 Hard), chosen because their SQL matches the analytics work, with the reference solution shown once you solve one. Pages that do carry dated public sources for a company's screen, such as the Capital One page, list them on the page with their dates."
         }
       },
       {
@@ -149,11 +149,45 @@
     </div>
     <div class="hb" style="animation:fadeUp .6s .1s both;margin-top:24px;"><span class="pd"></span><span style="font-size:13px;font-weight:600;color:#29B5E8;">Snowflake SQL Interview Prep</span></div>
     <h1 class="fd" style="font-size:clamp(38px,5vw,62px);font-weight:800;line-height:1.08;margin-bottom:24px;animation:fadeUp .6s .2s both;">Snowflake SQL Interview<br><span class="gt">Questions</span></h1>
-    <p style="font-size:18px;line-height:1.8;color:#94a3b8;margin-bottom:36px;max-width:640px;margin-left:auto;margin-right:auto;animation:fadeUp .6s .3s both;">Practice the SQL patterns Snowflake interviews actually test — window functions, CTEs, recursive queries, analytics. 90% of what you'll be asked is standard SQL. No DBeaver, no Docker, browser only.</p>
+    <p style="font-size:18px;line-height:1.8;color:#94a3b8;margin-bottom:36px;max-width:640px;margin-left:auto;margin-right:auto;animation:fadeUp .6s .3s both;">Practise the SQL behind Snowflake-style analytics questions on runnable data: window functions, CTEs, joins and aggregation, in standard SQL. No DBeaver, no Docker, browser only.</p>
     <div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center;animation:fadeUp .6s .4s both;">
       <a href="/app/?company=Snowflake&amp;goal=interview" class="btn bp" data-track="cta_hero_primary">Solve Snowflake question 1 now: Recent Hit Movies (2010s) — free, no sign-up</a>
       <a href="#questions" class="btn bo">See all 95 Snowflake-tagged challenges ↓</a>
     </div>
+<!-- company-first-screen:start -->
+<div id="start" data-section="first-screen" style="text-align:left;width:100%;max-width:820px;contain:inline-size;margin:36px auto 0;">
+  <span class="sl">Start here</span>
+  <div style="margin-top:12px;max-width:820px;">
+    <p style="margin:0;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:15px;line-height:1.7;color:#94a3b8;"><strong style="color:#e2e8f0;">Start with:</strong> <a href="/app/?challenge=23&amp;src=company-snowflake" data-track="cta_first_question" style="color:#c084fc;">Salary Rank Within Department</a> (Hard): a rank inside each department. The nth-highest salary is the one shape both readable Snowflake reports name (cited below), and this is the step before it. A Hard preview, so it opens inside the free tier.</p>
+    <p style="margin:0;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:15px;line-height:1.7;color:#94a3b8;"><strong style="color:#e2e8f0;">Readiness:</strong> <a href="/sql-interview-readiness-test/?company=snowflake&amp;src=company-snowflake" data-track="cta_first_readiness" style="color:#c084fc;">the Snowflake readiness test</a>, ten questions, no sign-up, scored against this set's skill mix.</p>
+    <p style="margin:0;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:15px;line-height:1.7;color:#94a3b8;border-bottom:none;"><strong style="color:#e2e8f0;">Pro, for this interview:</strong> the 42 Hard challenges in the Snowflake set past its Hard previews, the Hard Debug challenges like the one below, all 300+ challenges without the stop at 10 free challenge solves, and the full mock interview bank, timed and scored. Closest to this interview: <a href="/app/?interview=faang-sql-interview&amp;src=company-snowflake" data-track="cta_first_mock" style="color:#c084fc;">the Hard SQL Interview mock (Pro)</a>, 50 minutes, five written questions, including the second-highest salary and customers who ordered on consecutive days. It is a general mock, not modelled on Snowflake; it is the closest we have to the ranking and consecutive-day shapes the reports describe.</p>
+  </div>
+
+  <div data-first-screen-debug="true" style="margin-top:28px;max-width:820px;padding:20px 22px;border:1px solid rgba(124,58,237,.22);border-radius:14px;background:rgba(124,58,237,.05);">
+    <h2 class="fd" style="font-size:22px;font-weight:800;color:#e2e8f0;">Debug this query</h2>
+    <p style="font-size:15px;line-height:1.75;color:#94a3b8;margin-top:10px;">Snowflake does not publish its SQL questions, and we could not read any report of its analyst round. Two dated reports from its data-engineering interviews name the shapes: an employee who earns more than their manager, a self-join on the manager id (<a href="https://datadriven.io/companies/snowflake/interview" rel="nofollow noopener" target="_blank" style="color:#94a3b8;">DataDriven's Snowflake data engineer guide</a>, updated 23 Sep 2026, read 22 Nov 2026), and the employees on at least one project, without listing anyone twice (<a href="https://www.geeksforgeeks.org/?p=1054489" rel="nofollow noopener" target="_blank" style="color:#94a3b8;">a 2023 campus report on GeeksforGeeks</a>, updated 31 Aug 2023, read 22 Nov 2026). Two reports are not a format. Both shapes meet at one trap: a join that repeats a row, and a count that believes it.</p>
+    <p style="font-size:15px;line-height:1.75;color:#e2e8f0;margin-top:12px;"><strong>The ask:</strong> How many employees manage at least one person? The query below runs on our employees sample data and answers 43. Find the line.</p>
+    <pre class="fm" style="margin:14px 0 0;padding:14px 16px;overflow-x:auto;border:1px solid rgba(255,255,255,.08);border-radius:12px;background:rgba(10,10,25,.7);font-size:13px;line-height:1.7;color:#e2e8f0;"><span style="display:inline-block;width:2.2em;color:#5b6577;user-select:none;">1</span>SELECT COUNT(*) AS managers
+<span style="display:inline-block;width:2.2em;color:#5b6577;user-select:none;">2</span>FROM employees m
+<span style="display:inline-block;width:2.2em;color:#5b6577;user-select:none;">3</span>JOIN employees e ON e.manager_id = m.emp_id;</pre>
+    <details style="margin-top:14px;font-size:15px;line-height:1.75;color:#94a3b8;"><summary style="cursor:pointer;color:#e2e8f0;font-weight:700;">Show the bug</summary>
+      <p style="margin-top:10px;">Line 3: the join makes one row per report, not one per manager. The data has 50 employees and 7 with no manager, so the other 43 are reports, and COUNT(*) counts every one of them. 43 is the number of people who have a manager. The answer is 6. Ask whether a person has at least one report, which never repeats a row:</p>
+      <pre class="fm" style="margin:14px 0 0;padding:14px 16px;overflow-x:auto;border:1px solid rgba(255,255,255,.08);border-radius:12px;background:rgba(10,10,25,.7);font-size:13px;line-height:1.7;color:#e2e8f0;"><span style="display:inline-block;width:2.2em;color:#5b6577;user-select:none;">1</span>SELECT COUNT(*) AS managers
+<span style="display:inline-block;width:2.2em;color:#5b6577;user-select:none;">2</span>FROM employees m
+<span style="display:inline-block;width:2.2em;color:#5b6577;user-select:none;">3</span>WHERE EXISTS (
+<span style="display:inline-block;width:2.2em;color:#5b6577;user-select:none;">4</span>  SELECT 1 FROM employees e
+<span style="display:inline-block;width:2.2em;color:#5b6577;user-select:none;">5</span>  WHERE e.manager_id = m.emp_id
+<span style="display:inline-block;width:2.2em;color:#5b6577;user-select:none;">6</span>);</pre>
+    </details>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:18px;">
+      <a href="/app/?challenge=340&amp;src=company-snowflake" class="btn bo" data-track="cta_first_debug">Fix the same bug in the app: question 340 (Hard, Pro)</a>
+      <span style="font-size:13px;color:#8b98ab;">from our Debug set, not the Snowflake set: the same join that repeats rows, on orders and reviews</span>
+      <a href="/sql-debugging-practice/" style="font-size:14px;color:#94a3b8;">All Debug questions</a>
+      <a href="/sql-join-fan-out/" style="font-size:14px;color:#94a3b8;">The trap, explained</a>
+    </div>
+  </div>
+</div>
+<!-- company-first-screen:end -->
     <div style="display:flex;gap:28px;margin-top:44px;flex-wrap:wrap;justify-content:center;animation:fadeUp .6s .5s both;">
       <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">95 challenges</p><p style="font-size:12px;color:#8b98ab;">Snowflake-compatible patterns</p></div></div>
       <div style="display:flex;align-items:center;gap:8px;"><span class="gd"></span><div><p style="font-size:13px;font-weight:700;color:#e2e8f0;">Zero setup</p><p style="font-size:12px;color:#8b98ab;">No DBeaver, no Postgres</p></div></div>
@@ -352,7 +386,7 @@ document.getElementById('format-cards').innerHTML=[
 // a page fixed only in its visible text is not fixed for the assistants that
 // read the JSON-LD.
 const FAQS=[
-  ['Does this page know what SQL questions Snowflake asks?','No, and it does not claim to. Snowflake does not publish its interview questions, and we have no dated, citable source for them — so this page states no round length, no tool and no process. What it has instead is the 95 challenges tagged Snowflake in the SQL Quest bank (2 Easy, 45 Medium, 48 Hard), chosen because their SQL matches the analytics work, with the reference solution shown once you solve one. Pages that do carry dated public sources for a company\'s screen, such as the Capital One page, list them on the page with their dates.'],
+  ['Does this page know what SQL questions Snowflake asks?','No, and it does not claim to. Snowflake does not publish its interview questions; we cite two dated reports of question shapes from its data-engineering interviews (in the debug note on this page), and we have no source for the length, tool or process of an analyst round, so this page states none. What it has instead is the 95 challenges tagged Snowflake in the SQL Quest bank (2 Easy, 45 Medium, 48 Hard), chosen because their SQL matches the analytics work, with the reference solution shown once you solve one. Pages that do carry dated public sources for a company\'s screen, such as the Capital One page, list them on the page with their dates.'],
   ['Which SQL skills does the Snowflake practice set cover?','Resolving every challenge tag onto the nine canonical skills the app\'s radar uses, the 95 tagged challenges lean on Querying Basics (95), Aggregation & Grouping (66), Subqueries & CTEs (47) and Window Functions (30) — counts, not shares of an interview. A challenge exercises several skills, so the counts add up to more than 95. The composition section on this page shows all 8 skills the set touches.'],
   ['Are the Snowflake practice challenges free?','Your first 10 challenge solves are free, with no signup — pick them from the Easy and Medium challenges in this set or its 6 Hard previews. Pro ($29/mo or $99/yr) opens all 95, and the rest of the 300+ bank. Every challenge runs in the browser and shows its solution once solved.'],
   ['What SQL dialect should I practice for Snowflake?','We have no source for what Snowflake runs internally, so this page does not guess at it. Practise standard SQL: everything here runs on SQLite in the browser, and joins, GROUP BY, CTEs, window functions and date logic transfer unchanged to PostgreSQL, MySQL, Snowflake and BigQuery. Vendor-specific syntax is rarely what an analytics question is actually testing.']
