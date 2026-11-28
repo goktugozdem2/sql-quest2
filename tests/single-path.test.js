@@ -536,7 +536,7 @@ describe('the one-layer queue (arms B and D, first session)', () => {
       '{showSignupPrompt && pathLayerOk(pathSignupLayer) && (',
       "{milestonePopup && pathLayerOk('milestone_toast') && (",
       "{streakCardOpen && currentUser && !isGuest && (streakCardOpen !== 'auto' || pathLayerOk('streak_card')) && (",
-      "{fbPrompt && fbPrompt.kind !== 'stuck' && !showProModal && pathLayerOk('feedback_prompt') && (",
+      "{promptSlot(fbPrompt) === 'global' && !showProModal && pathLayerOk('feedback_prompt') && (",
     ]) expect(APP, g).toContain(g);
     expect(APP).toContain('const oneLayerOk = (id) => (pathUi.layerQueue ? pathLayerOk(id) :');
     expect(APP).toContain('const pathLayer = pathUi.layerQueue ? pathLayerDecide({ active: pathLayerActive, slot: pathLayerSlotNow, holdExtras: pathUi.holdLayers }) : null;');

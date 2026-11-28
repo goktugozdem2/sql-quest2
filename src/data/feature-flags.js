@@ -488,6 +488,26 @@ window.FEATURE_FLAGS = {
     exitReasonAsk: true,
     stuckAsk: false,
     day2Ask: true,
+    // The in-app interview asks (2026-11-25; src/utils/interview-asks.js,
+    // plans #367 docs/plans/interview-prep-feedback-2026-11-25.md and #369
+    // docs/plans/first-90-days-2026-11-25.md §F1, orchestrator decision
+    // 2026-11-25: the outcome is asked inside the app, no email). Not money
+    // surfaces; both share the one-ask-a-session slot with the three above.
+    // leastReadyAsk: "Which part of the real interview do you feel least
+    // ready for?" — eight fixed answers, on a mock's results screen (first
+    // full sitting) and on the Interview tab (interview person, 3+ solves,
+    // no finished mock). Once per browser. Metric `interview_prep_voice`.
+    // DARK 2026-11-25: A0 flips after A1 walks that the card never sits over
+    // the results' Retry/Back buttons or the plans.
+    leastReadyAsk: false,
+    // outcomeDebriefAsk: ONE outcome flow — "Did your interview happen?" on
+    // the Coach and the Interview tab for a person whose interview date
+    // passed 1–14 days ago or who declared interview/job_ready 21+ days ago
+    // (once per 30 days; `outcome_ask_shown`), answer = `interview_outcome
+    // {source:'in_app'}`; passed → the existing offer ask; failed → "What do
+    // you wish you had practised more?" (also after ?outcome=failed).
+    // Metrics `outcome_ask_answer`, `interview_prep_voice`. DARK 2026-11-25.
+    outcomeDebriefAsk: false,
     // IR-2 (E2, 2026-11-23; src/utils/feedback-context.js): the 💬 widget,
     // opened on a challenge, writes the challenge id, the last query (cut to
     // ~1,000 chars) and the last diagnosis kind into the row's `context`, and
