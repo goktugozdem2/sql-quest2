@@ -64,6 +64,31 @@ describe('bot signals', () => {
     expect(botDecision(botSignals({ userAgent: CHROME, viewport: 'desktop:1440x900', landingSrc: 'ref:aocr.org' }))).toEqual({ write: true, stamp: 'refspam' });
   });
 
+  // The topic-page crawler (2026-11-23): topic door, no landing source, one
+  // language. 211 people from 2026-10-07 to 11-23, none ran, solved or signed
+  // up; every clause dropped catches real people (12 / 13 / 3).
+  it('stamps the topic-page crawler: a topic door, no landing source, exactly one language', () => {
+    const crawler = { userAgent: CHROME, viewport: 'desktop:1366x768', tz: 'Asia/Hong_Kong', landingSrc: null, arrivalSrc: 'challenges-aggregation', languages: ['zh-CN'] };
+    expect(botSignals(crawler).soft).toBe('topic1lang');
+    expect(botSignals({ ...crawler, landingSrc: '' }).soft).toBe('topic1lang');
+    expect(botSignals({ ...crawler, arrivalSrc: 'challenges-advanced', tz: 'America/Mexico_City', languages: ['es-MX'] }).soft).toBe('topic1lang');
+    expect(botDecision(botSignals(crawler))).toEqual({ write: true, stamp: 'topic1lang' });
+  });
+
+  it('leaves a real topic-page arrival alone: with a referrer, with two languages, or through another door', () => {
+    const base = { userAgent: CHROME, viewport: 'desktop:1366x768', tz: 'Europe/Istanbul', landingSrc: null, arrivalSrc: 'challenges-aggregation', languages: ['en-US'] };
+    expect(botSignals({ ...base, landingSrc: 'search:google' }).soft).toBe(null);
+    expect(botSignals({ ...base, landingSrc: 'search:bing' }).soft).toBe(null);
+    expect(botSignals({ ...base, languages: ['en-US', 'en'] }).soft).toBe(null);
+    expect(botSignals({ ...base, languages: ['tr-TR', 'tr', 'en-US'] }).soft).toBe(null);
+    expect(botSignals({ ...base, arrivalSrc: 'sql-exercises' }).soft).toBe(null);
+    expect(botSignals({ ...base, arrivalSrc: 'home' }).soft).toBe(null);
+    expect(botSignals({ ...base, arrivalSrc: null }).soft).toBe(null);
+    // no languages reported is not "one language"
+    expect(botSignals({ ...base, languages: null }).soft).toBe(null);
+    expect(botSignals({ ...base, languages: [] }).soft).toBe(null);
+  });
+
   it('the spam list is the landing tracker’s, entry for entry', () => {
     const m = /var SPAM_REFERRERS = (\[[^\]]*\]);/.exec(read('src/track.js'));
     expect(m, 'SPAM_REFERRERS in src/track.js').toBeTruthy();
@@ -96,5 +121,11 @@ describe('app.jsx applies it', () => {
     expect(t).toContain('if (decision.stamp) payload.bot = decision.stamp;');
     expect(t).toMatch(/if \(event === 'app_opened' && signals\) Object\.assign\(payload, \{ wd: signals\.wd, uaBot: signals\.uaBot, langs: signals\.langs \}\);/);
     expect(t.indexOf('botDecision(signals)')).toBeLessThan(t.indexOf("writeProEvent(event, 'activation_funnel', payload"));
+  });
+  it('the activation tracker hands botSignals the door and the languages the topic-page rule reads', () => {
+    const t = app.slice(app.indexOf('const trackActivationEvent = (event, metadata = {}, options = {}) => {'), app.indexOf('// A save the server refused as a regression'));
+    const call = t.slice(t.indexOf('return botSignals({'), t.indexOf('});', t.indexOf('return botSignals({')));
+    expect(call).toContain('languages: navigator.languages');
+    expect(call).toContain('arrivalSrc: payload.arrivalSrc');
   });
 });

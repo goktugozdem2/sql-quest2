@@ -1406,6 +1406,30 @@ When a wave is suspected, count new people who ran or solved
 A rule that names a time zone or requires no landing source is the part the
 next wave walks around — fingerprint on what has never run a query.
 
+**Trap: the topic-page crawler — one language, no source (found
+2026-11-23, docs/reads/onboarding-2026-11-23.md §4).** An `app_opened`
+with `arrivalSrc` `challenges-*` (a topic page's `/app/?challenge=` link),
+an empty `landingSrc` and `langs = 1`, at ordinary desktop sizes (mostly
+1280–1400 wide) in rotating time zones (Asia/Shanghai, Asia/Hong_Kong,
+America/Mexico_City …). 211 people from 2026-10-07 (when `langs` was
+first written) to 11-23: first seen 10-18, 25–28 a day on 11-14 / 11-15,
+then **81 on 11-22** and 59 on 11-23 by 15:00 UTC. Not one ran a query,
+solved, signed up, carried progress (`solvedCount` / `attemptCount` > 0) or
+used a registered name. Each clause is needed: drop the door and the rule
+catches 12 people who did something, drop the one language 13, drop the
+empty source 3. Size, new app people by first open (the aar-weekly.sql
+filters): 11-10 → 11-21 348 with it vs 308 without; **from 11-22, 192 vs
+52** — first run 13.5% vs 50% on the same 26 runners. Stamped
+`bot: 'topic1lang'` once the fix of 2026-11-23 deploys (src/utils/bot-signals.js,
+app only — `src/track.js` has no door to read); before that date filter by
+hand on the first `app_opened` (scripts/aar-weekly.sql does).
+**The signal starts 2026-11-22 as far as any read is concerned: read
+arrival-based rates (`first_solve_10m`, `open_to_first_run`,
+`second_session_7d`, door splits) from 11-22 once with it and once without
+it, and never compare a rate across the change** — the rows before the
+deploy are unstamped, the rows after are stamped, and a series that spans
+both mixes a hand filter with a stamp.
+
 **Trap: a rendering crawler counts as new people (found 2026-09-23).**
 From 2026-09-17 a crawler executing the app arrived through the topic pages'
 `/app/?challenge=…&src=challenges-…` links: first `app_opened` with tz

@@ -44,6 +44,19 @@ export const SOFT_FINGERPRINTS = [
   { id: 'vp1280x1200', since: '2026-10-15', match: ({ viewport }) => viewport === 'desktop:1280x1200' },
   // Referrer spam: a landing source that is only ever a crawler's.
   { id: 'refspam', since: '2026-10-28', match: ({ landingSrc }) => isSpamReferrer(landingSrc) },
+  // The topic-page crawler (2026-11-23, docs/reads/onboarding-2026-11-23.md
+  // §4): arrives through a topic page's /app/?challenge=…&src=challenges-…
+  // link with no landing source and exactly one browser language, at
+  // ordinary desktop sizes in rotating time zones. From 2026-10-07 (when
+  // `langs` was first written) to 2026-11-23: 211 people, first seen
+  // 2026-10-18, 25–28 a day on 11-14/15, 81 on 11-22; not one ran a query,
+  // solved, signed up or carried progress. All three clauses are needed:
+  // without the door it catches 12 people who did something, without the one
+  // language 13, without the empty source 3. App only — the landing tracker
+  // has no door (the landing page IS the topic page), so src/track.js has no
+  // row for it.
+  { id: 'topic1lang', since: '2026-10-18', appOnly: true,
+    match: ({ arrivalSrc, landingSrc, langs }) => /^challenges-/.test(String(arrivalSrc || '')) && !landingSrc && langs === 1 },
 ];
 
 // Hosts whose referrals are only ever crawlers (2026-11-12). aocr.org: 816
@@ -61,18 +74,19 @@ export function isSpamReferrer(landingSrc) {
   return SPAM_REFERRERS.some(d => host === d || host.endsWith('.' + d));
 }
 
-export function botSignals({ userAgent = '', webdriver = false, languages = null, viewport = null, landingSrc = null, tz = null } = {}) {
+export function botSignals({ userAgent = '', webdriver = false, languages = null, viewport = null, landingSrc = null, tz = null, arrivalSrc = null } = {}) {
   const uaBot = BOT_UA_RE.test(String(userAgent || ''));
   const wd = webdriver === true;
   const hard = wd || uaBot;
-  const fp = SOFT_FINGERPRINTS.find(f => f.match({ viewport, landingSrc, tz }));
+  const langs = Array.isArray(languages) ? languages.length : null;
+  const fp = SOFT_FINGERPRINTS.find(f => f.match({ viewport, landingSrc, tz, langs, arrivalSrc }));
   return {
     hard,
     soft: fp ? fp.id : null,
     // coarse, never the UA string itself
     wd,
     uaBot,
-    langs: Array.isArray(languages) ? languages.length : null,
+    langs,
   };
 }
 

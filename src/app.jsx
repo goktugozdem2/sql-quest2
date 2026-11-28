@@ -7659,6 +7659,7 @@ function SQLQuest() {
           return botSignals({
             userAgent: navigator.userAgent, webdriver: navigator.webdriver, languages: navigator.languages,
             viewport: payload.viewport, landingSrc: payload.landingSrc, tz: payload.tz,
+            arrivalSrc: payload.arrivalSrc,
           });
         } catch (_) { return null; }
       })();
