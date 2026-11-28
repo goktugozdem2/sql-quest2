@@ -11,7 +11,8 @@
 // Arm `one`, on a narrow touch screen only, shows the layers one at a time in
 // a fixed priority:
 //   1. the solve feedback itself (inline on the challenge page, never gated);
-//   2. the ask — the soft email capture, then the intent question;
+//   2. the ask — the company ask's inline line (with its date follow-up),
+//      then the soft email capture, then the intent question;
 //   3. everything else (achievement, level up, Skillmap card, share bar,
 //      streak card): held from the solve until the next challenge opens; at
 //      that open the first one still pending shows, the rest are dropped for
@@ -33,7 +34,14 @@ export const ONE_LAYER_MIN_TARGET_PX = 44;
 
 // Tier 2, in order: the asks. The soft email capture already sequenced ahead
 // of the intent question on main; the order keeps that.
-export const ONE_LAYER_ASKS = ['soft_email', 'intent_ask'];
+// `company_ask` (2026-11-24): the company ask's inline line — and its one
+// follow-up, the interview date, which is the same layer, not a new one. It
+// goes first: it is on screen at the solve itself, while the soft email
+// modal arrives 1.5 s later (third solve), and a modal must not land on a
+// field the person may be typing into. The email waits until the line is
+// answered or skipped, or until the next challenge opens. The intent modal
+// never meets it: it is suppressed on the solve the line shows.
+export const ONE_LAYER_ASKS = ['company_ask', 'soft_email', 'intent_ask'];
 // Tier 3, in order: the rest of the post-solve layers.
 export const ONE_LAYER_EXTRAS = ['achievement', 'level_up', 'radar_pop', 'milestone_share', 'streak_card'];
 export const ONE_LAYER_ORDER = [...ONE_LAYER_ASKS, ...ONE_LAYER_EXTRAS];
