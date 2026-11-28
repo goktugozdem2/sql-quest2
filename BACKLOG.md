@@ -100,6 +100,11 @@ B2 builds none of these; each names the lane that owns it.
 - **B1 — `app_opened` per person halved (2.13 → 1.13) and
   `second_session_7d` fell to 6.9%.** Check whether #49 (10-08) changed what
   fires on a return visit before anyone reads retention (scorecard, 11-22).
+  **Read 11-25 (`docs/reads/second-session-2026-11-25.md`): not the event.**
+  Return-day coverage is flat at 82–89% across 10-08; returns themselves
+  fell, from the 09-26 flag batch on, inside the same doors. Baseline
+  restated 18.7% under today's crawler filter. Open question moves to
+  product: which 09-26 change cost the return.
 - **B1 — three events that never fire:** `pro_modal_shown {reason:
   'email_link'}` (0 rows ever, though 80 activated notes went out),
   `cta_practice_validate_ai_sql_*` and `editorial_claudequest_click` (0 rows,
@@ -142,6 +147,15 @@ C6 backlog (missing topics, no page owns them):
 - **C1 (2026-11-24): link /sql-not-in-null/ to challenge 356.** 356 is the NOT IN trap as a DELETE (two guest orders with no `customer_id`). The trap page's related links can point at it through the generator (`src/data/sql-patterns.js`), with `src=pattern-sql-not-in-null`.
 - **C6: SQLite vs PostgreSQL dates — a translation guide.** `date_trunc('month', ts)` ↔ `strftime('%Y-%m-01', ts)`, `EXTRACT` ↔ `strftime('%Y')`, `generate_series` ↔ a recursive date list, `interval` ↔ date modifiers, and month arithmetic (SQLite's `date('2023-01-31', '+1 month')` overflows into March; PostgreSQL clamps to the month's end). Four threads in run 2's sources (sqlite.org forum, HN). Today the only coverage is one sentence on `/sql-cheat-sheet/` and the dialect table in the app (`src/utils/dialect-notes.js`), which lists format strings, not the month-end trap. Our users practise on SQLite and interview on PostgreSQL or Snowflake, so this is the page that bridges the two. Every query needs a test on both shapes of result; run the PostgreSQL side by hand or say it was not run.
 - **B3/C6 practice gap: a date spine.** No challenge in the bank asks for a report that includes days with zero rows (the only recursive challenges walk an org chart or a chargeback chain). `/blog/recursive-cte-explained/#missing-days` now works it on `logins` (March 8–9, the `COUNT(*)` trap). One Medium on `logins` or `orders`: daily counts over a fixed range, graded on the zero days.
+
+## Routed by C7, question mining — 2026-11-25 (docs/reads/questions-2026-11-25.md)
+
+No 7-day count this run: Reddit and Stack Overflow refused the search tool, the Stack Exchange and HN Algolia APIs had no route, and no thread in the reachable sources (Quora, HN, sqlite.org forum) is from the last 7 days. Counts are threads found, any date. No new missing topic; UPSERT and median/percentiles from run 3 sit in open PR #294.
+
+- **C7 (next content run): the window tutorial's ROWS-vs-RANGE answer misleads on gappy dates.** Four threads ask why a "7-day" rolling sum is wrong when some days have no rows. `/blog/window-functions-tutorial/` says `ROWS BETWEEN 6 PRECEDING AND CURRENT ROW` "gives you exactly 7 rows" and "use ROWS unless…", in both the FAQ (JSON-LD and visible) and the callout. That holds only on a gap-free daily series. The answer on the existing page: aggregate to one row per day, then either `RANGE BETWEEN 6 PRECEDING AND CURRENT ROW` ordered by `julianday(day)` (SQLite 3.28+; PostgreSQL wants `RANGE BETWEEN INTERVAL '6 days' PRECEDING` on a date column) or a date spine LEFT JOINed first. Run every shown query in a test on `logins` or `orders` with a missing day, and check the FAQ schema still equals the visible FAQ.
+- **C6 note: the date spine has a third reader.** The same cluster and the month-over-month zero-month case both need the calendar spine already routed on 2026-11-23 (C7) and in B3's calendar-spine item. Raise its priority; no new item.
+- **Watch: single vs double quotes** (string literal vs identifier, SQLite's fallback that reads `"col"` as a string when no column matches). One thread; below the bar of 3.
+- **Not routed: "CAST after the division is too late".** Seven threads on integer division; `/blog/sql-group-by-tutorial/` already answers "write 100.0", but not that `CAST(a / b AS REAL)` still truncates. That page is in open PR #278, so this waits for #278 to land.
 
 ## GEO gaps — G1, 2026-11-22 (docs/reads/geo-2026-11-22.md)
 
@@ -392,6 +406,43 @@ Dossiers: `goldman-sachs.md`, `amazon.md`, `snowflake.md`.
   (29, 89); earns more than manager (17, 149, 315); consecutive days (318,
   319); above department average (131, 171); running totals (24, 173).
 
+### Batch 6, 2026-11-25: Netflix, Airbnb, NVIDIA, Anthropic
+
+Dossiers: `netflix.md`, `airbnb.md`, `nvidia.md`, `anthropic.md`. All four
+pages stay general; none clears "medium" for a SQL-round fact.
+
+- **C1: "patterns X screens for" with no source — NVIDIA, Anthropic (and
+  OpenAI, Plaid, Ramp, Morgan Stanley).** `<meta name="description">`,
+  `og:description`, `twitter:description` and JSON-LD `Course.description`
+  say what the company "screens for"; NVIDIA's hero adds "its interviews
+  screen for exactly that", two lines above the page's own "no dated public
+  source" box. Same fix as Tesla in #237: "Practice SQL on <kind of data>".
+  `grep -l "screens for" src/*-sql-interview.html` lists 8 pages; Revolut
+  and Wise are sourced pages, so check theirs against the dossier before
+  changing anything.
+- **C1: Netflix and Airbnb descriptions name roles no report covers.**
+  Netflix says "data analyst and data engineer", Airbnb "data analyst and
+  data scientist"; the readable reports are DS (Netflix) and DS + DE
+  (Airbnb). Drop the role list or name the reported roles.
+- **C1: Anthropic, one first-party dated line is page-ready.** Anthropic's
+  candidate AI guidance (anthropic.com/candidate-ai-guidance, updated
+  2025-07-10): take-homes and live interviews are done without AI unless
+  Anthropic says otherwise. A FAQ line with the link and date; it is not a
+  SQL-round claim, so the page stays general.
+- **C1: the stale FAQ sentence "such as the Capital One page"** is still in
+  17 `src/*-sql-interview.html` pages (grep 2026-11-25; 21 on 11-23).
+- **B3: page dwell time with LEAD.** Airbnb DE onsite (PracHub, Sep 2026;
+  low, one report): from a page-view log, time on each page = the next
+  event's timestamp minus this one, per user. The bank's only LEAD item is
+  47 (salaries); no item computes a duration from the next row. Fits any
+  event dataset; teaches LEAD + the last-event NULL.
+- **B3: "define the metric, then query it" gains a fifth source.** Airbnb
+  Sr DS tech screen (PracHub, Aug 2026): a vague retention request, define
+  which retention, then write it. Add to the existing line above (Revolut,
+  Stripe).
+- Covered already, no B3 needed: seven-day streaks (318, 319), top-N with
+  ties (20, 23, 28), conversion rate (Order Funnel Conversion; mock CTR).
+
 ## SEO sentinel — S1, 2026-11-22 (docs/reads/seo-sentinel-2026-11.md)
 
 - **C1 — RED: Bing index at 1.94 × the sitemap (`in_index` 833 vs 429
@@ -456,6 +507,26 @@ Read: `docs/reads/seo-sentinel-2026-11.md` (F5, indexing step).
   `linkTargets()` page. S1 re-checks on 11-25.
 - **C1 — RED, day 3 (F1), unchanged.** No new Bing data today (last fetch
   11-23 18:40 UTC). The 11-26 `blocked_by_robots` check stands.
+
+## SEO sentinel S1 + traffic C8, 2026-11-27
+
+Reads: `docs/reads/seo-sentinel-2026-11.md` (run 5) and `docs/reads/traffic-2026-11-27.md`.
+
+- **C1 — RED, day 6 (F1): `blocked_by_robots` was still rising at the 11-26
+  check.** It went 833 → 841 → 850 → 853 (11-22 → 11-25), +3 on the last
+  day. `in_index` is 858 against 445 sitemap URLs (1.93).
+  - The live `robots.txt` = main, with the bingbot group present.
+  - Either Bing has not re-read the file, or the counter only ages out.
+  - **FOUNDER:** Bing robots.txt tester, `bingbot`, on
+    `/app/?challenge=91&src=sql-exercises`. "Blocked" means ask Bing to
+    re-fetch robots.txt.
+- **B2 — before the Friday scorecard fill:** add A2's 11-26 walk aids
+  (`a2a21126%`, `d9fe96e2bdf44aefa9195673a6496888`) to the `founder` rule in
+  `scripts/scorecard-weekly.sql`. They are 13 "people" and 1 solver in the
+  week of 11-23. Keep the `google_ua` UA rule: #392's stamp catches only
+  2 of 16 GoogleOther rows (cached `track.js`, metrics.md).
+- **F5 (deploy drops the Debug-hub link) — cleared.** All four pages carry
+  the link live on 11-27. Nothing for C1.
 
 ## Funnel findings — B1, 2026-11-22 (docs/reads/funnel-2026-11-22.md)
 
@@ -598,7 +669,9 @@ off. Not built autonomously: it needs two deploys and a money decision.
 Each item needs the founder (cron, migration, deploy or auth). A3 does not
 touch them.
 
-- **A3-1. The 10:00 UTC mail crons time out together.** On 11-22,
+- **A3-1. The 10:00 UTC mail crons time out together.** RESOLVED 2026-11-24
+  (#225 deployed 11-23 13:21 UTC; the 11-24 10:00 runs all returned 200 in
+  13–14 s, no statement timeout). On 11-22,
   `skill-decay`, `welcome-back` and the 10:00 `streak-reminder` all
   returned 500. Each one reads every user with an email in a single request
   (`select username, email, data`). The three ran at once and hit the 8 s
@@ -619,14 +692,63 @@ touch them.
   (it fails before the index and passes after; rollback file beside it).
   Separately (auth, 6d): decide whether a timeout there should let the
   sign-up continue to the server's own check, instead of failing the form.
+  2026-11-28: the index is still not in `pg_indexes` (no timeout in the
+  window, 2 sign-ups).
 - **A3-3. `my-referral-stats` was never deployed (it has been in the repo
-  since 05-02).** The profile and the referral modal call it. The preflight
+  since 05-02).** RESOLVED 2026-11-23 13:21 UTC (deployed; 5 POSTs answered
+  200 on 11-24). The profile and the referral modal call it. The preflight
   gets 404, so the server-owned `personal_ref_code` never reaches the
   client. Its RPC `get_my_referral_stats` exists in production.
   FOUNDER: `supabase functions deploy my-referral-stats`. Then open the
   referral modal once as a registered account and check that the card
   shows the server's code. `claim-referral-reward` is undeployed too; it
   is a separate decision, because it grants Pro.
+
+## Errors — A3, 2026-11-25 (docs/reads/errors-2026-11-25.md)
+
+- **A3-4. Deploy `stripe-webhook`: it is behind main, and it revoked Pro from a
+  converted trial.** The deployed webhook predates M-01: its rows carry no
+  `after_trial`, and its emails have no invoice button. On 11-24 a trial's
+  first charge failed with `attempt_count` 0 and no next attempt. The webhook
+  read that as "Stripe gave up" and revoked Pro within the hour. The fix is in
+  #355 (draft, held under rule 6d).
+  FOUNDER:
+  1. Review #355.
+  2. Run `supabase functions deploy stripe-webhook`.
+  3. In Stripe, open the subscription with the open $9 invoice of 11-24
+     19:00 UTC. If it is still unpaid, send the customer the invoice's
+     hosted link and restore Pro by hand until it is settled.
+  2026-11-26: steps 1–2 are DONE (#355 merged, v27 deployed 11-25). Step 3
+  is still OPEN. About 35 h later the account still reads `proStatus` false,
+  and no `invoice.paid` has reached the webhook (`errors-2026-11-26.md`).
+  2026-11-27: still OPEN, about 62 h after expiry. A
+  `customer.subscription.updated` reached the webhook at 11-27 03:28 UTC
+  and wrote no row (only cancel/reactivate changes are logged); it may be
+  this subscription moving status on Stripe's retry schedule. Read its
+  status in Stripe (`errors-2026-11-27.md`).
+  2026-11-28: still OPEN, about 82 h after expiry; still `proStatus` false,
+  no `invoice.paid`, not back since 11-25 (`errors-2026-11-28.md`).
+- **A3-5. `pro_events` has no index on `username`, so per-person lookups scan
+  the table.** On 11-23 at 15:00 the `checkout-abandon` read
+  `username = … AND event IN (plan/checkout clicked)` hit the 8 s statement
+  timeout. That code ignores the error, so it treats the person as "never
+  clicked" and can send them the modal-abandon note (fail-open). The `used`
+  check before the recovery link has the same shape.
+  FOUNDER (no downtime):
+  `create index concurrently if not exists idx_pro_events_username_event on public.pro_events (username, event);`
+  Source half (any lane, small PR in `supabase/functions/checkout-abandon/`):
+  skip the person when either read returns an `error`.
+  2026-11-26: the source half is #398, held under 6d. After merge,
+  FOUNDER: `supabase functions deploy checkout-abandon`.
+  2026-11-27: #398 merged 11-26 10:51 UTC, but the deployed function is
+  still v14 (2026-09-17); the 11-26 15:00 run used the old code. The deploy
+  is still due.
+  2026-11-28: still v14; the 11-27 15:00 run used the old code again.
+- **A3-6. A failed sign-in leaves no `pro_events` row.** On 11-27 a
+  registered person got four 401s and a 429 lockout from `account-login`,
+  then got in 45 min later; only the function logs show it. Papercut: a
+  `login_failed {error: invalid_credentials | locked}` event (no username
+  typed, no password) would make lockouts countable. Not urgent at n = 1.
 
 ## Competitor watch — B6, 2026-11-22 (docs/reads/competitors-2026-11-22.md)
 
@@ -923,6 +1045,14 @@ Every competitor fact cited must come from that read (URL + date).
     Crypto, ≥ 100k iterations) on the next successful sign-in and marks the
     row's scheme; account-password writes the new scheme. Founder's call —
     it touches every sign-in.
+- **A/B metric SQL in metrics.md reads crawlers as people (B2, 2026-11-27).**
+  `company_direct_split`'s block filters only `metadata.bot` and internal
+  names; 45 of the 63 browsers assigned to `companyDirectOpen` by 11-27 are
+  `app1lang` crawlers (0 runs), so a read as written dilutes both arms about
+  threefold. Swap its filters for the `scripts/scorecard-weekly.sql`
+  exclusion block, and check the other A/B blocks (`runnable_starter_split`,
+  `mobileRunBar`, `mobileOneLayer`) and `scripts/ab/read-test.mjs` the same
+  way. A definition change, so its own PR (README 6b). Owner B2.
 
 ## Inbox review — 2026-11-23 (docs/reads/inbox-review-2026-11-23.md)
 
@@ -941,8 +1071,11 @@ Every competitor fact cited must come from that read (URL + date).
   tutor ("This box goes to the founder. For this query, the tutor answers
   now."). Measure it with `feedback_submitted` rows that carry a challenge
   id.
-- **IR-3 (founder). A payer's job question,** asked 2026-09-14 and never
-  answered. One honest line, either way.
+- ~~**IR-3 (founder). A payer's job question,** asked 2026-09-14 and never
+  answered. One honest line, either way.~~ **Closed 2026-11-24:** the payer
+  asked again on 11-24 and the founder answered in the same thread that day
+  (no opening promised; he would name her if asked for someone). E1 checked
+  on 11-26: the founder's reply is the last message, so no further draft.
 - **IR-4 (founder). Acknowledge the 09-15 security report** once #223 is
   deployed. The reporter left no contact, so this item is just to close the
   loop in the ledger.
@@ -1039,3 +1172,50 @@ cheapest open items). Every competitor fact cited must come from that read.
 - **Q7 · C2 guard — timed company mocks are no longer rare** (StrataScratch
   AI mocks per loop, LeetCode Interview Simulations, IQ AI mock). Do not
   claim otherwise.
+
+## Career path — First 90 Days and Moving up (plans 2026-11-25)
+
+Founder's request 2026-11-25 ("ilk iş ilk 90 gün" / "yükselme ve güncel
+stack"). Two plans, measured starting points in each:
+[docs/plans/first-90-days-2026-11-25.md](docs/plans/first-90-days-2026-11-25.md)
+and
+[docs/plans/moving-up-current-stack-2026-11-25.md](docs/plans/moving-up-current-stack-2026-11-25.md).
+Metrics defined in `docs/agent/metrics.md` (rule 6b): `outcome_ask_answer`,
+`ticket_door`, `stack_content_reach`, `at_work_share`, `moving_up_goal`.
+
+**Starting point.**
+- First 90 Days: 1 real person has set `hired`, 0 non-internal ticket opens
+  since 2026-10-04, and 0 `interview_outcome` rows ever.
+- Moving up: 0 opens recorded for any id above 321 since 2026-11-15 (Debug
+  and DDL/DML included), and 96 dialect-note openers in 90 days.
+
+**First 90 Days, first three tasks**
+1. **F1 measure PR** (B2): `outcome_ask_shown`, `first90_link_shown`,
+   `ticket_card_shown`, and `interview_outcome.source='in_app'`. Behaviour is
+   unchanged.
+2. **F1 build:** the in-app "Did your interview happen?" ask, behind a flag,
+   with a ledger claim on `outcome_ask_answer`.
+3. **F2 build:** a ticket-1 Coach card for Analyst Day-One and job-ready
+   people (6+ solves), behind a flag, with a claim on `ticket_door`. Waits
+   for founder decision 1 in the plan.
+
+**Moving up, first three tasks**
+1. **U1** (A2 walk, then the owning lane): find why no challenge above
+   id 321 has an open since 2026-11-15, and fix it with a source guard
+   before 2026-12-08, so the 12-22 Debug read has real opens.
+2. **U2 measure PR:** the `at_work` intent answer ("I use SQL at work and
+   want to move up"), behind a flag, with a claim on `at_work_share`.
+   `first_solve_10m` is the guardrail.
+3. **U3 draft:** the "Moving up" goal in a branch, from existing ids only.
+   Not merged until U2 reads ≥ 10% and the founder approves.
+
+**Founder decisions:**
+- Tickets for people who are not hired.
+- The outcome email.
+- Stripe cancellation reasons and #242.
+- The "Moving up" and "SQL with AI" goals.
+- The `at_work` answer.
+- PostgreSQL mode.
+- Python in or out of O2.
+
+The full list is in §9 of each plan.

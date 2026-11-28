@@ -16,7 +16,8 @@ describe('activation events', () => {
     expect(body('runChallengeQuery')).toContain("let via = 'run';");
     expect(body('runChallengeQuery')).toContain("via = 'starter';");
     expect(body('runChallengeQuery')).toContain('markChallengeFirstRun(via)');
-    expect(body('submitChallenge')).toContain("markChallengeFirstRun('submit')");
+    // Since 2026-11-26 Submit also passes `starterUntouched` (runnableStarter).
+    expect(body('submitChallenge')).toContain("markChallengeFirstRun('submit', starterUntouched ? { starterUntouched: true } : {})");
   });
   it('the first run is sent once per challenge', () => {
     expect(app).toMatch(/firstRunSentRef\.current\.has\(id\)\) return;/);

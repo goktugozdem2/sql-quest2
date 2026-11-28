@@ -278,6 +278,9 @@ export const COMPANY_INTERVIEWS = {
       ['What is not settled', 'The reports span 2023 to 2025, intern to experienced, and different teams; no source states one format for every PayPal data role. Only the intern report says the code was run (against test cases).', []],
     ],
     reportedTopics: ['Conditional aggregation (CASE WHEN inside SUM or COUNT)', 'Aggregates in HAVING', 'Joins, and filters in WHERE vs ON', 'Ranking with ties (average transaction per user)', 'Funnels and conversion rates', 'Transaction-flow and segmentation analysis', 'Anomaly and data-quality checks on transactions'],
+    // The one line on a metrics or case round, from the sources above
+    // (scripts/build-company-pages.mjs, caseRoundLine).
+    caseRound: { note: 'One data scientist report describes onsite rounds on fraud and risk decisions, one of them a fraud-labelling case; another puts a short case inside a phone round.', sources: ['prachub-onsite-pp', 'prachub-phone-pp'] },
     difficulty: 'Reported as medium in a July 2025 onsite and hard, by the candidate\'s own account, in a December 2025 phone round; the 2023 intern report calls the hiring-manager SQL medium to tough.',
     shapes: [
       ['Deposits and withdrawals per account: each account\'s closing balance.', 'datalemur-q-pp'],
@@ -313,6 +316,7 @@ export const COMPANY_INTERVIEWS = {
       ['Where sources differ', 'The guide describes the data science round as a conversation plus a whiteboard part; the March 2025 report names CoderPad. Neither report says whether the SQL was run. A second guide lists more rounds, including an AI-led behavioural screen for some 2025–2026 candidates.', ['aced-cb', 'prachub-sr-cb', 'prachub-guide-cb']],
     ],
     reportedTopics: ['Time-window filters (the last 30 days)', 'COUNT DISTINCT and choosing the denominator', 'Retention and cohort timing (7-day retention)', 'Rates (adoption, transaction rate)', 'Time between events (adoption to first transaction)', 'First event per user, compared with later rows', 'Running and cumulative sums', 'Layered CTEs and window functions'],
+    caseRound: { note: 'Both data scientist reports describe a case next to the SQL, and follow-ups on how a metric such as retention is defined; a prep guide describes a work-trial case presented to a panel.', sources: ['prachub-sr-cb', 'prachub-ds-cb', 'aced-cb'] },
     difficulty: 'Reported as medium by one candidate and hard by another; the medium report says the SQL itself was not especially hard and the interviewer weighed the reasoning.',
     shapes: [
       ['Trades by user, time, volume and asset: the share of users with three or more trades in the last 30 days.', 'prachub-sr-cb'],
@@ -353,6 +357,7 @@ export const COMPANY_INTERVIEWS = {
       ['Environment', 'Monzo\'s analytics run on BigQuery, dbt and Looker. None of the sources we could read says which tool the take-home itself is done in.', ['monzo-ae-2026', 'monzo-joiner-2022']],
     ],
     reportedTopics: ['Turning a stakeholder\'s question into a metric, then into SQL', 'Metrics over a period: counts, rates and ratios with GROUP BY', 'Readable, testable SQL you can defend line by line', 'Experiment and success-metric reasoning on top of the query', 'Data modelling into clean tables (Analytics Engineering)', 'Explaining a result to a non-technical reader'],
+    caseRound: { note: 'Monzo\'s own posts describe an open-ended case study in the final interviews and a review that covers success metrics; a data scientist who joined in 2022 describes a take-home on metric formulation.', sources: ['monzo-ds-2026', 'monzo-joiner-2022'] },
     difficulty: 'No source we could read grades it; Monzo describes the bar as clear, sensible code and sound reasoning rather than trivia, and the 2022 post set no time limit on the take-home.',
     shapes: [
       ['A data request arrives in plain business language: decide what to measure, write the SQL (or Python) that answers it, and present the finding so a non-technical reader can act on it.', 'monzo-ds-2026'],
@@ -390,6 +395,7 @@ export const COMPANY_INTERVIEWS = {
       ['What is not settled', 'All three are single candidate reports from late 2025. None names the coding tool, and none describes a data analyst loop; no source we could read states one format for every Chime data role.', []],
     ],
     reportedTopics: ['Timestamps truncated to a day or month before grouping', 'Layered CTEs', 'Ranking with ties kept', 'Comparing a row with the one before it', 'Rolling sums over a window', 'Defining a retention metric from users and transactions', 'Basic joins and aggregation (the software engineering report)'],
+    caseRound: { note: 'One data scientist report describes an hour of business case on a spreadsheet of metrics next to the SQL hour; another, a retention metric the candidate had to define before writing it.', sources: ['prachub-ts-ch', 'prachub-hm-ch'] },
     difficulty: 'Reported as medium in the October 2025 technical screen and easy in the November 2025 hiring-manager screen, which ended in a rejection; the software engineering report calls its SQL easy.',
     shapes: [
       ['Users and their transactions, the transaction time a full timestamp: metrics per day or month, which means truncating the timestamp first.', 'prachub-ts-ch'],
@@ -482,21 +488,34 @@ export const NEW_COMPANY_TAG_REASONS = {
 // moment its slug appears, so the entry has to be right before it ships.
 // ---------------------------------------------------------------------------
 export const SOURCED_FORMATS = {
+  // 2026-11-26 (C5): rows rebuilt from the R1 dossier
+  // docs/reads/companies/amazon.md (sources read 2026-11-22, refresh by
+  // 2027-01-21). Amazon's own BIE prep page (first-party) now carries the
+  // stages, the online assessment, the phone screen's length and the loop;
+  // Exponent's guide moved to aced.io; two PracHub reports (Jul, Sep 2026).
+  // The Blind report was read 2026-09-14 and not re-read (Blind answers 402).
   amazon: {
     name: 'Amazon',
     role: 'Business Intelligence Engineer / data analytics roles',
+    publishes: 'Amazon publishes the stages of its Business Intelligence Engineer interview on its own hiring page, not the questions in its SQL round.',
+    accessed: '22 Nov 2026',
     format: [
-      ['Stages', 'A recruiter screen of about 30 minutes, one or two technical phone screens, then a virtual onsite loop of about five rounds.', ['blind-amzn', 'exponent-amzn']],
-      ['Round length', 'One candidate report puts the technical phone screens at 75 minutes each and the onsite rounds at roughly 60 minutes. A prep guide describes the onsite as five to six rounds of 45 minutes to an hour.', ['blind-amzn', 'exponent-amzn']],
-      ['Environment', 'The same report describes SQL written on a "CoderPad-style" editor where you often cannot execute the query, so correctness has to be reasoned rather than run.', ['blind-amzn']],
-      ['What the SQL round covers', 'Joins, window functions and ranking, with follow-ups on edge cases; the guide says to expect at least five questions across SQL, Python, visualisation and business analytics in the technical screen, without splitting out how many are SQL.', ['blind-amzn', 'exponent-amzn']],
-      ['Alongside the SQL', 'Leadership Principles come up throughout, including inside technical rounds — not only in the behavioural ones.', ['exponent-amzn', 'blind-amzn']],
+      ['Stages', 'Amazon\'s own prep page lists an online assessment, then one or two technical phone screens (some candidates go straight to the loop), then the interview loop.', ['amazon-bie']],
+      ['Online assessment', 'Three parts: a SQL challenge, a "Working with SQL" section and a Work Styles survey. It stays open for seven days.', ['amazon-bie']],
+      ['Round length', 'Amazon gives the phone screen as 60 minutes with a senior leader, and the loop as five 55-minute interviews. Two candidate reports say they were told 75 minutes for the phone screen; in one it ended after about an hour.', ['amazon-bie', 'blind-amzn', 'prachub-bie-amzn']],
+      ['Environment', 'One candidate report describes a "CoderPad-style" shared editor where you often cannot run the query; the candidate who wrote to us describes an Amazon-branded web editor. Amazon does not say whether queries run, so plan to reason about correctness rather than run it.', ['blind-amzn', 'reported-amzn']],
+      ['What the SQL round covers', 'Amazon names SQL and basic scripting, analytical problem solving, visualisation, metrics and reporting, and business acumen. Candidate reports describe joins, window functions and ranking, with follow-ups on edge cases and duplicates. A prep guide expects at least five questions across SQL, Python, visualisation and business analytics in the technical screen, without splitting out how many are SQL.', ['amazon-bie', 'blind-amzn', 'reported-amzn', 'prachub-bie-amzn', 'aced-amzn']],
+      ['Alongside the SQL', 'Leadership Principles come up throughout: Amazon puts them in the phone screen, and says each loop interviewer typically asks two or three behavioural questions. One September 2026 report also describes a dashboard-design task in the technical screen: the metrics and charts for one operations page.', ['amazon-bie', 'prachub-bie-amzn']],
       // 2026-10-21: one round reported to us by email (docs/reads/amazon-bie-candidate-report-2026-10-21.md).
       ['A round reported to us', 'A Business Intelligence Engineer candidate described a 60-minute technical and behavioural round in October 2026: three SQL problems, each followed by questions about the query and changes to it — why a self-join, what a JOIN with no type performs, COUNT(*) against COUNT(column), ROW_NUMBER against RANK and DENSE_RANK, and how duplicate rows change a streak. The shapes: employees paid above their department\'s average; reviewers who rated the same title exactly twice with the second rating higher; users with three or more consecutive login days, with the streak\'s start and length.', ['reported-amzn']],
+      ['Business analyst', 'One July 2026 report of a Business Analyst screen describes three SQL questions, a behavioural deep-dive and a business case.', ['prachub-ba-amzn']],
     ],
     sources: {
-      'blind-amzn': ['Blind — "Amazon Business Intelligence Engineer (BIE L5) Interview 2025" (candidate report, replies to 15 Oct 2025)', 'https://www.teamblind.com/post/amazon-business-intelligence-engineer-bie-l5-interview-2025-jdr2idmd', '14 Sep 2025'],
-      'exponent-amzn': ['Exponent — Amazon Business Intelligence Engineer interview guide', 'https://www.tryexponent.com/guides/amazon-bie-interview', 'shown as "updated 2 months ago" on 14 Sep 2026'],
+      'amazon-bie': ['Amazon — Business Intelligence Engineer interview prep (Amazon\'s own hiring page)', 'https://atoz.amazon/en-us/jobs/hiring-process/interview-prep/business-intelligence-engineer', 'no date shown; read 22 Nov 2026'],
+      'blind-amzn': ['Blind — "Amazon Business Intelligence Engineer (BIE L5) Interview 2025" (candidate report, replies to 15 Oct 2025; read 14 Sep 2026, not re-read since)', 'https://www.teamblind.com/post/amazon-business-intelligence-engineer-bie-l5-interview-2025-jdr2idmd', '14 Sep 2025'],
+      'aced-amzn': ['aced.io (formerly Exponent) — Amazon Business Intelligence Engineer interview guide', 'https://www.aced.io/guides/amazon-business-intelligence-engineer-interview', 'shown as "updated 3 days ago" on 22 Nov 2026'],
+      'prachub-bie-amzn': ['PracHub — "Amazon Business Intelligence Engineer interview experience: SQL interrupted and a shortened phone screen" (candidate report, interview Sep 2026)', 'https://prachub.com/interview-experiences/amazon-business-intelligence-engineer-interview-experience-sql-interrupted-and-a-shortened-phone-screen', '28 Sep 2026'],
+      'prachub-ba-amzn': ['PracHub — "Amazon Business Analyst interview with SQL and business case" (candidate report, interview Jul 2026)', 'https://prachub.com/interview-experiences/amazon-business-analyst-interview-with-sql-and-business-case-88452e0571', '5 Sep 2026'],
       // `direct`: told to us, not published — the page says so and names no one.
       'reported-amzn': ['A Business Intelligence Engineer candidate, by email to SQL Quest (name withheld at their request)', null, '21 Oct 2026', 'direct'],
     },

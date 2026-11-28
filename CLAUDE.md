@@ -1,18 +1,21 @@
 # SQL Quest — Claude Instructions
 
-## Repo map — read this first (audited 2026-10-06)
+## Repo map — read this first (audited 2026-10-06; counts refreshed 2026-11-27)
 
 The rest of this file is the operating history: rules the founder set, traps
 that already bit us, and why things are the way they are. This section is the
 map. Work plan: `docs/PLAN.md`. Ranked issues: `BACKLOG.md`.
 
 ### Stack
-- **Front end:** one React 18 app, `src/app.jsx` (~41,000 lines, the
-  `SQLQuest` component), built by **Vite** into an IIFE at `public/app.js`
-  (~1.4 MB, ~376 KB gzipped). React, ReactDOM and **sql.js** (SQLite as WASM)
+- **Front end:** one React 18 app, `src/app.jsx` (~44,000 lines, the
+  `SQLQuest` component), built by **Vite** into an IIFE at `public/app.js`.
+  React, ReactDOM and **sql.js** (SQLite as WASM)
   load from CDNs in `src/app.html`; queries run in the browser. Content (the
-  304-question bank, lessons, datasets, mocks) is bundled separately into
-  `public/data.js` (~2.5 MB, ~646 KB gzipped) by `scripts/bundle-data.js`.
+  323-challenge bank — plus the 12 Debug items while `debugQuestions` is on —
+  lessons, datasets, mocks) is bundled separately into `public/data.js` by
+  `scripts/bundle-data.js`. Gzip budgets live in `.size-limit.json` (app.js
+  442.18 kB, data.js 678.03 kB, styles.css 14.11 kB on 2026-11-27); CI's
+  "Bundle size budget" step (`npm run size`) fails over them.
 - **Styling:** Tailwind (`src/input.css` → `public/styles.css`); design rules
   in `DESIGN.md`.
 - **Marketing site:** ~100 static HTML pages in `src/` (+ `src/blog/`,
@@ -30,13 +33,13 @@ map. Work plan: `docs/PLAN.md`. Ranked issues: `BACKLOG.md`.
 ### Folder structure
 | Path | What |
 |---|---|
-| `src/app.jsx` | the app (one component); pure logic is pulled out into `src/utils/*.js` (66 modules, tested) |
+| `src/app.jsx` | the app (one component); pure logic is pulled out into `src/utils/*.js` (95 modules, tested) |
 | `src/data/` | content: challenges, lessons, goals, datasets, mocks, tickets, feature flags |
 | `src/*.html`, `src/blog/`, `src/challenges/` | the static site (edit generated ones through their generator) |
 | `scripts/` | build steps, page generators, GSC/Bing pipelines (`gsc/`, `bing/`), smoke checks (`smoke/`), report SQL |
 | `supabase/functions/` | edge functions (deployed with `supabase functions deploy <name>`) |
 | `supabase/migrations/`, `supabase/manual/` | SQL migrations; rollbacks and replica tests in `manual/` |
-| `tests/` | vitest, 129 files (unit tests + source guards over app.jsx and the pages) |
+| `tests/` | vitest, 247 files (unit tests + source guards over app.jsx and the pages) |
 | `public/` | BUILD OUTPUT, committed (Vercel serves it). Never hand-edit. |
 | `docs/agent/` | objectives, ledger (claims → verdicts), metrics definitions, flag queue |
 | `docs/plans/`, `docs/reads/` | plans per feature; dated data reads that facts on pages must cite |
@@ -56,8 +59,8 @@ map. Work plan: `docs/PLAN.md`. Ranked issues: `BACKLOG.md`.
 - Preview a dark flag: `/app?ff_features_<flag>=true`.
 
 ### Tests
-- `npm run test:run` (vitest; `npm test` is watch mode). 2,502 tests on
-  2026-10-05 — re-run before quoting.
+- `npm run test:run` (vitest; `npm test` is watch mode). 4,530 tests in 247
+  files on 2026-11-27 — re-run before quoting.
 - `npm run lint` — ESLint over `src/utils/` and `tests/` only (app.jsx is
   not linted). 0 errors expected; ~41 warnings are known.
 - `npm run smoke` — headless-Chrome e2e against a running server.
@@ -115,8 +118,12 @@ map. Work plan: `docs/PLAN.md`. Ranked issues: `BACKLOG.md`.
    list) is not in git — re-read it after any price change.
 7. **Bot traffic** — rendering crawlers count as new people; filter the known
    fingerprints in any first-contact read.
-8. **Frozen pages** — `capital-one-sql-interview` until 2026-10-12 (a test
-   pins its hash); no `/questions/` template change before 2026-10-27.
+8. **Frozen pages** — none now. The Capital One freeze lifted 2026-11-22
+   (`SKIP_UNTIL_READ` in build-company-pages.mjs is empty, kept for the next
+   one); the `/questions/` template hold ended 2026-10-27.
+9. **Experiment cells** — at most two live A/Bs per funnel step × device
+   (orchestrator 2026-11-24); a new test checks its cell first, and every
+   read is split by the other tests' arms that meet the same person.
 
 ### Cloud sessions (claude.ai/code) — what is and is not there
 A cloud session clones this repo from GitHub: it reads this file,
@@ -137,8 +144,8 @@ It does **not** have what lives on the founder's laptop:
   local memory are below.
 - **GitHub Actions run regardless** (CI, smoke, IndexNow, GSC/Bing
   pipelines) — they use GitHub Secrets, not the session.
-- Follow `docs/PLAN.md`: one task, one branch, one PR, never merged without
-  the founder's go.
+- Follow `docs/PLAN.md`: one task, one branch, one PR, merged only through
+  A0's gate (see Conventions).
 
 **Two buyer facts that were only in local memory (2026-10-06):**
 - **Capital One is the sharpest buyer signal.** 2 of the first 3 payers were
@@ -281,6 +288,12 @@ metrics:report`. Cohorts by signup week: `scripts/cohort-report.sql`
 ### Build system
 - **Vite** (NOT Babel CLI). `npm run build` → `vite build` → `public/app.js` (IIFE, React external, window.SQLQuest set at bottom of src/app.jsx).
 - `npm run dev:vite` → HMR at :5173. `npm run dev` still runs `npx serve public/` for the preview MCP on :4321.
+- `build:jsx` also builds `public/pg-mode.js` (`vite.pg-mode.config.js`), the
+  PostgreSQL-mode engine the app injects only when a person picks it.
+- `npm run build` runs the company generators (#435): `build-company-pages.mjs`
+  then `build-company-crosslinks.mjs`, before `build-interview-hub.mjs`. Over
+  the committed sources the generator is a no-op ("0 page(s) changed");
+  `tests/company-template.test.js` pins that and the order.
 - Babel fallback kept as `build:jsx:babel` for one release.
 - `ws` dev-dep installed for scripts/smoke-test.js (headless Chrome e2e).
 
@@ -518,11 +531,15 @@ so a landing view and a later solve are joinable for the first time.
   reported topics, paraphrased question shapes, the real tagged challenges,
   Skillmap/readiness block, topic links, FAQ). Seven pages come from it
   (DoorDash, Goldman Sachs, Walmart, TikTok, LinkedIn, Microsoft, Bloomberg);
-  it also injects the readiness block and topic links into the 23 older pages.
-  Edit the data, then run it, then `node scripts/build-company-crosslinks.mjs`,
-  then `npm run build`. `tests/company-template.test.js` fails if a committed
-  page drifts from the generator; `tests/company-pages.test.js` still binds
+  it also injects the readiness block and topic links into the older pages.
+  Edit the data, then `npm run build` (it runs both generators since #435).
+  `tests/company-template.test.js` fails if any of the 34 committed pages
+  drifts from the generator, byte for byte; `tests/company-pages.test.js` still binds
   every claim (a page that states a format must sit in SOURCED_PAGES).
+- **First screens live only in the generator** (#434): `FIRST_SCREENS` in
+  `scripts/company-first-screen.mjs` (Monzo, Amazon, Wise on 2026-11-27)
+  puts a block in the hero, right after the primary CTA row; a hand-written
+  block is stripped on the next build.
 - **A company page never states a format without a dated source**, and never
   cites a fact seen only in a search snippet. Research notes:
   docs/reads/company-research-2026-09-13.md.
@@ -550,14 +567,10 @@ so a landing view and a later solve are joinable for the first time.
   dialect sentence (`src/utils/dialect-notes.js`, also the app's "What
   changes" table on every challenge); a `?interview=` button says Pro; the
   homepage table has no "Free tier" row; /app's meta says interview practice.
-  Capital One gets all of it on 10-12 (plan section E).
-- **2026-10-12, first job: the Capital One page** — plan with the branches
-  and the ready changes: `docs/plans/capital-one-2026-10-12.md` (competitor
-  read `docs/reads/capital-one-serp-2026-09-25.md`). Nothing on the page or
-  its blog post changes before that read. The generator skips it
-  (`SKIP_UNTIL_READ`) and `tests/company-sections.test.js` pins the page,
-  its built HTML and the blog post to git HEAD + a content hash until then;
-  on 10-12 remove the skip entry and the frozen test block together.
+  Capital One carries it too since its freeze lifted (2026-11-22).
+- **The Capital One freeze is over** (plan `docs/plans/capital-one-2026-10-12.md`):
+  it lifted 2026-11-22 and the page carries both sections like every other
+  signed archetype. `SKIP_UNTIL_READ` stays, empty, for the next frozen page.
 
 ### The interview hub is generated (2026-09-14)
 
@@ -995,6 +1008,85 @@ URLs filled, brand icon is the bolt, brand colour #FFE34D.
   metadata. The Stripe endpoint must subscribe to `setup_intent.setup_failed`
   (dashboard, founder).
 
+### The first-session tournament (2026-11-26, dark; launch 2026-12-12)
+
+- Plan `docs/plans/first-session-tournament-2026-11-26.md` (§5.5 rules);
+  metric `first_session_tournament` (6+ distinct challenges solved within 7
+  days of assignment; baseline 11.8%). Flag `firstSessionTournament` OFF
+  (#412 frame, #417 arm B, #418 arm D, #437); the flip is its own PR on
+  2026-12-12, after the holdout's halfway money read (orchestrator
+  2026-11-27), with the founder's go on the plan's §7 money strings. Flag off
+  is the kill switch: nobody new enrols, enrolled browsers get today's product.
+- **Arms** — `src/data/tournament-arms.js`, the one registry (app, tests and
+  `scripts/tournament-read.sql`'s `tournament-registry` VALUES, kept equal by
+  `tests/tournament-read.test.js`): `A_control` (today's product, permanent),
+  `B_single_path` (a 4-question adaptive ladder sets the level, then one plan
+  line), `D_interview_sprint` (company in one tap, 7 / 14 days / no date, a
+  day-by-day plan); `C_proof_first` queued as the first replacement. Retire
+  an arm by status (`eliminated` / `promoted`), never by deleting it; any
+  behaviour change bumps `armVersion`, and reads never pool across versions.
+- **Assignment** (src/utils/tournament.js): new visitors only — a browser's
+  first app open with no prior app key (`hasPriorAppUse`, the holdout's
+  rule); never returning browsers, `hired`, accounts created before the
+  first open, or a first open carrying `?interview=` / `?profile=`. Profile
+  first (`buildVisitorProfile`: door, company, device, tz bucket, …, no PII),
+  then one of four strata (`IT-D`, `IT-M`, `NI-D`, `NI-M`: interview-target ×
+  desktop / phone-tablet), then the draw inside the stratum — FNV over
+  `${aid}:first_session_tournament_v1:${stratum}`, murmur3-finalised, over
+  the stratum's weights (equal until routed). Record `sqlquest_tournament_v1`
+  (+ `userData.tournament`); a stored record always wins. `tournament_assigned`
+  once, with `stratum`, `profile`, `weights`, `draw` and a `reason` sentence;
+  `tArm` / `tArmV` on every `pro_events` row, like `fqArm`.
+- **A built challenger supersedes** the first-session A/Bs (`firstScreen`,
+  `companyDirectOpen`, `runnableStarter`, `mobileRunBar`) through
+  `tournamentSupersedesNow()`; arm A keeps them. Arm UI reads
+  `tournamentBehaviourNow()` and `pathUiFlags()` (src/utils/single-path.js),
+  all above the early returns; control and unenrolled people see today's
+  product byte for byte (tests/single-path.test.js).
+- **One layer at a time, the whole first session (B and D)** —
+  `pathLayerDecide`: one queue, Pro / `plan_end` ask > save / sign-up ask >
+  achievement > Skillmap card > survey; at most one layer per solve, the rest
+  dropped (`tournament_layer_dropped`), never held; one automatic Pro ask in
+  any 3 consecutive solves (`pathProAskAllowed`). Ends at the first hour away.
+- **Rules** (written before the data): nothing decided until every
+  challenger has ≥ 150 eligible; eliminate at P(worst among challengers) ≥
+  0.80, or the lowest posterior mean at 6 weeks; promote at P(better than
+  control) ≥ 0.95 on two consecutive Friday reads (it becomes `A_control`
+  vN+1); harm stop when `first_solve_10m` trails control by ≥ 10 points at ≥
+  100 per arm. Route a stratum only at P(best in stratum) ≥ 0.95 on two
+  consecutive reads with ≥ 100 per arm there, winner ≤ 80%
+  (`TOURNAMENT_STRATUM_WEIGHTS`; ≥ 20% always explores). Every read is 2×2
+  with `fqArm`.
+- **Reads** (Fridays): `scripts/tournament-read.sql` (query 1 pooled, query 4
+  per stratum) → `node scripts/tournament-posteriors.mjs` (`--strata` for
+  routing and the post-stratified pool, `--sim` for what the rules can see);
+  `scripts/tournament-people.sql` is one row per person — profile, stratum,
+  arm, why (`person` = 8 hex of sha256(aid), never the aid).
+- **The personal roadmap** (`src/utils/personal-roadmap.js`, `buildRoadmap`,
+  #415/#437; spec `docs/plans/personalized-roadmap-2026-11-26.md`, metric
+  `plan_steps_done_7d`): company, level, focus, deadline → an ordered plan,
+  rule-based and the same in every arm; the arms differ only in how the
+  profile is captured and the plan shown. Pure, writes nothing, curriculum
+  order only, never a Pro-only step before the 10th free solve. Arm D's
+  sprint keeps its own length field and **never writes `prepTarget.date`**
+  (`deadlineOffer` and the interview-outcome note read it).
+
+### Open → first run A/Bs, and the cell cap (2026-11-24 → 11-27)
+
+- **Cap: at most two live A/Bs per funnel step × device** (orchestrator
+  2026-11-24), not fleet-wide; reads are split 2×2 by the other tests' arms.
+- `mobileRunBar` ON at 50/50 (#366, 2026-11-25): Run / Submit pinned to the
+  bottom of a phone's viewport, above the keyboard; read 2026-12-23 (`open_to_first_run`, mobile band).
+  `runnableStarter` ON at 50/50 (#402 built, #408 flipped): on a desktop
+  empty-editor open the editor holds `SELECT * FROM <table> LIMIT 5;` as real
+  text; interim harm read 2026-12-17, final 2027-01-07
+  (`runnable_starter_split`). With `companyDirectOpen` they share the open →
+  first run cells.
+- **Inside the tournament** (orchestrator 2026-11-27): these tests run on in
+  arm A and for non-enrolled people; their reads become direction-only with n,
+  and none is promoted to everyone on that evidence. If arm A's share of new
+  visitors falls below 25%, stop them and keep today's defaults.
+
 ### The free quota — the deep-link leak and the road back (2026-10-02)
 
 - A `/app/?challenge=` link used to open the challenge 100 ms after starting
@@ -1010,6 +1102,21 @@ URLs filled, brand icon is the bolt, brand colour #FFE34D.
 - The pre-registered 10-09 rule (ledger, "the free quota"): fewer than 3
   people who met the wall then started a trial or paid by 10-09 → the quota
   moves to 20, with the founder's Go.
+- **The quota is under a 50/50 holdout (2026-11-25, founder's written go,
+  flag `freeQuotaHoldout`).** A browser whose first app open falls in
+  2026-11-28 → 12-25 is split by `freeQuotaArm(aid)`; the `holdout` arm reads
+  `freeQuota` OFF (no wall, no counter, the pre-09-26 in-app wording),
+  returning browsers and pre-window accounts keep the quota. Every
+  `freeQuota` read in app.jsx goes through `freeQuotaOn()`, never a bare
+  `ftbFlag('freeQuota')` (test-bound); the static pages keep today's wording.
+  Window constants (`FREE_QUOTA_HOLDOUT_START_ISO` / `_END_ISO`) live in
+  src/utils/free-quota-holdout.js; `fqArm` rides every `pro_events` row.
+  Arm-balance check 2026-12-04 (two-sided binomial vs 50/50 must hold at
+  p ≥ 0.01, ≥ 200 assigned; fail → flag off, investigate the hash), halfway
+  money read 12-12 (0 trials in `holdout` vs ≥ 3 in `quota` → tell the
+  founder the same day), final read 2027-01-02 (ledger "the free-quota
+  holdout", metric `free_quota_holdout`). Kill switch: `freeQuotaHoldout`
+  off returns everyone to the quota.
 
 ### Testing
 - **Rule (founder, 2026-09-25): a new test is proven by at least one
@@ -1017,7 +1124,7 @@ URLs filled, brand icon is the bolt, brand colour #FFE34D.
   guards is wrong, watch the test fail by name, then restore. A test that
   passed the first time is not trusted until it has been shown to catch
   something — say in the commit which break it caught.
-- **2,502 tests passing** across 129 test files (vitest, measured 2026-10-05; was 1,406 / 59 on 2026-09-12), incl. `tests/site-counts.test.js` — the guard that fails on any stale product count on a static page — and `tests/cloud-save-contract.test.js`, the guard on the one write that must never lie. Runs via `npm run test:run`. (This line goes stale fast — re-run before quoting it.)
+- **4,530 tests passing** across 247 test files (vitest, measured 2026-11-27; 2,502 / 129 on 2026-10-05), incl. `tests/site-counts.test.js` — the guard that fails on any stale product count on a static page — and `tests/cloud-save-contract.test.js`, the guard on the one write that must never lie. Runs via `npm run test:run`. (This line goes stale fast — re-run before quoting it.)
 - `scripts/smoke-test.js` (headless Chrome e2e): **28/28** against a local `npx serve public` AND hermetically against production (`SMOKE_HERMETIC=1 node scripts/smoke-test.js https://sqlquest.app`), measured 2026-09-30. Run with `npm run smoke` (dev server must be up on :4321 or pass URL arg). It counts in the daily smoke workflow — no advisory flag. Three things it depends on, each of which made it stale once: the first-screen A/B arm is **pinned** per step (`firstScreenArmPreamble` in scripts/smoke/lib.mjs — never let a step toss the coin); the challenge editor is CodeMirror, so a query goes in through `.CodeMirror.setValue`, never the hidden textarea; the first-run shell has three primary tabs.
 - The smoke workflow's fifth check, `scripts/smoke/tutor-health.mjs`, is the only one that is not hermetic: one real `live_nudge` call to the production tutor as the internal account `sqlquest` (2026-09-30, after the tutor returned 502 for three days unseen). Class `business` — it mails, it can never roll back. A 429 is a pass with a note.
 
@@ -1197,9 +1304,14 @@ Replaced by `intakeAfterFirstSolve`; `goalGate: false`, the component kept for t
   `goalWallEarly`) ·
   **10-14** `companySetGate` (M1, after the intent-routing reach-6 read it
   would confound). Nothing monetisation-adjacent flips before 09-29.
-- M1 (amended 2026-09-20): the gate applies only to a company whose set was
-  authored for it — a signed archetype member (Capital One, Revolut). In such
-  a company view the first three of the set are free, the fourth
+- M1 (amended 2026-09-20; the gate itself fixed 2026-11-27, #420): only a set
+  AUTHORED for the company is walled — a signed archetype member (Capital
+  One, Revolut). `companySetGate({authored})` is ungated for anything but
+  `authored: true`, and every call (app.jsx, arm D's sprint) passes
+  `authored: companyHasAuthoredSet(companyFilter)` — a source guard fails a
+  call without it. From the 09-26 flip until #420 a topical set's fourth
+  question met the wall (Snowflake, Wise, Meta, …) while its page promised
+  only the quota. In an authored view the first three of the set are free, the fourth
   meets `wall='company_set'` (`surface='challenge_set'`), reason
   `company_set`; the banner, the row locks and the set-complete ask all read
   `companyGateFreeIds()`. Solved is never taken back; the general list is
@@ -1363,13 +1475,13 @@ Replaced by `intakeAfterFirstSolve`; `goalGate: false`, the component kept for t
 The 2026-04 overhaul notes (dismissed persistence, `_subtabEnabled`, NOTIF_PRI) are in `docs/archive/claude-md-history-2026-11-22.md`.
 
 ### Inline mirrors — done
-The weekly report and skill-drill mirrors are gone (app.jsx imports `src/utils/weekly-report.js` / `skill-drill.js`, checked 2026-11-22). The regex canonical mapper near the skill code is intentionally different from SKILL_TO_RADAR — leave it.
+The weekly report and skill-drill mirrors are gone (app.jsx imports `src/utils/weekly-report.js` / `skill-drill.js`, checked 2026-11-22 and 2026-11-27). The regex canonical mapper near the skill code is intentionally different from SKILL_TO_RADAR — leave it.
 
 ### Key files
-- `src/app.jsx` (~41,000 lines on 2026-10-06) — the monolith. Most session work lives here.
+- `src/app.jsx` (~44,000 lines on 2026-11-27) — the monolith. Most session work lives here.
 - `src/utils/coach.js` · `skill-calc.js` · `weekly-report.js` · `skill-drill.js` — pure functions with tests
-- `src/data/goals.js` · `challenges.js` (304 in the bank, 2026-10-06) · `lessons.js` — content
-- `tests/` — 129 test files (see Testing)
+- `src/data/goals.js` · `challenges.js` + `sector-challenges.js` (214 + 109 = 323 in the bank, 2026-11-27) · `lessons.js` — content
+- `tests/` — 247 test files (see Testing)
 - `vite.config.js` — build config, dev server, data bundle plugin
 - `scripts/smoke-test.js` · `build-og.sh` · `build-ads.sh` — dev tooling
 

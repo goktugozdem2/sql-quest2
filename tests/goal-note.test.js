@@ -166,6 +166,10 @@ describe('goal-note: the one-time letter to everyone with no goal on record', ()
     expect(goalOnRecord({ intake: { goal: 'interview' } })).toBe(true);
     expect(goalOnRecord({ coachState: { goalId: 'fundamentals' } })).toBe(true);
     expect(goalOnRecord({ prepTarget: { date: '2026-10-02' } })).toBe(true);
+    // The shape setUserIntent writes (2026-11-25 fix): an answered goal is on
+    // record, so the letter never asks a person who already told us.
+    expect(goalOnRecord({ intent: { goal: 'interview', source: 'ask', at: '2026-11-01T10:00:00.000Z' } })).toBe(true);
+    expect(goalOnRecord({ intent: { goal: 'exploring', source: 'ask', at: '2026-11-01T10:00:00.000Z' } })).toBe(false);
   });
 
   it('only the service role may call it — the anon key is public (2026-09-17)', () => {
