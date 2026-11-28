@@ -63,6 +63,29 @@ async function logProEvent(event: string, username: string | null, reason: strin
   }
 }
 
+// Why a person cancelled, in Stripe's words (2026-11-23, E2). Stripe fills
+// `subscription.cancellation_details` — `reason` (why the subscription
+// ended: cancellation_requested, payment_failed, payment_disputed),
+// `feedback` (the portal's fixed answer: too_expensive, missing_features,
+// switched_service, unused, customer_service, too_complex, low_quality,
+// other) and `comment` (free text) — but `feedback` and `comment` arrive
+// ONLY when the Customer Portal is set to collect cancellation reasons
+// (dashboard, founder). The comment is cut to 500 characters. pro_events is
+// INSERT-only for anon; only the service role and the metrics reader read
+// it, so the comment never reaches a browser.
+const CANCEL_COMMENT_MAX = 500;
+function cancellationDetails(subscription: unknown): { reason: string | null; feedback: string | null; comment: string | null } {
+  const d = (subscription as { cancellation_details?: { reason?: unknown; feedback?: unknown; comment?: unknown } | null })
+    ?.cancellation_details || null;
+  const str = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : null);
+  const comment = str(d?.comment);
+  return {
+    reason: str(d?.reason),
+    feedback: str(d?.feedback),
+    comment: comment ? comment.slice(0, CANCEL_COMMENT_MAX) : null,
+  };
+}
+
 // One lookup, one revocation. Four branches need "who is this Stripe
 // customer" and three need "take Pro away now"; before 2026-09-20 each one
 // carried its own copy and they had drifted (one forgot proAutoRenew, which
@@ -940,6 +963,8 @@ serve(async (req) => {
             plan_type: userData?.proType || "unknown",
             scheduled: true,
             trial_end: subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null,
+            // reason / feedback / comment, only on the cancellation.
+            ...(subscription.cancel_at_period_end ? cancellationDetails(subscription) : {}),
           },
         );
         console.log(`${subscription.cancel_at_period_end ? "⚠️ Trial cancellation scheduled" : "↩️ Trial cancellation undone"} for ${userRecord?.username || customerId}`);
@@ -956,6 +981,9 @@ serve(async (req) => {
           cancel_at: subscription.cancel_at ? new Date(subscription.cancel_at * 1000).toISOString() : null,
           period_end: subscription.current_period_end ? new Date(subscription.current_period_end * 1000).toISOString() : null,
           days_since_purchase: daysSincePurchase,
+          // Why they cancelled (reason / feedback / comment), only on the
+          // cancellation — a reactivation carries none.
+          ...(subscription.cancel_at_period_end ? cancellationDetails(subscription) : {}),
         },
       );
       console.log(`${subscription.cancel_at_period_end ? "⚠️ Cancellation scheduled" : "↩️ Cancellation undone"} for ${userRecord?.username || customerId}`);
@@ -982,8 +1010,8 @@ serve(async (req) => {
       //
       // The old branch did the second thing to both. Stripe distinguishes
       // them: `cancellation_details.reason` and the terminal status.
-      const cancelReason = (subscription as { cancellation_details?: { reason?: string } })
-        .cancellation_details?.reason || null;
+      const cancelDetails = cancellationDetails(subscription);
+      const cancelReason = cancelDetails.reason;
       const endedForNonPayment = cancelReason === "payment_failed"
         || subscription.status === "unpaid"
         || subscription.status === "incomplete_expired";
@@ -1031,6 +1059,8 @@ serve(async (req) => {
             plan_type: userData.proType || "unknown",
             ended: true,
             reason: cancelReason,
+            feedback: cancelDetails.feedback,
+            comment: cancelDetails.comment,
             revoked: endedForNonPayment,
             trial_end: trialEndIso,
           });
@@ -1044,6 +1074,8 @@ serve(async (req) => {
           plan_type: userData.proType || "unknown",
           ended: true,
           reason: cancelReason,
+          feedback: cancelDetails.feedback,
+          comment: cancelDetails.comment,
           revoked: endedForNonPayment,
           days_since_purchase: subscription.created
             ? Math.round((Date.now() - subscription.created * 1000) / 86400000)
@@ -1053,6 +1085,7 @@ serve(async (req) => {
       } else {
         await logProEvent("pro_subscription_cancelled", null, "stripe_webhook", {
           plan_type: "unknown", ended: true, reason: cancelReason,
+          feedback: cancelDetails.feedback, comment: cancelDetails.comment,
           revoked: endedForNonPayment, stripe_customer_id: customerId,
         });
       }
