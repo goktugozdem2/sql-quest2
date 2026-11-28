@@ -172,7 +172,9 @@ describe('a first-run placement is a placement', () => {
     expect(readFirstRunPlacement({ getItem: () => 'not json' })).toBeNull();
     // 'first_run_readiness_test' added 2026-09-14: a readiness result is a placement (tests/onboarding-unified.test.js).
     // 'first_run_goal_measure' added 2026-09-17: the in-app ten-question check is the same evidence (tests/goal-measure.test.js).
-    expect(FIRST_RUN_PLACEMENT_SOURCES).toEqual(['first_run_placement_quiz', 'first_run_readiness_test', 'first_run_goal_measure', 'first_run_manual_or_recommendation', 'first_run_completed']);
+    // 'first_run_ladder' added 2026-11-26: tournament arm B's four solved questions (tests/single-path.test.js).
+    expect(FIRST_RUN_PLACEMENT_SOURCES).toEqual(['first_run_placement_quiz', 'first_run_readiness_test', 'first_run_goal_measure', 'first_run_manual_or_recommendation', 'first_run_completed', 'first_run_ladder']);
+    expect(readFirstRunPlacement(storage({ source: 'first_run_ladder', firstRunLevel: 'basics' })).level).toBe('basics');
   });
 
   it('floors sit on the goals\' own skipIf thresholds and name only canonical skills', () => {

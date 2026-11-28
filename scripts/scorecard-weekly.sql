@@ -21,6 +21,10 @@
 --                  2026-11-20 checkout tests (guest, pro_modal_shown reason
 --                  email_link, 0 solves) and the 2026-11-24 walk guests
 --                  (Europe/Istanbul, mobile:375x812, 11:00–11:08 UTC)
+--                  and A2's live-QA walk aids: every aid starting `a2a2`
+--                  (a2a21126…0001 → …0013 on 2026-11-26, and any later
+--                  walk A2 stamps that way) plus d9fe96e2bdf4… (the same
+--                  11-26 walk, 11:40 UTC, random aid). B2 2026-11-27.
 --   bot_stamp      metadata.bot, wd or uaBot
 --   viewport       tablet:800x600, desktop:1280x1200, desktop:1919x992,
 --                  desktop:1024x1024
@@ -102,6 +106,8 @@ facts AS (   -- one pass over every row a person ever wrote
     bool_or(COALESCE(username, '') ~* '^(test|qa_|fabletest|linktest|internalroutine|sqlquest$|elena$)') AS f_internal,
     bool_or(m->>'aid' IN ('363dfb2bc1314757acc88c8438c4d2ea')
             OR m->>'aid' LIKE 'e5fcbad1a022%'
+            OR m->>'aid' LIKE 'a2a2%'   -- A2's live-QA walk aids, 2026-11-26 on (prefix rule)
+            OR m->>'aid' = 'd9fe96e2bdf44aefa9195673a6496888'   -- A2's 11-26 walk, one random aid
             OR (event = 'pro_modal_shown' AND m->>'reason' = 'email_link'
                 AND created_at >= '2026-11-20' AND created_at < '2026-11-21'
                 AND username ILIKE 'guest%' AND COALESCE(m->>'solvedCount', '0') = '0')
@@ -293,6 +299,8 @@ facts AS (   -- one pass over every row a person ever wrote
     bool_or(COALESCE(username, '') ~* '^(test|qa_|fabletest|linktest|internalroutine|sqlquest$|elena$)') AS f_internal,
     bool_or(m->>'aid' IN ('363dfb2bc1314757acc88c8438c4d2ea')
             OR m->>'aid' LIKE 'e5fcbad1a022%'
+            OR m->>'aid' LIKE 'a2a2%'   -- A2's live-QA walk aids, 2026-11-26 on (prefix rule)
+            OR m->>'aid' = 'd9fe96e2bdf44aefa9195673a6496888'   -- A2's 11-26 walk, one random aid
             OR (event = 'pro_modal_shown' AND m->>'reason' = 'email_link'
                 AND created_at >= '2026-11-20' AND created_at < '2026-11-21'
                 AND username ILIKE 'guest%' AND COALESCE(m->>'solvedCount', '0') = '0')
@@ -506,6 +514,8 @@ facts AS (   -- one pass over every row a person ever wrote
     bool_or(COALESCE(username, '') ~* '^(test|qa_|fabletest|linktest|internalroutine|sqlquest$|elena$)') AS f_internal,
     bool_or(m->>'aid' IN ('363dfb2bc1314757acc88c8438c4d2ea')
             OR m->>'aid' LIKE 'e5fcbad1a022%'
+            OR m->>'aid' LIKE 'a2a2%'   -- A2's live-QA walk aids, 2026-11-26 on (prefix rule)
+            OR m->>'aid' = 'd9fe96e2bdf44aefa9195673a6496888'   -- A2's 11-26 walk, one random aid
             OR (event = 'pro_modal_shown' AND m->>'reason' = 'email_link'
                 AND created_at >= '2026-11-20' AND created_at < '2026-11-21'
                 AND username ILIKE 'guest%' AND COALESCE(m->>'solvedCount', '0') = '0')

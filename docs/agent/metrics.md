@@ -1389,6 +1389,14 @@ whose user agent contains `GoogleOther` (incl. -Image / -Video) carries
 AI-assistant signal, not a reader). Before that date they passed the filter
 (~130–170 a week from mid-October): drop them by hand with
 `((metadata #>> '{}')::jsonb->>'ua') ~* 'googleother|notebooklm'`.
+**After the merge, keep that UA filter anyway (C8, 2026-11-27).** #392 went
+live on 2026-11-26 at about 11:00 UTC. In the day that followed, the stamp
+caught NotebookLM 3 of 3 times but GoogleOther only 2 of 16. Every unstamped
+GoogleOther row lacks the `viewport` key that `track.js` has written since
+#79 (11-22), so Google's renderer runs a cached `track.js` from before #79,
+although the file is served `max-age=0, must-revalidate`. A read that
+filters only `->>'bot' IS NULL` still counts about 10–12 GoogleOther
+"people" a day. Never drop the UA rule from a person filter.
 **Still open:** landing_view carries no window size, so the 1280x1200
 crawler's landing views cannot be told apart — 214 (W1) and 295 (W0)
 landing people are Asia/Shanghai with no source. Read landing people with
@@ -2082,7 +2090,8 @@ kept beside the raw count, never instead of it. Query 1 (`raw_visitors`,
   exclusion — one row marks the whole browser. The exclusions are fleet
   README rule 2 plus the two app-only crawlers found by A01 (shared traps):
   internal usernames; the founder's walk aids (`363dfb2b…`, `e5fcbad1a022…`),
-  11-20 checkout tests and 11-24 walk guests; `metadata.bot` / `wd` /
+  11-20 checkout tests and 11-24 walk guests; A2's live-QA walk aids (every
+  `aid` starting `a2a2`, plus `d9fe96e2…` of 11-26; B2 2026-11-27); `metadata.bot` / `wd` /
   `uaBot`; viewports `tablet:800x600`, `desktop:1280x1200`,
   `desktop:1919x992`, `desktop:1024x1024`; `ref:aocr.org` and `verify-test`;
   `app1lang`, `topic1lang`, the LA/1920x1080 pre-stamp shape, `utc1280`,
@@ -3895,6 +3904,138 @@ Before 11-22 there is no such field: the baseline proxy counts a person as
 company-present when any of their rows carries `company` or an `arrivalSrc`
 starting `company:` — 09-26 → 11-21: **5 / 26 = 19.2%** clicked with a
 company vs **14 / 118 = 11.9%** without (bots and internal accounts out).
+
+## `free_quota_holdout`
+
+Defined 2026-11-25, in this PR's first commit, before the code (rule 6b).
+The read of the `freeQuota` holdout (flag `freeQuotaHoldout`, founder's
+written go 2026-11-25; design: docs/reads/returns-0926-flags-2026-11-25.md
+§5, PR #383; definitions: PR #382).
+
+- *Person* = the `aid`. *Arm* = `free_quota_arm_assigned.arm` (`quota` or
+  `holdout`), written once per browser at its first app open inside the
+  enrolment window (2026-11-28 → 2026-12-26 exclusive, i.e. first opens
+  11-28 through 12-25; fixed constants in `src/utils/free-quota-holdout.js`,
+  moved from 11-26 on 2026-11-26 and from 11-27 on 2026-11-27, each time
+  because the start had come before the merge). Only browsers with no
+  earlier app state are assigned; every later `pro_events` row from an
+  assigned browser carries `fqArm`. Read by assignment (intent to treat):
+  a holdout browser that signs into an account created before the window
+  gets the quota back and stays in `holdout`.
+- *t0* = the assignment row's `created_at` (it fires on the first open).
+  *Day-0 solver* = at least one `challenge_solved` on t0's UTC day.
+  *Day-0 solves* = distinct `challengeId` on those rows.
+- **Primary: 7-day return of day-0 solvers, by arm.** Returned = any row
+  with `reason` not `landing` on a later UTC day than t0 and within 7 days
+  of t0 (the #382/#383 definition). Report it whole and split **1–9 vs
+  10+ day-0 solves**: the wall reaches only the 10+ group, so a recovery in
+  1–9 says the counter and the copy are the cause, one in 10+ alone says
+  the wall is.
+- **Guardrails (money), per arm, over everyone assigned:** people with a
+  `pro_checkout_clicked` (client row, carries `fqArm`); trials
+  (`pro_trial_started`) and purchases (`pro_purchase_completed`,
+  `reason='stripe_webhook'`) — server rows carry no `fqArm`, so join them
+  to the arm through the username: any client row of the aid that names a
+  non-`guest` username. Stripe stays the only money truth.
+- Population: the bot and internal filters of `docs/agent/fleet/README.md`
+  step 2 (one bot row drops the person). A person needs 7 full days after
+  t0: rows younger than that are left out of the denominator.
+- **n target:** ~125 day-0 solvers per arm (~65 a week, both arms; detects
+  ≥ 16 points at 80% power). Below 85 per arm at the read → UNREADABLE.
+- **Baseline** (PR #383, read 2026-11-25): day-0 solver 7-day return 44.3%
+  (n 497, first opens 08-17 → 09-25 22:45 UTC, quota off) vs 23.7% (n 494,
+  09-25 22:45 → 11-18, quota on); 1–9 solves 39.6% → 23.1% (n 414 → 445),
+  10+ 67.5% → 28.6% (n 83 → 49). Purchases 2 per 30 days before and after;
+  10 trials since 10-01, 4 of them had touched a `free_quota` ask.
+- **Decision rule, written before the data:** holdout − quota ≥ 12 points
+  (two-sided p < 0.05) → the quota cost the returns; weigh that against the
+  trials and purchases the wall brings. Gap ≤ 5 points → it did not; look
+  elsewhere (the 09-25 deploy's diff). In between → extend enrolment by 4
+  weeks, once.
+- **Money stop (halfway read, 2 weeks into enrolment, 2026-12-12):** the
+  holdout arm shows 0 trials while `quota` shows ≥ 3 → report it to the
+  founder the same day (he decides whether to stop; the agent does not
+  turn the flag off on its own). A dispute or refund tied to the holdout
+  arm → report the same day.
+- **Arm-balance check 2026-12-04** (7 days into enrolment; written before
+  the data, ledger "the free-quota holdout"): over **every** bot-filtered
+  browser with a `free_quota_arm_assigned` row — the query below's `arm`
+  CTE, not its `assigned` column, which keeps only browsers 7 days past t0
+  and would hold almost nobody on 12-04 — the split must pass a two-sided
+  binomial test against 50/50 at p ≥ 0.01, i.e. each arm within
+  ±2.58·50/√n points (n = 200 → 40.9–59.1%; n = 400 → 43.6–56.4%). A fixed
+  ±5-point band would trip by chance ~16% of the time at n = 200. Needs
+  ≥ 200 assigned; if fewer on 12-04, re-run daily until 200. Fails (p <
+  0.01) → falsified: pause enrolment the same day (flag
+  `freeQuotaHoldout` off, which returns everyone to today's quota) and
+  report to the founder; investigate the hash (stored arm vs
+  `freeQuotaArm(aid)`, and whether one arm loses or bot-flags its
+  assignment row more often), fix, re-enrol from zero under a new test id.
+  Nothing else is read before it passes. Run it as the query below with
+  the final `select` replaced by:
+
+  ```sql
+  select arm, count(*) assigned,
+         round(100.0 * count(*) / sum(count(*)) over (), 1) pct
+  from arm group by arm order by arm;
+  ```
+- **Read** 2027-01-02, the 7th day after enrolment ends.
+- **Cells:** the holdout sits on its own cell, first open → 7-day return,
+  all devices. It nests the quota-wall tests (`quotaWallInline`,
+  `modalPlansFirst` on `free_quota` asks): holdout browsers never meet the
+  wall, so read those tests only on rows whose `fqArm` is not `holdout`,
+  and show the 2×2 where a person carries both.
+
+```sql
+with ev as (
+  select coalesce(((metadata #>> '{}')::jsonb)->>'aid', username) pid, username, event, reason, created_at,
+         (metadata #>> '{}')::jsonb m
+  from pro_events
+  where created_at >= :since - interval '1 day'
+    and coalesce(username, '') !~* '^(test|qa_|fabletest|linktest|internalroutine|sqlquest$|elena$)'
+),
+bots as (
+  select distinct pid from ev
+  where coalesce(m->>'bot', '') in ('true', '1')
+     or coalesce(m->>'viewport', '') in ('tablet:800x600', 'desktop:1280x1200', 'desktop:1919x992')
+),
+clean as (select * from ev where pid not in (select pid from bots)),
+arm as (
+  select distinct on (pid) pid, created_at t0, m->>'arm' arm
+  from clean where event = 'free_quota_arm_assigned' order by pid, created_at
+),
+names as (select distinct pid, username from clean where username is not null and username <> 'guest'),
+pp as (
+  select a.pid, a.arm, a.t0,
+    count(distinct x.m->>'challengeId') filter (where x.event = 'challenge_solved' and x.created_at::date = a.t0::date) solves0,
+    bool_or(x.reason is distinct from 'landing' and x.created_at::date > a.t0::date
+            and x.created_at <= a.t0 + interval '7 days') ret,
+    bool_or(x.event = 'pro_checkout_clicked') checkout
+  from arm a join clean x on x.pid = a.pid
+  where a.t0 < now() - interval '7 days'
+  group by a.pid, a.arm, a.t0
+),
+money as (
+  select n.pid,
+    bool_or(w.event = 'pro_trial_started') trial,
+    bool_or(w.event = 'pro_purchase_completed') paid
+  from names n join pro_events w on w.username = n.username and w.reason = 'stripe_webhook'
+  group by n.pid
+)
+select pp.arm,
+  count(*) assigned,
+  count(*) filter (where solves0 > 0) day0_solvers,
+  round(100.0 * avg(ret::int) filter (where solves0 > 0), 1) ret7_solvers,
+  count(*) filter (where solves0 between 1 and 9) s1_9,
+  round(100.0 * avg(ret::int) filter (where solves0 between 1 and 9), 1) ret7_1_9,
+  count(*) filter (where solves0 >= 10) s10,
+  round(100.0 * avg(ret::int) filter (where solves0 >= 10), 1) ret7_10,
+  count(*) filter (where checkout) checkout_people,
+  count(*) filter (where money.trial) trials,
+  count(*) filter (where money.paid) purchases
+from pp left join money using (pid)
+group by pp.arm order by pp.arm;
+```
 
 ## `payer_churn`
 
@@ -5740,7 +5881,8 @@ arm changes behaviour.
 
 - **Population.** People with a `tournament_assigned` row, one per person
   (the first, by `created_at`), by `arm` **and** `armVersion`. Never pool
-  across versions, or across a change of `TOURNAMENT_SLOTS`.
+  across versions, or across a change of `TOURNAMENT_SLOTS`; inside a
+  stratum, never across a change of its `weightsVersion`.
   - Person = `coalesce(((metadata #>> '{}')::jsonb)->>'aid', username)`.
   - Humans only: the exclusion block of `scripts/scorecard-weekly.sql`
     (#387), every rule, applied to the person's rows at any time.
@@ -5771,13 +5913,59 @@ arm changes behaviour.
     Baseline 23.3%.
   - **`second_session_7d`:** any non-landing row on a later UTC day than
     t0, within 7 days. Baseline 16.0%.
+- **Strata (2026-11-26, founder: "kişinin profilini anlamadan onu bir
+  gruba alamayız. profile göre gruba almalıyız").** The app reads a
+  profile at the first open (`buildVisitorProfile`, src/utils/tournament.js:
+  door, company, interview-target, device, country if cached, price
+  region, language, timezone bucket, landing-before, readiness band; no
+  PII), the profile puts the person in ONE of four strata, and the arm is
+  drawn at random INSIDE the stratum (FNV + murmur3 over
+  `${aid}:first_session_tournament_v1:${stratum}`, the stratum's weights).
+  The arm is never chosen from the profile — that would make arm and
+  profile one variable. `tournament_assigned` carries `stratum`, `profile`,
+  `weights`, `weightsVersion`, `draw` and `reason` (a sentence: "interview-
+  target (Capital One page) · desktop → stratum IT-D; equal weights A/B/D;
+  hash draw 0.41 → B").
+  - **IT-D / IT-M / NI-D / NI-M**: interview-target (a company page, a
+    `?company=` link, the readiness test or its stored result, the Capital
+    One blog — #409's entry definition, read from the URL before the app
+    stamps `arrivalSrc`) × desktop (or an unreadable device) / phone or
+    tablet. Four only: ~23 new people a day.
+  - **Expected volume** (first app openers 2026-10-05 → 11-22, cheap human
+    filter, scaled to #409's ~161 a week): IT-D ~28 a week, IT-M ~5, NI-D
+    ~116, NI-M ~12. Per arm at three arms: ~9, ~1.6, ~39, ~4 a week.
+  - A row written before the profile existed is placed by its arrival door
+    and viewport band (the read's cohort block).
+- **Per-stratum read** (query 4 of the read file + `tournament-posteriors.mjs
+  --strata`): every stratum × arm, at the stratum's current
+  `weightsVersion`, with P(best in stratum). **Elimination and promotion
+  stay pooled** (no stratum alone reaches 150 per arm in time). Once any
+  stratum is routed, the pool is **post-stratified** (each stratum weighted
+  by its share of eligible people), never the plain pool.
+- **Routing rule (written before the data).** A stratum is routed to an arm
+  only when that arm has **P(best in the stratum) ≥ 0.95 on two
+  consecutive Friday reads** with **≥ 100 eligible per arm in that
+  stratum**. Routing is an orchestrator decision row that adds the stratum
+  to `TOURNAMENT_STRATUM_WEIGHTS` with the winner at **≤ 80%**; every other
+  active arm keeps a share (**≥ 20% explores**, `TOURNAMENT_MIN_EXPLORE`;
+  a table that breaks it is ignored and the test fails). A weights change
+  bumps the stratum's `version` and restarts its per-arm counts. At the
+  volumes above only NI-D can reach 100 per arm within ~3 weeks of launch;
+  IT-D needs ~11 weeks; IT-M and NI-M are explore-only in practice.
+- **People, one row each** (`scripts/tournament-people.sql`): a hashed
+  8-character person, the date, the stratum, the profile fields, the arm,
+  the reason and the progress (first run, first solve, solves in 7 d,
+  quota wall, plan click, trial / paid in 30 d). It feeds a founder-visible
+  page.
 - **Splits on every read:**
-  - **segment.** Interview-target is the entry version of #409's segment A:
-    the first `app_opened`'s `arrivalSrc` is a company page
-    (`*-sql-interview`), `company:<Name>`, `blog-capital-one` or
+  - **segment.** Interview-target is the first half of the logged stratum
+    (above). A row with no stratum falls back to the entry version of
+    #409's segment A: the first `app_opened`'s `arrivalSrc` is a company
+    page (`*-sql-interview`), `company:<Name>`, `blog-capital-one` or
     `readiness`. Everyone else is the other segment.
   - **device band** (`viewport` prefix on the assignment row).
   - **`fqArm`** (2×2 with the freeQuota holdout).
+  - **stratum.**
 - **Posteriors.** Beta(1 + successes, 1 + failures) per arm, uniform prior,
   20,000 Monte-Carlo draws, computed from the query's per-arm counts:
   P(worst among challengers) and P(better than control). The rules,
@@ -5834,6 +6022,17 @@ thresholds. Defined 2026-11-26, before the code.
 - **Population.** People whose `tournament_assigned.arm =
   'B_single_path'`, by `armVersion`, humans only (as above). t0 = the
   assignment.
+- **Event names as built (arm B's PR, 2026-11-26).** The orchestrator's
+  brief renamed the arm's events; this section reads them as:
+  `ladder_question_resolved` = `tournament_ladder_step` (`q, rung,
+  challengeId, outcome, secs, wrongs, hint, nextRung, trigger`; `trigger`
+  is `wrongs` / `timer` on a B3 step-down, null on a solve — so
+  `path_stepdown_clicked` = the rows with a trigger; a "shown" row is not
+  logged); `path_plan_built` = `tournament_plan_shown`; `path_next_clicked`
+  = `tournament_path_next` (`from: line | verdict | ladder_end`);
+  `path_tabs_revealed` = `tournament_tabs_revealed`; `path_plan_end_shown`
+  = `tournament_plan_end_shown`. `placement_completed {source: 'ladder'}`
+  keeps its name.
 - **Ladder funnel:**
   - share with `ladder_question_resolved` for q = 1, 2, 3, 4;
   - share with `placement_completed {source: 'ladder'}` (the ladder
@@ -5857,6 +6056,119 @@ thresholds. Defined 2026-11-26, before the code.
 - **Tabs:** `path_tabs_revealed` reach. Of people revealed, the share whose
   next challenge open after the reveal came from `path_next_clicked` (the
   plan) rather than the list.
+  The reveal is NOT the ladder's end (walk fix, 2026-11-26, before any
+  data): it fires at the 3rd plan step after the ladder, "All steps", or
+  no free step left — split by `trigger` (`plan_steps` / `all_steps` /
+  `plan_end`). Sign-up prompts are held on the ladder, so
+  `signup_prompt_shown` for arm B lands at the ladder's end, at most one.
 - **Splits:** segment (interview-target vs other), device band, `fqArm`.
 - **Report n always.** At ~8 arm-B people a day, rung-level rows under 20
   are directional only.
+
+## `plan_steps_done_7d`
+
+Did people follow the personal roadmap? It attributes the tournament arms'
+results to the roadmap; it never decides (`first_session_tournament`
+decides). Plan: `docs/plans/personalized-roadmap-2026-11-26.md` §8. Engine:
+`src/utils/personal-roadmap.js`. Defined 2026-11-26, in the engine's PR,
+**before** any code that logs `path_plan_built` (fleet README rule 6b: the
+engine is not wired, and the arms' PRs that measure it come after).
+**As built (arm B's PR, 2026-11-26): the event is `tournament_plan_shown`**
+(`length, dailyCount, wallAt, planDays, k, planIds, proSteps, recompute,
+profile`; `planIds` are strings, a mock as `mock:<id>`), and each plan step
+solved after it logs `tournament_plan_step_done {challengeId, stepIndex, k,
+n, wallAt, day}`. Read `path_plan_built` below as `tournament_plan_shown`.
+Arm D (its PR, 2026-11-26) logs the same two, after
+`tournament_sprint_shown {doorCompany}` and `tournament_sprint_set {company,
+companySource: door | tap | undecided | learning | skipped, goal: interview |
+learning, days: 7 | 14 | null, daysSource: tap | no_date | skipped,
+planKind}`; its `tournament_tabs_revealed` fires when the first day's count
+is done or at the first solve of day 2. Split D's read on `goal` — a
+learner's fundamentals sprint and a company sprint are different plans.
+Walk fixes (2026-11-26, before any data): a company link's opened question
+is the plan's step 1 (`planIds[0]`, part `lead`); with no readiness band the
+level is assumed (`profile.levelSource` = `default` on the first
+`tournament_plan_shown`), the first two plan steps solved are read with the
+ladder's thresholds, `tournament_sprint_level {levelId, outcomes}` fires at
+the second, and a `tournament_plan_shown {recompute: true}` follows with
+`profile.levelSource = 'sprint_probe'` (or `readiness` when the band set
+it). Read N, `wallAt` and the level from the LAST `tournament_plan_shown`.
+
+- **Population.** People with a `path_plan_built` row whose
+  `tournament_assigned.arm` is a plan arm (`B_single_path`,
+  `D_interview_sprint`, later `C_proof_first`), by arm **and** armVersion,
+  humans only (the `first_session_tournament` exclusion block). t0 = the
+  person's first `path_plan_built`. Eligible when t0 + 7 d ≤ the read time.
+- **The plan.** `planIds` on that first row: the challenge ids in order. A
+  later row with `recompute: true` replaces the set from its own time on.
+  Ids solved before t0 are not counted.
+- **Per person.**
+  - `done` = distinct `challengeId`s on `challenge_solved` in
+    [t0, t0 + 7 d] that are in the plan;
+  - `all` = distinct `challengeId`s solved in the same window;
+  - adherence = done / all (people with all = 0 count in the zero row,
+    never in the ratio).
+- **Reported per arm × stratum.** The four strata are #409's entry
+  segment (interview-target: the first `app_opened`'s `arrivalSrc` is a
+  company page, `company:<Name>`, `blog-capital-one` or `readiness`; else
+  other) × the device band (desktop, or phone + tablet, from the assignment
+  row's `viewport`). Report:
+  - n;
+  - median `done`;
+  - share with `done ≥ 6`;
+  - share with `done ≥ wallAt` (reached the 10th free solve on the plan);
+  - median adherence.
+- **Personalization slices** (`scope`, `targetKind`, `level`,
+  `levelSource`, `focusSource`, `deadlineSource` from the row's `profile`
+  block) are listed as n only, and directional. At ~8 people per arm a day,
+  a slice is a handful a month. Never decide on one.
+- **How it is read** (written before the data):
+  - **An arm wins or loses on the decision metric with adherence ≥ 60%:**
+    the roadmap is part of the cause.
+  - **The result comes with adherence < 40%:** people did not follow the
+    plan, and the arm's result says nothing about the roadmap's content.
+    The presentation (the arm) is the suspect, not the engine.
+  - **Adherence ≥ 60% and `done ≥ 6` below control's 6+ in 7 days in the
+    same stratum:** following the plan produces fewer solves than the free
+    product. Open the slices of that stratum before the next replacement.
+- **Report n always.** Under 20 per cell is directional only.
+
+```sql
+WITH evp AS (
+  SELECT e.event, e.created_at, x.m, COALESCE(x.m->>'aid', e.username) AS pid
+  FROM public.pro_events e
+  CROSS JOIN LATERAL (SELECT (e.metadata #>> '{}')::jsonb AS m) x
+),
+-- person: the human filter, copied from scripts/scorecard-weekly.sql
+plan AS (
+  SELECT DISTINCT ON (pid) pid, created_at AS t0, m->'planIds' AS ids, (m->>'wallAt')::int AS wall_at
+  FROM evp WHERE event = 'tournament_plan_shown' AND COALESCE(m->>'recompute','false') <> 'true'
+  ORDER BY pid, created_at
+),
+asg AS (
+  SELECT DISTINCT ON (pid) pid, m->>'arm' AS arm, m->>'armVersion' AS v,
+         CASE WHEN m->>'arrivalSrc' ~ '(-sql-interview$|^company:|^blog-capital-one$|^readiness$)' THEN 'interview' ELSE 'other' END AS seg,
+         CASE WHEN split_part(m->>'viewport','x',1)::int >= 1024 THEN 'desktop' ELSE 'phone_tablet' END AS dev
+  FROM evp WHERE event = 'tournament_assigned' ORDER BY pid, created_at
+),
+solves AS (
+  SELECT p.pid,
+         count(DISTINCT e.m->>'challengeId') AS all_n,
+         count(DISTINCT e.m->>'challengeId') FILTER (WHERE p.ids ? (e.m->>'challengeId')) AS done
+  FROM plan p JOIN evp e ON e.pid = p.pid AND e.event = 'challenge_solved'
+   AND e.created_at >= p.t0 AND e.created_at <= p.t0 + interval '7 days'
+  GROUP BY p.pid
+)
+SELECT a.arm, a.v, a.seg, a.dev, count(*) AS n,
+  percentile_cont(0.5) WITHIN GROUP (ORDER BY COALESCE(s.done,0)) AS median_done,
+  avg((COALESCE(s.done,0) >= 6)::int) AS share_done6,
+  avg((COALESCE(s.done,0) >= p.wall_at)::int) AS share_to_wall,
+  percentile_cont(0.5) WITHIN GROUP (ORDER BY s.done::numeric / NULLIF(s.all_n,0)) AS median_adherence
+FROM plan p JOIN asg a USING (pid) LEFT JOIN solves s USING (pid)
+WHERE p.t0 + interval '7 days' <= now()
+GROUP BY 1,2,3,4 ORDER BY 1,2,3,4;
+```
+
+`planIds` must be logged as a JSON array of **strings** for the `?`
+operator above (or the read casts each element); the arm PR that writes
+the event pins the shape in its test.
