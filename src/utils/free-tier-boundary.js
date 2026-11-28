@@ -88,10 +88,20 @@ function idSet(solved) {
  * challenge is theirs; the gate never takes work back). A Hard preview past
  * position three is gated INSIDE the company view — it stays free from the
  * general list, which is the point: the curated set is what Pro buys.
+ *
+ * `authored` must be `true`: the set was AUTHORED for that company (a signed
+ * archetype member — Capital One, Revolut; the caller passes
+ * `companyHasAuthoredSet(companyFilter)`). Decided 2026-09-20 (founder QA
+ * round 5, item 5) but until 2026-11-26 only the banner knew it — the gate
+ * walled the fourth of Snowflake's, Wise's, Meta's … topical sets, whose
+ * pages promise only the general 10-solve quota. Anything but `true`
+ * (missing, false, undefined) is ungated, so a call site that forgets the
+ * argument fails open, never into a wall the copy does not describe.
  */
-export function companySetGate({ flagOn = false, isPro = false, companyFilter = null, challenge = null, scoped = [], solved = null } = {}) {
+export function companySetGate({ flagOn = false, isPro = false, companyFilter = null, authored = false, challenge = null, scoped = [], solved = null } = {}) {
   const none = { gated: false };
   if (!flagOn || isPro || !companyFilter || !challenge) return none;
+  if (authored !== true) return none;
   const ordered = companySetOrder(scoped);
   const position = ordered.findIndex(c => c.id === challenge.id);
   if (position < 0) return none;
