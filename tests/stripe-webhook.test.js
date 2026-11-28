@@ -169,7 +169,9 @@ describe('stripe-webhook: access comes back off', () => {
     const inside = b.slice(gate, out);
     expect(inside).toContain('logProEvent("pro_payment_failed"');
     expect(inside).toContain('at_checkout: true');
-    expect(inside).toContain('metadata?.username');
+    // the subscription's metadata, then its Checkout Session (2026-11-28)
+    expect(inside).toContain('await resolveSubscriber(customerId, invoice, failedSubId)');
+    expect(inside).not.toMatch(/\.update\(|proStatus|proExpiry/);
     expect(inside).not.toMatch(/api\.resend\.com|revokeProAccess|email_events/);
     // everything that mails or revokes comes after the gate has returned
     expect(b.indexOf('api.resend.com')).toBeGreaterThan(out);

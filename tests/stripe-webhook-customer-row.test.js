@@ -56,8 +56,15 @@ describe('stripe-webhook uses it everywhere', () => {
 
   it('the money branches pass the subscription\'s own username as the tie-break hint', () => {
     const paid = code.slice(code.indexOf('event.type === "invoice.payment_succeeded"'), code.indexOf('event.type === "invoice.payment_failed"'));
-    expect(paid).toMatch(/const userRecord = await findUserByCustomer\(customerId,\s*\([\s\S]*?subscription_details\?\.metadata\?\.username \|\| null\);/);
+    // 2026-11-28: through resolveSubscriber, which reads the hint off the
+    // Stripe object (subscriptionUsername: subscription_details.metadata on an
+    // invoice, metadata on a subscription) and hands it to findUserByCustomer.
+    expect(paid).toContain('const subscriber = await resolveSubscriber(customerId, invoice, (invoice.subscription as string) || null);');
+    expect(paid).toContain('const userRecord = subscriber.row;');
     const deleted = code.slice(code.indexOf('event.type === "customer.subscription.deleted"'));
-    expect(deleted).toContain('const userRecord = await findUserByCustomer(customerId, subscription.metadata?.username || null);');
+    expect(deleted).toContain('const subscriber = await resolveSubscriber(customerId, subscription, subscription.id);');
+    const resolver = code.slice(code.indexOf('async function resolveSubscriber'), code.indexOf('async function invoiceDeclineFields'));
+    expect(resolver).toContain('const hint = subscriptionUsername(stripeObject);');
+    expect(resolver).toContain('const row = await findUserByCustomer(customerId, hint);');
   });
 });

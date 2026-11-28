@@ -30,6 +30,15 @@
 // or buy.stripe.com only), `recovery_expires_at`, and booleans
 // `stripe_email_present` / `prefilled_email` / `promotions_consent` to
 // `pro_checkout_expired` — never an email address. No new endpoint events.
+//
+// Who an event belongs to (2026-11-28, ./attribution.ts): the customer id
+// alone picks the row a branch may write to. When no row holds it (a second
+// subscription moved stripeCustomerId on, or an event raced the checkout's
+// write) the pro_events row is still written under the person the
+// subscription's metadata or its Checkout Session names — never "unknown" —
+// and nothing is written to any account. Failure rows carry Stripe's decline
+// code and 3D Secure facts (./decline.ts), measurement only. No new endpoint
+// events.
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -37,6 +46,8 @@ import Stripe from "https://esm.sh/stripe@12.0.0?target=deno";
 import { pickCustomerRow } from "./customer-row.ts";
 import { paymentFailedEmail, stripeInvoiceUrl, startsAtTrialEnd, failedChargeState, PORTAL_URL_DEFAULT } from "./payment-failed-email.ts";
 import { expiredSessionMeta } from "../_shared/checkout-recovery.ts";
+import { attributeEvent, subscriptionUsername, cleanUsername } from "./attribution.ts";
+import { paymentFailureFields, setupFailureFields, EMPTY_FAILURE_FIELDS } from "./decline.ts";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
   apiVersion: "2023-10-16",
@@ -79,6 +90,50 @@ async function findUserByCustomer(customerId: string | null, hintUsername: strin
     .select("*")
     .filter("data->>stripeCustomerId", "eq", customerId);
   return pickCustomerRow(users, hintUsername);
+}
+
+// The Checkout Session that created a subscription names the person in
+// client_reference_id — Payment Links included, which carry no subscription
+// metadata. Read only when no row holds the customer id and the subscription
+// names nobody; a failed read is "nobody", never an error.
+async function sessionUsernameFor(subscriptionId: string | null): Promise<string | null> {
+  if (!subscriptionId) return null;
+  try {
+    const list = await stripe.checkout.sessions.list({ subscription: subscriptionId, limit: 1 });
+    return cleanUsername(list.data?.[0]?.client_reference_id);
+  } catch (_) {
+    return null;
+  }
+}
+
+// Who an event belongs to (./attribution.ts). `row` is the customer-id match
+// and the ONLY row a branch may write to; `username` is who the pro_events
+// row is written under, which falls back to the subscription's own metadata
+// and then its Checkout Session when no row holds the customer id any more
+// (a second subscription moved stripeCustomerId on, or the event raced
+// checkout.session.completed). Before 2026-11-28 those events were written
+// as "unknown".
+async function resolveSubscriber(customerId: string | null, stripeObject: unknown, subscriptionId: string | null) {
+  const hint = subscriptionUsername(stripeObject);
+  const row = await findUserByCustomer(customerId, hint);
+  if (row || hint) return attributeEvent(row, hint);
+  return attributeEvent(null, null, await sessionUsernameFor(subscriptionId));
+}
+
+// Stripe's own reason for a failed invoice charge (./decline.ts), read from
+// its PaymentIntent and latest Charge. Measurement only: a failed read gives
+// the empty fields and never stops the branch.
+async function invoiceDeclineFields(invoice: Stripe.Invoice) {
+  const piRef = (invoice as { payment_intent?: unknown }).payment_intent;
+  const piId = typeof piRef === "string" ? piRef : (piRef as { id?: string } | null)?.id || null;
+  if (!piId) return { ...EMPTY_FAILURE_FIELDS };
+  try {
+    const pi = await stripe.paymentIntents.retrieve(piId, { expand: ["latest_charge"] });
+    return paymentFailureFields(pi);
+  } catch (err) {
+    console.warn("[stripe-webhook] decline read failed:", err);
+    return { ...EMPTY_FAILURE_FIELDS };
+  }
 }
 
 // proType is deliberately KEPT: pro-access.js needs it to tell a lapsed
@@ -453,9 +508,11 @@ serve(async (req) => {
       }
 
       // Find user by Stripe customer ID — the registered account when a
-      // guest row shares it (findUserByCustomer / pickCustomerRow).
-      const userRecord = await findUserByCustomer(customerId,
-        (invoice as { subscription_details?: { metadata?: { username?: string } } }).subscription_details?.metadata?.username || null);
+      // guest row shares it (findUserByCustomer / pickCustomerRow). Only that
+      // row is extended; the subscriber's name (resolveSubscriber) also
+      // covers a subscription no row holds the customer id of any more.
+      const subscriber = await resolveSubscriber(customerId, invoice, (invoice.subscription as string) || null);
+      const userRecord = subscriber.row;
 
       if (userRecord) {
         const userData = userRecord.data;
@@ -531,6 +588,23 @@ serve(async (req) => {
             invoice_id: invoice.id,
           });
         }
+      } else {
+        // Money on a subscription no row holds the customer id of (a second
+        // subscription moved stripeCustomerId on). Until 2026-11-28 this
+        // charge left no row anywhere: the 11-03 recovery payment in the
+        // attribution note was invisible. Recorded under the person the
+        // subscription names; nothing is extended (`applied: false`) — the
+        // access this person holds belongs to the subscription on the row.
+        await logProEvent("pro_renewal_completed", subscriber.username, "stripe_webhook", {
+          plan_type: "unknown",
+          invoice_id: invoice.id,
+          amount_cents: amountPaid,
+          billing_reason: invoice.billing_reason ?? null,
+          stripe_subscription_id: (invoice.subscription as string) || null,
+          matched_by: subscriber.matchedBy,
+          applied: false,
+        });
+        console.warn(`[stripe-webhook] paid invoice ${invoice.id} on a customer no row holds (${subscriber.matchedBy || "unattributed"}) — recorded, nothing extended`);
       }
       
       return new Response("Subscription extended", { status: 200 });
@@ -553,6 +627,10 @@ serve(async (req) => {
       const willRetry = !!invoice.next_payment_attempt;
       // retrying | gave_up | waiting — only gave_up ends access (A3 2026-11-25).
       const chargeState = failedChargeState(invoice.next_payment_attempt, invoice.attempt_count);
+      const failedSubId = (invoice.subscription as string) || null;
+      // Stripe's reason for the refusal (decline code, 3D Secure) — measured
+      // on both rows below, read by nothing (2026-11-28, ./decline.ts).
+      const decline = await invoiceDeclineFields(invoice);
 
       // A failed FIRST invoice is a card declined on the checkout page, not
       // dunning. The buyer is still looking at Stripe's own "your card was
@@ -566,16 +644,12 @@ serve(async (req) => {
       // any access the person may already hold.
       if (invoice.billing_reason === "subscription_create") {
         // The customer is minutes old, so no user row carries its id yet;
-        // create-checkout-session wrote the username on the subscription.
-        const inv = invoice as unknown as {
-          subscription_details?: { metadata?: Record<string, string> };
-          lines?: { data?: Array<{ metadata?: Record<string, string> }> };
-        };
-        const checkoutUser = inv.subscription_details?.metadata?.username
-          || inv.lines?.data?.[0]?.metadata?.username
-          || (await findUserByCustomer(customerId))?.username
-          || null;
-        await logProEvent("pro_payment_failed", checkoutUser, "stripe_webhook", {
+        // create-checkout-session wrote the username on the subscription
+        // (metadata?.username), and a Payment Link's session carries it as
+        // client_reference_id (resolveSubscriber). Nothing is written to a
+        // user row here either way.
+        const checkout = await resolveSubscriber(customerId, invoice, failedSubId);
+        await logProEvent("pro_payment_failed", checkout.username, "stripe_webhook", {
           invoice_id: invoice.id,
           attempt_count: invoice.attempt_count ?? null,
           amount_due_cents: invoice.amount_due ?? null,
@@ -583,12 +657,18 @@ serve(async (req) => {
           next_attempt_unix: invoice.next_payment_attempt ?? null,
           billing_reason: invoice.billing_reason,
           at_checkout: true,
+          stripe_subscription_id: failedSubId,
+          matched_by: checkout.matchedBy,
+          ...decline,
         });
         console.log(`\uD83D\uDCB3 card declined at checkout (invoice ${invoice.id}) — recorded, no email`);
         return new Response("Checkout decline recorded", { status: 200 });
       }
 
-      const userRecord = await findUserByCustomer(customerId);
+      // `userRecord` (the customer-id match) is the only row this branch may
+      // revoke; `subscriber.username` is who the row is written under.
+      const subscriber = await resolveSubscriber(customerId, invoice, failedSubId);
+      const userRecord = subscriber.row;
 
       // One email per invoice, but a pro_events row per ATTEMPT. Stripe
       // fires this event on every retry (attempt 1, 2, 3…); the attempt
@@ -613,7 +693,6 @@ serve(async (req) => {
       // so it never throws: it falls back to the record's proTrial flag,
       // which stays true until the first charge lands.
       let afterTrial = false;
-      const failedSubId = (invoice.subscription as string) || null;
       if (invoice.billing_reason === "subscription_cycle") {
         afterTrial = (userRecord?.data as Record<string, unknown> | undefined)?.proTrial === true;
         if (failedSubId) {
@@ -627,7 +706,7 @@ serve(async (req) => {
         }
       }
 
-      await logProEvent("pro_payment_failed", userRecord?.username || null, "stripe_webhook", {
+      await logProEvent("pro_payment_failed", subscriber.username, "stripe_webhook", {
         invoice_id: invoice.id,
         attempt_count: invoice.attempt_count ?? null,
         amount_due_cents: invoice.amount_due ?? null,
@@ -636,6 +715,9 @@ serve(async (req) => {
         billing_reason: invoice.billing_reason ?? null,
         after_trial: afterTrial,
         charge_state: chargeState,
+        stripe_subscription_id: failedSubId,
+        matched_by: subscriber.matchedBy,
+        ...decline,
       });
 
       // Stripe has stopped retrying: this person is not going to pay for the
@@ -704,7 +786,7 @@ serve(async (req) => {
             let rid: string | null = null;
             try { rid = (await res.clone().json())?.id ?? null; } catch (_) { /* non-JSON body */ }
             await supabase.from("email_events").insert({
-              username: userRecord?.username || "unknown",
+              username: subscriber.username || "unknown",
               email: toEmail,
               template: "payment_failed",
               event: res.ok ? "sent" : "send_failed",
@@ -757,12 +839,21 @@ serve(async (req) => {
           }
         } catch (_) { /* the row is still worth writing */ }
       }
+      // Stripe's reason and the 3D Secure result, from the SetupIntent and its
+      // latest SetupAttempt (./decline.ts) — measurement only (2026-11-28).
+      // The event's own object is the fallback when the read fails.
+      let setupFields = setupFailureFields(si);
+      try {
+        const full = await stripe.setupIntents.retrieve(si.id, { expand: ["latest_attempt"] });
+        setupFields = setupFailureFields(full);
+      } catch (_) { /* the event's own fields stand */ }
       await logProEvent("pro_card_setup_failed", username, "stripe_webhook", {
         setup_intent_id: si.id,
+        ...setupFields,
         code: err.code || null,
-        decline_code: err.decline_code || null,
-        error_type: err.type || null,
-        three_d_secure: err.code === "setup_intent_authentication_failure",
+        decline_code: err.decline_code || setupFields.decline_code,
+        error_type: err.type || setupFields.error_type,
+        three_d_secure: err.code === "setup_intent_authentication_failure" || setupFields.three_d_secure === true,
         stripe_customer_id: customerId,
         matched_by: matchedBy,
         created_at: si.created ? new Date(si.created * 1000).toISOString() : null,
@@ -844,29 +935,41 @@ serve(async (req) => {
       if (!flipped && !statusChanged) return new Response("Subscription update noted", { status: 200 });
 
       const customerId = subscription.customer as string;
-      const userRecord = await findUserByCustomer(customerId);
+      // `userRecord` (customer-id match) is the only row written below;
+      // `subscriber.username` names the person when no row holds the id —
+      // a second subscription, or this event racing the checkout's write.
+      const subscriber = await resolveSubscriber(customerId, subscription, subscription.id);
+      const userRecord = subscriber.row;
       const userData = userRecord?.data;
 
       if (statusChanged) {
         const from = (previous["status"] as string) || null;
-        if (subscription.status === "unpaid" || subscription.status === "incomplete_expired") {
+        if ((subscription.status === "unpaid" || subscription.status === "incomplete_expired") && userRecord) {
           const had = await revokeProAccess(userRecord);
-          await logProEvent("pro_access_revoked", userRecord?.username || null, "stripe_webhook", {
+          await logProEvent("pro_access_revoked", userRecord.username, "stripe_webhook", {
             cause: `subscription_${subscription.status}`,
             from_status: from,
             stripe_customer_id: customerId,
+            stripe_subscription_id: subscription.id,
             had_access: had,
           });
         } else {
-          await logProEvent("pro_subscription_status", userRecord?.username || null, "stripe_webhook", {
+          // Also an unpaid / incomplete_expired subscription no row holds:
+          // nothing was revoked, so it is a status row, not a revoke row
+          // (until 2026-11-28 it was a "pro_access_revoked" under "unknown",
+          // e.g. a checkout attempt abandoned the day its buyer paid on a
+          // second one).
+          await logProEvent("pro_subscription_status", subscriber.username, "stripe_webhook", {
             status: subscription.status,
             from_status: from,
             plan_type: (userData as Record<string, unknown> | undefined)?.proType || "unknown",
             period_end: subscription.current_period_end
               ? new Date(subscription.current_period_end * 1000).toISOString() : null,
+            stripe_subscription_id: subscription.id,
+            matched_by: subscriber.matchedBy,
           });
         }
-        console.log(`\u2139\uFE0F Subscription ${from} \u2192 ${subscription.status} for ${userRecord?.username || customerId}`);
+        console.log(`\u2139\uFE0F Subscription ${from} \u2192 ${subscription.status} for ${subscriber.username || customerId}`);
 
         // ── billingIssue (M-01, 2026-11-22) ──
         // past_due: the charge failed and Stripe is retrying. The person's
@@ -934,11 +1037,12 @@ serve(async (req) => {
       if (subscription.status === "trialing") {
         await logProEvent(
           subscription.cancel_at_period_end ? "pro_trial_cancelled" : "pro_trial_reactivated",
-          userRecord?.username || null,
+          subscriber.username,
           "stripe_webhook",
           {
             plan_type: userData?.proType || "unknown",
             scheduled: true,
+            matched_by: subscriber.matchedBy,
             trial_end: subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null,
           },
         );
@@ -948,11 +1052,12 @@ serve(async (req) => {
 
       await logProEvent(
         subscription.cancel_at_period_end ? "pro_subscription_cancelled" : "pro_subscription_reactivated",
-        userRecord?.username || null,
+        subscriber.username,
         "stripe_webhook",
         {
           plan_type: userData?.proType || "unknown",
           scheduled: true,
+          matched_by: subscriber.matchedBy,
           cancel_at: subscription.cancel_at ? new Date(subscription.cancel_at * 1000).toISOString() : null,
           period_end: subscription.current_period_end ? new Date(subscription.current_period_end * 1000).toISOString() : null,
           days_since_purchase: daysSincePurchase,
@@ -967,7 +1072,8 @@ serve(async (req) => {
       const subscription = event.data.object as Stripe.Subscription;
       const customerId = subscription.customer as string;
       
-      const userRecord = await findUserByCustomer(customerId, subscription.metadata?.username || null);
+      const subscriber = await resolveSubscriber(customerId, subscription, subscription.id);
+      const userRecord = subscriber.row;
 
       // WHY a subscription ended decides whether the person keeps the period
       // (2026-09-14, founder: "ödeme fail olursa pro free'ye dönmeli").
@@ -1051,9 +1157,13 @@ serve(async (req) => {
         });
         console.log(`⚠️ Subscription ended for ${userRecord.username} (${cancelReason || subscription.status}) — ${endedForNonPayment ? "access revoked now" : "keeps the paid period"}`);
       } else {
-        await logProEvent("pro_subscription_cancelled", null, "stripe_webhook", {
+        // No row holds this customer id: nothing to write, but the end of a
+        // subscription is still somebody's (attribution note, 2026-11-28).
+        await logProEvent("pro_subscription_cancelled", subscriber.username, "stripe_webhook", {
           plan_type: "unknown", ended: true, reason: cancelReason,
-          revoked: endedForNonPayment, stripe_customer_id: customerId,
+          revoked: false, stripe_customer_id: customerId,
+          stripe_subscription_id: subscription.id,
+          matched_by: subscriber.matchedBy,
         });
       }
       
@@ -1091,7 +1201,10 @@ serve(async (req) => {
         }
       }
 
-      const userRecord = await findUserByCustomer(customerId);
+      // Revoked only on the customer-id match, as before; the row names the
+      // person even when no account holds this customer id.
+      const subscriber = await resolveSubscriber(customerId, null, subscriptionId);
+      const userRecord = subscriber.row;
       let cancelledSubscription: string | null = null;
 
       if (full) {
@@ -1109,7 +1222,7 @@ serve(async (req) => {
         }
       }
 
-      await logProEvent("pro_refunded", userRecord?.username || null, "stripe_webhook", {
+      await logProEvent("pro_refunded", subscriber.username, "stripe_webhook", {
         full,
         charge_id: charge.id,
         amount_cents: amount,
@@ -1119,6 +1232,7 @@ serve(async (req) => {
         subscription_cancelled: cancelledSubscription,
         revoked: full && !!userRecord,
         matched_user: !!userRecord,
+        matched_by: subscriber.matchedBy,
       });
       console.log(`\u21A9\uFE0F ${full ? "Full" : "Partial"} refund on ${charge.id} for ${userRecord?.username || customerId || "unknown customer"}${cancelledSubscription ? " (subscription cancelled)" : ""}`);
       return new Response("Refund recorded", { status: 200 });
