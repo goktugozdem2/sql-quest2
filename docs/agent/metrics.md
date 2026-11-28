@@ -5705,6 +5705,8 @@ F2). Defined 2026-11-25, before the code ships (rule 6b). New event:
 once per person per day when the card is on screen. The rest are existing
 events: `ticket_opened {ticketId, index, locked}`, `ticket_solved`.
 
+_Implementation note (PR #375): `ticket_card_shown` fires through `trackActivationEvent`'s `onceKey` (per browser and account, per day), and `ticket_opened` from this card carries `source` too._
+
 **Primary:** of the people with `ticket_card_shown` in the window, the share
 with an unlocked `ticket_opened` within 7 days, and of those, the share with
 `ticket_solved` for the same `ticketId`. Split by `source`; never one

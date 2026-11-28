@@ -27,6 +27,18 @@ of the verifier and must never be rounded to `FLAT`.
 
 ## Open
 
+### ticket 1 for Analyst Day-One and job-ready people (`ticketForDayOne`, First 90 Days F2)
+
+- **Claimed** 2026-11-25 · **Shipped** dark (flag `ticketForDayOne: false`); flips only in an orchestrator decision row after a walk (decision 1 of 2026-11-25, PR #372) · **Read** 28 days after the deploy of the flip commit (2027-01-01 at the latest if it flips by 2026-12-04); n rule below.
+- **Change** one Coach card, under the next-step card: "A request from a PM, on real data", which opens the next unsolved ticket (ticket 1 first) through the existing `openTicket` — own sql.js Database per dataset (`ticketDbFor`), graded on figures (`ticket-grade.js`), `reference` never rendered. Shown to Analyst Day-One goal holders (any solve count) and `job_ready` people with 6+ solves; `hired` keeps its own First 90 card. `FREE_TICKETS = 1` unchanged; tickets 2–5 stay Pro through the existing `post_hire` modal reason. New event `ticket_card_shown {source: analyst_day_one | job_ready | hired, solves}`, once per person per day while a card is on screen (with the flag on, the hired card is counted too); `ticket_opened` from this card carries `source`. Nothing priced or gated anew. src/utils/ticket-door.js; tests/ticket-door.test.js.
+- **Why** docs/plans/first-90-days-2026-11-25.md §1–2: since 2026-10-04 one real person set `hired` and nobody outside the team opened a ticket. The "first job" shape is a larger group that never sees a ticket: 226 job-ready solvers in 90 days; Analyst Day-One has 64 holders (28 chose it in 90 days) and the best step rate of the three goals (15 of 64).
+- **Metric** `ticket_door` (docs/agent/metrics.md; defined in PR #369 before this code, rule 6b; copied here because #369 is not on main). Split by `source`, never blended.
+- **Baseline** 0 non-internal ticket opens since 2026-10-04 (52 days to 11-25). Audience: 226 job-ready solvers / 90 days; 28 Analyst Day-One choosers / 90 days.
+- **Target** opened ÷ shown ≥ 10% at ≥ 40 people shown, and ≥ 40% of openers solve the ticket they opened.
+- **Guardrail** `reach_6_rate` of card-shown people may not fall more than 5 points below the same goal's people in the 28 days before the flip (the card must not pull people off challenges).
+- **Falsified if** fewer than 5% open at ≥ 40 shown → remove the card; tickets go back behind `hired` (MISS). Guardrail breached → remove the card whatever the open rate. Fewer than 40 shown at the read → UNREADABLE; extend once by 28 days, then remove. F3 (seven more tickets) is not built unless ≥ 10 people solve ticket 1.
+- **Confounds** the F1 measure PR (B2) may also add `ticket_card_shown` for the hired card; keep one emitter. `post_hire` modal copy ("The work after the interview.") is unchanged and is what a free non-hired person sees on a locked ticket 2; read locked opens → `pro_plan_clicked` by `source`.
+
 ### the company-set gate walls only authored sets (Capital One, Revolut) — bug fix
 
 - **Claimed** 2026-11-26 (founder's go in chat, "1'i uygula") · **Shipped**
